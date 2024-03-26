@@ -13,7 +13,6 @@ const StyledContainer = styled.div`
   display: flex;
   flex-direction: column;
 `;
-
 const StyledTopBar = styled.div<{ displayBottomBorder: boolean }>`
   align-items: center;
   border-bottom: ${({ displayBottomBorder, theme }) =>
@@ -27,7 +26,7 @@ const StyledTopBar = styled.div<{ displayBottomBorder: boolean }>`
   justify-content: space-between;
   padding-left: ${({ theme }) => theme.spacing(2)};
   padding-right: ${({ theme }) => theme.spacing(2)};
-  z-index: 5;
+  z-index: 7;
 `;
 
 const StyledLeftSection = styled.div`

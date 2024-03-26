@@ -74,13 +74,13 @@ const StyledTable = styled.table<{
   }
 
   // Label identifier column
+  // Changed this value of z index from 6 to 3. Any lower and then the sticky index stops working and any higher then the dropdown stops being visible.
   thead th:nth-of-type(1),
   thead th:nth-of-type(2) {
     left: 0;
     top: 0;
     z-index: 6;
   }
-
   thead th:nth-child(n + 3) {
     top: 0;
     z-index: 5;

@@ -12,13 +12,13 @@ import { AppErrorBoundary } from '@/error-handler/components/AppErrorBoundary';
 import { KeyboardShortcutMenu } from '@/keyboard-shortcut-menu/components/KeyboardShortcutMenu';
 import { AppNavigationDrawer } from '@/navigation/components/AppNavigationDrawer';
 import { MobileNavigationBar } from '@/navigation/components/MobileNavigationBar';
-import { useIsSettingsPage } from '@/navigation/hooks/useIsSettingsPage';
-import { OBJECT_SETTINGS_WIDTH } from '@/settings/data-model/constants/ObjectSettings';
+// import { useIsSettingsPage } from '@/navigation/hooks/useIsSettingsPage';
+// import { OBJECT_SETTINGS_WIDTH } from '@/settings/data-model/constants/ObjectSettings';
 import { SignInBackgroundMockPage } from '@/sign-in-background-mock/components/SignInBackgroundMockPage';
 import { AppPath } from '@/types/AppPath';
-import { DESKTOP_NAV_DRAWER_WIDTHS } from '@/ui/navigation/navigation-drawer/constants/DesktopNavDrawerWidths';
+// import { DESKTOP_NAV_DRAWER_WIDTHS } from '@/ui/navigation/navigation-drawer/constants/DesktopNavDrawerWidths';
 import { useIsMobile } from '@/ui/utilities/responsive/hooks/useIsMobile';
-import { useScreenSize } from '@/ui/utilities/screen-size/hooks/useScreenSize';
+// import { useScreenSize } from '@/ui/utilities/screen-size/hooks/useScreenSize';
 import { useIsMatchingLocation } from '~/hooks/useIsMatchingLocation';
 
 const StyledLayout = styled.div`
@@ -70,9 +70,9 @@ type DefaultLayoutProps = {
 export const DefaultLayout = ({ children }: DefaultLayoutProps) => {
   const onboardingStatus = useOnboardingStatus();
   const isMobile = useIsMobile();
-  const isSettingsPage = useIsSettingsPage();
+  // const isSettingsPage = useIsSettingsPage();
   const theme = useTheme();
-  const widowsWidth = useScreenSize().width;
+  // const widowsWidth = useScreenSize().width;
   const isMatchingLocation = useIsMatchingLocation();
   const showAuthModal = useMemo(() => {
     return (
@@ -104,15 +104,18 @@ export const DefaultLayout = ({ children }: DefaultLayoutProps) => {
         <KeyboardShortcutMenu />
 
         <StyledPageContainer
+          // animate={{
+          //   marginLeft:
+          //     isSettingsPage && !isMobile
+          //       ? (widowsWidth -
+          //           (OBJECT_SETTINGS_WIDTH +
+          //             DESKTOP_NAV_DRAWER_WIDTHS.menu +
+          //             64)) /
+          //         2
+          //       : 0,
+          // }}
           animate={{
-            marginLeft:
-              isSettingsPage && !isMobile
-                ? (widowsWidth -
-                    (OBJECT_SETTINGS_WIDTH +
-                      DESKTOP_NAV_DRAWER_WIDTHS.menu +
-                      64)) /
-                  2
-                : 0,
+            marginLeft: 0,
           }}
           transition={{
             duration: theme.animation.duration.normal,
