@@ -19,7 +19,6 @@ export class PersonRepository {
   ): Promise<ObjectRecord<PersonObjectMetadata>[]> {
     const dataSourceSchema =
       this.workspaceDataSourceService.getSchemaName(workspaceId);
-
     return await this.workspaceDataSourceService.executeRawQuery(
       `SELECT * FROM ${dataSourceSchema}.person WHERE email = ANY($1)`,
       [emails],

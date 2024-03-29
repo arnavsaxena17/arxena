@@ -14,6 +14,8 @@ import { HealthModule } from 'src/engine/core-modules/health/health.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { FileModule } from './file/file.module';
 import { ClientConfigModule } from './client-config/client-config.module';
+import { CatsModule } from 'src/engine/core-modules/cats/cats.module';
+import { RecruitmentAgentModule } from 'src/engine/core-modules/recruitment-agent/recruitment-agent.module';
 
 @Module({
   imports: [
@@ -24,6 +26,8 @@ import { ClientConfigModule } from './client-config/client-config.module';
     ClientConfigModule,
     FeatureFlagModule,
     FileModule,
+    RecruitmentAgentModule,
+    CatsModule,
     OpenApiModule,
     RefreshTokenModule,
     TimelineMessagingModule,
@@ -34,6 +38,8 @@ import { ClientConfigModule } from './client-config/client-config.module';
   exports: [
     AnalyticsModule,
     AuthModule,
+    CatsModule,
+    RecruitmentAgentModule,
     FeatureFlagModule,
     TimelineMessagingModule,
     TimelineCalendarEventModule,
