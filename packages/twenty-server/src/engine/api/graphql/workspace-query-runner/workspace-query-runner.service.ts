@@ -31,11 +31,7 @@ import { WorkspaceQueryBuilderFactory } from 'src/engine/api/graphql/workspace-q
 import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
 import { MessageQueueService } from 'src/engine/integrations/message-queue/services/message-queue.service';
 import { MessageQueue } from 'src/engine/integrations/message-queue/message-queue.constants';
-import {
-  CallWebhookJobsJob,
-  CallWebhookJobsJobData,
-  CallWebhookJobsJobOperation,
-} from 'src/engine/api/graphql/workspace-query-runner/jobs/call-webhook-jobs.job';
+import { CallWebhookJobsJob, CallWebhookJobsJobData, CallWebhookJobsJobOperation, } from 'src/engine/api/graphql/workspace-query-runner/jobs/call-webhook-jobs.job';
 import { parseResult } from 'src/engine/api/graphql/workspace-query-runner/utils/parse-result.util';
 import { computeObjectTargetTable } from 'src/engine/utils/compute-object-target-table.util';
 import { ObjectRecordDeleteEvent } from 'src/engine/integrations/event-emitter/types/object-record-delete.event';
@@ -407,6 +403,15 @@ export class WorkspaceQueryRunnerService {
       args,
       options,
     );
+
+    // TODO START: remove this awful patch and use our upcoming custom ORM is developed
+    const deletedWorkspaceMember = await this.handleDeleteWorkspaceMember(
+      args.id,
+      workspaceId,
+      objectMetadataItem,
+    );
+    // TODO END
+
     const result = await this.execute(query, workspaceId);
 
     const parsedResults = (
@@ -429,7 +434,10 @@ export class WorkspaceQueryRunnerService {
       recordId: args.id,
       objectMetadata: objectMetadataItem,
       details: {
-        before: this.removeNestedProperties(parsedResults?.[0]),
+        before: {
+          ...(deletedWorkspaceMember ?? {}),
+          ...this.removeNestedProperties(parsedResults?.[0]),
+        },
       },
     } satisfies ObjectRecordDeleteEvent<any>);
 
@@ -506,6 +514,8 @@ export class WorkspaceQueryRunnerService {
     }
 
     if (errors && errors.length > 0) {
+      console.log("Got error::");
+      
       const error = computePgGraphQLError(
         command,
         objectMetadataItem.nameSingular,
@@ -554,5 +564,34 @@ export class WorkspaceQueryRunnerService {
         { retryLimit: 3 },
       );
     });
+  }
+
+  async handleDeleteWorkspaceMember(
+    id: string,
+    workspaceId: string,
+    objectMetadataItem: ObjectMetadataInterface,
+  ) {
+    if (objectMetadataItem.nameSingular !== 'workspaceMember') {
+      return;
+    }
+
+    const workspaceMemberResult = await this.executeAndParse<IRecord>(
+      `
+      query {
+        workspaceMemberCollection(filter: {id: {eq: "${id}"}}) {
+          edges {
+            node {
+              userId: userId
+            }
+          }
+        }
+      }
+      `,
+      objectMetadataItem,
+      '',
+      workspaceId,
+    );
+
+    return workspaceMemberResult.edges?.[0]?.node;
   }
 }

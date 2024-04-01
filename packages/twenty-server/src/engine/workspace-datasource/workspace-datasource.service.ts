@@ -108,7 +108,8 @@ export class WorkspaceDataSourceService {
 
     return `${devId ? 'twenty_' : ''}${base36String}`;
   }
-
+  
+  
   public async executeRawQuery(
     query: string,
     parameters: any[] = [],
@@ -118,11 +119,17 @@ export class WorkspaceDataSourceService {
     console.log("QueryLL", query, parameters, workspaceId, transactionManager);
     
     try {
+      console.log("This is the query:", query)
+      console.log("This is the parameters:", parameters)
+      console.log("This is the transaction manager:", transactionManager)
+      console.log("This is the workspaceId:", workspaceId)
       if (transactionManager) {
         return await transactionManager.query(query, parameters);
       }
       const workspaceDataSource =
         await this.connectToWorkspaceDataSource(workspaceId);
+      console.log("This is the workspaceDataSource:", workspaceDataSource)
+
       return await workspaceDataSource.query(query, parameters);
     } catch (error) {
       throw new Error(

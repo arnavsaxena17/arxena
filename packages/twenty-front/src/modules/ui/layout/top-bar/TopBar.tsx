@@ -13,7 +13,6 @@ const StyledContainer = styled.div`
   display: flex;
   flex-direction: column;
 `;
-
 const StyledTopBar = styled.div<{ displayBottomBorder: boolean }>`
   align-items: center;
   border-bottom: ${({ displayBottomBorder, theme }) =>
