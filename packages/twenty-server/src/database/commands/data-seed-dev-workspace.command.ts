@@ -32,7 +32,7 @@ import { viewPrefillData } from 'src/engine/workspace-manager/standard-objects-p
     'Seed workspace with initial data. This command is intended for development only.',
 })
 export class DataSeedWorkspaceCommand extends CommandRunner {
-  workspaceIds = [SEED_APPLE_WORKSPACE_ID, SEED_TWENTY_WORKSPACE_ID];
+  workspaceIds = [SEED_APPLE_WORKSPACE_ID];
 
   constructor(
     private readonly environmentService: EnvironmentService,

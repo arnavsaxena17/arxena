@@ -16,6 +16,7 @@ export class RecruitmentAgentController {
   @Post()
 async create(@Req() request: Request): Promise<string> {
     console.log("These are the request body", request.body);
+    let chatResponseMessage: string = "";
 
     console.log("These are the request body", request.body);
     // console.log("These are the request headers", req.headers);
@@ -30,10 +31,13 @@ async create(@Req() request: Request): Promise<string> {
             messages
         };
 
-        await runChatAgent(userMessage);
+        let chatResponseMessagesResult = await runChatAgent(userMessage);
+        chatResponseMessage = chatResponseMessagesResult.output;
+        console.log("This is the chat response message", chatResponseMessage);
     }
 
-    return 'This action adds a new agent';
+
+    return chatResponseMessage;
 }
 
   @Get()

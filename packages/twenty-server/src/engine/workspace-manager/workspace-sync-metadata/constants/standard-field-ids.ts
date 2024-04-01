@@ -201,8 +201,9 @@ export const messageStandardFieldIds = {
 };
 
 export const opportunityStandardFieldIds = {
-  name: '20202020-8609-4f65-a2d9-44009eb422b5',
+  jobName: '20202020-8609-4f65-a2d9-44009eb422b5',
   amount: '20202020-583e-4642-8533-db761d5fa82f',
+  locationName: '20202020-5243-4ffb-afc5-2c675da41346',
   closeDate: '20202020-527e-44d6-b1ac-c4158d307b97',
   probability: '20202020-69d4-45f3-9703-690b09fafcf0',
   stage: '20202020-6f76-477d-8551-28cd65b2b4b9',

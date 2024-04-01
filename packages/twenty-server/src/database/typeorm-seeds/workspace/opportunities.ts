@@ -21,10 +21,11 @@ export const seedOpportunity = async (
     .insert()
     .into(`${schemaName}.${tableName}`, [
       'id',
-      'name',
+      'jobName',
       'amountAmountMicros',
       'amountCurrencyCode',
       'closeDate',
+      'locationName', // Add this line
       'probability',
       'stage',
       'position',
@@ -35,10 +36,11 @@ export const seedOpportunity = async (
     .values([
       {
         id: DEV_SEED_OPPORTUNITY_IDS.OPPORTUNITY_1,
-        name: 'Opportunity 1',
+        jobName: 'Opportunity 1',
         amountAmountMicros: 100000,
         amountCurrencyCode: 'USD',
         closeDate: new Date(),
+        locationName: 'San Francisco', // Add this line
         probability: 0.5,
         stage: 'NEW',
         position: 1,
@@ -47,10 +49,11 @@ export const seedOpportunity = async (
       },
       {
         id: DEV_SEED_OPPORTUNITY_IDS.OPPORTUNITY_2,
-        name: 'Opportunity 2',
+        jobName: 'Opportunity 2',
         amountAmountMicros: 2000000,
         amountCurrencyCode: 'USD',
         closeDate: new Date(),
+        locationName: 'San Francisco', // Add this line
         probability: 0.5,
         stage: 'MEETING',
         position: 2,
@@ -59,10 +62,11 @@ export const seedOpportunity = async (
       },
       {
         id: DEV_SEED_OPPORTUNITY_IDS.OPPORTUNITY_3,
-        name: 'Opportunity 3',
+        jobName: 'Opportunity 3',
         amountAmountMicros: 300000,
         amountCurrencyCode: 'USD',
         closeDate: new Date(),
+        locationName: 'San Francisco', // Add this line
         probability: 0.5,
         stage: 'PROPOSAL',
         position: 3,
@@ -71,10 +75,11 @@ export const seedOpportunity = async (
       },
       {
         id: DEV_SEED_OPPORTUNITY_IDS.OPPORTUNITY_4,
-        name: 'Opportunity 4',
+        jobName: 'Opportunity 4',
         amountAmountMicros: 4000000,
         amountCurrencyCode: 'USD',
         closeDate: new Date(),
+        locationName: 'San Francisco', // Add this line
         probability: 0.5,
         stage: 'PROPOSAL',
         position: 4,

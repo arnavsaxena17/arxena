@@ -29,13 +29,13 @@ import { EventObjectMetadata } from 'src/modules/event/standard-objects/event.ob
 })
 export class OpportunityObjectMetadata extends BaseObjectMetadata {
   @FieldMetadata({
-    standardId: opportunityStandardFieldIds.name,
+    standardId: opportunityStandardFieldIds.jobName,
     type: FieldMetadataType.TEXT,
-    label: 'Name',
+    label: 'Job Name',
     description: 'The opportunity name',
     icon: 'IconTargetArrow',
   })
-  name: string;
+  jobName: string;
 
   @FieldMetadata({
     standardId: opportunityStandardFieldIds.amount,
@@ -56,6 +56,17 @@ export class OpportunityObjectMetadata extends BaseObjectMetadata {
   })
   @IsNullable()
   closeDate: Date;
+
+  @FieldMetadata({
+    standardId: opportunityStandardFieldIds.locationName,
+    type: FieldMetadataType.TEXT,
+    label: 'Location Name',
+    description: 'Name of Location',
+    icon: 'IconLocationPin',
+    defaultValue: "''",
+  })
+  @IsNullable()
+  locationName: string;
 
   @FieldMetadata({
     standardId: opportunityStandardFieldIds.probability,

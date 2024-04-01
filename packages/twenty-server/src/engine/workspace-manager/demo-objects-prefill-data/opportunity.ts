@@ -24,6 +24,7 @@ const generateRandomAmountMicros = () => {
 const generateOpportunities = (companies) => {
   return companies.map((company) => ({
     id: v4(),
+    jobName: `Opportunity ${Math.floor(Math.random() * 100)}`,
     amountAmountMicros: generateRandomAmountMicros(),
     amountCurrencyCode: 'USD',
     closeDate: new Date(),
@@ -52,6 +53,7 @@ export const opportunityPrefillDemoData = async (
     .insert()
     .into(`${schemaName}.${tableName}`, [
       'id',
+      'jobName',
       'amountAmountMicros',
       'amountCurrencyCode',
       'closeDate',

@@ -10,7 +10,7 @@ export const viewOpportunityFields = (
     {
       fieldMetadataId:
         objectMetadataMap[standardObjectIds.opportunity].fields[
-          opportunityStandardFieldIds.name
+          opportunityStandardFieldIds.jobName
         ],
       viewId: viewId,
       position: 0,
@@ -54,6 +54,16 @@ export const viewOpportunityFields = (
         ],
       viewId: viewId,
       position: 4,
+      isVisible: true,
+      size: 150,
+    },
+    {
+      fieldMetadataId:
+        objectMetadataMap[standardObjectIds.opportunity].fields[
+          opportunityStandardFieldIds.locationName
+        ],
+      viewId: viewId,
+      position: 5,
       isVisible: true,
       size: 150,
     },

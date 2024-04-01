@@ -46,13 +46,19 @@ export class SaveEventToDbJob implements MessageQueueJob<SaveEventToDbJobData> {
       };
     }
 
-    await this.eventService.insert(
-      `${data.operation}.${data.objectName}`,
-      data.details,
-      workspaceMemberId,
-      data.objectName,
-      data.recordId,
-      data.workspaceId,
-    );
+    try{
+      await this.eventService.insert(
+        `${data.operation}.${data.objectName}`,
+        data.details,
+        workspaceMemberId,
+        data.objectName,
+        data.recordId,
+        data.workspaceId,
+      );
+    }
+    catch (error) {
+      console.error('Error saving event to db', error);
+    }
+    
   }
 }

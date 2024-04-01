@@ -83,6 +83,7 @@ export const useHandleViews = (viewBarComponentId?: string) => {
           name: name ?? view.name,
           icon: icon ?? view.icon,
           key: null,
+          isCompact: false,
           kanbanFieldMetadataId:
             kanbanFieldMetadataId ?? view.kanbanFieldMetadataId,
           type: type ?? view.type,

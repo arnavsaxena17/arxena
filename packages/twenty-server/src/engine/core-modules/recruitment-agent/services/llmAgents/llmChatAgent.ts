@@ -37,7 +37,9 @@ function getExecutorWithPromptAndTools(phoneNumber){
 }
 
 export const runChatAgent = async (userMessage: allDataObjects.userMessageType) => {
-  const chatInput = userMessage.messages[0]['content'];
+  console.log("Received user message:", userMessage)
+  const chatInput:string = userMessage.messages[0]['content'];
+  console.log("Received chat input:", chatInput)
   const candidates = await fetchCandidates();
   console.log("This is the candidates", candidates);
   const phoneNumber = userMessage.phoneNumber;
@@ -70,7 +72,9 @@ async function getChatHistory(phoneNumber: string): Promise<BaseMessage[]> {
 }
 
 function updateChatHistory(chatHistory: BaseMessage[], chatInput: string, output: string): HumanMessage[] {
+  console.log("This is chat chatInput", chatInput)
   const kwargs = { "timestamp": new Date().toISOString(), "content": chatInput, "phoneNumber": "918411937769" };
+  console.log("This is kwrargs:", kwargs)
   chatHistory.push(new HumanMessage(chatInput, kwargs));
   const kwargs_bot = { "timestamp": new Date().toISOString(), "content": output, "phoneNumber": "918411937769" };
   chatHistory.push(new AIMessage(output, kwargs_bot));

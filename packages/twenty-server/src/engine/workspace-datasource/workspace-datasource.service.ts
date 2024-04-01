@@ -115,13 +115,14 @@ export class WorkspaceDataSourceService {
     workspaceId: string,
     transactionManager?: EntityManager,
   ): Promise<any> {
+    console.log("QueryLL", query, parameters, workspaceId, transactionManager);
+    
     try {
       if (transactionManager) {
         return await transactionManager.query(query, parameters);
       }
       const workspaceDataSource =
         await this.connectToWorkspaceDataSource(workspaceId);
-
       return await workspaceDataSource.query(query, parameters);
     } catch (error) {
       throw new Error(
