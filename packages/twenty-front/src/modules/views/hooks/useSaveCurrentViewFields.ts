@@ -37,7 +37,7 @@ export const useSaveCurrentViewFields = (viewBarComponentId?: string) => {
 
         const viewFieldsToUpdate = fields
           .map((field) => {
-            const existingField = view.viewFields.find(
+            const existingField = view.viewFields?.find(
               (viewField) => viewField.id === field.id,
             );
 

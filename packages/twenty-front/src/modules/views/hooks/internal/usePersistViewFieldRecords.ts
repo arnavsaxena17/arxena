@@ -27,7 +27,7 @@ export const usePersistViewFieldRecords = () => {
 
   const createViewFieldRecords = useCallback(
     (viewFieldsToCreate: ViewField[], view: GraphQLView) => {
-      if (!viewFieldsToCreate.length) return;
+      if (!viewFieldsToCreate?.length) return;
       return Promise.all(
         viewFieldsToCreate.map((viewField) =>
           apolloClient.mutate({
