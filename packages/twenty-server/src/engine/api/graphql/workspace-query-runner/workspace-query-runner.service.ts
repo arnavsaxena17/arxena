@@ -42,6 +42,7 @@ import { EnvironmentService } from 'src/engine/integrations/environment/environm
 import { NotFoundError } from 'src/engine/utils/graphql-errors.util';
 import { QueryRunnerArgsFactory } from 'src/engine/api/graphql/workspace-query-runner/factories/query-runner-args.factory';
 import { QueryResultGettersFactory } from 'src/engine/api/graphql/workspace-query-runner/factories/query-result-getters.factory';
+import { assertMutationNotOnRemoteObject } from 'src/engine/metadata-modules/object-metadata/utils/assert-mutation-not-on-remote-object.util';
 
 import { WorkspaceQueryRunnerOptions } from './interfaces/query-runner-option.interface';
 import {
@@ -219,6 +220,9 @@ export class WorkspaceQueryRunnerService {
     options: WorkspaceQueryRunnerOptions,
   ): Promise<Record[] | undefined> {
     const { workspaceId, userId, objectMetadataItem } = options;
+
+    assertMutationNotOnRemoteObject(objectMetadataItem);
+
     const computedArgs = await this.queryRunnerArgsFactory.create(
       args,
       options,
@@ -277,9 +281,9 @@ export class WorkspaceQueryRunnerService {
   ): Promise<Record | undefined> {
     
     const { workspaceId, userId, objectMetadataItem } = options;
-    // console.log("This is the objectMetadataItem", objectMetadataItem);  
-    // console.log("This is the workspaceId, ", workspaceId);  
-    // console.log("This is the userId, ", userId);  
+
+    assertMutationNotOnRemoteObject(objectMetadataItem);
+
     const existingRecord = await this.findOne(
       { filter: { id: { eq: args.id } } } as FindOneResolverArgs,
       options,
@@ -328,6 +332,9 @@ export class WorkspaceQueryRunnerService {
     options: WorkspaceQueryRunnerOptions,
   ): Promise<Record[] | undefined> {
     const { workspaceId, objectMetadataItem } = options;
+
+    assertMutationNotOnRemoteObject(objectMetadataItem);
+
     const maximumRecordAffected = this.environmentService.get(
       'MUTATION_MAXIMUM_RECORD_AFFECTED',
     );
@@ -372,6 +379,9 @@ export class WorkspaceQueryRunnerService {
     options: WorkspaceQueryRunnerOptions,
   ): Promise<Record[] | undefined> {
     const { workspaceId, userId, objectMetadataItem } = options;
+
+    assertMutationNotOnRemoteObject(objectMetadataItem);
+
     const maximumRecordAffected = this.environmentService.get(
       'MUTATION_MAXIMUM_RECORD_AFFECTED',
     );
@@ -418,6 +428,9 @@ export class WorkspaceQueryRunnerService {
     options: WorkspaceQueryRunnerOptions,
   ): Promise<Record | undefined> {
     const { workspaceId, userId, objectMetadataItem } = options;
+
+    assertMutationNotOnRemoteObject(objectMetadataItem);
+
     const query = await this.workspaceQueryBuilderFactory.deleteOne(
       args,
       options,

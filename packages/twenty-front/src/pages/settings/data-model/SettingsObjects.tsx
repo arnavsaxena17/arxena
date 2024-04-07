@@ -4,7 +4,7 @@ import styled from '@emotion/styled';
 import { IconChevronRight, IconPlus, IconSettings } from 'twenty-ui';
 
 import { useDeleteOneObjectMetadataItem } from '@/object-metadata/hooks/useDeleteOneObjectMetadataItem';
-import { useObjectMetadataItemForSettings } from '@/object-metadata/hooks/useObjectMetadataItemForSettings';
+import { useFilteredObjectMetadataItems } from '@/object-metadata/hooks/useFilteredObjectMetadataItems';
 import { useUpdateOneObjectMetadataItem } from '@/object-metadata/hooks/useUpdateOneObjectMetadataItem';
 import { getObjectSlug } from '@/object-metadata/utils/getObjectSlug';
 import { SettingsHeaderContainer } from '@/settings/components/SettingsHeaderContainer';
@@ -38,12 +38,8 @@ export const SettingsObjects = () => {
   const theme = useTheme();
   const navigate = useNavigate();
 
-  const {
-    activeObjectMetadataItems,
-    inactiveObjectMetadataItems,
-    objectMetadataItems,
-  } = useObjectMetadataItemForSettings();
-  console.log('activeObjectMetadataItems', activeObjectMetadataItems);
+  const { activeObjectMetadataItems, inactiveObjectMetadataItems } =
+    useFilteredObjectMetadataItems();
   const { deleteOneObjectMetadataItem } = useDeleteOneObjectMetadataItem();
   const { updateOneObjectMetadataItem } = useUpdateOneObjectMetadataItem();
 
