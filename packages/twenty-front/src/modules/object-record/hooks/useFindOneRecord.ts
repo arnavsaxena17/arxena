@@ -24,7 +24,7 @@ export const useFindOneRecord = <T extends ObjectRecord = ObjectRecord>({
     { objectNameSingular },
     depth,
   );
-
+  console.log('findOneRecordQuery', findOneRecordQuery);
   const { data, loading, error } = useQuery<
     { [nameSingular: string]: T },
     { objectRecordId: string }

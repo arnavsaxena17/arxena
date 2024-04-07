@@ -102,6 +102,8 @@ export {
   IconNotes,
   IconNumbers,
   IconPaperclip,
+  IconPaperBag,
+  IconMessageChatbot,
   IconPencil,
   IconPhone,
   IconPhoto,

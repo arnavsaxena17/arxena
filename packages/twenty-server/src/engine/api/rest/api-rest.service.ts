@@ -29,6 +29,8 @@ export class ApiRestService {
     );
 
     try {
+      console.log("This is the data in the callGraphql api" , data)
+      console.log("This is the variables ::", data.variables)
       return await this.httpService.axiosRef.post(`${baseUrl}/graphql`, data, {
         headers: {
           'Content-Type': 'application/json',
@@ -47,8 +49,9 @@ export class ApiRestService {
 
   async get(request: Request): Promise<ApiRestResponse> {
     try {
+      console.log("I have come here to get api rest query builder factory to get request:", request)
       const data = await this.apiRestQueryBuilderFactory.get(request);
-
+      console.log("This isthe data:", data)
       return await this.callGraphql(request, data);
     } catch (err) {
       return { data: { error: err, status: err.status } };

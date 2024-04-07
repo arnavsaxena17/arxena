@@ -1,4 +1,4 @@
-import { candidateProfileType, recruiterProfileType, jobProfileType } from 'src/engine/core-modules/recruitment-agent/services/dataModelObjects';
+import { candidateProfileType, recruiterProfileType, jobProfileType } from 'src/engine/core-modules/recruitment-agent/services/data-model-objects';
 import { calculateMaxTokens, getModelContextSize} from "@langchain/core/language_models/base";
 import { get_encoding } from "tiktoken";
 

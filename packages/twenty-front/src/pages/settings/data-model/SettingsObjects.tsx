@@ -38,8 +38,12 @@ export const SettingsObjects = () => {
   const theme = useTheme();
   const navigate = useNavigate();
 
-  const { activeObjectMetadataItems, inactiveObjectMetadataItems } =
-    useObjectMetadataItemForSettings();
+  const {
+    activeObjectMetadataItems,
+    inactiveObjectMetadataItems,
+    objectMetadataItems,
+  } = useObjectMetadataItemForSettings();
+  console.log('activeObjectMetadataItems', activeObjectMetadataItems);
   const { deleteOneObjectMetadataItem } = useDeleteOneObjectMetadataItem();
   const { updateOneObjectMetadataItem } = useUpdateOneObjectMetadataItem();
 
@@ -70,12 +74,12 @@ export const SettingsObjects = () => {
                 <TableHeader align="right">Instances</TableHeader>
                 <TableHeader></TableHeader>
               </StyledObjectTableRow>
-              {!!activeObjectMetadataItems.length && (
+              {!!objectMetadataItems.length && (
                 <TableSection title="Active">
-                  {activeObjectMetadataItems.map((activeObjectMetadataItem) => (
+                  {objectMetadataItems.map((objectMetadataItem) => (
                     <SettingsObjectItemTableRow
-                      key={activeObjectMetadataItem.namePlural}
-                      objectItem={activeObjectMetadataItem}
+                      key={objectMetadataItem.namePlural}
+                      objectItem={objectMetadataItem}
                       action={
                         <StyledIconChevronRight
                           size={theme.icon.size.md}
@@ -85,7 +89,7 @@ export const SettingsObjects = () => {
                       onClick={() =>
                         navigate(
                           `/settings/objects/${getObjectSlug(
-                            activeObjectMetadataItem,
+                            objectMetadataItem,
                           )}`,
                         )
                       }

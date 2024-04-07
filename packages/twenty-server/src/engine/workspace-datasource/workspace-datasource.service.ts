@@ -116,10 +116,9 @@ export class WorkspaceDataSourceService {
     workspaceId: string,
     transactionManager?: EntityManager,
   ): Promise<any> {
-    console.log("QueryLL", query, parameters, workspaceId, transactionManager);
     
     try {
-      console.log("This is the query:", query)
+      console.log("This is the query executeRawQuery:", query)
       console.log("This is the parameters:", parameters)
       console.log("This is the transaction manager:", transactionManager)
       console.log("This is the workspaceId:", workspaceId)

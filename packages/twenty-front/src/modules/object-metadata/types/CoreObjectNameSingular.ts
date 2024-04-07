@@ -10,6 +10,8 @@ export enum CoreObjectNameSingular {
   Company = 'company',
   ConnectedAccount = 'connectedAccount',
   Event = 'event',
+  Chat = 'chat',
+  Chat2 = 'chat2',
   Favorite = 'favorite',
   Message = 'message',
   MessageChannel = 'messageChannel',

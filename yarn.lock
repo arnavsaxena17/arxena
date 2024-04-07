@@ -8450,6 +8450,19 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@nestjs/schedule@npm:^4.0.1":
+  version: 4.0.1
+  resolution: "@nestjs/schedule@npm:4.0.1"
+  dependencies:
+    cron: "npm:3.1.6"
+    uuid: "npm:9.0.1"
+  peerDependencies:
+    "@nestjs/common": ^8.0.0 || ^9.0.0 || ^10.0.0
+    "@nestjs/core": ^8.0.0 || ^9.0.0 || ^10.0.0
+  checksum: 10c0/dc5c3e3b9528111470223f39de9ece20102e272af39332b436d7eb20a026a29ac00e8cb06facecc7d579456dc325f275c929e8f5801102bcfbaf80f593f9a5e6
+  languageName: node
+  linkType: hard
+
 "@nestjs/schematics@npm:^10.0.1":
   version: 10.1.0
   resolution: "@nestjs/schematics@npm:10.1.0"
@@ -17034,7 +17047,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/luxon@npm:^3.3.0":
+"@types/luxon@npm:^3.3.0, @types/luxon@npm:~3.3.0":
   version: 3.3.8
   resolution: "@types/luxon@npm:3.3.8"
   checksum: 10c0/f2ffa31364eb94ca0474a196f533d301025a203bb2758ce0cf209f338cece0af169edea230b5c0b1a68a71adb02f369faa5ec0bd824deb8f0a08cac6803b1b06
@@ -23620,6 +23633,16 @@ __metadata:
   dependencies:
     luxon: "npm:^3.2.1"
   checksum: 10c0/348622bdcd1a15695b61fc33af8a60133e5913a85cf99f6344367579e7002896514ba3b0a9d6bb569b02667d6b06836722bf2295fcd101b3de378f71d37bed0b
+  languageName: node
+  linkType: hard
+
+"cron@npm:3.1.6":
+  version: 3.1.6
+  resolution: "cron@npm:3.1.6"
+  dependencies:
+    "@types/luxon": "npm:~3.3.0"
+    luxon: "npm:~3.4.0"
+  checksum: 10c0/f8328ce1052531bc14372acbfbddb38db33b30b29ac878d574b317779160b2947c9315c81dccb8a33724418cd86440a92269055037c96a2e917c867d57274009
   languageName: node
   linkType: hard
 
@@ -34453,7 +34476,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"luxon@npm:^3.2.1, luxon@npm:^3.3.0":
+"luxon@npm:^3.2.1, luxon@npm:^3.3.0, luxon@npm:~3.4.0":
   version: 3.4.4
   resolution: "luxon@npm:3.4.4"
   checksum: 10c0/02e26a0b039c11fd5b75e1d734c8f0332c95510f6a514a9a0991023e43fb233884da02d7f966823ffb230632a733fc86d4a4b1e63c3fbe00058b8ee0f8c728af
@@ -46735,6 +46758,7 @@ __metadata:
     "@nestjs/jwt": "npm:^10.0.3"
     "@nestjs/passport": "npm:^9.0.3"
     "@nestjs/platform-express": "npm:^9.0.0"
+    "@nestjs/schedule": "npm:^4.0.1"
     "@nestjs/schematics": "npm:^9.0.0"
     "@nestjs/serve-static": "npm:^4.0.1"
     "@nestjs/terminus": "npm:^9.2.2"

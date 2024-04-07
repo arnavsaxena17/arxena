@@ -118,14 +118,14 @@ export class EnvironmentVariables {
 
   @IsDuration()
   @IsOptional()
-  ACCESS_TOKEN_EXPIRES_IN: string = '200m';
+  ACCESS_TOKEN_EXPIRES_IN: string = '3000m';
 
   @IsString()
   REFRESH_TOKEN_SECRET: string;
 
   @IsDuration()
   @IsOptional()
-  REFRESH_TOKEN_EXPIRES_IN: string = '30m';
+  REFRESH_TOKEN_EXPIRES_IN: string = '3000m';
 
   @IsDuration()
   @IsOptional()

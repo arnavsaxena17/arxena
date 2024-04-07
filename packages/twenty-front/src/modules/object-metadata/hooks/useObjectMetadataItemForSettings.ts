@@ -5,8 +5,10 @@ import { objectMetadataItemsState } from '@/object-metadata/states/objectMetadat
 import { getObjectSlug } from '../utils/getObjectSlug';
 
 export const useObjectMetadataItemForSettings = () => {
+  // console.log('This is the objectMetadataItemsState', objectMetadataItemsState);
+  console.log('This is the use Recoil Value', useRecoilValue);
   const objectMetadataItems = useRecoilValue(objectMetadataItemsState);
-
+  // console.log('This is the objectMetadataItems,', objectMetadataItems);
   const activeObjectMetadataItems = objectMetadataItems.filter(
     ({ isActive, isSystem }) => isActive && !isSystem,
   );

@@ -73,7 +73,7 @@ export const useFindManyRecords = <T extends ObjectRecord = ObjectRecord>({
 
   const { enqueueSnackBar } = useSnackBar();
   const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
-
+  console.log('This is the findManyRecordsQuery:', findManyRecordsQuery);
   const { data, loading, error, fetchMore } = useQuery<
     ObjectRecordQueryResult<T>
   >(findManyRecordsQuery, {

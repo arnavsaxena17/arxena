@@ -1,17 +1,9 @@
 import styled from '@emotion/styled';
 import { useRecoilValue } from 'recoil';
-import {
-  IconCalendarEvent,
-  IconCheckbox,
-  IconMail,
-  IconNotes,
-  IconPaperclip,
-  IconTimelineEvent,
-} from 'twenty-ui';
-
+import { IconCalendarEvent, IconCheckbox, IconMail, IconMessageChatbot, IconNotes, IconPaperclip, IconTimelineEvent } from 'twenty-ui';
 import { Calendar } from '@/activities/calendar/components/Calendar';
+import { Chats } from '@/activities/chats/components/Chats';
 import { EmailThreads } from '@/activities/emails/components/EmailThreads';
-import { Events } from '@/activities/events/components/Events';
 import { Attachments } from '@/activities/files/components/Attachments';
 import { Notes } from '@/activities/notes/components/Notes';
 import { ObjectTasks } from '@/activities/tasks/components/ObjectTasks';
@@ -64,7 +56,8 @@ export const ShowPageRightContainer = ({
 }: ShowPageRightContainerProps) => {
   const { activeTabIdState } = useTabList(TAB_LIST_COMPONENT_ID);
   const activeTabId = useRecoilValue(activeTabIdState);
-
+  console.log('This is the activeTabId', activeTabId);
+  console.log('This is the activeTabIdState', activeTabIdState);
   const shouldDisplayCalendarTab = useIsFeatureEnabled('IS_CALENDAR_ENABLED');
   const shouldDisplayLogTab = useIsFeatureEnabled('IS_EVENT_OBJECT_ENABLED');
 
@@ -73,7 +66,7 @@ export const ShowPageRightContainer = ({
       targetableObject.targetObjectNameSingular ===
         CoreObjectNameSingular.Company) ||
     targetableObject.targetObjectNameSingular === CoreObjectNameSingular.Person;
-
+  console.log('targetableObject', targetableObject);
   const TASK_TABS = [
     {
       id: 'timeline',
@@ -118,6 +111,13 @@ export const ShowPageRightContainer = ({
       hide: !shouldDisplayLogTab,
       hasBetaPill: true,
     },
+    {
+      id: 'chats',
+      title: 'Chats',
+      Icon: IconMessageChatbot,
+      hide: !shouldDisplayLogTab,
+      hasBetaPill: true,
+    },
   ];
 
   return (
@@ -144,7 +144,11 @@ export const ShowPageRightContainer = ({
       {activeTabId === 'calendar' && (
         <Calendar targetableObject={targetableObject} />
       )}
-      {activeTabId === 'logs' && <Events targetableObject={targetableObject} />}
+      {activeTabId === 'chats' && <Chats targetableObject={targetableObject} />}
+
+      {activeTabId === 'logs' && (
+        <Timeline targetableObject={targetableObject} />
+      )}
     </StyledShowPageRightContainer>
   );
 };

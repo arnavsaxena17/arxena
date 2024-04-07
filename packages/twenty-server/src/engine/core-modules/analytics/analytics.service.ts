@@ -30,6 +30,7 @@ export class AnalyticsService {
     const anonymizationEnabled = this.environmentService.get(
       'TELEMETRY_ANONYMIZATION_ENABLED',
     );
+    console.log("anonymizationEnabled: ", anonymizationEnabled)
 
     const data = {
       type: createEventInput.type,
@@ -52,6 +53,8 @@ export class AnalyticsService {
     };
 
     try {
+      console.log("data: ", data)
+      console.log("this.httpService.axiosRef: ", this.httpService.axiosRef)
       await this.httpService.axiosRef.post('/v1', data);
     } catch {}
 

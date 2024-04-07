@@ -7,9 +7,9 @@ import { formatToOpenAIFunctionMessages } from "langchain/agents/format_scratchp
 import { OpenAIFunctionsAgentOutputParser } from "langchain/agents/openai/output_parser";
 import { AIMessage, BaseMessage, HumanMessage } from "@langchain/core/messages";
 import { statusOptions, getSystemPrompt } from 'src/engine/core-modules/recruitment-agent/services/constants';
-import *  as allDataObjects from 'src/engine/core-modules/recruitment-agent/services/dataModelObjects'; 
-import {fetchCandidates, findMessages, upsertMessages} from 'src/engine/core-modules/recruitment-agent/services/databaseActions/dbMaster';
-import * as allTools from 'src/engine/core-modules/recruitment-agent/services/databaseActions/functionCallingTools';
+import *  as allDataObjects from 'src/engine/core-modules/recruitment-agent/services/data-model-objects'; 
+import {fetchCandidates, findMessages, upsertMessages} from 'src/engine/core-modules/recruitment-agent/services/databaseActions/db-master';
+import * as allTools from 'src/engine/core-modules/recruitment-agent/services/databaseActions/function-calling-tools';
 
 console.log("statusOptions:",statusOptions);
 const tools = Object.values(allTools);

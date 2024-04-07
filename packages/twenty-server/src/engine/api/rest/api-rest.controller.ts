@@ -11,6 +11,7 @@ export class ApiRestController {
 
   @Get()
   async handleApiGet(@Req() request: Request, @Res() res: Response) {
+    console.log("This is the get request", request);
     handleResult(res, await this.apiRestService.get(request));
   }
 
@@ -21,6 +22,7 @@ export class ApiRestController {
 
   @Post()
   async handleApiPost(@Req() request: Request, @Res() res: Response) {
+    console.log("This is the post request", request);
     handleResult(res, await this.apiRestService.create(request));
   }
 
