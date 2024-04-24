@@ -118,8 +118,8 @@ export class WorkspaceDataSourceService {
   ): Promise<any> {
     
     try {
-      console.log("This is the query executeRawQuery:", query)
-      console.log("This is the parameters:", parameters)
+      // console.log("This is the query executeRawQuery:", query)
+      console.log("This is the parameters:", JSON.stringify(parameters))
       console.log("This is the transaction manager:", transactionManager)
       console.log("This is the workspaceId:", workspaceId)
       if (transactionManager) {
@@ -127,7 +127,7 @@ export class WorkspaceDataSourceService {
       }
       const workspaceDataSource =
         await this.connectToWorkspaceDataSource(workspaceId);
-      console.log("This is the workspaceDataSource:", workspaceDataSource)
+      // console.log("This is the workspaceDataSource:", workspaceDataSource)
 
       return await workspaceDataSource.query(query, parameters);
     } catch (error) {

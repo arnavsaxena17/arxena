@@ -3,7 +3,7 @@ import { z } from "zod";
 import { connectToDatabase } from 'src/engine/core-modules/recruitment-agent/services/databaseActions/db-master';
 import { statusOptions } from 'src/engine/core-modules/recruitment-agent/services/constants';
 
-console.log("statusOptions:",statusOptions);
+// console.log("statusOptions:",statusOptions);
 
 
 async function shareJDUpdateDatabase  (input:string) {
@@ -19,7 +19,6 @@ async function updateCandidateProfileFromSources ({ status }: { status: (typeof 
     // Rest of the code...
     return "Updated the candidate profile with the status."
 }
-
 
 export const updateCandidateProfileFunctions  = new DynamicStructuredTool({
     name: "updateCandidateProfile",

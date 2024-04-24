@@ -52,6 +52,8 @@ import { SettingsWorkspaceMembers } from '~/pages/settings/SettingsWorkspaceMemb
 import { Tasks } from '~/pages/tasks/Tasks';
 import { getPageTitleFromPath } from '~/utils/title-utils';
 
+import { VideoInterview } from '~/pages/video-interview/VideoInterviewPage'
+
 export const App = () => {
   const billing = useRecoilValue(billingState);
   const { pathname } = useLocation();
@@ -77,6 +79,7 @@ export const App = () => {
           />
           <Route path={AppPath.Index} element={<DefaultHomePage />} />
           <Route path={AppPath.TasksPage} element={<Tasks />} />
+          <Route path={AppPath.VideoInterviewPage} element={<VideoInterview />} />
           <Route path={AppPath.Impersonate} element={<ImpersonateEffect />} />
           <Route path={AppPath.RecordIndexPage} element={<RecordIndexPage />} />
           <Route path={AppPath.RecordShowPage} element={<RecordShowPage />} />

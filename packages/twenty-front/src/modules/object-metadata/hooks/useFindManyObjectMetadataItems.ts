@@ -31,7 +31,9 @@ export const useFindManyObjectMetadataItems = ({
   const { data, loading, error } = useQuery<
     ObjectMetadataItemsQuery,
     ObjectMetadataItemsQueryVariables
-  >(FIND_MANY_OBJECT_METADATA_ITEMS, {
+  >(
+    FIND_MANY_OBJECT_METADATA_ITEMS, {
+    
     variables: {
       objectFilter,
       fieldFilter,
@@ -50,6 +52,7 @@ export const useFindManyObjectMetadataItems = ({
   });
 
   const objectMetadataItems = useMemo(() => {
+    console.log('This is where we try and get the object meta data items');
     return mapPaginatedObjectMetadataItemsToObjectMetadataItems({
       pagedObjectMetadataItems: data,
     });

@@ -11,15 +11,13 @@ import *  as allDataObjects from 'src/engine/core-modules/recruitment-agent/serv
 import {fetchCandidates, findMessages, upsertMessages} from 'src/engine/core-modules/recruitment-agent/services/databaseActions/db-master';
 import * as allTools from 'src/engine/core-modules/recruitment-agent/services/databaseActions/function-calling-tools';
 
-console.log("statusOptions:",statusOptions);
+// console.log("statusOptions:",statusOptions);
 const tools = Object.values(allTools);
 
 const modelName = "gpt-3.5-turbo";
 const model = new ChatOpenAI({ modelName: modelName, temperature: 0 });
 // const chatHistory: BaseMessage[] = [];
 const MEMORY_KEY = "chat_history";
-
-
 
 function getExecutorWithPromptAndTools(phoneNumber){
 
@@ -48,6 +46,7 @@ export const runChatAgent = async (userMessage: allDataObjects.userMessageType) 
   const result = await executorWithMemoryAndTools.invoke({ input: chatInput, chat_history: chatHistory });
   console.log("This is the result", result);
   chatHistory = updateChatHistory(chatHistory, chatInput, result.output);
+  console.log("This is the chat history::", chatHistory)
   upsertMessages(chatHistory, phoneNumber);
   console.log("Chat reply:", result.output);
   console.log("Chat History OBJ:", result.chat_history);
@@ -57,7 +56,10 @@ export const runChatAgent = async (userMessage: allDataObjects.userMessageType) 
 }
 // Adjusted to handle a direct document or lack thereof
 async function getChatHistory(phoneNumber: string): Promise<BaseMessage[]> {
+
+  // 
   const chatHistoryDocument = await findMessages(phoneNumber);
+  console.log("This is the chathistory document:", chatHistoryDocument)
   if (!chatHistoryDocument || !chatHistoryDocument.messages) {
       // Handle the case where no document is found or there are no messages
       console.error('No chat history found or no messages in the document.');

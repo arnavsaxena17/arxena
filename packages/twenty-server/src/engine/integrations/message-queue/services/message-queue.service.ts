@@ -19,11 +19,13 @@ export class MessageQueueService implements OnModuleDestroy {
     protected queueName: MessageQueue,
   ) {
     if (typeof this.driver.register === 'function') {
+      console.log("This is the queue name in constructor:::", this.queueName)
       this.driver.register(queueName);
     }
   }
 
   async onModuleDestroy() {
+    console.log("This is the queue name in onModuleDestroy:::", this.queueName)
     if (typeof this.driver.stop === 'function') {
       await this.driver.stop();
     }
@@ -34,6 +36,7 @@ export class MessageQueueService implements OnModuleDestroy {
     data: T,
     options?: QueueJobOptions,
   ): Promise<void> {
+    console.log("This is the queue name in add:::", this.queueName)
     return this.driver.add(this.queueName, jobName, data, options);
   }
 
@@ -42,16 +45,19 @@ export class MessageQueueService implements OnModuleDestroy {
     data: T,
     options?: QueueCronJobOptions,
   ): Promise<void> {
+    console.log("This is the queue name in addCron:::", this.queueName)
     return this.driver.addCron(this.queueName, jobName, data, options);
   }
 
   removeCron(jobName: string, pattern: string): Promise<void> {
+    console.log("This is the queue name in removeCron:::", this.queueName)
     return this.driver.removeCron(this.queueName, jobName, pattern);
   }
 
   work<T extends MessageQueueJobData>(
     handler: ({ data, id }: { data: T; id: string }) => Promise<void> | void,
   ) {
+    console.log("This is the queue name in work cron:::", this.queueName)
     return this.driver.work(this.queueName, handler);
   }
 }

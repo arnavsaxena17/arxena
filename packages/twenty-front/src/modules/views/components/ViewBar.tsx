@@ -18,6 +18,7 @@ import { ViewsHotkeyScope } from '../types/ViewsHotkeyScope';
 
 import { UpdateViewButtonGroup } from './UpdateViewButtonGroup';
 import { ViewBarDetails } from './ViewBarDetails';
+import { LiftOffStarter } from '@/views/components/LiftOffStarter';
 
 export type ViewBarProps = {
   viewBarId: string;
@@ -62,6 +63,7 @@ export const ViewBar = ({
         displayBottomBorder={false}
         rightComponent={
           <>
+            <LiftOffStarter/>
             <ObjectFilterDropdownButton
               filterDropdownId={filterDropdownId}
               hotkeyScope={{

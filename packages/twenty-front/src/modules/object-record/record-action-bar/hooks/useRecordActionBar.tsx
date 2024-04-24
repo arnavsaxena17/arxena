@@ -56,18 +56,14 @@ export const useRecordActionBar = ({
         if (selectedRecordIds.length > 1) {
           return;
         }
-
         const selectedRecordId = selectedRecordIds[0];
         const selectedRecord = snapshot
           .getLoadable(recordStoreFamilyState(selectedRecordId))
           .getValue();
-
         const foundFavorite = favorites?.find(
           (favorite) => favorite.recordId === selectedRecordId,
         );
-
         const isFavorite = !!selectedRecordId && !!foundFavorite;
-
         if (isFavorite) {
           deleteFavorite(foundFavorite.id);
         } else if (isDefined(selectedRecord)) {

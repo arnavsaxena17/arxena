@@ -38,7 +38,7 @@ export const SettingsObjects = () => {
   const theme = useTheme();
   const navigate = useNavigate();
 
-  const { activeObjectMetadataItems, inactiveObjectMetadataItems } =
+  const { activeObjectMetadataItems, inactiveObjectMetadataItems, objectMetadataItems } =
     useFilteredObjectMetadataItems();
   const { deleteOneObjectMetadataItem } = useDeleteOneObjectMetadataItem();
   const { updateOneObjectMetadataItem } = useUpdateOneObjectMetadataItem();

@@ -7,6 +7,8 @@ import { graphqlUploadExpress } from 'graphql-upload';
 import bytes from 'bytes';
 import { useContainer } from 'class-validator';
 import '@sentry/tracing';
+import * as multer from 'multer';
+
 
 import { AppModule } from './app.module';
 
@@ -23,6 +25,12 @@ const bootstrap = async () => {
   });
   const logger = app.get(LoggerService);
 
+  app.enableCors({
+    origin: 'http://localhost:3001', // Replace with your frontend application's URL
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    // allowedHeaders: ['Content-Type', 'Authorization'],
+  });
+
   // TODO: Double check this as it's not working for now, it's going to be heplful for durable trees in twenty "orm"
   // // Apply context id strategy for durable trees
   // ContextIdFactory.apply(new AggregateByWorkspaceContextIdStrategy());
@@ -32,6 +40,8 @@ const bootstrap = async () => {
 
   // Use our logger
   app.useLogger(logger);
+  // app.use(multer)
+
 
   if (Sentry.isInitialized()) {
     app.use(Sentry.Handlers.requestHandler());

@@ -36,24 +36,24 @@ export class DogsController {
   @Get()
   async findAll(@Req() request: Request): Promise<object> {
 
-    const varP = {
-      "objectRecordId": "20202020-707e-44dc-a1d2-30030bf1a944"
-    }
+    // const varP = {
+    //   "objectRecordId": "20202020-707e-44dc-a1d2-30030bf1a944"
+    // }
 
-    const varUpdate = {
-      "idToUpdate": "20202020-35b1-4045-9cde-42f715148954",
-      "input": {
-        "stage": "PROPOSAL",
-        "position": 0.5
-      }
-    }
+    // const varUpdate = {
+    //   "idToUpdate": "20202020-35b1-4045-9cde-42f715148954",
+    //   "input": {
+    //     "stage": "PROPOSAL",
+    //     "position": 0.5
+    //   }
+    // }
 
   
-    const result = await this.apiRestService.callGraphql(request, {query: updateOneOpportunity, variables: varUpdate});
-    const resultObj = result.data
+    // const result = await this.apiRestService.callGraphql(request, {query: updateOneOpportunity, variables: varUpdate});
+    // const resultObj = result.data
     const timenow = 'This action returns all dogs at time ::' + new Date().toLocaleString();
     console.log("This is the timenow  ", timenow);
 
-    return resultObj;
+    return {};
   }
 }

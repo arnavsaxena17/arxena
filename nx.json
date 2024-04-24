@@ -45,14 +45,7 @@
         }
       }
     },
-    "@nx/eslint:lint": {
-      "cache": true,
-      "inputs": [
-        "default",
-        "{workspaceRoot}/.eslintrc.js",
-        "{workspaceRoot}/tools/eslint-rules/**/*"
-      ]
-    },
+
     "@nx/vite:test": {
       "cache": true,
       "inputs": ["default", "^default"]
@@ -71,7 +64,6 @@
       "application": {
         "babel": true,
         "style": "@emotion/styled",
-        "linter": "eslint",
         "bundler": "vite",
         "compiler": "swc",
         "unitTestRunner": "jest",
@@ -79,7 +71,6 @@
       },
       "library": {
         "style": "@emotion/styled",
-        "linter": "eslint",
         "bundler": "vite",
         "compiler": "swc",
         "unitTestRunner": "jest",

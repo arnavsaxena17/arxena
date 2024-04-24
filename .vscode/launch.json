@@ -11,6 +11,9 @@
         "nx",
         "run",
         "twenty-server:start",
+        "start:debug",
+        "--",
+        "--inspect-brk"
       ],
       "outputCapture": "std",
       "internalConsoleOptions": "openOnSessionStart",

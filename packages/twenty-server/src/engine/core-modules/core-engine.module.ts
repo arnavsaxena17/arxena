@@ -16,6 +16,7 @@ import { FileModule } from './file/file.module';
 import { ClientConfigModule } from './client-config/client-config.module';
 import { CatsModule } from 'src/engine/core-modules/cats/cats.module';
 import { RecruitmentAgentModule } from 'src/engine/core-modules/recruitment-agent/recruitment-agent.module';
+import { VideoInterviewModule } from 'src/engine/core-modules/video-interview/video-interview.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { RecruitmentAgentModule } from 'src/engine/core-modules/recruitment-agen
     FileModule,
     RecruitmentAgentModule,
     CatsModule,
+    VideoInterviewModule,
     OpenApiModule,
     AppTokenModule,
     TimelineMessagingModule,
@@ -40,6 +42,7 @@ import { RecruitmentAgentModule } from 'src/engine/core-modules/recruitment-agen
     AuthModule,
     CatsModule,
     RecruitmentAgentModule,
+    VideoInterviewModule,
     FeatureFlagModule,
     TimelineMessagingModule,
     TimelineCalendarEventModule,

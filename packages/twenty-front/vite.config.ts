@@ -38,6 +38,11 @@ export default defineConfig(({ command, mode }) => {
     server: {
       port: 3001,
       host: 'localhost',
+      headers: {
+        'Cross-Origin-Embedder-Policy': 'require-corp',
+        'Cross-Origin-Opener-Policy': 'same-origin',
+        'Access-Control-Allow-Origin': 'http://localhost:3001',
+      }
     },
 
     plugins: [

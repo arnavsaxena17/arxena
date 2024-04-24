@@ -14,6 +14,8 @@
 //     console.log('Scheduler started');    
 // }
 
+import checkCandidateEngagement from '../candidateEngagement/checkCandidateEngagement';
+
 
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
@@ -22,9 +24,9 @@ import { Cron } from '@nestjs/schedule';
 export class TasksService {
   private readonly logger = new Logger(TasksService.name);
 
-  @Cron('5 * * * * *')
+  @Cron('*/20 * * * * *')
   handleCron() {
-    console.log("This isa calledin every second");
-    this.logger.log('Called when the current second is 42');
+    // this.logger.log("Evert 5 seconds check Candidate Engagement is called");
+    checkCandidateEngagement();
   }
 }

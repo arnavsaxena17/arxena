@@ -13,7 +13,7 @@ export const messageQueueModuleFactory = async (
   environmentService: EnvironmentService,
 ): Promise<MessageQueueModuleOptions> => {
   const driverType = environmentService.get('MESSAGE_QUEUE_TYPE');
-
+  console.log("This is the message queue driver type:::", driverType)
   switch (driverType) {
     case MessageQueueDriverType.Sync: {
       return {

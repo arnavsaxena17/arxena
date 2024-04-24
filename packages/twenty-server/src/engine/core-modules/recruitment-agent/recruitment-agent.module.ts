@@ -1,13 +1,13 @@
 import { Module } from '@nestjs/common';
 
-import { RecruitmentAgentController } from 'src/engine/core-modules/recruitment-agent/recruitment-agent.controller';
+import { RecruitmentAgentController, UpdateChat, WhatsappTestAPI, WhatsappWebhook } from 'src/engine/core-modules/recruitment-agent/recruitment-agent.controller';
 import { TasksService } from 'src/engine/core-modules/recruitment-agent/services/databaseActions/scheduling-agent';
 import { AuthModule } from 'src/engine/core-modules/auth/auth.module';
 
 
 @Module({
   imports: [AuthModule],
-  controllers: [RecruitmentAgentController],
+  controllers: [RecruitmentAgentController, UpdateChat,WhatsappWebhook, WhatsappTestAPI],
   providers: [TasksService],
   exports: [],
 })

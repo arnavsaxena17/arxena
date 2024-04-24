@@ -51,10 +51,9 @@ export class AnalyticsService {
         ...createEventInput.data,
       },
     };
-
     try {
-      console.log("data: ", data)
-      console.log("this.httpService.axiosRef: ", this.httpService.axiosRef)
+      // console.log("data: ", data)
+      // console.log("this.httpService.axiosRef: ", this.httpService.axiosRef)
       await this.httpService.axiosRef.post('/v1', data);
     } catch {}
 

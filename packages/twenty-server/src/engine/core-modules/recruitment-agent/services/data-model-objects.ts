@@ -1,22 +1,75 @@
 export interface candidateProfileType {
     first_name: any;
+    id: string;
+    jobsId: string;
     status: string;
-    name: string;
+    job: jobProfileType;
     phoneNumber: string;
     email: string;
+    responsibleWorkspaceMemberId: string;
     input: string; // Add the 'input' property
   }
+  export interface sendwhatsappTextMessageType {
+    recipient: string;
+    text: string;
+  }
+
+  export interface sendWhatsappTemplateMessageObjectType {
+    template_name: string;
+    recipient: string;
+    recruiterName: string;
+    candidateFirstName: string;
+    recruiterJobTitle: string;
+    recruiterCompanyName: string;
+    recruiterCompanyDescription: string;
+    jobPositionName: string;
+    jobLocation: string;
+  }
+  
+
+export type candidateInfoType = {
+    candidateId: string;
+    jobsId: string;
+    responsibleWorkspaceMemberId: string;
+};
+
+
+export interface companyInfoType {
+  name : string;
+  descriptionOneliner : string;
+
+
+}
 
 export interface jobProfileType {
-    job_name: any;
-    company_name: string;
-    company_description_oneliner: string;
+    name: any;
+    jobLocation: string;
+    company : companyInfoType
     
   }
+
 
 export interface userMessageType { 
   phoneNumber: any; 
   messages: { [x: string]: any; }[]; 
+}
+
+export interface chatMessageType { 
+  messages: { [x: string]: any; }[]; 
+  phoneNumberFrom: any; 
+  phoneNumberTo: any; 
+  messageType : string;
+
+}
+
+export interface candidateChatMessageType { 
+  candidateProfile : candidateProfileType;
+  candidateFirstName: string;
+  messages: { [x: string]: any; }[]; 
+  phoneNumberFrom: any; 
+  phoneNumberTo: any; 
+  messageType : string;
+
 }
 
 
@@ -32,20 +85,27 @@ export interface recruiterProfileType {
     input: string; // Add the 'input' property
   }
 
-export const candidateProfile:candidateProfileType = {
-  name: 'John Doe',
-  first_name: 'John',
-  email: 'panda@panda.com',
-  input: "",
-  phoneNumber: "918411937769",
-  status: ""
-}
 export const jobProfile:jobProfileType = {
-  job_name: 'HR Leadership',
-  company_name: 'John',
-  company_description_oneliner: "one of the india's largest waste management companies",
+    name: 'HR Leadership',
+    company: {
+      name: "SR Wastes Management",
+      descriptionOneliner: "one of the india's largest waste management companies"
+    },
+    jobLocation: 'Mumbai'
+  
+  }
+  
+export const candidateProfile:candidateProfileType = {
+  first_name: 'Christoph',
+  id: '12d2232a-e79b-41c8-b56c-c186abb7fdea',
+  jobsId: '5643d1e6-0415-4327-b871-918e7cd699d5',
+  status: 'string',
+  job: jobProfile,
+  phoneNumber: '+919820297156',
+  email: 'christoph.calisto@linkedin.com',
+  responsibleWorkspaceMemberId: '20202020-0687-4c41-b707-ed1bfca972a7',
+  input: 'string', // Add the 'input' property
 }
-
 export const recruiterProfile:recruiterProfileType = {
   name: 'Arnav Doe',
   first_name: 'Arnav',
@@ -58,51 +118,67 @@ export const recruiterProfile:recruiterProfileType = {
   company_description_oneliner: "a US Based Recruitment Company"
 }
 
-// Create an array of candidateProfile objects
 export const candidateProfiles: candidateProfileType[] = [
   {
-    name: 'John Doe',
-    first_name: 'John',
-    email: 'panda@panda.com',
-    input: "",
-    phoneNumber: "918411937769",
-    status: ""
+    first_name: 'Christoph',
+    id: '12d2232a-e79b-41c8-b56c-c186abb7fdea',
+    jobsId: '5643d1e6-0415-4327-b871-918e7cd699d5',
+    status: 'string',
+    job: jobProfile,
+    phoneNumber: '+919820297156',
+    email: 'christoph.calisto@linkedin.com',
+    responsibleWorkspaceMemberId: '20202020-0687-4c41-b707-ed1bfca972a7',
+    input: 'string',
   },
   {
-    name: 'Alice Johnson',
     first_name: 'Alice',
+    id: '3e8a41d7-92b0-4c35-8178-6105c4dd3f09',
+    jobsId: '6f35f262-b7de-4872-a7b9-ea34e79bc6b5',
+    status: 'string',
+    phoneNumber: '+123456789',
     email: 'alice@example.com',
-    input: "",
-    phoneNumber: "9199999999",
-    status: ""
+    responsibleWorkspaceMemberId: '30303030-0687-4c41-b707-ed1bfca972a7',
+    input: 'string',
+    job: jobProfile,
   },
   {
-    name: 'Bob Smith',
-    first_name: 'Bob',
-    email: 'bob@smith.com',
-    input: "",
-    phoneNumber: "9188888888",
-    status: ""
+    first_name: 'John',
+    id: '8b4e45cf-0e9d-4a6d-baa1-4f331826d1a7',
+    jobsId: '98f4abfb-34c3-4f33-b628-54a0b5d92155',
+    status: 'string',
+    phoneNumber: '+987654321',
+    email: 'john@example.com',
+    responsibleWorkspaceMemberId: '40404040-0687-4c41-b707-ed1bfca972a7',
+    input: 'string',
+    job: jobProfile,
+
   }
 ];
-
-
 // Create an array of jobProfile objects
 export const jobProfiles: jobProfileType[] = [
   {
-    job_name: 'HR Leadership',
-    company_name: 'John',
-    company_description_oneliner: "one of India's largest waste management companies",
+    name: 'HR Leadership',
+    company: {
+      name: "SR Wastes Management",
+      descriptionOneliner: "one of the india's largest waste management companies"
+    },
+    jobLocation: 'Mumbai'
   },
   {
-    job_name: 'Software Developer',
-    company_name: 'Tech Innovations',
-    company_description_oneliner: "leading the way in technology solutions",
+    name: 'Software Developer',
+    company: {
+      name: "SR Wastes Management",
+      descriptionOneliner: "one of the india's largest waste management companies"
+    },
+    jobLocation: 'Mumbai'
   },
   {
-    job_name: 'Marketing Manager',
-    company_name: 'Creative Minds',
-    company_description_oneliner: "at the forefront of digital marketing strategies",
+    name: 'Marketing Manager',
+    company: {
+      name: "SR Wastes Management",
+      descriptionOneliner: "one of the india's largest waste management companies"
+    },
+    jobLocation: 'Mumbai'
   }
 ];
 

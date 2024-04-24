@@ -47,6 +47,7 @@ export const ActionBar = ({ selectedIds }: ActionBarProps) => {
   if (contextMenuIsOpen) {
     return null;
   }
+  // actionBarEntries.push("This is a test")
 
   return (
     <>

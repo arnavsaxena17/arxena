@@ -95,14 +95,13 @@ export class WorkspaceQueryRunnerService {
     const end = performance.now();
 
     this.logger.log(
-      `query time: ${end - start} ms on query ${
+      `query time: ${end - start} ms on query in workspace-query-runner.service ${
         options.objectMetadataItem.nameSingular
       }`,
     );
-    this.logger.log("This is the query findMany:", query);
-    this.logger.log("This is the query findMany workspaceId:", workspaceId);
-    this.logger.log("This is the query findMany args:", args);
-    this.logger.log("This is the query findMany options.objectMetadataItem:", options.objectMetadataItem);
+    // this.logger.log("This is the query findMany workspaceId:", workspaceId);
+    // this.logger.log("This is the query findMany args:", args);
+    // this.logger.log("This is the query findMany options.objectMetadataItem:", options.objectMetadataItem);
 
     return this.parseResult<IConnection<Record>>(
       result,
@@ -134,8 +133,8 @@ export class WorkspaceQueryRunnerService {
       'findOne',
       args,
     );
-    this.logger.log("This is the query findOne:", query);
-    this.logger.log("This is the query findOne workspaceId:", workspaceId);
+    // this.logger.log("This is the query findOne:", query);
+    // this.logger.log("This is the query findOne workspaceId:", workspaceId);
 
     const result = await this.execute(query, workspaceId);
     const parsedResult = await this.parseResult<IConnection<Record>>(
@@ -343,8 +342,8 @@ export class WorkspaceQueryRunnerService {
       atMost: maximumRecordAffected,
     });
 
-    this.logger.log("This is the query updateMany:", query);
-    this.logger.log("This is the query updateMany workspaceId:", workspaceId);
+    // this.logger.log("This is the query updateMany:", query);
+    // this.logger.log("This is the query updateMany workspaceId:", workspaceId);
 
     const result = await this.execute(query, workspaceId);
 
@@ -390,8 +389,8 @@ export class WorkspaceQueryRunnerService {
       atMost: maximumRecordAffected,
     });
 
-    this.logger.log("This is the query deleteMany:", query);
-    this.logger.log("This is the query deleteMany workspaceId:", workspaceId);
+    // this.logger.log("This is the query deleteMany:", query);
+    // this.logger.log("This is the query deleteMany workspaceId:", workspaceId);
     const result = await this.execute(query, workspaceId);
 
     const parsedResults = (
@@ -443,8 +442,8 @@ export class WorkspaceQueryRunnerService {
       objectMetadataItem,
     );
     // TODO END
-    this.logger.log("This is the query deleteOne:", query);
-    this.logger.log("This is the query deleteOne workspaceId:", workspaceId);
+    // this.logger.log("This is the query deleteOne:", query);
+    // this.logger.log("This is the query deleteOne workspaceId:", workspaceId);
     const result = await this.execute(query, workspaceId);
 
     const parsedResults = (
