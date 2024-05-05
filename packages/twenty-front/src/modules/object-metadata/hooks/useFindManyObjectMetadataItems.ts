@@ -28,7 +28,7 @@ export const useFindManyObjectMetadataItems = ({
 
   const { enqueueSnackBar } = useSnackBar();
 
-  const { data, loading, error } = useQuery<
+  const { data, loading, error, refetch } = useQuery<
     ObjectMetadataItemsQuery,
     ObjectMetadataItemsQueryVariables
   >(
@@ -62,5 +62,6 @@ export const useFindManyObjectMetadataItems = ({
     objectMetadataItems,
     loading,
     error,
+    refetch,
   };
 };

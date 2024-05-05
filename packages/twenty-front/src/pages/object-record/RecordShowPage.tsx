@@ -1,12 +1,14 @@
 import { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useSetRecoilState } from 'recoil';
-import { IconBuildingSkyscraper } from 'twenty-ui';
+import { useIcons } from 'twenty-ui';
 
 import { useFavorites } from '@/favorites/hooks/useFavorites';
+import { useLabelIdentifierFieldMetadataItem } from '@/object-metadata/hooks/useLabelIdentifierFieldMetadataItem';
 import { useObjectMetadataItem } from '@/object-metadata/hooks/useObjectMetadataItem';
 import { useFindOneRecord } from '@/object-record/hooks/useFindOneRecord';
 import { RecordShowContainer } from '@/object-record/record-show/components/RecordShowContainer';
+import { findOneRecordForShowPageOperationSignatureFactory } from '@/object-record/record-show/graphql/operations/factories/findOneRecordForShowPageOperationSignatureFactory';
 import { recordStoreFamilyState } from '@/object-record/record-store/states/recordStoreFamilyState';
 import { PageBody } from '@/ui/layout/page/PageBody';
 import { PageContainer } from '@/ui/layout/page/PageContainer';
@@ -17,6 +19,7 @@ import { ShowPageMoreButton } from '@/ui/layout/show-page/components/ShowPageMor
 import { PageTitle } from '@/ui/utilities/page-title/PageTitle';
 import { FieldMetadataType } from '~/generated-metadata/graphql';
 import { isDefined } from '~/utils/isDefined';
+import { capitalize } from '~/utils/string/capitalize';
 
 export const RecordShowPage = () => {
   const { objectNameSingular, objectRecordId } = useParams<{
@@ -32,8 +35,14 @@ export const RecordShowPage = () => {
     throw new Error(`Record id is not defined`);
   }
 
-  const { labelIdentifierFieldMetadata, objectMetadataItem } =
-    useObjectMetadataItem({ objectNameSingular });
+  const { objectMetadataItem } = useObjectMetadataItem({
+    objectNameSingular,
+  });
+
+  const { labelIdentifierFieldMetadataItem } =
+    useLabelIdentifierFieldMetadataItem({
+      objectNameSingular,
+    });
 
   const { favorites, createFavorite, deleteFavorite } = useFavorites();
 
@@ -41,9 +50,17 @@ export const RecordShowPage = () => {
     recordStoreFamilyState(objectRecordId),
   );
 
+  const { getIcon } = useIcons();
+
+  const headerIcon = getIcon(objectMetadataItem?.icon);
+
+  const FIND_ONE_RECORD_FOR_SHOW_PAGE_OPERATION_SIGNATURE =
+    findOneRecordForShowPageOperationSignatureFactory({ objectMetadataItem });
+
   const { record, loading } = useFindOneRecord({
     objectRecordId,
     objectNameSingular,
+    recordGqlFields: FIND_ONE_RECORD_FOR_SHOW_PAGE_OPERATION_SIGNATURE.fields,
   });
 
   useEffect(() => {
@@ -68,22 +85,29 @@ export const RecordShowPage = () => {
   };
 
   const labelIdentifierFieldValue =
-    record?.[labelIdentifierFieldMetadata?.name ?? ''];
+    record?.[labelIdentifierFieldMetadataItem?.name ?? ''];
+
   const pageName =
-    labelIdentifierFieldMetadata?.type === FieldMetadataType.FullName
+    labelIdentifierFieldMetadataItem?.type === FieldMetadataType.FullName
       ? [
           labelIdentifierFieldValue?.firstName,
           labelIdentifierFieldValue?.lastName,
         ].join(' ')
-      : `${labelIdentifierFieldValue}`;
+      : isDefined(labelIdentifierFieldValue)
+        ? `${labelIdentifierFieldValue}`
+        : '';
+
+  const pageTitle = pageName.trim()
+    ? `${pageName} - ${capitalize(objectNameSingular)}`
+    : capitalize(objectNameSingular);
 
   return (
     <PageContainer>
-      <PageTitle title={pageName} />
+      <PageTitle title={pageTitle} />
       <PageHeader
         title={pageName ?? ''}
         hasBackButton
-        Icon={IconBuildingSkyscraper}
+        Icon={headerIcon}
         loading={loading}
       >
         {record && (

@@ -7,6 +7,7 @@ import {
 import { ConfigModule } from '@nestjs/config';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { GraphQLModule } from '@nestjs/graphql';
+import { DevtoolsModule } from '@nestjs/devtools-integration';
 
 import { existsSync } from 'fs';
 import { join } from 'path';
@@ -19,14 +20,13 @@ import { CoreGraphQLApiModule } from 'src/engine/api/graphql/core-graphql-api.mo
 import { MetadataGraphQLApiModule } from 'src/engine/api/graphql/metadata-graphql-api.module';
 import { GraphQLConfigModule } from 'src/engine/api/graphql/graphql-config/graphql-config.module';
 import { GraphQLConfigService } from 'src/engine/api/graphql/graphql-config/graphql-config.service';
-import { UserWorkspaceMiddleware } from 'src/engine/middlewares/user-workspace.middleware';
+import { EnvironmentService } from 'src/engine/integrations/environment/environment.service';
 import { WorkspaceCacheVersionModule } from 'src/engine/metadata-modules/workspace-cache-version/workspace-cache-version.module';
+import { GraphQLHydrateRequestFromTokenMiddleware } from 'src/engine/middlewares/graphql-hydrate-request-from-token.middleware';
 
 import { CoreEngineModule } from './engine/core-modules/core-engine.module';
 import { IntegrationsModule } from './engine/integrations/integrations.module';
 import { ScheduleModule } from '@nestjs/schedule';
-import { EnvironmentService } from 'src/engine/integrations/environment/environment.service';
-import { DevtoolsModule } from '@nestjs/devtools-integration';
 
 
 @Module({
@@ -82,11 +82,11 @@ export class AppModule {
 
   configure(consumer: MiddlewareConsumer) {
     consumer
-      .apply(UserWorkspaceMiddleware)
+      .apply(GraphQLHydrateRequestFromTokenMiddleware)
       .forRoutes({ path: 'graphql', method: RequestMethod.ALL });
 
     consumer
-      .apply(UserWorkspaceMiddleware)
+      .apply(GraphQLHydrateRequestFromTokenMiddleware)
       .forRoutes({ path: 'metadata', method: RequestMethod.ALL });
   }
 }

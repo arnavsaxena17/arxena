@@ -12,6 +12,7 @@ export enum CoreObjectNameSingular {
   Event = 'event',
   Chat = 'chat',
   Chat2 = 'chat2',
+  TimelineActivity = 'timelineActivity',
   Favorite = 'favorite',
   Message = 'message',
   MessageChannel = 'messageChannel',

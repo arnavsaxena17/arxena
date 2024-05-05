@@ -9,6 +9,7 @@ import { Notes } from '@/activities/notes/components/Notes';
 import { ObjectTasks } from '@/activities/tasks/components/ObjectTasks';
 import { Timeline } from '@/activities/timeline/components/Timeline';
 import { TimelineQueryEffect } from '@/activities/timeline/components/TimelineQueryEffect';
+import { TimelineActivities } from '@/activities/timelineActivities/components/TimelineActivities';
 import { ActivityTargetableObject } from '@/activities/types/ActivityTargetableEntity';
 import { CoreObjectNameSingular } from '@/object-metadata/types/CoreObjectNameSingular';
 import { TabList } from '@/ui/layout/tab/components/TabList';
@@ -56,9 +57,12 @@ export const ShowPageRightContainer = ({
 }: ShowPageRightContainerProps) => {
   const { activeTabIdState } = useTabList(TAB_LIST_COMPONENT_ID);
   const activeTabId = useRecoilValue(activeTabIdState);
-  console.log('This is the activeTabId', activeTabId);
-  console.log('This is the activeTabIdState', activeTabIdState);
-  const shouldDisplayCalendarTab = useIsFeatureEnabled('IS_CALENDAR_ENABLED');
+
+  const shouldDisplayCalendarTab =
+    targetableObject.targetObjectNameSingular ===
+      CoreObjectNameSingular.Company ||
+    targetableObject.targetObjectNameSingular === CoreObjectNameSingular.Person;
+
   const shouldDisplayLogTab = useIsFeatureEnabled('IS_EVENT_OBJECT_ENABLED');
 
   const shouldDisplayEmailsTab =
@@ -147,7 +151,7 @@ export const ShowPageRightContainer = ({
       {activeTabId === 'chats' && <Chats targetableObject={targetableObject} />}
 
       {activeTabId === 'logs' && (
-        <Timeline targetableObject={targetableObject} />
+        <TimelineActivities targetableObject={targetableObject} />
       )}
     </StyledShowPageRightContainer>
   );

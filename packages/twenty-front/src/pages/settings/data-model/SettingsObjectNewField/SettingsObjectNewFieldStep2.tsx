@@ -4,12 +4,12 @@ import { Reference, useApolloClient } from '@apollo/client';
 import styled from '@emotion/styled';
 import { IconSettings } from 'twenty-ui';
 
-import { CachedObjectRecordEdge } from '@/apollo/types/CachedObjectRecordEdge';
 import { useCreateOneRelationMetadataItem } from '@/object-metadata/hooks/useCreateOneRelationMetadataItem';
 import { useFieldMetadataItem } from '@/object-metadata/hooks/useFieldMetadataItem';
 import { useFilteredObjectMetadataItems } from '@/object-metadata/hooks/useFilteredObjectMetadataItems';
-import { useObjectMetadataItemOnly } from '@/object-metadata/hooks/useObjectMetadataItemOnly';
+import { useObjectMetadataItem } from '@/object-metadata/hooks/useObjectMetadataItem';
 import { CoreObjectNameSingular } from '@/object-metadata/types/CoreObjectNameSingular';
+import { RecordGqlRefEdge } from '@/object-record/cache/types/RecordGqlRefEdge';
 import { modifyRecordFromCache } from '@/object-record/cache/utils/modifyRecordFromCache';
 import { useFindManyRecords } from '@/object-record/hooks/useFindManyRecords';
 import { SaveAndCancelButtons } from '@/settings/components/SaveAndCancelButtons/SaveAndCancelButtons';
@@ -85,10 +85,9 @@ export const SettingsObjectNewFieldStep2 = () => {
   const [objectViews, setObjectViews] = useState<View[]>([]);
   const [relationObjectViews, setRelationObjectViews] = useState<View[]>([]);
 
-  const { objectMetadataItem: viewObjectMetadataItem } =
-    useObjectMetadataItemOnly({
-      objectNameSingular: CoreObjectNameSingular.View,
-    });
+  const { objectMetadataItem: viewObjectMetadataItem } = useObjectMetadataItem({
+    objectNameSingular: CoreObjectNameSingular.View,
+  });
 
   useFindManyRecords<View>({
     objectNameSingular: CoreObjectNameSingular.View,
@@ -133,6 +132,7 @@ export const SettingsObjectNewFieldStep2 = () => {
             description: validatedFormValues.description,
             icon: validatedFormValues.icon,
             label: validatedFormValues.label,
+            type: validatedFormValues.type,
           },
           objectMetadataId: activeObjectMetadataItem.id,
           connect: {
@@ -148,7 +148,7 @@ export const SettingsObjectNewFieldStep2 = () => {
           validatedFormValues.relation.objectMetadataId,
         );
 
-        objectViews.forEach(async (view) => {
+        objectViews.map(async (view) => {
           const viewFieldToCreate = {
             viewId: view.id,
             fieldMetadataId:
@@ -181,7 +181,7 @@ export const SettingsObjectNewFieldStep2 = () => {
             recordId: view.id,
           });
 
-          relationObjectViews.forEach(async (view) => {
+          relationObjectViews.map(async (view) => {
             const viewFieldToCreate = {
               viewId: view.id,
               fieldMetadataId:
@@ -231,10 +231,12 @@ export const SettingsObjectNewFieldStep2 = () => {
           options:
             validatedFormValues.type === FieldMetadataType.Select
               ? validatedFormValues.select
-              : undefined,
+              : validatedFormValues.type === FieldMetadataType.MultiSelect
+                ? validatedFormValues.multiSelect
+                : undefined,
         });
 
-        objectViews.forEach(async (view) => {
+        objectViews.map(async (view) => {
           const viewFieldToCreate = {
             viewId: view.id,
             fieldMetadataId: createdMetadataField.data?.createOneField.id,
@@ -248,7 +250,7 @@ export const SettingsObjectNewFieldStep2 = () => {
             cache: cache,
             fieldModifiers: {
               viewFields: (cachedViewFieldsConnection, { readField }) => {
-                const edges = readField<CachedObjectRecordEdge[]>(
+                const edges = readField<RecordGqlRefEdge[]>(
                   'edges',
                   cachedViewFieldsConnection,
                 );
@@ -275,13 +277,11 @@ export const SettingsObjectNewFieldStep2 = () => {
   };
 
   const excludedFieldTypes: SettingsSupportedFieldType[] = [
-    FieldMetadataType.Currency,
     FieldMetadataType.Email,
     FieldMetadataType.FullName,
     FieldMetadataType.Link,
-    FieldMetadataType.MultiSelect,
+    FieldMetadataType.Links,
     FieldMetadataType.Numeric,
-    FieldMetadataType.Phone,
     FieldMetadataType.Probability,
     FieldMetadataType.Uuid,
   ];
@@ -336,6 +336,7 @@ export const SettingsObjectNewFieldStep2 = () => {
               currency: formValues.currency,
               relation: formValues.relation,
               select: formValues.select,
+              multiSelect: formValues.multiSelect,
               defaultValue: formValues.defaultValue,
             }}
           />

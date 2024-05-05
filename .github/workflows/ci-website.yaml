@@ -1,0 +1,39 @@
+name: CI Website
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'package.json'
+      - 'packages/twenty-website/**'
+  pull_request:
+    paths:
+      - 'package.json'
+      - 'packages/twenty-website/**'
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  website-build:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: twentycrm/twenty-postgres
+        env:
+          POSTGRES_PASSWORD: twenty
+          POSTGRES_USER: twenty
+        ports:
+          - 5432:5432
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        uses: ./.github/workflows/actions/yarn-install
+      - name: Website / Run migrations
+        run: npx nx database:migrate twenty-website 
+        env:
+          DATABASE_PG_URL: postgres://twenty:twenty@localhost:5432/default
+      - name: Website / Build Website
+        run: npx nx build twenty-website
+        env:
+          DATABASE_PG_URL: postgres://twenty:twenty@localhost:5432/default

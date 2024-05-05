@@ -1,6 +1,6 @@
+import { HttpModule } from '@nestjs/axios';
 import { Module } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
-import { HttpModule } from '@nestjs/axios';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { CallWebhookJobsJob } from 'src/engine/api/graphql/workspace-query-runner/jobs/call-webhook-jobs.job';
 import { CallWebhookJob } from 'src/engine/api/graphql/workspace-query-runner/jobs/call-webhook.job';
@@ -16,39 +16,53 @@ import { GmailPartialSyncCronJob } from 'src/modules/messaging/jobs/crons/gmail-
 import { MatchMessageParticipantJob } from 'src/modules/messaging/jobs/match-message-participant.job';
 import { CreateCompaniesAndContactsAfterSyncJob } from 'src/modules/messaging/jobs/create-companies-and-contacts-after-sync.job';
 import { AutoCompaniesAndContactsCreationModule } from 'src/modules/connected-account/auto-companies-and-contacts-creation/auto-companies-and-contacts-creation.module';
+
 import { DataSeedDemoWorkspaceModule } from 'src/database/commands/data-seed-demo-workspace/data-seed-demo-workspace.module';
 import { DataSeedDemoWorkspaceJob } from 'src/database/commands/data-seed-demo-workspace/jobs/data-seed-demo-workspace.job';
-import { DeleteConnectedAccountAssociatedMessagingDataJob } from 'src/modules/messaging/jobs/delete-connected-account-associated-messaging-data.job';
-import { ThreadCleanerModule } from 'src/modules/messaging/services/thread-cleaner/thread-cleaner.module';
-import { UpdateSubscriptionJob } from 'src/engine/core-modules/billing/jobs/update-subscription.job';
-import { BillingModule } from 'src/engine/core-modules/billing/billing.module';
-import { UserWorkspaceModule } from 'src/engine/core-modules/user-workspace/user-workspace.module';
-import { StripeModule } from 'src/engine/core-modules/billing/stripe/stripe.module';
-import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
-import { FeatureFlagEntity } from 'src/engine/core-modules/feature-flag/feature-flag.entity';
-import { DataSourceEntity } from 'src/engine/metadata-modules/data-source/data-source.entity';
-import { GoogleCalendarFullSyncJob } from 'src/modules/calendar/jobs/google-calendar-full-sync.job';
-import { CalendarEventCleanerModule } from 'src/modules/calendar/services/calendar-event-cleaner/calendar-event-cleaner.module';
 import { RecordPositionBackfillJob } from 'src/engine/api/graphql/workspace-query-runner/jobs/record-position-backfill.job';
 import { RecordPositionBackfillModule } from 'src/engine/api/graphql/workspace-query-runner/services/record-position-backfill-module';
 import { DeleteConnectedAccountAssociatedCalendarDataJob } from 'src/modules/calendar/jobs/delete-connected-account-associated-calendar-data.job';
-import { GoogleCalendarFullSyncModule } from 'src/modules/calendar/services/google-calendar-full-sync.module';
 import { GoogleAPIRefreshAccessTokenModule } from 'src/modules/connected-account/services/google-api-refresh-access-token/google-api-refresh-access-token.module';
 import { MessageParticipantModule } from 'src/modules/messaging/services/message-participant/message-participant.module';
 import { ObjectMetadataRepositoryModule } from 'src/engine/object-metadata-repository/object-metadata-repository.module';
 import { ConnectedAccountObjectMetadata } from 'src/modules/connected-account/standard-objects/connected-account.object-metadata';
-import { MessageParticipantObjectMetadata } from 'src/modules/messaging/standard-objects/message-participant.object-metadata';
-import { MessageChannelObjectMetadata } from 'src/modules/messaging/standard-objects/message-channel.object-metadata';
-import { SaveEventToDbJob } from 'src/engine/api/graphql/workspace-query-runner/jobs/save-event-to-db.job';
 import { CreateCompanyAndContactJob } from 'src/modules/connected-account/auto-companies-and-contacts-creation/jobs/create-company-and-contact.job';
-import { EventObjectMetadata } from 'src/modules/event/standard-objects/event.object-metadata';
+import { AuditLogObjectMetadata } from 'src/modules/timeline/standard-objects/audit-log.object-metadata';
+import { BillingModule } from 'src/engine/core-modules/billing/billing.module';
+import { UpdateSubscriptionJob } from 'src/engine/core-modules/billing/jobs/update-subscription.job';
+import { StripeModule } from 'src/engine/core-modules/billing/stripe/stripe.module';
+import { FeatureFlagEntity } from 'src/engine/core-modules/feature-flag/feature-flag.entity';
+import { UserWorkspaceModule } from 'src/engine/core-modules/user-workspace/user-workspace.module';
 import { HandleWorkspaceMemberDeletedJob } from 'src/engine/core-modules/workspace/handle-workspace-member-deleted.job';
-import { GmailFullSynV2Module } from 'src/modules/messaging/services/gmail-full-sync-v2/gmail-full-sync.v2.module';
+import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
+import { DataSourceEntity } from 'src/engine/metadata-modules/data-source/data-source.entity';
+import { MatchParticipantJob } from 'src/modules/calendar-messaging-participant/jobs/match-participant.job';
+import { UnmatchParticipantJob } from 'src/modules/calendar-messaging-participant/jobs/unmatch-participant.job';
+import { GoogleCalendarSyncCronJob } from 'src/modules/calendar/crons/jobs/google-calendar-sync.cron.job';
+import { CalendarCreateCompanyAndContactAfterSyncJob } from 'src/modules/calendar/jobs/calendar-create-company-and-contact-after-sync.job';
+import { GoogleCalendarSyncJob } from 'src/modules/calendar/jobs/google-calendar-sync.job';
+import { CalendarEventCleanerModule } from 'src/modules/calendar/services/calendar-event-cleaner/calendar-event-cleaner.module';
+import { CalendarEventParticipantModule } from 'src/modules/calendar/services/calendar-event-participant/calendar-event-participant.module';
+import { GoogleCalendarSyncModule } from 'src/modules/calendar/services/google-calendar-sync/google-calendar-sync.module';
+import { WorkspaceGoogleCalendarSyncModule } from 'src/modules/calendar/services/workspace-google-calendar-sync/workspace-google-calendar-sync.module';
+import { GmailFetchMessagesFromCacheCronJob } from 'src/modules/messaging/crons/jobs/gmail-fetch-messages-from-cache.cron.job';
+import { BlocklistReimportMessagesJob } from 'src/modules/messaging/jobs/blocklist-reimport-messages.job';
+import { DeleteConnectedAccountAssociatedMessagingDataJob } from 'src/modules/messaging/jobs/delete-connected-account-associated-messaging-data.job';
+import { BlocklistItemDeleteMessagesJob } from 'src/modules/messaging/jobs/blocklist-item-delete-messages.job';
+import { GmailFullSyncJob } from 'src/modules/messaging/jobs/gmail-full-sync.job';
+import { GmailPartialSyncJob } from 'src/modules/messaging/jobs/gmail-partial-sync.job';
+import { MessagingCreateCompanyAndContactAfterSyncJob } from 'src/modules/messaging/jobs/messaging-create-company-and-contact-after-sync.job';
 import { GmailFetchMessageContentFromCacheModule } from 'src/modules/messaging/services/gmail-fetch-message-content-from-cache/gmail-fetch-message-content-from-cache.module';
-import { FetchAllMessagesFromCacheCronJob } from 'src/modules/messaging/jobs/crons/fetch-all-messages-from-cache.cron.job';
-import { GmailFullSyncV2Job } from 'src/modules/messaging/jobs/gmail-full-sync-v2.job';
-import { GmailPartialSyncV2Job } from 'src/modules/messaging/jobs/gmail-partial-sync-v2.job';
-import { GmailPartialSyncV2Module } from 'src/modules/messaging/services/gmail-partial-sync-v2/gmail-partial-sync-v2.module';
+import { CreateAuditLogFromInternalEvent } from 'src/modules/timeline/jobs/create-audit-log-from-internal-event';
+import { UpsertTimelineActivityFromInternalEvent } from 'src/modules/timeline/jobs/upsert-timeline-activity-from-internal-event.job';
+import { GmailFullSyncModule } from 'src/modules/messaging/services/gmail-full-sync/gmail-full-sync.module';
+import { GmailPartialSyncModule } from 'src/modules/messaging/services/gmail-partial-sync/gmail-partial-sync.module';
+import { ThreadCleanerModule } from 'src/modules/messaging/services/thread-cleaner/thread-cleaner.module';
+import { TimelineActivityModule } from 'src/modules/timeline/timeline-activity.module';
+import { MessageChannelMessageAssociationObjectMetadata } from 'src/modules/messaging/standard-objects/message-channel-message-association.object-metadata';
+import { MessageChannelObjectMetadata } from 'src/modules/messaging/standard-objects/message-channel.object-metadata';
+import { BlocklistItemDeleteCalendarEventsJob } from 'src/modules/calendar/jobs/blocklist-item-delete-calendar-events.job';
+import { BlocklistReimportCalendarEventsJob } from 'src/modules/calendar/jobs/blocklist-reimport-calendar-events.job';
 
 @Module({
   imports: [
@@ -58,7 +72,8 @@ import { GmailPartialSyncV2Module } from 'src/modules/messaging/services/gmail-p
     DataSeedDemoWorkspaceModule,
     EnvironmentModule,
     HttpModule,
-    GoogleCalendarFullSyncModule,
+    GoogleCalendarSyncModule,
+    WorkspaceGoogleCalendarSyncModule,
     ObjectMetadataModule,
     StripeModule,
     ThreadCleanerModule,
@@ -74,18 +89,20 @@ import { GmailPartialSyncV2Module } from 'src/modules/messaging/services/gmail-p
     MessageParticipantModule,
     ObjectMetadataRepositoryModule.forFeature([
       ConnectedAccountObjectMetadata,
-      MessageParticipantObjectMetadata,
       MessageChannelObjectMetadata,
-      EventObjectMetadata,
+      AuditLogObjectMetadata,
+      MessageChannelMessageAssociationObjectMetadata,
     ]),
-    GmailFullSynV2Module,
+    GmailFullSyncModule,
     GmailFetchMessageContentFromCacheModule,
-    GmailPartialSyncV2Module,
+    GmailPartialSyncModule,
+    CalendarEventParticipantModule,
+    TimelineActivityModule,
   ],
   providers: [
     {
-      provide: GoogleCalendarFullSyncJob.name,
-      useClass: GoogleCalendarFullSyncJob,
+      provide: GoogleCalendarSyncJob.name,
+      useClass: GoogleCalendarSyncJob,
     },
     {
       provide: CallWebhookJobsJob.name,
@@ -105,12 +122,20 @@ import { GmailPartialSyncV2Module } from 'src/modules/messaging/services/gmail-p
       useClass: GmailPartialSyncCronJob,
     },
     {
-      provide: MatchMessageParticipantJob.name,
-      useClass: MatchMessageParticipantJob,
+      provide: MatchParticipantJob.name,
+      useClass: MatchParticipantJob,
     },
     {
-      provide: CreateCompaniesAndContactsAfterSyncJob.name,
-      useClass: CreateCompaniesAndContactsAfterSyncJob,
+      provide: UnmatchParticipantJob.name,
+      useClass: UnmatchParticipantJob,
+    },
+    {
+      provide: MessagingCreateCompanyAndContactAfterSyncJob.name,
+      useClass: MessagingCreateCompanyAndContactAfterSyncJob,
+    },
+    {
+      provide: CalendarCreateCompanyAndContactAfterSyncJob.name,
+      useClass: CalendarCreateCompanyAndContactAfterSyncJob,
     },
     {
       provide: DataSeedDemoWorkspaceJob.name,
@@ -137,21 +162,46 @@ import { GmailPartialSyncV2Module } from 'src/modules/messaging/services/gmail-p
       provide: CreateCompanyAndContactJob.name,
       useClass: CreateCompanyAndContactJob,
     },
+
     {
-      provide: SaveEventToDbJob.name,
-      useClass: SaveEventToDbJob,
+      provide: CreateAuditLogFromInternalEvent.name,
+      useClass: CreateAuditLogFromInternalEvent,
     },
     {
-      provide: FetchAllMessagesFromCacheCronJob.name,
-      useClass: FetchAllMessagesFromCacheCronJob,
+      provide: UpsertTimelineActivityFromInternalEvent.name,
+      useClass: UpsertTimelineActivityFromInternalEvent,
     },
     {
-      provide: GmailFullSyncV2Job.name,
-      useClass: GmailFullSyncV2Job,
+      provide: GmailFetchMessagesFromCacheCronJob.name,
+      useClass: GmailFetchMessagesFromCacheCronJob,
     },
     {
-      provide: GmailPartialSyncV2Job.name,
-      useClass: GmailPartialSyncV2Job,
+      provide: GmailFullSyncJob.name,
+      useClass: GmailFullSyncJob,
+    },
+    {
+      provide: GmailPartialSyncJob.name,
+      useClass: GmailPartialSyncJob,
+    },
+    {
+      provide: GoogleCalendarSyncCronJob.name,
+      useClass: GoogleCalendarSyncCronJob,
+    },
+    {
+      provide: BlocklistItemDeleteMessagesJob.name,
+      useClass: BlocklistItemDeleteMessagesJob,
+    },
+    {
+      provide: BlocklistItemDeleteCalendarEventsJob.name,
+      useClass: BlocklistItemDeleteCalendarEventsJob,
+    },
+    {
+      provide: BlocklistReimportMessagesJob.name,
+      useClass: BlocklistReimportMessagesJob,
+    },
+    {
+      provide: BlocklistReimportCalendarEventsJob.name,
+      useClass: BlocklistReimportCalendarEventsJob,
     },
   ],
 })
