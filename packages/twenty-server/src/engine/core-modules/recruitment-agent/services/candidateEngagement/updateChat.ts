@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { chatMessageType, candidateInfoType, candidateProfileType, candidateProfile, recruiterProfile, candidateChatMessageType } from 'src/engine/core-modules/recruitment-agent/services/data-model-objects';
+import { chatMessageType, candidateInfoType, emptyCandidateProfileObj, candidateProfileType, candidateProfile, recruiterProfile, candidateChatMessageType } from 'src/engine/core-modules/recruitment-agent/services/data-model-objects';
 import { graphqlQueryToCreateOneNewWhatsappMessage, graphqlQueryToFindPeopleByPhoneNumber, graphqlQueryToUpdateCandidateStatus } from 'src/engine/core-modules/recruitment-agent/services/graphql-queries/graphql-queries-chatbot';
 import { v4 } from 'uuid';
 
@@ -67,46 +67,10 @@ async function getCandidateInformation(userMessage: chatMessageType) {
             return candidateProfileObj;
         } else {
             console.log("No active candidate found.");
-            const emptyCandidateProfileObj: candidateProfileType = {
-                first_name: '',
-                id: '',
-                status: '',
-                job: {
-                    name: '',
-                    company: {
-                        name: '',
-                        descriptionOneliner: ''
-                    },
-                    jobLocation: '',
-                },
-                phoneNumber: '',
-                email: '',
-                input: '',
-                jobsId: '',
-                responsibleWorkspaceMemberId: ''
-            }
             return emptyCandidateProfileObj;
         }
 
     } catch (error) {
-        const emptyCandidateProfileObj: candidateProfileType = {
-            first_name: '',
-            id: '',
-            status: '',
-            job: {
-                name: '',
-                company: {
-                    name: '',
-                    descriptionOneliner: ''
-                },
-                jobLocation: '',
-            },
-            phoneNumber: '',
-            email: '',
-            input: '',
-            jobsId: '',
-            responsibleWorkspaceMemberId: ''
-        }
         return emptyCandidateProfileObj;
     }
 }
@@ -136,7 +100,7 @@ async function createAndUpdateWhatsappMessage( candidateProfileObj: candidatePro
         method: 'post',
         maxBodyLength: Infinity,
         url: process.env.GRAPHQL_URL,
-        headers: { 
+        headers: {
             'authorization': 'Bearer ' + process.env.TWENTY_JWT_SECRET,
             'content-type': 'application/json', 
           },

@@ -16,6 +16,7 @@ import { isDefined } from '~/utils/isDefined';
 import { ApolloFactory, Options } from '../services/apollo.factory';
 
 export const useApolloFactory = (options: Partial<Options<any>> = {}) => {
+  console.log("These are options::",options)
   // eslint-disable-next-line @nx/workspace-no-state-useref
   const apolloRef = useRef<ApolloFactory<NormalizedCacheObject> | null>(null);
   const currentWorkspace = useRecoilValue(currentWorkspaceState);
@@ -28,6 +29,8 @@ export const useApolloFactory = (options: Partial<Options<any>> = {}) => {
   const location = useLocation();
 
   const apolloClient = useMemo(() => {
+    console.log("These are the tokenPair::",tokenPair)  
+    
     apolloRef.current = new ApolloFactory({
       uri: `${REACT_APP_SERVER_BASE_URL}/graphql`,
       cache: new InMemoryCache(),

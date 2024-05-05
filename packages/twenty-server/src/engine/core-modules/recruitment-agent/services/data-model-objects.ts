@@ -14,6 +14,27 @@ export interface candidateProfileType {
     text: string;
   }
 
+export const emptyCandidateProfileObj: candidateProfileType = {
+  first_name: '',
+  id: '',
+  status: '',
+  job: {
+      name: '',
+      company: {
+          name: '',
+          descriptionOneliner: ''
+      },
+      jobLocation: ''
+  },
+  phoneNumber: '',
+  email: '',
+  input: '',
+  jobsId: '',
+  responsibleWorkspaceMemberId: ''
+};
+
+
+
   export interface sendWhatsappTemplateMessageObjectType {
     template_name: string;
     recipient: string;

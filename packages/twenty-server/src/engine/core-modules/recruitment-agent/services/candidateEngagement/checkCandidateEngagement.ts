@@ -33,7 +33,7 @@ async function fetchCandidatesToEngage(){
   let requestConfig = {
     method: 'post',
     maxBodyLength: Infinity,
-    url: 'http://localhost:3000/graphql/graphql',
+    url: 'http://localhost:3000/graphql',
     headers: { 
       'Content-Type': 'application/json', 
       'Authorization': 'Bearer '+ process.env.TWENTY_JWT_SECRET
@@ -59,17 +59,17 @@ function getExecutorWithPromptAndTools(phoneNumber){
   new MessagesPlaceholder(MEMORY_KEY), ["user", "{input}"], new MessagesPlaceholder("agent_scratchpad") ]);
   const modelWithFunctions = model.bind({ functions: tools.map((tool) => convertToOpenAIFunction(tool)) });
   const agentWithMemory = RunnableSequence.from([{input: (i) => i.input, agent_scratchpad: (i) => formatToOpenAIFunctionMessages(i.steps), chat_history: (i) => i.chat_history }, memoryPrompt, modelWithFunctions, new OpenAIFunctionsAgentOutputParser() ]);
-  const executorWithMemoryAndTools = AgentExecutor.fromAgentAndTools({ agent: agentWithMemory, tools,verbose: true});
+  const executorWithMemoryAndTools = AgentExecutor.fromAgentAndTools({ agent: agentWithMemory, tools, verbose: true});
   return executorWithMemoryAndTools 
 }
 
 
 async function startChatEngagement(response){
+    const filteredCandidatesToStartEngagement = response?.data?.data?.people?.edges?.filter(edge => {
+      return edge?.node?.candidate?.edges?.length > 0 && edge?.node?.candidate?.edges[0]?.node?.startChat === true;
+    });
   
-  const filteredCandidatesToStartEngagement = response.data.data.people.edges.filter(edge => {
-    return edge.node.candidate.edges.length > 0 && edge.node.candidate.edges[0].node.startChat === true;
-  });
-
+  
   // const filteredCandidatesToStartEngagement = []
   console.log("these are the number of candidates to who have no filteredCandidatesToStartEngagement ::", filteredCandidatesToStartEngagement.length);
   // debugger;
@@ -82,8 +82,6 @@ async function startChatEngagement(response){
     const candidateProfile = filteredCandidatesWhoHaveNoWhatsappHistory[i].node.candidate.edges[0].node;
     const recruiterProfile =  allDataObjects.recruiterProfile
     const chatReply = 'hi'
-
-
 
     const whatappUpdateMessageObj:allDataObjects.candidateChatMessageType = {
       candidateProfile:candidateProfile,
