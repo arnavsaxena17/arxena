@@ -513,8 +513,6 @@ export class WorkspaceQueryRunnerService {
       objectMetadataItem,
     );
     // TODO END
-    // this.logger.log("This is the query deleteOne:", query);
-    // this.logger.log("This is the query deleteOne workspaceId:", workspaceId);
 
     await this.workspacePreQueryHookService.executePreHooks(
       userId,

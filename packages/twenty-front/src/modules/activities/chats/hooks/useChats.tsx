@@ -21,6 +21,6 @@ export const useChats = (targetableObject: ActivityTargetableObject) => {
   });
 
   return {
-    chats: chats as Chat[],
+    chats: chats as unknown as Chat[],
   };
 };

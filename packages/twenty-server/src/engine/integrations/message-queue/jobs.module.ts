@@ -12,9 +12,9 @@ import { TypeORMModule } from 'src/database/typeorm/typeorm.module';
 import { EmailSenderJob } from 'src/engine/integrations/email/email-sender.job';
 import { UserModule } from 'src/engine/core-modules/user/user.module';
 import { EnvironmentModule } from 'src/engine/integrations/environment/environment.module';
-import { GmailPartialSyncCronJob } from 'src/modules/messaging/jobs/crons/gmail-partial-sync.cron.job';
-import { MatchMessageParticipantJob } from 'src/modules/messaging/jobs/match-message-participant.job';
-import { CreateCompaniesAndContactsAfterSyncJob } from 'src/modules/messaging/jobs/create-companies-and-contacts-after-sync.job';
+// import { GmailPartialSyncCronJob } from 'src/modules/messaging/jobs/crons/gmail-partial-sync.cron.job';
+// import { MatchMessageParticipantJob } from 'src/modules/messaging/jobs/match-message-participant.job';
+// import { CreateCompaniesAndContactsAfterSyncJob } from 'src/modules/messaging/jobs/create-companies-and-contacts-after-sync.job';
 import { AutoCompaniesAndContactsCreationModule } from 'src/modules/connected-account/auto-companies-and-contacts-creation/auto-companies-and-contacts-creation.module';
 
 import { DataSeedDemoWorkspaceModule } from 'src/database/commands/data-seed-demo-workspace/data-seed-demo-workspace.module';
@@ -117,10 +117,10 @@ import { BlocklistReimportCalendarEventsJob } from 'src/modules/calendar/jobs/bl
       useClass: CleanInactiveWorkspaceJob,
     },
     { provide: EmailSenderJob.name, useClass: EmailSenderJob },
-    {
-      provide: GmailPartialSyncCronJob.name,
-      useClass: GmailPartialSyncCronJob,
-    },
+    // {
+    //   provide: GmailPartialSyncCronJob.name,
+    //   useClass: GmailPartialSyncCronJob,
+    // },
     {
       provide: MatchParticipantJob.name,
       useClass: MatchParticipantJob,
