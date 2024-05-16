@@ -26,6 +26,7 @@ import { GraphQLHydrateRequestFromTokenMiddleware } from 'src/engine/middlewares
 
 import { CoreEngineModule } from './engine/core-modules/core-engine.module';
 import { IntegrationsModule } from './engine/integrations/integrations.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
@@ -37,6 +38,8 @@ import { IntegrationsModule } from './engine/integrations/integrations.module';
       }),
       inject: [EnvironmentService],
     }),
+    ScheduleModule.forRoot(),
+    
     ConfigModule.forRoot({
       isGlobal: true,
     }),

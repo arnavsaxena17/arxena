@@ -12,6 +12,9 @@ import { BillingModule } from 'src/engine/core-modules/billing/billing.module';
 import { HealthModule } from 'src/engine/core-modules/health/health.module';
 
 import { ClientConfigModule } from './client-config/client-config.module';
+import { CatsModule } from 'src/engine/core-modules/cats/cats.module';
+import { RecruitmentAgentModule } from 'src/engine/core-modules/recruitment-agent/recruitment-agent.module';
+import { VideoInterviewModule } from 'src/engine/core-modules/video-interview/video-interview.module';
 import { FileModule } from './file/file.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 
@@ -24,6 +27,9 @@ import { AnalyticsModule } from './analytics/analytics.module';
     ClientConfigModule,
     FeatureFlagModule,
     FileModule,
+    RecruitmentAgentModule,
+    CatsModule,
+    VideoInterviewModule,
     OpenApiModule,
     AppTokenModule,
     TimelineMessagingModule,
@@ -34,6 +40,9 @@ import { AnalyticsModule } from './analytics/analytics.module';
   exports: [
     AnalyticsModule,
     AuthModule,
+    CatsModule,
+    RecruitmentAgentModule,
+    VideoInterviewModule,
     FeatureFlagModule,
     TimelineMessagingModule,
     TimelineCalendarEventModule,
