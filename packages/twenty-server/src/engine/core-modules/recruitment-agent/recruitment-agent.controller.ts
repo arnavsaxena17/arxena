@@ -1,25 +1,48 @@
-import { Controller, Get, Post, Req, Res, UseGuards } from '@nestjs/common';
-// import { runChatAgent } from './services/llm-agents/llm-chat-agent';
+import { Controller, Get, Post, Req, Res, UseGuards, Body, Inject, HttpException, HttpStatus } from '@nestjs/common';
+
 import { LLMChatAgent } from 'src/engine/core-modules/recruitment-agent/services/llm-agents/llm-chat-agent';
 import { JwtAuthGuard } from 'src/engine/guards/jwt.auth.guard';
-import { candidateChatMessageType, chatMessageType, userMessageType, emptyCandidateProfileObj, sendWhatsappTemplateMessageObjectType, sendingAndIncomingwhatsappTextMessageType } from 'src/engine/core-modules/recruitment-agent/services/data-model-objects';
-
-import { FacebookWhatsappChatApi } from './services/whatsapp-api/facebook-whatsapp-api';
-import { UpdateChat } from './services/candidateEngagement/updateChat';
-import CandidateEngagement from './services/candidateEngagement/checkCandidateEngagement';
-
-
-interface UserRequestBody {
-    phoneNumber: string;
-    messages: any[]; // Adjust the type according to the structure of 'messages'
-}
+import * as allDataObjects from 'src/engine/core-modules/recruitment-agent/services/data-model-objects';
+import { FacebookWhatsappChatApi } from './services/whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
+// import { UpdateCandidatesChatsWhatsapps } from './services/candidateEngagement/updateChat';
+import CandidateEngagement from './services/candidate-engagement/check-candidate-engagement';
+import { IncomingWhatsappMessages}  from './services/whatsapp-api/incoming-messages';
 
 
-interface ChatRequestBody {
-  phoneNumberFrom: string;
-  phoneNumberTo: string;
-  messages: any[]; // Adjust the type according to the structure of 'messages'
-}
+// import { BaileysGateway } from './services/baileys/callBaileys';
+// import { SocketGateway } from 'src/engine/core-modules/baileys/socket-gateway/socket.gateway';
+// import { MessageDto } from 'src/engine/core-modules/baileys/types/baileys-types';
+
+// import { getBaileysSocket } from 'src/engine/core-modules/baileys/socket-gateway/socket.gateway';
+
+// import { initApp } from 'src/engine/core-modules/baileys/baileys';
+
+
+// @Controller('baileyswhatsapp')
+// export class WhatsappBaileysController {
+//   constructor(private socketGateway: SocketGateway) {}
+
+//   // @Post('send')
+//   // async sendMessage(@Body() body) {
+
+//   //   initApp ( arxSocket : SocketGateway )
+    
+    
+//   // }
+//   @Post('upload-file')
+//   async uploadFile(@Body() message: MessageDto) {
+//     try {
+//       await this.socketGateway.fileUpload(message);
+//       return { status: 'success', message: 'File upload initiated' };
+//     } catch (error) {
+//       throw new HttpException({
+//         status: HttpStatus.BAD_REQUEST,
+//         error: 'Could not upload file',
+//         message: error.message,
+//       }, HttpStatus.BAD_REQUEST);
+//     }
+//   }
+// }
 
 
 @Controller('agent')
@@ -28,14 +51,16 @@ export class RecruitmentAgentController {
   async create(@Req() request: Request): Promise<string> {
       console.log("These are the request body", request.body);
       let chatResponseMessage: string = "";
-      const userMessageBody: UserRequestBody | null = request?.body as UserRequestBody | null; // Type assertion
+      const userMessageBody: allDataObjects.chatMessageType | null = request?.body as allDataObjects.chatMessageType | null; // Type assertion
       console.log("This is the user message", userMessageBody);
 
       if (userMessageBody !== null) {
-          const { phoneNumber, messages } = userMessageBody;
-          const userMessage: userMessageType = {
-              phoneNumber,
-              messages
+          const { phoneNumberFrom, messages } = userMessageBody;
+          const userMessage: allDataObjects.chatMessageType = {
+            phoneNumberFrom:phoneNumberFrom,
+            phoneNumberTo:"918411937769",
+            messages:messages,
+            messageType:"string"
           };
           console.log("This is the user message", JSON.stringify(userMessage));
           let chatResponseMessagesResult = await new LLMChatAgent().runChatAgent(userMessage);
@@ -46,29 +71,27 @@ export class RecruitmentAgentController {
   }
 }
 
-
 @Controller('updateChat')
 export class UpdateChatEndpoint {
   @Post()
   async create(@Req() request: Request): Promise<object>{
       console.log("These are the request body", request.body);
-      const userMessageBody: ChatRequestBody | null = request?.body as ChatRequestBody | null; // Type assertion
+      const userMessageBody: allDataObjects.ChatRequestBody | null = request?.body as allDataObjects.ChatRequestBody | null; // Type assertion
       console.log("This is the user message", userMessageBody);
 
       if (userMessageBody !== null) {
           const { phoneNumberFrom, phoneNumberTo, messages } = userMessageBody;
-
-          const userMessage: candidateChatMessageType = {
-
+          const userMessage: allDataObjects.candidateChatMessageType = {
               phoneNumberFrom,
               phoneNumberTo,
-              messages,
+              messages:[{"text": userMessageBody.messages}],
               candidateFirstName: '',
+              messageObj: [],
               messageType: "candidateMessage",
-              candidateProfile : emptyCandidateProfileObj
-
+              candidateProfile : allDataObjects.emptyCandidateProfileObj,
+              executorResultObj: {}
           };
-          const updateStatus = await new UpdateChat().updateWhatsappMessageAndCandidateStatusInTable(userMessage);
+          const updateStatus = await new CandidateEngagement().updateAndSendWhatsappMessageAndCandidateEngagementStatusInTable(userMessage);
           console.log("This is the update status", updateStatus);
           return { status: updateStatus };
       }
@@ -118,40 +141,13 @@ export class WhatsappWebhook {
     console.log("Body:"+ JSON.stringify(request.body, null, 3));
     const requestBody = request.body;
     try {
-      if (!requestBody?.entry[0]?.changes[0]?.value?.statuses) {
-        console.log("There is a request body for sure", requestBody?.entry[0]?.changes[0]?.value?.messages[0])
-        const userMessageBody = requestBody?.entry[0]?.changes[0]?.value?.messages[0];
-        
-        if (userMessageBody) {
-          console.log("There is a usermessage body in the request", userMessageBody)
-          if (requestBody?.entry[0]?.changes[0]?.value?.messages[0].type !== "utility") {
-            console.log("We have a whatsapp incoming message which is a text one we have to do set of things with which is not a utility message")
-            const phoneNumberTo = requestBody?.entry[0]?.changes[0]?.value?.metadata?.display_phone_number
-            const whatsappIncomingMessage: chatMessageType = {
-              phoneNumberFrom: userMessageBody.from,
-              phoneNumberTo: phoneNumberTo,
-              messages: [{"role":"user","content":userMessageBody.text.body}],
-              messageType : "string"
-            };
-            const chatReply = userMessageBody.text.body
-            console.log("We will first go and get the candiate who sent us the message")
-            const candidateProfileData = await new UpdateChat().getCandidateInformation(whatsappIncomingMessage);
-            console.log("This is the candiate who has sent us the message., we have to update the database that this message has been recemivged::", chatReply)
-            console.log("This is the candiate who has sent us candidateProfileData::", candidateProfileData)
-            const whatappUpdateMessageObj = await new CandidateEngagement().createAndUpdateCandidateChatMessage(chatReply, candidateProfileData)
-          }
-        }
-      } else {
-        console.log("Message of type:", requestBody?.entry[0]?.changes[0]?.value?.statuses[0]?.status, ", ignoring it");
-      }
+      await new IncomingWhatsappMessages().receiveIncomingMessagesFromFacebook(requestBody);
     } catch (error) {
       // Handle error
     }
   response.sendStatus(200);
   }
 }
-
-
 
 @Controller('whatsapp-test')
 export class WhatsappTestAPI {
@@ -168,51 +164,57 @@ export class WhatsappTestAPI {
       "jobPositionName": "Sales Head",
       "jobLocation":"Surat"
     }
-    const sendMessageObj: sendWhatsappTemplateMessageObjectType = request.body as unknown as sendWhatsappTemplateMessageObjectType;
+    const sendMessageObj: allDataObjects.sendWhatsappTemplateMessageObjectType = request.body as unknown as allDataObjects.sendWhatsappTemplateMessageObjectType;
     new FacebookWhatsappChatApi().sendWhatsappTemplateMessage(sendMessageObj);
     return {"status":"success"};
   }
 
   @Post('message')
   async createTextMessage(@Req() request: Request): Promise<object> {
-    const sendTextMessageObj: sendingAndIncomingwhatsappTextMessageType = {
+    const sendTextMessageObj: allDataObjects.ChatRequestBody = {
       "phoneNumberTo": "918411937769",
       "phoneNumberFrom": "918411937769",
-      "text": "This is the panda talking",
+      "messages": "This is the panda talking",
     };
     new FacebookWhatsappChatApi().sendWhatsappTextMessage(sendTextMessageObj);
     return {"status":"success"};
   }
-
-
-  @Post('uploadfile')
-  async uploadFileToFBWAAPI(@Req() request: Request): Promise<object> {
-    new FacebookWhatsappChatApi().uploadFileToWhatsApp()
-    return {"status":"success"}
+  @Post('uploadFile')
+  async uploadFileToFBWAAPI(@Req() request: any): Promise<object> {
+    console.log("upload file to whatsapp api");
+    const requestBody = request.body;
+    const filePath = requestBody?.filePath;
+    const response = await new FacebookWhatsappChatApi().uploadFileToWhatsApp(filePath);
+    return response || {}; // Return an empty object if the response is undefined
   }
 
   @Post('sendAttachment')
   async sendFileToFBWAAPIUser(@Req() request: Request): Promise<object> {
-    const sendTextMessageObj:sendingAndIncomingwhatsappTextMessageType = {
-      "phoneNumberTo": "918411937769",
+    console.log("Send file")
+    console.log("Request bod::y::", request.body)
+    const sendTextMessageObj = {
       "phoneNumberFrom": "918411937769",
-      "text": "This is the panda talking",
+      "attachmentMessage": "string",
+      "phoneNumberTo": "918411937769",
+      "mediaFileName" :"AttachmentFile",
+      "mediaID" : "377908408596785"
     }
     new FacebookWhatsappChatApi().sendWhatsappAttachmentMessage(sendTextMessageObj)
     return {"status":"success"}
-    }
+  }
 
-
+  @Post('sendFile')
+  async uploadAndSendFileToFBWAAPIUser(@Req() request: any): Promise<object> {
+    const sendFileObj = request.body
+    new FacebookWhatsappChatApi().uploadAndSendFileToWhatsApp(sendFileObj)
+    return {"status":"success"}
+  }
 
   @Post('downloadAttachment')
   async downloadFileToFBWAAPIUser(@Req() request: Request): Promise<object> {
-    const downloadAttachmentMessageObj = {
-      "media-id": "918411937769",
-    }
+    const downloadAttachmentMessageObj = { "media-id": "918411937769" }
     new FacebookWhatsappChatApi().downloadWhatsappAttachmentMessage(downloadAttachmentMessageObj)
     return {"status":"success"}
     }
-
-
   }
 

@@ -1,177 +1,175 @@
-export interface candidateProfileType {
-    first_name: any;
-    id: string;
-    jobsId: string;
-    status: string;
-    jobs: jobProfileType;
-    phoneNumber: string;
-    email: string;
-    recruiterId: string;
-    input: string; // Add the 'input' property
-  }
-  export interface sendingAndIncomingwhatsappTextMessageType {
-    phoneNumberFrom: string;
-    phoneNumberTo: string;
-    text: string;
+import { ChainValues } from "@langchain/core/utils/types";
+import {  BaseMessage } from "@langchain/core/messages";
+
+
+export interface MessageNode {
+  recruiterId: string;
+  message: string;
+  candidateId: string;
+  jobsId: string;
+  position: number;
+  messageType : string;
+  phoneTo: string;
+  updatedAt: string;
+  createdAt: string;
+  id: string;
+  name: string;
+  phoneFrom: string;
+  messageObj: any ;
+}
+export interface SendAttachment {
+  filePath: string;
+  phoneNumberTo: string;
+  attachmentMessage: string;
+}
+export interface BaileysAttachmentObject{
+  phoneNumberTo: string;
+  fileData: {
+    fileName: string;
+    filePath: string;
+    fileBuffer: string;
+    mimetype: string;
   }
 
-  export interface Person {
-    phone: string;
-    email: string;
-    jobTitle: string;
-    id: string;
-    position: number;
-    name: {
-      firstName: string;
-      lastName: string;
-    };
-    candidates: {
-      edges: CandidateEdge[];
-    };
-  }
-
-  export interface PersonObj {
-    first_name: string;
-    id: string;
-    jobs: Job;
-    status: boolean;
-    phoneNumber: string;
-    email: string;
-    input: string;
-    jobsId: string;
-    recruiterId: string;
 }
 
-interface Job {
-  name: string;
-  id: string;
-  recruiterId: string;
-  company: {
-      name: string;
-      companyId: string;
-      descriptionOneliner: string;
-  };
+
+export interface attachmentMessageObj{
+  phoneNumberTo: string;
+  phoneNumberFrom: string;
+  fullPath: string;
+  fileData: {
+    fileName: string;
+    filePath: string;
+    fileBuffer: string;
+    mimetype: string;
+  }
+
+}
+export interface FacebookWhatsappAttachmentChatRequestBody{
+  phoneNumberFrom: string;
+  phoneNumberTo: string;
+  attachmentMessage: string;
+  mediaFileName :string;
+  mediaID : string;
+}
+export interface BaileysIncomingMessage{
+  message: string,
+  messageTimeStamp: string,
+  phoneNumberFrom: string,
+  fromName:string,
+  phoneNumberTo: string,
+
+}
+
+
+
+
+
+export interface candidateChatMessageType { 
+  executorResultObj: ChainValues;
+  messageObj: BaseMessage[];
+  candidateProfile : CandidateNode;
+  candidateFirstName: string;
+  messages: { [x: string]: any; }[]; 
+  phoneNumberFrom: string; 
+  phoneNumberTo: string; 
+  messageType : string;
+}
+
+
+export interface chatMessageType { 
+  messages: { [x: string]: any; }[]; 
+  phoneNumberFrom: string; 
+  phoneNumberTo: string; 
+  messageType : string;
+}
+
+export interface sendWhatsappTemplateMessageObjectType {
+  template_name: string;
+  recipient: string;
+  recruiterName: string;
+  candidateFirstName: string;
+  recruiterJobTitle: string;
+  recruiterCompanyName: string;
+  recruiterCompanyDescription: string;
+  jobPositionName: string;
   jobLocation: string;
 }
 
+export interface WhatsAppMessagesEdge {
+  node: MessageNode;
+}
 
-  
-  export interface CandidateEdge {
-    node: CandidateNode;
-  }
-  
-  export interface CandidateNode {
-    id: string;
-    engagementStatus: boolean | null;
-    startChat: boolean | null;
-    whatsappMessages: {
-      edges: WhatsappMessageEdge[];
-    };
-    jobs: {
-      name: string;
-      id: string;
-      recruiterId: string;
-      jobLocation: string;
-      companies: {
-        name: string;
-        descriptionOneliner: string;
-      };
-    };
-  }
-  
-  export interface WhatsappMessageEdge {
-    node: WhatsappMessageNode;
-  }
-  
-  export interface WhatsappMessageNode {
-    recruiterId: string;
-    message: string;
-    candidateId: string;
-    jobsId: string;
-    position: number;
-    phoneTo: string;
-    updatedAt: string;
-    createdAt: string;
-    id: string;
-    name: string;
-    phoneFrom: string;
-  }
-  
-  export interface PeopleData {
-    people: {
-      edges: PeopleEdge[];
-    };
-  }
-  
-  export interface PeopleEdge {
-    node: Person;
-  }
-  
+export interface WhatsAppMessages {
+  edges: WhatsAppMessagesEdge[];
+}
 
-  interface Job {
-    name: string;
-    id: string;
-    recruiterId: string;
-    company: {
-        name: string;
-        companyId: string;
-        descriptionOneliner: string;
-    };
-    jobLocation: string;
+export interface CandidateNode {
+  name: string;
+  id: string;
+  engagementStatus: boolean;
+  phoneNumber: string;
+  email: string;
+  input: string;
+  startChat: boolean;
+  whatsappMessages: WhatsAppMessages;
+  jobs: Jobs;
+}
+
+export interface CandidatesEdge {
+  node: CandidateNode;
+}
+
+export interface Candidates {
+  edges: CandidatesEdge[];
+}
+
+export interface Name {
+  firstName: string;
+  lastName: string;
+}
+
+export interface PersonNode {
+  phone: string;
+  email: string;
+  jobTitle: string;
+  id: string;
+  position: number;
+  name: Name;
+  candidates: Candidates;
+}
+
+export interface PersonEdge {
+  node: PersonNode;
+}
+
+export interface People {
+  edges: PersonEdge[];
+}
+
+export interface RootObject {
+  people: People;
 }
 
 
 
-export const emptyCandidateProfileObj: candidateProfileType = {
-  first_name: '',
-  id: '',
-  status: '',
-  jobs: {
-      name: '',
-      id: '',
-      recruiterId : '',
-      company: {
-          name: '',
-          companyId : '',
-          descriptionOneliner: ''
-      },
-      jobLocation: ''
-  },
-  phoneNumber: '',
-  email: '',
-  input: '',
-  jobsId: '',
-  recruiterId: ''
-};
-
-
-
-  export interface sendWhatsappTemplateMessageObjectType {
-    template_name: string;
-    recipient: string;
-    recruiterName: string;
-    candidateFirstName: string;
-    recruiterJobTitle: string;
-    recruiterCompanyName: string;
-    recruiterCompanyDescription: string;
-    jobPositionName: string;
-    jobLocation: string;
-  }
-  
-
-export type candidateInfoType = {
-    candidateId: string;
-    jobsId: string;
-    responsibleWorkspaceMemberId: string;
-};
-
+export interface ChatRequestBody {
+  phoneNumberFrom: string;
+  phoneNumberTo: string;
+  messages: string; // Adjust the type according to the structure of 'messages'
+}
 
 export interface companyInfoType {
   name : string;
   companyId: string;
   descriptionOneliner : string;
+}
 
-
+export interface Companies {
+  name: string;
+  companyId:string;
+  descriptionOneliner: string;
 }
 
 export interface jobProfileType {
@@ -180,75 +178,56 @@ export interface jobProfileType {
     id: string,
     recruiterId :string,
     company : companyInfoType
-    
   }
-
-
-export interface userMessageType { 
-  phoneNumber: any; 
-  messages: { [x: string]: any; }[]; 
-}
-
-export interface chatMessageType { 
-  messages: { [x: string]: any; }[]; 
-  phoneNumberFrom: any; 
-  phoneNumberTo: any; 
-  messageType : string;
-
-}
-
-export interface candidateChatMessageType { 
-  candidateProfile : candidateProfileType;
-  candidateFirstName: string;
-  messages: { [x: string]: any; }[]; 
-  phoneNumberFrom: any; 
-  phoneNumberTo: any; 
-  messageType : string;
-
-}
-
+  export interface Jobs {
+    name: string;
+    id: string;
+    recruiterId: string;
+    jobLocation: string;
+    companies: Companies;
+    whatsappMessages: WhatsAppMessages;
+  }
+  
 
 export interface recruiterProfileType {
-    job_title: any;
-    job_company_name: any;
-    company_description_oneliner: any;
-    first_name: any;
-    status: string;
-    name: string;
-    email: string;
-    phone: string;
-    input: string; // Add the 'input' property
-  }
+  job_title: any;
+  job_company_name: any;
+  company_description_oneliner: any;
+  first_name: any;
+  status: string;
+  name: string;
+  email: string;
+  phone: string;
+  input: string; // Add the 'input' property
+}
+
+
+interface Entry {
+  id: string;
+  changes: any[];
+}
+
+export interface WhatsAppBusinessAccount {
+  object: 'whatsapp_business_account';
+  entry: Entry[];
+}
 
 export const jobProfile:jobProfileType = {
-    name: 'Sales Manager',
-    
-    id: '5643d1e6-0415-4327-b871-918e7cd699d5',
-    recruiterId : '20202020-0687-4c41-b707-ed1bfca972a7',
-    company: {
-      name: "Qonto",
-      companyId : "1234",
-      descriptionOneliner: "one of the india's largest waste management companies"
-    },
-    jobLocation: 'Mumbai'
-  
-  }
-  
-export const candidateProfile:candidateProfileType = {
-  first_name: 'Bertrand',
-  id: '12d2232a-e79b-41c8-b56c-c186abb7fdea',
-  jobsId: '5643d1e6-0415-4327-b871-918e7cd699d5',
-  status: 'string',
-  jobs: jobProfile,
-  phoneNumber: '+919820297156',
-  email: 'christoph.calisto@linkedin.com',
-  recruiterId: '20202020-0687-4c41-b707-ed1bfca972a7',
-  input: 'string', // Add the 'input' property
+  name: 'Sales Manager',
+  id: '5643d1e6-0415-4327-b871-918e7cd699d5',
+  recruiterId : '20202020-0687-4c41-b707-ed1bfca972a7',
+  company: {
+    name: "Qonto",
+    companyId : "1234",
+    descriptionOneliner: "one of the india's largest waste management companies"
+  },
+  jobLocation: 'Mumbai'
 }
+
 export const recruiterProfile:recruiterProfileType = {
   name: 'Arnav Doe',
   first_name: 'Arnav',
-  phone: "918591724917",
+  phone: "919326970534",
   email: 'arnav@arxena.com',
   input: "",
   status: "",
@@ -257,114 +236,114 @@ export const recruiterProfile:recruiterProfileType = {
   company_description_oneliner: "a US Based Recruitment Company"
 }
 
-export const candidateProfiles: candidateProfileType[] = [
-  {
-    first_name: 'Christoph',
-    id: '12d2232a-e79b-41c8-b56c-c186abb7fdea',
-    jobsId: '5643d1e6-0415-4327-b871-918e7cd699d5',
-    status: 'string',
-    jobs: jobProfile,
-    phoneNumber: '+919820297156',
-    email: 'christoph.calisto@linkedin.com',
-    recruiterId: '20202020-0687-4c41-b707-ed1bfca972a7',
-    input: 'string',
+export const emptyCandidateProfileObj: CandidateNode = {
+  name: '',
+  id: '',
+  jobs: {
+      name: '',
+      id: '',
+      recruiterId: '',
+      companies: {
+          name: '',
+          companyId: '',
+          descriptionOneliner: ''
+        },
+      jobLocation: '',
+      whatsappMessages: {
+        edges:[{node:
+          {
+            recruiterId: '',
+            message: '',
+            candidateId: '',
+            jobsId: 'string',
+            position: 0,
+            messageType : '',
+            phoneTo: '',
+            updatedAt: '',
+            createdAt: '',
+            id: '',
+            name: '',
+            phoneFrom: '',
+            messageObj: {}
+          }
+          
+        }]
+      }
   },
-  {
-    first_name: 'Alice',
-    id: '3e8a41d7-92b0-4c35-8178-6105c4dd3f09',
-    jobsId: '6f35f262-b7de-4872-a7b9-ea34e79bc6b5',
-    status: 'string',
-    phoneNumber: '+123456789',
-    email: 'alice@example.com',
-    recruiterId: '30303030-0687-4c41-b707-ed1bfca972a7',
-    input: 'string',
-    jobs: jobProfile,
-  },
-  {
-    first_name: 'John',
-    id: '8b4e45cf-0e9d-4a6d-baa1-4f331826d1a7',
-    jobsId: '98f4abfb-34c3-4f33-b628-54a0b5d92155',
-    status: 'string',
-    phoneNumber: '+987654321',
-    email: 'john@example.com',
-    recruiterId: '40404040-0687-4c41-b707-ed1bfca972a7',
-    input: 'string',
-    jobs: jobProfile,
+     
+    engagementStatus: false,
+    phoneNumber: '',
+    email: '',
+    input: '',
+    startChat: false,
+    whatsappMessages: {
+      edges:[{node:
+        {
+          recruiterId: '',
+          message: '',
+          candidateId: '',
+          jobsId: 'string',
+          position: 0,
+          messageType : '',
+          phoneTo: '',
+          updatedAt: '',
+          createdAt: '',
+          id: '',
+          name: '',
+          phoneFrom: '',
+          messageObj: ''
+        }
+        
+      }]
+    }
+}
 
-  }
-];
-// Create an array of jobProfile objects
-export const jobProfiles: jobProfileType[] = [
-  {
-    name: 'HR Leadership',
-    company: {
-      name: "SR Wastes Management",
-      companyId : "1234",
-      descriptionOneliner: "one of the india's largest waste management companies"
-    },
-    id: '98f4abfb-34c3-4f33-b628-54a0b5d92155',
-    recruiterId : '40404040-0687-4c41-b707-ed1bfca972a7',
-    jobLocation: 'Mumbai'
-  },
-  {
-    name: 'Software Developer',
-    company: {
-      name: "SR Wastes Management",
-      companyId : "1234",
-      descriptionOneliner: "one of the india's largest waste management companies"
-    },
-    id: '98f4abfb-34c3-4f33-b628-54a0b5d92155',
-    recruiterId : '40404040-0687-4c41-b707-ed1bfca972a7',
-    jobLocation: 'Mumbai'
-  },
-  {
-    name: 'Marketing Manager',
-    company: {
-      name: "SR Wastes Management",
-      companyId : "1234",
-      descriptionOneliner: "one of the india's largest waste management companies"
-    },
-    id: '98f4abfb-34c3-4f33-b628-54a0b5d92155',
-    recruiterId : '40404040-0687-4c41-b707-ed1bfca972a7',
-    jobLocation: 'Mumbai'
-  }
-];
+export interface Attachment {
+  __typename: string;
+  whatsappMessageId: string | null;
+  authorId: string | null;
+  candidateId: string | null;
+  fullPath: string;
+  personId: string | null;
+  name: string;
+  opportunityId: string | null;
+  cvsSentId: string | null;
+  updatedAt: string;
+  createdAt: string;
+  jobId: string | null;
+  type: string;
+  companyId: string | null;
+  screeningId: string | null;
+  clientInterviewId: string | null;
+  id: string;
+  recruiterInterviewId: string | null;
+  activityId: string | null;
+  offerId: string | null;
+  questionId: string | null;
+  answerId: string | null;
+}
 
-// Create an array of recruiterProfile objects
-export const recruiterProfiles: recruiterProfileType[] = [
-  {
-    name: 'Arnav Saxena',
-    first_name: 'Arnav',
-    phone: "918591724917",
-    email: 'arnav@arxena.com',
-    input: "",
-    status: "",
-    job_title: "Director",
-    job_company_name: "Arxena Inc",
-    company_description_oneliner: "a US Based Recruitment Company"
-  },
-  {
-    // Add another recruiterProfile object with different details
-    name: 'Andrew Simoes',
-    first_name: 'Jane',
-    phone: "1234567890",
-    email: 'jane@company.com',
-    input: "",
-    status: "",
-    job_title: "Recruitment Manager",
-    job_company_name: "Tech Innovations",
-    company_description_oneliner: "Innovating the future of shared services"
-  },
-  {
-    // Add another recruiterProfile object with different details
-    name: 'Nupur Mehta',
-    first_name: 'Nupur',
-    phone: "1234567890",
-    email: 'jane@company.com',
-    input: "",
-    status: "",
-    job_title: "Recruitment Manager",
-    job_company_name: "Tech Innovations",
-    company_description_oneliner: "Innovating the future of pharma"
-  },
-];
+export const candidateProfile:candidateProfileType = {
+  first_name: 'Christoph',
+  id: '12d2232a-e79b-41c8-b56c-c186abb7fdea',
+  jobsId: '5643d1e6-0415-4327-b871-918e7cd699d5',
+  status: 'string',
+  job: jobProfile,
+  phoneNumber: '+919820297156',
+  email: 'christoph.calisto@linkedin.com',
+  responsibleWorkspaceMemberId: '20202020-0687-4c41-b707-ed1bfca972a7',
+  input: 'string', // Add the 'input' property
+}
+
+
+export interface candidateProfileType {
+  first_name: any;
+  id: string;
+  jobsId: string;
+  status: string;
+  job: jobProfileType;
+  phoneNumber: string;
+  email: string;
+  responsibleWorkspaceMemberId: string;
+  input: string; // Add the 'input' property
+}

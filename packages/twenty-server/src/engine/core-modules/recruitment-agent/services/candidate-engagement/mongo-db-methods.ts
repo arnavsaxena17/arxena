@@ -25,9 +25,9 @@ export async function connectToDatabase() {
     return { client, db };
 }
 
-export async function disconnectFromDatabase(client : MongoClient) {
-    await client.close();
-}
+// export async function disconnectFromDatabase(client : MongoClient) {
+//     await client.close();
+// }
 
 export async function upsertMessages(messages, phoneNumber) {
     console.log("This is the messages to be inserted", messages);
@@ -36,7 +36,7 @@ export async function upsertMessages(messages, phoneNumber) {
     const collection = db.collection('test-messages');
     // Corrected update operation to use $set operator
     const insertResult = await collection.updateOne( { phoneNumber: phoneNumber }, { $set: { messages: messages, phoneNumber: phoneNumber } }, { upsert: true } );
-    console.log("This is the insert result", insertResult);
+    console.log("This is the insert result in upsert Messages", insertResult);
     return insertResult;
 }
 
@@ -47,8 +47,8 @@ export async function findMessages(phoneNumber) {
     // console.log("This is the client", client);
     const collection = db.collection('test-messages');
     // console.log("This is the collection", collection);
-    const findResult = collection.findOne({ phoneNumber: phoneNumber });
-    console.log("This is the insert result", findResult);
+    const findResult = await collection.findOne({ phoneNumber: phoneNumber });
+    console.log("This is the insert result in findResult", findResult);
     return findResult;
 }
 
@@ -59,15 +59,15 @@ export async function fetchCandidates() {
     console.log("Candidates: ", candidates);
     return candidates
 }
-export async function updateCandidateStatus(candidate){
-    console.log("Updating candidate status: ", candidate);
-    const {client, db} = await connectToDatabase()
-    const query_obj = {'_id': candidate._id}
-    const update_obj = {$set: {'job_process.applications.$.status': candidate.status}}
-    const result = await db.collection('candidates').updateOne(query_obj, update_obj)
-    console.log("Result: ", result);
-    return result
-}
+// export async function updateCandidateStatus(candidate){
+//     console.log("Updating candidate status: ", candidate);
+//     const {client, db} = await connectToDatabase()
+//     const query_obj = {'_id': candidate._id}
+//     const update_obj = {$set: {'job_process.applications.$.status': candidate.status}}
+//     const result = await db.collection('candidates').updateOne(query_obj, update_obj)
+//     console.log("Result: ", result);
+//     return result
+// }
 
 
 
