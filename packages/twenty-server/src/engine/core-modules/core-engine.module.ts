@@ -16,33 +16,56 @@ import { AnalyticsModule } from './analytics/analytics.module';
 import { FileModule } from './file/file.module';
 import { ClientConfigModule } from './client-config/client-config.module';
 
+import { BaileysModule } from './baileys/baileys.module';
+// import { ArxChatModule } from './arx-chat/arx-chat-agent.module'
+import { RecruitmentAgentModule } from 'src/engine/core-modules/recruitment-agent/recruitment-agent.module';
+import { VideoInterviewModule } from 'src/engine/core-modules/video-interview/video-interview.module';
+
+
+const allImports =  [
+  TwentyORMModule.register({
+    workspaceEntities: ['dist/src/**/*.workspace-entity{.ts,.js}'],
+  }),
+  HealthModule,
+  AnalyticsModule,
+  AuthModule,
+  BillingModule,
+  ClientConfigModule,
+  FeatureFlagModule,
+  FileModule,
+  OpenApiModule,
+  AppTokenModule,
+  TimelineMessagingModule,
+  TimelineCalendarEventModule,
+  UserModule,
+  WorkspaceModule,
+  // ArxChatModule,
+  RecruitmentAgentModule,
+  VideoInterviewModule
+]
+
+const allExports = [
+  AnalyticsModule,
+  AuthModule,
+  FeatureFlagModule,
+  TimelineMessagingModule,
+  TimelineCalendarEventModule,
+  UserModule,
+  WorkspaceModule,
+  // ArxChatModule,
+  RecruitmentAgentModule,
+  VideoInterviewModule
+]
+
+
+if (process.env.WHATSAPP_API === 'baileys') {
+  allExports.push(BaileysModule)
+  allImports.push(BaileysModule)
+}
+
+
 @Module({
-  imports: [
-    TwentyORMModule.register({
-      workspaceEntities: ['dist/src/**/*.workspace-entity{.ts,.js}'],
-    }),
-    HealthModule,
-    AnalyticsModule,
-    AuthModule,
-    BillingModule,
-    ClientConfigModule,
-    FeatureFlagModule,
-    FileModule,
-    OpenApiModule,
-    AppTokenModule,
-    TimelineMessagingModule,
-    TimelineCalendarEventModule,
-    UserModule,
-    WorkspaceModule,
-  ],
-  exports: [
-    AnalyticsModule,
-    AuthModule,
-    FeatureFlagModule,
-    TimelineMessagingModule,
-    TimelineCalendarEventModule,
-    UserModule,
-    WorkspaceModule,
-  ],
+  imports: allImports,
+  exports: allExports,
 })
 export class CoreEngineModule {}

@@ -21,20 +21,28 @@ import { GraphQLConfigModule } from 'src/engine/api/graphql/graphql-config/graph
 import { GraphQLConfigService } from 'src/engine/api/graphql/graphql-config/graphql-config.service';
 import { WorkspaceCacheVersionModule } from 'src/engine/metadata-modules/workspace-cache-version/workspace-cache-version.module';
 import { GraphQLHydrateRequestFromTokenMiddleware } from 'src/engine/middlewares/graphql-hydrate-request-from-token.middleware';
+import { DevtoolsModule } from '@nestjs/devtools-integration';
 
+import { LoggerService } from './engine/integrations/logger/logger.service';
+import { BaileysModule } from './engine/core-modules/baileys/baileys.module';
 import { CoreEngineModule } from './engine/core-modules/core-engine.module';
 import { IntegrationsModule } from './engine/integrations/integrations.module';
+import { ScheduleModule } from '@nestjs/schedule';
+import { EnvironmentService } from 'src/engine/integrations/environment/environment.service';
 
 @Module({
   imports: [
     // Nest.js devtools, use devtools.nestjs.com to debug
-    // DevtoolsModule.registerAsync({
-    //   useFactory: (environmentService: EnvironmentService) => ({
-    //     http: environmentService.get('DEBUG_MODE'),
-    //     port: environmentService.get('DEBUG_PORT'),
-    //   }),
-    //   inject: [EnvironmentService],
-    // }),
+    DevtoolsModule.registerAsync({
+      useFactory: (environmentService: EnvironmentService) => ({
+        http: environmentService.get('DEBUG_MODE'),
+        port: environmentService.get('DEBUG_PORT'),
+      }),
+      inject: [EnvironmentService],
+    }),
+    ScheduleModule.forRoot(),
+
+
     ConfigModule.forRoot({
       isGlobal: true,
     }),
