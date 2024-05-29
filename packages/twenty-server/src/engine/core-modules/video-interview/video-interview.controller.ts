@@ -69,6 +69,32 @@ export class VideoInterviewController {
 
 
 
+// @Controller('agent')
+// export class RecruitmentAgentController {
+//   @Post()
+//   async create(@Req() request: Request): Promise<string> {
+//       console.log("These are the request body", request.body);
+//       let chatResponseMessage: string = "";
+
+//       const userMessageBody: UserRequestBody | null = request?.body as UserRequestBody | null; // Type assertion
+//       console.log("This is the user message", userMessageBody);
+
+//       if (userMessageBody !== null) {
+//           const { phoneNumber, messages } = userMessageBody;
+
+//           const userMessage: userMessageType = {
+//               phoneNumber,
+//               messages
+//           };
+
+//           let chatResponseMessagesResult = await runChatAgent(userMessage);
+//           chatResponseMessage = chatResponseMessagesResult.output;
+//           console.log("This is the chat response message", chatResponseMessage);
+//       }
+//       return chatResponseMessage;
+//   }
+// }
+
 
 
 // @Controller('video-interview')

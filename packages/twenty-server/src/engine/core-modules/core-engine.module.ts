@@ -12,6 +12,7 @@ import { BillingModule } from 'src/engine/core-modules/billing/billing.module';
 import { HealthModule } from 'src/engine/core-modules/health/health.module';
 import { TwentyORMModule } from 'src/engine/twenty-orm/twenty-orm.module';
 
+import { CatsModule } from 'src/engine/core-modules/cats/cats.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { FileModule } from './file/file.module';
 import { ClientConfigModule } from './client-config/client-config.module';
