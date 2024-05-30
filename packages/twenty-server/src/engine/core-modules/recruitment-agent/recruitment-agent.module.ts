@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-
 import { RecruitmentAgentController, UpdateChatEndpoint, WhatsappTestAPI, WhatsappWebhook } from 'src/engine/core-modules/recruitment-agent/recruitment-agent.controller';
 import { TasksService } from 'src/engine/core-modules/recruitment-agent/services/candidate-engagement/scheduling-agent';
 import { AuthModule } from 'src/engine/core-modules/auth/auth.module';

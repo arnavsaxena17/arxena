@@ -64,6 +64,7 @@ export default class CandidateEngagement {
       }
       console.log("This is chatHistory::", chatHistory);
     }
+
     console.log("these are the number of chats in chathisotry obj in createAndUpdateCandidateChatMessage:", chatHistory.length);
     whatappUpdateMessageObj = {
       executorResultObj: {},
@@ -272,6 +273,7 @@ async  getChatHistoryFromMongo(phoneNumber: string): Promise<BaseMessage[]> {
 // }
 
 async updateAndSendWhatsappMessageAndCandidateEngagementStatusInTable(whatappUpdateMessageObj: allDataObjects.candidateChatMessageType) {
+  debugger;
   console.log("Candidate information before processing:", whatappUpdateMessageObj);
   let candidateProfileObj = whatappUpdateMessageObj.messageType !== "botMessage" ? await new FetchAndUpdateCandidatesChatsWhatsapps().getCandidateInformation(whatappUpdateMessageObj) : whatappUpdateMessageObj.candidateProfile;
   console.log("Candidate information after processing:", candidateProfileObj);

@@ -1,5 +1,4 @@
 import { Controller, Get, Post, Req, Res, UseGuards, Body, Inject, HttpException, HttpStatus } from '@nestjs/common';
-
 import { LLMChatAgent } from './services/llm-agents/llm-chat-agent';
 import { JwtAuthGuard } from 'src/engine/guards/jwt.auth.guard';
 import * as allDataObjects from 'src/engine/core-modules/arx-chat/services/data-model-objects';
@@ -9,44 +8,9 @@ import CandidateEngagement from './services/candidate-engagement/check-candidate
 import { IncomingWhatsappMessages}  from './services/whatsapp-api/incoming-messages';
 
 
-// import { BaileysGateway } from './services/baileys/callBaileys';
-// import { SocketGateway } from 'src/engine/core-modules/baileys/socket-gateway/socket.gateway';
-// import { MessageDto } from 'src/engine/core-modules/baileys/types/baileys-types';
-
-// import { getBaileysSocket } from 'src/engine/core-modules/baileys/socket-gateway/socket.gateway';
-
-// import { initApp } from 'src/engine/core-modules/baileys/baileys';
-
-
-// @Controller('baileyswhatsapp')
-// export class WhatsappBaileysController {
-//   constructor(private socketGateway: SocketGateway) {}
-
-//   // @Post('send')
-//   // async sendMessage(@Body() body) {
-
-//   //   initApp ( arxSocket : SocketGateway )
-    
-    
-//   // }
-//   @Post('upload-file')
-//   async uploadFile(@Body() message: MessageDto) {
-//     try {
-//       await this.socketGateway.fileUpload(message);
-//       return { status: 'success', message: 'File upload initiated' };
-//     } catch (error) {
-//       throw new HttpException({
-//         status: HttpStatus.BAD_REQUEST,
-//         error: 'Could not upload file',
-//         message: error.message,
-//       }, HttpStatus.BAD_REQUEST);
-//     }
-//   }
-// }
-
 
 @Controller('agent')
-export class RecruitmentAgentController {
+export class ArxChatAgentController {
   @Post()
   async create(@Req() request: Request): Promise<string> {
       console.log("These are the request body", request.body);
@@ -148,73 +112,3 @@ export class WhatsappWebhook {
   response.sendStatus(200);
   }
 }
-
-@Controller('whatsapp-test')
-export class WhatsappTestAPI {
-  @Post('template')
-  async create(@Req() request: Request): Promise<object> {
-    const defaultSendMessageObj = {
-      "template_name":"recruitment",
-      "recipient":"918411937769",
-      "recruiterName":"John",
-      "candidateFirstName":"Jane",
-      "recruiterJobTitle":"Recruiter",
-      "recruiterCompanyName": "Arxena",
-      "recruiterCompanyDescription":"US Based Recruitment Company",
-      "jobPositionName": "Sales Head",
-      "jobLocation":"Surat"
-    }
-    const sendMessageObj: allDataObjects.sendWhatsappTemplateMessageObjectType = request.body as unknown as allDataObjects.sendWhatsappTemplateMessageObjectType;
-    new FacebookWhatsappChatApi().sendWhatsappTemplateMessage(sendMessageObj);
-    return {"status":"success"};
-  }
-
-  @Post('message')
-  async createTextMessage(@Req() request: Request): Promise<object> {
-    const sendTextMessageObj: allDataObjects.ChatRequestBody = {
-      "phoneNumberTo": "918411937769",
-      "phoneNumberFrom": "918411937769",
-      "messages": "This is the panda talking",
-    };
-    new FacebookWhatsappChatApi().sendWhatsappTextMessage(sendTextMessageObj);
-    return {"status":"success"};
-  }
-  @Post('uploadFile')
-  async uploadFileToFBWAAPI(@Req() request: any): Promise<object> {
-    console.log("upload file to whatsapp api");
-    const requestBody = request.body;
-    const filePath = requestBody?.filePath;
-    const response = await new FacebookWhatsappChatApi().uploadFileToWhatsApp(filePath);
-    return response || {}; // Return an empty object if the response is undefined
-  }
-
-  @Post('sendAttachment')
-  async sendFileToFBWAAPIUser(@Req() request: Request): Promise<object> {
-    console.log("Send file")
-    console.log("Request bod::y::", request.body)
-    const sendTextMessageObj = {
-      "phoneNumberFrom": "918411937769",
-      "attachmentMessage": "string",
-      "phoneNumberTo": "918411937769",
-      "mediaFileName" :"AttachmentFile",
-      "mediaID" : "377908408596785"
-    }
-    new FacebookWhatsappChatApi().sendWhatsappAttachmentMessage(sendTextMessageObj)
-    return {"status":"success"}
-  }
-
-  @Post('sendFile')
-  async uploadAndSendFileToFBWAAPIUser(@Req() request: any): Promise<object> {
-    const sendFileObj = request.body
-    new FacebookWhatsappChatApi().uploadAndSendFileToWhatsApp(sendFileObj)
-    return {"status":"success"}
-  }
-
-  @Post('downloadAttachment')
-  async downloadFileToFBWAAPIUser(@Req() request: Request): Promise<object> {
-    const downloadAttachmentMessageObj = { "media-id": "918411937769" }
-    new FacebookWhatsappChatApi().downloadWhatsappAttachmentMessage(downloadAttachmentMessageObj)
-    return {"status":"success"}
-    }
-  }
-

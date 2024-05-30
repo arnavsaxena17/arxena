@@ -16,8 +16,6 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
             console.log(error);
         }
     }
-
-
     async getCandidateDetailsByPhoneNumber(phoneNumber: string) {
         const graphVariables = {
             "filter": {
@@ -119,7 +117,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
     
     async createAndUpdateWhatsappMessage( candidateProfileObj: allDataObjects.CandidateNode, userMessage:allDataObjects.candidateChatMessageType ) {
         console.log("This is the candidate profile object", JSON.stringify(candidateProfileObj));
-        console.log("This is the user message for updateWhtsappMessage in createAndUpdateWhatsappMessage", userMessage);
+        console.log("This is the user message for updateWhtsappMessage in createAnd UpdateWhatsappMessage", userMessage);
         console.log("This is the user messageObj for updateWhtsappMessage", userMessage?.messageObj);
         console.log("This is the number of messages in  updateWhtsappMessage", userMessage?.messageObj.length);
         console.log("This is the message being published ", userMessage?.messages[0]?.text);
