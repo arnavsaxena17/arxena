@@ -319,7 +319,7 @@ export class FacebookWhatsappChatApi {
         console.log("Sending message to whatsapp via facebook api")
         console.log("whatappUpdateMessageObj.messageType",whatappUpdateMessageObj.messageType)
         if (whatappUpdateMessageObj.messageType === "botMessage") {
-            if (whatappUpdateMessageObj.messages[0].content.includes("a US Based Recruitment Company")) {
+            if (whatappUpdateMessageObj.messages[0].content.includes("a US Based Recruitment Company") || whatappUpdateMessageObj.messages[0].content.includes("assist")) {
                 console.log("This is the template api message to send in whatappUpdateMessageObj.phoneNumberFrom, ", whatappUpdateMessageObj.phoneNumberFrom)
                 const sendTemplateMessageObj = {
                     recipient: whatappUpdateMessageObj.phoneNumberTo,
@@ -345,6 +345,10 @@ export class FacebookWhatsappChatApi {
                 };
                 await this.sendWhatsappTextMessage(sendTextMessageObj);
             }
+        }
+        else{
+
+            console.log("passing a human message so, going to trash it")
         }
     }
 }

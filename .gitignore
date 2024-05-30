@@ -8,6 +8,8 @@
 
 .nx/installation
 .nx/cache
+.env
+.env.local
 
 .pnp.*
 .yarn/*

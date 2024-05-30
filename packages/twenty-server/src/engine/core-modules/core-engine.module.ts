@@ -12,11 +12,9 @@ import { BillingModule } from 'src/engine/core-modules/billing/billing.module';
 import { HealthModule } from 'src/engine/core-modules/health/health.module';
 import { TwentyORMModule } from 'src/engine/twenty-orm/twenty-orm.module';
 import { BaileysModule } from './baileys/baileys.module';
-// import { ArxChatModule } from './arx-chat/arx-chat-agent.module'
+import { ArxChatAgentModule } from './arx-chat/arx-chat-agent.module'
 import { RecruitmentAgentModule } from 'src/engine/core-modules/recruitment-agent/recruitment-agent.module';
 import { VideoInterviewModule } from 'src/engine/core-modules/video-interview/video-interview.module';
-
-
 
 import { AnalyticsModule } from './analytics/analytics.module';
 import { FileModule } from './file/file.module';
@@ -29,10 +27,11 @@ import { ClientConfigModule } from './client-config/client-config.module';
     }),
     HealthModule,
     AnalyticsModule,
+    ArxChatAgentModule,
     AuthModule,
     BillingModule,
     ClientConfigModule,
-    RecruitmentAgentModule,
+    // RecruitmentAgentModule,
     FeatureFlagModule,
     FileModule,
     OpenApiModule,
@@ -45,7 +44,8 @@ import { ClientConfigModule } from './client-config/client-config.module';
   exports: [
     AnalyticsModule,
     AuthModule,
-    RecruitmentAgentModule,
+    ArxChatAgentModule,
+    // RecruitmentAgentModule,
     FeatureFlagModule,
     TimelineMessagingModule,
     TimelineCalendarEventModule,

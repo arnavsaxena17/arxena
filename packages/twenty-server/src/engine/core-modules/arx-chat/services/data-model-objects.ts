@@ -1,6 +1,24 @@
 import { ChainValues } from "@langchain/core/utils/types";
 import {  BaseMessage } from "@langchain/core/messages";
 
+// Define the possible roles in the chat
+export type ChatRole = "system" | "user" | "tool";
+
+// Interface for chat message without tool call
+export interface ChatMessage {
+  role: ChatRole;
+  content: string;
+  name?: string; // Optional, only for tool messages
+}
+
+// Interface for chat message with tool call
+export interface ToolChatMessage extends ChatMessage {
+  tool_call_id: string;
+  name: string; // Required for tool messages
+}
+
+// Type for chat history items
+export type ChatHistoryItem = ChatMessage | ToolChatMessage;
 
 export interface MessageNode {
   recruiterId: string;
@@ -68,7 +86,7 @@ export interface BaileysIncomingMessage{
 
 export interface candidateChatMessageType { 
   executorResultObj: ChainValues;
-  messageObj: BaseMessage[];
+  messageObj: ChatHistoryItem[];
   candidateProfile : CandidateNode;
   candidateFirstName: string;
   messages: { [x: string]: any; }[]; 
