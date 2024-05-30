@@ -318,6 +318,7 @@ export class FacebookWhatsappChatApi {
     async sendWhatsappMessageVIAFacebookAPI(whatappUpdateMessageObj: allDataObjects.candidateChatMessageType) {
         console.log("Sending message to whatsapp via facebook api")
         console.log("whatappUpdateMessageObj.messageType",whatappUpdateMessageObj.messageType)
+        console.log("whatappUpdateMessageObj.messageType whatappUpdateMessageObj.messages ",JSON.stringify(whatappUpdateMessageObj))
         if (whatappUpdateMessageObj.messageType === "botMessage") {
             if (whatappUpdateMessageObj.messages[0].content.includes("a US Based Recruitment Company") || whatappUpdateMessageObj.messages[0].content.includes("assist")) {
                 console.log("This is the template api message to send in whatappUpdateMessageObj.phoneNumberFrom, ", whatappUpdateMessageObj.phoneNumberFrom)
