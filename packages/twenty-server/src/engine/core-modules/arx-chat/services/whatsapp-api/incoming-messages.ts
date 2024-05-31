@@ -1,4 +1,4 @@
-import CandidateEngagement from "../../services/candidate-engagement/check-candidate-engagement";
+import CandidateEngagementArx from "../../services/candidate-engagement/check-candidate-engagement";
 import { FetchAndUpdateCandidatesChatsWhatsapps } from "../../services/candidate-engagement/update-chat";
 import * as allDataObjects from '../../services/data-model-objects';
 
@@ -50,22 +50,19 @@ export class IncomingWhatsappMessages{
                 console.log("We will first go and get the candiate who sent us the message");
                 const candidateProfileData = await new FetchAndUpdateCandidatesChatsWhatsapps().getCandidateInformation(whatsappIncomingMessage);
                 console.log("This is the candiate who has sent us the message., we have to update the database that this message has been recemivged::", chatReply);
-                console.log("This is the candiate who has sent us candidateProfileData::", candidateProfileData)
-                await this.createAndUpdateIncomingCandidateChatMessage(chatReply, candidateProfileData)
+                console.log("This is the candiate who has sent us candidateProfileData::", candidateProfileData);
+                await this.createAndUpdateIncomingCandidateChatMessage(chatReply, candidateProfileData);
               }
             }
           } else {
             console.log("Message of type:", requestBody?.entry[0]?.changes[0]?.value?.statuses[0]?.status, ", ignoring it");
           }   
     }
-    async createAndUpdateIncomingCandidateChatMessage(chatReply:string, candidateProfileDataNodeObj:allDataObjects.CandidateNode){
-      // console.log("This is the candidate profile data node obj:", candidateProfileDataNodeObj);
-  
+    async createAndUpdateIncomingCandidateChatMessage(chatReply:string, candidateProfileDataNodeObj:allDataObjects.CandidateNode){  
       const recruiterProfile =  allDataObjects.recruiterProfile;
-      let whatappUpdateMessageObj:allDataObjects.candidateChatMessageType;
       const messagesList = candidateProfileDataNodeObj?.whatsappMessages?.edges;
       // Ensure messagesList is not undefined before sorting
-      console.log("This is the messageObj:", messagesList.map((edge:any) => edge.node.messageObj))
+      console.log("This is the messageObj:", messagesList.map((edge:any) => edge.node.messageObj));
       let mostRecentMessageObj;
       if (messagesList) {
         console.log("This is the messagesList:", messagesList);
@@ -73,15 +70,14 @@ export class IncomingWhatsappMessages{
         mostRecentMessageObj = messagesList[0]?.node.messageObj;
       }
       else{
-        console.log("Just having to take the first one")
+        console.log("Just having to take the first one");
         mostRecentMessageObj = candidateProfileDataNodeObj?.whatsappMessages.edges[0].node.messageObj;
       }
-  
-      console.log("These are message kwargs length:", mostRecentMessageObj?.length)
+      console.log("These are message kwargs length:", mostRecentMessageObj?.length);
       console.log("This is the most recent message object being considered::", mostRecentMessageObj);
       // chatHistory = await this.getChatHistoryFromMongo(mostRecentMessageObj);
       mostRecentMessageObj.push({role: "user", content: chatReply});
-      whatappUpdateMessageObj = {
+      let whatappUpdateMessageObj:allDataObjects.candidateChatMessageType = {
         executorResultObj: {},
         candidateProfile:candidateProfileDataNodeObj,
         candidateFirstName: candidateProfileDataNodeObj.name,
@@ -91,8 +87,7 @@ export class IncomingWhatsappMessages{
         messageType : "candidateMessage",
         messageObj: mostRecentMessageObj
       };
-      await new CandidateEngagement().updateAndSendWhatsappMessageAndCandidateEngagementStatusInTable(whatappUpdateMessageObj);
+      await new CandidateEngagementArx().updateAndSendWhatsappMessageAndCandidateEngagementStatusInTable(whatappUpdateMessageObj);
       return whatappUpdateMessageObj;
-    }
-  
+    } 
 }

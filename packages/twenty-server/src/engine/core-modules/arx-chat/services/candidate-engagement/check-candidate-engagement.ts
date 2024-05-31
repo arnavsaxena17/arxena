@@ -15,7 +15,7 @@ const rl = readline.createInterface({
   output: process.stdout,
 });
 
-export default class CandidateEngagement {
+export default class CandidateEngagementArx {
   async startChatEngagement(candidateResponseEngagementObj:allDataObjects.RootObject){
     console.log("Total number of candidates fetched to filter for start chat::", candidateResponseEngagementObj?.people?.edges?.length)
     const filteredCandidatesToStartEngagement = candidateResponseEngagementObj?.people?.edges?.filter(edge => {
@@ -29,15 +29,8 @@ export default class CandidateEngagement {
     for (let i = 0; i < filteredCandidatesWhoHaveNoWhatsappHistory?.length; i++) {
       const chatReply = 'hi';
       const candidateProfileDataNodeObj = filteredCandidatesWhoHaveNoWhatsappHistory[i].node;
-      await new CandidateEngagement().createAndUpdateCandidateHiChatMessage(chatReply, candidateProfileDataNodeObj);
+      await new CandidateEngagementArx().createAndUpdateCandidateHiChatMessage(chatReply, candidateProfileDataNodeObj);
     }
-  }
-  askQuestion(question: string): Promise<string> {
-    return new Promise((resolve) => {
-      rl.question(question, (answer: string) => {
-        resolve(answer);
-      });
-    });
   }
 
 
@@ -64,6 +57,9 @@ export default class CandidateEngagement {
       messageObj: chatHistory
     };
     await this.updateAndSendWhatsappMessageAndCandidateEngagementStatusInTable(whatappUpdateMessageObj);
+    // Adding this for now to be able to send messages to the candidates
+    // await new WhatsappAPISelector().sendWhatsappMessage(whatappUpdateMessageObj)
+
     return whatappUpdateMessageObj;
   }
 
@@ -76,22 +72,17 @@ async processCandidate(edge: allDataObjects.PersonEdge) {
     const candidateNode = edge.node.candidates.edges[0].node;
     const personNode = edge.node;
     console.log("This is candidate Node:", candidateNode)
-    console.log("This is the candidateNode?.whatsappMessages?.edges length::", candidateNode?.whatsappMessages?.edges.length)
     const messagesList = candidateNode?.whatsappMessages?.edges;
     console.log("Current Messages list:", messagesList)
-    let mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = [];
-    if (messagesList) {
-      console.log("This is the messagesList:", messagesList)
-      messagesList.sort((a, b) => new Date(b.node.createdAt).getTime() - new Date(a.node.createdAt).getTime());
-      mostRecentMessageArr = messagesList[0]?.node?.messageObj;
-      console.log(mostRecentMessageArr);
-    }
+    let mostRecentMessageArr:allDataObjects.ChatHistoryItem[] = this.getMostRecentMessageFromMessagesList(messagesList);
     const chatInput = candidateNode?.whatsappMessages?.edges[0]?.node?.message;
     console.log("mostRecentMessageArr before chatCompletion:", mostRecentMessageArr)
     if (mostRecentMessageArr?.length > 0) {
       mostRecentMessageArr = await new openAIArxClient(personNode).createCompletion(mostRecentMessageArr);
-      const whatappUpdateMessageObj = await this.updateChatHistoryObjCreateWhatsappMessageObj(response, candidateNode, edge, chatInput, mostRecentMessageArr);
+      const whatappUpdateMessageObj = await this.updateChatHistoryObjCreateWhatsappMessageObj(response, personNode, mostRecentMessageArr);
       await this.updateAndSendWhatsappMessageAndCandidateEngagementStatusInTable(whatappUpdateMessageObj);
+      await new WhatsappAPISelector().sendWhatsappMessage(whatappUpdateMessageObj)
+
     }
   }
   catch (error){
@@ -99,6 +90,15 @@ async processCandidate(edge: allDataObjects.PersonEdge) {
     debugger;
   }
   
+}
+getMostRecentMessageFromMessagesList(messagesList){
+  let mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = [];
+  if (messagesList) {
+    messagesList.sort((a, b) => new Date(b.node.createdAt).getTime() - new Date(a.node.createdAt).getTime());
+    mostRecentMessageArr = messagesList[0]?.node?.messageObj;
+    console.log(mostRecentMessageArr);
+  }
+  return mostRecentMessageArr;
 }
 
 async updateAndSendWhatsappMessageAndCandidateEngagementStatusInTable(whatappUpdateMessageObj: allDataObjects.candidateChatMessageType) {
@@ -116,20 +116,19 @@ async updateAndSendWhatsappMessageAndCandidateEngagementStatusInTable(whatappUpd
 
   console.log("Candidate engagement status updated successfully");
   console.log("Got whatsapp api selector to send messages")
-
-  await new WhatsappAPISelector().sendWhatsappMessage(whatappUpdateMessageObj)
+  // await new WhatsappAPISelector().sendWhatsappMessage(whatappUpdateMessageObj)
   return { "status": "success", "message": "Candidate engagement status updated successfully" };
 }
   
-  async updateChatHistoryObjCreateWhatsappMessageObj(result:ChainValues, candidateNode:allDataObjects.CandidateNode, edge:any, chatInput:string,  chatHistory) {
-
+  async updateChatHistoryObjCreateWhatsappMessageObj(result:ChainValues, personNode:allDataObjects.PersonNode,  chatHistory:allDataObjects.ChatHistoryItem[]) {
+  const candidateNode = personNode.candidates.edges[0].node;
   const updatedChatHistoryObj = {
     executorResultObj: result,
     messageObj : chatHistory,
     candidateProfile: candidateNode,
-    candidateFirstName: edge.node.name?.firstName,
+    candidateFirstName: personNode.name?.firstName,
     phoneNumberFrom: allDataObjects.recruiterProfile?.phone,
-    phoneNumberTo: edge.node.phone,
+    phoneNumberTo: personNode.phone,
     messages: chatHistory.slice(-1),
     messageType: "botMessage"
   }

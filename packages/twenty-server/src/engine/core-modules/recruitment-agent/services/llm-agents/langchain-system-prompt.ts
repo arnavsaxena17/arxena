@@ -29,8 +29,7 @@ function updateAnswerToQuestion(){
 export async function getSystemPrompt(availableTimeSlots: string, candidateProfile: allDataObjects.PersonNode, recruiterProfile: allDataObjects.recruiterProfileType, jobProfile: allDataObjects.jobProfileType){
     const screeningQuestionsMap = await getQuestionsToAsk(candidateProfile, recruiterProfile, jobProfile);
     const SYSTEM_PROMPT = `
-    You will drive the conversation with candidates like the recruiter. Your goal is to assess the candidates for interest and fitment.
-    If found reasonably fit, your goal is to setup a meeting at a available time.
+    You will drive the conversation with candidates like the recruiter. Your goal is to setup a meeting with candidates who are interested in the job and are also fit for the job.
     You will start the chat with asking if they are interested and available for a call.
     They may either ask questions or show interest or provide a time slot. You will first ask them a few screening questions one by one before confirming a time.
     Your screening questions are :
@@ -57,15 +56,15 @@ export async function getSystemPrompt(availableTimeSlots: string, candidateProfi
 }
 
 
-async function calCalculateTokenswithTiktoken(availableTimeSlots: string, candidateProfile: allDataObjects.PersonNode, recruiterProfile: allDataObjects.recruiterProfileType, jobProfile: allDataObjects.jobProfileType){
-    const SYSTEM_PROMPT = await getSystemPrompt(availableTimeSlots, candidateProfile, recruiterProfile, jobProfile)
-    const prompt = SYSTEM_PROMPT;
-    const modelName = "gpt-3.5-turbo";
-    calculateMaxTokens({ prompt, modelName }).then(maxTokens => { console.log("MaxTokens:",maxTokens); }).catch(error => { console.error(error); });
-    const contextSize = getModelContextSize(modelName);
-    console.log("ContextSize:", contextSize);
-    const encoding = get_encoding("cl100k_base");
-    const tokens = encoding.encode(SYSTEM_PROMPT);
-    encoding.free();
-    console.log("Tokens:", tokens.length);
-}
+// async function calCalculateTokenswithTiktoken(availableTimeSlots: string, candidateProfile: allDataObjects.PersonNode, recruiterProfile: allDataObjects.recruiterProfileType, jobProfile: allDataObjects.jobProfileType){
+//     const SYSTEM_PROMPT = await getSystemPrompt(availableTimeSlots, candidateProfile, recruiterProfile, jobProfile)
+//     const prompt = SYSTEM_PROMPT;
+//     const modelName = "gpt-3.5-turbo";
+//     calculateMaxTokens({ prompt, modelName }).then(maxTokens => { console.log("MaxTokens:",maxTokens); }).catch(error => { console.error(error); });
+//     const contextSize = getModelContextSize(modelName);
+//     console.log("ContextSize:", contextSize);
+//     const encoding = get_encoding("cl100k_base");
+//     const tokens = encoding.encode(SYSTEM_PROMPT);
+//     encoding.free();
+//     console.log("Tokens:", tokens.length);
+// }

@@ -2,19 +2,21 @@ import { ChainValues } from "@langchain/core/utils/types";
 import {  BaseMessage } from "@langchain/core/messages";
 
 // Define the possible roles in the chat
-export type ChatRole = "system" | "user" | "tool";
+export type ChatRole = "system" | "user" | "tool" | "assistant";
 
 // Interface for chat message without tool call
 export interface ChatMessage {
   role: ChatRole;
-  content: string;
+  content: string | null;
   name?: string; // Optional, only for tool messages
 }
 
 // Interface for chat message with tool call
-export interface ToolChatMessage extends ChatMessage {
+export interface ToolChatMessage {
   tool_call_id: string;
   name: string; // Required for tool messages
+  role: ChatRole;
+  content: string;
 }
 
 // Type for chat history items

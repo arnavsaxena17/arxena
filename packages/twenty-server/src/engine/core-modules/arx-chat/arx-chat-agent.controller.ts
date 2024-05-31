@@ -1,10 +1,9 @@
 import { Controller, Get, Post, Req, Res, UseGuards, Body, Inject, HttpException, HttpStatus } from '@nestjs/common';
-// import { LLMChatAgent } from './services/llm-agents/llm-chat-agent';
 import { JwtAuthGuard } from 'src/engine/guards/jwt.auth.guard';
 import * as allDataObjects from 'src/engine/core-modules/arx-chat/services/data-model-objects';
 import { FacebookWhatsappChatApi } from './services/whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
 // import { UpdateCandidatesChatsWhatsapps } from './services/candidateEngagement/updateChat';
-import CandidateEngagement from './services/candidate-engagement/check-candidate-engagement';
+import CandidateEngagementArx from './services/candidate-engagement/check-candidate-engagement';
 import { IncomingWhatsappMessages}  from './services/whatsapp-api/incoming-messages';
 
 
@@ -29,7 +28,7 @@ export class UpdateChatEndpoint {
               candidateProfile : allDataObjects.emptyCandidateProfileObj,
               executorResultObj: {}
           };
-          const updateStatus = await new CandidateEngagement().updateAndSendWhatsappMessageAndCandidateEngagementStatusInTable(userMessage);
+          const updateStatus = await new CandidateEngagementArx().updateAndSendWhatsappMessageAndCandidateEngagementStatusInTable(userMessage);
           console.log("This is the update status", updateStatus);
           return { status: updateStatus };
       }

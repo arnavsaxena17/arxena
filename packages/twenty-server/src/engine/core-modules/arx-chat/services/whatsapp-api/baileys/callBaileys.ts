@@ -23,6 +23,7 @@ export async function sendWhatsappMessageVIABaileysAPI(whatappUpdateMessageObj: 
       console.log("This is send whatsapp message via bailsyes api and is a candidate message");
     }
 }
+
 export async function sendWhatsappTextMessageViaBaileys(sendTextMessageObj:allDataObjects.ChatRequestBody){
   console.log("This is the ssendTextMessageObj for baileys to be sent ::", sendTextMessageObj);
   const sendMessageUrl = `${baseUrl}/send-wa-message`;
