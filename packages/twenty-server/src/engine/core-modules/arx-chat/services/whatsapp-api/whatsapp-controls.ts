@@ -7,11 +7,11 @@ import mime from 'mime-types';
 import axios from 'axios';
 
 
-const baseUrl = 'http://localhost:'+process.env.PORT; // Base URL of your GraphQL server
+const baseUrl = 'http://localhost:' + process.env.PORT; // Base URL of your GraphQL server
 export class WhatsappAPISelector{
   constructor() {
   }
-  async sendWhatsappMessage(whatappUpdateMessageObj) {
+  async sendWhatsappMessage(whatappUpdateMessageObj:allDataObjects.candidateChatMessageType) {
     if (process.env.WHATSAPP_API === 'facebook') {
       await new FacebookWhatsappChatApi().sendWhatsappMessageVIAFacebookAPI(whatappUpdateMessageObj);
     } else if (process.env.WHATSAPP_API === 'baileys') {
@@ -51,7 +51,9 @@ export class WhatsappAPISelector{
   async  sendJDViaWhatsapp(person:allDataObjects.PersonNode, candidateId:string,attachment:allDataObjects.Attachment){
     const fullPath= attachment?.fullPath || "";
     const name = attachment?.name || "";
+    console.log("This is attachment name:", name)
     const localFilePath = path?.join(__dirname, 'downloads', name) || fullPath;
+    console.log("This is localFile Path:", localFilePath)
     const fileUrl = `${baseUrl}`+'/'+fullPath; // Adjust this URL as needed based on your server configuration
     let fileData;
     try{

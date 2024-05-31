@@ -254,7 +254,6 @@ export class FacebookWhatsappChatApi {
         console.log("Received this template message object:", sendTemplateMessageObj)
         let templateMessage = this.getTemplateMessageObj(sendTemplateMessageObj);
         console.log("This is the template message object:", templateMessage)
-    
         let config = {
             method: 'post',
             maxBodyLength: Infinity,

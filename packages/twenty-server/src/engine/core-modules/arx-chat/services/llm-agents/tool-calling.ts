@@ -1,3 +1,4 @@
+import { shareJDtoCandidate } from "./tool-calls-processing";
 import * as allDataObjects from "../data-model-objects";
 
 const recruiterProfile =  allDataObjects.recruiterProfile
@@ -20,33 +21,35 @@ export class ToolsForAgents{
         return formattedQuestions
     }
 
-    async getSystemPrompt(candidateProfile){
-        const formattedQuestions = this.getQuestionsToAsk();
-        const SYSTEM_PROMPT = `
-        You will drive the conversation with candidates like the recruiter. Your goal is to assess the candidates for interest and fitment.
-        If found reasonably fit, your goal is to setup a meeting at a available time.
-        You will start the chat with asking if they are interested and available for a call.
-        They may either ask questions or show interest or provide a time slot. You will first ask them a few screening questions one by one before confirming a time.
-        Your screening questions are :
-        ${formattedQuestions}
-        If the candidate, asks details about the role or the company, share the JD with him/ her by calling the function "shareJD".
-        Even if the candidate doesn't ask about the role or the company, do share the JD with him/ her by calling the function "shareJD". 
-        Apart from your starting sentence, have small chats and not long winded sentences.
-        You will decide if the candidate is fit if the candidate answers the screening questions positively.
-        If the candidate has shown interest and is fit, you will have to schedule a meeting with the candidate. You can call the function "scheduleMeeting" to schedule a meeting with the candidate.
-        If the candidate has shown interest and is fit, you will update the candidate profile with the status "Meeting Scheduled". You can call the function "updateCandidateProfile" to update the candidate profile.
-        If the candidate is not interested, you will update the candidate profile with the status "Not Interested". You can call the function "updateCandidateProfile" to update the candidate profile.
-        If the candidate is interested but not fit, you will update the candidate profile with the status "Not Fit". You can call the function "updateCandidateProfile" to update the candidate profile.
-        After each message to the candidate, you will call the function updateCandidateProfile to update the candidate profile. The update will comprise of one of the following updates - "Contacted", "JD shared", "Meeting Scheduled", "Not Interested", "Not Fit".
-        Sometimes candidates will send forwards and irrelevant messages. You will have to ignore them. If the candidate unnecessarily replies and messages, you will reply with "boo". 
-        You will not indicate any updates to the candidate.
-        Available timeslots are: ${availableTimeSlots}
-        Your first message when you receive the prompt "hi" is: Hey ${candidateProfile.name},
-        I'm ${recruiterProfile.first_name}, ${recruiterProfile.job_title} at ${recruiterProfile.job_company_name}, ${recruiterProfile.company_description_oneliner}.
-        I'm hiring for a ${jobProfile.name} role for ${jobProfile.company.descriptionOneliner} and got your application on my job posting. I believe this might be a good fit.
-        Wanted to speak to you in regards your interests in our new role. Would you be available for a short call sometime today?`;
-        
-        return SYSTEM_PROMPT;
+    async  getSystemPrompt(candidateProfile: allDataObjects.PersonNode){
+      console.log("This is the candidate profile:", candidateProfile)
+      
+      const formattedQuestions = this.getQuestionsToAsk();
+      const SYSTEM_PROMPT = `
+      You will drive the conversation with candidates like the recruiter. Your goal is to assess the candidates for interest and fitment.
+      If found reasonably fit, your goal is to setup a meeting at a available time.
+      You will start the chat with asking if they are interested and available for a call.
+      They may either ask questions or show interest or provide a time slot. You will first ask them a few screening questions one by one before confirming a time.
+      Your screening questions are :
+      ${formattedQuestions}
+      If the candidate, asks details about the role or the company, share the JD with him/ her by calling the function "shareJD".
+      Even if the candidate doesn't ask about the role or the company, do share the JD with him/ her by calling the function "shareJD". 
+      Apart from your starting sentence, have small chats and not long winded sentences.
+      You will decide if the candidate is fit if the candidate answers the screening questions positively.
+      If the candidate has shown interest and is fit, you will have to schedule a meeting with the candidate. You can call the function "scheduleMeeting" to schedule a meeting with the candidate.
+      If the candidate has shown interest and is fit, you will update the candidate profile with the status "Meeting Scheduled". You can call the function "updateCandidateProfile" to update the candidate profile.
+      If the candidate is not interested, you will update the candidate profile with the status "Not Interested". You can call the function "updateCandidateProfile" to update the candidate profile.
+      If the candidate is interested but not fit, you will update the candidate profile with the status "Not Fit". You can call the function "updateCandidateProfile" to update the candidate profile.
+      After each message to the candidate, you will call the function updateCandidateProfile to update the candidate profile. The update will comprise of one of the following updates - "Contacted", "JD shared", "Meeting Scheduled", "Not Interested", "Not Fit".
+      Sometimes candidates will send forwards and irrelevant messages. You will have to ignore them. If the candidate unnecessarily replies and messages, you will reply with "boo". 
+      You will not indicate any updates to the candidate.
+      Available timeslots are: ${availableTimeSlots}
+      Your first message when you receive the prompt "hi" is: Hey ${candidateProfile.name.firstName},
+      I'm ${recruiterProfile.first_name}, ${recruiterProfile.job_title} at ${recruiterProfile.job_company_name}, ${recruiterProfile.company_description_oneliner}.
+      I'm hiring for a ${jobProfile.name} role for ${jobProfile.company.descriptionOneliner} and got your application on my job posting. I believe this might be a good fit.
+      Wanted to speak to you in regards your interests in our new role. Would you be available for a short call sometime today?`;
+      
+      return SYSTEM_PROMPT;
     }
 
     getAvailableFunctions(){
@@ -58,9 +61,10 @@ export class ToolsForAgents{
         }
     }
 
-    shareJD(inputs:any,  candidateProfileDataNodeObj:any){
+    async shareJD(inputs:any,  candidateProfileDataNodeObj:allDataObjects.PersonNode){
       try{
         console.log("Function Called: shareJD")
+        await shareJDtoCandidate(candidateProfileDataNodeObj)
         console.log("Function Called:  candidateProfileDataNodeObj:any",  candidateProfileDataNodeObj)
       }
       catch{
@@ -69,7 +73,7 @@ export class ToolsForAgents{
       return "Shared the JD with the candidate and updated the database."
     }
     
-    updateCandidateProfile(inputs:any, candidateProfileDataNodeObj:any){
+    updateCandidateProfile(inputs:any, candidateProfileDataNodeObj:allDataObjects.PersonNode){
       try{
         console.log("Function Called:  candidateProfileDataNodeObj:any",  candidateProfileDataNodeObj)
         return "Updated the candidate profile."
@@ -81,7 +85,7 @@ export class ToolsForAgents{
 
     }
     
-    updateAnswer(inputs:any,  candidateProfileDataNodeObj:any){
+    updateAnswer(inputs:any,  candidateProfileDataNodeObj:allDataObjects.PersonNode){
       // console.log("Received these inputs in Function Called:", inputs)
       try{
         console.log("Function Called:  candidateProfileDataNodeObj:any",  candidateProfileDataNodeObj)
@@ -94,7 +98,7 @@ export class ToolsForAgents{
       return "Updated the candidate updateAnswer."
     }
     
-    scheduleMeeting(inputs:any, candidateProfileDataNodeObj:any){
+    scheduleMeeting(inputs:any, candidateProfileDataNodeObj:allDataObjects.PersonNode){
       // console.log("Received these inputs in Function Called:", inputs)
       console.log("Function Called:  candidateProfileDataNodeObj:any",  candidateProfileDataNodeObj)
       console.log("Function Called: scheduleMeeting")
