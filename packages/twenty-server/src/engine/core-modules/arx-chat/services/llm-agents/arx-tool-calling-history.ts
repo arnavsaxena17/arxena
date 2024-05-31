@@ -47,8 +47,10 @@ export class openAIArxClient{
                 messages.push({ tool_call_id: toolCall.id, role: "tool", name: functionName, content: responseFromFunction});
             }
             // console.log("Message history in :2=====", messages.slice(1).map((message:any) => message.content).join("\n"),"=====")
+            const tools = await new ToolsForAgents().getTools();
+
             // @ts-ignore
-            const response = await openai.chat.completions.create({ model: modelName, messages: messages, tools: new ToolsForAgents().tools, tool_choice: "auto" });
+            const response = await this.client.chat.completions.create({ model: modelName, messages: messages, tools: tools, tool_choice: "auto" });
             console.log("BOT_MESSAGE:", response.choices[0].message.content);
             if (response.choices[0].message.content == null){ 
                 console.log("Response Choices::: 2")

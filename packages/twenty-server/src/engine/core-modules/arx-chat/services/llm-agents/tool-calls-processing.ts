@@ -1,7 +1,7 @@
 import *  as allDataObjects from '../../services/data-model-objects'; 
 import {AttachmentProcessingService} from '../../services/candidate-engagement/attachment-processing';
 import { WhatsappAPISelector } from '../../services/whatsapp-api/whatsapp-controls';
-import { FetchAndUpdateCandidatesChatsWhatsapps } from '../../services/candidate-engagement/update-chat';
+// import { FetchAndUpdateCandidatesChatsWhatsapps } from '../../services/candidate-engagement/update-chat';
 
 
 

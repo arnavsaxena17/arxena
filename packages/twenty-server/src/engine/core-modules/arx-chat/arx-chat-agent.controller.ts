@@ -1,5 +1,5 @@
 import { Controller, Get, Post, Req, Res, UseGuards, Body, Inject, HttpException, HttpStatus } from '@nestjs/common';
-import { LLMChatAgent } from './services/llm-agents/llm-chat-agent';
+// import { LLMChatAgent } from './services/llm-agents/llm-chat-agent';
 import { JwtAuthGuard } from 'src/engine/guards/jwt.auth.guard';
 import * as allDataObjects from 'src/engine/core-modules/arx-chat/services/data-model-objects';
 import { FacebookWhatsappChatApi } from './services/whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
@@ -8,32 +8,6 @@ import CandidateEngagement from './services/candidate-engagement/check-candidate
 import { IncomingWhatsappMessages}  from './services/whatsapp-api/incoming-messages';
 
 
-
-@Controller('agent')
-export class ArxChatAgentController {
-  @Post()
-  async create(@Req() request: Request): Promise<string> {
-      console.log("These are the request body", request.body);
-      let chatResponseMessage: string = "";
-      const userMessageBody: allDataObjects.chatMessageType | null = request?.body as allDataObjects.chatMessageType | null; // Type assertion
-      console.log("This is the user message", userMessageBody);
-
-      if (userMessageBody !== null) {
-          const { phoneNumberFrom, messages } = userMessageBody;
-          const userMessage: allDataObjects.chatMessageType = {
-            phoneNumberFrom:phoneNumberFrom,
-            phoneNumberTo:"918411937769",
-            messages:messages,
-            messageType:"string"
-          };
-          console.log("This is the user message", JSON.stringify(userMessage));
-          let chatResponseMessagesResult = await new LLMChatAgent().runChatAgent(userMessage);
-          chatResponseMessage = chatResponseMessagesResult.output;
-          console.log("This is the chat response message", chatResponseMessage);
-      }
-      return chatResponseMessage;
-  }
-}
 
 @Controller('updateChat')
 export class UpdateChatEndpoint {
