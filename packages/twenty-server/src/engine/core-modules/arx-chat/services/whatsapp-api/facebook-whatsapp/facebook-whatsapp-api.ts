@@ -16,7 +16,7 @@ import path from 'path';
 // }
 const FormData = require('form-data');
 import { createReadStream, createWriteStream } from 'fs';
-import { getContentTypeFromFileName } from '../../../utils/recruitmentAgentUtils';
+import { getContentTypeFromFileName } from '../../../utils/arx-chat-agent-utils';
 // import { lookup } from 'mime';
 // const mime = require('mime');
 const axios = require('axios');
@@ -121,7 +121,7 @@ export class FacebookWhatsappChatApi {
             },
             data : text_message
           };
-          console.log("This is the config:", config)
+        //   console.log("This is the config in sendWhatsappTextMessage:", config)
           
           axios.request(config)
           .then((response) => {
@@ -163,9 +163,6 @@ export class FacebookWhatsappChatApi {
             
     }
 
-
-
-    
     async uploadFileToWhatsApp(filePath) {
         console.log("This is the upload file to whatsapp")
         
@@ -238,7 +235,7 @@ export class FacebookWhatsappChatApi {
             },
             data : text_message
           };
-          console.log("This is the config:", config)
+        //   console.log("This is the config in sendWhatsappAttachmentMessage:", config)
           
         try {
             const response = await axios.request(config);
@@ -265,7 +262,7 @@ export class FacebookWhatsappChatApi {
             data : templateMessage
     
         };
-        console.log("This is the config:", config);
+        // console.log("This is the config in sendWhatsappTemplateMessage:", config);
         try {
             const response = await axios.request(config);
             // console.log("This is the response:", response)
@@ -293,7 +290,7 @@ export class FacebookWhatsappChatApi {
             },
             responseType: 'stream' // Ensure response is treated as a stream
         };
-        console.log("This is the config:", config);
+        // console.log("This is the config in downloadWhatsappAttachmentMessage", config);
         axios.request(config)
             .then((response) => {
                 // console.log("This is the response:", response.data)

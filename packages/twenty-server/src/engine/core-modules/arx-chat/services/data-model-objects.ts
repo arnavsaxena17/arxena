@@ -1,5 +1,7 @@
 import { ChainValues } from "@langchain/core/utils/types";
 import {  BaseMessage } from "@langchain/core/messages";
+import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
 
 // Define the possible roles in the chat
 export type ChatRole = "system" | "user" | "tool" | "assistant";
@@ -21,6 +23,21 @@ export interface ToolChatMessage {
 
 // Type for chat history items
 export type ChatHistoryItem = ChatMessage | ToolChatMessage;
+
+
+export interface AnswerMessageObj {
+ 
+      "questionsId" : string,
+      "name": string,
+      "position": string,
+      "candidateId" : string
+  
+  }
+
+
+
+
+
 
 export interface MessageNode {
   recruiterId: string;
@@ -366,4 +383,16 @@ export interface candidateProfileType {
   email: string;
   responsibleWorkspaceMemberId: string;
   input: string; // Add the 'input' property
+}
+
+export interface OpenAIArxSingleStepClient{
+  personNode: PersonNode;
+  openAIclient: OpenAI;
+  anthropic:Anthropic;
+}
+
+export interface OpenAIArxMultiStepClient{
+  personNode: PersonNode;
+  openAIclient: OpenAI;
+  anthropic:Anthropic;
 }

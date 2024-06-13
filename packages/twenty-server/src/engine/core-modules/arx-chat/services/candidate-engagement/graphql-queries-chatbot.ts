@@ -270,3 +270,12 @@ export const graphqlQueryToFindPeopleByPhoneNumber = `query FindManyPeople($filt
       __typename
     }
   }`
+
+  export const graphqlQueryToRemoveMessages = `mutation DeleteManyWhatsappMessages($filter: WhatsappMessageFilterInput!) {
+    deleteWhatsappMessages(filter: $filter) {
+      id
+      __typename
+    }
+  }`
+
+  
