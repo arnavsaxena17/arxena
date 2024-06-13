@@ -288,7 +288,12 @@ async updateAndSendWhatsappMessageAndCandidateEngagementStatusInTable(whatappUpd
   console.log("Candidate engagement status updated successfully");
   console.log("Got whatsapp api selector to send messages")
   // await new FacebookWhatsappChatApi().sendWhatsappMessageVIAFacebookAPI(whatappUpdateMessageObj);
-  await new WhatsappAPISelector().sendWhatsappMessage(whatappUpdateMessageObj)
+  if (process.env.WHATSAPP_ENABLED === "true"){
+    await new WhatsappAPISelector().sendWhatsappMessage(whatappUpdateMessageObj);
+  }
+  else{
+    console.log("Whatsapp is not enabled, so not sending message:", whatappUpdateMessageObj.messages[0].content)
+  }
 
 
   return { "status": "success", "message": "Candidate engagement status updated successfully" };
