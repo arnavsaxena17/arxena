@@ -118,7 +118,10 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
     }
 
 
-    async fetchQuestionsByJobId(jobId: string): Promise<String[]>{
+    async fetchQuestionsByJobId(jobId: string): Promise<{questionIdArray: {
+        questionId: string;
+        question: string;
+    }[], questionArray: string[]}>{
         const data = JSON.stringify({
             query: allGraphQLQueries.graphqlQueryToFindManyQuestionsByJobId
             ,
@@ -136,9 +139,11 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
           })
           console.log(response)
           
-          const questionsArray: String[] = response.data.data.questions.edges.map((val: { node: { name: String; }; }) => val.node.name);
+          const questionsArray: string[] = response.data.data.questions.edges.map((val: { node: { name: string; }; }) => val.node.name);
           console.log(questionsArray)
-          return questionsArray
+
+          const questionIdArray = response.data.data.questions.edges.map((val: { node: { id: string; name: string; }; }) => { return {questionId: val.node.id, question: val.node.name}});
+          return {questionArray: questionsArray,questionIdArray: questionIdArray}
     }
 
 
@@ -206,7 +211,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
         console.log("Updating candidate's status", candidateProfileObj, JSON.stringify(AnswerMessageObj));
         const updateCandidateObjectVariables = {
             input: {
-                AnswerMessageObj
+                ...AnswerMessageObj
             },
         };
         const graphqlQueryObj = JSON.stringify({
