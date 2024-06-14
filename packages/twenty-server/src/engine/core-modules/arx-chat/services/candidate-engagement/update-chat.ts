@@ -3,6 +3,7 @@ import *  as allDataObjects from '../../services/data-model-objects';
 import * as allGraphQLQueries from '../../services/candidate-engagement/graphql-queries-chatbot';
 import { v4 } from 'uuid';
 import {axiosRequest} from '../../utils/arx-chat-agent-utils';
+import axios from 'axios';
 export class FetchAndUpdateCandidatesChatsWhatsapps {
     async fetchCandidatesToEngage(){
         let graphqlQueryObj = JSON.stringify({
@@ -115,6 +116,32 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
             return allDataObjects.emptyCandidateProfileObj;
         }
     }
+
+
+    async fetchQuestionsByJobId(jobId: string): Promise<String[]>{
+        const data = JSON.stringify({
+            query: allGraphQLQueries.graphqlQueryToFindManyQuestionsByJobId
+            ,
+            variables: {"filter":{"jobsId":{"in":[`${jobId}`]}},"orderBy":{"position":"DescNullsFirst"}}
+          });
+       
+          const response = await axios.request({
+            method: 'post',
+              url: process.env.GRAPHQL_URL,
+              headers: {
+                  'authorization': 'Bearer ' + process.env.TWENTY_JWT_SECRET,
+                  'content-type': 'application/json',
+              },
+              data: data
+          })
+          console.log(response)
+          
+          const questionsArray: String[] = response.data.data.questions.edges.map((val: { node: { name: String; }; }) => val.node.name);
+          console.log(questionsArray)
+          return questionsArray
+    }
+
+
     async createAndUpdateWhatsappMessage( candidateProfileObj: allDataObjects.CandidateNode, userMessage:allDataObjects.candidateChatMessageType ) {
         console.log("This is the candidate profile object", JSON.stringify(candidateProfileObj));
         // console.log("This is the user message for updateWhtsappMessage in createAnd UpdateWhatsappMessage", userMessage);
