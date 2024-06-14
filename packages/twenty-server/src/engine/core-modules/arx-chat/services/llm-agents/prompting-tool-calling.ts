@@ -1,5 +1,9 @@
 import { shareJDtoCandidate,updateCandidateStatus } from "./tool-calls-processing";
 import * as allDataObjects from "../data-model-objects";
+import axios from "axios";
+import * as allGraphQLQueries from '../../services/candidate-engagement/graphql-queries-chatbot';
+import { FetchAndUpdateCandidatesChatsWhatsapps } from '../candidate-engagement/update-chat';
+
 
 const recruiterProfile =  allDataObjects.recruiterProfile
 // const candidateProfileObjAllData =  candidateProfile
@@ -23,17 +27,19 @@ export class ToolsForAgents{
 
 
   }
-  getQuestionsToAsk(){
-    const questions = ["What is your current & expected CTC?", "Who do you report to and which functions report to you?", "Are you okay to relocate to {location}?"];
-    const location = "Surat";
-    const formattedQuestions = questions.map((question, index) =>  `${index + 1}. ${question.replace("{location}", location)}`).join("\n");
-    return formattedQuestions
+  async getQuestionsToAsk(personNode: allDataObjects.PersonNode){
+    // const questions = ["What is your current & expected CTC?", "Who do you report to and which functions report to you?", "Are you okay to relocate to {location}?"];
+    // const location = "Surat";
+    // const formattedQuestions = questions.map((question, index) =>  `${index + 1}. ${question.replace("{location}", location)}`).join("\n");
+    // return formattedQuestions
+    const jobId = personNode?.candidates?.edges[0]?.node?.jobs?.id;
+    return new FetchAndUpdateCandidatesChatsWhatsapps().fetchQuestionsByJobId(jobId)
   }
 
   async  getSystemPrompt(personNode: allDataObjects.PersonNode){
     console.log("This is the candidate profile:", personNode)
     
-    const formattedQuestions = this.getQuestionsToAsk();
+    const formattedQuestions = await this.getQuestionsToAsk(personNode);
     const SYSTEM_PROMPT = `
     You will drive the conversation with candidates like the recruiter. Your goal is to assess the candidates for interest and fitment.
     If found reasonably fit, your goal is to setup a meeting at a available time.
@@ -41,8 +47,9 @@ export class ToolsForAgents{
     They may either ask questions or show interest or provide a time slot. You will first ask them a few screening questions one by one before confirming a time.
     Your screening questions are :
     ${formattedQuestions}
-    If the candidate, asks details about the role or the company, share the JD with him/ her by calling the function "shareJD".
-    Even if the candidate doesn't ask about the role or the company, do share the JD with him/ her by calling the function "shareJD". 
+    After the candidate answers each question, you will call the function update_answer.
+    If the candidate, asks details about the role or the company, share the JD with him/ her by calling the function "share_jd".
+    Even if the candidate doesn't ask about the role or the company, do share the JD with him/ her by calling the function "share_jd". 
     Apart from your starting sentence, have small chats and not long winded sentences.
     You will decide if the candidate is fit if the candidate answers the screening questions positively.
     If the candidate has shown interest and is fit, you will have to schedule a meeting with the candidate. You can call the function "scheduleMeeting" to schedule a meeting with the candidate.
