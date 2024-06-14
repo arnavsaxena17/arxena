@@ -53,3 +53,24 @@ export function sortWhatsAppMessages(peopleData: allDataObjects.People) {
     });
     return response;
 }
+
+
+
+  export async function fetchGraphQL(query: string) {
+  const variables = {};
+  const response = await fetch('YOUR_GRAPHQL_ENDPOINT', {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Bearer ' + process.env.TWENTY_JWT_SECRET,
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({ query, variables })
+  });
+
+  const result = await response.json();
+  if (result.errors) {
+    throw new Error(`GraphQL error: ${result.errors.map((e: any) => e.message).join(', ')}`);
+  }
+
+  return result.data;
+}

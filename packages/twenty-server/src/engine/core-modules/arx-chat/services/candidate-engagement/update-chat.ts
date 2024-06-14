@@ -3,6 +3,8 @@ import *  as allDataObjects from '../../services/data-model-objects';
 import * as allGraphQLQueries from '../../services/candidate-engagement/graphql-queries-chatbot';
 import { v4 } from 'uuid';
 import {axiosRequest} from '../../utils/arx-chat-agent-utils';
+
+
 export class FetchAndUpdateCandidatesChatsWhatsapps {
     async fetchCandidatesToEngage(){
         let graphqlQueryObj = JSON.stringify({
@@ -45,6 +47,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
             console.log("Getting an error and returning empty candidate profile objeect:", error)
             return allDataObjects.emptyCandidateProfileObj;
         }
+
     }
 
     async getCandidateInformation(userMessage: allDataObjects.chatMessageType) {
@@ -114,6 +117,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
             console.log("Getting an error and returning empty candidate profile objeect:", error)
             return allDataObjects.emptyCandidateProfileObj;
         }
+
     }
     async createAndUpdateWhatsappMessage( candidateProfileObj: allDataObjects.CandidateNode, userMessage:allDataObjects.candidateChatMessageType ) {
         console.log("This is the candidate profile object", JSON.stringify(candidateProfileObj));
@@ -151,6 +155,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
         } catch (error) {
             console.log(error);
         }
+        debugger;
     }
 
     async updateCandidateEngagementStatus(candidateProfileObj:allDataObjects.CandidateNode, whatappUpdateMessageObj:allDataObjects.candidateChatMessageType) {
@@ -174,6 +179,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
         } catch (error) {
             console.log(error);
         }
+        debugger;
     }
     async updateCandidateAnswer(candidateProfileObj:allDataObjects.CandidateNode, AnswerMessageObj:allDataObjects.AnswerMessageObj) {
         console.log("Updating candidate's status", candidateProfileObj, JSON.stringify(AnswerMessageObj));
@@ -194,6 +200,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
         } catch (error) {
             console.log(error);
         }
+        debugger;
     }
     async scheduleCandidateInterview(candidateProfileObj:allDataObjects.CandidateNode, scheduleInterviewObj:allDataObjects.candidateChatMessageType) {
         console.log("Updating candidate's status", candidateProfileObj, JSON.stringify(scheduleInterviewObj));
@@ -216,6 +223,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
         } catch (error) {
             console.log(error);
         }
+        debugger;
     }
     
     
@@ -229,6 +237,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
         console.log("Current Messages list:", messagesList);
         const messageIDs = messagesList?.map((message) => message?.node?.id);
         this.removeChatsByMessageIDs(messageIDs);
+        debugger;
     }
     async removeChatsByMessageIDs(messageIDs:string[]){
         const graphQLVariables = {
@@ -247,3 +256,4 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
         return response;
     }
 }
+

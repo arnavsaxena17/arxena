@@ -68,10 +68,10 @@ const bootstrap = async () => {
 
   await app.listen(process.env.PORT ?? 3000);
 
-  if (process.env.WHATSAPP_API =="baileys") {
-    const baileysApp = await NestFactory.create( BaileysModule ,{cors: true});
-    await baileysApp.listen( process.env.BAILEYS_PORT ?? 4000 );
-  }
+  // if (process.env.WHATSAPP_API =="baileys") {
+  //   const baileysApp = await NestFactory.create( BaileysModule ,{cors: true});
+  //   await baileysApp.listen( process.env.BAILEYS_PORT ?? 4000 );
+  // }
 };
 
 bootstrap();

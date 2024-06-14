@@ -5,7 +5,7 @@ import { Cron } from '@nestjs/schedule';
 @Injectable()
 export class TasksService {
   private readonly logger = new Logger(TasksService.name);
-  @Cron('*/20 * * * * *')
+  @Cron('*/5 * * * * *')
   async handleCron() {
     // this.logger.log("Evert 5 seconds check Candidate Engagement is called");
     await new CandidateEngagementArx().checkCandidateEngagement();

@@ -54,7 +54,7 @@ export class WhatsappAPISelector{
     console.log("This is attachment name:", name)
     const localFilePath = path?.join(__dirname, 'downloads', name) || fullPath;
     console.log("This is localFile Path:", localFilePath)
-    const fileUrl = `${baseUrl}`+'/'+fullPath; // Adjust this URL as needed based on your server configuration
+    const fileUrl = `${baseUrl}`+'/'+ fullPath; // Adjust this URL as needed based on your server configuration
     let fileData;
     try{
       console.log("Attachment:", attachment);

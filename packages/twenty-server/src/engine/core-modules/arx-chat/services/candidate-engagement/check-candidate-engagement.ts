@@ -24,7 +24,7 @@ export default class CandidateEngagementArx {
     const recruiterProfile =  allDataObjects.recruiterProfile;
     let chatHistory = candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.messageObj || [];
     if (chatReply === 'hi' && candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges.length === 0) {
-      const SYSTEM_PROMPT = await new ToolsForAgents().getSystemPrompt(candidateProfileDataNodeObj);
+      const SYSTEM_PROMPT = await new ToolsForAgents().getSystemPrompt(candidateProfileDataNodeObj,"1");
       chatHistory.push({role: "system", content: SYSTEM_PROMPT});
       chatHistory.push({role: "user", content: "Hi"});
     } else{

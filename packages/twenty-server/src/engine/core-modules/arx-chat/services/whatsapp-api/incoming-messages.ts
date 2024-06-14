@@ -24,6 +24,10 @@ export class IncomingWhatsappMessages{
       console.log("Message has been received from a candidate however the candidate is not in the database")
     }
   }
+
+
+
+
   async receiveIncomingMessagesFromFacebook(requestBody:allDataObjects.WhatsAppBusinessAccount){
     console.log("This is requestBody::", requestBody)
     if (!requestBody?.entry[0]?.changes[0]?.value?.statuses) {
@@ -53,6 +57,11 @@ export class IncomingWhatsappMessages{
       console.log("Message of type:", requestBody?.entry[0]?.changes[0]?.value?.statuses[0]?.status, ", ignoring it");
     }   
   }
+
+
+
+
+
     async createAndUpdateIncomingCandidateChatMessage(chatReply:string, candidateProfileDataNodeObj:allDataObjects.CandidateNode){  
       const recruiterProfile =  allDataObjects.recruiterProfile;
       const messagesList = candidateProfileDataNodeObj?.whatsappMessages?.edges;
@@ -85,7 +94,6 @@ export class IncomingWhatsappMessages{
       await new CandidateEngagementArx().updateCandidateEngagementDataInTable(whatappUpdateMessageObj);
       return whatappUpdateMessageObj;
     } 
-
-
-    
 }
+
+
