@@ -1,9 +1,7 @@
-import { shareJDtoCandidate,updateCandidateStatus } from "./tool-calls-processing";
+import { shareJDtoCandidate,updateAnswerInDatabase,updateCandidateStatus } from "./tool-calls-processing";
 import * as allDataObjects from "../data-model-objects";
-import axios from "axios";
-import * as allGraphQLQueries from '../../services/candidate-engagement/graphql-queries-chatbot';
 import { FetchAndUpdateCandidatesChatsWhatsapps } from '../candidate-engagement/update-chat';
-
+import fuzzy from 'fuzzy';
 
 const recruiterProfile =  allDataObjects.recruiterProfile
 // const candidateProfileObjAllData =  candidateProfile
@@ -11,6 +9,20 @@ const jobProfile =  allDataObjects.jobProfile
 const availableTimeSlots = "12PM-3PM, 4PM -6PM on the 24th and 25th January 2024."
 
 export class ToolsForAgents{
+
+
+  // personNode: allDataObjects.PersonNode;
+
+  // questionIdArray: {
+  //   questionId: string,
+  //   question: string
+  // }[]
+
+  // questionArray: string[];
+  // constructor(personNode:allDataObjects.PersonNode) {
+  //     this.personNode = personNode;
+  // };
+
   getStagePrompt(personNode: allDataObjects.PersonNode) {
     console.log("This is the candidate profile:", personNode)
     
@@ -33,13 +45,15 @@ export class ToolsForAgents{
     // const formattedQuestions = questions.map((question, index) =>  `${index + 1}. ${question.replace("{location}", location)}`).join("\n");
     // return formattedQuestions
     const jobId = personNode?.candidates?.edges[0]?.node?.jobs?.id;
-    return new FetchAndUpdateCandidatesChatsWhatsapps().fetchQuestionsByJobId(jobId)
+    const {questionArray, questionIdArray} = await new FetchAndUpdateCandidatesChatsWhatsapps().fetchQuestionsByJobId(jobId)
+    return questionArray
   }
 
   async  getSystemPrompt(personNode: allDataObjects.PersonNode){
     console.log("This is the candidate profile:", personNode)
-    
-    const formattedQuestions = await this.getQuestionsToAsk(personNode);
+    const  questionArray = await this.getQuestionsToAsk(personNode)
+    const formattedQuestions = questionArray.map((question, index) =>  `${index + 1}. ${question}`).join("\n");
+    console.log("Formtted Questions:", formattedQuestions)
     const SYSTEM_PROMPT = `
     You will drive the conversation with candidates like the recruiter. Your goal is to assess the candidates for interest and fitment.
     If found reasonably fit, your goal is to setup a meeting at a available time.
@@ -67,7 +81,7 @@ export class ToolsForAgents{
     
     return SYSTEM_PROMPT;
   }
-
+ 
 
   async getSystemPromptBasedOnStage(personNode:allDataObjects.PersonNode, stage:string){
     const systemPrompt = this.getSystemPrompt(personNode)
@@ -107,7 +121,27 @@ export class ToolsForAgents{
     }
   }
   
-  updateAnswer(inputs:any,  candidateProfileDataNodeObj:allDataObjects.PersonNode){
+  async updateAnswer(inputs:{question: string, answer: string},  candidateProfileDataNodeObj:allDataObjects.PersonNode){
+    
+    // const newQuestionArray = this.questionArray
+    const jobId = candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.jobs?.id;
+
+    const {questionIdArray, questionArray} = await new FetchAndUpdateCandidatesChatsWhatsapps().fetchQuestionsByJobId(jobId)
+    const results = fuzzy.filter(inputs.question, questionArray)
+    const matches = results.map(function(el) { return el.string; });
+
+    console.log("The matches are:", matches)
+    const mostSimilarQuestion = questionIdArray.filter(questionObj =>       questionObj.question == matches[0]
+    )
+    
+    const AnswerMessageObj =  {
+        questionsId : mostSimilarQuestion[0].questionId,
+        name: inputs.answer,
+        // "position": "first",
+        candidateId : candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.id,
+    }
+
+    await updateAnswerInDatabase(candidateProfileDataNodeObj, AnswerMessageObj)
     try{
       console.log("Function Called:  candidateProfileDataNodeObj:any",  candidateProfileDataNodeObj)
       console.log("Function Called: updateAnswer")
@@ -152,6 +186,7 @@ export class ToolsForAgents{
         "function": {
             "name": "update_answer",
             "description": "Update the candidate's answer",
+
         }
       }
     ];
@@ -186,7 +221,21 @@ export class ToolsForAgents{
         "type": "function",
         "function": {
             "name": "update_answer",
-            "description": "Update the candidate's answer",
+            "description": "Update the candidate's answer based on the question asked",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "question": {
+                  "type": "string",
+                  "description": "The question asked"
+                },
+                "answer": {
+                  "type": "string",
+                  "description": "The answer provided by the candidate"
+                }
+              },
+              "required": ["question", "answer"]
+            }
         }
       }
     ];
