@@ -112,6 +112,9 @@ export interface candidateChatMessageType {
   phoneNumberFrom: string; 
   phoneNumberTo: string; 
   messageType : string;
+  whatsappDeliveryStatus:string;
+
+  whatsappMessageId: string;
 }
 
 

@@ -33,7 +33,9 @@ export class UpdateChatEndpoint {
               messageObj: [],
               messageType: "candidateMessage",
               candidateProfile : allDataObjects.emptyCandidateProfileObj,
-              executorResultObj: {}
+              executorResultObj: {},
+              whatsappDeliveryStatus: "candidateMessageReceived",
+              whatsappMessageId: "UpdateChatEndpoint"
           };
           // const updateStatus = await new CandidateEngagementArx().updateCandidateEngagementDataInTable(userMessage);
           // console.log("This is the update status", updateStatus);
@@ -131,8 +133,11 @@ export class ArxChatEndpoint {
       phoneNumberTo: recruiterProfile.phone,
       messages: [{ content: chatReply }],
       messageType : "candidateMessage",
-      messageObj: chatHistory
+      messageObj: chatHistory,
+      whatsappDeliveryStatus: "startChatTriggered",
+      whatsappMessageId: "startChat"
     };
+    debugger
     await new CandidateEngagementArx().updateCandidateEngagementDataInTable(whatappUpdateMessageObj);
     return { status: "Success" };
   }

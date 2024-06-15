@@ -75,10 +75,10 @@ export class AttachmentProcessingService {
       query: allGraphQLQueries.graphQLtoCreateOneAttachmentFromFilePath,
       variables: documentObj
   })
-  debugger
+  // debugger
   const response = await axiosRequest(graphqlQueryObj);
   console.log(response)
-  debugger
+  // debugger
 
 
   }

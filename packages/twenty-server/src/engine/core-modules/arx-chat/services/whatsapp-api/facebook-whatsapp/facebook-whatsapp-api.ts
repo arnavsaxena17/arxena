@@ -124,13 +124,11 @@ export class FacebookWhatsappChatApi {
           };
         //   console.log("This is the config in sendWhatsappTextMessage:", config)
           
-          axios.request(config)
-          .then((response) => {
-            console.log("this isresponse::", JSON.stringify(response.data));
-          })
-          .catch((error) => {
-            console.log("This is axios errror::", error);
-        });
+          const response = await axios.request(config)
+          
+          return response
+          
+        
     }
     
 
@@ -318,7 +316,7 @@ export class FacebookWhatsappChatApi {
             console.log('File saved successfully at',filePath );
             const attachmentObj = await new AttachmentProcessingService().uploadAttachmentToTwenty(filePath)
             console.log(attachmentObj)
-            debugger
+            // debugger 
             // attachmentObj.uploadFile
             // candidateProfileData.id
             const dataToUploadInAttachmentTable = {
@@ -330,7 +328,7 @@ export class FacebookWhatsappChatApi {
                   "candidateId":  constCandidateProfileData.id,
                 }
               }
-              debugger
+            //   debugger
 
               
 
@@ -349,6 +347,7 @@ export class FacebookWhatsappChatApi {
         console.log("Sending message to whatsapp via facebook api")
         console.log("whatappUpdateMessageObj.messageType",whatappUpdateMessageObj.messageType)
         console.log("whatappUpdateMessageObj.messageType whatappUpdateMessageObj.messages ",JSON.stringify(whatappUpdateMessageObj))
+        let response
         if (whatappUpdateMessageObj.messageType === "botMessage") {
             if (whatappUpdateMessageObj.messages[0].content.includes("a US Based Recruitment Company") || whatappUpdateMessageObj.messages[0].content.includes("assist")) {
                 console.log("This is the template api message to send in whatappUpdateMessageObj.phoneNumberFrom, ", whatappUpdateMessageObj.phoneNumberFrom)
@@ -363,7 +362,7 @@ export class FacebookWhatsappChatApi {
                     jobPositionName: whatappUpdateMessageObj?.candidateProfile?.jobs?.name,
                     jobLocation: whatappUpdateMessageObj?.candidateProfile?.jobs?.jobLocation
                 }
-                await this.sendWhatsappTemplateMessage(sendTemplateMessageObj);
+                response = await this.sendWhatsappTemplateMessage(sendTemplateMessageObj);
             }
             else{
                 console.log("This is the standard message to send fromL", allDataObjects.recruiterProfile.phone)
@@ -374,8 +373,17 @@ export class FacebookWhatsappChatApi {
                     phoneNumberTo: whatappUpdateMessageObj.phoneNumberTo,
                     messages: whatappUpdateMessageObj.messages[0].content,
                 };
-                await this.sendWhatsappTextMessage(sendTextMessageObj);
+                response = await this.sendWhatsappTextMessage(sendTextMessageObj);
             }
+            // const whatappUpdateMessageObj = await this.updateChatHistoryObjCreateWhatsappMessageObj(response,personNode,mostRecentMessageArr);
+            // await this.updateCandidateEngagementDataInTable(whatappUpdateMessageObj);
+    
+    
+
+
+// update database here. You will personobjm candidate object. 
+
+            // response.messages[0].id
         }
         else{
 

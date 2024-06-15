@@ -38,7 +38,9 @@ export default class CandidateEngagementArx {
       phoneNumberTo: recruiterProfile.phone,
       messages: [{ content: chatReply }],
       messageType : "candidateMessage",
-      messageObj: chatHistory
+      messageObj: chatHistory,
+      whatsappDeliveryStatus: "startChatTriggered",
+      whatsappMessageId: "NA"
     };
     await this.updateCandidateEngagementDataInTable(whatappUpdateMessageObj);
     // Adding this for now to be able to send messages to the candidates
@@ -58,7 +60,7 @@ export default class CandidateEngagementArx {
       let mostRecentMessageArr:allDataObjects.ChatHistoryItem[] = this.getMostRecentMessageFromMessagesList(messagesList);
       console.log("mostRecentMessageArr before chatCompletion:", mostRecentMessageArr);
       if (mostRecentMessageArr?.length > 0) {
-        let chatAgent:any;
+        let chatAgent:OpenAIArxSingleStepClient | OpenAIArxMultiStepClient;
         if (process.env.PROMPT_ENGINEERING_TYPE === 'single-step') {
           console.log("Taking Single Step Client for - Prompt Engineering type:", process.env.PROMPT_ENGINEERING_TYPE)
           chatAgent = new OpenAIArxSingleStepClient(personNode);
@@ -67,10 +69,15 @@ export default class CandidateEngagementArx {
           console.log("Taking Multi Step Client for - Prompt Engineering type:", process.env.PROMPT_ENGINEERING_TYPE)
           chatAgent = new OpenAIArxMultiStepClient(personNode);
         }
-        
+        // debugger
         mostRecentMessageArr = await chatAgent.createCompletion(mostRecentMessageArr);
+
+        // Trying to move this inside the create completion so that we can update the whatsapp message after the message is being sent
+
         const whatappUpdateMessageObj = await this.updateChatHistoryObjCreateWhatsappMessageObj(response,personNode,mostRecentMessageArr);
         await this.updateCandidateEngagementDataInTable(whatappUpdateMessageObj);
+
+
         // Should no longer be here I think
         // if (process.env.WHATSAPP_ENABLED === "true"){
         //   await new WhatsappAPISelector().sendWhatsappMessage(whatappUpdateMessageObj);
@@ -98,8 +105,6 @@ export default class CandidateEngagementArx {
     return mostRecentMessageArr;
   }
 
-
-  
   async updateCandidateEngagementDataInTable(whatappUpdateMessageObj: allDataObjects.candidateChatMessageType) {
     // console.log("Candidate information before processing:", whatappUpdateMessageObj);
     let candidateProfileObj = whatappUpdateMessageObj.messageType !== "botMessage" ? await new FetchAndUpdateCandidatesChatsWhatsapps().getCandidateInformation(whatappUpdateMessageObj) : whatappUpdateMessageObj.candidateProfile;
@@ -119,6 +124,7 @@ export default class CandidateEngagementArx {
   }
   
   async updateChatHistoryObjCreateWhatsappMessageObj(result:ChainValues, personNode:allDataObjects.PersonNode,  chatHistory:allDataObjects.ChatHistoryItem[]) {
+
     const candidateNode = personNode.candidates.edges[0].node;
     const updatedChatHistoryObj = {
       executorResultObj: result,
@@ -128,7 +134,9 @@ export default class CandidateEngagementArx {
       phoneNumberFrom: allDataObjects.recruiterProfile?.phone,
       phoneNumberTo: personNode.phone,
       messages: chatHistory.slice(-1),
-      messageType: "botMessage"
+      messageType: "botMessage",
+      whatsappDeliveryStatus: "sent",
+      whatsappMessageId: "updateChatHistoryObjCreateWhatsappMessageObj"
     }
     return updatedChatHistoryObj;
   }
@@ -154,6 +162,9 @@ export default class CandidateEngagementArx {
       const chatReply = 'hi';
       const candidateProfileDataNodeObj = filteredCandidatesWhoHaveNoWhatsappHistory[i].node;
       await new CandidateEngagementArx().createAndUpdateCandidateHiChatMessage(chatReply, candidateProfileDataNodeObj);
+      // const updateCandidateStatusObj = await new FetchAndUpdateCandidatesChatsWhatsapps().setCandidateEngagementStatusToFalse(candidateProfileDataNodeObj.candidates.edges[0].node);
+
+
     }
   }
 
@@ -162,9 +173,10 @@ export default class CandidateEngagementArx {
     const sortedPeopleData = sortWhatsAppMessages(candidateResponseEngagementObj?.people);
     const filteredCandidates = this.filterCandidates(sortedPeopleData);
     console.log("Filtered candidates to engage:", filteredCandidates);
-    console.log("Number of filtered candidates to engage:", filteredCandidates?.length);
+    console.log("Number processCandidateof filtered candidates to engage:", filteredCandidates?.length);
     for (const edge of filteredCandidates) {
       await this.processCandidate(edge);
+      // await new FetchAndUpdateCandidatesChatsWhatsapps().setCandidateEngagementStatusToFalse(edge.node.candidates[0]);
     }
   }
   

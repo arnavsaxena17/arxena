@@ -65,8 +65,27 @@ export const graphqlQueryToFindPeopleByPhoneNumber = `query FindManyPeople($filt
       candidateId
       name
       messageObj
+      whatsappDeliveryStatus
+      whatsappMessageId
     }
   }`;
+
+  export const graphqlQueryToFindMessageByWAMId = `query FindManyWhatsappMessages($filter: WhatsappMessageFilterInput, $orderBy: WhatsappMessageOrderByInput, $lastCursor: String, $limit: Int) {
+  whatsappMessages(
+    filter: $filter
+    orderBy: $orderBy
+    first: $limit
+    after: $lastCursor
+  ) {
+    edges {
+      node {
+        __typename
+        id
+        whatsappMessageId
+      }
+  }
+}
+  `
 
 
   export const graphqlQueryToUpdateCandidateEngagementStatus = `mutation UpdateOneCandidate($idToUpdate: ID!, $input: CandidateUpdateInput!) {
@@ -75,6 +94,16 @@ export const graphqlQueryToFindPeopleByPhoneNumber = `query FindManyPeople($filt
       id
     }
   }`
+
+  export const graphqlQueryToUpdateMessageDeliveryStatus = `
+    mutation UpdateOneWhatsappMessage($idToUpdate: ID!, $input: WhatsappMessageUpdateInput!) {
+  updateWhatsappMessage(id: $idToUpdate, data: $input) {
+    __typename
+    whatsappDeliveryStatus
+    whatsappMessageId
+  }
+}
+  `
 
 
 
