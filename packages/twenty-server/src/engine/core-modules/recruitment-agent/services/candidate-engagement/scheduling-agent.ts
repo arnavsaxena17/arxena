@@ -8,6 +8,6 @@ export class TasksService {
   @Cron('*/20 * * * * *')
   handleCron() {
     // this.logger.log("Evert 5 seconds check Candidate Engagement is called");
-    new CandidateEngagement().checkCandidateEngagement();
+    // new CandidateEngagement().checkCandidateEngagement();
   }
 }

@@ -286,6 +286,8 @@ export class FacebookWhatsappChatApi {
         documentId: string
 
     }, candidateProfileData: allDataObjects.CandidateNode) {
+
+        const constCandidateProfileData = candidateProfileData
         let config = {
             method: 'get',
             maxBodyLength: Infinity,
@@ -303,7 +305,7 @@ export class FacebookWhatsappChatApi {
         config.url = url;
         config.responseType = 'stream'
         const fileDownloadResponse = await axios.request(config)
-
+        // debugger
 
         // console.log("This is the response:", response.data)
         console.log("This is the response: bpdy", response.body)
@@ -311,21 +313,30 @@ export class FacebookWhatsappChatApi {
         const filePath = `${process.cwd()}/${fileName}`;
         const writeStream = fs.createWriteStream(filePath);
         fileDownloadResponse.data.pipe(writeStream); // Pipe response stream to file stream
+        
         writeStream.on('finish',async () => {
             console.log('File saved successfully at',filePath );
             const attachmentObj = await new AttachmentProcessingService().uploadAttachmentToTwenty(filePath)
+            console.log(attachmentObj)
+            debugger
             // attachmentObj.uploadFile
             // candidateProfileData.id
-            // {
-            //     "input": {
-            //       "authorId": "20202020-0687-4c41-b707-ed1bfca972a7",
-            //       "name": fileName,
-            //       "fullPath": attachmentObj.uploadFile,
-            //       "type": "TextDocument",
-            //       "candidateId":  allDataObjects.CandidateNode,
+            const dataToUploadInAttachmentTable = {
+                "input": {
+                  "authorId": candidateProfileData.jobs.recruiterId,
+                  "name": filePath.replace(`${process.cwd()}/`, ""),
+                  "fullPath": attachmentObj.data.uploadFile,
+                  "type": "TextDocument",
+                  "candidateId":  constCandidateProfileData.id,
+                }
+              }
+              debugger
+
               
-            //     }
-            //   }
+
+              await new AttachmentProcessingService().createOneAttachmentFromFilePath(dataToUploadInAttachmentTable)
+
+
         });
         writeStream.on('error', (error) => {
             console.error('Error saving file:', error);

@@ -102,7 +102,6 @@ export class ToolsForAgents{
     const systemPrompt = await this.getSystemPrompt(personNode)
     const updatedSystemPromptWithStagePrompt = systemPrompt.replace("##STAGE_PROMPT", stage)
     console.log(updatedSystemPromptWithStagePrompt)
-    debugger
     return updatedSystemPromptWithStagePrompt
   }
 
