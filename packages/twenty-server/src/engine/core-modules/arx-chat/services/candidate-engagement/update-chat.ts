@@ -250,10 +250,6 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
         }
     }
     
-    
-    
-    
-    
     async removeChatsByPhoneNumber(phoneNumberFrom:string){
         const personObj:allDataObjects.PersonNode = await this.getPersonDetailsByPhoneNumber(phoneNumberFrom)
         const personCandidateNode = personObj?.candidates?.edges[0]?.node;

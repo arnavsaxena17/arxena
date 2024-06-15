@@ -178,6 +178,14 @@ export const graphqlQueryToFindPeopleByPhoneNumber = `query FindManyPeople($filt
       totalCount
     }
   }`
+
+  export const graphQLtoCreateOneAttachmentFromFilePath = `mutation CreateOneAttachment($input: AttachmentCreateInput!) {
+  createAttachment(data: $input) {
+    __typename
+  }
+}
+
+`
   
 
   export const graphqlQueryToFindManyQuestionsByJobId = `query FindManyQuestions($filter: QuestionFilterInput, $orderBy: QuestionOrderByInput, $lastCursor: String, $limit: Int) {
