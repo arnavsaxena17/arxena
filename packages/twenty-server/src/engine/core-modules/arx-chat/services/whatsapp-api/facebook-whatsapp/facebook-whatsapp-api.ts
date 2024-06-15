@@ -17,6 +17,7 @@ import path from 'path';
 const FormData = require('form-data');
 import { createReadStream, createWriteStream } from 'fs';
 import { getContentTypeFromFileName } from '../../../utils/arx-chat-agent-utils';
+import { AttachmentProcessingService } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/attachment-processing';
 // import { lookup } from 'mime';
 // const mime = require('mime');
 const axios = require('axios');
@@ -279,37 +280,59 @@ export class FacebookWhatsappChatApi {
     }
     
     
-    downloadWhatsappAttachmentMessage(sendTemplateMessageObj) {
+    async downloadWhatsappAttachmentMessage(sendTemplateMessageObj:{
+        filename: string,
+        mime_type: string,
+        documentId: string
+
+    }, candidateProfileData: allDataObjects.CandidateNode) {
         let config = {
             method: 'get',
             maxBodyLength: Infinity,
-            url: 'https://graph.facebook.com/v18.0/432131722836314',
+            url: 'https://graph.facebook.com/v18.0/' + sendTemplateMessageObj.documentId,
             headers: {
                 Authorization: 'Bearer ' + whatsappAPIToken,
                 'Content-Type': 'application/json'
             },
-            responseType: 'stream' // Ensure response is treated as a stream
+            responseType:'json'
         };
         // console.log("This is the config in downloadWhatsappAttachmentMessage", config);
-        axios.request(config)
-            .then((response) => {
-                // console.log("This is the response:", response.data)
-                console.log("This is the response: bpdy", response.body)
-                const fileName = 'attachment.pdf'; // Set the desired file name
-                const filePath = `${process.cwd()}/${fileName}`;
-                const writeStream = fs.createWriteStream(filePath);
-                response.data.pipe(writeStream); // Pipe response stream to file stream
+        const response = await axios.request(config)
+
+        const url = response.data.url;
+        config.url = url;
+        config.responseType = 'stream'
+        const fileDownloadResponse = await axios.request(config)
+
+
+        // console.log("This is the response:", response.data)
+        console.log("This is the response: bpdy", response.body)
+        const fileName = sendTemplateMessageObj.filename; // Set the desired file name
+        const filePath = `${process.cwd()}/${fileName}`;
+        const writeStream = fs.createWriteStream(filePath);
+        fileDownloadResponse.data.pipe(writeStream); // Pipe response stream to file stream
+        writeStream.on('finish',async () => {
+            console.log('File saved successfully at',filePath );
+            const attachmentObj = await new AttachmentProcessingService().uploadAttachmentToTwenty(filePath)
+            // attachmentObj.uploadFile
+            // candidateProfileData.id
+            // {
+            //     "input": {
+            //       "authorId": "20202020-0687-4c41-b707-ed1bfca972a7",
+            //       "name": fileName,
+            //       "fullPath": attachmentObj.uploadFile,
+            //       "type": "TextDocument",
+            //       "candidateId":  allDataObjects.CandidateNode,
+              
+            //     }
+            //   }
+        });
+        writeStream.on('error', (error) => {
+            console.error('Error saving file:', error);
+        });
     
-                writeStream.on('finish', () => {
-                    console.log('File saved successfully');
-                });
-                writeStream.on('error', (error) => {
-                    console.error('Error saving file:', error);
-                });
-            })
-            .catch((error) => {
-                console.log(error);
-            });
+
+        
     }
     async sendWhatsappMessageVIAFacebookAPI(whatappUpdateMessageObj: allDataObjects.candidateChatMessageType) {
         console.log("Sending message to whatsapp via facebook api")

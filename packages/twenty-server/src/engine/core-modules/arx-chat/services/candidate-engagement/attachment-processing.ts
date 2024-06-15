@@ -12,11 +12,11 @@ const fs = require('fs');
 
 export class AttachmentProcessingService {
 
-  async  uploadAttachmentToTwenty(){
+  async  uploadAttachmentToTwenty(filePath){
     let data = new FormData();
     data.append('operations', '{"operationName":"uploadFile","variables":{"file":null,"fileFolder":"Attachment"},"query":"mutation uploadFile($file: Upload!, $fileFolder: FileFolder) {\\n  uploadFile(file: $file, fileFolder: $fileFolder)\\n}"}');
     data.append('map', '{"1":["variables.file"]}');
-    data.append('1', fs.createReadStream('JD - Unit Head  - Environment Infra - Ahmedabad.pdf'));
+    data.append('1', fs.createReadStream(filePath));
     let config = {
       method: 'post',
       maxBodyLength: Infinity,
@@ -42,6 +42,7 @@ export class AttachmentProcessingService {
     } catch (error) {
         console.log(error);
     }
+    
   }
 
   async  fetchAllAttachmentsByJobId(jobId:string){
