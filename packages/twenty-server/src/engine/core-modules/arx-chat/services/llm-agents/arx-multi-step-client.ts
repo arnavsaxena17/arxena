@@ -95,6 +95,7 @@ export class OpenAIArxMultiStepClient{
                 const whatappUpdateMessageObj = await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj(response, this.personNode, mostRecentMessageArr)
                 if (process.env.WHATSAPP_ENABLED === "true"){
                     await new WhatsappAPISelector().sendWhatsappMessage(whatappUpdateMessageObj);
+
                 }
                 else{
                     console.log("Whatsapp is not enabled, so not sending message:", whatappUpdateMessageObj.messages[0].content)

@@ -13,7 +13,7 @@ export class WhatsappAPISelector{
   }
   async sendWhatsappMessage(whatappUpdateMessageObj:allDataObjects.candidateChatMessageType) {
     if (process.env.WHATSAPP_API === 'facebook') {
-      await new FacebookWhatsappChatApi().sendWhatsappMessageVIAFacebookAPI(whatappUpdateMessageObj);
+      const response = await new FacebookWhatsappChatApi().sendWhatsappMessageVIAFacebookAPI(whatappUpdateMessageObj);
     } else if (process.env.WHATSAPP_API === 'baileys') {
         await sendWhatsappMessageVIABaileysAPI(whatappUpdateMessageObj);
     }

@@ -35,7 +35,9 @@ export async function updateCandidateStatus(person:allDataObjects.PersonNode, st
       phoneNumberTo: allDataObjects.recruiterProfile.phone,
       messages: [{ content: status }],
       messageType : status,
-      messageObj: []
+      messageObj: [],
+      whatsappDeliveryStatus: "updateCandidateStatus",
+      whatsappMessageId: "updateCandidateStatus"
     };
     const updateCandidateStatusObj = await new FetchAndUpdateCandidatesChatsWhatsapps().updateCandidateEngagementStatus(candidateProfileObj, whatappUpdateMessageObj);
     return "Updated the candidate profile with the status."
@@ -73,7 +75,9 @@ export async function scheduleCandidateInterview(person:allDataObjects.PersonNod
       phoneNumberTo: allDataObjects.recruiterProfile.phone,
       messages: [{ content: status }],
       messageType : status,
-      messageObj: []
+      messageObj: [],
+      whatsappDeliveryStatus: "scheduleCandidateInterview",
+      whatsappMessageId: "scheduleCandidateInterview"
     };
     const updateCandidateStatusObj = await new FetchAndUpdateCandidatesChatsWhatsapps().updateCandidateEngagementStatus(candidateProfileObj, whatappUpdateMessageObj);
     return "Updated the candidate profile with the status."
