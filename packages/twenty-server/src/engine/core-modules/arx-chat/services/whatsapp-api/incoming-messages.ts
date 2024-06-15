@@ -32,29 +32,41 @@ export class IncomingWhatsappMessages{
       const userMessageBody = requestBody?.entry[0]?.changes[0]?.value?.messages[0];
       if (userMessageBody) {
         console.log("There is a usermessage body in the request", userMessageBody)
-        if (requestBody?.entry[0]?.changes[0]?.value?.messages[0].type !== "utility") {
-
+        if (requestBody?.entry[0]?.changes[0]?.value?.messages[0].type !== "utility" && requestBody?.entry[0]?.changes[0]?.value?.messages[0].type !== "document" ) {
+          // debugger
           console.log("We have a whatsapp incoming message which is a text one we have to do set of things with which is not a utility message")
           const phoneNumberTo = requestBody?.entry[0]?.changes[0]?.value?.metadata?.display_phone_number
           const whatsappIncomingMessage: allDataObjects.chatMessageType = {
             phoneNumberFrom: userMessageBody.from,
             phoneNumberTo: phoneNumberTo,
-            messages: [{"role":"user","content":userMessageBody.text.body}],
+            messages: [{"role":"user","content":userMessageBody?.text?.body}],
             messageType : "string"
           };
-          const chatReply = userMessageBody.text.body;
+          const chatReply = userMessageBody?.text?.body;
           console.log("We will first go and get the candiate who sent us the message");
           const candidateProfileData = await new FetchAndUpdateCandidatesChatsWhatsapps().getCandidateInformation(whatsappIncomingMessage);
           console.log("This is the candiate who has sent us the message., we have to update the database that this message has been recemivged::", chatReply);
           console.log("This is the candiate who has sent us candidateProfileData::", candidateProfileData);
-
-          if(requestBody?.entry[0]?.changes[0]?.value?.messages[0].type === "document"){
-            const sendTemplateMessageObj = {documentId: requestBody?.entry[0]?.changes[0]?.value?.messages[0].document.id, filename: requestBody?.entry[0]?.changes[0]?.value?.messages[0].document.filename, mime_type: requestBody?.entry[0]?.changes[0]?.value?.messages[0].document.mime_type}
-            await new FacebookWhatsappChatApi().downloadWhatsappAttachmentMessage(sendTemplateMessageObj, candidateProfileData)
-            
-          }
+          // debugger
+          
 
           await this.createAndUpdateIncomingCandidateChatMessage(chatReply, candidateProfileData);
+        }
+        else if(requestBody?.entry[0]?.changes[0]?.value?.messages[0].type === "document"){
+          const sendTemplateMessageObj = {documentId: requestBody?.entry[0]?.changes[0]?.value?.messages[0].document.id, filename: requestBody?.entry[0]?.changes[0]?.value?.messages[0].document.filename, mime_type: requestBody?.entry[0]?.changes[0]?.value?.messages[0].document.mime_type}
+          const phoneNumberTo = requestBody?.entry[0]?.changes[0]?.value?.metadata?.display_phone_number
+
+          const whatsappIncomingMessage: allDataObjects.chatMessageType = {
+            phoneNumberFrom: userMessageBody.from,
+            phoneNumberTo: phoneNumberTo,
+            messages: [{"role":"user","content":""}],
+            messageType : "string"
+          };
+
+          const candidateProfileData = await new FetchAndUpdateCandidatesChatsWhatsapps().getCandidateInformation(whatsappIncomingMessage);
+          debugger
+          await new FacebookWhatsappChatApi().downloadWhatsappAttachmentMessage(sendTemplateMessageObj, candidateProfileData)
+          
         }
       }
     } else {

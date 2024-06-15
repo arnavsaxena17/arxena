@@ -273,7 +273,7 @@ async  getChatHistoryFromMongo(phoneNumber: string): Promise<BaseMessage[]> {
 // }
 
 async updateAndSendWhatsappMessageAndCandidateEngagementStatusInTable(whatappUpdateMessageObj: allDataObjects.candidateChatMessageType) {
-  debugger;
+  debugger; 
   console.log("Candidate information before processing:", whatappUpdateMessageObj);
   let candidateProfileObj = whatappUpdateMessageObj.messageType !== "botMessage" ? await new FetchAndUpdateCandidatesChatsWhatsapps().getCandidateInformation(whatappUpdateMessageObj) : whatappUpdateMessageObj.candidateProfile;
   console.log("Candidate information after processing:", candidateProfileObj);

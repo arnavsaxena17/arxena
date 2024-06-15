@@ -182,7 +182,7 @@ export const graphqlQueryToFindPeopleByPhoneNumber = `query FindManyPeople($filt
   export const graphQLtoCreateOneAttachmentFromFilePath = `mutation CreateOneAttachment($input: AttachmentCreateInput!) {
   createAttachment(data: $input) {
     __typename
-  }
+  } 
 }
 
 `
