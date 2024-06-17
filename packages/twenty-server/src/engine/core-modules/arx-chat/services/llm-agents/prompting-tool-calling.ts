@@ -86,7 +86,7 @@ export class ToolsForAgents{
     If the candidate is not interested, you will update the candidate profile with the status "Not Interested". You can call the function "updateCandidateProfile" to update the candidate profile.
     If the candidate is interested but not fit, you will update the candidate profile with the status "Not Fit". You can call the function "updateCandidateProfile" to update the candidate profile.
     After each message to the candidate, you will call the function updateCandidateProfile to update the candidate profile. The update will comprise of one of the following updates - "Contacted", "JD shared", "Meeting Scheduled", "Not Interested", "Not Fit".
-    Sometimes candidates will send forwards and irrelevant messages. You will have to ignore them. If the candidate unnecessarily replies and messages, you will reply with "boo". 
+    Sometimes candidates will send forwards and irrelevant messages. You will have to ignore them. If the candidate unnecessarily replies and messages, you will reply with "#DONTRESPOND#" exact string. 
     You will not indicate any updates to the candidate.
     Available timeslots are: ${availableTimeSlots}
     Your first message when you receive the prompt "hi" is: Hey ${personNode.name.firstName},
@@ -152,7 +152,7 @@ export class ToolsForAgents{
     )
     
     const AnswerMessageObj =  {
-        questionsId : mostSimilarQuestion[0].questionId,
+        questionsId : mostSimilarQuestion[0]?.questionId,
         name: inputs.answer,
         // "position": "first",
         candidateId : candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.id,

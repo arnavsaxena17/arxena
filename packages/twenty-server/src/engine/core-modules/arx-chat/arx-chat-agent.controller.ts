@@ -67,8 +67,8 @@ export class ArxChatEndpoint {
       else{
         chatAgent = new OpenAIArxMultiStepClient(personObj);
       }
-      mostRecentMessageArr = await chatAgent.createCompletion(mostRecentMessageArr);
-      const whatappUpdateMessageObj = await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj(response,personObj,mostRecentMessageArr);
+      mostRecentMessageArr = await chatAgent.createCompletion(mostRecentMessageArr, personObj);
+      const whatappUpdateMessageObj = await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj("ArxChatEndpoint", response,personObj,mostRecentMessageArr);
       await new CandidateEngagementArx().updateCandidateEngagementDataInTable(whatappUpdateMessageObj);
 
     }

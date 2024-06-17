@@ -189,7 +189,8 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
     }
 
     async updateCandidateEngagementStatus(candidateProfileObj:allDataObjects.CandidateNode, whatappUpdateMessageObj:allDataObjects.candidateChatMessageType) {
-        console.log("Updating candidate's status", candidateProfileObj, JSON.stringify(whatappUpdateMessageObj));
+        // debugger
+        console.log("Updating candidate's status", candidateProfileObj, whatappUpdateMessageObj);
         // debugger
         const candidateEngagementStatus = whatappUpdateMessageObj.messageType !== 'botMessage';
         const updateCandidateObjectVariables = {

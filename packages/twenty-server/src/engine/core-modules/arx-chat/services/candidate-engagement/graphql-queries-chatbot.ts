@@ -84,7 +84,7 @@ export const graphqlQueryToFindPeopleByPhoneNumber = `query FindManyPeople($filt
         whatsappMessageId
       }
   }
-}
+}}
   `
 
 
