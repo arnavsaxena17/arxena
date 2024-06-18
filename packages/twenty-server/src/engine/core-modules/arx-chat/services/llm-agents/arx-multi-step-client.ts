@@ -13,13 +13,13 @@ import { ConsoleLogger } from "@nestjs/common";
 export class OpenAIArxMultiStepClient{
     personNode: allDataObjects.PersonNode;
     openAIclient: OpenAI;
-    anthropic:Anthropic;
+    anthropic: Anthropic;
     constructor(personNode:allDataObjects.PersonNode) {
         this.openAIclient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
         this.personNode = personNode;
         this.anthropic = new Anthropic({
             apiKey: process.env['ANTHROPIC_API_KEY'], // This is the default and can be omitted
-    });
+      });
   
     }
     async getStageOfTheConversation(mostRecentMessageArr:allDataObjects.ChatHistoryItem[]){
@@ -35,7 +35,9 @@ export class OpenAIArxMultiStepClient{
 
         console.log("This the stage that is determined by the model:", response.choices[0].message.content)
         stage = response.choices[0].message.content?? "1";
+        console.log("This is the stage that is determined by the model:", stage)
         return stage;
+
     }
     async updateMostRecentMessagesBasedOnNewSystemPrompt(mostRecentMessageArr: allDataObjects.ChatHistoryItem[], newSystemPrompt: string) {
         mostRecentMessageArr[0] = { role: "system", content: newSystemPrompt };
@@ -46,6 +48,7 @@ export class OpenAIArxMultiStepClient{
     async createCompletion(mostRecentMessageArr:allDataObjects.ChatHistoryItem[]) {
         console.log("Going top create completion in multi step client")
         const stage = await this.getStageOfTheConversation(mostRecentMessageArr)
+        console.log("This is the stage that is determined by the model:", stage)
         const newSystemPrompt = await new ToolsForAgents().getSystemPromptBasedOnStage(this.personNode, stage);
         const updatedMostRecentMessagesBasedOnNewSystemPrompt = this.updateMostRecentMessagesBasedOnNewSystemPrompt(mostRecentMessageArr, newSystemPrompt)
         const tools = await new ToolsForAgents().getToolsByStage(stage);

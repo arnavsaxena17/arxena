@@ -82,5 +82,6 @@ export class OpenAIArxSingleStepClient{
                     console.log("Whatsapp is not enabled, so not sending message:", whatappUpdateMessageObj.messages[0].content)
                   }
             }
+    
         }
     }
