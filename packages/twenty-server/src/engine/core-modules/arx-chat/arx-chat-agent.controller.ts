@@ -159,11 +159,13 @@ export class WhatsappWebhook {
     var mode = request.query["hub.mode"];
     var token = request.query["hub.verify_token"];
     var challenge = request.query["hub.challenge"];
-  
+    console.log("Mode:", mode)
+    console.log("token:", token)
+    console.log("challenge:", challenge)
     console.log("-------------- New Request GET --------------");
     console.log("Headers:"+ JSON.stringify(request.headers, null, 3));
     console.log("Body:"+ JSON.stringify(request.body, null, 3));
-  
+    
     // Check if a token and mode is in the query string of the request
     if (mode && token) {
       // Check the mode and token sent is correct

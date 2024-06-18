@@ -58,7 +58,7 @@ export default class CandidateEngagementArx {
       let mostRecentMessageArr:allDataObjects.ChatHistoryItem[] = this.getMostRecentMessageFromMessagesList(messagesList);
       console.log("mostRecentMessageArr before chatCompletion:", mostRecentMessageArr);
       if (mostRecentMessageArr?.length > 0) {
-        let chatAgent:any;
+        let chatAgent:OpenAIArxSingleStepClient | OpenAIArxMultiStepClient;
         if (process.env.PROMPT_ENGINEERING_TYPE === 'single-step') {
           console.log("Taking Single Step Client for - Prompt Engineering type:", process.env.PROMPT_ENGINEERING_TYPE)
           chatAgent = new OpenAIArxSingleStepClient(personNode);
@@ -69,6 +69,7 @@ export default class CandidateEngagementArx {
         }
         
         mostRecentMessageArr = await chatAgent.createCompletion(mostRecentMessageArr);
+        
         const whatappUpdateMessageObj = await this.updateChatHistoryObjCreateWhatsappMessageObj(response,personNode,mostRecentMessageArr);
         await this.updateCandidateEngagementDataInTable(whatappUpdateMessageObj);
         // Should no longer be here I think

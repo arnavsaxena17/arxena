@@ -120,7 +120,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
         // console.log("This is the user message for updateWhtsappMessage in createAnd UpdateWhatsappMessage", userMessage);
         console.log("This is the user messageObj for updateWhtsappMessage", userMessage?.messageObj);
         console.log("This is the number of messages in  updateWhtsappMessage", userMessage?.messageObj.length);
-        console.log("This is the message being published ", userMessage?.messages[0]?.text);
+        // console.log("This is the message being published ", userMessage?.messages[0]?.text);
         console.log("This is the message being published ", userMessage?.messages[0]?.content);
         // console.log("This is the user message phoneNumberTo", userMessage?.phoneNumberTo);
         const createNewWhatsappMessageUpdateVariables = {
