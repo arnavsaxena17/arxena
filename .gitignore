@@ -30,3 +30,4 @@ storybook-static
 .eslintcache
 .cache
 .nyc_output
+**/**/*.pdf
