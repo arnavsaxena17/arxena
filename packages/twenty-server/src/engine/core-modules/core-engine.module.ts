@@ -19,9 +19,11 @@ import { VideoInterviewModule } from 'src/engine/core-modules/video-interview/vi
 import { AnalyticsModule } from './analytics/analytics.module';
 import { FileModule } from './file/file.module';
 import { ClientConfigModule } from './client-config/client-config.module';
+import { GoogleCalendarModule } from 'src/engine/core-modules/calendar-events/google-calendar.module';
 
 @Module({
   imports: [
+    GoogleCalendarModule,
     HealthModule,
     AnalyticsModule,
     ArxChatAgentModule,
@@ -40,6 +42,8 @@ import { ClientConfigModule } from './client-config/client-config.module';
     PostgresCredentialsModule,
   ],
   exports: [
+    // GoogleCalendarModule,
+
     AnalyticsModule,
     AuthModule,
     ArxChatAgentModule,
@@ -49,6 +53,7 @@ import { ClientConfigModule } from './client-config/client-config.module';
     TimelineCalendarEventModule,
     UserModule,
     WorkspaceModule,
+    // GoogleCalendarModule
   ],
 })
 export class CoreEngineModule {}

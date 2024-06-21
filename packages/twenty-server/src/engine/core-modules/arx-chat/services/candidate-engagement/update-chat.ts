@@ -1,5 +1,5 @@
 
-import *  as allDataObjects from '../../services/data-model-objects'; 
+import * as allDataObjects from '../../services/data-model-objects'; 
 import * as allGraphQLQueries from '../../services/candidate-engagement/graphql-queries-chatbot';
 import { v4 } from 'uuid';
 import {axiosRequest} from '../../utils/arx-chat-agent-utils';
@@ -104,7 +104,12 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
                     email: personWithActiveJob?.node?.email,
                     input: userMessage?.messages[0]?.content,
                     startChat: activeJobCandidateObj?.node?.startChat,
-                    whatsappMessages: activeJobCandidateObj?.node?.whatsappMessages
+                    whatsappMessages: activeJobCandidateObj?.node?.whatsappMessages,
+                    // *! TO CHECK LATER
+                    emailMessages: {
+                        edges: activeJobCandidateObj?.node?.emailMessages?.edges
+                    }
+                    // ############################
                 };
                 return candidateProfileObj;
             } else {
@@ -137,12 +142,12 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
               },
               data: data
           })
-          console.log(response)
+          console.log(response?.data)
           
-          const questionsArray: string[] = response.data.data.questions.edges.map((val: { node: { name: string; }; }) => val.node.name);
+          const questionsArray: string[] = response?.data?.data?.questions?.edges.map((val: { node: { name: string; }; }) => val.node.name);
           console.log(questionsArray)
 
-          const questionIdArray = response.data.data.questions.edges.map((val: { node: { id: string; name: string; }; }) => { return {questionId: val.node.id, question: val.node.name}});
+          const questionIdArray = response?.data?.data?.questions?.edges?.map((val: { node: { id: string; name: string; }; }) => { return {questionId: val.node.id, question: val.node.name}});
           return {questionArray: questionsArray,questionIdArray: questionIdArray}
     }
 
@@ -301,4 +306,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
         console.log("REsponse status:", response.status)
         return response;
     }
+
+
+    
 }

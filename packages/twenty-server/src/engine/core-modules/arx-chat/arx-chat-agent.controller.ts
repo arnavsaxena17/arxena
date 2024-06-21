@@ -137,7 +137,7 @@ export class ArxChatEndpoint {
       whatsappDeliveryStatus: "startChatTriggered",
       whatsappMessageId: "startChat"
     };
-    debugger
+    // debugger
     await new CandidateEngagementArx().updateCandidateEngagementDataInTable(whatappUpdateMessageObj);
     return { status: "Success" };
   }
@@ -200,4 +200,10 @@ export class WhatsappWebhook {
     }
   response.sendStatus(200);
   }
+
+
+  // @Get('testing-schedule')
+  // async schedulingTest(){
+  //   await scheduleMeeting({}, )
+  // }
 }

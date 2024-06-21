@@ -3,11 +3,12 @@ import { Module } from '@nestjs/common';
 import {  ArxChatEndpoint, UpdateChatEndpoint, WhatsappWebhook } from 'src/engine/core-modules/arx-chat/arx-chat-agent.controller';
 import { TasksService } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/scheduling-agent';
 import { AuthModule } from 'src/engine/core-modules/auth/auth.module';
-
+import { GoogleCalendarController } from 'src/engine/core-modules/calendar-events/google-calendar.controller';
+import { GoogleCalendarModule } from 'src/engine/core-modules/calendar-events/google-calendar.module';
 
 
 @Module({
-  imports: [AuthModule],
+  imports: [AuthModule, GoogleCalendarModule],
   controllers: [ ArxChatEndpoint, UpdateChatEndpoint, WhatsappWebhook],
   providers: [TasksService],
   exports: [],

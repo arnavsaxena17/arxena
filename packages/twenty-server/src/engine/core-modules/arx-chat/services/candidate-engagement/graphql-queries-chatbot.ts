@@ -1,4 +1,4 @@
-export const graphqlQueryToFindPeopleByPhoneNumber = `query FindManyPeople($filter: PersonFilterInput, $orderBy: PersonOrderByInput, $lastCursor: String, $limit: Int) {
+export const graphqlQueryToFindPeopleByPhoneNumber = `query FindManyPeople($filter: PersonFilterInput, $orderBy: [PersonOrderByInput], $lastCursor: String, $limit: Int) {
   people(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
     edges {
       node {
@@ -70,7 +70,7 @@ export const graphqlQueryToFindPeopleByPhoneNumber = `query FindManyPeople($filt
     }
   }`;
 
-  export const graphqlQueryToFindMessageByWAMId = `query FindManyWhatsappMessages($filter: WhatsappMessageFilterInput, $orderBy: WhatsappMessageOrderByInput, $lastCursor: String, $limit: Int) {
+  export const graphqlQueryToFindMessageByWAMId = `query FindManyWhatsappMessages($filter: WhatsappMessageFilterInput, $orderBy: [WhatsappMessageOrderByInput], $lastCursor: String, $limit: Int) {
   whatsappMessages(
     filter: $filter
     orderBy: $orderBy
@@ -108,7 +108,7 @@ export const graphqlQueryToFindPeopleByPhoneNumber = `query FindManyPeople($filt
 
 
 
-  export const graphqlQueryToFindEngagedCandidates =   `query FindManyPeople($filter: PersonFilterInput, $orderBy: PersonOrderByInput, $lastCursor: String, $limit: Int) {
+  export const graphqlQueryToFindEngagedCandidates =   `query FindManyPeople($filter: PersonFilterInput, $orderBy: [PersonOrderByInput], $lastCursor: String, $limit: Int) {
     people(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
       edges {
         node {
@@ -119,12 +119,11 @@ export const graphqlQueryToFindPeopleByPhoneNumber = `query FindManyPeople($filt
                       jobs {
                          name
                          id
-                         recruiterId
                          jobLocation
-                         companies {
+                         companies{
                           name
                           descriptionOneliner
-                      }
+                        }
                       }
                       engagementStatus
                       startChat
@@ -157,8 +156,7 @@ export const graphqlQueryToFindPeopleByPhoneNumber = `query FindManyPeople($filt
           email
           jobTitle
           id
-          position
-          
+          position 
         }
       }
     }
@@ -166,7 +164,7 @@ export const graphqlQueryToFindPeopleByPhoneNumber = `query FindManyPeople($filt
 
 
 
-  export const graphqlQueryTofindManyAttachmentsByJobId =  `query FindManyAttachments($filter: AttachmentFilterInput, $orderBy: AttachmentOrderByInput, $lastCursor: String, $limit: Int) {
+  export const graphqlQueryTofindManyAttachmentsByJobId =  `query FindManyAttachments($filter: AttachmentFilterInput, $orderBy: [AttachmentOrderByInput], $lastCursor: String, $limit: Int) {
     attachments(
       filter: $filter
       orderBy: $orderBy
@@ -217,7 +215,7 @@ export const graphqlQueryToFindPeopleByPhoneNumber = `query FindManyPeople($filt
 `
   
 
-  export const graphqlQueryToFindManyQuestionsByJobId = `query FindManyQuestions($filter: QuestionFilterInput, $orderBy: QuestionOrderByInput, $lastCursor: String, $limit: Int) {
+  export const graphqlQueryToFindManyQuestionsByJobId = `query FindManyQuestions($filter: QuestionFilterInput, $orderBy: [QuestionOrderByInput], $lastCursor: String, $limit: Int) {
     questions(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
       edges {
         node {
@@ -262,7 +260,7 @@ export const graphqlQueryToFindPeopleByPhoneNumber = `query FindManyPeople($filt
   }`
 
 
-  export const graphqlToFindManyAnswers = `query FindManyAnswers($filter: AnswerFilterInput, $orderBy: AnswerOrderByInput, $lastCursor: String, $limit: Int) {
+  export const graphqlToFindManyAnswers = `query FindManyAnswers($filter: AnswerFilterInput, $orderBy: [AnswerOrderByInput], $lastCursor: String, $limit: Int) {
     answers(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
       edges {
         node {
@@ -316,3 +314,54 @@ export const graphqlQueryToFindPeopleByPhoneNumber = `query FindManyPeople($filt
   }`
 
   
+
+  export const graphqlQueryToGetTimelineThreadsFromPersonId = `query GetTimelineThreadsFromPersonId($personId: UUID!, $page: Int!, $pageSize: Int!) {
+  getTimelineThreadsFromPersonId(
+    personId: $personId
+    page: $page
+    pageSize: $pageSize
+  ) {
+    ...TimelineThreadsWithTotalFragment
+    __typename
+  }
+}
+
+fragment TimelineThreadsWithTotalFragment on TimelineThreadsWithTotal {
+  totalNumberOfThreads
+  timelineThreads {
+    ...TimelineThreadFragment
+    __typename
+  }
+  __typename
+}
+
+fragment TimelineThreadFragment on TimelineThread {
+  id
+  read
+  visibility
+  firstParticipant {
+    ...ParticipantFragment
+    __typename
+  }
+  lastTwoParticipants {
+    ...ParticipantFragment
+    __typename
+  }
+  lastMessageReceivedAt
+  lastMessageBody
+  subject
+  numberOfMessagesInThread
+  participantCount
+  __typename
+}
+
+fragment ParticipantFragment on TimelineThreadParticipant {
+  personId
+  workspaceMemberId
+  firstName
+  lastName
+  displayName
+  avatarUrl
+  handle
+  __typename
+}`

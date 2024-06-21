@@ -21,6 +21,7 @@ export default class CandidateEngagementArx {
     chatReply: string,
     candidateProfileDataNodeObj: allDataObjects.PersonNode
   ) {
+    
     // console.log("This is the candidate profile data node obj:", candidateProfileDataNodeObj);
     console.log("This is the chat reply:", chatReply);
     const recruiterProfile = allDataObjects.recruiterProfile;
@@ -67,6 +68,12 @@ export default class CandidateEngagementArx {
       const candidateNode = edge.node.candidates.edges[0].node;
       const personNode = edge.node;
       console.log("This is candidate Node:", candidateNode);
+
+
+      // fetch emails here
+
+      // const emailList = 
+
       const messagesList: allDataObjects.WhatsAppMessagesEdge[] =
         candidateNode?.whatsappMessages?.edges;
       console.log("Current Messages list:", messagesList);
@@ -276,7 +283,7 @@ export default class CandidateEngagementArx {
   }
 
   async checkCandidateEngagement() {
-    const response =
+   const response =
       await new FetchAndUpdateCandidatesChatsWhatsapps().fetchCandidatesToEngage();
     const candidateResponseEngagementObj = response?.data?.data;
     await this.startChatEngagement(candidateResponseEngagementObj);
