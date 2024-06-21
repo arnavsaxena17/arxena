@@ -5,6 +5,7 @@ import { v4 } from 'uuid';
 import {axiosRequest} from 'src/engine/core-modules/recruitment-agent/utils/recruitmentAgentUtils';
 export class FetchAndUpdateCandidatesChatsWhatsapps {
     async fetchCandidatesToEngage(){
+        debugger
         let graphqlQueryObj = JSON.stringify({
           query: allGraphQLQueries.graphqlQueryToFindEngagedCandidates,
           variables: {}

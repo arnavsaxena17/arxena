@@ -154,7 +154,31 @@ export interface CandidateNode {
   input: string;
   startChat: boolean;
   whatsappMessages: WhatsAppMessages;
+  emailMessages: EmailMessages;
   jobs: Jobs;
+}
+
+export interface EmailMessages {
+  edges: EmailMessagesEdge[];
+}
+
+export interface EmailMessagesEdge {
+  node: EmailMessageNode;
+}
+
+export interface EmailMessageNode {
+  id: string;
+  email: string;
+  text: string;
+  subject: string;
+  recruiterId: string;
+  candidateId: string;
+  jobsId: string;
+  // messageType: string;
+  messageThreadId: string;
+  receivedAt: string;
+  updatedAt: string;
+  createdAt: string;
 }
 
 export interface CandidatesEdge {
@@ -280,62 +304,79 @@ export const emptyCandidateProfileObj: CandidateNode = {
   name: '',
   id: '',
   jobs: {
+    name: '',
+    id: '',
+    recruiterId: '',
+    companies: {
       name: '',
-      id: '',
-      recruiterId: '',
-      companies: {
-          name: '',
-          companyId: '',
-          descriptionOneliner: ''
-        },
-      jobLocation: '',
-      whatsappMessages: {
-        edges:[{node:
-          {
-            recruiterId: '',
-            message: '',
-            candidateId: '',
-            jobsId: 'string',
-            position: 0,
-            messageType : '',
-            phoneTo: '',
-            updatedAt: '',
-            createdAt: '',
-            id: '',
-            name: '',
-            phoneFrom: '',
-            messageObj: {}
-          }
-          
-        }]
-      }
-  },
-     
-    engagementStatus: false,
-    phoneNumber: '',
-    email: '',
-    input: '',
-    startChat: false,
+      companyId: '',
+      descriptionOneliner: ''
+    },
+    jobLocation: '',
     whatsappMessages: {
-      edges:[{node:
-        {
+      edges: [{
+        node: {
           recruiterId: '',
           message: '',
           candidateId: '',
           jobsId: 'string',
           position: 0,
-          messageType : '',
+          messageType: '',
           phoneTo: '',
           updatedAt: '',
           createdAt: '',
           id: '',
           name: '',
           phoneFrom: '',
-          messageObj: ''
+          messageObj: {}
         }
-        
+
       }]
-    }
+    },
+  },
+
+  engagementStatus: false,
+  phoneNumber: '',
+  email: '',
+  input: '',
+  startChat: false,
+  whatsappMessages: {
+    edges: [{
+      node: {
+        recruiterId: '',
+        message: '',
+        candidateId: '',
+        jobsId: 'string',
+        position: 0,
+        messageType: '',
+        phoneTo: '',
+        updatedAt: '',
+        createdAt: '',
+        id: '',
+        name: '',
+        phoneFrom: '',
+        messageObj: ''
+      }
+
+    }]
+  },
+  emailMessages: {
+    edges: [{
+      node: {
+        id: '',
+        email: '',
+        text: '',
+        subject: '',
+        recruiterId: '',
+        candidateId: '',
+        jobsId: '',
+        messageThreadId: '',
+        receivedAt: '',
+        updatedAt: '',
+        createdAt: ''
+      }
+    }]
+  }
 }
 
 export interface Attachment {

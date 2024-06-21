@@ -2,6 +2,9 @@ import { shareJDtoCandidate,updateAnswerInDatabase,updateCandidateStatus } from 
 import * as allDataObjects from "../data-model-objects";
 import { FetchAndUpdateCandidatesChatsWhatsapps } from '../candidate-engagement/update-chat';
 import fuzzy from 'fuzzy';
+import { CalendarEventType } from '../../../calendar-events/services/calendar-data-objects-types';
+
+import { CalendarEmailService } from "../candidate-engagement/calendar-email";
 
 const recruiterProfile =  allDataObjects.recruiterProfile
 // const candidateProfileObjAllData =  candidateProfile
@@ -169,9 +172,37 @@ export class ToolsForAgents{
     return "Updated the candidate updateAnswer."
   }
   
-  scheduleMeeting(inputs:any, candidateProfileDataNodeObj:allDataObjects.PersonNode){
+  async scheduleMeeting(inputs:any, candidateProfileDataNodeObj:allDataObjects.PersonNode){
     console.log("Function Called:  candidateProfileDataNodeObj:any",  candidateProfileDataNodeObj)
+    const gptInputs = inputs?.inputs
+    debugger
     console.log("Function Called: scheduleMeeting")
+    const calendarEventObj: CalendarEventType = {
+      summary: gptInputs?.summary || "Meeting with the candidate",
+      typeOfMeeting: gptInputs?.typeOfMeeting || "Not defined",
+      location: gptInputs?.location || "Google Meet",
+      description: gptInputs?.description || "This meeting is scheduled to discuss the role and the company.",
+      start: {
+        dateTime: gptInputs?.startDateTime,
+        timeZone: gptInputs?.timeZone,
+      },
+      end: {
+        dateTime: gptInputs?.endDateTime,
+        timeZone: gptInputs?.timeZone,
+      },
+      attendees: [
+        {email: candidateProfileDataNodeObj.email}
+      ],
+      reminders: {
+        useDefault: false,
+        overrides: [
+          {method: "email", minutes: 24 * 60},
+          {method: "popup", minutes: 10}
+        ]
+    }
+
+    }
+    await new CalendarEmailService().createNewCalendarEvent(calendarEventObj)
     return "scheduleMeeting the candidate meeting."
   }
   
@@ -185,11 +216,67 @@ export class ToolsForAgents{
         }
       },
       {
-        "type": "function",
-        "function": {
-            "name": "schedule_meeting",
-            "description": "Schedule a meeting with the candidate",
-        }
+        type: "function",
+        function: {
+          name: "schedule_meeting",
+          description: "Schedule a meeting with the candidate",
+          parameters: {
+            type: "object",
+            properties: {
+              inputs: {
+                type: "object",
+                description: "Details about the meeting",
+                properties: {
+                  summary: {
+                    type: "string",
+                    description: "Summary of the meeting",
+                  },
+                  typeOfMeeting: {
+                    type: "string",
+                    description: "Type of the meeting, can be either Virtual or In-Person. Default is Virtual.",
+                  },
+                  location: {
+                    type: "string",
+                    description: "Location of the meeting",
+                  },
+                  description: {
+                    type: "string",
+                    description: "Description of the meeting",
+                  },
+                  startDateTime: {
+                    type: "string",
+                    format: "date-time",
+                    description: "Start date and time of the meeting in ISO 8601 format",
+                  },
+                  endDateTime: {
+                    type: "string",
+                    format: "date-time",
+                    description: "End date and time of the meeting in ISO 8601 format",
+                  },
+                  timeZone: {
+                    type: "string",
+                    description: "Time zone of the meeting",
+                  },
+                },
+                required: ["startDateTime", "endDateTime", "timeZone"],
+              },
+              candidateProfileDataNodeObj: {
+                type: "object",
+                description: "Profile data of the candidate",
+                properties: {
+                  email: {
+                    type: "string",
+                    format: "email",
+                    description: "Email of the candidate",
+                  },
+                },
+                required: ["email"],
+              },
+            },
+            required: ["inputs", "candidateProfileDataNodeObj"],
+          },
+        },
+      
       },
       {
         "type": "function",
@@ -221,11 +308,62 @@ export class ToolsForAgents{
         }
       },
       {
-        "type": "function",
-        "function": {
-            "name": "schedule_meeting",
-            "description": "Schedule a meeting with the candidate",
-        }
+        type: "function",
+    function: {
+      name: "schedule_meeting",
+      description: "Schedule a meeting with the candidate",
+      parameters: {
+        type: "object",
+        properties: {
+          inputs: {
+            type: "object",
+            description: "Details about the meeting",
+            properties: {
+              summary: {
+                type: "string",
+                description: "Summary of the meeting",
+              },
+              location: {
+                type: "string",
+                description: "Location of the meeting",
+              },
+              description: {
+                type: "string",
+                description: "Description of the meeting",
+              },
+              startDateTime: {
+                type: "string",
+                format: "date-time",
+                description: "Start date and time of the meeting in ISO 8601 format",
+              },
+              endDateTime: {
+                type: "string",
+                format: "date-time",
+                description: "End date and time of the meeting in ISO 8601 format",
+              },
+              timeZone: {
+                type: "string",
+                description: "Time zone of the meeting",
+              },
+            },
+            required: ["startDateTime", "endDateTime", "timeZone"],
+          },
+          candidateProfileDataNodeObj: {
+            type: "object",
+            description: "Profile data of the candidate",
+            properties: {
+              email: {
+                type: "string",
+                format: "email",
+                description: "Email of the candidate",
+              },
+            },
+            required: ["email"],
+          },
+        },
+        required: ["inputs", "candidateProfileDataNodeObj"],
+      },
+    },
       },
       {
         "type": "function",
