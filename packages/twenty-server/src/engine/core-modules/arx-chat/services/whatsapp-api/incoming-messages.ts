@@ -84,7 +84,7 @@ export class IncomingWhatsappMessages {
         +"-------------------"
       );
       // debugger
-      console.log(response);
+      console.log(response?.data?.data);
 
       if(response?.data?.data?.whatsappMessages?.edges.length === 0){
         console.log("No message found with the given WAMID");
