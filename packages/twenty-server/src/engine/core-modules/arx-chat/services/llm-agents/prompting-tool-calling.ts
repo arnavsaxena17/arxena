@@ -84,7 +84,7 @@ export class ToolsForAgents{
     Even if the candidate doesn't ask about the role or the company, do share the JD with him/ her by calling the function "share_jd". 
     Apart from your starting sentence, have small chats and not long winded sentences.
     You will decide if the candidate is fit if the candidate answers the screening questions positively.
-    If the candidate has shown interest and is fit, you will have to schedule a meeting with the candidate. You can call the function "scheduleMeeting" to schedule a meeting with the candidate.
+    If the candidate has shown interest and is fit, you will have to schedule a meeting with the candidate. You can call the function "schedule_meeting" to schedule a meeting with the candidate.
     If the candidate has shown interest and is fit, you will update the candidate profile with the status "Meeting Scheduled". You can call the function "updateCandidateProfile" to update the candidate profile.
     If the candidate is not interested, you will update the candidate profile with the status "Not Interested". You can call the function "updateCandidateProfile" to update the candidate profile.
     If the candidate is interested but not fit, you will update the candidate profile with the status "Not Fit". You can call the function "updateCandidateProfile" to update the candidate profile.
@@ -175,11 +175,11 @@ export class ToolsForAgents{
   async scheduleMeeting(inputs:any, candidateProfileDataNodeObj:allDataObjects.PersonNode){
     console.log("Function Called:  candidateProfileDataNodeObj:any",  candidateProfileDataNodeObj)
     const gptInputs = inputs?.inputs
-    debugger
+
     console.log("Function Called: scheduleMeeting")
     const calendarEventObj: CalendarEventType = {
       summary: gptInputs?.summary || "Meeting with the candidate",
-      typeOfMeeting: gptInputs?.typeOfMeeting || "Not defined",
+      typeOfMeeting: gptInputs?.typeOfMeeting || "Virtual",
       location: gptInputs?.location || "Google Meet",
       description: gptInputs?.description || "This meeting is scheduled to discuss the role and the company.",
       start: {
@@ -216,56 +216,56 @@ export class ToolsForAgents{
         }
       },
       {
-        type: "function",
-        function: {
-          name: "schedule_meeting",
-          description: "Schedule a meeting with the candidate",
-          parameters: {
-            type: "object",
-            properties: {
-              inputs: {
-                type: "object",
-                description: "Details about the meeting",
-                properties: {
-                  summary: {
-                    type: "string",
-                    description: "Summary of the meeting",
+        "type": "function",
+        "function": {
+          "name": "schedule_meeting",
+          "description": "Schedule a meeting with the candidate",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "inputs": {
+                "type": "object",
+                "description": "Details about the meeting",
+                "properties": {
+                  "summary": {
+                    "type": "string",
+                    "description": "Summary of the meeting",
                   },
-                  typeOfMeeting: {
-                    type: "string",
-                    description: "Type of the meeting, can be either Virtual or In-Person. Default is Virtual.",
+                  "typeOfMeeting": {
+                    "type": "string",
+                    "description": "Type of the meeting, can be either Virtual or In-Person. Default is Virtual.",
                   },
-                  location: {
-                    type: "string",
-                    description: "Location of the meeting",
+                  "location": {
+                    "type": "string",
+                    "description": "Location of the meeting",
                   },
-                  description: {
-                    type: "string",
-                    description: "Description of the meeting",
+                  "description": {
+                    "type": "string",
+                    "description": "Description of the meeting",
                   },
-                  startDateTime: {
-                    type: "string",
-                    format: "date-time",
-                    description: "Start date and time of the meeting in ISO 8601 format",
+                  "startDateTime": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Start date and time of the meeting in ISO 8601 format",
                   },
-                  endDateTime: {
-                    type: "string",
-                    format: "date-time",
-                    description: "End date and time of the meeting in ISO 8601 format",
+                  "endDateTime": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "End date and time of the meeting in ISO 8601 format",
                   },
-                  timeZone: {
-                    type: "string",
-                    description: "Time zone of the meeting",
+                  "timeZone": {
+                    "type": "string",
+                    "description": "Time zone of the meeting",
                   },
                 },
-                required: ["startDateTime", "endDateTime", "timeZone"],
+                "required": ["startDateTime", "endDateTime", "timeZone"],
               },
               candidateProfileDataNodeObj: {
-                type: "object",
+                "type": "object",
                 description: "Profile data of the candidate",
                 properties: {
                   email: {
-                    type: "string",
+                    "type": "string",
                     format: "email",
                     description: "Email of the candidate",
                   },
@@ -322,6 +322,10 @@ export class ToolsForAgents{
               summary: {
                 type: "string",
                 description: "Summary of the meeting",
+              },
+              typeOfMeeting: {
+                type: "string",
+                description: "Type of the meeting, can be either Virtual or In-Person. Default is Virtual.",
               },
               location: {
                 type: "string",

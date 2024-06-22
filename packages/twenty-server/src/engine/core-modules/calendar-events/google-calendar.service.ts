@@ -112,7 +112,7 @@ export class GoogleCalendarService {
       ...calendarEventData,
       
     };
-    debugger
+
     if (calendarEventDataObj.typeOfMeeting === 'Virtual') {
       const randomString = (length = 10) => [...Array(length)].map(() => (Math.random().toString(36)[2])).join('')
       calendarEventDataObj = {
