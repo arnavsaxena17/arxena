@@ -27,15 +27,9 @@ import { MessageQueueModule } from 'src/engine/integrations/message-queue/messag
 import { MessageQueueDriverType } from 'src/engine/integrations/message-queue/interfaces';
 
 import { IntegrationsModule } from './engine/integrations/integrations.module';
-<<<<<<< HEAD
-import { EnvironmentService } from 'src/engine/integrations/environment/environment.service';
-import { ScheduleModule } from '@nestjs/schedule';
-import { CoreEngineModule } from './engine/core-modules/core-engine.module';
-=======
 import { CoreEngineModule } from './engine/core-modules/core-engine.module';
 import { EnvironmentService } from 'src/engine/integrations/environment/environment.service';
 import { ScheduleModule } from '@nestjs/schedule';
->>>>>>> origin/dev_ninad
 
 @Module({
   imports: [
