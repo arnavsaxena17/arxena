@@ -284,10 +284,11 @@ export class FacebookWhatsappChatApi {
     
     
     downloadWhatsappAttachmentMessage(sendTemplateMessageObj) {
+        
         let config = {
             method: 'get',
             maxBodyLength: Infinity,
-            url: 'https://graph.facebook.com/v18.0/432131722836314',
+            url: 'https://graph.facebook.com/v18.0/432131722836314/'+sendTemplateMessageObj.mediaId,
             headers: {
                 Authorization: 'Bearer ' + whatsappAPIToken,
                 'Content-Type': 'application/json'

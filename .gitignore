@@ -30,3 +30,7 @@ storybook-static
 .eslintcache
 .cache
 .nyc_output
+**/**/*.pdf
+.vscode/
+**/**/token.json
+**/**/credentials.json

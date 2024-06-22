@@ -212,7 +212,7 @@ export class WhatsappTestAPI {
 
   @Post('downloadAttachment')
   async downloadFileToFBWAAPIUser(@Req() request: Request): Promise<object> {
-    const downloadAttachmentMessageObj = { "media-id": "918411937769" }
+    const downloadAttachmentMessageObj = request.body
     new FacebookWhatsappChatApi().downloadWhatsappAttachmentMessage(downloadAttachmentMessageObj)
     return {"status":"success"}
     }

@@ -35,29 +35,31 @@ export async function updateCandidateStatus(person:allDataObjects.PersonNode, st
       phoneNumberTo: allDataObjects.recruiterProfile.phone,
       messages: [{ content: status }],
       messageType : status,
-      messageObj: []
+      messageObj: [],
+      whatsappDeliveryStatus: "updateCandidateStatus",
+      whatsappMessageId: "updateCandidateStatus"
     };
     const updateCandidateStatusObj = await new FetchAndUpdateCandidatesChatsWhatsapps().updateCandidateEngagementStatus(candidateProfileObj, whatappUpdateMessageObj);
     return "Updated the candidate profile with the status."
 }
 
 
-export async function updateCandidateAnswer(person:allDataObjects.PersonNode, status:string){
-    console.log("Updating the candidate status");
-    const candidateId = person?.candidates?.edges[0]?.node?.id;
-    console.log("This is the candidateID for which we are trying to update the status:", candidateId)
-    const candidateProfileObj = person?.candidates?.edges[0]?.node;
-    const AnswerMessageObj =  {
-        "questionsId" : "8c1b58eb-b628-46e0-90de-0c0a9bc32b4b",
-        "name": "I manage 10 plants",
-        "position": "first",
-        "candidateId" : "2e13a102-ddc9-4a33-be6f-eb6324790779"
-    }
+// export async function updateCandidateAnswer(person:allDataObjects.PersonNode, status:string){
+//     console.log("Updating the candidate status");
+//     const candidateId = person?.candidates?.edges[0]?.node?.id;
+//     console.log("This is the candidateID for which we are trying to update the status:", candidateId)
+//     const candidateProfileObj = person?.candidates?.edges[0]?.node;
+//     const AnswerMessageObj =  {
+//         "questionsId" : "8c1b58eb-b628-46e0-90de-0c0a9bc32b4b",
+//         "name": "I manage 10 plants",
+//         "position": "first",
+//         "candidateId" : "2e13a102-ddc9-4a33-be6f-eb6324790779"
+//     }
     
 
-    const updateCandidateStatusObj = await new FetchAndUpdateCandidatesChatsWhatsapps().updateCandidateAnswer(candidateProfileObj, AnswerMessageObj);
-    return "Updated the candidate profile with the status."
-}
+//     const updateCandidateStatusObj = await new FetchAndUpdateCandidatesChatsWhatsapps().updateCandidateAnswer(candidateProfileObj, AnswerMessageObj);
+//     return "Updated the candidate profile with the status."
+// }
 
 
 export async function scheduleCandidateInterview(person:allDataObjects.PersonNode, status:string){
@@ -73,9 +75,21 @@ export async function scheduleCandidateInterview(person:allDataObjects.PersonNod
       phoneNumberTo: allDataObjects.recruiterProfile.phone,
       messages: [{ content: status }],
       messageType : status,
-      messageObj: []
+      messageObj: [],
+      whatsappDeliveryStatus: "scheduleCandidateInterview",
+      whatsappMessageId: "scheduleCandidateInterview"
     };
     const updateCandidateStatusObj = await new FetchAndUpdateCandidatesChatsWhatsapps().updateCandidateEngagementStatus(candidateProfileObj, whatappUpdateMessageObj);
+    return "Updated the candidate profile with the status."
+}
+
+
+export async function updateAnswerInDatabase(person:allDataObjects.PersonNode, AnswerMessageObj:any){
+    console.log("Updating the candidate status");
+    const candidateId = person?.candidates?.edges[0]?.node?.id;
+    console.log("This is the candidateID for which we are trying to update the status:", candidateId)
+    const candidateProfileObj = person?.candidates?.edges[0]?.node;
+    const updateCandidateStatusObj = await new FetchAndUpdateCandidatesChatsWhatsapps().updateCandidateAnswer(candidateProfileObj, AnswerMessageObj);
     return "Updated the candidate profile with the status."
 }
 
