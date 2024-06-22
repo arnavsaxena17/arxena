@@ -10,19 +10,28 @@ import { TimelineMessagingModule } from 'src/engine/core-modules/messaging/timel
 import { TimelineCalendarEventModule } from 'src/engine/core-modules/calendar/timeline-calendar-event.module';
 import { BillingModule } from 'src/engine/core-modules/billing/billing.module';
 import { HealthModule } from 'src/engine/core-modules/health/health.module';
+<<<<<<< HEAD
 import { TwentyORMModule } from 'src/engine/twenty-orm/twenty-orm.module';
+=======
+import { PostgresCredentialsModule } from 'src/engine/core-modules/postgres-credentials/postgres-credentials.module';
+>>>>>>> origin/dev_ninad
 import { BaileysModule } from './baileys/baileys.module';
 import { ArxChatAgentModule } from './arx-chat/arx-chat-agent.module'
 import { RecruitmentAgentModule } from 'src/engine/core-modules/recruitment-agent/recruitment-agent.module';
 import { VideoInterviewModule } from 'src/engine/core-modules/video-interview/video-interview.module';
+<<<<<<< HEAD
 import { PostgresCredentialsModule } from 'src/engine/core-modules/postgres-credentials/postgres-credentials.module';
+=======
+>>>>>>> origin/dev_ninad
 
 import { AnalyticsModule } from './analytics/analytics.module';
 import { FileModule } from './file/file.module';
 import { ClientConfigModule } from './client-config/client-config.module';
+import { GoogleCalendarModule } from 'src/engine/core-modules/calendar-events/google-calendar.module';
 
 @Module({
   imports: [
+    GoogleCalendarModule,
     HealthModule,
     AnalyticsModule,
     ArxChatAgentModule,
@@ -41,6 +50,8 @@ import { ClientConfigModule } from './client-config/client-config.module';
     PostgresCredentialsModule,
   ],
   exports: [
+    // GoogleCalendarModule,
+
     AnalyticsModule,
     AuthModule,
     ArxChatAgentModule,
@@ -50,6 +61,7 @@ import { ClientConfigModule } from './client-config/client-config.module';
     TimelineCalendarEventModule,
     UserModule,
     WorkspaceModule,
+    // GoogleCalendarModule
   ],
 })
 export class CoreEngineModule {}

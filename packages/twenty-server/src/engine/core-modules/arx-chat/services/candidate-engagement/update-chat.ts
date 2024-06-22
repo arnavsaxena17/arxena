@@ -1,8 +1,9 @@
 
-import *  as allDataObjects from '../../services/data-model-objects'; 
+import * as allDataObjects from '../../services/data-model-objects'; 
 import * as allGraphQLQueries from '../../services/candidate-engagement/graphql-queries-chatbot';
 import { v4 } from 'uuid';
 import {axiosRequest} from '../../utils/arx-chat-agent-utils';
+import axios from 'axios';
 export class FetchAndUpdateCandidatesChatsWhatsapps {
     async fetchCandidatesToEngage(){
         let graphqlQueryObj = JSON.stringify({
@@ -102,7 +103,12 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
                     email: personWithActiveJob?.node?.email,
                     input: userMessage?.messages[0]?.content,
                     startChat: activeJobCandidateObj?.node?.startChat,
-                    whatsappMessages: activeJobCandidateObj?.node?.whatsappMessages
+                    whatsappMessages: activeJobCandidateObj?.node?.whatsappMessages,
+                    // *! TO CHECK LATER
+                    emailMessages: {
+                        edges: activeJobCandidateObj?.node?.emailMessages?.edges
+                    }
+                    // ############################
                 };
                 return candidateProfileObj;
             } else {
@@ -114,6 +120,37 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
             return allDataObjects.emptyCandidateProfileObj;
         }
     }
+
+
+    async fetchQuestionsByJobId(jobId: string): Promise<{questionIdArray: {
+        questionId: string;
+        question: string;
+    }[], questionArray: string[]}>{
+        const data = JSON.stringify({
+            query: allGraphQLQueries.graphqlQueryToFindManyQuestionsByJobId
+            ,
+            variables: {"filter":{"jobsId":{"in":[`${jobId}`]}},"orderBy":{"position":"DescNullsFirst"}}
+          });
+       
+          const response = await axios.request({
+            method: 'post',
+              url: process.env.GRAPHQL_URL,
+              headers: {
+                  'authorization': 'Bearer ' + process.env.TWENTY_JWT_SECRET,
+                  'content-type': 'application/json',
+              },
+              data: data
+          })
+          console.log(response?.data)
+          
+          const questionsArray: string[] = response?.data?.data?.questions?.edges.map((val: { node: { name: string; }; }) => val.node.name);
+          console.log(questionsArray)
+
+          const questionIdArray = response?.data?.data?.questions?.edges?.map((val: { node: { id: string; name: string; }; }) => { return {questionId: val.node.id, question: val.node.name}});
+          return {questionArray: questionsArray,questionIdArray: questionIdArray}
+    }
+
+
     async createAndUpdateWhatsappMessage( candidateProfileObj: allDataObjects.CandidateNode, userMessage:allDataObjects.candidateChatMessageType ) {
         console.log("This is the candidate profile object", JSON.stringify(candidateProfileObj));
         // console.log("This is the user message for updateWhtsappMessage in createAnd UpdateWhatsappMessage", userMessage);
@@ -121,6 +158,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
         console.log("This is the number of messages in  updateWhtsappMessage", userMessage?.messageObj.length);
         // console.log("This is the message being published ", userMessage?.messages[0]?.text);
         console.log("This is the message being published ", userMessage?.messages[0]?.content);
+            // debugger
         // console.log("This is the user message phoneNumberTo", userMessage?.phoneNumberTo);
         const createNewWhatsappMessageUpdateVariables = {
             input: {
@@ -133,7 +171,9 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
                 "jobsId": candidateProfileObj[0]?.node.jobs?.id || candidateProfileObj.jobs?.id,
                 "recruiterId": candidateProfileObj[0]?.node?.jobs?.recruiterId || candidateProfileObj?.jobs?.recruiterId,
                 "name": userMessage?.messageType,
-                "messageObj":userMessage?.messageObj
+                "messageObj":userMessage?.messageObj,
+                "whatsappDeliveryStatus": userMessage.whatsappDeliveryStatus,
+                "whatsappMessageId": userMessage?.whatsappMessageId
             }
         };
         console.log("These are the graphvsariables:", JSON.stringify(createNewWhatsappMessageUpdateVariables));
@@ -153,7 +193,9 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
     }
 
     async updateCandidateEngagementStatus(candidateProfileObj:allDataObjects.CandidateNode, whatappUpdateMessageObj:allDataObjects.candidateChatMessageType) {
-        console.log("Updating candidate's status", candidateProfileObj, JSON.stringify(whatappUpdateMessageObj));
+        // debugger
+        console.log("Updating candidate's status", candidateProfileObj, whatappUpdateMessageObj);
+        // debugger
         const candidateEngagementStatus = whatappUpdateMessageObj.messageType !== 'botMessage';
         const updateCandidateObjectVariables = {
             idToUpdate: candidateProfileObj?.id,
@@ -174,11 +216,33 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
             console.log(error);
         }
     }
+
+    async setCandidateEngagementStatusToFalse(candidateProfileObj:allDataObjects.CandidateNode){
+        const updateCandidateObjectVariables = {
+            idToUpdate: candidateProfileObj?.id,
+            input: {
+                engagementStatus: false
+            },
+        };
+        console.log("This is the value of updatecandidateobject variables::0", updateCandidateObjectVariables)
+        const graphqlQueryObj = JSON.stringify({
+            query: allGraphQLQueries.graphqlQueryToUpdateCandidateEngagementStatus,
+            variables: updateCandidateObjectVariables
+        });
+        // console.log("GraphQL query to update candidate status:", graphqlQueryObj);
+        try {
+            const response = await axiosRequest(graphqlQueryObj);
+            console.log("Response from axios update request:", response.data);
+            return response.data;
+        } catch (error) {
+            console.log(error);
+        }
+    }
     async updateCandidateAnswer(candidateProfileObj:allDataObjects.CandidateNode, AnswerMessageObj:allDataObjects.AnswerMessageObj) {
         console.log("Updating candidate's status", candidateProfileObj, JSON.stringify(AnswerMessageObj));
         const updateCandidateObjectVariables = {
             input: {
-                AnswerMessageObj
+                ...AnswerMessageObj
             },
         };
         const graphqlQueryObj = JSON.stringify({
@@ -241,4 +305,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
         console.log("REsponse status:", response.status)
         return response;
     }
+
+
+    
 }

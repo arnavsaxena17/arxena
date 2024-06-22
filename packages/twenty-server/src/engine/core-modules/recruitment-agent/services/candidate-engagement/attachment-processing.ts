@@ -25,7 +25,7 @@ export class AttachmentProcessingService {
         'sec-ch-ua': '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"', 
         'DNT': '1', 
         'sec-ch-ua-mobile': '?0', 
-        'authorization': 'Bearer '+process.env.TWENTY_JWT_TOKEN, 
+        'authorization': 'Bearer '+process.env.TWENTY_JWT_SECRET, 
         'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36', 
         'x-schema-version': '41', 
         'accept': '*/*', 

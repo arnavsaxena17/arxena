@@ -11,9 +11,9 @@ const baseUrl = 'http://localhost:' + process.env.PORT; // Base URL of your Grap
 export class WhatsappAPISelector{
   constructor() {
   }
-  async sendWhatsappMessage(whatappUpdateMessageObj:allDataObjects.candidateChatMessageType) {
+  async sendWhatsappMessage(whatappUpdateMessageObj:allDataObjects.candidateChatMessageType, personNode:allDataObjects.PersonNode, mostRecentMessageArr:allDataObjects.ChatHistoryItem[]) {
     if (process.env.WHATSAPP_API === 'facebook') {
-      await new FacebookWhatsappChatApi().sendWhatsappMessageVIAFacebookAPI(whatappUpdateMessageObj);
+      const response = await new FacebookWhatsappChatApi().sendWhatsappMessageVIAFacebookAPI(whatappUpdateMessageObj, personNode, mostRecentMessageArr);
     } else if (process.env.WHATSAPP_API === 'baileys') {
         await sendWhatsappMessageVIABaileysAPI(whatappUpdateMessageObj);
     }

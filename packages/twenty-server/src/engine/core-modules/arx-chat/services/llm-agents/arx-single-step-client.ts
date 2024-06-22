@@ -6,7 +6,7 @@ const modelName = "gpt-4o"
 import {ToolsForAgents} from 'src/engine/core-modules/arx-chat/services/llm-agents/prompting-tool-calling';
 import { ChatCompletion, ChatCompletionMessage } from "openai/resources";
 import CandidateEngagementArx from "src/engine/core-modules/arx-chat/services/candidate-engagement/check-candidate-engagement";
-import { WhatsappAPISelector } from "src/engine/core-modules/recruitment-agent/services/whatsapp-api/whatsapp-controls";
+import { WhatsappAPISelector } from "src/engine/core-modules/arx-chat/services/whatsapp-api/whatsapp-controls";
 import Anthropic from '@anthropic-ai/sdk';
 
 export class OpenAIArxSingleStepClient{
@@ -22,7 +22,7 @@ export class OpenAIArxSingleStepClient{
   
     }
 
-    async createCompletion(mostRecentMessageArr:allDataObjects.ChatHistoryItem[]) {
+    async createCompletion(mostRecentMessageArr:allDataObjects.ChatHistoryItem[], personNode:allDataObjects.PersonNode) {
         const tools = await new ToolsForAgents().getTools();
         // @ts-ignore
         const response = await this.openAIclient.chat.completions.create({ model: modelName, messages: mostRecentMessageArr, tools: tools, tool_choice: "auto" });
@@ -31,13 +31,16 @@ export class OpenAIArxSingleStepClient{
         
         mostRecentMessageArr.push(responseMessage); // extend conversation with assistant's reply
         if (responseMessage.tool_calls) {
-            mostRecentMessageArr = await this.addResponseAndToolCallsToMessageHistory(responseMessage, mostRecentMessageArr)
+            mostRecentMessageArr = await this.addResponseAndToolCallsToMessageHistory(responseMessage, mostRecentMessageArr, personNode)
         }
-        await this.sendWhatsappMessageToCandidate(response, mostRecentMessageArr)
+        await this.sendWhatsappMessageToCandidate(response, mostRecentMessageArr, personNode)
+        // const whatappUpdateMessageObj = await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj(response,personNode,mostRecentMessageArr);
+        // await new CandidateEngagementArx().updateCandidateEngagementDataInTable(whatappUpdateMessageObj);
+
         return mostRecentMessageArr
     }
 
-    async addResponseAndToolCallsToMessageHistory(responseMessage:ChatCompletionMessage, messages:allDataObjects.ChatHistoryItem[]){
+    async addResponseAndToolCallsToMessageHistory(responseMessage:ChatCompletionMessage, messages:allDataObjects.ChatHistoryItem[], personNode:allDataObjects.PersonNode){
         const toolCalls = responseMessage.tool_calls;
         // @ts-ignore
         if (toolCalls) {
@@ -63,20 +66,20 @@ export class OpenAIArxSingleStepClient{
             messages.push(response.choices[0].message);
             // send messages here where you get some response choices messages
             if(response.choices[0].message.tool_calls){
-                messages = await this.addResponseAndToolCallsToMessageHistory(response.choices[0].message, messages)
+                messages = await this.addResponseAndToolCallsToMessageHistory(response.choices[0].message, messages, personNode)
             }
             const mostRecentMessageArr = messages
-            await this.sendWhatsappMessageToCandidate(response, mostRecentMessageArr)
+            await this.sendWhatsappMessageToCandidate(response, mostRecentMessageArr, personNode)
         }
         return messages
         }
 
-        async sendWhatsappMessageToCandidate(response:ChatCompletion, mostRecentMessageArr:allDataObjects.ChatHistoryItem[]){
-            if (response.choices[0].message.content){ 
+        async sendWhatsappMessageToCandidate(response:ChatCompletion, mostRecentMessageArr:allDataObjects.ChatHistoryItem[], personNode:allDataObjects.PersonNode){
+            if (response.choices[0].message.content && response.choices[0].message.content !== "#DONTRESPOND#"){ 
                 // send message to candidates
-                const whatappUpdateMessageObj = await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj(response, this.personNode, mostRecentMessageArr)
+                const whatappUpdateMessageObj = await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj("sendWhatsappMessageToCandidate", response, this.personNode, mostRecentMessageArr)
                 if (process.env.WHATSAPP_ENABLED === "true"){
-                    await new WhatsappAPISelector().sendWhatsappMessage(whatappUpdateMessageObj);
+                    await new WhatsappAPISelector().sendWhatsappMessage(whatappUpdateMessageObj, personNode, mostRecentMessageArr);
                 }
                 else{
                     console.log("Whatsapp is not enabled, so not sending message:", whatappUpdateMessageObj.messages[0].content)

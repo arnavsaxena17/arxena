@@ -33,7 +33,9 @@ export class UpdateChatEndpoint {
               messageObj: [],
               messageType: "candidateMessage",
               candidateProfile : allDataObjects.emptyCandidateProfileObj,
-              executorResultObj: {}
+              executorResultObj: {},
+              whatsappDeliveryStatus: "candidateMessageReceived",
+              whatsappMessageId: "UpdateChatEndpoint"
           };
           // const updateStatus = await new CandidateEngagementArx().updateCandidateEngagementDataInTable(userMessage);
           // console.log("This is the update status", updateStatus);
@@ -65,8 +67,8 @@ export class ArxChatEndpoint {
       else{
         chatAgent = new OpenAIArxMultiStepClient(personObj);
       }
-      mostRecentMessageArr = await chatAgent.createCompletion(mostRecentMessageArr);
-      const whatappUpdateMessageObj = await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj(response,personObj,mostRecentMessageArr);
+      mostRecentMessageArr = await chatAgent.createCompletion(mostRecentMessageArr, personObj);
+      const whatappUpdateMessageObj = await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj("ArxChatEndpoint", response,personObj,mostRecentMessageArr);
       await new CandidateEngagementArx().updateCandidateEngagementDataInTable(whatappUpdateMessageObj);
 
     }
@@ -131,8 +133,11 @@ export class ArxChatEndpoint {
       phoneNumberTo: recruiterProfile.phone,
       messages: [{ content: chatReply }],
       messageType : "candidateMessage",
-      messageObj: chatHistory
+      messageObj: chatHistory,
+      whatsappDeliveryStatus: "startChatTriggered",
+      whatsappMessageId: "startChat"
     };
+    // debugger
     await new CandidateEngagementArx().updateCandidateEngagementDataInTable(whatappUpdateMessageObj);
     return { status: "Success" };
   }
@@ -197,4 +202,10 @@ export class WhatsappWebhook {
     }
   response.sendStatus(200);
   }
+
+
+  // @Get('testing-schedule')
+  // async schedulingTest(){
+  //   await scheduleMeeting({}, )
+  // }
 }
