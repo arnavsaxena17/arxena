@@ -1,4 +1,4 @@
-export const graphqlQueryToFindPeopleByPhoneNumber = `query FindManyPeople($filter: PersonFilterInput, $orderBy: PersonOrderByInput, $lastCursor: String, $limit: Int) {
+export const graphqlQueryToFindPeopleByPhoneNumber = `query FindManyPeople($filter: PersonFilterInput, $orderBy: [PersonOrderByInput], $lastCursor: String, $limit: Int) {
   people(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
     edges {
       node {
@@ -32,6 +32,7 @@ export const graphqlQueryToFindPeopleByPhoneNumber = `query FindManyPeople($filt
                                 message
                                 candidateId
                                 jobsId
+                                messageObj
                                 position
                                 phoneTo
                                 updatedAt
@@ -39,7 +40,7 @@ export const graphqlQueryToFindPeopleByPhoneNumber = `query FindManyPeople($filt
                                 id
                                 name
                                 phoneFrom
-                                messageObj
+                                
                             }
                         }
                     }
@@ -79,7 +80,7 @@ export const graphqlQueryToFindPeopleByPhoneNumber = `query FindManyPeople($filt
 
 
 
-  export const graphqlQueryToFindEngagedCandidates =   `query FindManyPeople($filter: PersonFilterInput, $orderBy: PersonOrderByInput, $lastCursor: String, $limit: Int) {
+  export const graphqlQueryToFindEngagedCandidates = `query FindManyPeople($filter: PersonFilterInput, $orderBy: [PersonOrderByInput], $lastCursor: String, $limit: Int) {
     people(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
       edges {
         node {
@@ -90,12 +91,11 @@ export const graphqlQueryToFindPeopleByPhoneNumber = `query FindManyPeople($filt
                       jobs {
                          name
                          id
-                         recruiterId
                          jobLocation
-                         companies {
+                         companies{
                           name
                           descriptionOneliner
-                      }
+                        }
                       }
                       engagementStatus
                       startChat
@@ -108,12 +108,12 @@ export const graphqlQueryToFindPeopleByPhoneNumber = `query FindManyPeople($filt
                             jobsId
                             position
                             phoneTo
+                            messageObj
                             updatedAt
                             createdAt
                             id
                             name
                             phoneFrom
-                            messageObj
                           }
                         }
                       }
@@ -128,8 +128,7 @@ export const graphqlQueryToFindPeopleByPhoneNumber = `query FindManyPeople($filt
           email
           jobTitle
           id
-          position
-          
+          position 
         }
       }
     }

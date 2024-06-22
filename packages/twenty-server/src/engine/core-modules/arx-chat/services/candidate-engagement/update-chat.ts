@@ -13,6 +13,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
             const response = await axiosRequest(graphqlQueryObj);
             return response;
         } catch (error) {
+
             console.log(error);
         }
     }
@@ -29,8 +30,6 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
           };
         try {
             console.log("going to get candidate information")
-            // console.log("going to get process.env.TWENTY_JWT_SECRET",process.env.TWENTY_JWT_SECRET)
-            // console.log("going to get process.env.GRAPHQL_URL", process.env.GRAPHQL_URL)
             const graphqlQueryObj = JSON.stringify({
                 query: allGraphQLQueries.graphqlQueryToFindPeopleByPhoneNumber,
                 variables: graphVariables
@@ -217,10 +216,6 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
             console.log(error);
         }
     }
-    
-    
-    
-    
     
     async removeChatsByPhoneNumber(phoneNumberFrom:string){
         const personObj:allDataObjects.PersonNode = await this.getPersonDetailsByPhoneNumber(phoneNumberFrom)

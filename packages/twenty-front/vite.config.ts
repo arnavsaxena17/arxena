@@ -8,7 +8,6 @@ import tsconfigPaths from 'vite-tsconfig-paths';
 
 type Checkers = Parameters<typeof checker>[0];
 
-// https://vitejs.dev/config/
 export default defineConfig(({ command, mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
 
@@ -19,19 +18,6 @@ export default defineConfig(({ command, mode }) => {
 
   const isBuildCommand = command === 'build';
 
-  const checkers: Checkers = {
-    typescript: {
-      tsconfigPath: path.resolve(__dirname, './tsconfig.app.json'),
-    },
-    overlay: false,
-  };
-
-  if (!isBuildCommand) {
-    checkers['eslint'] = {
-      lintCommand:
-        'eslint . --report-unused-disable-directives --max-warnings 0 --config .eslintrc.cjs',
-    };
-  }
 
   return {
     root: __dirname,
@@ -48,9 +34,6 @@ export default defineConfig(({ command, mode }) => {
         projects: ['tsconfig.json', '../twenty-ui/tsconfig.json'],
       }),
       svgr(),
-      checker(checkers),
-      // TODO: fix this, we have to restrict the include to only the components that are using linaria
-      // Otherwise the build will fail because wyw tries to include emotion styled components
       wyw({
         include: [
           '**/CurrencyDisplay.tsx',

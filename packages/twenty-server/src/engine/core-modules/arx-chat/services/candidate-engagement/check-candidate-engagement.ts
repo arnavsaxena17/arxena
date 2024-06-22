@@ -170,7 +170,7 @@ export default class CandidateEngagementArx {
   
   async  checkCandidateEngagement() {
     const response = await new FetchAndUpdateCandidatesChatsWhatsapps().fetchCandidatesToEngage()
-    const candidateResponseEngagementObj = response?.data?.data;
+    const candidateResponseEngagementObj:allDataObjects.RootObject = response?.data?.data;
     await this.startChatEngagement(candidateResponseEngagementObj);
     await this.engageCandidates(candidateResponseEngagementObj);
     return
