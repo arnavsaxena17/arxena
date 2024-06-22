@@ -7522,6 +7522,9 @@ export type CreateOnePersonMutationFn = Apollo.MutationFunction<CreateOnePersonM
  *   },
  * });
  */
+
+
+
 export function useCreateOnePersonMutation(baseOptions?: Apollo.MutationHookOptions<CreateOnePersonMutation, CreateOnePersonMutationVariables>) {
         const options = {...defaultOptions, ...baseOptions}
         return Apollo.useMutation<CreateOnePersonMutation, CreateOnePersonMutationVariables>(CreateOnePersonDocument, options);
@@ -7548,26 +7551,59 @@ export const FindPersonDocument = gql`
 }
     `;
 
-/**
- * __useFindPersonQuery__
- *
- * To run a query within a React component, call `useFindPersonQuery` and pass it any options that fit your needs.
- * When your component renders, `useFindPersonQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useFindPersonQuery({
- *   variables: {
- *      filter: // value for 'filter'
- *   },
- * });
- */
+
 export function useFindPersonQuery(baseOptions: Apollo.QueryHookOptions<FindPersonQuery, FindPersonQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useQuery<FindPersonQuery, FindPersonQueryVariables>(FindPersonDocument, options);
-      }
+  const options = {...defaultOptions, ...baseOptions}
+  return Apollo.useQuery<FindPersonQuery, FindPersonQueryVariables>(FindPersonDocument, options);
+}
+
+
+
+
+
+
+// const GET_ATTACHMENT_BY_JOB_ID = gql`
+//   query GetAttachmentByJobID($jobId: ID!) {
+//     attachments(where: { jobId: $jobId }) {
+//       id
+//       name
+//       type
+//       createdAt
+//       updatedAt
+//       fullPath
+//       authorId
+//       jobId
+//     }
+//   }
+// `;
+
+
+// async function findAttachmentByJobID(jobId: string): Promise<Attachment | null> {
+//   try {
+//     const { data } = await client.query<{ attachments: Attachment[] }>({
+//       query: GET_ATTACHMENT_BY_JOB_ID,
+//       variables: { jobId }
+//     });
+
+//     if (data.attachments.length > 0) {
+//       return data.attachments[0];
+//     } else {
+//       console.log(`No attachment found for job ID: ${jobId}`);
+//       return null;
+//     }
+//   } catch (error) {
+//     console.error('Error fetching attachment:', error);
+//     return null;
+//   }
+// }
+
+
+
+
+
+
+
+
 export function useFindPersonLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<FindPersonQuery, FindPersonQueryVariables>) {
           const options = {...defaultOptions, ...baseOptions}
           return Apollo.useLazyQuery<FindPersonQuery, FindPersonQueryVariables>(FindPersonDocument, options);

@@ -35,9 +35,9 @@ export class WhatsappAPISelector{
       // await new FacebookWhatsappChatApi().sendWhatsappAttachmentMessage(facebookWhatsappAttachmentMessageObj);
 
       const sendWhatsappAttachmentTextMessageObj = {
-        "filePath":"/Users/arnavsaxena/Downloads/JD - Environment Infra - Group HR Head - Surat.pdf",
+        "filePath": attachmentMessage.fullPath,
         "phoneNumberTo": attachmentMessage.phoneNumberTo,
-        "attachmentMessage":"Sharing the JD with you"
+        "attachmentMessage": "Sharing the JD with you"
       }
       await new FacebookWhatsappChatApi().uploadAndSendFileToWhatsApp(sendWhatsappAttachmentTextMessageObj);
     }

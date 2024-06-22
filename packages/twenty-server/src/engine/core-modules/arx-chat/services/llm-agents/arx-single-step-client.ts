@@ -45,7 +45,7 @@ export class OpenAIArxSingleStepClient{
                 const functionName = toolCall.function.name;
                 console.log("This is the person:", this.personNode)
                 // console.log("functionName called:",functionName);
-                const availableFunctions = new ToolsForAgents().getAvailableFunctions();
+                const availableFunctions = new ToolsForAgents().getAvailableFunctions(this.personNode);
                 // @ts-ignore
                 const functionToCall = availableFunctions[functionName];
                 console.log("functionToCall::", functionToCall);

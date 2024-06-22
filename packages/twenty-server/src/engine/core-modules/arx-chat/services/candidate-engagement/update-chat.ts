@@ -126,6 +126,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
         console.log("This is the number of messages in  updateWhtsappMessage", userMessage?.messageObj.length);
         console.log("This is the message being published ", userMessage?.messages[0]?.text);
         console.log("This is the message being published ", userMessage?.messages[0]?.content);
+        debugger;
         // console.log("This is the user message phoneNumberTo", userMessage?.phoneNumberTo);
         const createNewWhatsappMessageUpdateVariables = {
             input: {
@@ -146,6 +147,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
             query: allGraphQLQueries.graphqlQueryToCreateOneNewWhatsappMessage,
             variables: createNewWhatsappMessageUpdateVariables
         });
+        debugger;
         // console.log("This is the user message", userMessage);
         // console.log("These are graph config data", graphqlQueryObj);
         try {

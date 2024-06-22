@@ -17,6 +17,8 @@ import path from 'path';
 const FormData = require('form-data');
 import { createReadStream, createWriteStream } from 'fs';
 import { getContentTypeFromFileName } from '../../../utils/arx-chat-agent-utils';
+import { AnyAaaaRecord } from 'dns';
+import { content } from 'googleapis/build/src/apis/content';
 // import { lookup } from 'mime';
 // const mime = require('mime');
 const axios = require('axios');
@@ -32,15 +34,18 @@ else {
 
 const templates = ['hello_world', 'recruitment']
 export class FacebookWhatsappChatApi {
-  async uploadAndSendFileToWhatsApp  (sendFileObj: allDataObjects.SendAttachment) {
+  async uploadAndSendFileToWhatsApp  (sendFileObj: any) {
+    console.log("uploadAndSendFileToWhatsApp function is being called -------------------------------------------- ");
     console.log("Send file")
     console.log("sendFileObj::y::", sendFileObj)
     const filePath = sendFileObj?.filePath
     const phoneNumberTo = sendFileObj?.phoneNumberTo
     const attachmentMessage = sendFileObj?.attachmentMessage
-    const response = await new FacebookWhatsappChatApi().uploadFileToWhatsApp(filePath)
+    const filename = sendFileObj?.fileName
+    const response = await new FacebookWhatsappChatApi().uploadFileToWhatsApp(filePath,filename)
     const mediaID = response?.mediaID
     const fileName = response?.fileName
+    debugger;
     const sendTextMessageObj = {
       "phoneNumberFrom": "918411937769",
       "attachmentMessage": attachmentMessage,
@@ -49,6 +54,7 @@ export class FacebookWhatsappChatApi {
       "mediaID" : mediaID
     }
     new FacebookWhatsappChatApi().sendWhatsappAttachmentMessage(sendTextMessageObj)
+    debugger;
 
   }
     getTemplateMessageObj(sendTemplateMessageObj:allDataObjects.sendWhatsappTemplateMessageObjectType) {
@@ -163,13 +169,17 @@ export class FacebookWhatsappChatApi {
             
     }
 
-    async uploadFileToWhatsApp(filePath) {
-        console.log("This is the upload file to whatsapp")
+    async uploadFileToWhatsApp(filePath: string, fileName: string) {
+        debugger;
+        console.log("uploadFileToWhatsapp function is being called -------------------------------------------- ");
+        console.log("This is the upload file to whatsapp", filePath)
         
         try {
             // const filePath = '/Users/arnavsaxena/Downloads/CVs-Mx/Prabhakar_Azad_Resume_05122022.doc';
             // Get the file name
-            const fileName = path.basename(filePath);
+            // const fileName = path.basename(filePath);
+            console.log("This is the path of the file: ", filePath);
+            console.log("This is the name of the file: ", fileName);
             // Get the content type
             // const contentType = mime.lookup(fileName) || 'application/octet-stream';
             // const fileData = await fileTypeFromFile(filePath)
@@ -177,14 +187,17 @@ export class FacebookWhatsappChatApi {
             const contentType = await getContentTypeFromFileName(fileName);
             console.log("This is the content type:", contentType);
             console.log("This is the file name:", fileName);
-    
+            const filePath2 = "/Users/aryanbansal/Downloads/attachment/" + fileName; //will change for actual database and filesystem
+            // const filePath2 = "/Users/aryanbansal/Downloads/attachment/jobdesc.pdf";
             const formData = new FormData();
-            formData.append('file', createReadStream(filePath), {
+            formData.append('file', createReadStream(filePath2), {
                 contentType: contentType,
                 filename: fileName
             });
+            debugger;
 
             formData.append('messaging_product', 'whatsapp');
+
             try {
                 const { data: { id: mediaId } } = await axios.post(`https://graph.facebook.com/v18.0/${process.env.FACEBOOK_WHATSAPP_PHONE_NUMBER_ID}/media`,
                     formData, {
@@ -196,11 +209,14 @@ export class FacebookWhatsappChatApi {
                 );
                 console.log("media ID", mediaId);
                 console.log("Request successful");
+                console.log("Media-ID - ", mediaId, "     File-name - ", fileName, "     content-type - ", contentType);
                 return {"mediaID": mediaId, "status": "success", "fileName": fileName, "contentType": contentType};
+                
 
             } catch (err) {
-                console.error("upload", err.toJSON());
+                console.error("upload Error::::", err.toJSON());
             }
+            debugger;
             // Remove the local file
             // const unlink = promisify(fs.unlink);
             // await unlink(filePath);
@@ -211,7 +227,7 @@ export class FacebookWhatsappChatApi {
         // Get the file name and content type from the response headers
     }
         
-    async sendWhatsappAttachmentMessage(sendWhatsappAttachmentTextMessageObj:allDataObjects.FacebookWhatsappAttachmentChatRequestBody){
+    async sendWhatsappAttachmentMessage(sendWhatsappAttachmentTextMessageObj:any){
         console.log("sending whatsapp attachment message")
         const text_message = {
             "messaging_product": "whatsapp",
@@ -224,6 +240,8 @@ export class FacebookWhatsappChatApi {
                 "filename":sendWhatsappAttachmentTextMessageObj.mediaFileName ? sendWhatsappAttachmentTextMessageObj.mediaFileName : "attachment",
             }
         }
+        console.log("This is the text_message: ", text_message);
+        debugger;
 
         let config = {
             method: 'post',
@@ -235,11 +253,11 @@ export class FacebookWhatsappChatApi {
             },
             data : text_message
           };
-        //   console.log("This is the config in sendWhatsappAttachmentMessage:", config)
-          
+        console.log("This is the config in sendWhatsappAttachmentMessage:", config)
+        debugger;
         try {
             const response = await axios.request(config);
-            console.log("Rehis is response data after sendAttachment is called",JSON.stringify(response.data));
+            console.log("This is response data after sendAttachment is called",JSON.stringify(response.data));
         } catch (error) {
             console.log(error);
         }

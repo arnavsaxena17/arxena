@@ -103,6 +103,7 @@ export default class CandidateEngagementArx {
     let candidateProfileObj = whatappUpdateMessageObj.messageType !== "botMessage" ? await new FetchAndUpdateCandidatesChatsWhatsapps().getCandidateInformation(whatappUpdateMessageObj) : whatappUpdateMessageObj.candidateProfile;
     console.log("Candidate information after processing:", candidateProfileObj);
     console.log("Whatsapp Objs :::", candidateProfileObj.whatsappMessages.edges.map((edge:any) => edge.node.messageObj));
+    debugger;
     if (candidateProfileObj.name === '') return;
     console.log("Candidate information retrieved successfully");
     const whatsappMessage = await new FetchAndUpdateCandidatesChatsWhatsapps().createAndUpdateWhatsappMessage(candidateProfileObj, whatappUpdateMessageObj);
@@ -112,6 +113,7 @@ export default class CandidateEngagementArx {
     if (!updateCandidateStatusObj) return;
     console.log("Candidate engagement status updated successfully");
     console.log("Got whatsapp api selector to send messages");
+    debugger;
     // await new WhatsappAPISelector().sendWhatsappMessage(whatappUpdateMessageObj)
     return { "status": "success", "message": "Candidate engagement status updated successfully" };
   }

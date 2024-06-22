@@ -44,7 +44,8 @@ export class IncomingWhatsappMessages{
         if (!requestBody?.entry[0]?.changes[0]?.value?.statuses) {
             console.log("There is a request body for sure", requestBody?.entry[0]?.changes[0]?.value?.messages[0])
             const userMessageBody = requestBody?.entry[0]?.changes[0]?.value?.messages[0];
-            
+            const candidateDocument = requestBody?.entry[0]?.changes[0]?.value?.metadata?.filename;
+            console.log("This is the filename of the Candidate's Document: ", candidateDocument);
             if (userMessageBody) {
               console.log("There is a usermessage body in the request", userMessageBody)
               if (requestBody?.entry[0]?.changes[0]?.value?.messages[0].type !== "utility") {

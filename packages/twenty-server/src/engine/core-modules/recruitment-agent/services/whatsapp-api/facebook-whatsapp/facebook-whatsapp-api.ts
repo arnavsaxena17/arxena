@@ -167,7 +167,8 @@ export class FacebookWhatsappChatApi {
 
     
     async uploadFileToWhatsApp(filePath) {
-        console.log("This is the upload file to whatsapp")
+        console.log("uploadFileToWhatsApp function is being called");
+        console.log("This is the upload file to whatsapp");
         
         try {
             // const filePath = '/Users/arnavsaxena/Downloads/CVs-Mx/Prabhakar_Azad_Resume_05122022.doc';
@@ -188,6 +189,7 @@ export class FacebookWhatsappChatApi {
             });
 
             formData.append('messaging_product', 'whatsapp');
+            console.log("This is the form data:", formData)
             try {
                 const { data: { id: mediaId } } = await axios.post(`https://graph.facebook.com/v18.0/${process.env.FACEBOOK_WHATSAPP_PHONE_NUMBER_ID}/media`,
                     formData, {
@@ -264,7 +266,6 @@ export class FacebookWhatsappChatApi {
                 'Content-Type': 'application/json'
             },
             data : templateMessage
-    
         };
         console.log("This is the config:", config);
         try {

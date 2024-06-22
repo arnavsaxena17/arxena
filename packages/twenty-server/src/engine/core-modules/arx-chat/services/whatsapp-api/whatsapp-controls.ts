@@ -21,7 +21,7 @@ export class WhatsappAPISelector{
       console.log("No valid whatsapp API selected");
     }
   }
-  async sendAttachmentMessageOnWhatsapp(attachmentMessage: allDataObjects.attachmentMessageObj) {
+  async sendAttachmentMessageOnWhatsapp(attachmentMessage: any) {
     console.log("attachmentMessage received to send attachment:", attachmentMessage);
     if (process.env.WHATSAPP_API === 'facebook'){
       // Alternative solution for sending attachment message (doesn't take the file path or mediaID as input, but the file itself)
@@ -35,11 +35,13 @@ export class WhatsappAPISelector{
       // await new FacebookWhatsappChatApi().sendWhatsappAttachmentMessage(facebookWhatsappAttachmentMessageObj);
 
       const sendWhatsappAttachmentTextMessageObj = {
-        "filePath":"/Users/arnavsaxena/Downloads/JD - Environment Infra - Group HR Head - Surat.pdf",
+        "fileName": attachmentMessage.fileData.fileName,
+        "filePath": attachmentMessage.fullPath,
         "phoneNumberTo": attachmentMessage.phoneNumberTo,
         "attachmentMessage":"Sharing the JD with you"
       }
       await new FacebookWhatsappChatApi().uploadAndSendFileToWhatsApp(sendWhatsappAttachmentTextMessageObj);
+      debugger;
     }
     else if (process.env.WHATSAPP_API === 'baileys') {
       // await sendWhatsappMessageVIABaileysAPI(whatappUpdateMessageObj);
@@ -48,14 +50,18 @@ export class WhatsappAPISelector{
   }
 
 
-  async  sendJDViaWhatsapp(person:allDataObjects.PersonNode, candidateId:string,attachment:allDataObjects.Attachment){
-    const fullPath= attachment?.fullPath || "";
-    const name = attachment?.name || "";
+
+  async  sendJDViaWhatsapp(person:allDataObjects.PersonNode, candidateId:string,attachment: any){
+    const fullPathh= attachment?.node.fullPath || "";
+    const fullPath = fullPathh.split('?')[0];
+    const name = attachment?.node.name || "";
     console.log("This is attachment name:", name)
     const localFilePath = path?.join(__dirname, 'downloads', name) || fullPath;
     console.log("This is localFile Path:", localFilePath)
-    const fileUrl = `${baseUrl}`+'/'+ fullPath; // Adjust this URL as needed based on your server configuration
+    const fileUrl = fullPath; // Adjust this URL as needed based on your server configuration
     let fileData;
+    debugger;
+
     try{
       console.log("Attachment:", attachment);
       console.log("path:", fullPath, "name:", name, "fileUrl:", fileUrl);
@@ -63,6 +69,7 @@ export class WhatsappAPISelector{
       // Download and save the file locally
       fileData = await axios({ url: fileUrl, method: 'GET', responseType: 'arraybuffer' });
       fs.writeFile(localFilePath, fileData.data, error => {});
+      debugger;
     }
     catch(error){
       console.log("Error in downloading the file:", error);
@@ -71,14 +78,16 @@ export class WhatsappAPISelector{
     const attachmentMessageObj ={
       phoneNumberTo: person.phone,
       phoneNumberFrom: "918411937769",
-      fullPath: fullPath,
+      fullPath: fileUrl,
+      // fileName: name,
       fileData: {
         fileName: name,
-        filePath: localFilePath,
+        filePath: fileUrl,
         fileBuffer: fileData?.data,
         mimetype: mime.lookup(name) || 'application/octet-stream'
       }
     }
+    debugger;
     await new WhatsappAPISelector().sendAttachmentMessageOnWhatsapp(attachmentMessageObj)
   }
   

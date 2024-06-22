@@ -68,7 +68,7 @@ export class OpenAIArxMultiStepClient{
         if (toolCalls) {
             for (const toolCall of toolCalls) {
                 const functionName = toolCall.function.name;
-                const availableFunctions = new ToolsForAgents().getAvailableFunctions();
+                const availableFunctions = new ToolsForAgents().getAvailableFunctions(this.personNode);
                 // @ts-ignore
                 const functionToCall = availableFunctions[functionName];
                 const functionArgs = JSON.parse(toolCall.function.arguments);

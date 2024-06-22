@@ -7,6 +7,7 @@ import { FacebookWhatsappChatApi } from './services/whatsapp-api/facebook-whatsa
 // import { UpdateCandidatesChatsWhatsapps } from './services/candidateEngagement/updateChat';
 import CandidateEngagement from './services/candidate-engagement/check-candidate-engagement';
 import { IncomingWhatsappMessages}  from './services/whatsapp-api/incoming-messages';
+const fs = require('fs');
 
 
 // import { BaileysGateway } from './services/baileys/callBaileys';
@@ -184,6 +185,7 @@ export class WhatsappTestAPI {
     console.log("upload file to whatsapp api");
     const requestBody = request.body;
     const filePath = requestBody?.filePath;
+    console.log("File path:", filePath)
     const response = await new FacebookWhatsappChatApi().uploadFileToWhatsApp(filePath);
     return response || {}; // Return an empty object if the response is undefined
   }
