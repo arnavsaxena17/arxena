@@ -59,7 +59,7 @@ export default class CandidateEngagementArx {
     return whatappUpdateMessageObj;
   }
 
-  async processCandidate(edge: allDataObjects.PersonEdge) {
+  async processCandidate(edge: allDataObjects.PersonEdge){
     console.log("The edge is ::", edge);
     try {
       const candidateNode = edge.node.candidates.edges[0].node;
@@ -70,7 +70,7 @@ export default class CandidateEngagementArx {
       let mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = this.getMostRecentMessageFromMessagesList(messagesList);
       console.log( "mostRecentMessageArr before chatCompletion:", mostRecentMessageArr );
       if (mostRecentMessageArr?.length > 0) {
-        console.log( "Taking Single Step Client for - Prompt Engineering type:", process.env.PROMPT_ENGINEERING_TYPE);
+        console.log( "Taking MULTI Step Client for - Prompt Engineering type:", process.env.PROMPT_ENGINEERING_TYPE);
         let chatAgent = new OpenAIArxMultiStepClient(personNode);
         await chatAgent.createCompletion( mostRecentMessageArr, personNode );
       }
