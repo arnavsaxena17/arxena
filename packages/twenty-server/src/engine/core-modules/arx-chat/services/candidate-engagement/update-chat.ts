@@ -99,15 +99,15 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
                         whatsappMessages: activeJobCandidateObj?.node?.jobs?.whatsappMessages
                     },
                     engagementStatus: activeJobCandidateObj?.node?.engagementStatus,
-                    // phoneNumber: personWithActiveJob?.node?.phone,
-                    // email: personWithActiveJob?.node?.email,
-                    // input: userMessage?.messages[0]?.content,
+                    phoneNumber: personWithActiveJob?.node?.phone,
+                    email: personWithActiveJob?.node?.email,
+                    input: userMessage?.messages[0]?.content,
                     startChat: activeJobCandidateObj?.node?.startChat,
                     whatsappMessages: activeJobCandidateObj?.node?.whatsappMessages,
                     // *! TO CHECK LATER
-                    // emailMessages: {
-                    //     edges: activeJobCandidateObj?.node?.emailMessages?.edges
-                    // }
+                    emailMessages: {
+                        edges: activeJobCandidateObj?.node?.emailMessages?.edges
+                    }
                     // ############################
                 };
                 return candidateProfileObj;
