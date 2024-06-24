@@ -33,21 +33,21 @@ if (process.env.FACEBOOK_WHATSAPP_PERMANENT_API) {
 const templates = ["hello_world", "recruitment"];
 export class FacebookWhatsappChatApi {
   async uploadAndSendFileToWhatsApp(
-    sendFileObj: allDataObjects.SendAttachment
+    attachmentMessage: allDataObjects.AttachmentMessageObject
   ) {
     console.log("Send file");
-    console.log("sendFileObj::y::", sendFileObj);
-    const filePath = sendFileObj?.filePath;
-    const phoneNumberTo = sendFileObj?.phoneNumberTo;
-    const attachmentMessage = sendFileObj?.attachmentMessage;
+    console.log("sendFileObj::y::", attachmentMessage);
+    const filePath = attachmentMessage?.fileData?.filePath;
+    const phoneNumberTo = attachmentMessage?.phoneNumberTo;
+    const attachmentText = "Sharing the JD";
     const response = await new FacebookWhatsappChatApi().uploadFileToWhatsApp(
-      filePath
+      attachmentMessage
     );
     const mediaID = response?.mediaID;
-    const fileName = response?.fileName;
+    const fileName = attachmentMessage?.fileData?.fileName;
     const sendTextMessageObj = {
       phoneNumberFrom: "918411937769",
-      attachmentMessage: attachmentMessage,
+      attachmentText: attachmentText,
       phoneNumberTo: phoneNumberTo ?? "918411937769",
       mediaFileName: fileName ?? "AttachmentFile",
       mediaID: mediaID,
@@ -176,12 +176,18 @@ export class FacebookWhatsappChatApi {
     return { filePath, fileName, contentType };
   }
 
-  async uploadFileToWhatsApp(filePath) {
+  async uploadFileToWhatsApp(
+    attachmentMessage: allDataObjects.AttachmentMessageObject
+  ) {
     console.log("This is the upload file to whatsapp");
 
     try {
       // const filePath = '/Users/arnavsaxena/Downloads/CVs-Mx/Prabhakar_Azad_Resume_05122022.doc';
       // Get the file name
+
+      const filePath =
+        "/home/ninad/Documents/twenty/packages/twenty-server/.attachments/ec0cd07a-914c-4539-b0e5-ac18c03199bc/file-sample_150kB.pdf";
+
       const fileName = path.basename(filePath);
       // Get the content type
       // const contentType = mime.lookup(fileName) || 'application/octet-stream';
@@ -191,36 +197,49 @@ export class FacebookWhatsappChatApi {
       console.log("This is the content type:", contentType);
       console.log("This is the file name:", fileName);
 
+      const fileData = createReadStream(filePath);
+
       const formData = new FormData();
-      formData.append("file", createReadStream(filePath), {
+      formData.append("file", fileData, {
         contentType: contentType,
         filename: fileName,
       });
 
       formData.append("messaging_product", "whatsapp");
+      let response;
       try {
-        const {
-          data: { id: mediaId },
-        } = await axios.post(
-          `https://graph.facebook.com/v18.0/${process.env.FACEBOOK_WHATSAPP_PHONE_NUMBER_ID}/media`,
-          formData,
-          {
-            headers: {
-              Authorization: `Bearer ${whatsappAPIToken}`,
-              ...formData.getHeaders(),
-            },
-          }
+        // response = await axios.post(
+        //   `https://graph.facebook.com/v19.0/${process.env.FACEBOOK_WHATSAPP_PHONE_NUMBER_ID}/media`,
+        //   formData,
+        //   {
+        //     headers: {
+        //       Authorization: `Bearer ${whatsappAPIToken}`,
+        //       ...formData.getHeaders(),
+        //     },
+        //   }
+        // );
+
+        const response = await axios.post(
+          "http://localhost:3000/whatsapp-test/uploadFile",
+          { filePath: filePath }
         );
-        console.log("media ID", mediaId);
+        console.log("media ID", response?.data?.mediaID);
+        console.log("Request successful");
+
+        console.log("****Response data********????:", response.data);
+        console.log("media ID", response?.data?.id);
         console.log("Request successful");
         return {
-          mediaID: mediaId,
+          mediaID: response?.data?.mediaID,
           status: "success",
           fileName: fileName,
           contentType: contentType,
         };
       } catch (err) {
+        debugger;
+        console.error("Errir heree", response?.data);
         console.error("upload", err.toJSON());
+        console.log(err.data);
       }
       // Remove the local file
       // const unlink = promisify(fs.unlink);
@@ -243,7 +262,7 @@ export class FacebookWhatsappChatApi {
       type: "document",
       document: {
         id: sendWhatsappAttachmentTextMessageObj.mediaID,
-        caption: sendWhatsappAttachmentTextMessageObj.attachmentMessage,
+        caption: sendWhatsappAttachmentTextMessageObj.attachmentText,
         filename: sendWhatsappAttachmentTextMessageObj.mediaFileName
           ? sendWhatsappAttachmentTextMessageObj.mediaFileName
           : "attachment",
