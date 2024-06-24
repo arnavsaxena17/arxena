@@ -320,48 +320,29 @@ export class FacebookWhatsappChatApi {
     }
   }
 
-  async downloadWhatsappAttachmentMessage(
-    sendTemplateMessageObj: {
-      filename: string;
-      mime_type: string;
-      documentId: string;
-    },
-    candidateProfileData: allDataObjects.CandidateNode
-  ) {
+  async downloadWhatsappAttachmentMessage( sendTemplateMessageObj: { filename: string; mime_type: string; documentId: string; }, candidateProfileData: allDataObjects.CandidateNode ) {
     const constCandidateProfileData = candidateProfileData;
     let config = {
       method: "get",
       maxBodyLength: Infinity,
-      url:
-        "https://graph.facebook.com/v18.0/" + sendTemplateMessageObj.documentId,
-      headers: {
-        Authorization: "Bearer " + whatsappAPIToken,
-        "Content-Type": "application/json",
-      },
+      url: "https://graph.facebook.com/v18.0/" + sendTemplateMessageObj.documentId,
+      headers: { Authorization: "Bearer " + whatsappAPIToken, "Content-Type": "application/json", },
       responseType: "json",
     };
     // console.log("This is the config in downloadWhatsappAttachmentMessage", config);
     const response = await axios.request(config);
-
     const url = response.data.url;
     config.url = url;
     config.responseType = "stream";
     const fileDownloadResponse = await axios.request(config);
-    // debugger
-
-    // console.log("This is the response:", response.data)
     console.log("This is the response: bpdy", response.body);
     const fileName = sendTemplateMessageObj.filename; // Set the desired file name
     const filePath = `${process.cwd()}/${fileName}`;
     const writeStream = fs.createWriteStream(filePath);
     fileDownloadResponse.data.pipe(writeStream); // Pipe response stream to file stream
-
     writeStream.on("finish", async () => {
       console.log("File saved successfully at", filePath);
-      const attachmentObj =
-        await new AttachmentProcessingService().uploadAttachmentToTwenty(
-          filePath
-        );
+      const attachmentObj = await new AttachmentProcessingService().uploadAttachmentToTwenty( filePath );
       console.log(attachmentObj);
       // debugger
       // attachmentObj.uploadFile
@@ -375,11 +356,7 @@ export class FacebookWhatsappChatApi {
           candidateId: constCandidateProfileData.id,
         },
       };
-      //   debugger
-
-      await new AttachmentProcessingService().createOneAttachmentFromFilePath(
-        dataToUploadInAttachmentTable
-      );
+      await new AttachmentProcessingService().createOneAttachmentFromFilePath( dataToUploadInAttachmentTable );
     });
     writeStream.on("error", (error) => {
       console.error("Error saving file:", error);

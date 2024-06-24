@@ -75,7 +75,6 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
             console.log("This is the response from getCandidate Information",  response.data.data)
             const candidateDataObjs = response.data?.data?.people?.edges[0]?.node?.candidates?.edges;
             console.log("This is the candidate data::", candidateDataObjs);
-
             const activeJobCandidateObj = candidateDataObjs?.find((edge: any) => edge?.node?.jobs?.isActive);
             console.log("This is the number of candidates", candidateDataObjs?.length);
             console.log("This is the activeJobCandidateObj", activeJobCandidateObj);
@@ -185,7 +184,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
         // console.log("These are graph config data", graphqlQueryObj);
         try {
             const response = await axiosRequest(graphqlQueryObj);
-            console.log("This is the response from the axios request::", response.data);
+            console.log("This is the response from the axios request in createAndUpdateWhatsappMessage::", response.data);
             return response.data;    
         } catch (error) {
             console.log(error);

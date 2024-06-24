@@ -35,14 +35,7 @@ export class IncomingWhatsappMessages {
         "This is the candiate who has sent us candidateProfileData::",
         candidateProfileData
       );
-      await this.createAndUpdateIncomingCandidateChatMessage(
-        {
-          chatReply: chatReply,
-          whatsappDeliveryStatus: "delivered",
-          whatsappMessageId: "receiveIncomingMessagesFromBaileys",
-        },
-        candidateProfileData
-      );
+      await this.createAndUpdateIncomingCandidateChatMessage( { chatReply: chatReply, whatsappDeliveryStatus: "delivered", whatsappMessageId: "receiveIncomingMessagesFromBaileys", }, candidateProfileData );
     } else {
       console.log(
         "Message has been received from a candidate however the candidate is not in the database"
@@ -219,14 +212,7 @@ export class IncomingWhatsappMessages {
       );
     }
   }
-  async createAndUpdateIncomingCandidateChatMessage(
-    replyObject: {
-      whatsappDeliveryStatus: string;
-      chatReply: string;
-      whatsappMessageId: string;
-    },
-    candidateProfileDataNodeObj: allDataObjects.CandidateNode
-  ) {
+  async createAndUpdateIncomingCandidateChatMessage( replyObject: { whatsappDeliveryStatus: string; chatReply: string; whatsappMessageId: string; }, candidateProfileDataNodeObj: allDataObjects.CandidateNode ) {
     const recruiterProfile = allDataObjects.recruiterProfile;
     const messagesList = candidateProfileDataNodeObj?.whatsappMessages?.edges;
     // Ensure messagesList is not undefined before sorting
@@ -234,6 +220,7 @@ export class IncomingWhatsappMessages {
       "This is the messageObj:",
       messagesList.map((edge: any) => edge.node.messageObj)
     );
+    console.log("This is the chat reply:", replyObject.chatReply);
     let mostRecentMessageObj;
     if (messagesList) {
       console.log("This is the messagesList:", messagesList);

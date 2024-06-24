@@ -47,7 +47,6 @@ export class OpenAIArxSingleStepClient{
             for (const toolCall of toolCalls) {
                 const functionName = toolCall.function.name;
                 console.log("This is the person:", this.personNode)
-                // console.log("functionName called:",functionName);
                 const availableFunctions = new ToolsForAgents().getAvailableFunctions();
                 // @ts-ignore
                 const functionToCall = availableFunctions[functionName];
@@ -58,7 +57,7 @@ export class OpenAIArxSingleStepClient{
                 // @ts-ignore
                 messages.push({ tool_call_id: toolCall.id, role: "tool", name: functionName, content: responseFromFunction});
             }
-            // console.log("Message history in :2=====", messages.slice(1).map((message:any) => message.content).join("\n"),"=====")
+
             const tools = await new ToolsForAgents().getTools();
             // @ts-ignore
             const response = await this.openAIclient.chat.completions.create({ model: modelName, messages: messages, tools: tools, tool_choice: "auto" });
