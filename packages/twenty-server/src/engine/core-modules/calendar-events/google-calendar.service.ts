@@ -10,7 +10,7 @@ import { authenticate } from '@google-cloud/local-auth';
 import { google } from 'googleapis';
 import { env } from 'process';
 import axios from 'axios';
-import { CalendarEventType } from 'src/engine/core-modules/calendar-events/services/calendar-data-objects-types';
+import { CalendarEventType } from '../../../engine/core-modules/calendar-events/services/calendar-data-objects-types';
 
 // If modifying these scopes, delete token.json.
 const SCOPES = ['https://www.googleapis.com/auth/calendar'];

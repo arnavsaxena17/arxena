@@ -76,7 +76,7 @@ export async function sendAttachmentMessageViaBaileys(sendTextMessageObj:allData
   try {
     const response = await axios.post(uploadFileUrl, data);
     console.log('Upload File Response:', response.data);
-  } catch (error) {
+  } catch (error:any) {
     console.error('Upload File Error:', error.response?.data || error.message);
   }
 }

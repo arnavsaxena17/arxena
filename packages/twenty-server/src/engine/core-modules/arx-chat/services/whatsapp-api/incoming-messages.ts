@@ -98,17 +98,11 @@ export class IncomingWhatsappMessages {
         },
       };
       // debugger
-      const graphqlQueryObjForUpdationForDeliveryStatus = JSON.stringify({
-        query: allGraphQLQueries.graphqlQueryToUpdateMessageDeliveryStatus,
-        variables: variablesToUpdateDeliveryStatus,
-      });
+      const graphqlQueryObjForUpdationForDeliveryStatus = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToUpdateMessageDeliveryStatus, variables: variablesToUpdateDeliveryStatus, });
+      const responseOfDeliveryStatus = await axiosRequest(graphqlQueryObjForUpdationForDeliveryStatus);
 
-      const responseOfDeliveryStatus = await axiosRequest(
-        graphqlQueryObjForUpdationForDeliveryStatus
-      );
-
-      console.log("---------------DONEEEEEEEEEEEEEEEE-----------------------");
-      console.log(responseOfDeliveryStatus);
+      console.log("---------------DELIVERY STATUS UPDATE DONE-----------------------");
+      // console.log(responseOfDeliveryStatus);
     } else if (requestBody?.entry[0]?.changes[0]?.value?.messages?.length > 0) {
       // to check if the incoming message is the message
       console.log(

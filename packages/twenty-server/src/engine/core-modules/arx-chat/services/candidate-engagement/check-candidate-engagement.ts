@@ -17,10 +17,7 @@ const rl = readline.createInterface({
 });
 
 export default class CandidateEngagementArx {
-  async createAndUpdateCandidateHiChatMessage(
-    chatReply: string,
-    candidateProfileDataNodeObj: allDataObjects.PersonNode
-  ) {
+  async createAndUpdateCandidateHiChatMessage( chatReply: string, candidateProfileDataNodeObj: allDataObjects.PersonNode ) {
     
     // console.log("This is the candidate profile data node obj:", candidateProfileDataNodeObj);
     console.log("This is the chat reply:", chatReply);
@@ -68,78 +65,24 @@ export default class CandidateEngagementArx {
       const candidateNode = edge.node.candidates.edges[0].node;
       const personNode = edge.node;
       console.log("This is candidate Node:", candidateNode);
-
-
-      // fetch emails here
-
-      // const emailList = 
-
-      const messagesList: allDataObjects.WhatsAppMessagesEdge[] =
-        candidateNode?.whatsappMessages?.edges;
+      const messagesList: allDataObjects.WhatsAppMessagesEdge[] = candidateNode?.whatsappMessages?.edges;
       console.log("Current Messages list:", messagesList);
-      let mostRecentMessageArr: allDataObjects.ChatHistoryItem[] =
-        this.getMostRecentMessageFromMessagesList(messagesList);
-      console.log(
-        "mostRecentMessageArr before chatCompletion:",
-        mostRecentMessageArr
-      );
+      let mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = this.getMostRecentMessageFromMessagesList(messagesList);
+      console.log( "mostRecentMessageArr before chatCompletion:", mostRecentMessageArr );
       if (mostRecentMessageArr?.length > 0) {
-        let chatAgent: OpenAIArxSingleStepClient | OpenAIArxMultiStepClient;
-        if (process.env.PROMPT_ENGINEERING_TYPE === "single-step") {
-          console.log(
-            "Taking Single Step Client for - Prompt Engineering type:",
-            process.env.PROMPT_ENGINEERING_TYPE
-          );
-          chatAgent = new OpenAIArxSingleStepClient(personNode);
-        } else {
-          console.log(
-            "Taking Multi Step Client for - Prompt Engineering type:",
-            process.env.PROMPT_ENGINEERING_TYPE
-          );
-          chatAgent = new OpenAIArxMultiStepClient(personNode);
-        }
-        // debugger
-        mostRecentMessageArr = await chatAgent.createCompletion(
-          mostRecentMessageArr,
-          personNode
-        );
-
-        // Trying to move this inside the create completion so that we can update the whatsapp message after the message is being sent
-
-        // const whatappUpdateMessageObj =
-        //   await this.updateChatHistoryObjCreateWhatsappMessageObj(
-        //     "checkCandidateEngagement",
-        //     response,
-        //     personNode,
-        //     mostRecentMessageArr
-        //   );
-        // await this.updateCandidateEngagementDataInTable(
-        //   whatappUpdateMessageObj
-        // );
-
-        // Should no longer be here I think
-        // if (process.env.WHATSAPP_ENABLED === "true"){
-        //   await new WhatsappAPISelector().sendWhatsappMessage(whatappUpdateMessageObj);
-        // }
-        // else{
-        //   console.log("Whatsapp is not enabled, so not sending message:", whatappUpdateMessageObj.messages[0].content)
-        // }
+        console.log( "Taking Single Step Client for - Prompt Engineering type:", process.env.PROMPT_ENGINEERING_TYPE);
+        let chatAgent = new OpenAIArxMultiStepClient(personNode);
+        await chatAgent.createCompletion( mostRecentMessageArr, personNode );
       }
     } catch (error) {
       console.log("This is the error in processCandidate", error);
       debugger;
     }
   }
-  getMostRecentMessageFromMessagesList(
-    messagesList: allDataObjects.WhatsAppMessagesEdge[]
-  ) {
+  getMostRecentMessageFromMessagesList( messagesList: allDataObjects.WhatsAppMessagesEdge[] ) {
     let mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = [];
     if (messagesList) {
-      messagesList.sort(
-        (a, b) =>
-          new Date(b.node.createdAt).getTime() -
-          new Date(a.node.createdAt).getTime()
-      );
+      messagesList.sort( (a, b) => new Date(b.node.createdAt).getTime() - new Date(a.node.createdAt).getTime() );
       mostRecentMessageArr = messagesList[0]?.node?.messageObj;
       console.log(mostRecentMessageArr);
     }
@@ -187,12 +130,7 @@ export default class CandidateEngagementArx {
     };
   }
 
-  async updateChatHistoryObjCreateWhatsappMessageObj(
-    wamId: string,
-    result: ChainValues,
-    personNode: allDataObjects.PersonNode,
-    chatHistory: allDataObjects.ChatHistoryItem[]
-  ) {
+  async updateChatHistoryObjCreateWhatsappMessageObj( wamId: string, result: ChainValues, personNode: allDataObjects.PersonNode, chatHistory: allDataObjects.ChatHistoryItem[] ) {
     const candidateNode = personNode.candidates.edges[0].node;
     const updatedChatHistoryObj = {
       executorResultObj: result,
@@ -211,10 +149,8 @@ export default class CandidateEngagementArx {
 
   filterCandidates(sortedPeopleData: allDataObjects.People) {
     // console.log("This is filter candidates:", sortedPeopleData)
-    return sortedPeopleData?.edges?.filter(
-      (edge) =>
-        edge?.node?.candidates?.edges?.length > 0 &&
-        edge?.node?.candidates?.edges[0]?.node?.engagementStatus
+    return sortedPeopleData?.edges?.filter( (edge) =>
+        edge?.node?.candidates?.edges?.length > 0 && edge?.node?.candidates?.edges[0]?.node?.engagementStatus
     );
   }
 

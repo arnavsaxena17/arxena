@@ -13,7 +13,7 @@ import { OpenAIArxSingleStepClient } from './services/llm-agents/arx-single-step
 import { WhatsappAPISelector } from './services/whatsapp-api/whatsapp-controls';
 import { any } from 'zod';
 import { IncomingMessage } from 'http';
-import { ToolsForAgents } from 'src/engine/core-modules/arx-chat/services/llm-agents/prompting-tool-calling';
+import { ToolsForAgents } from './services/llm-agents/prompting-tool-calling';
 
 
 @Controller('updateChat')
@@ -67,7 +67,7 @@ export class ArxChatEndpoint {
       else{
         chatAgent = new OpenAIArxMultiStepClient(personObj);
       }
-      mostRecentMessageArr = await chatAgent.createCompletion(mostRecentMessageArr, personObj);
+      await chatAgent.createCompletion(mostRecentMessageArr, personObj);
       const whatappUpdateMessageObj = await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj("ArxChatEndpoint", response,personObj,mostRecentMessageArr);
       await new CandidateEngagementArx().updateCandidateEngagementDataInTable(whatappUpdateMessageObj);
 

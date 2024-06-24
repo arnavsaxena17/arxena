@@ -15,9 +15,9 @@ import path from "path";
 const FormData = require("form-data");
 import { createReadStream, createWriteStream } from "fs";
 import { getContentTypeFromFileName } from "../../../utils/arx-chat-agent-utils";
-import { AttachmentProcessingService } from "src/engine/core-modules/arx-chat/services/candidate-engagement/attachment-processing";
-import CandidateEngagement from "src/engine/core-modules/recruitment-agent/services/candidate-engagement/check-candidate-engagement";
-import CandidateEngagementArx from "src/engine/core-modules/arx-chat/services/candidate-engagement/check-candidate-engagement";
+import { AttachmentProcessingService } from "../../../services/candidate-engagement/attachment-processing";
+import CandidateEngagement from "../../../services/candidate-engagement/check-candidate-engagement";
+import CandidateEngagementArx from "../../../services/candidate-engagement/check-candidate-engagement";
 // import { lookup } from 'mime';
 // const mime = require('mime');
 const axios = require("axios");
@@ -133,7 +133,7 @@ export class FacebookWhatsappChatApi {
       },
       data: text_message,
     };
-    //   console.log("This is the config in sendWhatsappTextMessage:", config)
+      console.log("This is the config in sendWhatsappTextMessage:", config)
 
     const response = await axios.request(config);
 
@@ -176,7 +176,7 @@ export class FacebookWhatsappChatApi {
     return { filePath, fileName, contentType };
   }
 
-  async uploadFileToWhatsApp(filePath) {
+  async uploadFileToWhatsApp(filePath:string) {
     console.log("This is the upload file to whatsapp");
 
     try {
@@ -219,7 +219,7 @@ export class FacebookWhatsappChatApi {
           fileName: fileName,
           contentType: contentType,
         };
-      } catch (err) {
+      } catch (err: any) {
         console.error("upload", err.toJSON());
       }
       // Remove the local file
@@ -413,19 +413,15 @@ export class FacebookWhatsappChatApi {
           whatappUpdateMessageObj.phoneNumberFrom
         );
         const sendTemplateMessageObj = {
-          recipient: whatappUpdateMessageObj.phoneNumberTo,
+          recipient: whatappUpdateMessageObj.phoneNumberTo.replace("+",""),
           template_name: templates[1],
           candidateFirstName: whatappUpdateMessageObj.candidateFirstName,
           recruiterName: allDataObjects.recruiterProfile.name,
           recruiterJobTitle: allDataObjects.recruiterProfile.job_title,
-          recruiterCompanyName:
-            allDataObjects.recruiterProfile.job_company_name,
-          recruiterCompanyDescription:
-            allDataObjects.recruiterProfile.company_description_oneliner,
-          jobPositionName:
-            whatappUpdateMessageObj?.candidateProfile?.jobs?.name,
-          jobLocation:
-            whatappUpdateMessageObj?.candidateProfile?.jobs?.jobLocation,
+          recruiterCompanyName: allDataObjects.recruiterProfile.job_company_name,
+          recruiterCompanyDescription: allDataObjects.recruiterProfile.company_description_oneliner,
+          jobPositionName: whatappUpdateMessageObj?.candidateProfile?.jobs?.name,
+          jobLocation: whatappUpdateMessageObj?.candidateProfile?.jobs?.jobLocation,
         };
         response = await this.sendWhatsappTemplateMessage(
           sendTemplateMessageObj

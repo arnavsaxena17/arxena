@@ -28,7 +28,7 @@ export class ToolsForAgents{
   // };
   
 
-  convertToBulletPoints (steps){
+  convertToBulletPoints (steps:any){
     let result = "";
     for (let key in steps) {
         result += `${key}. ${steps[key]}\n`;
@@ -77,7 +77,7 @@ export class ToolsForAgents{
     They may either ask questions or show interest or provide a time slot. You will first ask them a few screening questions one by one before confirming a time.
 
     ##STAGE_PROMPT
-    
+
     Your screening questions are :
     ${formattedQuestions}
     After the candidate answers each question, you will call the function update_answer.
@@ -92,19 +92,23 @@ export class ToolsForAgents{
     After each message to the candidate, you will call the function updateCandidateProfile to update the candidate profile. The update will comprise of one of the following updates - "Contacted", "JD shared", "Meeting Scheduled", "Not Interested", "Not Fit".
     Sometimes candidates will send forwards and irrelevant messages. You will have to ignore them. If the candidate unnecessarily replies and messages, you will reply with "#DONTRESPOND#" exact string. 
     You will not indicate any updates to the candidate.
-    
     Available timeslots are: ${availableTimeSlots}
-    
     Your first message when you receive the prompt "startChat" is: Hey ${personNode.name.firstName},
     I'm ${recruiterProfile.first_name}, ${recruiterProfile.job_title} at ${recruiterProfile.job_company_name}, ${recruiterProfile.company_description_oneliner}.
     I'm hiring for a ${jobProfile.name} role for ${jobProfile.company.descriptionOneliner} and got your application on my job posting. I believe this might be a good fit.
     Wanted to speak to you in regards your interests in our new role. Would you be available for a short call sometime today?`;
-    
     return SYSTEM_PROMPT;
   }
  
 
-  async getSystemPromptBasedOnStage(personNode:allDataObjects.PersonNode, stage:string){
+  async getCandidateFacingSystemPromptBasedOnStage(personNode:allDataObjects.PersonNode, stage:string){
+    const systemPrompt = await this.getSystemPrompt(personNode)
+    const updatedSystemPromptWithStagePrompt = systemPrompt.replace("##STAGE_PROMPT", stage)
+    console.log(updatedSystemPromptWithStagePrompt)
+    return updatedSystemPromptWithStagePrompt
+  }
+
+  async getSystemFacingSystemPromptBasedOnStage(personNode:allDataObjects.PersonNode, stage:string){
     const systemPrompt = await this.getSystemPrompt(personNode)
     const updatedSystemPromptWithStagePrompt = systemPrompt.replace("##STAGE_PROMPT", stage)
     console.log(updatedSystemPromptWithStagePrompt)
@@ -301,7 +305,109 @@ export class ToolsForAgents{
   }
   
   
-  async getToolsByStage(stage:string){
+  async getCandidateFacingToolsByStage(stage:string){
+    const tools = [
+      {
+        "type": "function",
+        "function": {
+            "name": "share_jd",
+            "description": "Share the candidate JD",
+        }
+      },
+      {
+        type: "function",
+    function: {
+      name: "schedule_meeting",
+      description: "Schedule a meeting with the candidate",
+      parameters: {
+        type: "object",
+        properties: {
+          inputs: {
+            type: "object",
+            description: "Details about the meeting",
+            properties: {
+              summary: {
+                type: "string",
+                description: "Summary of the meeting",
+              },
+              typeOfMeeting: {
+                type: "string",
+                description: "Type of the meeting, can be either Virtual or In-Person. Default is Virtual.",
+              },
+              location: {
+                type: "string",
+                description: "Location of the meeting",
+              },
+              description: {
+                type: "string",
+                description: "Description of the meeting",
+              },
+              startDateTime: {
+                type: "string",
+                format: "date-time",
+                description: "Start date and time of the meeting in ISO 8601 format",
+              },
+              endDateTime: {
+                type: "string",
+                format: "date-time",
+                description: "End date and time of the meeting in ISO 8601 format",
+              },
+              timeZone: {
+                type: "string",
+                description: "Time zone of the meeting",
+              },
+            },
+            required: ["startDateTime", "endDateTime", "timeZone"],
+          },
+          candidateProfileDataNodeObj: {
+            type: "object",
+            description: "Profile data of the candidate",
+            properties: {
+              email: {
+                type: "string",
+                format: "email",
+                description: "Email of the candidate",
+              },
+            },
+            required: ["email"],
+          },
+        },
+        required: ["inputs", "candidateProfileDataNodeObj"],
+      },
+    },
+      },
+      {
+        "type": "function",
+        "function": {
+            "name": "update_candidate_profile",
+            "description": "Update the candidate profile",
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+            "name": "update_answer",
+            "description": "Update the candidate's answer based on the question asked",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "question": {
+                  "type": "string",
+                  "description": "The question asked"
+                },
+                "answer": {
+                  "type": "string",
+                  "description": "The answer provided by the candidate"
+                }
+              },
+              "required": ["question", "answer"]
+            }
+        }
+      }
+    ];
+    return tools
+  }
+  async getSystemFacingToolsByStage(stage:string){
     const tools = [
       {
         "type": "function",
