@@ -3,7 +3,7 @@ import * as allDataObjects from "../data-model-objects";
 
 const modelName = "gpt-4o"
 
-import {ToolsForAgents} from 'src/engine/core-modules/arx-chat/services/llm-agents/prompting-tool-calling';
+import {ToolsForAgents} from '../../services/llm-agents/prompting-tool-calling';
 import { ChatCompletion, ChatCompletionMessage } from "openai/resources";
 import CandidateEngagementArx from "src/engine/core-modules/arx-chat/services/candidate-engagement/check-candidate-engagement";
 import { WhatsappAPISelector } from "src/engine/core-modules/arx-chat/services/whatsapp-api/whatsapp-controls";
@@ -75,15 +75,15 @@ export class OpenAIArxSingleStepClient{
         }
 
         async sendWhatsappMessageToCandidate(response:ChatCompletion, mostRecentMessageArr:allDataObjects.ChatHistoryItem[], personNode:allDataObjects.PersonNode){
-            if (response.choices[0].message.content && response.choices[0].message.content !== "#DONTRESPOND#"){ 
+            if (response.choices[0].message.content && response.choices[0].message.content !== "#DONTRESPOND#"){
                 // send message to candidates
                 const whatappUpdateMessageObj = await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj("sendWhatsappMessageToCandidate", response, this.personNode, mostRecentMessageArr)
-                if (process.env.WHATSAPP_ENABLED === "true"){
+                if (process.env.WHATSAPP_ENABLED === "true") {
                     await new WhatsappAPISelector().sendWhatsappMessage(whatappUpdateMessageObj, personNode, mostRecentMessageArr);
                 }
-                else{
+                else {
                     console.log("Whatsapp is not enabled, so not sending message:", whatappUpdateMessageObj.messages[0].content)
-                  }
+                }
             }
     
         }

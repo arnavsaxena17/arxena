@@ -1,6 +1,6 @@
 import { Controller, Post, Body } from '@nestjs/common';
 import { GoogleCalendarService } from './google-calendar.service';
-import { CalendarEventType } from 'src/engine/core-modules/calendar-events/services/calendar-data-objects-types';
+import { CalendarEventType } from '../../../engine/core-modules/calendar-events/services/calendar-data-objects-types';
 
 @Controller('google-calendar')
 export class GoogleCalendarController {

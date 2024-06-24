@@ -12,7 +12,7 @@ const fs = require('fs');
 
 export class AttachmentProcessingService {
 
-  async  uploadAttachmentToTwenty(filePath){
+  async  uploadAttachmentToTwenty(filePath:string){
     let data = new FormData();
     data.append('operations', '{"operationName":"uploadFile","variables":{"file":null,"fileFolder":"Attachment"},"query":"mutation uploadFile($file: Upload!, $fileFolder: FileFolder) {\\n  uploadFile(file: $file, fileFolder: $fileFolder)\\n}"}');
     data.append('map', '{"1":["variables.file"]}');

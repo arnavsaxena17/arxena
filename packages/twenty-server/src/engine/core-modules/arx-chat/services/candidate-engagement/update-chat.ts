@@ -80,7 +80,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
             console.log("This is the number of candidates", candidateDataObjs?.length);
             console.log("This is the activeJobCandidateObj", activeJobCandidateObj);
             if (activeJobCandidateObj) {
-                const personWithActiveJob = response?.data?.data?.people?.edges?.find(person => 
+                const personWithActiveJob = response?.data?.data?.people?.edges?.find((person: { node: { candidates: { edges: any[]; }; }; }) => 
                     person?.node?.candidates?.edges?.some(candidate => candidate?.node?.jobs?.isActive)
                 );
                 const candidateProfileObj: allDataObjects.CandidateNode = {
@@ -99,15 +99,15 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
                         whatsappMessages: activeJobCandidateObj?.node?.jobs?.whatsappMessages
                     },
                     engagementStatus: activeJobCandidateObj?.node?.engagementStatus,
-                    phoneNumber: personWithActiveJob?.node?.phone,
-                    email: personWithActiveJob?.node?.email,
-                    input: userMessage?.messages[0]?.content,
+                    // phoneNumber: personWithActiveJob?.node?.phone,
+                    // email: personWithActiveJob?.node?.email,
+                    // input: userMessage?.messages[0]?.content,
                     startChat: activeJobCandidateObj?.node?.startChat,
                     whatsappMessages: activeJobCandidateObj?.node?.whatsappMessages,
                     // *! TO CHECK LATER
-                    emailMessages: {
-                        edges: activeJobCandidateObj?.node?.emailMessages?.edges
-                    }
+                    // emailMessages: {
+                    //     edges: activeJobCandidateObj?.node?.emailMessages?.edges
+                    // }
                     // ############################
                 };
                 return candidateProfileObj;
@@ -168,8 +168,8 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
                 "message": userMessage?.messages[0]?.content || userMessage?.messages[0]?.text,
                 "phoneFrom": userMessage?.phoneNumberFrom,
                 "phoneTo": userMessage?.phoneNumberTo,
-                "jobsId": candidateProfileObj[0]?.node.jobs?.id || candidateProfileObj.jobs?.id,
-                "recruiterId": candidateProfileObj[0]?.node?.jobs?.recruiterId || candidateProfileObj?.jobs?.recruiterId,
+                "jobsId":  candidateProfileObj.jobs?.id,
+                "recruiterId":  candidateProfileObj?.jobs?.recruiterId,
                 "name": userMessage?.messageType,
                 "messageObj":userMessage?.messageObj,
                 "whatsappDeliveryStatus": userMessage.whatsappDeliveryStatus,
