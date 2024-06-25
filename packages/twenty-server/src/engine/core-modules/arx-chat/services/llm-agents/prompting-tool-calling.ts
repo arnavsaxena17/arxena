@@ -336,6 +336,138 @@ export class ToolsForAgents {
             required: ["inputs", "candidateProfileDataNodeObj"],
           },
         },
+      
+      },
+      {
+        "type": "function",
+        "function": {
+            "name": "update_candidate_profile",
+            "description": "Update the candidate profile",
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+            "name": "update_answer",
+            "description": "Update the candidate's answer",
+
+        }
+      }
+    ];
+    return tools
+  }
+  
+  
+  async getCandidateFacingToolsByStage(stage:string){
+    const tools = [
+      {
+        "type": "function",
+        "function": {
+            "name": "share_jd",
+            "description": "Share the candidate JD",
+        }
+      },
+      {
+        type: "function",
+    function: {
+      name: "schedule_meeting",
+      description: "Schedule a meeting with the candidate",
+      parameters: {
+        type: "object",
+        properties: {
+          inputs: {
+            type: "object",
+            description: "Details about the meeting",
+            properties: {
+              summary: {
+                type: "string",
+                description: "Summary of the meeting",
+              },
+              typeOfMeeting: {
+                type: "string",
+                description: "Type of the meeting, can be either Virtual or In-Person. Default is Virtual.",
+              },
+              location: {
+                type: "string",
+                description: "Location of the meeting",
+              },
+              description: {
+                type: "string",
+                description: "Description of the meeting",
+              },
+              startDateTime: {
+                type: "string",
+                format: "date-time",
+                description: "Start date and time of the meeting in ISO 8601 format",
+              },
+              endDateTime: {
+                type: "string",
+                format: "date-time",
+                description: "End date and time of the meeting in ISO 8601 format",
+              },
+              timeZone: {
+                type: "string",
+                description: "Time zone of the meeting",
+              },
+            },
+            required: ["startDateTime", "endDateTime", "timeZone"],
+          },
+          candidateProfileDataNodeObj: {
+            type: "object",
+            description: "Profile data of the candidate",
+            properties: {
+              email: {
+                type: "string",
+                format: "email",
+                description: "Email of the candidate",
+              },
+            },
+            required: ["email"],
+          },
+        },
+        required: ["inputs", "candidateProfileDataNodeObj"],
+      },
+    },
+      },
+      {
+        "type": "function",
+        "function": {
+            "name": "update_candidate_profile",
+            "description": "Update the candidate profile",
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+            "name": "update_answer",
+            "description": "Update the candidate's answer based on the question asked",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "question": {
+                  "type": "string",
+                  "description": "The question asked"
+                },
+                "answer": {
+                  "type": "string",
+                  "description": "The answer provided by the candidate"
+                }
+              },
+              "required": ["question", "answer"]
+            }
+        }
+      }
+    ];
+    return tools
+  }
+  async getSystemFacingToolsByStage(stage:string){
+    const tools = [
+      {
+        "type": "function",
+        "function": {
+            "name": "share_jd",
+            "description": "Share the candidate JD",
+        }
       },
       {
         type: "function",
