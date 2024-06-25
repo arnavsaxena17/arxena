@@ -1,5 +1,5 @@
 import { ChainValues } from "@langchain/core/utils/types";
-import {  BaseMessage } from "@langchain/core/messages";
+import { BaseMessage } from "@langchain/core/messages";
 import Anthropic from "@anthropic-ai/sdk";
 import OpenAI from "openai";
 
@@ -24,20 +24,12 @@ export interface ToolChatMessage {
 // Type for chat history items
 export type ChatHistoryItem = ChatMessage | ToolChatMessage;
 
-
 export interface AnswerMessageObj {
- 
-      "questionsId" : string,
-      "name": string,
-      "position": string,
-      "candidateId" : string
-  
-  }
-
-
-
-
-
+  questionsId: string;
+  name: string;
+  position: string;
+  candidateId: string;
+}
 
 export interface MessageNode {
   recruiterId: string;
@@ -45,84 +37,66 @@ export interface MessageNode {
   candidateId: string;
   jobsId: string;
   position: number;
-  messageType : string;
+  messageType: string;
   phoneTo: string;
   updatedAt: string;
   createdAt: string;
   id: string;
   name: string;
   phoneFrom: string;
-  messageObj: any ;
+  messageObj: any;
 }
 export interface SendAttachment {
   filePath: string;
   phoneNumberTo: string;
   attachmentMessage: string;
 }
-export interface BaileysAttachmentObject{
+export interface BaileysAttachmentObject {
   phoneNumberTo: string;
   fileData: {
     fileName: string;
     filePath: string;
     fileBuffer: string;
     mimetype: string;
-  }
-
+  };
 }
 
-
-export interface attachmentMessageObj{
-  phoneNumberTo: string;
-  phoneNumberFrom: string;
-  fullPath: string;
-  fileData: {
-    fileName: string;
-    filePath: string;
-    fileBuffer: string;
-    mimetype: string;
-  }
-
-}
-export interface FacebookWhatsappAttachmentChatRequestBody{
+export interface FacebookWhatsappAttachmentChatRequestBody {
   phoneNumberFrom: string;
   phoneNumberTo: string;
-  attachmentMessage: string;
-  mediaFileName :string;
-  mediaID : string;
+  attachmentText: string;
+  mediaFileName: string;
+  mediaID: string;
 }
-export interface BaileysIncomingMessage{
-  message: string,
-  messageTimeStamp: string,
-  phoneNumberFrom: string,
-  fromName:string,
-  phoneNumberTo: string,
-
+export interface BaileysIncomingMessage {
+  message: string;
+  messageTimeStamp: string;
+  phoneNumberFrom: string;
+  fromName: string;
+  phoneNumberTo: string;
 }
 
-
-
-
-
-export interface candidateChatMessageType { 
+export interface candidateChatMessageType {
   executorResultObj: ChainValues;
   messageObj: ChatHistoryItem[];
-  candidateProfile : CandidateNode;
+  candidateProfile: CandidateNode;
   candidateFirstName: string;
-  messages: { [x: string]: any; }[]; 
-  phoneNumberFrom: string; 
-  phoneNumberTo: string; 
-  messageType : string;
-  whatsappDeliveryStatus:string;
+  messages: { [x: string]: any }[];
+  phoneNumberFrom: string;
+  phoneNumberTo: string;
+  messageType: string;
+  whatsappDeliveryStatus: string;
 
   whatsappMessageId: string;
+  type?: string;
+  databaseFilePath?: string;
 }
 
-
-export interface chatMessageType { 
-  messages: { [x: string]: any; }[]; 
-  phoneNumberFrom: string; 
-  phoneNumberTo: string; 
-  messageType : string;
+export interface chatMessageType {
+  messages: { [x: string]: any }[];
+  phoneNumberFrom: string;
+  phoneNumberTo: string;
+  messageType: string;
 }
 
 export interface sendWhatsappTemplateMessageObjectType {
@@ -216,8 +190,6 @@ export interface RootObject {
   people: People;
 }
 
-
-
 export interface ChatRequestBody {
   phoneNumberFrom: string;
   phoneNumberTo: string;
@@ -225,33 +197,32 @@ export interface ChatRequestBody {
 }
 
 export interface companyInfoType {
-  name : string;
+  name: string;
   companyId: string;
-  descriptionOneliner : string;
+  descriptionOneliner: string;
 }
 
 export interface Companies {
   name: string;
-  companyId:string;
+  companyId: string;
   descriptionOneliner: string;
 }
 
 export interface jobProfileType {
-    name: any;
-    jobLocation: string;
-    id: string,
-    recruiterId :string,
-    company : companyInfoType
-  }
-  export interface Jobs {
-    name: string;
-    id: string;
-    recruiterId: string;
-    jobLocation: string;
-    companies: Companies;
-    whatsappMessages: WhatsAppMessages;
-  }
-  
+  name: any;
+  jobLocation: string;
+  id: string;
+  recruiterId: string;
+  company: companyInfoType;
+}
+export interface Jobs {
+  name: string;
+  id: string;
+  recruiterId: string;
+  jobLocation: string;
+  companies: Companies;
+  whatsappMessages: WhatsAppMessages;
+}
 
 export interface recruiterProfileType {
   job_title: any;
@@ -265,119 +236,123 @@ export interface recruiterProfileType {
   input: string; // Add the 'input' property
 }
 
-
 interface Entry {
   id: string;
   changes: any[];
 }
 
 export interface WhatsAppBusinessAccount {
-  object: 'whatsapp_business_account';
+  object: "whatsapp_business_account";
   entry: Entry[];
 }
 
-export const jobProfile:jobProfileType = {
-  name: 'Sales Manager',
-  id: '5643d1e6-0415-4327-b871-918e7cd699d5',
-  recruiterId : '20202020-0687-4c41-b707-ed1bfca972a7',
+export const jobProfile: jobProfileType = {
+  name: "Sales Manager",
+  id: "5643d1e6-0415-4327-b871-918e7cd699d5",
+  recruiterId: "20202020-0687-4c41-b707-ed1bfca972a7",
   company: {
     name: "Qonto",
-    companyId : "1234",
-    descriptionOneliner: "one of the india's largest waste management companies"
+    companyId: "1234",
+    descriptionOneliner:
+      "one of the india's largest waste management companies",
   },
-  jobLocation: 'Mumbai'
-}
+  jobLocation: "Mumbai",
+};
 
-export const recruiterProfile:recruiterProfileType = {
-  name: 'Arnav Doe',
-  first_name: 'Arnav',
+export const recruiterProfile: recruiterProfileType = {
+  name: "Arnav Doe",
+  first_name: "Arnav",
   phone: "919326970534",
-  email: 'arnav@arxena.com',
+  email: "arnav@arxena.com",
   input: "",
   status: "",
   job_title: "Director",
   job_company_name: "Arxena Inc",
-  company_description_oneliner: "a US Based Recruitment Company"
-}
+  company_description_oneliner: "a US Based Recruitment Company",
+};
 
 export const emptyCandidateProfileObj: CandidateNode = {
-  name: '',
-  id: '',
+  name: "",
+  id: "",
   jobs: {
-    name: '',
-    id: '',
-    recruiterId: '',
+    name: "",
+    id: "",
+    recruiterId: "",
     companies: {
-      name: '',
-      companyId: '',
-      descriptionOneliner: ''
+      name: "",
+      companyId: "",
+      descriptionOneliner: "",
     },
-    jobLocation: '',
+    jobLocation: "",
     whatsappMessages: {
-      edges: [{
-        node: {
-          recruiterId: '',
-          message: '',
-          candidateId: '',
-          jobsId: 'string',
-          position: 0,
-          messageType: '',
-          phoneTo: '',
-          updatedAt: '',
-          createdAt: '',
-          id: '',
-          name: '',
-          phoneFrom: '',
-          messageObj: {}
-        }
-
-      }]
+      edges: [
+        {
+          node: {
+            recruiterId: "",
+            message: "",
+            candidateId: "",
+            jobsId: "string",
+            position: 0,
+            messageType: "",
+            phoneTo: "",
+            updatedAt: "",
+            createdAt: "",
+            id: "",
+            name: "",
+            phoneFrom: "",
+            messageObj: {},
+          },
+        },
+      ],
     },
   },
 
   engagementStatus: false,
-  phoneNumber: '',
-  email: '',
-  input: '',
+  phoneNumber: "",
+  email: "",
+  input: "",
   startChat: false,
   whatsappMessages: {
-    edges: [{
-      node: {
-        recruiterId: '',
-        message: '',
-        candidateId: '',
-        jobsId: 'string',
-        position: 0,
-        messageType: '',
-        phoneTo: '',
-        updatedAt: '',
-        createdAt: '',
-        id: '',
-        name: '',
-        phoneFrom: '',
-        messageObj: ''
-      }
-
-    }]
+    edges: [
+      {
+        node: {
+          recruiterId: "",
+          message: "",
+          candidateId: "",
+          jobsId: "string",
+          position: 0,
+          messageType: "",
+          phoneTo: "",
+          updatedAt: "",
+          createdAt: "",
+          id: "",
+          name: "",
+          phoneFrom: "",
+          messageObj: "",
+        },
+      },
+    ],
   },
   emailMessages: {
-    edges: [{
-      node: {
-        id: '',
-        email: '',
-        text: '',
-        subject: '',
-        recruiterId: '',
-        candidateId: '',
-        jobsId: '',
-        messageThreadId: '',
-        receivedAt: '',
-        updatedAt: '',
-        createdAt: ''
-      }
-    }]
-  }
-}
+    edges: [
+      {
+        node: {
+          id: "",
+          email: "",
+          text: "",
+          subject: "",
+          recruiterId: "",
+          candidateId: "",
+          jobsId: "",
+          messageThreadId: "",
+          receivedAt: "",
+          updatedAt: "",
+          createdAt: "",
+        },
+      },
+    ],
+  },
+};
 
 export interface Attachment {
   __typename: string;
@@ -404,18 +379,17 @@ export interface Attachment {
   answerId: string | null;
 }
 
-export const candidateProfile:candidateProfileType = {
-  first_name: 'Christoph',
-  id: '12d2232a-e79b-41c8-b56c-c186abb7fdea',
-  jobsId: '5643d1e6-0415-4327-b871-918e7cd699d5',
-  status: 'string',
+export const candidateProfile: candidateProfileType = {
+  first_name: "Christoph",
+  id: "12d2232a-e79b-41c8-b56c-c186abb7fdea",
+  jobsId: "5643d1e6-0415-4327-b871-918e7cd699d5",
+  status: "string",
   job: jobProfile,
-  phoneNumber: '+919820297156',
-  email: 'christoph.calisto@linkedin.com',
-  responsibleWorkspaceMemberId: '20202020-0687-4c41-b707-ed1bfca972a7',
-  input: 'string', // Add the 'input' property
-}
-
+  phoneNumber: "+919820297156",
+  email: "christoph.calisto@linkedin.com",
+  responsibleWorkspaceMemberId: "20202020-0687-4c41-b707-ed1bfca972a7",
+  input: "string", // Add the 'input' property
+};
 
 export interface candidateProfileType {
   first_name: any;
@@ -429,14 +403,26 @@ export interface candidateProfileType {
   input: string; // Add the 'input' property
 }
 
-export interface OpenAIArxSingleStepClient{
+export interface OpenAIArxSingleStepClient {
   personNode: PersonNode;
   openAIclient: OpenAI;
-  anthropic:Anthropic;
+  anthropic: Anthropic;
 }
 
-export interface OpenAIArxMultiStepClient{
+export interface OpenAIArxMultiStepClient {
   personNode: PersonNode;
   openAIclient: OpenAI;
-  anthropic:Anthropic;
+  anthropic: Anthropic;
+}
+
+export interface AttachmentMessageObject {
+  phoneNumberTo: string;
+  phoneNumberFrom: string;
+  fullPath: string;
+  fileData: {
+    fileName: string;
+    filePath: string;
+    fileBuffer: string;
+    mimetype: string;
+  };
 }

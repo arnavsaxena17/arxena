@@ -46,10 +46,13 @@ export class IncomingWhatsappMessages {
   async receiveIncomingMessagesFromFacebook(
     requestBody: allDataObjects.WhatsAppBusinessAccount
   ) {
-    // debugger
     console.log("This is requestBody::", requestBody);
     // to check if the incoming message is the status of the message
-    if (requestBody?.entry[0]?.changes[0]?.value?.statuses && requestBody?.entry[0]?.changes[0]?.value?.statuses[0]?.status && !requestBody?.entry[0]?.changes[0]?.value?.messages) {
+    if (
+      requestBody?.entry[0]?.changes[0]?.value?.statuses &&
+      requestBody?.entry[0]?.changes[0]?.value?.statuses[0]?.status &&
+      !requestBody?.entry[0]?.changes[0]?.value?.messages
+    ) {
       const messageId =
         requestBody?.entry[0]?.changes[0]?.value?.statuses[0]?.id;
       const messageStatus =
@@ -79,7 +82,7 @@ export class IncomingWhatsappMessages {
       // debugger
       console.log(response?.data?.data);
 
-      if(response?.data?.data?.whatsappMessages?.edges.length === 0){
+      if (response?.data?.data?.whatsappMessages?.edges.length === 0) {
         console.log("No message found with the given WAMID");
         return;
       }
@@ -113,7 +116,8 @@ export class IncomingWhatsappMessages {
           requestBody?.entry[0]?.changes[0]?.value?.messages[0].type !==
             "utility" &&
           requestBody?.entry[0]?.changes[0]?.value?.messages[0].type !==
-            "document"
+            "document" &&
+          requestBody?.entry[0]?.changes[0]?.value?.messages[0].type !== "audio"
         ) {
           // debugger
           console.log(
@@ -152,10 +156,11 @@ export class IncomingWhatsappMessages {
               requestBody?.entry[0]?.changes[0]?.value?.messages[0].id,
           };
 
-          const responseAfterMessageUpdate = await this.createAndUpdateIncomingCandidateChatMessage(
-            replyObject,
-            candidateProfileData
-          );
+          const responseAfterMessageUpdate =
+            await this.createAndUpdateIncomingCandidateChatMessage(
+              replyObject,
+              candidateProfileData
+            );
           console.log(responseAfterMessageUpdate);
         } else if (
           requestBody?.entry[0]?.changes[0]?.value?.messages[0].type ===
@@ -186,7 +191,7 @@ export class IncomingWhatsappMessages {
             chatReply: userMessageBody?.text?.body || "Attachment Received",
             whatsappDeliveryStatus: "receivedFromCandidate",
             whatsappMessageId:
-            requestBody?.entry[0]?.changes[0]?.value?.messages[0].id,
+              requestBody?.entry[0]?.changes[0]?.value?.messages[0].id,
           };
 
           const candidateProfileData =
@@ -203,6 +208,59 @@ export class IncomingWhatsappMessages {
             candidateProfileData
           );
         }
+        // Audio message
+        else if (
+          requestBody?.entry[0]?.changes[0]?.value?.messages[0].type === "audio"
+        ) {
+          const audioMessageObject = {
+            audioId:
+              requestBody?.entry[0]?.changes[0]?.value?.messages[0]?.audio?.id,
+            filename:
+              requestBody?.entry[0]?.changes[0]?.value?.messages[0]?.audio?.id +
+              ".ogg",
+            mime_type:
+              requestBody?.entry[0]?.changes[0]?.value?.messages[0]?.audio
+                ?.mime_type,
+          };
+          const phoneNumberTo =
+            requestBody?.entry[0]?.changes[0]?.value?.metadata
+              ?.display_phone_number;
+
+          const whatsappIncomingMessage: allDataObjects.chatMessageType = {
+            phoneNumberFrom: userMessageBody.from,
+            phoneNumberTo: phoneNumberTo,
+            messages: [{ role: "user", content: "" }],
+            messageType: "string",
+          };
+
+          const candidateProfileData =
+            await new FetchAndUpdateCandidatesChatsWhatsapps().getCandidateInformation(
+              whatsappIncomingMessage
+            );
+          const audioMessageDetails =
+            await new FacebookWhatsappChatApi().handleAudioMessage(
+              audioMessageObject,
+              candidateProfileData
+            );
+
+          console.log("This is the audioMessageDetails::", audioMessageDetails);
+          // debugger;
+          const replyObject = {
+            chatReply:
+              audioMessageDetails?.audioTranscriptionText ||
+              "Audio Message Received",
+            whatsappDeliveryStatus: "receivedFromCandidate",
+            type: "audio",
+            databaseFilePath: audioMessageDetails?.databaseFilePath,
+            whatsappMessageId:
+              requestBody?.entry[0]?.changes[0]?.value?.messages[0].id,
+          };
+
+          await this.createAndUpdateIncomingCandidateChatMessage(
+            replyObject,
+            candidateProfileData
+          );
+        }
       }
     } else {
       console.log(
@@ -212,7 +270,16 @@ export class IncomingWhatsappMessages {
       );
     }
   }
-  async createAndUpdateIncomingCandidateChatMessage( replyObject: { whatsappDeliveryStatus: string; chatReply: string; whatsappMessageId: string; }, candidateProfileDataNodeObj: allDataObjects.CandidateNode ) {
+  async createAndUpdateIncomingCandidateChatMessage(
+    replyObject: {
+      whatsappDeliveryStatus: string;
+      chatReply: string;
+      whatsappMessageId: string;
+      databaseFilePath?: string | null;
+      type?: string;
+    },
+    candidateProfileDataNodeObj: allDataObjects.CandidateNode
+  ) {
     const recruiterProfile = allDataObjects.recruiterProfile;
     const messagesList = candidateProfileDataNodeObj?.whatsappMessages?.edges;
     // Ensure messagesList is not undefined before sorting
@@ -256,6 +323,8 @@ export class IncomingWhatsappMessages {
       messageObj: mostRecentMessageObj,
       whatsappDeliveryStatus: replyObject.whatsappDeliveryStatus,
       whatsappMessageId: replyObject.whatsappMessageId,
+      type: replyObject.type || "text",
+      databaseFilePath: replyObject?.databaseFilePath || "",
     };
     await new CandidateEngagementArx().updateCandidateEngagementDataInTable(
       whatappUpdateMessageObj
