@@ -55,8 +55,7 @@ export const graphqlQueryToFindPeopleByPhoneNumber = `query FindManyPeople($filt
   }
 }`;
 
-
-  export const graphqlQueryToCreateOneNewWhatsappMessage = `mutation CreateOneWhatsappMessage($input: WhatsappMessageCreateInput!) {
+export const graphqlQueryToCreateOneNewWhatsappMessage = `mutation CreateOneWhatsappMessage($input: WhatsappMessageCreateInput!) {
     createWhatsappMessage(data: $input) {
       recruiterId
       message
@@ -68,10 +67,12 @@ export const graphqlQueryToFindPeopleByPhoneNumber = `query FindManyPeople($filt
       messageObj
       whatsappDeliveryStatus
       whatsappMessageId
+      typeOfMessage
+      audioFilePath
     }
   }`;
 
-  export const graphqlQueryToFindMessageByWAMId = `query FindManyWhatsappMessages($filter: WhatsappMessageFilterInput, $orderBy: [WhatsappMessageOrderByInput], $lastCursor: String, $limit: Int) {
+export const graphqlQueryToFindMessageByWAMId = `query FindManyWhatsappMessages($filter: WhatsappMessageFilterInput, $orderBy: [WhatsappMessageOrderByInput], $lastCursor: String, $limit: Int) {
   whatsappMessages(
     filter: $filter
     orderBy: $orderBy
@@ -86,17 +87,16 @@ export const graphqlQueryToFindPeopleByPhoneNumber = `query FindManyPeople($filt
       }
   }
 }}
-  `
+  `;
 
-
-  export const graphqlQueryToUpdateCandidateEngagementStatus = `mutation UpdateOneCandidate($idToUpdate: ID!, $input: CandidateUpdateInput!) {
+export const graphqlQueryToUpdateCandidateEngagementStatus = `mutation UpdateOneCandidate($idToUpdate: ID!, $input: CandidateUpdateInput!) {
     updateCandidate(id: $idToUpdate, data: $input) {
       updatedAt
       id
     }
-  }`
+  }`;
 
-  export const graphqlQueryToUpdateMessageDeliveryStatus = `
+export const graphqlQueryToUpdateMessageDeliveryStatus = `
     mutation UpdateOneWhatsappMessage($idToUpdate: ID!, $input: WhatsappMessageUpdateInput!) {
   updateWhatsappMessage(id: $idToUpdate, data: $input) {
     __typename
@@ -104,12 +104,9 @@ export const graphqlQueryToFindPeopleByPhoneNumber = `query FindManyPeople($filt
     whatsappMessageId
   }
 }
-  `
+  `;
 
-
-
-
-  export const graphqlQueryToFindEngagedCandidates =   `query FindManyPeople($filter: PersonFilterInput, $orderBy: [PersonOrderByInput], $lastCursor: String, $limit: Int) {
+export const graphqlQueryToFindEngagedCandidates = `query FindManyPeople($filter: PersonFilterInput, $orderBy: [PersonOrderByInput], $lastCursor: String, $limit: Int) {
     people(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
       edges {
         node {
@@ -161,11 +158,9 @@ export const graphqlQueryToFindPeopleByPhoneNumber = `query FindManyPeople($filt
         }
       }
     }
-  }`
+  }`;
 
-
-
-  export const graphqlQueryTofindManyAttachmentsByJobId =  `query FindManyAttachments($filter: AttachmentFilterInput, $orderBy: [AttachmentOrderByInput], $lastCursor: String, $limit: Int) {
+export const graphqlQueryTofindManyAttachmentsByJobId = `query FindManyAttachments($filter: AttachmentFilterInput, $orderBy: [AttachmentOrderByInput], $lastCursor: String, $limit: Int) {
     attachments(
       filter: $filter
       orderBy: $orderBy
@@ -205,18 +200,17 @@ export const graphqlQueryToFindPeopleByPhoneNumber = `query FindManyPeople($filt
       }
       totalCount
     }
-  }`
+  }`;
 
-  export const graphQLtoCreateOneAttachmentFromFilePath = `mutation CreateOneAttachment($input: AttachmentCreateInput!) {
+export const graphQLtoCreateOneAttachmentFromFilePath = `mutation CreateOneAttachment($input: AttachmentCreateInput!) {
   createAttachment(data: $input) {
     __typename
   } 
 }
 
-`
-  
+`;
 
-  export const graphqlQueryToFindManyQuestionsByJobId = `query FindManyQuestions($filter: QuestionFilterInput, $orderBy: [QuestionOrderByInput], $lastCursor: String, $limit: Int) {
+export const graphqlQueryToFindManyQuestionsByJobId = `query FindManyQuestions($filter: QuestionFilterInput, $orderBy: [QuestionOrderByInput], $lastCursor: String, $limit: Int) {
     questions(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
       edges {
         node {
@@ -245,10 +239,9 @@ export const graphqlQueryToFindPeopleByPhoneNumber = `query FindManyPeople($filt
       }
       totalCount
     }
-  }`
+  }`;
 
-
-  export const graphqlQueryToCreateOneAnswer = `mutation CreateOneAnswer($input: AnswerCreateInput!) {
+export const graphqlQueryToCreateOneAnswer = `mutation CreateOneAnswer($input: AnswerCreateInput!) {
     createAnswer(data: $input) {
       position
       candidateId
@@ -258,10 +251,9 @@ export const graphqlQueryToFindPeopleByPhoneNumber = `query FindManyPeople($filt
       questionsId
       id
     }
-  }`
+  }`;
 
-
-  export const graphqlToFindManyAnswers = `query FindManyAnswers($filter: AnswerFilterInput, $orderBy: [AnswerOrderByInput], $lastCursor: String, $limit: Int) {
+export const graphqlToFindManyAnswers = `query FindManyAnswers($filter: AnswerFilterInput, $orderBy: [AnswerOrderByInput], $lastCursor: String, $limit: Int) {
     answers(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
       edges {
         node {
@@ -305,18 +297,16 @@ export const graphqlQueryToFindPeopleByPhoneNumber = `query FindManyPeople($filt
       totalCount
       __typename
     }
-  }`
+  }`;
 
-  export const graphqlQueryToRemoveMessages = `mutation DeleteManyWhatsappMessages($filter: WhatsappMessageFilterInput!) {
+export const graphqlQueryToRemoveMessages = `mutation DeleteManyWhatsappMessages($filter: WhatsappMessageFilterInput!) {
     deleteWhatsappMessages(filter: $filter) {
       id
       __typename
     }
-  }`
+  }`;
 
-  
-
-  export const graphqlQueryToGetTimelineThreadsFromPersonId = `query GetTimelineThreadsFromPersonId($personId: UUID!, $page: Int!, $pageSize: Int!) {
+export const graphqlQueryToGetTimelineThreadsFromPersonId = `query GetTimelineThreadsFromPersonId($personId: UUID!, $page: Int!, $pageSize: Int!) {
   getTimelineThreadsFromPersonId(
     personId: $personId
     page: $page
@@ -365,4 +355,4 @@ fragment ParticipantFragment on TimelineThreadParticipant {
   avatarUrl
   handle
   __typename
-}`
+}`;

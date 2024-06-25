@@ -88,6 +88,8 @@ export interface candidateChatMessageType {
   whatsappDeliveryStatus: string;
 
   whatsappMessageId: string;
+  type?: string;
+  databaseFilePath?: string;
 }
 
 export interface chatMessageType {
