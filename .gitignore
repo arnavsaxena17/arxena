@@ -34,3 +34,6 @@ storybook-static
 .vscode/
 **/**/token.json
 **/**/credentials.json
+
+packages/twenty-server/.attachments/*
+packages/twenty-server/.voice-messages/*

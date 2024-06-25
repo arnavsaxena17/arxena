@@ -1,55 +1,106 @@
-
 import axios from "axios";
-import *  as allDataObjects from '../services/data-model-objects'; 
+import * as allDataObjects from "../services/data-model-objects";
+import fs from "fs";
+import OpenAI from "openai";
 
+import ffmpeg from "fluent-ffmpeg";
+import ffmpegPath from "ffmpeg-static";
+import path from "path";
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+// Set the path for the ffmpeg binary
+ffmpeg.setFfmpegPath(ffmpegPath);
+``;
 
 export function sortWhatsAppMessages(peopleData: allDataObjects.People) {
-    // console.log("This is the people data:", JSON.stringify(peopleData));
-    const sortedPeopleData = peopleData; // Deep copy to avoid mutating the original data
-    sortedPeopleData?.edges?.forEach(personEdge => {
-      personEdge?.node?.candidates?.edges.forEach(candidateEdge => {
-        candidateEdge?.node?.whatsappMessages?.edges.sort((a, b) => {
-          // Sorting in descending order by the createdAt timestamp
-          return new Date(b.node.createdAt).getTime() - new Date(a.node.createdAt).getTime();
-        });
+  // console.log("This is the people data:", JSON.stringify(peopleData));
+  const sortedPeopleData = peopleData; // Deep copy to avoid mutating the original data
+  sortedPeopleData?.edges?.forEach((personEdge) => {
+    personEdge?.node?.candidates?.edges.forEach((candidateEdge) => {
+      candidateEdge?.node?.whatsappMessages?.edges.sort((a, b) => {
+        // Sorting in descending order by the createdAt timestamp
+        return (
+          new Date(b.node.createdAt).getTime() -
+          new Date(a.node.createdAt).getTime()
+        );
       });
     });
-    console.log("Candidates have been sorted by the latest WhatsApp message")
-    return sortedPeopleData;
-  }
-
-  
-  export function getContentTypeFromFileName(filename:string){
-    const extension = filename?.split('.').pop()?.toLowerCase() ?? '';
-
-    let contentType;
-
-    switch (extension) {
-        case 'doc':
-            contentType = 'application/msword';
-            break;
-        case 'docx':
-            contentType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-            break;
-        case 'pdf':
-            contentType = 'application/pdf';
-            break;
-        default:
-            contentType = 'application/octet-stream'; // Default content type if none match
-    }
-    return contentType
-
+  });
+  console.log("Candidates have been sorted by the latest WhatsApp message");
+  return sortedPeopleData;
 }
 
-  export async function axiosRequest(data: string) {
-    const response = await axios.request({
-        method: 'post',
-        url: process.env.GRAPHQL_URL,
-        headers: {
-            'authorization': 'Bearer ' + process.env.TWENTY_JWT_SECRET,
-            'content-type': 'application/json',
-        },
-        data: data
+export function getContentTypeFromFileName(filename: string) {
+  const extension = filename?.split(".").pop()?.toLowerCase() ?? "";
+
+  let contentType;
+
+  switch (extension) {
+    case "doc":
+      contentType = "application/msword";
+      break;
+    case "docx":
+      contentType =
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+      break;
+    case "pdf":
+      contentType = "application/pdf";
+      break;
+    default:
+      contentType = "application/octet-stream"; // Default content type if none match
+  }
+  return contentType;
+}
+
+export async function axiosRequest(data: string) {
+  const response = await axios.request({
+    method: "post",
+    url: process.env.GRAPHQL_URL,
+    headers: {
+      authorization: "Bearer " + process.env.TWENTY_JWT_SECRET,
+      "content-type": "application/json",
+    },
+    data: data,
+  });
+  return response;
+}
+
+async function convertOggToWav(inputFilePath: string) {
+  const outputFilePath = inputFilePath.replace(".ogg", ".wav");
+  return new Promise((resolve, reject) => {
+    ffmpeg(inputFilePath)
+      .toFormat("wav")
+      .on("end", () => {
+        console.log("Conversion complete:", outputFilePath);
+        resolve(outputFilePath);
+      })
+      .on("error", (err) => {
+        console.error("Error during conversion:", err);
+        reject(err);
+      })
+      .save(outputFilePath);
+  });
+}
+
+export async function getTranscriptionFromWhisper(
+  filePath: string
+): Promise<string> {
+  const inputFilePath = path.resolve(filePath);
+  const outputFilePath = inputFilePath.replace(".ogg", ".wav");
+
+  await convertOggToWav(inputFilePath)
+    .then(() => {
+      console.log("File converted successfully");
+    })
+    .catch((err) => {
+      console.error("Error converting file:", err);
     });
-    return response;
+
+  const transcription = await openai.audio.transcriptions.create({
+    file: fs.createReadStream(outputFilePath),
+    model: "whisper-1",
+  });
+
+  console.log(transcription.text);
+  return transcription?.text;
 }
