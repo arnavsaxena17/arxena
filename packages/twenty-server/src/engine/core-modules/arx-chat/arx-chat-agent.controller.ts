@@ -194,13 +194,6 @@ export class ArxChatEndpoint {
     );
     return { status: "Success" };
   }
-
-  @Post("post-doc-wa")
-  async postDoc(@Req() request: any): Promise<object> {
-    await new ToolsForAgents().shareJD("", request.body);
-    // ! IMPORTANT: CHANGE LATER
-    return { status: "¯⁠\\_(⁠ツ⁠)_/⁠¯" };
-  }
 }
 
 // @UseGuards(JwtAuthGuard)

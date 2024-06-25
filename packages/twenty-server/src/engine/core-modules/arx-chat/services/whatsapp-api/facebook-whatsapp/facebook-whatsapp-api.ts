@@ -21,6 +21,8 @@ import CandidateEngagementArx from "src/engine/core-modules/arx-chat/services/ca
 // import { lookup } from 'mime';
 // const mime = require('mime');
 const axios = require("axios");
+import { getTranscriptionFromWhisper } from "../../../utils/arx-chat-agent-utils";
+const { exec } = require("child_process");
 
 let whatsappAPIToken = process.env.FACEBOOK_WHATSAPP_PERMANENT_API;
 
@@ -485,5 +487,152 @@ export class FacebookWhatsappChatApi {
     } else {
       console.log("passing a human message so, going to trash it");
     }
+  }
+
+  async handleAudioMessage(
+    audioMessageObject: {
+      filename: string;
+      mime_type: string;
+      audioId: string;
+    },
+    candidateProfileData: allDataObjects.CandidateNode
+  ) {
+    let audioTranscriptionText;
+    const constCandidateProfileData = candidateProfileData;
+    let config = {
+      method: "get",
+      maxBodyLength: Infinity,
+      url: "https://graph.facebook.com/v18.0/" + audioMessageObject?.audioId,
+      headers: {
+        Authorization: "Bearer " + whatsappAPIToken,
+        "Content-Type": "application/json",
+      },
+      responseType: "json",
+    };
+
+    await fs.promises.mkdir(
+      process.cwd() + "/.voice-messages/" + candidateProfileData?.id,
+      { recursive: true }
+    );
+    // console.log("This is the config in downloadWhatsappAttachmentMessage", config);
+    const filePath = `${process.cwd()}/.voice-messages/${candidateProfileData?.id}/${audioMessageObject?.filename}`;
+    let uploadFilePath = "";
+
+    try {
+      const response = await axios.request(config);
+      const url = response.data.url;
+      let fileSaved = false;
+
+      await new Promise<void>((resolve, reject) => {
+        exec(
+          `curl --location '${url}' --header 'Authorization: Bearer ${whatsappAPIToken}' --output ${filePath}`,
+          (error, stdout, stderr) => {
+            if (error) {
+              console.error(`Error executing curl: ${error}`);
+              reject(error);
+            } else {
+              console.log("Curl output:", stdout);
+              fileSaved = true;
+              resolve();
+            }
+          }
+        );
+      });
+
+      if (fileSaved) {
+        console.log("File saved successfully at", filePath);
+        try {
+          // Check if file exists before uploading
+          await fs.access(filePath, (err) => {
+            console.log(err);
+          });
+          const attachmentObj =
+            await new AttachmentProcessingService().uploadAttachmentToTwenty(
+              filePath
+            );
+          console.log(attachmentObj);
+          uploadFilePath = attachmentObj?.data?.uploadFile;
+        } catch (uploadError) {
+          console.error("Error during file upload:", uploadError);
+        }
+      } else {
+        console.error("File was not saved.");
+      }
+    } catch (axiosError) {
+      console.error("Error with axios request:", axiosError);
+    }
+    // debugger
+    // attachmentObj.uploadFile
+    // candidateProfileData.id
+
+    // ------------------
+    // const dataToUploadInAttachmentTable = {
+    //   input: {
+    //     authorId: candidateProfileData?.jobs?.recruiterId,
+    //     name: filePath.replace(`${process.cwd()}/`, ""),
+    //     fullPath: attachmentObj.data.uploadFile,
+    //     type: "AudioFile",
+    //     candidateId: constCandidateProfileData?.id,
+    //   },
+    // };
+    //   debugger
+
+    audioTranscriptionText = await getTranscriptionFromWhisper(filePath);
+
+    // await new AttachmentProcessingService().createOneAttachmentFromFilePath(
+    //   dataToUploadInAttachmentTable
+    // );
+    console.log(`DONEE`);
+    // } else {
+    //   throw new Error("File not saved");
+    // }
+    // config.url = url;
+    // config.responseType = "stream";
+    // const fileDownloadResponse = await axios.request(config);
+
+    // console.log(fileDownloadResponse?.data);
+    // // debugger
+    // // console.log("This is the response:", response.data)
+    // console.log("This is the response: bpdy", response.body);
+    // const fileName = audioMessageObject?.filename; // Set the desired file name
+    // const filePath = `${process.cwd()}/${fileName}`;
+    // const writeStream = fs.createWriteStream(filePath);
+    // fileDownloadResponse.data.pipe(writeStream); // Pipe response stream to file stream
+
+    // writeStream.on("finish", async () => {
+    //   console.log("File saved successfully at", filePath);
+    //   const attachmentObj =
+    //     await new AttachmentProcessingService().uploadAttachmentToTwenty(
+    //       filePath
+    //     );
+    //   console.log(attachmentObj);
+    //   // debugger
+    //   // attachmentObj.uploadFile
+    //   // candidateProfileData.id
+    //   const dataToUploadInAttachmentTable = {
+    //     input: {
+    //       authorId: candidateProfileData?.jobs?.recruiterId,
+    //       name: filePath.replace(`${process.cwd()}/`, ""),
+    //       fullPath: attachmentObj.data.uploadFile,
+    //       type: "AudioFile",
+    //       candidateId: constCandidateProfileData?.id,
+    //     },
+    //   };
+    //   //   debugger
+
+    //   audioTranscriptionText = await getTranscriptionFromWhisper(filePath);
+
+    //   await new AttachmentProcessingService().createOneAttachmentFromFilePath(
+    //     dataToUploadInAttachmentTable
+    //   );
+    // });
+    // writeStream.on("error", (error) => {
+    //   console.error("Error saving file:", error);
+    // });
+    console.log("Uploaded here", uploadFilePath);
+    return {
+      databaseFilePath: uploadFilePath,
+      audioTranscriptionText: audioTranscriptionText,
+    };
   }
 }
