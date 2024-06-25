@@ -91,7 +91,7 @@ export class OpenAIArxMultiStepClient {
         const functionArgs = JSON.parse(toolCall.function.arguments);
         const responseFromFunction = await functionToCall( functionArgs, this.personNode );
         // @ts-ignore
-        messages.push({ tool_call_id: toolCall.id, role: "tool", name: functionName, content: responseFromFunction, });
+        messages.push({ tool_call_id: toolCall.id, role: "tool", name: functionName, content: responseFromFunction });
       }
       const tools = await new ToolsForAgents().getTools();
       // @ts-ignore
