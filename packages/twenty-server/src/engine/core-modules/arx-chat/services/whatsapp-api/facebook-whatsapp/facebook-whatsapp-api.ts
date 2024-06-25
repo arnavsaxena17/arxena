@@ -133,7 +133,7 @@ export class FacebookWhatsappChatApi {
       },
       data: text_message,
     };
-      console.log("This is the config in sendWhatsappTextMessage:", config)
+      // console.log("This is the config in sendWhatsappTextMessage:", config)
 
     const response = await axios.request(config);
 
@@ -420,7 +420,7 @@ export class FacebookWhatsappChatApi {
         };
         response = await this.sendWhatsappTextMessage(sendTextMessageObj);
       }
-      console.log(response);
+      // console.log(response);
 
       const whatappUpdateMessageObjAfterWAMidUpdate =
         await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj(

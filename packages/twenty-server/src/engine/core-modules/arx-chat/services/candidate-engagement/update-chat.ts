@@ -193,7 +193,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
 
     async updateCandidateEngagementStatus(candidateProfileObj:allDataObjects.CandidateNode, whatappUpdateMessageObj:allDataObjects.candidateChatMessageType) {
         // debugger
-        console.log("Updating candidate's status", candidateProfileObj, whatappUpdateMessageObj);
+        // console.log("Updating candidate's status", candidateProfileObj, whatappUpdateMessageObj);
         // debugger
         const candidateEngagementStatus = whatappUpdateMessageObj.messageType !== 'botMessage';
         const updateCandidateObjectVariables = {
@@ -209,7 +209,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
         // console.log("GraphQL query to update candidate status:", graphqlQueryObj);
         try {
             const response = await axiosRequest(graphqlQueryObj);
-            console.log("Response from axios update request:", response.data);
+            // console.log("Response from axios update request:", response.data);
             return response.data;
         } catch (error) {
             console.log(error);
@@ -238,7 +238,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
         }
     }
     async updateCandidateAnswer(candidateProfileObj:allDataObjects.CandidateNode, AnswerMessageObj:allDataObjects.AnswerMessageObj) {
-        console.log("Updating candidate's status", candidateProfileObj, JSON.stringify(AnswerMessageObj));
+        // console.log("Updating candidate's status", candidateProfileObj, JSON.stringify(AnswerMessageObj));
         const updateCandidateObjectVariables = {
             input: {
                 ...AnswerMessageObj
@@ -251,14 +251,14 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
         // console.log("GraphQL query to update candidate status:", graphqlQueryObj);
         try {
             const response = await axiosRequest(graphqlQueryObj);
-            console.log("Response from axios update request:", response.data);
+            // console.log("Response from axios update request:", response.data);
             return response.data;
         } catch (error) {
             console.log(error);
         }
     }
     async scheduleCandidateInterview(candidateProfileObj:allDataObjects.CandidateNode, scheduleInterviewObj:allDataObjects.candidateChatMessageType) {
-        console.log("Updating candidate's status", candidateProfileObj, JSON.stringify(scheduleInterviewObj));
+        // console.log("Updating candidate's status", candidateProfileObj, JSON.stringify(scheduleInterviewObj));
         const candidateEngagementStatus = scheduleInterviewObj.messageType !== 'botMessage';
         const updateCandidateObjectVariables = {
             idToUpdate: candidateProfileObj?.id,
@@ -273,7 +273,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
         // console.log("GraphQL query to update candidate status:", graphqlQueryObj);
         try {
             const response = await axiosRequest(graphqlQueryObj);
-            console.log("Response from axios update request:", response.data);
+            // console.log("Response from axios update request:", response.data);
             return response.data;
         } catch (error) {
             console.log(error);
