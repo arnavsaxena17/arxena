@@ -1,4 +1,3 @@
-
 import * as allDataObjects from '../../services/data-model-objects'; 
 import * as allGraphQLQueries from '../../services/candidate-engagement/graphql-queries-chatbot';
 import { v4 } from 'uuid';
@@ -172,7 +171,10 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
                 "name": userMessage?.messageType,
                 "messageObj":userMessage?.messageObj,
                 "whatsappDeliveryStatus": userMessage.whatsappDeliveryStatus,
-                "whatsappMessageId": userMessage?.whatsappMessageId
+                "whatsappMessageId": userMessage?.whatsappMessageId,
+                "typeOfMessage": userMessage?.type,
+                "audioFilePath": userMessage?.databaseFilePath
+        
             }
         };
         console.log("These are the graphvsariables:", JSON.stringify(createNewWhatsappMessageUpdateVariables));
