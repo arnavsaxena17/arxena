@@ -42,14 +42,26 @@ export class ToolsForAgents {
   };
 
 
-  async getStagePrompt() {
 
-    const steps = {
-      "1": "Initial Outreach: The recruiter introduces themselves and their company, mentions the specific role, and the candidate has responded in some manner.",
-      "2": "Share Role Details: Provide a JD of the role and company. Check if the candidate has heard of the company. Assess the candidate's interest level and fit for the role, including their ability to relocate if needed.",
-      "3": "Share screening questions: Share screening questions and record responses",
-      "4": "Schedule Screening Meeting: Propose times for a call to discuss the role, company, and candidate's experience more deeply, aiming for a 30-minute discussion.",
-    };
+
+
+  async getStagePrompt() {
+    const recruitmentSteps = [
+      "Initial Outreach: The recruiter introduces themselves and their company, mentions the specific role, and the candidate has responded in some manner.",
+      // "Share Role Details: Provide a JD of the role and company. Check if the candidate has heard of the company. Assess the candidate's interest level and fit for the role, including their ability to relocate if needed.",
+      
+      "Share screening questions: Share screening questions and record responses",
+      // "Schedule Screening Meeting: Propose times for a call to discuss the role, company, and candidate's experience more deeply, aiming for a 30-minute discussion."
+      "Acknowledge and postpone: Let the candidate know that you will get back"
+    ];
+    
+    const steps = {};
+    recruitmentSteps.forEach((step, index) => {
+      steps[(index + 1).toString()] = step;
+    });
+    
+    
+
 
     const stepsBulleted = await this.convertToBulletPoints(steps)
     
@@ -134,6 +146,39 @@ export class ToolsForAgents {
     console.log(updatedSystemPromptWithStagePrompt)
     return updatedSystemPromptWithStagePrompt
   }
+
+  async getToolCallsByStage(){
+    const toolCallsByStage =  {
+      "Initial Outreach":['update_candidate_profile'],
+      "Share Role Details":['share_jd'],
+      "Share screening questions":['update_answer','update_candidate_profile'],
+      "Create Reminder":['update_candidate_profile','schedule_meeting'],
+      "Schedule Screening Meeting":['update_candidate_profile','schedule_meeting']
+    }
+    return toolCallsByStage
+  }
+
+
+  async getStageWiseActivity(){
+    const stageWiseActions =  {
+      "Initial Outreach":[`
+        The recruiter introduces themselves and their company, mentions the specific role, and the candidate has responded in some manner. 
+        The candidate might ask questions about we found their profile or which platform. Answer accordingly.  
+        The candidate might directly propose a time to speak/ meet or ask for more details. In either case, share the JD with the candidate and ask them for their interest
+        `],
+      "Share Role Details":[`
+        Provide a JD of the role and describe in short the details of the company. Ask the candidate if they would be keen on the role wiht the company.
+        `],
+      "Share screening questions":[`
+        Ask questions to the candidate to assess their fitment for the role.
+        `],
+      "Create Reminder":[`
+        `],
+      "Schedule Screening Meeting":['']
+    }
+    return stageWiseActions
+  }
+
 
   getAvailableFunctions() {
     return {
