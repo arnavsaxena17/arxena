@@ -186,9 +186,7 @@ export class FacebookWhatsappChatApi {
     try {
       // const filePath = '/Users/arnavsaxena/Downloads/CVs-Mx/Prabhakar_Azad_Resume_05122022.doc';
       // Get the file name
-
-      const filePath =
-        "/home/ninad/Documents/twenty/packages/twenty-server/.attachments/ec0cd07a-914c-4539-b0e5-ac18c03199bc/file-sample_150kB.pdf";
+      const filePath = attachmentMessage?.fileData?.filePath.slice();
 
       const fileName = path.basename(filePath);
       // Get the content type
