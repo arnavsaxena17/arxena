@@ -179,7 +179,7 @@ export class FacebookWhatsappChatApi {
   }
 
   async uploadFileToWhatsApp(filePathArg: string) {
-    console.log("This is the upload file to whatsapp");
+    console.log("This is the upload file to whatsapp in recruitment agent");
     // debugger;
     try {
       const filePath = filePathArg.slice();
