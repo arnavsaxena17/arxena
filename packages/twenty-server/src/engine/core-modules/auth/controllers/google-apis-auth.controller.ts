@@ -1,26 +1,27 @@
 import {
   Controller,
   Get,
+  Post,
   Req,
   Res,
   UnauthorizedException,
   UseGuards,
-} from '@nestjs/common';
+} from "@nestjs/common";
 
-import { Response } from 'express';
+import { Response } from "express";
 
-import { GoogleAPIsProviderEnabledGuard } from 'src/engine/core-modules/auth/guards/google-apis-provider-enabled.guard';
-import { GoogleAPIsOauthGuard } from 'src/engine/core-modules/auth/guards/google-apis-oauth.guard';
-import { GoogleAPIsRequest } from 'src/engine/core-modules/auth/strategies/google-apis.auth.strategy';
-import { GoogleAPIsService } from 'src/engine/core-modules/auth/services/google-apis.service';
-import { TokenService } from 'src/engine/core-modules/auth/services/token.service';
-import { EnvironmentService } from 'src/engine/integrations/environment/environment.service';
-import { OnboardingService } from 'src/engine/core-modules/onboarding/onboarding.service';
-import { WorkspaceMemberRepository } from 'src/modules/workspace-member/repositories/workspace-member.repository';
-import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
-import { InjectObjectMetadataRepository } from 'src/engine/object-metadata-repository/object-metadata-repository.decorator';
+import { GoogleAPIsProviderEnabledGuard } from "src/engine/core-modules/auth/guards/google-apis-provider-enabled.guard";
+import { GoogleAPIsOauthGuard } from "src/engine/core-modules/auth/guards/google-apis-oauth.guard";
+import { GoogleAPIsRequest } from "src/engine/core-modules/auth/strategies/google-apis.auth.strategy";
+import { GoogleAPIsService } from "src/engine/core-modules/auth/services/google-apis.service";
+import { TokenService } from "src/engine/core-modules/auth/services/token.service";
+import { EnvironmentService } from "src/engine/integrations/environment/environment.service";
+import { OnboardingService } from "src/engine/core-modules/onboarding/onboarding.service";
+import { WorkspaceMemberRepository } from "src/modules/workspace-member/repositories/workspace-member.repository";
+import { WorkspaceMemberWorkspaceEntity } from "src/modules/workspace-member/standard-objects/workspace-member.workspace-entity";
+import { InjectObjectMetadataRepository } from "src/engine/object-metadata-repository/object-metadata-repository.decorator";
 
-@Controller('auth/google-apis')
+@Controller("auth/google-apis")
 export class GoogleAPIsAuthController {
   constructor(
     private readonly googleAPIsService: GoogleAPIsService,
@@ -28,7 +29,7 @@ export class GoogleAPIsAuthController {
     private readonly environmentService: EnvironmentService,
     private readonly onboardingService: OnboardingService,
     @InjectObjectMetadataRepository(WorkspaceMemberWorkspaceEntity)
-    private readonly workspaceMemberService: WorkspaceMemberRepository,
+    private readonly workspaceMemberService: WorkspaceMemberRepository
   ) {}
 
   @Get()
@@ -38,11 +39,11 @@ export class GoogleAPIsAuthController {
     return;
   }
 
-  @Get('get-access-token')
+  @Get("get-access-token")
   @UseGuards(GoogleAPIsProviderEnabledGuard, GoogleAPIsOauthGuard)
   async googleAuthGetAccessToken(
     @Req() req: GoogleAPIsRequest,
-    @Res() res: Response,
+    @Res() res: Response
   ) {
     const { user } = req;
 
@@ -59,16 +60,16 @@ export class GoogleAPIsAuthController {
     const { workspaceMemberId, workspaceId } =
       await this.tokenService.verifyTransientToken(transientToken);
 
-    const demoWorkspaceIds = this.environmentService.get('DEMO_WORKSPACE_IDS');
+    const demoWorkspaceIds = this.environmentService.get("DEMO_WORKSPACE_IDS");
 
     if (demoWorkspaceIds.includes(workspaceId)) {
       throw new UnauthorizedException(
-        'Cannot connect Google account to demo workspace',
+        "Cannot connect Google account to demo workspace"
       );
     }
 
     if (!workspaceId) {
-      throw new Error('Workspace not found');
+      throw new Error("Workspace not found");
     }
 
     await this.googleAPIsService.refreshGoogleRefreshToken({
@@ -88,14 +89,14 @@ export class GoogleAPIsAuthController {
     if (userId) {
       await this.onboardingService.skipSyncEmailOnboardingStep(
         userId,
-        workspaceId,
+        workspaceId
       );
     }
 
     return res.redirect(
-      `${this.environmentService.get('FRONT_BASE_URL')}${
-        redirectLocation || '/settings/accounts'
-      }`,
+      `${this.environmentService.get("FRONT_BASE_URL")}${
+        redirectLocation || "/settings/accounts"
+      }`
     );
   }
 }

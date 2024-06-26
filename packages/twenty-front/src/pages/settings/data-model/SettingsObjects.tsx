@@ -1,34 +1,34 @@
-import { useTheme } from '@emotion/react';
-import styled from '@emotion/styled';
+import { useTheme } from "@emotion/react";
+import styled from "@emotion/styled";
 import {
   H1Title,
   H2Title,
   IconChevronRight,
   IconPlus,
   IconSettings,
-} from 'twenty-ui';
+} from "twenty-ui";
 
-import { useDeleteOneObjectMetadataItem } from '@/object-metadata/hooks/useDeleteOneObjectMetadataItem';
-import { useFilteredObjectMetadataItems } from '@/object-metadata/hooks/useFilteredObjectMetadataItems';
-import { useUpdateOneObjectMetadataItem } from '@/object-metadata/hooks/useUpdateOneObjectMetadataItem';
-import { getObjectSlug } from '@/object-metadata/utils/getObjectSlug';
-import { SettingsHeaderContainer } from '@/settings/components/SettingsHeaderContainer';
-import { SettingsPageContainer } from '@/settings/components/SettingsPageContainer';
+import { useDeleteOneObjectMetadataItem } from "@/object-metadata/hooks/useDeleteOneObjectMetadataItem";
+import { useFilteredObjectMetadataItems } from "@/object-metadata/hooks/useFilteredObjectMetadataItems";
+import { useUpdateOneObjectMetadataItem } from "@/object-metadata/hooks/useUpdateOneObjectMetadataItem";
+import { getObjectSlug } from "@/object-metadata/utils/getObjectSlug";
+import { SettingsHeaderContainer } from "@/settings/components/SettingsHeaderContainer";
+import { SettingsPageContainer } from "@/settings/components/SettingsPageContainer";
 import {
   SettingsObjectItemTableRow,
   StyledObjectTableRow,
-} from '@/settings/data-model/object-details/components/SettingsObjectItemTableRow';
-import { SettingsObjectCoverImage } from '@/settings/data-model/objects/SettingsObjectCoverImage';
-import { SettingsObjectInactiveMenuDropDown } from '@/settings/data-model/objects/SettingsObjectInactiveMenuDropDown';
-import { getSettingsPagePath } from '@/settings/utils/getSettingsPagePath';
-import { SettingsPath } from '@/types/SettingsPath';
-import { Button } from '@/ui/input/button/components/Button';
-import { SubMenuTopBarContainer } from '@/ui/layout/page/SubMenuTopBarContainer';
-import { Section } from '@/ui/layout/section/components/Section';
-import { Table } from '@/ui/layout/table/components/Table';
-import { TableHeader } from '@/ui/layout/table/components/TableHeader';
-import { TableSection } from '@/ui/layout/table/components/TableSection';
-import { UndecoratedLink } from '@/ui/navigation/link/components/UndecoratedLink';
+} from "@/settings/data-model/object-details/components/SettingsObjectItemTableRow";
+import { SettingsObjectCoverImage } from "@/settings/data-model/objects/SettingsObjectCoverImage";
+import { SettingsObjectInactiveMenuDropDown } from "@/settings/data-model/objects/SettingsObjectInactiveMenuDropDown";
+import { getSettingsPagePath } from "@/settings/utils/getSettingsPagePath";
+import { SettingsPath } from "@/types/SettingsPath";
+import { Button } from "@/ui/input/button/components/Button";
+import { SubMenuTopBarContainer } from "@/ui/layout/page/SubMenuTopBarContainer";
+import { Section } from "@/ui/layout/section/components/Section";
+import { Table } from "@/ui/layout/table/components/Table";
+import { TableHeader } from "@/ui/layout/table/components/TableHeader";
+import { TableSection } from "@/ui/layout/table/components/TableSection";
+import { UndecoratedLink } from "@/ui/navigation/link/components/UndecoratedLink";
 
 const StyledIconChevronRight = styled(IconChevronRight)`
   color: ${({ theme }) => theme.font.color.tertiary};
@@ -85,7 +85,7 @@ export const SettingsObjects = () => {
                         />
                       }
                       to={`/settings/objects/${getObjectSlug(
-                        activeObjectMetadataItem,
+                        activeObjectMetadataItem
                       )}`}
                     />
                   ))}
@@ -110,13 +110,13 @@ export const SettingsObjects = () => {
                             }
                             onDelete={() =>
                               deleteOneObjectMetadataItem(
-                                inactiveObjectMetadataItem.id,
+                                inactiveObjectMetadataItem.id
                               )
                             }
                           />
                         }
                       />
-                    ),
+                    )
                   )}
                 </TableSection>
               )}

@@ -8,6 +8,7 @@ import { authenticate } from "@google-cloud/local-auth";
 import { google } from "googleapis";
 import { env } from "process";
 import * as gmailSenderTypes from "./services/gmail-sender-objects-types";
+import axios from "axios";
 
 // If modifying these scopes, delete token.json.
 const SCOPES = [
@@ -59,12 +60,58 @@ export class MailerService {
    * @return {Promise<OAuth2Client|null>}
    */
   async loadSavedCredentialsIfExist() {
-    try {
-      const content = await fs.readFile(TOKEN_PATH);
-      const credentials = JSON.parse(content.toString());
-      return google.auth.fromJSON(credentials);
-    } catch (err) {
-      return null;
+    // try {
+    //   const content = await fs.readFile(TOKEN_PATH);
+    //   const credentials = JSON.parse(content.toString());
+    //   return google.auth.fromJSON(credentials);
+    // } catch (err) {
+    //   return null;
+    // }
+
+    const connectedAccountsResponse = await axios.request({
+      method: "get",
+      url: "http://localhost:3000/rest/connectedAccounts",
+      headers: {
+        authorization: "Bearer " + process.env.TWENTY_JWT_SECRET,
+        "content-type": "application/json",
+      },
+    });
+
+    if (connectedAccountsResponse?.data?.data?.connectedAccounts?.length > 0) {
+      const refreshToken =
+        connectedAccountsResponse?.data?.data?.connectedAccounts[0]
+          ?.refreshToken;
+      // const graphqlQueryObj2 = JSON.stringify({
+      //   query: graphqlQueryToGetCurrentUser,
+      //   variables: graphVariables,
+      // });
+
+      // const queryResponse2 = await axiosRequest(graphqlQueryObj);
+
+      // const graphVariables2 = {
+      //   objectRecordId: workspaceMemberId,
+      // };
+
+      // const refreshToken =
+      //   queryResponse2?.data?.data?.workspaceMember?.connectedAccounts?.edges[0]
+      //     ?.node?.refreshToken;
+      debugger;
+      if (!refreshToken) {
+        return null;
+      }
+
+      try {
+        const credentials = {
+          type: "authorized_user",
+          client_id: process.env.AUTH_GOOGLE_CLIENT_ID,
+          client_secret: process.env.AUTH_GOOGLE_CLIENT_SECRET,
+          refresh_token: refreshToken,
+        };
+
+        return google.auth.fromJSON(credentials);
+      } catch (err) {
+        return null;
+      }
     }
   }
 
