@@ -2,9 +2,9 @@ import {
   ExecutionContext,
   ForbiddenException,
   createParamDecorator,
-} from '@nestjs/common';
+} from "@nestjs/common";
 
-import { getRequest } from 'src/utils/extract-request';
+import { getRequest } from "src/utils/extract-request";
 
 interface DecoratorOptions {
   allowUndefined?: boolean;
@@ -19,5 +19,5 @@ export const AuthUser = createParamDecorator(
     }
 
     return request.user ? request.user.user : undefined;
-  },
+  }
 );

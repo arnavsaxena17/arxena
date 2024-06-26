@@ -6,8 +6,9 @@ import * as gmailSenderTypes from "./services/gmail-sender-objects-types";
 export class MailerController {
   constructor(private readonly mailerService: MailerService) {}
 
-  @Get("sendMail")
+  @Post("sendMail")
   async sendEmailOfController(
+    @Body()
     gmailMessageObject: gmailSenderTypes.GmailMessageData
   ): Promise<object> {
     try {
