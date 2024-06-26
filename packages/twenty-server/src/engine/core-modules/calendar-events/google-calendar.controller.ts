@@ -1,15 +1,16 @@
-import { Controller, Post, Body } from '@nestjs/common';
-import { GoogleCalendarService } from './google-calendar.service';
-import { CalendarEventType } from '../../../engine/core-modules/calendar-events/services/calendar-data-objects-types';
+import { Controller, Post, Body } from "@nestjs/common";
+import { GoogleCalendarService } from "./google-calendar.service";
+import { CalendarEventType } from "../../../engine/core-modules/calendar-events/services/calendar-data-objects-types";
 
-@Controller('google-calendar')
+@Controller("google-calendar")
 export class GoogleCalendarController {
   constructor(private readonly googleCalendarService: GoogleCalendarService) {}
 
-  @Post('create-event')
-  async createEventOfController(@Body() calendarEventDataObj: CalendarEventType): Promise<object> {
+  @Post("create-event")
+  async createEventOfController(
+    @Body() calendarEventDataObj: CalendarEventType
+  ): Promise<object> {
     console.log("Calendar create event request body::", calendarEventDataObj);
-    debugger
     try {
       const auth = await this.googleCalendarService.authorize();
       await this.googleCalendarService.createEvent(auth, calendarEventDataObj);

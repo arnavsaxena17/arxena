@@ -20,9 +20,11 @@ import { AnalyticsModule } from "./analytics/analytics.module";
 import { FileModule } from "./file/file.module";
 import { ClientConfigModule } from "./client-config/client-config.module";
 import { GoogleCalendarModule } from "src/engine/core-modules/calendar-events/google-calendar.module";
+import { MailerModule } from "./gmail-sender/gmail-sender.module";
 
 @Module({
   imports: [
+    // MailerModule,
     GoogleCalendarModule,
     HealthModule,
     AnalyticsModule,
@@ -53,6 +55,7 @@ import { GoogleCalendarModule } from "src/engine/core-modules/calendar-events/go
     TimelineCalendarEventModule,
     UserModule,
     WorkspaceModule,
+    // MailerModule,
     // GoogleCalendarModule
   ],
 })
