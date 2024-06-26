@@ -60,9 +60,7 @@ export class ToolsForAgents {
       steps[(index + 1).toString()] = step;
     });
     
-    
-
-
+  
     const stepsBulleted = await this.convertToBulletPoints(steps)
     
     const STAGE_SYSTEM_PROMPT = `

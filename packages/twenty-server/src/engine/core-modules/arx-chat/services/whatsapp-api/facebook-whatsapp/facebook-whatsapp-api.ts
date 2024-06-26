@@ -181,7 +181,7 @@ export class FacebookWhatsappChatApi {
   async uploadFileToWhatsApp(
     attachmentMessage: allDataObjects.AttachmentMessageObject
   ) {
-    console.log("This is the upload file to whatsapp");
+    console.log("This is the upload file to whatsapp in arx chat");
 
     try {
       // const filePath = '/Users/arnavsaxena/Downloads/CVs-Mx/Prabhakar_Azad_Resume_05122022.doc';
