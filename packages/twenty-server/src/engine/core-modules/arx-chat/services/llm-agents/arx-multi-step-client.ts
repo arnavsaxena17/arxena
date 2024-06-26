@@ -30,10 +30,10 @@ export class OpenAIArxMultiStepClient {
     // await this.runSystemFacingAgentsAlongWithToolCalls( mostRecentMessageArr, personNode, stage)
   }
   
-  async getStageOfTheConversation( mostRecentMessageArr: allDataObjects.ChatHistoryItem[] ) {
+  async getStageOfTheConversation( mostRecentMessageArr: allDataObjects.ChatHistoryItem[]) {
     console.log("got here to get the stage of the conversation");
     let stage: string | null = "1";
-    const stagePrompt = new ToolsForAgents().getStagePrompt(this.personNode);
+    const stagePrompt = await new ToolsForAgents().getStagePrompt();
     console.log("got here to with the stage prompt", stagePrompt);
     const updatedMostRecentMessagesBasedOnNewSystemPrompt = await this.updateMostRecentMessagesBasedOnNewSystemPrompt( mostRecentMessageArr, stagePrompt );
     console.log( "Got the updated recement messages:", updatedMostRecentMessagesBasedOnNewSystemPrompt );

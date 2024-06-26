@@ -127,6 +127,39 @@ export class ArxChatEndpoint {
     return mostRecentMessageArr ;
   }
 
+  @Post('run-stage-prompt')
+  async runStagePrompt(@Req() request: any): Promise<object>{
+    console.log("JSON.string", JSON.stringify(request.body))
+    
+    const personObj:allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber("918411937768")
+    const messagesList = request.body;
+
+    let chatAgent = new OpenAIArxMultiStepClient(personObj);
+    const stage = await chatAgent.getStageOfTheConversation(messagesList);
+
+    // const personCandidateNode = personObj?.candidates?.edges[0]?.node;
+    // const messagesList = personCandidateNode?.whatsappMessages?.edges;
+    // console.log("Current Messages list:", messagesList);
+    // let mostRecentMessageArr:allDataObjects.ChatHistoryItem[] = new CandidateEngagementArx().getMostRecentMessageFromMessagesList(messagesList);
+    // console.log("mostRecentMessageArr before chatCompletion:", mostRecentMessageArr);
+    // if (mostRecentMessageArr?.length > 0) {
+    //   let chatAgent:OpenAIArxSingleStepClient | OpenAIArxMultiStepClient;
+    //   if (process.env.PROMPT_ENGINEERING_TYPE === 'single-step') {
+    //     chatAgent = new OpenAIArxSingleStepClient(personObj);
+    //   }
+    //   else{
+    //     chatAgent = new OpenAIArxMultiStepClient(personObj);
+    //   }
+    //   await chatAgent.createCompletion(mostRecentMessageArr, personObj);
+    //   const whatappUpdateMessageObj = await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj("ArxChatEndpoint", response,personObj,mostRecentMessageArr);
+    //   await new CandidateEngagementArx().updateCandidateEngagementDataInTable(whatappUpdateMessageObj);
+    // }
+    return {stage: stage} ;
+  }
+
+
+
+
 
   @Post("add-chat")
   async addChat(@Req() request: any): Promise<object> {

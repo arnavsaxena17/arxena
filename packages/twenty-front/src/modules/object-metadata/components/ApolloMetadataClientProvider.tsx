@@ -12,6 +12,7 @@ export const ApolloMetadataClientProvider = ({
     uri: `${REACT_APP_SERVER_BASE_URL}/metadata`,
     connectToDevTools: false,
   });
+  console.log("apolloMetadataClient::", apolloMetadataClient)
 
   return (
     <ApolloMetadataClientContext.Provider value={apolloMetadataClient}>
