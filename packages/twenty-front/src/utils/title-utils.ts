@@ -49,6 +49,8 @@ export const getPageTitleFromPath = (pathname: string): string => {
       return 'Create Profile';
     case AppPath.TasksPage:
       return 'Tasks';
+    case AppPath.ChatsPage:
+      return 'Chats';
     case AppPath.OpportunitiesPage:
       return 'Opportunities';
     case SettingsPathPrefixes.Appearance:

@@ -13,6 +13,7 @@ import { navigationMemorizedUrlState } from '@/ui/navigation/states/navigationMe
 import { useIsMobile } from '@/ui/utilities/responsive/hooks/useIsMobile';
 
 import { useIsTasksPage } from '../hooks/useIsTasksPage';
+import { IconMessage } from '@tabler/icons-react';
 
 export const MainNavigationDrawerItems = () => {
   const isMobile = useIsMobile();
@@ -48,6 +49,12 @@ export const MainNavigationDrawerItems = () => {
             to="/tasks"
             active={isTasksPage}
             Icon={IconCheckbox}
+            count={currentUserDueTaskCount}
+          />
+          <NavigationDrawerItem
+            label="Chats"
+            to="/chats"
+            Icon={IconMessage}
             count={currentUserDueTaskCount}
           />
         </NavigationDrawerSection>
