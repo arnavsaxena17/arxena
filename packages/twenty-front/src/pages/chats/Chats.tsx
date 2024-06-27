@@ -56,7 +56,28 @@ export const Chats = () => {
             <PageAddTaskButton />
           </PageHeader>
           <PageBody>
-
+            <StyledTasksContainer>
+              <TopBar
+                leftComponent={
+                  <StyledTabListContainer>
+                    <TabList
+                      tabListId={TASKS_TAB_LIST_COMPONENT_ID}
+                      tabs={TASK_TABS}
+                    />
+                  </StyledTabListContainer>
+                }
+                rightComponent={
+                  <ObjectFilterDropdownButton
+                    filterDropdownId={filterDropdownId}
+                    key="tasks-filter-dropdown-button"
+                    hotkeyScope={{
+                      scope: RelationPickerHotkeyScope.RelationPicker,
+                    }}
+                  />
+                }
+              />
+              <TaskGroups filterDropdownId={filterDropdownId} />
+            </StyledTasksContainer>
           </PageBody>
         </RecoilScope>
       </RecordFieldValueSelectorContextProvider>
