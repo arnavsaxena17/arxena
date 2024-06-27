@@ -25,6 +25,8 @@ import { WhatsappAPISelector } from "./services/whatsapp-api/whatsapp-controls";
 import { any } from "zod";
 import { IncomingMessage } from "http";
 import { ToolsForAgents } from "src/engine/core-modules/arx-chat/services/llm-agents/prompting-tool-calling";
+import { axiosRequest } from "./utils/arx-chat-agent-utils";
+import * as allGraphQLQueries from "./services/candidate-engagement/graphql-queries-chatbot";
 
 @Controller("updateChat")
 export class UpdateChatEndpoint {
@@ -44,7 +46,7 @@ export class UpdateChatEndpoint {
         messageObj: [],
         messageType: "candidateMessage",
         candidateProfile: allDataObjects.emptyCandidateProfileObj,
-        executorResultObj: {},
+        // executorResultObj: {},
         whatsappDeliveryStatus: "candidateMessageReceived",
         whatsappMessageId: "UpdateChatEndpoint",
       };
@@ -85,27 +87,39 @@ export class ArxChatEndpoint {
         chatAgent = new OpenAIArxMultiStepClient(personObj);
       }
       await chatAgent.createCompletion(mostRecentMessageArr, personObj);
-      const whatappUpdateMessageObj = await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj("ArxChatEndpoint", response,personObj,mostRecentMessageArr);
-      await new CandidateEngagementArx().updateCandidateEngagementDataInTable(whatappUpdateMessageObj);
+      const whatappUpdateMessageObj =
+        await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj(
+          "ArxChatEndpoint",
+          // response,
+          personObj,
+          mostRecentMessageArr
+        );
+      await new CandidateEngagementArx().updateCandidateEngagementDataInTable(
+        whatappUpdateMessageObj
+      );
     }
     return { status: "Success" };
   }
 
-
-
-  @Post('run-chat-completion')
-  async runChatCompletion(@Req() request: any): Promise<object>{
-    console.log("JSON.string", JSON.stringify(request.body))
-    const personObj:allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber("918411937768")
+  @Post("run-chat-completion")
+  async runChatCompletion(@Req() request: any): Promise<object> {
+    console.log("JSON.string", JSON.stringify(request.body));
+    const personObj: allDataObjects.PersonNode =
+      await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(
+        "918411937768"
+      );
     const messagesList = request.body;
 
     let chatAgent: OpenAIArxSingleStepClient | OpenAIArxMultiStepClient;
-    if (process.env.PROMPT_ENGINEERING_TYPE === 'single-step') {
+    if (process.env.PROMPT_ENGINEERING_TYPE === "single-step") {
       chatAgent = new OpenAIArxSingleStepClient(personObj);
     } else {
       chatAgent = new OpenAIArxMultiStepClient(personObj);
     }
-    const mostRecentMessageArr = await chatAgent.createCompletion(messagesList, personObj);
+    const mostRecentMessageArr = await chatAgent.createCompletion(
+      messagesList,
+      personObj
+    );
 
     // const personCandidateNode = personObj?.candidates?.edges[0]?.node;
     // const messagesList = personCandidateNode?.whatsappMessages?.edges;
@@ -124,14 +138,17 @@ export class ArxChatEndpoint {
     //   const whatappUpdateMessageObj = await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj("ArxChatEndpoint", response,personObj,mostRecentMessageArr);
     //   await new CandidateEngagementArx().updateCandidateEngagementDataInTable(whatappUpdateMessageObj);
     // }
-    return mostRecentMessageArr ;
+    return mostRecentMessageArr;
   }
 
-  @Post('run-stage-prompt')
-  async runStagePrompt(@Req() request: any): Promise<object>{
-    console.log("JSON.string", JSON.stringify(request.body))
-    
-    const personObj:allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber("918411937768")
+  @Post("run-stage-prompt")
+  async runStagePrompt(@Req() request: any): Promise<object> {
+    console.log("JSON.string", JSON.stringify(request.body));
+
+    const personObj: allDataObjects.PersonNode =
+      await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(
+        "918411937768"
+      );
     const messagesList = request.body;
 
     let chatAgent = new OpenAIArxMultiStepClient(personObj);
@@ -154,12 +171,8 @@ export class ArxChatEndpoint {
     //   const whatappUpdateMessageObj = await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj("ArxChatEndpoint", response,personObj,mostRecentMessageArr);
     //   await new CandidateEngagementArx().updateCandidateEngagementDataInTable(whatappUpdateMessageObj);
     // }
-    return {stage: stage} ;
+    return { stage: stage };
   }
-
-
-
-
 
   @Post("add-chat")
   async addChat(@Req() request: any): Promise<object> {
@@ -179,8 +192,18 @@ export class ArxChatEndpoint {
         whatsappIncomingMessage
       );
     // console.log("This is the candiate who has sent us the message., we have to update the database that this message has been recemivged::", chatReply);
-    console.log("This is the candiate who has sent us candidateProfileData::", candidateProfileData);
-    await new IncomingWhatsappMessages().createAndUpdateIncomingCandidateChatMessage({ chatReply: chatReply, whatsappDeliveryStatus: "delivered", whatsappMessageId: "receiveIncomingMessagesFromController"}, candidateProfileData);
+    console.log(
+      "This is the candiate who has sent us candidateProfileData::",
+      candidateProfileData
+    );
+    await new IncomingWhatsappMessages().createAndUpdateIncomingCandidateChatMessage(
+      {
+        chatReply: chatReply,
+        whatsappDeliveryStatus: "delivered",
+        whatsappMessageId: "receiveIncomingMessagesFromController",
+      },
+      candidateProfileData
+    );
     return { status: "Success" };
   }
 
@@ -222,7 +245,7 @@ export class ArxChatEndpoint {
           ?.messageObj;
     }
     let whatappUpdateMessageObj: allDataObjects.candidateChatMessageType = {
-      executorResultObj: {},
+      // executorResultObj: {},
       candidateProfile: personObj?.candidates?.edges[0]?.node,
       candidateFirstName: personObj?.name?.firstName,
       phoneNumberFrom: personObj?.phone,
@@ -234,14 +257,118 @@ export class ArxChatEndpoint {
       whatsappMessageId: "startChat",
     };
 
-    const engagementStatus = await new CandidateEngagementArx().updateCandidateEngagementDataInTable(whatappUpdateMessageObj);
-    if (engagementStatus?.status === "Success"){
+    const engagementStatus =
+      await new CandidateEngagementArx().updateCandidateEngagementDataInTable(
+        whatappUpdateMessageObj
+      );
+    if (engagementStatus?.status === "Success") {
       return { status: engagementStatus?.status };
-    }
-    else{
+    } else {
       return { status: "Failed" };
     }
-    
+  }
+
+  @Post("send-chat")
+  async SendChat(@Req() request: any): Promise<object> {
+    // const whatsappIncomingMessage: allDataObjects.chatMessageType = {
+    //   phoneNumberFrom: request.body.phoneNumberFrom,
+    //   phoneNumberTo: "918591724917",
+    //   messages: [{ role: "user", content: "hi" }],
+    //   messageType: "string",
+    // };
+
+    // console.log("This is the chat reply:", whatsappIncomingMessage);
+    // const chatReply = "hi";
+
+    const messageToSend = request?.body?.messageToSend;
+
+    const personObj: allDataObjects.PersonNode =
+      await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(
+        request.body.phoneNumberTo
+      );
+    console.log("Person Obj:", JSON.stringify(personObj));
+    console.log("This is the chat reply:", messageToSend);
+    const recruiterProfile = allDataObjects.recruiterProfile;
+    console.log("Recruiter profile", recruiterProfile);
+    const chatMessages =
+      personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges;
+    console.log("chatMessages:", chatMessages);
+    let chatHistory = chatMessages[0]?.node?.messageObj || [];
+    console.log("Got chathistory = ", chatHistory);
+    console.log("chatMessages:", chatMessages);
+    // if (chatReply === "hi" && chatMessages.length === 0) {
+    //   const SYSTEM_PROMPT = await new ToolsForAgents().getSystemPrompt(
+    //     personObj
+    //   );
+    //   chatHistory.push({ role: "system", content: SYSTEM_PROMPT });
+    //   chatHistory.push({ role: "user", content: "Hi" });
+    // } else {
+    chatHistory =
+      personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node
+        ?.messageObj;
+    // }
+    let whatappUpdateMessageObj: allDataObjects.candidateChatMessageType = {
+      // executorResultObj: {},
+      candidateProfile: personObj?.candidates?.edges[0]?.node,
+      candidateFirstName: personObj?.name?.firstName,
+      phoneNumberFrom: recruiterProfile.phone,
+      phoneNumberTo: personObj?.phone,
+      messages: [{ content: request?.body?.messageToSend }],
+      messageType: "recruiterMessage",
+      messageObj: chatHistory,
+      whatsappDeliveryStatus: "created",
+      whatsappMessageId: "startChat",
+    };
+    // debugger;
+    // await new OpenAIArxMultiStepClient(
+    //   personObj
+    // ).sendWhatsappMessageToCandidate(request?.body?.messageToSend, chatHistory);
+    let messageObj: allDataObjects.ChatRequestBody = {
+      phoneNumberFrom: recruiterProfile.phone,
+      phoneNumberTo: personObj.phone,
+      messages: messageToSend,
+    };
+
+    // to send the message to facebook api
+    const sendMessageResponse =
+      await new FacebookWhatsappChatApi().sendWhatsappTextMessage(messageObj);
+
+    whatappUpdateMessageObj.whatsappMessageId =
+      sendMessageResponse?.data?.messages[0]?.id;
+    whatappUpdateMessageObj.whatsappDeliveryStatus = "sent";
+    // to put it inside database table
+    await new FetchAndUpdateCandidatesChatsWhatsapps().createAndUpdateWhatsappMessage(
+      personObj.candidates.edges[0].node,
+      whatappUpdateMessageObj
+    );
+
+    console.log(sendMessageResponse);
+
+    // if()
+    return { status: "success" };
+
+    // const engagementStatus =
+    //   await new CandidateEngagementArx().updateCandidateEngagementDataInTable(
+    //     whatappUpdateMessageObj
+    //   );
+    // if (engagementStatus?.status === "Success") {
+    //   return { status: engagementStatus?.status };
+    // } else {
+    //   return { status: "Failed" };
+    // }
+  }
+
+  @Get("get-candidates-and-chats")
+  async getCandidatesAndChats(@Req() request: any): Promise<object> {
+    const graphqlQueryObj = JSON.stringify({
+      query: allGraphQLQueries.graphqlQueryToFindEngagedCandidates,
+    });
+    const response = await axiosRequest(graphqlQueryObj);
+    console.log(
+      "This is the response from getCandidate Information FROM PHONENUMBER",
+      response.data.data
+    );
+    return response?.data?.data;
   }
 
   @Post("remove-chats")
