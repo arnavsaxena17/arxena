@@ -35,7 +35,14 @@ export class IncomingWhatsappMessages {
         "This is the candiate who has sent us candidateProfileData::",
         candidateProfileData
       );
-      await this.createAndUpdateIncomingCandidateChatMessage( { chatReply: chatReply, whatsappDeliveryStatus: "delivered", whatsappMessageId: "receiveIncomingMessagesFromBaileys", }, candidateProfileData );
+      await this.createAndUpdateIncomingCandidateChatMessage(
+        {
+          chatReply: chatReply,
+          whatsappDeliveryStatus: "delivered",
+          whatsappMessageId: "receiveIncomingMessagesFromBaileys",
+        },
+        candidateProfileData
+      );
     } else {
       console.log(
         "Message has been received from a candidate however the candidate is not in the database"
@@ -94,10 +101,17 @@ export class IncomingWhatsappMessages {
         },
       };
       // debugger
-      const graphqlQueryObjForUpdationForDeliveryStatus = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToUpdateMessageDeliveryStatus, variables: variablesToUpdateDeliveryStatus, });
-      const responseOfDeliveryStatus = await axiosRequest(graphqlQueryObjForUpdationForDeliveryStatus);
+      const graphqlQueryObjForUpdationForDeliveryStatus = JSON.stringify({
+        query: allGraphQLQueries.graphqlQueryToUpdateMessageDeliveryStatus,
+        variables: variablesToUpdateDeliveryStatus,
+      });
+      const responseOfDeliveryStatus = await axiosRequest(
+        graphqlQueryObjForUpdationForDeliveryStatus
+      );
 
-      console.log("---------------DELIVERY STATUS UPDATE DONE-----------------------");
+      console.log(
+        "---------------DELIVERY STATUS UPDATE DONE-----------------------"
+      );
       // console.log(responseOfDeliveryStatus);
     } else if (requestBody?.entry[0]?.changes[0]?.value?.messages?.length > 0) {
       // to check if the incoming message is the message
@@ -313,7 +327,7 @@ export class IncomingWhatsappMessages {
     // chatHistory = await this.getChatHistoryFromMongo(mostRecentMessageObj);
     mostRecentMessageObj.push({ role: "user", content: replyObject.chatReply });
     let whatappUpdateMessageObj: allDataObjects.candidateChatMessageType = {
-      executorResultObj: {},
+      // executorResultObj: {},
       candidateProfile: candidateProfileDataNodeObj,
       candidateFirstName: candidateProfileDataNodeObj.name,
       phoneNumberFrom: candidateProfileDataNodeObj?.phoneNumber,
