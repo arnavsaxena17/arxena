@@ -20,11 +20,14 @@ export default function ChatMain() {
     []
   );
 
-  // const [unreadMessages, setUnreadMessages] = useState<{
+  const [unreadMessages, setUnreadMessages] =
+    useState<frontChatTypes.UnreadMessageListManyCandidates>({
+      listOfUnreadMessages: [],
+    });
 
-  // }>(0);
   const inputRef = useRef(null);
   const [people, setPeople] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const [tokenPair] = useRecoilState(tokenPairState);
 
@@ -37,6 +40,53 @@ export default function ChatMain() {
   console.log(variable);
   console.log(variable2);
 
+  function getUnreadMessageListManyCandidates(
+    peopleEdges: frontChatTypes.PersonEdge[]
+  ): frontChatTypes.UnreadMessageListManyCandidates {
+    const listOfUnreadMessages: frontChatTypes.UnreadMessagesPerOneCandidate[] =
+      [];
+
+    peopleEdges.forEach((personEdge: frontChatTypes.PersonEdge) => {
+      const personNode: frontChatTypes.PersonNode = personEdge.node;
+
+      personNode.candidates.edges.forEach(
+        (candidateEdge: frontChatTypes.CandidatesEdge) => {
+          const candidateNode: frontChatTypes.CandidateNode =
+            candidateEdge.node;
+
+          const ManyUnreadMessages: frontChatTypes.OneUnreadMessage[] =
+            candidateNode.whatsappMessages.edges
+              .map(
+                (whatsappMessagesEdge: frontChatTypes.WhatsAppMessagesEdge) =>
+                  whatsappMessagesEdge.node
+              )
+              .filter(
+                (messageNode: frontChatTypes.MessageNode) =>
+                  messageNode.whatsappDeliveryStatus === "receivedFromCandidate"
+              )
+              .map(
+                (
+                  messageNode: frontChatTypes.MessageNode
+                ): frontChatTypes.OneUnreadMessage => ({
+                  message: messageNode.message,
+                  id: messageNode.id,
+                  whatsappDeliveryStatus: messageNode.whatsappDeliveryStatus,
+                })
+              );
+
+          if (ManyUnreadMessages.length > 0) {
+            listOfUnreadMessages.push({
+              candidateId: candidateNode.id,
+              ManyUnreadMessages,
+            });
+          }
+        }
+      );
+    });
+
+    return { listOfUnreadMessages };
+  }
+
   useEffect(() => {
     async function fetchData() {
       const response = await axios.get(
@@ -47,20 +97,41 @@ export default function ChatMain() {
           },
         }
       );
-      console.log(response?.data?.people?.edges);
-      setPeople(response?.data?.people?.edges);
-      setIndividuals(
+
+      const availablePeople: frontChatTypes.PersonEdge[] =
         response?.data?.people?.edges.filter(
           (person: frontChatTypes.PersonEdge) =>
             person?.node?.candidates?.edges?.length > 0
-        )
-      );
+        );
+
+      console.log(response?.data?.people?.edges);
+      setPeople(response?.data?.people?.edges);
+      setIndividuals(availablePeople);
       console.log(
         response?.data?.people?.edges.filter(
           (person: frontChatTypes.PersonEdge) =>
             person?.node?.candidates?.edges?.length > 0
         )
       );
+
+      // const unreadMessagesList: frontChatTypes.UnreadMessagesPerCandidate[] =
+      //   availablePeople?.filter((person: frontChatTypes.PersonEdge) => {
+      //     return (
+      //       person?.node?.candidates?.edges[0]?.node?.whatsappMessages?.edges?.filter(
+      //         (message: frontChatTypes.WhatsAppMessagesEdge) => {
+      //           return (
+      //             message?.node?.whatsappDeliveryStatus ===
+      //             "receivedFromCandidate"
+      //           );
+      //         }
+      //       ).length > 0
+      //     );
+      //   });
+
+      const unreadMessagesList =
+        getUnreadMessageListManyCandidates(availablePeople);
+      console.log(unreadMessages);
+      setUnreadMessages(unreadMessagesList);
     }
 
     fetchData();
@@ -83,6 +154,7 @@ export default function ChatMain() {
               individuals={individuals}
               selectedIndividual={selectedIndividual}
               setSelectedIndividual={setSelectedIndividual}
+              unreadMessages={unreadMessages}
             />
             <div>
               {/* {variable?.records?.map((record) => {

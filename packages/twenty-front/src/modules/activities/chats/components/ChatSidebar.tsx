@@ -16,17 +16,27 @@ export default function (props: {
   individuals: frontChatTypes.PersonEdge[];
   selectedIndividual: string;
   setSelectedIndividual: (value: React.SetStateAction<string>) => void;
+  unreadMessages: frontChatTypes.UnreadMessageListManyCandidates;
 }) {
   return (
     <div>
       <StyledSidebarContainer>
-        <SearchBox placeholder="Hello"/>
+        <SearchBox placeholder="Hello" />
         {props.individuals?.map((individual) => {
           return (
             <ChatTile
               individual={individual}
               setSelectedIndividual={props.setSelectedIndividual}
               selectedIndividual={props.selectedIndividual}
+              unreadMessagesCount={
+                props.unreadMessages?.listOfUnreadMessages?.filter((unread) => {
+                  debugger;
+                  return (
+                    unread.candidateId ===
+                    individual?.node?.candidates?.edges[0]?.node?.id
+                  );
+                })[0]?.ManyUnreadMessages.length
+              }
             />
           );
         })}
