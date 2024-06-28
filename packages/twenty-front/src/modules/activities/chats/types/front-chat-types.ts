@@ -429,3 +429,18 @@ export interface AttachmentMessageObject {
     mimetype: string;
   };
 }
+
+export interface UnreadMessageListManyCandidates {
+  listOfUnreadMessages: UnreadMessagesPerOneCandidate[];
+}
+
+export interface UnreadMessagesPerOneCandidate {
+  candidateId: string;
+  ManyUnreadMessages: OneUnreadMessage[];
+}
+
+export interface OneUnreadMessage {
+  message: string;
+  id: string;
+  whatsappDeliveryStatus: string;
+}
