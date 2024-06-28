@@ -57,8 +57,6 @@ export const Chats = () => {
             <PageAddTaskButton />
           </PageHeader>
           <PageBody>
-            <div>Hehlllooooo</div>
-
             {/* <TaskGroups filterDropdownId={filterDropdownId} /> */}
             <ChatMain />
           </PageBody>

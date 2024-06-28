@@ -34,7 +34,7 @@ export async function shareJDtoCandidate(person: allDataObjects.PersonNode) {
   const attachment = jobAttachments?.node ?? "";
   await new WhatsappAPISelector().sendJDViaWhatsapp(
     person,
-    candidateId,
+    // candidateId,
     attachment
   );
 }

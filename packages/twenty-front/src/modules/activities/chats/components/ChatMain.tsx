@@ -5,6 +5,9 @@ import { useFindManyPeople } from "../hooks/useFindManyPeople";
 
 import * as frontChatTypes from "../types/front-chat-types";
 import ChatWindow from "./ChatWindow";
+import { useRecoilState } from "recoil";
+import { tokenPairState } from "@/auth/states/tokenPairState";
+import ChatSidebar from "./ChatSidebar";
 
 export default function ChatMain() {
   // const { loading, error, data } = useQuery(GET_DOGS);
@@ -16,8 +19,14 @@ export default function ChatMain() {
   const [individuals, setIndividuals] = useState<frontChatTypes.PersonEdge[]>(
     []
   );
+
+  // const [unreadMessages, setUnreadMessages] = useState<{
+
+  // }>(0);
   const inputRef = useRef(null);
   const [people, setPeople] = useState([]);
+
+  const [tokenPair] = useRecoilState(tokenPairState);
 
   const handleSubmit = () => {
     console.log("submit");
@@ -31,7 +40,12 @@ export default function ChatMain() {
   useEffect(() => {
     async function fetchData() {
       const response = await axios.get(
-        "http://localhost:3000/arx-chat/get-candidates-and-chats"
+        "http://localhost:3000/arx-chat/get-candidates-and-chats",
+        {
+          headers: {
+            Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
+          },
+        }
       );
       console.log(response?.data?.people?.edges);
       setPeople(response?.data?.people?.edges);
@@ -50,44 +64,26 @@ export default function ChatMain() {
     }
 
     fetchData();
-
-    const interval = setInterval(fetchData, 5000);
+    //! Change later: Fetch data every 5 seconds
+    const interval = setInterval(fetchData, 50000);
 
     return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
-    debugger;
     console.log("selectedindividuals", selectedIndividual);
   }, [selectedIndividual]);
 
   return (
     <>
       <div>
-        <h1>Chat Main</h1>
         <div>
-          <p>Chat Main</p>
-
           <div style={{ display: "flex" }}>
-            <div style={{ margin: "5em" }}>
-              {individuals?.map((individual) => {
-                //@ts-ignore
-                return (
-                  <div
-                    onClick={() => {
-                      setSelectedIndividual(individual?.node?.id);
-                    }}
-                    style={{ cursor: "pointer" }}
-                  >
-                    <p>
-                      {individual?.node?.name?.firstName}{" "}
-                      {individual?.node?.name?.lastName}{" "}
-                      {individual?.node?.phone}
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
+            <ChatSidebar
+              individuals={individuals}
+              selectedIndividual={selectedIndividual}
+              setSelectedIndividual={setSelectedIndividual}
+            />
             <div>
               {/* {variable?.records?.map((record) => {
                 return (

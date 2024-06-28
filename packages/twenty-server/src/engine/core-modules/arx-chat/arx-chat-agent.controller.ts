@@ -27,6 +27,8 @@ import { IncomingMessage } from "http";
 import { ToolsForAgents } from "src/engine/core-modules/arx-chat/services/llm-agents/prompting-tool-calling";
 import { axiosRequest } from "./utils/arx-chat-agent-utils";
 import * as allGraphQLQueries from "./services/candidate-engagement/graphql-queries-chatbot";
+import { FilePathGuard } from "../file/guards/file-path-guard";
+import { shareJDtoCandidate } from "./services/llm-agents/tool-calls-processing";
 
 @Controller("updateChat")
 export class UpdateChatEndpoint {
@@ -269,6 +271,7 @@ export class ArxChatEndpoint {
   }
 
   @Post("send-chat")
+  @UseGuards(JwtAuthGuard)
   async SendChat(@Req() request: any): Promise<object> {
     // const whatsappIncomingMessage: allDataObjects.chatMessageType = {
     //   phoneNumberFrom: request.body.phoneNumberFrom,
@@ -359,6 +362,7 @@ export class ArxChatEndpoint {
   }
 
   @Get("get-candidates-and-chats")
+  @UseGuards(JwtAuthGuard)
   async getCandidatesAndChats(@Req() request: any): Promise<object> {
     const graphqlQueryObj = JSON.stringify({
       query: allGraphQLQueries.graphqlQueryToFindEngagedCandidates,
@@ -377,6 +381,60 @@ export class ArxChatEndpoint {
     //   request.body.phoneNumberFrom
     // );
     return { status: "Success" };
+  }
+
+  @Post("send-jd-from-frontend")
+  @UseGuards(JwtAuthGuard)
+  async uploadAttachment(@Req() request: any): Promise<object> {
+    console.log("This is the request body", request.body);
+    // const attachmentData: allDataObjects.AttachmentData =
+    //   request.body.attachmentData;
+
+    const personObj: allDataObjects.PersonNode =
+      await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(
+        request.body.phoneNumberTo
+      );
+
+    const recruiterProfile = allDataObjects.recruiterProfile;
+    try {
+      await shareJDtoCandidate(personObj);
+      return { status: "Success" };
+    } catch (err) {
+      return { status: err };
+    }
+  }
+
+  @Post("update-whatsapp-delivery-status")
+  @UseGuards(JwtAuthGuard)
+  async updateDeliveryStatus(@Req() request: any): Promise<object> {
+    const listOfMessagesIds: string[] = request.body.listOfMessagesIds;
+    try {
+      for (let id of listOfMessagesIds) {
+        const variablesToUpdateDeliveryStatus = {
+          idToUpdate: id,
+          input: {
+            whatsappDeliveryStatus: "readByRecruiter",
+          },
+        };
+        // debugger
+        const graphqlQueryObjForUpdationForDeliveryStatus = JSON.stringify({
+          query: allGraphQLQueries.graphqlQueryToUpdateMessageDeliveryStatus,
+          variables: variablesToUpdateDeliveryStatus,
+        });
+        const responseOfDeliveryStatus = await axiosRequest(
+          graphqlQueryObjForUpdationForDeliveryStatus
+        );
+
+        console.log("Res:::", responseOfDeliveryStatus?.data);
+
+        console.log(
+          "---------------DELIVERY STATUS UPDATE DONE-----------------------"
+        );
+      }
+      return { status: "Success" };
+    } catch (err) {
+      return { status: err };
+    }
   }
 }
 

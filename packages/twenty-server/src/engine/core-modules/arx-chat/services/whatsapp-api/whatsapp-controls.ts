@@ -64,7 +64,7 @@ export class WhatsappAPISelector {
 
   async sendJDViaWhatsapp(
     person: allDataObjects.PersonNode,
-    candidateId: string,
+    // candidateId: string,
     attachment: allDataObjects.Attachment
   ) {
     const fullPath = attachment?.fullPath;
