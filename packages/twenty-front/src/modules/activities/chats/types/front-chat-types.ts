@@ -45,6 +45,7 @@ export interface MessageNode {
   name: string;
   phoneFrom: string;
   messageObj: any;
+  whatsappDeliveryStatus: string;
 }
 export interface SendAttachment {
   filePath: string;
@@ -301,6 +302,7 @@ export const emptyCandidateProfileObj: CandidateNode = {
             name: "",
             phoneFrom: "",
             messageObj: {},
+            whatsappDeliveryStatus: "",
           },
         },
       ],
@@ -329,6 +331,7 @@ export const emptyCandidateProfileObj: CandidateNode = {
           name: "",
           phoneFrom: "",
           messageObj: "",
+          whatsappDeliveryStatus: "",
         },
       },
     ],
