@@ -25,6 +25,7 @@ import { MailerModule } from "./gmail-sender/gmail-sender.module";
 @Module({
   imports: [
     // MailerModule,
+    // BaileysModule,
     GoogleCalendarModule,
     HealthModule,
     AnalyticsModule,
@@ -45,7 +46,7 @@ import { MailerModule } from "./gmail-sender/gmail-sender.module";
   ],
   exports: [
     // GoogleCalendarModule,
-
+    // BaileysModule,
     AnalyticsModule,
     AuthModule,
     ArxChatAgentModule,

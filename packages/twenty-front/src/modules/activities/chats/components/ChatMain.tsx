@@ -5,9 +5,11 @@ import { useFindManyPeople } from "../hooks/useFindManyPeople";
 
 import * as frontChatTypes from "../types/front-chat-types";
 import ChatWindow from "./ChatWindow";
-import { useRecoilState } from "recoil";
+import { useRecoilState, useRecoilValue } from "recoil";
 import { tokenPairState } from "@/auth/states/tokenPairState";
 import ChatSidebar from "./ChatSidebar";
+import { currentUnreadMessagesState } from "@/activities/tasks/states/currentUnreadMessagesState";
+// /home/ninad/Documents/twenty/packages/twenty-front/src/modules/activities/tasks/states/currentUnreadMessagesState.ts
 
 export default function ChatMain() {
   // const { loading, error, data } = useQuery(GET_DOGS);
@@ -30,6 +32,10 @@ export default function ChatMain() {
   const [unreadCount, setUnreadCount] = useState(0);
 
   const [tokenPair] = useRecoilState(tokenPairState);
+
+  const [currentUnreadMessages, setCurrentUnreadMessages] = useRecoilState(
+    currentUnreadMessagesState
+  );
 
   const handleSubmit = () => {
     console.log("submit");
@@ -130,20 +136,53 @@ export default function ChatMain() {
 
       const unreadMessagesList =
         getUnreadMessageListManyCandidates(availablePeople);
-      console.log(unreadMessages);
+      console.log(unreadMessagesList);
+      setCurrentUnreadMessages(
+        unreadMessagesList?.listOfUnreadMessages?.length
+      );
+      console.log("count::::", currentUnreadMessages);
       setUnreadMessages(unreadMessagesList);
+      updateUnreadMessagesStatus(selectedIndividual);
     }
 
     fetchData();
     //! Change later: Fetch data every 5 seconds
-    const interval = setInterval(fetchData, 50000);
+    const interval = setInterval(fetchData, 5000);
 
     return () => clearInterval(interval);
   }, []);
 
+  const updateUnreadMessagesStatus = async (selectedIndividual: string) => {
+    // debugger;
+    const listOfMessagesIds = unreadMessages?.listOfUnreadMessages
+      ?.filter(
+        (unreadMessage) =>
+          unreadMessage.candidateId ===
+          individuals?.filter(
+            (individual) => individual.node.id === selectedIndividual
+          )[0]?.node?.candidates?.edges[0]?.node?.id
+      )[0]
+      ?.ManyUnreadMessages.map((message) => message.id);
+
+    console.log("listOfMessagesIds", listOfMessagesIds);
+    if (listOfMessagesIds === undefined) return;
+    const response = await axios.post(
+      "http://localhost:3000/arx-chat/update-whatsapp-delivery-status",
+      {
+        listOfMessagesIds: listOfMessagesIds,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
+        },
+      }
+    );
+  };
+
   useEffect(() => {
     console.log("selectedindividuals", selectedIndividual);
-  }, [selectedIndividual]);
+    updateUnreadMessagesStatus(selectedIndividual);
+  }, [selectedIndividual, individuals]);
 
   return (
     <>

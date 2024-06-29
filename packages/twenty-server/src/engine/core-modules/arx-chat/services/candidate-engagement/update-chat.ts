@@ -470,4 +470,42 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
     console.log("REsponse status:", response.status);
     return response;
   }
+
+  async getCandidateDetailsByPhoneNumber(
+    phoneNumber: string
+  ): Promise<allDataObjects.CandidateNode> {
+    const graphVariables = {
+      filter: {
+        phone: {
+          ilike: "%" + phoneNumber + "%",
+        },
+      },
+      orderBy: {
+        position: "AscNullsFirst",
+      },
+    };
+    try {
+      console.log("going to get candidate information");
+      // console.log("going to get process.env.TWENTY_JWT_SECRET",process.env.TWENTY_JWT_SECRET)
+      // console.log("going to get process.env.GRAPHQL_URL", process.env.GRAPHQL_URL)
+      const graphqlQueryObj = JSON.stringify({
+        query: allGraphQLQueries.graphqlQueryToFindPeopleByPhoneNumber,
+        variables: graphVariables,
+      });
+      const response = await axiosRequest(graphqlQueryObj);
+      console.log(
+        "This is the response from getCandidate Information FROM PHONENUMBER",
+        response.data.data
+      );
+      const candidateDataObjs =
+        response.data?.data?.people?.edges[0]?.node?.candidates?.edges;
+      return candidateDataObjs;
+    } catch (error) {
+      console.log(
+        "Getting an error and returning empty candidate profile objeect:",
+        error
+      );
+      return allDataObjects.emptyCandidateProfileObj;
+    }
+  }
 }
