@@ -25,7 +25,11 @@ export class WhatsappAPISelector {
           mostRecentMessageArr
         );
     } else if (process.env.WHATSAPP_API === "baileys") {
-      await sendWhatsappMessageVIABaileysAPI(whatappUpdateMessageObj);
+      await sendWhatsappMessageVIABaileysAPI(
+        whatappUpdateMessageObj,
+        personNode,
+        mostRecentMessageArr
+      );
     } else {
       console.log("No valid whatsapp API selected");
     }

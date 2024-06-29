@@ -12,6 +12,11 @@ const StyledNameSpan = styled.span`
   margin-right: 0.5rem;
 `;
 
+const StyledTime = styled.span`
+  color: #aaa;
+  font-size: 0.9rem;
+`;
+
 const ChatMessageInfo = (props: {
   messageName: string;
   messageTime: string;
@@ -19,7 +24,7 @@ const ChatMessageInfo = (props: {
   return (
     <div>
       <StyledNameSpan>{props.messageName}</StyledNameSpan>
-      <span>{dayjs(props.messageTime).format("hh:mm A")}</span>
+      <StyledTime>{dayjs(props.messageTime).format("hh:mm A")}</StyledTime>
     </div>
   );
 };

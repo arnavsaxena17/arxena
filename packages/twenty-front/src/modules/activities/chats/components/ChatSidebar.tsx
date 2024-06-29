@@ -25,12 +25,13 @@ export default function (props: {
         {props.individuals?.map((individual) => {
           return (
             <ChatTile
+              id={individual?.node?.candidates?.edges[0]?.node?.id}
               individual={individual}
               setSelectedIndividual={props.setSelectedIndividual}
               selectedIndividual={props.selectedIndividual}
               unreadMessagesCount={
                 props.unreadMessages?.listOfUnreadMessages?.filter((unread) => {
-                  debugger;
+                  // debugger;
                   return (
                     unread.candidateId ===
                     individual?.node?.candidates?.edges[0]?.node?.id

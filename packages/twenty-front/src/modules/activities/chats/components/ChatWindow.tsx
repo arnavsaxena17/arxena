@@ -8,24 +8,53 @@ import styled from "@emotion/styled";
 import SingleChatContainer from "./SingleChatContainer";
 import dayjs from "dayjs";
 
+const StyledButton = styled.button`
+  padding: 0.5em;
+  background-color: #0e6874;
+  color: white;
+  border: none;
+  margin-left: 1rem;
+  cursor: pointer;
+  border-radius: 4px;
+`;
+
+const StyledWindow = styled.div`
+  display: flex;
+  flex-direction: column;
+  height: 90vh;
+  margin: 0 auto;
+`;
+
 const StyledChatInput = styled.input`
   padding: 0.5em;
-  width: auto;
+  width: 100%;
   display: block;
+  flex: 1;
   border: 1px solid #ccc;
   outline: none;
-  
+`;
+
+const StyledChatInputBox = styled.div`
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  background-color: rgba(255, 255, 255, 0.8);
+  filter: drop-shadow(0px -2px 4px rgba(0, 0, 0, 0.1));
+  z-index: 1;
+  backdrop-filter: saturate(180%) blur(10px);
+  max-width: auto;
+  padding: 1rem;
+  flex: 1;
 `;
 
 const ChatView = styled.div`
   position: relative;
   border: 1px solid #ccc;
   overflow-y: scroll;
-  height: 85vh;
+  height: 90vh;
   width: auto;
 `;
 
-const formatDate = (date: string) => dayjs(date).format("YYYY-MM-DD");
 const StyledDateComponent = styled.span`
   padding: 0.5em;
   background-color: #ccf9ff;
@@ -39,8 +68,8 @@ const StyledTopBar = styled.div`
   padding: 1.5rem;
   position: fixed;
   display: block;
-  border-bottom: 1px solid #ccc;
-  width: 100%;
+  /* border-bottom: 1px solid #ccc; */
+  width: 66%;
   background-color: rgba(255, 255, 255, 0.8);
   filter: drop-shadow(0px 2px 4px rgba(0, 0, 0, 0.1));
   z-index: 1;
@@ -50,6 +79,8 @@ const StyledTopBar = styled.div`
 const StyledScrollingView = styled.div`
   padding-top: 5rem;
 `;
+
+const formatDate = (date: string) => dayjs(date).format("YYYY-MM-DD");
 
 export default function ChatWindow(props: {
   selectedIndividual: string;
@@ -121,7 +152,7 @@ export default function ChatWindow(props: {
     <>
       <div style={{ display: "flex", flexDirection: "column" }}>
         {(props.selectedIndividual && (
-          <div>
+          <StyledWindow>
             <ChatView>
               <StyledTopBar>{`${messageName.firstName} ${messageName.lastName}`}</StyledTopBar>
               <StyledScrollingView>
@@ -154,17 +185,16 @@ export default function ChatWindow(props: {
                 }
               </StyledScrollingView>
             </ChatView>
-
-            <div>
+            <StyledChatInputBox>
               <StyledChatInput
                 type="text"
                 ref={inputRef}
                 placeholder="Type your message"
               />
-              <button onClick={handleSubmit}>Submit</button>
-              <button onClick={handleShareJD}>Share JD</button>
-            </div>
-          </div>
+              <StyledButton onClick={handleSubmit}>Submit</StyledButton>
+              <StyledButton onClick={handleShareJD}>Share JD</StyledButton>
+            </StyledChatInputBox>
+          </StyledWindow>
         )) ||
           "Select a chat to start chatting"}
       </div>
