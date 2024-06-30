@@ -90,6 +90,7 @@
     "dataloader": "^2.2.2",
     "date-fns": "^2.30.0",
     "date-fns-tz": "^2.0.0",
+    "dayjs": "^1.11.11",
     "debounce": "^2.0.0",
     "deep-equal": "^2.2.2",
     "docusaurus-node-polyfills": "^1.0.0",

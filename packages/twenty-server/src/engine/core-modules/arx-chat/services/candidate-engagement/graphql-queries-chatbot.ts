@@ -140,6 +140,7 @@ export const graphqlQueryToFindEngagedCandidates = `query FindManyPeople($filter
                             id
                             name
                             phoneFrom
+                            whatsappDeliveryStatus
                           }
                         }
                       }
