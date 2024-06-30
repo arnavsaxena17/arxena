@@ -4,7 +4,7 @@ import * as allDataObjects from 'src/engine/core-modules/recruitment-agent/servi
 
 
 
-export class IncomingWhatsappMessages{
+export class IncomingWhatsappMessages {
 
   async receiveIncomingMessagesFromBaileys(requestBody:allDataObjects.BaileysIncomingMessage){
     console.log("This is requestBody::", requestBody)
