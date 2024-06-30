@@ -45,6 +45,7 @@ export interface MessageNode {
   name: string;
   phoneFrom: string;
   messageObj: any;
+  whatsappDeliveryStatus: string;
 }
 export interface SendAttachment {
   filePath: string;
@@ -301,6 +302,7 @@ export const emptyCandidateProfileObj: CandidateNode = {
             name: "",
             phoneFrom: "",
             messageObj: {},
+            whatsappDeliveryStatus: "",
           },
         },
       ],
@@ -329,6 +331,7 @@ export const emptyCandidateProfileObj: CandidateNode = {
           name: "",
           phoneFrom: "",
           messageObj: "",
+          whatsappDeliveryStatus: "",
         },
       },
     ],
@@ -425,4 +428,19 @@ export interface AttachmentMessageObject {
     fileBuffer: string;
     mimetype: string;
   };
+}
+
+export interface UnreadMessageListManyCandidates {
+  listOfUnreadMessages: UnreadMessagesPerOneCandidate[];
+}
+
+export interface UnreadMessagesPerOneCandidate {
+  candidateId: string;
+  ManyUnreadMessages: OneUnreadMessage[];
+}
+
+export interface OneUnreadMessage {
+  message: string;
+  id: string;
+  whatsappDeliveryStatus: string;
 }
