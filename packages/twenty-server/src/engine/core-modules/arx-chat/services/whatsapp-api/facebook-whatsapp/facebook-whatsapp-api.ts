@@ -22,6 +22,7 @@ import CandidateEngagementArx from "../../../services/candidate-engagement/check
 // const mime = require('mime');
 const axios = require("axios");
 import { getTranscriptionFromWhisper } from "../../../utils/arx-chat-agent-utils";
+import { FetchAndUpdateCandidatesChatsWhatsapps } from "../../candidate-engagement/update-chat";
 const { exec } = require("child_process");
 
 let whatsappAPIToken = process.env.FACEBOOK_WHATSAPP_PERMANENT_API;
@@ -54,8 +55,24 @@ export class FacebookWhatsappChatApi {
       mediaFileName: fileName ?? "AttachmentFile",
       mediaID: mediaID,
     };
+
+    const personObj =
+      await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(
+        phoneNumberTo
+      );
+
+    const mostRecentMessageArr: allDataObjects.ChatHistoryItem[] =
+      personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node
+        ?.messageObj;
+
+    mostRecentMessageArr.push({
+      role: "user",
+      content: "Shared JD with the candidate",
+    });
     new FacebookWhatsappChatApi().sendWhatsappAttachmentMessage(
-      sendTextMessageObj
+      sendTextMessageObj,
+      personObj,
+      mostRecentMessageArr
     );
   }
   getTemplateMessageObj(
@@ -251,7 +268,9 @@ export class FacebookWhatsappChatApi {
   }
 
   async sendWhatsappAttachmentMessage(
-    sendWhatsappAttachmentTextMessageObj: allDataObjects.FacebookWhatsappAttachmentChatRequestBody
+    sendWhatsappAttachmentTextMessageObj: allDataObjects.FacebookWhatsappAttachmentChatRequestBody,
+    personObj: allDataObjects.PersonNode,
+    mostRecentMessageArr: allDataObjects.ChatHistoryItem[]
   ) {
     console.log("sending whatsapp attachment message");
     const text_message = {
@@ -286,8 +305,19 @@ export class FacebookWhatsappChatApi {
     try {
       const response = await axios.request(config);
       console.log(
-        "Rehis is response data after sendAttachment is called",
+        "This is response data after sendAttachment is called",
         JSON.stringify(response.data)
+      );
+      const wamId = response?.data?.messages[0]?.id;
+      const whatappUpdateMessageObj =
+        await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj(
+          wamId,
+          // response,
+          personObj,
+          mostRecentMessageArr
+        );
+      await new CandidateEngagementArx().updateCandidateEngagementDataInTable(
+        whatappUpdateMessageObj
       );
     } catch (error) {
       console.log(error);
@@ -459,10 +489,9 @@ export class FacebookWhatsappChatApi {
         response = await this.sendWhatsappTextMessage(sendTextMessageObj);
       }
       // console.log(response);
-
       const whatappUpdateMessageObjAfterWAMidUpdate =
         await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj(
-          response?.data?.messages[0]?.id, // whatsapp message id
+          response?.data?.messages[0]?.id || response.messages[0].id, // whatsapp message id response.messages[0].id
           // response,
           personNode,
           mostRecentMessageArr
