@@ -208,6 +208,7 @@ export class OpenAIArxMultiStepClient {
     messageText: string,
     mostRecentMessageArr: allDataObjects.ChatHistoryItem[]
   ) {
+    console.log("Called sendWhatsappMessageToCandidate to send message via any whatsapp api")
     if (messageText === "#DONTRESPOND#") {
       console.log("Found a #DONTRESPOND# message, so not sending any message");
       return;
@@ -220,11 +221,7 @@ export class OpenAIArxMultiStepClient {
           mostRecentMessageArr
         );
       if (process.env.WHATSAPP_ENABLED === "true") {
-        await new WhatsappAPISelector().sendWhatsappMessage(
-          whatappUpdateMessageObj,
-          this.personNode,
-          mostRecentMessageArr
-        );
+        await new WhatsappAPISelector().sendWhatsappMessage( whatappUpdateMessageObj, this.personNode, mostRecentMessageArr );
       } else {
         console.log(
           "Whatsapp is not enabled, so not sending message:",

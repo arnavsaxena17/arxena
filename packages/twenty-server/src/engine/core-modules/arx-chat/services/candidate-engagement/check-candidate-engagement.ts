@@ -56,7 +56,7 @@ export default class CandidateEngagementArx {
     };
     await this.updateCandidateEngagementDataInTable(whatappUpdateMessageObj);
     // Adding this for now to be able to send messages to the candidates
-    // await new WhatsappAPISelector().sendWhatsappMessage(whatappUpdateMessageObj)
+    // await new WhatsappAPISelector().sendWhatsappMessage(whatappUpdateMessageObj, candidateProfileDataNodeObj, chatHistory);
 
     return whatappUpdateMessageObj;
   }
@@ -139,7 +139,7 @@ export default class CandidateEngagementArx {
     if (!updateCandidateStatusObj) return;
     console.log("Candidate engagement status updated successfully");
     console.log("Got whatsapp api selector to send messages");
-    // await new WhatsappAPISelector().sendWhatsappMessage(whatappUpdateMessageObj)
+    // await new WhatsappAPISelector().sendWhatsappMessage(whatappUpdateMessageObj);
     return {
       status: "success",
       message: "Candidate engagement status updated successfully",
@@ -151,6 +151,7 @@ export default class CandidateEngagementArx {
     personNode: allDataObjects.PersonNode,
     chatHistory: allDataObjects.ChatHistoryItem[]
   ) {
+    debugger;
     const candidateNode = personNode.candidates.edges[0].node;
     const updatedChatHistoryObj = {
       // executorResultObj: result,

@@ -3,9 +3,9 @@ import styled from '@emotion/styled';
 
 import { Activity } from '@/activities/types/Activity';
 
-import { TaskRow } from './TaskRow';
+import { ChatRow } from './ChatRow';
 
-type TaskListProps = {
+type ChatListProps = {
   title?: string;
   tasks: Activity[];
   button?: ReactElement | false;
@@ -39,14 +39,14 @@ const StyledCount = styled.span`
   margin-left: ${({ theme }) => theme.spacing(2)};
 `;
 
-const StyledTaskRows = styled.div`
+const StyledChatRows = styled.div`
   background-color: ${({ theme }) => theme.background.secondary};
   border: 1px solid ${({ theme }) => theme.border.color.light};
   border-radius: ${({ theme }) => theme.border.radius.md};
   width: 100%;
 `;
 
-export const TaskList = ({ title, tasks, button }: TaskListProps) => (
+export const ChatList = ({ title, tasks, button }: ChatListProps) => (
   <>
     {tasks && tasks.length > 0 && (
       <StyledContainer>
@@ -58,11 +58,11 @@ export const TaskList = ({ title, tasks, button }: TaskListProps) => (
           )}
           {button}
         </StyledTitleBar>
-        <StyledTaskRows>
+        <StyledChatRows>
           {tasks.map((task) => (
-            <TaskRow key={task.id} task={task} />
+            <ChatRow key={task.id} task={task} />
           ))}
-        </StyledTaskRows>
+        </StyledChatRows>
       </StyledContainer>
     )}
   </>

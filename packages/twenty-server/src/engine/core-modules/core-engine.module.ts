@@ -11,7 +11,7 @@ import { TimelineCalendarEventModule } from "src/engine/core-modules/calendar/ti
 import { BillingModule } from "src/engine/core-modules/billing/billing.module";
 import { HealthModule } from "src/engine/core-modules/health/health.module";
 import { PostgresCredentialsModule } from "src/engine/core-modules/postgres-credentials/postgres-credentials.module";
-import { BaileysModule } from "./baileys/baileys.module";
+// import { BaileysModule } from "./baileys/baileys.module";
 import { ArxChatAgentModule } from "./arx-chat/arx-chat-agent.module";
 import { RecruitmentAgentModule } from "src/engine/core-modules/recruitment-agent/recruitment-agent.module";
 import { VideoInterviewModule } from "src/engine/core-modules/video-interview/video-interview.module";
@@ -25,9 +25,8 @@ import { MailerModule } from "./gmail-sender/gmail-sender.module";
 @Module({
   imports: [
     // MailerModule,
-    // BaileysModule,
     GoogleCalendarModule,
-    BaileysModule,
+    // BaileysModule,
     HealthModule,
     AnalyticsModule,
     ArxChatAgentModule,
@@ -51,7 +50,6 @@ import { MailerModule } from "./gmail-sender/gmail-sender.module";
     AnalyticsModule,
     AuthModule,
     ArxChatAgentModule,
-    BaileysModule,
     RecruitmentAgentModule,
     FeatureFlagModule,
     TimelineMessagingModule,

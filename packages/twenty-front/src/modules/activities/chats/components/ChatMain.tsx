@@ -8,8 +8,8 @@ import ChatWindow from "./ChatWindow";
 import { useRecoilState, useRecoilValue } from "recoil";
 import { tokenPairState } from "@/auth/states/tokenPairState";
 import ChatSidebar from "./ChatSidebar";
-import { currentUnreadMessagesState } from "@/activities/tasks/states/currentUnreadMessagesState";
-// /home/ninad/Documents/twenty/packages/twenty-front/src/modules/activities/tasks/states/currentUnreadMessagesState.ts
+import { currentUnreadMessagesState } from "@/activities/chats/states/currentUnreadMessagesState";
+
 
 export default function ChatMain() {
   // const { loading, error, data } = useQuery(GET_DOGS);

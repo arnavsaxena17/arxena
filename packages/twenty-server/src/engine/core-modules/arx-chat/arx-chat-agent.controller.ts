@@ -368,10 +368,6 @@ export class ArxChatEndpoint {
       query: allGraphQLQueries.graphqlQueryToFindEngagedCandidates,
     });
     const response = await axiosRequest(graphqlQueryObj);
-    console.log(
-      "This is the response from getCandidate Information FROM PHONENUMBER",
-      response.data.data
-    );
     return response?.data?.data;
   }
 

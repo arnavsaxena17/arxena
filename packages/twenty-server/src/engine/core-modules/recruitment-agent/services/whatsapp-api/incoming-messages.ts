@@ -33,11 +33,6 @@ export class IncomingWhatsappMessages {
     else{
       console.log("Message has been received from a candidate however the candidate is not in the database")
     }
-    //         }
-    //     }
-    // } else {
-    //     console.log("Message of type:", requestBody?.entry[0]?.changes[0]?.value?.statuses[0]?.status, ", ignoring it");
-    // }
 }
     async receiveIncomingMessagesFromFacebook(requestBody:allDataObjects.WhatsAppBusinessAccount){
         console.log("This is requestBody::", requestBody)
