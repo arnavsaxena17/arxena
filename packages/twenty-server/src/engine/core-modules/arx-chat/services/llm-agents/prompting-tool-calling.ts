@@ -41,10 +41,6 @@ export class ToolsForAgents {
     return result;
   };
 
-
-
-
-
   async getStagePrompt() {
     const recruitmentSteps = [
       "Initial Outreach: The recruiter introduces themselves and their company, mentions the specific role, and the candidate has responded in some manner.",
