@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import * as frontChatTypes from "../types/front-chat-types";
 import axios from "axios";
 import { useRecoilState } from "recoil";
@@ -86,6 +86,10 @@ export default function ChatWindow(props: {
   selectedIndividual: string;
   individuals: frontChatTypes.PersonEdge[];
 }) {
+  const [messageHistory, setMessageHistory] = useState<[]>([]);
+  const [latestResponseGenerated, setLatestResponseGenerated] = useState("");
+  const [listOfToolCalls, setListOfToolCalls] = useState<string[]>([]);
+
   const inputRef = useRef(null);
 
   const [tokenPair] = useRecoilState(tokenPairState);
@@ -173,8 +177,15 @@ export default function ChatWindow(props: {
                         </p>
                       )}
                       <SingleChatContainer
+                        phoneNumber={currentIndividual?.node?.phone}
                         message={message}
                         messageName={`${messageName.firstName} ${messageName.lastName}`}
+                        latestResponseGenerated={latestResponseGenerated}
+                        setLatestResponseGenerated={setLatestResponseGenerated}
+                        listOfToolCalls={listOfToolCalls}
+                        setListOfToolCalls={setListOfToolCalls}
+                        messageHistory={messageHistory}
+                        setMessageHistory={setMessageHistory}
                       />
                     </>
                   );
