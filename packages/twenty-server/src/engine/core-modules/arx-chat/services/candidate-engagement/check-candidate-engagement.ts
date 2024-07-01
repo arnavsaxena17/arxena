@@ -151,7 +151,6 @@ export default class CandidateEngagementArx {
     personNode: allDataObjects.PersonNode,
     chatHistory: allDataObjects.ChatHistoryItem[]
   ) {
-    debugger;
     const candidateNode = personNode.candidates.edges[0].node;
     const updatedChatHistoryObj = {
       // executorResultObj: result,
