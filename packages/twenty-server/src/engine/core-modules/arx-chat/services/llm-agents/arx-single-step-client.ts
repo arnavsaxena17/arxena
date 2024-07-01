@@ -23,7 +23,8 @@ export class OpenAIArxSingleStepClient {
 
   async createCompletion(
     mostRecentMessageArr: allDataObjects.ChatHistoryItem[],
-    personNode: allDataObjects.PersonNode
+    personNode: allDataObjects.PersonNode,
+    isChatEnabled?: boolean
   ) {
     const tools = await new ToolsForAgents().getTools();
     // @ts-ignore
@@ -47,7 +48,8 @@ export class OpenAIArxSingleStepClient {
     await this.sendWhatsappMessageToCandidate(
       response,
       mostRecentMessageArr,
-      personNode
+      personNode,
+      isChatEnabled
     );
     // const whatappUpdateMessageObj = await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj(response,personNode,mostRecentMessageArr);
     // await new CandidateEngagementArx().updateCandidateEngagementDataInTable(whatappUpdateMessageObj);
@@ -116,7 +118,8 @@ export class OpenAIArxSingleStepClient {
   async sendWhatsappMessageToCandidate(
     response: ChatCompletion,
     mostRecentMessageArr: allDataObjects.ChatHistoryItem[],
-    personNode: allDataObjects.PersonNode
+    personNode: allDataObjects.PersonNode,
+    isChatEnabled?: boolean
   ) {
     if (
       response.choices[0].message.content &&
@@ -129,7 +132,10 @@ export class OpenAIArxSingleStepClient {
           this.personNode,
           mostRecentMessageArr
         );
-      if (process.env.WHATSAPP_ENABLED === "true") {
+      if (
+        process.env.WHATSAPP_ENABLED === "true" &&
+        (isChatEnabled === undefined || isChatEnabled)
+      ) {
         await new WhatsappAPISelector().sendWhatsappMessage(
           whatappUpdateMessageObj,
           personNode,

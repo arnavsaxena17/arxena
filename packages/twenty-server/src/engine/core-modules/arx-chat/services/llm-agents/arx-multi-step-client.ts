@@ -23,7 +23,8 @@ export class OpenAIArxMultiStepClient {
   // THis is the entry point
   async createCompletion(
     mostRecentMessageArr: allDataObjects.ChatHistoryItem[],
-    personNode: allDataObjects.PersonNode
+    personNode: allDataObjects.PersonNode,
+    isChatEnabled?: boolean
   ) {
     console.log("Going top create completion in multi step client");
     const stage = await this.getStageOfTheConversation(mostRecentMessageArr);
@@ -35,7 +36,8 @@ export class OpenAIArxMultiStepClient {
       await this.runCandidateFacingAgentsAlongWithToolCalls(
         mostRecentMessageArr,
         personNode,
-        stage
+        stage,
+        isChatEnabled
       );
     return mostRecentMessageArr;
     // await this.runSystemFacingAgentsAlongWithToolCalls( mostRecentMessageArr, personNode, stage)
@@ -82,7 +84,8 @@ export class OpenAIArxMultiStepClient {
   async runCandidateFacingAgentsAlongWithToolCalls(
     mostRecentMessageArr: allDataObjects.ChatHistoryItem[],
     personNode: allDataObjects.PersonNode,
-    stage: string
+    stage: string,
+    isChatEnabled?: boolean
   ) {
     const newSystemPrompt =
       await new ToolsForAgents().getCandidateFacingSystemPromptBasedOnStage(
@@ -115,7 +118,8 @@ export class OpenAIArxMultiStepClient {
     }
     await this.sendWhatsappMessageToCandidate(
       response?.choices[0]?.message?.content || "",
-      mostRecentMessageArr
+      mostRecentMessageArr,
+      isChatEnabled
     );
     return mostRecentMessageArr;
   }
@@ -206,7 +210,8 @@ export class OpenAIArxMultiStepClient {
 
   async sendWhatsappMessageToCandidate(
     messageText: string,
-    mostRecentMessageArr: allDataObjects.ChatHistoryItem[]
+    mostRecentMessageArr: allDataObjects.ChatHistoryItem[],
+    isChatEnabled?: boolean
   ) {
     console.log(
       "Called sendWhatsappMessageToCandidate to send message via any whatsapp api"
@@ -222,7 +227,10 @@ export class OpenAIArxMultiStepClient {
           this.personNode,
           mostRecentMessageArr
         );
-      if (process.env.WHATSAPP_ENABLED === "true") {
+      if (
+        process.env.WHATSAPP_ENABLED === "true" &&
+        (isChatEnabled === undefined || isChatEnabled)
+      ) {
         await new WhatsappAPISelector().sendWhatsappMessage(
           whatappUpdateMessageObj,
           this.personNode,

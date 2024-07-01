@@ -96,9 +96,10 @@ export class ArxChatEndpoint {
           personObj,
           mostRecentMessageArr
         );
-      const engagementStatus = await new CandidateEngagementArx().updateCandidateEngagementDataInTable(
-        whatappUpdateMessageObj
-      );
+      const engagementStatus =
+        await new CandidateEngagementArx().updateCandidateEngagementDataInTable(
+          whatappUpdateMessageObj
+        );
 
       console.log("Engagement Status:", engagementStatus);
       if (engagementStatus?.status === "success") {
@@ -115,6 +116,7 @@ export class ArxChatEndpoint {
       await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(
         request.body.phoneNumberFrom
       );
+    // debugger;
     const personCandidateNode = personObj?.candidates?.edges[0]?.node;
     const messagesList = personCandidateNode?.whatsappMessages?.edges;
     console.log("Current Messages list:", messagesList);
@@ -122,6 +124,7 @@ export class ArxChatEndpoint {
       new CandidateEngagementArx().getMostRecentMessageFromMessagesList(
         messagesList
       );
+    const isChatEnabled: boolean = false;
     console.log(
       "mostRecentMessageArr before chatCompletion:",
       mostRecentMessageArr
@@ -133,22 +136,21 @@ export class ArxChatEndpoint {
       } else {
         chatAgent = new OpenAIArxMultiStepClient(personObj);
       }
-      await chatAgent.createCompletion(mostRecentMessageArr, personObj);
-      
+      await chatAgent.createCompletion(
+        mostRecentMessageArr,
+        personObj,
+        isChatEnabled
+      );
 
       mostRecentMessageArr = await chatAgent.createCompletion(
         mostRecentMessageArr,
-        personObj
+        personObj,
+        isChatEnabled
       );
       return mostRecentMessageArr;
-
-    
     }
     return { status: "Success" };
   }
-
-
-
 
   @Post("run-chat-completion")
   async runChatCompletion(@Req() request: any): Promise<object> {
@@ -287,7 +289,6 @@ export class ArxChatEndpoint {
   @Post("send-chat")
   @UseGuards(JwtAuthGuard)
   async SendChat(@Req() request: any): Promise<object> {
-
     const messageToSend = request?.body?.messageToSend;
 
     const personObj: allDataObjects.PersonNode =
