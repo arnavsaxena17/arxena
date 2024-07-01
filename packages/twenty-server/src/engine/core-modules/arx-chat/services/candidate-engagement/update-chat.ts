@@ -347,8 +347,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
     // debugger
     // console.log("Updating candidate's status", candidateProfileObj, whatappUpdateMessageObj);
     // debugger
-    const candidateEngagementStatus =
-      whatappUpdateMessageObj.messageType !== "botMessage";
+    const candidateEngagementStatus = whatappUpdateMessageObj.messageType !== "botMessage";
     const updateCandidateObjectVariables = {
       idToUpdate: candidateProfileObj?.id,
       input: {
@@ -367,6 +366,8 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
     } catch (error) {
       console.log(error);
     }
+    console.log("Candidate engagement status updated successfully");
+
   }
 
   async setCandidateEngagementStatusToFalse(

@@ -65,7 +65,7 @@ export class UpdateChatEndpoint {
 @Controller("arx-chat")
 export class ArxChatEndpoint {
   @Post("invoke-chat")
-  async evaluate(@Req() request: any): Promise<object> {
+  async evaluate(@Req() request: any) {
     const personObj: allDataObjects.PersonNode =
       await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(
         request.body.phoneNumberFrom
@@ -96,12 +96,59 @@ export class ArxChatEndpoint {
           personObj,
           mostRecentMessageArr
         );
-      await new CandidateEngagementArx().updateCandidateEngagementDataInTable(
+      const engagementStatus = await new CandidateEngagementArx().updateCandidateEngagementDataInTable(
         whatappUpdateMessageObj
       );
+
+      console.log("Engagement Status:", engagementStatus);
+      if (engagementStatus?.status === "success") {
+        return { status: engagementStatus?.status };
+      } else {
+        return { status: "Failed" };
+      }
+    }
+  }
+
+  @Post("retrieve-chat-response")
+  async retrieve(@Req() request: any): Promise<object> {
+    const personObj: allDataObjects.PersonNode =
+      await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(
+        request.body.phoneNumberFrom
+      );
+    const personCandidateNode = personObj?.candidates?.edges[0]?.node;
+    const messagesList = personCandidateNode?.whatsappMessages?.edges;
+    console.log("Current Messages list:", messagesList);
+    let mostRecentMessageArr: allDataObjects.ChatHistoryItem[] =
+      new CandidateEngagementArx().getMostRecentMessageFromMessagesList(
+        messagesList
+      );
+    console.log(
+      "mostRecentMessageArr before chatCompletion:",
+      mostRecentMessageArr
+    );
+    if (mostRecentMessageArr?.length > 0) {
+      let chatAgent: OpenAIArxSingleStepClient | OpenAIArxMultiStepClient;
+      if (process.env.PROMPT_ENGINEERING_TYPE === "single-step") {
+        chatAgent = new OpenAIArxSingleStepClient(personObj);
+      } else {
+        chatAgent = new OpenAIArxMultiStepClient(personObj);
+      }
+      await chatAgent.createCompletion(mostRecentMessageArr, personObj);
+      
+
+      mostRecentMessageArr = await chatAgent.createCompletion(
+        mostRecentMessageArr,
+        personObj
+      );
+      return mostRecentMessageArr;
+
+    
     }
     return { status: "Success" };
   }
+
+
+
 
   @Post("run-chat-completion")
   async runChatCompletion(@Req() request: any): Promise<object> {
@@ -123,23 +170,6 @@ export class ArxChatEndpoint {
       personObj
     );
 
-    // const personCandidateNode = personObj?.candidates?.edges[0]?.node;
-    // const messagesList = personCandidateNode?.whatsappMessages?.edges;
-    // console.log("Current Messages list:", messagesList);
-    // let mostRecentMessageArr:allDataObjects.ChatHistoryItem[] = new CandidateEngagementArx().getMostRecentMessageFromMessagesList(messagesList);
-    // console.log("mostRecentMessageArr before chatCompletion:", mostRecentMessageArr);
-    // if (mostRecentMessageArr?.length > 0) {
-    //   let chatAgent:OpenAIArxSingleStepClient | OpenAIArxMultiStepClient;
-    //   if (process.env.PROMPT_ENGINEERING_TYPE === 'single-step') {
-    //     chatAgent = new OpenAIArxSingleStepClient(personObj);
-    //   }
-    //   else{
-    //     chatAgent = new OpenAIArxMultiStepClient(personObj);
-    //   }
-    //   await chatAgent.createCompletion(mostRecentMessageArr, personObj);
-    //   const whatappUpdateMessageObj = await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj("ArxChatEndpoint", response,personObj,mostRecentMessageArr);
-    //   await new CandidateEngagementArx().updateCandidateEngagementDataInTable(whatappUpdateMessageObj);
-    // }
     return mostRecentMessageArr;
   }
 
@@ -156,23 +186,6 @@ export class ArxChatEndpoint {
     let chatAgent = new OpenAIArxMultiStepClient(personObj);
     const stage = await chatAgent.getStageOfTheConversation(messagesList);
 
-    // const personCandidateNode = personObj?.candidates?.edges[0]?.node;
-    // const messagesList = personCandidateNode?.whatsappMessages?.edges;
-    // console.log("Current Messages list:", messagesList);
-    // let mostRecentMessageArr:allDataObjects.ChatHistoryItem[] = new CandidateEngagementArx().getMostRecentMessageFromMessagesList(messagesList);
-    // console.log("mostRecentMessageArr before chatCompletion:", mostRecentMessageArr);
-    // if (mostRecentMessageArr?.length > 0) {
-    //   let chatAgent:OpenAIArxSingleStepClient | OpenAIArxMultiStepClient;
-    //   if (process.env.PROMPT_ENGINEERING_TYPE === 'single-step') {
-    //     chatAgent = new OpenAIArxSingleStepClient(personObj);
-    //   }
-    //   else{
-    //     chatAgent = new OpenAIArxMultiStepClient(personObj);
-    //   }
-    //   await chatAgent.createCompletion(mostRecentMessageArr, personObj);
-    //   const whatappUpdateMessageObj = await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj("ArxChatEndpoint", response,personObj,mostRecentMessageArr);
-    //   await new CandidateEngagementArx().updateCandidateEngagementDataInTable(whatappUpdateMessageObj);
-    // }
     return { stage: stage };
   }
 
@@ -263,7 +276,8 @@ export class ArxChatEndpoint {
       await new CandidateEngagementArx().updateCandidateEngagementDataInTable(
         whatappUpdateMessageObj
       );
-    if (engagementStatus?.status === "Success") {
+    console.log("Engagement Status:", engagementStatus);
+    if (engagementStatus?.status === "success") {
       return { status: engagementStatus?.status };
     } else {
       return { status: "Failed" };
@@ -273,15 +287,6 @@ export class ArxChatEndpoint {
   @Post("send-chat")
   @UseGuards(JwtAuthGuard)
   async SendChat(@Req() request: any): Promise<object> {
-    // const whatsappIncomingMessage: allDataObjects.chatMessageType = {
-    //   phoneNumberFrom: request.body.phoneNumberFrom,
-    //   phoneNumberTo: "918591724917",
-    //   messages: [{ role: "user", content: "hi" }],
-    //   messageType: "string",
-    // };
-
-    // console.log("This is the chat reply:", whatsappIncomingMessage);
-    // const chatReply = "hi";
 
     const messageToSend = request?.body?.messageToSend;
 
@@ -299,13 +304,7 @@ export class ArxChatEndpoint {
     let chatHistory = chatMessages[0]?.node?.messageObj || [];
     console.log("Got chathistory = ", chatHistory);
     console.log("chatMessages:", chatMessages);
-    // if (chatReply === "hi" && chatMessages.length === 0) {
-    //   const SYSTEM_PROMPT = await new ToolsForAgents().getSystemPrompt(
-    //     personObj
-    //   );
-    //   chatHistory.push({ role: "system", content: SYSTEM_PROMPT });
-    //   chatHistory.push({ role: "user", content: "Hi" });
-    // } else {
+
     chatHistory =
       personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node
         ?.messageObj;
@@ -322,10 +321,7 @@ export class ArxChatEndpoint {
       whatsappDeliveryStatus: "created",
       whatsappMessageId: "startChat",
     };
-    // debugger;
-    // await new OpenAIArxMultiStepClient(
-    //   personObj
-    // ).sendWhatsappMessageToCandidate(request?.body?.messageToSend, chatHistory);
+
     let messageObj: allDataObjects.ChatRequestBody = {
       phoneNumberFrom: recruiterProfile.phone,
       phoneNumberTo: personObj.phone,

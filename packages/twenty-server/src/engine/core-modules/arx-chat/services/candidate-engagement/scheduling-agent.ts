@@ -8,6 +8,11 @@ export class TasksService {
   @Cron("*/60 * * * * *")
   async handleCron() {
     // this.logger.log("Evert 5 seconds check Candidate Engagement is called");
-    await new CandidateEngagementArx().checkCandidateEngagement();
+    if (process.env.RUN_SCHEDULER === "true") {
+      await new CandidateEngagementArx().checkCandidateEngagement();
+    }
+    else{
+      console.log("Scheduler is turned off")
+    }
   }
 }
