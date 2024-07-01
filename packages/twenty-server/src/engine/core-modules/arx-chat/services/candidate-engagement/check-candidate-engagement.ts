@@ -137,8 +137,6 @@ export default class CandidateEngagementArx {
         whatappUpdateMessageObj
       );
     if (!updateCandidateStatusObj) return;
-    console.log("Candidate engagement status updated successfully");
-    console.log("Got whatsapp api selector to send messages");
     // await new WhatsappAPISelector().sendWhatsappMessage(whatappUpdateMessageObj);
     return {
       status: "success",
