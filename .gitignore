@@ -3,7 +3,7 @@
 /.idea
 **/**/node_modules/
 .cache
-
+packages/twenty-server/auth_info_baileys/*
 # yarn is the recommended package manager across the project
 **/**/.package-lock.json
 

@@ -79,7 +79,7 @@ const StyledCheckboxContainer = styled.div`
   display: flex;
 `;
 
-export const TaskRow = ({ task }: { task: Activity }) => {
+export const ChatRow = ({ task }: { task: Activity }) => {
   const theme = useTheme();
   const openActivityRightDrawer = useOpenActivityRightDrawer();
 
@@ -105,7 +105,7 @@ export const TaskRow = ({ task }: { task: Activity }) => {
           />
         </StyledCheckboxContainer>
         <StyledTaskTitle completed={task.completedAt !== null}>
-          {task.title || <StyledPlaceholder>Task title</StyledPlaceholder>}
+          {task.title || <StyledPlaceholder>Chat title</StyledPlaceholder>}
         </StyledTaskTitle>
         <StyledTaskBody>
           <OverflowingTextWithTooltip text={body} />
