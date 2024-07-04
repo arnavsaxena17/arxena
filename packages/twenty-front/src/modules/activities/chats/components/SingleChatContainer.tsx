@@ -1,9 +1,48 @@
-import React, { useState } from "react";
+import React, { useState, ReactElement } from "react";
 import styled from "@emotion/styled";
 import * as frontChatTypes from "../types/front-chat-types";
 import dayjs from "dayjs";
 import axios from "axios";
 import { set } from "date-fns";
+import { IconCheck, IconChecks, IconAlertCircle } from "@tabler/icons-react";
+
+const IconChecksBlue = () => {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={24}
+      height={24}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="#007bff"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="icon icon-tabler icons-tabler-outline icon-tabler-checks"
+    >
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M7 12l5 5l10 -10" />
+      <path d="M2 12l5 5m5 -5l5 -5" />
+    </svg>
+  );
+};
+
+interface MessageStatusType {
+  [key: string]: ReactElement;
+  sent: ReactElement;
+  delivered: ReactElement;
+  read: ReactElement;
+  failed: ReactElement;
+  readByRecruiter: ReactElement;
+}
+
+const MessageStatus: MessageStatusType = {
+  sent: <IconCheck />,
+  delivered: <IconChecks />,
+  read: <IconChecksBlue />,
+  failed: <IconAlertCircle />,
+  readByRecruiter: <IconChecksBlue />,
+};
 
 const StyledContainer = styled.div`
   padding: 1rem;
@@ -19,119 +58,34 @@ const StyledTime = styled.span`
   font-size: 0.9rem;
 `;
 
-const StyledButtonsBelowChatMessage = styled.div`
-  display: flex;
-  /* justify-content: space-between; */
-`;
-
-const StyledButton = styled.button`
-  background-color: #4caf50;
-  border: none;
-  border-radius: 10px;
-  color: white;
-  cursor: pointer;
-  margin-right: 0.5rem;
-`;
-
 const ChatMessageInfo = (props: {
   messageName: string;
   messageTime: string;
+  messageReadStatus: string;
 }) => {
   return (
     <div>
       <StyledNameSpan>{props.messageName}</StyledNameSpan>
       <StyledTime>{dayjs(props.messageTime).format("hh:mm A")}</StyledTime>
+      {props.messageName === "You" ? (
+        <span>{MessageStatus[props.messageReadStatus]}</span>
+      ) : (
+        <></>
+      )}
     </div>
   );
-};
-
-const handleRetrieveBotMessage = async (
-  phoneNumber: string,
-  latestResponseGenerated: string,
-  setLatestResponseGenerated: React.Dispatch<React.SetStateAction<string>>,
-  listOfToolCalls: string[],
-  setListOfToolCalls: React.Dispatch<React.SetStateAction<string[]>>,
-  messageHistory: [],
-  setMessageHistory: React.Dispatch<React.SetStateAction<[]>>
-) => {
-  console.log("Retrieve Bot Message");
-  const oldLength = messageHistory.length;
-  debugger;
-  const response = await axios.post(
-    // ! Update host later to app.arxena.com/app
-    "http://localhost:3000/arx-chat/retrieve-chat-response",
-    {
-      phoneNumberFrom: phoneNumber,
-    }
-  );
-  console.log("Got response after retrieving bot message", response.data);
-  // setMessageHistory(response.data);
-  const newMessageHistory = response.data;
-  const latestObject = response.data[response.data.length - 1];
-  // setLatestResponseGenerated(latestObject.content ?? "");
-  const newLatestResponseGenerated = latestObject.content ?? "";
-  console.log("latest:", newLatestResponseGenerated);
-  const newLength = newMessageHistory.length;
-  const diff = newLength - oldLength;
-  const arrObjOfToolCalls = response.data.slice(
-    response.data.length - diff,
-    response.data.length - 1
-  );
-  console.log(arrObjOfToolCalls);
-  setListOfToolCalls(
-    arrObjOfToolCalls
-      .filter((obj: any) => obj?.role === "tool")
-      .map((obj: any) => obj?.name)
-  );
-};
-
-const handleInvokeChatAndRunToolCalls = async (
-  phoneNumber: string,
-  latestResponseGenerated: string,
-  setLatestResponseGenerated: React.Dispatch<React.SetStateAction<string>>
-) => {
-  console.log("Invoke Chat + Run tool calls");
-  debugger;
-  console.log("Retrieve Bot Message");
-  const response = await axios.post(
-    // ! Update host later to app.arxena.com/app
-    "http://localhost:3000/arx-chat/invoke-chat",
-    {
-      phoneNumberFrom: phoneNumber,
-    }
-  );
-  console.log("Got response after invoking the chat", response.data);
-};
-
-const handleSendMessage = async (
-  phoneNumber: string,
-  latestResponseGenerated: string
-) => {
-  debugger;
-  console.log("Send Message");
-  const response = await axios.post(
-    "http://localhost:3000/arx-chat/send-chat",
-    {
-      messageToSend: latestResponseGenerated || "Didnt work",
-      phoneNumberTo: phoneNumber,
-    }
-  );
-};
-
-const handleToolCalls = () => {
-  console.log("Tool Calls");
 };
 
 export default function SingleChatContainer(props: {
   message: frontChatTypes.WhatsAppMessagesEdge;
   messageName: string;
   phoneNumber: string;
-  latestResponseGenerated: string;
-  setLatestResponseGenerated: React.Dispatch<React.SetStateAction<string>>;
-  listOfToolCalls: string[];
-  setListOfToolCalls: React.Dispatch<React.SetStateAction<string[]>>;
-  messageHistory: [];
-  setMessageHistory: React.Dispatch<React.SetStateAction<[]>>;
+  // latestResponseGenerated: string;
+  // setLatestResponseGenerated: React.Dispatch<React.SetStateAction<string>>;
+  // listOfToolCalls: string[];
+  // setListOfToolCalls: React.Dispatch<React.SetStateAction<string[]>>;
+  // messageHistory: [];
+  // setMessageHistory: React.Dispatch<React.SetStateAction<[]>>;
 }) {
   return (
     <div>
@@ -143,45 +97,12 @@ export default function SingleChatContainer(props: {
               : "You"
           }
           messageTime={props.message?.node?.createdAt}
+          messageReadStatus={props.message?.node?.whatsappDeliveryStatus}
         />
         <p>{props.message?.node?.message}</p>
-        {props.message?.node?.name !== "candidateMessage" && (
-          <StyledButtonsBelowChatMessage>
-            <StyledButton
-              onClick={() =>
-                handleRetrieveBotMessage(
-                  props.phoneNumber,
-                  props.latestResponseGenerated,
-                  props.setLatestResponseGenerated,
-                  props.listOfToolCalls,
-                  props.setListOfToolCalls,
-                  props.messageHistory,
-                  props.setMessageHistory
-                )
-              }
-            >
-              Retrieve Bot Response
-            </StyledButton>
-            <StyledButton
-              onClick={() => {
-                handleSendMessage(
-                  props.phoneNumber,
-                  props.latestResponseGenerated
-                );
-                handleInvokeChatAndRunToolCalls(
-                  props.phoneNumber,
-                  props.latestResponseGenerated,
-                  props.setLatestResponseGenerated
-                );
-              }}
-            >
-              Invoke Chat + Run tool calls
-            </StyledButton>
-            <span>
-              Tools Called: {props.listOfToolCalls?.map((tool) => tool + ", ")}
-            </span>
-          </StyledButtonsBelowChatMessage>
-        )}
+        {/* {props.message?.node?.name !== "candidateMessage" && (
+          
+        )} */}
       </StyledContainer>
     </div>
   );

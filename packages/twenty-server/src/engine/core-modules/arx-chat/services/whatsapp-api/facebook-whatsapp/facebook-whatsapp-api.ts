@@ -67,7 +67,7 @@ export class FacebookWhatsappChatApi {
 
     mostRecentMessageArr.push({
       role: "user",
-      content: "Shared JD with the candidate",
+      content: "Sharing the JD",
     });
     new FacebookWhatsappChatApi().sendWhatsappAttachmentMessage(
       sendTextMessageObj,
@@ -253,13 +253,40 @@ export class FacebookWhatsappChatApi {
           contentType: contentType,
         };
       } catch (err) {
+        debugger;
         console.error("Errir heree", response?.data);
         console.error("upload", err.toJSON());
         console.log(err.data);
+        const phoneNumberTo = attachmentMessage?.phoneNumberTo;
+
+        const personObj =
+          await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(
+            phoneNumberTo
+          );
+
+        const mostRecentMessageArr: allDataObjects.ChatHistoryItem[] =
+          personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]
+            ?.node?.messageObj;
+
+        mostRecentMessageArr.push({
+          role: "user",
+          content: "Failed to send JD to the candidate.",
+        });
+
+        const whatappUpdateMessageObj =
+          await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj(
+            "failed",
+            // response,
+            personObj,
+            mostRecentMessageArr
+          );
+        await new CandidateEngagementArx().updateCandidateEngagementDataInTable(
+          whatappUpdateMessageObj
+        );
+        // Remove the local file
+        // const unlink = promisify(fs.unlink);
+        // await unlink(filePath);
       }
-      // Remove the local file
-      // const unlink = promisify(fs.unlink);
-      // await unlink(filePath);
     } catch (error) {
       console.error("Error downloading file from WhatsApp:", error);
       throw error;

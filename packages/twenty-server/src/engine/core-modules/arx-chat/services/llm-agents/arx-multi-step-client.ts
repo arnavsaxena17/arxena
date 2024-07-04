@@ -24,7 +24,7 @@ export class OpenAIArxMultiStepClient {
   async createCompletion(
     mostRecentMessageArr: allDataObjects.ChatHistoryItem[],
     personNode: allDataObjects.PersonNode,
-    isChatEnabled?: boolean
+    isChatEnabled: boolean = true
   ) {
     console.log("Going top create completion in multi step client");
     const stage = await this.getStageOfTheConversation(mostRecentMessageArr);
@@ -85,7 +85,7 @@ export class OpenAIArxMultiStepClient {
     mostRecentMessageArr: allDataObjects.ChatHistoryItem[],
     personNode: allDataObjects.PersonNode,
     stage: string,
-    isChatEnabled?: boolean
+    isChatEnabled: boolean = true
   ) {
     const newSystemPrompt =
       await new ToolsForAgents().getCandidateFacingSystemPromptBasedOnStage(
@@ -110,10 +110,11 @@ export class OpenAIArxMultiStepClient {
     const responseMessage: ChatCompletionMessage = response.choices[0].message;
     console.log("BOT_MESSAGE:", responseMessage.content);
     mostRecentMessageArr.push(responseMessage); // extend conversation with assistant's reply
-    if (responseMessage.tool_calls) {
+    if (responseMessage.tool_calls && isChatEnabled) {
       mostRecentMessageArr = await this.addResponseAndToolCallsToMessageHistory(
         responseMessage,
         mostRecentMessageArr
+        // isChatEnabled
       );
     }
     await this.sendWhatsappMessageToCandidate(
@@ -162,6 +163,7 @@ export class OpenAIArxMultiStepClient {
     responseMessage: ChatCompletionMessage,
     messages: allDataObjects.ChatHistoryItem[]
   ) {
+    debugger;
     const toolCalls = responseMessage.tool_calls;
     // @ts-ignore
     if (toolCalls) {
@@ -171,10 +173,12 @@ export class OpenAIArxMultiStepClient {
         // @ts-ignore
         const functionToCall = availableFunctions[functionName];
         const functionArgs = JSON.parse(toolCall.function.arguments);
+        // if (isChatEnabled) {
         const responseFromFunction = await functionToCall(
           functionArgs,
           this.personNode
         );
+        // }
         // @ts-ignore
         messages.push({
           tool_call_id: toolCall.id,
