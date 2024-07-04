@@ -20,7 +20,7 @@ import { FetchAndUpdateCandidatesChatsWhatsapps } from "./services/candidate-eng
 import { create } from "domain";
 import { request, response } from "express";
 import { OpenAIArxMultiStepClient } from "./services/llm-agents/arx-multi-step-client";
-import { OpenAIArxSingleStepClient } from "./services/llm-agents/arx-single-step-client";
+// import { OpenAIArxSingleStepClient } from "./services/llm-agents/arx-single-step-client";
 import { WhatsappAPISelector } from "./services/whatsapp-api/whatsapp-controls";
 import { any } from "zod";
 import { IncomingMessage } from "http";
@@ -82,12 +82,12 @@ export class ArxChatEndpoint {
       mostRecentMessageArr
     );
     if (mostRecentMessageArr?.length > 0) {
-      let chatAgent: OpenAIArxSingleStepClient | OpenAIArxMultiStepClient;
-      if (process.env.PROMPT_ENGINEERING_TYPE === "single-step") {
-        chatAgent = new OpenAIArxSingleStepClient(personObj);
-      } else {
-        chatAgent = new OpenAIArxMultiStepClient(personObj);
-      }
+      let chatAgent: OpenAIArxMultiStepClient;
+      // if (process.env.PROMPT_ENGINEERING_TYPE === "single-step") {
+      //   chatAgent = new OpenAIArxSingleStepClient(personObj);
+      // } else {
+      chatAgent = new OpenAIArxMultiStepClient(personObj);
+      // }
       await chatAgent.createCompletion(mostRecentMessageArr, personObj);
       const whatappUpdateMessageObj =
         await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj(
@@ -96,17 +96,18 @@ export class ArxChatEndpoint {
           personObj,
           mostRecentMessageArr
         );
-      const engagementStatus =
-        await new CandidateEngagementArx().updateCandidateEngagementDataInTable(
-          whatappUpdateMessageObj
-        );
+      // const engagementStatus =
+      //   await new CandidateEngagementArx().updateCandidateEngagementDataInTable(
+      //     whatappUpdateMessageObj
+      //   );
 
-      console.log("Engagement Status:", engagementStatus);
-      if (engagementStatus?.status === "success") {
-        return { status: engagementStatus?.status };
-      } else {
-        return { status: "Failed" };
-      }
+      // console.log("Engagement Status:", engagementStatus);
+      // if (engagementStatus?.status === "success") {
+      //   return { status: engagementStatus?.status };
+      // } else {
+      //   return { status: "Failed" };
+      // }
+      return whatappUpdateMessageObj;
     }
   }
 
@@ -117,39 +118,43 @@ export class ArxChatEndpoint {
         request.body.phoneNumberFrom
       );
     // debugger;
-    const personCandidateNode = personObj?.candidates?.edges[0]?.node;
-    const messagesList = personCandidateNode?.whatsappMessages?.edges;
-    console.log("Current Messages list:", messagesList);
-    let mostRecentMessageArr: allDataObjects.ChatHistoryItem[] =
-      new CandidateEngagementArx().getMostRecentMessageFromMessagesList(
-        messagesList
+    try {
+      const personCandidateNode = personObj?.candidates?.edges[0]?.node;
+      const messagesList = personCandidateNode?.whatsappMessages?.edges;
+      console.log("Current Messages list:", messagesList);
+      let mostRecentMessageArr: allDataObjects.ChatHistoryItem[] =
+        new CandidateEngagementArx().getMostRecentMessageFromMessagesList(
+          messagesList
+        );
+      const isChatEnabled: boolean = false;
+      console.log(
+        "mostRecentMessageArr before chatCompletion:",
+        mostRecentMessageArr
       );
-    const isChatEnabled: boolean = false;
-    console.log(
-      "mostRecentMessageArr before chatCompletion:",
-      mostRecentMessageArr
-    );
-    if (mostRecentMessageArr?.length > 0) {
-      let chatAgent: OpenAIArxSingleStepClient | OpenAIArxMultiStepClient;
-      if (process.env.PROMPT_ENGINEERING_TYPE === "single-step") {
-        chatAgent = new OpenAIArxSingleStepClient(personObj);
-      } else {
+      if (mostRecentMessageArr?.length > 0) {
+        let chatAgent: OpenAIArxMultiStepClient;
+        // if (process.env.PROMPT_ENGINEERING_TYPE === "single-step") {
+        //   chatAgent = new OpenAIArxSingleStepClient(personObj);
+        // } else {
         chatAgent = new OpenAIArxMultiStepClient(personObj);
-      }
-      await chatAgent.createCompletion(
-        mostRecentMessageArr,
-        personObj,
-        isChatEnabled
-      );
+        // }
+        // await chatAgent.createCompletion(
+        //   mostRecentMessageArr,
+        //   personObj,
+        //   isChatEnabled
+        // );
 
-      mostRecentMessageArr = await chatAgent.createCompletion(
-        mostRecentMessageArr,
-        personObj,
-        isChatEnabled
-      );
-      return mostRecentMessageArr;
+        mostRecentMessageArr = await chatAgent.createCompletion(
+          mostRecentMessageArr,
+          personObj,
+          isChatEnabled
+        );
+        return mostRecentMessageArr;
+      }
+    } catch (err) {
+      return { status: err };
     }
-    return { status: "Success" };
+    return { status: "Failed" };
   }
 
   @Post("run-chat-completion")
@@ -161,12 +166,12 @@ export class ArxChatEndpoint {
       );
     const messagesList = request.body;
 
-    let chatAgent: OpenAIArxSingleStepClient | OpenAIArxMultiStepClient;
-    if (process.env.PROMPT_ENGINEERING_TYPE === "single-step") {
-      chatAgent = new OpenAIArxSingleStepClient(personObj);
-    } else {
-      chatAgent = new OpenAIArxMultiStepClient(personObj);
-    }
+    let chatAgent: OpenAIArxMultiStepClient;
+    // if (process.env.PROMPT_ENGINEERING_TYPE === "single-step") {
+    //   chatAgent = new OpenAIArxSingleStepClient(personObj);
+    // } else {
+    chatAgent = new OpenAIArxMultiStepClient(personObj);
+    // }
     const mostRecentMessageArr = await chatAgent.createCompletion(
       messagesList,
       personObj

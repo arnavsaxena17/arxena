@@ -57,8 +57,6 @@ export class GoogleCalendarService {
     //   return null;
     // }
 
-    debugger;
-
     // const graphVariables = {};
 
     // const graphqlQueryObj = JSON.stringify({
