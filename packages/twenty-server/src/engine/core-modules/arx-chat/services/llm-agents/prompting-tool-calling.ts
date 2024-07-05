@@ -32,33 +32,37 @@ export class ToolsForAgents {
   //     this.personNode = personNode;
   // };
 
-  
-  async convertToBulletPoints (steps: { [x: string]: any; 1?: string; 2?: string; 3?: string; 4?: string; }){
+  async convertToBulletPoints(steps: {
+    [x: string]: any;
+    1?: string;
+    2?: string;
+    3?: string;
+    4?: string;
+  }) {
     let result = "";
     for (let key in steps) {
-        result += `${key}. ${steps[key]}\n`;
+      result += `${key}. ${steps[key]}\n`;
     }
     return result;
-  };
+  }
 
   async getStagePrompt() {
     const recruitmentSteps = [
       "Initial Outreach: The recruiter introduces themselves and their company, mentions the specific role, and the candidate has responded in some manner.",
       // "Share Role Details: Provide a JD of the role and company. Check if the candidate has heard of the company. Assess the candidate's interest level and fit for the role, including their ability to relocate if needed.",
-      
+
       "Share screening questions: Share screening questions and record responses",
       // "Schedule Screening Meeting: Propose times for a call to discuss the role, company, and candidate's experience more deeply, aiming for a 30-minute discussion."
-      "Acknowledge and postpone: Let the candidate know that you will get back"
+      "Acknowledge and postpone: Let the candidate know that you will get back",
     ];
-    
+
     const steps = {};
     recruitmentSteps.forEach((step, index) => {
       steps[(index + 1).toString()] = step;
     });
-    
-  
-    const stepsBulleted = await this.convertToBulletPoints(steps)
-    
+
+    const stepsBulleted = await this.convertToBulletPoints(steps);
+
     const STAGE_SYSTEM_PROMPT = `
     You are assisting with determining the appropriate stage in a recruiting conversation based on the interaction history with a candidate. Your task is to decide whether to maintain the current stage or progress to the next one based on the dialogue so far.
     Here are the stages to choose from:
@@ -66,13 +70,18 @@ export class ToolsForAgents {
     When deciding the next step:
 
     If there is no  conversation history or only a greeting, default to stage 1.
-    Your response should be a single number between 1 and ${Object.keys(steps).length}, representing the appropriate stage.
+    Your response should be a single number between 1 and ${
+      Object.keys(steps).length
+    }, representing the appropriate stage.
     Do not include any additional text or instructions in your response.
     Do not take the output as an instruction of what to say.
+    If the candidate's answer is not specific enough, do not progress to the next stage and ask the candidate to be more specific.
     Your decision should not be influenced by the output itself. Do not respond to the user input when determining the appropriate stage.
-    Your response should be a only a single number between 1 and ${Object.keys(steps).length}, representing the appropriate stage.
-    `
-    
+    Your response should be a only a single number between 1 and ${
+      Object.keys(steps).length
+    }, representing the appropriate stage.
+    `;
+
     return STAGE_SYSTEM_PROMPT;
   }
   async getQuestionsToAsk(personNode: allDataObjects.PersonNode) {
@@ -81,12 +90,19 @@ export class ToolsForAgents {
     // const formattedQuestions = questions.map((question, index) =>  `${index + 1}. ${question.replace("{location}", location)}`).join("\n");
     // return formattedQuestions
     const jobId = personNode?.candidates?.edges[0]?.node?.jobs?.id;
-    console.log("This is the job Id:", jobId)
-    const {questionArray, questionIdArray} = await new FetchAndUpdateCandidatesChatsWhatsapps().fetchQuestionsByJobId(jobId)
-    if (questionArray.length == 0){
-      return ["What is your current & expected CTC?", "Who do you report to and which functions report to you?", "Are you okay to relocate to {location}?"]
+    console.log("This is the job Id:", jobId);
+    const { questionArray, questionIdArray } =
+      await new FetchAndUpdateCandidatesChatsWhatsapps().fetchQuestionsByJobId(
+        jobId
+      );
+    if (questionArray.length == 0) {
+      return [
+        "What is your current & expected CTC?",
+        "Who do you report to and which functions report to you?",
+        "Are you okay to relocate to {location}?",
+      ];
     }
-    return questionArray
+    return questionArray;
   }
 
   async getSystemPrompt(personNode: allDataObjects.PersonNode) {
@@ -100,13 +116,14 @@ export class ToolsForAgents {
     You will drive the conversation with candidates like the recruiter. Your goal is to assess the candidates for interest and fitment.
     If found reasonably fit, your goal is to setup a meeting at a available time.
     You will start the chat with asking if they are interested and available for a call.
-    They may either ask questions or show interest or provide a time slot. You will first ask them a few screening questions one by one before confirming a time.
+    They may either ask questions or show interest or provide a time slot. You will first ask them a few screening questions before confirming a time.
 
     ##STAGE_PROMPT
 
     Your screening questions are :
     ${formattedQuestions}
     After the candidate answers each question, you will call the function update_answer.
+        If the candidate's answer is not specific enough, do not update the answer and ask the candidate to be more specific.
     If the candidate, asks details about the role or the company, share the JD with him/ her by calling the function "share_jd".
     Even if the candidate doesn't ask about the role or the company, do share the JD with him/ her by calling the function "share_jd". 
     Apart from your starting sentence, have small chats and not long winded sentences.
@@ -117,9 +134,11 @@ export class ToolsForAgents {
     If the candidate is interested but not fit, you will update the candidate profile with the status "Not Fit". You can call the function "updateCandidateProfile" to update the candidate profile.
     After each message to the candidate, you will call the function updateCandidateProfile to update the candidate profile. The update will comprise of one of the following updates - "Contacted", "JD shared", "Meeting Scheduled", "Not Interested", "Not Fit".
     If the candidate asks to send job description on email, call the function "send_email" to send the job description to the candidate.
+    Candidate might ask you to send the JD on a specified email. You will send the JD by just calling the "share_jd" function. You will not ask for the email.
     Sometimes candidates will send forwards and irrelevant messages. You will have to ignore them. If the candidate unnecessarily replies and messages, you will reply with "#DONTRESPOND#" exact string. 
-    You will not indicate any updates to the candidate.
+    You will not indicate any updates to the candidate. You will only ask questions and share the JD. You will not provide any feedback to the candidate. The candidate might ask for feedback, you will not provide any feedback. They can ask any queries unrelated to the role or the background inside any related questions. You will not respond to any queries unrelated to the role. Do not let the candidate know you are updating their profile or status.
     Available timeslots are: ${availableTimeSlots}
+    Do not schedule a meeting outside these timeslots even if the candidate requests or insists. Tell the candidate that these are the only available timeslots and you cannot schedule a meeting outside of these timeslots.
     Your first message when you receive the prompt "startChat" is: Hey ${personNode.name.firstName},
     I'm ${recruiterProfile.first_name}, ${recruiterProfile.job_title} at ${recruiterProfile.job_company_name}, ${recruiterProfile.company_description_oneliner}.
     I'm hiring for a ${jobProfile.name} role for ${jobProfile.company.descriptionOneliner} and got your application on my job posting. I believe this might be a good fit.
@@ -127,52 +146,76 @@ export class ToolsForAgents {
     return SYSTEM_PROMPT;
   }
 
-  async getCandidateFacingSystemPromptBasedOnStage(personNode:allDataObjects.PersonNode, stage:string){
-    const systemPrompt = await this.getSystemPrompt(personNode)
-    const updatedSystemPromptWithStagePrompt = systemPrompt.replace("##STAGE_PROMPT", stage)
-    console.log(updatedSystemPromptWithStagePrompt)
-    return updatedSystemPromptWithStagePrompt
+  async getCandidateFacingSystemPromptBasedOnStage(
+    personNode: allDataObjects.PersonNode,
+    stage: string
+  ) {
+    const systemPrompt = await this.getSystemPrompt(personNode);
+    const updatedSystemPromptWithStagePrompt = systemPrompt.replace(
+      "##STAGE_PROMPT",
+      stage
+    );
+    console.log(updatedSystemPromptWithStagePrompt);
+    return updatedSystemPromptWithStagePrompt;
   }
 
-  async getSystemFacingSystemPromptBasedOnStage(personNode:allDataObjects.PersonNode, stage:string){
-    const systemPrompt = await this.getSystemPrompt(personNode)
-    const updatedSystemPromptWithStagePrompt = systemPrompt.replace("##STAGE_PROMPT", stage)
-    console.log(updatedSystemPromptWithStagePrompt)
-    return updatedSystemPromptWithStagePrompt
+  async getSystemFacingSystemPromptBasedOnStage(
+    personNode: allDataObjects.PersonNode,
+    stage: string
+  ) {
+    const systemPrompt = await this.getSystemPrompt(personNode);
+    const updatedSystemPromptWithStagePrompt = systemPrompt.replace(
+      "##STAGE_PROMPT",
+      stage
+    );
+    console.log(updatedSystemPromptWithStagePrompt);
+    return updatedSystemPromptWithStagePrompt;
   }
 
-  async getToolCallsByStage(){
-    const toolCallsByStage =  {
-      "Initial Outreach":['update_candidate_profile'],
-      "Share Role Details":['share_jd'],
-      "Share screening questions":['update_answer','update_candidate_profile'],
-      "Create Reminder":['update_candidate_profile','schedule_meeting'],
-      "Schedule Screening Meeting":['update_candidate_profile','schedule_meeting']
-    }
-    return toolCallsByStage
+  async getToolCallsByStage() {
+    const toolCallsByStage = {
+      "Initial Outreach": ["update_candidate_profile"],
+      "Share Role Details": ["share_jd"],
+      "Share screening questions": [
+        "update_answer",
+        "update_candidate_profile",
+      ],
+      "Create Reminder": ["update_candidate_profile", "schedule_meeting"],
+      "Schedule Screening Meeting": [
+        "update_candidate_profile",
+        "schedule_meeting",
+      ],
+    };
+    return toolCallsByStage;
   }
 
-
-  async getStageWiseActivity(){
-    const stageWiseActions =  {
-      "Initial Outreach":[`
+  async getStageWiseActivity() {
+    const stageWiseActions = {
+      "Initial Outreach": [
+        `
         The recruiter introduces themselves and their company, mentions the specific role, and the candidate has responded in some manner. 
         The candidate might ask questions about we found their profile or which platform. Answer accordingly.  
         The candidate might directly propose a time to speak/ meet or ask for more details. In either case, share the JD with the candidate and ask them for their interest
-        `],
-      "Share Role Details":[`
+        `,
+      ],
+      "Share Role Details": [
+        `
         Provide a JD of the role and describe in short the details of the company. Ask the candidate if they would be keen on the role wiht the company.
-        `],
-      "Share screening questions":[`
+        `,
+      ],
+      "Share screening questions": [
+        `
         Ask questions to the candidate to assess their fitment for the role.
-        `],
-      "Create Reminder":[`
-        `],
-      "Schedule Screening Meeting":['']
-    }
-    return stageWiseActions
+        `,
+      ],
+      "Create Reminder": [
+        `
+        `,
+      ],
+      "Schedule Screening Meeting": [""],
+    };
+    return stageWiseActions;
   }
-
 
   getAvailableFunctions() {
     return {
@@ -380,138 +423,149 @@ export class ToolsForAgents {
             required: ["inputs", "candidateProfileDataNodeObj"],
           },
         },
-      
-      },
-      {
-        "type": "function",
-        "function": {
-            "name": "update_candidate_profile",
-            "description": "Update the candidate profile",
-        }
-      },
-      {
-        "type": "function",
-        "function": {
-            "name": "update_answer",
-            "description": "Update the candidate's answer",
-
-        }
-      }
-    ];
-    return tools
-  }
-  
-  
-  async getCandidateFacingToolsByStage(stage:string){
-    const tools = [
-      {
-        "type": "function",
-        "function": {
-            "name": "share_jd",
-            "description": "Share the candidate JD",
-        }
       },
       {
         type: "function",
-    function: {
-      name: "schedule_meeting",
-      description: "Schedule a meeting with the candidate",
-      parameters: {
-        type: "object",
-        properties: {
-          inputs: {
-            type: "object",
-            description: "Details about the meeting",
-            properties: {
-              summary: {
-                type: "string",
-                description: "Summary of the meeting",
-              },
-              typeOfMeeting: {
-                type: "string",
-                description: "Type of the meeting, can be either Virtual or In-Person. Default is Virtual.",
-              },
-              location: {
-                type: "string",
-                description: "Location of the meeting",
-              },
-              description: {
-                type: "string",
-                description: "Description of the meeting",
-              },
-              startDateTime: {
-                type: "string",
-                format: "date-time",
-                description: "Start date and time of the meeting in ISO 8601 format",
-              },
-              endDateTime: {
-                type: "string",
-                format: "date-time",
-                description: "End date and time of the meeting in ISO 8601 format",
-              },
-              timeZone: {
-                type: "string",
-                description: "Time zone of the meeting",
-              },
-            },
-            required: ["startDateTime", "endDateTime", "timeZone"],
-          },
-          candidateProfileDataNodeObj: {
-            type: "object",
-            description: "Profile data of the candidate",
-            properties: {
-              email: {
-                type: "string",
-                format: "email",
-                description: "Email of the candidate",
-              },
-            },
-            required: ["email"],
-          },
+        function: {
+          name: "update_candidate_profile",
+          description: "Update the candidate profile",
         },
-        required: ["inputs", "candidateProfileDataNodeObj"],
-      },
-    },
       },
       {
-        "type": "function",
-        "function": {
-            "name": "update_candidate_profile",
-            "description": "Update the candidate profile",
-        }
+        type: "function",
+        function: {
+          name: "update_answer",
+          description: "Update the candidate's answer",
+        },
       },
-      {
-        "type": "function",
-        "function": {
-            "name": "update_answer",
-            "description": "Update the candidate's answer based on the question asked",
-            "parameters": {
-              "type": "object",
-              "properties": {
-                "question": {
-                  "type": "string",
-                  "description": "The question asked"
-                },
-                "answer": {
-                  "type": "string",
-                  "description": "The answer provided by the candidate"
-                }
-              },
-              "required": ["question", "answer"]
-            }
-        }
-      }
     ];
-    return tools
+    return tools;
   }
-  async getSystemFacingToolsByStage(stage:string){
+
+  async getCandidateFacingToolsByStage(stage: string) {
     const tools = [
       {
-        "type": "function",
-        "function": {
-            "name": "share_jd",
-            "description": "Share the candidate JD",
-        }
+        type: "function",
+        function: {
+          name: "share_jd",
+          description: "Share the candidate JD",
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "schedule_meeting",
+          description: "Schedule a meeting with the candidate",
+          parameters: {
+            type: "object",
+            properties: {
+              inputs: {
+                type: "object",
+                description: "Details about the meeting",
+                properties: {
+                  summary: {
+                    type: "string",
+                    description: "Summary of the meeting",
+                  },
+                  typeOfMeeting: {
+                    type: "string",
+                    description:
+                      "Type of the meeting, can be either Virtual or In-Person. Default is Virtual.",
+                  },
+                  location: {
+                    type: "string",
+                    description: "Location of the meeting",
+                  },
+                  description: {
+                    type: "string",
+                    description: "Description of the meeting",
+                  },
+                  startDateTime: {
+                    type: "string",
+                    format: "date-time",
+                    description:
+                      "Start date and time of the meeting in ISO 8601 format",
+                  },
+                  endDateTime: {
+                    type: "string",
+                    format: "date-time",
+                    description:
+                      "End date and time of the meeting in ISO 8601 format",
+                  },
+                  timeZone: {
+                    type: "string",
+                    description: "Time zone of the meeting",
+                  },
+                },
+                required: ["startDateTime", "endDateTime", "timeZone"],
+              },
+              candidateProfileDataNodeObj: {
+                type: "object",
+                description: "Profile data of the candidate",
+                properties: {
+                  email: {
+                    type: "string",
+                    format: "email",
+                    description: "Email of the candidate",
+                  },
+                },
+                required: ["email"],
+              },
+            },
+            required: ["inputs", "candidateProfileDataNodeObj"],
+          },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "update_candidate_profile",
+          description: "Update the candidate profile",
+          parameters: {
+            type: "object",
+            properties: {
+              candidateStatus: {
+                type: "string",
+                description: "The status of the candidate",
+              },
+            },
+            required: ["candidateStatus"],
+          },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "update_answer",
+          description:
+            "Update the candidate's answer based on the question asked",
+          parameters: {
+            type: "object",
+            properties: {
+              question: {
+                type: "string",
+                description: "The question asked",
+              },
+              answer: {
+                type: "string",
+                description: "The answer provided by the candidate",
+              },
+            },
+            required: ["question", "answer"],
+          },
+        },
+      },
+    ];
+    return tools;
+  }
+  async getSystemFacingToolsByStage(stage: string) {
+    const tools = [
+      {
+        type: "function",
+        function: {
+          name: "share_jd",
+          description: "Share the candidate JD",
+        },
       },
       {
         type: "function",
@@ -631,6 +685,23 @@ export class ToolsForAgents {
         function: {
           name: "update_candidate_profile",
           description: "Update the candidate profile",
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "update_candidate_profile",
+          description: "Update the candidate profile",
+          parameters: {
+            type: "object",
+            properties: {
+              candidateStatus: {
+                type: "string",
+                description: "The status of the candidate",
+              },
+            },
+            required: ["candidateStatus"],
+          },
         },
       },
       {

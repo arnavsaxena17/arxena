@@ -473,8 +473,15 @@ export default function ChatWindow(props: {
               </div>
             </StyledChatInputBox>
           </StyledWindow>
-        )) ||
-          "Select a chat to start chatting"}
+        )) || (
+          <div>
+            <img
+              src="/images/placeholders/moving-image/empty_inbox.png"
+              alt=""
+            />
+            <p>Select a chat to start talking</p>
+          </div>
+        )}
       </div>
     </>
   );
