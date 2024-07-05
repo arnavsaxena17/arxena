@@ -117,6 +117,7 @@ export class OpenAIArxMultiStepClient {
         // isChatEnabled
       );
     }
+    debugger;
     await this.sendWhatsappMessageToCandidate(
       response?.choices[0]?.message?.content || "",
       mostRecentMessageArr,
@@ -204,6 +205,7 @@ export class OpenAIArxMultiStepClient {
         );
       }
       const mostRecentMessageArr = messages;
+      debugger;
       await this.sendWhatsappMessageToCandidate(
         response?.choices[0]?.message?.content || "",
         mostRecentMessageArr

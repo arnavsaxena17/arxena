@@ -240,11 +240,41 @@ export class FacebookWhatsappChatApi {
           "http://localhost:3000/whatsapp-test/uploadFile",
           { filePath: filePath }
         );
+        debugger;
+        if (!response?.data?.mediaID) {
+          debugger;
+          const phoneNumberTo = attachmentMessage?.phoneNumberTo;
+
+          const personObj =
+            await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(
+              phoneNumberTo
+            );
+
+          const mostRecentMessageArr: allDataObjects.ChatHistoryItem[] =
+            personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]
+              ?.node?.messageObj;
+
+          mostRecentMessageArr.push({
+            role: "user",
+            content: "Failed to send JD to the candidate.",
+          });
+
+          const whatappUpdateMessageObj =
+            await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj(
+              "failed",
+              // response,
+              personObj,
+              mostRecentMessageArr
+            );
+          await new CandidateEngagementArx().updateCandidateEngagementDataInTable(
+            whatappUpdateMessageObj
+          );
+        }
         console.log("media ID", response?.data?.mediaID);
         console.log("Request successful");
 
         console.log("****Response data********????:", response.data);
-        console.log("media ID", response?.data?.id);
+        console.log("media ID", response?.data?.mediaID);
         console.log("Request successful");
         return {
           mediaID: response?.data?.mediaID,
@@ -257,32 +287,7 @@ export class FacebookWhatsappChatApi {
         console.error("Errir heree", response?.data);
         console.error("upload", err.toJSON());
         console.log(err.data);
-        const phoneNumberTo = attachmentMessage?.phoneNumberTo;
 
-        const personObj =
-          await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(
-            phoneNumberTo
-          );
-
-        const mostRecentMessageArr: allDataObjects.ChatHistoryItem[] =
-          personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]
-            ?.node?.messageObj;
-
-        mostRecentMessageArr.push({
-          role: "user",
-          content: "Failed to send JD to the candidate.",
-        });
-
-        const whatappUpdateMessageObj =
-          await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj(
-            "failed",
-            // response,
-            personObj,
-            mostRecentMessageArr
-          );
-        await new CandidateEngagementArx().updateCandidateEngagementDataInTable(
-          whatappUpdateMessageObj
-        );
         // Remove the local file
         // const unlink = promisify(fs.unlink);
         // await unlink(filePath);
