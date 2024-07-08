@@ -235,40 +235,50 @@ export class FacebookWhatsappChatApi {
         //     },
         //   }
         // );
-
-        const response = await axios.post(
+        let response;
+        response = await axios.post(
           "http://localhost:3000/whatsapp-test/uploadFile",
           { filePath: filePath }
         );
-        debugger;
         if (!response?.data?.mediaID) {
-          debugger;
-          const phoneNumberTo = attachmentMessage?.phoneNumberTo;
-
-          const personObj =
-            await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(
-              phoneNumberTo
-            );
-
-          const mostRecentMessageArr: allDataObjects.ChatHistoryItem[] =
-            personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]
-              ?.node?.messageObj;
-
-          mostRecentMessageArr.push({
-            role: "user",
-            content: "Failed to send JD to the candidate.",
-          });
-
-          const whatappUpdateMessageObj =
-            await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj(
-              "failed",
-              // response,
-              personObj,
-              mostRecentMessageArr
-            );
-          await new CandidateEngagementArx().updateCandidateEngagementDataInTable(
-            whatappUpdateMessageObj
+          console.error(
+            "Failed to upload JD to WhatsApp. Retrying it again..."
           );
+          response = await axios.post(
+            "http://localhost:3000/whatsapp-test/uploadFile",
+            { filePath: filePath }
+          );
+          if (!response?.data?.mediaID) {
+            console.error(
+              "Failed to upload JD to WhatsApp the second time. Bad luck! :("
+            );
+            const phoneNumberTo = attachmentMessage?.phoneNumberTo;
+
+            const personObj =
+              await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(
+                phoneNumberTo
+              );
+
+            const mostRecentMessageArr: allDataObjects.ChatHistoryItem[] =
+              personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]
+                ?.node?.messageObj;
+
+            mostRecentMessageArr.push({
+              role: "user",
+              content: "Failed to send JD to the candidate.",
+            });
+
+            const whatappUpdateMessageObj =
+              await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj(
+                "failed",
+                // response,
+                personObj,
+                mostRecentMessageArr
+              );
+            await new CandidateEngagementArx().updateCandidateEngagementDataInTable(
+              whatappUpdateMessageObj
+            );
+          }
         }
         console.log("media ID", response?.data?.mediaID);
         console.log("Request successful");

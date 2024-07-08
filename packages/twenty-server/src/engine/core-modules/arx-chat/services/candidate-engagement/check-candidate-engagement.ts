@@ -3,13 +3,18 @@ import * as allDataObjects from "../../services/data-model-objects";
 import { FetchAndUpdateCandidatesChatsWhatsapps } from "./update-chat";
 // import { FacebookWhatsappChatApi } from '../../services/whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
 import { WhatsappAPISelector } from "../../services/whatsapp-api/whatsapp-controls";
-import { sortWhatsAppMessages } from "../../utils/arx-chat-agent-utils";
+import {
+  axiosRequest,
+  sortWhatsAppMessages,
+} from "../../utils/arx-chat-agent-utils";
 import { ChainValues } from "@langchain/core/utils/types";
 
 import { response } from "express";
 // import { OpenAIArxSingleStepClient } from "../llm-agents/arx-single-step-client";
 import { OpenAIArxMultiStepClient } from "../llm-agents/arx-multi-step-client";
 import { ToolsForAgents } from "../llm-agents/prompting-tool-calling";
+import * as allGraphQLQueries from "./graphql-queries-chatbot";
+
 const readline = require("node:readline");
 const rl = readline.createInterface({
   input: process.stdin,
@@ -238,7 +243,64 @@ export default class CandidateEngagementArx {
     }
   }
 
+  async checkAvailableRemindersAndSend() {
+    const graphqlQueryObj = JSON.stringify({
+      query: allGraphQLQueries.graphqlQueryToFindEngagedCandidates,
+      variables: {},
+    });
+    const response = await axiosRequest(graphqlQueryObj);
+    const listOfCandidatesToRemind: allDataObjects.PersonEdge[] =
+      response?.data?.data?.people?.edges?.filter(
+        (edge: allDataObjects.PersonEdge) => {
+          edge?.node?.candidates?.edges[0]?.node?.candidateReminders?.edges
+            ?.length > 0;
+        }
+      );
+    console.log(
+      "Number of candidates to remind:",
+      listOfCandidatesToRemind?.length
+    );
+    for (const edge of listOfCandidatesToRemind) {
+      debugger;
+      const candidateNode = edge?.node?.candidates.edges[0].node;
+      const personNode = edge?.node;
+      const messagesList: allDataObjects.WhatsAppMessagesEdge[] =
+        candidateNode?.whatsappMessages?.edges;
+      let mostRecentMessageArr: allDataObjects.ChatHistoryItem[] =
+        this.getMostRecentMessageFromMessagesList(messagesList);
+      console.log(
+        "mostRecentMessageArr before chatCompletion:",
+        mostRecentMessageArr
+      );
+
+      const REMIND_SYSTEM_PROMPT =
+        await new ToolsForAgents().getReminderSystemPrompt();
+      mostRecentMessageArr[0] = {
+        role: "system",
+        content: REMIND_SYSTEM_PROMPT,
+      };
+      const recruiterProfile = allDataObjects.recruiterProfile;
+
+      let whatappUpdateMessageObj: allDataObjects.candidateChatMessageType = {
+        // executorResultObj: {},
+        candidateProfile: candidateNode,
+        candidateFirstName: personNode?.name?.firstName,
+        phoneNumberFrom: personNode?.phone,
+        phoneNumberTo: recruiterProfile.phone,
+        messages: [{ content: REMIND_SYSTEM_PROMPT }],
+        messageType: "candidateMessage",
+        messageObj: mostRecentMessageArr,
+        whatsappDeliveryStatus: "reminderTriggered",
+        whatsappMessageId: "NA",
+      };
+      await this.updateCandidateEngagementDataInTable(whatappUpdateMessageObj);
+      const chatAgent = new OpenAIArxMultiStepClient(personNode);
+      await chatAgent.createCompletion(mostRecentMessageArr, personNode);
+    }
+  }
+
   async checkCandidateEngagement() {
+    await this.checkAvailableRemindersAndSend();
     const response =
       await new FetchAndUpdateCandidatesChatsWhatsapps().fetchCandidatesToEngage();
     const candidateResponseEngagementObj = response?.data?.data;
