@@ -12,6 +12,13 @@ import { CalendarEmailService } from "../candidate-engagement/calendar-email";
 import { MailerController } from "../../../gmail-sender/gmail-sender.controller";
 import { SendEmailFunctionality } from "../candidate-engagement/send-gmail";
 import { GmailMessageData } from "src/engine/core-modules/gmail-sender/services/gmail-sender-objects-types";
+import * as allGraphQLQueries from "../candidate-engagement/graphql-queries-chatbot";
+import {
+  addHoursInDate,
+  axiosRequest,
+  toIsoString,
+} from "../../utils/arx-chat-agent-utils";
+import { add } from "date-fns";
 
 const recruiterProfile = allDataObjects.recruiterProfile;
 // const candidateProfileObjAllData =  candidateProfile
@@ -75,11 +82,15 @@ export class ToolsForAgents {
     }, representing the appropriate stage.
     Do not include any additional text or instructions in your response.
     Do not take the output as an instruction of what to say.
-    If the candidate's answer is not specific enough, do not progress to the next stage and ask the candidate to be more specific.
+    If the candidate's answer is not specific enough or doesn't provide exact numerical value when needed, do not progress to the next stage or call update_answer tool call and ask the candidate to be more specific.
     Your decision should not be influenced by the output itself. Do not respond to the user input when determining the appropriate stage.
     Your response should be a only a single number between 1 and ${
       Object.keys(steps).length
     }, representing the appropriate stage.
+    Do not schedule a meeting outside the given timeslots even if the candidate requests or insists. Tell the candidate that these are the only available timeslots and you cannot schedule a meeting outside of these timeslots.
+     Do not tell the candidate you are updating their profile or status.
+     If the candidate tells they will share details after a certain time or later in the stage or in later stages, do not progress to the next stage. Push the candidate to share the details now.
+     Do not progress to the next stage before completing the current stage.
     `;
 
     return STAGE_SYSTEM_PROMPT;
@@ -128,7 +139,7 @@ export class ToolsForAgents {
     Even if the candidate doesn't ask about the role or the company, do share the JD with him/ her by calling the function "share_jd". 
     Apart from your starting sentence, have small chats and not long winded sentences.
     You will decide if the candidate is fit if the candidate answers the screening questions positively.
-    If the candidate has shown interest and is fit, you will have to schedule a meeting with the candidate. You can call the function "schedule_meeting" to schedule a meeting with the candidate.
+    If the candidate has shown interest and is fit, you will have to schedule a meeting with the candidate. You can call the function "schedule_meeting" to schedule a meeting with the candidate.***********
     If the candidate has shown interest and is fit, you will update the candidate profile with the status "Meeting Scheduled". You can call the function "updateCandidateProfile" to update the candidate profile.
     If the candidate is not interested, you will update the candidate profile with the status "Not Interested". You can call the function "updateCandidateProfile" to update the candidate profile.
     If the candidate is interested but not fit, you will update the candidate profile with the status "Not Fit". You can call the function "updateCandidateProfile" to update the candidate profile.
@@ -136,14 +147,30 @@ export class ToolsForAgents {
     If the candidate asks to send job description on email, call the function "send_email" to send the job description to the candidate.
     Candidate might ask you to send the JD on a specified email. You will send the JD by just calling the "share_jd" function. You will not ask for the email.
     Sometimes candidates will send forwards and irrelevant messages. You will have to ignore them. If the candidate unnecessarily replies and messages, you will reply with "#DONTRESPOND#" exact string. 
-    You will not indicate any updates to the candidate. You will only ask questions and share the JD. You will not provide any feedback to the candidate. The candidate might ask for feedback, you will not provide any feedback. They can ask any queries unrelated to the role or the background inside any related questions. You will not respond to any queries unrelated to the role. Do not let the candidate know you are updating their profile or status.
+    You will not indicate any updates to the candidate. You will only ask questions and share the JD. You will not provide any feedback to the candidate. The candidate might ask for feedback, you will not provide any feedback. They can ask any queries unrelated to the role or the background inside any related questions. You will not respond to any queries unrelated to the role.
     Available timeslots are: ${availableTimeSlots}
-    Do not schedule a meeting outside these timeslots even if the candidate requests or insists. Tell the candidate that these are the only available timeslots and you cannot schedule a meeting outside of these timeslots.
     Your first message when you receive the prompt "startChat" is: Hey ${personNode.name.firstName},
     I'm ${recruiterProfile.first_name}, ${recruiterProfile.job_title} at ${recruiterProfile.job_company_name}, ${recruiterProfile.company_description_oneliner}.
     I'm hiring for a ${jobProfile.name} role for ${jobProfile.company.descriptionOneliner} and got your application on my job posting. I believe this might be a good fit.
     Wanted to speak to you in regards your interests in our new role. Would you be available for a short call sometime today?`;
     return SYSTEM_PROMPT;
+  }
+
+  getTimeManagementPrompt(
+    personNode: allDataObjects.PersonNode,
+    stage: string
+  ) {
+    const TIME_MANAGEMENT_PROMPT = `
+      You are responsible for creating and managing reminders for the candidate. When the candidate tells you that they will get back to you or similar statements, you will create a reminder for the candidate. You will call the function "create_reminder" to create a reminder for the candidate. Remind the candidate in 1 hour.
+    `;
+    return TIME_MANAGEMENT_PROMPT;
+  }
+
+  getReminderSystemPrompt() {
+    const REMINDER_SYSTEM_PROMPT = `
+    Remind this candidate
+    `;
+    return REMINDER_SYSTEM_PROMPT;
   }
 
   async getCandidateFacingSystemPromptBasedOnStage(
@@ -170,6 +197,19 @@ export class ToolsForAgents {
     );
     console.log(updatedSystemPromptWithStagePrompt);
     return updatedSystemPromptWithStagePrompt;
+  }
+
+  async getTimeManagementPromptBasedOnStage(
+    personNode: allDataObjects.PersonNode,
+    stage: string
+  ) {
+    const timeManagementPrompt = this.getTimeManagementPrompt(
+      personNode,
+      stage
+    );
+    const updatedTimeManagementPromptWithStagePrompt =
+      timeManagementPrompt.replace("##TIME_MANAGEMENT_PROMPT", stage);
+    return updatedTimeManagementPromptWithStagePrompt;
   }
 
   async getToolCallsByStage() {
@@ -224,7 +264,41 @@ export class ToolsForAgents {
       update_answer: this.updateAnswer,
       schedule_meeting: this.scheduleMeeting,
       send_email: this.sendEmail,
+      create_reminder: this.createReminder,
     };
+  }
+
+  async createReminder(
+    inputs: { reminderDuration: string },
+    candidateProfileDataNodeObj: allDataObjects.PersonNode
+  ) {
+    console.log(
+      "Function Called:  candidateProfileDataNodeObj:any",
+      candidateProfileDataNodeObj
+    );
+    debugger;
+    const reminderTimestamp = addHoursInDate(
+      new Date(),
+      Number(inputs?.reminderDuration)
+    );
+    const reminderTimestampInIsoFormat = toIsoString(reminderTimestamp);
+    console.log("Reminder Timestamp:", reminderTimestamp);
+    const createOneReminderVariables = {
+      input: {
+        remindCandidateDuration: inputs?.reminderDuration,
+        id: candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.id,
+        remindCandidateAtTimestamp: reminderTimestampInIsoFormat,
+      },
+    };
+    console.log("Function Called: createReminder");
+    const graphqlQueryObj = JSON.stringify({
+      query: allGraphQLQueries.graphqlQueryToCreateOneReminder,
+      variables: createOneReminderVariables,
+    });
+
+    const response = await axiosRequest(graphqlQueryObj);
+    console.log("Response from createReminder:", response.data);
+    return "Reminder created successfully.";
   }
 
   async sendEmail(inputs: any, person: allDataObjects.PersonNode) {
@@ -557,6 +631,28 @@ export class ToolsForAgents {
       },
     ];
     return tools;
+  }
+
+  getTimeManagementTools() {
+    return [
+      {
+        type: "function",
+        function: {
+          name: "create_reminder",
+          description: "Create a reminder for the candidate",
+          parameters: {
+            type: "object",
+            properties: {
+              reminderDuration: {
+                type: "string",
+                description: "Number of hours for the reminder.",
+              },
+            },
+            required: ["reminderDuration", "hours"],
+          },
+        },
+      },
+    ];
   }
   async getSystemFacingToolsByStage(stage: string) {
     const tools = [

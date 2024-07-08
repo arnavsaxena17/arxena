@@ -127,6 +127,9 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
           emailMessages: {
             edges: activeJobCandidateObj?.node?.emailMessages?.edges,
           },
+          candidateReminders: {
+            edges: activeJobCandidateObj?.node?.candidateReminders?.edges,
+          },
           // ############################
         };
         return candidateProfileObj;
@@ -219,6 +222,9 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
         // *! TO CHECK LATER
         emailMessages: {
           edges: candidateDataObjs?.node?.emailMessages?.edges,
+        },
+        candidateReminders: {
+          edges: candidateDataObjs?.node?.candidateReminders?.edges,
         },
         // ############################
       };
@@ -347,7 +353,8 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
     // debugger
     // console.log("Updating candidate's status", candidateProfileObj, whatappUpdateMessageObj);
     // debugger
-    const candidateEngagementStatus = whatappUpdateMessageObj.messageType !== "botMessage";
+    const candidateEngagementStatus =
+      whatappUpdateMessageObj.messageType !== "botMessage";
     const updateCandidateObjectVariables = {
       idToUpdate: candidateProfileObj?.id,
       input: {
@@ -367,7 +374,6 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
       console.log(error);
     }
     console.log("Candidate engagement status updated successfully");
-
   }
 
   async setCandidateEngagementStatusToFalse(

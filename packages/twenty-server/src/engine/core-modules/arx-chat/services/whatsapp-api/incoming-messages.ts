@@ -94,6 +94,19 @@ export class IncomingWhatsappMessages {
         return;
       }
 
+      if (
+        response?.data?.data?.whatsappMessages?.edges[0]?.node
+          ?.whatsappDeliveryStatus === "read" ||
+        (response?.data?.data?.whatsappMessages?.edges[0]?.node
+          ?.whatsappDeliveryStatus === "delivered" &&
+          messageStatus !== "read")
+      ) {
+        console.log(
+          "Message has already been read/delivered, skipping the update"
+        );
+        return;
+      }
+
       const variablesToUpdateDeliveryStatus = {
         idToUpdate: response?.data?.data?.whatsappMessages?.edges[0]?.node?.id,
         input: {
@@ -175,6 +188,26 @@ export class IncomingWhatsappMessages {
               replyObject,
               candidateProfileData
             );
+          if (candidateProfileData?.candidateReminders?.edges.length > 0) {
+            const listOfReminders =
+              candidateProfileData?.candidateReminders?.edges;
+            const updateOneReminderVariables = {
+              idToUpdate: listOfReminders[0]?.node?.id,
+              input: {
+                isReminderActive: false,
+              },
+            };
+            const graphqlQueryObj = JSON.stringify({
+              query:
+                allGraphQLQueries.graphqlQueryToCreateOneNewWhatsappMessage,
+              variables: updateOneReminderVariables,
+            });
+            console.log(
+              "This is the graphqlQueryObj after updating the reminder status::",
+              graphqlQueryObj
+            );
+          }
+
           console.log(responseAfterMessageUpdate);
         } else if (
           requestBody?.entry[0]?.changes[0]?.value?.messages[0].type ===

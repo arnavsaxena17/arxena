@@ -125,6 +125,16 @@ export const graphqlQueryToFindEngagedCandidates = `query FindManyPeople($filter
                       }
                       engagementStatus
                       startChat
+                      candidateReminders{
+                        edges{
+                            node{
+                                remindCandidateAtTimestamp
+                                remindCandidateDuration
+                                isReminderActive
+                                name
+                            }
+                        }
+                      }
                       whatsappMessages {
                         edges {
                           node {
@@ -357,3 +367,51 @@ fragment ParticipantFragment on TimelineThreadParticipant {
   handle
   __typename
 }`;
+
+export const graphqlQueryToCreateOneReminder = `
+  mutation CreateOneCandidateReminder($input: CandidateReminderCreateInput!) {
+  createCandidateReminder(data: $input) {
+    __typename
+  }
+}
+`;
+
+export const graphqlQueryToFindManyReminders = `query FindManyCandidateReminders($filter: CandidateReminderFilterInput, $orderBy: [CandidateReminderOrderByInput], $lastCursor: String) {
+  candidateReminders(
+    filter: $filter
+    orderBy: $orderBy
+    after: $lastCursor
+  ) {
+    edges {
+      node {
+        __typename
+        remindCandidateDuration
+        createdAt
+        candidateId
+        remindCandidateAtTimestamp
+        id
+        position
+        name
+        updatedAt
+      }
+      cursor
+      __typename
+    }
+    pageInfo {
+      hasNextPage
+      startCursor
+      endCursor
+      __typename
+    }
+    totalCount
+    __typename
+  }
+}`;
+
+export const graphqlQueryToUpdateOneReminder = `
+  mutation UpdateOneCandidateReminder($idToUpdate: ID!, $input: CandidateReminderUpdateInput!) {
+  updateCandidateReminder(id: $idToUpdate, data: $input) {
+    __typename
+  }
+}
+`;

@@ -104,3 +104,34 @@ export async function getTranscriptionFromWhisper(
   console.log(transcription.text);
   return transcription?.text;
 }
+
+export function toIsoString(date: Date) {
+  var tzo = -date.getTimezoneOffset(),
+    dif = tzo >= 0 ? "+" : "-",
+    pad = function (num) {
+      return (num < 10 ? "0" : "") + num;
+    };
+
+  return (
+    date.getFullYear() +
+    "-" +
+    pad(date.getMonth() + 1) +
+    "-" +
+    pad(date.getDate()) +
+    "T" +
+    pad(date.getHours()) +
+    ":" +
+    pad(date.getMinutes()) +
+    ":" +
+    pad(date.getSeconds()) +
+    dif +
+    pad(Math.floor(Math.abs(tzo) / 60)) +
+    ":" +
+    pad(Math.abs(tzo) % 60)
+  );
+}
+
+export function addHoursInDate(date: Date, hours: number) {
+  date.setHours(date.getHours() + hours);
+  return date;
+}
