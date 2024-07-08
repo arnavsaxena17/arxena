@@ -130,6 +130,23 @@ export interface CandidateNode {
   whatsappMessages: WhatsAppMessages;
   emailMessages: EmailMessages;
   jobs: Jobs;
+  candidateReminders: Reminders;
+}
+
+export interface Reminders {
+  edges: ReminderEdge[];
+}
+
+export interface ReminderEdge {
+  node: ReminderObject;
+}
+
+export interface ReminderObject {
+  remindCandidateAtTimestamp: string;
+  remindCandidateDuration: string;
+  isReminderActive: boolean;
+  name: string;
+  id: string;
 }
 
 export interface EmailMessages {
@@ -284,6 +301,7 @@ export const emptyCandidateProfileObj: CandidateNode = {
       descriptionOneliner: "",
     },
     jobLocation: "",
+
     whatsappMessages: {
       edges: [
         {
@@ -305,6 +323,19 @@ export const emptyCandidateProfileObj: CandidateNode = {
         },
       ],
     },
+  },
+  candidateReminders: {
+    edges: [
+      {
+        node: {
+          remindCandidateAtTimestamp: "",
+          remindCandidateDuration: "",
+          isReminderActive: false,
+          name: "",
+          id: "",
+        },
+      },
+    ],
   },
 
   engagementStatus: false,

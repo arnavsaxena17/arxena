@@ -39,9 +39,13 @@ export class OpenAIArxMultiStepClient {
         stage,
         isChatEnabled
       );
+    await this.runSystemFacingAgentsAlongWithToolCalls(
+      mostRecentMessageArr,
+      personNode,
+      stage
+    );
+    await this.timeManagementPrompt(mostRecentMessageArr, personNode, stage);
     return mostRecentMessageArr;
-    // await this.runSystemFacingAgentsAlongWithToolCalls( mostRecentMessageArr, personNode, stage)
-    // await this.TimeManagementPrompt( mostRecentMessageArr, personNode, stage)
   }
 
   async getStageOfTheConversation(
@@ -117,7 +121,6 @@ export class OpenAIArxMultiStepClient {
         // isChatEnabled
       );
     }
-    debugger;
     await this.sendWhatsappMessageToCandidate(
       response?.choices[0]?.message?.content || "",
       mostRecentMessageArr,
@@ -164,7 +167,6 @@ export class OpenAIArxMultiStepClient {
     responseMessage: ChatCompletionMessage,
     messages: allDataObjects.ChatHistoryItem[]
   ) {
-    debugger;
     const toolCalls = responseMessage.tool_calls;
     // @ts-ignore
     if (toolCalls) {
@@ -205,7 +207,6 @@ export class OpenAIArxMultiStepClient {
         );
       }
       const mostRecentMessageArr = messages;
-      debugger;
       await this.sendWhatsappMessageToCandidate(
         response?.choices[0]?.message?.content || "",
         mostRecentMessageArr
@@ -248,6 +249,40 @@ export class OpenAIArxMultiStepClient {
           whatappUpdateMessageObj.messages[0].content
         );
       }
+    }
+  }
+  async timeManagementPrompt(
+    mostRecentMessageArr: allDataObjects.ChatHistoryItem[],
+    personNode: allDataObjects.PersonNode,
+    stage: string
+  ) {
+    debugger;
+    const timeManagementPrompt = new ToolsForAgents().getTimeManagementPrompt(
+      personNode,
+      stage
+    );
+    let updatedMostRecentMessagesBasedOnNewSystemPrompt =
+      await this.updateMostRecentMessagesBasedOnNewSystemPrompt(
+        mostRecentMessageArr,
+        timeManagementPrompt
+      );
+    const timeManagementTool = new ToolsForAgents().getTimeManagementTools();
+    // @ts-ignore
+    const response = await this.openAIclient.chat.completions.create({
+      model: modelName,
+      messages: updatedMostRecentMessagesBasedOnNewSystemPrompt,
+      tools: timeManagementTool,
+      tool_choice: "auto",
+    });
+    const responseMessage: ChatCompletionMessage = response.choices[0].message;
+    console.log("BOT_MESSAGE:", responseMessage.content);
+    updatedMostRecentMessagesBasedOnNewSystemPrompt.push(responseMessage); // extend conversation with assistant's reply
+    if (responseMessage.tool_calls) {
+      updatedMostRecentMessagesBasedOnNewSystemPrompt =
+        await this.addResponseAndToolCallsToMessageHistory(
+          responseMessage,
+          updatedMostRecentMessagesBasedOnNewSystemPrompt
+        );
     }
   }
 }
