@@ -74,7 +74,7 @@ export const Invite = () => {
             />
           </StyledContentContainer>
           <FooterNote>
-            By using Twenty, you agree to the Terms of Service and Privacy
+            By using Arxena, you agree to the Terms of Service and Privacy
             Policy.
           </FooterNote>
         </>

@@ -42,16 +42,16 @@ type StyledMainLogoProps = {
 const StyledMainLogo = styled.div<StyledMainLogoProps>`
   background: url(${(props) => props.logo});
   background-size: cover;
-  height: 100%;
-
-  width: 100%;
+  height: 150%;
+  width: 150%;
+  margin-left: -25%;
 `;
 
 export const Logo = ({ workspaceLogo }: LogoProps) => {
   if (!workspaceLogo) {
     return (
       <StyledContainer>
-        <StyledMainLogo logo="/icons/android/android-launchericon-192-192.png" />
+        <StyledMainLogo logo="/icons/arxena/arxena-icon-black-icon.png" />
       </StyledContainer>
     );
   }
@@ -60,7 +60,7 @@ export const Logo = ({ workspaceLogo }: LogoProps) => {
     <StyledContainer>
       <StyledMainLogo logo={getImageAbsoluteURIOrBase64(workspaceLogo)} />
       <StyledTwentyLogoContainer>
-        <StyledTwentyLogo src="/icons/android/android-launchericon-192-192.png" />
+        <StyledTwentyLogo src="/icons/arxena/arxena-icon-black-icon.png" />
       </StyledTwentyLogoContainer>
     </StyledContainer>
   );
