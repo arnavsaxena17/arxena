@@ -161,7 +161,7 @@ export class ToolsForAgents {
     stage: string
   ) {
     const TIME_MANAGEMENT_PROMPT = `
-      You are responsible for creating and managing reminders for the candidate. When the candidate tells you that they will get back to you or similar statements, you will create a reminder for the candidate. You will call the function "create_reminder" to create a reminder for the candidate. Remind the candidate in 1 hour.
+      You are responsible for creating and managing reminders for the candidate. When the candidate tells you that they will get back to you, your task is to remind the candidate to reply back after certain hours. You can do this by calling the function "create_reminder". You will not call this function otherwise. For now the reminder time is 1 hour.
     `;
     return TIME_MANAGEMENT_PROMPT;
   }
@@ -288,6 +288,10 @@ export class ToolsForAgents {
         remindCandidateDuration: inputs?.reminderDuration,
         id: candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.id,
         remindCandidateAtTimestamp: reminderTimestampInIsoFormat,
+        candidateId:
+          candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.id,
+        name: `Reminder for ${candidateProfileDataNodeObj?.name?.firstName} ${candidateProfileDataNodeObj?.name?.lastName} to remind in ${inputs?.reminderDuration} hours`,
+        isReminderActive: true,
       },
     };
     console.log("Function Called: createReminder");

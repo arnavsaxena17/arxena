@@ -274,7 +274,7 @@ export default class CandidateEngagementArx {
       );
 
       const REMIND_SYSTEM_PROMPT =
-        await new ToolsForAgents().getReminderSystemPrompt();
+        new ToolsForAgents().getReminderSystemPrompt();
       mostRecentMessageArr[0] = {
         role: "system",
         content: REMIND_SYSTEM_PROMPT,
@@ -300,7 +300,7 @@ export default class CandidateEngagementArx {
   }
 
   async checkCandidateEngagement() {
-    await this.checkAvailableRemindersAndSend();
+    // await this.checkAvailableRemindersAndSend();
     const response =
       await new FetchAndUpdateCandidatesChatsWhatsapps().fetchCandidatesToEngage();
     const candidateResponseEngagementObj = response?.data?.data;
