@@ -5,7 +5,7 @@ import { Cron } from "@nestjs/schedule";
 @Injectable()
 export class TasksService {
   private readonly logger = new Logger(TasksService.name);
-  @Cron("*/30 * * * * *")
+  @Cron("*/60 * * * * *")
   async handleCron() {
     // this.logger.log("Evert 5 seconds check Candidate Engagement is called");
     if (process.env.RUN_SCHEDULER === "true") {

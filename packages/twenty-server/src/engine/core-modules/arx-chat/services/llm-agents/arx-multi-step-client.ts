@@ -44,7 +44,7 @@ export class OpenAIArxMultiStepClient {
       personNode,
       stage
     );
-    await this.timeManagementPrompt(mostRecentMessageArr, personNode, stage);
+    await this.runTimeManagementAgent(mostRecentMessageArr, personNode, stage);
     return mostRecentMessageArr;
   }
 
@@ -172,6 +172,7 @@ export class OpenAIArxMultiStepClient {
     if (toolCalls) {
       for (const toolCall of toolCalls) {
         const functionName = toolCall.function.name;
+        console.log("Function name is:", functionName);
         const availableFunctions = new ToolsForAgents().getAvailableFunctions();
         // @ts-ignore
         const functionToCall = availableFunctions[functionName];
@@ -251,7 +252,7 @@ export class OpenAIArxMultiStepClient {
       }
     }
   }
-  async timeManagementPrompt(
+  async runTimeManagementAgent(
     mostRecentMessageArr: allDataObjects.ChatHistoryItem[],
     personNode: allDataObjects.PersonNode,
     stage: string
