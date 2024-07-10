@@ -252,8 +252,11 @@ export default class CandidateEngagementArx {
     const listOfCandidatesToRemind: allDataObjects.PersonEdge[] =
       response?.data?.data?.people?.edges?.filter(
         (edge: allDataObjects.PersonEdge) => {
-          edge?.node?.candidates?.edges[0]?.node?.candidateReminders?.edges
-            ?.length > 0;
+          edge?.node?.candidates?.edges[0]?.node?.candidateReminders?.edges?.filter(
+            (reminderEdge) =>
+              reminderEdge?.node?.remindCandidateAtTimestamp <
+                new Date().toISOString() && reminderEdge?.node?.isReminderActive
+          );
         }
       );
     console.log(
@@ -296,11 +299,21 @@ export default class CandidateEngagementArx {
       await this.updateCandidateEngagementDataInTable(whatappUpdateMessageObj);
       const chatAgent = new OpenAIArxMultiStepClient(personNode);
       await chatAgent.createCompletion(mostRecentMessageArr, personNode);
+
+      candidateNode?.candidateReminders?.edges?.forEach((reminderEdge) => {
+        if (
+          reminderEdge?.node?.remindCandidateAtTimestamp <
+            new Date().toISOString() &&
+          reminderEdge?.node?.isReminderActive
+        ) {
+          reminderEdge.node.isReminderActive = false;
+        }
+      });
     }
   }
 
   async checkCandidateEngagement() {
-    // await this.checkAvailableRemindersAndSend();
+    await this.checkAvailableRemindersAndSend();
     const response =
       await new FetchAndUpdateCandidatesChatsWhatsapps().fetchCandidatesToEngage();
     const candidateResponseEngagementObj = response?.data?.data;
