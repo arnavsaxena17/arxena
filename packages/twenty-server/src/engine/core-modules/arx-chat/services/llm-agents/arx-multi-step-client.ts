@@ -44,7 +44,7 @@ export class OpenAIArxMultiStepClient {
       personNode,
       stage
     );
-    await this.runTimeManagementAgent(mostRecentMessageArr, personNode, stage);
+    // await this.runTimeManagementAgent(mostRecentMessageArr, personNode, stage);
     return mostRecentMessageArr;
   }
 
@@ -121,6 +121,7 @@ export class OpenAIArxMultiStepClient {
         // isChatEnabled
       );
     }
+    // debugger;
     await this.sendWhatsappMessageToCandidate(
       response?.choices[0]?.message?.content || "",
       mostRecentMessageArr,
@@ -208,6 +209,7 @@ export class OpenAIArxMultiStepClient {
         );
       }
       const mostRecentMessageArr = messages;
+      // debugger;
       await this.sendWhatsappMessageToCandidate(
         response?.choices[0]?.message?.content || "",
         mostRecentMessageArr
@@ -257,7 +259,6 @@ export class OpenAIArxMultiStepClient {
     personNode: allDataObjects.PersonNode,
     stage: string
   ) {
-    debugger;
     const timeManagementPrompt = new ToolsForAgents().getTimeManagementPrompt(
       personNode,
       stage

@@ -188,6 +188,7 @@ export class IncomingWhatsappMessages {
               replyObject,
               candidateProfileData
             );
+          // debugger;
           if (candidateProfileData?.candidateReminders?.edges.length > 0) {
             const listOfReminders =
               candidateProfileData?.candidateReminders?.edges;

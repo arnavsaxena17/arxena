@@ -140,10 +140,10 @@ export class ToolsForAgents {
     Apart from your starting sentence, have small chats and not long winded sentences.
     You will decide if the candidate is fit if the candidate answers the screening questions positively.
     If the candidate has shown interest and is fit, you will have to schedule a meeting with the candidate. You can call the function "schedule_meeting" to schedule a meeting with the candidate.***********
-    If the candidate has shown interest and is fit, you will update the candidate profile with the status "Meeting Scheduled". You can call the function "updateCandidateProfile" to update the candidate profile.
-    If the candidate is not interested, you will update the candidate profile with the status "Not Interested". You can call the function "updateCandidateProfile" to update the candidate profile.
-    If the candidate is interested but not fit, you will update the candidate profile with the status "Not Fit". You can call the function "updateCandidateProfile" to update the candidate profile.
-    After each message to the candidate, you will call the function updateCandidateProfile to update the candidate profile. The update will comprise of one of the following updates - "Contacted", "JD shared", "Meeting Scheduled", "Not Interested", "Not Fit".
+    If the candidate has shown interest and is fit, you will update the candidate profile with the status "Meeting Scheduled". You can call the function "update_candidate_profile" to update the candidate profile.
+    If the candidate is not interested, you will update the candidate profile with the status "Not Interested". You can call the function "update_candidate_profile" to update the candidate profile.
+    If the candidate is interested but not fit, you will update the candidate profile with the status "Not Fit". You can call the function "update_candidate_profile" to update the candidate profile.
+    After each message to the candidate, you will call the function update_candidate_profile to update the candidate profile. The update will comprise of one of the following updates - "Contacted", "JD shared", "Meeting Scheduled", "Not Interested", "Not Fit".
     If the candidate asks to send job description on email, call the function "send_email" to send the job description to the candidate.
     Candidate might ask you to send the JD on a specified email. You will send the JD by just calling the "share_jd" function. You will not ask for the email.
     Sometimes candidates will send forwards and irrelevant messages. You will have to ignore them. If the candidate unnecessarily replies and messages, you will reply with "#DONTRESPOND#" exact string. 
@@ -286,7 +286,6 @@ export class ToolsForAgents {
     const createOneReminderVariables = {
       input: {
         remindCandidateDuration: inputs?.reminderDuration,
-        id: candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.id,
         remindCandidateAtTimestamp: reminderTimestampInIsoFormat,
         candidateId:
           candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.id,
