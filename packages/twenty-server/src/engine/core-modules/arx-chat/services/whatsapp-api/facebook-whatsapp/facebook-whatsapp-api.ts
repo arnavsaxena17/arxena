@@ -386,13 +386,13 @@ export class FacebookWhatsappChatApi {
       console.error('Error saving file:', error);
     });
   }
-  async sendWhatsappMessageVIAFacebookAPI(whatappUpdateMessageObj: allDataObjects.candidateChatMessageType, personNode: allDataObjects.PersonNode, mostRecentMessageArr: allDataObjects.ChatHistoryItem[]) {
+  async sendWhatsappMessageVIAFacebookAPI(whatappUpdateMessageObj: allDataObjects.candidateChatMessageType, personNode: allDataObjects.PersonNode, mostRecentMessageArr: allDataObjects.ChatHistoryItem[], source:"firstChatCompletionCall"| "secondChatCompletionCall") {
     console.log('Sending message to whatsapp via facebook api');
     console.log('whatappUpdateMessageObj.messageType', whatappUpdateMessageObj.messageType);
     console.log('whatappUpdateMessageObj.messageType whatappUpdateMessageObj.messages ', JSON.stringify(whatappUpdateMessageObj));
     let response;
 
-    if (whatappUpdateMessageObj.messageType === 'botMessage') {
+    if (whatappUpdateMessageObj.messageType === 'botMessage' && source === "firstChatCompletionCall") {
       if (whatappUpdateMessageObj.messages[0].content.includes('a US Based Recruitment Company') || whatappUpdateMessageObj.messages[0].content.includes('assist')) {
         console.log('This is the template api message to send in whatappUpdateMessageObj.phoneNumberFrom, ', whatappUpdateMessageObj.phoneNumberFrom);
         const sendTemplateMessageObj = {

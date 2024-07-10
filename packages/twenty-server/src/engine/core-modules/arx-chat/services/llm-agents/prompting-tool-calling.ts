@@ -119,7 +119,7 @@ export class ToolsForAgents {
 
   async getTimeManagementPrompt(personNode: allDataObjects.PersonNode) {
     const TIME_MANAGEMENT_PROMPT = `
-      The current time is `+ new Date() +`. Calculate the amount of time that has passed from the last message. If the time elapsed has gone beyond 1 day and less than 2 days and the user has not been sent the first reminder, Return the stage as "reminder_necessary" else return "reminder_unnecessary". Do not return any other text.
+      The current time is `+ new Date() +`. Calculate the amount of time that has passed from the last message. If the time elapsed has gone beyond 1 minute and less than 5 minutes and the user has not been sent the first reminder, Return the stage as "reminder_necessary" else return "reminder_unnecessary". Do not return any other text.
     `;
     return TIME_MANAGEMENT_PROMPT;
   }

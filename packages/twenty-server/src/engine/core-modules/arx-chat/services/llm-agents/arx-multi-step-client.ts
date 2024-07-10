@@ -99,7 +99,7 @@ export class OpenAIArxMultiStepClient {
       mostRecentMessageArr = await this.addResponseAndToolCallsToMessageHistory( responseMessage, stage, mostRecentMessageArr );
     }
     // debugger;
-    await this.sendWhatsappMessageToCandidate(response?.choices[0]?.message?.content || '', mostRecentMessageArr, isChatEnabled);
+    await this.sendWhatsappMessageToCandidate(response?.choices[0]?.message?.content || '', mostRecentMessageArr, "firstChatCompletionCall", isChatEnabled);
     return mostRecentMessageArr;
   }
 
@@ -160,12 +160,12 @@ export class OpenAIArxMultiStepClient {
       const mostRecentMessageArr = messages;
       // debugger;
       // Removing this message so that tool call messages are not sent to the candidate. 
-      // await this.sendWhatsappMessageToCandidate(response?.choices[0]?.message?.content || '', mostRecentMessageArr);
+      await this.sendWhatsappMessageToCandidate(response?.choices[0]?.message?.content || '', mostRecentMessageArr, "secondChatCompletionCall");
     }
     return messages;
   }
 
-  async sendWhatsappMessageToCandidate(messageText: string, mostRecentMessageArr: allDataObjects.ChatHistoryItem[], isChatEnabled?: boolean) {
+  async sendWhatsappMessageToCandidate(messageText: string, mostRecentMessageArr: allDataObjects.ChatHistoryItem[], source: "firstChatCompletionCall" | "secondChatCompletionCall", isChatEnabled?: boolean) {
     console.log('Called sendWhatsappMessageToCandidate to send message via any whatsapp api');
     if (messageText === '#DONTRESPOND#') {
       console.log('Found a #DONTRESPOND# message, so not sending any message');
@@ -174,7 +174,7 @@ export class OpenAIArxMultiStepClient {
     if (messageText) {
       const whatappUpdateMessageObj = await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj('sendWhatsappMessageToCandidateMulti', this.personNode, mostRecentMessageArr);
       if (process.env.WHATSAPP_ENABLED === 'true' && (isChatEnabled === undefined || isChatEnabled)) {
-        await new WhatsappAPISelector().sendWhatsappMessage(whatappUpdateMessageObj, this.personNode, mostRecentMessageArr);
+        await new WhatsappAPISelector().sendWhatsappMessage(whatappUpdateMessageObj, this.personNode, mostRecentMessageArr, source);
       } else {
         console.log('Whatsapp is not enabled, so not sending message:', whatappUpdateMessageObj.messages[0].content);
       }

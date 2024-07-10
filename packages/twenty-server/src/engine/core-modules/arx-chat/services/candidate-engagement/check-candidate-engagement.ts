@@ -118,16 +118,16 @@ export default class CandidateEngagementArx {
   }
   filterCandidatesToRemind(sortedPeopleData: allDataObjects.People) {
     // console.log("This is filter candidates:", sortedPeopleData)
-    return sortedPeopleData?.edges?.filter( (edge: allDataObjects.PersonEdge) => { edge?.node?.candidates?.edges[0]?.node?.candidateReminders?.edges ?.length > 0; } );
+    return sortedPeopleData?.edges?.filter(edge => edge?.node?.candidates?.edges?.length > 0 && !edge?.node?.candidates?.edges[0]?.node?.engagementStatus && !edge?.node?.candidates?.edges[0]?.node?.startChat);
   }
 
   async startChatEngagement(candidateResponseEngagementObj: allDataObjects.RootObject) {
     console.log('Total number of candidates fetched to filter for start chat::', candidateResponseEngagementObj?.people?.edges?.length);
-    const filteredCandidatesToStartEngagement = candidateResponseEngagementObj?.people?.edges?.filter(edge => {
-      return edge?.node?.candidates?.edges?.length > 0 && edge?.node?.candidates?.edges[0]?.node?.startChat === true;
-    });
-    console.log('these are the number of candidates to who have no filteredCandidatesToStartEngagement ::', filteredCandidatesToStartEngagement?.length);
-    const filteredCandidatesWhoHaveNoWhatsappHistory = filteredCandidatesToStartEngagement?.filter(edge => {
+    // const filteredCandidatesToStartEngagement = candidateResponseEngagementObj?.people?.edges?.filter(edge => {
+    //   return edge?.node?.candidates?.edges?.length > 0 && edge?.node?.candidates?.edges[0]?.node?.startChat === true;
+    // });
+    // console.log('these are the number of candidates to who have no filteredCandidatesToStartEngagement ::', filteredCandidatesToStartEngagement?.length);
+    const filteredCandidatesWhoHaveNoWhatsappHistory = candidateResponseEngagementObj?.people?.edges?.filter(edge => {
       return edge?.node?.candidates?.edges[0]?.node?.whatsappMessages?.edges.length === 0;
     });
     console.log('these are the number of candidates to start chat ::', filteredCandidatesWhoHaveNoWhatsappHistory?.length);
@@ -152,6 +152,7 @@ export default class CandidateEngagementArx {
     }
 
     const filteredCandidatesToRemind: allDataObjects.PersonEdge[] = this.filterCandidatesToRemind(sortedPeopleData);
+    
     console.log('Filtered candidates to engage:', filteredCandidatesToRemind);
     console.log('Number processCandidateof filtered candidates to engage:', filteredCandidatesToRemind?.length);
     for (const edge of filteredCandidatesToRemind) {
