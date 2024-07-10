@@ -392,7 +392,7 @@ export class FacebookWhatsappChatApi {
     console.log('whatappUpdateMessageObj.messageType whatappUpdateMessageObj.messages ', JSON.stringify(whatappUpdateMessageObj));
     let response;
 
-    if (whatappUpdateMessageObj.messageType === 'botMessage' && source === "firstChatCompletionCall") {
+    if (whatappUpdateMessageObj.messageType === 'botMessage') {
       if (whatappUpdateMessageObj.messages[0].content.includes('a US Based Recruitment Company') || whatappUpdateMessageObj.messages[0].content.includes('assist')) {
         console.log('This is the template api message to send in whatappUpdateMessageObj.phoneNumberFrom, ', whatappUpdateMessageObj.phoneNumberFrom);
         const sendTemplateMessageObj = {
@@ -406,7 +406,17 @@ export class FacebookWhatsappChatApi {
           jobPositionName: whatappUpdateMessageObj?.candidateProfile?.jobs?.name,
           jobLocation: whatappUpdateMessageObj?.candidateProfile?.jobs?.jobLocation,
         };
-        response = await this.sendWhatsappTemplateMessage(sendTemplateMessageObj);
+        if (source === 'firstChatCompletionCall') {
+          response = await this.sendWhatsappTemplateMessage(sendTemplateMessageObj);
+          const whatappUpdateMessageObjAfterWAMidUpdate = await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj(
+            response?.data?.messages[0]?.id || response.messages[0].id, // whatsapp message id response.messages[0].id
+            // response,
+            personNode,
+            mostRecentMessageArr,
+          );
+          await new CandidateEngagementArx().updateCandidateEngagementDataInTable(whatappUpdateMessageObjAfterWAMidUpdate);
+    
+        }
       } else {
         console.log('This is the standard message to send fromL', allDataObjects.recruiterProfile.phone);
         console.log('This is the standard message to send to phone:', whatappUpdateMessageObj.phoneNumberTo);
@@ -416,20 +426,19 @@ export class FacebookWhatsappChatApi {
           phoneNumberTo: whatappUpdateMessageObj.phoneNumberTo,
           messages: whatappUpdateMessageObj.messages[0].content,
         };
-        response = await this.sendWhatsappTextMessage(sendTextMessageObj);
+        if (source === 'firstChatCompletionCall') {
+          response = await this.sendWhatsappTextMessage(sendTextMessageObj);
+          const whatappUpdateMessageObjAfterWAMidUpdate = await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj(
+            response?.data?.messages[0]?.id || response.messages[0].id, // whatsapp message id response.messages[0].id
+            // response,
+            personNode,
+            mostRecentMessageArr,
+          );
+          await new CandidateEngagementArx().updateCandidateEngagementDataInTable(whatappUpdateMessageObjAfterWAMidUpdate);
+    
+        }
       }
-      // console.log(response);
-      const whatappUpdateMessageObjAfterWAMidUpdate = await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj(
-        response?.data?.messages[0]?.id || response.messages[0].id, // whatsapp message id response.messages[0].id
-        // response,
-        personNode,
-        mostRecentMessageArr,
-      );
-      await new CandidateEngagementArx().updateCandidateEngagementDataInTable(whatappUpdateMessageObjAfterWAMidUpdate);
 
-      // update database here. You will personobjm candidate object.
-
-      // response.messages[0].id
     } else {
       console.log('passing a human message so, going to trash it');
     }
