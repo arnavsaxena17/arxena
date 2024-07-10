@@ -18,17 +18,6 @@ const jobProfile = allDataObjects.jobProfile;
 const availableTimeSlots = '12PM-3PM, 4PM -6PM on the 24th and 25th January 2024.';
 
 export class ToolsForAgents {
-  // personNode: allDataObjects.PersonNode;
-
-  // questionIdArray: {
-  //   questionId: string,
-  //   question: string
-  // }[]
-
-  // questionArray: string[];
-  // constructor(personNode:allDataObjects.PersonNode) {
-  //     this.personNode = personNode;
-  // };
 
   async convertToBulletPoints(steps: { [x: string]: any; 1?: string; 2?: string; 3?: string; 4?: string }) {
     let result = '';
@@ -128,25 +117,30 @@ export class ToolsForAgents {
     return SYSTEM_PROMPT;
   }
 
-  getTimeManagementPrompt(personNode: allDataObjects.PersonNode, stage: string) {
+  async getTimeManagementPrompt(personNode: allDataObjects.PersonNode) {
     const TIME_MANAGEMENT_PROMPT = `
-      You are responsible for creating and managing reminders for the candidate. When the candidate tells you that they will get back to you, your task is to remind the candidate to reply back after certain hours. You can do this by calling the function "create_reminder". You will not call this function otherwise. For now the reminder time is 1 hour.
+      The current time is `+ new Date() +`. Calculate the amount of time that has passed from the last message. If the time elapsed has gone beyond 1 day and less than 2 days and the user has not been sent the first reminder, Return the stage as "reminder_necessary" else return "reminder_unnecessary". Do not return any other text.
     `;
     return TIME_MANAGEMENT_PROMPT;
   }
 
-  getReminderSystemPrompt() {
+  async getReminderSystemPrompt() {
     const REMINDER_SYSTEM_PROMPT = `
-    Remind this candidate
+    Read the message history. This candidate hasn't responded in a while. Remind this candidate
     `;
     return REMINDER_SYSTEM_PROMPT;
   }
 
   async getCandidateFacingSystemPromptBasedOnStage(personNode: allDataObjects.PersonNode, stage: string) {
-    const systemPrompt = await this.getSystemPrompt(personNode);
-    const updatedSystemPromptWithStagePrompt = systemPrompt.replace('##STAGE_PROMPT', stage);
-    console.log(updatedSystemPromptWithStagePrompt);
-    return updatedSystemPromptWithStagePrompt;
+    if (stage == 'remind_candidate') {
+      return await this.getReminderSystemPrompt();
+    }
+    else{
+      const systemPrompt = await this.getSystemPrompt(personNode);
+      const updatedSystemPromptWithStagePrompt = systemPrompt.replace('##STAGE_PROMPT', stage);
+      console.log(updatedSystemPromptWithStagePrompt);
+      return updatedSystemPromptWithStagePrompt;
+    }
   }
 
   async getSystemFacingSystemPromptBasedOnStage(personNode: allDataObjects.PersonNode, stage: string) {
@@ -156,11 +150,11 @@ export class ToolsForAgents {
     return updatedSystemPromptWithStagePrompt;
   }
 
-  async getTimeManagementPromptBasedOnStage(personNode: allDataObjects.PersonNode, stage: string) {
-    const timeManagementPrompt = this.getTimeManagementPrompt(personNode, stage);
-    const updatedTimeManagementPromptWithStagePrompt = timeManagementPrompt.replace('##TIME_MANAGEMENT_PROMPT', stage);
-    return updatedTimeManagementPromptWithStagePrompt;
-  }
+  // async getTimeManagementPromptBasedOnStage(personNode: allDataObjects.PersonNode, stage: string) {
+  //   const timeManagementPrompt = await this.getTimeManagementPrompt(personNode);
+  //   const updatedTimeManagementPromptWithStagePrompt = timeManagementPrompt.replace('##TIME_MANAGEMENT_PROMPT', stage);
+  //   return updatedTimeManagementPromptWithStagePrompt;
+  // }
 
   async getToolCallsByStage() {
     const toolCallsByStage = {
