@@ -23,7 +23,7 @@ export class OpenAIArxMultiStepClient {
   // THis is the entry point
   async createCompletion(mostRecentMessageArr: allDataObjects.ChatHistoryItem[], personNode: allDataObjects.PersonNode, isChatEnabled: boolean = true) {
     console.log('Going top create completion in multi step client');
-    const stage = await this.getStageOfTheConversation(mostRecentMessageArr);
+    const stage = await this.getStageOfTheConversation(mostRecentMessageArr, personNode);
     console.log('This is the stage that is arrived at CURRENT STAGE::::::::', stage);
     mostRecentMessageArr = await this.runCandidateFacingAgentsAlongWithToolCalls(mostRecentMessageArr, personNode, stage, isChatEnabled);
     await this.runSystemFacingAgentsAlongWithToolCalls(mostRecentMessageArr, personNode, stage);
@@ -31,7 +31,22 @@ export class OpenAIArxMultiStepClient {
     return mostRecentMessageArr;
   }
 
-  async getStageOfTheConversation(mostRecentMessageArr: allDataObjects.ChatHistoryItem[]) {
+
+
+  async getStageOfTheConversation(mostRecentMessageArr: allDataObjects.ChatHistoryItem[], personNode: allDataObjects.PersonNode) {
+    
+    const messagesWithTimeStamp = personNode.candidates.edges[0].node.whatsappMessages.edges.map((edge) => {
+      return {
+        "role": edge.node.name === "candidateMessage" ? "user" : "assistant",
+        "content": "TimeStamp: " + edge.node.createdAt + " Message: " + edge.node.message
+      };
+    }).reverse();
+
+    console.log("MessagesWithTimeStamp:::", messagesWithTimeStamp);
+    console.log("mostRecentMessageArr::", mostRecentMessageArr);
+    
+
+
     console.log('got here to get the stage of the conversation');
     let stage: string | null = '1';
     const stagePrompt = await new ToolsForAgents().getStagePrompt();

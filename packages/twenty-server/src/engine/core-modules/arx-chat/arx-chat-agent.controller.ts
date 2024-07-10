@@ -147,7 +147,7 @@ export class ArxChatEndpoint {
     const messagesList = request.body;
 
     let chatAgent = new OpenAIArxMultiStepClient(personObj);
-    const stage = await chatAgent.getStageOfTheConversation(messagesList);
+    const stage = await chatAgent.getStageOfTheConversation(messagesList, personObj);
 
     return { stage: stage };
   }
