@@ -1,30 +1,21 @@
-import {
-  shareJDtoCandidate,
-  updateAnswerInDatabase,
-  updateCandidateStatus,
-} from "./tool-calls-processing";
-import * as allDataObjects from "../data-model-objects";
-import { FetchAndUpdateCandidatesChatsWhatsapps } from "../candidate-engagement/update-chat";
+import { shareJDtoCandidate, updateAnswerInDatabase, updateCandidateStatus } from './tool-calls-processing';
+import * as allDataObjects from '../data-model-objects';
+import { FetchAndUpdateCandidatesChatsWhatsapps } from '../candidate-engagement/update-chat';
 
-import fuzzy from "fuzzy";
-import { CalendarEventType } from "../../../calendar-events/services/calendar-data-objects-types";
-import { CalendarEmailService } from "../candidate-engagement/calendar-email";
-import { MailerController } from "../../../gmail-sender/gmail-sender.controller";
-import { SendEmailFunctionality } from "../candidate-engagement/send-gmail";
-import { GmailMessageData } from "src/engine/core-modules/gmail-sender/services/gmail-sender-objects-types";
-import * as allGraphQLQueries from "../candidate-engagement/graphql-queries-chatbot";
-import {
-  addHoursInDate,
-  axiosRequest,
-  toIsoString,
-} from "../../utils/arx-chat-agent-utils";
-import { add } from "date-fns";
+import fuzzy from 'fuzzy';
+import { CalendarEventType } from '../../../calendar-events/services/calendar-data-objects-types';
+import { CalendarEmailService } from '../candidate-engagement/calendar-email';
+import { MailerController } from '../../../gmail-sender/gmail-sender.controller';
+import { SendEmailFunctionality } from '../candidate-engagement/send-gmail';
+import { GmailMessageData } from 'src/engine/core-modules/gmail-sender/services/gmail-sender-objects-types';
+import * as allGraphQLQueries from '../candidate-engagement/graphql-queries-chatbot';
+import { addHoursInDate, axiosRequest, toIsoString } from '../../utils/arx-chat-agent-utils';
+import { add } from 'date-fns';
 
 const recruiterProfile = allDataObjects.recruiterProfile;
 // const candidateProfileObjAllData =  candidateProfile
 const jobProfile = allDataObjects.jobProfile;
-const availableTimeSlots =
-  "12PM-3PM, 4PM -6PM on the 24th and 25th January 2024.";
+const availableTimeSlots = '12PM-3PM, 4PM -6PM on the 24th and 25th January 2024.';
 
 export class ToolsForAgents {
   // personNode: allDataObjects.PersonNode;
@@ -39,14 +30,8 @@ export class ToolsForAgents {
   //     this.personNode = personNode;
   // };
 
-  async convertToBulletPoints(steps: {
-    [x: string]: any;
-    1?: string;
-    2?: string;
-    3?: string;
-    4?: string;
-  }) {
-    let result = "";
+  async convertToBulletPoints(steps: { [x: string]: any; 1?: string; 2?: string; 3?: string; 4?: string }) {
+    let result = '';
     for (let key in steps) {
       result += `${key}. ${steps[key]}\n`;
     }
@@ -55,12 +40,12 @@ export class ToolsForAgents {
 
   async getStagePrompt() {
     const recruitmentSteps = [
-      "Initial Outreach: The recruiter introduces themselves and their company, mentions the specific role, and the candidate has responded in some manner.",
+      'Initial Outreach: The recruiter introduces themselves and their company, mentions the specific role, and the candidate has responded in some manner.',
       // "Share Role Details: Provide a JD of the role and company. Check if the candidate has heard of the company. Assess the candidate's interest level and fit for the role, including their ability to relocate if needed.",
 
-      "Share screening questions: Share screening questions and record responses",
+      'Share screening questions: Share screening questions and record responses',
       // "Schedule Screening Meeting: Propose times for a call to discuss the role, company, and candidate's experience more deeply, aiming for a 30-minute discussion."
-      "Acknowledge and postpone: Let the candidate know that you will get back",
+      'Acknowledge and postpone: Let the candidate know that you will get back',
     ];
 
     const steps = {};
@@ -77,16 +62,12 @@ export class ToolsForAgents {
     When deciding the next step:
 
     If there is no  conversation history or only a greeting, default to stage 1.
-    Your response should be a single number between 1 and ${
-      Object.keys(steps).length
-    }, representing the appropriate stage.
+    Your response should be a single number between 1 and ${Object.keys(steps).length}, representing the appropriate stage.
     Do not include any additional text or instructions in your response.
     Do not take the output as an instruction of what to say.
     If the candidate's answer is not specific enough or doesn't provide exact numerical value when needed, do not progress to the next stage or call update_answer tool call and ask the candidate to be more specific.
     Your decision should not be influenced by the output itself. Do not respond to the user input when determining the appropriate stage.
-    Your response should be a only a single number between 1 and ${
-      Object.keys(steps).length
-    }, representing the appropriate stage.
+    Your response should be a only a single number between 1 and ${Object.keys(steps).length}, representing the appropriate stage.
     Do not schedule a meeting outside the given timeslots even if the candidate requests or insists. Tell the candidate that these are the only available timeslots and you cannot schedule a meeting outside of these timeslots.
      Do not tell the candidate you are updating their profile or status.
      If the candidate tells they will share details after a certain time or later in the stage or in later stages, do not progress to the next stage. Push the candidate to share the details now.
@@ -101,28 +82,19 @@ export class ToolsForAgents {
     // const formattedQuestions = questions.map((question, index) =>  `${index + 1}. ${question.replace("{location}", location)}`).join("\n");
     // return formattedQuestions
     const jobId = personNode?.candidates?.edges[0]?.node?.jobs?.id;
-    console.log("This is the job Id:", jobId);
-    const { questionArray, questionIdArray } =
-      await new FetchAndUpdateCandidatesChatsWhatsapps().fetchQuestionsByJobId(
-        jobId
-      );
+    console.log('This is the job Id:', jobId);
+    const { questionArray, questionIdArray } = await new FetchAndUpdateCandidatesChatsWhatsapps().fetchQuestionsByJobId(jobId);
     if (questionArray.length == 0) {
-      return [
-        "What is your current & expected CTC?",
-        "Who do you report to and which functions report to you?",
-        "Are you okay to relocate to {location}?",
-      ];
+      return ['What is your current & expected CTC?', 'Who do you report to and which functions report to you?', 'Are you okay to relocate to {location}?'];
     }
     return questionArray;
   }
 
   async getSystemPrompt(personNode: allDataObjects.PersonNode) {
-    console.log("This is the candidate profile:", personNode);
+    console.log('This is the candidate profile:', personNode);
     const questionArray = await this.getQuestionsToAsk(personNode);
-    const formattedQuestions = questionArray
-      .map((question, index) => `${index + 1}. ${question}`)
-      .join("\n");
-    console.log("Formtted Questions:", formattedQuestions);
+    const formattedQuestions = questionArray.map((question, index) => `${index + 1}. ${question}`).join('\n');
+    console.log('Formtted Questions:', formattedQuestions);
     const SYSTEM_PROMPT = `
     You will drive the conversation with candidates like the recruiter. Your goal is to assess the candidates for interest and fitment.
     If found reasonably fit, your goal is to setup a meeting at a available time.
@@ -156,10 +128,7 @@ export class ToolsForAgents {
     return SYSTEM_PROMPT;
   }
 
-  getTimeManagementPrompt(
-    personNode: allDataObjects.PersonNode,
-    stage: string
-  ) {
+  getTimeManagementPrompt(personNode: allDataObjects.PersonNode, stage: string) {
     const TIME_MANAGEMENT_PROMPT = `
       You are responsible for creating and managing reminders for the candidate. When the candidate tells you that they will get back to you, your task is to remind the candidate to reply back after certain hours. You can do this by calling the function "create_reminder". You will not call this function otherwise. For now the reminder time is 1 hour.
     `;
@@ -173,86 +142,61 @@ export class ToolsForAgents {
     return REMINDER_SYSTEM_PROMPT;
   }
 
-  async getCandidateFacingSystemPromptBasedOnStage(
-    personNode: allDataObjects.PersonNode,
-    stage: string
-  ) {
+  async getCandidateFacingSystemPromptBasedOnStage(personNode: allDataObjects.PersonNode, stage: string) {
     const systemPrompt = await this.getSystemPrompt(personNode);
-    const updatedSystemPromptWithStagePrompt = systemPrompt.replace(
-      "##STAGE_PROMPT",
-      stage
-    );
+    const updatedSystemPromptWithStagePrompt = systemPrompt.replace('##STAGE_PROMPT', stage);
     console.log(updatedSystemPromptWithStagePrompt);
     return updatedSystemPromptWithStagePrompt;
   }
 
-  async getSystemFacingSystemPromptBasedOnStage(
-    personNode: allDataObjects.PersonNode,
-    stage: string
-  ) {
+  async getSystemFacingSystemPromptBasedOnStage(personNode: allDataObjects.PersonNode, stage: string) {
     const systemPrompt = await this.getSystemPrompt(personNode);
-    const updatedSystemPromptWithStagePrompt = systemPrompt.replace(
-      "##STAGE_PROMPT",
-      stage
-    );
+    const updatedSystemPromptWithStagePrompt = systemPrompt.replace('##STAGE_PROMPT', stage);
     console.log(updatedSystemPromptWithStagePrompt);
     return updatedSystemPromptWithStagePrompt;
   }
 
-  async getTimeManagementPromptBasedOnStage(
-    personNode: allDataObjects.PersonNode,
-    stage: string
-  ) {
-    const timeManagementPrompt = this.getTimeManagementPrompt(
-      personNode,
-      stage
-    );
-    const updatedTimeManagementPromptWithStagePrompt =
-      timeManagementPrompt.replace("##TIME_MANAGEMENT_PROMPT", stage);
+  async getTimeManagementPromptBasedOnStage(personNode: allDataObjects.PersonNode, stage: string) {
+    const timeManagementPrompt = this.getTimeManagementPrompt(personNode, stage);
+    const updatedTimeManagementPromptWithStagePrompt = timeManagementPrompt.replace('##TIME_MANAGEMENT_PROMPT', stage);
     return updatedTimeManagementPromptWithStagePrompt;
   }
 
   async getToolCallsByStage() {
     const toolCallsByStage = {
-      "Initial Outreach": ["update_candidate_profile"],
-      "Share Role Details": ["share_jd"],
-      "Share screening questions": [
-        "update_answer",
-        "update_candidate_profile",
-      ],
-      "Create Reminder": ["update_candidate_profile", "schedule_meeting"],
-      "Schedule Screening Meeting": [
-        "update_candidate_profile",
-        "schedule_meeting",
-      ],
+      'Initial Outreach': ['update_candidate_profile'],
+      'Share Role Details': ['share_jd'],
+      'Share screening questions': ['update_answer', 'update_candidate_profile'],
+      'Create Reminder': ['update_candidate_profile', 'schedule_meeting'],
+      'Schedule Screening Meeting': ['update_candidate_profile', 'schedule_meeting'],
     };
     return toolCallsByStage;
   }
 
   async getStageWiseActivity() {
     const stageWiseActions = {
-      "Initial Outreach": [
+      'Initial Outreach': [
         `
         The recruiter introduces themselves and their company, mentions the specific role, and the candidate has responded in some manner. 
         The candidate might ask questions about we found their profile or which platform. Answer accordingly.  
         The candidate might directly propose a time to speak/ meet or ask for more details. In either case, share the JD with the candidate and ask them for their interest
         `,
       ],
-      "Share Role Details": [
+      'Share Role Details': [
         `
         Provide a JD of the role and describe in short the details of the company. Ask the candidate if they would be keen on the role wiht the company.
         `,
       ],
-      "Share screening questions": [
+      'Share screening questions': [
         `
         Ask questions to the candidate to assess their fitment for the role.
         `,
       ],
-      "Create Reminder": [
+      'Create Reminder': [
         `
         `,
       ],
-      "Schedule Screening Meeting": [""],
+      'Schedule Screening Meeting': [''],
     };
     return stageWiseActions;
   }
@@ -268,105 +212,77 @@ export class ToolsForAgents {
     };
   }
 
-  async createReminder(
-    inputs: { reminderDuration: string },
-    candidateProfileDataNodeObj: allDataObjects.PersonNode
-  ) {
-    console.log(
-      "Function Called:  candidateProfileDataNodeObj:any",
-      candidateProfileDataNodeObj
-    );
+  async createReminder(inputs: { reminderDuration: string }, candidateProfileDataNodeObj: allDataObjects.PersonNode) {
+    console.log('Function Called:  candidateProfileDataNodeObj:any', candidateProfileDataNodeObj);
     debugger;
-    const reminderTimestamp = addHoursInDate(
-      new Date(),
-      Number(inputs?.reminderDuration)
-    );
+    const reminderTimestamp = addHoursInDate(new Date(), Number(inputs?.reminderDuration));
     const reminderTimestampInIsoFormat = toIsoString(reminderTimestamp);
-    console.log("Reminder Timestamp:", reminderTimestamp);
+    console.log('Reminder Timestamp:', reminderTimestamp);
     const createOneReminderVariables = {
       input: {
         remindCandidateDuration: inputs?.reminderDuration,
         remindCandidateAtTimestamp: reminderTimestampInIsoFormat,
-        candidateId:
-          candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.id,
+        candidateId: candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.id,
         name: `Reminder for ${candidateProfileDataNodeObj?.name?.firstName} ${candidateProfileDataNodeObj?.name?.lastName} to remind in ${inputs?.reminderDuration} hours`,
         isReminderActive: true,
       },
     };
-    console.log("Function Called: createReminder");
+    console.log('Function Called: createReminder');
     const graphqlQueryObj = JSON.stringify({
       query: allGraphQLQueries.graphqlQueryToCreateOneReminder,
       variables: createOneReminderVariables,
     });
 
     const response = await axiosRequest(graphqlQueryObj);
-    console.log("Response from createReminder:", response.data);
-    return "Reminder created successfully.";
+    console.log('Response from createReminder:', response.data);
+    return 'Reminder created successfully.';
   }
 
   async sendEmail(inputs: any, person: allDataObjects.PersonNode) {
     const emailData: GmailMessageData = {
       sendEmailFrom: recruiterProfile?.email,
       sendEmailTo: person?.email,
-      subject: inputs?.subject || "Email from the recruiter",
-      message: inputs?.message || "",
+      subject: inputs?.subject || 'Email from the recruiter',
+      message: inputs?.message || '',
     };
     await new SendEmailFunctionality().sendEmailFunction(emailData);
-    return "Email sent successfully.";
+    return 'Email sent successfully.';
   }
 
   async shareJD(inputs: any, personNode: allDataObjects.PersonNode) {
     try {
-      console.log("Function Called: shareJD");
+      console.log('Function Called: shareJD');
       await shareJDtoCandidate(personNode);
-      console.log(
-        "Function Called:  candidateProfileDataNodeObj:any",
-        personNode
-      );
+      console.log('Function Called:  candidateProfileDataNodeObj:any', personNode);
     } catch {
       debugger;
     }
-    return "Shared the JD with the candidate and updated the database.";
+    return 'Shared the JD with the candidate and updated the database.';
   }
 
-  async updateCandidateProfile(
-    inputs: any,
-    personNode: allDataObjects.PersonNode
-  ) {
+  async updateCandidateProfile(inputs: any, personNode: allDataObjects.PersonNode) {
     try {
-      console.log(
-        "Function Called:  candidateProfileDataNodeObj:any",
-        personNode
-      );
-      const status = "Meeting Scheduled";
+      console.log('Function Called:  candidateProfileDataNodeObj:any', personNode);
+      const status = 'Meeting Scheduled';
       await updateCandidateStatus(personNode, status);
-      return "Updated the candidate profile.";
+      return 'Updated the candidate profile.';
     } catch (error) {
-      console.log("Error in updateCandidateProfile:", error);
+      console.log('Error in updateCandidateProfile:', error);
     }
   }
 
-  async updateAnswer(
-    inputs: { question: string; answer: string },
-    candidateProfileDataNodeObj: allDataObjects.PersonNode
-  ) {
+  async updateAnswer(inputs: { question: string; answer: string }, candidateProfileDataNodeObj: allDataObjects.PersonNode) {
     // const newQuestionArray = this.questionArray
-    const jobId =
-      candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.jobs?.id;
+    const jobId = candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.jobs?.id;
 
-    const { questionIdArray, questionArray } =
-      await new FetchAndUpdateCandidatesChatsWhatsapps().fetchQuestionsByJobId(
-        jobId
-      );
+    const { questionIdArray, questionArray } = await new FetchAndUpdateCandidatesChatsWhatsapps().fetchQuestionsByJobId(jobId);
     const results = fuzzy.filter(inputs.question, questionArray);
     const matches = results.map(function (el) {
       return el.string;
     });
 
-    console.log("The matches are:", matches);
-    const mostSimilarQuestion = questionIdArray.filter(
-      (questionObj) => questionObj.question == matches[0]
-    );
+    console.log('The matches are:', matches);
+    const mostSimilarQuestion = questionIdArray.filter(questionObj => questionObj.question == matches[0]);
 
     const AnswerMessageObj = {
       questionsId: mostSimilarQuestion[0]?.questionId,
@@ -377,35 +293,24 @@ export class ToolsForAgents {
 
     await updateAnswerInDatabase(candidateProfileDataNodeObj, AnswerMessageObj);
     try {
-      console.log(
-        "Function Called:  candidateProfileDataNodeObj:any",
-        candidateProfileDataNodeObj
-      );
-      console.log("Function Called: updateAnswer");
+      console.log('Function Called:  candidateProfileDataNodeObj:any', candidateProfileDataNodeObj);
+      console.log('Function Called: updateAnswer');
     } catch {
       debugger;
     }
-    return "Updated the candidate updateAnswer.";
+    return 'Updated the candidate updateAnswer.';
   }
 
-  async scheduleMeeting(
-    inputs: any,
-    candidateProfileDataNodeObj: allDataObjects.PersonNode
-  ) {
-    console.log(
-      "Function Called:  candidateProfileDataNodeObj:any",
-      candidateProfileDataNodeObj
-    );
+  async scheduleMeeting(inputs: any, candidateProfileDataNodeObj: allDataObjects.PersonNode) {
+    console.log('Function Called:  candidateProfileDataNodeObj:any', candidateProfileDataNodeObj);
     const gptInputs = inputs?.inputs;
 
-    console.log("Function Called: scheduleMeeting");
+    console.log('Function Called: scheduleMeeting');
     const calendarEventObj: CalendarEventType = {
-      summary: gptInputs?.summary || "Meeting with the candidate",
-      typeOfMeeting: gptInputs?.typeOfMeeting || "Virtual",
-      location: gptInputs?.location || "Google Meet",
-      description:
-        gptInputs?.description ||
-        "This meeting is scheduled to discuss the role and the company.",
+      summary: gptInputs?.summary || 'Meeting with the candidate',
+      typeOfMeeting: gptInputs?.typeOfMeeting || 'Virtual',
+      location: gptInputs?.location || 'Google Meet',
+      description: gptInputs?.description || 'This meeting is scheduled to discuss the role and the company.',
       start: {
         dateTime: gptInputs?.startDateTime,
         timeZone: gptInputs?.timeZone,
@@ -418,217 +323,123 @@ export class ToolsForAgents {
       reminders: {
         useDefault: false,
         overrides: [
-          { method: "email", minutes: 24 * 60 },
-          { method: "popup", minutes: 10 },
+          { method: 'email', minutes: 24 * 60 },
+          { method: 'popup', minutes: 10 },
         ],
       },
     };
     await new CalendarEmailService().createNewCalendarEvent(calendarEventObj);
-    return "scheduleMeeting the candidate meeting.";
+    return 'scheduleMeeting the candidate meeting.';
   }
 
-  async getTools() {
-    const tools = [
-      {
-        type: "function",
-        function: {
-          name: "share_jd",
-          description: "Share the candidate JD",
-        },
-      },
-      {
-        type: "function",
-        function: {
-          name: "schedule_meeting",
-          description: "Schedule a meeting with the candidate",
-          parameters: {
-            type: "object",
-            properties: {
-              inputs: {
-                type: "object",
-                description: "Details about the meeting",
-                properties: {
-                  summary: {
-                    type: "string",
-                    description: "Summary of the meeting",
-                  },
-                  typeOfMeeting: {
-                    type: "string",
-                    description:
-                      "Type of the meeting, can be either Virtual or In-Person. Default is Virtual.",
-                  },
-                  location: {
-                    type: "string",
-                    description: "Location of the meeting",
-                  },
-                  description: {
-                    type: "string",
-                    description: "Description of the meeting",
-                  },
-                  startDateTime: {
-                    type: "string",
-                    format: "date-time",
-                    description:
-                      "Start date and time of the meeting in ISO 8601 format",
-                  },
-                  endDateTime: {
-                    type: "string",
-                    format: "date-time",
-                    description:
-                      "End date and time of the meeting in ISO 8601 format",
-                  },
-                  timeZone: {
-                    type: "string",
-                    description: "Time zone of the meeting",
-                  },
-                },
-                required: ["startDateTime", "endDateTime", "timeZone"],
-              },
-              candidateProfileDataNodeObj: {
-                type: "object",
-                description: "Profile data of the candidate",
-                properties: {
-                  email: {
-                    type: "string",
-                    format: "email",
-                    description: "Email of the candidate",
-                  },
-                },
-                required: ["email"],
-              },
-            },
-            required: ["inputs", "candidateProfileDataNodeObj"],
-          },
-        },
-      },
-      {
-        type: "function",
-        function: {
-          name: "update_candidate_profile",
-          description: "Update the candidate profile",
-        },
-      },
-      {
-        type: "function",
-        function: {
-          name: "update_answer",
-          description: "Update the candidate's answer",
-        },
-      },
-    ];
-    return tools;
-  }
+
 
   async getCandidateFacingToolsByStage(stage: string) {
     const tools = [
       {
-        type: "function",
+        type: 'function',
         function: {
-          name: "share_jd",
-          description: "Share the candidate JD",
+          name: 'share_jd',
+          description: 'Share the candidate JD',
         },
       },
       {
-        type: "function",
+        type: 'function',
         function: {
-          name: "schedule_meeting",
-          description: "Schedule a meeting with the candidate",
+          name: 'schedule_meeting',
+          description: 'Schedule a meeting with the candidate',
           parameters: {
-            type: "object",
+            type: 'object',
             properties: {
               inputs: {
-                type: "object",
-                description: "Details about the meeting",
+                type: 'object',
+                description: 'Details about the meeting',
                 properties: {
                   summary: {
-                    type: "string",
-                    description: "Summary of the meeting",
+                    type: 'string',
+                    description: 'Summary of the meeting',
                   },
                   typeOfMeeting: {
-                    type: "string",
-                    description:
-                      "Type of the meeting, can be either Virtual or In-Person. Default is Virtual.",
+                    type: 'string',
+                    description: 'Type of the meeting, can be either Virtual or In-Person. Default is Virtual.',
                   },
                   location: {
-                    type: "string",
-                    description: "Location of the meeting",
+                    type: 'string',
+                    description: 'Location of the meeting',
                   },
                   description: {
-                    type: "string",
-                    description: "Description of the meeting",
+                    type: 'string',
+                    description: 'Description of the meeting',
                   },
                   startDateTime: {
-                    type: "string",
-                    format: "date-time",
-                    description:
-                      "Start date and time of the meeting in ISO 8601 format",
+                    type: 'string',
+                    format: 'date-time',
+                    description: 'Start date and time of the meeting in ISO 8601 format',
                   },
                   endDateTime: {
-                    type: "string",
-                    format: "date-time",
-                    description:
-                      "End date and time of the meeting in ISO 8601 format",
+                    type: 'string',
+                    format: 'date-time',
+                    description: 'End date and time of the meeting in ISO 8601 format',
                   },
                   timeZone: {
-                    type: "string",
-                    description: "Time zone of the meeting",
+                    type: 'string',
+                    description: 'Time zone of the meeting',
                   },
                 },
-                required: ["startDateTime", "endDateTime", "timeZone"],
+                required: ['startDateTime', 'endDateTime', 'timeZone'],
               },
               candidateProfileDataNodeObj: {
-                type: "object",
-                description: "Profile data of the candidate",
+                type: 'object',
+                description: 'Profile data of the candidate',
                 properties: {
                   email: {
-                    type: "string",
-                    format: "email",
-                    description: "Email of the candidate",
+                    type: 'string',
+                    format: 'email',
+                    description: 'Email of the candidate',
                   },
                 },
-                required: ["email"],
+                required: ['email'],
               },
             },
-            required: ["inputs", "candidateProfileDataNodeObj"],
+            required: ['inputs', 'candidateProfileDataNodeObj'],
           },
         },
       },
       {
-        type: "function",
+        type: 'function',
         function: {
-          name: "update_candidate_profile",
-          description: "Update the candidate profile",
+          name: 'update_candidate_profile',
+          description: 'Update the candidate profile',
           parameters: {
-            type: "object",
+            type: 'object',
             properties: {
               candidateStatus: {
-                type: "string",
-                description: "The status of the candidate",
+                type: 'string',
+                description: 'The status of the candidate',
               },
             },
-            required: ["candidateStatus"],
+            required: ['candidateStatus'],
           },
         },
       },
       {
-        type: "function",
+        type: 'function',
         function: {
-          name: "update_answer",
-          description:
-            "Update the candidate's answer based on the question asked",
+          name: 'update_answer',
+          description: "Update the candidate's answer based on the question asked",
           parameters: {
-            type: "object",
+            type: 'object',
             properties: {
               question: {
-                type: "string",
-                description: "The question asked",
+                type: 'string',
+                description: 'The question asked',
               },
               answer: {
-                type: "string",
-                description: "The answer provided by the candidate",
+                type: 'string',
+                description: 'The answer provided by the candidate',
               },
             },
-            required: ["question", "answer"],
+            required: ['question', 'answer'],
           },
         },
       },
@@ -636,47 +447,47 @@ export class ToolsForAgents {
     return tools;
   }
 
-  getTimeManagementTools() {
-    return [
-      {
-        type: "function",
-        function: {
-          name: "create_reminder",
-          description: "Create a reminder for the candidate",
-          parameters: {
-            type: "object",
-            properties: {
-              reminderDuration: {
-                type: "string",
-                description: "Number of hours for the reminder.",
-              },
-            },
-            required: ["reminderDuration", "hours"],
-          },
-        },
-      },
-    ];
-  }
+  // getTimeManagementTools() {
+  //   return [
+  //     {
+  //       type: 'function',
+  //       function: {
+  //         name: 'create_reminder',
+  //         description: 'Create a reminder for the candidate',
+  //         parameters: {
+  //           type: 'object',
+  //           properties: {
+  //             reminderDuration: {
+  //               type: 'string',
+  //               description: 'Number of hours for the reminder.',
+  //             },
+  //           },
+  //           required: ['reminderDuration', 'hours'],
+  //         },
+  //       },
+  //     },
+  //   ];
+  // }
   async getSystemFacingToolsByStage(stage: string) {
     const tools = [
       {
-        type: "function",
+        type: 'function',
         function: {
-          name: "share_jd",
-          description: "Share the candidate JD",
+          name: 'share_jd',
+          description: 'Share the candidate JD',
         },
       },
       {
-        type: "function",
+        type: 'function',
         function: {
-          name: "update_candidate_profile",
-          description: "Update the candidate profile",
+          name: 'update_candidate_profile',
+          description: 'Update the candidate profile',
         },
       },
       {
-        type: "function",
+        type: 'function',
         function: {
-          name: "update_answer",
+          name: 'update_answer',
           description: "Update the candidate's answer",
         },
       },
@@ -684,148 +495,4 @@ export class ToolsForAgents {
     return tools;
   }
 
-  async getToolsByStage(stage: string) {
-    const tools = [
-      {
-        type: "function",
-        function: {
-          name: "share_jd",
-          description: "Share the candidate JD",
-        },
-      },
-      {
-        type: "function",
-        function: {
-          name: "send_email",
-          description: "Send an email to the candidate",
-          parameters: {
-            type: "object",
-            properties: {
-              message: {
-                type: "string",
-                description: "Message body of the email",
-              },
-              subject: {
-                type: "string",
-                description: "Subject of the email",
-              },
-            },
-            required: ["message", "subject", "body"],
-          },
-        },
-      },
-      {
-        type: "function",
-        function: {
-          name: "schedule_meeting",
-          description: "Schedule a meeting with the candidate",
-          parameters: {
-            type: "object",
-            properties: {
-              inputs: {
-                type: "object",
-                description: "Details about the meeting",
-                properties: {
-                  summary: {
-                    type: "string",
-                    description: "Summary of the meeting",
-                  },
-                  typeOfMeeting: {
-                    type: "string",
-                    description:
-                      "Type of the meeting, can be either Virtual or In-Person. Default is Virtual.",
-                  },
-                  location: {
-                    type: "string",
-                    description: "Location of the meeting",
-                  },
-                  description: {
-                    type: "string",
-                    description: "Description of the meeting",
-                  },
-                  startDateTime: {
-                    type: "string",
-                    format: "date-time",
-                    description:
-                      "Start date and time of the meeting in ISO 8601 format",
-                  },
-                  endDateTime: {
-                    type: "string",
-                    format: "date-time",
-                    description:
-                      "End date and time of the meeting in ISO 8601 format",
-                  },
-                  timeZone: {
-                    type: "string",
-                    description: "Time zone of the meeting",
-                  },
-                },
-                required: ["startDateTime", "endDateTime", "timeZone"],
-              },
-              candidateProfileDataNodeObj: {
-                type: "object",
-                description: "Profile data of the candidate",
-                properties: {
-                  email: {
-                    type: "string",
-                    format: "email",
-                    description: "Email of the candidate",
-                  },
-                },
-                required: ["email"],
-              },
-            },
-            required: ["inputs", "candidateProfileDataNodeObj"],
-          },
-        },
-      },
-      {
-        type: "function",
-        function: {
-          name: "update_candidate_profile",
-          description: "Update the candidate profile",
-        },
-      },
-      {
-        type: "function",
-        function: {
-          name: "update_candidate_profile",
-          description: "Update the candidate profile",
-          parameters: {
-            type: "object",
-            properties: {
-              candidateStatus: {
-                type: "string",
-                description: "The status of the candidate",
-              },
-            },
-            required: ["candidateStatus"],
-          },
-        },
-      },
-      {
-        type: "function",
-        function: {
-          name: "update_answer",
-          description:
-            "Update the candidate's answer based on the question asked",
-          parameters: {
-            type: "object",
-            properties: {
-              question: {
-                type: "string",
-                description: "The question asked",
-              },
-              answer: {
-                type: "string",
-                description: "The answer provided by the candidate",
-              },
-            },
-            required: ["question", "answer"],
-          },
-        },
-      },
-    ];
-    return tools;
-  }
 }
