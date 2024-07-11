@@ -10,7 +10,6 @@ export async function sendWhatsappMessageVIABaileysAPI(
   whatappUpdateMessageObj: allDataObjects.candidateChatMessageType,
   personNode: allDataObjects.PersonNode,
   mostRecentMessageArr: allDataObjects.ChatHistoryItem[],
-  source: "firstChatCompletionCall" | "secondChatCompletionCall"
 ) {
   console.log("Sending message to whatsapp via baileys api");
   console.log(

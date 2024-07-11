@@ -59,7 +59,7 @@ export class ArxChatEndpoint {
     const messagesList = personCandidateNode?.whatsappMessages?.edges;
     console.log('Current Messages list:', messagesList);
     let mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = new CandidateEngagementArx().getMostRecentMessageFromMessagesList(messagesList);
-    console.log('mostRecentMessageArr before chatCompletion:', mostRecentMessageArr);
+    // console.log('mostRecentMessageArr before chatCompletion:', mostRecentMessageArr);
     if (mostRecentMessageArr?.length > 0) {
       let chatAgent: OpenAIArxMultiStepClient;
       // if (process.env.PROMPT_ENGINEERING_TYPE === "single-step") {
@@ -99,7 +99,7 @@ export class ArxChatEndpoint {
       console.log('Current Messages list:', messagesList);
       let mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = new CandidateEngagementArx().getMostRecentMessageFromMessagesList(messagesList);
       const isChatEnabled: boolean = false;
-      console.log('mostRecentMessageArr before chatCompletion:', mostRecentMessageArr);
+      // console.log('mostRecentMessageArr before chatCompletion:', mostRecentMessageArr);
       if (mostRecentMessageArr?.length > 0) {
         let chatAgent: OpenAIArxMultiStepClient;
         // if (process.env.PROMPT_ENGINEERING_TYPE === "single-step") {
