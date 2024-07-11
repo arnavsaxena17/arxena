@@ -112,8 +112,8 @@ export class ArxChatEndpoint {
         //   personObj,
         //   isChatEnabled
         // );
-        const engagementType = "engage"
-        mostRecentMessageArr = await chatAgent.createCompletion(mostRecentMessageArr, personObj,engagementType, isChatEnabled);
+        const engagementType = 'engage';
+        mostRecentMessageArr = await chatAgent.createCompletion(mostRecentMessageArr, personObj, engagementType, isChatEnabled);
         return mostRecentMessageArr;
       }
     } catch (err) {
@@ -409,4 +409,16 @@ export class WhatsappWebhook {
   // async schedulingTest(){
   //   await scheduleMeeting({}, )
   // }
+}
+
+@Controller('whatsapp-controller')
+export class WhatsappControllers {
+  @Post('uploadFile')
+  async uploadFileToFBWAAPI(@Req() request: any): Promise<object> {
+    console.log('upload file to whatsapp api');
+    const requestBody = request?.body;
+    const filePath = requestBody?.filePath;
+    const response = await new FacebookWhatsappChatApi().uploadFileToWhatsAppUsingControllerApi(filePath);
+    return response || {}; // Return an empty object if the response is undefined
+  }
 }

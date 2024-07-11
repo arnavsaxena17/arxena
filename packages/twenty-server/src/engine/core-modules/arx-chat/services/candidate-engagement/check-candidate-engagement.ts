@@ -84,7 +84,7 @@ export default class CandidateEngagementArx {
     const updateCandidateStatusObj = await new FetchAndUpdateCandidatesChatsWhatsapps().updateCandidateEngagementStatus(candidateProfileObj, whatappUpdateMessageObj);
     if (!updateCandidateStatusObj) return;
     // await new WhatsappAPISelector().sendWhatsappMessage(whatappUpdateMessageObj);
-    return { status: 'success', message: 'Candidate engagement status updated successfully', };
+    return { status: 'success', message: 'Candidate engagement status updated successfully' };
   }
 
   async updateChatHistoryObjCreateWhatsappMessageObj(wamId: string, personNode: allDataObjects.PersonNode, chatHistory: allDataObjects.ChatHistoryItem[]) {
@@ -147,7 +147,7 @@ export default class CandidateEngagementArx {
 
     const filteredCandidatesToEngage = this.filterCandidatesToEngage(sortedPeopleData);
 
-    const filteredCandidatesToRemind: allDataObjects.PersonEdge[] = this.filterCandidatesToRemind(sortedPeopleData);
+    // const filteredCandidatesToRemind: allDataObjects.PersonEdge[] = this.filterCandidatesToRemind(sortedPeopleData);
 
     console.log('Filtered candidates to remind:', filteredCandidatesToRemind);
     console.log('Number processCandidateof filtered candidates to remind:', filteredCandidatesToRemind?.length);

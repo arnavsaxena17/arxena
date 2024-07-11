@@ -207,10 +207,10 @@ export class FacebookWhatsappChatApi {
         //   }
         // );
         let response;
-        response = await axios.post('http://localhost:3000/whatsapp-test/uploadFile', { filePath: filePath });
+        response = await axios.post('http://localhost:3000/whatsapp-controller/uploadFile', { filePath: filePath });
         if (!response?.data?.mediaID) {
           console.error('Failed to upload JD to WhatsApp. Retrying it again...');
-          response = await axios.post('http://localhost:3000/whatsapp-test/uploadFile', { filePath: filePath });
+          response = await axios.post('http://localhost:3000/whatsapp-controller/uploadFile', { filePath: filePath });
           if (!response?.data?.mediaID) {
             console.error('Failed to upload JD to WhatsApp the second time. Bad luck! :(');
             const phoneNumberTo = attachmentMessage?.phoneNumberTo;
@@ -260,6 +260,58 @@ export class FacebookWhatsappChatApi {
       throw error;
     }
     // Get the file name and content type from the response headers
+  }
+
+  async uploadFileToWhatsAppUsingControllerApi(filePathArg: string) {
+    console.log('This is the upload file to whatsapp in recruitment agent');
+    // debugger;
+    try {
+      const filePath = filePathArg.slice();
+      // "/home/ninad/Documents/twenty/packages/twenty-server/.attachments/ec0cd07a-914c-4539-b0e5-ac18c03199bc/file-sample_150kB.pdf";
+      // Get the file name
+      const fileName = path.basename(filePath);
+      // Get the content type
+      // const contentType = mime.lookup(fileName) || 'application/octet-stream';
+      // const fileData = await fileTypeFromFile(filePath)
+      // const contentType = fileData?.mime || 'application/octet-stream';
+      const contentType = await getContentTypeFromFileName(fileName);
+      console.log('This is the content type:', contentType);
+      console.log('This is the file name:', fileName);
+
+      const formData = new FormData();
+      formData.append('file', createReadStream(filePath), {
+        contentType: contentType,
+        filename: fileName,
+      });
+
+      formData.append('messaging_product', 'whatsapp');
+      try {
+        const {
+          data: { id: mediaId },
+        } = await axios.post(`https://graph.facebook.com/v18.0/${process.env.FACEBOOK_WHATSAPP_PHONE_NUMBER_ID}/media`, formData, {
+          headers: {
+            Authorization: `Bearer ${whatsappAPIToken}`,
+            ...formData.getHeaders(),
+          },
+        });
+        console.log('media ID', mediaId);
+        console.log('Request successful');
+        return {
+          mediaID: mediaId,
+          status: 'success',
+          fileName: fileName,
+          contentType: contentType,
+        };
+      } catch (err) {
+        console.error('upload', err.toJSON());
+      }
+      // Remove the local file
+      // const unlink = promisify(fs.unlink);
+      // await unlink(filePath);
+    } catch (error) {
+      console.error('Error downloading file from WhatsApp:', error);
+      throw error;
+    }
   }
 
   async sendWhatsappAttachmentMessage(sendWhatsappAttachmentTextMessageObj: allDataObjects.FacebookWhatsappAttachmentChatRequestBody, personObj: allDataObjects.PersonNode, mostRecentMessageArr: allDataObjects.ChatHistoryItem[]) {
@@ -392,7 +444,7 @@ export class FacebookWhatsappChatApi {
     // console.log('whatappUpdateMessageObj.messageType whatappUpdateMessageObj.messages ', JSON.stringify(whatappUpdateMessageObj));
     let response;
     if (whatappUpdateMessageObj.messageType === 'botMessage') {
-      console.log("TEmplate Message or Text Message depends on :", whatappUpdateMessageObj.messages[0].content)
+      console.log('TEmplate Message or Text Message depends on :', whatappUpdateMessageObj.messages[0].content);
 
       if (whatappUpdateMessageObj.messages[0].content.includes('a US Based Recruitment Company') || whatappUpdateMessageObj.messages[0].content.includes('assist')) {
         console.log('This is the template api message to send in whatappUpdateMessageObj.phoneNumberFrom, ', whatappUpdateMessageObj.phoneNumberFrom);
@@ -407,14 +459,9 @@ export class FacebookWhatsappChatApi {
           jobPositionName: whatappUpdateMessageObj?.candidateProfile?.jobs?.name,
           jobLocation: whatappUpdateMessageObj?.candidateProfile?.jobs?.jobLocation,
         };
-          response = await this.sendWhatsappTemplateMessage(sendTemplateMessageObj);
-          const whatappUpdateMessageObjAfterWAMidUpdate = await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj(
-            response?.data?.messages[0]?.id || response.messages[0].id,
-            personNode,
-            mostRecentMessageArr,
-          );
-          await new CandidateEngagementArx().updateCandidateEngagementDataInTable(whatappUpdateMessageObjAfterWAMidUpdate);
-    
+        response = await this.sendWhatsappTemplateMessage(sendTemplateMessageObj);
+        const whatappUpdateMessageObjAfterWAMidUpdate = await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj(response?.data?.messages[0]?.id || response.messages[0].id, personNode, mostRecentMessageArr);
+        await new CandidateEngagementArx().updateCandidateEngagementDataInTable(whatappUpdateMessageObjAfterWAMidUpdate);
       } else {
         console.log('This is the standard message to send fromL', allDataObjects.recruiterProfile.phone);
         console.log('This is the standard message to send to phone:', whatappUpdateMessageObj.phoneNumberTo);
@@ -424,22 +471,20 @@ export class FacebookWhatsappChatApi {
           phoneNumberTo: whatappUpdateMessageObj.phoneNumberTo,
           messages: whatappUpdateMessageObj.messages[0].content,
         };
-          response = await this.sendWhatsappTextMessage(sendTextMessageObj);
-          const whatappUpdateMessageObjAfterWAMidUpdate = await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj(
-            response?.data?.messages[0]?.id || response.messages[0].id, // whatsapp message id response.messages[0].id
-            // response,
-            personNode,
-            mostRecentMessageArr,
-          );
-          await new CandidateEngagementArx().updateCandidateEngagementDataInTable(whatappUpdateMessageObjAfterWAMidUpdate);
-    
+        response = await this.sendWhatsappTextMessage(sendTextMessageObj);
+        const whatappUpdateMessageObjAfterWAMidUpdate = await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj(
+          response?.data?.messages[0]?.id || response.messages[0].id, // whatsapp message id response.messages[0].id
+          // response,
+          personNode,
+          mostRecentMessageArr,
+        );
+        await new CandidateEngagementArx().updateCandidateEngagementDataInTable(whatappUpdateMessageObjAfterWAMidUpdate);
       }
-
     } else {
       console.log('passing a human message so, going to trash it');
     }
   }
-async handleAudioMessage( audioMessageObject: { filename: string; mime_type: string; audioId: string; }, candidateProfileData: allDataObjects.CandidateNode, ) {
+  async handleAudioMessage(audioMessageObject: { filename: string; mime_type: string; audioId: string }, candidateProfileData: allDataObjects.CandidateNode) {
     let audioTranscriptionText;
     const constCandidateProfileData = candidateProfileData;
     let config = {
