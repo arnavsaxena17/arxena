@@ -117,16 +117,19 @@ export class ToolsForAgents {
     return SYSTEM_PROMPT;
   }
 
-  async getTimeManagementPrompt(personNode: allDataObjects.PersonNode, stage:string) {
+  async getTimeManagementPrompt(personNode: allDataObjects.PersonNode) {
+    // const TIME_MANAGEMENT_PROMPT = `
+    //   The current time is `+ new Date() +`. Calculate the amount of time that has passed from the last message. If the time elapsed has gone beyond 1 minute and less than 5 minutes and the user has not been sent the first reminder, Return the stage as "reminder_necessary" else return "reminder_unnecessary". Do not return any other text.
+    // `;
     const TIME_MANAGEMENT_PROMPT = `
-      The current time is `+ new Date() +`. Calculate the amount of time that has passed from the last message. If the time elapsed has gone beyond 1 minute and less than 5 minutes and the user has not been sent the first reminder, Return the stage as "reminder_necessary" else return "reminder_unnecessary". Do not return any other text.
+      You are responsible for creating and managing reminders for the candidate. When the candidate tells you that they will get back to you, your task is to remind the candidate to reply back after certain hours. You can do this by calling the function "create_reminder". You will not call this function otherwise. For now the reminder time is 1 hour.
     `;
     return TIME_MANAGEMENT_PROMPT;
   }
 
   async getReminderSystemPrompt() {
     const REMINDER_SYSTEM_PROMPT = `
-    Read the message history. This candidate hasn't responded in a while. Remind this candidate
+    Read the message history. This candidate hasn't responded in a while. Remind this candidate. If the candidate has already been reminded, reply with "#DONTRESPOND#" exact string.
     `;
     return REMINDER_SYSTEM_PROMPT;
   }

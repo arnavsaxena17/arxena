@@ -96,6 +96,14 @@ export const graphqlQueryToUpdateCandidateEngagementStatus = `mutation UpdateOne
     }
   }`;
 
+
+  export const graphqlQueryToUpdateReminderStatus = `mutation UpdateOneReminder($idToUpdate: ID!, $input: ReminderUpdateInput!) {
+    updateReminder(id: $idToUpdate, data: $input) {
+      updatedAt
+      id
+    }
+  }`;
+
 export const graphqlQueryToUpdateMessageDeliveryStatus = `
     mutation UpdateOneWhatsappMessage($idToUpdate: ID!, $input: WhatsappMessageUpdateInput!) {
   updateWhatsappMessage(id: $idToUpdate, data: $input) {
