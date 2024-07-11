@@ -21,12 +21,13 @@ import { FileModule } from './file/file.module';
 import { ClientConfigModule } from './client-config/client-config.module';
 import { GoogleCalendarModule } from 'src/engine/core-modules/calendar-events/google-calendar.module';
 import { MailerModule } from './gmail-sender/gmail-sender.module';
+import { BaileysModule } from './baileys/baileys.module';
 
 @Module({
   imports: [
     // MailerModule,
     GoogleCalendarModule,
-    // BaileysModule,
+    BaileysModule,
     HealthModule,
     AnalyticsModule,
     ArxChatAgentModule,
@@ -46,7 +47,7 @@ import { MailerModule } from './gmail-sender/gmail-sender.module';
   ],
   exports: [
     // GoogleCalendarModule,
-    // BaileysModule,
+    BaileysModule,
     AnalyticsModule,
     AuthModule,
     ArxChatAgentModule,
