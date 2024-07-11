@@ -83,7 +83,7 @@ export class ToolsForAgents {
     console.log('This is the candidate profile:', personNode);
     const questionArray = await this.getQuestionsToAsk(personNode);
     const formattedQuestions = questionArray.map((question, index) => `${index + 1}. ${question}`).join('\n');
-    console.log('Formtted Questions:', formattedQuestions);
+    // console.log('Formtted Questions:', formattedQuestions);
     const SYSTEM_PROMPT = `
     You will drive the conversation with candidates like the recruiter. Your goal is to assess the candidates for interest and fitment.
     If found reasonably fit, your goal is to setup a meeting at a available time.
@@ -137,8 +137,9 @@ export class ToolsForAgents {
     }
     else{
       const systemPrompt = await this.getSystemPrompt(personNode);
-      const updatedSystemPromptWithStagePrompt = systemPrompt.replace('##STAGE_PROMPT', stage);
-      console.log(updatedSystemPromptWithStagePrompt);
+      // const updatedSystemPromptWithStagePrompt = systemPrompt.replace('##STAGE_PROMPT', stage);
+      const updatedSystemPromptWithStagePrompt = systemPrompt;
+      // console.log(updatedSystemPromptWithStagePrompt);
       return updatedSystemPromptWithStagePrompt;
     }
   }
@@ -146,7 +147,7 @@ export class ToolsForAgents {
   async getSystemFacingSystemPromptBasedOnStage(personNode: allDataObjects.PersonNode, stage: string) {
     const systemPrompt = await this.getSystemPrompt(personNode);
     const updatedSystemPromptWithStagePrompt = systemPrompt.replace('##STAGE_PROMPT', stage);
-    console.log(updatedSystemPromptWithStagePrompt);
+    // console.log(updatedSystemPromptWithStagePrompt);
     return updatedSystemPromptWithStagePrompt;
   }
 

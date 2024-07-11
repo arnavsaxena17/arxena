@@ -95,7 +95,7 @@ export class AttachmentProcessingService {
     });
     try {
       const response = await axiosRequest(graphqlQueryObj);
-      console.log("Received ressponse for JD attachmentsResponse:", response);
+      // console.log("Received ressponse for JD attachmentsResponse:", response);
       const attachments = response?.data?.data?.attachments?.edges[0];
       console.log("Atachments:", attachments);
       return attachments;
