@@ -67,7 +67,7 @@ export class ArxChatEndpoint {
       // } else {
       chatAgent = new OpenAIArxMultiStepClient(personObj);
       // }
-      await chatAgent.createCompletion(mostRecentMessageArr, personObj, 'engage');
+      await chatAgent.createCompletion(mostRecentMessageArr, personObj);
       const whatappUpdateMessageObj = await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj(
         'ArxChatEndpoint',
         // response,
@@ -113,7 +113,7 @@ export class ArxChatEndpoint {
         //   isChatEnabled
         // );
         const engagementType = 'engage';
-        mostRecentMessageArr = await chatAgent.createCompletion(mostRecentMessageArr, personObj, engagementType, isChatEnabled);
+        mostRecentMessageArr = await chatAgent.createCompletion(mostRecentMessageArr, personObj, isChatEnabled);
         return mostRecentMessageArr;
       }
     } catch (err) {
@@ -135,7 +135,7 @@ export class ArxChatEndpoint {
     chatAgent = new OpenAIArxMultiStepClient(personObj);
     // }
     const engagementType = 'engage';
-    const mostRecentMessageArr = await chatAgent.createCompletion(messagesList, personObj, engagementType);
+    const mostRecentMessageArr = await chatAgent.createCompletion(messagesList, personObj);
 
     return mostRecentMessageArr;
   }
@@ -148,7 +148,7 @@ export class ArxChatEndpoint {
     const messagesList = request.body;
 
     let chatAgent = new OpenAIArxMultiStepClient(personObj);
-    const stage = await chatAgent.getStageOfTheConversation(messagesList, personObj, 'engage');
+    const stage = await chatAgent.getStageOfTheConversation(messagesList);
 
     return { stage: stage };
   }
