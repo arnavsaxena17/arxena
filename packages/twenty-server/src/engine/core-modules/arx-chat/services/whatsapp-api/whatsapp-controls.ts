@@ -14,8 +14,7 @@ export class WhatsappAPISelector {
   constructor() {}
   async sendWhatsappMessage( whatappUpdateMessageObj: allDataObjects.candidateChatMessageType, personNode: allDataObjects.PersonNode, mostRecentMessageArr: allDataObjects.ChatHistoryItem[] ) {
     if (process.env.WHATSAPP_API === "facebook") {
-      const response =
-        await new FacebookWhatsappChatApi().sendWhatsappMessageVIAFacebookAPI( whatappUpdateMessageObj, personNode, mostRecentMessageArr );
+      const response = await new FacebookWhatsappChatApi().sendWhatsappMessageVIAFacebookAPI( whatappUpdateMessageObj, personNode, mostRecentMessageArr );
     } else if (process.env.WHATSAPP_API === "baileys") {
       await sendWhatsappMessageVIABaileysAPI( whatappUpdateMessageObj, personNode, mostRecentMessageArr );
     } else {
@@ -45,9 +44,7 @@ export class WhatsappAPISelector {
       //   "phoneNumberTo": attachmentMessage.phoneNumberTo,
       //   "attachmentMessage":"Sharing the JD with you"
       // }
-      await new FacebookWhatsappChatApi().uploadAndSendFileToWhatsApp(
-        attachmentMessage
-      );
+      await new FacebookWhatsappChatApi().uploadAndSendFileToWhatsApp( attachmentMessage );
     } else if (process.env.WHATSAPP_API === "baileys") {
       // await sendWhatsappMessageVIABaileysAPI(whatappUpdateMessageObj);
       await sendAttachmentMessageViaBaileys(attachmentMessage);

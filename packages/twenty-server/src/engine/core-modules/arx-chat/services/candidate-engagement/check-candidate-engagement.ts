@@ -172,7 +172,7 @@ export default class CandidateEngagementArx {
       let mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = this.getMostRecentMessageFromMessagesList(messagesList);
       console.log("mostRecentMessageArr before chatCompletion:", mostRecentMessageArr);
 
-      const REMIND_SYSTEM_PROMPT = new ToolsForAgents().getReminderSystemPrompt();
+      const REMIND_SYSTEM_PROMPT = await new ToolsForAgents().getReminderSystemPrompt();
       mostRecentMessageArr[0] = {
         role: "system",
         content: REMIND_SYSTEM_PROMPT,

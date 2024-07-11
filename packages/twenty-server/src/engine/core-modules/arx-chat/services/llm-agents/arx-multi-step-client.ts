@@ -61,7 +61,8 @@ export class OpenAIArxMultiStepClient {
     if (responseMessage.tool_calls && isChatEnabled) {
       mostRecentMessageArr = await this.addResponseAndToolCallsToMessageHistory(
       responseMessage,
-      mostRecentMessageArr
+      mostRecentMessageArr,
+      stage
       );
     }
     await this.sendWhatsappMessageToCandidate(response?.choices[0]?.message?.content || "", mostRecentMessageArr, isChatEnabled);
@@ -83,11 +84,11 @@ export class OpenAIArxMultiStepClient {
     console.log("BOT_MESSAGE:", responseMessage.content);
     mostRecentMessageArr.push(responseMessage); // extend conversation with assistant's reply
     if (responseMessage.tool_calls) {
-      mostRecentMessageArr = await this.addResponseAndToolCallsToMessageHistory(responseMessage, mostRecentMessageArr);
+      mostRecentMessageArr = await this.addResponseAndToolCallsToMessageHistory(responseMessage, mostRecentMessageArr, stage);
     }
   }
 
-  async addResponseAndToolCallsToMessageHistory(responseMessage: ChatCompletionMessage, messages: allDataObjects.ChatHistoryItem[]) {
+  async addResponseAndToolCallsToMessageHistory(responseMessage: ChatCompletionMessage, messages: allDataObjects.ChatHistoryItem[], stage:string) {
     const toolCalls = responseMessage.tool_calls;
     // @ts-ignore
     if (toolCalls) {
@@ -102,28 +103,17 @@ export class OpenAIArxMultiStepClient {
         const responseFromFunction = await functionToCall(functionArgs, this.personNode);
         // }
         // @ts-ignore
-        messages.push({
-          tool_call_id: toolCall.id,
-          role: "tool",
-          name: functionName,
-          content: responseFromFunction,
-        });
+        messages.push({ tool_call_id: toolCall.id, role: "tool", name: functionName, content: responseFromFunction, });
       }
-      const tools = await new ToolsForAgents().getTools();
+      const tools = await new ToolsForAgents().getCandidateFacingToolsByStage(stage);
       // @ts-ignore
-      const response = await this.openAIclient.chat.completions.create({
-        model: modelName,
-        messages: messages,
-        tools: tools,
-        tool_choice: "auto",
-      });
+      const response = await this.openAIclient.chat.completions.create({ model: modelName, messages: messages, tools: tools, tool_choice: "auto", });
       console.log("BOT_MESSAGE:", response.choices[0].message.content);
       messages.push(response.choices[0].message);
       if (response.choices[0].message.tool_calls) {
-        messages = await this.addResponseAndToolCallsToMessageHistory(response.choices[0].message, messages);
+        messages = await this.addResponseAndToolCallsToMessageHistory(response.choices[0].message, messages, stage);
       }
       const mostRecentMessageArr = messages;
-      // debugger;
       await this.sendWhatsappMessageToCandidate(response?.choices[0]?.message?.content || "", mostRecentMessageArr);
     }
     return messages;
@@ -145,7 +135,7 @@ export class OpenAIArxMultiStepClient {
     }
   }
   async runTimeManagementAgent(mostRecentMessageArr: allDataObjects.ChatHistoryItem[], personNode: allDataObjects.PersonNode, stage: string) {
-    const timeManagementPrompt = new ToolsForAgents().getTimeManagementPrompt(personNode, stage);
+    const timeManagementPrompt = await new ToolsForAgents().getTimeManagementPrompt(personNode, stage);
     let updatedMostRecentMessagesBasedOnNewSystemPrompt = await this.updateMostRecentMessagesBasedOnNewSystemPrompt(mostRecentMessageArr, timeManagementPrompt);
     const timeManagementTool = new ToolsForAgents().getTimeManagementTools();
     // @ts-ignore
@@ -159,7 +149,7 @@ export class OpenAIArxMultiStepClient {
     console.log("BOT_MESSAGE:", responseMessage.content);
     updatedMostRecentMessagesBasedOnNewSystemPrompt.push(responseMessage); // extend conversation with assistant's reply
     if (responseMessage.tool_calls) {
-      updatedMostRecentMessagesBasedOnNewSystemPrompt = await this.addResponseAndToolCallsToMessageHistory(responseMessage, updatedMostRecentMessagesBasedOnNewSystemPrompt);
+      updatedMostRecentMessagesBasedOnNewSystemPrompt = await this.addResponseAndToolCallsToMessageHistory(responseMessage, updatedMostRecentMessagesBasedOnNewSystemPrompt, stage);
     }
   }
 }
