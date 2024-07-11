@@ -76,7 +76,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
             const response = await axiosRequest(graphqlQueryObj);
             console.log("This is the response from getCandidate Information",  response.data.data)
             const candidateDataObjs = response.data?.data?.people?.edges[0]?.node?.candidates?.edges;
-            console.log("This is the candidate data::", candidateDataObjs);
+            // console.log("This is the candidate data::", candidateDataObjs);
 
             const activeJobCandidateObj = candidateDataObjs?.find((edge: any) => edge?.node?.jobs?.isActive);
             console.log("This is the number of candidates", candidateDataObjs?.length);
@@ -119,9 +119,9 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
     }
     
     async createAndUpdateWhatsappMessage( candidateProfileObj: allDataObjects.CandidateNode, userMessage:allDataObjects.candidateChatMessageType ) {
-        console.log("This is the candidate profile object", JSON.stringify(candidateProfileObj));
-        console.log("This is the user message for updateWhtsappMessage in createAndUpdateWhatsappMessage", userMessage);
-        console.log("This is the user messageObj for updateWhtsappMessage", userMessage?.messageObj);
+        // console.log("This is the candidate profile object", JSON.stringify(candidateProfileObj));
+        // console.log("This is the user message for updateWhtsappMessage in createAndUpdateWhatsappMessage", userMessage);
+        // console.log("This is the user messageObj for updateWhtsappMessage", userMessage?.messageObj);
         console.log("This is the number of messages in  updateWhtsappMessage", userMessage?.messageObj.length);
         console.log("This is the message being published ", userMessage?.messages[0]?.text);
         console.log("This is the message being published ", userMessage?.messages[0]?.content);
@@ -140,7 +140,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
                 "messageObj":userMessage?.messageObj
             }
         };
-        console.log("These are the graphvsariables:", JSON.stringify(createNewWhatsappMessageUpdateVariables));
+        // console.log("These are the graphvsariables:", JSON.stringify(createNewWhatsappMessageUpdateVariables));
         const graphqlQueryObj = JSON.stringify({
             query: allGraphQLQueries.graphqlQueryToCreateOneNewWhatsappMessage,
             variables: createNewWhatsappMessageUpdateVariables

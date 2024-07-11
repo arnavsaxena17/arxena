@@ -276,7 +276,7 @@ async updateAndSendWhatsappMessageAndCandidateEngagementStatusInTable(whatappUpd
   debugger; 
   console.log("Candidate information before processing:", whatappUpdateMessageObj);
   let candidateProfileObj = whatappUpdateMessageObj.messageType !== "botMessage" ? await new FetchAndUpdateCandidatesChatsWhatsapps().getCandidateInformation(whatappUpdateMessageObj) : whatappUpdateMessageObj.candidateProfile;
-  console.log("Candidate information after processing:", candidateProfileObj);
+  // console.log("Candidate information after processing:", candidateProfileObj);
   console.log("Whatsapp Objs :::", candidateProfileObj.whatsappMessages.edges.map((edge:any) => edge.node.messageObj))
   if (candidateProfileObj.name === '') return;
   console.log("Candidate information retrieved successfully");
