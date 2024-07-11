@@ -26,7 +26,7 @@ export class OpenAIArxMultiStepClient {
     const stage = await this.getStageOfTheConversation(mostRecentMessageArr, personNode, engagementType);
     console.log('This is the stage that is arrived at CURRENT STAGE::::::::', stage);
     mostRecentMessageArr = await this.runCandidateFacingAgentsAlongWithToolCalls(mostRecentMessageArr, personNode, stage, isChatEnabled);
-    await this.runSystemFacingAgentsAlongWithToolCalls(mostRecentMessageArr, personNode, stage);
+    // await this.runSystemFacingAgentsAlongWithToolCalls(mostRecentMessageArr, personNode, stage);
     // await this.runTimeManagementAgent(mostRecentMessageArr, personNode, stage);
     return mostRecentMessageArr;
   }
@@ -60,20 +60,14 @@ export class OpenAIArxMultiStepClient {
     else{
       console.log('got here to get the stage of the conversation');
       const stagePrompt = await new ToolsForAgents().getStagePrompt();
-      console.log('got here to with the stage prompt', stagePrompt);
+      // console.log('got here to with the stage prompt', stagePrompt);
       const updatedMostRecentMessagesBasedOnNewSystemPrompt = await this.updateMostRecentMessagesBasedOnNewSystemPrompt(mostRecentMessageArr, stagePrompt);
-      console.log('Got the updated recement messages:', updatedMostRecentMessagesBasedOnNewSystemPrompt);
+      // console.log('Got the updated recement messages:', updatedMostRecentMessagesBasedOnNewSystemPrompt);
       // @ts-ignore
-      const response = await this.openAIclient.chat.completions.create({
-        model: modelName,
-        // @ts-ignore
-        messages: updatedMostRecentMessagesBasedOnNewSystemPrompt,
-      });
+      const response = await this.openAIclient.chat.completions.create({ model: modelName, messages: updatedMostRecentMessagesBasedOnNewSystemPrompt, });
       console.log('This the stage that is determined by the model:', response.choices[0].message.content);
       stage = response.choices[0].message.content ?? '1';
     }
-    
-
     return stage;
   }
   async updateMostRecentMessagesBasedOnNewSystemPrompt(mostRecentMessageArr: allDataObjects.ChatHistoryItem[], newSystemPrompt: string) {
@@ -93,13 +87,13 @@ export class OpenAIArxMultiStepClient {
       tool_choice: 'auto',
     });
     const responseMessage: ChatCompletionMessage = response.choices[0].message;
-    console.log('BOT_MESSAGE:', responseMessage.content);
+    console.log('BOT_MESSAGE FROM runCandidateFacingAgentsAlongWithToolCalls STAGE1 :', responseMessage.content);
     mostRecentMessageArr.push(responseMessage); // extend conversation with assistant's reply
     if (responseMessage.tool_calls && isChatEnabled) {
       mostRecentMessageArr = await this.addResponseAndToolCallsToMessageHistory( responseMessage, stage, mostRecentMessageArr );
     }
     // debugger;
-    await this.sendWhatsappMessageToCandidate(response?.choices[0]?.message?.content || '', mostRecentMessageArr, "firstChatCompletionCall", isChatEnabled);
+    await this.sendWhatsappMessageToCandidate(response?.choices[0]?.message?.content || '', mostRecentMessageArr, isChatEnabled);
     return mostRecentMessageArr;
   }
 
@@ -115,7 +109,7 @@ export class OpenAIArxMultiStepClient {
       tool_choice: 'auto',
     });
     const responseMessage: ChatCompletionMessage = response.choices[0].message;
-    console.log('BOT_MESSAGE:', responseMessage.content);
+    console.log('BOT_MESSAGE FROM runCandidateFacingAgentsAlongWithToolCalls STAGE1 :', responseMessage.content);
     mostRecentMessageArr.push(responseMessage); // extend conversation with assistant's reply
     if (responseMessage.tool_calls) {
       mostRecentMessageArr = await this.addResponseAndToolCallsToMessageHistory(responseMessage, stage, mostRecentMessageArr);
@@ -137,12 +131,7 @@ export class OpenAIArxMultiStepClient {
         const responseFromFunction = await functionToCall(functionArgs, this.personNode);
         // }
         // @ts-ignore
-        messages.push({
-          tool_call_id: toolCall.id,
-          role: 'tool',
-          name: functionName,
-          content: responseFromFunction,
-        });
+        messages.push({ tool_call_id: toolCall.id, role: 'tool', name: functionName, content: responseFromFunction, });
       }
       const tools = await new ToolsForAgents().getCandidateFacingToolsByStage(stage);
       // @ts-ignore
@@ -152,7 +141,7 @@ export class OpenAIArxMultiStepClient {
         tools: tools,
         tool_choice: 'auto',
       });
-      console.log('BOT_MESSAGE:', response.choices[0].message.content);
+      console.log('BOT_MESSAGE FROM addResponseAndToolCallsToMessageHistory STAGE2 :', response.choices[0].message.content);
       messages.push(response.choices[0].message);
       if (response.choices[0].message.tool_calls) {
         messages = await this.addResponseAndToolCallsToMessageHistory(response.choices[0].message, stage, messages);
@@ -160,12 +149,12 @@ export class OpenAIArxMultiStepClient {
       const mostRecentMessageArr = messages;
       // debugger;
       // Removing this message so that tool call messages are not sent to the candidate. 
-      await this.sendWhatsappMessageToCandidate(response?.choices[0]?.message?.content || '', mostRecentMessageArr, "secondChatCompletionCall");
+      await this.sendWhatsappMessageToCandidate(response?.choices[0]?.message?.content || '', mostRecentMessageArr);
     }
     return messages;
   }
 
-  async sendWhatsappMessageToCandidate(messageText: string, mostRecentMessageArr: allDataObjects.ChatHistoryItem[], source: "firstChatCompletionCall" | "secondChatCompletionCall", isChatEnabled?: boolean) {
+  async sendWhatsappMessageToCandidate(messageText: string, mostRecentMessageArr: allDataObjects.ChatHistoryItem[], isChatEnabled?: boolean) {
     console.log('Called sendWhatsappMessageToCandidate to send message via any whatsapp api');
     if (messageText === '#DONTRESPOND#') {
       console.log('Found a #DONTRESPOND# message, so not sending any message');
@@ -174,7 +163,7 @@ export class OpenAIArxMultiStepClient {
     if (messageText) {
       const whatappUpdateMessageObj = await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj('sendWhatsappMessageToCandidateMulti', this.personNode, mostRecentMessageArr);
       if (process.env.WHATSAPP_ENABLED === 'true' && (isChatEnabled === undefined || isChatEnabled)) {
-        await new WhatsappAPISelector().sendWhatsappMessage(whatappUpdateMessageObj, this.personNode, mostRecentMessageArr, source);
+        await new WhatsappAPISelector().sendWhatsappMessage(whatappUpdateMessageObj, this.personNode, mostRecentMessageArr);
       } else {
         console.log('Whatsapp is not enabled, so not sending message:', whatappUpdateMessageObj.messages[0].content);
       }

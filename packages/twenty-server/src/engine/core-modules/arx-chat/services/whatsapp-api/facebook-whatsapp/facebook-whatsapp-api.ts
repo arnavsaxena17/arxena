@@ -386,13 +386,14 @@ export class FacebookWhatsappChatApi {
       console.error('Error saving file:', error);
     });
   }
-  async sendWhatsappMessageVIAFacebookAPI(whatappUpdateMessageObj: allDataObjects.candidateChatMessageType, personNode: allDataObjects.PersonNode, mostRecentMessageArr: allDataObjects.ChatHistoryItem[], source:"firstChatCompletionCall"| "secondChatCompletionCall") {
+  async sendWhatsappMessageVIAFacebookAPI(whatappUpdateMessageObj: allDataObjects.candidateChatMessageType, personNode: allDataObjects.PersonNode, mostRecentMessageArr: allDataObjects.ChatHistoryItem[]) {
     console.log('Sending message to whatsapp via facebook api');
     console.log('whatappUpdateMessageObj.messageType', whatappUpdateMessageObj.messageType);
-    console.log('whatappUpdateMessageObj.messageType whatappUpdateMessageObj.messages ', JSON.stringify(whatappUpdateMessageObj));
+    // console.log('whatappUpdateMessageObj.messageType whatappUpdateMessageObj.messages ', JSON.stringify(whatappUpdateMessageObj));
     let response;
-
     if (whatappUpdateMessageObj.messageType === 'botMessage') {
+      console.log("TEmplate Message or Text Message depends on :", whatappUpdateMessageObj.messages[0].content)
+
       if (whatappUpdateMessageObj.messages[0].content.includes('a US Based Recruitment Company') || whatappUpdateMessageObj.messages[0].content.includes('assist')) {
         console.log('This is the template api message to send in whatappUpdateMessageObj.phoneNumberFrom, ', whatappUpdateMessageObj.phoneNumberFrom);
         const sendTemplateMessageObj = {
@@ -406,17 +407,14 @@ export class FacebookWhatsappChatApi {
           jobPositionName: whatappUpdateMessageObj?.candidateProfile?.jobs?.name,
           jobLocation: whatappUpdateMessageObj?.candidateProfile?.jobs?.jobLocation,
         };
-        if (source === 'firstChatCompletionCall') {
           response = await this.sendWhatsappTemplateMessage(sendTemplateMessageObj);
           const whatappUpdateMessageObjAfterWAMidUpdate = await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj(
-            response?.data?.messages[0]?.id || response.messages[0].id, // whatsapp message id response.messages[0].id
-            // response,
+            response?.data?.messages[0]?.id || response.messages[0].id,
             personNode,
             mostRecentMessageArr,
           );
           await new CandidateEngagementArx().updateCandidateEngagementDataInTable(whatappUpdateMessageObjAfterWAMidUpdate);
     
-        }
       } else {
         console.log('This is the standard message to send fromL', allDataObjects.recruiterProfile.phone);
         console.log('This is the standard message to send to phone:', whatappUpdateMessageObj.phoneNumberTo);
@@ -426,7 +424,6 @@ export class FacebookWhatsappChatApi {
           phoneNumberTo: whatappUpdateMessageObj.phoneNumberTo,
           messages: whatappUpdateMessageObj.messages[0].content,
         };
-        if (source === 'firstChatCompletionCall') {
           response = await this.sendWhatsappTextMessage(sendTextMessageObj);
           const whatappUpdateMessageObjAfterWAMidUpdate = await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj(
             response?.data?.messages[0]?.id || response.messages[0].id, // whatsapp message id response.messages[0].id
@@ -436,7 +433,6 @@ export class FacebookWhatsappChatApi {
           );
           await new CandidateEngagementArx().updateCandidateEngagementDataInTable(whatappUpdateMessageObjAfterWAMidUpdate);
     
-        }
       }
 
     } else {
