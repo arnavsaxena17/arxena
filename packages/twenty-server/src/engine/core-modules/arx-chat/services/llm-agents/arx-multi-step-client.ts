@@ -21,7 +21,7 @@ export class OpenAIArxMultiStepClient {
     });
   }
   // THis is the entry point
-  async createCompletion(mostRecentMessageArr: allDataObjects.ChatHistoryItem[], personNode: allDataObjects.PersonNode,engagementType:string , isChatEnabled: boolean = true) {
+  async createCompletion(mostRecentMessageArr: allDataObjects.ChatHistoryItem[], personNode: allDataObjects.PersonNode,engagementType: 'engage' | 'reminder' , isChatEnabled: boolean = true) {
     console.log('Going top create completion in multi step client');
     const stage = await this.getStageOfTheConversation(mostRecentMessageArr, personNode, engagementType);
     console.log('This is the stage that is arrived at CURRENT STAGE::::::::', stage);
@@ -33,9 +33,11 @@ export class OpenAIArxMultiStepClient {
 
 
 
-  async getStageOfTheConversation(mostRecentMessageArr: allDataObjects.ChatHistoryItem[], personNode: allDataObjects.PersonNode, engagementType:string) {
-    let stage: string | null = '1';
-    if (engagementType == "reminder") {
+  async getStageOfTheConversation(mostRecentMessageArr: allDataObjects.ChatHistoryItem[], personNode: allDataObjects.PersonNode, engagementType: 'engage' | 'reminder') {
+    let stage: string | null;
+    console.log("Engagement Type::", engagementType)
+    if (engagementType === "reminder") {
+      console.log("Engagement type is reminder, so will try to get the stage from the last message")
       const messagesWithTimeStamp = personNode.candidates.edges[0].node.whatsappMessages.edges.map((edge) => {
         return {
           "role": edge.node.name === "candidateMessage" ? "user" : "assistant",
@@ -46,16 +48,14 @@ export class OpenAIArxMultiStepClient {
       messagesWithTimeStamp.unshift({ role: 'system', content: checkReminderPrompt });
       console.log('got here to with the checkReminderPrompt prompt', checkReminderPrompt);
       // @ts-ignore
-      const response = await this.openAIclient.chat.completions.create({
-        model: modelName,
-        // @ts-ignore
-        messages: messagesWithTimeStamp,
-      });
-      let stage = response.choices[0].message.content;
+      const response = await this.openAIclient.chat.completions.create({ model: modelName, messages: messagesWithTimeStamp });
+      stage = response.choices[0].message.content;
+      console.log("This is the stage that is determined by the model:", stage)
   
       console.log("MessagesWithTimeStamp:::", messagesWithTimeStamp);
       console.log("mostRecentMessageArr::", mostRecentMessageArr);
       stage = "remind_candidate";
+      console.log("This is the stage here:", stage)
     }
     else{
       console.log('got here to get the stage of the conversation');
@@ -68,6 +68,7 @@ export class OpenAIArxMultiStepClient {
       console.log('This the stage that is determined by the model:', response.choices[0].message.content);
       stage = response.choices[0].message.content ?? '1';
     }
+    console.log('This is the stage that is arrived at:', stage)
     return stage;
   }
   async updateMostRecentMessagesBasedOnNewSystemPrompt(mostRecentMessageArr: allDataObjects.ChatHistoryItem[], newSystemPrompt: string) {

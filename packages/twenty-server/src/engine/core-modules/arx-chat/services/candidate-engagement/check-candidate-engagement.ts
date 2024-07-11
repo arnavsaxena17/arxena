@@ -48,9 +48,9 @@ export default class CandidateEngagementArx {
       const personNode = edge.node;
       console.log('This is candidate Node:', candidateNode);
       const messagesList: allDataObjects.WhatsAppMessagesEdge[] = candidateNode?.whatsappMessages?.edges;
-      console.log('Current Messages list:', messagesList);
+      // console.log('Current Messages list:', messagesList);
       let mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = this.getMostRecentMessageFromMessagesList(messagesList);
-      console.log('mostRecentMessageArr before chatCompletion:', mostRecentMessageArr);
+      // console.log('mostRecentMessageArr before chatCompletion:', mostRecentMessageArr);
       if (mostRecentMessageArr?.length > 0) {
         console.log('Taking MULTI Step Client for - Prompt Engineering type:', process.env.PROMPT_ENGINEERING_TYPE);
         let chatAgent = new OpenAIArxMultiStepClient(personNode);
@@ -137,10 +137,10 @@ export default class CandidateEngagementArx {
     const sortedPeopleData = sortWhatsAppMessages(candidateResponseEngagementObj?.people);
     const filteredCandidatesToEngage = this.filterCandidatesToEngage(sortedPeopleData);
 
-    const filteredCandidatesToRemind: allDataObjects.PersonEdge[] = this.filterCandidatesToRemind(sortedPeopleData);
+    // const filteredCandidatesToRemind: allDataObjects.PersonEdge[] = this.filterCandidatesToRemind(sortedPeopleData);
 
-    console.log('Filtered candidates to remind:', filteredCandidatesToRemind);
-    console.log('Number processCandidateof filtered candidates to remind:', filteredCandidatesToRemind?.length);
+    // console.log('Filtered candidates to remind:', filteredCandidatesToRemind);
+    // console.log('Number processCandidateof filtered candidates to remind:', filteredCandidatesToRemind?.length);
     // for (const edge of filteredCandidatesToRemind) {
     //   const engagementType = 'reminder';
     //   await this.processCandidate(edge, engagementType);
@@ -156,11 +156,33 @@ export default class CandidateEngagementArx {
     }
   }
 
+
+  async engageCandidatesForReminders(candidateResponseEngagementObj: allDataObjects.RootObject) {
+    const sortedPeopleData = sortWhatsAppMessages(candidateResponseEngagementObj?.people);
+
+    const filteredCandidatesToRemind: allDataObjects.PersonEdge[] = this.filterCandidatesToRemind(sortedPeopleData);
+
+    console.log('Filtered candidates to remind:', filteredCandidatesToRemind);
+    console.log('Number processCandidateof filtered candidates to remind:', filteredCandidatesToRemind?.length);
+    for (const edge of filteredCandidatesToRemind) {
+      const engagementType = 'reminder';
+      await this.processCandidate(edge, engagementType);
+      // await new FetchAndUpdateCandidatesChatsWhatsapps().setCandidateEngagementStatusToFalse(edge.node.candidates[0]);
+    }
+  }
+
   async checkCandidateEngagement() {
     const response = await new FetchAndUpdateCandidatesChatsWhatsapps().fetchCandidatesToEngage();
     const candidateResponseEngagementObj = response?.data?.data;
     await this.startChatEngagement(candidateResponseEngagementObj);
     await this.engageCandidates(candidateResponseEngagementObj);
+    return;
+  }
+
+  async checkCandidateEngagementForReminders() {
+    const response = await new FetchAndUpdateCandidatesChatsWhatsapps().fetchCandidatesToEngage();
+    const candidateResponseEngagementObj = response?.data?.data;
+    // await this.engageCandidatesForReminders(candidateResponseEngagementObj);
     return;
   }
 }

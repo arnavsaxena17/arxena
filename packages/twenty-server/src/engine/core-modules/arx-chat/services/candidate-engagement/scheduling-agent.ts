@@ -14,4 +14,17 @@ export class TasksService {
       console.log("Scheduler is turned off");
     }
   }
+
+
+
+
+  @Cron("*/30 * * * * *")
+  async handleReminders() {
+    // this.logger.log("Evert 5 seconds check Candidate Engagement is called");
+    if (process.env.RUN_SCHEDULER === "true") {
+      await new CandidateEngagementArx().checkCandidateEngagementForReminders();
+    } else {
+      console.log("Scheduler is turned off");
+    }
+  }
 }
