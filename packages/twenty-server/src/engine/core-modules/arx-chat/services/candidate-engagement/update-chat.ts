@@ -283,6 +283,29 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
       console.log("Error in updating candidate status::", error);
     }
   }
+  async updateCandidateReminderStatus(reminderObj: allDataObjects.ReminderObject) {
+
+    const candidateReminderStatus = false;
+    const reminderObjectVariables = {
+      idToUpdate: reminderObj?.id,
+      input: {
+        isReminderActive: candidateReminderStatus,
+      },
+    };
+    const graphqlQueryObj = JSON.stringify({
+      query: allGraphQLQueries.graphqlQueryToUpdateCandidateEngagementStatus,
+      variables: reminderObjectVariables,
+    });
+    console.log("GraphQL query to update candidate status:", graphqlQueryObj);
+    try {
+      const response = await axiosRequest(graphqlQueryObj);
+      // console.log("Response from axios update request:", response.data);
+      console.log('Candidate engagement status updated successfully');
+      return response.data;
+    } catch (error) {
+      console.log("Error in updating candidate status::", error);
+    }
+  }
 
   async setCandidateEngagementStatusToFalse(candidateProfileObj: allDataObjects.CandidateNode) {
     const updateCandidateObjectVariables = {

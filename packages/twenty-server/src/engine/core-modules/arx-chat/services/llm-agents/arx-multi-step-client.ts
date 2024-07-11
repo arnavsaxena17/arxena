@@ -21,9 +21,9 @@ export class OpenAIArxMultiStepClient {
     });
   }
   // THis is the entry point
-  async createCompletion(mostRecentMessageArr: allDataObjects.ChatHistoryItem[], personNode: allDataObjects.PersonNode, isChatEnabled: boolean = true) {
+  async createCompletion(mostRecentMessageArr: allDataObjects.ChatHistoryItem[], personNode: allDataObjects.PersonNode, engagementType:"remind"|"engage", isChatEnabled: boolean = true) {
     console.log("Going top create completion in multi step client");
-    const stage = await this.getStageOfTheConversation(mostRecentMessageArr);
+    const stage = await this.getStageOfTheConversation(mostRecentMessageArr, engagementType);
     console.log("This is the stage that is arrived at CURRENT STAGE::::::::", stage);
     mostRecentMessageArr = await this.runCandidateFacingAgentsAlongWithToolCalls(mostRecentMessageArr, personNode, stage, isChatEnabled);
     await this.runSystemFacingAgentsAlongWithToolCalls(mostRecentMessageArr, personNode, stage);
@@ -31,17 +31,42 @@ export class OpenAIArxMultiStepClient {
     return mostRecentMessageArr;
   }
 
-  async getStageOfTheConversation(mostRecentMessageArr: allDataObjects.ChatHistoryItem[]) {
-    console.log("got here to get the stage of the conversation");
-    let stage: string | null = "1";
-    const stagePrompt = await new ToolsForAgents().getStagePrompt();
-    console.log("got here to with the stage prompt", stagePrompt);
-    const updatedMostRecentMessagesBasedOnNewSystemPrompt = await this.updateMostRecentMessagesBasedOnNewSystemPrompt(mostRecentMessageArr, stagePrompt);
-    console.log("Got the updated recement messages:", updatedMostRecentMessagesBasedOnNewSystemPrompt);
-    // @ts-ignore
-    const response = await this.openAIclient.chat.completions.create({ model: modelName,messages: updatedMostRecentMessagesBasedOnNewSystemPrompt });
-    console.log("This the stage that is determined by the model:", response.choices[0].message.content);
-    stage = response.choices[0].message.content ?? "1";
+  async getStageOfTheConversation(mostRecentMessageArr: allDataObjects.ChatHistoryItem[],engagementType:"remind"|"engage") {
+    let stage: string | null;
+    console.log("Engagement Type::", engagementType)
+    if (engagementType === "remind") {
+      console.log("Engagement type is reminder, so will try to get the stage from the last message")
+      const messagesWithTimeStamp = this.personNode.candidates.edges[0].node.whatsappMessages.edges.map((edge) => {
+        return {
+          "role": edge.node.name === "candidateMessage" ? "user" : "assistant",
+          "content": "TimeStamp: " + edge.node.createdAt + " Message: " + edge.node.message
+        };
+      }).reverse();
+      const checkReminderPrompt = await new ToolsForAgents().getTimeManagementPrompt(this.personNode);
+      messagesWithTimeStamp.unshift({ role: 'system', content: checkReminderPrompt });
+      console.log('got here to with the checkReminderPrompt prompt', checkReminderPrompt);
+      // @ts-ignore
+      const response = await this.openAIclient.chat.completions.create({ model: modelName, messages: messagesWithTimeStamp });
+      stage = response.choices[0].message.content;
+      console.log("This is the stage that is determined by the model:", stage)
+  
+      console.log("MessagesWithTimeStamp:::", messagesWithTimeStamp);
+      console.log("mostRecentMessageArr::", mostRecentMessageArr);
+      stage = "remind_candidate";
+      console.log("This is the stage here:", stage)
+    }
+    else{
+      console.log('got here to get the stage of the conversation');
+      const stagePrompt = await new ToolsForAgents().getStagePrompt();
+      // console.log('got here to with the stage prompt', stagePrompt);
+      const updatedMostRecentMessagesBasedOnNewSystemPrompt = await this.updateMostRecentMessagesBasedOnNewSystemPrompt(mostRecentMessageArr, stagePrompt);
+      // console.log('Got the updated recement messages:', updatedMostRecentMessagesBasedOnNewSystemPrompt);
+      // @ts-ignore
+      const response = await this.openAIclient.chat.completions.create({ model: modelName, messages: updatedMostRecentMessagesBasedOnNewSystemPrompt, });
+      console.log('This the stage that is determined by the model:', response.choices[0].message.content);
+      stage = response.choices[0].message.content ?? '1';
+    }
+    console.log('This is the stage that is arrived at:', stage)
     return stage;
   }
   async updateMostRecentMessagesBasedOnNewSystemPrompt(mostRecentMessageArr: allDataObjects.ChatHistoryItem[], newSystemPrompt: string) {
@@ -59,11 +84,7 @@ export class OpenAIArxMultiStepClient {
     console.log("BOT_MESSAGE:", responseMessage.content);
     mostRecentMessageArr.push(responseMessage); // extend conversation with assistant's reply
     if (responseMessage.tool_calls && isChatEnabled) {
-      mostRecentMessageArr = await this.addResponseAndToolCallsToMessageHistory(
-      responseMessage,
-      mostRecentMessageArr,
-      stage
-      );
+      mostRecentMessageArr = await this.addResponseAndToolCallsToMessageHistory( responseMessage, mostRecentMessageArr, stage );
     }
     await this.sendWhatsappMessageToCandidate(response?.choices[0]?.message?.content || "", mostRecentMessageArr, isChatEnabled);
     return mostRecentMessageArr;
@@ -74,12 +95,7 @@ export class OpenAIArxMultiStepClient {
     const updatedMostRecentMessagesBasedOnNewSystemPrompt = this.updateMostRecentMessagesBasedOnNewSystemPrompt(mostRecentMessageArr, newSystemPrompt);
     const tools = await new ToolsForAgents().getSystemFacingToolsByStage(stage);
     // @ts-ignore
-    const response = await this.openAIclient.chat.completions.create({
-      model: modelName,
-      messages: mostRecentMessageArr,
-      tools: tools,
-      tool_choice: "auto",
-    });
+    const response = await this.openAIclient.chat.completions.create({ model: modelName, messages: mostRecentMessageArr, tools: tools, tool_choice: "auto", });
     const responseMessage: ChatCompletionMessage = response.choices[0].message;
     console.log("BOT_MESSAGE:", responseMessage.content);
     mostRecentMessageArr.push(responseMessage); // extend conversation with assistant's reply
@@ -99,9 +115,7 @@ export class OpenAIArxMultiStepClient {
         // @ts-ignore
         const functionToCall = availableFunctions[functionName];
         const functionArgs = JSON.parse(toolCall.function.arguments);
-        // if (isChatEnabled) {
         const responseFromFunction = await functionToCall(functionArgs, this.personNode);
-        // }
         // @ts-ignore
         messages.push({ tool_call_id: toolCall.id, role: "tool", name: functionName, content: responseFromFunction, });
       }
@@ -134,22 +148,19 @@ export class OpenAIArxMultiStepClient {
       }
     }
   }
-  async runTimeManagementAgent(mostRecentMessageArr: allDataObjects.ChatHistoryItem[], personNode: allDataObjects.PersonNode, stage: string) {
-    const timeManagementPrompt = await new ToolsForAgents().getTimeManagementPrompt(personNode, stage);
-    let updatedMostRecentMessagesBasedOnNewSystemPrompt = await this.updateMostRecentMessagesBasedOnNewSystemPrompt(mostRecentMessageArr, timeManagementPrompt);
-    const timeManagementTool = new ToolsForAgents().getTimeManagementTools();
-    // @ts-ignore
-    const response = await this.openAIclient.chat.completions.create({
-      model: modelName,
-      messages: updatedMostRecentMessagesBasedOnNewSystemPrompt,
-      tools: timeManagementTool,
-      tool_choice: "auto",
-    });
-    const responseMessage: ChatCompletionMessage = response.choices[0].message;
-    console.log("BOT_MESSAGE:", responseMessage.content);
-    updatedMostRecentMessagesBasedOnNewSystemPrompt.push(responseMessage); // extend conversation with assistant's reply
-    if (responseMessage.tool_calls) {
-      updatedMostRecentMessagesBasedOnNewSystemPrompt = await this.addResponseAndToolCallsToMessageHistory(responseMessage, updatedMostRecentMessagesBasedOnNewSystemPrompt, stage);
-    }
-  }
+
+
+  // async runTimeManagementAgent(mostRecentMessageArr: allDataObjects.ChatHistoryItem[], personNode: allDataObjects.PersonNode, stage: string) {
+  //   const timeManagementPrompt = await new ToolsForAgents().getTimeManagementPrompt(personNode, stage);
+  //   let updatedMostRecentMessagesBasedOnNewSystemPrompt = await this.updateMostRecentMessagesBasedOnNewSystemPrompt(mostRecentMessageArr, timeManagementPrompt);
+  //   const timeManagementTool = new ToolsForAgents().getTimeManagementTools();
+  //   // @ts-ignore
+  //   const response = await this.openAIclient.chat.completions.create({ model: modelName, messages: updatedMostRecentMessagesBasedOnNewSystemPrompt, tools: timeManagementTool, tool_choice: "auto", });
+  //   const responseMessage: ChatCompletionMessage = response.choices[0].message;
+  //   console.log("BOT_MESSAGE:", responseMessage.content);
+  //   updatedMostRecentMessagesBasedOnNewSystemPrompt.push(responseMessage); // extend conversation with assistant's reply
+  //   if (responseMessage.tool_calls) {
+  //     updatedMostRecentMessagesBasedOnNewSystemPrompt = await this.addResponseAndToolCallsToMessageHistory(responseMessage, updatedMostRecentMessagesBasedOnNewSystemPrompt, stage);
+  //   }
+  // }
 }
