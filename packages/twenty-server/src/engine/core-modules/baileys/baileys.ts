@@ -1,7 +1,11 @@
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+
 import { makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, downloadMediaMessage } from '@whiskeysockets/baileys';
 // import {Mimetype} from '@whiskeysockets/baileys'
 import { AIMessage, HumanMessage, BaseMessage } from '@langchain/core/messages';
 import { SocksProxyAgent } from 'socks-proxy-agent';
+import * as tls from 'tls';
+import { HttpsProxyAgent } from 'https-proxy-agent';
 
 import { writeFile } from 'fs/promises';
 import { Boom } from '@hapi/boom';
@@ -18,8 +22,7 @@ import { FetchAndUpdateCandidatesChatsWhatsapps } from 'src/engine/core-modules/
 import * as allDataObjects from 'src/engine/core-modules/arx-chat/services/data-model-objects';
 console.log('Baileys being called!!!');
 
-const agent = new SocksProxyAgent('socks5://127.0.0.1:24000');
-// const agent = new SocksProxyAgent('socks5://brd-customer-hl_c5a2ddf1-zone-baileys_proxy:mxt1yz6kptqz@brd.superproxy.io:22225');
+const agent = new SocksProxyAgent(process.env.SMART_PROXY_URL || '');
 
 export class BaileysBot {
   source: string;
@@ -66,10 +69,35 @@ export class BaileysBot {
       const socket = makeWASocket({
         auth: state,
         agent: agent,
+        // fetchAgent: agent,
         version,
         printQRInTerminal: true,
         defaultQueryTimeoutMs: undefined,
       });
+
+      // return new Promise((resolve, reject) => {
+      //   const proxyOptions = {
+      //     hostname: '127.0.0.1',
+      //     port: 24000,
+      //     protocol: 'socks5:'
+      //   };
+
+      //   const proxyAgent = new SocksProxyAgent('socks5://127.0.0.1:24000'
+      // );
+
+      // Custom TLS agent with rejectUnauthorized set to false
+      //   const agent = tls.connect({
+      //     rejectUnauthorized: false,
+      //     socket: proxyAgent // Use the SOCKS proxy agent for the socket
+      //   });
+
+      //   const socket = makeWASocket({
+      //     auth: state,
+      //     agent: agent,
+      //     version,
+      //     printQRInTerminal: true,
+      //     defaultQueryTimeoutMs: undefined,
+      //   });
       resolve(socket);
     });
   }
