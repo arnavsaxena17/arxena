@@ -1,3 +1,5 @@
+process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = '0';
+
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
@@ -68,9 +70,9 @@ const bootstrap = async () => {
 
   await app.listen(process.env.PORT ?? 3000);
 
-  if (process.env.WHATSAPP_API =="baileys") {
-    const baileysApp = await NestFactory.create( BaileysModule , {cors: true});
-    await baileysApp.listen( process.env.BAILEYS_PORT ?? 4000 );
+  if (process.env.WHATSAPP_API == 'baileys') {
+    const baileysApp = await NestFactory.create(BaileysModule, { cors: true });
+    await baileysApp.listen(process.env.BAILEYS_PORT ?? 4000);
   }
 };
 
