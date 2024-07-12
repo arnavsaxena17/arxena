@@ -497,8 +497,8 @@ export class TwilioControllers {
   
   @Post('testMessage')
   async testMessage(@Req() request: any): Promise<any> {
-    const accountSid = 'AC7f4142db08bc0925f728be1d543fa0f0';
-    const authToken = '5bb5afd15f1264216ebf5dae645f16af';
+    const accountSid = process.env.TWILIO_ACCOUNT_SID;
+    const authToken = process.env.TWILIO_AUTH_TOKEN;
     const client = require('twilio')(accountSid, authToken);
 
     client.messages.create({
