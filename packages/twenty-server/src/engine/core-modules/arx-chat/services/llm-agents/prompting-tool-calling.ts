@@ -160,16 +160,16 @@ export class ToolsForAgents {
   //   return updatedTimeManagementPromptWithStagePrompt;
   // }
 
-  async getToolCallsByStage() {
-    const toolCallsByStage = {
-      'Initial Outreach': ['update_candidate_profile'],
-      'Share Role Details': ['share_jd'],
-      'Share screening questions': ['update_answer', 'update_candidate_profile'],
-      'Create Reminder': ['update_candidate_profile', 'schedule_meeting'],
-      'Schedule Screening Meeting': ['update_candidate_profile', 'schedule_meeting'],
-    };
-    return toolCallsByStage;
-  }
+  // async getToolCallsByStage() {
+  //   const toolCallsByStage = {
+  //     'Initial Outreach': ['update_candidate_profile'],
+  //     'Share Role Details': ['share_jd'],
+  //     'Share screening questions': ['update_answer', 'update_candidate_profile'],
+  //     'Create Reminder': ['update_candidate_profile', 'schedule_meeting'],
+  //     'Schedule Screening Meeting': ['update_candidate_profile', 'schedule_meeting'],
+  //   };
+  //   return toolCallsByStage;
+  // }
 
   async getStageWiseActivity() {
     const stageWiseActions = {
@@ -333,115 +333,121 @@ export class ToolsForAgents {
 
 
   async getCandidateFacingToolsByStage(stage: string) {
-    const tools = [
-      {
-        type: 'function',
-        function: {
-          name: 'share_jd',
-          description: 'Share the candidate JD',
+    let tools;
+    if (stage == "remind_candidate"){
+      tools = this.getTimeManagementTools()
+    }
+    else{
+      tools = [
+        {
+          type: 'function',
+          function: {
+            name: 'share_jd',
+            description: 'Share the candidate JD',
+          },
         },
-      },
-      {
-        type: 'function',
-        function: {
-          name: 'schedule_meeting',
-          description: 'Schedule a meeting with the candidate',
-          parameters: {
-            type: 'object',
-            properties: {
-              inputs: {
-                type: 'object',
-                description: 'Details about the meeting',
-                properties: {
-                  summary: {
-                    type: 'string',
-                    description: 'Summary of the meeting',
+        {
+          type: 'function',
+          function: {
+            name: 'schedule_meeting',
+            description: 'Schedule a meeting with the candidate',
+            parameters: {
+              type: 'object',
+              properties: {
+                inputs: {
+                  type: 'object',
+                  description: 'Details about the meeting',
+                  properties: {
+                    summary: {
+                      type: 'string',
+                      description: 'Summary of the meeting',
+                    },
+                    typeOfMeeting: {
+                      type: 'string',
+                      description: 'Type of the meeting, can be either Virtual or In-Person. Default is Virtual.',
+                    },
+                    location: {
+                      type: 'string',
+                      description: 'Location of the meeting',
+                    },
+                    description: {
+                      type: 'string',
+                      description: 'Description of the meeting',
+                    },
+                    startDateTime: {
+                      type: 'string',
+                      format: 'date-time',
+                      description: 'Start date and time of the meeting in ISO 8601 format',
+                    },
+                    endDateTime: {
+                      type: 'string',
+                      format: 'date-time',
+                      description: 'End date and time of the meeting in ISO 8601 format',
+                    },
+                    timeZone: {
+                      type: 'string',
+                      description: 'Time zone of the meeting',
+                    },
                   },
-                  typeOfMeeting: {
-                    type: 'string',
-                    description: 'Type of the meeting, can be either Virtual or In-Person. Default is Virtual.',
-                  },
-                  location: {
-                    type: 'string',
-                    description: 'Location of the meeting',
-                  },
-                  description: {
-                    type: 'string',
-                    description: 'Description of the meeting',
-                  },
-                  startDateTime: {
-                    type: 'string',
-                    format: 'date-time',
-                    description: 'Start date and time of the meeting in ISO 8601 format',
-                  },
-                  endDateTime: {
-                    type: 'string',
-                    format: 'date-time',
-                    description: 'End date and time of the meeting in ISO 8601 format',
-                  },
-                  timeZone: {
-                    type: 'string',
-                    description: 'Time zone of the meeting',
-                  },
+                  required: ['startDateTime', 'endDateTime', 'timeZone'],
                 },
-                required: ['startDateTime', 'endDateTime', 'timeZone'],
-              },
-              candidateProfileDataNodeObj: {
-                type: 'object',
-                description: 'Profile data of the candidate',
-                properties: {
-                  email: {
-                    type: 'string',
-                    format: 'email',
-                    description: 'Email of the candidate',
+                candidateProfileDataNodeObj: {
+                  type: 'object',
+                  description: 'Profile data of the candidate',
+                  properties: {
+                    email: {
+                      type: 'string',
+                      format: 'email',
+                      description: 'Email of the candidate',
+                    },
                   },
+                  required: ['email'],
                 },
-                required: ['email'],
               },
+              required: ['inputs', 'candidateProfileDataNodeObj'],
             },
-            required: ['inputs', 'candidateProfileDataNodeObj'],
           },
         },
-      },
-      {
-        type: 'function',
-        function: {
-          name: 'update_candidate_profile',
-          description: 'Update the candidate profile',
-          parameters: {
-            type: 'object',
-            properties: {
-              candidateStatus: {
-                type: 'string',
-                description: 'The status of the candidate',
+        {
+          type: 'function',
+          function: {
+            name: 'update_candidate_profile',
+            description: 'Update the candidate profile',
+            parameters: {
+              type: 'object',
+              properties: {
+                candidateStatus: {
+                  type: 'string',
+                  description: 'The status of the candidate',
+                },
               },
+              required: ['candidateStatus'],
             },
-            required: ['candidateStatus'],
           },
         },
-      },
-      {
-        type: 'function',
-        function: {
-          name: 'update_answer',
-          description: "Update the candidate's answer based on the question asked",
-          parameters: {
-            type: 'object',
-            properties: {
-              question: {
-                type: 'string',
-                description: 'The question asked',
+        {
+          type: 'function',
+          function: {
+            name: 'update_answer',
+            description: "Update the candidate's answer based on the question asked",
+            parameters: {
+              type: 'object',
+              properties: {
+                question: {
+                  type: 'string',
+                  description: 'The question asked',
+                },
+                answer: {
+                  type: 'string',
+                  description: 'The answer provided by the candidate',
+                },
               },
-              answer: {
-                type: 'string',
-                description: 'The answer provided by the candidate',
-              },
+              required: ['question', 'answer'],
             },
-            required: ['question', 'answer'],
           },
         },
-      },
-    ];
+      ];
+    }
     return tools;
   }
 

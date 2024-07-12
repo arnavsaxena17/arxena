@@ -446,7 +446,7 @@ export class FacebookWhatsappChatApi {
     if (whatappUpdateMessageObj.messageType === 'botMessage') {
       console.log('TEmplate Message or Text Message depends on :', whatappUpdateMessageObj.messages[0].content);
 
-      if (whatappUpdateMessageObj.messages[0].content.includes('a US Based Recruitment Company') || whatappUpdateMessageObj.messages[0].content.includes('assist')) {
+      if (whatappUpdateMessageObj.messages[0].content.includes('Based Recruitment Company') || whatappUpdateMessageObj.messages[0].content.includes('assist')) {
         console.log('This is the template api message to send in whatappUpdateMessageObj.phoneNumberFrom, ', whatappUpdateMessageObj.phoneNumberFrom);
         const sendTemplateMessageObj = {
           recipient: whatappUpdateMessageObj.phoneNumberTo.replace('+', ''),
