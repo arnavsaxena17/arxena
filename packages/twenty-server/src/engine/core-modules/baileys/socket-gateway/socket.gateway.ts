@@ -85,7 +85,7 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     console.log('client disconnected...');
   }
 
-  async sendMessageToBaileys(body: MessageDto) {
+  async sendMessageToBaileys(body: MessageDto): Promise<object> {
     console.log('REceived body in socket gateway:', body);
     try {
       let { jid, message } = body;
@@ -97,29 +97,50 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
         (async () => {
           try {
             this.baileys = await new BaileysBot('sendMessageServiceNotInitilaised').initApp(this, 'because service is not initilised');
+            return await this.sendMessageToBaileys(body); // ! Recursion
             // let { jid, message } = body;
             // console.log('Sending the mesages to baileys API JID', jid);
             // console.log('this it hjid to baileys API ::', jid, { text: message });
             // await this.baileys.sendMessage(jid, { text: message });
           } catch (error) {
+            console.log('09324:: error here', error);
             this.handleError(error);
           }
         })();
       } else {
+        console.log('534534:: this.baileys::');
         try {
           let { jid, message } = body;
           console.log('Sending the mesages to baileys API JID', jid);
           console.log('this it hjid to baileys API ::', jid, { text: message });
-          await this.baileys.sendMessage(jid, { text: message });
+          const sentMsgObj = await this.baileys.sendMessage(jid, { text: message });
+          console.log('59435:: sentMsgObj', sentMsgObj);
+          return sentMsgObj;
         } catch (error) {
-          // await this.retrySendMessageToBaileys(body);
           console.error('baileys.sendMessage got error', error);
-          throw error;
+          this.handleError(error);
+
+          return await this.retrySendMessageToBaileys(body);
         }
       }
     } catch (error) {
       console.log('baileys.sendMessage got error');
       this.handleError(error);
+    }
+    return { status: 'failed' };
+  }
+
+  async retrySendMessageToBaileys(body: MessageDto) {
+    try {
+      let { jid, message } = body;
+      console.log('Sending the mesages to baileys API JID', jid);
+      console.log('this it hjid to baileys API ::', jid, { text: message });
+      const sentMsgObj = await this.baileys.sendMessage(jid, { text: message });
+      console.log('59435:: sentMsgObj', sentMsgObj);
+      return sentMsgObj;
+    } catch (error) {
+      console.log('retrySendMessageToBaileys got error as well', error);
+      throw error;
     }
   }
 
