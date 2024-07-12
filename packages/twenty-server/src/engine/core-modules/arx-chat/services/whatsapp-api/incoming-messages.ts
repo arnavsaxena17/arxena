@@ -22,7 +22,7 @@ export class IncomingWhatsappMessages {
     console.log('This is the candiate who has sent us the message fromBaileys., we have to update the database that this message has been recemivged::', chatReply);
     if (candidateProfileData != allDataObjects.emptyCandidateProfileObj) {
       console.log('This is the candiate who has sent us candidateProfileData::', candidateProfileData);
-      await this.createAndUpdateIncomingCandidateChatMessage( { chatReply: chatReply, whatsappDeliveryStatus: 'delivered', whatsappMessageId: 'receiveIncomingMessagesFromBaileys', }, candidateProfileData );
+      await this.createAndUpdateIncomingCandidateChatMessage({ chatReply: chatReply, whatsappDeliveryStatus: 'delivered', whatsappMessageId: requestBody.baileysMessageId }, candidateProfileData);
     } else {
       console.log('Message has been received from a candidate however the candidate is not in the database');
     }
@@ -46,11 +46,9 @@ export class IncomingWhatsappMessages {
     console.log('This is requestBody::', requestBody);
     // to check if the incoming message is the status of the message
 
-
     if (requestBody?.entry[0]?.changes[0]?.value?.statuses && requestBody?.entry[0]?.changes[0]?.value?.statuses[0]?.status && !requestBody?.entry[0]?.changes[0]?.value?.messages) {
       const messageId = requestBody?.entry[0]?.changes[0]?.value?.statuses[0]?.id;
       const messageStatus = requestBody?.entry[0]?.changes[0]?.value?.statuses[0]?.status;
-
 
       const variables = { filter: { whatsappMessageId: { ilike: `%${messageId}%` } }, orderBy: { position: 'AscNullsFirst' } };
       const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindMessageByWAMId, variables: variables });
@@ -64,7 +62,6 @@ export class IncomingWhatsappMessages {
         return;
       }
 
-
       if (response?.data?.data?.whatsappMessages?.edges[0]?.node?.whatsappDeliveryStatus === 'read' || (response?.data?.data?.whatsappMessages?.edges[0]?.node?.whatsappDeliveryStatus === 'delivered' && messageStatus !== 'read')) {
         console.log('Message has already been read/delivered, skipping the update');
         return;
@@ -77,19 +74,16 @@ export class IncomingWhatsappMessages {
       console.log('---------------DELIVERY STATUS UPDATE DONE-----------------------');
       // console.log(responseOfDeliveryStatus);
     } else if (requestBody?.entry[0]?.changes[0]?.value?.messages?.length > 0) {
-
       // to check if the incoming message is the message
       console.log('There is a request body for sure', requestBody?.entry[0]?.changes[0]?.value?.messages[0]);
       const userMessageBody = requestBody?.entry[0]?.changes[0]?.value?.messages[0];
       if (userMessageBody) {
         let timestamp = requestBody?.entry[0]?.changes[0]?.value?.messages[0].timestamp; // Assuming this is the Unix timestamp in seconds
         let result = this.isWithinLast5Minutes(timestamp);
-        if (!result){
-          console.log("MESSAGE IS NOT WITHIN 5 MINUTES:::: ",userMessageBody )
+        if (!result) {
+          console.log('MESSAGE IS NOT WITHIN 5 MINUTES:::: ', userMessageBody);
           return;
-
         }
-
 
         console.log('There is a usermessage body in the request', userMessageBody);
         if (requestBody?.entry[0]?.changes[0]?.value?.messages[0].type !== 'utility' && requestBody?.entry[0]?.changes[0]?.value?.messages[0].type !== 'document' && requestBody?.entry[0]?.changes[0]?.value?.messages[0].type !== 'audio') {
@@ -180,7 +174,10 @@ export class IncomingWhatsappMessages {
       console.log('Message of type:', requestBody?.entry[0]?.changes[0]?.value?.statuses[0]?.status, ', ignoring it');
     }
   }
-  async createAndUpdateIncomingCandidateChatMessage( replyObject: { whatsappDeliveryStatus: string; chatReply: string; whatsappMessageId: string; databaseFilePath?: string | null; type?: string; }, candidateProfileDataNodeObj: allDataObjects.CandidateNode, ) {
+  async createAndUpdateIncomingCandidateChatMessage(
+    replyObject: { whatsappDeliveryStatus: string; chatReply: string; whatsappMessageId: string; databaseFilePath?: string | null; type?: string },
+    candidateProfileDataNodeObj: allDataObjects.CandidateNode,
+  ) {
     const recruiterProfile = allDataObjects.recruiterProfile;
     const messagesList = candidateProfileDataNodeObj?.whatsappMessages?.edges;
     // Ensure messagesList is not undefined before sorting

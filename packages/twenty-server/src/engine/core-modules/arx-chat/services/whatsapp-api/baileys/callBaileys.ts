@@ -18,10 +18,10 @@ export async function sendWhatsappMessageVIABaileysAPI(whatappUpdateMessageObj: 
       messages: whatappUpdateMessageObj.messages[0].content,
     };
     const response = await sendWhatsappTextMessageViaBaileys(sendTextMessageObj);
-
+    console.log('99493:: response is here', response);
     const whatappUpdateMessageObjAfterWAMidUpdate = await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj(
       // response?.data?.messages[0]?.id ||
-      'placeholdermessageid', // whatsapp message id
+      response?.key?.id || 'placeholdermessageid', // whatsapp message id
       // response,
       personNode,
       mostRecentMessageArr,
@@ -65,7 +65,7 @@ export async function sendWhatsappTextMessageViaBaileys(sendTextMessageObj: allD
     //     console.log('WORKED THE SECOND TIME');
     //   }
     // }
-    return response;
+    return response.data;
   } catch (error: any) {
     console.error('Send Message Error in the first time. Will try to send a test message and then send again:', error.response?.data || error.message);
     // await tryAgaintoSendWhatsappMessage(sendMessageUrl, data)

@@ -1,6 +1,7 @@
 import { makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, downloadMediaMessage } from '@whiskeysockets/baileys';
 // import {Mimetype} from '@whiskeysockets/baileys'
 import { AIMessage, HumanMessage, BaseMessage } from '@langchain/core/messages';
+import { SocksProxyAgent } from 'socks-proxy-agent';
 
 import { writeFile } from 'fs/promises';
 import { Boom } from '@hapi/boom';
@@ -16,6 +17,9 @@ import { IncomingWhatsappMessages } from 'src/engine/core-modules/arx-chat/servi
 import { FetchAndUpdateCandidatesChatsWhatsapps } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/update-chat';
 import * as allDataObjects from 'src/engine/core-modules/arx-chat/services/data-model-objects';
 console.log('Baileys being called!!!');
+
+const agent = new SocksProxyAgent('socks5://127.0.0.1:24000');
+// const agent = new SocksProxyAgent('socks5://brd-customer-hl_c5a2ddf1-zone-baileys_proxy:mxt1yz6kptqz@brd.superproxy.io:22225');
 
 export class BaileysBot {
   source: string;
@@ -61,6 +65,7 @@ export class BaileysBot {
     return new Promise((resolve, reject) => {
       const socket = makeWASocket({
         auth: state,
+        agent: agent,
         version,
         printQRInTerminal: true,
         defaultQueryTimeoutMs: undefined,
@@ -142,6 +147,7 @@ export class BaileysBot {
         phoneNumberTo: phoneNumberTo,
         messageTimeStamp: m.messages[0]?.messageTimestamp,
         fromName: m?.messages[0]?.pushName,
+        baileysMessageId: m?.messages[0]?.key?.id,
       };
       console.log('FInal baileysWhatsappIncomingObj:', baileysWhatsappIncomingObj);
       new IncomingWhatsappMessages().receiveIncomingMessagesFromBaileys(baileysWhatsappIncomingObj);
@@ -171,13 +177,15 @@ export class BaileysBot {
           phoneNumberTo: m?.messages[0]?.key?.remoteJid?.replace('@s.whatsapp.net', ''),
           messages: [{ text: messageBeingSent }],
           candidateFirstName: candidateProfileData?.name,
-          messageObj: candidateProfileData?.whatsappMessages?.edges[candidateProfileData?.whatsappMessages?.edges?.length]?.node?.messageObj || {},
+          messageObj: candidateProfileData?.whatsappMessages?.edges[0]?.node?.messageObj || {},
           messageType: 'botMessage',
           candidateProfile: candidateProfileData,
           whatsappDeliveryStatus: 'sent',
           whatsappMessageId: m?.messages[0]?.key?.id || 'not given',
         };
-        await new FetchAndUpdateCandidatesChatsWhatsapps().createAndUpdateWhatsappMessage(candidateProfileData, userMessage);
+
+        // ! This will just create a message in the database and not update the engagement status. That's why database entry is done inside sendWhatsappMessageVIABaileysAPI
+        // await new FetchAndUpdateCandidatesChatsWhatsapps().createAndUpdateWhatsappMessage(candidateProfileData, userMessage);
       } else {
         console.log('Message has been sent to new candidate not in database');
       }

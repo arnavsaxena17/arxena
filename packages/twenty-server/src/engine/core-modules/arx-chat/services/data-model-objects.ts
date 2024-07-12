@@ -74,6 +74,7 @@ export interface BaileysIncomingMessage {
   phoneNumberFrom: string;
   fromName: string;
   phoneNumberTo: string;
+  baileysMessageId: string;
 }
 
 export interface candidateChatMessageType {

@@ -29,10 +29,11 @@ export class BaileysController {
   }
 
   @Post('/send-wa-message')
-  sendWAMessage(@Body() data: MessageDto): any {
+  sendWAMessage(@Body() data: MessageDto): Promise<object> {
     console.log(data);
     console.log('--------------------This is from baileys app ----------------------------');
-    this.socket.sendMessageToBaileys(data);
+    const resData = this.socket.sendMessageToBaileys(data);
+    return resData;
   }
 
   @Post('/send-wa-message-file')

@@ -200,6 +200,7 @@
     "semver": "^7.5.4",
     "sharp": "^0.32.1",
     "socket.io": "^4.7.5",
+    "socks-proxy-agent": "^8.0.4",
     "stripe": "^14.17.0",
     "tiktoken": "^1.0.15",
     "ts-key-enum": "^2.0.12",
