@@ -67,7 +67,7 @@ export class ArxChatEndpoint {
       // } else {
       chatAgent = new OpenAIArxMultiStepClient(personObj);
       // }
-      await chatAgent.createCompletion(mostRecentMessageArr, personObj);
+      await chatAgent.createCompletion(mostRecentMessageArr, personObj, "engage");
       const whatappUpdateMessageObj = await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj(
         'ArxChatEndpoint',
         // response,
@@ -113,7 +113,7 @@ export class ArxChatEndpoint {
         //   isChatEnabled
         // );
         const engagementType = 'engage';
-        mostRecentMessageArr = await chatAgent.createCompletion(mostRecentMessageArr, personObj, isChatEnabled);
+        mostRecentMessageArr = await chatAgent.createCompletion(mostRecentMessageArr, personObj, engagementType, isChatEnabled);
         return mostRecentMessageArr;
       }
     } catch (err) {
@@ -135,7 +135,7 @@ export class ArxChatEndpoint {
     chatAgent = new OpenAIArxMultiStepClient(personObj);
     // }
     const engagementType = 'engage';
-    const mostRecentMessageArr = await chatAgent.createCompletion(messagesList, personObj);
+    const mostRecentMessageArr = await chatAgent.createCompletion(messagesList,  personObj, engagementType);
 
     return mostRecentMessageArr;
   }
@@ -148,7 +148,9 @@ export class ArxChatEndpoint {
     const messagesList = request.body;
 
     let chatAgent = new OpenAIArxMultiStepClient(personObj);
-    const stage = await chatAgent.getStageOfTheConversation(messagesList);
+    const engagementType = 'engage';
+
+    const stage = await chatAgent.getStageOfTheConversation(messagesList, engagementType);
 
     return { stage: stage };
   }
@@ -420,5 +422,86 @@ export class WhatsappControllers {
     const filePath = requestBody?.filePath;
     const response = await new FacebookWhatsappChatApi().uploadFileToWhatsAppUsingControllerApi(filePath);
     return response || {}; // Return an empty object if the response is undefined
+  }
+}
+
+
+
+
+@Controller("whatsapp-test")
+export class WhatsappTestAPI {
+  @Post("template")
+  async create(@Req() request: Request): Promise<object> {
+    // const defaultSendMessageObj = {
+    //   template_name: "recruitment",
+    //   recipient: "918411937769",
+    //   recruiterName: "John",
+    //   candidateFirstName: "Jane",
+    //   recruiterJobTitle: "Recruiter",
+    //   recruiterCompanyName: "Arxena",
+    //   recruiterCompanyDescription: "US Based Recruitment Company",
+    //   jobPositionName: "Sales Head",
+    //   jobLocation: "Surat",
+    // };
+    const sendMessageObj: allDataObjects.sendWhatsappTemplateMessageObjectType =
+      request.body as unknown as allDataObjects.sendWhatsappTemplateMessageObjectType;
+    new FacebookWhatsappChatApi().sendWhatsappTemplateMessage(sendMessageObj);
+    return { status: "success" };
+  }
+
+  @Post("message")
+  async createTextMessage(@Req() request: Request): Promise<object> {
+    const sendTextMessageObj: allDataObjects.ChatRequestBody = {
+      phoneNumberTo: "918411937769",
+      phoneNumberFrom: "918411937769",
+      messages: "This is the panda talking",
+    };
+    new FacebookWhatsappChatApi().sendWhatsappTextMessage(sendTextMessageObj);
+    return { status: "success" };
+  }
+  @Post("uploadFile")
+  async uploadFileToFBWAAPI(@Req() request: any): Promise<object> {
+    console.log("upload file to whatsapp api");
+    const requestBody = request?.body;
+    const filePath = requestBody?.filePath;
+    const response = await new FacebookWhatsappChatApi().uploadFileToWhatsApp(
+      filePath
+    );
+    return response || {}; // Return an empty object if the response is undefined
+  }
+
+  @Post("sendAttachment")
+  async sendFileToFBWAAPIUser(@Req() request: Request): Promise<object> {
+    console.log("Send file");
+    console.log("Request bod::y::", request.body);
+    const sendTextMessageObj = {
+      phoneNumberFrom: "918411937769",
+      attachmentMessage: "string",
+      phoneNumberTo: "918411937769",
+      mediaFileName: "AttachmentFile",
+      mediaID: "377908408596785",
+    };
+
+    
+    // new FacebookWhatsappChatApi().sendWhatsappAttachmentMessage(
+    //   sendTextMessageObj
+    // );
+    return { status: "success" };
+  }
+
+  @Post("sendFile")
+  async uploadAndSendFileToFBWAAPIUser(@Req() request: any): Promise<object> {
+    const sendFileObj = request.body;
+    new FacebookWhatsappChatApi().uploadAndSendFileToWhatsApp(sendFileObj);
+    return { status: "success" };
+  }
+
+  @Post("downloadAttachment")
+  async downloadFileToFBWAAPIUser(@Req() request: Request): Promise<object> {
+    const downloadAttachmentMessageObj = request.body;
+    // new FacebookWhatsappChatApi().downloadWhatsappAttachmentMessage(
+    //   downloadAttachmentMessageObj
+    // );
+    return { status: "success" };
   }
 }

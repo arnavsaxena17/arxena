@@ -19,21 +19,12 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
   async getPersonDetailsByPhoneNumber(phoneNumber: string) {
     console.log('Trying to get person details by phone number:', phoneNumber);
     const graphVariables = {
-      filter: {
-        phone: {
-          ilike: '%' + phoneNumber + '%',
-        },
-      },
-      orderBy: {
-        position: 'AscNullsFirst',
-      },
+      filter: { phone: { ilike: '%' + phoneNumber + '%', }, },
+      orderBy: { position: 'AscNullsFirst', },
     };
     try {
       console.log('going to get candidate information');
-      const graphqlQueryObj = JSON.stringify({
-        query: allGraphQLQueries.graphqlQueryToFindPeopleByPhoneNumber,
-        variables: graphVariables,
-      });
+      const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindPeopleByPhoneNumber, variables: graphVariables });
       const response = await axiosRequest(graphqlQueryObj);
       console.log('This is the response from getCandidate Information FROM PHONENUMBER', response.data.data);
       const personObj = response.data?.data?.people?.edges[0].node;
@@ -125,10 +116,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
       console.log('going to get candidate information');
       // console.log("going to get process.env.TWENTY_JWT_SECRET",process.env.TWENTY_JWT_SECRET)
       // console.log("going to get process.env.GRAPHQL_URL", process.env.GRAPHQL_URL)
-      const graphqlQueryObj = JSON.stringify({
-        query: allGraphQLQueries.graphqlQueryToFindPeopleByPhoneNumber,
-        variables: graphVariables,
-      });
+      const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindPeopleByPhoneNumber, variables: graphVariables, });
       const response = await axiosRequest(graphqlQueryObj);
       console.log('This is the response from getCandidate Information', response.data.data);
       const candidateDataObjs = response.data?.data?.people?.edges[0]?.node?.candidates?.edges;
