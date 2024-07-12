@@ -1,10 +1,10 @@
-import { ChainValues } from "@langchain/core/utils/types";
-import { BaseMessage } from "@langchain/core/messages";
-import Anthropic from "@anthropic-ai/sdk";
-import OpenAI from "openai";
+import { ChainValues } from '@langchain/core/utils/types';
+import { BaseMessage } from '@langchain/core/messages';
+import Anthropic from '@anthropic-ai/sdk';
+import OpenAI from 'openai';
 
 // Define the possible roles in the chat
-export type ChatRole = "system" | "user" | "tool" | "assistant";
+export type ChatRole = 'system' | 'user' | 'tool' | 'assistant';
 
 // Interface for chat message without tool call
 export interface ChatMessage {
@@ -74,6 +74,7 @@ export interface BaileysIncomingMessage {
   phoneNumberFrom: string;
   fromName: string;
   phoneNumberTo: string;
+  baileysMessageId: string;
 }
 
 export interface candidateChatMessageType {
@@ -259,65 +260,64 @@ interface Entry {
 }
 
 export interface WhatsAppBusinessAccount {
-  object: "whatsapp_business_account";
+  object: 'whatsapp_business_account';
   entry: Entry[];
 }
 
 export const jobProfile: jobProfileType = {
-  name: "Sales Manager",
-  id: "5643d1e6-0415-4327-b871-918e7cd699d5",
-  recruiterId: "20202020-0687-4c41-b707-ed1bfca972a7",
+  name: 'Sales Manager',
+  id: '5643d1e6-0415-4327-b871-918e7cd699d5',
+  recruiterId: '20202020-0687-4c41-b707-ed1bfca972a7',
   company: {
-    name: "Qonto",
-    companyId: "1234",
-    descriptionOneliner:
-      "one of the india's largest waste management companies",
+    name: 'Qonto',
+    companyId: '1234',
+    descriptionOneliner: "one of the india's largest waste management companies",
   },
-  jobLocation: "Mumbai",
+  jobLocation: 'Mumbai',
 };
 
 export const recruiterProfile: recruiterProfileType = {
-  name: "Arnav Doe",
-  first_name: "Arnav",
-  phone: "919326970534",
-  email: "arnav@arxena.com",
-  input: "",
-  status: "",
-  job_title: "Director",
-  job_company_name: "Arxena Inc",
-  company_description_oneliner: "a US Based Recruitment Company",
+  name: 'Arnav Doe',
+  first_name: 'Arnav',
+  phone: '919326970534',
+  email: 'arnav@arxena.com',
+  input: '',
+  status: '',
+  job_title: 'Director',
+  job_company_name: 'Arxena Inc',
+  company_description_oneliner: 'a US Based Recruitment Company',
 };
 
 export const emptyCandidateProfileObj: CandidateNode = {
-  name: "",
-  id: "",
+  name: '',
+  id: '',
   jobs: {
-    name: "",
-    id: "",
-    recruiterId: "",
+    name: '',
+    id: '',
+    recruiterId: '',
     companies: {
-      name: "",
-      companyId: "",
-      descriptionOneliner: "",
+      name: '',
+      companyId: '',
+      descriptionOneliner: '',
     },
-    jobLocation: "",
+    jobLocation: '',
 
     whatsappMessages: {
       edges: [
         {
           node: {
-            recruiterId: "",
-            message: "",
-            candidateId: "",
-            jobsId: "string",
+            recruiterId: '',
+            message: '',
+            candidateId: '',
+            jobsId: 'string',
             position: 0,
-            messageType: "",
-            phoneTo: "",
-            updatedAt: "",
-            createdAt: "",
-            id: "",
-            name: "",
-            phoneFrom: "",
+            messageType: '',
+            phoneTo: '',
+            updatedAt: '',
+            createdAt: '',
+            id: '',
+            name: '',
+            phoneFrom: '',
             messageObj: {},
           },
         },
@@ -328,38 +328,38 @@ export const emptyCandidateProfileObj: CandidateNode = {
     edges: [
       {
         node: {
-          remindCandidateAtTimestamp: "",
-          remindCandidateDuration: "",
+          remindCandidateAtTimestamp: '',
+          remindCandidateDuration: '',
           isReminderActive: false,
-          name: "",
-          id: "",
+          name: '',
+          id: '',
         },
       },
     ],
   },
 
   engagementStatus: false,
-  phoneNumber: "",
-  email: "",
-  input: "",
+  phoneNumber: '',
+  email: '',
+  input: '',
   startChat: false,
   whatsappMessages: {
     edges: [
       {
         node: {
-          recruiterId: "",
-          message: "",
-          candidateId: "",
-          jobsId: "string",
+          recruiterId: '',
+          message: '',
+          candidateId: '',
+          jobsId: 'string',
           position: 0,
-          messageType: "",
-          phoneTo: "",
-          updatedAt: "",
-          createdAt: "",
-          id: "",
-          name: "",
-          phoneFrom: "",
-          messageObj: "",
+          messageType: '',
+          phoneTo: '',
+          updatedAt: '',
+          createdAt: '',
+          id: '',
+          name: '',
+          phoneFrom: '',
+          messageObj: '',
         },
       },
     ],
@@ -368,17 +368,17 @@ export const emptyCandidateProfileObj: CandidateNode = {
     edges: [
       {
         node: {
-          id: "",
-          email: "",
-          text: "",
-          subject: "",
-          recruiterId: "",
-          candidateId: "",
-          jobsId: "",
-          messageThreadId: "",
-          receivedAt: "",
-          updatedAt: "",
-          createdAt: "",
+          id: '',
+          email: '',
+          text: '',
+          subject: '',
+          recruiterId: '',
+          candidateId: '',
+          jobsId: '',
+          messageThreadId: '',
+          receivedAt: '',
+          updatedAt: '',
+          createdAt: '',
         },
       },
     ],
@@ -411,15 +411,15 @@ export interface Attachment {
 }
 
 export const candidateProfile: candidateProfileType = {
-  first_name: "Christoph",
-  id: "12d2232a-e79b-41c8-b56c-c186abb7fdea",
-  jobsId: "5643d1e6-0415-4327-b871-918e7cd699d5",
-  status: "string",
+  first_name: 'Christoph',
+  id: '12d2232a-e79b-41c8-b56c-c186abb7fdea',
+  jobsId: '5643d1e6-0415-4327-b871-918e7cd699d5',
+  status: 'string',
   job: jobProfile,
-  phoneNumber: "+919820297156",
-  email: "christoph.calisto@linkedin.com",
-  responsibleWorkspaceMemberId: "20202020-0687-4c41-b707-ed1bfca972a7",
-  input: "string", // Add the 'input' property
+  phoneNumber: '+919820297156',
+  email: 'christoph.calisto@linkedin.com',
+  responsibleWorkspaceMemberId: '20202020-0687-4c41-b707-ed1bfca972a7',
+  input: 'string', // Add the 'input' property
 };
 
 export interface candidateProfileType {
@@ -453,7 +453,7 @@ export interface AttachmentMessageObject {
   fileData: {
     fileName: string;
     filePath: string;
-    fileBuffer: string;
+    fileBuffer?: string;
     mimetype: string;
   };
 }

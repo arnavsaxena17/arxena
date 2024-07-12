@@ -408,6 +408,16 @@ export class WhatsappWebhook {
     response.sendStatus(200);
   }
 
+  @Post('send-message-baileys')
+  async sendMessageToBaileys() {
+    try {
+      // await this.baileys.sendMessage('919769331376@s.whatsapp.net', { text: 'Hello from controller' });
+    } catch (error) {
+      // Handle error
+    }
+    response.sendStatus(200);
+  }
+
   // @Get('testing-schedule')
   // async schedulingTest(){
   //   await scheduleMeeting({}, )
