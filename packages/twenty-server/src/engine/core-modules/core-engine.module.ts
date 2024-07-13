@@ -21,13 +21,14 @@ import { FileModule } from './file/file.module';
 import { ClientConfigModule } from './client-config/client-config.module';
 import { GoogleCalendarModule } from 'src/engine/core-modules/calendar-events/google-calendar.module';
 import { MailerModule } from './gmail-sender/gmail-sender.module';
-import { BaileysModule } from './baileys/baileys.module';
+// import { BaileysModule } from './baileys/baileys.module';
+import { WhatsappModule } from './whiskeysocket-baileys/whiskeysocket-baileys.module';
 
 @Module({
   imports: [
     // MailerModule,
     GoogleCalendarModule,
-    BaileysModule,
+    // BaileysModule,
     HealthModule,
     AnalyticsModule,
     ArxChatAgentModule,
@@ -44,10 +45,11 @@ import { BaileysModule } from './baileys/baileys.module';
     UserModule,
     WorkspaceModule,
     PostgresCredentialsModule,
+    WhatsappModule,
   ],
   exports: [
     // GoogleCalendarModule,
-    BaileysModule,
+    // BaileysModule,
     AnalyticsModule,
     AuthModule,
     ArxChatAgentModule,
@@ -57,6 +59,7 @@ import { BaileysModule } from './baileys/baileys.module';
     TimelineCalendarEventModule,
     UserModule,
     WorkspaceModule,
+    WhatsappModule,
     // MailerModule,
     // GoogleCalendarModule
   ],
