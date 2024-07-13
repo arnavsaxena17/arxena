@@ -7,6 +7,7 @@ import * as jwt from 'jsonwebtoken';
 import { FileDataDto, MessageDto } from '../types/baileys-types';
 console.log('SocketGateway being called!!!');
 import { MimeType } from 'file-type';
+import { delay } from '@whiskeysockets/baileys';
 // import { sendWhatsappTextMessageViaBaileys } from 'src/engine/core-modules/recruitment-agent/services/whatsapp-api/baileys/callBaileys';
 
 @WebSocketGateway({
@@ -97,6 +98,7 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
         (async () => {
           try {
             this.baileys = await new BaileysBot('sendMessageServiceNotInitilaised').initApp(this, 'because service is not initilised');
+            // await delay(2000);
             return await this.sendMessageToBaileys(body); // ! Recursion
             // let { jid, message } = body;
             // console.log('Sending the mesages to baileys API JID', jid);
@@ -108,11 +110,21 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
           }
         })();
       } else {
-        console.log('534534:: this.baileys::');
+        // console.log('534534:: this.baileys::');
         try {
+          console.log('534534:: this.baileys::', this.baileys);
           let { jid, message } = body;
           console.log('Sending the mesages to baileys API JID', jid);
           console.log('this it hjid to baileys API ::', jid, { text: message });
+          await this.baileys.presenceSubscribe(jid);
+          await delay(500);
+
+          await this.baileys.sendPresenceUpdate('composing', jid);
+          await delay(2000);
+
+          await this.baileys.sendPresenceUpdate('paused', jid);
+
+          // await waSock.sendMessage(waJid, { text: message });
           const sentMsgObj = await this.baileys.sendMessage(jid, { text: message });
           console.log('59435:: sentMsgObj', sentMsgObj);
           return sentMsgObj;

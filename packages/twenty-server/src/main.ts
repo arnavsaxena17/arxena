@@ -17,7 +17,7 @@ import { AppModule } from './app.module';
 import { generateFrontConfig } from './utils/generate-front-config';
 import { settings } from './engine/constants/settings';
 import { LoggerService } from './engine/integrations/logger/logger.service';
-import { BaileysModule } from 'src/engine/core-modules/baileys/baileys.module';
+// import { BaileysModule } from 'src/engine/core-modules/baileys/baileys.module';
 
 const bootstrap = async () => {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
@@ -70,10 +70,10 @@ const bootstrap = async () => {
 
   await app.listen(process.env.PORT ?? 3000);
 
-  if (process.env.WHATSAPP_API == 'baileys') {
-    const baileysApp = await NestFactory.create(BaileysModule, { cors: true });
-    await baileysApp.listen(process.env.BAILEYS_PORT ?? 4000);
-  }
+  // if (process.env.WHATSAPP_API == 'baileys') {
+  //   const baileysApp = await NestFactory.create(BaileysModule, { cors: true });
+  //   await baileysApp.listen(process.env.BAILEYS_PORT ?? 4000);
+  // }
 };
 
 bootstrap();
