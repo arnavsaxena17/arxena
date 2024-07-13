@@ -43,6 +43,7 @@ import { BaileysModule } from './baileys/baileys.module';
     TimelineCalendarEventModule,
     UserModule,
     WorkspaceModule,
+    // VideoInterviewModule,
     PostgresCredentialsModule,
   ],
   exports: [
@@ -57,6 +58,7 @@ import { BaileysModule } from './baileys/baileys.module';
     TimelineCalendarEventModule,
     UserModule,
     WorkspaceModule,
+    // VideoInterviewModule,
     // MailerModule,
     // GoogleCalendarModule
   ],
