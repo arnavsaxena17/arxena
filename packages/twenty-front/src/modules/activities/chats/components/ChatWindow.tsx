@@ -1,12 +1,12 @@
-import React, { useEffect, useRef, useState } from "react";
-import * as frontChatTypes from "../types/front-chat-types";
-import axios from "axios";
-import { useRecoilState } from "recoil";
-import { tokenPairState } from "@/auth/states/tokenPairState";
-import FileUpload from "./FileUpload";
-import styled from "@emotion/styled";
-import SingleChatContainer from "./SingleChatContainer";
-import dayjs from "dayjs";
+import React, { useEffect, useRef, useState } from 'react';
+import * as frontChatTypes from '../types/front-chat-types';
+import axios from 'axios';
+import { useRecoilState } from 'recoil';
+import { tokenPairState } from '@/auth/states/tokenPairState';
+import FileUpload from './FileUpload';
+import styled from '@emotion/styled';
+import SingleChatContainer from './SingleChatContainer';
+import dayjs from 'dayjs';
 // import {Check} from "@tabler/icons-react"
 
 const StyledButton = styled.button`
@@ -100,14 +100,11 @@ const StyledButton2 = styled.button`
   margin-right: 0.5rem;
 `;
 
-const formatDate = (date: string) => dayjs(date).format("YYYY-MM-DD");
+const formatDate = (date: string) => dayjs(date).format('YYYY-MM-DD');
 
-export default function ChatWindow(props: {
-  selectedIndividual: string;
-  individuals: frontChatTypes.PersonEdge[];
-}) {
+export default function ChatWindow(props: { selectedIndividual: string; individuals: frontChatTypes.PersonEdge[] }) {
   const [messageHistory, setMessageHistory] = useState<[]>([]);
-  const [latestResponseGenerated, setLatestResponseGenerated] = useState("");
+  const [latestResponseGenerated, setLatestResponseGenerated] = useState('');
   const [listOfToolCalls, setListOfToolCalls] = useState<string[]>([]);
 
   const botResponsePreviewRef = useRef(null);
@@ -116,34 +113,23 @@ export default function ChatWindow(props: {
 
   const [tokenPair] = useRecoilState(tokenPairState);
 
-  console.log("tokenPair", tokenPair);
+  console.log('tokenPair', tokenPair);
 
-  let currentIndividual = props?.individuals?.filter((individual) => {
+  let currentIndividual = props?.individuals?.filter(individual => {
     return individual?.node?.id === props.selectedIndividual;
   })[0];
 
-  let listOfMessages =
-    currentIndividual?.node?.candidates?.edges[0]?.node?.whatsappMessages
-      ?.edges;
+  let listOfMessages = currentIndividual?.node?.candidates?.edges[0]?.node?.whatsappMessages?.edges;
 
-  let currentMessageObject =
-    currentIndividual?.node?.candidates?.edges[0]?.node?.whatsappMessages
-      ?.edges[
-      currentIndividual?.node?.candidates?.edges[0]?.node?.whatsappMessages
-        ?.edges?.length - 1
-    ]?.node?.messageObj;
+  let currentMessageObject = currentIndividual?.node?.candidates?.edges[0]?.node?.whatsappMessages?.edges[currentIndividual?.node?.candidates?.edges[0]?.node?.whatsappMessages?.edges?.length - 1]?.node?.messageObj;
 
   let messageName = currentIndividual?.node?.name;
-  listOfMessages?.sort(
-    (a, b) =>
-      new Date(a?.node?.createdAt).getTime() -
-      new Date(b?.node?.createdAt).getTime()
-  );
+  listOfMessages?.sort((a, b) => new Date(a?.node?.createdAt).getTime() - new Date(b?.node?.createdAt).getTime());
 
   const sendMessage = async (messageText: string) => {
-    console.log("send message");
+    console.log('send message');
     const response = await axios.post(
-      "http://localhost:3000/arx-chat/send-chat",
+      process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/send-chat',
       {
         messageToSend: messageText,
         phoneNumberTo: currentIndividual?.node?.phone,
@@ -152,24 +138,24 @@ export default function ChatWindow(props: {
         headers: {
           Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
         },
-      }
+      },
     );
   };
   const handleSubmit = () => {
-    console.log("submit");
+    console.log('submit');
     //@ts-ignore
     console.log(inputRef?.current?.value);
     //@ts-ignore
     sendMessage(inputRef?.current?.value);
     //@ts-ignore
-    inputRef.current.value = ""; // Clear the input field
+    inputRef.current.value = ''; // Clear the input field
   };
 
   const handleShareJD = async () => {
-    console.log("share JD");
+    console.log('share JD');
     //@ts-ignore
     const response = await axios.post(
-      "http://localhost:3000/arx-chat/send-jd-from-frontend",
+      process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/send-jd-from-frontend',
       {
         phoneNumberTo: currentIndividual?.node?.phone,
       },
@@ -177,7 +163,7 @@ export default function ChatWindow(props: {
         headers: {
           Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
         },
-      }
+      },
     );
   };
 
@@ -195,7 +181,7 @@ export default function ChatWindow(props: {
   //   debugger;
   //   const response = await axios.post(
   //     // ! Update host later to app.arxena.com/app
-  //     "http://localhost:3000/arx-chat/retrieve-chat-response",
+  //     process.env.REACT_APP_SERVER_BASE_URL + "/arx-chat/retrieve-chat-response",
   //     {
   //       phoneNumberFrom: phoneNumber,
   //     }
@@ -241,19 +227,19 @@ export default function ChatWindow(props: {
     listOfToolCalls: string[],
     setListOfToolCalls: React.Dispatch<React.SetStateAction<string[]>>,
     messageHistory: [],
-    setMessageHistory: React.Dispatch<React.SetStateAction<[]>>
+    setMessageHistory: React.Dispatch<React.SetStateAction<[]>>,
   ) => {
-    console.log("Retrieve Bot Message");
+    console.log('Retrieve Bot Message');
     const oldLength = currentMessageObject.length;
     debugger;
     const response = await axios.post(
       // ! Update host later to app.arxena.com/app
-      "http://localhost:3000/arx-chat/retrieve-chat-response",
+      process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/retrieve-chat-response',
       {
         phoneNumberFrom: phoneNumber,
-      }
+      },
     );
-    console.log("Got response after retrieving bot message", response.data);
+    console.log('Got response after retrieving bot message', response.data);
     setMessageHistory(response.data);
     const newMessageHistory = response.data;
 
@@ -265,26 +251,16 @@ export default function ChatWindow(props: {
     // console.log("latest:", newLatestResponseGenerated);
     const newLength = newMessageHistory.length;
     const diff = newLength - oldLength;
-    const arrObjOfToolCalls = response.data.slice(
-      newLength - diff,
-      newLength + 1
-    );
+    const arrObjOfToolCalls = response.data.slice(newLength - diff, newLength + 1);
 
-    let latestObjectText =
-      arrObjOfToolCalls
-        ?.filter(
-          (obj: any) =>
-            obj?.role === "assistant" &&
-            (obj?.content !== null || obj?.content !== "")
-        )
-        .pop()?.content || "Failed to retrieve bot message";
+    let latestObjectText = arrObjOfToolCalls?.filter((obj: any) => obj?.role === 'assistant' && (obj?.content !== null || obj?.content !== '')).pop()?.content || 'Failed to retrieve bot message';
 
     if (
       arrObjOfToolCalls
         // .filter((obj: any) => obj?.role === "tool")
         .filter((obj: any) => obj?.tool_calls?.length > 0)?.length > 0
     ) {
-      latestObjectText = "Tool Calls being called";
+      latestObjectText = 'Tool Calls being called';
     }
     //@ts-ignore
     botResponsePreviewRef.current.value = latestObjectText;
@@ -294,58 +270,47 @@ export default function ChatWindow(props: {
       arrObjOfToolCalls
         // .filter((obj: any) => obj?.role === "tool")
         .filter((obj: any) => obj?.tool_calls?.length > 0)
-        .map(
-          (obj: any) =>
-            obj?.tool_calls?.map((tool: any) => tool?.function?.name)
-        )
+        .map((obj: any) => obj?.tool_calls?.map((tool: any) => tool?.function?.name)),
     );
   };
 
-  const handleInvokeChatAndRunToolCalls = async (
-    phoneNumber: string,
-    latestResponseGenerated: string,
-    setLatestResponseGenerated: React.Dispatch<React.SetStateAction<string>>,
-    setListOfToolCalls: React.Dispatch<React.SetStateAction<string[]>>
-  ) => {
-    console.log("Invoke Chat + Run tool calls");
+  const handleInvokeChatAndRunToolCalls = async (phoneNumber: string, latestResponseGenerated: string, setLatestResponseGenerated: React.Dispatch<React.SetStateAction<string>>, setListOfToolCalls: React.Dispatch<React.SetStateAction<string[]>>) => {
+    console.log('Invoke Chat + Run tool calls');
     debugger;
-    console.log("Retrieve Bot Message");
+    console.log('Retrieve Bot Message');
     //@ts-ignore
-    botResponsePreviewRef.current.value = "";
+    botResponsePreviewRef.current.value = '';
     const response = await axios.post(
       // ! Update host later to app.arxena.com/app
-      "http://localhost:3000/arx-chat/invoke-chat",
+      process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/invoke-chat',
       {
         phoneNumberFrom: phoneNumber,
-      }
+      },
     );
     // clear textarea
-    console.log("Got response after invoking the chat", response.data);
+    console.log('Got response after invoking the chat', response.data);
     setListOfToolCalls([]);
   };
 
-  const handleSendMessage = async (
-    phoneNumber: string,
-    latestResponseGenerated: string
-  ) => {
+  const handleSendMessage = async (phoneNumber: string, latestResponseGenerated: string) => {
     debugger;
-    console.log("Send Message");
+    console.log('Send Message');
     const response = await axios.post(
-      "http://localhost:3000/arx-chat/send-chat",
+      process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/send-chat',
       {
-        messageToSend: latestResponseGenerated || "Didnt work",
+        messageToSend: latestResponseGenerated || 'Didnt work',
         phoneNumberTo: phoneNumber,
       },
       {
         headers: {
           Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
         },
-      }
+      },
     );
   };
 
   const handleToolCalls = () => {
-    console.log("Tool Calls");
+    console.log('Tool Calls');
   };
 
   // useEffect(() => {
@@ -355,12 +320,12 @@ export default function ChatWindow(props: {
   const fetchMessageHistory = async (phoneNumber: string) => {
     const response = await axios.post(
       // ! Update host later to app.arxena.com/app
-      "http://localhost:3000/arx-chat/retrieve-chat-response",
+      process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/retrieve-chat-response',
       {
         phoneNumberFrom: phoneNumber,
-      }
+      },
     );
-    console.log("Got response after retrieving bot message", response.data);
+    console.log('Got response after retrieving bot message', response.data);
     setMessageHistory(response.data);
   };
 
@@ -371,26 +336,19 @@ export default function ChatWindow(props: {
 
   return (
     <>
-      <div style={{ display: "flex", flexDirection: "column" }}>
+      <div style={{ display: 'flex', flexDirection: 'column' }}>
         {(props.selectedIndividual && (
           <StyledWindow>
             <ChatView>
               <StyledTopBar>{`${messageName.firstName} ${messageName.lastName}`}</StyledTopBar>
               <StyledScrollingView>
                 {listOfMessages?.map((message, index) => {
-                  const showDateSeparator =
-                    index === 0 ||
-                    formatDate(listOfMessages[index - 1]?.node?.createdAt) !==
-                      formatDate(message?.node?.createdAt);
+                  const showDateSeparator = index === 0 || formatDate(listOfMessages[index - 1]?.node?.createdAt) !== formatDate(message?.node?.createdAt);
                   return (
                     <>
                       {showDateSeparator && (
-                        <p style={{ textAlign: "center" }}>
-                          <StyledDateComponent>
-                            {dayjs(message?.node?.createdAt).format(
-                              "ddd DD MMM, 'YY"
-                            )}
-                          </StyledDateComponent>
+                        <p style={{ textAlign: 'center' }}>
+                          <StyledDateComponent>{dayjs(message?.node?.createdAt).format("ddd DD MMM, 'YY")}</StyledDateComponent>
                         </p>
                       )}
                       <SingleChatContainer
@@ -415,30 +373,11 @@ export default function ChatWindow(props: {
             </ChatView>
             <StyledChatInputBox>
               <div>
-                <textarea
-                  name=""
-                  id=""
-                  cols={100}
-                  disabled
-                  ref={botResponsePreviewRef}
-                  placeholder="Bot Response Preview will appear here..."
-                ></textarea>
+                <textarea name="" id="" cols={100} disabled ref={botResponsePreviewRef} placeholder="Bot Response Preview will appear here..."></textarea>
               </div>
               <div>
                 <StyledButtonsBelowChatMessage>
-                  <StyledButton2
-                    onClick={() =>
-                      handleRetrieveBotMessage(
-                        currentIndividual?.node?.phone,
-                        latestResponseGenerated,
-                        setLatestResponseGenerated,
-                        listOfToolCalls,
-                        setListOfToolCalls,
-                        messageHistory,
-                        setMessageHistory
-                      )
-                    }
-                  >
+                  <StyledButton2 onClick={() => handleRetrieveBotMessage(currentIndividual?.node?.phone, latestResponseGenerated, setLatestResponseGenerated, listOfToolCalls, setListOfToolCalls, messageHistory, setMessageHistory)}>
                     Retrieve Bot Response
                   </StyledButton2>
                   <StyledButton2
@@ -447,27 +386,15 @@ export default function ChatWindow(props: {
                       //   currentIndividual?.node?.phone,
                       //   latestResponseGenerated
                       // );
-                      handleInvokeChatAndRunToolCalls(
-                        currentIndividual?.node?.phone,
-                        latestResponseGenerated,
-                        setLatestResponseGenerated,
-                        setListOfToolCalls
-                      );
-                    }}
-                  >
+                      handleInvokeChatAndRunToolCalls(currentIndividual?.node?.phone, latestResponseGenerated, setLatestResponseGenerated, setListOfToolCalls);
+                    }}>
                     Invoke Chat + Run tool calls
                   </StyledButton2>
-                  <span>
-                    Tools Called: {listOfToolCalls?.map((tool) => tool + ", ")}
-                  </span>
+                  <span>Tools Called: {listOfToolCalls?.map(tool => tool + ', ')}</span>
                 </StyledButtonsBelowChatMessage>
               </div>
-              <div style={{ display: "flex" }}>
-                <StyledChatInput
-                  type="text"
-                  ref={inputRef}
-                  placeholder="Type your message"
-                />
+              <div style={{ display: 'flex' }}>
+                <StyledChatInput type="text" ref={inputRef} placeholder="Type your message" />
                 <StyledButton onClick={handleSubmit}>Submit</StyledButton>
                 <StyledButton onClick={handleShareJD}>Share JD</StyledButton>
               </div>
@@ -475,10 +402,7 @@ export default function ChatWindow(props: {
           </StyledWindow>
         )) || (
           <div>
-            <img
-              src="/images/placeholders/moving-image/empty_inbox.png"
-              alt=""
-            />
+            <img src="/images/placeholders/moving-image/empty_inbox.png" alt="" />
             <p>Select a chat to start talking</p>
           </div>
         )}
