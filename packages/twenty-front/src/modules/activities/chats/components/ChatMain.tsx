@@ -43,25 +43,25 @@ export default function ChatMain() {
   function getUnreadMessageListManyCandidates(peopleEdges: frontChatTypes.PersonEdge[]): frontChatTypes.UnreadMessageListManyCandidates {
     const listOfUnreadMessages: frontChatTypes.UnreadMessagesPerOneCandidate[] = [];
 
-    peopleEdges.forEach((personEdge: frontChatTypes.PersonEdge) => {
-      const personNode: frontChatTypes.PersonNode = personEdge.node;
+    peopleEdges?.forEach((personEdge: frontChatTypes.PersonEdge) => {
+      const personNode: frontChatTypes.PersonNode = personEdge?.node;
 
-      personNode.candidates.edges.forEach((candidateEdge: frontChatTypes.CandidatesEdge) => {
-        const candidateNode: frontChatTypes.CandidateNode = candidateEdge.node;
+      personNode?.candidates?.edges?.forEach((candidateEdge: frontChatTypes.CandidatesEdge) => {
+        const candidateNode: frontChatTypes.CandidateNode = candidateEdge?.node;
 
-        const ManyUnreadMessages: frontChatTypes.OneUnreadMessage[] = candidateNode.whatsappMessages.edges
-          .map((whatsappMessagesEdge: frontChatTypes.WhatsAppMessagesEdge) => whatsappMessagesEdge.node)
-          .filter((messageNode: frontChatTypes.MessageNode) => messageNode.whatsappDeliveryStatus === 'receivedFromCandidate')
-          .map(
+        const ManyUnreadMessages: frontChatTypes.OneUnreadMessage[] = candidateNode?.whatsappMessages?.edges
+          ?.map((whatsappMessagesEdge: frontChatTypes.WhatsAppMessagesEdge) => whatsappMessagesEdge?.node)
+          ?.filter((messageNode: frontChatTypes.MessageNode) => messageNode?.whatsappDeliveryStatus === 'receivedFromCandidate')
+          ?.map(
             (messageNode: frontChatTypes.MessageNode): frontChatTypes.OneUnreadMessage => ({
-              message: messageNode.message,
-              id: messageNode.id,
-              whatsappDeliveryStatus: messageNode.whatsappDeliveryStatus,
+              message: messageNode?.message,
+              id: messageNode?.id,
+              whatsappDeliveryStatus: messageNode?.whatsappDeliveryStatus,
             }),
           );
 
         if (ManyUnreadMessages.length > 0) {
-          listOfUnreadMessages.push({
+          listOfUnreadMessages?.push({
             candidateId: candidateNode.id,
             ManyUnreadMessages,
           });
