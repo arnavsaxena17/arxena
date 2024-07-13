@@ -1,31 +1,27 @@
-import React, { useEffect, useRef, useState } from "react";
-import { useChats } from "../hooks/useChats";
-import axios from "axios";
-import { useFindManyPeople } from "../hooks/useFindManyPeople";
+import React, { useEffect, useRef, useState } from 'react';
+import { useChats } from '../hooks/useChats';
+import axios from 'axios';
+import { useFindManyPeople } from '../hooks/useFindManyPeople';
 
-import * as frontChatTypes from "../types/front-chat-types";
-import ChatWindow from "./ChatWindow";
-import { useRecoilState, useRecoilValue } from "recoil";
-import { tokenPairState } from "@/auth/states/tokenPairState";
-import ChatSidebar from "./ChatSidebar";
-import { currentUnreadMessagesState } from "@/activities/chats/states/currentUnreadMessagesState";
-
+import * as frontChatTypes from '../types/front-chat-types';
+import ChatWindow from './ChatWindow';
+import { useRecoilState, useRecoilValue } from 'recoil';
+import { tokenPairState } from '@/auth/states/tokenPairState';
+import ChatSidebar from './ChatSidebar';
+import { currentUnreadMessagesState } from '@/activities/chats/states/currentUnreadMessagesState';
 
 export default function ChatMain() {
   // const { loading, error, data } = useQuery(GET_DOGS);
   // if (error) return <div>Error</div>;
   // if (loading) return <div>Fetching</div>;
-  const [inputMessage, setInputMessage] = useState("");
+  const [inputMessage, setInputMessage] = useState('');
   // const [chats, setChats] = useState([]);
-  const [selectedIndividual, setSelectedIndividual] = useState<string>("");
-  const [individuals, setIndividuals] = useState<frontChatTypes.PersonEdge[]>(
-    []
-  );
+  const [selectedIndividual, setSelectedIndividual] = useState<string>('');
+  const [individuals, setIndividuals] = useState<frontChatTypes.PersonEdge[]>([]);
 
-  const [unreadMessages, setUnreadMessages] =
-    useState<frontChatTypes.UnreadMessageListManyCandidates>({
-      listOfUnreadMessages: [],
-    });
+  const [unreadMessages, setUnreadMessages] = useState<frontChatTypes.UnreadMessageListManyCandidates>({
+    listOfUnreadMessages: [],
+  });
 
   const inputRef = useRef(null);
   const [people, setPeople] = useState([]);
@@ -33,12 +29,10 @@ export default function ChatMain() {
 
   const [tokenPair] = useRecoilState(tokenPairState);
 
-  const [currentUnreadMessages, setCurrentUnreadMessages] = useRecoilState(
-    currentUnreadMessagesState
-  );
+  const [currentUnreadMessages, setCurrentUnreadMessages] = useRecoilState(currentUnreadMessagesState);
 
   const handleSubmit = () => {
-    console.log("submit");
+    console.log('submit');
     // console.log(inputRef?.current?.value);
   };
   const variable = useChats();
@@ -46,48 +40,33 @@ export default function ChatMain() {
   console.log(variable);
   console.log(variable2);
 
-  function getUnreadMessageListManyCandidates(
-    peopleEdges: frontChatTypes.PersonEdge[]
-  ): frontChatTypes.UnreadMessageListManyCandidates {
-    const listOfUnreadMessages: frontChatTypes.UnreadMessagesPerOneCandidate[] =
-      [];
+  function getUnreadMessageListManyCandidates(peopleEdges: frontChatTypes.PersonEdge[]): frontChatTypes.UnreadMessageListManyCandidates {
+    const listOfUnreadMessages: frontChatTypes.UnreadMessagesPerOneCandidate[] = [];
 
     peopleEdges.forEach((personEdge: frontChatTypes.PersonEdge) => {
       const personNode: frontChatTypes.PersonNode = personEdge.node;
 
-      personNode.candidates.edges.forEach(
-        (candidateEdge: frontChatTypes.CandidatesEdge) => {
-          const candidateNode: frontChatTypes.CandidateNode =
-            candidateEdge.node;
+      personNode.candidates.edges.forEach((candidateEdge: frontChatTypes.CandidatesEdge) => {
+        const candidateNode: frontChatTypes.CandidateNode = candidateEdge.node;
 
-          const ManyUnreadMessages: frontChatTypes.OneUnreadMessage[] =
-            candidateNode.whatsappMessages.edges
-              .map(
-                (whatsappMessagesEdge: frontChatTypes.WhatsAppMessagesEdge) =>
-                  whatsappMessagesEdge.node
-              )
-              .filter(
-                (messageNode: frontChatTypes.MessageNode) =>
-                  messageNode.whatsappDeliveryStatus === "receivedFromCandidate"
-              )
-              .map(
-                (
-                  messageNode: frontChatTypes.MessageNode
-                ): frontChatTypes.OneUnreadMessage => ({
-                  message: messageNode.message,
-                  id: messageNode.id,
-                  whatsappDeliveryStatus: messageNode.whatsappDeliveryStatus,
-                })
-              );
+        const ManyUnreadMessages: frontChatTypes.OneUnreadMessage[] = candidateNode.whatsappMessages.edges
+          .map((whatsappMessagesEdge: frontChatTypes.WhatsAppMessagesEdge) => whatsappMessagesEdge.node)
+          .filter((messageNode: frontChatTypes.MessageNode) => messageNode.whatsappDeliveryStatus === 'receivedFromCandidate')
+          .map(
+            (messageNode: frontChatTypes.MessageNode): frontChatTypes.OneUnreadMessage => ({
+              message: messageNode.message,
+              id: messageNode.id,
+              whatsappDeliveryStatus: messageNode.whatsappDeliveryStatus,
+            }),
+          );
 
-          if (ManyUnreadMessages.length > 0) {
-            listOfUnreadMessages.push({
-              candidateId: candidateNode.id,
-              ManyUnreadMessages,
-            });
-          }
+        if (ManyUnreadMessages.length > 0) {
+          listOfUnreadMessages.push({
+            candidateId: candidateNode.id,
+            ManyUnreadMessages,
+          });
         }
-      );
+      });
     });
 
     return { listOfUnreadMessages };
@@ -95,30 +74,18 @@ export default function ChatMain() {
 
   useEffect(() => {
     async function fetchData() {
-      const response = await axios.get(
-        "http://localhost:3000/arx-chat/get-candidates-and-chats",
-        {
-          headers: {
-            Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
-          },
-        }
-      );
+      const response = await axios.get(process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/get-candidates-and-chats', {
+        headers: {
+          Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
+        },
+      });
 
-      const availablePeople: frontChatTypes.PersonEdge[] =
-        response?.data?.people?.edges.filter(
-          (person: frontChatTypes.PersonEdge) =>
-            person?.node?.candidates?.edges?.length > 0
-        );
+      const availablePeople: frontChatTypes.PersonEdge[] = response?.data?.people?.edges.filter((person: frontChatTypes.PersonEdge) => person?.node?.candidates?.edges?.length > 0);
 
       console.log(response?.data?.people?.edges);
       setPeople(response?.data?.people?.edges);
       setIndividuals(availablePeople);
-      console.log(
-        response?.data?.people?.edges.filter(
-          (person: frontChatTypes.PersonEdge) =>
-            person?.node?.candidates?.edges?.length > 0
-        )
-      );
+      console.log(response?.data?.people?.edges.filter((person: frontChatTypes.PersonEdge) => person?.node?.candidates?.edges?.length > 0));
 
       // const unreadMessagesList: frontChatTypes.UnreadMessagesPerCandidate[] =
       //   availablePeople?.filter((person: frontChatTypes.PersonEdge) => {
@@ -134,13 +101,10 @@ export default function ChatMain() {
       //     );
       //   });
 
-      const unreadMessagesList =
-        getUnreadMessageListManyCandidates(availablePeople);
+      const unreadMessagesList = getUnreadMessageListManyCandidates(availablePeople);
       console.log(unreadMessagesList);
-      setCurrentUnreadMessages(
-        unreadMessagesList?.listOfUnreadMessages?.length
-      );
-      console.log("count::::", currentUnreadMessages);
+      setCurrentUnreadMessages(unreadMessagesList?.listOfUnreadMessages?.length);
+      console.log('count::::', currentUnreadMessages);
       setUnreadMessages(unreadMessagesList);
       updateUnreadMessagesStatus(selectedIndividual);
     }
@@ -155,19 +119,13 @@ export default function ChatMain() {
   const updateUnreadMessagesStatus = async (selectedIndividual: string) => {
     // debugger;
     const listOfMessagesIds = unreadMessages?.listOfUnreadMessages
-      ?.filter(
-        (unreadMessage) =>
-          unreadMessage.candidateId ===
-          individuals?.filter(
-            (individual) => individual.node.id === selectedIndividual
-          )[0]?.node?.candidates?.edges[0]?.node?.id
-      )[0]
-      ?.ManyUnreadMessages.map((message) => message.id);
+      ?.filter(unreadMessage => unreadMessage.candidateId === individuals?.filter(individual => individual.node.id === selectedIndividual)[0]?.node?.candidates?.edges[0]?.node?.id)[0]
+      ?.ManyUnreadMessages.map(message => message.id);
 
-    console.log("listOfMessagesIds", listOfMessagesIds);
+    console.log('listOfMessagesIds', listOfMessagesIds);
     if (listOfMessagesIds === undefined) return;
     const response = await axios.post(
-      "http://localhost:3000/arx-chat/update-whatsapp-delivery-status",
+      process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/update-whatsapp-delivery-status',
       {
         listOfMessagesIds: listOfMessagesIds,
       },
@@ -175,12 +133,12 @@ export default function ChatMain() {
         headers: {
           Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
         },
-      }
+      },
     );
   };
 
   useEffect(() => {
-    console.log("selectedindividuals", selectedIndividual);
+    console.log('selectedindividuals', selectedIndividual);
     updateUnreadMessagesStatus(selectedIndividual);
   }, [selectedIndividual, individuals]);
 
@@ -188,13 +146,8 @@ export default function ChatMain() {
     <>
       <div>
         <div>
-          <div style={{ display: "flex" }}>
-            <ChatSidebar
-              individuals={individuals}
-              selectedIndividual={selectedIndividual}
-              setSelectedIndividual={setSelectedIndividual}
-              unreadMessages={unreadMessages}
-            />
+          <div style={{ display: 'flex' }}>
+            <ChatSidebar individuals={individuals} selectedIndividual={selectedIndividual} setSelectedIndividual={setSelectedIndividual} unreadMessages={unreadMessages} />
             <div>
               {/* {variable?.records?.map((record) => {
                 return (
@@ -219,10 +172,7 @@ export default function ChatMain() {
               }
               <input type="text" ref={inputRef} />
               <button onClick={handleSubmit}>Submit</button> */}
-              <ChatWindow
-                selectedIndividual={selectedIndividual}
-                individuals={individuals}
-              />
+              <ChatWindow selectedIndividual={selectedIndividual} individuals={individuals} />
             </div>
           </div>
         </div>
