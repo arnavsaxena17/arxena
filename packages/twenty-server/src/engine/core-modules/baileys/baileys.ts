@@ -73,6 +73,7 @@ export class BaileysBot {
         version,
         printQRInTerminal: true,
         defaultQueryTimeoutMs: undefined,
+        syncFullHistory: false,
       });
 
       // return new Promise((resolve, reject) => {

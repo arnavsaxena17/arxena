@@ -4,7 +4,7 @@ import axios from 'axios';
 
 const FormData = require('form-data');
 const fs = require('fs');
-const baseUrl = 'http://localhost:4000/baileys'; // Adjust the base URL as needed
+const baseUrl = 'http://localhost:3000/whatsapp'; // Adjust the base URL as needed
 
 export async function sendWhatsappMessageVIABaileysAPI(whatappUpdateMessageObj: allDataObjects.candidateChatMessageType, personNode: allDataObjects.PersonNode, mostRecentMessageArr: allDataObjects.ChatHistoryItem[]) {
   console.log('Sending message to whatsapp via baileys api');
@@ -34,7 +34,7 @@ export async function sendWhatsappMessageVIABaileysAPI(whatappUpdateMessageObj: 
 
 export async function sendWhatsappTextMessageViaBaileys(sendTextMessageObj: allDataObjects.ChatRequestBody) {
   console.log('This is the ssendTextMessageObj for baileys to be sent ::', sendTextMessageObj);
-  const sendMessageUrl = `${baseUrl}/send-wa-message`;
+  const sendMessageUrl = `${baseUrl}/send`;
   const data = {
     fileBuffer: '',
     fileName: '',
@@ -76,7 +76,7 @@ export async function sendAttachmentMessageViaBaileys(sendTextMessageObj: allDat
   const uploadFileUrl = `${baseUrl}/send-wa-message-file`;
   const data = {
     WANumber: sendTextMessageObj.phoneNumberTo,
-    jid: (sendTextMessageObj.phoneNumberTo.startsWith('+') ? sendTextMessageObj.phoneNumberTo.replace('+', '') : sendTextMessageObj.phoneNumberTo) + '@s.whatsapp.net' + '@s.whatsapp.net',
+    jid: (sendTextMessageObj.phoneNumberTo.startsWith('+') ? sendTextMessageObj.phoneNumberTo.replace('+', '') : sendTextMessageObj.phoneNumberTo) + '@s.whatsapp.net',
     fileData: sendTextMessageObj.fileData,
     message: 'Sharing the JD',
   };
