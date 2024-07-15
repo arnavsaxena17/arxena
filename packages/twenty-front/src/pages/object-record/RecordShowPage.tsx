@@ -1,4 +1,5 @@
 import { useParams } from 'react-router-dom';
+import { useRecoilValue } from 'recoil';
 
 import { TimelineActivityContext } from '@/activities/timelineActivities/contexts/TimelineActivityContext';
 import { RecordShowContainer } from '@/object-record/record-show/components/RecordShowContainer';
@@ -12,6 +13,9 @@ import { PageHeader } from '@/ui/layout/page/PageHeader';
 import { ShowPageAddButton } from '@/ui/layout/show-page/components/ShowPageAddButton';
 import { ShowPageMoreButton } from '@/ui/layout/show-page/components/ShowPageMoreButton';
 import { PageTitle } from '@/ui/utilities/page-title/PageTitle';
+
+import { isAIInterviewModalOpenState } from '@/ai-interview/interview-creation/states/aIInterviewModalState';
+import { InterviewCreationModal } from '@/ai-interview/interview-creation/InterviewCreationModal';
 
 export const RecordShowPage = () => {
   const parameters = useParams<{
@@ -34,6 +38,8 @@ export const RecordShowPage = () => {
     parameters.objectNameSingular ?? '',
     parameters.objectRecordId ?? '',
   );
+
+  const isAIInterviewModalOpen = useRecoilValue(isAIInterviewModalOpenState);
 
   return (
     <RecordFieldValueSelectorContextProvider>
@@ -78,6 +84,14 @@ export const RecordShowPage = () => {
             />
           </TimelineActivityContext.Provider>
         </PageBody>
+        {isAIInterviewModalOpen ? (
+          <InterviewCreationModal
+            objectNameSingular={objectNameSingular}
+            objectRecordId={objectRecordId}
+          />
+        ) : (
+          <></>
+        )}
       </PageContainer>
     </RecordFieldValueSelectorContextProvider>
   );
