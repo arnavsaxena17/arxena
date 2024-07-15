@@ -1,4 +1,4 @@
-import { Controller, Post, Body } from '@nestjs/common';
+import { Controller, Post, Body, Get } from '@nestjs/common';
 import { WhatsappService } from './whiskeysocket-baileys.service';
 import { MessageDto } from './types/baileys-types';
 
@@ -16,4 +16,9 @@ export class WhatsappController {
     console.log(data);
     this.whatsappService.sendMessageFileToBaileys(data);
   }
+
+  // @Get('/get-wa-login-status')
+  // getWaLoginStatus(): Promise<boolean> {
+  //   return this.whatsappService.getCurrentWhatsappLoginStatus();
+  // }
 }

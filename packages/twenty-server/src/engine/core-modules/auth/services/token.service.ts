@@ -1,12 +1,4 @@
-import {
-  BadRequestException,
-  ForbiddenException,
-  Injectable,
-  InternalServerErrorException,
-  NotFoundException,
-  UnauthorizedException,
-  UnprocessableEntityException,
-} from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, InternalServerErrorException, NotFoundException, UnauthorizedException, UnprocessableEntityException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 
@@ -21,23 +13,12 @@ import { ExtractJwt } from 'passport-jwt';
 import { render } from '@react-email/render';
 import { PasswordResetLinkEmail } from 'twenty-emails';
 
-import {
-  JwtAuthStrategy,
-  JwtPayload,
-} from 'src/engine/core-modules/auth/strategies/jwt.auth.strategy';
+import { JwtAuthStrategy, JwtPayload } from 'src/engine/core-modules/auth/strategies/jwt.auth.strategy';
 import { assert } from 'src/utils/assert';
-import {
-  ApiKeyToken,
-  AuthToken,
-  AuthTokens,
-  PasswordResetToken,
-} from 'src/engine/core-modules/auth/dto/token.entity';
+import { ApiKeyToken, AuthToken, AuthTokens, PasswordResetToken } from 'src/engine/core-modules/auth/dto/token.entity';
 import { EnvironmentService } from 'src/engine/integrations/environment/environment.service';
 import { User } from 'src/engine/core-modules/user/user.entity';
-import {
-  AppToken,
-  AppTokenType,
-} from 'src/engine/core-modules/app-token/app-token.entity';
+import { AppToken, AppTokenType } from 'src/engine/core-modules/app-token/app-token.entity';
 import { ValidatePasswordResetToken } from 'src/engine/core-modules/auth/dto/validate-password-reset-token.entity';
 import { EmailService } from 'src/engine/integrations/email/email.service';
 import { InvalidatePassword } from 'src/engine/core-modules/auth/dto/invalidate-password.entity';
@@ -62,10 +43,7 @@ export class TokenService {
     private readonly emailService: EmailService,
   ) {}
 
-  async generateAccessToken(
-    userId: string,
-    workspaceId?: string,
-  ): Promise<AuthToken> {
+  async generateAccessToken(userId: string, workspaceId?: string): Promise<AuthToken> {
     const expiresIn = this.environmentService.get('ACCESS_TOKEN_EXPIRES_IN');
 
     assert(expiresIn, '', InternalServerErrorException);
@@ -145,14 +123,9 @@ export class TokenService {
     };
   }
 
-  async generateTransientToken(
-    workspaceMemberId: string,
-    workspaceId: string,
-  ): Promise<AuthToken> {
+  async generateTransientToken(workspaceMemberId: string, workspaceId: string): Promise<AuthToken> {
     const secret = this.environmentService.get('LOGIN_TOKEN_SECRET');
-    const expiresIn = this.environmentService.get(
-      'SHORT_TERM_TOKEN_EXPIRES_IN',
-    );
+    const expiresIn = this.environmentService.get('SHORT_TERM_TOKEN_EXPIRES_IN');
 
     assert(expiresIn, '', InternalServerErrorException);
     const expiresAt = addMilliseconds(new Date().getTime(), ms(expiresIn));
@@ -170,11 +143,7 @@ export class TokenService {
     };
   }
 
-  async generateApiKeyToken(
-    workspaceId: string,
-    apiKeyId?: string,
-    expiresAt?: Date | string,
-  ): Promise<Pick<ApiKeyToken, 'token'> | undefined> {
+  async generateApiKeyToken(workspaceId: string, apiKeyId?: string, expiresAt?: Date | string): Promise<Pick<ApiKeyToken, 'token'> | undefined> {
     if (!apiKeyId) {
       return;
     }
@@ -185,9 +154,7 @@ export class TokenService {
     let expiresIn: string | number;
 
     if (expiresAt) {
-      expiresIn = Math.floor(
-        (new Date(expiresAt).getTime() - new Date().getTime()) / 1000,
-      );
+      expiresIn = Math.floor((new Date(expiresAt).getTime() - new Date().getTime()) / 1000);
     } else {
       expiresIn = this.environmentService.get('API_TOKEN_EXPIRES_IN');
     }
@@ -207,19 +174,16 @@ export class TokenService {
   }
 
   async validateToken(request: Request): Promise<JwtData> {
+    console.log('request ::', request?.headers?.authorization);
     const token = ExtractJwt.fromAuthHeaderAsBearerToken()(request);
+    console.log('token ::', token);
 
     if (!token) {
       throw new UnauthorizedException('missing authentication token');
     }
-    const decoded = await this.verifyJwt(
-      token,
-      this.environmentService.get('ACCESS_TOKEN_SECRET'),
-    );
+    const decoded = await this.verifyJwt(token, this.environmentService.get('ACCESS_TOKEN_SECRET'));
 
-    const { user, workspace } = await this.jwtStrategy.validate(
-      decoded as JwtPayload,
-    );
+    const { user, workspace } = await this.jwtStrategy.validate(decoded as JwtPayload);
 
     return { user, workspace };
   }
@@ -236,8 +200,7 @@ export class TokenService {
     workspaceMemberId: string;
     workspaceId: string;
   }> {
-    const transientTokenSecret =
-      this.environmentService.get('LOGIN_TOKEN_SECRET');
+    const transientTokenSecret = this.environmentService.get('LOGIN_TOKEN_SECRET');
 
     const payload = await this.verifyJwt(transientToken, transientTokenSecret);
 
@@ -247,10 +210,7 @@ export class TokenService {
     };
   }
 
-  async generateSwitchWorkspaceToken(
-    user: User,
-    workspaceId: string,
-  ): Promise<AuthTokens> {
+  async generateSwitchWorkspaceToken(user: User, workspaceId: string): Promise<AuthTokens> {
     const userExists = await this.userRepository.findBy({ id: user.id });
 
     assert(userExists, 'User not found', NotFoundException);
@@ -262,13 +222,7 @@ export class TokenService {
 
     assert(workspace, 'workspace doesnt exist', NotFoundException);
 
-    assert(
-      workspace.workspaceUsers
-        .map((userWorkspace) => userWorkspace.userId)
-        .includes(user.id),
-      'user does not belong to workspace',
-      ForbiddenException,
-    );
+    assert(workspace.workspaceUsers.map(userWorkspace => userWorkspace.userId).includes(user.id), 'user does not belong to workspace', ForbiddenException);
 
     await this.userRepository.save({
       id: user.id,
@@ -286,23 +240,12 @@ export class TokenService {
     };
   }
 
-  async verifyAuthorizationCode(
-    exchangeAuthCodeInput: ExchangeAuthCodeInput,
-  ): Promise<ExchangeAuthCode> {
-    const { authorizationCode, codeVerifier, clientSecret } =
-      exchangeAuthCodeInput;
+  async verifyAuthorizationCode(exchangeAuthCodeInput: ExchangeAuthCodeInput): Promise<ExchangeAuthCode> {
+    const { authorizationCode, codeVerifier, clientSecret } = exchangeAuthCodeInput;
 
-    assert(
-      authorizationCode,
-      'Authorization code not found',
-      NotFoundException,
-    );
+    assert(authorizationCode, 'Authorization code not found', NotFoundException);
 
-    assert(
-      !codeVerifier || !clientSecret,
-      'client secret or code verifier not found',
-      NotFoundException,
-    );
+    assert(!codeVerifier || !clientSecret, 'client secret or code verifier not found', NotFoundException);
 
     let userId = '';
 
@@ -319,26 +262,11 @@ export class TokenService {
         },
       });
 
-      assert(
-        authorizationCodeAppToken,
-        'Authorization code does not exist',
-        NotFoundException,
-      );
+      assert(authorizationCodeAppToken, 'Authorization code does not exist', NotFoundException);
 
-      assert(
-        authorizationCodeAppToken.expiresAt.getTime() >= Date.now(),
-        'Authorization code expired.',
-        ForbiddenException,
-      );
+      assert(authorizationCodeAppToken.expiresAt.getTime() >= Date.now(), 'Authorization code expired.', ForbiddenException);
 
-      const codeChallenge = crypto
-        .createHash('sha256')
-        .update(codeVerifier)
-        .digest()
-        .toString('base64')
-        .replace(/\+/g, '-')
-        .replace(/\//g, '_')
-        .replace(/=/g, '');
+      const codeChallenge = crypto.createHash('sha256').update(codeVerifier).digest().toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
 
       const codeChallengeAppToken = await this.appTokenRepository.findOne({
         where: {
@@ -346,23 +274,11 @@ export class TokenService {
         },
       });
 
-      assert(
-        codeChallengeAppToken,
-        'code verifier doesnt match the challenge',
-        ForbiddenException,
-      );
+      assert(codeChallengeAppToken, 'code verifier doesnt match the challenge', ForbiddenException);
 
-      assert(
-        codeChallengeAppToken.expiresAt.getTime() >= Date.now(),
-        'code challenge expired.',
-        ForbiddenException,
-      );
+      assert(codeChallengeAppToken.expiresAt.getTime() >= Date.now(), 'code challenge expired.', ForbiddenException);
 
-      assert(
-        codeChallengeAppToken.userId === authorizationCodeAppToken.userId,
-        'authorization code / code verifier was not created by same client',
-        ForbiddenException,
-      );
+      assert(codeChallengeAppToken.userId === authorizationCodeAppToken.userId, 'authorization code / code verifier was not created by same client', ForbiddenException);
 
       if (codeChallengeAppToken.revokedAt) {
         throw new ForbiddenException('Token has been revoked.');
@@ -382,19 +298,14 @@ export class TokenService {
     });
 
     if (!user) {
-      throw new NotFoundException(
-        'User who generated the token does not exist',
-      );
+      throw new NotFoundException('User who generated the token does not exist');
     }
 
     if (!user.defaultWorkspace) {
       throw new NotFoundException('User does not have a default workspace');
     }
 
-    const accessToken = await this.generateAccessToken(
-      user.id,
-      user.defaultWorkspaceId,
-    );
+    const accessToken = await this.generateAccessToken(user.id, user.defaultWorkspaceId);
     const refreshToken = await this.generateRefreshToken(user.id);
     const loginToken = await this.generateLoginToken(user.email);
 
@@ -410,11 +321,7 @@ export class TokenService {
     const coolDown = this.environmentService.get('REFRESH_TOKEN_COOL_DOWN');
     const jwtPayload = await this.verifyJwt(refreshToken, secret);
 
-    assert(
-      jwtPayload.jti && jwtPayload.sub,
-      'This refresh token is malformed',
-      UnprocessableEntityException,
-    );
+    assert(jwtPayload.jti && jwtPayload.sub, 'This refresh token is malformed', UnprocessableEntityException);
 
     const token = await this.appTokenRepository.findOneBy({
       id: jwtPayload.jti,
@@ -430,10 +337,7 @@ export class TokenService {
     assert(user, 'User not found', NotFoundException);
 
     // Check if revokedAt is less than coolDown
-    if (
-      token.revokedAt &&
-      token.revokedAt.getTime() <= Date.now() - ms(coolDown)
-    ) {
+    if (token.revokedAt && token.revokedAt.getTime() <= Date.now() - ms(coolDown)) {
       // Revoke all user refresh tokens
       await Promise.all(
         user.appTokens.map(async ({ id, type }) => {
@@ -448,9 +352,7 @@ export class TokenService {
         }),
       );
 
-      throw new ForbiddenException(
-        'Suspicious activity detected, this refresh token has been revoked. All tokens has been revoked.',
-      );
+      throw new ForbiddenException('Suspicious activity detected, this refresh token has been revoked. All tokens has been revoked.');
     }
 
     return { user, token };
@@ -485,9 +387,7 @@ export class TokenService {
   }
 
   computeRedirectURI(loginToken: string): string {
-    return `${this.environmentService.get(
-      'FRONT_BASE_URL',
-    )}/verify?loginToken=${loginToken}`;
+    return `${this.environmentService.get('FRONT_BASE_URL')}/verify?loginToken=${loginToken}`;
   }
 
   async verifyJwt(token: string, secret?: string) {
@@ -511,15 +411,9 @@ export class TokenService {
 
     assert(user, 'User not found', NotFoundException);
 
-    const expiresIn = this.environmentService.get(
-      'PASSWORD_RESET_TOKEN_EXPIRES_IN',
-    );
+    const expiresIn = this.environmentService.get('PASSWORD_RESET_TOKEN_EXPIRES_IN');
 
-    assert(
-      expiresIn,
-      'PASSWORD_RESET_TOKEN_EXPIRES_IN constant value not found',
-      InternalServerErrorException,
-    );
+    assert(expiresIn, 'PASSWORD_RESET_TOKEN_EXPIRES_IN constant value not found', InternalServerErrorException);
 
     const existingToken = await this.appTokenRepository.findOne({
       where: {
@@ -531,23 +425,13 @@ export class TokenService {
     });
 
     if (existingToken) {
-      const timeToWait = ms(
-        differenceInMilliseconds(existingToken.expiresAt, new Date()),
-        { long: true },
-      );
+      const timeToWait = ms(differenceInMilliseconds(existingToken.expiresAt, new Date()), { long: true });
 
-      assert(
-        false,
-        `Token has already been generated. Please wait for ${timeToWait} to generate again.`,
-        BadRequestException,
-      );
+      assert(false, `Token has already been generated. Please wait for ${timeToWait} to generate again.`, BadRequestException);
     }
 
     const plainResetToken = crypto.randomBytes(32).toString('hex');
-    const hashedResetToken = crypto
-      .createHash('sha256')
-      .update(plainResetToken)
-      .digest('hex');
+    const hashedResetToken = crypto.createHash('sha256').update(plainResetToken).digest('hex');
 
     const expiresAt = addMilliseconds(new Date().getTime(), ms(expiresIn));
 
@@ -564,10 +448,7 @@ export class TokenService {
     };
   }
 
-  async sendEmailPasswordResetLink(
-    resetToken: PasswordResetToken,
-    email: string,
-  ): Promise<EmailPasswordResetLink> {
+  async sendEmailPasswordResetLink(resetToken: PasswordResetToken, email: string): Promise<EmailPasswordResetLink> {
     const user = await this.userRepository.findOneBy({
       email,
     });
@@ -579,15 +460,9 @@ export class TokenService {
 
     const emailData = {
       link: resetLink,
-      duration: ms(
-        differenceInMilliseconds(
-          resetToken.passwordResetTokenExpiresAt,
-          new Date(),
-        ),
-        {
-          long: true,
-        },
-      ),
+      duration: ms(differenceInMilliseconds(resetToken.passwordResetTokenExpiresAt, new Date()), {
+        long: true,
+      }),
     };
 
     const emailTemplate = PasswordResetLinkEmail(emailData);
@@ -600,9 +475,7 @@ export class TokenService {
     });
 
     this.emailService.send({
-      from: `${this.environmentService.get(
-        'EMAIL_FROM_NAME',
-      )} <${this.environmentService.get('EMAIL_FROM_ADDRESS')}>`,
+      from: `${this.environmentService.get('EMAIL_FROM_NAME')} <${this.environmentService.get('EMAIL_FROM_ADDRESS')}>`,
       to: email,
       subject: 'Action Needed to Reset Password',
       text,
@@ -612,13 +485,8 @@ export class TokenService {
     return { success: true };
   }
 
-  async validatePasswordResetToken(
-    resetToken: string,
-  ): Promise<ValidatePasswordResetToken> {
-    const hashedResetToken = crypto
-      .createHash('sha256')
-      .update(resetToken)
-      .digest('hex');
+  async validatePasswordResetToken(resetToken: string): Promise<ValidatePasswordResetToken> {
+    const hashedResetToken = crypto.createHash('sha256').update(resetToken).digest('hex');
 
     const token = await this.appTokenRepository.findOne({
       where: {
@@ -643,9 +511,7 @@ export class TokenService {
     };
   }
 
-  async invalidatePasswordResetToken(
-    userId: string,
-  ): Promise<InvalidatePassword> {
+  async invalidatePasswordResetToken(userId: string): Promise<InvalidatePassword> {
     const user = await this.userRepository.findOneBy({
       id: userId,
     });
