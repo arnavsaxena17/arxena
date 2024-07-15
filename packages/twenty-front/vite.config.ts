@@ -8,7 +8,6 @@ import tsconfigPaths from 'vite-tsconfig-paths';
 
 type Checkers = Parameters<typeof checker>[0];
 
-// https://vitejs.dev/config/
 export default defineConfig(({ command, mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
 

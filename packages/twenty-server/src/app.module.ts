@@ -9,6 +9,8 @@ import { ServeStaticModule } from '@nestjs/serve-static';
 import { GraphQLModule } from '@nestjs/graphql';
 
 import { existsSync } from 'fs';
+import { DevtoolsModule } from '@nestjs/devtools-integration';
+
 import { join } from 'path';
 
 import { YogaDriverConfig, YogaDriver } from '@graphql-yoga/nestjs';
@@ -26,17 +28,21 @@ import { MessageQueueDriverType } from 'src/engine/integrations/message-queue/in
 
 import { IntegrationsModule } from './engine/integrations/integrations.module';
 import { CoreEngineModule } from './engine/core-modules/core-engine.module';
+import { EnvironmentService } from 'src/engine/integrations/environment/environment.service';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
     // Nest.js devtools, use devtools.nestjs.com to debug
-    // DevtoolsModule.registerAsync({
-    //   useFactory: (environmentService: EnvironmentService) => ({
-    //     http: environmentService.get('DEBUG_MODE'),
-    //     port: environmentService.get('DEBUG_PORT'),
-    //   }),
-    //   inject: [EnvironmentService],
-    // }),
+    DevtoolsModule.registerAsync({
+      useFactory: (environmentService: EnvironmentService) => ({
+        http: environmentService.get('DEBUG_MODE'),
+        port: environmentService.get('DEBUG_PORT'),
+      }),
+      inject: [EnvironmentService],
+    }),
+    ScheduleModule.forRoot(),
+
     ConfigModule.forRoot({
       isGlobal: true,
     }),

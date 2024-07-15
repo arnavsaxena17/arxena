@@ -42,7 +42,7 @@ export class AnalyticsService {
     };
 
     try {
-      await this.httpService.axiosRef.post('/v1', data);
+      // await this.httpService.axiosRef.post('/v1', data);
     } catch {
       this.logger.error('Failed to send analytics event');
 

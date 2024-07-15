@@ -26,4 +26,5 @@ export enum CoreObjectNameSingular {
   AIInterview = 'aIInterview',
   Job = 'job',
   Candidate = 'candidate',
+  whatsappMessage = 'whatsappMessage',
 }

@@ -84,6 +84,13 @@ export const PageChangeEffect = () => {
         });
         break;
       }
+      case isMatchingLocation(AppPath.ChatsPage): {
+        setHotkeyScope(PageHotkeyScope.ChatsPage, {
+          goto: true,
+          keyboardShortcutMenu: true,
+        });
+        break;
+      }
 
       case isMatchingLocation(AppPath.SignInUp): {
         setHotkeyScope(PageHotkeyScope.SignInUp);
