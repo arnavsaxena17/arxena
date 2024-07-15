@@ -48,16 +48,14 @@ export class WhatsappService {
       agent: agent,
       logger: this.logger,
       printQRInTerminal: true,
-      auth: {
-        creds: state.creds,
-        keys: makeCacheableSignalKeyStore(state.keys, this.logger),
-      },
+      auth: { creds: state.creds, keys: makeCacheableSignalKeyStore(state.keys, this.logger), },
       msgRetryCounterCache: nodeCache,
     });
 
     this.store.bind(this.sock.ev);
 
     this.sock.ev.process(async events => {
+
       if (events['connection.update']) {
         const { connection, lastDisconnect } = events['connection.update'];
         if (connection === 'close') {
@@ -74,9 +72,17 @@ export class WhatsappService {
         await saveCreds();
       }
 
+
       if (events['messages.upsert']) {
+        console.log('events::::', events);
         const upsert = events['messages.upsert'];
-        console.log('recv messages', JSON.stringify(upsert, undefined, 2));
+        console.log("Upsert Type::", upsert.type);
+        // console.log("These are events:", JSON.stringify(events, undefined, 2));
+        // console.log('recv messages', JSON.stringify(upsert, undefined, 2));
+        const selfWhatsappID = this.sock.user.id;
+        const selfPhoneNumber = selfWhatsappID.split(':')[0];
+
+        console.log('Phone Number selfWhatsappID:', selfWhatsappID);
 
         if (upsert.type === 'notify') {
           let phoneNumberTo = '';
@@ -86,7 +92,9 @@ export class WhatsappService {
           } catch {
             phoneNumberTo = '';
           }
-          console.log('Phone Number TO captured:', phoneNumberTo);
+          console.log('Phone Number TO upsert?.messages[0]?.key?.remoteJid:', phoneNumberTo);
+
+          console.log('Phone Number TO captured:', selfPhoneNumber);
           for (const msg of upsert.messages) {
             if (!msg.key.fromMe) {
               let data: any = {
@@ -95,13 +103,14 @@ export class WhatsappService {
                 fromRemoteJid: msg?.key?.remoteJid,
                 message: msg?.message?.conversation || msg?.message?.extendedTextMessage?.text || '',
               };
+
               let event = 'message';
               console.log('replying to', msg.key.remoteJid);
               await this.sock.readMessages([msg.key]);
               const baileysWhatsappIncomingObj = {
                 phoneNumberFrom: '+' + msg?.key?.remoteJid?.replace('@s.whatsapp.net', ''),
                 message: msg?.message?.conversation || msg?.message?.extendedTextMessage?.text || '',
-                phoneNumberTo: phoneNumberTo,
+                phoneNumberTo: selfPhoneNumber,
                 messageTimeStamp: msg?.messageTimestamp,
                 fromName: msg?.pushName,
                 baileysMessageId: msg?.key?.id,
@@ -110,6 +119,20 @@ export class WhatsappService {
               console.log('baileysWhatsappIncomingObj', baileysWhatsappIncomingObj);
               this.sock?.server?.emit(event, data);
               await this.downloadAllMediaFiles(msg, this.sock, msg.key.remoteJid);
+            }
+            else{
+              console.log('Message is from me:', msg.key.fromMe);
+              console.log("This is the message:", msg);
+              const baileysWhatsappIncomingObj = {
+                phoneNumberTo: '+' + msg?.key?.remoteJid?.replace('@s.whatsapp.net', ''),
+                message: msg?.message?.conversation || msg?.message?.extendedTextMessage?.text || '',
+                phoneNumberFrom: selfPhoneNumber,
+                messageTimeStamp: msg?.messageTimestamp,
+                fromName: msg?.pushName,
+                baileysMessageId: msg?.key?.id,
+              };
+              await new IncomingWhatsappMessages().receiveIncomingMessagesFromSelfFromBaileys(baileysWhatsappIncomingObj);
+
             }
           }
         }
@@ -157,21 +180,8 @@ export class WhatsappService {
     console.log('This is the ogFileName message?.documentWithCaptionMessage:', message?.documentWithCaptionMessage);
     console.log('This is the ogFileName message?.documentWithCaptionMessage message?.documentWithCaptionMessage?.message?.fileName:', message?.documentWithCaptionMessage?.message?.documentMessage?.fileName);
     // download the message
-    const buffer = await downloadMediaMessage(
-      m,
-      'buffer',
-      {},
-      {
-        logger: this.logger,
-        // pass this so that baileys can request a reupload of media
-        // that has been deleted
-        reuploadRequest: socket.updateMediaMessage,
-      },
-    );
-    let data: any = {
-      fileName: ogFileName,
-      fileBuffer: buffer,
-    };
+    const buffer = await downloadMediaMessage( m, 'buffer', {}, { logger: this.logger, reuploadRequest: socket.updateMediaMessage, }, );
+    let data: any = { fileName: ogFileName, fileBuffer: buffer, };
     this.handleFileUpload(data, '');
     // downloadMediaFiles(m, socket, messageType);
   }
@@ -210,29 +220,19 @@ export class WhatsappService {
   async sendMessageWTyping(msg: AnyMessageContent, jid: string) {
     await this.sock.presenceSubscribe(jid);
     await delay(500);
-
     await this.sock.sendPresenceUpdate('composing', jid);
     await delay(2000);
-
     await this.sock.sendPresenceUpdate('paused', jid);
-
-    await this.sock.sendMessage(jid, msg);
+    const sendMessageResponse = await this.sock.sendMessage(jid, msg);
+    // console.log('sendMessageResponse in baileys service::', sendMessageResponse);
+    return sendMessageResponse
   }
 
   async sendMessageFileToBaileys(body: MessageDto) {
     const { jid, message, fileData: { filePath, mimetype, fileName } = {} as any } = body;
     console.log('file media ', { jid, message, filePath, mimetype, fileName });
     try {
-      await this.sock.sendMessage(
-        jid,
-        {
-          document: { url: filePath },
-          caption: message,
-          mimetype,
-          fileName,
-        },
-        { url: filePath },
-      );
+      await this.sock.sendMessage( jid, { document: { url: filePath }, caption: message, mimetype, fileName, }, { url: filePath }, );
     } catch (error) {
       console.log('baileys.sendMessage got error');
       // this.handleError(error);

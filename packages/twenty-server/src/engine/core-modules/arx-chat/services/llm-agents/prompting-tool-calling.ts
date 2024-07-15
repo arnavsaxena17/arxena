@@ -71,8 +71,9 @@ export class ToolsForAgents {
     // const formattedQuestions = questions.map((question, index) =>  `${index + 1}. ${question.replace("{location}", location)}`).join("\n");
     // return formattedQuestions
     const jobId = personNode?.candidates?.edges[0]?.node?.jobs?.id;
-    console.log('This is the job Id:', jobId);
+    // console.log('This is the job Id:', jobId);
     const { questionArray, questionIdArray } = await new FetchAndUpdateCandidatesChatsWhatsapps().fetchQuestionsByJobId(jobId);
+    // Hardcoded questions to ask if no questions are found in the database
     if (questionArray.length == 0) {
       return ['What is your current & expected CTC?', 'Who do you report to and which functions report to you?', 'Are you okay to relocate to {location}?'];
     }
@@ -80,7 +81,7 @@ export class ToolsForAgents {
   }
 
   async getSystemPrompt(personNode: allDataObjects.PersonNode) {
-    console.log('This is the candidate profile:', personNode);
+    // console.log('This is the candidate profile:', personNode);
     const questionArray = await this.getQuestionsToAsk(personNode);
     const formattedQuestions = questionArray.map((question, index) => `${index + 1}. ${question}`).join('\n');
     // console.log('Formtted Questions:', formattedQuestions);

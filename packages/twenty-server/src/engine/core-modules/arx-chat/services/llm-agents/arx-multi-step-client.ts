@@ -22,7 +22,6 @@ export class OpenAIArxMultiStepClient {
   }
   // THis is the entry point
   async createCompletion(mostRecentMessageArr: allDataObjects.ChatHistoryItem[], personNode: allDataObjects.PersonNode, engagementType:"remind"|"engage", isChatEnabled: boolean = true) {
-    console.log("Going top create completion in multi step client");
     const stage = await this.getStageOfTheConversation(mostRecentMessageArr, engagementType);
     console.log("This is the stage that is arrived at CURRENT STAGE::::::::", stage);
     mostRecentMessageArr = await this.runCandidateFacingAgentsAlongWithToolCalls(mostRecentMessageArr, personNode, stage, isChatEnabled);
@@ -81,12 +80,12 @@ export class OpenAIArxMultiStepClient {
     // @ts-ignore
     const response = await this.openAIclient.chat.completions.create({ model: modelName, messages: mostRecentMessageArr, tools: tools, tool_choice: "auto" });
     const responseMessage: ChatCompletionMessage = response.choices[0].message;
-    console.log("BOT_MESSAGE:", responseMessage.content);
+    console.log("BOT_MESSAGE in runCandidateFacingAgentsAlongWithToolCalls_stage1 :", responseMessage.content);
     mostRecentMessageArr.push(responseMessage); // extend conversation with assistant's reply
     if (responseMessage.tool_calls && isChatEnabled) {
       mostRecentMessageArr = await this.addResponseAndToolCallsToMessageHistory( responseMessage, mostRecentMessageArr, stage );
     }
-    await this.sendWhatsappMessageToCandidate(response?.choices[0]?.message?.content || "", mostRecentMessageArr, isChatEnabled);
+    await this.sendWhatsappMessageToCandidate(response?.choices[0]?.message?.content || "", mostRecentMessageArr, "runCandidateFacingAgentsAlongWithToolCalls_stage1" ,isChatEnabled);
     return mostRecentMessageArr;
   }
 
@@ -97,7 +96,7 @@ export class OpenAIArxMultiStepClient {
     // @ts-ignore
     const response = await this.openAIclient.chat.completions.create({ model: modelName, messages: mostRecentMessageArr, tools: tools, tool_choice: "auto", });
     const responseMessage: ChatCompletionMessage = response.choices[0].message;
-    console.log("BOT_MESSAGE:", responseMessage.content);
+    console.log("BOT_MESSAGE in runSystemFacingAgentsAlongWithToolCalls:", responseMessage.content);
     mostRecentMessageArr.push(responseMessage); // extend conversation with assistant's reply
     if (responseMessage.tool_calls) {
       mostRecentMessageArr = await this.addResponseAndToolCallsToMessageHistory(responseMessage, mostRecentMessageArr, stage);
@@ -122,19 +121,19 @@ export class OpenAIArxMultiStepClient {
       const tools = await new ToolsForAgents().getCandidateFacingToolsByStage(stage);
       // @ts-ignore
       const response = await this.openAIclient.chat.completions.create({ model: modelName, messages: messages, tools: tools, tool_choice: "auto", });
-      console.log("BOT_MESSAGE:", response.choices[0].message.content);
+      console.log("BOT_MESSAGE in addResponseAndToolCallsToMessageHistory_stage2:", response.choices[0].message.content);
       messages.push(response.choices[0].message);
       if (response.choices[0].message.tool_calls) {
         messages = await this.addResponseAndToolCallsToMessageHistory(response.choices[0].message, messages, stage);
       }
       const mostRecentMessageArr = messages;
-      await this.sendWhatsappMessageToCandidate(response?.choices[0]?.message?.content || "", mostRecentMessageArr);
+      await this.sendWhatsappMessageToCandidate(response?.choices[0]?.message?.content || "", mostRecentMessageArr, "addResponseAndToolCallsToMessageHistory_stage2");
     }
     return messages;
   }
 
-  async sendWhatsappMessageToCandidate(messageText: string, mostRecentMessageArr: allDataObjects.ChatHistoryItem[], isChatEnabled?: boolean) {
-    console.log("Called sendWhatsappMessageToCandidate to send message via any whatsapp api");
+  async sendWhatsappMessageToCandidate(messageText: string, mostRecentMessageArr: allDataObjects.ChatHistoryItem[], functionSource:string, isChatEnabled?: boolean) {
+    console.log("Called sendWhatsappMessageToCandidate to send message via any whatsapp api::", functionSource);
     if (messageText === "#DONTRESPOND#") {
       console.log("Found a #DONTRESPOND# message, so not sending any message");
       return;

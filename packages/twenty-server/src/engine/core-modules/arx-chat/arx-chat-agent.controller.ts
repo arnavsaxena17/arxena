@@ -58,7 +58,7 @@ export class ArxChatEndpoint {
     const personObj: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(request.body.phoneNumberFrom);
     const personCandidateNode = personObj?.candidates?.edges[0]?.node;
     const messagesList = personCandidateNode?.whatsappMessages?.edges;
-    console.log('Current Messages list:', messagesList);
+    // console.log('Current Messages list:', messagesList);
     let mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = new CandidateEngagementArx().getMostRecentMessageFromMessagesList(messagesList);
     // console.log('mostRecentMessageArr before chatCompletion:', mostRecentMessageArr);
     if (mostRecentMessageArr?.length > 0) {
@@ -97,7 +97,7 @@ export class ArxChatEndpoint {
     try {
       const personCandidateNode = personObj?.candidates?.edges[0]?.node;
       const messagesList = personCandidateNode?.whatsappMessages?.edges;
-      console.log('Current Messages list:', messagesList);
+      // console.log('Current Messages list:', messagesList);
       let mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = new CandidateEngagementArx().getMostRecentMessageFromMessagesList(messagesList);
       const isChatEnabled: boolean = false;
       // console.log('mostRecentMessageArr before chatCompletion:', mostRecentMessageArr);
@@ -348,9 +348,7 @@ export class ArxChatEndpoint {
           variables: variablesToUpdateDeliveryStatus,
         });
         const responseOfDeliveryStatus = await axiosRequest(graphqlQueryObjForUpdationForDeliveryStatus);
-
         console.log('Res:::', responseOfDeliveryStatus?.data);
-
         console.log('---------------DELIVERY STATUS UPDATE DONE-----------------------');
       }
       return { status: 'Success' };
@@ -534,17 +532,7 @@ export class TwilioControllers {
 export class WhatsappTestAPI {
   @Post("template")
   async create(@Req() request: Request): Promise<object> {
-    // const defaultSendMessageObj = {
-    //   template_name: "recruitment",
-    //   recipient: "918411937769",
-    //   recruiterName: "John",
-    //   candidateFirstName: "Jane",
-    //   recruiterJobTitle: "Recruiter",
-    //   recruiterCompanyName: "Arxena",
-    //   recruiterCompanyDescription: "US Based Recruitment Company",
-    //   jobPositionName: "Sales Head",
-    //   jobLocation: "Surat",
-    // };
+
     const sendMessageObj: allDataObjects.sendWhatsappTemplateMessageObjectType =
       request.body as unknown as allDataObjects.sendWhatsappTemplateMessageObjectType;
     new FacebookWhatsappChatApi().sendWhatsappTemplateMessage(sendMessageObj);
