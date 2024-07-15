@@ -3,12 +3,14 @@
 /.idea
 **/**/node_modules/
 .cache
-
+packages/twenty-server/auth_info_baileys/*
 # yarn is the recommended package manager across the project
 **/**/.package-lock.json
-
+packages/twenty-server/FileUploads/*
 .nx/installation
 .nx/cache
+.env
+.env.local
 
 .pnp.*
 .yarn/*
@@ -28,3 +30,15 @@ storybook-static
 .eslintcache
 .cache
 .nyc_output
+**/**/*.pdf
+.vscode/
+**/**/token.json
+**/**/credentials.json
+
+packages/twenty-server/.attachments/*
+packages/twenty-server/.voice-messages/*
+packages/twenty-server/auth_info_baileys/*
+
+packages/twenty-server/baileys_store_multi.json
+packages/twenty-server/baileys_auth_info/*
+

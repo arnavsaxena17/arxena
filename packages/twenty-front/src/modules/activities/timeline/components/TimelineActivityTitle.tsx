@@ -56,7 +56,7 @@ export const TimelineActivityTitle = ({
       </StyledCheckboxContainer>
     )}
     <StyledTitleText completed={completed} hasCheckbox={type === 'Task'}>
-      <OverflowingTextWithTooltip text={title ? title : 'Task title'} />
+      <OverflowingTextWithTooltip text={title ? title : 'Task titled'} />
     </StyledTitleText>
   </StyledTitleContainer>
 );

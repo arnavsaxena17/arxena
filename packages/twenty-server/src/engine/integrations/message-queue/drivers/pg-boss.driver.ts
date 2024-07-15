@@ -39,10 +39,11 @@ export class PgBossDriver
     handler: (job: MessageQueueJob<T>) => Promise<void>,
     options?: MessageQueueWorkerOptions,
   ) {
+    console.log("Thrse are options:", options)
     return this.pgBoss.work<T>(
       `${queueName}.*`,
       {
-        teamConcurrency: options?.concurrency,
+        teamConcurrency: 999,
       },
       async (job) => {
         await handler({ data: job.data, id: job.id, name: job.name });

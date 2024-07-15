@@ -8,7 +8,7 @@ import { SubTitle } from 'src/components/SubTitle';
 export const WhatIsTwenty = () => {
   return (
     <>
-      <SubTitle value="What is Twenty?" />
+      <SubTitle value="What is Arxena?" />
       <MainText>
         A software to help businesses manage their customer data and
         relationships efficiently.
@@ -36,7 +36,7 @@ export const WhatIsTwenty = () => {
         </Column>
       </Row>
       <ShadowText>
-        Twenty.com Public Benefit Corporation
+        arxena.com Public Benefit Corporation
         <br />
         2261 Market Street #5275
         <br />
