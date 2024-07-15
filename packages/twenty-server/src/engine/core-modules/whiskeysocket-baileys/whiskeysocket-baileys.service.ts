@@ -25,17 +25,21 @@ import { IncomingWhatsappMessages } from '../arx-chat/services/whatsapp-api/inco
 import { BaileysIncomingMessage } from '../arx-chat/services/data-model-objects';
 import { FileDataDto, MessageDto } from './types/baileys-types';
 import { SocksProxyAgent } from 'socks-proxy-agent';
+import { EventsGateway } from './events-gateway-module/events-gateway';
 const nodeCache = new NodeCache();
 
 const agent = new SocksProxyAgent(process.env.SMART_PROXY_URL || '');
+
+// WhatsappService(USER).eventsGateway.emitEvent();
 
 @Injectable()
 export class WhatsappService {
   private readonly logger = MAIN_LOGGER.child({});
   private sock: any;
   private store: any = makeStore();
+  public connectionStatus: boolean = false; // Add this line
 
-  constructor() {
+  constructor(private eventsGateway: EventsGateway) {
     this.startSock();
   }
 
@@ -48,16 +52,20 @@ export class WhatsappService {
       agent: agent,
       logger: this.logger,
       printQRInTerminal: true,
-      auth: { creds: state.creds, keys: makeCacheableSignalKeyStore(state.keys, this.logger), },
+      auth: { creds: state.creds, keys: makeCacheableSignalKeyStore(state.keys, this.logger) },
       msgRetryCounterCache: nodeCache,
     });
 
     this.store.bind(this.sock.ev);
 
     this.sock.ev.process(async events => {
-
       if (events['connection.update']) {
-        const { connection, lastDisconnect } = events['connection.update'];
+        const { connection, lastDisconnect, qr } = events['connection.update'];
+        if (qr) {
+          console.log('Sending the QR through socket', qr);
+          const event = 'qr';
+          this?.eventsGateway?.emitEvent(event, qr); // Emit event through the gateway
+        }
         if (connection === 'close') {
           if ((lastDisconnect?.error as Boom)?.output?.statusCode !== DisconnectReason.loggedOut) {
             this.startSock();
@@ -66,17 +74,21 @@ export class WhatsappService {
           }
         }
         console.log('connection update', events['connection.update']);
+        // this.eventsGateway.updateLoginState(events['connection.update'].connection === 'open'); // Update connection status
+
+        this.connectionStatus = events['connection.update'].connection === 'open'; // Update connection status
+
+        this?.eventsGateway?.emitEvent('isWhatsappLoggedIn', events['connection.update'].connection === 'open');
       }
 
       if (events['creds.update']) {
         await saveCreds();
       }
 
-
       if (events['messages.upsert']) {
         console.log('events::::', events);
         const upsert = events['messages.upsert'];
-        console.log("Upsert Type::", upsert.type);
+        console.log('Upsert Type::', upsert.type);
         // console.log("These are events:", JSON.stringify(events, undefined, 2));
         // console.log('recv messages', JSON.stringify(upsert, undefined, 2));
         const selfWhatsappID = this.sock.user.id;
@@ -119,10 +131,9 @@ export class WhatsappService {
               console.log('baileysWhatsappIncomingObj', baileysWhatsappIncomingObj);
               this.sock?.server?.emit(event, data);
               await this.downloadAllMediaFiles(msg, this.sock, msg.key.remoteJid);
-            }
-            else{
+            } else {
               console.log('Message is from me:', msg.key.fromMe);
-              console.log("This is the message:", msg);
+              console.log('This is the message:', msg);
               const baileysWhatsappIncomingObj = {
                 phoneNumberTo: '+' + msg?.key?.remoteJid?.replace('@s.whatsapp.net', ''),
                 message: msg?.message?.conversation || msg?.message?.extendedTextMessage?.text || '',
@@ -132,7 +143,6 @@ export class WhatsappService {
                 baileysMessageId: msg?.key?.id,
               };
               await new IncomingWhatsappMessages().receiveIncomingMessagesFromSelfFromBaileys(baileysWhatsappIncomingObj);
-
             }
           }
         }
@@ -180,9 +190,13 @@ export class WhatsappService {
     console.log('This is the ogFileName message?.documentWithCaptionMessage:', message?.documentWithCaptionMessage);
     console.log('This is the ogFileName message?.documentWithCaptionMessage message?.documentWithCaptionMessage?.message?.fileName:', message?.documentWithCaptionMessage?.message?.documentMessage?.fileName);
     // download the message
-    const buffer = await downloadMediaMessage( m, 'buffer', {}, { logger: this.logger, reuploadRequest: socket.updateMediaMessage, }, );
-    let data: any = { fileName: ogFileName, fileBuffer: buffer, };
-    this.handleFileUpload(data, '');
+    try {
+      const buffer = await downloadMediaMessage(m, 'buffer', {}, { logger: this.logger, reuploadRequest: socket.updateMediaMessage });
+      let data: any = { fileName: ogFileName, fileBuffer: buffer };
+      this.handleFileUpload(data, '');
+    } catch (error) {
+      console.log('Error downloading media:', error);
+    }
     // downloadMediaFiles(m, socket, messageType);
   }
 
@@ -225,17 +239,21 @@ export class WhatsappService {
     await this.sock.sendPresenceUpdate('paused', jid);
     const sendMessageResponse = await this.sock.sendMessage(jid, msg);
     // console.log('sendMessageResponse in baileys service::', sendMessageResponse);
-    return sendMessageResponse
+    return sendMessageResponse;
   }
 
   async sendMessageFileToBaileys(body: MessageDto) {
     const { jid, message, fileData: { filePath, mimetype, fileName } = {} as any } = body;
     console.log('file media ', { jid, message, filePath, mimetype, fileName });
     try {
-      await this.sock.sendMessage( jid, { document: { url: filePath }, caption: message, mimetype, fileName, }, { url: filePath }, );
+      await this.sock.sendMessage(jid, { document: { url: filePath }, caption: message, mimetype, fileName }, { url: filePath });
     } catch (error) {
       console.log('baileys.sendMessage got error');
       // this.handleError(error);
     }
+  }
+
+  async getCurrentWhatsappLoginStatus() {
+    return this.connectionStatus;
   }
 }

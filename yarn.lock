@@ -8609,17 +8609,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@nestjs/platform-socket.io@npm:^10.3.9":
-  version: 10.3.9
-  resolution: "@nestjs/platform-socket.io@npm:10.3.9"
+"@nestjs/platform-socket.io@npm:^10.3.10":
+  version: 10.3.10
+  resolution: "@nestjs/platform-socket.io@npm:10.3.10"
   dependencies:
     socket.io: "npm:4.7.5"
-    tslib: "npm:2.6.2"
+    tslib: "npm:2.6.3"
   peerDependencies:
     "@nestjs/common": ^10.0.0
     "@nestjs/websockets": ^10.0.0
     rxjs: ^7.1.0
-  checksum: 6ebde6ea6c86f5db176d624ee1507956edef59a89fecfcd48d3d40dd955548e6fe0108a014e000aa528857724695b7c36f3ec4859ff0dd3faa78a5644ee9e29a
+  checksum: 96cb2d5b88eadafe3a557b74e22cf90d5e3f0f9ae90867ca46ea3715996464c901249737c3dbd189a7a667b032c542fe5b84f9da63034e6dcb4f6b437eaa9871
   languageName: node
   linkType: hard
 
@@ -8773,13 +8773,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@nestjs/websockets@npm:^10.3.8":
-  version: 10.3.8
-  resolution: "@nestjs/websockets@npm:10.3.8"
+"@nestjs/websockets@npm:^10.3.10":
+  version: 10.3.10
+  resolution: "@nestjs/websockets@npm:10.3.10"
   dependencies:
     iterare: "npm:1.2.1"
     object-hash: "npm:3.0.0"
-    tslib: "npm:2.6.2"
+    tslib: "npm:2.6.3"
   peerDependencies:
     "@nestjs/common": ^10.0.0
     "@nestjs/core": ^10.0.0
@@ -8789,7 +8789,7 @@ __metadata:
   peerDependenciesMeta:
     "@nestjs/platform-socket.io":
       optional: true
-  checksum: 2a03a61e20a2f965a95696ac351e26dd810003527bd137728433ff32867699de1a27e4ff595db0be85ca77147765c68b5ed6a5f76694acf5b629ce80410cd6ad
+  checksum: eaad3ef3a58c03ab8004aae70ad3d5f3ba4d51e0baabe336a6cb6ac0bf82fc0e34495981317664f25a772c4481cf31a6ed4bfb2c0f02c697b248919ed1ebe4c2
   languageName: node
   linkType: hard
 
@@ -22938,7 +22938,7 @@ __metadata:
     function-bind: "npm:^1.1.2"
     get-intrinsic: "npm:^1.2.4"
     set-function-length: "npm:^1.2.1"
-  checksum: 10c0/a3ded2e423b8e2a265983dba81c27e125b48eefb2655e7dfab6be597088da3d47c47976c24bc51b8fd9af1061f8f87b4ab78a314f3c77784b2ae2ba535ad8b8d
+  checksum: a3ded2e423b8e2a265983dba81c27e125b48eefb2655e7dfab6be597088da3d47c47976c24bc51b8fd9af1061f8f87b4ab78a314f3c77784b2ae2ba535ad8b8d
   languageName: node
   linkType: hard
 
@@ -25846,7 +25846,7 @@ __metadata:
     es-define-property: "npm:^1.0.0"
     es-errors: "npm:^1.3.0"
     gopd: "npm:^1.0.1"
-  checksum: 10c0/dea0606d1483eb9db8d930d4eac62ca0fa16738b0b3e07046cddfacf7d8c868bbe13fa0cb263eb91c7d0d527960dc3f2f2471a69ed7816210307f6744fe62e37
+  checksum: dea0606d1483eb9db8d930d4eac62ca0fa16738b0b3e07046cddfacf7d8c868bbe13fa0cb263eb91c7d0d527960dc3f2f2471a69ed7816210307f6744fe62e37
   languageName: node
   linkType: hard
 
@@ -26787,6 +26787,19 @@ __metadata:
   languageName: node
   linkType: hard
 
+"engine.io-client@npm:~6.5.2":
+  version: 6.5.4
+  resolution: "engine.io-client@npm:6.5.4"
+  dependencies:
+    "@socket.io/component-emitter": "npm:~3.1.0"
+    debug: "npm:~4.3.1"
+    engine.io-parser: "npm:~5.2.1"
+    ws: "npm:~8.17.1"
+    xmlhttprequest-ssl: "npm:~2.0.0"
+  checksum: ef220f9875d6a43bade906bd9b61118e812474bbe46e80f38c92dca238484170daf92d51e58bbade6433c29ffb5ba329f4864c5609f2e33c5e31041b1f8ad672
+  languageName: node
+  linkType: hard
+
 "engine.io-parser@npm:~5.2.1":
   version: 5.2.2
   resolution: "engine.io-parser@npm:5.2.2"
@@ -26966,14 +26979,14 @@ __metadata:
   resolution: "es-define-property@npm:1.0.0"
   dependencies:
     get-intrinsic: "npm:^1.2.4"
-  checksum: 10c0/6bf3191feb7ea2ebda48b577f69bdfac7a2b3c9bcf97307f55fd6ef1bbca0b49f0c219a935aca506c993d8c5d8bddd937766cb760cd5e5a1071351f2df9f9aa4
+  checksum: 6bf3191feb7ea2ebda48b577f69bdfac7a2b3c9bcf97307f55fd6ef1bbca0b49f0c219a935aca506c993d8c5d8bddd937766cb760cd5e5a1071351f2df9f9aa4
   languageName: node
   linkType: hard
 
 "es-errors@npm:^1.3.0":
   version: 1.3.0
   resolution: "es-errors@npm:1.3.0"
-  checksum: 10c0/0a61325670072f98d8ae3b914edab3559b6caa980f08054a3b872052640d91da01d38df55df797fcc916389d77fc92b8d5906cf028f4db46d7e3003abecbca85
+  checksum: 0a61325670072f98d8ae3b914edab3559b6caa980f08054a3b872052640d91da01d38df55df797fcc916389d77fc92b8d5906cf028f4db46d7e3003abecbca85
   languageName: node
   linkType: hard
 
@@ -29806,7 +29819,7 @@ __metadata:
     has-proto: "npm:^1.0.1"
     has-symbols: "npm:^1.0.3"
     hasown: "npm:^2.0.0"
-  checksum: 10c0/0a9b82c16696ed6da5e39b1267104475c47e3a9bdbe8b509dfe1710946e38a87be70d759f4bb3cda042d76a41ef47fe769660f3b7c0d1f68750299344ffb15b7
+  checksum: 0a9b82c16696ed6da5e39b1267104475c47e3a9bdbe8b509dfe1710946e38a87be70d759f4bb3cda042d76a41ef47fe769660f3b7c0d1f68750299344ffb15b7
   languageName: node
   linkType: hard
 
@@ -30796,7 +30809,7 @@ __metadata:
   resolution: "has-property-descriptors@npm:1.0.2"
   dependencies:
     es-define-property: "npm:^1.0.0"
-  checksum: 10c0/253c1f59e80bb476cf0dde8ff5284505d90c3bdb762983c3514d36414290475fe3fd6f574929d84de2a8eec00d35cf07cb6776205ff32efd7c50719125f00236
+  checksum: 253c1f59e80bb476cf0dde8ff5284505d90c3bdb762983c3514d36414290475fe3fd6f574929d84de2a8eec00d35cf07cb6776205ff32efd7c50719125f00236
   languageName: node
   linkType: hard
 
@@ -43065,6 +43078,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"qr.js@npm:0.0.0":
+  version: 0.0.0
+  resolution: "qr.js@npm:0.0.0"
+  checksum: 1c6a4c7a58d04e52ec2fee99e39b680fdc5b2a510a981df42c36b716a8eac6634d130fc4d65af8f030f2a07dbf5fa046b97cdfa7456c250ebb50a73916efdcb5
+  languageName: node
+  linkType: hard
+
 "qrcode-terminal@npm:^0.12.0":
   version: 0.12.0
   resolution: "qrcode-terminal@npm:0.12.0"
@@ -43097,7 +43117,7 @@ __metadata:
   resolution: "qs@npm:6.12.3"
   dependencies:
     side-channel: "npm:^1.0.6"
-  checksum: 10c0/243ddcc8f49dab78fc51041f7f64c500b47c671c45a101a8aca565d8537cb562921da7ef1a831b4a7051596ec88bb35a0d5e25a240025e8b32c6bfb69f00bf2f
+  checksum: 243ddcc8f49dab78fc51041f7f64c500b47c671c45a101a8aca565d8537cb562921da7ef1a831b4a7051596ec88bb35a0d5e25a240025e8b32c6bfb69f00bf2f
   languageName: node
   linkType: hard
 
@@ -43648,6 +43668,18 @@ __metadata:
     react: ">=16.8"
     react-dom: ">=16.8"
   checksum: 01f3a3e83bfa4953c29b2fa72ba5085d2956673d86d62287a1b70e6de5d5fa830019718bb8168d76a131358c9bc428c492b23e63ea073f393ead3e1c4a6f37bf
+  languageName: node
+  linkType: hard
+
+"react-qr-code@npm:^2.0.15":
+  version: 2.0.15
+  resolution: "react-qr-code@npm:2.0.15"
+  dependencies:
+    prop-types: "npm:^15.8.1"
+    qr.js: "npm:0.0.0"
+  peerDependencies:
+    react: "*"
+  checksum: 6a9d73918623eecbf6204da02bae1851b584f22f0724b2e5cf529a7eee991a757a211822146f670db63c21860ccb2d245b9288f48cd58ca2bff16de0dcdbdb25
   languageName: node
   linkType: hard
 
@@ -45607,7 +45639,7 @@ __metadata:
 "scmp@npm:^2.1.0":
   version: 2.1.0
   resolution: "scmp@npm:2.1.0"
-  checksum: 10c0/2128efa993cd2e3e10e3ab6d574cc9993ac7aa30430527e5da830ab509ba15eae49d8ca918d6aa934915bbd5b863778b04178227be005b49d801c0ca6063d2e4
+  checksum: 2128efa993cd2e3e10e3ab6d574cc9993ac7aa30430527e5da830ab509ba15eae49d8ca918d6aa934915bbd5b863778b04178227be005b49d801c0ca6063d2e4
   languageName: node
   linkType: hard
 
@@ -45896,7 +45928,7 @@ __metadata:
     get-intrinsic: "npm:^1.2.4"
     gopd: "npm:^1.0.1"
     has-property-descriptors: "npm:^1.0.2"
-  checksum: 10c0/82850e62f412a258b71e123d4ed3873fa9377c216809551192bb6769329340176f109c2eeae8c22a8d386c76739855f78e8716515c818bcaef384b51110f0f3c
+  checksum: 82850e62f412a258b71e123d4ed3873fa9377c216809551192bb6769329340176f109c2eeae8c22a8d386c76739855f78e8716515c818bcaef384b51110f0f3c
   languageName: node
   linkType: hard
 
@@ -46081,7 +46113,7 @@ __metadata:
     es-errors: "npm:^1.3.0"
     get-intrinsic: "npm:^1.2.4"
     object-inspect: "npm:^1.13.1"
-  checksum: 10c0/d2afd163dc733cc0a39aa6f7e39bf0c436293510dbccbff446733daeaf295857dbccf94297092ec8c53e2503acac30f0b78830876f0485991d62a90e9cad305f
+  checksum: d2afd163dc733cc0a39aa6f7e39bf0c436293510dbccbff446733daeaf295857dbccf94297092ec8c53e2503acac30f0b78830876f0485991d62a90e9cad305f
   languageName: node
   linkType: hard
 
@@ -46284,6 +46316,18 @@ __metadata:
     debug: "npm:~4.3.4"
     ws: "npm:~8.11.0"
   checksum: 839b50ba2a08a70ccf9b597b2f5e275a47c2f62fa423b1906249ab24facc7f2b7eeb695ef8bbfc3570ab769564fb9148d2608621800ef99917338fa9dd99e127
+  languageName: node
+  linkType: hard
+
+"socket.io-client@npm:^4.7.5":
+  version: 4.7.5
+  resolution: "socket.io-client@npm:4.7.5"
+  dependencies:
+    "@socket.io/component-emitter": "npm:~3.1.0"
+    debug: "npm:~4.3.2"
+    engine.io-client: "npm:~6.5.2"
+    socket.io-parser: "npm:~4.2.4"
+  checksum: d5dc90ee63755fbbb0a1cb3faf575c9ce20d98e809a43a4c9c3ce03a56b8810335ae38e678ceb0650ac434d55e72ea6449c2e5d6db8bc7258f7c529148fac99d
   languageName: node
   linkType: hard
 
@@ -48605,6 +48649,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"tslib@npm:2.6.3":
+  version: 2.6.3
+  resolution: "tslib@npm:2.6.3"
+  checksum: 2598aef53d9dbe711af75522464b2104724d6467b26a60f2bdac8297d2b5f1f6b86a71f61717384aa8fd897240467aaa7bcc36a0700a0faf751293d1331db39a
+  languageName: node
+  linkType: hard
+
 "tslib@npm:^1, tslib@npm:^1.11.1, tslib@npm:^1.13.0, tslib@npm:^1.8.1, tslib@npm:^1.9.3":
   version: 1.14.1
   resolution: "tslib@npm:1.14.1"
@@ -48883,14 +48934,14 @@ __metadata:
     "@nestjs/jwt": "npm:^10.0.3"
     "@nestjs/passport": "npm:^9.0.3"
     "@nestjs/platform-express": "npm:^9.0.0"
-    "@nestjs/platform-socket.io": "npm:^10.3.9"
+    "@nestjs/platform-socket.io": "npm:^10.3.10"
     "@nestjs/schedule": "npm:^4.0.2"
     "@nestjs/schematics": "npm:^9.0.0"
     "@nestjs/serve-static": "npm:^4.0.1"
     "@nestjs/terminus": "npm:^9.2.2"
     "@nestjs/testing": "npm:^9.0.0"
     "@nestjs/typeorm": "npm:^10.0.0"
-    "@nestjs/websockets": "npm:^10.3.8"
+    "@nestjs/websockets": "npm:^10.3.10"
     "@next/eslint-plugin-next": "npm:^14.1.4"
     "@nivo/calendar": "npm:^0.84.0"
     "@nivo/core": "npm:^0.84.0"
@@ -49138,6 +49189,7 @@ __metadata:
     react-intersection-observer: "npm:^9.5.2"
     react-loading-skeleton: "npm:^3.3.1"
     react-phone-number-input: "npm:^3.3.4"
+    react-qr-code: "npm:^2.0.15"
     react-responsive: "npm:^9.0.2"
     react-router-dom: "npm:^6.4.4"
     react-textarea-autosize: "npm:^8.4.1"
@@ -49153,6 +49205,7 @@ __metadata:
     semver: "npm:^7.5.4"
     sharp: "npm:^0.32.1"
     socket.io: "npm:^4.7.5"
+    socket.io-client: "npm:^4.7.5"
     socks-proxy-agent: "npm:^8.0.4"
     source-map-support: "npm:^0.5.20"
     storybook: "npm:^7.6.3"
@@ -49200,7 +49253,7 @@ __metadata:
     qs: "npm:^6.9.4"
     scmp: "npm:^2.1.0"
     xmlbuilder: "npm:^13.0.2"
-  checksum: 10c0/02870d8f17d3e8969dfaa9fc329cad925dce71064ecdc4438e96764c2e2c09f6d0ef98ff28e5051600939ef3b82271ce65609cef5cbc479adb5740746d1654be
+  checksum: 02870d8f17d3e8969dfaa9fc329cad925dce71064ecdc4438e96764c2e2c09f6d0ef98ff28e5051600939ef3b82271ce65609cef5cbc479adb5740746d1654be
   languageName: node
   linkType: hard
 
@@ -51814,6 +51867,21 @@ __metadata:
   languageName: node
   linkType: hard
 
+"ws@npm:~8.17.1":
+  version: 8.17.1
+  resolution: "ws@npm:8.17.1"
+  peerDependencies:
+    bufferutil: ^4.0.1
+    utf-8-validate: ">=5.0.2"
+  peerDependenciesMeta:
+    bufferutil:
+      optional: true
+    utf-8-validate:
+      optional: true
+  checksum: f4a49064afae4500be772abdc2211c8518f39e1c959640457dcee15d4488628620625c783902a52af2dd02f68558da2868fd06e6fd0e67ebcd09e6881b1b5bfe
+  languageName: node
+  linkType: hard
+
 "xcase@npm:^2.0.1":
   version: 2.0.1
   resolution: "xcase@npm:2.0.1"
@@ -51888,7 +51956,7 @@ __metadata:
 "xmlbuilder@npm:^13.0.2":
   version: 13.0.2
   resolution: "xmlbuilder@npm:13.0.2"
-  checksum: 10c0/e703027bd10808ee93f6626a4ca440e9d295a0b323aed151c39f427f32d23bda0a1af0b9278286fa94c25fc52d46716fa79e17abcda31205fb33bf4bc0ffe575
+  checksum: e703027bd10808ee93f6626a4ca440e9d295a0b323aed151c39f427f32d23bda0a1af0b9278286fa94c25fc52d46716fa79e17abcda31205fb33bf4bc0ffe575
   languageName: node
   linkType: hard
 
@@ -51896,6 +51964,13 @@ __metadata:
   version: 2.2.0
   resolution: "xmlchars@npm:2.2.0"
   checksum: b64b535861a6f310c5d9bfa10834cf49127c71922c297da9d4d1b45eeaae40bf9b4363275876088fbe2667e5db028d2cd4f8ee72eed9bede840a67d57dab7593
+  languageName: node
+  linkType: hard
+
+"xmlhttprequest-ssl@npm:~2.0.0":
+  version: 2.0.0
+  resolution: "xmlhttprequest-ssl@npm:2.0.0"
+  checksum: b64ab371459bd5e3a4827e3c7535759047d285fd310aea6fd028973d547133f3be0d473c1fdae9f14d89bf509267759198ae1fbe89802079a7e217ddd990d734
   languageName: node
   linkType: hard
 
