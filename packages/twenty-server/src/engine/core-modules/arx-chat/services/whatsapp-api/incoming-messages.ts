@@ -27,6 +27,28 @@ export class IncomingWhatsappMessages {
       console.log('Message has been received from a candidate however the candidate is not in the database');
     }
   }
+  async receiveIncomingMessagesFromSelfFromBaileys(requestBody: allDataObjects.BaileysIncomingMessage) {
+    console.log('This is requestBody::', requestBody);
+    const whatsappIncomingMessage: allDataObjects.chatMessageType = {
+      phoneNumberFrom: requestBody.phoneNumberFrom,
+      phoneNumberTo: requestBody.phoneNumberTo,
+      messages: [{ role: 'user', content: requestBody.message }],
+      messageType: 'messageFromSelf',
+    };
+    const chatReply = requestBody.message;
+    console.log('We will first go and get the candiate who sent us the message');
+    const candidateProfileData = await new FetchAndUpdateCandidatesChatsWhatsapps().getCandidateInformation(whatsappIncomingMessage);
+    console.log('This is the SELF message., we have to update the database that this message has been received::', chatReply);
+    if (candidateProfileData != allDataObjects.emptyCandidateProfileObj) {
+      console.log('This is the candiate who has sent us candidateProfileData::', candidateProfileData);
+      await this.createAndUpdateIncomingCandidateChatMessage({ chatReply: chatReply, whatsappDeliveryStatus: 'delivered', whatsappMessageId: requestBody.baileysMessageId }, candidateProfileData);
+      // const replyObject = { chatReply: chatReply, whatsappDeliveryStatus: 'receivedFromHumanBot', whatsappMessageId: requestBody?.baileysMessageId };
+      // await this.createAndUpdateIncomingCandidateChatMessage(replyObject, candidateProfileData);
+      new FetchAndUpdateCandidatesChatsWhatsapps().setCandidateEngagementStatusToFalse(candidateProfileData);
+    } else {
+      console.log('Message has been received from a candidate however the candidate is not in the database');
+    }
+  }
 
   isWithinLast5Minutes(unixTimestamp) {
     // Get current time in seconds (Unix timestamp)
@@ -181,10 +203,7 @@ export class IncomingWhatsappMessages {
     const recruiterProfile = allDataObjects.recruiterProfile;
     const messagesList = candidateProfileDataNodeObj?.whatsappMessages?.edges;
     // Ensure messagesList is not undefined before sorting
-    console.log(
-      'This is the messageObj:',
-      messagesList.map((edge: any) => edge.node.messageObj),
-    );
+    // console.log( 'This is the messageObj:', messagesList.map((edge: any) => edge.node.messageObj), );
     console.log('This is the chat reply:', replyObject.chatReply);
     let mostRecentMessageObj;
     if (messagesList) {
@@ -196,7 +215,7 @@ export class IncomingWhatsappMessages {
       mostRecentMessageObj = candidateProfileDataNodeObj?.whatsappMessages.edges[0].node.messageObj;
     }
     console.log('These are message kwargs length:', mostRecentMessageObj?.length);
-    console.log('This is the most recent message object being considered::', mostRecentMessageObj);
+    // console.log('This is the most recent message object being considered::', mostRecentMessageObj);
     // chatHistory = await this.getChatHistoryFromMongo(mostRecentMessageObj);
     mostRecentMessageObj.push({ role: 'user', content: replyObject.chatReply });
     let whatappUpdateMessageObj: allDataObjects.candidateChatMessageType = {

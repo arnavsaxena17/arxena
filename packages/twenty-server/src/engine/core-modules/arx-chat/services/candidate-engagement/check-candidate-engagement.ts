@@ -51,15 +51,15 @@ export default class CandidateEngagementArx {
   }
 
   async processCandidate(edge: allDataObjects.PersonEdge, engagementType: 'remind' | 'engage') {
-    console.log('The edge is ::', edge);
+    // console.log('The edge is ::', edge);
     try {
       const candidateNode = edge.node.candidates.edges[0].node;
       const personNode = edge.node;
-      console.log('This is candidate Node:', candidateNode);
+      // console.log('This is candidate Node:', candidateNode);
       const messagesList: allDataObjects.WhatsAppMessagesEdge[] = candidateNode?.whatsappMessages?.edges;
-      console.log('Current Messages list:', messagesList);
+      // console.log('Current Messages list:', messagesList);
       let mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = this.getMostRecentMessageFromMessagesList(messagesList);
-      console.log('mostRecentMessageArr before chatCompletion:', mostRecentMessageArr);
+      // console.log('mostRecentMessageArr before chatCompletion:', mostRecentMessageArr);
       if (mostRecentMessageArr?.length > 0) {
         console.log('Taking MULTI Step Client for - Prompt Engineering type:', process.env.PROMPT_ENGINEERING_TYPE);
         let chatAgent = new OpenAIArxMultiStepClient(personNode);
@@ -75,7 +75,7 @@ export default class CandidateEngagementArx {
     if (messagesList) {
       messagesList.sort((a, b) => new Date(b.node.createdAt).getTime() - new Date(a.node.createdAt).getTime());
       mostRecentMessageArr = messagesList[0]?.node?.messageObj;
-      console.log(mostRecentMessageArr);
+      // console.log(mostRecentMessageArr);
     }
     return mostRecentMessageArr;
   }
@@ -83,20 +83,16 @@ export default class CandidateEngagementArx {
   async updateCandidateEngagementDataInTable(whatappUpdateMessageObj: allDataObjects.candidateChatMessageType) {
     // console.log("Candidate information before processing:", whatappUpdateMessageObj);
     let candidateProfileObj = whatappUpdateMessageObj.messageType !== 'botMessage' ? await new FetchAndUpdateCandidatesChatsWhatsapps().getCandidateInformation(whatappUpdateMessageObj) : whatappUpdateMessageObj.candidateProfile;
-    console.log('Candidate information after processing:', candidateProfileObj);
-    console.log( 'Whatsapp Objs :::', candidateProfileObj.whatsappMessages.edges.map((edge: any) => edge.node.messageObj), );
+    // console.log('Candidate information after processing:', candidateProfileObj);
+    // console.log( 'Whatsapp Objs :::', candidateProfileObj.whatsappMessages.edges.map((edge: any) => edge.node.messageObj), );
     if (candidateProfileObj.name === '') return;
     console.log('Candidate information retrieved successfully');
     const whatsappMessage = await new FetchAndUpdateCandidatesChatsWhatsapps().createAndUpdateWhatsappMessage(candidateProfileObj, whatappUpdateMessageObj);
     if (!whatsappMessage) return;
-    console.log('Whatsapp message created successfully');
     const updateCandidateStatusObj = await new FetchAndUpdateCandidatesChatsWhatsapps().updateCandidateEngagementStatus(candidateProfileObj, whatappUpdateMessageObj);
     if (!updateCandidateStatusObj) return;
     // await new WhatsappAPISelector().sendWhatsappMessage(whatappUpdateMessageObj);
-    return {
-      status: 'success',
-      message: 'Candidate engagement status updated successfully',
-    };
+    return { status: 'success', message: 'Candidate engagement status updated successfully', };
   }
 
   async updateChatHistoryObjCreateWhatsappMessageObj(wamId: string, personNode: allDataObjects.PersonNode, chatHistory: allDataObjects.ChatHistoryItem[]) {

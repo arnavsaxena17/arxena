@@ -255,9 +255,9 @@ export class BaileysBot {
     } catch {
       console.log('message type errored');
     }
-    console.log('This si the path:', folder);
-    console.log('This si the download media files path:', folder);
-    console.log('This si the download media files messageType:', messageType);
+    // console.log('This si the path:', folder);
+    // console.log('This si the download media files path:', folder);
+    // console.log('This si the download media files messageType:', messageType);
     // messageType = "imageMessage","videoMessage","documentMessage"
 
     let message = m?.messages[0]?.message;
@@ -266,7 +266,8 @@ export class BaileysBot {
     // let type = m.messages[0].message.<imageMessage>.mimetype
 
     let ogFileName: string = ''; // Change the type of ogFileName from null to string and initialize it with an empty string
-    console.log('This is the media message:', m?.messages[0]?.message);
+    console.log('This is the media message type :', messageType);
+    console.log('This is the media message  :', messageType);
     // console.log("This is the media message type:", Object.keys(m?.messages[0]?.message)[0])
     if (messageType == 'imageMessage') {
       ogFileName = `${new Date().getTime()}.jpeg`;
@@ -281,6 +282,7 @@ export class BaileysBot {
       ogFileName = message.documentMessage.fileName;
       folder = folder + '/docs';
     } else {
+      console.log('Media message is noone of imageMessage, images, videos or messageCOntent or docs, hence returning:', messageType);
       return;
     }
     console.log('This is the folder path:', folder);
@@ -288,17 +290,7 @@ export class BaileysBot {
     console.log('This is the ogFileName message?.documentWithCaptionMessage:', message?.documentWithCaptionMessage);
     console.log('This is the ogFileName message?.documentWithCaptionMessage message?.documentWithCaptionMessage?.message?.fileName:', message?.documentWithCaptionMessage?.message?.documentMessage?.fileName);
     // download the message
-    const buffer = await downloadMediaMessage(
-      m.messages[0],
-      'buffer',
-      {},
-      {
-        logger,
-        // pass this so that baileys can request a reupload of media
-        // that has been deleted
-        reuploadRequest: socket.updateMediaMessage,
-      },
-    );
+    const buffer = await downloadMediaMessage( m.messages[0], 'buffer', {}, { logger, reuploadRequest: socket.updateMediaMessage, }, );
     let data: any = {
       fileName: ogFileName,
       fileBuffer: buffer,
