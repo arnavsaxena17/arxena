@@ -8,6 +8,7 @@ import { ChatCompletion, ChatCompletionMessage } from "openai/resources";
 import CandidateEngagementArx from "../../services/candidate-engagement/check-candidate-engagement";
 import { WhatsappAPISelector } from "../../services/whatsapp-api/whatsapp-controls";
 import Anthropic from "@anthropic-ai/sdk";
+import { ConsoleLogger } from "@nestjs/common";
 
 export class OpenAIArxMultiStepClient {
   personNode: allDataObjects.PersonNode;
@@ -22,15 +23,37 @@ export class OpenAIArxMultiStepClient {
   }
   // THis is the entry point
   async createCompletion(mostRecentMessageArr: allDataObjects.ChatHistoryItem[], personNode: allDataObjects.PersonNode, engagementType:"remind"|"engage", isChatEnabled: boolean = true) {
-    const stage = await this.getStageOfTheConversation(mostRecentMessageArr, engagementType);
+    let processorType:string;
+    processorType = "stage"
+    const stage = await this.getStageOfTheConversation(mostRecentMessageArr, engagementType, processorType);
     console.log("This is the stage that is arrived at CURRENT STAGE::::::::", stage);
-    mostRecentMessageArr = await this.runCandidateFacingAgentsAlongWithToolCalls(mostRecentMessageArr, personNode, stage, isChatEnabled);
-    await this.runSystemFacingAgentsAlongWithToolCalls(mostRecentMessageArr, personNode, stage);
+    processorType = "candidate-facing"
+    mostRecentMessageArr = await this.runCandidateFacingAgentsAlongWithToolCalls(mostRecentMessageArr, personNode, stage,  processorType,isChatEnabled);
+    console.log("After running the stage and candidate facing agents, the mostRecentMessageArr is::", mostRecentMessageArr)
+    processorType = "system-facing"
+
+    await this.runSystemFacingAgentsAlongWithToolCalls(mostRecentMessageArr, personNode, stage, processorType);
     // await this.runTimeManagementAgent(mostRecentMessageArr, personNode, stage);
     return mostRecentMessageArr;
   }
 
-  async getStageOfTheConversation(mostRecentMessageArr: allDataObjects.ChatHistoryItem[],engagementType:"remind"|"engage") {
+  async runCandidateFacingAgentsAlongWithToolCalls(mostRecentMessageArr: allDataObjects.ChatHistoryItem[], personNode: allDataObjects.PersonNode, stage: string,processorType:string, isChatEnabled: boolean = true) {
+    const newSystemPrompt = await new ToolsForAgents().getCandidateFacingSystemPromptBasedOnStage(this.personNode, stage);
+    const updatedMostRecentMessagesBasedOnNewSystemPrompt = this.updateMostRecentMessagesBasedOnNewSystemPrompt(mostRecentMessageArr, newSystemPrompt);
+    const tools = await new ToolsForAgents().getCandidateFacingToolsByStage(stage);
+    // @ts-ignore
+    const response = await this.openAIclient.chat.completions.create({ model: modelName, messages: mostRecentMessageArr, tools: tools, tool_choice: "auto" });
+    const responseMessage: ChatCompletionMessage = response.choices[0].message;
+    console.log(new Date().toString()," : " ,"BOT_MESSAGE in runCandidateFacingAgentsAlongWithToolCalls_stage1 :",  JSON.stringify(responseMessage), "  Stage:::", stage, "  processorType::", processorType);
+    mostRecentMessageArr.push(responseMessage); // extend conversation with assistant's reply
+    if (responseMessage.tool_calls && isChatEnabled) {
+      mostRecentMessageArr = await this.addResponseAndToolCallsToMessageHistory( responseMessage, mostRecentMessageArr, stage, processorType );
+    }
+    await this.sendWhatsappMessageToCandidate(response?.choices[0]?.message?.content || "", mostRecentMessageArr, "runCandidateFacingAgentsAlongWithToolCalls_stage1" ,isChatEnabled);
+    return mostRecentMessageArr;
+  }
+
+  async getStageOfTheConversation(mostRecentMessageArr: allDataObjects.ChatHistoryItem[],engagementType:"remind"|"engage", processorType:string) {
     let stage: string | null;
     console.log("Engagement Type::", engagementType)
     if (engagementType === "remind") {
@@ -62,48 +85,33 @@ export class OpenAIArxMultiStepClient {
       // console.log('Got the updated recement messages:', updatedMostRecentMessagesBasedOnNewSystemPrompt);
       // @ts-ignore
       const response = await this.openAIclient.chat.completions.create({ model: modelName, messages: updatedMostRecentMessagesBasedOnNewSystemPrompt, });
-      console.log('This the stage that is determined by the model:', response.choices[0].message.content);
       stage = response.choices[0].message.content ?? '1';
+      console.log('This the stage that is determined by the model:', response.choices[0].message.content, "  Stage::", stage, "  processorType::", processorType);
     }
     console.log('This is the stage that is arrived at:', stage)
     return stage;
   }
+  
   async updateMostRecentMessagesBasedOnNewSystemPrompt(mostRecentMessageArr: allDataObjects.ChatHistoryItem[], newSystemPrompt: string) {
     mostRecentMessageArr[0] = { role: "system", content: newSystemPrompt };
     return mostRecentMessageArr;
   }
 
-  async runCandidateFacingAgentsAlongWithToolCalls(mostRecentMessageArr: allDataObjects.ChatHistoryItem[], personNode: allDataObjects.PersonNode, stage: string, isChatEnabled: boolean = true) {
-    const newSystemPrompt = await new ToolsForAgents().getCandidateFacingSystemPromptBasedOnStage(this.personNode, stage);
-    const updatedMostRecentMessagesBasedOnNewSystemPrompt = this.updateMostRecentMessagesBasedOnNewSystemPrompt(mostRecentMessageArr, newSystemPrompt);
-    const tools = await new ToolsForAgents().getCandidateFacingToolsByStage(stage);
-    // @ts-ignore
-    const response = await this.openAIclient.chat.completions.create({ model: modelName, messages: mostRecentMessageArr, tools: tools, tool_choice: "auto" });
-    const responseMessage: ChatCompletionMessage = response.choices[0].message;
-    console.log("BOT_MESSAGE in runCandidateFacingAgentsAlongWithToolCalls_stage1 :", responseMessage.content);
-    mostRecentMessageArr.push(responseMessage); // extend conversation with assistant's reply
-    if (responseMessage.tool_calls && isChatEnabled) {
-      mostRecentMessageArr = await this.addResponseAndToolCallsToMessageHistory( responseMessage, mostRecentMessageArr, stage );
-    }
-    await this.sendWhatsappMessageToCandidate(response?.choices[0]?.message?.content || "", mostRecentMessageArr, "runCandidateFacingAgentsAlongWithToolCalls_stage1" ,isChatEnabled);
-    return mostRecentMessageArr;
-  }
-
-  async runSystemFacingAgentsAlongWithToolCalls(mostRecentMessageArr: allDataObjects.ChatHistoryItem[], personNode: allDataObjects.PersonNode, stage: string) {
+  async runSystemFacingAgentsAlongWithToolCalls(mostRecentMessageArr: allDataObjects.ChatHistoryItem[], personNode: allDataObjects.PersonNode, stage: string, processorType:string) {
     const newSystemPrompt = await new ToolsForAgents().getSystemFacingSystemPromptBasedOnStage(this.personNode, stage);
     const updatedMostRecentMessagesBasedOnNewSystemPrompt = this.updateMostRecentMessagesBasedOnNewSystemPrompt(mostRecentMessageArr, newSystemPrompt);
     const tools = await new ToolsForAgents().getSystemFacingToolsByStage(stage);
     // @ts-ignore
     const response = await this.openAIclient.chat.completions.create({ model: modelName, messages: mostRecentMessageArr, tools: tools, tool_choice: "auto", });
     const responseMessage: ChatCompletionMessage = response.choices[0].message;
-    console.log("BOT_MESSAGE in runSystemFacingAgentsAlongWithToolCalls:", responseMessage.content);
+    console.log(new Date().toString()," : " ,"BOT_MESSAGE in runSystemFacingAgentsAlongWithToolCalls:::", JSON.stringify(responseMessage), "  Stage::", stage, "processorType::", processorType);
     mostRecentMessageArr.push(responseMessage); // extend conversation with assistant's reply
     if (responseMessage.tool_calls) {
-      mostRecentMessageArr = await this.addResponseAndToolCallsToMessageHistory(responseMessage, mostRecentMessageArr, stage);
+      mostRecentMessageArr = await this.addResponseAndToolCallsToMessageHistory(responseMessage, mostRecentMessageArr, stage, processorType);
     }
   }
 
-  async addResponseAndToolCallsToMessageHistory(responseMessage: ChatCompletionMessage, messages: allDataObjects.ChatHistoryItem[], stage:string) {
+  async addResponseAndToolCallsToMessageHistory(responseMessage: ChatCompletionMessage, messages: allDataObjects.ChatHistoryItem[], stage:string, processorType:string) {
     const toolCalls = responseMessage.tool_calls;
     // @ts-ignore
     if (toolCalls) {
@@ -121,10 +129,11 @@ export class OpenAIArxMultiStepClient {
       const tools = await new ToolsForAgents().getCandidateFacingToolsByStage(stage);
       // @ts-ignore
       const response = await this.openAIclient.chat.completions.create({ model: modelName, messages: messages, tools: tools, tool_choice: "auto", });
-      console.log("BOT_MESSAGE in addResponseAndToolCallsToMessageHistory_stage2:", response.choices[0].message.content);
+      console.log(new Date().toString()," : " ,"BOT_MESSAGE in addResponseAndToolCallsToMessageHistory_stage2:", JSON.stringify(response), "  Stage::", stage, "processorType::", processorType);
       messages.push(response.choices[0].message);
       if (response.choices[0].message.tool_calls) {
-        messages = await this.addResponseAndToolCallsToMessageHistory(response.choices[0].message, messages, stage);
+        console.log("More Tool Calls inside of the addResponseAndToolCallsToMessageHistory. RECURSION Initiated:::: processorType::", processorType)
+        messages = await this.addResponseAndToolCallsToMessageHistory(response.choices[0].message, messages, stage, processorType);
       }
       const mostRecentMessageArr = messages;
       await this.sendWhatsappMessageToCandidate(response?.choices[0]?.message?.content || "", mostRecentMessageArr, "addResponseAndToolCallsToMessageHistory_stage2");

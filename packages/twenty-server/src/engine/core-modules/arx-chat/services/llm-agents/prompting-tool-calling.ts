@@ -10,12 +10,12 @@ import { SendEmailFunctionality } from '../candidate-engagement/send-gmail';
 import { GmailMessageData } from 'src/engine/core-modules/gmail-sender/services/gmail-sender-objects-types';
 import * as allGraphQLQueries from '../candidate-engagement/graphql-queries-chatbot';
 import { addHoursInDate, axiosRequest, toIsoString } from '../../utils/arx-chat-agent-utils';
-import { add } from 'date-fns';
 
 const recruiterProfile = allDataObjects.recruiterProfile;
 // const candidateProfileObjAllData =  candidateProfile
 const jobProfile = allDataObjects.jobProfile;
-const availableTimeSlots = '12PM-3PM, 4PM -6PM on the 24th and 25th January 2024.';
+const availableTimeSlots = '12PM-3PM, 4PM -6PM on the 24th and 25th August 2024.';
+
 
 export class ToolsForAgents {
 
@@ -31,7 +31,6 @@ export class ToolsForAgents {
     const recruitmentSteps = [
       'Initial Outreach: The recruiter introduces themselves and their company, mentions the specific role, and the candidate has responded in some manner.',
       // "Share Role Details: Provide a JD of the role and company. Check if the candidate has heard of the company. Assess the candidate's interest level and fit for the role, including their ability to relocate if needed.",
-
       'Share screening questions: Share screening questions and record responses',
       // "Schedule Screening Meeting: Propose times for a call to discuss the role, company, and candidate's experience more deeply, aiming for a 30-minute discussion."
       'Acknowledge and postpone: Let the candidate know that you will get back',
@@ -49,7 +48,6 @@ export class ToolsForAgents {
     Here are the stages to choose from:
     ${stepsBulleted}
     When deciding the next step:
-
     If there is no  conversation history or only a greeting, default to stage 1.
     Your response should be a single number between 1 and ${Object.keys(steps).length}, representing the appropriate stage.
     Do not include any additional text or instructions in your response.
@@ -58,9 +56,9 @@ export class ToolsForAgents {
     Your decision should not be influenced by the output itself. Do not respond to the user input when determining the appropriate stage.
     Your response should be a only a single number between 1 and ${Object.keys(steps).length}, representing the appropriate stage.
     Do not schedule a meeting outside the given timeslots even if the candidate requests or insists. Tell the candidate that these are the only available timeslots and you cannot schedule a meeting outside of these timeslots.
-     Do not tell the candidate you are updating their profile or status.
-     If the candidate tells they will share details after a certain time or later in the stage or in later stages, do not progress to the next stage. Push the candidate to share the details now.
-     Do not progress to the next stage before completing the current stage.
+    Do not tell the candidate you are updating their profile or status.
+    If the candidate tells they will share details after a certain time or later in the stage or in later stages, do not progress to the next stage. Push the candidate to share the details now.
+    Do not progress to the next stage before completing the current stage.
     `;
 
     return STAGE_SYSTEM_PROMPT;
@@ -81,10 +79,8 @@ export class ToolsForAgents {
   }
 
   async getSystemPrompt(personNode: allDataObjects.PersonNode) {
-    // console.log('This is the candidate profile:', personNode);
     const questionArray = await this.getQuestionsToAsk(personNode);
     const formattedQuestions = questionArray.map((question, index) => `${index + 1}. ${question}`).join('\n');
-    // console.log('Formtted Questions:', formattedQuestions);
     const SYSTEM_PROMPT = `
     You will drive the conversation with candidates like the recruiter. Your goal is to assess the candidates for interest and fitment.
     If found reasonably fit, your goal is to setup a meeting at a available time.
@@ -96,10 +92,10 @@ export class ToolsForAgents {
     Your screening questions are :
     ${formattedQuestions}
     After the candidate answers each question, you will call the function update_answer.
-        If the candidate's answer is not specific enough, do not update the answer and ask the candidate to be more specific.
+    If the candidate's answer is not specific enough, do not update the answer and ask the candidate to be more specific.
     If the candidate, asks details about the role or the company, share the JD with him/ her by calling the function "share_jd".
     Even if the candidate doesn't ask about the role or the company, do share the JD with him/ her by calling the function "share_jd". 
-    Apart from your starting sentence, have small chats and not long winded sentences.
+    Apart from your starting sentence, Be direct, firm and to the point. No need to be overly polite or formal.
     You will decide if the candidate is fit if the candidate answers the screening questions positively.
     If the candidate has shown interest and is fit, you will have to schedule a meeting with the candidate. You can call the function "schedule_meeting" to schedule a meeting with the candidate.***********
     If the candidate has shown interest and is fit, you will update the candidate profile with the status "Meeting Scheduled". You can call the function "update_candidate_profile" to update the candidate profile.
@@ -132,6 +128,7 @@ export class ToolsForAgents {
     const REMINDER_SYSTEM_PROMPT = `
     Read the message history. This candidate hasn't responded in a while. Remind this candidate. If the candidate has already been reminded, reply with "#DONTRESPOND#" exact string.
     `;
+    console.log("Using reminder prompt")
     return REMINDER_SYSTEM_PROMPT;
   }
 
@@ -142,16 +139,17 @@ export class ToolsForAgents {
     else{
       const systemPrompt = await this.getSystemPrompt(personNode);
       // const updatedSystemPromptWithStagePrompt = systemPrompt.replace('##STAGE_PROMPT', stage);
-      const updatedSystemPromptWithStagePrompt = systemPrompt;
-      // console.log(updatedSystemPromptWithStagePrompt);
-      return updatedSystemPromptWithStagePrompt;
+      const updatedCandidatePromptWithStagePrompt = systemPrompt;
+      console.log("Updated Candidate Prompt ::", updatedCandidatePromptWithStagePrompt)
+      return updatedCandidatePromptWithStagePrompt;
     }
   }
 
   async getSystemFacingSystemPromptBasedOnStage(personNode: allDataObjects.PersonNode, stage: string) {
+    
     const systemPrompt = await this.getSystemPrompt(personNode);
     const updatedSystemPromptWithStagePrompt = systemPrompt.replace('##STAGE_PROMPT', stage);
-    // console.log(updatedSystemPromptWithStagePrompt);
+    console.log("Updated System Prompt ::", updatedSystemPromptWithStagePrompt)
     return updatedSystemPromptWithStagePrompt;
   }
 
@@ -261,8 +259,9 @@ export class ToolsForAgents {
 
   async updateCandidateProfile(inputs: any, personNode: allDataObjects.PersonNode) {
     try {
+      console.log("UPDATE CANDIDATE PROFILE CALLED AND INPUTS IS ::", inputs)
       console.log('Function Called:  candidateProfileDataNodeObj:any', personNode);
-      const status = 'Meeting Scheduled';
+      const status: allDataObjects.statuses = 'RECRUITER_INTERVIEW';
       await updateCandidateStatus(personNode, status);
       return 'Updated the candidate profile.';
     } catch (error) {
@@ -276,26 +275,17 @@ export class ToolsForAgents {
 
     const { questionIdArray, questionArray } = await new FetchAndUpdateCandidatesChatsWhatsapps().fetchQuestionsByJobId(jobId);
     const results = fuzzy.filter(inputs.question, questionArray);
-    const matches = results.map(function (el) {
-      return el.string;
-    });
-
+    const matches = results.map(function (el) { return el.string; });
     console.log('The matches are:', matches);
     const mostSimilarQuestion = questionIdArray.filter(questionObj => questionObj.question == matches[0]);
-
-    const AnswerMessageObj = {
-      questionsId: mostSimilarQuestion[0]?.questionId,
-      name: inputs.answer,
-      // "position": "first",
-      candidateId: candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.id,
-    };
+    const AnswerMessageObj = { questionsId: mostSimilarQuestion[0]?.questionId, name: inputs.answer, candidateId: candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.id, };
 
     await updateAnswerInDatabase(candidateProfileDataNodeObj, AnswerMessageObj);
     try {
       console.log('Function Called:  candidateProfileDataNodeObj:any', candidateProfileDataNodeObj);
       console.log('Function Called: updateAnswer');
     } catch {
-      debugger;
+      console.log("Update Answer in Database working")
     }
     return 'Updated the candidate updateAnswer.';
   }
@@ -310,22 +300,10 @@ export class ToolsForAgents {
       typeOfMeeting: gptInputs?.typeOfMeeting || 'Virtual',
       location: gptInputs?.location || 'Google Meet',
       description: gptInputs?.description || 'This meeting is scheduled to discuss the role and the company.',
-      start: {
-        dateTime: gptInputs?.startDateTime,
-        timeZone: gptInputs?.timeZone,
-      },
-      end: {
-        dateTime: gptInputs?.endDateTime,
-        timeZone: gptInputs?.timeZone,
-      },
+      start: { dateTime: gptInputs?.startDateTime, timeZone: gptInputs?.timeZone, },
+      end: { dateTime: gptInputs?.endDateTime, timeZone: gptInputs?.timeZone, },
       attendees: [{ email: candidateProfileDataNodeObj.email }],
-      reminders: {
-        useDefault: false,
-        overrides: [
-          { method: 'email', minutes: 24 * 60 },
-          { method: 'popup', minutes: 10 },
-        ],
-      },
+      reminders: { useDefault: false, overrides: [ { method: 'email', minutes: 24 * 60 }, { method: 'popup', minutes: 10 }, ], },
     };
     await new CalendarEmailService().createNewCalendarEvent(calendarEventObj);
     return 'scheduleMeeting the candidate meeting.';
