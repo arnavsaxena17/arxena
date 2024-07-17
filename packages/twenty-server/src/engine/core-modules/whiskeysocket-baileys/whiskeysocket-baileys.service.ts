@@ -25,109 +25,153 @@ import { IncomingWhatsappMessages } from '../arx-chat/services/whatsapp-api/inco
 import { BaileysIncomingMessage } from '../arx-chat/services/data-model-objects';
 import { FileDataDto, MessageDto } from './types/baileys-types';
 import { SocksProxyAgent } from 'socks-proxy-agent';
+import { EventsGateway } from './events-gateway-module/events-gateway';
 const nodeCache = new NodeCache();
 
 const agent = new SocksProxyAgent(process.env.SMART_PROXY_URL || '');
 
+// WhatsappService(USER).eventsGateway.emitEvent();
+
 @Injectable()
 export class WhatsappService {
   private readonly logger = MAIN_LOGGER.child({});
-  private userId :any;
   private sock: any;
   private store: any = makeStore();
 
-  constructor() {
+  constructor(
+    private eventsGateway: EventsGateway,
+    private sessionId: string,
+    private socketClientId: string,
+    private connectionStatus: boolean = false,
+  ) {
+    this.sessionId = sessionId;
     this.startSock();
+    // const workspaceMemberId = this.eventsGateway.workspaceMemberId;
+  }
+
+  setSocketClientId(socketClientId: string) {
+    console.log('setting socketClientId', socketClientId);
+    this.socketClientId = socketClientId;
+  }
+
+  sendConnectionUpdate() {
+    console.log('sending connection update', this.connectionStatus);
+    this.eventsGateway.emitEventTo('isWhatsappLoggedIn', this.connectionStatus, this.socketClientId);
   }
 
   private async startSock() {
-    const { state, saveCreds } = await useMultiFileAuthState('baileys_auth_info'+this.userId);
+    const { state, saveCreds } = await useMultiFileAuthState('baileys_auth_info/' + this.sessionId);
     const { version, isLatest } = await fetchLatestBaileysVersion();
     console.log(`Using WA v${version.join('.')}, isLatest: ${isLatest}`);
     this.sock = makeWASocket({
       version,
       agent: agent,
       logger: this.logger,
-      printQRInTerminal: true,
-      auth: { creds: state.creds, keys: makeCacheableSignalKeyStore(state.keys, this.logger), },
+      printQRInTerminal: false,
+      auth: { creds: state.creds, keys: makeCacheableSignalKeyStore(state.keys, this.logger) },
       msgRetryCounterCache: nodeCache,
     });
+
     this.store.bind(this.sock.ev);
+
     this.sock.ev.process(async events => {
-    if (events['connection.update']) {
-      const { connection, lastDisconnect } = events['connection.update'];
-      if (connection === 'close') {
-        if ((lastDisconnect?.error as Boom)?.output?.statusCode !== DisconnectReason.loggedOut) {
-          this.startSock();
-        } else {
-          console.log('Connection closed. You are logged out.');
+      if (events['connection.update']) {
+        const { connection, lastDisconnect, qr } = events['connection.update'];
+        if (qr) {
+          console.log('Sending the QR through socket to ', this.socketClientId, qr);
+          const event = 'qr';
+          this?.eventsGateway?.emitEventTo(event, qr, this.socketClientId); // Emit event through the gateway
+        }
+        if (connection === 'close') {
+          if ((lastDisconnect?.error as Boom)?.output?.statusCode !== DisconnectReason.loggedOut) {
+            this.startSock();
+          } else {
+            console.log('Connection closed. You are logged out.');
+            fs.rm('baileys_auth_info/' + this.sessionId, { recursive: true, force: true }, err => {
+              if (err) {
+                console.error('Error removing directory:', err);
+              } else {
+                console.log('Deleting the session directory because the user is logged out and starting the session again');
+                this.startSock();
+              }
+            });
+          }
+        }
+        console.log('connection update', events['connection.update']);
+        // this.eventsGateway.updateLoginState(events['connection.update'].connection === 'open'); // Update connection status
+
+        // this.connectionStatus = events['connection.update'].connection === 'open'; // Update connection status
+        if (events['connection.update'].connection) {
+          console.log('connection update status', events['connection.update'].connection);
+          this.connectionStatus = events['connection.update'].connection === 'open'; // Update connection status
+
+          this?.eventsGateway?.emitEventTo('isWhatsappLoggedIn', events['connection.update'].connection === 'open', this.socketClientId); // Emit event through the gateway
         }
       }
-      console.log('connection update', events['connection.update']);
-    }
-    if (events['creds.update']) {
-      await saveCreds();
-    }
-    if (events['messages.upsert']) {
-      // console.log('events::::', events);
-      const upsert = events['messages.upsert'];
-      console.log("Upsert Type::", upsert.type);
-      // console.log("These are events:", JSON.stringify(events, undefined, 2));
-      // console.log('recv messages', JSON.stringify(upsert, undefined, 2));
-      const selfWhatsappID = this.sock.user.id;
-      const selfPhoneNumber = selfWhatsappID.split(':')[0];
 
-      console.log('Phone Number selfWhatsappID:', selfWhatsappID);
+      if (events['creds.update']) {
+        await saveCreds();
+      }
 
-      if (upsert.type === 'notify') {
-        let phoneNumberTo = '';
-        try {
-          phoneNumberTo = upsert?.messages[0]?.key?.remoteJid?.replace('@s.whatsapp.net', '');
-          console.log();
-        } catch {
-          phoneNumberTo = '';
-        }
-        console.log('Phone Number TO upsert?.messages[0]?.key?.remoteJid:', phoneNumberTo);
+      if (events['messages.upsert']) {
+        console.log('events::::', events);
+        const upsert = events['messages.upsert'];
+        console.log('Upsert Type::', upsert.type);
+        // console.log("These are events:", JSON.stringify(events, undefined, 2));
+        // console.log('recv messages', JSON.stringify(upsert, undefined, 2));
+        const selfWhatsappID = this.sock?.user?.id;
+        const selfPhoneNumber = selfWhatsappID?.split(':')[0];
 
-        console.log('Phone Number TO captured:', selfPhoneNumber);
-        for (const msg of upsert.messages) {
-          if (!msg.key.fromMe) {
-            let data: any = {
-              msg: `got message from:${msg?.pushName}(${msg?.key?.remoteJid}) and message is:${msg?.message?.conversation}`,
-              fromName: msg?.pushName,
-              fromRemoteJid: msg?.key?.remoteJid,
-              message: msg?.message?.conversation || msg?.message?.extendedTextMessage?.text || '',
-            };
+        console.log('Phone Number selfWhatsappID:', selfWhatsappID);
 
-            let event = 'message';
-            console.log('replying to', msg.key.remoteJid);
-            await this.sock.readMessages([msg.key]);
-            const baileysWhatsappIncomingObj = {
-              phoneNumberFrom: '+' + msg?.key?.remoteJid?.replace('@s.whatsapp.net', ''),
-              message: msg?.message?.conversation || msg?.message?.extendedTextMessage?.text || '',
-              phoneNumberTo: selfPhoneNumber,
-              messageTimeStamp: msg?.messageTimestamp,
-              fromName: msg?.pushName,
-              baileysMessageId: msg?.key?.id,
-            };
-            await new IncomingWhatsappMessages().receiveIncomingMessagesFromBaileys(baileysWhatsappIncomingObj);
-            console.log('baileysWhatsappIncomingObj', baileysWhatsappIncomingObj);
-            this.sock?.server?.emit(event, data);
-            await this.downloadAllMediaFiles(msg, this.sock, msg.key.remoteJid);
+        if (upsert.type === 'notify') {
+          let phoneNumberTo = '';
+          try {
+            phoneNumberTo = upsert?.messages[0]?.key?.remoteJid?.replace('@s.whatsapp.net', '');
+            console.log();
+          } catch {
+            phoneNumberTo = '';
           }
-          else{
-            console.log('Message is from me:', msg.key.fromMe);
-            console.log("This is the message:", msg);
-            const baileysWhatsappIncomingObj = {
-              phoneNumberTo: '+' + msg?.key?.remoteJid?.replace('@s.whatsapp.net', ''),
-              message: msg?.message?.conversation || msg?.message?.extendedTextMessage?.text || '',
-              phoneNumberFrom: selfPhoneNumber,
-              messageTimeStamp: msg?.messageTimestamp,
-              fromName: msg?.pushName,
-              baileysMessageId: msg?.key?.id,
-            };
-            await new IncomingWhatsappMessages().receiveIncomingMessagesFromSelfFromBaileys(baileysWhatsappIncomingObj);
+          console.log('Phone Number TO upsert?.messages[0]?.key?.remoteJid:', phoneNumberTo);
 
+          console.log('Phone Number TO  captured:', selfPhoneNumber);
+          for (const msg of upsert.messages) {
+            if (!msg.key.fromMe) {
+              let data: any = {
+                msg: `got message from:${msg?.pushName}(${msg?.key?.remoteJid}) and message is:${msg?.message?.conversation}`,
+                fromName: msg?.pushName,
+                fromRemoteJid: msg?.key?.remoteJid,
+                message: msg?.message?.conversation || msg?.message?.extendedTextMessage?.text || '',
+              };
+              this.eventsGateway.emitEventTo('received', msg?.message?.conversation || msg?.message?.extendedTextMessage?.text, this.socketClientId);
+
+              let event = 'message';
+              console.log('replying to', msg.key.remoteJid);
+              // await this.sock.readMessages([msg.key]);
+              const baileysWhatsappIncomingObj = {
+                phoneNumberFrom: '+' + msg?.key?.remoteJid?.replace('@s.whatsapp.net', ''),
+                message: msg?.message?.conversation || msg?.message?.extendedTextMessage?.text || '',
+                phoneNumberTo: selfPhoneNumber,
+                messageTimeStamp: msg?.messageTimestamp,
+                fromName: msg?.pushName,
+                baileysMessageId: msg?.key?.id,
+              };
+              await new IncomingWhatsappMessages().receiveIncomingMessagesFromBaileys(baileysWhatsappIncomingObj);
+              console.log('baileysWhatsappIncomingObj', baileysWhatsappIncomingObj);
+              this.sock?.server?.emit(event, data);
+              await this.downloadAllMediaFiles(msg, this.sock, msg.key.remoteJid);
+            } else {
+              console.log('Message is from me:', msg.key.fromMe);
+              console.log('This is the message:', msg);
+              const baileysWhatsappIncomingObj = {
+                phoneNumberTo: '+' + msg?.key?.remoteJid?.replace('@s.whatsapp.net', ''),
+                message: msg?.message?.conversation || msg?.message?.extendedTextMessage?.text || '',
+                phoneNumberFrom: selfPhoneNumber,
+                messageTimeStamp: msg?.messageTimestamp,
+                fromName: msg?.pushName,
+                baileysMessageId: msg?.key?.id,
+              };
+              await new IncomingWhatsappMessages().receiveIncomingMessagesFromSelfFromBaileys(baileysWhatsappIncomingObj);
             }
           }
         }
@@ -175,9 +219,13 @@ export class WhatsappService {
     console.log('This is the ogFileName message?.documentWithCaptionMessage:', message?.documentWithCaptionMessage);
     console.log('This is the ogFileName message?.documentWithCaptionMessage message?.documentWithCaptionMessage?.message?.fileName:', message?.documentWithCaptionMessage?.message?.documentMessage?.fileName);
     // download the message
-    const buffer = await downloadMediaMessage( m, 'buffer', {}, { logger: this.logger, reuploadRequest: socket.updateMediaMessage, }, );
-    let data: any = { fileName: ogFileName, fileBuffer: buffer, };
-    this.handleFileUpload(data, '');
+    try {
+      const buffer = await downloadMediaMessage(m, 'buffer', {}, { logger: this.logger, reuploadRequest: socket.updateMediaMessage });
+      let data: any = { fileName: ogFileName, fileBuffer: buffer };
+      this.handleFileUpload(data, '');
+    } catch (error) {
+      console.log('Error downloading media:', error);
+    }
     // downloadMediaFiles(m, socket, messageType);
   }
 
@@ -220,17 +268,21 @@ export class WhatsappService {
     await this.sock.sendPresenceUpdate('paused', jid);
     const sendMessageResponse = await this.sock.sendMessage(jid, msg);
     // console.log('sendMessageResponse in baileys service::', sendMessageResponse);
-    return sendMessageResponse
+    return sendMessageResponse;
   }
 
   async sendMessageFileToBaileys(body: MessageDto) {
     const { jid, message, fileData: { filePath, mimetype, fileName } = {} as any } = body;
     console.log('file media ', { jid, message, filePath, mimetype, fileName });
     try {
-      await this.sock.sendMessage( jid, { document: { url: filePath }, caption: message, mimetype, fileName, }, { url: filePath }, );
+      await this.sock.sendMessage(jid, { document: { url: filePath }, caption: message, mimetype, fileName }, { url: filePath });
     } catch (error) {
       console.log('baileys.sendMessage got error');
       // this.handleError(error);
     }
   }
+
+  // async getCurrentWhatsappLoginStatus() {
+  //   return this.connectionStatus;
+  // }
 }

@@ -15,7 +15,6 @@ import { PostgresCredentialsModule } from 'src/engine/core-modules/postgres-cred
 import { ArxChatAgentModule } from './arx-chat/arx-chat-agent.module';
 // import { RecruitmentAgentModule } from "src/engine/core-modules/recruitment-agent/recruitment-agent.module";
 // import { VideoInterviewModule } from 'src/engine/core-modules/video-interview/video-interview.module';
-
 import { AnalyticsModule } from './analytics/analytics.module';
 import { FileModule } from './file/file.module';
 import { ClientConfigModule } from './client-config/client-config.module';
@@ -23,6 +22,8 @@ import { GoogleCalendarModule } from 'src/engine/core-modules/calendar-events/go
 import { MailerModule } from './gmail-sender/gmail-sender.module';
 // import { BaileysModule } from './baileys/baileys.module';
 import { WhatsappModule } from './whiskeysocket-baileys/whiskeysocket-baileys.module';
+import { CandidateSourcingModule } from './candidate-sourcing/candidate-sourcing.module';
+// import { EventsGateway } from './whiskeysocket-baileys/events-gateway-module/events-gateway';
 
 @Module({
   imports: [
@@ -46,7 +47,9 @@ import { WhatsappModule } from './whiskeysocket-baileys/whiskeysocket-baileys.mo
     WorkspaceModule,
     // VideoInterviewModule,
     PostgresCredentialsModule,
-    WhatsappModule,
+    // WhatsappModule,
+    CandidateSourcingModule,
+    // EventsGateway,
   ],
   exports: [
     // GoogleCalendarModule,
@@ -61,9 +64,10 @@ import { WhatsappModule } from './whiskeysocket-baileys/whiskeysocket-baileys.mo
     UserModule,
     WorkspaceModule,
     // VideoInterviewModule,
-    WhatsappModule,
+    // WhatsappModule,
     // MailerModule,
-    // GoogleCalendarModule
+    // GoogleCalendarModule,
+    // EventsGateway,
   ],
 })
 export class CoreEngineModule {}

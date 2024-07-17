@@ -33,6 +33,7 @@ import { AuthResolver } from './auth.resolver';
 
 import { JwtAuthStrategy } from './strategies/jwt.auth.strategy';
 import { AuthService } from './services/auth.service';
+import { SocketVerifyAuth } from './controllers/socket-auth.controller';
 const jwtModule = JwtModule.registerAsync({
   useFactory: async (environmentService: EnvironmentService) => {
     return {
@@ -53,34 +54,14 @@ const jwtModule = JwtModule.registerAsync({
     UserModule,
     WorkspaceManagerModule,
     TypeORMModule,
-    TypeOrmModule.forFeature(
-      [Workspace, User, AppToken, FeatureFlagEntity],
-      'core',
-    ),
-    ObjectMetadataRepositoryModule.forFeature([
-      ConnectedAccountWorkspaceEntity,
-      MessageChannelWorkspaceEntity,
-      CalendarChannelWorkspaceEntity,
-    ]),
+    TypeOrmModule.forFeature([Workspace, User, AppToken, FeatureFlagEntity], 'core'),
+    ObjectMetadataRepositoryModule.forFeature([ConnectedAccountWorkspaceEntity, MessageChannelWorkspaceEntity, CalendarChannelWorkspaceEntity]),
     HttpModule,
     UserWorkspaceModule,
     OnboardingModule,
   ],
-  controllers: [
-    GoogleAuthController,
-    MicrosoftAuthController,
-    GoogleAPIsAuthController,
-    VerifyAuthController,
-  ],
-  providers: [
-    SignInUpService,
-    AuthService,
-    TokenService,
-    JwtAuthStrategy,
-    AuthResolver,
-    GoogleAPIsService,
-    AppTokenService,
-  ],
-  exports: [jwtModule, TokenService],
+  controllers: [GoogleAuthController, MicrosoftAuthController, GoogleAPIsAuthController, VerifyAuthController, SocketVerifyAuth],
+  providers: [SignInUpService, AuthService, TokenService, JwtAuthStrategy, AuthResolver, GoogleAPIsService, AppTokenService, SocketVerifyAuth],
+  exports: [jwtModule, TokenService, SocketVerifyAuth],
 })
 export class AuthModule {}

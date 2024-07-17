@@ -7,6 +7,11 @@ import FileUpload from './FileUpload';
 import styled from '@emotion/styled';
 import SingleChatContainer from './SingleChatContainer';
 import dayjs from 'dayjs';
+import { Server } from 'socket.io';
+import { io } from 'socket.io-client';
+import QRCode from 'react-qr-code';
+import { p } from 'node_modules/msw/lib/core/GraphQLHandler-907fc607';
+
 // import {Check} from "@tabler/icons-react"
 
 const StyledButton = styled.button`
@@ -112,6 +117,8 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
   const inputRef = useRef(null);
 
   const [tokenPair] = useRecoilState(tokenPairState);
+
+  const [qrCode, setQrCode] = useState('');
 
   console.log('tokenPair', tokenPair);
 
@@ -334,6 +341,48 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
   //   console.log("useEffect::", messageHistory);
   // }, [currentIndividual?.node?.phone]);
 
+  const [isWhatsappLoggedIn, setIsWhatsappLoggedIn] = useState(false);
+
+  useEffect(() => {
+    const URL = process.env.REACT_APP_SERVER_BASE_URL || 'http://localhost:3000'; // Make sure this matches the URL and port of your Socket.io server
+    const socket = io(URL, {
+      query: {
+        token: tokenPair?.accessToken?.token, // Replace with the actual JWT token
+      },
+    });
+
+    // Listen for QR code updates
+    console.log('Listening for QR code updates');
+    socket.on('qr', (qr: any) => {
+      console.log('Received QR code:', qr);
+      setQrCode(qr);
+    });
+
+    // socket.emit('getIsWhatsappLoggedIn', (data: boolean) => {
+    //   console.log('getIsWhatsappLoggedIn:', data);
+    //   setIsWhatsappLoggedIn(data)
+    // });
+
+    socket.on('isWhatsappLoggedIn', (isWhatsappLoggedIn: boolean) => {
+      console.log('Received isWhatsappLoggedIn:', isWhatsappLoggedIn);
+      setIsWhatsappLoggedIn(isWhatsappLoggedIn);
+    });
+
+    // socket.on('received', (data: any) => {
+    //   console.log(data);
+    // });
+
+    // Clean up the connection when the component is unmounted
+    return () => {
+      socket.off('qr');
+      socket.off('isWhatsappLoggedIn');
+    };
+  }, []);
+
+  // useEffect(() => {
+  //   {async const response = await axios.get(process.env.REACT_APP_SERVER_BASE_URL + '/whatsapp/get-wa-login-status');
+  // })
+
   return (
     <>
       <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -402,6 +451,10 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
           </StyledWindow>
         )) || (
           <div>
+            <div>
+              <h1>WhatsApp QR Code</h1>
+              {isWhatsappLoggedIn === false ? qrCode ? <QRCode value={qrCode} /> : <p>Loading QR Code...</p> : <p>Your WhatsApp is logged in! Enjoy!</p>}
+            </div>
             <img src="/images/placeholders/moving-image/empty_inbox.png" alt="" />
             <p>Select a chat to start talking</p>
           </div>
