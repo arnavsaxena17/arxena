@@ -207,7 +207,7 @@ export class IncomingWhatsappMessages {
     console.log('This is the chat reply:', replyObject.chatReply);
     let mostRecentMessageObj;
     if (messagesList) {
-      console.log('This is the messagesList:', messagesList);
+      // console.log('This is the messagesList:', messagesList);
       messagesList.sort((a, b) => new Date(b.node.createdAt).getTime() - new Date(a.node.createdAt).getTime());
       mostRecentMessageObj = messagesList[0]?.node.messageObj;
     } else {

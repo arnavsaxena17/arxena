@@ -267,7 +267,7 @@ export class BaileysBot {
 
     let ogFileName: string = ''; // Change the type of ogFileName from null to string and initialize it with an empty string
     console.log('This is the media message type :', messageType);
-    console.log('This is the media message  :', messageType);
+    // console.log('This is the media message  :', messageType);
     // console.log("This is the media message type:", Object.keys(m?.messages[0]?.message)[0])
     if (messageType == 'imageMessage') {
       ogFileName = `${new Date().getTime()}.jpeg`;

@@ -108,14 +108,8 @@ async function tryAgaintoSendWhatsappMessage(sendTextMessageObj: allDataObjects.
     // }
   } catch (error: any) {
     console.error('SECOND TIME DID NOT WORK> PLEASE CHECK THE SYSTEM:', error.response?.data || error.message);
-
   }
-
-
 }
-
-
-
 
 export async function sendAttachmentMessageViaBaileys(sendTextMessageObj: allDataObjects.AttachmentMessageObject) {
   const uploadFileUrl = `${baseUrl}/send-wa-message-file`;

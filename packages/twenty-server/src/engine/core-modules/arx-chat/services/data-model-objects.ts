@@ -6,6 +6,9 @@ import OpenAI from 'openai';
 // Define the possible roles in the chat
 export type ChatRole = 'system' | 'user' | 'tool' | 'assistant';
 
+
+export type statuses = 'SCREENING'|'RECRUITER_INTERVIEW'|'CV_SENT'|'CLIENT_INTERVIEW'|'NEGOTIATION'
+
 // Interface for chat message without tool call
 export interface ChatMessage {
   role: ChatRole;

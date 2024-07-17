@@ -150,8 +150,8 @@ export class ArxChatEndpoint {
 
     let chatAgent = new OpenAIArxMultiStepClient(personObj);
     const engagementType = 'engage';
-
-    const stage = await chatAgent.getStageOfTheConversation(messagesList, engagementType);
+    const processorType = "stage"
+    const stage = await chatAgent.getStageOfTheConversation(messagesList, engagementType, processorType);
 
     return { stage: stage };
   }

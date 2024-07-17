@@ -52,6 +52,7 @@ export default class CandidateEngagementArx {
 
   async processCandidate(edge: allDataObjects.PersonEdge, engagementType: 'remind' | 'engage') {
     // console.log('The edge is ::', edge);
+    console.log("Engagement Type:", engagementType);
     try {
       const candidateNode = edge.node.candidates.edges[0].node;
       const personNode = edge.node;
