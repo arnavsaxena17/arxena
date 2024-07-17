@@ -174,9 +174,9 @@ export class TokenService {
   }
 
   async validateToken(request: Request): Promise<JwtData> {
-    console.log('request ::', request?.headers?.authorization);
+    // console.log('request ::', request?.headers?.authorization);
     const token = ExtractJwt.fromAuthHeaderAsBearerToken()(request);
-    console.log('token ::', token);
+    // console.log('token ::', token);
 
     if (!token) {
       throw new UnauthorizedException('missing authentication token');
