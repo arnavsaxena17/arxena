@@ -1,24 +1,14 @@
-import { Controller, Post, Body, Get } from '@nestjs/common';
+import { Controller, Post, Body } from '@nestjs/common';
 import { WhatsappService } from './whiskeysocket-baileys.service';
-import { MessageDto } from './types/baileys-types';
+import { EventsGateway } from './events-gateway-module/events-gateway';
 
 @Controller('whatsapp')
 export class WhatsappController {
-  constructor(private readonly whatsappService: WhatsappService) {}
+  constructor(private eventsGateway: EventsGateway) {}
 
-  @Post('send')
-  async sendMessage(@Body() body: { message: string; jid: string }) {
-    return this.whatsappService.sendMessageWTyping({ text: body.message }, body.jid);
+  @Post('token')
+  async sendMessage(@Body() body: { sessionId: string }) {
+    await new WhatsappService(this.eventsGateway, body.sessionId, '');
+    return { status: 'ok' };
   }
-
-  @Post('/send-wa-message-file')
-  sendWAMessageFile(@Body() data: any): any {
-    console.log(data);
-    this.whatsappService.sendMessageFileToBaileys(data);
-  }
-
-  // @Get('/get-wa-login-status')
-  // getWaLoginStatus(): Promise<boolean> {
-  //   return this.whatsappService.getCurrentWhatsappLoginStatus();
-  // }
 }

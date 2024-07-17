@@ -22,7 +22,7 @@ import { GoogleCalendarModule } from 'src/engine/core-modules/calendar-events/go
 import { MailerModule } from './gmail-sender/gmail-sender.module';
 // import { BaileysModule } from './baileys/baileys.module';
 import { WhatsappModule } from './whiskeysocket-baileys/whiskeysocket-baileys.module';
-import { EventsGateway } from './whiskeysocket-baileys/events-gateway-module/events-gateway';
+// import { EventsGateway } from './whiskeysocket-baileys/events-gateway-module/events-gateway';
 
 @Module({
   imports: [
@@ -47,7 +47,7 @@ import { EventsGateway } from './whiskeysocket-baileys/events-gateway-module/eve
     // VideoInterviewModule,
     PostgresCredentialsModule,
     WhatsappModule,
-    EventsGateway,
+    // EventsGateway,
   ],
   exports: [
     // GoogleCalendarModule,
@@ -62,10 +62,10 @@ import { EventsGateway } from './whiskeysocket-baileys/events-gateway-module/eve
     UserModule,
     WorkspaceModule,
     // VideoInterviewModule,
-    WhatsappModule,
+    // WhatsappModule,
     // MailerModule,
     // GoogleCalendarModule,
-    EventsGateway,
+    // EventsGateway,
   ],
 })
 export class CoreEngineModule {}

@@ -10,6 +10,6 @@ export class SocketVerifyAuth {
     console.log('43342:: req', req?.headers?.authorization);
     const response = await this.tokenService.validateToken(req);
     console.log('43342:: response', response);
-    return { status: response };
+    return response?.user?.id;
   }
 }

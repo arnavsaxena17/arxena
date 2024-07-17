@@ -368,6 +368,10 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
       setIsWhatsappLoggedIn(isWhatsappLoggedIn);
     });
 
+    // socket.on('received', (data: any) => {
+    //   console.log(data);
+    // });
+
     // Clean up the connection when the component is unmounted
     return () => {
       socket.off('qr');
