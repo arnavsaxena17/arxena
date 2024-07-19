@@ -18,7 +18,7 @@ export class WhatsappAPISelector {
       console.log('No valid whatsapp API selected');
     }
   }
-  async sendAttachmentMessageOnWhatsapp(attachmentMessage: allDataObjects.AttachmentMessageObject) {
+  async sendAttachmentMessageOnWhatsapp(attachmentMessage: allDataObjects.AttachmentMessageObject, personNode: allDataObjects.PersonNode) {
     console.log('attachmentMessage received to send attachment:', attachmentMessage);
     if (process.env.WHATSAPP_API === 'facebook') {
       // Alternative solution for sending attachment message (doesn't take the file path or mediaID as input, but the file itself)
@@ -39,7 +39,7 @@ export class WhatsappAPISelector {
       await new FacebookWhatsappChatApi().uploadAndSendFileToWhatsApp(attachmentMessage);
     } else if (process.env.WHATSAPP_API === 'baileys') {
       // await sendWhatsappMessageVIABaileysAPI(whatappUpdateMessageObj);
-      await sendAttachmentMessageViaBaileys(attachmentMessage);
+      await sendAttachmentMessageViaBaileys(attachmentMessage, personNode);
     }
   }
 
@@ -99,6 +99,6 @@ export class WhatsappAPISelector {
         mimetype: mime.lookup(name) || 'application/octet-stream',
       },
     };
-    await new WhatsappAPISelector().sendAttachmentMessageOnWhatsapp(attachmentMessageObj);
+    await new WhatsappAPISelector().sendAttachmentMessageOnWhatsapp(attachmentMessageObj, person);
   }
 }
