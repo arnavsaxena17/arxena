@@ -17,7 +17,7 @@ export async function sendWhatsappMessageVIABaileysAPI(whatappUpdateMessageObj: 
       phoneNumberTo: whatappUpdateMessageObj.phoneNumberTo,
       messages: whatappUpdateMessageObj.messages[0].content,
     };
-    const response = await sendWhatsappTextMessageViaBaileys(sendTextMessageObj);
+    const response = await sendWhatsappTextMessageViaBaileys(sendTextMessageObj, personNode);
     // console.log('99493:: response is here', response);
     const whatappUpdateMessageObjAfterWAMidUpdate = await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj(
       // response?.data?.messages[0]?.id ||
@@ -32,7 +32,7 @@ export async function sendWhatsappMessageVIABaileysAPI(whatappUpdateMessageObj: 
   }
 }
 
-export async function sendWhatsappTextMessageViaBaileys(sendTextMessageObj: allDataObjects.ChatRequestBody) {
+export async function sendWhatsappTextMessageViaBaileys(sendTextMessageObj: allDataObjects.ChatRequestBody, personNode: allDataObjects.PersonNode) {
   // console.log('This is the ssendTextMessageObj for baileys to be sent ::', sendTextMessageObj);
   const sendMessageUrl = `${baseUrl}/send`;
   const data = {
@@ -44,6 +44,7 @@ export async function sendWhatsappTextMessageViaBaileys(sendTextMessageObj: allD
     message: sendTextMessageObj.messages,
     fileData: '',
     jid: (sendTextMessageObj.phoneNumberTo.startsWith('+') ? sendTextMessageObj.phoneNumberTo.replace('+', '') : sendTextMessageObj.phoneNumberTo) + '@s.whatsapp.net',
+    recruiterId: personNode?.candidates?.edges[0]?.node?.jobs?.recruiterId,
   };
   let response;
   try {
@@ -69,13 +70,12 @@ export async function sendWhatsappTextMessageViaBaileys(sendTextMessageObj: allD
     return response.data;
   } catch (error: any) {
     console.error('Send Message Error in the first time. Will try to send a test message and then send again:', error.response?.data || error.message);
-    await new Promise(resolve => setTimeout(resolve, 10000))
-    await tryAgaintoSendWhatsappMessage(sendTextMessageObj)
+    await new Promise(resolve => setTimeout(resolve, 10000));
+    await tryAgaintoSendWhatsappMessage(sendTextMessageObj);
   }
 }
 
-
-async function tryAgaintoSendWhatsappMessage(sendTextMessageObj: allDataObjects.ChatRequestBody){
+async function tryAgaintoSendWhatsappMessage(sendTextMessageObj: allDataObjects.ChatRequestBody) {
   try {
     const sendMessageUrl = `${baseUrl}/send`;
     const data = {
@@ -108,16 +108,10 @@ async function tryAgaintoSendWhatsappMessage(sendTextMessageObj: allDataObjects.
     // }
   } catch (error: any) {
     console.error('SECOND TIME DID NOT WORK> PLEASE CHECK THE SYSTEM:', error.response?.data || error.message);
-
   }
-
-
 }
 
-
-
-
-export async function sendAttachmentMessageViaBaileys(sendTextMessageObj: allDataObjects.AttachmentMessageObject) {
+export async function sendAttachmentMessageViaBaileys(sendTextMessageObj: allDataObjects.AttachmentMessageObject, personNode: allDataObjects.PersonNode) {
   const uploadFileUrl = `${baseUrl}/send-wa-message-file`;
   const data = {
     WANumber: sendTextMessageObj.phoneNumberTo,
@@ -126,8 +120,13 @@ export async function sendAttachmentMessageViaBaileys(sendTextMessageObj: allDat
     message: 'Sharing the JD',
   };
 
+  const payloadToSendToWhiskey = {
+    recruiterId: personNode?.candidates?.edges[0]?.node?.jobs?.recruiterId,
+    fileToSendData: data,
+  };
+
   try {
-    const response = await axios.post(uploadFileUrl, data);
+    const response = await axios.post(uploadFileUrl, payloadToSendToWhiskey);
     console.log('Upload File Response:', response.data);
   } catch (error: any) {
     console.error('Upload File Error:', error.response?.data || error.message);

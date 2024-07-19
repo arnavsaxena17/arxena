@@ -96,8 +96,7 @@ export const graphqlQueryToUpdateCandidateEngagementStatus = `mutation UpdateOne
     }
   }`;
 
-
-  export const graphqlQueryToUpdateReminderStatus = `mutation UpdateOneReminder($idToUpdate: ID!, $input: ReminderUpdateInput!) {
+export const graphqlQueryToUpdateReminderStatus = `mutation UpdateOneReminder($idToUpdate: ID!, $input: ReminderUpdateInput!) {
     updateReminder(id: $idToUpdate, data: $input) {
       updatedAt
       id
@@ -126,6 +125,7 @@ export const graphqlQueryToFindEngagedCandidates = `query FindManyPeople($filter
                          name
                          id
                          jobLocation
+                         recruiterId
                          companies{
                           name
                           descriptionOneliner
