@@ -2,6 +2,7 @@ export const CreateOneJob = `
 mutation CreateOneJob($input: JobCreateInput!) {
   createJob(data: $input) {
     __typename
+    id
   }
 }`;
 
@@ -16,6 +17,7 @@ export const CreateManyCandidates = `
 mutation CreateCandidates($data: [CandidateCreateInput!]!) {
   createCandidates(data: $data) {
     __typename
+    id
   }
 }`;
 
@@ -26,3 +28,69 @@ mutation CreateOneCompany($input: CompanyCreateInput!) {
   }
 }
 `;
+
+export const CreateOneObjectMetadataItem = `
+  mutation CreateOneObjectMetadataItem($input: CreateOneObjectInput!) {
+  createOneObject(input: $input) {
+    __typename
+    id
+  }
+}
+`;
+
+export const CreateOneRelationMetadata = ` mutation CreateOneRelationMetadata($input: CreateOneRelationInput!) {
+  createOneRelation(input: $input) {
+    id
+    relationType
+    fromObjectMetadataId
+    toObjectMetadataId
+    fromFieldMetadataId
+    toFieldMetadataId
+    createdAt
+    updatedAt
+    __typename
+  }
+}
+  `;
+
+export const ObjectMetadataItems = `
+  query ObjectMetadataItems($objectFilter: objectFilter) {
+  objects(paging: {first: 1000},filter: $objectFilter) {
+    edges {
+      node {
+        id
+        nameSingular
+        labelPlural
+      }
+    }
+  }
+}
+  `;
+
+export const CreateOneFieldMetadataItem = `
+  mutation CreateOneFieldMetadataItem($input: CreateOneFieldMetadataInput!) {
+  createOneField(input: $input) {
+    
+    __typename
+  }
+}
+  `;
+
+export const CreateOneCustomMetadataObject = (objName: string) => {
+  return `
+    mutation CreateMany${objName}($input: CreateMany${objName}CreateInput!) {
+      createMany${objName}(input: $input) {
+        id
+      }
+    }
+    `;
+};
+
+export const FindOneJob = `
+  query FindOneJob($objectRecordId: ID!) {
+    job(filter: {id: {eq: $objectRecordId}}) {
+      id
+      name
+    }
+  }
+  `;

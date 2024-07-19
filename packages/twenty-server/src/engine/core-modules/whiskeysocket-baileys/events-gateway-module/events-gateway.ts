@@ -3,6 +3,9 @@ import { Server, Socket } from 'socket.io';
 import axios from 'axios';
 import * as fs from 'fs';
 import { WhatsappService } from '../whiskeysocket-baileys.service';
+import { axiosRequest } from '../../arx-chat/utils/arx-chat-agent-utils';
+import { FindManyWorkspaceMembers } from '../graphql-queries';
+import { MessageDto } from '../types/baileys-types';
 
 @WebSocketGateway({
   cors: {
@@ -44,8 +47,29 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       const response = await axios.get('http://localhost:3000/socket-auth/verify', { headers });
 
       console.log('UserId connected:', response?.data);
-      const workspaceMemberId = response?.data;
+      const workspaceUserId = response?.data;
+      const graphqlVariableToFilterWorkspaceMember = {
+        filter: {
+          userId: {
+            eq: workspaceUserId,
+          },
+        },
+      };
+      let responseAfterQueryingWorkspaceMember;
+      try {
+        responseAfterQueryingWorkspaceMember = await axiosRequest(
+          JSON.stringify({
+            query: FindManyWorkspaceMembers,
+            variables: graphqlVariableToFilterWorkspaceMember,
+          }),
+        );
 
+        console.log('response:', response?.data);
+      } catch (error) {
+        console.error('Error querying workspace member:', error);
+      }
+      const workspaceMemberId = responseAfterQueryingWorkspaceMember?.data?.data?.workspaceMembers?.edges[0]?.node?.id;
+      console.log('responseAfterQueryingWorkspaceMember:', responseAfterQueryingWorkspaceMember?.data?.data?.workspaceMembers?.edges[0]?.node?.id);
       const sessionId = workspaceMemberId;
 
       if (!this.whatsappServices.has(sessionId)) {
@@ -99,5 +123,21 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
         this.whatsappServices.set(sessionId, whatsappService);
       });
     }
+  }
+
+  async sendWhatsappMessage(message: string, jid: string, sessionId: string) {
+    try {
+      console.log('42342 reached here');
+      console.log('sessionId:', sessionId);
+      console.log('jid:', jid);
+      console.log('message:', message);
+      await this.whatsappServices.get(sessionId)?.sendMessageWTyping(message, jid);
+    } catch (error) {
+      console.error('Error sending message:', error);
+    }
+  }
+
+  async sendWhatsappFile(payload: { recruiterId: string; fileToSendData: MessageDto }) {
+    await this.whatsappServices.get(payload?.recruiterId)?.sendMessageFileToBaileys(payload?.fileToSendData);
   }
 }
