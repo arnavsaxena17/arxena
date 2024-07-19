@@ -1,7 +1,7 @@
 import { Body, Controller, Post } from '@nestjs/common';
 import { job, panda, arxenaColumns, arxenaColumnsV2 } from './constant';
 import axios from 'axios';
-import { CreateManyCandidates, CreateManyPeople, CreateOneFieldMetadataItem, CreateOneJob, CreateOneObjectMetadataItem, CreateOneRelationMetadata, ObjectMetadataItems } from './graphql-queries';
+import { CreateManyCandidates, CreateManyPeople, CreateOneFieldMetadataItem, CreateOneJob, CreateOneObjectMetadataItem, CreateOneRelationMetadata, ObjectMetadataItems, graphqlToFindManyJobByArxenaSiteId } from './graphql-queries';
 import { v4 as uuidv4 } from 'uuid';
 import camelCase from 'camelcase';
 
@@ -19,14 +19,25 @@ export class CandidateSourcingController {
     // return panda;
 
     console.log('Sourcing candidates', body);
+    // const responseBody = JSON.parse(body);
     const jobId = body?.job_id;
     const data: UserProfile[] = body?.data;
 
     const responseFromGetJob = await axiosRequest(
       JSON.stringify({
-        query: FindOneJob,
+        query: graphqlToFindManyJobByArxenaSiteId,
         variables: {
-          objectRecordId: jobId,
+          filter: {
+            arxenaSiteId: {
+              in: [jobId],
+            },
+          },
+          limit: 30,
+          orderBy: [
+            {
+              position: 'AscNullsFirst',
+            },
+          ],
         },
       }),
     );
