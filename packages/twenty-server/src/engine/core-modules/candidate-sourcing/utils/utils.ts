@@ -12,3 +12,15 @@ export async function axiosRequest(data: string) {
   });
   return response;
 }
+export async function axiosRequestForMetadata(data: string) {
+  const response = await axios.request({
+    method: 'post',
+    url: process.env.GRAPHQL_URL_METADATA,
+    headers: {
+      authorization: 'Bearer ' + process.env.TWENTY_JWT_SECRET,
+      'content-type': 'application/json',
+    },
+    data: data,
+  });
+  return response;
+}

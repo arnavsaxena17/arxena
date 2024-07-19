@@ -260,14 +260,14 @@ export class WhatsappService {
     }
   }
 
-  async sendMessageWTyping(msg: AnyMessageContent, jid: string) {
+  async sendMessageWTyping(msg: string, jid: string) {
     await this.sock.presenceSubscribe(jid);
     await delay(500);
     await this.sock.sendPresenceUpdate('composing', jid);
     await delay(2000);
     await this.sock.sendPresenceUpdate('paused', jid);
-    const sendMessageResponse = await this.sock.sendMessage(jid, msg);
-    // console.log('sendMessageResponse in baileys service::', sendMessageResponse);
+    const sendMessageResponse = await this.sock.sendMessage(jid, { text: msg });
+    console.log('sendMessageResponse in baileys service::', sendMessageResponse);
     return sendMessageResponse;
   }
 
