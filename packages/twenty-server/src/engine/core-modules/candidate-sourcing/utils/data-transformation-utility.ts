@@ -16,7 +16,7 @@ export const mapArxCandidateToPersonNode = candidate => {
 export const mapArxCandidateToCandidateNode = (candidate, jobNode, jobSpecificNode) => {
   const candidateNode: ArxenaCandidateNode = {
     name: candidate.first_name + ' ' + candidate.last_name,
-    jobs: jobNode,
+    jobsId: jobNode.id,
     engagementStatus: false,
     startChat: false,
     phoneNumber: candidate.phone_numbers[0],
