@@ -1,11 +1,6 @@
 interface Name {
-  first_name: string | null;
-  last_name: string | null;
-  title: string | null;
-  middle_name: string | null;
-  middle_initial: string | null;
-  name: string | null;
-  is_primary: boolean | null;
+  firstName: string | null;
+  lastName: string | null;
 }
 
 interface Industry {
@@ -101,7 +96,7 @@ interface SocialProfiles {
   linkedin: string;
 }
 
-interface UserProfile {
+export interface UserProfile {
   names: Name;
   id: string | null;
   first_name: string;
@@ -205,4 +200,28 @@ interface Person {
     url: string;
   };
   jobTitle: string;
+}
+
+export interface ArxenaCandidateNode {
+  name: string;
+  engagementStatus: boolean;
+  phoneNumber: string;
+  email: string;
+  startChat: boolean;
+  jobs: Jobs;
+  jobSpecificFields: any;
+}
+
+export interface ArxenaPersonNode {
+  phone: string;
+  email: string;
+  jobTitle: string;
+  name: Name;
+}
+
+export interface Jobs {
+  name: string;
+  id: string;
+  recruiterId: string;
+  jobLocation: string;
 }

@@ -6,8 +6,7 @@ import OpenAI from 'openai';
 // Define the possible roles in the chat
 export type ChatRole = 'system' | 'user' | 'tool' | 'assistant';
 
-
-export type statuses = 'SCREENING'|'RECRUITER_INTERVIEW'|'CV_SENT'|'CLIENT_INTERVIEW'|'NEGOTIATION'
+export type statuses = 'SCREENING' | 'RECRUITER_INTERVIEW' | 'CV_SENT' | 'CLIENT_INTERVIEW' | 'NEGOTIATION';
 
 // Interface for chat message without tool call
 export interface ChatMessage {
@@ -136,6 +135,15 @@ export interface CandidateNode {
   jobs: Jobs;
   candidateReminders: Reminders;
 }
+
+// export interface ArxJobs {
+//   name: string;
+//   id: string;
+//   recruiterId: string;
+//   // companies: Companies;
+//   jobLocation: string;
+//   // whatsappMessages: WhatsAppMessages;
+// }
 
 export interface Reminders {
   edges: ReminderEdge[];

@@ -78,7 +78,7 @@ export const CreateOneFieldMetadataItem = `
 
 export const CreateManyCustomMetadataObject = (objName: string) => {
   return `
-    mutation CreateMany${objName}($data: [CreateMany${objName}CreateInput!]!) {
+    mutation Create${objName}($data: [${objName}CreateInput!]!) {
       createMany${objName}(input: $data) {
         id
       }
