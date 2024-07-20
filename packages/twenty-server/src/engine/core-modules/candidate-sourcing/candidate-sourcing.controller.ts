@@ -110,6 +110,7 @@ export class CandidateSourcingController {
       query: CreateManyCandidates,
       variables: graphqlVariablesForCandidate,
     });
+    console.log('Query for candidate', graphqlQueryObjForCandidate);
     try {
       const responseForPerson = await axiosRequest(graphqlQueryObjForPerson);
       console.log('Response from creating people', responseForPerson.data);

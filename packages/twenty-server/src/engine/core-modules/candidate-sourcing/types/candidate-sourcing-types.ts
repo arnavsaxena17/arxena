@@ -205,8 +205,8 @@ interface Person {
 export interface ArxenaCandidateNode {
   name: string;
   engagementStatus: boolean;
-  phoneNumber: string;
-  email: string;
+  // phoneNumber: string;
+  // email: string;
   startChat: boolean;
   jobsId: string;
   jobSpecificFields: any;

@@ -19,8 +19,8 @@ export const mapArxCandidateToCandidateNode = (candidate, jobNode, jobSpecificNo
     jobsId: jobNode.id,
     engagementStatus: false,
     startChat: false,
-    phoneNumber: candidate.phone_numbers[0],
-    email: candidate.email_address[0],
+    // phoneNumber: candidate.phone_numbers[0],
+    // email: candidate.email_address[0],
     jobSpecificFields: jobSpecificNode,
   };
 
