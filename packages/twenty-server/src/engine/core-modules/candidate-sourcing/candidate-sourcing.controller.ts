@@ -99,25 +99,37 @@ export class CandidateSourcingController {
     const graphqlVariablesForPerson = {
       data: manyPersonObjects,
     };
-    const graphqlVariablesForCandidate = {
-      data: manyCandidateObjects,
-    };
     const graphqlQueryObjForPerson = JSON.stringify({
       query: CreateManyPeople,
       variables: graphqlVariablesForPerson,
     });
-    const graphqlQueryObjForCandidate = JSON.stringify({
-      query: CreateManyCandidates,
-      variables: graphqlVariablesForCandidate,
-    });
-    console.log('Query for candidate', graphqlQueryObjForCandidate);
+    // console.log('Query for candidate', graphqlQueryObjForCandidate);
+    let arrayOfPersonIds: string[] = [];
     try {
       const responseForPerson = await axiosRequest(graphqlQueryObjForPerson);
+      responseForPerson.data.data.createPeople.forEach((person: any) => {
+        console.log('Person ID', person?.id);
+        arrayOfPersonIds.push(person?.id);
+      });
       console.log('Response from creating people', responseForPerson.data);
     } catch (error) {
       console.log('Error in creating people', error);
       return { error: error.message };
     }
+
+    manyCandidateObjects.map((candidate, index) => {
+      candidate.peopleId = arrayOfPersonIds[index];
+    });
+
+    const graphqlVariablesForCandidate = {
+      data: manyCandidateObjects,
+    };
+
+    const graphqlQueryObjForCandidate = JSON.stringify({
+      query: CreateManyCandidates,
+      variables: graphqlVariablesForCandidate,
+    });
+
     try {
       const responseForCandidate = await axiosRequest(graphqlQueryObjForCandidate);
       console.log('Response from creating candidates', responseForCandidate.data);
