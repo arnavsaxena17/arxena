@@ -210,6 +210,7 @@ export interface ArxenaCandidateNode {
   startChat: boolean;
   jobsId: string;
   jobSpecificFields: any;
+  peopleId: string;
 }
 
 export interface ArxenaPersonNode {

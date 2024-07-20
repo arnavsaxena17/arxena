@@ -10,6 +10,7 @@ export const CreateManyPeople = `
 mutation CreatePeople($data: [PersonCreateInput!]!) {
   createPeople(data: $data) {
     __typename
+    id
   }
 }`;
 
