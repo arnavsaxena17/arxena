@@ -23040,6 +23040,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"capitalize@npm:^2.0.4":
+  version: 2.0.4
+  resolution: "capitalize@npm:2.0.4"
+  checksum: 014b5aaaebef5c9af598361df99a8ccd9267c273d5f4e5412ebacf902c4ba40638b77a705f82d460ea371935d2d3c81ac09db2bb81b1f55ba89ed0ea54d15656
+  languageName: node
+  linkType: hard
+
 "cardinal@npm:^2.1.1":
   version: 2.1.1
   resolution: "cardinal@npm:2.1.1"
@@ -49053,6 +49060,7 @@ __metadata:
     body-parser: "npm:^1.20.2"
     bullmq: "npm:^4.14.0"
     bytes: "npm:^3.1.2"
+    capitalize: "npm:^2.0.4"
     chromatic: "npm:^6.18.0"
     class-transformer: "npm:^0.5.1"
     class-validator: "npm:^0.14.1"
