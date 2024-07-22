@@ -264,7 +264,7 @@ export class WhatsappService {
     await this.sock.presenceSubscribe(jid);
     await delay(500);
     await this.sock.sendPresenceUpdate('composing', jid);
-    await delay(2000);
+    await delay(1000);
     await this.sock.sendPresenceUpdate('paused', jid);
     const sendMessageResponse = await this.sock.sendMessage(jid, { text: msg });
     console.log('sendMessageResponse in baileys service::', sendMessageResponse);

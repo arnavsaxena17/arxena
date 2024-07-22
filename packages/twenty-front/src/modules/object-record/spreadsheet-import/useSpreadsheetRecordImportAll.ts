@@ -14,7 +14,7 @@ import { isDefined } from '~/utils/isDefined';
 const firstName = 'Firstname';
 const lastName = 'Lastname';
 
-export const useSpreadsheetRecordImport = (objectNameSingular: string) => {
+export const useSpreadsheetRecordImportAll = (objectNameSingular: string) => {
   const { openSpreadsheetImport } = useSpreadsheetImport<any>();
   const { enqueueSnackBar } = useSnackBar();
   const { getIcon } = useIcons();
@@ -80,70 +80,71 @@ export const useSpreadsheetRecordImport = (objectNameSingular: string) => {
     objectNameSingular,
   });
 
-  const openRecordSpreadsheetImport = (options?: Omit<SpreadsheetOptions<any>, 'fields' | 'isOpen' | 'onClose'>) => {
+  const openRecordSpreadsheetImportAll = (options?: Omit<SpreadsheetOptions<any>, 'fields' | 'isOpen' | 'onClose'>) => {
     openSpreadsheetImport({
       ...options,
       onSubmit: async data => {
-        const createInputs = data.validData.map(record => {
-          const fieldMapping: Record<string, any> = {};
-          for (const field of fields) {
-            const value = record[field.name];
+        console.log(data);
+        //     const createInputs = data.validData.map(record => {
+        //       const fieldMapping: Record<string, any> = {};
+        //       for (const field of fields) {
+        //         const value = record[field.name];
 
-            switch (field.type) {
-              case FieldMetadataType.Boolean:
-                fieldMapping[field.name] = value === 'true' || value === true;
-                break;
-              case FieldMetadataType.Number:
-              case FieldMetadataType.Numeric:
-                fieldMapping[field.name] = Number(value);
-                break;
-              case FieldMetadataType.Currency:
-                if (value !== undefined) {
-                  fieldMapping[field.name] = {
-                    amountMicros: Number(value),
-                    currencyCode: 'USD',
-                  };
-                }
-                break;
-              case FieldMetadataType.Link:
-                if (value !== undefined) {
-                  fieldMapping[field.name] = {
-                    label: field.name,
-                    url: value || null,
-                  };
-                }
-                break;
-              case FieldMetadataType.Relation:
-                if (isDefined(value) && (isNonEmptyString(value) || value !== false)) {
-                  fieldMapping[field.name + 'Id'] = value;
-                }
-                break;
-              case FieldMetadataType.FullName:
-                if (isDefined(record[`${firstName} (${field.name})`] || record[`${lastName} (${field.name})`])) {
-                  fieldMapping[field.name] = {
-                    firstName: record[`${firstName} (${field.name})`] || '',
-                    lastName: record[`${lastName} (${field.name})`] || '',
-                  };
-                }
-                break;
-              default:
-                fieldMapping[field.name] = value;
-                break;
-            }
-          }
-          return fieldMapping;
-        });
-        try {
-          await createManyRecords(createInputs);
-        } catch (error: any) {
-          enqueueSnackBar(error?.message || 'Something went wrong', {
-            variant: SnackBarVariant.Error,
-          });
-        }
+        //         switch (field.type) {
+        //           case FieldMetadataType.Boolean:
+        //             fieldMapping[field.name] = value === 'true' || value === true;
+        //             break;
+        //           case FieldMetadataType.Number:
+        //           case FieldMetadataType.Numeric:
+        //             fieldMapping[field.name] = Number(value);
+        //             break;
+        //           case FieldMetadataType.Currency:
+        //             if (value !== undefined) {
+        //               fieldMapping[field.name] = {
+        //                 amountMicros: Number(value),
+        //                 currencyCode: 'USD',
+        //               };
+        //             }
+        //             break;
+        //           case FieldMetadataType.Link:
+        //             if (value !== undefined) {
+        //               fieldMapping[field.name] = {
+        //                 label: field.name,
+        //                 url: value || null,
+        //               };
+        //             }
+        //             break;
+        //           case FieldMetadataType.Relation:
+        //             if (isDefined(value) && (isNonEmptyString(value) || value !== false)) {
+        //               fieldMapping[field.name + 'Id'] = value;
+        //             }
+        //             break;
+        //           case FieldMetadataType.FullName:
+        //             if (isDefined(record[`${firstName} (${field.name})`] || record[`${lastName} (${field.name})`])) {
+        //               fieldMapping[field.name] = {
+        //                 firstName: record[`${firstName} (${field.name})`] || '',
+        //                 lastName: record[`${lastName} (${field.name})`] || '',
+        //               };
+        //             }
+        //             break;
+        //           default:
+        //             fieldMapping[field.name] = value;
+        //             break;
+        //         }
+        //       }
+        //       return fieldMapping;
+        //     });
+        //     try {
+        //       await createManyRecords(createInputs);
+        //     } catch (error: any) {
+        //       enqueueSnackBar(error?.message || 'Something went wrong', {
+        //         variant: SnackBarVariant.Error,
+        //       });
+        //     }
       },
       fields: templateFields,
     });
   };
 
-  return { openRecordSpreadsheetImport };
+  return { openRecordSpreadsheetImportAll };
 };

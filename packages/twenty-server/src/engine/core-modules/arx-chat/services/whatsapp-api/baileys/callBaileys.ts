@@ -1,4 +1,5 @@
 import CandidateEngagementArx from '../../candidate-engagement/check-candidate-engagement';
+import { FetchAndUpdateCandidatesChatsWhatsapps } from '../../candidate-engagement/update-chat';
 import * as allDataObjects from '../../data-model-objects';
 import axios from 'axios';
 
@@ -26,7 +27,12 @@ export async function sendWhatsappMessageVIABaileysAPI(whatappUpdateMessageObj: 
       personNode,
       mostRecentMessageArr,
     );
-    await new CandidateEngagementArx().updateCandidateEngagementDataInTable(whatappUpdateMessageObjAfterWAMidUpdate);
+    let candidateProfileObj = whatappUpdateMessageObj.messageType !== 'botMessage' ? await new FetchAndUpdateCandidatesChatsWhatsapps().getCandidateInformation(whatappUpdateMessageObj) : whatappUpdateMessageObj.candidateProfile;
+
+    await new CandidateEngagementArx().updateCandidateEngagementDataInTable(whatappUpdateMessageObjAfterWAMidUpdate, true);
+    const updateCandidateStatusObj = await new FetchAndUpdateCandidatesChatsWhatsapps().updateCandidateEngagementStatus(candidateProfileObj, whatappUpdateMessageObj);
+
+    // await updateCandidateEngagementStatus
   } else {
     console.log('This is send whatsapp message via bailsyes api and is a candidate message');
   }

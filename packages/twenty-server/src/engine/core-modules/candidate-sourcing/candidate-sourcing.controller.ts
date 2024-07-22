@@ -118,7 +118,7 @@ export class CandidateSourcingController {
     }
 
     manyCandidateObjects.map((candidate, index) => {
-      manyCandidateObjects[index].peopleId = arrayOfPersonIds[index];
+      candidate.peopleId = arrayOfPersonIds[index];
     });
 
     const graphqlVariablesForCandidate = {

@@ -16,9 +16,7 @@ const recruiterProfile = allDataObjects.recruiterProfile;
 const jobProfile = allDataObjects.jobProfile;
 const availableTimeSlots = '12PM-3PM, 4PM -6PM on the 24th and 25th August 2024.';
 
-
 export class ToolsForAgents {
-
   async convertToBulletPoints(steps: { [x: string]: any; 1?: string; 2?: string; 3?: string; 4?: string }) {
     let result = '';
     for (let key in steps) {
@@ -55,6 +53,7 @@ export class ToolsForAgents {
     If the candidate's answer is not specific enough or doesn't provide exact numerical value when needed, do not progress to the next stage or call update_answer tool call and ask the candidate to be more specific.
     Your decision should not be influenced by the output itself. Do not respond to the user input when determining the appropriate stage.
     Your response should be a only a single number between 1 and ${Object.keys(steps).length}, representing the appropriate stage.
+    Never repeat your response. If you feel like you have to repeat your response, reply with "#DONTRESPOND#" exact string without any text around it.
     Do not schedule a meeting outside the given timeslots even if the candidate requests or insists. Tell the candidate that these are the only available timeslots and you cannot schedule a meeting outside of these timeslots.
     Do not tell the candidate you are updating their profile or status.
     If the candidate tells they will share details after a certain time or later in the stage or in later stages, do not progress to the next stage. Push the candidate to share the details now.
@@ -104,7 +103,7 @@ export class ToolsForAgents {
     After each message to the candidate, you will call the function update_candidate_profile to update the candidate profile. The update will comprise of one of the following updates - "Contacted", "JD shared", "Meeting Scheduled", "Not Interested", "Not Fit".
     If the candidate asks to send job description on email, call the function "send_email" to send the job description to the candidate.
     Candidate might ask you to send the JD on a specified email. You will send the JD by just calling the "share_jd" function. You will not ask for the email.
-    Sometimes candidates will send forwards and irrelevant messages. You will have to ignore them. If the candidate unnecessarily replies and messages, you will reply with "#DONTRESPOND#" exact string. 
+    Sometimes candidates will send forwards and irrelevant messages. You will have to ignore them. If the candidate unnecessarily replies and messages, you will reply with "#DONTRESPOND#" exact string without any text around it.
     You will not indicate any updates to the candidate. You will only ask questions and share the JD. You will not provide any feedback to the candidate. The candidate might ask for feedback, you will not provide any feedback. They can ask any queries unrelated to the role or the background inside any related questions. You will not respond to any queries unrelated to the role.
     Available timeslots are: ${availableTimeSlots}
     Your first message when you receive the prompt "startChat" is: Hey ${personNode.name.firstName},
@@ -128,28 +127,26 @@ export class ToolsForAgents {
     const REMINDER_SYSTEM_PROMPT = `
     Read the message history. This candidate hasn't responded in a while. Remind this candidate. If the candidate has already been reminded, reply with "#DONTRESPOND#" exact string.
     `;
-    console.log("Using reminder prompt")
+    console.log('Using reminder prompt');
     return REMINDER_SYSTEM_PROMPT;
   }
 
   async getCandidateFacingSystemPromptBasedOnStage(personNode: allDataObjects.PersonNode, stage: string) {
     if (stage == 'remind_candidate') {
       return await this.getReminderSystemPrompt();
-    }
-    else{
+    } else {
       const systemPrompt = await this.getSystemPrompt(personNode);
       // const updatedSystemPromptWithStagePrompt = systemPrompt.replace('##STAGE_PROMPT', stage);
       const updatedCandidatePromptWithStagePrompt = systemPrompt;
-      console.log("Updated Candidate Prompt ::", updatedCandidatePromptWithStagePrompt)
+      console.log('Updated Candidate Prompt ::', updatedCandidatePromptWithStagePrompt);
       return updatedCandidatePromptWithStagePrompt;
     }
   }
 
   async getSystemFacingSystemPromptBasedOnStage(personNode: allDataObjects.PersonNode, stage: string) {
-    
     const systemPrompt = await this.getSystemPrompt(personNode);
     const updatedSystemPromptWithStagePrompt = systemPrompt.replace('##STAGE_PROMPT', stage);
-    console.log("Updated System Prompt ::", updatedSystemPromptWithStagePrompt)
+    console.log('Updated System Prompt ::', updatedSystemPromptWithStagePrompt);
     return updatedSystemPromptWithStagePrompt;
   }
 
@@ -259,7 +256,7 @@ export class ToolsForAgents {
 
   async updateCandidateProfile(inputs: any, personNode: allDataObjects.PersonNode) {
     try {
-      console.log("UPDATE CANDIDATE PROFILE CALLED AND INPUTS IS ::", inputs)
+      console.log('UPDATE CANDIDATE PROFILE CALLED AND INPUTS IS ::', inputs);
       console.log('Function Called:  candidateProfileDataNodeObj:any', personNode);
       const status: allDataObjects.statuses = 'RECRUITER_INTERVIEW';
       await updateCandidateStatus(personNode, status);
@@ -275,17 +272,19 @@ export class ToolsForAgents {
 
     const { questionIdArray, questionArray } = await new FetchAndUpdateCandidatesChatsWhatsapps().fetchQuestionsByJobId(jobId);
     const results = fuzzy.filter(inputs.question, questionArray);
-    const matches = results.map(function (el) { return el.string; });
+    const matches = results.map(function (el) {
+      return el.string;
+    });
     console.log('The matches are:', matches);
     const mostSimilarQuestion = questionIdArray.filter(questionObj => questionObj.question == matches[0]);
-    const AnswerMessageObj = { questionsId: mostSimilarQuestion[0]?.questionId, name: inputs.answer, candidateId: candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.id, };
+    const AnswerMessageObj = { questionsId: mostSimilarQuestion[0]?.questionId, name: inputs.answer, candidateId: candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.id };
 
     await updateAnswerInDatabase(candidateProfileDataNodeObj, AnswerMessageObj);
     try {
       console.log('Function Called:  candidateProfileDataNodeObj:any', candidateProfileDataNodeObj);
       console.log('Function Called: updateAnswer');
     } catch {
-      console.log("Update Answer in Database working")
+      console.log('Update Answer in Database working');
     }
     return 'Updated the candidate updateAnswer.';
   }
@@ -300,23 +299,26 @@ export class ToolsForAgents {
       typeOfMeeting: gptInputs?.typeOfMeeting || 'Virtual',
       location: gptInputs?.location || 'Google Meet',
       description: gptInputs?.description || 'This meeting is scheduled to discuss the role and the company.',
-      start: { dateTime: gptInputs?.startDateTime, timeZone: gptInputs?.timeZone, },
-      end: { dateTime: gptInputs?.endDateTime, timeZone: gptInputs?.timeZone, },
+      start: { dateTime: gptInputs?.startDateTime, timeZone: gptInputs?.timeZone },
+      end: { dateTime: gptInputs?.endDateTime, timeZone: gptInputs?.timeZone },
       attendees: [{ email: candidateProfileDataNodeObj.email }],
-      reminders: { useDefault: false, overrides: [ { method: 'email', minutes: 24 * 60 }, { method: 'popup', minutes: 10 }, ], },
+      reminders: {
+        useDefault: false,
+        overrides: [
+          { method: 'email', minutes: 24 * 60 },
+          { method: 'popup', minutes: 10 },
+        ],
+      },
     };
     await new CalendarEmailService().createNewCalendarEvent(calendarEventObj);
     return 'scheduleMeeting the candidate meeting.';
   }
 
-
-
   async getCandidateFacingToolsByStage(stage: string) {
     let tools;
-    if (stage == "remind_candidate"){
-      tools = this.getTimeManagementTools()
-    }
-    else{
+    if (stage == 'remind_candidate') {
+      tools = this.getTimeManagementTools();
+    } else {
       tools = [
         {
           type: 'function',
@@ -477,5 +479,4 @@ export class ToolsForAgents {
     ];
     return tools;
   }
-
 }

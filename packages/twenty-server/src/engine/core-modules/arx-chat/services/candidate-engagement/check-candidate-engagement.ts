@@ -52,7 +52,7 @@ export default class CandidateEngagementArx {
 
   async processCandidate(edge: allDataObjects.PersonEdge, engagementType: 'remind' | 'engage') {
     // console.log('The edge is ::', edge);
-    console.log("Engagement Type:", engagementType);
+    console.log('Engagement Type:', engagementType);
     try {
       const candidateNode = edge.node.candidates.edges[0].node;
       const personNode = edge.node;
@@ -81,7 +81,7 @@ export default class CandidateEngagementArx {
     return mostRecentMessageArr;
   }
 
-  async updateCandidateEngagementDataInTable(whatappUpdateMessageObj: allDataObjects.candidateChatMessageType) {
+  async updateCandidateEngagementDataInTable(whatappUpdateMessageObj: allDataObjects.candidateChatMessageType, isAfterMessageSent: boolean = false) {
     // console.log("Candidate information before processing:", whatappUpdateMessageObj);
     let candidateProfileObj = whatappUpdateMessageObj.messageType !== 'botMessage' ? await new FetchAndUpdateCandidatesChatsWhatsapps().getCandidateInformation(whatappUpdateMessageObj) : whatappUpdateMessageObj.candidateProfile;
     // console.log('Candidate information after processing:', candidateProfileObj);
@@ -89,11 +89,11 @@ export default class CandidateEngagementArx {
     if (candidateProfileObj.name === '') return;
     console.log('Candidate information retrieved successfully');
     const whatsappMessage = await new FetchAndUpdateCandidatesChatsWhatsapps().createAndUpdateWhatsappMessage(candidateProfileObj, whatappUpdateMessageObj);
-    if (!whatsappMessage) return;
+    if (!whatsappMessage || isAfterMessageSent) return;
     const updateCandidateStatusObj = await new FetchAndUpdateCandidatesChatsWhatsapps().updateCandidateEngagementStatus(candidateProfileObj, whatappUpdateMessageObj);
     if (!updateCandidateStatusObj) return;
     // await new WhatsappAPISelector().sendWhatsappMessage(whatappUpdateMessageObj);
-    return { status: 'success', message: 'Candidate engagement status updated successfully', };
+    return { status: 'success', message: 'Candidate engagement status updated successfully' };
   }
 
   async updateChatHistoryObjCreateWhatsappMessageObj(wamId: string, personNode: allDataObjects.PersonNode, chatHistory: allDataObjects.ChatHistoryItem[]) {
@@ -145,19 +145,21 @@ export default class CandidateEngagementArx {
       edge?.node?.candidates?.edges[0]?.node?.candidateReminders?.edges?.filter(reminderEdge => reminderEdge?.node?.remindCandidateAtTimestamp < new Date().toISOString() && reminderEdge?.node?.isReminderActive);
     });
 
-    for (const edge of listOfCandidatesToRemind) {
-      await this.processCandidate(edge, 'remind');
-      edge.node.candidates.edges?.forEach(candidateEdge => {
-        candidateEdge.node.candidateReminders.edges.forEach(candidateReminder => {
-          new FetchAndUpdateCandidatesChatsWhatsapps().updateCandidateReminderStatus(candidateReminder.node);
-        });
-      });
-    }
+    // for (const edge of listOfCandidatesToRemind) {
+    //   await this.processCandidate(edge, 'remind');
+    //   edge.node.candidates.edges?.forEach(candidateEdge => {
+    //     candidateEdge.node.candidateReminders.edges.forEach(candidateReminder => {
+    //       new FetchAndUpdateCandidatesChatsWhatsapps().updateCandidateReminderStatus(candidateReminder.node);
+    //     });
+    //   });
+    // }
 
     console.log('Number processCandidateof filtered candidates to engage:', filteredCandidates?.length);
     for (const edge of filteredCandidates) {
+      // await new FetchAndUpdateCandidatesChatsWhatsapps().setCandidateEngagementStatusToFalse(edge?.node?.candidates?.edges[0]?.node);
+      await new FetchAndUpdateCandidatesChatsWhatsapps().updateEngagementStatusBeforeRunningEngageCandidates(edge?.node?.candidates?.edges[0]?.node?.id);
+      console.log('Updated engagement status to false for candidate:', edge?.node?.name?.firstName);
       await this.processCandidate(edge, 'engage');
-      // await new FetchAndUpdateCandidatesChatsWhatsapps().setCandidateEngagementStatusToFalse(edge.node.candidates[0]);
     }
   }
 

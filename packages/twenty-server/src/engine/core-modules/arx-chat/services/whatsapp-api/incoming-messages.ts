@@ -217,7 +217,7 @@ export class IncomingWhatsappMessages {
     console.log('These are message kwargs length:', mostRecentMessageObj?.length);
     // console.log('This is the most recent message object being considered::', mostRecentMessageObj);
     // chatHistory = await this.getChatHistoryFromMongo(mostRecentMessageObj);
-    mostRecentMessageObj.push({ role: 'user', content: replyObject.chatReply });
+    if (mostRecentMessageObj?.length > 0) mostRecentMessageObj.push({ role: 'user', content: replyObject.chatReply });
     let whatappUpdateMessageObj: allDataObjects.candidateChatMessageType = {
       // executorResultObj: {},
       candidateProfile: candidateProfileDataNodeObj,
@@ -233,6 +233,6 @@ export class IncomingWhatsappMessages {
       databaseFilePath: replyObject?.databaseFilePath || '',
     };
     await new CandidateEngagementArx().updateCandidateEngagementDataInTable(whatappUpdateMessageObj);
-    return whatappUpdateMessageObj;
+    // return whatappUpdateMessageObj;
   }
 }
