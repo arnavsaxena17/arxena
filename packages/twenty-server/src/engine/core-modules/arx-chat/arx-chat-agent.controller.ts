@@ -68,7 +68,7 @@ export class ArxChatEndpoint {
       // } else {
       chatAgent = new OpenAIArxMultiStepClient(personObj);
       await chatAgent.createCompletion(mostRecentMessageArr, personObj, 'engage');
-      const whatappUpdateMessageObj = await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj( 'ArxChatEndpoint', personObj, mostRecentMessageArr );
+      const whatappUpdateMessageObj = await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj('ArxChatEndpoint', personObj, mostRecentMessageArr);
       // const engagementStatus =
       //   await new CandidateEngagementArx().updateCandidateEngagementDataInTable(
       //     whatappUpdateMessageObj
@@ -144,7 +144,7 @@ export class ArxChatEndpoint {
 
     let chatAgent = new OpenAIArxMultiStepClient(personObj);
     const engagementType = 'engage';
-    const processorType = "stage"
+    const processorType = 'stage';
     const stage = await chatAgent.getStageOfTheConversation(messagesList, engagementType, processorType);
 
     return { stage: stage };
@@ -219,7 +219,7 @@ export class ArxChatEndpoint {
     };
 
     const engagementStatus = await new CandidateEngagementArx().updateCandidateEngagementDataInTable(whatappUpdateMessageObj);
-    console.log('Engagement Status:', engagementStatus);
+    // console.log('Engagement Status:', engagementStatus);
     if (engagementStatus?.status === 'success') {
       return { status: engagementStatus?.status };
     } else {
