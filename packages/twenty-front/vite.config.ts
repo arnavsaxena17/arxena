@@ -14,7 +14,7 @@ export default defineConfig(({ command, mode }) => {
   /*
     Using explicit env variables, there is no need to expose all of them (security).
   */
-  const { REACT_APP_SERVER_BASE_URL, VITE_BUILD_SOURCEMAP, REACT_APP_SOCKET_PATH_FRONT } = env;
+  const { REACT_APP_SERVER_BASE_URL, VITE_BUILD_SOURCEMAP, REACT_APP_SOCKET_PATH_FRONT, REACT_APP_SERVER_SOCKET_URL } = env;
 
   const isBuildCommand = command === 'build';
 
@@ -81,6 +81,7 @@ export default defineConfig(({ command, mode }) => {
       'process.env': {
         REACT_APP_SERVER_BASE_URL,
         REACT_APP_SOCKET_PATH_FRONT,
+        REACT_APP_SERVER_SOCKET_URL,
       },
     },
     css: {
