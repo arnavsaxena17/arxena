@@ -344,7 +344,7 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
   const [isWhatsappLoggedIn, setIsWhatsappLoggedIn] = useState(false);
 
   useEffect(() => {
-    const URL = process.env.REACT_APP_SERVER_BASE_URL || 'http://localhost:3000'; // Make sure this matches the URL and port of your Socket.io server
+    const URL = process.env.REACT_APP_SERVER_SOCKET_URL || 'http://localhost:3000'; // Make sure this matches the URL and port of your Socket.io server
     const socket = io(URL, {
       path: process.env.REACT_APP_SOCKET_PATH_FRONT,
       query: {
