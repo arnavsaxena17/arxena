@@ -346,6 +346,7 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
   useEffect(() => {
     const URL = process.env.REACT_APP_SERVER_BASE_URL || 'http://localhost:3000'; // Make sure this matches the URL and port of your Socket.io server
     const socket = io(URL, {
+      path: process.env.REACT_APP_SOCKET_PATH_FRONT,
       query: {
         token: tokenPair?.accessToken?.token, // Replace with the actual JWT token
       },
@@ -379,9 +380,11 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
     };
   }, []);
 
-  // useEffect(() => {
-  //   {async const response = await axios.get(process.env.REACT_APP_SERVER_BASE_URL + '/whatsapp/get-wa-login-status');
-  // })
+  useEffect(() => {
+    // {async const response = await axios.get(process.env.REACT_APP_SERVER_BASE_URL + '/whatsapp/get-wa-login-status');
+    console.log('232093', process.env.REACT_APP_SOCKET_PATH_FRONT);
+    console.log('232093', process.env.REACT_APP_SERVER_BASE_URL);
+  });
 
   return (
     <>
