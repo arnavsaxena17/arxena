@@ -11,6 +11,7 @@ import { MessageDto } from '../types/baileys-types';
   cors: {
     origin: '*', // Adjust the CORS settings according to your needs
   },
+  path: process.env.SOCKET_PATH,
 })
 export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer() server: Server;
