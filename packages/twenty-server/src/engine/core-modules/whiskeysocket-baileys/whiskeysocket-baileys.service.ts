@@ -150,9 +150,10 @@ export class WhatsappService {
               let event = 'message';
               console.log('replying to', msg.key.remoteJid);
               // await this.sock.readMessages([msg.key]);
+              const isMediaDownloaded = await this.downloadAllMediaFiles(msg, this.sock, msg.key.remoteJid);
               const baileysWhatsappIncomingObj = {
                 phoneNumberFrom: '+' + msg?.key?.remoteJid?.replace('@s.whatsapp.net', ''),
-                message: msg?.message?.conversation || msg?.message?.extendedTextMessage?.text || '',
+                message: msg?.message?.conversation || msg?.message?.extendedTextMessage?.text || (isMediaDownloaded && 'Attachment Received') || '',
                 phoneNumberTo: selfPhoneNumber,
                 messageTimeStamp: msg?.messageTimestamp,
                 fromName: msg?.pushName,
@@ -161,7 +162,6 @@ export class WhatsappService {
               await new IncomingWhatsappMessages().receiveIncomingMessagesFromBaileys(baileysWhatsappIncomingObj);
               console.log('baileysWhatsappIncomingObj', baileysWhatsappIncomingObj);
               this.sock?.server?.emit(event, data);
-              await this.downloadAllMediaFiles(msg, this.sock, msg.key.remoteJid);
             } else {
               console.log('Message is from me:', msg.key.fromMe);
               console.log('This is the message:', msg);
@@ -214,7 +214,7 @@ export class WhatsappService {
       ogFileName = message.documentMessage.fileName;
       folder = folder + '/docs';
     } else {
-      return;
+      return false;
     }
     console.log('This is the folder path:', folder);
     console.log('This is the ogFileName ogFileName:', ogFileName);
@@ -224,7 +224,8 @@ export class WhatsappService {
     try {
       const buffer = await downloadMediaMessage(m, 'buffer', {}, { logger: this.logger, reuploadRequest: socket.updateMediaMessage });
       let data: any = { fileName: ogFileName, fileBuffer: buffer };
-      this.handleFileUpload(data, '');
+      this.handleFileUpload(data, './.attachments/' + folder);
+      return true;
     } catch (error) {
       console.log('Error downloading media:', error);
     }
@@ -246,7 +247,7 @@ export class WhatsappService {
   }
 
   async createDirectoryIfNotExists(dirPath: string, defaultDir: string = process.env.UPLOAD_DEFAULT_LOCATION || 'FileUploads'): Promise<string> {
-    const filePath = path.join(`${defaultDir}/${dirPath}/`);
+    const filePath = path.join(`${dirPath}/`);
     try {
       // Check if directory exists
       await fs.promises.access(filePath, fs.constants.F_OK);
