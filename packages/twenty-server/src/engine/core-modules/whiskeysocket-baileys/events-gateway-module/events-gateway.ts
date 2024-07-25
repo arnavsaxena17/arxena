@@ -82,6 +82,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
         //@ts-ignore
         this.whatsappServices.get(sessionId).setSocketClientId(socketClientId);
         this.whatsappServices.get(sessionId)?.sendConnectionUpdate();
+        this.emitEventTo('qr', this.whatsappServices.get(sessionId)?.whatsappLoginQrString, socketClientId);
       }
 
       // this._workspaceMemberId = response?.data;

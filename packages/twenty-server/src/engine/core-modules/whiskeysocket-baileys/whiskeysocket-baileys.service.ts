@@ -37,6 +37,7 @@ export class WhatsappService {
   private readonly logger = MAIN_LOGGER.child({});
   private sock: any;
   private store: any = makeStore();
+  public whatsappLoginQrString: string = '';
 
   constructor(
     private eventsGateway: EventsGateway,
@@ -80,6 +81,7 @@ export class WhatsappService {
         if (qr) {
           console.log('Sending the QR through socket to ', this.socketClientId, qr);
           const event = 'qr';
+          this.whatsappLoginQrString = qr;
           this?.eventsGateway?.emitEventTo(event, qr, this.socketClientId); // Emit event through the gateway
         }
         if (connection === 'close') {
