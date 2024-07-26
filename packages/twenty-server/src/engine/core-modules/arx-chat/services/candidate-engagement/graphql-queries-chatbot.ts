@@ -113,9 +113,10 @@ export const graphqlQueryToUpdateMessageDeliveryStatus = `
 }
   `;
 
-export const graphqlQueryToFindEngagedCandidates = `query FindManyPeople($filter: PersonFilterInput, $orderBy: [PersonOrderByInput], $lastCursor: String, $limit: Int) {
-    people(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
+export const graphqlQueryToFindEngagedCandidates = `query FindManyPeople($filter: PersonFilterInput, $orderBy: [PersonOrderByInput], $lastCursor: String, ) {
+    people(filter: $filter, orderBy: $orderBy,  after: $lastCursor) {
       edges {
+        cursor
         node {
           candidates {
               edges{

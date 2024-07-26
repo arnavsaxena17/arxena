@@ -50,12 +50,11 @@ export default class CandidateEngagementArx {
     return whatappUpdateMessageObj;
   }
 
-  async processCandidate(edge: allDataObjects.PersonEdge, engagementType: 'remind' | 'engage') {
+  async processCandidate(personNode: allDataObjects.PersonNode, engagementType: 'remind' | 'engage') {
     // console.log('The edge is ::', edge);
     console.log('Engagement Type:', engagementType);
     try {
-      const candidateNode = edge.node.candidates.edges[0].node;
-      const personNode = edge.node;
+      const candidateNode = personNode.candidates.edges[0].node;
       // console.log('This is candidate Node:', candidateNode);
       const messagesList: allDataObjects.WhatsAppMessagesEdge[] = candidateNode?.whatsappMessages?.edges;
       // console.log('Current Messages list:', messagesList);
@@ -113,36 +112,39 @@ export default class CandidateEngagementArx {
     return updatedChatHistoryObj;
   }
 
-  filterCandidates(sortedPeopleData: allDataObjects.People) {
+  filterCandidates(sortedPeopleData: allDataObjects.PersonNode[]) {
     // console.log("This is filter candidates:", sortedPeopleData)
-    return sortedPeopleData?.edges?.filter(edge => edge?.node?.candidates?.edges?.length > 0 && edge?.node?.candidates?.edges[0]?.node?.engagementStatus);
+    return sortedPeopleData?.filter(edge => edge?.candidates?.edges?.length > 0 && edge?.candidates?.edges[0]?.node?.engagementStatus);
   }
 
-  async startChatEngagement(candidateResponseEngagementObj: allDataObjects.RootObject) {
-    console.log('Total number of candidates fetched to filter for start chat::', candidateResponseEngagementObj?.people?.edges?.length);
-    const filteredCandidatesToStartEngagement = candidateResponseEngagementObj?.people?.edges?.filter(edge => {
-      return edge?.node?.candidates?.edges?.length > 0 && edge?.node?.candidates?.edges[0]?.node?.startChat === true;
+  async startChatEngagement(candidateResponseEngagementArr: allDataObjects.PersonNode[]) {
+    console.log('Total number of candidates fetched to filter for start chat::', candidateResponseEngagementArr?.length);
+    const filteredCandidatesToStartEngagement = candidateResponseEngagementArr?.filter((personNode) => {
+      if (personNode.name.firstName === 'Ninad') {
+        console.log('This is the Ninads candidate:', personNode);
+      }
+      return personNode?.candidates?.edges?.length > 0 && personNode?.candidates?.edges[0]?.node?.startChat === true;
     });
     console.log('these are the number of candidates to who have no filteredCandidatesToStartEngagement ::', filteredCandidatesToStartEngagement?.length);
-    const filteredCandidatesWhoHaveNoWhatsappHistory = filteredCandidatesToStartEngagement?.filter(edge => {
-      return edge?.node?.candidates?.edges[0]?.node?.whatsappMessages?.edges.length === 0;
+    const filteredCandidatesWhoHaveNoWhatsappHistory = filteredCandidatesToStartEngagement?.filter(personNode => {
+      return personNode?.candidates?.edges[0]?.node?.whatsappMessages?.edges.length === 0;
     });
     console.log('these are the number of candidates to start chat ::', filteredCandidatesWhoHaveNoWhatsappHistory?.length);
     for (let i = 0; i < filteredCandidatesWhoHaveNoWhatsappHistory?.length; i++) {
       const chatReply = 'hi';
-      const candidateProfileDataNodeObj = filteredCandidatesWhoHaveNoWhatsappHistory[i].node;
+      const candidateProfileDataNodeObj = filteredCandidatesWhoHaveNoWhatsappHistory[i];
       await new CandidateEngagementArx().createAndUpdateCandidateHiChatMessage(chatReply, candidateProfileDataNodeObj);
       // const updateCandidateStatusObj = await new FetchAndUpdateCandidatesChatsWhatsapps().setCandidateEngagementStatusToFalse(candidateProfileDataNodeObj.candidates.edges[0].node);
     }
   }
 
-  async engageCandidates(candidateResponseEngagementObj: allDataObjects.RootObject) {
-    // console.log("This is candidateResponseEngagementObj:", candidateResponseEngagementObj)
-    const sortedPeopleData = sortWhatsAppMessages(candidateResponseEngagementObj?.people);
-    const filteredCandidates = this.filterCandidates(sortedPeopleData);
+  async engageCandidates(candidateResponseEngagementArr: allDataObjects.PersonNode[]) {
+    // console.log("This is candidateResponseEngagementObj:", candidateResponseEngagementArr)
+    const sortedPeopleData:allDataObjects.PersonNode[] = sortWhatsAppMessages(candidateResponseEngagementArr);
+    const filteredCandidates:allDataObjects.PersonNode[] = this.filterCandidates(sortedPeopleData);
     console.log('Filtered candidates to engage:', filteredCandidates);
-    const listOfCandidatesToRemind: allDataObjects.PersonEdge[] = candidateResponseEngagementObj?.people?.edges?.filter((edge: allDataObjects.PersonEdge) => {
-      edge?.node?.candidates?.edges[0]?.node?.candidateReminders?.edges?.filter(reminderEdge => reminderEdge?.node?.remindCandidateAtTimestamp < new Date().toISOString() && reminderEdge?.node?.isReminderActive);
+    const listOfCandidatesToRemind: allDataObjects.PersonNode[] = candidateResponseEngagementArr?.filter((edge: allDataObjects.PersonNode) => {
+      edge?.candidates?.edges[0]?.node?.candidateReminders?.edges?.filter(reminderEdge => reminderEdge?.node?.remindCandidateAtTimestamp < new Date().toISOString() && reminderEdge?.node?.isReminderActive);
     });
 
     // for (const edge of listOfCandidatesToRemind) {
@@ -157,8 +159,8 @@ export default class CandidateEngagementArx {
     console.log('Number processCandidateof filtered candidates to engage:', filteredCandidates?.length);
     for (const edge of filteredCandidates) {
       // await new FetchAndUpdateCandidatesChatsWhatsapps().setCandidateEngagementStatusToFalse(edge?.node?.candidates?.edges[0]?.node);
-      await new FetchAndUpdateCandidatesChatsWhatsapps().updateEngagementStatusBeforeRunningEngageCandidates(edge?.node?.candidates?.edges[0]?.node?.id);
-      console.log('Updated engagement status to false for candidate:', edge?.node?.name?.firstName);
+      await new FetchAndUpdateCandidatesChatsWhatsapps().updateEngagementStatusBeforeRunningEngageCandidates(edge?.candidates?.edges[0]?.node?.id);
+      console.log('Updated engagement status to false for candidate:', edge?.name?.firstName);
       await this.processCandidate(edge, 'engage');
     }
   }
@@ -209,10 +211,11 @@ export default class CandidateEngagementArx {
 
   async checkCandidateEngagement() {
     // await this.checkAvailableRemindersAndSend();
-    const response = await new FetchAndUpdateCandidatesChatsWhatsapps().fetchCandidatesToEngage();
-    const candidateResponseEngagementObj = response?.data?.data;
-    await this.startChatEngagement(candidateResponseEngagementObj);
-    await this.engageCandidates(candidateResponseEngagementObj);
+    const limit = 400
+    const candidateResponseEngagementArr = await new FetchAndUpdateCandidatesChatsWhatsapps().fetchCandidatesToEngage(limit);
+    console.log("Received response to check candidate engagement:resposne", candidateResponseEngagementArr)
+    await this.startChatEngagement(candidateResponseEngagementArr);
+    await this.engageCandidates(candidateResponseEngagementArr);
     return;
   }
 }
