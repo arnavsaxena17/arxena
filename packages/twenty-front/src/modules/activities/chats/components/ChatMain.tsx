@@ -74,6 +74,7 @@ export default function ChatMain() {
 
   useEffect(() => {
     async function fetchData() {
+      console.log("process.env.REACT_APP_SERVER_BASE_URL::", process.env.REACT_APP_SERVER_BASE_URL)
       const response = await axios.get(process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/get-candidates-and-chats', {
         headers: {
           Authorization: `Bearer ${tokenPair?.accessToken?.token}`,

@@ -27,7 +27,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
         // console.log("In this case the size of allCandidates is:", data.edges.length);
         lastCursor = data.edges[data.edges.length - 1]?.cursor;
         hasNextPage = data.edges.length === 30;
-        console.log("Value of true cfasel, ", allCandidates.size < limit && hasNextPage)
+        // console.log("Value of true cfasel, ", allCandidates.size < limit && hasNextPage)
       } catch (error) {
         console.log(error);
         break;  // Exit the loop if there is an error
