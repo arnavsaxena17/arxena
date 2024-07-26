@@ -1,11 +1,11 @@
 import CandidateEngagementArx from '../candidate-engagement/check-candidate-engagement';
 import { Injectable, Logger } from '@nestjs/common';
-import { Cron } from '@nestjs/schedule';
+import { Cron, CronExpression } from '@nestjs/schedule';
 
 @Injectable()
 export class TasksService {
   private readonly logger = new Logger(TasksService.name);
-  @Cron('*/15 * * * * *')
+  @Cron('0 */1 * * * *')
   async handleCron() {
     // this.logger.log("Evert 5 seconds check Candidate Engagement is called");
     if (process.env.RUN_SCHEDULER === 'true') {
