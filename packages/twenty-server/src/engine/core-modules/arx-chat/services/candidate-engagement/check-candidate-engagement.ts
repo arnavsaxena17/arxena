@@ -147,73 +147,22 @@ export default class CandidateEngagementArx {
       edge?.candidates?.edges[0]?.node?.candidateReminders?.edges?.filter(reminderEdge => reminderEdge?.node?.remindCandidateAtTimestamp < new Date().toISOString() && reminderEdge?.node?.isReminderActive);
     });
 
-    // for (const edge of listOfCandidatesToRemind) {
-    //   await this.processCandidate(edge, 'remind');
-    //   edge.node.candidates.edges?.forEach(candidateEdge => {
-    //     candidateEdge.node.candidateReminders.edges.forEach(candidateReminder => {
-    //       new FetchAndUpdateCandidatesChatsWhatsapps().updateCandidateReminderStatus(candidateReminder.node);
-    //     });
-    //   });
-    // }
-
     console.log('Number processCandidateof filtered candidates to engage:', filteredCandidates?.length);
-    for (const edge of filteredCandidates) {
+    for (const personNode of filteredCandidates) {
       // await new FetchAndUpdateCandidatesChatsWhatsapps().setCandidateEngagementStatusToFalse(edge?.node?.candidates?.edges[0]?.node);
-      await new FetchAndUpdateCandidatesChatsWhatsapps().updateEngagementStatusBeforeRunningEngageCandidates(edge?.candidates?.edges[0]?.node?.id);
-      console.log('Updated engagement status to false for candidate:', edge?.name?.firstName);
-      await this.processCandidate(edge, 'engage');
+      await new FetchAndUpdateCandidatesChatsWhatsapps().updateEngagementStatusBeforeRunningEngageCandidates(personNode?.candidates?.edges[0]?.node?.id);
+      console.log('Updated engagement status to false for candidate:', personNode?.name?.firstName);
+      await this.processCandidate(personNode, 'engage');
     }
   }
 
-  // async checkAvailableRemindersAndSend() {
-  //   const graphqlQueryObj = JSON.stringify({
-  //     query: allGraphQLQueries.graphqlQueryToFindEngagedCandidates,
-  //     variables: {},
-  //   });
-  //   const response = await axiosRequest(graphqlQueryObj);
-  //   const listOfCandidatesToRemind: allDataObjects.PersonEdge[] = response?.data?.data?.people?.edges?.filter((edge: allDataObjects.PersonEdge) => {
-  //     edge?.node?.candidates?.edges[0]?.node?.candidateReminders?.edges?.filter((reminderEdge) => reminderEdge?.node?.remindCandidateAtTimestamp < new Date().toISOString() && reminderEdge?.node?.isReminderActive);
-  //   });
-  //   console.log("Number of candidates to remind:", listOfCandidatesToRemind?.length);
-  //   for (const edge of listOfCandidatesToRemind) {
-  //     const candidateNode = edge?.node?.candidates.edges[0].node;
-  //     const personNode = edge?.node;
-  //     const messagesList: allDataObjects.WhatsAppMessagesEdge[] = candidateNode?.whatsappMessages?.edges;
-  //     let mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = this.getMostRecentMessageFromMessagesList(messagesList);
-  //     console.log("mostRecentMessageArr before chatCompletion:", mostRecentMessageArr);
 
-  //     const REMIND_SYSTEM_PROMPT = await new ToolsForAgents().getReminderSystemPrompt();
-  //     mostRecentMessageArr[0] = { role: "system", content: REMIND_SYSTEM_PROMPT, };
-  //     const recruiterProfile = allDataObjects.recruiterProfile;
-
-  //     let whatappUpdateMessageObj: allDataObjects.candidateChatMessageType = {
-  //       // executorResultObj: {},
-  //       candidateProfile: candidateNode,
-  //       candidateFirstName: personNode?.name?.firstName,
-  //       phoneNumberFrom: personNode?.phone,
-  //       phoneNumberTo: recruiterProfile.phone,
-  //       messages: [{ content: REMIND_SYSTEM_PROMPT }],
-  //       messageType: "candidateMessage",
-  //       messageObj: mostRecentMessageArr,
-  //       whatsappDeliveryStatus: "reminderTriggered",
-  //       whatsappMessageId: "NA",
-  //     };
-  //     await this.updateCandidateEngagementDataInTable(whatappUpdateMessageObj);
-  //     const chatAgent = new OpenAIArxMultiStepClient(personNode);
-  //     const engagementType = "remind"
-  //     await chatAgent.createCompletion(mostRecentMessageArr, personNode, engagementType);
-
-  //     candidateNode?.candidateReminders?.edges?.forEach((reminderEdge) => {
-  //       new FetchAndUpdateCandidatesChatsWhatsapps().updateCandidateReminderStatus(reminderEdge.node);
-  //     });
-  //   }
-  // }
 
   async checkCandidateEngagement() {
     // await this.checkAvailableRemindersAndSend();
     const limit = 400
     const candidateResponseEngagementArr = await new FetchAndUpdateCandidatesChatsWhatsapps().fetchCandidatesToEngage(limit);
-    console.log("Received response to check candidate engagement:resposne", candidateResponseEngagementArr)
+    // console.log("Received response to check candidate engagement:resposne", candidateResponseEngagementArr)
     await this.startChatEngagement(candidateResponseEngagementArr);
     await this.engageCandidates(candidateResponseEngagementArr);
     return;
