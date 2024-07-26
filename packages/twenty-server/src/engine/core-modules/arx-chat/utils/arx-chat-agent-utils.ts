@@ -12,11 +12,11 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 ffmpeg.setFfmpegPath(ffmpegPath);
 ``;
 
-export function sortWhatsAppMessages(peopleData: allDataObjects.People) {
+export function sortWhatsAppMessages(candidateResponseEngagementArr: allDataObjects.PersonNode[]) {
   // console.log("This is the people data:", JSON.stringify(peopleData));
-  const sortedPeopleData = peopleData; // Deep copy to avoid mutating the original data
-  sortedPeopleData?.edges?.forEach((personEdge) => {
-    personEdge?.node?.candidates?.edges.forEach((candidateEdge) => {
+  const sortedPeopleData:allDataObjects.PersonNode[] = candidateResponseEngagementArr; // Deep copy to avoid mutating the original data
+  candidateResponseEngagementArr?.forEach((personEdge) => {
+    personEdge?.candidates?.edges.forEach((candidateEdge) => {
       candidateEdge?.node?.whatsappMessages?.edges.sort((a, b) => {
         // Sorting in descending order by the createdAt timestamp
         return (

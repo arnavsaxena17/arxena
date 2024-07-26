@@ -4,15 +4,38 @@ import { v4 } from 'uuid';
 import { axiosRequest } from '../../utils/arx-chat-agent-utils';
 import axios from 'axios';
 export class FetchAndUpdateCandidatesChatsWhatsapps {
-  async fetchCandidatesToEngage() {
-    let graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindEngagedCandidates, variables: {} });
-    try {
-      const response = await axiosRequest(graphqlQueryObj);
-      return response;
-    } catch (error) {
-      console.log(error);
+
+  
+  async fetchCandidatesToEngage(limit: number) {
+    console.log("Limit:", limit)
+    let allCandidates = new Map();    ;
+    let lastCursor = null;
+    let hasNextPage = true;
+  
+    while (allCandidates.size < limit && hasNextPage) {
+      const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindEngagedCandidates, variables: { lastCursor: lastCursor, orderBy: { position: "DescNullsFirst" }} });
+      try {
+        const response = await axiosRequest(graphqlQueryObj);
+        const data = response.data.data.people;
+        
+        data.edges.forEach(edge => {
+          const candidate = edge.node;
+          if (!allCandidates.has(candidate.id)) {
+            allCandidates.set(candidate.id, candidate);
+          }
+        });
+        // console.log("In this case the size of allCandidates is:", data.edges.length);
+        lastCursor = data.edges[data.edges.length - 1]?.cursor;
+        hasNextPage = data.edges.length === 30;
+        console.log("Value of true cfasel, ", allCandidates.size < limit && hasNextPage)
+      } catch (error) {
+        console.log(error);
+        break;  // Exit the loop if there is an error
+      }
     }
+    return Array.from(allCandidates.values()).slice(0, limit);  // Ensure we only return the requested number of results
   }
+
   async getPersonDetailsByPhoneNumber(phoneNumber: string) {
     console.log('Trying to get person details by phone number:', phoneNumber);
     const graphVariables = { filter: { phone: { ilike: '%' + phoneNumber + '%' } }, orderBy: { position: 'AscNullsFirst' } };
@@ -342,41 +365,4 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
       console.log('Error in updating candidate status::', error);
     }
   }
-  // async getPersonDetailsByPhoneNumber(
-  //   phoneNumber: string
-  // ): Promise<allDataObjects.PersonNode> {
-  //   const graphVariables = {
-  //     filter: {
-  //       phone: {
-  //         ilike: "%" + phoneNumber + "%",
-  //       },
-  //     },
-  //     orderBy: {
-  //       position: "AscNullsFirst",
-  //     },
-  //   };
-  //   try {
-  //     console.log("going to get candidate information");
-  //     // console.log("going to get process.env.TWENTY_JWT_SECRET",process.env.TWENTY_JWT_SECRET)
-  //     // console.log("going to get process.env.GRAPHQL_URL", process.env.GRAPHQL_URL)
-  //     const graphqlQueryObj = JSON.stringify({
-  //       query: allGraphQLQueries.graphqlQueryToFindPeopleByPhoneNumber,
-  //       variables: graphVariables,
-  //     });
-  //     const response = await axiosRequest(graphqlQueryObj);
-  //     console.log(
-  //       "This is the response from getCandidate Information FROM PHONENUMBER",
-  //       response.data.data
-  //     );
-  //     const candidateDataObjs =
-  //       response.data?.data?.people?.edges[0]?.node?.candidates?.edges;
-  //     return candidateDataObjs;
-  //   } catch (error) {
-  //     console.log(
-  //       "Getting an error and returning empty candidate profile objeect:",
-  //       error
-  //     );
-  //     return allDataObjects.emptyCandidateProfileObj;
-  //   }
-  // }
 }
