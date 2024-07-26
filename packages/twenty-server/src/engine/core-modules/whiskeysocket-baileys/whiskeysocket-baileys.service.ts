@@ -26,6 +26,12 @@ import { BaileysIncomingMessage } from '../arx-chat/services/data-model-objects'
 import { FileDataDto, MessageDto } from './types/baileys-types';
 import { SocksProxyAgent } from 'socks-proxy-agent';
 import { EventsGateway } from './events-gateway-module/events-gateway';
+import { AttachmentProcessingService } from '../arx-chat/services/candidate-engagement/attachment-processing';
+import * as allDataObjects from '../arx-chat/services/data-model-objects';
+import { FetchAndUpdateCandidatesChatsWhatsapps } from '../arx-chat/services/candidate-engagement/update-chat';
+import { axiosRequest } from '../arx-chat/utils/arx-chat-agent-utils';
+import { graphqlToFetchWhatsappMessageByCandidateId, graphqlToFetchWhatsappMessageByWhatsappId, graphqlToUpdateWhatsappMessageId } from './graphql-queries';
+
 const nodeCache = new NodeCache();
 
 const agent = new SocksProxyAgent(process.env.SMART_PROXY_URL || '');
@@ -139,26 +145,74 @@ export class WhatsappService {
           console.log('Phone Number TO  captured:', selfPhoneNumber);
           for (const msg of upsert.messages) {
             if (!msg.key.fromMe) {
+              console.log('This is the message:', msg);
+
               let data: any = {
                 msg: `got message from:${msg?.pushName}(${msg?.key?.remoteJid}) and message is:${msg?.message?.conversation}`,
                 fromName: msg?.pushName,
                 fromRemoteJid: msg?.key?.remoteJid,
                 message: msg?.message?.conversation || msg?.message?.extendedTextMessage?.text || '',
               };
-              this.eventsGateway.emitEventTo('received', msg?.message?.conversation || msg?.message?.extendedTextMessage?.text, this.socketClientId);
+              // this.eventsGateway.emitEventTo('received', msg?.message?.conversation || msg?.message?.extendedTextMessage?.text, this.socketClientId);
 
               let event = 'message';
               console.log('replying to', msg.key.remoteJid);
+              const whatsappIncomingMessage: allDataObjects.chatMessageType = {
+                phoneNumberFrom: '+' + msg?.key?.remoteJid?.replace('@s.whatsapp.net', ''),
+                phoneNumberTo: phoneNumberTo,
+                messages: [],
+                messageType: 'string',
+              };
+
+              const candidateProfileData = await new FetchAndUpdateCandidatesChatsWhatsapps().getCandidateInformation(whatsappIncomingMessage);
+
+              if (msg?.message?.protocolMessage?.type === 0) {
+                await this.handleDeleteForEveryoneMessage(msg, candidateProfileData);
+                continue;
+              }
+
+              if (candidateProfileData == allDataObjects.emptyCandidateProfileObj) {
+                continue;
+              }
+
+              let isMediaDownloaded = false;
+              let isReactionMessage = false;
+              let textMessageToSend = msg?.message?.conversation || msg?.message?.extendedTextMessage?.text || (isMediaDownloaded && 'Attachment Received') || '';
+              if (msg?.message?.messageType === 'imageMessage' || 'videoMessage' || 'documentMessage' || 'messageContextInfo') {
+                isMediaDownloaded = true;
+              }
+
+              if (msg?.message?.reactionMessage) {
+                isReactionMessage = true;
+                const whatsappMessageReacted: {
+                  data: {
+                    whatsappMessage: {
+                      id: string;
+                      candidateId: string;
+                      whatsappMessageId: string;
+                      message: string;
+                    };
+                  };
+                } = await this.fetchWhatsappMessageById(msg?.message?.reactionMessage?.key?.id);
+                console.log('whatsappMessageReacted:', whatsappMessageReacted);
+                if (msg?.message?.reactionMessage?.text === '') {
+                  textMessageToSend = 'Unreacted reaction' + msg?.message?.reactionMessage?.text + ' to ' + "'" + whatsappMessageReacted?.data?.whatsappMessage?.message + "'" || '';
+                } else {
+                  textMessageToSend = 'Reacted ' + msg?.message?.reactionMessage?.text + ' to ' + "'" + whatsappMessageReacted?.data?.whatsappMessage?.message + "'" || '';
+                }
+              }
               // await this.sock.readMessages([msg.key]);
-              const isMediaDownloaded = await this.downloadAllMediaFiles(msg, this.sock, msg.key.remoteJid);
+
               const baileysWhatsappIncomingObj = {
                 phoneNumberFrom: '+' + msg?.key?.remoteJid?.replace('@s.whatsapp.net', ''),
-                message: msg?.message?.conversation || msg?.message?.extendedTextMessage?.text || (isMediaDownloaded && 'Attachment Received') || '',
+                message: textMessageToSend,
                 phoneNumberTo: selfPhoneNumber,
                 messageTimeStamp: msg?.messageTimestamp,
                 fromName: msg?.pushName,
                 baileysMessageId: msg?.key?.id,
               };
+
+              await this.downloadAllMediaFiles(msg, this.sock, msg.key.remoteJid, candidateProfileData);
               await new IncomingWhatsappMessages().receiveIncomingMessagesFromBaileys(baileysWhatsappIncomingObj);
               console.log('baileysWhatsappIncomingObj', baileysWhatsappIncomingObj);
               this.sock?.server?.emit(event, data);
@@ -180,8 +234,85 @@ export class WhatsappService {
       }
     });
   }
+  async fetchWhatsappMessageById(messageId: string) {
+    console.log('This is the message id:', messageId);
+    try {
+      const whatsappMessageVariable = {
+        whatsappMessageId: messageId,
+      };
+      const response = await axiosRequest(
+        JSON.stringify({
+          query: graphqlToFetchWhatsappMessageByWhatsappId,
+          variables: whatsappMessageVariable,
+        }),
+      );
+      console.log('Response from fetchWhatsappMessageById:', response?.data);
+      return response?.data;
+    } catch (error) {
+      console.log('Error fetching whatsapp message by id:', error);
+      return { error: error };
+    }
+  }
 
-  async downloadAllMediaFiles(m: any, socket: any, folder: any) {
+  async handleDeleteForEveryoneMessage(msg, candidateProfile: allDataObjects.CandidateNode) {
+    console.log('This is the message:', msg);
+    console.log('This is the candidateProfile:', candidateProfile);
+    const whatsappMessageToGetDeleted = await this.fetchWhatsappMessageById(msg?.message?.protocolMessage?.key?.id);
+    console.log('whatsappMessageToGetDeleted:', whatsappMessageToGetDeleted);
+    const messageObj = whatsappMessageToGetDeleted?.data?.whatsappMessage?.messageObj;
+    console.log('messageObj:', messageObj);
+    const messagesAfterDeletingTheCurrentMessage = messageObj?.slice(0, messageObj?.length - 1);
+    console.log('messagesAfterDeletingTheCurrentMessage:', messagesAfterDeletingTheCurrentMessage);
+
+    try {
+      const variables = {
+        limit: 1,
+        filter: {
+          candidateId: {
+            eq: candidateProfile?.id,
+          },
+        },
+        orderBy: [
+          {
+            position: 'AscNullsFirst',
+          },
+        ],
+      };
+      const responseAfterFetchingAllMessagesByCandidateId = await axiosRequest(
+        JSON.stringify({
+          query: graphqlToFetchWhatsappMessageByCandidateId,
+          variables: variables,
+        }),
+      );
+      const latestMessageObject: any[] = responseAfterFetchingAllMessagesByCandidateId?.data?.data?.whatsappMessages?.edges[0]?.node?.messageObj;
+      console.log('latestMessageObject:', latestMessageObject);
+      let updatedMessageHistoryObject: any = [];
+      for (let i = latestMessageObject.length - 1; i >= 0; i--) {
+        if (whatsappMessageToGetDeleted?.data?.whatsappMessage?.message !== latestMessageObject[i].content) {
+          updatedMessageHistoryObject.unshift(latestMessageObject[i]);
+        }
+      }
+
+      const dataToUpdate = {
+        idToUpdate: responseAfterFetchingAllMessagesByCandidateId?.data?.data?.whatsappMessages?.edges[0]?.node?.id,
+        input: {
+          messageObj: updatedMessageHistoryObject,
+        },
+      };
+      const response = await axiosRequest(
+        JSON.stringify({
+          query: graphqlToUpdateWhatsappMessageId,
+          variables: dataToUpdate,
+        }),
+      );
+
+      console.log('Response from updating the message:', response?.data);
+    } catch (error) {
+      console.log('Error updating the message', error);
+    }
+  }
+
+  async downloadAllMediaFiles(m: any, socket: any, folder: any, candidateProfileData: allDataObjects.CandidateNode) {
     let messageType = '';
     try {
       messageType = Object.keys(m.message)[0];
@@ -222,17 +353,22 @@ export class WhatsappService {
     console.log('This is the ogFileName message?.documentWithCaptionMessage message?.documentWithCaptionMessage?.message?.fileName:', message?.documentWithCaptionMessage?.message?.documentMessage?.fileName);
     // download the message
     try {
-      const buffer = await downloadMediaMessage(m, 'buffer', {}, { logger: this.logger, reuploadRequest: socket.updateMediaMessage });
-      let data: any = { fileName: ogFileName, fileBuffer: buffer };
-      this.handleFileUpload(data, './.attachments/' + folder);
-      return true;
+      if (candidateProfileData != allDataObjects.emptyCandidateProfileObj) {
+        console.log('This is the candiate who has sent us candidateProfileData::', candidateProfileData);
+        const buffer = await downloadMediaMessage(m, 'buffer', {}, { logger: this.logger, reuploadRequest: socket.updateMediaMessage });
+        let data: any = { fileName: ogFileName, fileBuffer: buffer };
+        this.handleFileUpload(data, './.attachments/' + folder, candidateProfileData);
+        return true;
+      } else {
+        console.log('Message has been received from a candidate however the candidate is not in the database');
+      }
     } catch (error) {
       console.log('Error downloading media:', error);
     }
     // downloadMediaFiles(m, socket, messageType);
   }
 
-  async handleFileUpload(file: FileDataDto, userDirectory: string): Promise<FileDataDto> {
+  async handleFileUpload(file: FileDataDto, userDirectory: string, candidateProfileData): Promise<FileDataDto> {
     try {
       console.log('userDirectory:', userDirectory);
       console.log('file:', file);
@@ -240,6 +376,18 @@ export class WhatsappService {
       file.filePath = path.join(userDirectory, file.fileName);
       console.log(file.filePath);
       await fs.promises.writeFile(file.filePath, file.fileBuffer);
+      const attachmentObj = await new AttachmentProcessingService().uploadAttachmentToTwenty(file.filePath);
+
+      const dataToUploadInAttachmentTable = {
+        input: {
+          authorId: candidateProfileData.jobs.recruiterId,
+          name: file.fileName,
+          fullPath: attachmentObj.data.uploadFile,
+          type: 'TextDocument',
+          candidateId: candidateProfileData.id,
+        },
+      };
+      await new AttachmentProcessingService().createOneAttachmentFromFilePath(dataToUploadInAttachmentTable);
       return file;
     } catch (error) {
       throw new Error(`Error handling file upload: ${error}`);
@@ -271,7 +419,7 @@ export class WhatsappService {
     await this.sock.sendPresenceUpdate('paused', jid);
     const sendMessageResponse = await this.sock.sendMessage(jid, { text: msg });
     console.log('sendMessageResponse in baileys service::', sendMessageResponse);
-    return sendMessageResponse;
+    return sendMessageResponse?.key?.id;
   }
 
   async sendMessageFileToBaileys(body: MessageDto) {

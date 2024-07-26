@@ -17,8 +17,8 @@ export class WhatsappController {
   async sendMessage(@Body() body: { message: string; jid: string; recruiterId: string }) {
     try {
       const sessionId = body?.recruiterId;
-      await this.eventsGateway.sendWhatsappMessage(body?.message, body?.jid, sessionId);
-      return { status: 'ok' };
+      const messageId = await this.eventsGateway.sendWhatsappMessage(body?.message, body?.jid, sessionId);
+      return { messageId: messageId, status: 'ok' };
     } catch (error) {
       console.log('Error sending message', error);
       return { status: 'error' };
