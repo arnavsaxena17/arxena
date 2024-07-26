@@ -343,7 +343,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
     console.log('This is the candidateID for which we are trying to update the status:', candidateId);
     const updateCandidateObjectVariables = { idToUpdate: candidateProfileObj?.id, input: { status: candidateStatus } };
     const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToUpdateCandidateStatus, variables: updateCandidateObjectVariables });
-    // console.log("GraphQL query to update candidate status:", graphqlQueryObj);
+    console.log("GraphQL query to update candidate status:", graphqlQueryObj);
     try {
       const response = await axiosRequest(graphqlQueryObj);
       return 'Updated the candidate profile with the status.';
