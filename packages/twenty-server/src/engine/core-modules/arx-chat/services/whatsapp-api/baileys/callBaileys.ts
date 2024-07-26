@@ -19,10 +19,11 @@ export async function sendWhatsappMessageVIABaileysAPI(whatappUpdateMessageObj: 
       messages: whatappUpdateMessageObj.messages[0].content,
     };
     const response = await sendWhatsappTextMessageViaBaileys(sendTextMessageObj, personNode);
+    console.log(response);
     // console.log('99493:: response is here', response);
     const whatappUpdateMessageObjAfterWAMidUpdate = await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj(
       // response?.data?.messages[0]?.id ||
-      response?.key?.id || 'placeholdermessageid', // whatsapp message id
+      response?.messageId || 'placeholdermessageid', // whatsapp message id
       // response,
       personNode,
       mostRecentMessageArr,

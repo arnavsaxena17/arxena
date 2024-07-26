@@ -133,7 +133,8 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       console.log('sessionId:', sessionId);
       console.log('jid:', jid);
       console.log('message:', message);
-      await this.whatsappServices.get(sessionId)?.sendMessageWTyping(message, jid);
+      const messageId: string = await this.whatsappServices.get(sessionId)?.sendMessageWTyping(message, jid);
+      return messageId;
     } catch (error) {
       console.error('Error sending message:', error);
     }
