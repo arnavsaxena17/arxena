@@ -49,9 +49,43 @@ export class OpenAIArxMultiStepClient {
     if (responseMessage.tool_calls && isChatEnabled) {
       mostRecentMessageArr = await this.addResponseAndToolCallsToMessageHistory(responseMessage, mostRecentMessageArr, stage, processorType);
     }
-    await this.sendWhatsappMessageToCandidate(response?.choices[0]?.message?.content || '', mostRecentMessageArr, 'runCandidateFacingAgentsAlongWithToolCalls_stage1', isChatEnabled);
+    let messageArr_stage1 = mostRecentMessageArr.slice()
+    if (processorType === 'candidate-facing') {
+      console.log("Sending message to candidate from addResponseAndToolCallsToMessageHistory_stage1", messageArr_stage1);
+      await this.sendWhatsappMessageToCandidate(response?.choices[0]?.message?.content || '', messageArr_stage1, 'runCandidateFacingAgentsAlongWithToolCalls_stage1', isChatEnabled);
+    }
     return mostRecentMessageArr;
   }
+  async addResponseAndToolCallsToMessageHistory(responseMessage: ChatCompletionMessage, mostRecentMessageArr: allDataObjects.ChatHistoryItem[], stage: string, processorType: string) {
+    const toolCalls = responseMessage.tool_calls;
+    if (toolCalls) {
+      for (const toolCall of toolCalls) {
+        const functionName = toolCall.function.name;
+        console.log('Function name is:', functionName);
+        const availableFunctions = new ToolsForAgents().getAvailableFunctions();
+        const functionToCall = availableFunctions[functionName];
+        const functionArgs = JSON.parse(toolCall.function.arguments);
+        const responseFromFunction = await functionToCall(functionArgs, this.personNode);
+        mostRecentMessageArr.push({ tool_call_id: toolCall.id, role: 'tool', name: functionName, content: responseFromFunction });
+      }
+      const tools = await new ToolsForAgents().getCandidateFacingToolsByStage(stage);
+      // @ts-ignore
+      const response = await this.openAIclient.chat.completions.create({ model: modelName, messages: mostRecentMessageArr, tools: tools, tool_choice: 'auto' });
+      console.log(new Date().toString(), ' : ', 'BOT_MESSAGE in addResponseAndToolCallsToMessageHistory_stage2:', JSON.stringify(response), '  Stage::', stage, 'processorType::', processorType);
+      mostRecentMessageArr.push(response.choices[0].message);
+      if (response.choices[0].message.tool_calls) {
+        console.log('More Tool Calls inside of the addResponseAndToolCallsToMessageHistory. RECURSION Initiated:::: processorType::', processorType);
+        mostRecentMessageArr = await this.addResponseAndToolCallsToMessageHistory(response.choices[0].message, mostRecentMessageArr, stage, processorType);
+      }
+      let messageArr_stage2 = mostRecentMessageArr.slice()
+      if (processorType === 'candidate-facing') {
+        console.log("Sending message to candidate from addResponseAndToolCallsToMessageHistory_stage2", messageArr_stage2);
+        await this.sendWhatsappMessageToCandidate(response?.choices[0]?.message?.content || '', messageArr_stage2, 'addResponseAndToolCallsToMessageHistory_stage2');
+      }
+    }
+    return mostRecentMessageArr;
+  }
+
 
   async getStageOfTheConversation(mostRecentMessageArr: allDataObjects.ChatHistoryItem[], engagementType: 'remind' | 'engage', processorType: string) {
     let stage: string | null;
@@ -112,37 +146,6 @@ export class OpenAIArxMultiStepClient {
     }
   }
 
-  async addResponseAndToolCallsToMessageHistory(responseMessage: ChatCompletionMessage, messages: allDataObjects.ChatHistoryItem[], stage: string, processorType: string) {
-    const toolCalls = responseMessage.tool_calls;
-    // @ts-ignore
-    if (toolCalls) {
-      for (const toolCall of toolCalls) {
-        const functionName = toolCall.function.name;
-        console.log('Function name is:', functionName);
-        const availableFunctions = new ToolsForAgents().getAvailableFunctions();
-        // @ts-ignore
-        const functionToCall = availableFunctions[functionName];
-        const functionArgs = JSON.parse(toolCall.function.arguments);
-        const responseFromFunction = await functionToCall(functionArgs, this.personNode);
-        // @ts-ignore
-        messages.push({ tool_call_id: toolCall.id, role: 'tool', name: functionName, content: responseFromFunction });
-      }
-      const tools = await new ToolsForAgents().getCandidateFacingToolsByStage(stage);
-      // @ts-ignore
-      const response = await this.openAIclient.chat.completions.create({ model: modelName, messages: messages, tools: tools, tool_choice: 'auto' });
-      console.log(new Date().toString(), ' : ', 'BOT_MESSAGE in addResponseAndToolCallsToMessageHistory_stage2:', JSON.stringify(response), '  Stage::', stage, 'processorType::', processorType);
-      messages.push(response.choices[0].message);
-      if (response.choices[0].message.tool_calls) {
-        console.log('More Tool Calls inside of the addResponseAndToolCallsToMessageHistory. RECURSION Initiated:::: processorType::', processorType);
-        messages = await this.addResponseAndToolCallsToMessageHistory(response.choices[0].message, messages, stage, processorType);
-      }
-      const mostRecentMessageArr = messages;
-      if (processorType === 'candidate-facing') {
-        await this.sendWhatsappMessageToCandidate(response?.choices[0]?.message?.content || '', mostRecentMessageArr, 'addResponseAndToolCallsToMessageHistory_stage2');
-      }
-    }
-    return messages;
-  }
 
   async sendWhatsappMessageToCandidate(messageText: string, mostRecentMessageArr: allDataObjects.ChatHistoryItem[], functionSource: string, isChatEnabled?: boolean) {
     console.log('Called sendWhatsappMessageToCandidate to send message via any whatsapp api::', functionSource);

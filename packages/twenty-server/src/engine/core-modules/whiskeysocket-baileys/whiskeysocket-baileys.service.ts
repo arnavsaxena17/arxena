@@ -145,7 +145,7 @@ export class WhatsappService {
           console.log('Phone Number TO  captured:', selfPhoneNumber);
           for (const msg of upsert.messages) {
             if (!msg.key.fromMe) {
-              console.log('This is the message:', msg);
+              // console.log('This is the message:', msg);
 
               let data: any = {
                 msg: `got message from:${msg?.pushName}(${msg?.key?.remoteJid}) and message is:${msg?.message?.conversation}`,
@@ -218,7 +218,7 @@ export class WhatsappService {
               this.sock?.server?.emit(event, data);
             } else {
               console.log('Message is from me:', msg.key.fromMe);
-              console.log('This is the message:', msg);
+              // console.log('This is the message:', msg);
               const baileysWhatsappIncomingObj = {
                 phoneNumberTo: '+' + msg?.key?.remoteJid?.replace('@s.whatsapp.net', ''),
                 message: msg?.message?.conversation || msg?.message?.extendedTextMessage?.text || '',
@@ -255,7 +255,7 @@ export class WhatsappService {
   }
 
   async handleDeleteForEveryoneMessage(msg, candidateProfile: allDataObjects.CandidateNode) {
-    console.log('This is the message:', msg);
+    // console.log('This is the message:', msg);
     console.log('This is the candidateProfile:', candidateProfile);
     const whatsappMessageToGetDeleted = await this.fetchWhatsappMessageById(msg?.message?.protocolMessage?.key?.id);
     console.log('whatsappMessageToGetDeleted:', whatsappMessageToGetDeleted);
