@@ -19,15 +19,15 @@ const rl = readline.createInterface({
 });
 
 export default class CandidateEngagementArx {
-  async createAndUpdateCandidateHiChatMessage(chatReply: string, candidateProfileDataNodeObj: allDataObjects.PersonNode) {
+  async createAndUpdateCandidateStartChatChatMessage(chatReply: string, candidateProfileDataNodeObj: allDataObjects.PersonNode) {
     // console.log("This is the candidate profile data node obj:", candidateProfileDataNodeObj);
     console.log('This is the chat reply:', chatReply);
     const recruiterProfile = allDataObjects.recruiterProfile;
     let chatHistory = candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.messageObj || [];
-    if (chatReply === 'hi' && candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges.length === 0) {
+    if (chatReply === 'startChat' && candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges.length === 0) {
       const SYSTEM_PROMPT = await new ToolsForAgents().getSystemPrompt(candidateProfileDataNodeObj);
       chatHistory.push({ role: 'system', content: SYSTEM_PROMPT });
-      chatHistory.push({ role: 'user', content: 'Hi' });
+      chatHistory.push({ role: 'user', content: 'startChat' });
     } else {
       chatHistory = candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.messageObj;
     }
@@ -131,9 +131,9 @@ export default class CandidateEngagementArx {
     });
     console.log('these are the number of candidates to start chat ::', filteredCandidatesWhoHaveNoWhatsappHistory?.length);
     for (let i = 0; i < filteredCandidatesWhoHaveNoWhatsappHistory?.length; i++) {
-      const chatReply = 'hi';
+      const chatReply = 'startChat';
       const candidateProfileDataNodeObj = filteredCandidatesWhoHaveNoWhatsappHistory[i];
-      await new CandidateEngagementArx().createAndUpdateCandidateHiChatMessage(chatReply, candidateProfileDataNodeObj);
+      await new CandidateEngagementArx().createAndUpdateCandidateStartChatChatMessage(chatReply, candidateProfileDataNodeObj);
       // const updateCandidateStatusObj = await new FetchAndUpdateCandidatesChatsWhatsapps().setCandidateEngagementStatusToFalse(candidateProfileDataNodeObj.candidates.edges[0].node);
     }
   }

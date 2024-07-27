@@ -180,12 +180,12 @@ export class ArxChatEndpoint {
     const whatsappIncomingMessage: allDataObjects.chatMessageType = {
       phoneNumberFrom: request.body.phoneNumberFrom,
       phoneNumberTo: '918591724917',
-      messages: [{ role: 'user', content: 'hi' }],
+      messages: [{ role: 'user', content: 'startChat' }],
       messageType: 'string',
     };
 
     console.log('This is the chat reply:', whatsappIncomingMessage);
-    const chatReply = 'hi';
+    const chatReply = 'startChat';
 
     const personObj: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(request.body.phoneNumberFrom);
     console.log('Person Obj:', JSON.stringify(personObj));
@@ -197,10 +197,10 @@ export class ArxChatEndpoint {
     let chatHistory = chatMessages[0]?.node?.messageObj || [];
     console.log('Got chathistory = ', chatHistory);
     console.log('chatMessages:', chatMessages);
-    if (chatReply === 'hi' && chatMessages.length === 0) {
+    if (chatReply === 'startChat' && chatMessages.length === 0) {
       const SYSTEM_PROMPT = await new ToolsForAgents().getSystemPrompt(personObj);
       chatHistory.push({ role: 'system', content: SYSTEM_PROMPT });
-      chatHistory.push({ role: 'user', content: 'Hi' });
+      chatHistory.push({ role: 'user', content: 'startChat' });
     } else {
       chatHistory = personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.messageObj;
     }
