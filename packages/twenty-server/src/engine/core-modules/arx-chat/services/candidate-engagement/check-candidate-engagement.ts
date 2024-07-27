@@ -119,7 +119,7 @@ export default class CandidateEngagementArx {
 
   async startChatEngagement(candidateResponseEngagementArr: allDataObjects.PersonNode[]) {
     console.log('Total number of candidates fetched to filter for start chat::', candidateResponseEngagementArr?.length);
-    const filteredCandidatesToStartEngagement = candidateResponseEngagementArr?.filter((personNode) => {
+    const filteredCandidatesToStartEngagement = candidateResponseEngagementArr?.filter(personNode => {
       // if (personNode.name.firstName === 'Ninad') {
       //   console.log('This is the Ninads candidate:', personNode);
       // }
@@ -140,8 +140,8 @@ export default class CandidateEngagementArx {
 
   async engageCandidates(candidateResponseEngagementArr: allDataObjects.PersonNode[]) {
     // console.log("This is candidateResponseEngagementObj:", candidateResponseEngagementArr)
-    const sortedPeopleData:allDataObjects.PersonNode[] = sortWhatsAppMessages(candidateResponseEngagementArr);
-    const filteredCandidates:allDataObjects.PersonNode[] = this.filterCandidates(sortedPeopleData);
+    const sortedPeopleData: allDataObjects.PersonNode[] = sortWhatsAppMessages(candidateResponseEngagementArr);
+    const filteredCandidates: allDataObjects.PersonNode[] = this.filterCandidates(sortedPeopleData);
     console.log('Filtered candidates to engage:', filteredCandidates);
     const listOfCandidatesToRemind: allDataObjects.PersonNode[] = candidateResponseEngagementArr?.filter((edge: allDataObjects.PersonNode) => {
       edge?.candidates?.edges[0]?.node?.candidateReminders?.edges?.filter(reminderEdge => reminderEdge?.node?.remindCandidateAtTimestamp < new Date().toISOString() && reminderEdge?.node?.isReminderActive);
@@ -156,11 +156,9 @@ export default class CandidateEngagementArx {
     }
   }
 
-
-
   async checkCandidateEngagement() {
     // await this.checkAvailableRemindersAndSend();
-    const limit = 400
+    const limit = 2500;
     const candidateResponseEngagementArr = await new FetchAndUpdateCandidatesChatsWhatsapps().fetchCandidatesToEngage(limit);
     // console.log("Received response to check candidate engagement:resposne", candidateResponseEngagementArr)
     await this.startChatEngagement(candidateResponseEngagementArr);
