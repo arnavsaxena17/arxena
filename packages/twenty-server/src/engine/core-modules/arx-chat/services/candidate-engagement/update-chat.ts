@@ -66,7 +66,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
       console.log('going to get candidate information');
       const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindPeopleByPhoneNumber, variables: graphVariables });
       const response = await axiosRequest(graphqlQueryObj);
-      console.log('This is the response from getCandidate Information', response.data.data);
+      // console.log('This is the response from getCandidate Information', response.data.data);
       const candidateDataObjs = response.data?.data?.people?.edges[0]?.node?.candidates?.edges;
       // console.log('This is the candidate data::', candidateDataObjs);
       const activeJobCandidateObj = candidateDataObjs?.find((edge: any) => edge?.node?.jobs?.isActive);
@@ -126,7 +126,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
       // console.log("going to get process.env.GRAPHQL_URL", process.env.GRAPHQL_URL)
       const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindPeopleByPhoneNumber, variables: graphVariables });
       const response = await axiosRequest(graphqlQueryObj);
-      console.log('This is the response from getCandidate Information', response.data.data);
+      // console.log('This is the response from getCandidate Information', response.data.data);
       const candidateDataObjs = response.data?.data?.people?.edges[0]?.node?.candidates?.edges;
       // console.log('This is the candidate data::', candidateDataObjs);
       //   const activeJobCandidateObj = candidateDataObjs?.find(

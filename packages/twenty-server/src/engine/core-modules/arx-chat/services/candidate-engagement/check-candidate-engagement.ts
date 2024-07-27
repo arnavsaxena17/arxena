@@ -120,9 +120,9 @@ export default class CandidateEngagementArx {
   async startChatEngagement(candidateResponseEngagementArr: allDataObjects.PersonNode[]) {
     console.log('Total number of candidates fetched to filter for start chat::', candidateResponseEngagementArr?.length);
     const filteredCandidatesToStartEngagement = candidateResponseEngagementArr?.filter((personNode) => {
-      if (personNode.name.firstName === 'Ninad') {
-        console.log('This is the Ninads candidate:', personNode);
-      }
+      // if (personNode.name.firstName === 'Ninad') {
+      //   console.log('This is the Ninads candidate:', personNode);
+      // }
       return personNode?.candidates?.edges?.length > 0 && personNode?.candidates?.edges[0]?.node?.startChat === true;
     });
     console.log('these are the number of candidates to who have no filteredCandidatesToStartEngagement ::', filteredCandidatesToStartEngagement?.length);

@@ -150,22 +150,6 @@ export class ToolsForAgents {
     return updatedSystemPromptWithStagePrompt;
   }
 
-  // async getTimeManagementPromptBasedOnStage(personNode: allDataObjects.PersonNode, stage: string) {
-  //   const timeManagementPrompt = await this.getTimeManagementPrompt(personNode);
-  //   const updatedTimeManagementPromptWithStagePrompt = timeManagementPrompt.replace('##TIME_MANAGEMENT_PROMPT', stage);
-  //   return updatedTimeManagementPromptWithStagePrompt;
-  // }
-
-  // async getToolCallsByStage() {
-  //   const toolCallsByStage = {
-  //     'Initial Outreach': ['update_candidate_profile'],
-  //     'Share Role Details': ['share_jd'],
-  //     'Share screening questions': ['update_answer', 'update_candidate_profile'],
-  //     'Create Reminder': ['update_candidate_profile', 'schedule_meeting'],
-  //     'Schedule Screening Meeting': ['update_candidate_profile', 'schedule_meeting'],
-  //   };
-  //   return toolCallsByStage;
-  // }
 
   async getStageWiseActivity() {
     const stageWiseActions = {
@@ -178,7 +162,7 @@ export class ToolsForAgents {
       ],
       'Share Role Details': [
         `
-        Provide a JD of the role and describe in short the details of the company. Ask the candidate if they would be keen on the role wiht the company.
+        Provide a JD of the role and describe in short the details of the company. Ask the candidate if they would be keen on the role with the company.
         `,
       ],
       'Share screening questions': [
