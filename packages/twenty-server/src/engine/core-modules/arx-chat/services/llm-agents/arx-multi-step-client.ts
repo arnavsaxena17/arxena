@@ -32,7 +32,7 @@ export class OpenAIArxMultiStepClient {
     console.log('After running the stage and candidate facing agents, the mostRecentMessageArr is::', mostRecentMessageArr);
     processorType = 'system-facing';
 
-    await this.runSystemFacingAgentsAlongWithToolCalls(mostRecentMessageArr, personNode, stage, processorType);
+    // await this.runSystemFacingAgentsAlongWithToolCalls(mostRecentMessageArr, personNode, stage, processorType);
     // await this.runTimeManagementAgent(mostRecentMessageArr, personNode, stage);
     return mostRecentMessageArr;
   }

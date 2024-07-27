@@ -78,6 +78,7 @@ export class ToolsForAgents {
   }
 
   async getSystemPrompt(personNode: allDataObjects.PersonNode) {
+    const jobProfile = personNode?.candidates?.edges[0]?.node?.jobs;
     const questionArray = await this.getQuestionsToAsk(personNode);
     const formattedQuestions = questionArray.map((question, index) => `${index + 1}. ${question}`).join('\n');
     const SYSTEM_PROMPT = `
@@ -108,7 +109,7 @@ export class ToolsForAgents {
     Available timeslots are: ${availableTimeSlots}
     Your first message when you receive the prompt "startChat" is: Hey ${personNode.name.firstName},
     I'm ${recruiterProfile.first_name}, ${recruiterProfile.job_title} at ${recruiterProfile.job_company_name}, ${recruiterProfile.company_description_oneliner}.
-    I'm hiring for a ${jobProfile.name} role for ${jobProfile.company.descriptionOneliner} and got your application on my job posting. I believe this might be a good fit.
+    I'm hiring for a ${jobProfile.name} role for ${jobProfile.companies.descriptionOneliner} and got your application on my job posting. I believe this might be a good fit.
     Wanted to speak to you in regards your interests in our new role. Would you be available for a short call sometime today?`;
     return SYSTEM_PROMPT;
   }
@@ -149,7 +150,6 @@ export class ToolsForAgents {
     console.log('Updated System Prompt ::', updatedSystemPromptWithStagePrompt);
     return updatedSystemPromptWithStagePrompt;
   }
-
 
   async getStageWiseActivity() {
     const stageWiseActions = {
