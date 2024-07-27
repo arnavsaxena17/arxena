@@ -13,90 +13,73 @@ import { NavigationDrawerSectionTitle } from '@/ui/navigation/navigation-drawer/
 import { useNavigationSection } from '@/ui/navigation/navigation-drawer/hooks/useNavigationSection';
 import { View } from '@/views/types/View';
 import { getObjectMetadataItemViews } from '@/views/utils/getObjectMetadataItemViews';
+import { useEffect } from 'react';
+import { IconSunElectricity } from '@tabler/icons-react';
+import { useQuery } from '@apollo/client';
+import { GET_JOBS } from '../graphql/queries';
+import JobNavigationSection from './JobNavigationSection';
 
 export const ObjectMetadataNavItems = ({ isRemote }: { isRemote: boolean }) => {
-  const { toggleNavigationSection, isNavigationSectionOpenState } =
-    useNavigationSection('Objects' + (isRemote ? 'Remote' : 'Workspace'));
+  const { toggleNavigationSection, isNavigationSectionOpenState } = useNavigationSection('Objects' + (isRemote ? 'Remote' : 'Workspace'));
   const isNavigationSectionOpen = useRecoilValue(isNavigationSectionOpenState);
 
   const { activeObjectMetadataItems } = useFilteredObjectMetadataItems();
-  const filteredActiveObjectMetadataItems = activeObjectMetadataItems.filter(
-    (item) => (isRemote ? item.isRemote : !item.isRemote),
-  );
+  const filteredActiveObjectMetadataItems = activeObjectMetadataItems.filter(item => (isRemote ? item.isRemote : !item.isRemote));
   const { getIcon } = useIcons();
   const currentPath = useLocation().pathname;
 
   const { records: views } = usePrefetchedData<View>(PrefetchKey.AllViews);
   const loading = useIsPrefetchLoading();
 
+  // useEffect(() => {
+  //   (async function fetchData() {
+
+  //   })();
+  // }, []);
+
   if (loading) {
     return <ObjectMetadataNavItemsSkeletonLoader />;
   }
 
   return (
-    filteredActiveObjectMetadataItems.length > 0 && (
-      <NavigationDrawerSection>
-        <NavigationDrawerSectionTitle
-          label={isRemote ? 'Remote' : 'Workspace'}
-          onClick={() => toggleNavigationSection()}
-        />
+    <>
+      {filteredActiveObjectMetadataItems.length > 0 && (
+        <NavigationDrawerSection>
+          <NavigationDrawerSectionTitle label={isRemote ? 'Remote' : 'Workspace'} onClick={() => toggleNavigationSection()} />
 
-        {isNavigationSectionOpen &&
-          [
-            ...filteredActiveObjectMetadataItems
-              .filter((item) =>
-                ['person', 'company', 'opportunity'].includes(
-                  item.nameSingular,
-                ),
-              )
-              .sort((objectMetadataItemA, objectMetadataItemB) => {
-                const order = ['person', 'company', 'opportunity'];
-                const indexA = order.indexOf(objectMetadataItemA.nameSingular);
-                const indexB = order.indexOf(objectMetadataItemB.nameSingular);
-                if (indexA === -1 || indexB === -1) {
-                  return objectMetadataItemA.nameSingular.localeCompare(
-                    objectMetadataItemB.nameSingular,
-                  );
-                }
-                return indexA - indexB;
-              }),
-            ...filteredActiveObjectMetadataItems
-              .filter(
-                (item) =>
-                  !['person', 'company', 'opportunity'].includes(
-                    item.nameSingular,
-                  ),
-              )
-              .sort((objectMetadataItemA, objectMetadataItemB) => {
-                return new Date(objectMetadataItemA.createdAt) <
-                  new Date(objectMetadataItemB.createdAt)
-                  ? 1
-                  : -1;
-              }),
-          ].map((objectMetadataItem) => {
-            const objectMetadataViews = getObjectMetadataItemViews(
-              objectMetadataItem.id,
-              views,
-            );
-            const viewId = objectMetadataViews[0]?.id;
+          {isNavigationSectionOpen &&
+            [
+              ...filteredActiveObjectMetadataItems
+                .filter(item => ['person', 'company', 'opportunity'].includes(item.nameSingular))
+                .sort((objectMetadataItemA, objectMetadataItemB) => {
+                  const order = ['person', 'company', 'opportunity'];
+                  const indexA = order.indexOf(objectMetadataItemA.nameSingular);
+                  const indexB = order.indexOf(objectMetadataItemB.nameSingular);
+                  if (indexA === -1 || indexB === -1) {
+                    return objectMetadataItemA.nameSingular.localeCompare(objectMetadataItemB.nameSingular);
+                  }
+                  return indexA - indexB;
+                }),
+              ...filteredActiveObjectMetadataItems
+                .filter(item => !['person', 'company', 'opportunity'].includes(item.nameSingular))
+                .sort((objectMetadataItemA, objectMetadataItemB) => {
+                  return new Date(objectMetadataItemA.createdAt) < new Date(objectMetadataItemB.createdAt) ? 1 : -1;
+                }),
+            ].map(objectMetadataItem => {
+              const objectMetadataViews = getObjectMetadataItemViews(objectMetadataItem.id, views);
+              const viewId = objectMetadataViews[0]?.id;
 
-            const navigationPath = `/objects/${objectMetadataItem.namePlural}${
-              viewId ? `?view=${viewId}` : ''
-            }`;
+              const navigationPath = `/objects/${objectMetadataItem.namePlural}${viewId ? `?view=${viewId}` : ''}`;
 
-            return (
-              <NavigationDrawerItem
-                key={objectMetadataItem.id}
-                label={objectMetadataItem.labelPlural}
-                to={navigationPath}
-                active={
-                  currentPath === `/objects/${objectMetadataItem.namePlural}`
-                }
-                Icon={getIcon(objectMetadataItem.icon)}
-              />
-            );
-          })}
-      </NavigationDrawerSection>
-    )
+              return (
+                <>
+                  <NavigationDrawerItem key={objectMetadataItem.id} label={objectMetadataItem.labelPlural} to={navigationPath} active={currentPath === `/objects/${objectMetadataItem.namePlural}`} Icon={getIcon(objectMetadataItem.icon)} />
+                </>
+              );
+            })}
+          <JobNavigationSection />
+        </NavigationDrawerSection>
+      )}
+    </>
   );
 };

@@ -7,9 +7,11 @@ import { contextMenuIsOpenState } from '@/ui/navigation/context-menu/states/cont
 import SharedNavigationModal from '@/ui/navigation/shared/components/NavigationModal';
 
 import { ActionBarItem } from './ActionBarItem';
+import { IconFileExport } from '@tabler/icons-react';
 
 type ActionBarProps = {
   selectedIds?: string[];
+  recordTableId?: string;
 };
 
 const StyledContainerActionBar = styled.div`
@@ -40,7 +42,7 @@ const StyledLabel = styled.div`
   padding-right: ${({ theme }) => theme.spacing(2)};
 `;
 
-export const ActionBar = ({ selectedIds = [] }: ActionBarProps) => {
+export const ActionBar = ({ selectedIds = [], recordTableId = '' }: ActionBarProps) => {
   const setContextMenuOpenState = useSetRecoilState(contextMenuIsOpenState);
 
   useEffect(() => {
@@ -59,22 +61,25 @@ export const ActionBar = ({ selectedIds = [] }: ActionBarProps) => {
 
   return (
     <>
-      <StyledContainerActionBar
-        data-select-disable
-        className="action-bar"
-        ref={wrapperRef}
-      >
-        {selectedIds && (
-          <StyledLabel>{selectedIds.length} selected:</StyledLabel>
-        )}
+      <StyledContainerActionBar data-select-disable className="action-bar" ref={wrapperRef}>
+        {selectedIds && <StyledLabel>{selectedIds.length} selected:</StyledLabel>}
         {actionBarEntries.map((item, index) => (
           <ActionBarItem key={index} item={item} />
         ))}
+        {recordTableId === 'cvSents' ? (
+          <ActionBarItem
+            key={3}
+            item={{
+              label: 'Export To Excel Sheet',
+              Icon: IconFileExport,
+              onClick: () => {
+                console.log('Export to Excel');
+              },
+            }}
+          />
+        ) : null}
       </StyledContainerActionBar>
-      <SharedNavigationModal
-        actionBarEntries={actionBarEntries}
-        customClassName="action-bar"
-      />
+      <SharedNavigationModal actionBarEntries={actionBarEntries} customClassName="action-bar" />
     </>
   );
 };

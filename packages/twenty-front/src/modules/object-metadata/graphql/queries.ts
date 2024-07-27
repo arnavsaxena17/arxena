@@ -1,10 +1,7 @@
 import { gql } from '@apollo/client';
 
 export const FIND_MANY_OBJECT_METADATA_ITEMS = gql`
-  query ObjectMetadataItems(
-    $objectFilter: objectFilter
-    $fieldFilter: fieldFilter
-  ) {
+  query ObjectMetadataItems($objectFilter: objectFilter, $fieldFilter: fieldFilter) {
     objects(paging: { first: 1000 }, filter: $objectFilter) {
       edges {
         node {
@@ -105,6 +102,19 @@ export const FIND_MANY_OBJECT_METADATA_ITEMS = gql`
         hasPreviousPage
         startCursor
         endCursor
+      }
+    }
+  }
+`;
+
+export const GET_JOBS = gql`
+  query FindManyJobs($filter: JobFilterInput) {
+    jobs(filter: $filter) {
+      edges {
+        node {
+          name
+          id
+        }
       }
     }
   }
