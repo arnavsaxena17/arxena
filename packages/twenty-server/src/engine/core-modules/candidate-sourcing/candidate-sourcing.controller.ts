@@ -51,48 +51,8 @@ export class CandidateSourcingController {
     let manyCandidateObjects: ArxenaCandidateNode[] = [];
     let manyCandidateJobEnrichData: any[] = [];
     for (let profile of data) {
-      //   // const graphqlVariablesForCompany = {
-      //   //     input: {
-      //   //         name:
-      //   //     }
-      //   // }
       let uuid = uuidv4();
       const { personNode, candidateNode } = processArxCandidate(profile, jobObject);
-      // const onePersonObject = {
-      //   id: uuid,
-      //   name: {
-      //     firstName: profile?.names?.first_name || '',
-      //     lastName: profile?.names?.last_name || '',
-      //   },
-      //   linkedinLink: {
-      //     url: profile?.linkedin_url,
-      //   },
-      //   jobTitle: profile?.profile_title,
-      // };
-      // const oneCandidateObject = {
-      //   name: profile?.names?.first_name + ' ' + profile?.names?.last_name,
-      //   // companiesId: ""
-      //   peopleId: uuid,
-      //   status: 'SCREENING',
-      //   engagementStatus: false,
-      //   startChat: false,
-      //   whatsappProvider: 'baileys',
-      // };
-      //   // const graphqlQueryObj = JSON.stringify({
-      //   //     query: CreateOneJob,
-      //   //     variables: graphqlVariables,
-      //   // });
-      //   // const responseNew = await axiosRequest(graphqlQueryObj);
-      //   // return { data: responseNew.data };
-      //   const result = Object.entries(profile)
-      //     .filter(([key1, value]) => typeof value !== 'object' || value === null)
-      //     .map(([key1, value]) => {
-      //       // Your mapping logic here, for example, return the key-value pair
-      //       return { key1: value };
-      //     });
-      //   const oneCandidateJobEnrichData = {
-      //     input: result,
-      //   };
       manyPersonObjects.push(personNode);
       manyCandidateObjects.push(candidateNode);
     }
@@ -137,27 +97,7 @@ export class CandidateSourcingController {
       console.log('Error in creating candidates', error);
       return { error: error.message };
     }
-    // try {
-    //   const responseForCandidateJob = await axiosRequest(graphqlQueryObjForCandidate);
-    // } catch (error) {
-    //   console.log('Error in creating candidates', error);
-    //   return { error: error.message };
-    // }
-    // // upload to new candidateJobTable as well
-    // try {
-    //   const response = await axiosRequest(
-    //     JSON.stringify({
-    //       query: CreateManyCustomMetadataObject(dynamicQueryName),
-    //       variables: {
-    //         data: manyCandidateJobEnrichData,
-    //       },
-    //     }),
-    //   );
-    // } catch (error) {
-    //   console.log('Error in uploading to candidate job table', error);
-    //   return { error: error.message };
-    // }
-    // const candidatesArray:
+
   }
 
   @Post('post-job')
