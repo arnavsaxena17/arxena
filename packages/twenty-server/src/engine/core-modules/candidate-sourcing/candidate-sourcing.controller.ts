@@ -28,17 +28,9 @@ export class CandidateSourcingController {
       JSON.stringify({
         query: graphqlToFindManyJobByArxenaSiteId,
         variables: {
-          filter: {
-            arxenaSiteId: {
-              in: [arxenaJobId],
-            },
-          },
+          filter: { arxenaSiteId: { in: [arxenaJobId] } },
           limit: 30,
-          orderBy: [
-            {
-              position: 'AscNullsFirst',
-            },
-          ],
+          orderBy: [ { position: 'AscNullsFirst' } ],
         },
       }),
     );
@@ -49,7 +41,6 @@ export class CandidateSourcingController {
     // const dynamicQueryName = (jobName + jobIdMetadataInCamelCaseFormat).charAt(0).toUpperCase() + camelCase(jobName + jobIdMetadataInCamelCaseFormat).slice(1);
     let manyPersonObjects: ArxenaPersonNode[] = [];
     let manyCandidateObjects: ArxenaCandidateNode[] = [];
-    let manyCandidateJobEnrichData: any[] = [];
     for (let profile of data) {
       let uuid = uuidv4();
       const { personNode, candidateNode } = processArxCandidate(profile, jobObject);

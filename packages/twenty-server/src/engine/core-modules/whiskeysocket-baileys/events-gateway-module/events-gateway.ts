@@ -49,13 +49,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       console.log('UserId connected:', response?.data);
       const workspaceUserId = response?.data;
-      const graphqlVariableToFilterWorkspaceMember = {
-        filter: {
-          userId: {
-            eq: workspaceUserId,
-          },
-        },
-      };
+      const graphqlVariableToFilterWorkspaceMember = { filter: { userId: { eq: workspaceUserId, }, }, };
       let responseAfterQueryingWorkspaceMember;
       try {
         responseAfterQueryingWorkspaceMember = await axiosRequest(
@@ -120,16 +114,20 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const filePath = './sessionIds.json';
     if (fs.existsSync(filePath)) {
       const sessionIds = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+      console.log("Loaded sessionIds:", sessionIds);
       sessionIds.forEach((sessionId: string) => {
         const whatsappService = new WhatsappService(this, sessionId, '');
         this.whatsappServices.set(sessionId, whatsappService);
       });
     }
+    else{
+      console.log("Session IDs file not found")
+    }
   }
 
   async sendWhatsappMessage(message: string, jid: string, sessionId: string) {
     try {
-      console.log('42342 reached here');
+      console.log('42342 Got to sendWhatsappMssage in Events Gateway');
       console.log('sessionId:', sessionId);
       console.log('jid:', jid);
       console.log('message:', message);

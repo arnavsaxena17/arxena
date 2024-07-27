@@ -8,7 +8,7 @@ export class WhatsappController {
   constructor(private eventsGateway: EventsGateway) {}
 
   @Post('token')
-  async sendMessage1(@Body() body: { sessionId: string }) {
+  async token(@Body() body: { sessionId: string }) {
     await new WhatsappService(this.eventsGateway, body.sessionId, '');
     return { status: 'ok' };
   }
@@ -17,6 +17,7 @@ export class WhatsappController {
   async sendMessage(@Body() body: { message: string; jid: string; recruiterId: string }) {
     try {
       const sessionId = body?.recruiterId;
+      console.log("Received sessionID from send API in baileyscontroller", sessionId);
       const messageId = await this.eventsGateway.sendWhatsappMessage(body?.message, body?.jid, sessionId);
       return { messageId: messageId, status: 'ok' };
     } catch (error) {
