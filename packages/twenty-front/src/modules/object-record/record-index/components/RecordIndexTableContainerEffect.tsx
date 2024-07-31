@@ -13,21 +13,11 @@ type RecordIndexTableContainerEffectProps = {
   objectNameSingular: string;
   recordTableId: string;
   viewBarId: string;
+  jobData?: any;
 };
 
-export const RecordIndexTableContainerEffect = ({
-  objectNameSingular,
-  recordTableId,
-  viewBarId,
-}: RecordIndexTableContainerEffectProps) => {
-  const {
-    setAvailableTableColumns,
-    setOnEntityCountChange,
-    resetTableRowSelection,
-    selectedRowIdsSelector,
-    setOnToggleColumnFilter,
-    setOnToggleColumnSort,
-  } = useRecordTable({
+export const RecordIndexTableContainerEffect = ({ objectNameSingular, recordTableId, viewBarId, jobData }: RecordIndexTableContainerEffectProps) => {
+  const { setAvailableTableColumns, setOnEntityCountChange, resetTableRowSelection, selectedRowIdsSelector, setOnToggleColumnFilter, setOnToggleColumnSort } = useRecordTable({
     recordTableId,
   });
 
@@ -35,11 +25,9 @@ export const RecordIndexTableContainerEffect = ({
     objectNameSingular,
   });
 
-  const { columnDefinitions } =
-    useColumnDefinitionsFromFieldMetadata(objectMetadataItem);
+  const { columnDefinitions } = useColumnDefinitionsFromFieldMetadata(objectMetadataItem);
 
-  const { setRecordCountInCurrentView } =
-    useSetRecordCountInCurrentView(viewBarId);
+  const { setRecordCountInCurrentView } = useSetRecordCountInCurrentView(viewBarId);
 
   useEffect(() => {
     setAvailableTableColumns(columnDefinitions);
@@ -64,17 +52,11 @@ export const RecordIndexTableContainerEffect = ({
   });
 
   useEffect(() => {
-    setOnToggleColumnFilter(
-      () => (fieldMetadataId: string) =>
-        handleToggleColumnFilter(fieldMetadataId),
-    );
+    setOnToggleColumnFilter(() => (fieldMetadataId: string) => handleToggleColumnFilter(fieldMetadataId));
   }, [setOnToggleColumnFilter, handleToggleColumnFilter]);
 
   useEffect(() => {
-    setOnToggleColumnSort(
-      () => (fieldMetadataId: string) =>
-        handleToggleColumnSort(fieldMetadataId),
-    );
+    setOnToggleColumnSort(() => (fieldMetadataId: string) => handleToggleColumnSort(fieldMetadataId));
   }, [setOnToggleColumnSort, handleToggleColumnSort]);
 
   useEffect(() => {
@@ -83,9 +65,7 @@ export const RecordIndexTableContainerEffect = ({
   }, [setActionBarEntries, setContextMenuEntries]);
 
   useEffect(() => {
-    setOnEntityCountChange(
-      () => (entityCount: number) => setRecordCountInCurrentView(entityCount),
-    );
+    setOnEntityCountChange(() => (entityCount: number) => setRecordCountInCurrentView(entityCount));
   }, [setRecordCountInCurrentView, setOnEntityCountChange]);
 
   return <></>;

@@ -75,29 +75,15 @@ const StyledHeaderIcon = styled.div`
   margin: ${({ theme }) => theme.spacing(1, 1, 1, 1.5)};
 `;
 
-export const RecordTableHeaderCell = ({
-  column,
-  createRecord,
-}: {
-  column: ColumnDefinition<FieldMetadata>;
-  createRecord: () => void;
-}) => {
+export const RecordTableHeaderCell = ({ column, createRecord }: { column: ColumnDefinition<FieldMetadata>; createRecord: () => void }) => {
   const { resizeFieldOffsetState, tableColumnsState } = useRecordTableStates();
 
-  const [resizeFieldOffset, setResizeFieldOffset] = useRecoilState(
-    resizeFieldOffsetState,
-  );
+  const [resizeFieldOffset, setResizeFieldOffset] = useRecoilState(resizeFieldOffsetState);
 
   const tableColumns = useRecoilValue(tableColumnsState);
-  const tableColumnsByKey = useMemo(
-    () =>
-      mapArrayToObject(tableColumns, ({ fieldMetadataId }) => fieldMetadataId),
-    [tableColumns],
-  );
+  const tableColumnsByKey = useMemo(() => mapArrayToObject(tableColumns, ({ fieldMetadataId }) => fieldMetadataId), [tableColumns]);
 
-  const [initialPointerPositionX, setInitialPointerPositionX] = useState<
-    number | null
-  >(null);
+  const [initialPointerPositionX, setInitialPointerPositionX] = useState<number | null>(null);
   const [resizedFieldKey, setResizedFieldKey] = useState<string | null>(null);
 
   const { handleColumnsChange } = useTableColumns();
@@ -121,39 +107,21 @@ export const RecordTableHeaderCell = ({
       async () => {
         if (!resizedFieldKey) return;
 
-        const resizeFieldOffset = getSnapshotValue(
-          snapshot,
-          resizeFieldOffsetState,
-        );
+        const resizeFieldOffset = getSnapshotValue(snapshot, resizeFieldOffsetState);
 
-        const nextWidth = Math.round(
-          Math.max(
-            tableColumnsByKey[resizedFieldKey].size + resizeFieldOffset,
-            COLUMN_MIN_WIDTH,
-          ),
-        );
+        const nextWidth = Math.round(Math.max(tableColumnsByKey[resizedFieldKey]?.size ?? 180 + resizeFieldOffset, COLUMN_MIN_WIDTH));
 
         set(resizeFieldOffsetState, 0);
         setInitialPointerPositionX(null);
         setResizedFieldKey(null);
 
         if (nextWidth !== tableColumnsByKey[resizedFieldKey].size) {
-          const nextColumns = tableColumns.map((column) =>
-            column.fieldMetadataId === resizedFieldKey
-              ? { ...column, size: nextWidth }
-              : column,
-          );
+          const nextColumns = tableColumns.map(column => (column.fieldMetadataId === resizedFieldKey ? { ...column, size: nextWidth } : column));
 
           await handleColumnsChange(nextColumns);
         }
       },
-    [
-      resizedFieldKey,
-      resizeFieldOffsetState,
-      tableColumnsByKey,
-      tableColumns,
-      handleColumnsChange,
-    ],
+    [resizedFieldKey, resizeFieldOffsetState, tableColumnsByKey, tableColumns, handleColumnsChange],
   );
 
   useTrackPointer({
@@ -166,36 +134,20 @@ export const RecordTableHeaderCell = ({
   const isMobile = useIsMobile();
   const scrollLeft = useRecoilValue(scrollLeftState);
 
-  const disableColumnResize =
-    column.isLabelIdentifier && isMobile && scrollLeft > 0;
+  const disableColumnResize = column.isLabelIdentifier && isMobile && scrollLeft > 0;
 
   return (
     <StyledColumnHeaderCell
       key={column.fieldMetadataId}
       isResizing={resizedFieldKey === column.fieldMetadataId}
-      columnWidth={Math.max(
-        tableColumnsByKey[column.fieldMetadataId].size +
-          (resizedFieldKey === column.fieldMetadataId ? resizeFieldOffset : 0) +
-          24,
-        COLUMN_MIN_WIDTH,
-      )}
+      columnWidth={Math.max(tableColumnsByKey[column.fieldMetadataId]?.size ?? 180 + (resizedFieldKey === column.fieldMetadataId ? resizeFieldOffset : 0) + 24, COLUMN_MIN_WIDTH)}
       onMouseEnter={() => setIconVisibility(true)}
-      onMouseLeave={() => setIconVisibility(false)}
-    >
+      onMouseLeave={() => setIconVisibility(false)}>
       <StyledColumnHeadContainer>
-        {column.isLabelIdentifier ? (
-          <ColumnHead column={column} />
-        ) : (
-          <ColumnHeadWithDropdown column={column} />
-        )}
+        {column.isLabelIdentifier ? <ColumnHead column={column} /> : <ColumnHeadWithDropdown column={column} />}
         {(useIsMobile() || iconVisibility) && !!column.isLabelIdentifier && (
           <StyledHeaderIcon>
-            <LightIconButton
-              Icon={IconPlus}
-              size="small"
-              accent="tertiary"
-              onClick={createRecord}
-            />
+            <LightIconButton Icon={IconPlus} size="small" accent="tertiary" onClick={createRecord} />
           </StyledHeaderIcon>
         )}
       </StyledColumnHeadContainer>

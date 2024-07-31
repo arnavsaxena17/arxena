@@ -35,8 +35,8 @@ export default function JobNavigationSection() {
 
   return (
     <div>
-      <NavigationDrawerSectionTitle label={'Jobs'} onClick={() => navigationSectionJob.toggleNavigationSection()} />
-      {jobArray?.map(job => <>{isNavigationSectionOpenJob && <NavigationDrawerItem key={4} label={job?.jobName} to={'/objects/new'} active={currentPath === `jobs/someNumber`} Icon={IconBriefcase2} />}</>)}
+      <NavigationDrawerSectionTitle label={'Candidates'} onClick={() => navigationSectionJob.toggleNavigationSection()} />
+      {jobArray?.map(job => <>{isNavigationSectionOpenJob && <NavigationDrawerItem key={4} label={job?.jobName} to={`/job/${job?.jobId}`} active={currentPath === `/job/${job?.jobId}`} Icon={IconBriefcase2} />}</>)}
     </div>
   );
 }

@@ -1,14 +1,5 @@
 import { StrictMode } from 'react';
-import {
-  createBrowserRouter,
-  createRoutesFromElements,
-  Outlet,
-  redirect,
-  Route,
-  RouterProvider,
-  Routes,
-  useLocation,
-} from 'react-router-dom';
+import { createBrowserRouter, createRoutesFromElements, Outlet, redirect, Route, RouterProvider, Routes, useLocation } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
 
 import { ApolloProvider } from '@/apollo/components/ApolloProvider';
@@ -84,6 +75,7 @@ import { SettingsWorkspaceMembers } from '~/pages/settings/SettingsWorkspaceMemb
 import { Tasks } from '~/pages/tasks/Tasks';
 import { Chats } from '~/pages/chats/Chats';
 import { getPageTitleFromPath } from '~/utils/title-utils';
+import { RecordConsolidatedPage } from '~/pages/job-record/RecordConsolidatedPage';
 
 const ProvidersThatNeedRouterContext = () => {
   const { pathname } = useLocation();
@@ -135,8 +127,7 @@ const createRouter = (isBillingEnabled?: boolean) =>
         element={<ProvidersThatNeedRouterContext />}
         // To switch state to `loading` temporarily to enable us
         // to set scroll position before the page is rendered
-        loader={async () => Promise.resolve(null)}
-      >
+        loader={async () => Promise.resolve(null)}>
         <Route element={<DefaultLayout />}>
           <Route path={AppPath.Verify} element={<VerifyEffect />} />
           <Route path={AppPath.SignInUp} element={<SignInUp />} />
@@ -147,53 +138,27 @@ const createRouter = (isBillingEnabled?: boolean) =>
           <Route path={AppPath.SyncEmails} element={<SyncEmails />} />
           <Route path={AppPath.InviteTeam} element={<InviteTeam />} />
           <Route path={AppPath.PlanRequired} element={<ChooseYourPlan />} />
-          <Route
-            path={AppPath.PlanRequiredSuccess}
-            element={<PaymentSuccess />}
-          />
+          <Route path={AppPath.PlanRequiredSuccess} element={<PaymentSuccess />} />
           <Route path={indexAppPath.getIndexAppPath()} element={<></>} />
           <Route path={AppPath.TasksPage} element={<Tasks />} />
           <Route path={AppPath.ChatsPage} element={<Chats />} />
           <Route path={AppPath.Impersonate} element={<ImpersonateEffect />} />
           <Route path={AppPath.RecordIndexPage} element={<RecordIndexPage />} />
           <Route path={AppPath.RecordShowPage} element={<RecordShowPage />} />
+          <Route path={AppPath.RecordConsolidatedPage} element={<RecordConsolidatedPage />} />
 
           <Route
             path={AppPath.SettingsCatchAll}
             element={
               <Routes>
-                <Route
-                  path={SettingsPath.ProfilePage}
-                  element={<SettingsProfile />}
-                />
-                <Route
-                  path={SettingsPath.Appearance}
-                  element={<SettingsAppearance />}
-                />
-                <Route
-                  path={SettingsPath.Accounts}
-                  element={<SettingsAccounts />}
-                />
-                <Route
-                  path={SettingsPath.NewAccount}
-                  element={<SettingsNewAccount />}
-                />
-                <Route
-                  path={SettingsPath.AccountsCalendars}
-                  element={<SettingsAccountsCalendars />}
-                />
-                <Route
-                  path={SettingsPath.AccountsCalendarsSettings}
-                  element={<SettingsAccountsCalendarsSettings />}
-                />
-                <Route
-                  path={SettingsPath.AccountsEmails}
-                  element={<SettingsAccountsEmails />}
-                />
-                <Route
-                  path={SettingsPath.AccountsEmailsInboxSettings}
-                  element={<SettingsAccountsEmailsInboxSettings />}
-                />
+                <Route path={SettingsPath.ProfilePage} element={<SettingsProfile />} />
+                <Route path={SettingsPath.Appearance} element={<SettingsAppearance />} />
+                <Route path={SettingsPath.Accounts} element={<SettingsAccounts />} />
+                <Route path={SettingsPath.NewAccount} element={<SettingsNewAccount />} />
+                <Route path={SettingsPath.AccountsCalendars} element={<SettingsAccountsCalendars />} />
+                <Route path={SettingsPath.AccountsCalendarsSettings} element={<SettingsAccountsCalendarsSettings />} />
+                <Route path={SettingsPath.AccountsEmails} element={<SettingsAccountsEmails />} />
+                <Route path={SettingsPath.AccountsEmailsInboxSettings} element={<SettingsAccountsEmailsInboxSettings />} />
                 <Route
                   path={SettingsPath.Billing}
                   element={<SettingsBilling />}
@@ -202,93 +167,33 @@ const createRouter = (isBillingEnabled?: boolean) =>
                     return null;
                   }}
                 />
-                <Route
-                  path={SettingsPath.WorkspaceMembersPage}
-                  element={<SettingsWorkspaceMembers />}
-                />
-                <Route
-                  path={SettingsPath.Workspace}
-                  element={<SettingsWorkspace />}
-                />
-                <Route
-                  path={SettingsPath.Objects}
-                  element={<SettingsObjects />}
-                />
-                <Route
-                  path={SettingsPath.ObjectOverview}
-                  element={<SettingsObjectOverview />}
-                />
-                <Route
-                  path={SettingsPath.ObjectDetail}
-                  element={<SettingsObjectDetail />}
-                />
-                <Route
-                  path={SettingsPath.ObjectEdit}
-                  element={<SettingsObjectEdit />}
-                />
-                <Route
-                  path={SettingsPath.NewObject}
-                  element={<SettingsNewObject />}
-                />
-                <Route
-                  path={SettingsPath.Developers}
-                  element={<SettingsDevelopers />}
-                />
+                <Route path={SettingsPath.WorkspaceMembersPage} element={<SettingsWorkspaceMembers />} />
+                <Route path={SettingsPath.Workspace} element={<SettingsWorkspace />} />
+                <Route path={SettingsPath.Objects} element={<SettingsObjects />} />
+                <Route path={SettingsPath.ObjectOverview} element={<SettingsObjectOverview />} />
+                <Route path={SettingsPath.ObjectDetail} element={<SettingsObjectDetail />} />
+                <Route path={SettingsPath.ObjectEdit} element={<SettingsObjectEdit />} />
+                <Route path={SettingsPath.NewObject} element={<SettingsNewObject />} />
+                <Route path={SettingsPath.Developers} element={<SettingsDevelopers />} />
                 <Route
                   path={AppPath.DevelopersCatchAll}
                   element={
                     <Routes>
-                      <Route
-                        path={SettingsPath.DevelopersNewApiKey}
-                        element={<SettingsDevelopersApiKeysNew />}
-                      />
-                      <Route
-                        path={SettingsPath.DevelopersApiKeyDetail}
-                        element={<SettingsDevelopersApiKeyDetail />}
-                      />
-                      <Route
-                        path={SettingsPath.DevelopersNewWebhook}
-                        element={<SettingsDevelopersWebhooksNew />}
-                      />
-                      <Route
-                        path={SettingsPath.DevelopersNewWebhookDetail}
-                        element={<SettingsDevelopersWebhooksDetail />}
-                      />
+                      <Route path={SettingsPath.DevelopersNewApiKey} element={<SettingsDevelopersApiKeysNew />} />
+                      <Route path={SettingsPath.DevelopersApiKeyDetail} element={<SettingsDevelopersApiKeyDetail />} />
+                      <Route path={SettingsPath.DevelopersNewWebhook} element={<SettingsDevelopersWebhooksNew />} />
+                      <Route path={SettingsPath.DevelopersNewWebhookDetail} element={<SettingsDevelopersWebhooksDetail />} />
                     </Routes>
                   }
                 />
-                <Route
-                  path={SettingsPath.Integrations}
-                  element={<SettingsIntegrations />}
-                />
-                <Route
-                  path={SettingsPath.IntegrationDatabase}
-                  element={<SettingsIntegrationDatabase />}
-                />
-                <Route
-                  path={SettingsPath.IntegrationNewDatabaseConnection}
-                  element={<SettingsIntegrationNewDatabaseConnection />}
-                />
-                <Route
-                  path={SettingsPath.IntegrationEditDatabaseConnection}
-                  element={<SettingsIntegrationEditDatabaseConnection />}
-                />
-                <Route
-                  path={SettingsPath.IntegrationDatabaseConnection}
-                  element={<SettingsIntegrationShowDatabaseConnection />}
-                />
-                <Route
-                  path={SettingsPath.ObjectNewFieldStep1}
-                  element={<SettingsObjectNewFieldStep1 />}
-                />
-                <Route
-                  path={SettingsPath.ObjectNewFieldStep2}
-                  element={<SettingsObjectNewFieldStep2 />}
-                />
-                <Route
-                  path={SettingsPath.ObjectFieldEdit}
-                  element={<SettingsObjectFieldEdit />}
-                />
+                <Route path={SettingsPath.Integrations} element={<SettingsIntegrations />} />
+                <Route path={SettingsPath.IntegrationDatabase} element={<SettingsIntegrationDatabase />} />
+                <Route path={SettingsPath.IntegrationNewDatabaseConnection} element={<SettingsIntegrationNewDatabaseConnection />} />
+                <Route path={SettingsPath.IntegrationEditDatabaseConnection} element={<SettingsIntegrationEditDatabaseConnection />} />
+                <Route path={SettingsPath.IntegrationDatabaseConnection} element={<SettingsIntegrationShowDatabaseConnection />} />
+                <Route path={SettingsPath.ObjectNewFieldStep1} element={<SettingsObjectNewFieldStep1 />} />
+                <Route path={SettingsPath.ObjectNewFieldStep2} element={<SettingsObjectNewFieldStep2 />} />
+                <Route path={SettingsPath.ObjectFieldEdit} element={<SettingsObjectFieldEdit />} />
                 <Route path={SettingsPath.Releases} element={<Releases />} />
               </Routes>
             }

@@ -37,23 +37,15 @@ type RecordTableWithWrappersProps = {
   viewBarId: string;
   updateRecordMutation: (params: any) => void;
   createRecord: () => Promise<void>;
+  isConsolidated?: boolean;
 };
 
-export const RecordTableWithWrappers = ({
-  updateRecordMutation,
-  createRecord,
-  objectNameSingular,
-  recordTableId,
-  viewBarId,
-}: RecordTableWithWrappersProps) => {
+export const RecordTableWithWrappers = ({ updateRecordMutation, createRecord, objectNameSingular, recordTableId, viewBarId, isConsolidated }: RecordTableWithWrappersProps) => {
   const tableBodyRef = useRef<HTMLDivElement>(null);
 
-  const { isRecordTableInitialLoadingState, tableRowIdsState } =
-    useRecordTableStates(recordTableId);
+  const { isRecordTableInitialLoadingState, tableRowIdsState } = useRecordTableStates(recordTableId);
 
-  const isRecordTableInitialLoading = useRecoilValue(
-    isRecordTableInitialLoadingState,
-  );
+  const isRecordTableInitialLoading = useRecoilValue(isRecordTableInitialLoadingState);
 
   const tableRowIds = useRecoilValue(tableRowIdsState);
 
@@ -61,11 +53,9 @@ export const RecordTableWithWrappers = ({
     recordTableId,
   });
 
-  const { objectMetadataItem: foundObjectMetadataItem } = useObjectMetadataItem(
-    {
-      objectNameSingular,
-    },
-  );
+  const { objectMetadataItem: foundObjectMetadataItem } = useObjectMetadataItem({
+    objectNameSingular,
+  });
 
   const { saveViewFields } = useSaveCurrentViewFields(viewBarId);
 
@@ -84,39 +74,22 @@ export const RecordTableWithWrappers = ({
               <div ref={tableBodyRef}>
                 <RecordTable
                   recordTableId={recordTableId}
+                  isConsolidated={isConsolidated}
                   objectNameSingular={objectNameSingular}
                   onColumnsChange={useRecoilCallback(
-                    () => (columns) => {
-                      saveViewFields(
-                        mapColumnDefinitionsToViewFields(
-                          columns as ColumnDefinition<FieldMetadata>[],
-                        ),
-                      );
+                    () => columns => {
+                      saveViewFields(mapColumnDefinitionsToViewFields(columns as ColumnDefinition<FieldMetadata>[]));
                     },
                     [saveViewFields],
                   )}
                   createRecord={createRecord}
                 />
-                <DragSelect
-                  dragSelectable={tableBodyRef}
-                  onDragSelectionStart={resetTableRowSelection}
-                  onDragSelectionChange={setRowSelected}
-                />
+                <DragSelect dragSelectable={tableBodyRef} onDragSelectionStart={resetTableRowSelection} onDragSelectionChange={setRowSelected} />
               </div>
-              <RecordTableInternalEffect
-                recordTableId={recordTableId}
-                tableBodyRef={tableBodyRef}
-              />
+              <RecordTableInternalEffect recordTableId={recordTableId} tableBodyRef={tableBodyRef} />
               {!isRecordTableInitialLoading &&
                 // we cannot rely on count states because this is not available for remote objects
-                tableRowIds.length === 0 && (
-                  <RecordTableEmptyState
-                    objectNameSingular={objectNameSingular}
-                    objectLabel={objectLabel}
-                    createRecord={createRecord}
-                    isRemote={isRemote}
-                  />
-                )}
+                tableRowIds.length === 0 && <RecordTableEmptyState objectNameSingular={objectNameSingular} objectLabel={objectLabel} createRecord={createRecord} isRemote={isRemote} />}
             </StyledTableContainer>
           </StyledTableWithHeader>
         </RecordUpdateContext.Provider>

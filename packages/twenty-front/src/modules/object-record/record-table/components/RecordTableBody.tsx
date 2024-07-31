@@ -8,12 +8,10 @@ import { DraggableTableBody } from '@/ui/layout/draggable-list/components/Dragga
 type RecordTableBodyProps = {
   objectNameSingular: string;
   recordTableId: string;
+  isConsolidated?: boolean;
 };
 
-export const RecordTableBody = ({
-  objectNameSingular,
-  recordTableId,
-}: RecordTableBodyProps) => {
+export const RecordTableBody = ({ objectNameSingular, recordTableId, isConsolidated }: RecordTableBodyProps) => {
   const { tableRowIdsState } = useRecordTableStates();
 
   const tableRowIds = useRecoilValue(tableRowIdsState);
@@ -26,13 +24,7 @@ export const RecordTableBody = ({
         draggableItems={
           <>
             {tableRowIds.map((recordId, rowIndex) => {
-              return (
-                <RecordTableRow
-                  key={recordId}
-                  recordId={recordId}
-                  rowIndex={rowIndex}
-                />
-              );
+              return <RecordTableRow key={recordId} recordId={recordId} rowIndex={rowIndex} isConsolidated={isConsolidated} />;
             })}
           </>
         }

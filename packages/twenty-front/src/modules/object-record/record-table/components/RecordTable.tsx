@@ -13,10 +13,7 @@ import { useRecordTableStates } from '@/object-record/record-table/hooks/interna
 import { useRecordTableMoveFocus } from '@/object-record/record-table/hooks/useRecordTableMoveFocus';
 import { useCloseRecordTableCellV2 } from '@/object-record/record-table/record-table-cell/hooks/useCloseRecordTableCellV2';
 import { useMoveSoftFocusToCellOnHoverV2 } from '@/object-record/record-table/record-table-cell/hooks/useMoveSoftFocusToCellOnHoverV2';
-import {
-  OpenTableCellArgs,
-  useOpenRecordTableCellV2,
-} from '@/object-record/record-table/record-table-cell/hooks/useOpenRecordTableCellV2';
+import { OpenTableCellArgs, useOpenRecordTableCellV2 } from '@/object-record/record-table/record-table-cell/hooks/useOpenRecordTableCellV2';
 import { useTriggerContextMenu } from '@/object-record/record-table/record-table-cell/hooks/useTriggerContextMenu';
 import { useUpsertRecordV2 } from '@/object-record/record-table/record-table-cell/hooks/useUpsertRecordV2';
 import { RecordTableScope } from '@/object-record/record-table/scopes/RecordTableScope';
@@ -141,9 +138,7 @@ const StyledTable = styled.table<{
       ${({ freezeFirstColumns, theme }) =>
         freezeFirstColumns &&
         css`
-          box-shadow: 4px 0px 4px -4px ${theme.name === 'dark'
-              ? RGBA(theme.grayScale.gray50, 0.8)
-              : RGBA(theme.grayScale.gray100, 0.25)} inset;
+          box-shadow: 4px 0px 4px -4px ${theme.name === 'dark' ? RGBA(theme.grayScale.gray50, 0.8) : RGBA(theme.grayScale.gray100, 0.25)} inset;
         `}
     }
   }
@@ -154,16 +149,11 @@ type RecordTableProps = {
   objectNameSingular: string;
   onColumnsChange: (columns: any) => void;
   createRecord: () => void;
+  isConsolidated?: boolean;
 };
 
-export const RecordTable = ({
-  recordTableId,
-  objectNameSingular,
-  onColumnsChange,
-  createRecord,
-}: RecordTableProps) => {
-  const { scopeId, visibleTableColumnsSelector } =
-    useRecordTableStates(recordTableId);
+export const RecordTable = ({ recordTableId, objectNameSingular, onColumnsChange, createRecord, isConsolidated }: RecordTableProps) => {
+  const { scopeId, visibleTableColumnsSelector } = useRecordTableStates(recordTableId);
 
   const { objectMetadataItem } = useObjectMetadataItem({
     objectNameSingular,
@@ -173,15 +163,7 @@ export const RecordTable = ({
     objectNameSingular,
   });
 
-  const handleUpsertRecord = ({
-    persistField,
-    entityId,
-    fieldName,
-  }: {
-    persistField: () => void;
-    entityId: string;
-    fieldName: string;
-  }) => {
+  const handleUpsertRecord = ({ persistField, entityId, fieldName }: { persistField: () => void; entityId: string; fieldName: string }) => {
     upsertRecord(persistField, entityId, fieldName, recordTableId);
   };
 
@@ -203,8 +185,7 @@ export const RecordTable = ({
     closeTableCell();
   };
 
-  const { moveSoftFocusToCell } =
-    useMoveSoftFocusToCellOnHoverV2(recordTableId);
+  const { moveSoftFocusToCell } = useMoveSoftFocusToCellOnHoverV2(recordTableId);
 
   const handleMoveSoftFocusToCell = (cellPosition: TableCellPosition) => {
     moveSoftFocusToCell(cellPosition);
@@ -225,10 +206,7 @@ export const RecordTable = ({
   const visibleTableColumns = useRecoilValue(visibleTableColumnsSelector());
 
   return (
-    <RecordTableScope
-      recordTableScopeId={scopeId}
-      onColumnsChange={onColumnsChange}
-    >
+    <RecordTableScope recordTableScopeId={scopeId} onColumnsChange={onColumnsChange}>
       {!!objectNameSingular && (
         <RecordTableContext.Provider
           value={{
@@ -241,15 +219,11 @@ export const RecordTable = ({
             onContextMenu: handleContextMenu,
             onCellMouseEnter: handleContainerMouseEnter,
             visibleTableColumns,
-          }}
-        >
+          }}>
           <StyledTable className="entity-table-cell">
-            <RecordTableHeader createRecord={createRecord} />
+            <RecordTableHeader createRecord={createRecord} isConsolidated={isConsolidated} />
             <RecordTableBodyEffect objectNameSingular={objectNameSingular} />
-            <RecordTableBody
-              objectNameSingular={objectNameSingular}
-              recordTableId={recordTableId}
-            />
+            <RecordTableBody objectNameSingular={objectNameSingular} recordTableId={recordTableId} isConsolidated={isConsolidated} />
           </StyledTable>
         </RecordTableContext.Provider>
       )}

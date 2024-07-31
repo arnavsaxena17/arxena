@@ -10,14 +10,10 @@ type RecordIndexTableContainerProps = {
   viewBarId: string;
   objectNameSingular: string;
   createRecord: () => Promise<void>;
+  isConsolidated?: boolean;
 };
 
-export const RecordIndexTableContainer = ({
-  recordTableId,
-  viewBarId,
-  objectNameSingular,
-  createRecord,
-}: RecordIndexTableContainerProps) => {
+export const RecordIndexTableContainer = ({ recordTableId, viewBarId, objectNameSingular, createRecord, isConsolidated }: RecordIndexTableContainerProps) => {
   const { updateOneRecord } = useUpdateOneRecord({
     objectNameSingular,
   });
@@ -31,13 +27,7 @@ export const RecordIndexTableContainer = ({
 
   return (
     <>
-      <RecordTableWithWrappers
-        recordTableId={recordTableId}
-        objectNameSingular={objectNameSingular}
-        viewBarId={viewBarId}
-        updateRecordMutation={updateEntity}
-        createRecord={createRecord}
-      />
+      <RecordTableWithWrappers recordTableId={recordTableId} objectNameSingular={objectNameSingular} viewBarId={viewBarId} updateRecordMutation={updateEntity} createRecord={createRecord} isConsolidated={isConsolidated} />
       <RecordTableActionBar recordTableId={recordTableId} />
       <RemoveSortingModal recordTableId={recordTableId} />
       <RecordTableContextMenu recordTableId={recordTableId} />

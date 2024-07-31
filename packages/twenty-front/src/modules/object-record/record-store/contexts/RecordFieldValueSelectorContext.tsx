@@ -9,18 +9,13 @@ export type RecordFieldValue = {
   };
 };
 
-export const RecordFieldValueSelectorContext = createContext<
-  [RecordFieldValue, Dispatch<SetStateAction<RecordFieldValue>>]
->([{}, () => {}]);
+export const RecordFieldValueSelectorContext = createContext<[RecordFieldValue, Dispatch<SetStateAction<RecordFieldValue>>]>([{}, () => {}]);
 
 export const useSetRecordValue = () => {
-  const setTableValue = useContextSelector(
-    RecordFieldValueSelectorContext,
-    (value) => value[1],
-  );
+  const setTableValue = useContextSelector(RecordFieldValueSelectorContext, value => value[1]);
 
   return (recordId: string, newRecord: any) => {
-    setTableValue((currentTable) => ({
+    setTableValue(currentTable => ({
       ...currentTable,
       [recordId]: newRecord,
     }));
@@ -28,34 +23,24 @@ export const useSetRecordValue = () => {
 };
 
 export const useRecordValue = (recordId: string) => {
-  const tableValue = useContextSelector(
-    RecordFieldValueSelectorContext,
-    (value) => value[0],
-  );
+  const tableValue = useContextSelector(RecordFieldValueSelectorContext, value => value[0]);
 
   return tableValue?.[recordId] as ObjectRecord | undefined;
 };
 
-export const useRecordFieldValue = <T,>(
-  recordId: string,
-  fieldName: string,
-) => {
-  const recordFieldValues = useContextSelector(
-    RecordFieldValueSelectorContext,
-    (value) => value[0],
-  );
+export const useRecordFieldValue = <T,>(recordId: string, fieldName: string) => {
+  const recordFieldValues = useContextSelector(RecordFieldValueSelectorContext, value => value[0]);
 
   return recordFieldValues?.[recordId]?.[fieldName] as T;
 };
 
 export const useSetRecordFieldValue = () => {
-  const setTableValue = useContextSelector(
-    RecordFieldValueSelectorContext,
-    (value) => value[1],
-  );
-
+  const setTableValue = useContextSelector(RecordFieldValueSelectorContext, value => value[1]);
+  const tableValue = useContextSelector(RecordFieldValueSelectorContext, value => value[0]);
+  debugger;
+  console.log('tableValue', tableValue);
   return (recordId: string, fieldName: string, newValue: any) => {
-    setTableValue((currentTable) => ({
+    setTableValue(currentTable => ({
       ...currentTable,
       [recordId]: {
         ...currentTable[recordId],
@@ -65,14 +50,4 @@ export const useSetRecordFieldValue = () => {
   };
 };
 
-export const RecordFieldValueSelectorContextProvider = ({
-  children,
-}: {
-  children: any;
-}) => (
-  <RecordFieldValueSelectorContext.Provider
-    value={useState<RecordFieldValue>({})}
-  >
-    {children}
-  </RecordFieldValueSelectorContext.Provider>
-);
+export const RecordFieldValueSelectorContextProvider = ({ children }: { children: any }) => <RecordFieldValueSelectorContext.Provider value={useState<RecordFieldValue>({})}>{children}</RecordFieldValueSelectorContext.Provider>;

@@ -10,6 +10,7 @@ import { useScrollWrapperScopedRef } from '@/ui/utilities/scroll/hooks/useScroll
 
 import { RecordTableHeaderPlusButtonContent } from './RecordTableHeaderPlusButtonContent';
 import { SelectAllCheckbox } from './SelectAllCheckbox';
+import { useRecordContext } from '~/pages/job-record/RecordContext';
 
 const StyledTableHead = styled.thead`
   cursor: pointer;
@@ -44,28 +45,24 @@ const StyledPlusIconContainer = styled.div`
   width: 32px;
 `;
 
-export const HIDDEN_TABLE_COLUMN_DROPDOWN_ID =
-  'hidden-table-columns-dropdown-scope-id';
+export const HIDDEN_TABLE_COLUMN_DROPDOWN_ID = 'hidden-table-columns-dropdown-scope-id';
 
-const HIDDEN_TABLE_COLUMN_DROPDOWN_HOTKEY_SCOPE_ID =
-  'hidden-table-columns-dropdown-hotkey-scope-id';
+const HIDDEN_TABLE_COLUMN_DROPDOWN_HOTKEY_SCOPE_ID = 'hidden-table-columns-dropdown-hotkey-scope-id';
 
-export const RecordTableHeader = ({
-  createRecord,
-}: {
-  createRecord: () => void;
-}) => {
+export const RecordTableHeader = ({ createRecord, isConsolidated }: { createRecord: () => void; isConsolidated?: boolean }) => {
   const { visibleTableColumnsSelector } = useRecordTableStates();
 
   const scrollWrapper = useScrollWrapperScopedRef();
-  const isTableWiderThanScreen =
-    (scrollWrapper.current?.clientWidth ?? 0) <
-    (scrollWrapper.current?.scrollWidth ?? 0);
+  const isTableWiderThanScreen = (scrollWrapper.current?.clientWidth ?? 0) < (scrollWrapper.current?.scrollWidth ?? 0);
 
   const visibleTableColumns = useRecoilValue(visibleTableColumnsSelector());
   const hiddenTableColumns = useRecoilValue(visibleTableColumnsSelector());
-
+  let extraColumns = null;
   const theme = useTheme();
+  if (isConsolidated) {
+    extraColumns = useRecordContext();
+  }
+  console.log('extraColumns', extraColumns);
 
   return (
     <StyledTableHead data-select-disable>
@@ -76,20 +73,38 @@ export const RecordTableHeader = ({
             width: 30,
             minWidth: 30,
             maxWidth: 30,
-          }}
-        >
+          }}>
           <SelectAllCheckbox />
         </th>
-        {visibleTableColumns.map((column) => (
-          <RecordTableHeaderCell
-            key={column.fieldMetadataId}
-            column={column}
-            createRecord={createRecord}
-          />
+        {visibleTableColumns.map(column => (
+          <RecordTableHeaderCell key={column.fieldMetadataId} column={column} createRecord={createRecord} />
         ))}
-        <StyledPlusIconHeaderCell
-          isTableWiderThanScreen={isTableWiderThanScreen}
-        >
+        {/* <RecordTableHeaderCell
+          key={'44'}
+          column={{
+            fieldMetadataId: '76af1771-15c3-457e-b18f-077c22c5fb50',
+            iconName: 'IconPlus',
+            label: 'jobLocation',
+            size: 180,
+            // @ts-ignore
+            metadata: {
+              fieldName: 'jobLocation',
+              placeHolder: 'jobLocation',
+              relationObjectMetadataNameSingular: '',
+              relationObjectMetadataNamePlural: '',
+              objectMetadataNameSingular: 'job',
+              targetFieldMetadataName: '',
+              options: null,
+            },
+            type: 'TEXT' as any,
+          }}
+        /> */}
+        {isConsolidated &&
+          extraColumns?.columns?.map((column, index) => {
+            //@ts-ignore
+            return <RecordTableHeaderCell key={index} column={column} createRecord={createRecord} />;
+          })}
+        <StyledPlusIconHeaderCell isTableWiderThanScreen={isTableWiderThanScreen}>
           {hiddenTableColumns.length > 0 && (
             <Dropdown
               dropdownId={HIDDEN_TABLE_COLUMN_DROPDOWN_ID}

@@ -16,11 +16,13 @@ import { ScrollWrapperContext } from '@/ui/utilities/scroll/components/ScrollWra
 
 import { CheckboxCell } from './CheckboxCell';
 import { GripCell } from './GripCell';
+import { useRecordContext } from '~/pages/job-record/RecordContext';
 
 type RecordTableRowProps = {
   recordId: string;
   rowIndex: number;
   isPendingRow?: boolean;
+  isConsolidated?: boolean;
 };
 
 const StyledTd = styled.td`
@@ -58,13 +60,8 @@ const StyledTr = styled.tr<{ isDragging: boolean }>`
   `}
 `;
 
-export const RecordTableRow = ({
-  recordId,
-  rowIndex,
-  isPendingRow,
-}: RecordTableRowProps) => {
-  const { visibleTableColumnsSelector, isRowSelectedFamilyState } =
-    useRecordTableStates();
+export const RecordTableRow = ({ recordId, rowIndex, isPendingRow, isConsolidated }: RecordTableRowProps) => {
+  const { visibleTableColumnsSelector, isRowSelectedFamilyState } = useRecordTableStates();
   const currentRowSelected = useRecoilValue(isRowSelectedFamilyState(recordId));
   const { objectMetadataItem } = useContext(RecordTableContext);
 
@@ -73,13 +70,18 @@ export const RecordTableRow = ({
   const scrollWrapperRef = useContext(ScrollWrapperContext);
 
   const { ref: elementRef, inView } = useInView({
-    root: scrollWrapperRef.current?.querySelector(
-      '[data-overlayscrollbars-viewport="scrollbarHidden"]',
-    ),
+    root: scrollWrapperRef.current?.querySelector('[data-overlayscrollbars-viewport="scrollbarHidden"]'),
     rootMargin: '1000px',
   });
 
   const theme = useTheme();
+
+  let extraData = null;
+
+  if (isConsolidated) {
+    extraData = useRecordContext();
+    console.log('extraData', extraData);
+  }
 
   return (
     <RecordTableRowContext.Provider
@@ -94,14 +96,13 @@ export const RecordTableRow = ({
         isSelected: currentRowSelected,
         isReadOnly: objectMetadataItem.isRemote ?? false,
         isPendingRow,
-      }}
-    >
+      }}>
       <RecordValueSetterEffect recordId={recordId} />
 
       <Draggable key={recordId} draggableId={recordId} index={rowIndex}>
         {(draggableProvided, draggableSnapshot) => (
           <StyledTr
-            ref={(node) => {
+            ref={node => {
               elementRef(node);
               draggableProvided.innerRef(node);
             }}
@@ -109,44 +110,60 @@ export const RecordTableRow = ({
             {...draggableProvided.draggableProps}
             style={{
               ...draggableProvided.draggableProps.style,
-              background: draggableSnapshot.isDragging
-                ? theme.background.transparent.light
-                : 'none',
-              borderColor: draggableSnapshot.isDragging
-                ? `${theme.border.color.medium}`
-                : 'transparent',
+              background: draggableSnapshot.isDragging ? theme.background.transparent.light : 'none',
+              borderColor: draggableSnapshot.isDragging ? `${theme.border.color.medium}` : 'transparent',
             }}
             isDragging={draggableSnapshot.isDragging}
             data-testid={`row-id-${recordId}`}
-            data-selectable-id={recordId}
-          >
+            data-selectable-id={recordId}>
             <StyledTd
               // eslint-disable-next-line react/jsx-props-no-spreading
               {...draggableProvided.dragHandleProps}
-              data-select-disable
-            >
+              data-select-disable>
               <GripCell isDragging={draggableSnapshot.isDragging} />
             </StyledTd>
-            <StyledTd>
-              {!draggableSnapshot.isDragging && <CheckboxCell />}
-            </StyledTd>
-            {inView || draggableSnapshot.isDragging
-              ? visibleTableColumns.map((column, columnIndex) => (
+            <StyledTd>{!draggableSnapshot.isDragging && <CheckboxCell />}</StyledTd>
+            {inView || draggableSnapshot.isDragging ? (
+              <>
+                {visibleTableColumns.map((column, columnIndex) => (
                   <RecordTableCellContext.Provider
                     value={{
                       columnDefinition: column,
                       columnIndex,
                     }}
-                    key={column.fieldMetadataId}
-                  >
-                    {draggableSnapshot.isDragging && columnIndex > 0 ? null : (
-                      <RecordTableCellFieldContextWrapper />
-                    )}
+                    key={column.fieldMetadataId}>
+                    {draggableSnapshot.isDragging && columnIndex > 0 ? null : <RecordTableCellFieldContextWrapper />}
                   </RecordTableCellContext.Provider>
-                ))
-              : visibleTableColumns.map((column) => (
+                ))}
+                {isConsolidated &&
+                  extraData?.columns?.map((column, columnIndex) => {
+                    console.log(columnIndex);
+                    //@ts-ignore
+                    return (
+                      <RecordTableCellContext.Provider
+                        value={{
+                          columnDefinition: column,
+                          columnIndex,
+                        }}
+                        key={column.fieldMetadataId}>
+                        {draggableSnapshot.isDragging && columnIndex > 0 ? null : <RecordTableCellFieldContextWrapper />}
+                      </RecordTableCellContext.Provider>
+                    );
+                  })}
+              </>
+            ) : (
+              <>
+                {visibleTableColumns.map(column => (
                   <StyledTd key={column.fieldMetadataId}></StyledTd>
                 ))}
+                {isConsolidated &&
+                  extraData?.columns?.map((data, index) => {
+                    console.log(index);
+                    //@ts-ignore
+                    return <StyledTd key={index}></StyledTd>;
+                  })}
+              </>
+            )}
             <StyledTd />
           </StyledTr>
         )}
