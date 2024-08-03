@@ -4,14 +4,10 @@ import { ScopeInternalContext } from '../types/ScopeInternalContext';
 
 import { useScopeInternalContext } from './useScopeInternalContext';
 
-export const useAvailableScopeIdOrThrow = <T extends { scopeId: string }>(
-  Context: ScopeInternalContext<T>,
-  scopeIdFromProps?: string,
-): string => {
+export const useAvailableScopeIdOrThrow = <T extends { scopeId: string }>(Context: ScopeInternalContext<T>, scopeIdFromProps?: string): string => {
+  // debugger;
   const scopeInternalContext = useScopeInternalContext(Context);
-
   const scopeIdFromContext = scopeInternalContext?.scopeId;
-
   if (isNonEmptyString(scopeIdFromProps)) {
     return scopeIdFromProps;
   } else if (isNonEmptyString(scopeIdFromContext)) {

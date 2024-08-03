@@ -14,32 +14,24 @@ type RecordIndexPageHeaderProps = {
   createRecord: () => void;
 };
 
-export const RecordIndexPageHeader = ({
-  createRecord,
-}: RecordIndexPageHeaderProps) => {
+export const RecordIndexPageHeader = ({ createRecord }: RecordIndexPageHeaderProps) => {
   const objectNamePlural = useParams().objectNamePlural ?? '';
 
-  const { findObjectMetadataItemByNamePlural } =
-    useFilteredObjectMetadataItems();
+  const { findObjectMetadataItemByNamePlural } = useFilteredObjectMetadataItems();
 
-  const objectMetadataItem =
-    findObjectMetadataItemByNamePlural(objectNamePlural);
+  const objectMetadataItem = findObjectMetadataItemByNamePlural(objectNamePlural);
 
   const { getIcon } = useIcons();
-  const Icon = getIcon(
-    findObjectMetadataItemByNamePlural(objectNamePlural)?.icon,
-  );
+  const Icon = getIcon(findObjectMetadataItemByNamePlural(objectNamePlural)?.icon);
 
   const recordIndexViewType = useRecoilValue(recordIndexViewTypeState);
 
-  const canAddRecord =
-    recordIndexViewType === ViewType.Table && !objectMetadataItem?.isRemote;
+  const canAddRecord = recordIndexViewType === ViewType.Table && !objectMetadataItem?.isRemote;
 
-  const pageHeaderTitle =
-    objectMetadataItem?.labelPlural ?? capitalize(objectNamePlural);
+  const pageHeaderTitle = objectMetadataItem?.labelPlural ?? capitalize(objectNamePlural);
 
   return (
-    <PageHeader title={pageHeaderTitle} Icon={Icon}>
+    <PageHeader title={pageHeaderTitle} Icon={Icon} recordId={'candidate'} isRecordTable={true}>
       <PageHotkeysEffect onAddButtonClick={createRecord} />
       {canAddRecord && <PageAddButton onClick={createRecord} />}
     </PageHeader>
