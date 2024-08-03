@@ -51,23 +51,13 @@ export const useFindManyRecords = <T extends ObjectRecord = ObjectRecord>({
     recordGqlFields?: RecordGqlOperationGqlRecordFields;
     fetchPolicy?: WatchQueryFetchPolicy;
   }) => {
-  const findManyQueryStateIdentifier =
-    objectNameSingular +
-    JSON.stringify(filter) +
-    JSON.stringify(orderBy) +
-    limit;
+  const findManyQueryStateIdentifier = objectNameSingular + JSON.stringify(filter) + JSON.stringify(orderBy) + limit;
 
-  const [lastCursor, setLastCursor] = useRecoilState(
-    cursorFamilyState(findManyQueryStateIdentifier),
-  );
+  const [lastCursor, setLastCursor] = useRecoilState(cursorFamilyState(findManyQueryStateIdentifier));
 
-  const [hasNextPage, setHasNextPage] = useRecoilState(
-    hasNextPageFamilyState(findManyQueryStateIdentifier),
-  );
+  const [hasNextPage, setHasNextPage] = useRecoilState(hasNextPageFamilyState(findManyQueryStateIdentifier));
 
-  const setIsFetchingMoreObjects = useSetRecoilState(
-    isFetchingMoreRecordsFamilyState(findManyQueryStateIdentifier),
-  );
+  const setIsFetchingMoreObjects = useSetRecoilState(isFetchingMoreRecordsFamilyState(findManyQueryStateIdentifier));
 
   const { objectMetadataItem } = useObjectMetadataItem({
     objectNameSingular,
@@ -81,50 +71,43 @@ export const useFindManyRecords = <T extends ObjectRecord = ObjectRecord>({
   const { enqueueSnackBar } = useSnackBar();
   const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
 
-  const { data, loading, error, fetchMore } =
-    useQuery<RecordGqlOperationFindManyResult>(findManyRecordsQuery, {
-      skip: skip || !objectMetadataItem || !currentWorkspaceMember,
-      variables: {
-        filter,
-        limit,
-        orderBy,
-      },
-      fetchPolicy: fetchPolicy,
-      onCompleted: (data) => {
-        if (!isDefined(data)) {
-          onCompleted?.([]);
-        }
+  const { data, loading, error, fetchMore, refetch } = useQuery<RecordGqlOperationFindManyResult>(findManyRecordsQuery, {
+    skip: skip || !objectMetadataItem || !currentWorkspaceMember,
+    variables: {
+      filter,
+      limit,
+      orderBy,
+    },
+    fetchPolicy: fetchPolicy,
+    onCompleted: data => {
+      if (!isDefined(data)) {
+        onCompleted?.([]);
+      }
 
-        const pageInfo = data?.[objectMetadataItem.namePlural]?.pageInfo;
+      const pageInfo = data?.[objectMetadataItem.namePlural]?.pageInfo;
 
-        const records = getRecordsFromRecordConnection({
-          recordConnection: data?.[objectMetadataItem.namePlural],
-        }) as T[];
+      const records = getRecordsFromRecordConnection({
+        recordConnection: data?.[objectMetadataItem.namePlural],
+      }) as T[];
 
-        onCompleted?.(records, {
-          pageInfo,
-          totalCount: data?.[objectMetadataItem.namePlural]?.totalCount,
-        });
+      onCompleted?.(records, {
+        pageInfo,
+        totalCount: data?.[objectMetadataItem.namePlural]?.totalCount,
+      });
 
-        if (isDefined(data?.[objectMetadataItem.namePlural])) {
-          setLastCursor(pageInfo.endCursor ?? '');
-          setHasNextPage(pageInfo.hasNextPage ?? false);
-        }
-      },
-      onError: (error) => {
-        logError(
-          `useFindManyRecords for "${objectMetadataItem.namePlural}" error : ` +
-            error,
-        );
-        enqueueSnackBar(
-          `Error during useFindManyRecords for "${objectMetadataItem.namePlural}", ${error.message}`,
-          {
-            variant: SnackBarVariant.Error,
-          },
-        );
-        onError?.(error);
-      },
-    });
+      if (isDefined(data?.[objectMetadataItem.namePlural])) {
+        setLastCursor(pageInfo.endCursor ?? '');
+        setHasNextPage(pageInfo.hasNextPage ?? false);
+      }
+    },
+    onError: error => {
+      logError(`useFindManyRecords for "${objectMetadataItem.namePlural}" error : ` + error);
+      enqueueSnackBar(`Error during useFindManyRecords for "${objectMetadataItem.namePlural}", ${error.message}`, {
+        variant: SnackBarVariant.Error,
+      });
+      onError?.(error);
+    },
+  });
 
   const fetchMoreRecords = useCallback(async () => {
     // Remote objects does not support hasNextPage. We cannot rely on it to fetch more records.
@@ -140,21 +123,15 @@ export const useFindManyRecords = <T extends ObjectRecord = ObjectRecord>({
           },
           updateQuery: (prev, { fetchMoreResult }) => {
             const previousEdges = prev?.[objectMetadataItem.namePlural]?.edges;
-            const nextEdges =
-              fetchMoreResult?.[objectMetadataItem.namePlural]?.edges;
+            const nextEdges = fetchMoreResult?.[objectMetadataItem.namePlural]?.edges;
 
             let newEdges: RecordGqlEdge[] = previousEdges ?? [];
 
             if (isNonEmptyArray(nextEdges)) {
-              newEdges = filterUniqueRecordEdgesByCursor([
-                ...newEdges,
-                ...(fetchMoreResult?.[objectMetadataItem.namePlural]?.edges ??
-                  []),
-              ]);
+              newEdges = filterUniqueRecordEdgesByCursor([...newEdges, ...(fetchMoreResult?.[objectMetadataItem.namePlural]?.edges ?? [])]);
             }
 
-            const pageInfo =
-              fetchMoreResult?.[objectMetadataItem.namePlural]?.pageInfo;
+            const pageInfo = fetchMoreResult?.[objectMetadataItem.namePlural]?.pageInfo;
 
             if (isDefined(data?.[objectMetadataItem.namePlural])) {
               setLastCursor(pageInfo.endCursor ?? '');
@@ -170,54 +147,29 @@ export const useFindManyRecords = <T extends ObjectRecord = ObjectRecord>({
 
             onCompleted?.(records, {
               pageInfo,
-              totalCount:
-                fetchMoreResult?.[objectMetadataItem.namePlural]?.totalCount,
+              totalCount: fetchMoreResult?.[objectMetadataItem.namePlural]?.totalCount,
             });
 
             return Object.assign({}, prev, {
               [objectMetadataItem.namePlural]: {
-                __typename: `${capitalize(
-                  objectMetadataItem.nameSingular,
-                )}Connection`,
+                __typename: `${capitalize(objectMetadataItem.nameSingular)}Connection`,
                 edges: newEdges,
-                pageInfo:
-                  fetchMoreResult?.[objectMetadataItem.namePlural].pageInfo,
-                totalCount:
-                  fetchMoreResult?.[objectMetadataItem.namePlural].totalCount,
+                pageInfo: fetchMoreResult?.[objectMetadataItem.namePlural].pageInfo,
+                totalCount: fetchMoreResult?.[objectMetadataItem.namePlural].totalCount,
               },
             } as RecordGqlOperationFindManyResult);
           },
         });
       } catch (error) {
-        logError(
-          `fetchMoreObjects for "${objectMetadataItem.namePlural}" error : ` +
-            error,
-        );
-        enqueueSnackBar(
-          `Error during fetchMoreObjects for "${objectMetadataItem.namePlural}", ${error}`,
-          {
-            variant: SnackBarVariant.Error,
-          },
-        );
+        logError(`fetchMoreObjects for "${objectMetadataItem.namePlural}" error : ` + error);
+        enqueueSnackBar(`Error during fetchMoreObjects for "${objectMetadataItem.namePlural}", ${error}`, {
+          variant: SnackBarVariant.Error,
+        });
       } finally {
         setIsFetchingMoreObjects(false);
       }
     }
-  }, [
-    hasNextPage,
-    objectMetadataItem,
-    error,
-    setIsFetchingMoreObjects,
-    fetchMore,
-    filter,
-    orderBy,
-    lastCursor,
-    data,
-    onCompleted,
-    setLastCursor,
-    setHasNextPage,
-    enqueueSnackBar,
-  ]);
+  }, [hasNextPage, objectMetadataItem, error, setIsFetchingMoreObjects, fetchMore, filter, orderBy, lastCursor, data, onCompleted, setLastCursor, setHasNextPage, enqueueSnackBar]);
 
   const totalCount = data?.[objectMetadataItem.namePlural]?.totalCount;
 
@@ -232,6 +184,41 @@ export const useFindManyRecords = <T extends ObjectRecord = ObjectRecord>({
     [data, objectMetadataItem.namePlural],
   );
 
+  const refetchRecords = useCallback(async () => {
+    console.log('objectMetadataItem.namePlural', objectMetadataItem.namePlural);
+
+    setIsFetchingMoreObjects(true);
+    try {
+      const result = await refetch();
+
+      if (result.data) {
+        const pageInfo = result.data[objectMetadataItem.namePlural]?.pageInfo;
+        const records = getRecordsFromRecordConnection({
+          recordConnection: result.data[objectMetadataItem.namePlural],
+        }) as T[];
+
+        onCompleted?.(records, {
+          pageInfo,
+          totalCount: result.data[objectMetadataItem.namePlural]?.totalCount,
+        });
+
+        setLastCursor(pageInfo.endCursor ?? '');
+        setHasNextPage(pageInfo.hasNextPage ?? false);
+      }
+
+      return result;
+    } catch (error: any) {
+      logError(`refetchRecords for "${objectMetadataItem.namePlural}" error: ${error}`);
+      enqueueSnackBar(`Error during refetchRecords for "${objectMetadataItem.namePlural}", ${error}`, {
+        variant: SnackBarVariant.Error,
+      });
+      onError?.(error);
+      throw error;
+    } finally {
+      setIsFetchingMoreObjects(false);
+    }
+  }, [refetch, objectMetadataItem.namePlural, setIsFetchingMoreObjects, onCompleted, setLastCursor, setHasNextPage, enqueueSnackBar, onError]);
+
   return {
     objectMetadataItem,
     records,
@@ -241,5 +228,6 @@ export const useFindManyRecords = <T extends ObjectRecord = ObjectRecord>({
     fetchMoreRecords,
     queryStateIdentifier: findManyQueryStateIdentifier,
     hasNextPage,
+    refetchRecords,
   };
 };
