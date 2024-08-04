@@ -43,8 +43,8 @@ export class UpdateChatEndpoint {
       };
       // const updateStatus = await new CandidateEngagementArx().updateCandidateEngagementDataInTable(userMessage);
       // console.log("This is the update status", updateStatus);
-      const panda = { status: 'updateStatus' };
-      return panda;
+      const statusMessage = { status: 'updateStatus' };
+      return statusMessage;
     } else {
       return { status: 'Failed' };
     }
@@ -163,7 +163,7 @@ export class ArxChatEndpoint {
     console.log('We will first go and get the candiate who sent us the message');
     const candidateProfileData = await new FetchAndUpdateCandidatesChatsWhatsapps().getCandidateInformation(whatsappIncomingMessage);
     // console.log("This is the candiate who has sent us the message., we have to update the database that this message has been recemivged::", chatReply);
-    console.log('This is the candiate who has sent us candidateProfileData::', candidateProfileData);
+    // console.log('This is the candiate who has sent us candidateProfileData::', candidateProfileData);
     await new IncomingWhatsappMessages().createAndUpdateIncomingCandidateChatMessage(
       {
         chatReply: chatReply,

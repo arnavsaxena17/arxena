@@ -122,7 +122,7 @@ export class WhatsappService {
       }
 
       if (events['messages.upsert']) {
-        console.log('events::::', events);
+        // console.log('events::::', events);
         const upsert = events['messages.upsert'];
         console.log('Upsert Type::', upsert.type);
         // console.log("These are events:", JSON.stringify(events, undefined, 2));
@@ -211,10 +211,11 @@ export class WhatsappService {
                 fromName: msg?.pushName,
                 baileysMessageId: msg?.key?.id,
               };
-
+              console.log("baileysWhatsappIncomingObj", baileysWhatsappIncomingObj)
+              console.log("msg", msg)
               await this.downloadAllMediaFiles(msg, this.sock, msg.key.remoteJid, candidateProfileData);
               await new IncomingWhatsappMessages().receiveIncomingMessagesFromBaileys(baileysWhatsappIncomingObj);
-              console.log('baileysWhatsappIncomingObj', baileysWhatsappIncomingObj);
+              // console.log('baileysWhatsappIncomingObj', baileysWhatsappIncomingObj);
               this.sock?.server?.emit(event, data);
             } else {
               console.log('Message is from me:', msg.key.fromMe);
@@ -330,7 +331,7 @@ export class WhatsappService {
     // let type = m.messages[0].message.<imageMessage>.mimetype
 
     let ogFileName: string = ''; // Change the type of ogFileName from null to string and initialize it with an empty string
-    console.log('This is the media message:', m?.message);
+    // console.log('This is the media message:', m?.message);
     // console.log("This is the media message type:", Object.keys(m?.messages[0]?.message)[0])
     if (messageType == 'imageMessage') {
       ogFileName = `${new Date().getTime()}.jpeg`;
@@ -354,9 +355,12 @@ export class WhatsappService {
     // download the message
     try {
       if (candidateProfileData != allDataObjects.emptyCandidateProfileObj) {
-        console.log('This is the candiate who has sent us candidateProfileData::', candidateProfileData);
+        console.log("Candidate is in the database, seee")
+        console.log("Candidate is in socket.updateMediaMessageseee", socket.updateMediaMessage)
+        // console.log('This is the candiate who has sent us candidateProfileData::', candidateProfileData);
         const buffer = await downloadMediaMessage(m, 'buffer', {}, { logger: this.logger, reuploadRequest: socket.updateMediaMessage });
         let data: any = { fileName: ogFileName, fileBuffer: buffer };
+        console.log("Got the data for upload attachemnets:", data)
         this.handleFileUpload(data, './.attachments/' + folder, candidateProfileData);
         return true;
       } else {
@@ -418,7 +422,7 @@ export class WhatsappService {
     await delay(1000);
     await this.sock.sendPresenceUpdate('paused', jid);
     const sendMessageResponse = await this.sock.sendMessage(jid, { text: msg });
-    console.log('sendMessageResponse in baileys service::', sendMessageResponse);
+    // console.log('sendMessageResponse in baileys service::', sendMessageResponse);
     return sendMessageResponse?.key?.id;
   }
 
@@ -426,7 +430,8 @@ export class WhatsappService {
     const { jid, message, fileData: { filePath, mimetype, fileName } = {} as any } = body;
     console.log('file media ', { jid, message, filePath, mimetype, fileName });
     try {
-      await this.sock.sendMessage(jid, { document: { url: filePath }, caption: message, mimetype, fileName }, { url: filePath });
+      const sendMessageResponse = await this.sock.sendMessage(jid, { document: { url: filePath }, caption: message, mimetype, fileName }, { url: filePath });
+      return sendMessageResponse?.key?.id;
     } catch (error) {
       console.log('baileys.sendMessage got error');
       // this.handleError(error);

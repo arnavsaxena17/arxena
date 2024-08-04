@@ -1,9 +1,11 @@
 import { Body, Controller, Post } from '@nestjs/common';
 import { job, panda, arxenaColumns, arxenaColumnsV2 } from './constant';
 import axios from 'axios';
-import { CreateManyCandidates, CreateManyPeople, CreateOneFieldMetadataItem, CreateOneJob, CreateOneObjectMetadataItem, CreateOneRelationMetadata, ObjectMetadataItems, graphqlToFindManyJobByArxenaSiteId } from './graphql-queries';
+import { CreateManyCandidates, CreateManyPeople, graphQltoStartChat, CreateOneFieldMetadataItem, CreateOneJob, CreateOneObjectMetadataItem, CreateOneRelationMetadata, ObjectMetadataItems, graphqlToFindManyJobByArxenaSiteId } from './graphql-queries';
+import {FetchAndUpdateCandidatesChatsWhatsapps} from '../arx-chat/services/candidate-engagement/update-chat';
 import { v4 as uuidv4 } from 'uuid';
 import camelCase from 'camelcase';
+import * as allDataObjects from '../arx-chat/services/data-model-objects';
 import capitalize from 'capitalize';
 
 import { axiosRequest, axiosRequestForMetadata } from './utils/utils';
@@ -84,6 +86,7 @@ export class CandidateSourcingController {
     try {
       const responseForCandidate = await axiosRequest(graphqlQueryObjForCandidate);
       console.log('Response from creating candidates', responseForCandidate.data);
+      return {data: responseForCandidate.data};
     } catch (error) {
       console.log('Error in creating candidates', error);
       return { error: error.message };
@@ -93,153 +96,63 @@ export class CandidateSourcingController {
 
   @Post('post-job')
   async postJob(@Body() body: any) {
-    // console.log(panda);
-    // console.log(body);
-    // return
     let uuid;
     try {
       const data = body;
       console.log(body);
 
-      //   const headers = {
-      //     Authorization: body?.headers?.authorization,
-      //   };
-      //   const response = await axios.get('http://localhost:3000/socket-auth/verify', { headers });
-
-      //   console.log('UserId connected:', response?.data);
-      //   const workspaceMemberId = response?.data;
-
-      const graphqlVariables = {
-        input: {
-          name: data?.job_name,
-          arxenaSiteId: data?.job_id,
-          isActive: true,
-          // jobLocation: "",
-          //   recruiterId: workspaceMemberId,
-          // companiesId: ""
-        },
+      const graphqlVariables = { input: { name: data?.job_name, arxenaSiteId: data?.job_id, isActive: true },
       };
-      const graphqlQueryObj = JSON.stringify({
-        query: CreateOneJob,
-        variables: graphqlVariables,
-      });
+      const graphqlQueryObj = JSON.stringify({ query: CreateOneJob, variables: graphqlVariables, });
       const responseNew = await axiosRequest(graphqlQueryObj);
       console.log('Response from create job', responseNew.data);
       uuid = responseNew.data.data.createJob.id;
-      return { status: 'success' };
+      return { status: 'success', job_uuid: uuid };
     } catch (error) {
       console.log('Error in postJob', error);
       return { error: error.message };
     }
+  }
 
-    // let responseForField;
 
-    // try {
-    //   // CreateOneObjectMetadataItem
+  @Post('start-chat')
+  async startChat(@Body() body: any) {
 
-    //   const data = body;
-    //   console.log(body);
+    const graphqlVariables = {
+      "idToUpdate": body.candidateId,
+      "input": {
+        "startChat": true
+      }
+    }
+    const graphqlQueryObj = JSON.stringify({
+      query: graphQltoStartChat,
+      variables: graphqlVariables,
+    });
 
-    //   const graphqlVariablesToGetMetadata = {
-    //     objectFilter: {
-    //       isActive: {
-    //         is: true,
-    //       },
-    //     },
-    //   };
+    const response = await axiosRequest(graphqlQueryObj);
+    console.log('Response from create startChat', response.data);
+  }
 
-    //   const graphqlQueryObjToGetMetadataItems = JSON.stringify({
-    //     query: ObjectMetadataItems,
-    //     variables: {},
-    //   });
+  @Post('fetch-candidate-by-phone-number-start-chat')
+  async fetchCandidateByPhoneNumber(@Body() body: any) {
 
-    //   const responseForMetadata = await axiosRequestForMetadata(graphqlQueryObjToGetMetadataItems);
+    const personObj: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(body.phoneNumber);
 
-    //   const objects = responseForMetadata.data?.data?.objects?.edges;
-    //   console.log('349844:: Objects', objects);
+    const candidateId = personObj.candidates?.edges[0]?.node?.id;
+    const graphqlVariables = {
+      "idToUpdate": candidateId,
+      "input": {
+        "startChat": true
+      }
+    }
+    const graphqlQueryObj = JSON.stringify({
+      query: graphQltoStartChat,
+      variables: graphqlVariables,
+    });
 
-    //   const graphqlVariablesForCreate = {
-    //     input: {
-    //       object: {
-    //         description: '',
-    //         icon: 'IconBriefcase2',
-    //         labelPlural: data.job_name + 's',
-    //         labelSingular: data.job_name,
-    //         nameSingular: camelCase(data.job_name + '_' + uuid),
-    //         namePlural: camelCase(data.job_name + 's' + '_' + uuid),
-    //       },
-    //     },
-    //   };
-    //   const graphqlQueryObj = JSON.stringify({
-    //     query: CreateOneObjectMetadataItem,
-    //     variables: graphqlVariablesForCreate,
-    //   });
-    //   const responseNew = await axiosRequestForMetadata(graphqlQueryObj);
+    const response = await axiosRequest(graphqlQueryObj);
+    console.log('Response from create startChat', response.data);
+    return response.data;
 
-    //   const newObjectMetadataId = responseNew.data?.data?.createOneObject?.id; // !
-    //   console.log('Response from creating object', responseNew.data);
-    //   console.log('New Object Metadata ID', newObjectMetadataId);
-    //   const graphqlVariablesForRelation = {
-    //     input: {
-    //       relation: {
-    //         fromDescription: null,
-    //         // "fromIcon": "IconBuilding",
-    //         fromLabel: data.job_name,
-    //         fromName: camelCase(data.job_name + '_' + uuid),
-    //         fromObjectMetadataId: objects.find(obj => obj?.node?.nameSingular === 'job')?.node?.id,
-    //         relationType: 'ONE_TO_MANY',
-    //         toObjectMetadataId: newObjectMetadataId,
-    //         toDescription: '',
-    //         toLabel: 'Job',
-    //         toName: 'job',
-    //       },
-    //     },
-    //   };
-    //   const graphqlQueryObjForRelation = JSON.stringify({
-    //     query: CreateOneRelationMetadata,
-    //     variables: graphqlVariablesForRelation,
-    //   });
-
-    //   const responseForRelation = await axiosRequestForMetadata(graphqlQueryObjForRelation); //! Error here
-
-    //   console.log('Response from creating relation', responseForRelation.data);
-
-    //   let graphqlVariablesForMetadataFields: any[] = [];
-
-    //   arxenaColumnsV2.map((column: string) => {
-    //     const graphqlVariablesForMetadataField = {
-    //       input: {
-    //         field: {
-    //           description: '',
-    //           label: camelCase(column),
-    //           name: camelCase(column),
-    //           objectMetadataId: newObjectMetadataId,
-    //           type: 'TEXT',
-    //         },
-    //       },
-    //     };
-
-    //     graphqlVariablesForMetadataFields.push(graphqlVariablesForMetadataField);
-    //   });
-
-    //   for (let field of graphqlVariablesForMetadataFields) {
-    //     const graphqlQueryObjForField = JSON.stringify({
-    //       query: CreateOneFieldMetadataItem,
-    //       variables: field,
-    //     });
-    //     responseForField = await axiosRequestForMetadata(graphqlQueryObjForField);
-    //     console.log('Response from creating field', responseForField.data);
-    //   }
-
-    // const responseAfterUpdatingJobMetadataId = await axiosRequestForMetadata({
-    //   query: j,
-
-    // });
-
-    //   return { status: 'success' };
-    // } catch (error) {
-    //   console.log('Error in postJob', error);
-    //   return { error: error.message };
-    // }
   }
 }

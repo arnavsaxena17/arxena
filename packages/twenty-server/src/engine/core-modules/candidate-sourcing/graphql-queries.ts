@@ -126,3 +126,16 @@ export const graphqlToFindManyJobByArxenaSiteId = `
   }
 }
   `;
+
+
+  export const graphQltoStartChat = `mutation UpdateOneCandidate($idToUpdate: ID!, $input: CandidateUpdateInput!) {
+  updateCandidate(id: $idToUpdate, data: $input) {
+    __typename
+    engagementStatus
+    whatsappProvider
+    jobsId
+    updatedAt
+    startChat
+    position
+  }
+}`

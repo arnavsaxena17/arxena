@@ -135,10 +135,14 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return messageId;
     } catch (error) {
       console.error('Error sending message:', error);
+      return "failed";
+
     }
   }
 
   async sendWhatsappFile(payload: { recruiterId: string; fileToSendData: MessageDto }) {
-    await this.whatsappServices.get(payload?.recruiterId)?.sendMessageFileToBaileys(payload?.fileToSendData);
+    const messageId: string = await this.whatsappServices.get(payload?.recruiterId)?.sendMessageFileToBaileys(payload?.fileToSendData);
+    return messageId
+
   }
 }

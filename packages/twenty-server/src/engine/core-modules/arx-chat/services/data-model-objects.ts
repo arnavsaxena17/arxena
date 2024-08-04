@@ -6,7 +6,11 @@ import OpenAI from 'openai';
 // Define the possible roles in the chat
 export type ChatRole = 'system' | 'user' | 'tool' | 'assistant';
 
-export type statuses = 'SCREENING' | 'RECRUITER_INTERVIEW' | 'CV_SENT' | 'CLIENT_INTERVIEW' | 'NEGOTIATION';
+export const statusesArray = ['INTERESTED','NOT_INTERESTED','SCREENING','NOT_FIT', 'CV_RECEIVED','RECRUITER_INTERVIEW'] as const;
+
+export type statuses = typeof statusesArray[number];
+
+// export type statuses = 'SCREENING' | 'RECRUITER_INTERVIEW' | 'CV_SENT' | 'CLIENT_INTERVIEW' | 'NEGOTIATION';
 
 // Interface for chat message without tool call
 export interface ChatMessage {
@@ -122,6 +126,20 @@ export interface WhatsAppMessages {
   edges: WhatsAppMessagesEdge[];
 }
 
+
+export interface Candidate {
+  id: string;
+  name: string;
+  startChat: boolean;
+  people: {
+    id: string;
+    name: {
+      firstName: string;
+      lastName: string;
+    };
+  };
+}
+
 export interface CandidateNode {
   name: string;
   id: string;
@@ -232,6 +250,7 @@ export interface companyInfoType {
 }
 
 export interface Companies {
+  domainName: any;
   name: string;
   companyId: string;
   descriptionOneliner: string;
@@ -288,7 +307,7 @@ export const jobProfile: jobProfileType = {
 };
 
 export const recruiterProfile: recruiterProfileType = {
-  name: 'Arnav Doe',
+  name: 'Arnav Saxena',
   first_name: 'Arnav',
   phone: '919326970534',
   email: 'arnav@arxena.com',
@@ -309,6 +328,7 @@ export const emptyCandidateProfileObj: CandidateNode = {
     companies: {
       name: '',
       companyId: '',
+      domainName: '',
       descriptionOneliner: '',
     },
     jobLocation: '',

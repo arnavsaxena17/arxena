@@ -10,10 +10,7 @@ export class AttachmentProcessingService {
   async uploadAttachmentToTwenty(filePath: string) {
     // debugger;
     let data = new FormData();
-    data.append(
-      "operations",
-      '{"operationName":"uploadFile","variables":{"file":null,"fileFolder":"Attachment"},"query":"mutation uploadFile($file: Upload!, $fileFolder: FileFolder) {\\n  uploadFile(file: $file, fileFolder: $fileFolder)\\n}"}'
-    );
+    data.append( "operations", '{"operationName":"uploadFile","variables":{"file":null,"fileFolder":"Attachment"},"query":"mutation uploadFile($file: Upload!, $fileFolder: FileFolder) {\\n  uploadFile(file: $file, fileFolder: $fileFolder)\\n}"}' );
     data.append("map", '{"1":["variables.file"]}');
     data.append("1", fs.createReadStream(filePath));
     let config = {
@@ -21,13 +18,11 @@ export class AttachmentProcessingService {
       maxBodyLength: Infinity,
       url: "http://localhost:3000/graphql",
       headers: {
-        "sec-ch-ua":
-          '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
+        "sec-ch-ua": '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
         DNT: "1",
         "sec-ch-ua-mobile": "?0",
         authorization: "Bearer " + process.env.TWENTY_JWT_SECRET,
-        "User-Agent":
-          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
         "x-schema-version": "41",
         accept: "*/*",
         Referer: "http://localhost:3001/",
@@ -67,20 +62,13 @@ export class AttachmentProcessingService {
       Referer: "http://localhost:3001/",
     };
 
-    // const variables = {
-    //     "authorId": documentObj.authorId,
-    //     "name": documentObj.name,
-    //     "fullPath": documentObj.fullPath,
-    //     "type": documentObj.type,
-    //     "candidateId": documentObj.candidateId
-    // }
     const graphqlQueryObj = JSON.stringify({
       query: allGraphQLQueries.graphQLtoCreateOneAttachmentFromFilePath,
       variables: documentObj,
     });
     // debugger
     const response = await axiosRequest(graphqlQueryObj);
-    console.log(response);
+    // console.log(response);
     // debugger
   }
 
