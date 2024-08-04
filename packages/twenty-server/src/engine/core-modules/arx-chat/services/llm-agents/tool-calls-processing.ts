@@ -12,7 +12,7 @@ export async function shareJDtoCandidate(person: allDataObjects.PersonNode) {
   const jDPath = person?.candidates?.edges[0]?.node?.jobs;
   console.log('This is the jDPath for which we are trying to send the JD:', jDPath);
   const jobAttachments = (await new AttachmentProcessingService().fetchAllAttachmentsByJobId(jobId)) ?? [];
-  console.log('Job Attachments:', jobAttachments);
+  // console.log('Job Attachments:', jobAttachments);
   if (!jobAttachments) {
     console.log('No attachments found for this job');
   }

@@ -21,6 +21,7 @@ export const graphqlQueryToFindPeopleByPhoneNumber = `query FindManyPeople($filt
                         companies {
                             name
                             id
+                            domainName
                             descriptionOneliner
                         }
 
@@ -136,6 +137,8 @@ export const graphqlQueryToFindEngagedCandidates = `query FindManyPeople($filter
                          recruiterId
                          companies{
                           name
+                          id
+                          domainName
                           descriptionOneliner
                         }
                       }
@@ -186,6 +189,28 @@ export const graphqlQueryToFindEngagedCandidates = `query FindManyPeople($filter
       }
     }
   }`;
+
+  export const graphqlToFetchAllCandidatesByStartChat = `
+  query FindManyCandidates($lastCursor: String, $limit: Int, $filter: CandidateFilterInput) {
+    candidates(after: $lastCursor, first: $limit, filter: $filter) {
+      edges {
+        cursor
+        node {
+          id
+          name
+          people {
+            id
+            name {
+              firstName
+              lastName
+            }
+          }
+          startChat
+        }
+      }
+    }
+  }
+`
 
 export const graphqlQueryTofindManyAttachmentsByJobId = `query FindManyAttachments($filter: AttachmentFilterInput, $orderBy: [AttachmentOrderByInput], $lastCursor: String, $limit: Int) {
     attachments(

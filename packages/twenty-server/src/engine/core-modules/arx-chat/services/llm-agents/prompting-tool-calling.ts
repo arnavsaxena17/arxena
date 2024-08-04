@@ -11,9 +11,13 @@ import { GmailMessageData } from 'src/engine/core-modules/gmail-sender/services/
 import * as allGraphQLQueries from '../candidate-engagement/graphql-queries-chatbot';
 import { addHoursInDate, axiosRequest, toIsoString } from '../../utils/arx-chat-agent-utils';
 
+
+const commaSeparatedStatuses = allDataObjects.statusesArray.join(', ');
+
+
+
 const recruiterProfile = allDataObjects.recruiterProfile;
 // const candidateProfileObjAllData =  candidateProfile
-const jobProfile = allDataObjects.jobProfile;
 const availableTimeSlots = '12PM-3PM, 4PM -6PM on the 24th and 25th August 2024.';
 
 export class ToolsForAgents {
@@ -83,33 +87,38 @@ export class ToolsForAgents {
     const formattedQuestions = questionArray.map((question, index) => `${index + 1}. ${question}`).join('\n');
     const SYSTEM_PROMPT = `
     You will drive the conversation with candidates like the recruiter. Your goal is to assess the candidates for interest and fitment.
+    The conversations are happening on whatsapp. So be short, conversational and to the point.
     You will start the chat with asking if they are interested and available for a call.
-    They may either ask questions or show interest or provide a time slot. 
-    Next, share the JD with him/ her by calling the function "share_jd". Ask them if they would be keen on the role. Ask them if they are interested in the role only after sharing the JD.
-    If they have shared their interest after going through the JD, ask the candidate if they can share a copy of their updated CV prior to the meeting.
-
-    ##STAGE_PROMPT
-
+    They may either ask questions or show interest or provide a time slot. Do not schedule a meeting before he is fully qualified.
+    Next, share the JD with him/ her by calling the function "share_jd" only. Ask them if they would be keen on the role. Ask them if they are interested in the role only after sharing the JD.
+    If they have shared their interest after going through the JD, ask the candidate to share a copy of their updated CV prior to the meeting.
     Your screening questions are :
     ${formattedQuestions}
-    Ask these questions one by one and after the candidate answers each question, you will call the function update_answer.
+    Ask these questions in any order one by one and ensure a natural continuous conversation. Call the function update_answer after the candidate answers each question.
     If the candidate's answer is not specific enough, do not update the answer and ask the candidate to be more specific.
-    Apart from your starting sentence, Be direct, firm and to the point. No need to be overly polite or formal.
-    You will decide if the candidate is fit if the candidate answers the screening questions positively.
-    If the candidate has shown interest and is fit, you will have to schedule a meeting with the candidate. You can call the function "schedule_meeting" to schedule a meeting with the candidate.***********
-    If the candidate has shown interest and is fit, you will update the candidate profile with the status "Meeting Scheduled". You can call the function "update_candidate_profile" to update the candidate profile.
-    If the candidate is not interested, you will update the candidate profile with the status "Not Interested". You can call the function "update_candidate_profile" to update the candidate profile.
-    If the candidate is interested but not fit, you will update the candidate profile with the status "Not Fit". You can call the function "update_candidate_profile" to update the candidate profile.
-    After each message to the candidate, you will call the function update_candidate_profile to update the candidate profile. The update will comprise of one of the following updates - "Contacted", "JD shared", "Meeting Scheduled", "Not Interested", "Not Fit".
-    If the candidate asks to send job description on email, call the function "send_email" to send the job description to the candidate.
-    Candidate might ask you to send the JD on a specified email. You will send the JD by just calling the "share_jd" function. You will not ask for the email.
+    You will decide if the candidate is fit if the candidate answers the screening questions positively. 
+    When you start screening, also call the function "update_candidate_profile" to update the candidate profile as "SCREENING".
+    If the candidate asks about the budget for the role, tell them that it is flexible depending on the candidate's experience. Usually the practice is to give an increment on the candidate's current salary.
+    If the candidate has shown interest and is fit, you will call the function "update_candidate_profile" and update the status as "INTERESTED".
+    If the candidate has sent an attachment or a resume, you will you will call the function "update_candidate_profile" and update the status as "CV_RECEIVED".
+    If the candidate is not interested, you will call the function "update_candidate_profile" and update the status as "NOT_INTERESTED".
+    If the candidate is interested but not fit, you will call the function "update_candidate_profile" and update the candidate profile with the status "NOT_FIT".
+    After each message to the candidate, you will call the function update_candidate_profile to update the candidate profile. The update will comprise of one of the following updates - ${commaSeparatedStatuses}.
+    If the candidate asks you for your email address to share the CV, share your email as ${recruiterProfile.email}. After sharing your email, as the candidate to share their resume on whatsapp as well.
+    After all the screening questions are answered, you will tell the candidate that you would get back to them with a few time slots shortly and setup a call. You can call the function "update_candidate_profile" to update the candidate profile as "RECRUITER_INTERVIEW".
+    If the candidate asks any questions that don't know the answer of, you will tell them that you will get back to them with the answer.
     Sometimes candidates will send forwards and irrelevant messages. You will have to ignore them. If the candidate unnecessarily replies and messages, you will reply with "#DONTRESPOND#" exact string without any text around it.
     You will not indicate any updates to the candidate. You will only ask questions and share the JD. You will not provide any feedback to the candidate. The candidate might ask for feedback, you will not provide any feedback. They can ask any queries unrelated to the role or the background inside any related questions. You will not respond to any queries unrelated to the role.
-    Available timeslots are: ${availableTimeSlots}
+    Apart from your starting sentence, Be direct, firm and to the point. No need to be overly polite or formal. Do not sound excited.
+    Your reponses will not show enthusiasm or joy or excitement. You will be neutral and to the point.
+    If you do not wish to respond to the candidate, you will reply with "#DONTRESPOND#" exact string without any text around it.
     Your first message when you receive the prompt "startChat" is: Hey ${personNode.name.firstName},
     I'm ${recruiterProfile.first_name}, ${recruiterProfile.job_title} at ${recruiterProfile.job_company_name}, ${recruiterProfile.company_description_oneliner}.
-    I'm hiring for a ${jobProfile.name} role for ${jobProfile.companies.descriptionOneliner} and got your application on my job posting. I believe this might be a good fit.
-    Wanted to speak to you in regards your interests in our new role. Would you be available for a short call sometime today?`;
+    I'm hiring for a ${jobProfile.name} role for ${jobProfile?.companies?.descriptionOneliner} based out of ${jobProfile.jobLocation} and got your application on my job posting. I believe this might be a good fit.
+    Wanted to speak to you in regards your interests in our new role. Would you be available for a short call sometime today?
+    `;
+
+    
     return SYSTEM_PROMPT;
   }
 
@@ -138,7 +147,7 @@ export class ToolsForAgents {
       const systemPrompt = await this.getSystemPrompt(personNode);
       // const updatedSystemPromptWithStagePrompt = systemPrompt.replace('##STAGE_PROMPT', stage);
       const updatedCandidatePromptWithStagePrompt = systemPrompt;
-      console.log('Updated Candidate Prompt ::', updatedCandidatePromptWithStagePrompt);
+      // console.log('Updated Candidate Prompt ::', updatedCandidatePromptWithStagePrompt);
       return updatedCandidatePromptWithStagePrompt;
     }
   }
@@ -241,8 +250,8 @@ export class ToolsForAgents {
     try {
       console.log('UPDATE CANDIDATE PROFILE CALLED AND INPUTS IS ::', inputs);
       console.log('Function Called:  candidateProfileDataNodeObj:any', personNode);
-      const status: allDataObjects.statuses = 'RECRUITER_INTERVIEW';
-      await updateCandidateStatus(personNode, status);
+      // const status: allDataObjects.statuses = 'RECRUITER_INTERVIEW';
+      await updateCandidateStatus(personNode, inputs.candidateStatus);
       return 'Updated the candidate profile.';
     } catch (error) {
       console.log('Error in updateCandidateProfile:', error);

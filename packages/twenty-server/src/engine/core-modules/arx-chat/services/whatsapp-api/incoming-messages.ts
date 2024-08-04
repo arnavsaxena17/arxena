@@ -8,27 +8,36 @@ import { axiosRequest } from 'src/engine/core-modules/arx-chat/utils/arx-chat-ag
 
 export class IncomingWhatsappMessages {
   async receiveIncomingMessagesFromBaileys(requestBody: allDataObjects.BaileysIncomingMessage) {
-    console.log('This is requestBody::', requestBody);
+    // console.log('This is requestBody::', requestBody);
+    let savedMessage
+    if (requestBody.message == ""){
+      savedMessage = "Attachment Received"
+    }
+    else{
+      savedMessage = requestBody.message
+    }
+    console.log("Saved message is ::", savedMessage)
+
     const whatsappIncomingMessage: allDataObjects.chatMessageType = {
       phoneNumberFrom: requestBody.phoneNumberFrom,
       phoneNumberTo: requestBody.phoneNumberTo,
-      messages: [{ role: 'user', content: requestBody.message }],
+      messages: [{ role: 'user', content: savedMessage }],
       messageType: 'string',
     };
-    const chatReply = requestBody.message;
+    const chatReply = savedMessage;
     const status = '';
     console.log('We will first go and get the candiate who sent us the message');
     const candidateProfileData = await new FetchAndUpdateCandidatesChatsWhatsapps().getCandidateInformation(whatsappIncomingMessage);
     console.log('This is the candiate who has sent us the message fromBaileys., we have to update the database that this message has been recemivged::', chatReply);
     if (candidateProfileData != allDataObjects.emptyCandidateProfileObj) {
-      console.log('This is the candiate who has sent us candidateProfileData::', candidateProfileData);
-      await this.createAndUpdateIncomingCandidateChatMessage({ chatReply: chatReply, whatsappDeliveryStatus: 'delivered', whatsappMessageId: requestBody.baileysMessageId }, candidateProfileData);
+      // console.log('This is the candiate who has sent us candidateProfileData::', candidateProfileData);
+      await this.createAndUpdateIncomingCandidateChatMessage({ chatReply: savedMessage, whatsappDeliveryStatus: 'delivered', whatsappMessageId: requestBody.baileysMessageId }, candidateProfileData);
     } else {
       console.log('Message has been received from a candidate however the candidate is not in the database');
     }
   }
   async receiveIncomingMessagesFromSelfFromBaileys(requestBody: allDataObjects.BaileysIncomingMessage) {
-    console.log('This is requestBody::', requestBody);
+    // console.log('This is requestBody::', requestBody);
     console.log('-------This is the self message-------------');
     const whatsappIncomingMessage: allDataObjects.chatMessageType = {
       phoneNumberFrom: requestBody.phoneNumberFrom,
@@ -41,7 +50,7 @@ export class IncomingWhatsappMessages {
     const candidateProfileData = await new FetchAndUpdateCandidatesChatsWhatsapps().getCandidateInformation(whatsappIncomingMessage);
     console.log('This is the SELF message., we have to update the database that this message has been received::', chatReply);
     if (candidateProfileData != allDataObjects.emptyCandidateProfileObj) {
-      console.log('This is the candiate who has sent us candidateProfileData::', candidateProfileData);
+      // console.log('This is the candiate who has sent us candidateProfileData::', candidateProfileData);
       await this.createAndUpdateIncomingCandidateChatMessage({ chatReply: chatReply, whatsappDeliveryStatus: 'delivered', whatsappMessageId: requestBody.baileysMessageId, isFromMe: true }, candidateProfileData);
       // const replyObject = { chatReply: chatReply, whatsappDeliveryStatus: 'receivedFromHumanBot', whatsappMessageId: requestBody?.baileysMessageId };
       // await this.createAndUpdateIncomingCandidateChatMessage(replyObject, candidateProfileData);
@@ -66,7 +75,7 @@ export class IncomingWhatsappMessages {
   }
 
   async receiveIncomingMessagesFromFacebook(requestBody: allDataObjects.WhatsAppBusinessAccount) {
-    console.log('This is requestBody::', requestBody);
+    // console.log('This is requestBody::', requestBody);
     // to check if the incoming message is the status of the message
 
     if (requestBody?.entry[0]?.changes[0]?.value?.statuses && requestBody?.entry[0]?.changes[0]?.value?.statuses[0]?.status && !requestBody?.entry[0]?.changes[0]?.value?.messages) {
@@ -123,7 +132,7 @@ export class IncomingWhatsappMessages {
           console.log('We will first go and get the candiate who sent us the message');
           const candidateProfileData = await new FetchAndUpdateCandidatesChatsWhatsapps().getCandidateInformation(whatsappIncomingMessage);
           console.log('This is the candiate who has sent us the message., we have to update the database that this message has been recemivged::', chatReply);
-          console.log('This is the candiate who has sent us candidateProfileData::', candidateProfileData);
+          // console.log('This is the candiate who has sent us candidateProfileData::', candidateProfileData);
           // debugger
           const replyObject = {
             chatReply: userMessageBody?.text?.body,
@@ -205,7 +214,7 @@ export class IncomingWhatsappMessages {
     const messagesList = candidateProfileDataNodeObj?.whatsappMessages?.edges;
     // Ensure messagesList is not undefined before sorting
     // console.log( 'This is the messageObj:', messagesList.map((edge: any) => edge.node.messageObj), );
-    console.log('This is the chat reply:', replyObject.chatReply);
+    console.log('This is the chat reply in createAndUpdateIncomingCandidateChatMessage:', replyObject.chatReply);
     let mostRecentMessageObj;
     if (messagesList) {
       // console.log('This is the messagesList:', messagesList);

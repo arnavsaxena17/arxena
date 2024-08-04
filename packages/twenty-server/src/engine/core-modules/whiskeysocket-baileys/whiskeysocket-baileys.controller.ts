@@ -18,11 +18,20 @@ export class WhatsappController {
     try {
       const sessionId = body?.recruiterId;
       console.log("Received sessionID from send API in baileyscontroller", sessionId);
+      if (!sessionId) {
+        console.log("Session ID IS NULL SO WHATSAPP MESSAGE NOT SENT");
+      }
       const messageId = await this.eventsGateway.sendWhatsappMessage(body?.message, body?.jid, sessionId);
-      return { messageId: messageId, status: 'ok' };
-    } catch (error) {
+      if (messageId === 'failed') {
+        return { status: 'failed' };
+      } 
+      else{
+        return { status: 'ok' };
+      }
+    }
+    catch (error) {
       console.log('Error sending message', error);
-      return { status: 'error' };
+      return { status: 'failed' };
     }
   }
 
@@ -49,11 +58,15 @@ export class WhatsappController {
   async sendWAMessageFile(@Body() payload: { recruiterId: string; fileToSendData: MessageDto }): Promise<object> {
     console.log(payload);
     try {
-      await this.eventsGateway.sendWhatsappFile(payload);
-      return { status: 'ok' };
-    } catch {
+      const messageId = await this.eventsGateway.sendWhatsappFile(payload);
+      if (messageId === 'failed') {
+        return { status: 'failed' };
+      } 
+      else{
+        return { status: 'ok' };
+      }    } catch {
       console.log('Error sending file');
-      return { status: 'error' };
+      return { status: 'failed' };
     }
   }
 }
