@@ -8,8 +8,8 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
     try {
       console.log('Fetching candidates to engage');
       const candidates = await this.fetchAllCandidatesWithStartChatTrue();
-      console.log(`Fetched ${candidates.length} candidates`); 
-      const candidateIds = candidates.map(c => c.people.id);
+      console.log(`Fetched ${candidates?.length} candidates`); 
+      const candidateIds = candidates?.map(c => c.people.id);
       console.log("CandidateIds:", candidateIds);
       const people = await this.fetchAllPeople(candidateIds);
       console.log(`Fetched ${people.length} people`);

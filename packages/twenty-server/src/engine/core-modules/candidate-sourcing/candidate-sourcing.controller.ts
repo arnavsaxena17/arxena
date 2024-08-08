@@ -22,7 +22,7 @@ export class CandidateSourcingController {
     // console.log(panda);
     // console.log(body);
     // return panda;
-    console.log('Sourcing candidates', body);
+    // console.log('Sourcing candidates', body);
     // // const responseBody = JSON.parse(body);
     const arxenaJobId = body?.job_id;
     const data: UserProfile[] = body?.data;
@@ -36,7 +36,7 @@ export class CandidateSourcingController {
         },
       }),
     );
-    console.log('Response from get job', responseFromGetJob);
+    console.log('Response status from get job', responseFromGetJob.status);
     const jobObject: Jobs = responseFromGetJob.data?.data?.jobs?.edges[0]?.node;
     const jobIdMetadata = responseFromGetJob.data?.data?.jobs?.edges[0]?.node?.id;
     // const jobIdMetadataInCamelCaseFormat: string = camelCase(jobIdMetadata).charAt(0).toUpperCase() + camelCase(jobIdMetadata).slice(1);
@@ -59,7 +59,9 @@ export class CandidateSourcingController {
     // console.log('Query for candidate', graphqlQueryObjForCandidate);
     let arrayOfPersonIds: string[] = [];
     try {
+      // console.log("graphqlQueryObjForPerson:  ", graphqlQueryObjForPerson);
       const responseForPerson = await axiosRequest(graphqlQueryObjForPerson);
+      console.log("Response from graphqlQueryObjForPerson:", responseForPerson.status);
       responseForPerson.data.data.createPeople.forEach((person: any) => {
         console.log('Person ID', person?.id);
         arrayOfPersonIds.push(person?.id);
@@ -67,6 +69,21 @@ export class CandidateSourcingController {
       console.log('Response from creating people', responseForPerson.data);
     } catch (error) {
       console.log('Error in creating people', error);
+      if (error.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        console.error("Error data:", error.response.data);
+        console.error("Error status:", error.response.status);
+        console.error("Error headers:", error.response.headers);
+      } else if (error.request) {
+        // The request was made but no response was received
+        console.error("Error request:", error.request);
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        console.error("Error message:", error.message);
+      }
+      console.error("Error config:", error.config);
+    
       return { error: error.message };
     }
 
