@@ -19,38 +19,16 @@ export const RecordShowPage = () => {
     objectRecordId: string;
   }>();
 
-  const {
-    objectNameSingular,
-    objectRecordId,
-    headerIcon,
-    loading,
-    pageTitle,
-    pageName,
-    isFavorite,
-    handleFavoriteButtonClick,
-    record,
-    objectMetadataItem,
-  } = useRecordShowPage(
-    parameters.objectNameSingular ?? '',
-    parameters.objectRecordId ?? '',
-  );
+  const { objectNameSingular, objectRecordId, headerIcon, loading, pageTitle, pageName, isFavorite, handleFavoriteButtonClick, record, objectMetadataItem } = useRecordShowPage(parameters.objectNameSingular ?? '', parameters.objectRecordId ?? '');
 
   return (
     <RecordFieldValueSelectorContextProvider>
       <RecordValueSetterEffect recordId={objectRecordId} />
       <PageContainer>
         <PageTitle title={pageTitle} />
-        <PageHeader
-          title={pageName ?? ''}
-          hasBackButton
-          Icon={headerIcon}
-          loading={loading}
-        >
+        <PageHeader title={pageName ?? ''} hasBackButton Icon={headerIcon} loading={loading}>
           <>
-            <PageFavoriteButton
-              isFavorite={isFavorite}
-              onClick={handleFavoriteButtonClick}
-            />
+            <PageFavoriteButton isFavorite={isFavorite} onClick={handleFavoriteButtonClick} />
             <ShowPageAddButton
               key="add"
               activityTargetObject={{
@@ -58,24 +36,15 @@ export const RecordShowPage = () => {
                 targetObjectNameSingular: objectMetadataItem?.nameSingular,
               }}
             />
-            <ShowPageMoreButton
-              key="more"
-              recordId={record?.id ?? '0'}
-              objectNameSingular={objectNameSingular}
-            />
+            <ShowPageMoreButton key="more" recordId={record?.id ?? '0'} objectNameSingular={objectNameSingular} />
           </>
         </PageHeader>
         <PageBody>
           <TimelineActivityContext.Provider
             value={{
               labelIdentifierValue: pageName,
-            }}
-          >
-            <RecordShowContainer
-              objectNameSingular={objectNameSingular}
-              objectRecordId={objectRecordId}
-              loading={loading}
-            />
+            }}>
+            <RecordShowContainer objectNameSingular={objectNameSingular} objectRecordId={objectRecordId} loading={loading} />
           </TimelineActivityContext.Provider>
         </PageBody>
       </PageContainer>
