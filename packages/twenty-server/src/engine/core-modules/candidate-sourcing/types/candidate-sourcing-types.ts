@@ -214,10 +214,13 @@ export interface ArxenaCandidateNode {
 }
 
 export interface ArxenaPersonNode {
-  phone: string;
-  email: string;
-  jobTitle: string;
-  name: Name;
+  name: {
+    firstName: string;
+    lastName: string;
+  };
+  email: string | null;
+  phone: string | null;
+  jobTitle: string | null;
 }
 
 export interface Jobs {
