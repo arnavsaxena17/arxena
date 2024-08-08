@@ -3,18 +3,17 @@ import Skeleton, { SkeletonTheme } from 'react-loading-skeleton';
 import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
 import { useRecoilValue } from 'recoil';
-import {
-  IconChevronLeft,
-  IconComponent,
-  MOBILE_VIEWPORT,
-  OverflowingTextWithTooltip,
-} from 'twenty-ui';
+import { IconChevronLeft, IconComponent, IconRefresh, MOBILE_VIEWPORT, OverflowingTextWithTooltip } from 'twenty-ui';
 
 import { IconButton } from '@/ui/input/button/components/IconButton';
 import { UndecoratedLink } from '@/ui/navigation/link/components/UndecoratedLink';
 import { NavigationDrawerCollapseButton } from '@/ui/navigation/navigation-drawer/components/NavigationDrawerCollapseButton';
 import { isNavigationDrawerOpenState } from '@/ui/navigation/states/isNavigationDrawerOpenState';
 import { useIsMobile } from '@/ui/utilities/responsive/hooks/useIsMobile';
+import { Button } from '@/ui/input/button/components/Button';
+import { useSetRecordValue } from '@/object-record/record-store/contexts/RecordFieldValueSelectorContext';
+import { recordStoreFamilyState } from '@/object-record/record-store/states/recordStoreFamilyState';
+import { useRecordTable } from '@/object-record/record-table/hooks/useRecordTable';
 
 export const PAGE_BAR_MIN_HEIGHT = 40;
 
@@ -77,11 +76,7 @@ const StyledTopBarButtonContainer = styled.div`
 const StyledSkeletonLoader = () => {
   const theme = useTheme();
   return (
-    <SkeletonTheme
-      baseColor={theme.background.quaternary}
-      highlightColor={theme.background.transparent.light}
-      borderRadius={50}
-    >
+    <SkeletonTheme baseColor={theme.background.quaternary} highlightColor={theme.background.transparent.light} borderRadius={50}>
       <Skeleton height={24} width={108} />
     </SkeletonTheme>
   );
@@ -93,19 +88,20 @@ type PageHeaderProps = ComponentProps<'div'> & {
   Icon: IconComponent;
   children?: ReactNode;
   loading?: boolean;
+  recordId?: string;
+  isRecordTable?: boolean;
 };
 
-export const PageHeader = ({
-  title,
-  hasBackButton,
-  Icon,
-  children,
-  loading,
-}: PageHeaderProps) => {
+export const PageHeader = ({ title, hasBackButton, Icon, children, loading, recordId, isRecordTable = false }: PageHeaderProps) => {
   const isMobile = useIsMobile();
   const theme = useTheme();
   const isNavigationDrawerOpen = useRecoilValue(isNavigationDrawerOpenState);
-
+  // const { setPendingRecordId } = useRecordTable({
+  //   recordTableId: recordId,
+  // });
+  // const handleRefresh = () => {
+  //   if (!recordId) return;
+  // };
   return (
     <StyledTopBarContainer>
       <StyledLeftContainer>
@@ -116,11 +112,7 @@ export const PageHeader = ({
         )}
         {hasBackButton && (
           <UndecoratedLink to={-1}>
-            <IconButton
-              Icon={IconChevronLeft}
-              size="small"
-              variant="tertiary"
-            />
+            <IconButton Icon={IconChevronLeft} size="small" variant="tertiary" />
           </UndecoratedLink>
         )}
         {loading ? (
@@ -131,6 +123,8 @@ export const PageHeader = ({
             <StyledTitleContainer data-testid="top-bar-title">
               <OverflowingTextWithTooltip text={title} />
             </StyledTitleContainer>
+
+            {/* {isRecordTable && <Button Icon={IconRefresh} title="Refetch" variant="secondary" accent="default" onClick={handleRefresh} />} */}
           </StyledTopBarIconStyledTitleContainer>
         )}
       </StyledLeftContainer>

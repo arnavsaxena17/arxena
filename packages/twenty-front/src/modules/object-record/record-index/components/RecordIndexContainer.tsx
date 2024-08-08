@@ -1,5 +1,5 @@
 import styled from '@emotion/styled';
-import { useRecoilCallback, useRecoilState, useSetRecoilState } from 'recoil';
+import { useRecoilCallback, useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 
 import { useColumnDefinitionsFromFieldMetadata } from '@/object-metadata/hooks/useColumnDefinitionsFromFieldMetadata';
 import { useObjectMetadataItem } from '@/object-metadata/hooks/useObjectMetadataItem';
@@ -27,6 +27,10 @@ import { mapViewFieldsToColumnDefinitions } from '@/views/utils/mapViewFieldsToC
 import { mapViewFiltersToFilters } from '@/views/utils/mapViewFiltersToFilters';
 import { mapViewSortsToSorts } from '@/views/utils/mapViewSortsToSorts';
 import { isDeeplyEqual } from '~/utils/isDeeplyEqual';
+import { useEffect, useState, useTransition } from 'react';
+import { useLoadRecordIndexTable } from '../hooks/useLoadRecordIndexTable';
+import { getRefetchFunctionSelector } from '@/object-record/record-table/components/RecordTableBodyEffect';
+import { refetchFunctionAtom } from '@/object-record/record-table/states/refetchFunctionAtom';
 
 const StyledContainer = styled.div`
   display: flex;
@@ -46,14 +50,8 @@ type RecordIndexContainerProps = {
   createRecord: () => Promise<void>;
 };
 
-export const RecordIndexContainer = ({
-  createRecord,
-  recordIndexId,
-  objectNamePlural,
-}: RecordIndexContainerProps) => {
-  const [recordIndexViewType, setRecordIndexViewType] = useRecoilState(
-    recordIndexViewTypeState,
-  );
+export const RecordIndexContainer = ({ createRecord, recordIndexId, objectNamePlural }: RecordIndexContainerProps) => {
+  const [recordIndexViewType, setRecordIndexViewType] = useRecoilState(recordIndexViewTypeState);
   const { objectNameSingular } = useObjectNameSingularFromPlural({
     objectNamePlural,
   });
@@ -62,21 +60,18 @@ export const RecordIndexContainer = ({
     objectNameSingular,
   });
 
-  const { columnDefinitions, filterDefinitions, sortDefinitions } =
-    useColumnDefinitionsFromFieldMetadata(objectMetadataItem);
+  const { columnDefinitions, filterDefinitions, sortDefinitions } = useColumnDefinitionsFromFieldMetadata(objectMetadataItem);
 
   const setRecordIndexFilters = useSetRecoilState(recordIndexFiltersState);
   const setRecordIndexSorts = useSetRecoilState(recordIndexSortsState);
-  const setRecordIndexIsCompactModeActive = useSetRecoilState(
-    recordIndexIsCompactModeActiveState,
-  );
-  const setRecordIndexViewKanbanFieldMetadataIdState = useSetRecoilState(
-    recordIndexKanbanFieldMetadataIdState,
-  );
+  const setRecordIndexIsCompactModeActive = useSetRecoilState(recordIndexIsCompactModeActiveState);
+  const setRecordIndexViewKanbanFieldMetadataIdState = useSetRecoilState(recordIndexKanbanFieldMetadataIdState);
 
   const { setTableFilters, setTableSorts, setTableColumns } = useRecordTable({
     recordTableId: recordIndexId,
   });
+
+  // const [refresh, setRefresh] = useState(false);
 
   const onViewFieldsChange = useRecoilCallback(
     ({ set, snapshot }) =>
@@ -88,25 +83,30 @@ export const RecordIndexContainer = ({
 
         setTableColumns(newFieldDefinitions);
 
-        const newRecordIndexFieldDefinitions = newFieldDefinitions.filter(
-          (boardField) => !boardField.isLabelIdentifier,
-        );
+        const newRecordIndexFieldDefinitions = newFieldDefinitions.filter(boardField => !boardField.isLabelIdentifier);
 
-        const existingRecordIndexFieldDefinitions = snapshot
-          .getLoadable(recordIndexFieldDefinitionsState)
-          .getValue();
+        const existingRecordIndexFieldDefinitions = snapshot.getLoadable(recordIndexFieldDefinitionsState).getValue();
 
-        if (
-          !isDeeplyEqual(
-            existingRecordIndexFieldDefinitions,
-            newRecordIndexFieldDefinitions,
-          )
-        ) {
+        if (!isDeeplyEqual(existingRecordIndexFieldDefinitions, newRecordIndexFieldDefinitions)) {
           set(recordIndexFieldDefinitionsState, newRecordIndexFieldDefinitions);
         }
       },
     [columnDefinitions, setTableColumns],
   );
+
+  // const refetchFunction = useRecoilValue(refetchFunctionAtom);
+  const [isPending, startTransition] = useTransition();
+  // const [refetchFunction, setRefetchFunction] = useRecoilState(refetchFunctionAtom);
+  let refetchFunction = useRecoilValue(refetchFunctionAtom);
+  // @ts-ignore
+  // refetchFunction = useRecoilValue(getRefetchFunctionSelector(objectNameSingular));
+  // useEffect(() => {
+  //   startTransition(() => {});
+  // }, []);
+  const handleRefresh = () => {
+    //@ts-ignore
+    refetchFunction();
+  };
 
   return (
     <StyledContainer>
@@ -114,78 +114,40 @@ export const RecordIndexContainer = ({
         <SpreadsheetImportProvider>
           <StyledContainerWithPadding>
             <ViewBar
+              handleRefresh={handleRefresh}
               viewBarId={recordIndexId}
-              optionsDropdownButton={
-                <RecordIndexOptionsDropdown
-                  recordIndexId={recordIndexId}
-                  objectNameSingular={objectNameSingular}
-                  viewType={recordIndexViewType ?? ViewType.Table}
-                />
-              }
-              onCurrentViewChange={(view) => {
+              optionsDropdownButton={<RecordIndexOptionsDropdown recordIndexId={recordIndexId} objectNameSingular={objectNameSingular} viewType={recordIndexViewType ?? ViewType.Table} />}
+              onCurrentViewChange={view => {
                 if (!view) {
                   return;
                 }
 
                 onViewFieldsChange(view.viewFields);
-                setTableFilters(
-                  mapViewFiltersToFilters(view.viewFilters, filterDefinitions),
-                );
-                setRecordIndexFilters(
-                  mapViewFiltersToFilters(view.viewFilters, filterDefinitions),
-                );
-                setTableSorts(
-                  mapViewSortsToSorts(view.viewSorts, sortDefinitions),
-                );
-                setRecordIndexSorts(
-                  mapViewSortsToSorts(view.viewSorts, sortDefinitions),
-                );
+                setTableFilters(mapViewFiltersToFilters(view.viewFilters, filterDefinitions));
+                setRecordIndexFilters(mapViewFiltersToFilters(view.viewFilters, filterDefinitions));
+                setTableSorts(mapViewSortsToSorts(view.viewSorts, sortDefinitions));
+                setRecordIndexSorts(mapViewSortsToSorts(view.viewSorts, sortDefinitions));
                 setRecordIndexViewType(view.type);
-                setRecordIndexViewKanbanFieldMetadataIdState(
-                  view.kanbanFieldMetadataId,
-                );
+                setRecordIndexViewKanbanFieldMetadataIdState(view.kanbanFieldMetadataId);
                 setRecordIndexIsCompactModeActive(view.isCompact);
               }}
             />
-            <RecordIndexViewBarEffect
-              objectNamePlural={objectNamePlural}
-              viewBarId={recordIndexId}
-            />
+            <RecordIndexViewBarEffect objectNamePlural={objectNamePlural} viewBarId={recordIndexId} />
           </StyledContainerWithPadding>
         </SpreadsheetImportProvider>
 
         {recordIndexViewType === ViewType.Table && (
           <>
-            <RecordIndexTableContainer
-              recordTableId={recordIndexId}
-              viewBarId={recordIndexId}
-              objectNameSingular={objectNameSingular}
-              createRecord={createRecord}
-            />
-            <RecordIndexTableContainerEffect
-              objectNameSingular={objectNameSingular}
-              recordTableId={recordIndexId}
-              viewBarId={recordIndexId}
-            />
+            <RecordIndexTableContainer recordTableId={recordIndexId} viewBarId={recordIndexId} objectNameSingular={objectNameSingular} createRecord={createRecord} />
+            <RecordIndexTableContainerEffect objectNameSingular={objectNameSingular} recordTableId={recordIndexId} viewBarId={recordIndexId} />
           </>
         )}
 
         {recordIndexViewType === ViewType.Kanban && (
           <StyledContainerWithPadding>
-            <RecordIndexBoardContainer
-              recordBoardId={recordIndexId}
-              viewBarId={recordIndexId}
-              objectNameSingular={objectNameSingular}
-              createRecord={createRecord}
-            />
-            <RecordIndexBoardDataLoader
-              objectNameSingular={objectNameSingular}
-              recordBoardId={recordIndexId}
-            />
-            <RecordIndexBoardDataLoaderEffect
-              objectNameSingular={objectNameSingular}
-              recordBoardId={recordIndexId}
-            />
+            <RecordIndexBoardContainer recordBoardId={recordIndexId} viewBarId={recordIndexId} objectNameSingular={objectNameSingular} createRecord={createRecord} />
+            <RecordIndexBoardDataLoader objectNameSingular={objectNameSingular} recordBoardId={recordIndexId} />
+            <RecordIndexBoardDataLoaderEffect objectNameSingular={objectNameSingular} recordBoardId={recordIndexId} />
           </StyledContainerWithPadding>
         )}
       </RecordFieldValueSelectorContextProvider>
