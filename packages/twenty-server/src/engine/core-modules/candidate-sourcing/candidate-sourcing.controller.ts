@@ -1,115 +1,233 @@
 import { Body, Controller, Post } from '@nestjs/common';
-import { job, panda, arxenaColumns, arxenaColumnsV2 } from './constant';
-import axios from 'axios';
-import { CreateManyCandidates, CreateManyPeople, graphQltoStartChat, CreateOneFieldMetadataItem, CreateOneJob, CreateOneObjectMetadataItem, CreateOneRelationMetadata, ObjectMetadataItems, graphqlToFindManyJobByArxenaSiteId } from './graphql-queries';
-import {FetchAndUpdateCandidatesChatsWhatsapps} from '../arx-chat/services/candidate-engagement/update-chat';
-import { v4 as uuidv4 } from 'uuid';
-import camelCase from 'camelcase';
-import * as allDataObjects from '../arx-chat/services/data-model-objects';
-import capitalize from 'capitalize';
+import { chunk } from 'lodash';
 
-import { axiosRequest, axiosRequestForMetadata } from './utils/utils';
-import { url } from 'inspector';
-import { CreateManyCustomMetadataObject, FindOneJob } from './graphql-queries';
+import { CreateManyCandidates, CreateManyPeople, graphQltoStartChat, CreateOneJob, graphqlToFindManyJobByArxenaSiteId } from './graphql-queries';
+import {FetchAndUpdateCandidatesChatsWhatsapps} from '../arx-chat/services/candidate-engagement/update-chat';
+import * as allDataObjects from '../arx-chat/services/data-model-objects';
+import * as allGraphQLQueries from '../arx-chat/services/candidate-engagement/graphql-queries-chatbot';
+
+import { axiosRequest } from './utils/utils';
 import { processArxCandidate } from './utils/data-transformation-utility';
 import { ArxenaCandidateNode, ArxenaPersonNode, Jobs, UserProfile } from './types/candidate-sourcing-types';
 @Controller('candidate-sourcing')
 export class CandidateSourcingController {
-  @Post('post-candidates')
-  async sourceCandidates(@Body() body: any) {
-    // first create companies
-    // then create people
-    // console.log(panda);
-    // console.log(body);
-    // return panda;
-    // console.log('Sourcing candidates', body);
-    // // const responseBody = JSON.parse(body);
-    const arxenaJobId = body?.job_id;
-    const data: UserProfile[] = body?.data;
-    const responseFromGetJob = await axiosRequest(
+  async  getJobDetails(arxenaJobId: string): Promise<Jobs> {
+    const response = await axiosRequest(
       JSON.stringify({
         query: graphqlToFindManyJobByArxenaSiteId,
         variables: {
           filter: { arxenaSiteId: { in: [arxenaJobId] } },
           limit: 30,
-          orderBy: [ { position: 'AscNullsFirst' } ],
+          orderBy: [{ position: 'AscNullsFirst' }],
         },
-      }),
+      })
     );
-    console.log('Response status from get job', responseFromGetJob.status);
-    const jobObject: Jobs = responseFromGetJob.data?.data?.jobs?.edges[0]?.node;
-    const jobIdMetadata = responseFromGetJob.data?.data?.jobs?.edges[0]?.node?.id;
-    // const jobIdMetadataInCamelCaseFormat: string = camelCase(jobIdMetadata).charAt(0).toUpperCase() + camelCase(jobIdMetadata).slice(1);
-    // const dynamicQueryName = (jobName + jobIdMetadataInCamelCaseFormat).charAt(0).toUpperCase() + camelCase(jobName + jobIdMetadataInCamelCaseFormat).slice(1);
-    let manyPersonObjects: ArxenaPersonNode[] = [];
-    let manyCandidateObjects: ArxenaCandidateNode[] = [];
-    for (let profile of data) {
-      let uuid = uuidv4();
-      const { personNode, candidateNode } = processArxCandidate(profile, jobObject);
-      manyPersonObjects.push(personNode);
-      manyCandidateObjects.push(candidateNode);
-    }
-    const graphqlVariablesForPerson = {
-      data: manyPersonObjects,
-    };
+    console.log('Response status from get job', response.status);
+    return response.data?.data?.jobs?.edges[0]?.node;
+  }
+  
+  async  createPeople(manyPersonObjects: ArxenaPersonNode[]): Promise<string[]> {
+    const graphqlVariablesForPerson = { data: manyPersonObjects };
     const graphqlQueryObjForPerson = JSON.stringify({
       query: CreateManyPeople,
       variables: graphqlVariablesForPerson,
     });
-    // console.log('Query for candidate', graphqlQueryObjForCandidate);
-    let arrayOfPersonIds: string[] = [];
+  
     try {
-      // console.log("graphqlQueryObjForPerson:  ", graphqlQueryObjForPerson);
       const responseForPerson = await axiosRequest(graphqlQueryObjForPerson);
       console.log("Response from graphqlQueryObjForPerson:", responseForPerson.status);
-      responseForPerson.data.data.createPeople.forEach((person: any) => {
-        console.log('Person ID', person?.id);
-        arrayOfPersonIds.push(person?.id);
-      });
-      console.log('Response from creating people', responseForPerson.data);
+      return responseForPerson.data.data.createPeople.map((person: any) => person.id);
     } catch (error) {
-      console.log('Error in creating people', error);
-      if (error.response) {
-        // The request was made and the server responded with a status code
-        // that falls out of the range of 2xx
-        console.error("Error data:", error.response.data);
-        console.error("Error status:", error.response.status);
-        console.error("Error headers:", error.response.headers);
-      } else if (error.request) {
-        // The request was made but no response was received
-        console.error("Error request:", error.request);
-      } else {
-        // Something happened in setting up the request that triggered an Error
-        console.error("Error message:", error.message);
-      }
-      console.error("Error config:", error.config);
-    
-      return { error: error.message };
+      console.error('Error in creating people', error);
+      throw error;
     }
-
-    manyCandidateObjects.map((candidate, index) => {
-      candidate.peopleId = arrayOfPersonIds[index];
-    });
-
-    const graphqlVariablesForCandidate = {
-      data: manyCandidateObjects,
-    };
-
+  }
+  
+  async  createCandidates(manyCandidateObjects: ArxenaCandidateNode[]): Promise<any> {
+    console.log("Creating candidates, manyCandidateObjects:", manyCandidateObjects.length);
+    console.log("Creating candidates, manyCandidateObjects:", manyCandidateObjects.map(x => x.name));
+    const graphqlVariablesForCandidate = { data: manyCandidateObjects };
     const graphqlQueryObjForCandidate = JSON.stringify({
       query: CreateManyCandidates,
       variables: graphqlVariablesForCandidate,
     });
-
+  
     try {
       const responseForCandidate = await axiosRequest(graphqlQueryObjForCandidate);
       console.log('Response from creating candidates', responseForCandidate.data);
-      return {data: responseForCandidate.data};
+      return responseForCandidate.data;
     } catch (error) {
-      console.log('Error in creating candidates', error);
+      console.error('Error in creating candidates', error);
+      throw error;
+    }
+  }
+
+  // async exponentialBackoffRequest(requestFn: () => Promise<any>, maxRetries = 5) {
+  //   console.log("have hit exponentialBackoffRequest");
+  //   for (let attempt = 0; attempt < maxRetries; attempt++) {
+  //     const resp = await requestFn()
+  //     // console.log("Response status is 200 and respo is ::", resp.data);
+  //     if (resp?.data?.errors?.length>0 && resp?.data?.errors[0]?.extensions?.response){
+  //       console.log("Error in response is ::", resp?.data?.errors[0]?.extensions?.response);
+  //       console.log("Attempt ::", attempt);
+  //     }
+  //     if (resp?.data?.errors?.length>0 && resp?.data?.errors[0]?.extensions?.response === "Too many requests." && attempt < maxRetries - 1) {
+  //       const delay = Math.pow(2, attempt) * 1000; // Exponential backoff
+  //       console.log(`Rate limit hit. Retrying in ${delay}ms...`);
+  //       await new Promise(resolve => setTimeout(resolve, delay));
+  //     }
+  //     else{
+  //       return resp;
+  //     }
+  //   }
+  // }
+  
+  
+  // async getPersonDetailsByPhoneNumber(phoneNumber: string) {
+  //   console.log('Trying to get person details by phone number:', phoneNumber);
+  //   const graphVariables = { filter: { phone: { ilike: '%' + phoneNumber + '%' } }, orderBy: { position: 'AscNullsFirst' } };
+  //   try {
+  //     // console.log('going to get candidate information');
+  //     const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindPeopleByPhoneNumber, variables: graphVariables });
+  //     const response = await this.exponentialBackoffRequest(() => axiosRequest(graphqlQueryObj));
+  //     console.log('This is the response from getCandidate Information FROM PHONENUMBER', response.data.data);
+  //     if (response.data?.data?.people?.edges.length === 0) {
+  //       console.log('Returning None');
+  //       return ;
+  //     }
+  //     else{
+  //       const personObj = response.data?.data?.people?.edges[0].node;
+  //       console.log('Personobj exists:', personObj);
+  //       return personObj;
+  //     }
+  //   } catch (error) {
+  //     console.log('Getting an error and returning empty candidate profile objeect:', error);
+  //     }
+  // }
+
+  // async processProfiles(data: UserProfile[], jobObject: Jobs): Promise<{ manyPersonObjects: ArxenaPersonNode[], manyCandidateObjects: ArxenaCandidateNode[] }> {
+  //   const manyPersonObjects: ArxenaPersonNode[] = [];
+  //   const manyCandidateObjects: ArxenaCandidateNode[] = [];
+  
+  //   for (let profile of data) {
+  //     const current_phone_number = profile?.phone_number;
+  //     const personObj: allDataObjects.PersonNode = await this.getPersonDetailsByPhoneNumber(current_phone_number);
+  //     // @ts-ignore
+  //     if (!personObj) {
+  //       const { personNode, candidateNode } = processArxCandidate(profile, jobObject);
+  //       manyPersonObjects.push(personNode);
+  //       manyCandidateObjects.push(candidateNode);
+  //     }
+  //   }
+  
+  //   return { manyPersonObjects, manyCandidateObjects };
+  // }
+  async batchGetPersonDetails(phoneNumbers: string[]): Promise<Map<string, allDataObjects.PersonNode>> {
+    const graphqlVariables = {
+      filter: { phone: { in: phoneNumbers } },
+      limit: 30, // Adjust based on your API's limits
+    };
+  
+    const graphqlQuery = JSON.stringify({
+      query: allGraphQLQueries.graphqlQueryToFindPeopleByPhoneNumber,
+      variables: graphqlVariables,
+    });
+  
+    try {
+      const response = await axiosRequest(graphqlQuery);
+      const people = response.data?.data?.people?.edges || [];
+      const personMap:Map<string, allDataObjects.PersonNode> =  new Map(people.map((edge: any) => [edge.node.phone, edge.node]));
+      return personMap
+    } catch (error) {
+      console.error('Error in batchGetPersonDetails:', error);
+      throw error;
+    }
+  }
+  
+  async processProfilesWithRateLimiting(data: UserProfile[], jobObject: Jobs): Promise<{ manyPersonObjects: ArxenaPersonNode[], manyCandidateObjects: ArxenaCandidateNode[] }> {
+    const manyPersonObjects: ArxenaPersonNode[] = [];
+    const manyCandidateObjects: ArxenaCandidateNode[] = [];
+    const batchSize = 25; // Adjust based on your API's limits
+    const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+  
+    for (let i = 0; i < data.length; i += batchSize) {
+      const batch = data.slice(i, i + batchSize);
+      const phoneNumbers = batch.map(profile => profile.phone_number).filter(Boolean);
+      
+      const personDetailsMap = await this.batchGetPersonDetails(phoneNumbers);
+  
+      for (const profile of batch) {
+        const current_phone_number = profile?.phone_number;
+        if (!current_phone_number) continue;
+  
+        const personObj = personDetailsMap.get(current_phone_number);
+  
+        if (!personObj || !personObj.name) {
+          const { personNode, candidateNode } = processArxCandidate(profile, jobObject);
+          manyPersonObjects.push(personNode);
+          manyCandidateObjects.push(candidateNode);
+        }
+      }
+  
+      // Add a delay between batches to avoid rate limiting
+      if (i + batchSize < data.length) {
+        await delay(1000); // 1 second delay, adjust as needed
+      }
+    }
+  
+    return { manyPersonObjects, manyCandidateObjects };
+  }
+  @Post('post-candidates')
+  async sourceCandidates(@Body() body: any) {
+    const arxenaJobId = body?.job_id;
+    const data: UserProfile[] = body?.data;
+  
+    try {
+      const jobObject = await this.getJobDetails(arxenaJobId);
+      // const { manyPersonObjects, manyCandidateObjects } = await this.processProfiles(data, jobObject);
+      const { manyPersonObjects, manyCandidateObjects } = await this.processProfilesWithRateLimiting(data, jobObject);
+
+      if (manyPersonObjects.length === 0) {
+        return { message: 'All candidates already exist' };
+      }
+  
+      const arrayOfPersonIds = await this.createPeople(manyPersonObjects);
+  
+      manyCandidateObjects.forEach((candidate, index) => {
+        candidate.peopleId = arrayOfPersonIds[index];
+      });
+  
+      const result = await this.createCandidates(manyCandidateObjects);
+      return { data: result };
+    } catch (error) {
+      console.error('Error in sourceCandidates:', error);
       return { error: error.message };
     }
+  }
+  
+
+  @Post('get-all-jobs')
+  async getJobs(@Body() body: any) {
+    // first create companies
+    console.log('Getting all jobs');
+    const responseFromGetAllJobs = await axiosRequest(
+      JSON.stringify({
+        query: graphqlToFindManyJobByArxenaSiteId,
+        variables: {
+          limit: 30,
+          orderBy: [ { position: 'AscNullsFirst' } ],
+        },
+      }),
+    );
+    console.log('Response status from get job', responseFromGetAllJobs.status);
+    console.log('Response data from get job', responseFromGetAllJobs.data);
+    const jobsObject: Jobs = responseFromGetAllJobs.data?.data?.jobs?.edges;
+    // const jobIdMetadataInCamelCaseFormat: string = camelCase(jobIdMetadata).charAt(0).toUpperCase() + camelCase(jobIdMetadata).slice(1);
+    // const dynamicQueryName = (jobName + jobIdMetadataInCamelCaseFormat).charAt(0).toUpperCase() + camelCase(jobName + jobIdMetadataInCamelCaseFormat).slice(1);
+    return {jobs:jobsObject}
 
   }
+
 
   @Post('post-job')
   async postJob(@Body() body: any) {
@@ -118,7 +236,7 @@ export class CandidateSourcingController {
       const data = body;
       console.log(body);
 
-      const graphqlVariables = { input: { name: data?.job_name, arxenaSiteId: data?.job_id, isActive: true },
+      const graphqlVariables = { input: { name: data?.job_name, arxenaSiteId: data?.job_id, isActive: true, jobLocation: data?.job_location, recruiterId:data?.recruiterId, companiesId: data?.companiesId },
       };
       const graphqlQueryObj = JSON.stringify({ query: CreateOneJob, variables: graphqlVariables, });
       const responseNew = await axiosRequest(graphqlQueryObj);

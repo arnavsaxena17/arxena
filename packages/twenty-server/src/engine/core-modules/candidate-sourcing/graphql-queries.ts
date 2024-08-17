@@ -105,6 +105,7 @@ export const graphqlToFindManyJobByArxenaSiteId = `
         updatedAt
         isActive
         recruiterId
+        arxenaSiteId
         createdAt
         name
         jobLocation
