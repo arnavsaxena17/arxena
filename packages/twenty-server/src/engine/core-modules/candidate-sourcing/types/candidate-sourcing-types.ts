@@ -133,6 +133,7 @@ export interface UserProfile {
   industries: Industry[];
   profiles: Profile[];
   phone_numbers: string[];
+  phone_number: string;
   job_process: {
     applications: Application[];
   };
