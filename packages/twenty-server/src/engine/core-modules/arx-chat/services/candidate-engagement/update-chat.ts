@@ -101,9 +101,9 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
     console.log('This is the phoneNumberFrom', userMessage.phoneNumberFrom);
     let phoneNumberToSearch: string;
     if (userMessage.messageType === 'messageFromSelf') {
-      phoneNumberToSearch = userMessage.phoneNumberTo;
+      phoneNumberToSearch = userMessage.phoneNumberTo.replace("+","");
     } else {
-      phoneNumberToSearch = userMessage.phoneNumberFrom;
+      phoneNumberToSearch = userMessage.phoneNumberFrom.replace("+","");
     }
     console.log("Phone number to search is :", phoneNumberToSearch)
     const graphVariables = { filter: { phone: { ilike: '%' + phoneNumberToSearch + '%' } }, orderBy: { position: 'AscNullsFirst' } };
