@@ -105,17 +105,18 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
     } else {
       phoneNumberToSearch = userMessage.phoneNumberFrom;
     }
+    console.log("Phone number to search is :", phoneNumberToSearch)
     const graphVariables = { filter: { phone: { ilike: '%' + phoneNumberToSearch + '%' } }, orderBy: { position: 'AscNullsFirst' } };
     try {
-      // console.log('going to get candidate information');
+      console.log('going to get candidate information');
       const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindPeopleByPhoneNumber, variables: graphVariables });
       const response = await axiosRequest(graphqlQueryObj);
-      // console.log('This is the response from getCandidate Information', response.data.data);
+      console.log('This is the response from getCandidate Information', response.data.data);
       const candidateDataObjs = response.data?.data?.people?.edges[0]?.node?.candidates?.edges;
-      // console.log('This is the candidate data::', candidateDataObjs);
+      console.log('This is the candidate data::', candidateDataObjs);
       const activeJobCandidateObj = candidateDataObjs?.find((edge: any) => edge?.node?.jobs?.isActive);
       console.log('This is the number of candidates', candidateDataObjs?.length);
-      // console.log('This is the activeJobCandidateObj', activeJobCandidateObj);
+      console.log('This is the activeJobCandidateObj', activeJobCandidateObj);
       if (activeJobCandidateObj) {
         const personWithActiveJob = response?.data?.data?.people?.edges?.find((person: { node: { candidates: { edges: any[] } } }) => person?.node?.candidates?.edges?.some(candidate => candidate?.node?.jobs?.isActive));
         const candidateProfileObj: allDataObjects.CandidateNode = {
