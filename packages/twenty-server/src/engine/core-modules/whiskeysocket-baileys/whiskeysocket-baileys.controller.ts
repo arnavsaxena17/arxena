@@ -12,6 +12,11 @@ export class WhatsappController {
     await new WhatsappService(this.eventsGateway, body.sessionId, '');
     return { status: 'ok' };
   }
+  @Post('fetch-chats')
+  async fetchChats(@Body() body: { phoneNumber: string }) {
+    this.eventsGateway
+    return { status: 'ok' };
+  }
 
   @Post('send')
   async sendMessage(@Body() body: { message: string; jid: string; recruiterId: string }) {
@@ -21,8 +26,10 @@ export class WhatsappController {
       if (!sessionId) {
         console.log("Session ID IS NULL SO WHATSAPP MESSAGE NOT SENT");
       }
+
       const messageId = await this.eventsGateway.sendWhatsappMessage(body?.message, body?.jid, sessionId);
       if (messageId === 'failed') {
+
         return { status: 'failed' };
       } 
       else{
