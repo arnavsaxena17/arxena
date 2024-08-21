@@ -127,7 +127,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   async sendWhatsappMessage(message: string, jid: string, sessionId: string) {
     try {
-      console.log('42342 Got to sendWhatsappMssage in Events Gateway');
+      console.log('Got to sendWhatsappMssage in Events Gateway');
       console.log('sessionId:', sessionId);
       console.log('jid:', jid);
       console.log('message:', message);
@@ -143,6 +143,11 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   async sendWhatsappFile(payload: { recruiterId: string; fileToSendData: MessageDto }) {
     const messageId: string = await this.whatsappServices.get(payload?.recruiterId)?.sendMessageFileToBaileys(payload?.fileToSendData);
     return messageId
-
+  }
+  
+  
+  async receiveMessages(payload: { recruiterId: string; fileToSendData: MessageDto }) {
+    const messageId: string = await this.whatsappServices.get(payload?.recruiterId)?.sendMessageFileToBaileys(payload?.fileToSendData);
+    return messageId
   }
 }

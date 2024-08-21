@@ -77,11 +77,16 @@ export class WhatsappService {
       printQRInTerminal: false,
       auth: { creds: state.creds, keys: makeCacheableSignalKeyStore(state.keys, this.logger) },
       msgRetryCounterCache: nodeCache,
+      syncFullHistory: true,
+
     });
 
     this.store.bind(this.sock.ev);
 
     this.sock.ev.process(async events => {
+      // console.log('Top Events::::', events);
+      console.log('Top Events Keys::::', Object.keys(events));
+
       if (events['connection.update']) {
         const { connection, lastDisconnect, qr } = events['connection.update'];
         if (qr) {
@@ -91,6 +96,9 @@ export class WhatsappService {
           this?.eventsGateway?.emitEventTo(event, qr, this.socketClientId); // Emit event through the gateway
         }
         if (connection === 'close') {
+          console.log("<--Disconnection has happened-->")
+          console.log("<--Disconnection has happened status code-->", (lastDisconnect?.error as Boom)?.output?.statusCode)
+          console.log("<--Disconnection has happened status output -->", (lastDisconnect?.error as Boom)?.output)
           if ((lastDisconnect?.error as Boom)?.output?.statusCode !== DisconnectReason.loggedOut) {
             this.startSock();
           } else {
@@ -112,7 +120,6 @@ export class WhatsappService {
         if (events['connection.update'].connection) {
           console.log('connection update status', events['connection.update'].connection);
           this.connectionStatus = events['connection.update'].connection === 'open'; // Update connection status
-
           this?.eventsGateway?.emitEventTo('isWhatsappLoggedIn', events['connection.update'].connection === 'open', this.socketClientId); // Emit event through the gateway
         }
       }
@@ -125,6 +132,7 @@ export class WhatsappService {
         // console.log('events::::', events);
         const upsert = events['messages.upsert'];
         console.log('Upsert Type::', upsert.type);
+        console.log('Upsert::', upsert);
         // console.log("These are events:", JSON.stringify(events, undefined, 2));
         // console.log('recv messages', JSON.stringify(upsert, undefined, 2));
         const selfWhatsappID = this.sock?.user?.id;
@@ -132,7 +140,7 @@ export class WhatsappService {
 
         console.log('Phone Number selfWhatsappID:', selfWhatsappID);
 
-        if (upsert.type === 'notify') {
+        if (upsert.type === 'notify' || upsert.type === 'append') {
           let phoneNumberTo = '';
           try {
             phoneNumberTo = upsert?.messages[0]?.key?.remoteJid?.replace('@s.whatsapp.net', '');
@@ -232,7 +240,31 @@ export class WhatsappService {
             }
           }
         }
+
+        if (upsert.type === 'append') {
+          for (const msg of upsert.messages) {
+            console.log("Append Message:", msg)
+          }
+        }
+        }
+
+
+      if (events['chats.update']) {
+        // console.log('events::::', events);
+        const chatUpdate = events['chats.update'];
+        console.log('chats.update::', chatUpdate);
       }
+
+      if (events['chats.upsert']) {
+        // console.log('events::::', events);
+        const chatUpsert = events['chats.upsert'];
+        console.log('chats.upsert::', chatUpsert);
+      }
+
+      // socket.ev.on('chats.update', data => console.log('chats.update', JSON.stringify( data, undefined, 2 ), "\n====================================================" ) );
+      // socket.ev.on('chats.upsert', data => console.log('chats.upsert', JSON.stringify( data, undefined, 2 ), "\n====================================================" ) );
+
+
     });
   }
   async fetchWhatsappMessageById(messageId: string) {

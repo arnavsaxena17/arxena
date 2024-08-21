@@ -17,7 +17,7 @@ export async function shareJDtoCandidate(person: allDataObjects.PersonNode) {
     console.log('No attachments found for this job');
   }
   const attachment = jobAttachments?.node ?? '';
-  await new WhatsappAPISelector().sendJDViaWhatsapp( person, attachment, );
+  await new WhatsappAPISelector().sendJDViaWhatsapp( person, attachment );
 }
 
 export async function updateCandidateStatus(person: allDataObjects.PersonNode, status: string) {
