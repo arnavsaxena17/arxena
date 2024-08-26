@@ -144,6 +144,7 @@ export const graphqlQueryToFindEngagedCandidates = `query FindManyPeople($filter
                       }
                       engagementStatus
                       startChat
+                      stopChat
                       candidateReminders{
                         edges{
                             node{
@@ -206,6 +207,7 @@ export const graphqlQueryToFindEngagedCandidates = `query FindManyPeople($filter
             }
           }
           startChat
+          stopChat
         }
       }
     }
@@ -334,6 +336,7 @@ export const graphqlToFindManyAnswers = `query FindManyAnswers($filter: AnswerFi
             createdAt
             updatedAt
             startChat
+            stopChat
           }
           id
         }
