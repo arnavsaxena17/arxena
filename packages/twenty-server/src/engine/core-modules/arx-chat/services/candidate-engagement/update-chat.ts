@@ -12,7 +12,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
       const candidateIds = candidates?.map(c => c.people.id);
       console.log("CandidateIds:", candidateIds);
       const people = await this.fetchAllPeople(candidateIds);
-      console.log(`Fetched ${people.length} people`);
+      console.log(`Fetched ${people?.length} people`);
       console.log(people);
       return people
     } catch (error) {
@@ -26,8 +26,9 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
     while (true) {
       const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlToFetchAllCandidatesByStartChat, variables: {lastCursor, limit: 30, filter: {startChat: {eq: true},stopChat: { eq: false }}}});
       const response = await axiosRequest(graphqlQueryObj);
-      const edges = response.data.data.candidates.edges;
-      if (edges.length === 0) break;
+      const edges = response?.data?.data?.candidates?.edges;
+      console.log("Number of candidate edges:", edges?.length)
+      if (!edges || edges?.length === 0) break;
       allCandidates = allCandidates.concat(edges.map((edge: any) => edge.node));
       lastCursor = edges[edges.length - 1].cursor;
     }
@@ -39,8 +40,8 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
     while (true) {
       const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindEngagedCandidates, variables: {filter: {id: {in: candidateIds}}, lastCursor}});
       const response = await axiosRequest(graphqlQueryObj);
-      const edges = response.data.data.people.edges;
-      if (edges.length === 0) break;
+      const edges = response?.data?.data?.people?.edges;
+      if (!edges || edges?.length === 0) break;
       allPeople = allPeople.concat(edges.map((edge: any) => edge.node));
       lastCursor = edges[edges.length - 1].cursor;
     }
