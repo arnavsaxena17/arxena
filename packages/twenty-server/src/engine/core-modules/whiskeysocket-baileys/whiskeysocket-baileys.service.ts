@@ -78,7 +78,6 @@ export class WhatsappService {
       auth: { creds: state.creds, keys: makeCacheableSignalKeyStore(state.keys, this.logger) },
       msgRetryCounterCache: nodeCache,
       syncFullHistory: true,
-
     });
 
     this.store.bind(this.sock.ev);

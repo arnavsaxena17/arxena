@@ -24,7 +24,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
     let allCandidates: allDataObjects.Candidate[] = [];
     let lastCursor: string | null = null;
     while (true) {
-      const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlToFetchAllCandidatesByStartChat, variables: {lastCursor, limit: 30, filter: {startChat: {eq: true}}}});
+      const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlToFetchAllCandidatesByStartChat, variables: {lastCursor, limit: 30, filter: {startChat: {eq: true},stopChat: { eq: false }}}});
       const response = await axiosRequest(graphqlQueryObj);
       const edges = response.data.data.candidates.edges;
       if (edges.length === 0) break;
@@ -41,7 +41,6 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
       const response = await axiosRequest(graphqlQueryObj);
       const edges = response.data.data.people.edges;
       if (edges.length === 0) break;
-  
       allPeople = allPeople.concat(edges.map((edge: any) => edge.node));
       lastCursor = edges[edges.length - 1].cursor;
     }
