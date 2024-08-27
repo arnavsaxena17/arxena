@@ -5,7 +5,7 @@ import axios from 'axios';
 
 const FormData = require('form-data');
 const fs = require('fs');
-const baseUrl = 'http://localhost:3000/whatsapp'; // Adjust the base URL as needed
+const baseUrl = process.env.SERVER_BASE_URL+'/whatsapp'; // Adjust the base URL as needed
 
 export async function sendWhatsappMessageVIABaileysAPI(whatappUpdateMessageObj: allDataObjects.candidateChatMessageType, personNode: allDataObjects.PersonNode, mostRecentMessageArr: allDataObjects.ChatHistoryItem[]) {
   console.log('Sending message to whatsapp via baileys api');

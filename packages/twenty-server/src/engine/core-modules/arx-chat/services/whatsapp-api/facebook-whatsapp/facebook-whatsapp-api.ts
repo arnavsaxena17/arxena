@@ -191,7 +191,7 @@ export class FacebookWhatsappChatApi {
 
   async fetchFileFromTwentyGetLocalPath() {
     const fileUrl =
-      'http://localhost:3000/files/attachment/2604e253-36e3-4e87-9638-bdbb661a0547.pdf?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHBpcmF0aW9uX2RhdGUiOiIyMDI0LTA1LTI3VDEwOjE3OjM5Ljk2MFoiLCJhdHRhY2htZW50X2lkIjoiZjIwYjE5YzUtZDAwYy00NzBjLWI5YjAtNzY2MTgwOTdhZjkyIiwiaWF0IjoxNzE2NzE4NjU5LCJleHAiOjE3MTY4OTg2NTl9.NP6CvbDKTh3W0T0uP0JKUfnV_PmN6rIz6FanK7Hp_us';
+      process.env.SERVER_BASE_URL+'/files/attachment/2604e253-36e3-4e87-9638-bdbb661a0547.pdf?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHBpcmF0aW9uX2RhdGUiOiIyMDI0LTA1LTI3VDEwOjE3OjM5Ljk2MFoiLCJhdHRhY2htZW50X2lkIjoiZjIwYjE5YzUtZDAwYy00NzBjLWI5YjAtNzY2MTgwOTdhZjkyIiwiaWF0IjoxNzE2NzE4NjU5LCJleHAiOjE3MTY4OTg2NTl9.NP6CvbDKTh3W0T0uP0JKUfnV_PmN6rIz6FanK7Hp_us';
     const response = await axios.get(fileUrl, { responseType: 'stream' });
     console.log('Response status received:', response.status);
     console.log('Response.data:', response.data);
@@ -246,21 +246,11 @@ export class FacebookWhatsappChatApi {
       formData.append('messaging_product', 'whatsapp');
       let response;
       try {
-        // response = await axios.post(
-        //   `https://graph.facebook.com/v19.0/${process.env.FACEBOOK_WHATSAPP_PHONE_NUMBER_ID}/media`,
-        //   formData,
-        //   {
-        //     headers: {
-        //       Authorization: `Bearer ${whatsappAPIToken}`,
-        //       ...formData.getHeaders(),
-        //     },
-        //   }
-        // );
         let response;
-        response = await axios.post('http://localhost:3000/whatsapp-controller/uploadFile', { filePath: filePath });
+        response = await axios.post(process.env.SERVER_BASE_URL+'/whatsapp-controller/uploadFile', { filePath: filePath });
         if (!response?.data?.mediaID) {
           console.error('Failed to upload JD to WhatsApp. Retrying it again...');
-          response = await axios.post('http://localhost:3000/whatsapp-controller/uploadFile', { filePath: filePath });
+          response = await axios.post(process.env.SERVER_BASE_URL+'/whatsapp-controller/uploadFile', { filePath: filePath });
           if (!response?.data?.mediaID) {
             console.error('Failed to upload JD to WhatsApp the second time. Bad luck! :(');
             const phoneNumberTo = attachmentMessage?.phoneNumberTo;
