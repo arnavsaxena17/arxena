@@ -516,6 +516,12 @@ export class WhatsappTestAPI {
     new FacebookWhatsappChatApi().sendWhatsappTemplateMessage(sendMessageObj);
     return { status: 'success' };
   }
+  @Post('utility')
+  async createUtilityMessage(@Req() request: Request): Promise<object> {
+    const sendMessageObj: allDataObjects.sendWhatsappUtilityMessageObjectType = request.body as unknown as allDataObjects.sendWhatsappUtilityMessageObjectType;
+    new FacebookWhatsappChatApi().sendWhatsappUtilityMessage(sendMessageObj);
+    return { status: 'success' };
+  }
 
   @Post('message')
   async createTextMessage(@Req() request: Request): Promise<object> {

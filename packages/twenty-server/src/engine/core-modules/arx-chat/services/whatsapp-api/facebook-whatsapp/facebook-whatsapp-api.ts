@@ -28,6 +28,7 @@ const { exec } = require('child_process');
 let whatsappAPIToken = process.env.FACEBOOK_WHATSAPP_PERMANENT_API;
 
 if (process.env.FACEBOOK_WHATSAPP_PERMANENT_API) {
+  // whatsappAPIToken = process.env.FACEBOOK_WHATSAPP_API_TOKEN;
   whatsappAPIToken = process.env.FACEBOOK_WHATSAPP_PERMANENT_API;
 } else {
   whatsappAPIToken = process.env.FACEBOOK_WHATSAPP_API_TOKEN;
@@ -104,6 +105,61 @@ export class FacebookWhatsappChatApi {
       },
     });
     // console.log("This is the template message object created:", templateMessageObj)
+    return templateMessageObj;
+  }
+  getUtilityMessageObj(sendTemplateMessageObj: allDataObjects.sendWhatsappUtilityMessageObjectType) {
+    const templateMessageObj = JSON.stringify({
+      messaging_product: 'whatsapp',
+      to: sendTemplateMessageObj.recipient,
+      type: 'template',
+      template: {
+        name: sendTemplateMessageObj.template_name,
+        language: { code: 'en' },
+        components: [
+          {
+            type: 'body',
+            parameters: [
+              {
+                type: 'text',
+                text: sendTemplateMessageObj.candidateFirstName,
+              },
+              {
+                type: 'text',
+                text: sendTemplateMessageObj.recruiterName,
+              },
+              {
+                type: 'text',
+                text: sendTemplateMessageObj.recruiterJobTitle,
+              },
+              {
+                type: 'text',
+                text: sendTemplateMessageObj.recruiterCompanyName,
+              },
+              {
+                type: 'text',
+                text: sendTemplateMessageObj.recruiterCompanyDescription,
+              },
+              {
+                type: 'text',
+                text: sendTemplateMessageObj.jobCode,
+              },
+              {
+                type: 'text',
+                text: sendTemplateMessageObj.jobPositionCompanyName,
+              },
+              {
+                type: 'text',
+                text: sendTemplateMessageObj.jobPositionName,
+              },
+              {
+                type: 'text',
+                text: sendTemplateMessageObj.jobLocation,
+              },
+            ],
+          },
+        ],
+      },
+    });
     return templateMessageObj;
   }
   async sendWhatsappTextMessage(sendTextMessageObj: allDataObjects.ChatRequestBody) {
@@ -363,6 +419,35 @@ export class FacebookWhatsappChatApi {
         'Content-Type': 'application/json',
       },
       data: templateMessage,
+    };
+    // console.log("This is the config in sendWhatsappTemplateMessage:", config);
+    try {
+      const response = await axios.request(config);
+      // console.log("This is the response:", response)
+      // console.log("This is the response data:", response.data)
+      if (response?.data?.messages[0]?.message_status === 'accepted') {
+        console.log('Message sent successfully and accepted by FACEBOOK API with id::', response?.data?.messages[0]?.id);
+        return response?.data;
+        // wamid.HBgMOTE4NDExOTM3NzY5FQIAERgSNjI0NkM1RjlCNzBGMEE5MjY5AA
+      }
+      console.log('This is the message sent successfully');
+    } catch (error) {
+      console.log('This is error in facebook graph api when sending messaging template::', error);
+    }
+  }
+  async sendWhatsappUtilityMessage(sendUtilityMessageObj: allDataObjects.sendWhatsappUtilityMessageObjectType) {
+    console.log('Received this utiltuy message object:', sendUtilityMessageObj);
+    let utilityMessage = this.getUtilityMessageObj(sendUtilityMessageObj);
+    console.log('This is the utlity message object:', utilityMessage);
+    let config = {
+      method: 'post',
+      maxBodyLength: Infinity,
+      url: 'https://graph.facebook.com/v18.0/' + process.env.FACEBOOK_WHATSAPP_PHONE_NUMBER_ID + '/messages',
+      headers: {
+        Authorization: 'Bearer ' + whatsappAPIToken,
+        'Content-Type': 'application/json',
+      },
+      data: utilityMessage,
     };
     // console.log("This is the config in sendWhatsappTemplateMessage:", config);
     try {

@@ -117,6 +117,19 @@ export interface sendWhatsappTemplateMessageObjectType {
   jobPositionName: string;
   jobLocation: string;
 }
+export interface sendWhatsappUtilityMessageObjectType {
+  template_name: string;
+  recipient: string;
+  recruiterName: string;
+  candidateFirstName: string;
+  recruiterJobTitle: string;
+  recruiterCompanyName: string;
+  recruiterCompanyDescription: string;
+  jobPositionName: string;
+  jobPositionCompanyName?: string;
+  jobCode: string;
+  jobLocation: string;
+}
 
 export interface WhatsAppMessagesEdge {
   node: MessageNode;

@@ -113,9 +113,10 @@ export default class CandidateEngagementArx {
   }
 
   filterCandidates(sortedPeopleData: allDataObjects.PersonNode[]): allDataObjects.PersonNode[] {
-    const threeMinutesAgo = new Date(Date.now() - .5 * 60 * 1000);
+    const threeMinutesAgo = new Date(Date.now() - 3 * 60 * 1000);
     // return sortedPeopleData?.filter(edge => edge?.candidates?.edges?.length > 0 && edge?.candidates?.edges[0]?.node?.engagementStatus);
     
+    // THis is for when we want to engage people only after 3 minutes of receiving their response
     return sortedPeopleData.filter(person => {
         // Check if the person has candidates
         if (person.candidates?.edges?.length > 0) {
@@ -151,62 +152,62 @@ export default class CandidateEngagementArx {
     });
   }
 
-  // async startChatEngagement(peopleCandidateResponseEngagementArr: allDataObjects.PersonNode[]) {
-  //   console.log('Total number of candidates fetched to filter for start chat::', peopleCandidateResponseEngagementArr?.length);
-  //   const filteredCandidatesToStartEngagement = peopleCandidateResponseEngagementArr?.filter(personNode => {
-  //     return personNode?.candidates?.edges?.length > 0 && personNode?.candidates?.edges[0]?.node?.startChat === true;
-  //   });
-  //   console.log('these are the number of candidates to who have no filteredCandidatesToStartEngagement ::', filteredCandidatesToStartEngagement?.length);
-  //   const filteredCandidatesWhoHaveNoWhatsappHistory = filteredCandidatesToStartEngagement?.filter(personNode => {
-  //     return personNode?.candidates?.edges[0]?.node?.whatsappMessages?.edges.length === 0;
-  //   });
-  //   console.log('these are the number of candidates to start chat ::', filteredCandidatesWhoHaveNoWhatsappHistory?.length);
-  //   for (let i = 0; i < filteredCandidatesWhoHaveNoWhatsappHistory?.length; i++) {
-  //     const chatReply = 'startChat';
-  //     const candidateProfileDataNodeObj = filteredCandidatesWhoHaveNoWhatsappHistory[i];
+  async startChatEngagement(peopleCandidateResponseEngagementArr: allDataObjects.PersonNode[]) {
+    console.log('Total number of candidates fetched to filter for start chat::', peopleCandidateResponseEngagementArr?.length);
+    const filteredCandidatesToStartEngagement = peopleCandidateResponseEngagementArr?.filter(personNode => {
+      return personNode?.candidates?.edges?.length > 0 && personNode?.candidates?.edges[0]?.node?.startChat === true;
+    });
+    console.log('these are the number of candidates to who have no filteredCandidatesToStartEngagement ::', filteredCandidatesToStartEngagement?.length);
+    const filteredCandidatesWhoHaveNoWhatsappHistory = filteredCandidatesToStartEngagement?.filter(personNode => {
+      return personNode?.candidates?.edges[0]?.node?.whatsappMessages?.edges.length === 0;
+    });
+    console.log('these are the number of candidates to start chat ::', filteredCandidatesWhoHaveNoWhatsappHistory?.length);
+    for (let i = 0; i < filteredCandidatesWhoHaveNoWhatsappHistory?.length; i++) {
+      const chatReply = 'startChat';
+      const candidateProfileDataNodeObj = filteredCandidatesWhoHaveNoWhatsappHistory[i];
 
-  //     await new CandidateEngagementArx().createAndUpdateCandidateStartChatChatMessage(chatReply, candidateProfileDataNodeObj);
+      await new CandidateEngagementArx().createAndUpdateCandidateStartChatChatMessage(chatReply, candidateProfileDataNodeObj);
 
-  //     // const updateCandidateStatusObj = await new FetchAndUpdateCandidatesChatsWhatsapps().setCandidateEngagementStatusToFalse(candidateProfileDataNodeObj.candidates.edges[0].node);
-  //   }
-  // }
+      // const updateCandidateStatusObj = await new FetchAndUpdateCandidatesChatsWhatsapps().setCandidateEngagementStatusToFalse(candidateProfileDataNodeObj.candidates.edges[0].node);
+    }
+  }
 
 
   async delay(min: number, max: number): Promise<void> {
     const ms = Math.floor(Math.random() * (max - min + 1)) + min;
     await new Promise(resolve => setTimeout(resolve, ms));
   }
-
-  async startChatEngagement(peopleCandidateResponseEngagementArr: allDataObjects.PersonNode[]) {
-    console.log('Total number of candidates fetched to filter for start chat::', peopleCandidateResponseEngagementArr?.length);
-    const filteredCandidatesToStartEngagement = peopleCandidateResponseEngagementArr?.filter(personNode => 
-      personNode?.candidates?.edges?.length > 0 && personNode?.candidates?.edges[0]?.node?.startChat === true
-    );
-    console.log('Number of candidates with filteredCandidatesToStartEngagement::', filteredCandidatesToStartEngagement?.length);
-    const filteredCandidatesWhoHaveNoWhatsappHistory = filteredCandidatesToStartEngagement?.filter(personNode => 
-      personNode?.candidates?.edges[0]?.node?.whatsappMessages?.edges.length === 0
-    );
-    console.log('Number of candidates to start chat::', filteredCandidatesWhoHaveNoWhatsappHistory?.length);
-    // Process candidates in batches
-    for (let i = 0; i < filteredCandidatesWhoHaveNoWhatsappHistory.length; i += 15) {
-      // Determine batch size (8 to 15)
-      const batchSize = Math.floor(Math.random() * (15 - 8 + 1)) + 8;
-      const batch = filteredCandidatesWhoHaveNoWhatsappHistory.slice(i, i + batchSize);
-      console.log(`Processing batch of ${batch.length} candidates`);
-      for (const candidateProfileDataNodeObj of batch) {
-        const chatReply = 'startChat';
-        await new CandidateEngagementArx().createAndUpdateCandidateStartChatChatMessage(chatReply, candidateProfileDataNodeObj);
-        // Delay between messages (40 to 72 seconds)
-        await this.delay(40000, 72000);
-      }
-      // Delay between batches (5 minutes)
-      if (i + batchSize < filteredCandidatesWhoHaveNoWhatsappHistory.length) {
-        console.log('Waiting 5 minutes before processing next batch...');
-        await this.delay(240000, 300000);
-      }
-    }
-    console.log('Finished processing all candidates');
-  }
+// This is the engagement we created for baileys bot which we are not using anymore
+  // async startChatEngagement(peopleCandidateResponseEngagementArr: allDataObjects.PersonNode[]) {
+  //   console.log('Total number of candidates fetched to filter for start chat::', peopleCandidateResponseEngagementArr?.length);
+  //   const filteredCandidatesToStartEngagement = peopleCandidateResponseEngagementArr?.filter(personNode => 
+  //     personNode?.candidates?.edges?.length > 0 && personNode?.candidates?.edges[0]?.node?.startChat === true
+  //   );
+  //   console.log('Number of candidates with filteredCandidatesToStartEngagement::', filteredCandidatesToStartEngagement?.length);
+  //   const filteredCandidatesWhoHaveNoWhatsappHistory = filteredCandidatesToStartEngagement?.filter(personNode => 
+  //     personNode?.candidates?.edges[0]?.node?.whatsappMessages?.edges.length === 0
+  //   );
+  //   console.log('Number of candidates to start chat::', filteredCandidatesWhoHaveNoWhatsappHistory?.length);
+  //   // Process candidates in batches
+  //   for (let i = 0; i < filteredCandidatesWhoHaveNoWhatsappHistory.length; i += 15) {
+  //     // Determine batch size (8 to 15)
+  //     const batchSize = Math.floor(Math.random() * (15 - 8 + 1)) + 8;
+  //     const batch = filteredCandidatesWhoHaveNoWhatsappHistory.slice(i, i + batchSize);
+  //     console.log(`Processing batch of ${batch.length} candidates`);
+  //     for (const candidateProfileDataNodeObj of batch) {
+  //       const chatReply = 'startChat';
+  //       await new CandidateEngagementArx().createAndUpdateCandidateStartChatChatMessage(chatReply, candidateProfileDataNodeObj);
+  //       // Delay between messages (40 to 72 seconds)
+  //       await this.delay(40000, 72000);
+  //     }
+  //     // Delay between batches (5 minutes)
+  //     if (i + batchSize < filteredCandidatesWhoHaveNoWhatsappHistory.length) {
+  //       console.log('Waiting 5 minutes before processing next batch...');
+  //       await this.delay(240000, 300000);
+  //     }
+  //   }
+  //   console.log('Finished processing all candidates');
+  // }
   
   async engageCandidates(peopleCandidateResponseEngagementArr: allDataObjects.PersonNode[]) {
     // console.log("This is candidateResponseEngagementObj:", candidateResponseEngagementArr)
