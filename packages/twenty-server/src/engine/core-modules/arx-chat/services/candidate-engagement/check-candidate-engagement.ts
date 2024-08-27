@@ -113,7 +113,7 @@ export default class CandidateEngagementArx {
   }
 
   filterCandidates(sortedPeopleData: allDataObjects.PersonNode[]): allDataObjects.PersonNode[] {
-    const threeMinutesAgo = new Date(Date.now() - 3 * 60 * 1000);
+  const threeMinutesAgo = new Date(Date.now() - 3 * 60 * 1000);
     // return sortedPeopleData?.filter(edge => edge?.candidates?.edges?.length > 0 && edge?.candidates?.edges[0]?.node?.engagementStatus);
     
     // THis is for when we want to engage people only after 3 minutes of receiving their response

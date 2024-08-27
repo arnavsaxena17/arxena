@@ -15,7 +15,7 @@ export class AttachmentProcessingService {
     let config = {
       method: "post",
       maxBodyLength: Infinity,
-      url: "http://localhost:3000/graphql",
+      url: process.env.SERVER_BASE_URL+"/graphql",
       headers: {
         "sec-ch-ua": '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
         DNT: "1",
@@ -24,7 +24,7 @@ export class AttachmentProcessingService {
         "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
         "x-schema-version": "41",
         accept: "*/*",
-        Referer: "http://localhost:3001/",
+        Referer: process.env.FRONT_BASE_URL+"/",
         "sec-ch-ua-platform": '"macOS"',
         ...data.getHeaders(),
       },
@@ -49,16 +49,13 @@ export class AttachmentProcessingService {
     };
   }) {
     const headers = {
-      "sec-ch-ua":
-        '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
-      DNT: "1",
-      "sec-ch-ua-mobile": "?0",
+      "sec-ch-ua": '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
+      DNT: "1", "sec-ch-ua-mobile": "?0",
       authorization: "Bearer " + process.env.TWENTY_JWT_SECRET,
-      "User-Agent":
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+      "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
       "x-schema-version": "41",
       accept: "*/*",
-      Referer: "http://localhost:3001/",
+      Referer: process.env.FRONT_BASE_URL+"/",
     };
 
     const graphqlQueryObj = JSON.stringify({
