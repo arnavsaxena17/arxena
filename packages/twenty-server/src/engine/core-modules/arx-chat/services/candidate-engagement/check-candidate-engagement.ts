@@ -113,27 +113,24 @@ export default class CandidateEngagementArx {
   }
 
   filterCandidates(sortedPeopleData: allDataObjects.PersonNode[]): allDataObjects.PersonNode[] {
-  const threeMinutesAgo = new Date(Date.now() - 3 * 60 * 1000);
+  const minutesToWait = 2
+  const twoMinutesAgo = new Date(Date.now() - minutesToWait * 60 * 1000);
     // return sortedPeopleData?.filter(edge => edge?.candidates?.edges?.length > 0 && edge?.candidates?.edges[0]?.node?.engagementStatus);
-    
     // THis is for when we want to engage people only after 3 minutes of receiving their response
     return sortedPeopleData.filter(person => {
         // Check if the person has candidates
         if (person.candidates?.edges?.length > 0) {
             const candidate = person.candidates.edges[0].node;
-            
             // Check if the candidate has engagement status
             if (candidate.engagementStatus) {
                 // Check if the candidate has WhatsApp messages
                 if (candidate.whatsappMessages?.edges?.length > 0) {
                     // Get the latest WhatsApp message
                     const latestMessage = candidate.whatsappMessages.edges[0].node;
-                    
                     // Check if the latest message is older than 3 minutes
                     const messageDate = new Date(latestMessage.createdAt);
-                    
-                    if (messageDate >= threeMinutesAgo) {
-                        console.log("Candidate messaged less than 3 minutes ago:", {
+                    if (messageDate >= twoMinutesAgo) {
+                        console.log("Candidate messaged less than "+minutesToWait.toString()+" minutes ago:", {
                             candidateId: candidate.id,
                             candidateName: candidate.name,
                             latestMessageTime: messageDate,

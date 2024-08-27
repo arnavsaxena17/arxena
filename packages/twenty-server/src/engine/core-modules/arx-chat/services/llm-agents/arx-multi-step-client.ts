@@ -36,14 +36,46 @@ export class OpenAIArxMultiStepClient {
     // await this.runTimeManagementAgent(mostRecentMessageArr, personNode, stage);
     return mostRecentMessageArr;
   }
+  async checkIfResponseMessageSoundsLikeaBot(responseMessage){
+
+    const responseMessageType = "seemsHumanMessage"
+
+    return responseMessageType
+  }
+
+  async getHumanLikeResponseMessageFromLLM(mostRecentMessageArr:allDataObjects.ChatHistoryItem[], tools:any){
+    let response:any
+    let responseMessage:any
+    // @ts-ignore
+    response = await this.openAIclient.chat.completions.create({ model: modelName, messages: mostRecentMessageArr, tools: tools, tool_choice: 'auto' });
+    responseMessage = response.choices[0].message;
+    const responseMessageType = await this.checkIfResponseMessageSoundsLikeaBot(responseMessage)
+    if (responseMessageType != "seemsHumanMessage"){
+      console.log("The first time we tried this, there was a bot response in  responseMessage, so trying again second time")
+      // @ts-ignore
+      response = await this.openAIclient.chat.completions.create({ model: modelName, messages: mostRecentMessageArr, tools: tools, tool_choice: 'auto' });
+      responseMessage = response.choices[0].message;
+      const responseMessageType = await this.checkIfResponseMessageSoundsLikeaBot(responseMessage)
+      if (responseMessageType != "seemsHumanMessage"){
+        console.log("The second time we tried this, there was a bot response in responseMessage, so trying again third time")
+        // @ts-ignore
+        response = await this.openAIclient.chat.completions.create({ model: modelName, messages: mostRecentMessageArr, tools: tools, tool_choice: 'auto' });
+        responseMessage = response.choices[0].message;
+        const responseMessageType = await this.checkIfResponseMessageSoundsLikeaBot(responseMessage)
+        if (responseMessageType != "seemsHumanMessage"){
+          console.log("If the third time we tried, but its a fucking bot message so we are saying fuck this shit and send it anyway")
+        }
+      }
+    }
+    return responseMessage
+  }
 
   async runCandidateFacingAgentsAlongWithToolCalls(mostRecentMessageArr: allDataObjects.ChatHistoryItem[], personNode: allDataObjects.PersonNode, stage: string, processorType: string, isChatEnabled: boolean = true) {
+
     const newSystemPrompt = await new ToolsForAgents().getCandidateFacingSystemPromptBasedOnStage(this.personNode, stage);
-    const updatedMostRecentMessagesBasedOnNewSystemPrompt = this.updateMostRecentMessagesBasedOnNewSystemPrompt(mostRecentMessageArr, newSystemPrompt);
+    const updatedMostRecentMessagesBasedOnNewSystemPrompt = await this.updateMostRecentMessagesBasedOnNewSystemPrompt(mostRecentMessageArr, newSystemPrompt);
     const tools = await new ToolsForAgents().getCandidateFacingToolsByStage(stage);
-    // @ts-ignore
-    const response = await this.openAIclient.chat.completions.create({ model: modelName, messages: mostRecentMessageArr, tools: tools, tool_choice: 'auto' });
-    const responseMessage: ChatCompletionMessage = response.choices[0].message;
+    const responseMessage = await this.getHumanLikeResponseMessageFromLLM(updatedMostRecentMessagesBasedOnNewSystemPrompt, tools)
     console.log(new Date().toString(), ' : ', 'BOT_MESSAGE in runCandidateFacingAgentsAlongWithToolCalls_stage1 :', JSON.stringify(responseMessage), '  Stage:::', stage, '  processorType::', processorType);
     mostRecentMessageArr.push(responseMessage); // extend conversation with assistant's reply
     if (responseMessage.tool_calls && isChatEnabled) {
@@ -51,8 +83,8 @@ export class OpenAIArxMultiStepClient {
     }
     if (processorType === 'candidate-facing') {
       console.log("Sending message to candidate from addResponseAndToolCallsToMessageHistory_stage1", mostRecentMessageArr.slice(-1)[0].content);
-      console.log("Message text in stage 1 received based on which we will decide whether to send message or not::", response?.choices[0]?.message?.content)
-      await this.sendWhatsappMessageToCandidate(response?.choices[0]?.message?.content || '', mostRecentMessageArr, 'runCandidateFacingAgentsAlongWithToolCalls_stage1', isChatEnabled);
+      console.log("Message text in stage 1 received based on which we will decide whether to send message or not::", responseMessage?.content)
+      await this.sendWhatsappMessageToCandidate(responseMessage?.content || '', mostRecentMessageArr, 'runCandidateFacingAgentsAlongWithToolCalls_stage1', isChatEnabled);
     }
     return mostRecentMessageArr;
   }
