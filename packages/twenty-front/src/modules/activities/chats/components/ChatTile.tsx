@@ -21,7 +21,7 @@ const UnreadIndicator = styled.span`
 `;
 
 export default function ChatTile(props: {
-  individual: frontChatTypes.PersonEdge;
+  individual: frontChatTypes.PersonNode;
   setSelectedIndividual: (value: React.SetStateAction<string>) => void;
   selectedIndividual: string;
   unreadMessagesCount: number;
@@ -31,13 +31,13 @@ export default function ChatTile(props: {
     <StyledChatTile $selected={props.selectedIndividual === props.id}>
       <div
         onClick={() => {
-          props.setSelectedIndividual(props.individual?.node?.id);
+          props.setSelectedIndividual(props.individual?.id);
         }}
         style={{ cursor: "pointer" }}
       >
         <span>
-          {props.individual?.node?.name?.firstName}{" "}
-          {props.individual?.node?.name?.lastName}
+          {props.individual?.name?.firstName}{" "}
+          {props.individual?.name?.lastName}
         </span>
 
         {props.unreadMessagesCount && props.unreadMessagesCount > 0 ? (

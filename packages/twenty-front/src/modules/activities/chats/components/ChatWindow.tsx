@@ -107,7 +107,7 @@ const StyledButton2 = styled.button`
 
 const formatDate = (date: string) => dayjs(date).format('YYYY-MM-DD');
 
-export default function ChatWindow(props: { selectedIndividual: string; individuals: frontChatTypes.PersonEdge[] }) {
+export default function ChatWindow(props: { selectedIndividual: string; individuals: frontChatTypes.PersonNode[] }) {
   const [messageHistory, setMessageHistory] = useState<[]>([]);
   const [latestResponseGenerated, setLatestResponseGenerated] = useState('');
   const [listOfToolCalls, setListOfToolCalls] = useState<string[]>([]);
@@ -123,14 +123,14 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
   console.log('tokenPair', tokenPair);
 
   let currentIndividual = props?.individuals?.filter(individual => {
-    return individual?.node?.id === props.selectedIndividual;
+    return individual?.id === props.selectedIndividual;
   })[0];
 
-  let listOfMessages = currentIndividual?.node?.candidates?.edges[0]?.node?.whatsappMessages?.edges;
+  let listOfMessages = currentIndividual?.candidates?.edges[0]?.node?.whatsappMessages?.edges;
 
-  let currentMessageObject = currentIndividual?.node?.candidates?.edges[0]?.node?.whatsappMessages?.edges[currentIndividual?.node?.candidates?.edges[0]?.node?.whatsappMessages?.edges?.length - 1]?.node?.messageObj;
+  let currentMessageObject = currentIndividual?.candidates?.edges[0]?.node?.whatsappMessages?.edges[currentIndividual?.candidates?.edges[0]?.node?.whatsappMessages?.edges?.length - 1]?.node?.messageObj;
 
-  let messageName = currentIndividual?.node?.name;
+  let messageName = currentIndividual?.name;
   listOfMessages?.sort((a, b) => new Date(a?.node?.createdAt).getTime() - new Date(b?.node?.createdAt).getTime());
 
   const sendMessage = async (messageText: string) => {
@@ -139,7 +139,7 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
       process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/send-chat',
       {
         messageToSend: messageText,
-        phoneNumberTo: currentIndividual?.node?.phone,
+        phoneNumberTo: currentIndividual?.phone,
       },
       {
         headers: {
@@ -164,7 +164,7 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
     const response = await axios.post(
       process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/send-jd-from-frontend',
       {
-        phoneNumberTo: currentIndividual?.node?.phone,
+        phoneNumberTo: currentIndividual?.phone,
       },
       {
         headers: {
@@ -405,7 +405,7 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
                         </p>
                       )}
                       <SingleChatContainer
-                        phoneNumber={currentIndividual?.node?.phone}
+                        phoneNumber={currentIndividual?.phone}
                         message={message}
                         messageName={`${messageName.firstName} ${messageName.lastName}`}
                         // latestResponseGenerated={latestResponseGenerated}
@@ -430,7 +430,7 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
               </div>
               <div>
                 <StyledButtonsBelowChatMessage>
-                  <StyledButton2 onClick={() => handleRetrieveBotMessage(currentIndividual?.node?.phone, latestResponseGenerated, setLatestResponseGenerated, listOfToolCalls, setListOfToolCalls, messageHistory, setMessageHistory)}>
+                  <StyledButton2 onClick={() => handleRetrieveBotMessage(currentIndividual?.phone, latestResponseGenerated, setLatestResponseGenerated, listOfToolCalls, setListOfToolCalls, messageHistory, setMessageHistory)}>
                     Retrieve Bot Response
                   </StyledButton2>
                   <StyledButton2
@@ -439,7 +439,7 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
                       //   currentIndividual?.node?.phone,
                       //   latestResponseGenerated
                       // );
-                      handleInvokeChatAndRunToolCalls(currentIndividual?.node?.phone, latestResponseGenerated, setLatestResponseGenerated, setListOfToolCalls);
+                      handleInvokeChatAndRunToolCalls(currentIndividual?.phone, latestResponseGenerated, setLatestResponseGenerated, setListOfToolCalls);
                     }}>
                     Invoke Chat + Run tool calls
                   </StyledButton2>

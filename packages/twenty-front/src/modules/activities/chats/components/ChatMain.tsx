@@ -17,7 +17,7 @@ export default function ChatMain() {
   const [inputMessage, setInputMessage] = useState('');
   // const [chats, setChats] = useState([]);
   const [selectedIndividual, setSelectedIndividual] = useState<string>('');
-  const [individuals, setIndividuals] = useState<frontChatTypes.PersonEdge[]>([]);
+  const [individuals, setIndividuals] = useState<frontChatTypes.PersonNode[]>([]);
 
   const [unreadMessages, setUnreadMessages] = useState<frontChatTypes.UnreadMessageListManyCandidates>({
     listOfUnreadMessages: [],
@@ -40,11 +40,11 @@ export default function ChatMain() {
   console.log(variable);
   console.log(variable2);
 
-  function getUnreadMessageListManyCandidates(peopleEdges: frontChatTypes.PersonEdge[]): frontChatTypes.UnreadMessageListManyCandidates {
+  function getUnreadMessageListManyCandidates(personNodes: frontChatTypes.PersonNode[]): frontChatTypes.UnreadMessageListManyCandidates {
     const listOfUnreadMessages: frontChatTypes.UnreadMessagesPerOneCandidate[] = [];
 
-    peopleEdges?.forEach((personEdge: frontChatTypes.PersonEdge) => {
-      const personNode: frontChatTypes.PersonNode = personEdge?.node;
+    personNodes?.forEach((personNode: frontChatTypes.PersonNode) => {
+      // const personNode: frontChatTypes.PersonNode = personNode;
 
       personNode?.candidates?.edges?.forEach((candidateEdge: frontChatTypes.CandidatesEdge) => {
         const candidateNode: frontChatTypes.CandidateNode = candidateEdge?.node;
@@ -80,14 +80,15 @@ export default function ChatMain() {
           Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
         },
       });
+      console.log("REceived response:", response)
 
-      const availablePeople: frontChatTypes.PersonEdge[] = response?.data?.people?.edges.filter((person: frontChatTypes.PersonEdge) => person?.node?.candidates?.edges?.length > 0 &&  person?.node?.candidates?.edges[0].node.startChat);
+      const availablePeople: frontChatTypes.PersonNode[] = response?.data?.filter((person: frontChatTypes.PersonNode) => person?.candidates?.edges?.length > 0 &&  person?.candidates?.edges[0].node.startChat);
 
-      console.log("All people:", response?.data?.people?.edges);
+      console.log("All people:", response?.data);
       console.log("Available people:", availablePeople);
-      setPeople(response?.data?.people?.edges);
+      setPeople(response?.data);
       setIndividuals(availablePeople);
-      console.log(response?.data?.people?.edges.filter((person: frontChatTypes.PersonEdge) => person?.node?.candidates?.edges?.length > 0));
+      console.log(response?.data.filter((person: frontChatTypes.PersonNode) => person?.candidates?.edges?.length > 0));
 
       // const unreadMessagesList: frontChatTypes.UnreadMessagesPerCandidate[] =
       //   availablePeople?.filter((person: frontChatTypes.PersonEdge) => {
@@ -121,7 +122,7 @@ export default function ChatMain() {
   const updateUnreadMessagesStatus = async (selectedIndividual: string) => {
     // debugger;
     const listOfMessagesIds = unreadMessages?.listOfUnreadMessages
-      ?.filter(unreadMessage => unreadMessage.candidateId === individuals?.filter(individual => individual.node.id === selectedIndividual)[0]?.node?.candidates?.edges[0]?.node?.id)[0]
+      ?.filter(unreadMessage => unreadMessage.candidateId === individuals?.filter(individual => individual?.id === selectedIndividual)[0]?.candidates?.edges[0]?.node?.id)[0]
       ?.ManyUnreadMessages.map(message => message.id);
 
     console.log('listOfMessagesIds', listOfMessagesIds);

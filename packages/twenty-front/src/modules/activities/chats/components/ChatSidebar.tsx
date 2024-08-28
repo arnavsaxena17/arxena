@@ -13,7 +13,7 @@ const StyledSidebarContainer = styled.div`
 `;
 
 export default function (props: {
-  individuals: frontChatTypes.PersonEdge[];
+  individuals: frontChatTypes.PersonNode[];
   selectedIndividual: string;
   setSelectedIndividual: (value: React.SetStateAction<string>) => void;
   unreadMessages: frontChatTypes.UnreadMessageListManyCandidates;
@@ -25,14 +25,14 @@ export default function (props: {
         {props.individuals?.map((individual) => {
           return (
             <ChatTile
-              id={individual?.node?.candidates?.edges[0]?.node?.id}
+              id={individual?.candidates?.edges[0]?.node?.id}
               individual={individual}
               setSelectedIndividual={props.setSelectedIndividual}
               selectedIndividual={props.selectedIndividual}
               unreadMessagesCount={
                 props.unreadMessages?.listOfUnreadMessages?.filter((unread) => {
                   return (
-                    unread.candidateId === individual?.node?.candidates?.edges[0]?.node?.id
+                    unread.candidateId === individual?.candidates?.edges[0]?.node?.id
                   );
                 })[0]?.ManyUnreadMessages.length
               }
