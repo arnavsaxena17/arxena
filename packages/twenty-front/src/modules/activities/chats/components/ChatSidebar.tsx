@@ -31,10 +31,8 @@ export default function (props: {
               selectedIndividual={props.selectedIndividual}
               unreadMessagesCount={
                 props.unreadMessages?.listOfUnreadMessages?.filter((unread) => {
-                  // debugger;
                   return (
-                    unread.candidateId ===
-                    individual?.node?.candidates?.edges[0]?.node?.id
+                    unread.candidateId === individual?.node?.candidates?.edges[0]?.node?.id
                   );
                 })[0]?.ManyUnreadMessages.length
               }

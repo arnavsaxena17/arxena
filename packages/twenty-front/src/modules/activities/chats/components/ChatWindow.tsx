@@ -381,11 +381,11 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
   //   };
   // }, []);
 
-  useEffect(() => {
-    // {async const response = await axios.get(process.env.REACT_APP_SERVER_BASE_URL + '/whatsapp/get-wa-login-status');
-    console.log('232093', process.env.REACT_APP_SOCKET_PATH_FRONT);
-    console.log('232093', process.env.REACT_APP_SERVER_BASE_URL);
-  });
+  // useEffect(() => {
+  //   // {async const response = await axios.get(process.env.REACT_APP_SERVER_BASE_URL + '/whatsapp/get-wa-login-status');
+  //   console.log('232093', process.env.REACT_APP_SOCKET_PATH_FRONT);
+  //   console.log('232093', process.env.REACT_APP_SERVER_BASE_URL);
+  // });
 
   return (
     <>
