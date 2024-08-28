@@ -81,9 +81,10 @@ export default function ChatMain() {
         },
       });
 
-      const availablePeople: frontChatTypes.PersonEdge[] = response?.data?.people?.edges.filter((person: frontChatTypes.PersonEdge) => person?.node?.candidates?.edges?.length > 0);
+      const availablePeople: frontChatTypes.PersonEdge[] = response?.data?.people?.edges.filter((person: frontChatTypes.PersonEdge) => person?.node?.candidates?.edges?.length > 0 &&  person?.node?.candidates?.edges[0].node.startChat);
 
-      console.log(response?.data?.people?.edges);
+      console.log("All people:", response?.data?.people?.edges);
+      console.log("Available people:", availablePeople);
       setPeople(response?.data?.people?.edges);
       setIndividuals(availablePeople);
       console.log(response?.data?.people?.edges.filter((person: frontChatTypes.PersonEdge) => person?.node?.candidates?.edges?.length > 0));
