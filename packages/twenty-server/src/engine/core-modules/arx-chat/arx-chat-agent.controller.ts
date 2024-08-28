@@ -288,14 +288,64 @@ export class ArxChatEndpoint {
     // }
   }
 
+  async makeGraphQLRequest(lastCursor) {
+ 
+  
+    return ;
+  }
+
+  async fetchAllPeople() {
+    let allPeople = [];
+    let lastCursor = null;
+  
+    while (true) {
+      try {
+        const graphqlQueryObj = JSON.stringify({
+          query: allGraphQLQueries.graphqlQueryToFindEngagedCandidates,
+          variables: { "limit": 1000, "lastCursor": lastCursor }
+        });
+        const response = await axiosRequest(graphqlQueryObj);
+
+        const peopleData = response.data.data.people;
+        if (!peopleData || !peopleData.edges || peopleData.edges.length === 0) {
+          console.log("No more data to fetch.");
+          break;
+        }
+  
+        const newPeople = peopleData.edges.map(edge => edge.node);
+
+        console.log("New people length:", newPeople.length)
+        allPeople = allPeople.concat(newPeople);
+        console.log("All people length:", allPeople.length)
+        
+        lastCursor = peopleData.edges[peopleData.edges.length - 1].cursor;
+        
+        console.log(`Fetched ${peopleData.edges.length} people. Total: ${allPeople.length}`);
+        if (newPeople.length < 1000) {  // Assuming 1000 is the maximum limit per request
+          console.log("Reached the last page.");
+          break;
+        }
+  
+      } catch (error) {
+        console.error('Error fetching people:', error);
+        break;
+      }
+    }
+  
+    return allPeople;
+  }
+
   @Get('get-candidates-and-chats')
   @UseGuards(JwtAuthGuard)
   async getCandidatesAndChats(@Req() request: any): Promise<object> {
-    const graphqlQueryObj = JSON.stringify({
-      query: allGraphQLQueries.graphqlQueryToFindEngagedCandidates,
-    });
-    const response = await axiosRequest(graphqlQueryObj);
-    return response?.data?.data;
+    // const graphqlQueryObj = JSON.stringify({
+    //   query: allGraphQLQueries.graphqlQueryToFindEngagedCandidates,
+    // });
+    // const response = await axiosRequest(graphqlQueryObj);
+    // return response?.data?.data;
+
+    const fetchAllPeople = await this.fetchAllPeople()
+    return fetchAllPeople
   }
 
   @Post('remove-chats')
