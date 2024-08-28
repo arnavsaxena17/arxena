@@ -302,7 +302,7 @@ export class ArxChatEndpoint {
       try {
         const graphqlQueryObj = JSON.stringify({
           query: allGraphQLQueries.graphqlQueryToFindEngagedCandidates,
-          variables: { "limit": 1000, "lastCursor": lastCursor }
+          variables: { "limit": 30, "lastCursor": lastCursor }
         });
         const response = await axiosRequest(graphqlQueryObj);
 
@@ -321,7 +321,7 @@ export class ArxChatEndpoint {
         lastCursor = peopleData.edges[peopleData.edges.length - 1].cursor;
         
         console.log(`Fetched ${peopleData.edges.length} people. Total: ${allPeople.length}`);
-        if (newPeople.length < 1000) {  // Assuming 1000 is the maximum limit per request
+        if (newPeople.length < 30) {  // Assuming 1000 is the maximum limit per request
           console.log("Reached the last page.");
           break;
         }
