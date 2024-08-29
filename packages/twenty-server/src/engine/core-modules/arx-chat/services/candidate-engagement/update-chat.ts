@@ -117,7 +117,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
       // console.log('This is the candidate data::', candidateDataObjs);
       const activeJobCandidateObj = candidateDataObjs?.find((edge: any) => edge?.node?.jobs?.isActive);
       console.log('This is the number of candidates', candidateDataObjs?.length);
-      console.log('This is the activeJobCandidateObj who got called', activeJobCandidateObj?.node?.name.firstName);
+      console.log('This is the activeJobCandidateObj who got called', activeJobCandidateObj?.node);
       if (activeJobCandidateObj) {
         const personWithActiveJob = response?.data?.data?.people?.edges?.find((person: { node: { candidates: { edges: any[] } } }) => person?.node?.candidates?.edges?.some(candidate => candidate?.node?.jobs?.isActive));
         const candidateProfileObj: allDataObjects.CandidateNode = {

@@ -418,8 +418,8 @@ export class WhatsappWebhook {
   @Post()
   async create(@Req() request: any, @Res() response: any) {
     console.log('-------------- New Request POST --------------');
-    console.log('Headers:' + JSON.stringify(request.headers, null, 3));
-    console.log('Body:' + JSON.stringify(request.body, null, 3));
+    // console.log('Headers:' + JSON.stringify(request.headers, null, 3));
+    // console.log('Body:' + JSON.stringify(request.body, null, 3));
     const requestBody = request.body;
     try {
       await new IncomingWhatsappMessages().receiveIncomingMessagesFromFacebook(requestBody);

@@ -75,7 +75,7 @@ export class IncomingWhatsappMessages {
   }
 
   async receiveIncomingMessagesFromFacebook(requestBody: allDataObjects.WhatsAppBusinessAccount) {
-    // console.log('This is requestBody::', requestBody);
+    console.log('This is requestBody from Facebook::', requestBody);
     // to check if the incoming message is the status of the message
 
     if (requestBody?.entry[0]?.changes[0]?.value?.statuses && requestBody?.entry[0]?.changes[0]?.value?.statuses[0]?.status && !requestBody?.entry[0]?.changes[0]?.value?.messages) {
@@ -87,7 +87,7 @@ export class IncomingWhatsappMessages {
       const response = await axiosRequest(graphqlQueryObj);
       console.log('-----------------This is the response from the query to find the message by WAMID::', +'-------------------');
       // debugger
-      console.log(response?.data?.data);
+      console.log("Response to query::", response?.data?.data);
 
       if (response?.data?.data?.whatsappMessages?.edges.length === 0) {
         console.log('No message found with the given WAMID');
@@ -109,6 +109,7 @@ export class IncomingWhatsappMessages {
       // to check if the incoming message is the message
       console.log('There is a request body for sure', requestBody?.entry[0]?.changes[0]?.value?.messages[0]);
       const userMessageBody = requestBody?.entry[0]?.changes[0]?.value?.messages[0];
+      // console.log("This is the user messageBody :", userMessageBody)
       if (userMessageBody) {
         let timestamp = requestBody?.entry[0]?.changes[0]?.value?.messages[0].timestamp; // Assuming this is the Unix timestamp in seconds
         let result = this.isWithinLast5Minutes(timestamp);
