@@ -87,7 +87,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
       // console.log('going to get candidate information');
       const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindPeopleByPhoneNumber, variables: graphVariables });
       const response = await axiosRequest(graphqlQueryObj);
-      console.log('This is the response from getCandidate Information FROM PHONENUMBER', response.data.data);
+      console.log('This is the response from getCandidate Information FROM PHONENUMBER in getPersonDetailsByPhoneNumber', response.data.data);
       const personObj = response.data?.data?.people?.edges[0].node;
       console.log('Personobj:', personObj);
       return personObj;
@@ -374,7 +374,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
       // console.log("going to get process.env.GRAPHQL_URL", process.env.GRAPHQL_URL)
       const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindPeopleByPhoneNumber, variables: graphVariables });
       const response = await axiosRequest(graphqlQueryObj);
-      console.log('This is the response from getCandidate Information FROM PHONENUMBER', response.data.data);
+      console.log('This is the response from getCandidate Information FROM PHONENUMBER in getCandidateDetailsByPhoneNumber', response.data.data);
       const candidateDataObjs = response.data?.data?.people?.edges[0]?.node?.candidates?.edges;
       return candidateDataObjs;
     } catch (error) {

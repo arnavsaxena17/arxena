@@ -230,11 +230,12 @@ export default class CandidateEngagementArx {
       const peopleCandidateResponseEngagementArr = await new FetchAndUpdateCandidatesChatsWhatsapps().fetchPeopleToEngageByCheckingOnlyStartChat();
       // console.log("Received response to check candidate engagement:resposne", candidateResponseEngagementArr)
       if (peopleCandidateResponseEngagementArr) {
-        await this.startChatEngagement(peopleCandidateResponseEngagementArr);
+        await this.engageCandidates(peopleCandidateResponseEngagementArr);
       }
       if (peopleCandidateResponseEngagementArr) {
-          await this.engageCandidates(peopleCandidateResponseEngagementArr);
+        await this.startChatEngagement(peopleCandidateResponseEngagementArr);
       }
+
       return;
   }
 }
