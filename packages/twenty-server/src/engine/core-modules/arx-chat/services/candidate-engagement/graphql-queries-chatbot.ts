@@ -10,6 +10,7 @@ export const graphqlQueryToFindPeopleByPhoneNumber = `query FindManyPeople($filt
             edges{
                 node {
                     id
+                    name
                     engagementStatus
                     jobs{
                         id
@@ -51,7 +52,6 @@ export const graphqlQueryToFindPeopleByPhoneNumber = `query FindManyPeople($filt
         }
         id
         phone
-        name
         email
       }
     }
@@ -132,6 +132,7 @@ export const graphqlQueryToFindEngagedCandidates = `query FindManyPeople($filter
               edges{
                   node{
                       id
+                      name
                       jobs {
                          name
                          id
