@@ -125,8 +125,8 @@ export interface sendWhatsappUtilityMessageObjectType {
   recruiterJobTitle: string;
   recruiterCompanyName: string;
   recruiterCompanyDescription: string;
+  descriptionOneliner:string
   jobPositionName: string;
-  jobPositionCompanyName?: string;
   jobCode: string;
   jobLocation: string;
 }

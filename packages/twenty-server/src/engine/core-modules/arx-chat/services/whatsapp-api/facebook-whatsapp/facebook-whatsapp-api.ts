@@ -145,7 +145,7 @@ export class FacebookWhatsappChatApi {
               },
               {
                 type: 'text',
-                text: sendTemplateMessageObj.jobPositionCompanyName,
+                text: sendTemplateMessageObj.descriptionOneliner,
               },
               {
                 type: 'text',
@@ -523,6 +523,7 @@ export class FacebookWhatsappChatApi {
           recruiterCompanyName: allDataObjects.recruiterProfile.job_company_name,
           recruiterCompanyDescription: allDataObjects.recruiterProfile.company_description_oneliner,
           jobPositionName: whatappUpdateMessageObj?.candidateProfile?.jobs?.name,
+          descriptionOneliner:whatappUpdateMessageObj?.candidateProfile?.jobs?.companies?.descriptionOneliner,
           jobCode: whatappUpdateMessageObj?.candidateProfile?.jobs?.jobCode,
           jobLocation: whatappUpdateMessageObj?.candidateProfile?.jobs?.jobLocation,
         };
