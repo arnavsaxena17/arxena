@@ -130,12 +130,7 @@ export default class CandidateEngagementArx {
                     // Check if the latest message is older than 3 minutes
                     const messageDate = new Date(latestMessage.createdAt);
                     if (messageDate >= twoMinutesAgo) {
-                        console.log("Candidate messaged less than "+minutesToWait.toString()+" minutes ago:", {
-                            candidateId: candidate.id,
-                            candidateName: candidate.name,
-                            latestMessageTime: messageDate,
-                            candidate: candidate
-                        });
+                        console.log("Candidate messaged less than "+minutesToWait.toString()+" minutes ago:");
                         return false;
                     }
                     return true;
