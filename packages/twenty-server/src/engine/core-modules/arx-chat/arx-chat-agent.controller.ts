@@ -314,9 +314,9 @@ export class ArxChatEndpoint {
   
         const newPeople = peopleData.edges.map(edge => edge.node);
 
-        console.log("New people length:", newPeople.length)
+        // console.log("New people length:", newPeople.length)
         allPeople = allPeople.concat(newPeople);
-        console.log("All people length:", allPeople.length)
+        // console.log("All people length:", allPeople.length)
         
         lastCursor = peopleData.edges[peopleData.edges.length - 1].cursor;
         
@@ -344,8 +344,10 @@ export class ArxChatEndpoint {
     // const response = await axiosRequest(graphqlQueryObj);
     // return response?.data?.data;
 
-    const fetchAllPeople = await this.fetchAllPeople()
-    return fetchAllPeople
+    const allPeople = await this.fetchAllPeople()
+    console.log("All people length:", allPeople.length)
+
+    return allPeople
   }
 
   @Post('remove-chats')

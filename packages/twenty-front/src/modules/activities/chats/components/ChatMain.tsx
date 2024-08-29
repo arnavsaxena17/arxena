@@ -114,7 +114,7 @@ export default function ChatMain() {
 
     fetchData();
     //! Change later: Fetch data every 5 seconds
-    const interval = setInterval(fetchData, 5000);
+    const interval = setInterval(fetchData, 10000);
 
     return () => clearInterval(interval);
   }, []);
