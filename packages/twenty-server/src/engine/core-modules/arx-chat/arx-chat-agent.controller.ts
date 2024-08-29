@@ -363,12 +363,24 @@ export class ArxChatEndpoint {
     debugger;
     // const attachmentData: allDataObjects.AttachmentData =
     //   request.body.attachmentData;
-
     const personObj: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(request.body.phoneNumberTo);
-
-    const recruiterProfile = allDataObjects.recruiterProfile;
     try {
       await shareJDtoCandidate(personObj);
+      return { status: 'Success' };
+    } catch (err) {
+      return { status: err };
+    }
+  }
+
+  @Post('check-human-like')
+  @UseGuards(JwtAuthGuard)
+  async checkHumanLike(@Req() request: any): Promise<object> {
+    console.log('This is the request body', request.body);
+    try {
+      const personObj: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(request.body.phoneNumberFrom);
+      console.log("Person object receiveed::", personObj)
+      const checkHumanLike = await new OpenAIArxMultiStepClient(personObj).checkIfResponseMessageSoundsHumanLike(request.body.contentObj);
+      console.log("checkHumanLike:", checkHumanLike)
       return { status: 'Success' };
     } catch (err) {
       return { status: err };
