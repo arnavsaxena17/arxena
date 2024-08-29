@@ -145,11 +145,11 @@ export class FacebookWhatsappChatApi {
               },
               {
                 type: 'text',
-                text: sendTemplateMessageObj.descriptionOneliner,
+                text: sendTemplateMessageObj.jobPositionName,
               },
               {
                 type: 'text',
-                text: sendTemplateMessageObj.jobPositionName,
+                text: sendTemplateMessageObj.descriptionOneliner,
               },
               {
                 type: 'text',
