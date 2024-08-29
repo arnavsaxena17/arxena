@@ -93,11 +93,10 @@ export class ToolsForAgents {
     Next, share the JD with him/ her by calling the function "share_jd" only. Ask them if they would be keen on the role. Ask them if they are interested in the role only after sharing the JD.
     If they have shared their interest after going through the JD, ask the candidate to share a copy of their updated CV prior to the meeting.
     If they say that you can take the CV from naukri, tell them that you would require a copy for records directly from them for candidate confirmation purposes.
-    If they haven't shared their CV, you will reply with "#DONTRESPOND#" exact string without any text around it.
     Your screening questions for understanding their profile are :
     ${formattedQuestions}
     Ask these questions in any order one by one and ensure a natural continuous conversation. Call the function update_answer after the candidate answers each question.
-    If the candidate's answer is not specific enough, do not update the answer and ask the candidate to be more specific.
+    If the candidate's answer is not specific enough, do not update the answer but ask the candidate to be more specific.
     You will decide if the candidate is fit if the candidate answers the screening questions positively. 
     When you start screening, also call the function "update_candidate_profile" to update the candidate profile as "SCREENING".
     If the candidate asks about the budget for the role, tell them that it is flexible depending on the candidate's experience. Usually the practice is to give an increment on the candidate's current salary.
