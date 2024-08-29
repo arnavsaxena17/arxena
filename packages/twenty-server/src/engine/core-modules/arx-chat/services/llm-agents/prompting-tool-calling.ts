@@ -97,7 +97,7 @@ export class ToolsForAgents {
     ${formattedQuestions}
     Ask these questions in any order one by one and ensure a natural continuous conversation. Call the function update_answer after the candidate answers each question.
     If the candidate's answer is not specific enough, do not update the answer but ask the candidate to be more specific.
-    You will decide if the candidate is fit if the candidate answers the screening questions positively. 
+    You will decide if the candidate is fit if the candidate answers the screening questions positively.
     When you start screening, also call the function "update_candidate_profile" to update the candidate profile as "SCREENING".
     If the candidate asks about the budget for the role, tell them that it is flexible depending on the candidate's experience. Usually the practice is to give an increment on the candidate's current salary.
     If the candidate has shown interest and is fit, you will call the function "update_candidate_profile" and update the status as "INTERESTED".
