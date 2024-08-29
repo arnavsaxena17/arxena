@@ -126,6 +126,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
             name: activeJobCandidateObj?.node?.jobs?.name,
             id: activeJobCandidateObj?.node?.jobs?.id,
             recruiterId: activeJobCandidateObj?.node?.jobs?.recruiterId,
+            jobCode:activeJobCandidateObj?.node?.jobs?.jobCode,
             companies: {
               name: activeJobCandidateObj?.node?.jobs?.companies?.name,
               companyId: activeJobCandidateObj?.node?.jobs?.companies?.id,
@@ -194,6 +195,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
             descriptionOneliner: candidateDataObjs?.node?.jobs?.companies?.descriptionOneliner,
           },
           jobLocation: candidateDataObjs?.node?.jobs?.jobLocation,
+          jobCode: candidateDataObjs?.node?.jobs?.jobCode,
           whatsappMessages: candidateDataObjs?.node?.jobs?.whatsappMessages,
         },
         engagementStatus: candidateDataObjs?.node?.engagementStatus,
