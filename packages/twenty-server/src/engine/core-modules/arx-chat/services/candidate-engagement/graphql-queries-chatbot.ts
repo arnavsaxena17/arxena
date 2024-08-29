@@ -51,6 +51,7 @@ export const graphqlQueryToFindPeopleByPhoneNumber = `query FindManyPeople($filt
         }
         id
         phone
+        name
         email
       }
     }
