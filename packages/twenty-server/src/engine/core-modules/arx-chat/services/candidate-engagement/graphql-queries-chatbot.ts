@@ -17,6 +17,7 @@ export const graphqlQueryToFindPeopleByPhoneNumber = `query FindManyPeople($filt
                         isActive
                         recruiterId
                         jobLocation
+                        jobCode
                         createdAt
                         companies {
                             name
@@ -134,6 +135,7 @@ export const graphqlQueryToFindEngagedCandidates = `query FindManyPeople($filter
                          name
                          id
                          jobLocation
+                         jobCode
                          recruiterId
                          companies{
                           name
@@ -280,6 +282,7 @@ export const graphqlQueryToFindManyQuestionsByJobId = `query FindManyQuestions($
             createdAt
             isActive
             jobLocation
+            jobCode
             updatedAt
           }
           name

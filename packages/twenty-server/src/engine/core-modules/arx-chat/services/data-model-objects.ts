@@ -281,6 +281,7 @@ export interface Jobs {
   id: string;
   recruiterId: string;
   jobLocation: string;
+  jobCode:string;
   companies: Companies;
   whatsappMessages: WhatsAppMessages;
 }
@@ -345,6 +346,7 @@ export const emptyCandidateProfileObj: CandidateNode = {
       descriptionOneliner: '',
     },
     jobLocation: '',
+    jobCode: "",
 
     whatsappMessages: {
       edges: [
