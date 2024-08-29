@@ -78,6 +78,7 @@ export class OpenAIArxMultiStepClient {
     // @ts-ignore
     response = await this.openAIclient.chat.completions.create({ model: modelName, messages: mostRecentMessageArr, tools: tools, tool_choice: 'auto' });
     responseMessage = response.choices[0].message;
+    console.log("This is the response: message", response.choices[0])
     const responseMessageType = await this.checkIfResponseMessageSoundsHumanLike(responseMessage)
     console.log("Check if this sounds like a human message 1st time:",responseMessageType)
     if (responseMessageType != "seemsHumanMessage"){
