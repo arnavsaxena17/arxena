@@ -247,6 +247,7 @@ export class ToolsForAgents {
     }
     return 'Shared the JD with the candidate and updated the database.';
   }
+  
 
   async updateCandidateProfile(inputs: any, personNode: allDataObjects.PersonNode) {
     try {

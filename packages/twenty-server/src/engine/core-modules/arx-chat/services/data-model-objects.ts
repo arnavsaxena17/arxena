@@ -6,7 +6,8 @@ import OpenAI from 'openai';
 // Define the possible roles in the chat
 export type ChatRole = 'system' | 'user' | 'tool' | 'assistant';
 
-export const statusesArray = ['INTERESTED','NOT_INTERESTED','SCREENING','NOT_FIT', 'CV_RECEIVED','RECRUITER_INTERVIEW'] as const;
+// export const statusesArray = ['INTERESTED','NOT_INTERESTED','SCREENING','NOT_FIT', 'CV_RECEIVED','RECRUITER_INTERVIEW'] as const;
+export const statusesArray = ['SCREENING', 'CV_SENT','RECRUITER_INTERVIEW','CLIENT_RECEIVED','NEGOTIATION'] as const;
 
 export type statuses = typeof statusesArray[number];
 
