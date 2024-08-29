@@ -12,8 +12,9 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
       const candidateIds = candidates?.map(c => c.people.id);
       console.log("CandidateIds:", candidateIds);
       const people = await this.fetchAllPeople(candidateIds);
-      console.log(`Fetched ${people?.length} people`);
-      console.log(people);
+      console.log(`Fetched ${people?.length} people in fetch all People`);
+      console.log("People names:", people.map(x => x.name.firstName + " " + x.name.lastName))
+      // console.log(people);
       return people
     } catch (error) {
       console.error('An error occurred:', error);
@@ -113,10 +114,10 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
       const response = await axiosRequest(graphqlQueryObj);
       console.log('This is the response from getCandidate Information in getCandidateInformation ', response.data.data);
       const candidateDataObjs = response.data?.data?.people?.edges[0]?.node?.candidates?.edges;
-      console.log('This is the candidate data::', candidateDataObjs);
+      // console.log('This is the candidate data::', candidateDataObjs);
       const activeJobCandidateObj = candidateDataObjs?.find((edge: any) => edge?.node?.jobs?.isActive);
       console.log('This is the number of candidates', candidateDataObjs?.length);
-      console.log('This is the activeJobCandidateObj', activeJobCandidateObj);
+      console.log('This is the activeJobCandidateObj who got called', activeJobCandidateObj?.node?.name.firstName);
       if (activeJobCandidateObj) {
         const personWithActiveJob = response?.data?.data?.people?.edges?.find((person: { node: { candidates: { edges: any[] } } }) => person?.node?.candidates?.edges?.some(candidate => candidate?.node?.jobs?.isActive));
         const candidateProfileObj: allDataObjects.CandidateNode = {

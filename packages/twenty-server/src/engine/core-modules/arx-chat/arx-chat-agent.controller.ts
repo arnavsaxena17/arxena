@@ -311,16 +311,12 @@ export class ArxChatEndpoint {
           console.log("No more data to fetch.");
           break;
         }
-  
         const newPeople = peopleData.edges.map(edge => edge.node);
-
         // console.log("New people length:", newPeople.length)
         allPeople = allPeople.concat(newPeople);
         // console.log("All people length:", allPeople.length)
-        
         lastCursor = peopleData.edges[peopleData.edges.length - 1].cursor;
-        
-        console.log(`Fetched ${peopleData.edges.length} people. Total: ${allPeople.length}`);
+        // console.log(`Fetched ${peopleData.edges.length} people. Total: ${allPeople.length}`);
         if (newPeople.length < 30) {  // Assuming 1000 is the maximum limit per request
           console.log("Reached the last page.");
           break;
