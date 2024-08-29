@@ -29,9 +29,7 @@ export function sortWhatsAppMessages(candidateResponseEngagementArr: allDataObje
 
 export function getContentTypeFromFileName(filename: string) {
   const extension = filename?.split(".").pop()?.toLowerCase() ?? "";
-
   let contentType;
-
   switch (extension) {
     case "doc":
       contentType = "application/msword";
