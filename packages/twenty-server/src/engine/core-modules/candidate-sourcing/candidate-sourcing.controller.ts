@@ -235,7 +235,7 @@ export class CandidateSourcingController {
     try {
       const data = body;
       console.log(body);
-      const graphqlVariables = { input: { name: data?.job_name, arxenaSiteId: data?.job_id, isActive: true, jobLocation: data?.jobLocation, recruiterId:data?.recruiterId, companiesId: data?.companiesId }, };
+      const graphqlVariables = { input: { name: data?.job_name, arxenaSiteId: data?.job_id, isActive: true, jobLocation: data?.jobLocation, jobCode:data?.jobCode,recruiterId:data?.recruiterId, companiesId: data?.companiesId }, };
       const graphqlQueryObj = JSON.stringify({ query: CreateOneJob, variables: graphqlVariables, });
       const responseNew = await axiosRequest(graphqlQueryObj);
       console.log('Response from create job', responseNew.data);

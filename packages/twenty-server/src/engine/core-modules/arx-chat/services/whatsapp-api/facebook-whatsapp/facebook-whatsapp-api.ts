@@ -523,9 +523,11 @@ export class FacebookWhatsappChatApi {
           recruiterCompanyName: allDataObjects.recruiterProfile.job_company_name,
           recruiterCompanyDescription: allDataObjects.recruiterProfile.company_description_oneliner,
           jobPositionName: whatappUpdateMessageObj?.candidateProfile?.jobs?.name,
+          jobCode: whatappUpdateMessageObj?.candidateProfile?.jobs?.jobCode,
           jobLocation: whatappUpdateMessageObj?.candidateProfile?.jobs?.jobLocation,
         };
-        response = await this.sendWhatsappTemplateMessage(sendTemplateMessageObj);
+        // response = await this.sendWhatsappTemplateMessage(sendTemplateMessageObj);
+        response = await this.sendWhatsappUtilityMessage(sendTemplateMessageObj);
         const whatappUpdateMessageObjAfterWAMidUpdate = await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj(response?.data?.messages[0]?.id || response.messages[0].id, personNode, mostRecentMessageArr);
         await new CandidateEngagementArx().updateCandidateEngagementDataInTable(whatappUpdateMessageObjAfterWAMidUpdate);
       } else {
