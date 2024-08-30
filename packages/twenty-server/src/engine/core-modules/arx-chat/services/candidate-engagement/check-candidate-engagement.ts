@@ -130,7 +130,7 @@ export default class CandidateEngagementArx {
                     // Check if the latest message is older than 3 minutes
                     const messageDate = new Date(latestMessage.createdAt);
                     if (messageDate >= twoMinutesAgo) {
-                        console.log("Candidate messaged less than "+minutesToWait.toString()+" minutes ago:");
+                        console.log("Candidate messaged less than "+minutesToWait.toString()+" minutes ago");
                         return false;
                     }
                     return true;
@@ -206,9 +206,9 @@ export default class CandidateEngagementArx {
     const sortedPeopleData: allDataObjects.PersonNode[] = sortWhatsAppMessages(peopleCandidateResponseEngagementArr);
     const filteredCandidates: allDataObjects.PersonNode[] = this.filterCandidates(sortedPeopleData);
     // console.log('Filtered candidates to engage:', filteredCandidates);
-    const listOfCandidatesToRemind: allDataObjects.PersonNode[] = peopleCandidateResponseEngagementArr?.filter((edge: allDataObjects.PersonNode) => {
-      edge?.candidates?.edges[0]?.node?.candidateReminders?.edges?.filter(reminderEdge => reminderEdge?.node?.remindCandidateAtTimestamp < new Date().toISOString() && reminderEdge?.node?.isReminderActive);
-    });
+    // const listOfCandidatesToRemind: allDataObjects.PersonNode[] = peopleCandidateResponseEngagementArr?.filter((edge: allDataObjects.PersonNode) => {
+    //   edge?.candidates?.edges[0]?.node?.candidateReminders?.edges?.filter(reminderEdge => reminderEdge?.node?.remindCandidateAtTimestamp < new Date().toISOString() && reminderEdge?.node?.isReminderActive);
+    // });
 
     console.log('Number processCandidateof filtered candidates to engage:', filteredCandidates?.length);
     for (const personNode of filteredCandidates) {
