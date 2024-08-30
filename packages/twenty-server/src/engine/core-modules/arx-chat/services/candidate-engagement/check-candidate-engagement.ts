@@ -52,7 +52,7 @@ export default class CandidateEngagementArx {
 
   async processCandidate(personNode: allDataObjects.PersonNode, engagementType: 'remind' | 'engage') {
     // console.log('The edge is ::', edge);
-    console.log('Engagement Type:', engagementType);
+    console.log('Engagement Type:', engagementType, "for the candidate ::", personNode.name.firstName + " " + personNode.name.lastName);
     try {
       const candidateNode = personNode.candidates.edges[0].node;
       // console.log('This is candidate Node:', candidateNode);
@@ -65,9 +65,11 @@ export default class CandidateEngagementArx {
         let chatAgent = new OpenAIArxMultiStepClient(personNode);
         await chatAgent.createCompletion(mostRecentMessageArr, personNode, engagementType);
       }
+      else{
+        console.log("mostRecentMessageArr?.length is not greater than 0, hence no engagement:: (length)::", mostRecentMessageArr?.length)
+      }
     } catch (error) {
       console.log('This is the error in processCandidate', error);
-      debugger;
     }
   }
   getMostRecentMessageFromMessagesList(messagesList: allDataObjects.WhatsAppMessagesEdge[]) {
@@ -113,11 +115,11 @@ export default class CandidateEngagementArx {
   }
 
   filterCandidates(sortedPeopleData: allDataObjects.PersonNode[]): allDataObjects.PersonNode[] {
-  const minutesToWait = .5
-  const twoMinutesAgo = new Date(Date.now() - minutesToWait * 60 * 1000);
-    // return sortedPeopleData?.filter(edge => edge?.candidates?.edges?.length > 0 && edge?.candidates?.edges[0]?.node?.engagementStatus);
-    // THis is for when we want to engage people only after 3 minutes of receiving their response
-    return sortedPeopleData.filter(person => {
+    const minutesToWait = .5
+    const twoMinutesAgo = new Date(Date.now() - minutesToWait * 60 * 1000);
+      // return sortedPeopleData?.filter(edge => edge?.candidates?.edges?.length > 0 && edge?.candidates?.edges[0]?.node?.engagementStatus);
+      // THis is for when we want to engage people only after 3 minutes of receiving their response
+      const filteredCandidatesToEngage = sortedPeopleData.filter(person => {
         // Check if the person has candidates
         if (person.candidates?.edges?.length > 0) {
             const candidate = person.candidates.edges[0].node;
@@ -141,8 +143,10 @@ export default class CandidateEngagementArx {
         }
         // If there are no candidates or the candidate has no engagement status, exclude this person
         return false;
-    });
-  }
+      });
+      console.log("These are the number of candidates who are filetered and will be engaged:", filteredCandidatesToEngage.length)
+      return  filteredCandidatesToEngage
+    }
 
   async startChatEngagement(peopleCandidateResponseEngagementArr: allDataObjects.PersonNode[]) {
     console.log('Total number of candidates fetched to filter for start chat::', peopleCandidateResponseEngagementArr?.length);
@@ -212,9 +216,10 @@ export default class CandidateEngagementArx {
 
     console.log('Number processCandidateof filtered candidates to engage:', filteredCandidates?.length);
     for (const personNode of filteredCandidates) {
+      console.log("This is the personNode?.candidates?.edges[0]?.node:: for which we will start engagement", personNode?.candidates?.edges[0]?.node.name)
       // await new FetchAndUpdateCandidatesChatsWhatsapps().setCandidateEngagementStatusToFalse(edge?.node?.candidates?.edges[0]?.node);
       await new FetchAndUpdateCandidatesChatsWhatsapps().updateEngagementStatusBeforeRunningEngageCandidates(personNode?.candidates?.edges[0]?.node?.id);
-      console.log('Updated engagement status to false for candidate:', personNode?.name?.firstName);
+      console.log('Updated engagement status to false for candidate and going to process their candidature:', personNode?.name?.firstName);
       await this.processCandidate(personNode, 'engage');
     }
   }
