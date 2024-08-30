@@ -145,6 +145,7 @@ export class CandidateSourcingController {
   }
   
   async processProfilesWithRateLimiting(data: UserProfile[], jobObject: Jobs): Promise<{ manyPersonObjects: ArxenaPersonNode[], manyCandidateObjects: ArxenaCandidateNode[] }> {
+    console.log("")
     const manyPersonObjects: ArxenaPersonNode[] = [];
     const manyCandidateObjects: ArxenaCandidateNode[] = [];
     const batchSize = 25; // Adjust based on your API's limits
@@ -174,14 +175,16 @@ export class CandidateSourcingController {
         await delay(1000); // 1 second delay, adjust as needed
       }
     }
+    console.log("Received total numbers in processProfilesWithRateLimiting:", manyCandidateObjects.length)
   
     return { manyPersonObjects, manyCandidateObjects };
   }
   @Post('post-candidates')
   async sourceCandidates(@Body() body: any) {
+    console.log("Called post candidates API")
     const arxenaJobId = body?.job_id;
     const data: UserProfile[] = body?.data;
-  
+    console.log("Going to add and process candidate profiles")
     try {
       const jobObject = await this.getJobDetails(arxenaJobId);
       // const { manyPersonObjects, manyCandidateObjects } = await this.processProfiles(data, jobObject);
@@ -268,6 +271,7 @@ export class CandidateSourcingController {
 
   @Post('fetch-candidate-by-phone-number-start-chat')
   async fetchCandidateByPhoneNumber(@Body() body: any) {
+    console.log("called fetchCandidateByPhoneNumber for phone:", body.phoneNumber)
 
     const personObj: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(body.phoneNumber);
 
@@ -284,7 +288,7 @@ export class CandidateSourcingController {
     });
 
     const response = await axiosRequest(graphqlQueryObj);
-    console.log('Response from create startChat', response.data);
+    console.log('Response from create startChat::', response.data);
     return response.data;
 
   }
