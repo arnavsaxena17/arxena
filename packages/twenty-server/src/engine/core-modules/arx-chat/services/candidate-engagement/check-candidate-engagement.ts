@@ -207,6 +207,7 @@ export default class CandidateEngagementArx {
   // }
   
   async engageCandidates(peopleCandidateResponseEngagementArr: allDataObjects.PersonNode[]) {
+    console.log("These are the candidates who we want to engage ::",peopleCandidateResponseEngagementArr.length )
     // console.log("This is candidateResponseEngagementObj:", candidateResponseEngagementArr)
     const sortedPeopleData: allDataObjects.PersonNode[] = sortWhatsAppMessages(peopleCandidateResponseEngagementArr);
     const filteredCandidates: allDataObjects.PersonNode[] = this.filterCandidates(sortedPeopleData);
