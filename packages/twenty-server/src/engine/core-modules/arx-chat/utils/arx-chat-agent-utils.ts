@@ -13,6 +13,7 @@ ffmpeg.setFfmpegPath(ffmpegPath);
 ``;
 
 export function sortWhatsAppMessages(candidateResponseEngagementArr: allDataObjects.PersonNode[]) {
+  console.log("Number of candidates being sorted:", candidateResponseEngagementArr.length)
   // console.log("This is the people data:", JSON.stringify(peopleData));
   const sortedPeopleData:allDataObjects.PersonNode[] = candidateResponseEngagementArr; // Deep copy to avoid mutating the original data
   candidateResponseEngagementArr?.forEach((personEdge) => {
@@ -23,7 +24,7 @@ export function sortWhatsAppMessages(candidateResponseEngagementArr: allDataObje
       });
     });
   });
-  console.log("Candidates have been sorted by the latest WhatsApp message");
+  console.log("Total candidates have been sorted by the latest WhatsApp message::", sortedPeopleData.length);
   return sortedPeopleData;
 }
 
