@@ -115,8 +115,8 @@ export default class CandidateEngagementArx {
   }
 
   filterCandidates(sortedPeopleData: allDataObjects.PersonNode[]): allDataObjects.PersonNode[] {
-    console.log("The number of sorted people::", sortedPeopleData)
-    const minutesToWait = .5
+    console.log("The number of sorted people::", sortedPeopleData.length)
+    const minutesToWait = 1
     const twoMinutesAgo = new Date(Date.now() - minutesToWait * 60 * 1000);
       // return sortedPeopleData?.filter(edge => edge?.candidates?.edges?.length > 0 && edge?.candidates?.edges[0]?.node?.engagementStatus);
       // THis is for when we want to engage people only after 3 minutes of receiving their response
@@ -133,7 +133,7 @@ export default class CandidateEngagementArx {
                     // Check if the latest message is older than 3 minutes
                     const messageDate = new Date(latestMessage.createdAt);
                     if (messageDate >= twoMinutesAgo) {
-                        console.log("Candidate messaged less than "+minutesToWait.toString()+" minutes ago");
+                        console.log("Candidate messaged less than "+minutesToWait.toString()+" minutes ago::"+candidate.name);
                         return false;
                     }
                     return true;
