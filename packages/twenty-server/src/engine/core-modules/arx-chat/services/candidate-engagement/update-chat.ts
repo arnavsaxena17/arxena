@@ -10,7 +10,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
       const candidates = await this.fetchAllCandidatesWithStartChatTrue();
       console.log(`Fetched ${candidates?.length} candidates`); 
       const candidateIds = candidates?.map(c => c.people.id);
-      console.log("CandidateIds:", candidateIds);
+      // console.log("CandidateIds:", candidateIds);
       const people = await this.fetchAllPeople(candidateIds);
       console.log(`Fetched ${people?.length} people in fetch all People`);
       console.log("People names:", people.map(x => x.name.firstName + " " + x.name.lastName))
