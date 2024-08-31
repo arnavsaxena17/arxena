@@ -88,7 +88,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
       // console.log('going to get candidate information');
       const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindPeopleByPhoneNumber, variables: graphVariables });
       const response = await axiosRequest(graphqlQueryObj);
-      console.log('This is the response from getCandidate Information FROM PHONENUMBER in getPersonDetailsByPhoneNumber', response.data.data);
+      // console.log('This is the response from getCandidate Information FROM PHONENUMBER in getPersonDetailsByPhoneNumber', response.data.data);
       const personObj = response.data?.data?.people?.edges[0].node;
       console.log('Personobj:', personObj);
       return personObj;
@@ -112,12 +112,12 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
       console.log('going to get candidate information');
       const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindPeopleByPhoneNumber, variables: graphVariables });
       const response = await axiosRequest(graphqlQueryObj);
-      console.log('This is the response from getCandidate Information in getCandidateInformation ', response.data.data);
+      // console.log('This is the response from getCandidate Information in getCandidateInformation ', response.data.data);
       const candidateDataObjs = response.data?.data?.people?.edges[0]?.node?.candidates?.edges;
       // console.log('This is the candidate data::', candidateDataObjs);
       const activeJobCandidateObj = candidateDataObjs?.find((edge: any) => edge?.node?.jobs?.isActive);
       console.log('This is the number of candidates', candidateDataObjs?.length);
-      console.log('This is the activeJobCandidateObj who got called', activeJobCandidateObj?.node);
+      console.log('This is the activeJobCandidateObj who got called', activeJobCandidateObj?.node.name);
       if (activeJobCandidateObj) {
         const personWithActiveJob = response?.data?.data?.people?.edges?.find((person: { node: { candidates: { edges: any[] } } }) => person?.node?.candidates?.edges?.some(candidate => candidate?.node?.jobs?.isActive));
         const candidateProfileObj: allDataObjects.CandidateNode = {
