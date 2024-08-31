@@ -72,11 +72,12 @@ export class ToolsForAgents {
     // const formattedQuestions = questions.map((question, index) =>  `${index + 1}. ${question.replace("{location}", location)}`).join("\n");
     // return formattedQuestions
     const jobId = personNode?.candidates?.edges[0]?.node?.jobs?.id;
+    console.log("Job Name:", personNode?.candidates?.edges[0]?.node?.jobs?.name)
     // console.log('This is the job Id:', jobId);
     const { questionArray, questionIdArray } = await new FetchAndUpdateCandidatesChatsWhatsapps().fetchQuestionsByJobId(jobId);
     // Hardcoded questions to ask if no questions are found in the database
     if (questionArray.length == 0) {
-      return ['What is your current & expected CTC?', 'Who do you report to and which functions report to you?', 'Are you okay to relocate to {location}?'];
+      return ['Are you okay to relocate to {location}?','What is your current & expected CTC?', 'What is your notice period?'];
     }
     return questionArray;
   }
@@ -88,13 +89,13 @@ export class ToolsForAgents {
     receiveCV = ``
     const jobProfile = personNode?.candidates?.edges[0]?.node?.jobs;
     const questionArray = await this.getQuestionsToAsk(personNode);
-    const formattedQuestions = questionArray.map((question, index) => `${index + 1}. ${question}`).join('\n');
+    const formattedQuestions = '\t'+questionArray.map((question, index) => `${index + 1}. ${question}`).join('\n\t');
     const SYSTEM_PROMPT = `
     You will drive the conversation with candidates like the recruiter. Your goal is to assess the candidates for interest and fitment.
     The conversations are happening on whatsapp. So be short, conversational and to the point.
     You will start the chat with asking if they are interested and available for a call.
     They may either ask questions or show interest or provide a time slot. Do not schedule a meeting before he is fully qualified.
-    Next, share the JD with him/ her by calling the function "share_jd" only. Ask them if they would be keen on the role. Ask them if they are interested in the role only after sharing the JD.
+    Next, share the JD with him/ her by calling the function "share_jd". Ask them if they would be keen on the role. Ask them if they are interested in the role only after sharing the JD.
     ${receiveCV}
     Your screening questions for understanding their profile are :
     ${formattedQuestions}

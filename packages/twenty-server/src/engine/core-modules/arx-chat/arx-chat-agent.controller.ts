@@ -135,6 +135,16 @@ export class ArxChatEndpoint {
     return mostRecentMessageArr;
   }
 
+
+  @Post('get-system-prompt')
+  async getSystemPrompt(@Req() request: any): Promise<object> {
+    console.log('JSON.string', JSON.stringify(request.body));
+    const personObj: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(request.body.phoneNumber);
+    const systemPrompt = await new ToolsForAgents().getSystemPrompt(personObj)
+    console.log("This is the system prompt::", systemPrompt)
+    return {"system_prompt":systemPrompt};
+  }
+
   @Post('run-stage-prompt')
   async runStagePrompt(@Req() request: any): Promise<object> {
     console.log('JSON.string', JSON.stringify(request.body));
