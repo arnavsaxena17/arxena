@@ -221,6 +221,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
   }
 
   async fetchQuestionsByJobId(jobId: string): Promise<{ questionIdArray: { questionId: string; question: string }[]; questionArray: string[] }> {
+    console.log("Going to fetch questions for job id:", jobId)
     const data = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindManyQuestionsByJobId, variables: { filter: { jobsId: { in: [`${jobId}`] } }, orderBy: { position: 'DescNullsFirst' } } });
     const response = await axios.request({
       method: 'post',
@@ -229,7 +230,6 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
       data: data,
     });
     const questionsArray: string[] = response?.data?.data?.questions?.edges.map((val: { node: { name: string } }) => val.node.name);
-
     const questionIdArray = response?.data?.data?.questions?.edges?.map((val: { node: { id: string; name: string } }) => {
       return { questionId: val.node.id, question: val.node.name };
     });
