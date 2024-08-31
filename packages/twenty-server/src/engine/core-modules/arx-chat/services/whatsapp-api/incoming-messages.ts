@@ -61,16 +61,9 @@ export class IncomingWhatsappMessages {
   }
 
   isWithinLast5Minutes(unixTimestamp) {
-    // Get current time in seconds (Unix timestamp)
-    let currentTime = Math.floor(Date.now() / 1000); // convert milliseconds to seconds
-
-    // Convert provided Unix timestamp (which is in seconds) to a number
+    let currentTime = Math.floor(Date.now() / 1000); 
     let providedTime = parseInt(unixTimestamp, 10);
-
-    // Calculate the difference in seconds
     let differenceInSeconds = currentTime - providedTime;
-
-    // Check if the difference is less than 5 minutes (300 seconds)
     return differenceInSeconds < 300;
   }
 

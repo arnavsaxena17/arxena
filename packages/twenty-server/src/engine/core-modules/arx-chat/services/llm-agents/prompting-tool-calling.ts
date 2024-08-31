@@ -82,6 +82,10 @@ export class ToolsForAgents {
   }
 
   async getSystemPrompt(personNode: allDataObjects.PersonNode) {
+    let receiveCV
+    receiveCV = `If they have shared their interest after going through the JD, ask the candidate to share a copy of their updated CV prior to the meeting.
+    If they say that you can take the CV from naukri, tell them that you would require a copy for records directly from them for candidate confirmation purposes.`
+    receiveCV = ``
     const jobProfile = personNode?.candidates?.edges[0]?.node?.jobs;
     const questionArray = await this.getQuestionsToAsk(personNode);
     const formattedQuestions = questionArray.map((question, index) => `${index + 1}. ${question}`).join('\n');
@@ -91,8 +95,7 @@ export class ToolsForAgents {
     You will start the chat with asking if they are interested and available for a call.
     They may either ask questions or show interest or provide a time slot. Do not schedule a meeting before he is fully qualified.
     Next, share the JD with him/ her by calling the function "share_jd" only. Ask them if they would be keen on the role. Ask them if they are interested in the role only after sharing the JD.
-    If they have shared their interest after going through the JD, ask the candidate to share a copy of their updated CV prior to the meeting.
-    If they say that you can take the CV from naukri, tell them that you would require a copy for records directly from them for candidate confirmation purposes.
+    ${receiveCV}
     Your screening questions for understanding their profile are :
     ${formattedQuestions}
     Ask these questions in any order one by one and ensure a natural continuous conversation. Call the function update_answer after the candidate answers each question.
