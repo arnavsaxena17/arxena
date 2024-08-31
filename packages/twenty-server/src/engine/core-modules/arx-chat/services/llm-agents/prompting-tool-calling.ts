@@ -86,7 +86,7 @@ export class ToolsForAgents {
     let receiveCV
     receiveCV = `If they have shared their interest after going through the JD, ask the candidate to share a copy of their updated CV prior to the meeting.
     If they say that you can take the CV from naukri, tell them that you would require a copy for records directly from them for candidate confirmation purposes.`
-    receiveCV = ``
+    // receiveCV = ``
     const jobProfile = personNode?.candidates?.edges[0]?.node?.jobs;
     const questionArray = await this.getQuestionsToAsk(personNode);
     const formattedQuestions = '\t'+questionArray.map((question, index) => `${index + 1}. ${question}`).join('\n\t');
