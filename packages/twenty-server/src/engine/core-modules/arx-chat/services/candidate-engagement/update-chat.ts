@@ -90,7 +90,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
       const response = await axiosRequest(graphqlQueryObj);
       // console.log('This is the response from getCandidate Information FROM PHONENUMBER in getPersonDetailsByPhoneNumber', response.data.data);
       const personObj = response.data?.data?.people?.edges[0].node;
-      console.log('Personobj:', personObj);
+      console.log('Personobj:', personObj.name.firstName +" " + personObj.name.lastName);
       return personObj;
     } catch (error) {
       console.log('Getting an error and returning empty candidate profile objeect:', error);
@@ -391,11 +391,12 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
     console.log('Updating the candidate status::', candidateStatus);
     const candidateId = candidateProfileObj?.id;
     console.log('This is the candidateID for which we are trying to update the status:', candidateId);
-    const updateCandidateObjectVariables = { idToUpdate: candidateProfileObj?.id, input: { status: candidateStatus } };
+    const updateCandidateObjectVariables = { idToUpdate: candidateId, input: { status: candidateStatus } };
     const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToUpdateCandidateStatus, variables: updateCandidateObjectVariables });
     console.log("GraphQL query to update candidate status:", graphqlQueryObj);
     try {
       const response = await axiosRequest(graphqlQueryObj);
+      console.log("REsponse from updating candidate status:", response.status)
       return 'Updated the candidate profile with the status.';
     } catch {
       console.log('Error in updating candidate profile status');
