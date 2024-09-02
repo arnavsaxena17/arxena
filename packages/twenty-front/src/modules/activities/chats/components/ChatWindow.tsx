@@ -179,6 +179,7 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
 
   useEffect(() => {
     if (currentCandidateId) {
+      console.log("Getting list of messages for candidate id:", currentCandidateId)
       getlistOfMessages(currentCandidateId);
     }
   }, [props.selectedIndividual, currentCandidateId]);
@@ -190,6 +191,7 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
         { candidateId: currentCandidateId },
         { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } }
       );
+      console.log("Messages for candidate are :", response.data, "for id:", currentCandidateId)
       setMessageHistory(response.data);
       scrollToBottom();
     } catch (error) {
