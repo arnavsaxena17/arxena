@@ -256,7 +256,7 @@ export class ToolsForAgents {
 
   async updateCandidateProfile(inputs: any, personNode: allDataObjects.PersonNode) {
     try {
-      console.log('UPDATE CANDIDATE PROFILE CALLED AND INPUTS IS ::', inputs);
+      console.log('UPDATE CANDIDATE PROFILE CALLED AND UPDATING TO ::', inputs);
       console.log('Function Called:  candidateProfileDataNodeObj:any', personNode);
       // const status: allDataObjects.statuses = 'RECRUITER_INTERVIEW';
       await updateCandidateStatus(personNode, inputs.candidateStatus);

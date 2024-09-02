@@ -11,6 +11,7 @@ import { Server } from 'socket.io';
 import { io } from 'socket.io-client';
 import QRCode from 'react-qr-code';
 import { p } from 'node_modules/msw/lib/core/GraphQLHandler-907fc607';
+import { useHotkeys } from 'react-hotkeys-hook';
 
 // import {Check} from "@tabler/icons-react"
 
@@ -25,7 +26,9 @@ const StyledButton = styled.button`
 `;
 
 const StyledWindow = styled.div`
-  display: flex;
+  position: fixed;
+  display: block;
+
   flex-direction: column;
   height: 90vh;
   margin: 0 auto;
@@ -132,6 +135,20 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
 
   let messageName = currentIndividual?.name;
   listOfMessages?.sort((a, b) => new Date(a?.node?.createdAt).getTime() - new Date(b?.node?.createdAt).getTime());
+
+
+  const chatViewRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    if (chatViewRef.current) {
+      chatViewRef.current.scrollTop = chatViewRef.current.scrollHeight;
+    }
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [props.selectedIndividual, listOfMessages]);
+
 
   const sendMessage = async (messageText: string) => {
     console.log('send message');
@@ -392,7 +409,7 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
       <div style={{ display: 'flex', flexDirection: 'column' }}>
         {(props.selectedIndividual && (
           <StyledWindow>
-            <ChatView>
+            <ChatView ref={chatViewRef}>
               <StyledTopBar>{`${messageName.firstName} ${messageName.lastName}`}</StyledTopBar>
               <StyledScrollingView>
                 {listOfMessages?.map((message, index) => {
@@ -456,8 +473,6 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
         )) || (
           <div>
             <div>
-              
-              
             </div>
             <img src="/images/placeholders/moving-image/empty_inbox.png" alt="" />
             <p>Select a chat to start talking</p>

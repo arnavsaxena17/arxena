@@ -11,8 +11,8 @@ export async function sendWhatsappMessageVIABaileysAPI(whatappUpdateMessageObj: 
   console.log('Sending message to whatsapp via baileys api');
   console.log('whatappUpdateMessageObj.messageType', whatappUpdateMessageObj.messageType);
   if (whatappUpdateMessageObj.messageType === 'botMessage') {
-    console.log('This is the standard message to send fromL', allDataObjects.recruiterProfile.phone);
-    console.log('This is the standard message to send to phone:', whatappUpdateMessageObj.phoneNumberTo);
+    console.log('This is the standard message to send fromL', allDataObjects.recruiterProfile.phone, "for name:",whatappUpdateMessageObj.candidateProfile.name );
+    console.log('This is the standard message to send to phone:', whatappUpdateMessageObj.phoneNumberTo, "for name :", whatappUpdateMessageObj.candidateProfile.name);
     const sendTextMessageObj: allDataObjects.ChatRequestBody = {
       phoneNumberFrom: allDataObjects.recruiterProfile.phone,
       phoneNumberTo: whatappUpdateMessageObj.phoneNumberTo,

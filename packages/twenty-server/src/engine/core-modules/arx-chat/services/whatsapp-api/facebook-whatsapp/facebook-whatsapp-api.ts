@@ -477,7 +477,7 @@ export class FacebookWhatsappChatApi {
     config.url = url;
     config.responseType = 'stream';
     const fileDownloadResponse = await axios.request(config);
-    console.log('This is the response: bpdy', response.body);
+    console.log('This is the response: body in the download Attachment', response.body);
     const fileName = sendTemplateMessageObj.filename; // Set the desired file name
     const filePath = `${process.cwd()}/${fileName}`;
     const writeStream = fs.createWriteStream(filePath);
@@ -493,7 +493,7 @@ export class FacebookWhatsappChatApi {
         input: {
           authorId: candidateProfileData.jobs.recruiterId,
           name: filePath.replace(`${process.cwd()}/`, ''),
-          fullPath: attachmentObj.data.uploadFile,
+          fullPath: attachmentObj?.data?.uploadFile,
           type: 'TextDocument',
           candidateId: constCandidateProfileData.id,
         },

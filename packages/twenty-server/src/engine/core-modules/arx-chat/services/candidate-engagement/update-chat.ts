@@ -13,7 +13,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
       // console.log("CandidateIds:", candidateIds);
       const people = await this.fetchAllPeople(candidateIds);
       console.log(`Fetched ${people?.length} people in fetch all People`);
-      console.log("People names:", people.map(x => x.name.firstName + " " + x.name.lastName))
+      // console.log("People names:", people.map(x => x.name.firstName + " " + x.name.lastName))
       // console.log(people);
       return people
     } catch (error) {

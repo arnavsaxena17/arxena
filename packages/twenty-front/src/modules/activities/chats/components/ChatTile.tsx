@@ -2,11 +2,18 @@ import React from "react";
 import * as frontChatTypes from "../types/front-chat-types";
 import styled from "@emotion/styled";
 
-const StyledChatTile = styled.div<{ $selected?: boolean }>`
+const StyledChatTile = styled.div<{ $selected: boolean }>`
   padding: 1rem;
-  border-bottom: 1px solid #ccc; // Divider between tiles
-  //if selected, change background color
-  background-color: ${(props) => (props.$selected ? "#8c8c8c" : "white")};
+  border-bottom: 1px solid #ccc;
+  background-color: ${(props) => (props.$selected ? "#e6f7ff" : "white")};
+  color: ${(props) => (props.$selected ? "#1890ff" : "inherit")};
+  border-left: 4px solid ${(props) => (props.$selected ? "#1890ff" : "transparent")};
+  transition: all 0.3s;
+  cursor: pointer;
+
+  &:hover {
+    background-color: ${(props) => (props.$selected ? "#e6f7ff" : "#f0f0f0")};
+  }
 `;
 
 const UnreadIndicator = styled.span`
@@ -20,30 +27,34 @@ const UnreadIndicator = styled.span`
   width: 1rem;
 `;
 
-export default function ChatTile(props: {
+interface ChatTileProps {
   individual: frontChatTypes.PersonNode;
-  setSelectedIndividual: (value: React.SetStateAction<string>) => void;
+  setSelectedIndividual: (id: string) => void;
   selectedIndividual: string;
   unreadMessagesCount: number;
   id: string;
-}) {
-  return (
-    <StyledChatTile $selected={props.selectedIndividual === props.id}>
-      <div
-        onClick={() => {
-          props.setSelectedIndividual(props.individual?.id);
-        }}
-        style={{ cursor: "pointer" }}
-      >
-        <span>
-          {props.individual?.name?.firstName}{" "}
-          {props.individual?.name?.lastName}
-        </span>
+}
 
-        {props.unreadMessagesCount && props.unreadMessagesCount > 0 ? (
-          <UnreadIndicator>{props.unreadMessagesCount}</UnreadIndicator>
-        ) : null}
-      </div>
+const ChatTile: React.FC<ChatTileProps> = ({
+  individual,
+  setSelectedIndividual,
+  selectedIndividual,
+  unreadMessagesCount,
+  id,
+}) => {
+  return (
+    <StyledChatTile
+      $selected={selectedIndividual === id}
+      onClick={() => setSelectedIndividual(individual.id)}
+    >
+      <span>
+        {individual.name.firstName} {individual.name.lastName}
+      </span>
+      {unreadMessagesCount > 0 && (
+        <UnreadIndicator>{unreadMessagesCount}</UnreadIndicator>
+      )}
     </StyledChatTile>
   );
-}
+};
+
+export default ChatTile;
