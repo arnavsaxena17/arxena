@@ -296,7 +296,7 @@ export class ArxChatEndpoint {
       tryNo+=1
       console.log("Try #", tryNo)
       try {
-        const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphQlToFetchWhatsappMessages, variables:{ "limit": 30, "lastCursor": lastCursor, "filter": { "candidateId":{"in": [candidateId] } }, "orderBy": [ { "position": "AscNullsFirst" } ] } });
+        const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphQlToFetchWhatsappMessages, variables:{ "limit": 30, "lastCursor": lastCursor, "filter": { "candidateId":{"in": [candidateId] } }, "orderBy": [ { "position": "DescNullsFirst" } ] } });
         const response = await axiosRequest(graphqlQueryObj);
         const whatsappMessages = response.data.data.whatsappMessages;
         // console.log("Got Whatsapp Messages:", whatsappMessages)
@@ -351,11 +351,6 @@ export class ArxChatEndpoint {
   @Get('get-candidates-and-chats')
   @UseGuards(JwtAuthGuard)
   async getCandidatesAndChats(@Req() request: any): Promise<object> {
-    // const graphqlQueryObj = JSON.stringify({
-    //   query: allGraphQLQueries.graphqlQueryToFindEngagedCandidates,
-    // });
-    // const response = await axiosRequest(graphqlQueryObj);
-    // return response?.data?.data;
 
     const allPeople = await this.fetchAllPeople()
     console.log("All people length:", allPeople.length)
