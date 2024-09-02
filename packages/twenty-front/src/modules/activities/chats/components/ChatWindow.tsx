@@ -191,59 +191,6 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
     );
   };
 
-  // const handleRetrieveBotMessage = async (
-  //   phoneNumber: string,
-  //   latestResponseGenerated: string,
-  //   setLatestResponseGenerated: React.Dispatch<React.SetStateAction<string>>,
-  //   listOfToolCalls: string[],
-  //   setListOfToolCalls: React.Dispatch<React.SetStateAction<string[]>>,
-  //   messageHistory: [],
-  //   setMessageHistory: React.Dispatch<React.SetStateAction<[]>>
-  // ) => {
-  //   console.log("Retrieve Bot Message");
-  //   const oldLength = messageHistory.length;
-  //   debugger;
-  //   const response = await axios.post(
-  //     // ! Update host later to app.arxena.com/app
-  //     process.env.REACT_APP_SERVER_BASE_URL + "/arx-chat/retrieve-chat-response",
-  //     {
-  //       phoneNumberFrom: phoneNumber,
-  //     }
-  //   );
-  //   console.log("Got response after retrieving bot message", response.data);
-  //   setMessageHistory(response.data);
-  //   const newMessageHistory = response.data;
-
-  //   // const latestObject = response.data[response.data.length - 1];
-  //   // setLatestResponseGenerated(latestObject.content ?? "");
-  //   // const newLatestResponseGenerated = latestObject.content ?? "";
-  //   // botResponsePreviewRef.current.value = newLatestResponseGenerated;
-  //   // listOfMessages.push(newLatestResponseGenerated);
-  //   // console.log("latest:", newLatestResponseGenerated);
-  //   const newLength = newMessageHistory.length;
-  //   const diff = newLength - oldLength;
-  //   const arrObjOfToolCalls = response.data.slice(
-  //     newLength - diff,
-  //     newLength + 1
-  //   );
-
-  //   const latestObjectText =
-  //     arrObjOfToolCalls?.filter(
-  //       (obj: any) =>
-  //         obj?.role === "assistant" &&
-  //         (obj?.content !== null || obj?.content !== "")
-  //     )[0]?.content || "Failed to retrieve bot message";
-  //   //@ts-ignore
-  //   botResponsePreviewRef.current.value = latestObjectText;
-  //   setLatestResponseGenerated(latestObjectText);
-  //   console.log(arrObjOfToolCalls);
-  //   setListOfToolCalls(
-  //     arrObjOfToolCalls
-  //       .filter((obj: any) => obj?.role === "tool")
-  //       .map((obj: any) => obj?.name)
-  //   );
-  // };
-
   const handleRetrieveBotMessage = async (
     phoneNumber: string,
     latestResponseGenerated: string,
@@ -255,7 +202,6 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
   ) => {
     console.log('Retrieve Bot Message');
     const oldLength = currentMessageObject.length;
-    debugger;
     const response = await axios.post(
       // ! Update host later to app.arxena.com/app
       process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/retrieve-chat-response',
@@ -353,64 +299,13 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
     setMessageHistory(response.data);
   };
 
-  // useEffect(() => {
-  //   fetchMessageHistory(currentIndividual?.node?.phone);
-  //   console.log("useEffect::", messageHistory);
-  // }, [currentIndividual?.node?.phone]);
-
-  // Turning off whatsapp login logged out 
-  // const [isWhatsappLoggedIn, setIsWhatsappLoggedIn] = useState(false);
-  // Turning off whatsapp useeffect fot qr qnd token
-  // useEffect(() => {
-  //   const URL = process.env.REACT_APP_SERVER_SOCKET_URL || 'http://localhost:3000'; // Make sure this matches the URL and port of your Socket.io server
-  //   const socket = io(URL, {
-  //     path: process.env.REACT_APP_SOCKET_PATH_FRONT,
-  //     query: {
-  //       token: tokenPair?.accessToken?.token, // Replace with the actual JWT token
-  //     },
-  //   });
-
-  //   // Listen for QR code updates
-  //   console.log('Listening for QR code updates');
-  //   socket.on('qr', (qr: any) => {
-  //     console.log('Received QR code:', qr);
-  //     setQrCode(qr);
-  //   });
-
-  //   // socket.emit('getIsWhatsappLoggedIn', (data: boolean) => {
-  //   //   console.log('getIsWhatsappLoggedIn:', data);
-  //   //   setIsWhatsappLoggedIn(data)
-  //   // });
-
-  //   socket.on('isWhatsappLoggedIn', (isWhatsappLoggedIn: boolean) => {
-  //     console.log('Received isWhatsappLoggedIn:', isWhatsappLoggedIn);
-  //     setIsWhatsappLoggedIn(isWhatsappLoggedIn);
-  //   });
-
-  //   // socket.on('received', (data: any) => {
-  //   //   console.log(data);
-  //   // });
-
-  //   // Clean up the connection when the component is unmounted
-  //   return () => {
-  //     socket.off('qr');
-  //     socket.off('isWhatsappLoggedIn');
-  //   };
-  // }, []);
-
-  // useEffect(() => {
-  //   // {async const response = await axios.get(process.env.REACT_APP_SERVER_BASE_URL + '/whatsapp/get-wa-login-status');
-  //   console.log('232093', process.env.REACT_APP_SOCKET_PATH_FRONT);
-  //   console.log('232093', process.env.REACT_APP_SERVER_BASE_URL);
-  // });
-
   return (
     <>
       <div style={{ display: 'flex', flexDirection: 'column' }}>
         {(props.selectedIndividual && (
           <StyledWindow>
             <ChatView ref={chatViewRef}>
-              <StyledTopBar>{`${messageName.firstName} ${messageName.lastName}`}</StyledTopBar>
+              <StyledTopBar>{`${messageName.firstName} ${messageName.lastName} || ${currentIndividual.phone} || ${currentIndividual.id} || Messages: ${listOfMessages.length} ` }</StyledTopBar>
               <StyledScrollingView>
                 {listOfMessages?.map((message, index) => {
                   const showDateSeparator = index === 0 || formatDate(listOfMessages[index - 1]?.node?.createdAt) !== formatDate(message?.node?.createdAt);
@@ -421,17 +316,7 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
                           <StyledDateComponent>{dayjs(message?.node?.createdAt).format("ddd DD MMM, 'YY")}</StyledDateComponent>
                         </p>
                       )}
-                      <SingleChatContainer
-                        phoneNumber={currentIndividual?.phone}
-                        message={message}
-                        messageName={`${messageName.firstName} ${messageName.lastName}`}
-                        // latestResponseGenerated={latestResponseGenerated}
-                        // setLatestResponseGenerated={setLatestResponseGenerated}
-                        // listOfToolCalls={listOfToolCalls}
-                        // setListOfToolCalls={setListOfToolCalls}
-                        // messageHistory={messageHistory}
-                        // setMessageHistory={setMessageHistory}
-                      />
+                      <SingleChatContainer phoneNumber={currentIndividual?.phone} message={message} messageName={`${messageName.firstName} ${messageName.lastName}`} />
                     </>
                   );
                 })

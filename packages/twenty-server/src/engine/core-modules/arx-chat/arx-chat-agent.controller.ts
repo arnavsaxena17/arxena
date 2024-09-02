@@ -198,14 +198,14 @@ export class ArxChatEndpoint {
     const chatReply = 'startChat';
 
     const personObj: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(request.body.phoneNumberFrom);
-    console.log('Person Obj:', JSON.stringify(personObj));
+    // console.log('Person Obj:', JSON.stringify(personObj));
     console.log('This is the chat reply:', chatReply);
     const recruiterProfile = allDataObjects.recruiterProfile;
     console.log('Recruiter profile', recruiterProfile);
     const chatMessages = personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges;
     console.log('chatMessages:', chatMessages);
     let chatHistory = chatMessages[0]?.node?.messageObj || [];
-    console.log('Got chathistory = ', chatHistory);
+    // console.log('Got chathistory = ', chatHistory);
     console.log('chatMessages:', chatMessages);
     if (chatReply === 'startChat' && chatMessages.length === 0) {
       const SYSTEM_PROMPT = await new ToolsForAgents().getSystemPrompt(personObj);
@@ -242,14 +242,14 @@ export class ArxChatEndpoint {
   async SendChat(@Req() request: any): Promise<object> {
     const messageToSend = request?.body?.messageToSend;
     const personObj: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(request.body.phoneNumberTo);
-    console.log('Person Obj:', JSON.stringify(personObj));
+    // console.log('Person Obj:', JSON.stringify(personObj));
     console.log('This is the chat reply:', messageToSend);
     const recruiterProfile = allDataObjects.recruiterProfile;
     console.log('Recruiter profile', recruiterProfile);
     const chatMessages = personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges;
     console.log('chatMessages:', chatMessages);
     let chatHistory = chatMessages[0]?.node?.messageObj || [];
-    console.log('Got chathistory = ', chatHistory);
+    // console.log('Got chathistory = ', chatHistory);
     console.log('chatMessages:', chatMessages);
 
     chatHistory = personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.messageObj;
@@ -278,7 +278,7 @@ export class ArxChatEndpoint {
     whatappUpdateMessageObj.whatsappDeliveryStatus = 'sent';
     // to put it inside database table
     await new FetchAndUpdateCandidatesChatsWhatsapps().createAndUpdateWhatsappMessage(personObj.candidates.edges[0].node, whatappUpdateMessageObj);
-    console.log(sendMessageResponse);
+    // console.log(sendMessageResponse);
     return { status: 'success' };
   }
 
@@ -298,7 +298,7 @@ export class ArxChatEndpoint {
         allPeople = allPeople.concat(newPeople);
         lastCursor = peopleData.edges[peopleData.edges.length - 1].cursor;
         if (newPeople.length < 30) {  // Assuming 1000 is the maximum limit per request
-          console.log("Reached the last page.");
+          // console.log("Reached the last page.");
           break;
         }
       } catch (error) {
