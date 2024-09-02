@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import * as frontChatTypes from "../types/front-chat-types";
 import ChatTile from "./ChatTile";
 import styled from "@emotion/styled";
@@ -25,10 +25,20 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   setSelectedIndividual,
   unreadMessages,
 }) => {
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredIndividuals = individuals.filter((individual) =>
+    individual?.name?.firstName.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <StyledSidebarContainer>
-      <SearchBox placeholder="Search chats" />
-      {individuals.map((individual) => (
+      <SearchBox
+        placeholder="Search chats"
+        value={searchQuery}
+        onChange={(e:any) => setSearchQuery(e.target.value)}
+      />
+      {filteredIndividuals.map((individual) => (
         <ChatTile
           key={individual.id}
           id={individual.id}
