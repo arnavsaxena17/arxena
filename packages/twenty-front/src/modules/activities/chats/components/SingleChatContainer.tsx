@@ -77,7 +77,7 @@ const ChatMessageInfo = (props: {
 };
 
 export default function SingleChatContainer(props: {
-  message: frontChatTypes.WhatsAppMessagesEdge;
+  message: frontChatTypes.MessageNode;
   messageName: string | undefined;
   phoneNumber: string | undefined;
   // latestResponseGenerated: string;
@@ -92,14 +92,14 @@ export default function SingleChatContainer(props: {
       <StyledContainer>
         <ChatMessageInfo
           messageName={
-            props.message?.node?.name === "candidateMessage"
+            props.message?.name === "candidateMessage"
               ? props.messageName
               : "You"
           }
-          messageTime={props.message?.node?.createdAt}
-          messageReadStatus={props.message?.node?.whatsappDeliveryStatus}
+          messageTime={props.message?.createdAt}
+          messageReadStatus={props.message?.whatsappDeliveryStatus}
         />
-        <p>{props.message?.node?.message}</p>
+        <p>{props.message?.message}</p>
         {/* {props.message?.node?.name !== "candidateMessage" && (
           
         )} */}

@@ -163,12 +163,12 @@ export class FacebookWhatsappChatApi {
     return templateMessageObj;
   }
   async sendWhatsappTextMessage(sendTextMessageObj: allDataObjects.ChatRequestBody) {
-    console.log('Sending a message to ::', sendTextMessageObj.phoneNumberTo);
+    console.log('Sending a message to ::', sendTextMessageObj.phoneNumberTo.replace("+",""));
     console.log('Sending message text ::', sendTextMessageObj.messages);
     const text_message = {
       messaging_product: 'whatsapp',
       recipient_type: 'individual',
-      to: sendTextMessageObj.phoneNumberTo,
+      to: sendTextMessageObj.phoneNumberTo.replace("+",""),
       type: 'text',
       text: { preview_url: false, body: sendTextMessageObj.messages },
     };
@@ -185,6 +185,7 @@ export class FacebookWhatsappChatApi {
     // console.log("This is the config in sendWhatsappTextMessage:", config)
 
     const response = await axios.request(config);
+    console.log("Status on sending that whatsaapp message::", response?.status)
 
     return response;
   }

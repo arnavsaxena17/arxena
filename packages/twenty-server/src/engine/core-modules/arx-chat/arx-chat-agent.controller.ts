@@ -203,10 +203,10 @@ export class ArxChatEndpoint {
     const recruiterProfile = allDataObjects.recruiterProfile;
     console.log('Recruiter profile', recruiterProfile);
     const chatMessages = personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges;
-    console.log('chatMessages:', chatMessages);
+    // console.log('chatMessages:', chatMessages);
     let chatHistory = chatMessages[0]?.node?.messageObj || [];
     // console.log('Got chathistory = ', chatHistory);
-    console.log('chatMessages:', chatMessages);
+    // console.log('chatMessages:', chatMessages);
     if (chatReply === 'startChat' && chatMessages.length === 0) {
       const SYSTEM_PROMPT = await new ToolsForAgents().getSystemPrompt(personObj);
       chatHistory.push({ role: 'system', content: SYSTEM_PROMPT });
@@ -247,10 +247,10 @@ export class ArxChatEndpoint {
     const recruiterProfile = allDataObjects.recruiterProfile;
     console.log('Recruiter profile', recruiterProfile);
     const chatMessages = personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges;
-    console.log('chatMessages:', chatMessages);
+    // console.log('chatMessages:', chatMessages);
     let chatHistory = chatMessages[0]?.node?.messageObj || [];
     // console.log('Got chathistory = ', chatHistory);
-    console.log('chatMessages:', chatMessages);
+    // console.log('chatMessages:', chatMessages);
 
     chatHistory = personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.messageObj;
     // }

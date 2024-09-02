@@ -37,8 +37,7 @@ export default function ChatMain() {
   };
   const variable = useChats();
   const variable2 = useFindManyPeople();
-  console.log(variable);
-  console.log(variable2);
+
 
   function getUnreadMessageListManyCandidates(personNodes: frontChatTypes.PersonNode[]): frontChatTypes.UnreadMessageListManyCandidates {
     const listOfUnreadMessages: frontChatTypes.UnreadMessagesPerOneCandidate[] = [];
@@ -112,7 +111,7 @@ export default function ChatMain() {
       ?.filter(unreadMessage => unreadMessage.candidateId === individuals?.filter(individual => individual?.id === selectedIndividual)[0]?.candidates?.edges[0]?.node?.id)[0]
       ?.ManyUnreadMessages.map(message => message.id);
 
-    console.log('listOfMessagesIds', listOfMessagesIds);
+    // console.log('listOfMessagesIds', listOfMessagesIds);
     if (listOfMessagesIds === undefined) return;
     const response = await axios.post(
       process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/update-whatsapp-delivery-status',
