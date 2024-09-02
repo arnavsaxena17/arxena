@@ -143,6 +143,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
           input: userMessage?.messages[0]?.content,
           startChat: activeJobCandidateObj?.node?.startChat,
           whatsappMessages: activeJobCandidateObj?.node?.whatsappMessages,
+          status: activeJobCandidateObj?.node?.status,
 
           emailMessages: { edges: activeJobCandidateObj?.node?.emailMessages?.edges },
           candidateReminders: {
@@ -202,6 +203,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
         engagementStatus: candidateDataObjs?.node?.engagementStatus,
         phoneNumber: personWithActiveJob?.node?.phone,
         email: personWithActiveJob?.node?.email,
+        status:personWithActiveJob.node.status,
         input: userMessage?.messages[0]?.content,
         startChat: candidateDataObjs?.node?.startChat,
         whatsappMessages: candidateDataObjs?.node?.whatsappMessages,

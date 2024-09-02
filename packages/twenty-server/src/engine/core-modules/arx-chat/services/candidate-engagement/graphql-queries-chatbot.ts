@@ -1,3 +1,32 @@
+export const graphqlToFetchOneWhatsappMessageByWhatsappId = `
+query FindOneWhatsappMessage($whatsappMessageId: String!) {
+  whatsappMessage(filter: {whatsappMessageId: {eq: $whatsappMessageId}}) {
+    id
+    candidateId
+    whatsappMessageId
+    message
+    messageObj
+  }
+}
+`;
+export const graphqlQueryToFindMessageByWAMId = `query FindManyWhatsappMessages($filter: WhatsappMessageFilterInput, $orderBy: [WhatsappMessageOrderByInput], $lastCursor: String, $limit: Int) {
+  whatsappMessages(
+    filter: $filter
+    orderBy: $orderBy
+    first: $limit
+    after: $lastCursor
+  ) {
+    edges {
+      node {
+        __typename
+        id
+        whatsappMessageId
+      }
+  }
+}}
+  `;
+
+
 export const graphqlQueryToFindPeopleByPhoneNumber = `query FindManyPeople($filter: PersonFilterInput, $orderBy: [PersonOrderByInput], $lastCursor: String, $limit: Int) {
   people(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
     edges {
@@ -75,22 +104,7 @@ export const graphqlQueryToCreateOneNewWhatsappMessage = `mutation CreateOneWhat
     }
   }`;
 
-export const graphqlQueryToFindMessageByWAMId = `query FindManyWhatsappMessages($filter: WhatsappMessageFilterInput, $orderBy: [WhatsappMessageOrderByInput], $lastCursor: String, $limit: Int) {
-  whatsappMessages(
-    filter: $filter
-    orderBy: $orderBy
-    first: $limit
-    after: $lastCursor
-  ) {
-    edges {
-      node {
-        __typename
-        id
-        whatsappMessageId
-      }
-  }
-}}
-  `;
+
 
 export const graphqlQueryToUpdateCandidateEngagementStatus = `mutation UpdateOneCandidate($idToUpdate: ID!, $input: CandidateUpdateInput!) {
     updateCandidate(id: $idToUpdate, data: $input) {
@@ -120,8 +134,46 @@ export const graphqlQueryToUpdateMessageDeliveryStatus = `
     whatsappDeliveryStatus
     whatsappMessageId
   }
+}`;
+
+export const graphQlToFetchWhatsappMessages = `query FindManyWhatsappMessages($filter: WhatsappMessageFilterInput, $orderBy: [WhatsappMessageOrderByInput], $lastCursor: String, $limit: Int) {
+  whatsappMessages(
+    filter: $filter
+    orderBy: $orderBy
+    first: $limit
+    after: $lastCursor
+  ) {
+    edges {
+      node {
+        __typename
+        message
+        name
+        typeOfMessage
+        whatsappMessageId
+        audioFilePath
+        candidateId
+        whatsappDeliveryStatus
+        createdAt
+        whatsappProvider
+        phoneFrom
+        id
+        phoneTo
+        position
+      }
+      cursor
+      __typename
+    }
+    pageInfo {
+      hasNextPage
+      startCursor
+      endCursor
+      __typename
+    }
+    totalCount
+    __typename
+  }
 }
-  `;
+`
 
 export const graphqlQueryToFindEngagedCandidates = `query FindManyPeople($filter: PersonFilterInput, $orderBy: [PersonOrderByInput], $lastCursor: String, ) {
     people(filter: $filter, orderBy: $orderBy,  after: $lastCursor) {

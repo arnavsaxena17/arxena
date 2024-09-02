@@ -282,6 +282,45 @@ export class ArxChatEndpoint {
     return { status: 'success' };
   }
 
+
+  @Post('get-all-messages-by-candidate-id')
+  @UseGuards(JwtAuthGuard)
+  async getPhoneNumbersByCandidateId(@Req() request: any): Promise<object> {
+    
+    let allWhatsappMessages = [];
+    let lastCursor = null;
+    let tryNo = 0
+    const candidateId = request.body.candidateId;
+    console.log('candidateId to fetch all messages:', candidateId);
+    while (true) {
+      tryNo+=1
+      console.log("Try #", tryNo)
+      try {
+        const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphQlToFetchWhatsappMessages, variables:{ "limit": 30, "lastCursor": lastCursor, "filter": { "candidateId":{"in": [candidateId] } }, "orderBy": [ { "position": "AscNullsFirst" } ] } });
+        const response = await axiosRequest(graphqlQueryObj);
+        const whatsappMessages = response.data.data.whatsappMessages;
+        // console.log("Got Whatsapp Messages:", whatsappMessages)
+        if (!whatsappMessages || whatsappMessages?.edges?.length === 0) {
+          console.log("No more data to fetch.");
+          break;
+        }
+        const newWhatsappMessages = whatsappMessages.edges.map(edge => edge.node);
+        allWhatsappMessages = allWhatsappMessages.concat(newWhatsappMessages);
+        lastCursor = whatsappMessages.edges[whatsappMessages.edges.length - 1].cursor;
+        if (newWhatsappMessages.length < 30) {  // Assuming 1000 is the maximum limit per request
+          console.log("Reached the last page.");
+          break;
+        }
+      } catch (error) {
+        console.error('Error fetching whatsappmessages:', error);
+        break;
+      }
+    }
+    return allWhatsappMessages;
+  }
+
+
+
   async fetchAllPeople() {
     let allPeople = [];
     let lastCursor = null;

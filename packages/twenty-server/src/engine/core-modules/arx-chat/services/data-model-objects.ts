@@ -162,6 +162,7 @@ export interface CandidateNode {
   email: string;
   input: string;
   startChat: boolean;
+  status:string;
   whatsappMessages: WhatsAppMessages;
   emailMessages: EmailMessages;
   jobs: Jobs;
@@ -384,7 +385,7 @@ export const emptyCandidateProfileObj: CandidateNode = {
       },
     ],
   },
-
+  status:"",
   engagementStatus: false,
   phoneNumber: '',
   email: '',

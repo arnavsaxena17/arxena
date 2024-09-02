@@ -67,6 +67,25 @@ export class IncomingWhatsappMessages {
     return differenceInSeconds < 300;
   }
 
+  async fetchWhatsappMessageById(messageId: string) {
+    console.log('This is the message id:', messageId);
+    try {
+      const whatsappMessageVariable = {
+        whatsappMessageId: messageId,
+      };
+      const response = await axiosRequest(
+        JSON.stringify({
+          query: allGraphQLQueries.graphqlToFetchOneWhatsappMessageByWhatsappId,
+          variables: whatsappMessageVariable,
+        }),
+      );
+      console.log('Response from fetchWhatsappMessageById:', response?.data);
+      return response?.data;
+    } catch (error) {
+      console.log('Error fetching whatsapp message by id:', error);
+      return { error: error };
+    }
+  }
   async receiveIncomingMessagesFromFacebook(requestBody: allDataObjects.WhatsAppBusinessAccount) {
     console.log('This is requestBody from Facebook::', JSON.stringify(requestBody));
     // to check if the incoming message is the status of the message
@@ -115,27 +134,34 @@ export class IncomingWhatsappMessages {
         if (requestBody?.entry[0]?.changes[0]?.value?.messages[0].type !== 'utility' && requestBody?.entry[0]?.changes[0]?.value?.messages[0].type !== 'document' && requestBody?.entry[0]?.changes[0]?.value?.messages[0].type !== 'audio') {
           // debugger
           console.log('We have a whatsapp incoming message which is a text one we have to do set of things with which is not a utility message');
+          let chatReply = userMessageBody?.text?.body;
+          if (!chatReply && userMessageBody.reaction.id){
+          const whatsappMessageCommentedOn = await this.fetchWhatsappMessageById(userMessageBody?.reaction?.id);
+
+            console.log("its likely an emoji message or emoji reaction to precededing message")
+            console.log("Emoji message:", userMessageBody.reaction.emoji, "to message id:", userMessageBody.reaction.id, "from ::", userMessageBody.reaction.from)
+            // Adhoc setting chatReply to emoji. lets see how it goes.
+            const messageToAppend = 'Reacted ' + userMessageBody.reaction.emoji + ' to ' + "'" + whatsappMessageCommentedOn + "'" || '';
+            chatReply = messageToAppend
+          }
           const phoneNumberTo = requestBody?.entry[0]?.changes[0]?.value?.metadata?.display_phone_number;
           const whatsappIncomingMessage: allDataObjects.chatMessageType = {
             phoneNumberFrom: userMessageBody.from,
             phoneNumberTo: phoneNumberTo,
-            messages: [{ role: 'user', content: userMessageBody?.text?.body }],
+            messages: [{ role: 'user', content: chatReply }],
             messageType: 'string',
           };
-          const chatReply = userMessageBody?.text?.body;
           console.log('We will first go and get the candiate who sent us the message');
           const candidateProfileData = await new FetchAndUpdateCandidatesChatsWhatsapps().getCandidateInformation(whatsappIncomingMessage);
           console.log('This is the candiate who has sent us the message., we have to update the database that this message has been recemivged::', chatReply);
           // console.log('This is the candiate who has sent us candidateProfileData::', candidateProfileData);
-          // debugger
           const replyObject = {
-            chatReply: userMessageBody?.text?.body,
+            chatReply: chatReply,
             whatsappDeliveryStatus: 'receivedFromCandidate',
             whatsappMessageId: requestBody?.entry[0]?.changes[0]?.value?.messages[0].id,
           };
 
           const responseAfterMessageUpdate = await this.createAndUpdateIncomingCandidateChatMessage(replyObject, candidateProfileData);
-          // debugger;
           if (candidateProfileData?.candidateReminders?.edges.length > 0) {
             const listOfReminders = candidateProfileData?.candidateReminders?.edges;
             const updateOneReminderVariables = { idToUpdate: listOfReminders[0]?.node?.id, input: { isReminderActive: false } };
