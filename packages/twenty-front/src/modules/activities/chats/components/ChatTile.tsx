@@ -48,7 +48,7 @@ const ChatTile: React.FC<ChatTileProps> = ({
       onClick={() => setSelectedIndividual(individual.id)}
     >
       <span>
-        {individual.name.firstName} {individual.name.lastName}
+        {individual.name.firstName} {individual.name.lastName} ({individual.candidates.edges[0].node.whatsappMessages.edges.length})
       </span>
       {unreadMessagesCount > 0 && (
         <UnreadIndicator>{unreadMessagesCount}</UnreadIndicator>

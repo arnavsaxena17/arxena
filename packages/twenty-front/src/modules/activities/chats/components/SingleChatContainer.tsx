@@ -59,8 +59,8 @@ const StyledTime = styled.span`
 `;
 
 const ChatMessageInfo = (props: {
-  messageName: string;
-  messageTime: string;
+  messageName: string | undefined;
+  messageTime: string | undefined;
   messageReadStatus: string;
 }) => {
   return (
@@ -78,8 +78,8 @@ const ChatMessageInfo = (props: {
 
 export default function SingleChatContainer(props: {
   message: frontChatTypes.WhatsAppMessagesEdge;
-  messageName: string;
-  phoneNumber: string;
+  messageName: string | undefined;
+  phoneNumber: string | undefined;
   // latestResponseGenerated: string;
   // setLatestResponseGenerated: React.Dispatch<React.SetStateAction<string>>;
   // listOfToolCalls: string[];

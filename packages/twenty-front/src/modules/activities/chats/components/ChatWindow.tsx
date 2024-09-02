@@ -131,6 +131,36 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
 
   let listOfMessages = currentIndividual?.candidates?.edges[0]?.node?.whatsappMessages?.edges;
 
+
+  // const [listOfMessages, setListOfMessages] = useState<any[]>([]);
+
+
+  // async function getlistOfMessages(currentIndividualId: string) {
+  //   try {
+  //     const response = await axios.post(
+  //       process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/get-all-messages-by-candidate-id',
+  //       { candidateId: currentIndividualId },
+  //       { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } }
+  //     );
+  //     return response.data;
+  //   } catch (error) {
+  //     console.error('Error fetching messages:', error);
+  //     return [];
+  //   }
+  // }
+
+
+  // useEffect(() => {
+  //   async function fetchMessages() {
+  //     if (currentIndividual?.candidates?.edges[0]?.node?.id) {
+        // const messages = await getlistOfMessages(currentIndividual.candidates.edges[0].node.id);
+  //       setListOfMessages(messages);
+  //     }
+  //   }
+  //   fetchMessages();
+  // }, [currentIndividual]);
+
+
   let currentMessageObject = currentIndividual?.candidates?.edges[0]?.node?.whatsappMessages?.edges[currentIndividual?.candidates?.edges[0]?.node?.whatsappMessages?.edges?.length - 1]?.node?.messageObj;
 
   let messageName = currentIndividual?.name;
@@ -144,27 +174,34 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
       chatViewRef.current.scrollTop = chatViewRef.current.scrollHeight;
     }
   };
+  const currentCandidateId = currentIndividual?.candidates?.edges[0]?.node?.id;
+
 
   useEffect(() => {
-    scrollToBottom();
-  }, [props.selectedIndividual, listOfMessages]);
+    if (currentCandidateId) {
+      getlistOfMessages(currentCandidateId);
+    }
+  }, [props.selectedIndividual, currentCandidateId]);
+
+  async function getlistOfMessages(currentCandidateId: string) {
+    try {
+      const response = await axios.post(
+        process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/get-all-messages-by-candidate-id',
+        { candidateId: currentCandidateId },
+        { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } }
+      );
+      setMessageHistory(response.data);
+      scrollToBottom();
+    } catch (error) {
+      console.error('Error fetching messages:', error);
+      setMessageHistory([]);
+    }
+  }
 
 
   const sendMessage = async (messageText: string) => {
     console.log('send message');
-    const response = await axios.post(
-      process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/send-chat',
-      {
-        messageToSend: messageText,
-        phoneNumberTo: currentIndividual?.phone,
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
-        },
-      },
-    );
-  };
+  const response = await axios.post( process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/send-chat', { messageToSend: messageText, phoneNumberTo: currentIndividual?.phone, }, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}`, }, }, ); };
   const handleSubmit = () => {
     console.log('submit');
     //@ts-ignore
@@ -178,17 +215,7 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
   const handleShareJD = async () => {
     console.log('share JD');
     //@ts-ignore
-    const response = await axios.post(
-      process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/send-jd-from-frontend',
-      {
-        phoneNumberTo: currentIndividual?.phone,
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
-        },
-      },
-    );
+    const response = await axios.post( process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/send-jd-from-frontend', { phoneNumberTo: currentIndividual?.phone, }, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}`, }, }, );
   };
 
   const handleRetrieveBotMessage = async (
@@ -263,20 +290,8 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
   };
 
   const handleSendMessage = async (phoneNumber: string, latestResponseGenerated: string) => {
-    debugger;
     console.log('Send Message');
-    const response = await axios.post(
-      process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/send-chat',
-      {
-        messageToSend: latestResponseGenerated || 'Didnt work',
-        phoneNumberTo: phoneNumber,
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
-        },
-      },
-    );
+    const response = await axios.post( process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/send-chat', { messageToSend: latestResponseGenerated || 'Didnt work', phoneNumberTo: phoneNumber }, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } } );
   };
 
   const handleToolCalls = () => {
@@ -305,7 +320,7 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
         {(props.selectedIndividual && (
           <StyledWindow>
             <ChatView ref={chatViewRef}>
-              <StyledTopBar>{`${messageName.firstName} ${messageName.lastName} || ${currentIndividual.phone} || ${currentIndividual.id} || Messages: ${listOfMessages.length} ` }</StyledTopBar>
+              <StyledTopBar>{`${messageName.firstName} ${messageName.lastName}  || ${currentIndividual.phone} || ${currentIndividual.id} || Messages: ${listOfMessages.length} ` }</StyledTopBar>
               <StyledScrollingView>
                 {listOfMessages?.map((message, index) => {
                   const showDateSeparator = index === 0 || formatDate(listOfMessages[index - 1]?.node?.createdAt) !== formatDate(message?.node?.createdAt);
@@ -352,6 +367,10 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
                 <StyledChatInput type="text" ref={inputRef} placeholder="Type your message" />
                 <StyledButton onClick={handleSubmit}>Submit</StyledButton>
                 <StyledButton onClick={handleShareJD}>Share JD</StyledButton>
+              </div>
+              <div style={{ display: 'flex' }}>
+                    Last Status: {currentIndividual.candidates.edges[0].node.status}
+
               </div>
             </StyledChatInputBox>
           </StyledWindow>
