@@ -289,12 +289,12 @@ export class ArxChatEndpoint {
     
     let allWhatsappMessages = [];
     let lastCursor = null;
-    let tryNo = 0
+    // let tryNo = 0
     const candidateId = request.body.candidateId;
     console.log('candidateId to fetch all messages:', candidateId);
     while (true) {
-      tryNo+=1
-      console.log("Try #", tryNo)
+      // tryNo+=1
+      // console.log("Try #", tryNo)
       try {
         const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphQlToFetchWhatsappMessages, variables:{ "limit": 30, "lastCursor": lastCursor, "filter": { "candidateId":{"in": [candidateId] } }, "orderBy": [ { "position": "DescNullsFirst" } ] } });
         const response = await axiosRequest(graphqlQueryObj);

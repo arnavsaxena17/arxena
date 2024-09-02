@@ -200,6 +200,7 @@ export const graphqlQueryToFindEngagedCandidates = `query FindManyPeople($filter
                       }
                       engagementStatus
                       startChat
+                      status
                       stopChat
                       candidateReminders{
                         edges{

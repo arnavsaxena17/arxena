@@ -140,6 +140,7 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
       setMessageHistory([]);
     }
   }
+  console.log("Current Individual::", currentIndividual)
   let currentMessageObject = currentIndividual?.candidates?.edges[0]?.node?.whatsappMessages?.edges[currentIndividual?.candidates?.edges[0]?.node?.whatsappMessages?.edges?.length - 1]?.node?.messageObj;
 
   const handleInvokeChatAndRunToolCalls = async (phoneNumber: string | undefined, latestResponseGenerated: string, setLatestResponseGenerated: React.Dispatch<React.SetStateAction<string>>, setListOfToolCalls: React.Dispatch<React.SetStateAction<string[]>>) => {
