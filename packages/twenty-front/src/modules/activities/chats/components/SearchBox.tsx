@@ -10,6 +10,15 @@ const SearchBoxContainer = styled.div`
   max-width: 400px;
 `;
 
+// Define the props type
+interface SearchBoxProps {
+  placeholder: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+}
+
+
+
 const SearchIcon = styled.span`
   margin-right: 8px;
   color: #888;
@@ -21,11 +30,16 @@ const SearchInput = styled.input`
   width: 100%;
 `;
 
-const SearchBox = ({ placeholder }) => {
+const SearchBox: React.FC<SearchBoxProps> = ({ placeholder, value, onChange }) => {
   return (
     <SearchBoxContainer>
       <SearchIcon>🔍</SearchIcon>
-      <SearchInput type="text" placeholder="Search" />
+      <SearchInput
+        type="text"
+        placeholder={placeholder}
+        value={value}
+        onChange={onChange}
+      />
     </SearchBoxContainer>
   );
 };

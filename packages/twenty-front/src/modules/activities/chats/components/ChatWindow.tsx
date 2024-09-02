@@ -255,7 +255,7 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
         {props.selectedIndividual && (
           <StyledWindow>
             <ChatView ref={chatViewRef}>
-              <StyledTopBar>{`${currentIndividual?.name.firstName} ${currentIndividual?.name.lastName} || ${currentIndividual?.phone} || ${currentIndividual?.id} || Messages: ${messageHistory.length}`}</StyledTopBar>
+              <StyledTopBar>{`${currentIndividual?.name.firstName} ${currentIndividual?.name.lastName} || ${currentIndividual?.phone} || ${currentIndividual?.id} || Messages: ${messageHistory.length} || 'Last Status': ${currentIndividual?.candidates?.edges[0]?.node?.status}`}</StyledTopBar>
               <StyledScrollingView>
                 {messageHistory.map((message, index) => {
                   const showDateSeparator = index === 0 || formatDate(messageHistory[index - 1]?.createdAt) !== formatDate(message?.createdAt);
