@@ -12,34 +12,38 @@ const StyledSidebarContainer = styled.div`
   overflow-y: auto;
 `;
 
-export default function (props: {
+interface ChatSidebarProps {
   individuals: frontChatTypes.PersonNode[];
   selectedIndividual: string;
-  setSelectedIndividual: (value: React.SetStateAction<string>) => void;
+  setSelectedIndividual: (id: string) => void;
   unreadMessages: frontChatTypes.UnreadMessageListManyCandidates;
-}) {
-  return (
-    <div>
-      <StyledSidebarContainer>
-        <SearchBox placeholder="Hello" />
-        {props.individuals?.map((individual) => {
-          return (
-            <ChatTile
-              id={individual?.candidates?.edges[0]?.node?.id}
-              individual={individual}
-              setSelectedIndividual={props.setSelectedIndividual}
-              selectedIndividual={props.selectedIndividual}
-              unreadMessagesCount={
-                props.unreadMessages?.listOfUnreadMessages?.filter((unread) => {
-                  return (
-                    unread.candidateId === individual?.candidates?.edges[0]?.node?.id
-                  );
-                })[0]?.ManyUnreadMessages.length
-              }
-            />
-          );
-        })}
-      </StyledSidebarContainer>
-    </div>
-  );
 }
+
+const ChatSidebar: React.FC<ChatSidebarProps> = ({
+  individuals,
+  selectedIndividual,
+  setSelectedIndividual,
+  unreadMessages,
+}) => {
+  return (
+    <StyledSidebarContainer>
+      <SearchBox placeholder="Search chats" />
+      {individuals.map((individual) => (
+        <ChatTile
+          key={individual.id}
+          id={individual.id}
+          individual={individual}
+          setSelectedIndividual={setSelectedIndividual}
+          selectedIndividual={selectedIndividual}
+          unreadMessagesCount={
+            unreadMessages.listOfUnreadMessages
+              ?.filter((unread) => unread.candidateId === individual.candidates?.edges[0]?.node?.id)
+              [0]?.ManyUnreadMessages.length || 0
+          }
+        />
+      ))}
+    </StyledSidebarContainer>
+  );
+};
+
+export default ChatSidebar;

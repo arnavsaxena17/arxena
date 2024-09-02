@@ -68,7 +68,7 @@ export class IncomingWhatsappMessages {
   }
 
   async receiveIncomingMessagesFromFacebook(requestBody: allDataObjects.WhatsAppBusinessAccount) {
-    console.log('This is requestBody from Facebook::', requestBody);
+    console.log('This is requestBody from Facebook::', JSON.stringify(requestBody));
     // to check if the incoming message is the status of the message
 
     if (requestBody?.entry[0]?.changes[0]?.value?.statuses && requestBody?.entry[0]?.changes[0]?.value?.statuses[0]?.status && !requestBody?.entry[0]?.changes[0]?.value?.messages) {
@@ -78,9 +78,9 @@ export class IncomingWhatsappMessages {
       const variables = { filter: { whatsappMessageId: { ilike: `%${messageId}%` } }, orderBy: { position: 'AscNullsFirst' } };
       const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindMessageByWAMId, variables: variables });
       const response = await axiosRequest(graphqlQueryObj);
-      console.log('-----------------This is the response from the query to find the message by WAMID::', +'-------------------');
+      console.log('-----------------This is the response from the query to find the message by WAMID::-------------------');
       // debugger
-      console.log("Response to query::", response?.data?.data);
+      // console.log("Response to query on who sent the messages::", response?.data?.data);
 
       if (response?.data?.data?.whatsappMessages?.edges.length === 0) {
         console.log('No message found with the given WAMID');
@@ -111,7 +111,7 @@ export class IncomingWhatsappMessages {
           return;
         }
 
-        console.log('There is a usermessage body in the request', userMessageBody);
+        // console.log('There is a usermessage body in the request', userMessageBody);
         if (requestBody?.entry[0]?.changes[0]?.value?.messages[0].type !== 'utility' && requestBody?.entry[0]?.changes[0]?.value?.messages[0].type !== 'document' && requestBody?.entry[0]?.changes[0]?.value?.messages[0].type !== 'audio') {
           // debugger
           console.log('We have a whatsapp incoming message which is a text one we have to do set of things with which is not a utility message');

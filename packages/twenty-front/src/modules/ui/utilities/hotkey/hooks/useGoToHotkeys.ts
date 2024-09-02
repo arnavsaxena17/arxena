@@ -6,20 +6,20 @@ import { AppHotkeyScope } from '../types/AppHotkeyScope';
 import { useSequenceHotkeys } from './useSequenceScopedHotkeys';
 
 export const useGoToHotkeys = (key: Keys, location: string) => {
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
 
-  useSequenceHotkeys(
-    'g',
-    key,
-    () => {
-      navigate(location);
-    },
-    AppHotkeyScope.Goto,
-    {
-      enableOnContentEditable: true,
-      enableOnFormTags: true,
-      preventDefault: true,
-    },
-    [navigate],
-  );
+  // useSequenceHotkeys(
+  //   'g',
+  //   key,
+  //   () => {
+  //     navigate(location);
+  //   },
+  //   AppHotkeyScope.Goto,
+  //   {
+  //     enableOnContentEditable: true,
+  //     enableOnFormTags: true,
+  //     preventDefault: true,
+  //   },
+  //   [navigate],
+  // );
 };
