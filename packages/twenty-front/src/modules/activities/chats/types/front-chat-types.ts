@@ -114,6 +114,7 @@ export interface sendWhatsappTemplateMessageObjectType {
 
 export interface WhatsAppMessagesEdge {
   node: MessageNode;
+  
 }
 
 export interface WhatsAppMessages {
