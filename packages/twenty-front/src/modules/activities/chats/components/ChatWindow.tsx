@@ -81,7 +81,7 @@ const StyledButton = styled.button<{ bgColor: string }>`
 
 const StyledButtonBottom = styled.button`
   padding: 0.5em;
-  background-color: #0e6874;
+  background-color: black;
   color: white;
   border: none;
   margin-left: 1rem;
@@ -151,7 +151,7 @@ const StyledButtonsBelowChatMessage = styled.div`
 `;
 
 const StyledButton2 = styled.button`
-  background-color: #4caf50;
+  background-color: #666666;
   border: none;
   border-radius: 10px;
   color: white;
@@ -377,10 +377,10 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
             <StyledTopBar>
             <div>{`${currentIndividual?.name.firstName} ${currentIndividual?.name.lastName} || ${currentIndividual?.phone} || ${currentIndividual?.id} || Messages: ${messageHistory.length} || Last Status: ${currentIndividual?.candidates?.edges[0]?.node?.status}`}</div>
                 <StyledButtonGroup>
-                  <StyledButton onClick={handleNavigateToPersonPage} bgColor="#0e6874" data-tooltip="Person">
+                  <StyledButton onClick={handleNavigateToPersonPage} bgColor="black" data-tooltip="Person">
                     <PersonIcon />
                   </StyledButton>
-                  <StyledButton onClick={handleNavigateToCandidatePage} bgColor="#6b4e71" data-tooltip="Candidate">
+                  <StyledButton onClick={handleNavigateToCandidatePage} bgColor="black" data-tooltip="Candidate">
                     <CandidateIcon />
                   </StyledButton>
                 </StyledButtonGroup>

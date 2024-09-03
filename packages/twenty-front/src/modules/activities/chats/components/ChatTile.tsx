@@ -5,14 +5,14 @@ import styled from "@emotion/styled";
 const StyledChatTile = styled.div<{ $selected: boolean }>`
   padding: 1rem;
   border-bottom: 1px solid #ccc;
-  background-color: ${(props) => (props.$selected ? "#e6f7ff" : "white")};
-  color: ${(props) => (props.$selected ? "#1890ff" : "inherit")};
-  border-left: 4px solid ${(props) => (props.$selected ? "#1890ff" : "transparent")};
+  background-color: ${(props) => (props.$selected ? "#f5f9fd" : "white")};
+  color: ${(props) => (props.$selected ? "black" : "inherit")};
+  border-left: 4px solid ${(props) => (props.$selected ? "black" : "transparent")};
   transition: all 0.3s;
   cursor: pointer;
 
   &:hover {
-    background-color: ${(props) => (props.$selected ? "#e6f7ff" : "#f0f0f0")};
+    background-color: ${(props) => (props.$selected ? "#f5f9fd" : "#f0f0f0")};
   }
 `;
 
@@ -35,15 +35,16 @@ interface ChatTileProps {
   id: string;
 }
 
-export const statusesArray = ['SCREENING', 'CV_SENT', 'RECRUITER_INTERVIEW', 'CLIENT_RECEIVED', 'NEGOTIATION'] as const;
+export const statusesArray = ['SCREENING', 'CV_SENT', 'RECRUITER_INTERVIEW','CV_RECEIVED', 'CLIENT_RECEIVED', 'NEGOTIATION'] as const;
 type Status = typeof statusesArray[number];
 
 const statusMapping: Record<Status, string> = {
   "SCREENING": "S",
-  "CV_SENT": "CV",
+  'CV_RECEIVED':"CVR",
+  "CV_SENT": "CVS",
   "RECRUITER_INTERVIEW": "RI",
   "CLIENT_RECEIVED": "CI",
-  "NEGOTIATION": "O"
+  "NEGOTIATION": "OFF"
 };
 
 const ChatTile: React.FC<ChatTileProps> = ({
