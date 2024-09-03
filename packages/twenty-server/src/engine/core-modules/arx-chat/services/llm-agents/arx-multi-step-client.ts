@@ -161,6 +161,7 @@ export class OpenAIArxMultiStepClient {
   }
   async addResponseAndToolCallsToMessageHistory(responseMessage: ChatCompletionMessage, mostRecentMessageArr: allDataObjects.ChatHistoryItem[], stage: string, processorType: string) {
     const toolCalls = responseMessage?.tool_calls;
+    console.log("We have made a total of ", toolCalls?.length, " tool calls in current chatResponseMessage")
     if (toolCalls) {
       for (const toolCall of toolCalls) {
         const functionName = toolCall.function.name;
