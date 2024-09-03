@@ -415,7 +415,7 @@ export class ArxChatEndpoint {
           variables: variablesToUpdateDeliveryStatus,
         });
         const responseOfDeliveryStatus = await axiosRequest(graphqlQueryObjForUpdationForDeliveryStatus);
-        console.log('Res:::', responseOfDeliveryStatus?.data);
+        console.log('Res:::', responseOfDeliveryStatus?.data?.data?.whatsappDeliveryStatus, "for wamid::", responseOfDeliveryStatus?.data?.data?.whatsappMessageId);
         console.log('---------------DELIVERY STATUS UPDATE DONE-----------------------');
       }
       return { status: 'Success' };

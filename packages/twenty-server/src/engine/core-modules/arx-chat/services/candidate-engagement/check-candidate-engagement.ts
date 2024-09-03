@@ -145,7 +145,7 @@ export default class CandidateEngagementArx {
         // If there are no candidates or the candidate has no engagement status, exclude this person
         return false;
       });
-      console.log("These are the number of candidates who are filetered and will be engaged:", filteredCandidatesToEngage.length)
+      console.log("Number of candidates who are filtered and will be engaged:", filteredCandidatesToEngage.length)
       return  filteredCandidatesToEngage
     }
 
@@ -154,11 +154,11 @@ export default class CandidateEngagementArx {
     const filteredCandidatesToStartEngagement = peopleCandidateResponseEngagementArr?.filter(personNode => {
       return personNode?.candidates?.edges?.length > 0 && personNode?.candidates?.edges[0]?.node?.startChat === true;
     });
-    console.log('these are the number of candidates to who have no filteredCandidatesToStartEngagement ::', filteredCandidatesToStartEngagement?.length);
+    console.log('Number of candidates to who have no filteredCandidatesToStartEngagement ::', filteredCandidatesToStartEngagement?.length);
     const filteredCandidatesWhoHaveNoWhatsappHistory = filteredCandidatesToStartEngagement?.filter(personNode => {
       return personNode?.candidates?.edges[0]?.node?.whatsappMessages?.edges.length === 0;
     });
-    console.log('these are the number of candidates to start chat ::', filteredCandidatesWhoHaveNoWhatsappHistory?.length);
+    console.log('Number of candidates to start chat ::', filteredCandidatesWhoHaveNoWhatsappHistory?.length);
     for (let i = 0; i < filteredCandidatesWhoHaveNoWhatsappHistory?.length; i++) {
       const chatReply = 'startChat';
       const candidateProfileDataNodeObj = filteredCandidatesWhoHaveNoWhatsappHistory[i];

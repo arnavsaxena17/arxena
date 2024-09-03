@@ -513,6 +513,11 @@ export class FacebookWhatsappChatApi {
     if (whatappUpdateMessageObj.messageType === 'botMessage') {
       console.log('TEmplate Message or Text Message depends on :', whatappUpdateMessageObj.messages[0].content);
 
+      if (whatappUpdateMessageObj.messages[0].content.includes('#DONTRESPOND#') || whatappUpdateMessageObj.messages[0].content.includes('DONTRESPOND') || whatappUpdateMessageObj.messages[0].content.includes('DONOTRESPOND')) {
+        console.log('Found a #DONTRESPOND# message in STAGE 2, so not sending any message');
+        return;
+      }
+
       if (whatappUpdateMessageObj.messages[0].content.includes('Based Recruitment Company') || whatappUpdateMessageObj.messages[0].content.includes('assist')) {
         console.log('This is the template api message to send in whatappUpdateMessageObj.phoneNumberFrom, ', whatappUpdateMessageObj.phoneNumberFrom);
         const sendTemplateMessageObj = {
@@ -543,8 +548,7 @@ export class FacebookWhatsappChatApi {
         };
         response = await this.sendWhatsappTextMessage(sendTextMessageObj);
         const whatappUpdateMessageObjAfterWAMidUpdate = await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj(
-          response?.data?.messages[0]?.id || response.messages[0].id, // whatsapp message id response.messages[0].id
-          // response,
+          response?.data?.messages[0]?.id || response.messages[0].id,
           personNode,
           mostRecentMessageArr,
         );
