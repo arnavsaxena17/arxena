@@ -335,7 +335,6 @@ export class ArxChatEndpoint {
         allPeople = allPeople.concat(newPeople);
         lastCursor = peopleData.edges[peopleData.edges.length - 1].cursor;
         if (newPeople.length < 30) {  // Assuming 1000 is the maximum limit per request
-          // console.log("Reached the last page.");
           break;
         }
       } catch (error) {
@@ -352,7 +351,6 @@ export class ArxChatEndpoint {
 
     const allPeople = await this.fetchAllPeople()
     console.log("All people length:", allPeople?.length)
-
     return allPeople
   }
 

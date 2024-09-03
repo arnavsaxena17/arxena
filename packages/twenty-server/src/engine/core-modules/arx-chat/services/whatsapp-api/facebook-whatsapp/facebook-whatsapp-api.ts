@@ -603,7 +603,7 @@ export class FacebookWhatsappChatApi {
             console.log(err);
           });
           const attachmentObj = await new AttachmentProcessingService().uploadAttachmentToTwenty(filePath);
-          console.log(attachmentObj);
+          // console.log(attachmentObj);
           uploadFilePath = attachmentObj?.data?.uploadFile;
         } catch (uploadError) {
           console.error('Error during file upload:', uploadError);
