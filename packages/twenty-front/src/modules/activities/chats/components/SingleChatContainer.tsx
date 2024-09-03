@@ -4,14 +4,14 @@ import * as frontChatTypes from "../types/front-chat-types";
 import dayjs from "dayjs";
 import axios from "axios";
 import { set } from "date-fns";
-import { IconCheck, IconChecks, IconAlertCircle } from "@tabler/icons-react";
+import { IconChecks,IconCheck,  IconAlertCircle } from "@tabler/icons-react";
 
 const IconChecksBlue = () => {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      width={24}
-      height={24}
+      width={18}
+      height={18}
       viewBox="0 0 24 24"
       fill="none"
       stroke="#007bff"
@@ -27,6 +27,9 @@ const IconChecksBlue = () => {
   );
 };
 
+
+
+
 interface MessageStatusType {
   [key: string]: ReactElement;
   sent: ReactElement;
@@ -37,8 +40,8 @@ interface MessageStatusType {
 }
 
 const MessageStatus: MessageStatusType = {
-  sent: <IconCheck />,
-  delivered: <IconChecks />,
+  sent: <IconCheck size = {18} />,
+  delivered: <IconChecks size = {18} />,
   read: <IconChecksBlue />,
   failed: <IconAlertCircle />,
   readByRecruiter: <IconChecksBlue />,
@@ -80,12 +83,6 @@ export default function SingleChatContainer(props: {
   message: frontChatTypes.MessageNode;
   messageName: string | undefined;
   phoneNumber: string | undefined;
-  // latestResponseGenerated: string;
-  // setLatestResponseGenerated: React.Dispatch<React.SetStateAction<string>>;
-  // listOfToolCalls: string[];
-  // setListOfToolCalls: React.Dispatch<React.SetStateAction<string[]>>;
-  // messageHistory: [];
-  // setMessageHistory: React.Dispatch<React.SetStateAction<[]>>;
 }) {
   return (
     <div>
