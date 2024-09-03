@@ -256,12 +256,24 @@ export class OpenAIArxMultiStepClient {
 
   async sendWhatsappMessageToCandidate(messageText: string, mostRecentMessageArr: allDataObjects.ChatHistoryItem[], functionSource: string, isChatEnabled?: boolean) {
     console.log('Called sendWhatsappMessageToCandidate to send message via any whatsapp api::', functionSource, "message text::", messageText);
-    if (messageText.includes('#DONTRESPOND#') || messageText.includes('DONTRESPOND')) {
+    if (messageText.includes('#DONTRESPOND#') || messageText.includes('DONTRESPOND') && messageText) {
       console.log('Found a #DONTRESPOND# message, so not sending any message');
+      return;
+    }
+    if (!messageText || messageText == "") {
+      console.log('Message text is empty, so not sending any message');
       return;
     }
     console.log("Going to create whatsaappupdatemessage obj for message text::", messageText)
     const whatappUpdateMessageObj = await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj('sendWhatsappMessageToCandidateMulti', this.personNode, mostRecentMessageArr);
+    if (whatappUpdateMessageObj.messages[0].content?.includes('#DONTRESPOND#') || whatappUpdateMessageObj.messages[0].content?.includes('DONTRESPOND') && whatappUpdateMessageObj.messages[0].content) {
+      console.log('Found a #DONTRESPOND# message, so not sending any message');
+      return;
+    }
+    if (!whatappUpdateMessageObj.messages[0].content || whatappUpdateMessageObj.messages[0].content == "") {
+      console.log('Message text is empty, so not sending any message');
+      return;
+    }
     if (whatappUpdateMessageObj.messages[0].content ) {
       if (process.env.WHATSAPP_ENABLED === 'true' && (isChatEnabled === undefined || isChatEnabled)) {
         await new WhatsappAPISelector().sendWhatsappMessage(whatappUpdateMessageObj, this.personNode, mostRecentMessageArr);
