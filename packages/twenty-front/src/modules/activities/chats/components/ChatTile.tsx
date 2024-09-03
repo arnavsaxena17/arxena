@@ -55,7 +55,7 @@ const ChatTile: React.FC<ChatTileProps> = ({
   id,
 }) => {
   const status = individual?.candidates?.edges[0]?.node?.status as Status | undefined;
-  const statusCode = status && status in statusMapping ? statusMapping[status] : null;
+  const statusCode = status && status in statusMapping ? statusMapping[status] : "S";
 
   return (
     <StyledChatTile
@@ -64,7 +64,7 @@ const ChatTile: React.FC<ChatTileProps> = ({
     >
       <span>
         {individual.name.firstName} {individual.name.lastName} ({individual.candidates.edges[0].node.whatsappMessages.edges.length})
-        {statusCode && ` (${statusCode})`}
+        {` (${statusCode})`}
       </span>
       {unreadMessagesCount > 0 && (
         <UnreadIndicator>{unreadMessagesCount}</UnreadIndicator>
