@@ -387,8 +387,8 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
               </div>
               <div style={{ display: 'flex' }}>
                 Last Status: {currentIndividual?.candidates?.edges[0]?.node?.status} | 
-                Total: {props?.individuals?.length}
-                Screening: {props?.individuals?.filter(individual => individual?.candidates?.edges[0]?.node?.status === "SCREENING").length} ({(props?.individuals?.filter(individual => individual?.candidates?.edges[0]?.node?.status === "REJECTED").length/props.individuals.length*100).toFixed(1)}%) | 
+                Total: {props?.individuals?.length} | 
+                Screening: {props?.individuals?.filter(individual => individual?.candidates?.edges[0]?.node?.status === "SCREENING").length} ({(props?.individuals?.filter(individual => individual?.candidates?.edges[0]?.node?.status === "SCREENING").length/props.individuals.length*100).toFixed(1)}%) | 
                 Unresponsive:{props?.individuals?.filter(individual => individual?.candidates?.edges[0]?.node?.status === null).length} ({(props?.individuals?.filter(individual => individual?.candidates?.edges[0]?.node?.status === null).length/props.individuals.length*100).toFixed(1)}%) | 
                 Not Interested: {props?.individuals?.filter(individual => individual?.candidates?.edges[0]?.node?.status === "NOT_INTERESTED").length} ({(props?.individuals?.filter(individual => individual?.candidates?.edges[0]?.node?.status === "NOT_INTERESTED").length/props.individuals.length*100).toFixed(1)}%) | 
                 Not Fit: {props?.individuals?.filter(individual => individual?.candidates?.edges[0]?.node?.status === "NOT_FIT").length} ({(props?.individuals?.filter(individual => individual?.candidates?.edges[0]?.node?.status === "NOT_FIT").length/props.individuals.length*100).toFixed(1)}%) | 
