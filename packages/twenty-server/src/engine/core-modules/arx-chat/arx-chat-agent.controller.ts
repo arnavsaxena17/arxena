@@ -318,9 +318,7 @@ export class ArxChatEndpoint {
     }
     return allWhatsappMessages;
   }
-
-
-
+  
   async fetchAllPeople() {
     let allPeople = [];
     let lastCursor = null;
@@ -353,7 +351,7 @@ export class ArxChatEndpoint {
   async getCandidatesAndChats(@Req() request: any): Promise<object> {
 
     const allPeople = await this.fetchAllPeople()
-    console.log("All people length:", allPeople.length)
+    console.log("All people length:", allPeople?.length)
 
     return allPeople
   }
@@ -415,7 +413,7 @@ export class ArxChatEndpoint {
           variables: variablesToUpdateDeliveryStatus,
         });
         const responseOfDeliveryStatus = await axiosRequest(graphqlQueryObjForUpdationForDeliveryStatus);
-        console.log('Res:::', responseOfDeliveryStatus?.data?.data?.whatsappDeliveryStatus, "for wamid::", responseOfDeliveryStatus?.data?.data?.whatsappMessageId);
+        console.log('Res:::', responseOfDeliveryStatus?.data?.whatsappDeliveryStatus, "for wamid::", responseOfDeliveryStatus?.data?.whatsappMessageId);
         console.log('---------------DELIVERY STATUS UPDATE DONE-----------------------');
       }
       return { status: 'Success' };
