@@ -33,7 +33,7 @@ export class AttachmentProcessingService {
     try {
         const response = await axios.request(config);
         console.log("This is the response from the axios request in upload Attachment to TWenty::", response.data);
-        return response.data;    
+        return response.data;
     } catch (error) {
         console.log("This is error", error);
     }

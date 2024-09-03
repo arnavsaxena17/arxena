@@ -271,7 +271,6 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
     // console.log("These are graph config data", graphqlQueryObj);
     try {
       const response = await axiosRequest(graphqlQueryObj);
-      // console.log('This is the response from the axios request in createAndUpdateWhatsappMessage::', response.data);
       return response.data;
     } catch (error) {
       console.log(error);
