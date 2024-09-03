@@ -175,7 +175,7 @@ export class OpenAIArxMultiStepClient {
       const tools = await new ToolsForAgents().getCandidateFacingToolsByStage(stage);
       // @ts-ignore
       const response = await this.openAIclient.chat.completions.create({ model: modelName, messages: mostRecentMessageArr, tools: tools, tool_choice: 'auto' });
-      console.log(new Date().toString(), ' : ', 'BOT_MESSAGE in addResponseAndToolCallsToMessageHistory_stage2:', JSON.stringify(response), '  Stage::', stage, 'processorType::', processorType);
+      console.log('BOT_MESSAGE in runCandidateFacingAgentsAlongWithToolCalls_stage2 :', "at::", new Date().toString(), ' ::: ' ,JSON.stringify(responseMessage), '  Stage:::', stage, '  processorType::', processorType);
       mostRecentMessageArr.push(response.choices[0].message);
       let firstStageMessageArr = mostRecentMessageArr.slice(-1)
       if (response?.choices[0]?.message?.tool_calls) {
