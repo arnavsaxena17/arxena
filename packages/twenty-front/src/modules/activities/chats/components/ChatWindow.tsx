@@ -425,7 +425,14 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
                 <StyledButtonBottom onClick={handleShareJD}>Share JD</StyledButtonBottom>
               </div>
               <div style={{ display: 'flex' }}>
-                Last Status: {currentIndividual?.candidates?.edges[0]?.node?.status}
+                Last Status: {currentIndividual?.candidates?.edges[0]?.node?.status} | 
+                Rejected: {props?.individuals[0]?.candidates?.edges[0]?.node?.status} | 
+                Recruiter Interviews: {props?.individuals?.filter(individual => individual?.candidates?.edges[0]?.node?.status === "RECRUITER_INTERVIEW").length/props.individuals.length} | 
+                Not Interested: {props?.individuals?.filter(individual => individual?.candidates?.edges[0]?.node?.status === "NOT_INTERESTED").length/props.individuals.length} | 
+                Not Fit: {props?.individuals?.filter(individual => individual?.candidates?.edges[0]?.node?.status === "NOT_FIT").length/props.individuals.length} | 
+                Unresponsive: {props?.individuals?.filter(individual => individual?.candidates?.edges[0]?.node?.status === null).length/props.individuals.length} | 
+                Total: {props?.individuals?.length}
+                
               </div>
             </StyledChatInputBox>
           </StyledWindow>
