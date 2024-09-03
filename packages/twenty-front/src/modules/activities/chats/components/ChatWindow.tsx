@@ -13,7 +13,73 @@ import QRCode from 'react-qr-code';
 import { p } from 'node_modules/msw/lib/core/GraphQLHandler-907fc607';
 import { useHotkeys } from 'react-hotkeys-hook';
 
-const StyledButton = styled.button`
+import { useNavigate } from 'react-router-dom';
+
+
+const PersonIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+    <circle cx="12" cy="7" r="4"></circle>
+  </svg>
+);
+const CandidateIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+    <circle cx="9" cy="7" r="4"></circle>
+    <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+  </svg>
+);
+
+
+const StyledButtonGroup = styled.div`
+  display: flex;
+  gap: 8px;
+`;
+
+
+
+const StyledButton = styled.button<{ bgColor: string }>`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: ${props => props.bgColor};
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  position: relative;
+
+  &:hover {
+    filter: brightness(90%);
+  }
+
+  &::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #333;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+
+  &:hover::after {
+    opacity: 1;
+  }
+`;
+
+const StyledButtonBottom = styled.button`
   padding: 0.5em;
   background-color: #0e6874;
   color: white;
@@ -75,16 +141,6 @@ const StyledDateComponent = styled.span`
   border-radius: 4px;
 `;
 
-const StyledTopBar = styled.div`
-  padding: 1.5rem;
-  position: fixed;
-  display: block;
-  width: 66%;
-  background-color: rgba(255, 255, 255, 0.8);
-  filter: drop-shadow(0px 2px 4px rgba(0, 0, 0, 0.1));
-  z-index: 1;
-  backdrop-filter: saturate(180%) blur(10px);
-`;
 
 const StyledScrollingView = styled.div`
   padding-top: 5rem;
@@ -103,9 +159,63 @@ const StyledButton2 = styled.button`
   margin-right: 0.5rem;
 `;
 
+const StyledTopBar = styled.div`
+  padding: 1.5rem;
+  position: fixed;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 66%;
+  background-color: rgba(255, 255, 255, 0.8);
+  filter: drop-shadow(0px 2px 4px rgba(0, 0, 0, 0.1));
+  z-index: 1;
+  backdrop-filter: saturate(180%) blur(10px);
+`;
+
+const StyledInternalLink = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #0e6874;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  position: relative;
+
+  &:hover {
+    background-color: #0a4f59;
+  }
+
+  &::after {
+    content: 'Person';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #333;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+
+  &:hover::after {
+    opacity: 1;
+  }
+`;
 const formatDate = (date: string) => dayjs(date).format('YYYY-MM-DD');
 
 export default function ChatWindow(props: { selectedIndividual: string; individuals: frontChatTypes.PersonNode[] }) {
+  const navigate = useNavigate();
+
   const [messageHistory, setMessageHistory] = useState<frontChatTypes.MessageNode[]>([]);
   const [latestResponseGenerated, setLatestResponseGenerated] = useState('');
   const [listOfToolCalls, setListOfToolCalls] = useState<string[]>([]);
@@ -127,6 +237,15 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
     }
     }, [props.selectedIndividual, currentCandidateId, messageHistory.length]);
 
+
+  const handleNavigateToPersonPage = () => {
+    navigate(`/object/person/${currentIndividual?.id}`);
+  };
+  const handleNavigateToCandidatePage = () => {
+    navigate(`/object/candidate/${currentCandidateId}`);
+  };
+
+  
   async function getlistOfMessages(currentCandidateId: string) {
     try {
       const response = await axios.post(
@@ -255,7 +374,17 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
         {props.selectedIndividual && (
           <StyledWindow>
             <ChatView ref={chatViewRef}>
-              <StyledTopBar>{`${currentIndividual?.name.firstName} ${currentIndividual?.name.lastName} || ${currentIndividual?.phone} || ${currentIndividual?.id} || Messages: ${messageHistory.length} || 'Last Status': ${currentIndividual?.candidates?.edges[0]?.node?.status}`}</StyledTopBar>
+            <StyledTopBar>
+            <div>{`${currentIndividual?.name.firstName} ${currentIndividual?.name.lastName} || ${currentIndividual?.phone} || ${currentIndividual?.id} || Messages: ${messageHistory.length} || Last Status: ${currentIndividual?.candidates?.edges[0]?.node?.status}`}</div>
+                <StyledButtonGroup>
+                  <StyledButton onClick={handleNavigateToPersonPage} bgColor="#0e6874" data-tooltip="Person">
+                    <PersonIcon />
+                  </StyledButton>
+                  <StyledButton onClick={handleNavigateToCandidatePage} bgColor="#6b4e71" data-tooltip="Candidate">
+                    <CandidateIcon />
+                  </StyledButton>
+                </StyledButtonGroup>
+              </StyledTopBar>
               <StyledScrollingView>
                 {messageHistory.map((message, index) => {
                   const showDateSeparator = index === 0 || formatDate(messageHistory[index - 1]?.createdAt) !== formatDate(message?.createdAt);
@@ -292,8 +421,8 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
               </div>
               <div style={{ display: 'flex' }}>
                 <StyledChatInput type="text" ref={inputRef} placeholder="Type your message" />
-                <StyledButton onClick={handleSubmit}>Submit</StyledButton>
-                <StyledButton onClick={handleShareJD}>Share JD</StyledButton>
+                <StyledButtonBottom onClick={handleSubmit}>Submit</StyledButtonBottom>
+                <StyledButtonBottom onClick={handleShareJD}>Share JD</StyledButtonBottom>
               </div>
               <div style={{ display: 'flex' }}>
                 Last Status: {currentIndividual?.candidates?.edges[0]?.node?.status}

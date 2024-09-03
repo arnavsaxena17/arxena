@@ -35,6 +35,17 @@ interface ChatTileProps {
   id: string;
 }
 
+export const statusesArray = ['SCREENING', 'CV_SENT', 'RECRUITER_INTERVIEW', 'CLIENT_RECEIVED', 'NEGOTIATION'] as const;
+type Status = typeof statusesArray[number];
+
+const statusMapping: Record<Status, string> = {
+  "SCREENING": "S",
+  "CV_SENT": "CV",
+  "RECRUITER_INTERVIEW": "RI",
+  "CLIENT_RECEIVED": "CI",
+  "NEGOTIATION": "O"
+};
+
 const ChatTile: React.FC<ChatTileProps> = ({
   individual,
   setSelectedIndividual,
@@ -42,6 +53,9 @@ const ChatTile: React.FC<ChatTileProps> = ({
   unreadMessagesCount,
   id,
 }) => {
+  const status = individual?.candidates?.edges[0]?.node?.status as Status | undefined;
+  const statusCode = status && status in statusMapping ? statusMapping[status] : null;
+
   return (
     <StyledChatTile
       $selected={selectedIndividual === id}
@@ -49,6 +63,7 @@ const ChatTile: React.FC<ChatTileProps> = ({
     >
       <span>
         {individual.name.firstName} {individual.name.lastName} ({individual.candidates.edges[0].node.whatsappMessages.edges.length})
+        {statusCode && ` (${statusCode})`}
       </span>
       {unreadMessagesCount > 0 && (
         <UnreadIndicator>{unreadMessagesCount}</UnreadIndicator>
