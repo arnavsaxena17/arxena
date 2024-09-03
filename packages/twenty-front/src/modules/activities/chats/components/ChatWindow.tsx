@@ -172,45 +172,6 @@ const StyledTopBar = styled.div`
   backdrop-filter: saturate(180%) blur(10px);
 `;
 
-const StyledInternalLink = styled.button`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: #0e6874;
-  color: white;
-  border: none;
-  border-radius: 50%;
-  width: 32px;
-  height: 32px;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-  position: relative;
-
-  &:hover {
-    background-color: #0a4f59;
-  }
-
-  &::after {
-    content: 'Person';
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: #333;
-    color: white;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 12px;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    pointer-events: none;
-    white-space: nowrap;
-  }
-
-  &:hover::after {
-    opacity: 1;
-  }
-`;
 const formatDate = (date: string) => dayjs(date).format('YYYY-MM-DD');
 
 export default function ChatWindow(props: { selectedIndividual: string; individuals: frontChatTypes.PersonNode[] }) {
@@ -426,7 +387,7 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
               </div>
               <div style={{ display: 'flex' }}>
                 Last Status: {currentIndividual?.candidates?.edges[0]?.node?.status} | 
-                Rejected: {props?.individuals[0]?.candidates?.edges[0]?.node?.status} | 
+                Rejected: {props?.individuals?.filter(individual => individual?.candidates?.edges[0]?.node?.status === "REJECTED").length} ({(props?.individuals?.filter(individual => individual?.candidates?.edges[0]?.node?.status === "REJECTED").length/props.individuals.length*100).toFixed(1)}) | 
                 Recruiter Interviews: {props?.individuals?.filter(individual => individual?.candidates?.edges[0]?.node?.status === "RECRUITER_INTERVIEW").length} ({(props?.individuals?.filter(individual => individual?.candidates?.edges[0]?.node?.status === "RECRUITER_INTERVIEW").length/props.individuals.length*100).toFixed(1)}) | 
                 Not Interested: {props?.individuals?.filter(individual => individual?.candidates?.edges[0]?.node?.status === "NOT_INTERESTED").length} ({(props?.individuals?.filter(individual => individual?.candidates?.edges[0]?.node?.status === "NOT_INTERESTED").length/props.individuals.length*100).toFixed(1)}) | 
                 Not Fit: {props?.individuals?.filter(individual => individual?.candidates?.edges[0]?.node?.status === "NOT_FIT").length} ({(props?.individuals?.filter(individual => individual?.candidates?.edges[0]?.node?.status === "NOT_FIT").length/props.individuals.length*100).toFixed(1)}) | 
