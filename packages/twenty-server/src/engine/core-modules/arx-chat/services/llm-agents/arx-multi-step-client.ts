@@ -149,8 +149,8 @@ export class OpenAIArxMultiStepClient {
       }
       if (processorType === 'candidate-facing') {
         console.log("Sending message to candidate from addResponseAndToolCallsToMessageHistory_stage1", mostRecentMessageArr.slice(-1)[0].content);
-        console.log("Message text in stage 1 received based on which we will decide whether to send message or not::", responseMessage?.content)
-        await this.sendWhatsappMessageToCandidate(responseMessage?.content || '', mostRecentMessageArr, 'runCandidateFacingAgentsAlongWithToolCalls_stage1', isChatEnabled);
+        console.log("Message text in stage 1 received based on which we will decide whether to send message or not::",  mostRecentMessageArr.slice(-1)[0].content)
+        await this.sendWhatsappMessageToCandidate( mostRecentMessageArr.slice(-1)[0].content || '', mostRecentMessageArr, 'runCandidateFacingAgentsAlongWithToolCalls_stage1', isChatEnabled);
       }
       return mostRecentMessageArr;
     }
@@ -256,13 +256,9 @@ export class OpenAIArxMultiStepClient {
 
 
   async sendWhatsappMessageToCandidate(messageText: string, mostRecentMessageArr: allDataObjects.ChatHistoryItem[], functionSource: string, isChatEnabled?: boolean) {
-    console.log('Called sendWhatsappMessageToCandidate to send message via any whatsapp api::', functionSource, "message text::", messageText);
+    console.log('Called sendWhatsappMessage ToCandidate to send message via any whatsapp api::', functionSource, "message text::", messageText);
     if (messageText.includes('#DONTRESPOND#') || messageText.includes('DONTRESPOND') && messageText) {
       console.log('Found a #DONTRESPOND# message, so not sending any message');
-      return;
-    }
-    if (!messageText || messageText == "") {
-      console.log('Message text is empty, so not sending any message');
       return;
     }
     console.log("Going to create whatsaappupdatemessage obj for message text::", messageText)
@@ -271,11 +267,13 @@ export class OpenAIArxMultiStepClient {
       console.log('Found a #DONTRESPOND# message, so not sending any message');
       return;
     }
-    if (!whatappUpdateMessageObj.messages[0].content || whatappUpdateMessageObj.messages[0].content == "") {
+    if ((!messageText || messageText == "") && (!whatappUpdateMessageObj.messages[0].content || whatappUpdateMessageObj.messages[0].content=="") ) {
       console.log('Message text is empty, so not sending any message');
+      console.log('Current messageText::', messageText);
+      console.log('Current whatappUpdateMessageObj.messages[0].content::', whatappUpdateMessageObj.messages[0].content);
       return;
     }
-    if (whatappUpdateMessageObj.messages[0].content ) {
+    if (whatappUpdateMessageObj.messages[0].content ||  messageText) {
       if (process.env.WHATSAPP_ENABLED === 'true' && (isChatEnabled === undefined || isChatEnabled)) {
         await new WhatsappAPISelector().sendWhatsappMessage(whatappUpdateMessageObj, this.personNode, mostRecentMessageArr);
       } else {
