@@ -1,25 +1,11 @@
-// import { ChatRequestBody, candidateChatMessageType, recruiterProfile, sendWhatsappTemplateMessageObjectType } from "../../../services/data-model-objects";
-// import {UpdateChat} from '../candidateEngagement/updateChat';
-// import  CandidateEngagement  from "../../../services/candidateEngagement/checkCandidateEngagement";
 import * as allDataObjects from '../../../services/data-model-objects';
-// import { promisify } from 'util';
-// import { response } from 'express';
 import fs from 'fs';
 import path from 'path';
-// const mimePromise = import('mime');
-
-// const phoneNumberIDs = {
-//     "14155793982": "228382133694523",
-//     "918591724917": "213381881866663"
-// }
 const FormData = require('form-data');
 import { createReadStream, createWriteStream } from 'fs';
 import { getContentTypeFromFileName } from '../../../utils/arx-chat-agent-utils';
 import { AttachmentProcessingService } from '../../../services/candidate-engagement/attachment-processing';
-import CandidateEngagement from '../../../services/candidate-engagement/check-candidate-engagement';
 import CandidateEngagementArx from '../../../services/candidate-engagement/check-candidate-engagement';
-// import { lookup } from 'mime';
-// const mime = require('mime');
 const axios = require('axios');
 import { getTranscriptionFromWhisper } from '../../../utils/arx-chat-agent-utils';
 import { FetchAndUpdateCandidatesChatsWhatsapps } from '../../candidate-engagement/update-chat';
@@ -28,7 +14,6 @@ const { exec } = require('child_process');
 let whatsappAPIToken = process.env.FACEBOOK_WHATSAPP_PERMANENT_API;
 
 if (process.env.FACEBOOK_WHATSAPP_PERMANENT_API) {
-  // whatsappAPIToken = process.env.FACEBOOK_WHATSAPP_API_TOKEN;
   whatsappAPIToken = process.env.FACEBOOK_WHATSAPP_PERMANENT_API;
 } else {
   whatsappAPIToken = process.env.FACEBOOK_WHATSAPP_API_TOKEN;
@@ -228,10 +213,6 @@ export class FacebookWhatsappChatApi {
       const filePath = attachmentMessage?.fileData?.filePath.slice();
 
       const fileName = path.basename(filePath);
-      // Get the content type
-      // const contentType = mime.lookup(fileName) || 'application/octet-stream';
-      // const fileData = await fileTypeFromFile(filePath)
-      // const contentType = fileData?.mime || 'application/octet-stream';
       const contentType = await getContentTypeFromFileName(fileName);
       console.log('This is the content type:', contentType);
       console.log('This is the file name:', fileName);
@@ -305,13 +286,7 @@ export class FacebookWhatsappChatApi {
     // debugger;
     try {
       const filePath = filePathArg.slice();
-      // "/home/ninad/Documents/twenty/packages/twenty-server/.attachments/ec0cd07a-914c-4539-b0e5-ac18c03199bc/file-sample_150kB.pdf";
-      // Get the file name
       const fileName = path.basename(filePath);
-      // Get the content type
-      // const contentType = mime.lookup(fileName) || 'application/octet-stream';
-      // const fileData = await fileTypeFromFile(filePath)
-      // const contentType = fileData?.mime || 'application/octet-stream';
       const contentType = await getContentTypeFromFileName(fileName);
       console.log('This is the content type:', contentType);
       console.log('This is the file name:', fileName);
@@ -472,7 +447,6 @@ export class FacebookWhatsappChatApi {
       },
       responseType: 'json',
     };
-    // console.log("This is the config in downloadWhatsappAttachmentMessage", config);
     const response = await axios.request(config);
     const url = response.data.url;
     config.url = url;
@@ -487,9 +461,6 @@ export class FacebookWhatsappChatApi {
       console.log('File saved successfully at', filePath);
       const attachmentObj = await new AttachmentProcessingService().uploadAttachmentToTwenty(filePath);
       console.log(attachmentObj);
-      // debugger
-      // attachmentObj.uploadFile
-      // candidateProfileData.id
       const dataToUploadInAttachmentTable = {
         input: {
           authorId: candidateProfileData.jobs.recruiterId,
@@ -573,7 +544,6 @@ export class FacebookWhatsappChatApi {
     };
 
     await fs.promises.mkdir(process.cwd() + '/.voice-messages/' + candidateProfileData?.id, { recursive: true });
-    // console.log("This is the config in downloadWhatsappAttachmentMessage", config);
     const filePath = `${process.cwd()}/.voice-messages/${candidateProfileData?.id}/${audioMessageObject?.filename}`;
     let uploadFilePath = '';
 
@@ -614,74 +584,8 @@ export class FacebookWhatsappChatApi {
     } catch (axiosError) {
       console.error('Error with axios request:', axiosError);
     }
-    // debugger
-    // attachmentObj.uploadFile
-    // candidateProfileData.id
-
-    // ------------------
-    // const dataToUploadInAttachmentTable = {
-    //   input: {
-    //     authorId: candidateProfileData?.jobs?.recruiterId,
-    //     name: filePath.replace(`${process.cwd()}/`, ""),
-    //     fullPath: attachmentObj.data.uploadFile,
-    //     type: "AudioFile",
-    //     candidateId: constCandidateProfileData?.id,
-    //   },
-    // };
-    //   debugger
-
     audioTranscriptionText = await getTranscriptionFromWhisper(filePath);
-
-    // await new AttachmentProcessingService().createOneAttachmentFromFilePath(
-    //   dataToUploadInAttachmentTable
-    // );
     console.log(`DONEE`);
-    // } else {
-    //   throw new Error("File not saved");
-    // }
-    // config.url = url;
-    // config.responseType = "stream";
-    // const fileDownloadResponse = await axios.request(config);
-
-    // console.log(fileDownloadResponse?.data);
-    // // debugger
-    // // console.log("This is the response:", response.data)
-    // console.log("This is the response: bpdy", response.body);
-    // const fileName = audioMessageObject?.filename; // Set the desired file name
-    // const filePath = `${process.cwd()}/${fileName}`;
-    // const writeStream = fs.createWriteStream(filePath);
-    // fileDownloadResponse.data.pipe(writeStream); // Pipe response stream to file stream
-
-    // writeStream.on("finish", async () => {
-    //   console.log("File saved successfully at", filePath);
-    //   const attachmentObj =
-    //     await new AttachmentProcessingService().uploadAttachmentToTwenty(
-    //       filePath
-    //     );
-    //   console.log(attachmentObj);
-    //   // debugger
-    //   // attachmentObj.uploadFile
-    //   // candidateProfileData.id
-    //   const dataToUploadInAttachmentTable = {
-    //     input: {
-    //       authorId: candidateProfileData?.jobs?.recruiterId,
-    //       name: filePath.replace(`${process.cwd()}/`, ""),
-    //       fullPath: attachmentObj.data.uploadFile,
-    //       type: "AudioFile",
-    //       candidateId: constCandidateProfileData?.id,
-    //     },
-    //   };
-    //   //   debugger
-
-    //   audioTranscriptionText = await getTranscriptionFromWhisper(filePath);
-
-    //   await new AttachmentProcessingService().createOneAttachmentFromFilePath(
-    //     dataToUploadInAttachmentTable
-    //   );
-    // });
-    // writeStream.on("error", (error) => {
-    //   console.error("Error saving file:", error);
-    // });
     console.log('Uploaded here', uploadFilePath);
     return {
       databaseFilePath: uploadFilePath,

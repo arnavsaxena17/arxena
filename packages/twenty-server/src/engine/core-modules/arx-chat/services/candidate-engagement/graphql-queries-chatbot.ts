@@ -9,6 +9,24 @@ query FindOneWhatsappMessage($whatsappMessageId: String!) {
   }
 }
 `;
+
+export const graphqlToFetchActiveJob = `query FindManyJobs($filter: JobFilterInput, $orderBy: [JobOrderByInput], $lastCursor: String, $limit: Int) {
+        jobs(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
+          edges {
+            node {
+              candidates {
+                edges {
+                  node {
+                    id
+                  }
+                }
+              }
+            }
+          }
+        }
+      }`
+
+
 export const graphqlQueryToFindMessageByWAMId = `query FindManyWhatsappMessages($filter: WhatsappMessageFilterInput, $orderBy: [WhatsappMessageOrderByInput], $lastCursor: String, $limit: Int) {
   whatsappMessages(
     filter: $filter
