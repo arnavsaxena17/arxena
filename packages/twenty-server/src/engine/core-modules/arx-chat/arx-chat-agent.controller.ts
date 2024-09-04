@@ -215,20 +215,20 @@ export class ArxChatEndpoint {
   
   @Post('get-all-messages-by-phone-number')
   @UseGuards(JwtAuthGuard)
-  async getAllMessagesByPhoneNumber(@Req() request: any): Promise<object[]> {
+  async getAllMessagesByPhoneNumber(@Req() request: any): Promise<object> {
     const personObj: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(request.body.phoneNumber);
     const candidateId = personObj.candidates.edges[0].node.id
     const allWhatsappMessages = await new FetchAndUpdateCandidatesChatsWhatsapps().fetchAllWhatsappMessages(candidateId);
-    return allWhatsappMessages;
+    const formattedMessages = await new FetchAndUpdateCandidatesChatsWhatsapps().formatChat(allWhatsappMessages)
+    return {"formattedMessages":formattedMessages};
   }
   
   @Post('get-candidate-status-by-phone-number')
   @UseGuards(JwtAuthGuard)
-  async getCandidateStatusByPhoneNumber(@Req() request: any): Promise<object[]> {
+  async getCandidateStatusByPhoneNumber(@Req() request: any): Promise<object> {
     const personObj: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(request.body.phoneNumber);
-    const candidateId = personObj.candidates.edges[0].node.id
-    const allWhatsappMessages = await new FetchAndUpdateCandidatesChatsWhatsapps().fetchAllWhatsappMessages(candidateId);
-    return allWhatsappMessages;
+    const candidateStatus = personObj.candidates.edges[0].node.status
+    return {"status":candidateStatus};
   }
   
   @Post('get-candidate-by-phone-number')
