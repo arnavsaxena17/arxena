@@ -147,38 +147,68 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
     return allWhatsappMessages;
   }
 
-  async fetchCandidatesToEngage(limit: number) {
-    console.log("Limit:", limit)
-    let allCandidates = new Map();
-    let lastCursor = null;
-    let hasNextPage = true;
-    let numberLoops = 0;
-    while (allCandidates.size < limit && hasNextPage) {
-      numberLoops++;
-      const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindEngagedCandidates, variables: {limit: 60, lastCursor: lastCursor, orderBy: { position: "DescNullsFirst" }, } });
-      // console.log("GrahqlQueryObj:", graphqlQueryObj)
-      try {
-        const response = await axiosRequest(graphqlQueryObj);
-        // console.log("Pringint :", response.data.data)
-        const data = response.data.data.people;
-        console.log("fetchCandidatesToEngage Data edges length:", data.edges.length)
-        data.edges.forEach(edge => {
-          const candidate = edge.node;
-          if (!allCandidates.has(candidate.id)) {
-            allCandidates.set(candidate.id, candidate);
-          }
-        });
-        // console.log("In this case the size of allCandidates is:", data.edges.length);
-        lastCursor = data.edges[data.edges.length - 1]?.cursor;
-        hasNextPage = data.edges.length === 30;
-      } catch (error) {
-        console.log("There is an erorr in fetchCandidatesToEngage::", error, "data::");
+
+
+  async formatChat(messages) {
+    // Sort messages by position in ascending order
+    // messages.sort((a, b) => a.position - b.position);
+  
+    let formattedChat = '';
+    let messageCount = 1;
+    messages.forEach(message => {
+      const timestamp = new Date(message.createdAt).toLocaleString();
+      let sender = '';
+      if (message.name === 'candidateMessage') {
+        sender = 'Candidate';
+      } else if (message.name === 'botMessage' || message.name === 'recruiterMessage') {
+        sender = 'Recruiter';
+      } else {
+        sender = message.name;
       }
-    }
-    console.log("Number of loops:", numberLoops);
-    console.log("Number of candidates:", allCandidates.size);
-    return Array.from(allCandidates.values()).slice(0, limit);  // Ensure we only return the requested number of results
+      
+      formattedChat += `[${timestamp}] ${sender}:\n`;
+      formattedChat += `${message.message}\n\n`;
+      messageCount++;
+    });
+  
+    return formattedChat;
   }
+  
+  
+
+  
+  // async fetchCandidatesToEngage(limit: number) {
+  //   console.log("Limit:", limit)
+  //   let allCandidates = new Map();
+  //   let lastCursor = null;
+  //   let hasNextPage = true;
+  //   let numberLoops = 0;
+  //   while (allCandidates.size < limit && hasNextPage) {
+  //     numberLoops++;
+  //     const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindEngagedCandidates, variables: {limit: 60, lastCursor: lastCursor, orderBy: { position: "DescNullsFirst" }, } });
+  //     // console.log("GrahqlQueryObj:", graphqlQueryObj)
+  //     try {
+  //       const response = await axiosRequest(graphqlQueryObj);
+  //       // console.log("Pringint :", response.data.data)
+  //       const data = response.data.data.people;
+  //       console.log("fetchCandidatesToEngage Data edges length:", data.edges.length)
+  //       data.edges.forEach(edge => {
+  //         const candidate = edge.node;
+  //         if (!allCandidates.has(candidate.id)) {
+  //           allCandidates.set(candidate.id, candidate);
+  //         }
+  //       });
+  //       // console.log("In this case the size of allCandidates is:", data.edges.length);
+  //       lastCursor = data.edges[data.edges.length - 1]?.cursor;
+  //       hasNextPage = data.edges.length === 30;
+  //     } catch (error) {
+  //       console.log("There is an erorr in fetchCandidatesToEngage::", error, "data::");
+  //     }
+  //   }
+  //   console.log("Number of loops:", numberLoops);
+  //   console.log("Number of candidates:", allCandidates.size);
+  //   return Array.from(allCandidates.values()).slice(0, limit);  // Ensure we only return the requested number of results
+  // }
 
   async getPersonDetailsByPhoneNumber(phoneNumber: string) {
     console.log('Trying to get person details by phone number:', phoneNumber);
@@ -211,24 +241,22 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
       console.log('going to get candidate information');
       const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindPeopleByPhoneNumber, variables: graphVariables });
       const response = await axiosRequest(graphqlQueryObj);
-      // console.log('This is the response from getCandidate Information in getCandidateInformation ', response.data.data);
       const candidateDataObjs = response.data?.data?.people?.edges[0]?.node?.candidates?.edges;
-      // console.log('This is the candidate data::', candidateDataObjs);
       const activeJobCandidateObj = candidateDataObjs?.find((edge: any) => edge?.node?.jobs?.isActive);
       console.log('This is the number of candidates', candidateDataObjs?.length);
-      console.log('This is the activeJobCandidateObj who got called', activeJobCandidateObj?.node.name);
+      console.log('This is the activeJobCandidateObj who got called', activeJobCandidateObj?.node?.name || "");
       if (activeJobCandidateObj) {
         const personWithActiveJob = response?.data?.data?.people?.edges?.find((person: { node: { candidates: { edges: any[] } } }) => person?.node?.candidates?.edges?.some(candidate => candidate?.node?.jobs?.isActive));
         const candidateProfileObj: allDataObjects.CandidateNode = {
-          name: personWithActiveJob?.node?.name?.firstName,
+          name: personWithActiveJob?.node?.name?.firstName || "",
           id: activeJobCandidateObj?.node?.id,
           jobs: {
-            name: activeJobCandidateObj?.node?.jobs?.name,
+            name: activeJobCandidateObj?.node?.jobs?.name || "",
             id: activeJobCandidateObj?.node?.jobs?.id,
             recruiterId: activeJobCandidateObj?.node?.jobs?.recruiterId,
             jobCode:activeJobCandidateObj?.node?.jobs?.jobCode,
             companies: {
-              name: activeJobCandidateObj?.node?.jobs?.companies?.name,
+              name: activeJobCandidateObj?.node?.jobs?.companies?.name || "",
               companyId: activeJobCandidateObj?.node?.jobs?.companies?.id,
               domainName: activeJobCandidateObj?.node?.jobs?.companies?.domainName,
               descriptionOneliner: activeJobCandidateObj?.node?.jobs?.companies?.descriptionOneliner,
@@ -260,53 +288,53 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
     }
   }
 
-  async getCandidateInformationToSendMessageTo(userMessage: allDataObjects.chatMessageType) {
-    // Get the candidate information from the user message
-    const graphVariables = { filter: { phone: { ilike: '%' + userMessage.phoneNumberTo + '%' } }, orderBy: { position: 'AscNullsFirst' } };
-    try {
-      const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindPeopleByPhoneNumber, variables: graphVariables });
-      const response = await axiosRequest(graphqlQueryObj);
-      const candidateDataObjs = response.data?.data?.people?.edges[0]?.node?.candidates?.edges;
-      console.log('This is the number of candidates', candidateDataObjs?.length);
-      const personWithActiveJob = response?.data?.data?.people?.edges?.find((person: { node: { candidates: { edges: any[] } } }) => person?.node?.candidates?.edges?.some(candidate => candidate?.node?.jobs?.isActive));
-      const candidateProfileObj: allDataObjects.CandidateNode = {
-        name: personWithActiveJob?.node?.name?.firstName,
-        id: candidateDataObjs?.node?.id,
-        jobs: {
-          name: candidateDataObjs?.node?.jobs?.name,
-          id: candidateDataObjs?.node?.jobs?.id,
-          recruiterId: candidateDataObjs?.node?.jobs?.recruiterId,
-          companies: {
-            name: candidateDataObjs?.node?.jobs?.companies?.name,
-            companyId: candidateDataObjs?.node?.jobs?.companies?.id,
-            domainName: candidateDataObjs?.node?.jobs?.companies?.domainName,
-            descriptionOneliner: candidateDataObjs?.node?.jobs?.companies?.descriptionOneliner,
-          },
-          jobLocation: candidateDataObjs?.node?.jobs?.jobLocation,
-          jobCode: candidateDataObjs?.node?.jobs?.jobCode,
-          whatsappMessages: candidateDataObjs?.node?.jobs?.whatsappMessages,
-        },
-        engagementStatus: candidateDataObjs?.node?.engagementStatus,
-        phoneNumber: personWithActiveJob?.node?.phone,
-        email: personWithActiveJob?.node?.email,
-        status:personWithActiveJob.node.status,
-        input: userMessage?.messages[0]?.content,
-        startChat: candidateDataObjs?.node?.startChat,
-        whatsappMessages: candidateDataObjs?.node?.whatsappMessages,
-        // *! TO CHECK LATER
-        emailMessages: {
-          edges: candidateDataObjs?.node?.emailMessages?.edges,
-        },
-        candidateReminders: {
-          edges: candidateDataObjs?.node?.candidateReminders?.edges,
-        },
-      };
-      return candidateProfileObj;
-    } catch (error) {
-      console.log('Getting an error and returning empty candidate profile objeect:', error);
-      return allDataObjects.emptyCandidateProfileObj;
-    }
-  }
+  // async getCandidateInformationToSendMessageTo(userMessage: allDataObjects.chatMessageType) {
+  //   // Get the candidate information from the user message
+  //   const graphVariables = { filter: { phone: { ilike: '%' + userMessage.phoneNumberTo + '%' } }, orderBy: { position: 'AscNullsFirst' } };
+  //   try {
+  //     const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindPeopleByPhoneNumber, variables: graphVariables });
+  //     const response = await axiosRequest(graphqlQueryObj);
+  //     const candidateDataObjs = response.data?.data?.people?.edges[0]?.node?.candidates?.edges;
+  //     console.log('This is the number of candidates', candidateDataObjs?.length);
+  //     const personWithActiveJob = response?.data?.data?.people?.edges?.find((person: { node: { candidates: { edges: any[] } } }) => person?.node?.candidates?.edges?.some(candidate => candidate?.node?.jobs?.isActive));
+  //     const candidateProfileObj: allDataObjects.CandidateNode = {
+  //       name: personWithActiveJob?.node?.name?.firstName,
+  //       id: candidateDataObjs?.node?.id,
+  //       jobs: {
+  //         name: candidateDataObjs?.node?.jobs?.name,
+  //         id: candidateDataObjs?.node?.jobs?.id,
+  //         recruiterId: candidateDataObjs?.node?.jobs?.recruiterId,
+  //         companies: {
+  //           name: candidateDataObjs?.node?.jobs?.companies?.name,
+  //           companyId: candidateDataObjs?.node?.jobs?.companies?.id,
+  //           domainName: candidateDataObjs?.node?.jobs?.companies?.domainName,
+  //           descriptionOneliner: candidateDataObjs?.node?.jobs?.companies?.descriptionOneliner,
+  //         },
+  //         jobLocation: candidateDataObjs?.node?.jobs?.jobLocation,
+  //         jobCode: candidateDataObjs?.node?.jobs?.jobCode,
+  //         whatsappMessages: candidateDataObjs?.node?.jobs?.whatsappMessages,
+  //       },
+  //       engagementStatus: candidateDataObjs?.node?.engagementStatus,
+  //       phoneNumber: personWithActiveJob?.node?.phone,
+  //       email: personWithActiveJob?.node?.email,
+  //       status:personWithActiveJob.node.status,
+  //       input: userMessage?.messages[0]?.content,
+  //       startChat: candidateDataObjs?.node?.startChat,
+  //       whatsappMessages: candidateDataObjs?.node?.whatsappMessages,
+  //       // *! TO CHECK LATER
+  //       emailMessages: {
+  //         edges: candidateDataObjs?.node?.emailMessages?.edges,
+  //       },
+  //       candidateReminders: {
+  //         edges: candidateDataObjs?.node?.candidateReminders?.edges,
+  //       },
+  //     };
+  //     return candidateProfileObj;
+  //   } catch (error) {
+  //     console.log('Getting an error and returning empty candidate profile objeect:', error);
+  //     return allDataObjects.emptyCandidateProfileObj;
+  //   }
+  // }
 
   async fetchQuestionsByJobId(jobId: string): Promise<{ questionIdArray: { questionId: string; question: string }[]; questionArray: string[] }> {
     console.log("Going to fetch questions for job id:", jobId)
@@ -366,18 +394,18 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
       console.log('Error in updating candidate status::', error);
     }
   }
-  async updateCandidateReminderStatus(reminderObj: allDataObjects.ReminderObject) {
-    const candidateReminderStatus = false;
-    const reminderObjectVariables = { idToUpdate: reminderObj?.id, input: { isReminderActive: candidateReminderStatus } };
-    const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToUpdateCandidateEngagementStatus, variables: reminderObjectVariables });
-    try {
-      const response = await axiosRequest(graphqlQueryObj);
-      console.log('Candidate reminder status updated successfully');
-      return response.data;
-    } catch (error) {
-      console.log('Error in updating candidate status::', error);
-    }
-  }
+  // async updateCandidateReminderStatus(reminderObj: allDataObjects.ReminderObject) {
+  //   const candidateReminderStatus = false;
+  //   const reminderObjectVariables = { idToUpdate: reminderObj?.id, input: { isReminderActive: candidateReminderStatus } };
+  //   const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToUpdateCandidateEngagementStatus, variables: reminderObjectVariables });
+  //   try {
+  //     const response = await axiosRequest(graphqlQueryObj);
+  //     console.log('Candidate reminder status updated successfully');
+  //     return response.data;
+  //   } catch (error) {
+  //     console.log('Error in updating candidate status::', error);
+  //   }
+  // }
 
   async setCandidateEngagementStatusToFalse(candidateProfileObj: allDataObjects.CandidateNode) {
     const updateCandidateObjectVariables = { idToUpdate: candidateProfileObj?.id, input: { engagementStatus: false } };
