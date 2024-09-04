@@ -239,7 +239,6 @@ export class ArxChatEndpoint {
     console.log('candidateId to fetch all messages:', candidateId);
     return {"candidateId":candidateId};
   }
-
   
   @Get('get-candidates-and-chats')
   @UseGuards(JwtAuthGuard)
