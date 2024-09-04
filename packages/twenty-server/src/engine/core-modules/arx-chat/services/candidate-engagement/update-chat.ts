@@ -218,11 +218,11 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
       const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindPeopleByPhoneNumber, variables: graphVariables });
       const response = await axiosRequest(graphqlQueryObj);
       // console.log('This is the response from getCandidate Information FROM PHONENUMBER in getPersonDetailsByPhoneNumber', response.data.data);
-      const personObj = response.data?.data?.people?.edges[0].node;
-      console.log('Personobj:', personObj.name.firstName +" " + personObj.name.lastName);
+      const personObj = response.data?.data?.people?.edges[0]?.node;
+      console.log('Personobj:', personObj?.name?.firstName || "" +" " + personObj?.name?.lastName) + "";
       return personObj;
     } catch (error) {
-      console.log('Getting an error and returning empty candidate profile objeect:', error);
+      console.log('Getting an error and returning empty candidate person profile objeect:', error);
       return allDataObjects.emptyCandidateProfileObj;
     }
   }
@@ -283,7 +283,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
         return allDataObjects.emptyCandidateProfileObj;
       }
     } catch (error) {
-      console.log('Getting an error and returning empty candidate profile objeect:', error);
+      console.log('Getting an error and returning empty getCandidateInformation candidate profile objeect:', error);
       return allDataObjects.emptyCandidateProfileObj;
     }
   }
