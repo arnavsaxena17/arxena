@@ -219,8 +219,14 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
       const response = await axiosRequest(graphqlQueryObj);
       // console.log('This is the response from getCandidate Information FROM PHONENUMBER in getPersonDetailsByPhoneNumber', response.data.data);
       const personObj = response.data?.data?.people?.edges[0]?.node;
-      console.log('Personobj:', personObj?.name?.firstName || "" +" " + personObj?.name?.lastName) + "";
-      return personObj;
+      if (personObj){
+        console.log('Personobj:', personObj?.name?.firstName || "" +" " + personObj?.name?.lastName) + "";
+        return personObj;
+      }
+      else{
+        console.log("Person not found")
+        return allDataObjects.emptyCandidateProfileObj;
+      }
     } catch (error) {
       console.log('Getting an error and returning empty candidate person profile objeect:', error);
       return allDataObjects.emptyCandidateProfileObj;
