@@ -6,6 +6,8 @@ import { ChatCompletion, ChatCompletionMessage } from 'openai/resources';
 import CandidateEngagementArx from '../../services/candidate-engagement/check-candidate-engagement';
 import { WhatsappAPISelector } from '../../services/whatsapp-api/whatsapp-controls';
 import Anthropic from '@anthropic-ai/sdk';
+import { zodResponseFormat } from "openai/helpers/zod";
+import { z } from "zod";
 
 export class OpenAIArxMultiStepClient {
   personNode: allDataObjects.PersonNode;
@@ -15,22 +17,18 @@ export class OpenAIArxMultiStepClient {
     this.openAIclient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
     this.personNode = personNode;
     this.anthropic = new Anthropic({
-      apiKey: process.env['ANTHROPIC_API_KEY'], // This is the default and can be omitted
+      apiKey: process.env['ANTHROPIC_API_KEY'], 
     });
   }
   // THis is the entry point
   async createCompletion(mostRecentMessageArr: allDataObjects.ChatHistoryItem[], personNode: allDataObjects.PersonNode, engagementType: 'remind' | 'engage', isChatEnabled: boolean = true) {
     let processorType: string;
-    // processorType = 'stage';
-    // const stage = await this.getStageOfTheConversation(mostRecentMessageArr, engagementType, processorType);
     const stage = 'any-stage'
     console.log('This is the stage that is arrived at CURRENT STAGE::::::::', stage);
     processorType = 'candidate-facing';
     mostRecentMessageArr = await this.runCandidateFacingAgentsAlongWithToolCalls(mostRecentMessageArr, personNode, stage, processorType, isChatEnabled);
     console.log('After running the stage and candidate facing agents, the mostRecentMessageArr is::', mostRecentMessageArr);
     processorType = 'system-facing';
-    // await this.runSystemFacingAgentsAlongWithToolCalls(mostRecentMessageArr, personNode, stage, processorType);
-    // await this.runTimeManagementAgent(mostRecentMessageArr, personNode, stage);
     return mostRecentMessageArr;
   }
   async checkIfResponseMessageSoundsHumanLike(responseMessage:{content:string|null}){
@@ -107,13 +105,11 @@ export class OpenAIArxMultiStepClient {
       }
       else{
         console.log("Response Message is mostly null::, last two messages from llm have been ::" )
-        // mostRecentMessageArr.map(x => x.content)
         return responseMessage
       }
     }
     catch(error){
       console.log("This is the error in getHumanLikeResponse, returning null:", error)
-      
       return null
     }
   }
