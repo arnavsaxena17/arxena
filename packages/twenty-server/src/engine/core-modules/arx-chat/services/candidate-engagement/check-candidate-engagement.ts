@@ -57,7 +57,7 @@ export default class CandidateEngagementArx {
       const candidateNode = personNode.candidates.edges[0].node;
       // console.log('This is candidate Node:', candidateNode);
       const messagesList: allDataObjects.WhatsAppMessagesEdge[] = candidateNode?.whatsappMessages?.edges;
-      // console.log('Current Messages list:', messagesList);
+      console.log('Current Messages list:', messagesList);
       let mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = this.getMostRecentMessageFromMessagesList(messagesList);
       // console.log('mostRecentMessageArr before chatCompletion:', mostRecentMessageArr);
       if (mostRecentMessageArr?.length > 0) {
