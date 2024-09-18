@@ -35,7 +35,7 @@ interface ChatTileProps {
   id: string;
 }
 
-export const statusesArray = ['SCREENING', 'CV_SENT', 'RECRUITER_INTERVIEW','CV_RECEIVED', 'CLIENT_RECEIVED', 'NEGOTIATION'] as const;
+export const statusesArray = ['SCREENING', 'CV_SENT', 'RECRUITER_INTERVIEW','CV_RECEIVED', "NOT_INTERESTED",'CLIENT_RECEIVED', 'NEGOTIATION'] as const;
 type Status = typeof statusesArray[number];
 
 const statusMapping: Record<Status, string> = {
@@ -44,7 +44,8 @@ const statusMapping: Record<Status, string> = {
   "CV_SENT": "CVS",
   "RECRUITER_INTERVIEW": "RI",
   "CLIENT_RECEIVED": "CI",
-  "NEGOTIATION": "OFF"
+  "NEGOTIATION": "OFF",
+  "NOT_INTERESTED":"NI"
 };
 
 const ChatTile: React.FC<ChatTileProps> = ({
@@ -55,7 +56,7 @@ const ChatTile: React.FC<ChatTileProps> = ({
   id,
 }) => {
   const status = individual?.candidates?.edges[0]?.node?.status as Status | undefined;
-  const statusCode = status && status in statusMapping ? statusMapping[status] : "S";
+  const statusCode = status && status in statusMapping ? statusMapping[status] : "NI";
 
   return (
     <StyledChatTile
