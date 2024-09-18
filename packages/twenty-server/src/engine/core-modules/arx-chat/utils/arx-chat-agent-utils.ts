@@ -49,6 +49,7 @@ export function getContentTypeFromFileName(filename: string) {
 }
 
 export async function axiosRequest(data: string) {
+  console.log("Sending a post request to the graphql server:: with data", data);
   const response = await axios.request({
     method: "post",
     url: process.env.GRAPHQL_URL,
