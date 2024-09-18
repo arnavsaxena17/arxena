@@ -380,6 +380,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
     };
     const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToCreateOneNewWhatsappMessage, variables: createNewWhatsappMessageUpdateVariables });
     try {
+      console.log("Sending graphql request with whatsapp message:", createNewWhatsappMessageUpdateVariables?.input?.message);
       const response = await axiosRequest(graphqlQueryObj);
       return response.data;
     } catch (error) {

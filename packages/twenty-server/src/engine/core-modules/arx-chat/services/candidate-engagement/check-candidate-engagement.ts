@@ -165,7 +165,6 @@ export default class CandidateEngagementArx {
 
       await new CandidateEngagementArx().createAndUpdateCandidateStartChatChatMessage(chatReply, candidateProfileDataNodeObj);
 
-      // const updateCandidateStatusObj = await new FetchAndUpdateCandidatesChatsWhatsapps().setCandidateEngagementStatusToFalse(candidateProfileDataNodeObj.candidates.edges[0].node);
     }
   }
 
@@ -227,17 +226,18 @@ export default class CandidateEngagementArx {
   }
 
   async checkCandidateEngagement() {
-      // await this.checkAvailableRemindersAndSend();
-      // const candidateResponseEngagementArr = await new FetchAndUpdateCandidatesChatsWhatsapps().fetchCandidatesToEngage(limit);
-      const peopleCandidateResponseEngagementArr = await new FetchAndUpdateCandidatesChatsWhatsapps().fetchPeopleToEngageByCheckingOnlyStartChat();
-      // console.log("Received response to check candidate engagement:resposne", candidateResponseEngagementArr)
-      if (peopleCandidateResponseEngagementArr) {
-        await this.engageCandidates(peopleCandidateResponseEngagementArr);
-      }
-      if (peopleCandidateResponseEngagementArr) {
-        await this.startChatEngagement(peopleCandidateResponseEngagementArr);
-      }
+    console.log("Cron running and cycle started to check candidate engagement");
+    // await this.checkAvailableRemindersAndSend();
+    // const candidateResponseEngagementArr = await new FetchAndUpdateCandidatesChatsWhatsapps().fetchCandidatesToEngage(limit);
+    const peopleCandidateResponseEngagementArr = await new FetchAndUpdateCandidatesChatsWhatsapps().fetchPeopleToEngageByCheckingOnlyStartChat();
+    // console.log("Received response to check candidate engagement:resposne", candidateResponseEngagementArr)
+    if (peopleCandidateResponseEngagementArr) {
+      await this.engageCandidates(peopleCandidateResponseEngagementArr);
+    }
+    if (peopleCandidateResponseEngagementArr) {
+      await this.startChatEngagement(peopleCandidateResponseEngagementArr);
+    }
 
-      return;
+    return;
   }
 }
