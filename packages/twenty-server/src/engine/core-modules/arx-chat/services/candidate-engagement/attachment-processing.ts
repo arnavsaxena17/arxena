@@ -18,8 +18,7 @@ export class AttachmentProcessingService {
       url: process.env.SERVER_BASE_URL+"/graphql",
       headers: {
         "sec-ch-ua": '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
-        DNT: "1",
-        "sec-ch-ua-mobile": "?0",
+        DNT: "1", "sec-ch-ua-mobile": "?0",
         authorization: "Bearer " + process.env.TWENTY_JWT_SECRET,
         "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
         "x-schema-version": "41",
@@ -39,37 +38,26 @@ export class AttachmentProcessingService {
     }
   }
 
-  async createOneAttachmentFromFilePath(documentObj: {
-    input: {
-      authorId: string;
-      name: string;
-      fullPath: string;
-      type: string;
-      candidateId: string;
-    };
+  async createOneAttachmentFromFilePath(documentObj: { input: { authorId: string; name: string; fullPath: string; type: string; candidateId: string; };
   }) {
-    const headers = {
-      "sec-ch-ua": '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
-      DNT: "1", "sec-ch-ua-mobile": "?0",
-      authorization: "Bearer " + process.env.TWENTY_JWT_SECRET,
-      "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-      "x-schema-version": "41",
-      accept: "*/*",
-      Referer: process.env.FRONT_BASE_URL+"/",
-    };
-
+    // const headers = {
+    //   "sec-ch-ua": '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
+    //   DNT: "1", "sec-ch-ua-mobile": "?0",
+    //   authorization: "Bearer " + process.env.TWENTY_JWT_SECRET,
+    //   "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    //   "x-schema-version": "41",
+    //   accept: "*/*",
+    //   Referer: process.env.FRONT_BASE_URL+"/",
+    // };
     const graphqlQueryObj = JSON.stringify({
       query: allGraphQLQueries.graphQLtoCreateOneAttachmentFromFilePath,
       variables: documentObj,
     });
-    // debugger
     const response = await axiosRequest(graphqlQueryObj);
-    // console.log(response);
-    // debugger
   }
 
   async fetchAllAttachmentsByJobId(jobId: string) {
-    console.log("REceived Job ID:", jobId);
+    console.log("Received Job ID:", jobId);
     let graphqlQueryObj = JSON.stringify({
       query: allGraphQLQueries.graphqlQueryTofindManyAttachmentsByJobId,
       variables: {
@@ -79,24 +67,11 @@ export class AttachmentProcessingService {
     });
     try {
       const response = await axiosRequest(graphqlQueryObj);
-      // console.log("Received ressponse for JD attachmentsResponse:", response);
       const attachments = response?.data?.data?.attachments?.edges[0];
-      console.log("Atachments:", attachments);
+      console.log("Attachments:", attachments);
       return attachments;
     } catch (error) {
       console.log(error);
     }
   }
-  // getJDForJob(candidateId: string) {
-  //     console.log("Running getJDForJob")
-  //     console.log("This is the jobId to get JD for:", jobId)
-  //     const jobDocument = await findJob(jobId);
-  //     console.log("This is the job document:", jobDocument)
-  //     if (!jobDocument || !jobDocument.jobDescription) {
-  //         // Handle the case where no document is found or there is no job description
-  //         console.error('No job description found.');
-  //         return [];
-  //     }
-  //     return jobDocument.jobDescription;
-  // }
 }

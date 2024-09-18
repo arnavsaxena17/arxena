@@ -42,6 +42,7 @@ export class FacebookWhatsappChatApi {
     mostRecentMessageArr.push({ role: 'user', content: 'Sharing the JD' });
     new FacebookWhatsappChatApi().sendWhatsappAttachmentMessage(sendTextMessageObj, personObj, mostRecentMessageArr);
   }
+  
   getTemplateMessageObj(sendTemplateMessageObj: allDataObjects.sendWhatsappTemplateMessageObjectType) {
     const templateMessageObj = JSON.stringify({
       messaging_product: 'whatsapp',
