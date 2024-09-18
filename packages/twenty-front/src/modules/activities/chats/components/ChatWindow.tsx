@@ -336,7 +336,7 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
           <StyledWindow>
             <ChatView ref={chatViewRef}>
             <StyledTopBar>
-            <div>{`${currentIndividual?.name.firstName} ${currentIndividual?.name.lastName} || ${currentIndividual?.phone} || ${currentIndividual?.id} || Messages: ${messageHistory.length} || Last Status: ${currentIndividual?.candidates?.edges[0]?.node?.status}`}</div>
+            <div>{`${currentIndividual?.name.firstName} ${currentIndividual?.name.lastName} || ${currentIndividual?.phone} || Person: ${currentIndividual?.id} || Candidate: ${currentIndividual?.candidates.edges[0].node.id} || Messages: ${messageHistory.length} || Last Status: ${currentIndividual?.candidates?.edges[0]?.node?.status}`}</div>
                 <StyledButtonGroup>
                   <StyledButton onClick={handleNavigateToPersonPage} bgColor="black" data-tooltip="Person">
                     <PersonIcon />
