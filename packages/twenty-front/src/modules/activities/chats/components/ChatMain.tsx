@@ -10,6 +10,7 @@ import { tokenPairState } from '@/auth/states/tokenPairState';
 import ChatSidebar from './ChatSidebar';
 import { currentUnreadMessagesState } from '@/activities/chats/states/currentUnreadMessagesState';
 
+import { Job } from "../types/front-chat-types";
 
 
 
@@ -24,10 +25,7 @@ export default function ChatMain() {
   });
 
 
-interface Job {
-  id: string;
-  name: string;
-}
+
   const inputRef = useRef(null);
   const [people, setPeople] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -124,6 +122,7 @@ interface Job {
     return () => clearInterval(interval);
   }, []);
 
+  console.log("Current jobs in state:", jobs); // Debug log outside useEffect
 
   const updateUnreadMessagesStatus = async (selectedIndividual: string) => {
     const listOfMessagesIds = unreadMessages?.listOfUnreadMessages

@@ -222,8 +222,8 @@ export class CandidateSourcingController {
         },
       }),
     );
-    console.log('Response status from get job', responseFromGetAllJobs.status);
-    console.log('Response data from get job', responseFromGetAllJobs.data);
+    // console.log('Response status from get job', responseFromGetAllJobs.status);
+    // console.log('Response data from get job', responseFromGetAllJobs.data);
     const jobsObject: Jobs = responseFromGetAllJobs.data?.data?.jobs?.edges;
     // const jobIdMetadataInCamelCaseFormat: string = camelCase(jobIdMetadata).charAt(0).toUpperCase() + camelCase(jobIdMetadata).slice(1);
     // const dynamicQueryName = (jobName + jobIdMetadataInCamelCaseFormat).charAt(0).toUpperCase() + camelCase(jobName + jobIdMetadataInCamelCaseFormat).slice(1);
