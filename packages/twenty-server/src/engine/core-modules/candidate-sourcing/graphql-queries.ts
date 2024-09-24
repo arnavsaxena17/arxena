@@ -6,6 +6,15 @@ mutation CreateOneJob($input: JobCreateInput!) {
   }
 }`;
 
+
+export const createOneQuestion = `
+mutation CreateOneQuestion($input: QuestionCreateInput!) {
+  createQuestion(data: $input) {
+    __typename
+  }
+}`
+
+
 export const CreateManyPeople = `
 mutation CreatePeople($data: [PersonCreateInput!]!) {
   createPeople(data: $data) {
