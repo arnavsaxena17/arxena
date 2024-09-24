@@ -5,6 +5,8 @@ import styled from "@emotion/styled";
 import SearchBox from "./SearchBox";
 import JobDropdown from "./JobDropdown";
 
+import { Job } from "../types/front-chat-types";
+
 const StyledSidebarContainer = styled.div`
   display: flex;
   flex-direction: column;
@@ -13,12 +15,6 @@ const StyledSidebarContainer = styled.div`
   overflow-y: auto;
 `;
 
-interface Job {
-  node:{
-    id: string;
-    name: string;
-  }
-}
 
 interface ChatSidebarProps {
   individuals: frontChatTypes.PersonNode[];
