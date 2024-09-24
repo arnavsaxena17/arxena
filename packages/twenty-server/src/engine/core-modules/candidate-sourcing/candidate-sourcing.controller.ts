@@ -250,6 +250,27 @@ export class CandidateSourcingController {
     }
   }
 
+  @Post('add-questions')
+  async addQuestions(@Body() body: any) {
+    try {
+      console.log(body); 
+      const data = body;
+      const arxenaJobId = data?.job_id;
+      const jobObject = await this.getJobDetails(arxenaJobId);
+      const questions = data?.questions || [];
+      for (const question of questions) {
+        const graphqlVariables = { input: { name: question, jobsId: jobObject.id } };
+        const graphqlQueryObj = JSON.stringify({ query: CreateOneJob, variables: graphqlVariables });
+        const response = await axiosRequest(graphqlQueryObj);
+        console.log('Response from adding question:', response.data);
+      }
+      return { status: 'success' };
+    } catch (error) {
+      console.log('Error in postJob', error);
+      return { error: error.message };
+    }
+  }
+
 
   @Post('start-chat')
   async startChat(@Body() body: any) {

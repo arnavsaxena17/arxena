@@ -239,7 +239,7 @@ export class FacebookWhatsappChatApi {
             const phoneNumberTo = attachmentMessage?.phoneNumberTo;
 
             const personObj = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(phoneNumberTo);
-
+            
             const mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.messageObj;
 
             mostRecentMessageArr.push({ role: 'user', content: 'Failed to send JD to the candidate.' });

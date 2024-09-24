@@ -23,9 +23,16 @@ export default function ChatMain() {
     listOfUnreadMessages: [],
   });
 
+
+interface Job {
+  id: string;
+  name: string;
+}
   const inputRef = useRef(null);
   const [people, setPeople] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [jobs, setJobs] = useState<Job[]>([]);
+
 
   const [tokenPair] = useRecoilState(tokenPairState);
 
@@ -73,21 +80,29 @@ export default function ChatMain() {
 
   useEffect(() => {
     async function fetchData() {
-      console.log("process.env.REACT_APP_SERVER_BASE_URL::", process.env.REACT_APP_SERVER_BASE_URL)
-      const response = await axios.get(process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/get-candidates-and-chats', {
-        headers: {
-          Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
-        },
-      });
-      console.log("REceived response:", response)
+      try {
+        const [peopleResponse, jobsResponse] = await Promise.all([
+          axios.get(process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/get-candidates-and-chats', {
+            headers: {
+              Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
+            },
+          }),
+          axios.post(process.env.REACT_APP_SERVER_BASE_URL + '/candidate-sourcing/get-all-jobs', {
+            headers: {
+              Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
+            },
+          })
+      ]);
+    
+      const availablePeople: frontChatTypes.PersonNode[] = peopleResponse.data.filter((person: frontChatTypes.PersonNode) => person?.candidates?.edges?.length > 0 &&  person?.candidates?.edges[0].node.startChat);
 
-      const availablePeople: frontChatTypes.PersonNode[] = response?.data?.filter((person: frontChatTypes.PersonNode) => person?.candidates?.edges?.length > 0 &&  person?.candidates?.edges[0].node.startChat);
-
-      console.log("All people:", response?.data);
+      console.log("All people:", peopleResponse?.data);
       console.log("Available people:", availablePeople);
-      setPeople(response?.data);
+      setPeople(peopleResponse.data);
       setIndividuals(availablePeople);
-      console.log(response?.data.filter((person: frontChatTypes.PersonNode) => person?.candidates?.edges?.length > 0));
+      setJobs(jobsResponse.data.jobs);
+
+      console.log(peopleResponse?.data.filter((person: frontChatTypes.PersonNode) => person?.candidates?.edges?.length > 0));
 
       const unreadMessagesList = getUnreadMessageListManyCandidates(availablePeople);
       console.log(unreadMessagesList);
@@ -95,6 +110,11 @@ export default function ChatMain() {
       console.log('count::::', currentUnreadMessages);
       setUnreadMessages(unreadMessagesList);
       updateUnreadMessagesStatus(selectedIndividual);
+    }
+    
+    catch (error) {
+      console.error(error);
+    }
     }
 
     fetchData();
@@ -133,7 +153,8 @@ export default function ChatMain() {
       <div>
         <div>
           <div style={{ display: 'flex' }}>
-            <ChatSidebar individuals={individuals} selectedIndividual={selectedIndividual} setSelectedIndividual={setSelectedIndividual} unreadMessages={unreadMessages} />
+            <ChatSidebar individuals={individuals} selectedIndividual={selectedIndividual} setSelectedIndividual={setSelectedIndividual} unreadMessages={unreadMessages} jobs={jobs}
+            />
             <div>
               <ChatWindow selectedIndividual={selectedIndividual} individuals={individuals} />
             </div>
