@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import * as frontChatTypes from "../types/front-chat-types";
 import ChatTile from "./ChatTile";
 import styled from "@emotion/styled";
@@ -14,8 +14,10 @@ const StyledSidebarContainer = styled.div`
 `;
 
 interface Job {
-  id: string;
-  name: string;
+  node:{
+    id: string;
+    name: string;
+  }
 }
 
 interface ChatSidebarProps {
@@ -35,6 +37,12 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedJob, setSelectedJob] = useState("");
+
+
+  useEffect(() => {
+    console.log("Jobs received in ChatSidebar:", jobs); // Debug log
+  }, [jobs]);
+
 
   const filteredIndividuals = individuals.filter((individual) => {
     const matchesSearch = 
