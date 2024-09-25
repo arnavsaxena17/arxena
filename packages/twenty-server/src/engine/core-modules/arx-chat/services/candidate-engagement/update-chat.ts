@@ -9,7 +9,15 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
       console.log('Fetching candidates to engage');
       const candidates = await this.fetchAllCandidatesWithStartChatTrue();
       console.log(`Fetched ${candidates?.length} candidates`); 
-      const candidateIds = candidates?.map(c => c?.people?.id).filter(id => id !== null);
+      const candidateIds = candidates
+      ?.map((c, index) => {
+        if (!c?.people?.id) {
+          console.log(`Candidate at index ${index} has undefined or null ID.`);
+          return null; 
+        }
+        return c.people.id;
+      })
+      .filter(id => id !== null && id !== undefined); 
       console.log("Got a total of ", candidateIds?.length, "candidate ids");
       console.log("These are candidate ids:", candidateIds)
       const people = await this.fetchAllPeopleByCandidateIds(candidateIds);
