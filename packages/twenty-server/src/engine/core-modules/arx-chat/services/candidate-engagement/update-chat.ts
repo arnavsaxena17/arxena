@@ -9,8 +9,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
       console.log('Fetching candidates to engage');
       const candidates = await this.fetchAllCandidatesWithStartChatTrue();
       console.log(`Fetched ${candidates?.length} candidates`); 
-      const candidateIds = candidates?.map(c => c.people.id);
-      // console.log("CandidateIds:", candidateIds);
+      const candidateIds = candidates?.map(c => c?.people?.id);
       const people = await this.fetchAllPeopleByCandidateIds(candidateIds);
       console.log(`Fetched ${people?.length} people in fetch all People`);
       return people
@@ -30,11 +29,11 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
         variables: { "limit": 30, "orderBy": [{"position": "AscNullsFirst"}], "filter": {"id": {"eq": jobId}}, "after": endCursor } });
       try {
         const response = await axiosRequest(graphqlQueryObj);
-        const jobData = response.data.data.jobs.edges[0].node;
-        const candidates = jobData.candidates.edges.map(edge => edge.node.id);
+        const jobData = response?.data?.data?.jobs?.edges[0]?.node;
+        const candidates = jobData?.candidates?.edges?.map(edge => edge?.node?.id);
         allCandidates = allCandidates.concat(candidates);
-        hasNextPage = jobData.candidates.pageInfo.hasNextPage;
-        endCursor = jobData.candidates.pageInfo.endCursor;
+        hasNextPage = jobData?.candidates?.pageInfo?.hasNextPage;
+        endCursor = jobData?.candidates?.pageInfo?.endCursor;
       } catch (error) {
         console.error('Error fetching active candidates:', error);
         hasNextPage = false;
@@ -73,7 +72,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
       const edges = response?.data?.data?.candidates?.edges;
       // console.log("Number of candidate edges:", edges?.length)
       if (!edges || edges?.length === 0) break;
-      allCandidates = allCandidates.concat(edges.map((edge: any) => edge.node));
+      allCandidates = allCandidates?.concat(edges.map((edge: any) => edge.node));
       lastCursor = edges[edges.length - 1].cursor;
     }
     return allCandidates;
@@ -86,7 +85,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
       const response = await axiosRequest(graphqlQueryObj);
       const edges = response?.data?.data?.people?.edges;
       if (!edges || edges?.length === 0) break;
-      allPeople = allPeople.concat(edges.map((edge: any) => edge.node));
+      allPeople = allPeople.concat(edges.map((edge: any) => edge?.node));
       lastCursor = edges[edges.length - 1].cursor;
     }
     return allPeople;
@@ -98,14 +97,14 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
       try {
         const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindEngagedCandidates, variables: { "limit": 30, "lastCursor": lastCursor } });
         const response = await axiosRequest(graphqlQueryObj);
-        const peopleData = response.data.data.people;
-        if (!peopleData || !peopleData.edges || peopleData.edges.length === 0) {
+        const peopleData = response?.data?.data?.people;
+        if (!peopleData || !peopleData?.edges || peopleData?.edges?.length === 0) {
           console.log("No more data to fetch.");
           break;
         }
-        const newPeople = peopleData.edges.map(edge => edge.node);
-        allPeople = allPeople.concat(newPeople);
-        lastCursor = peopleData.edges[peopleData.edges.length - 1].cursor;
+        const newPeople = peopleData?.edges?.map(edge => edge?.node);
+        allPeople = allPeople?.concat(newPeople);
+        lastCursor = peopleData?.edges[peopleData?.edges?.length - 1].cursor;
         if (newPeople.length < 30) {  // Assuming 1000 is the maximum limit per request
           break;
         }
@@ -127,7 +126,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
           query: allGraphQLQueries.graphQlToFetchWhatsappMessages,
           variables: { "limit": 30, "lastCursor": lastCursor, "filter": { "candidateId": { "in": [candidateId] } }, "orderBy": [{ "position": "DescNullsFirst" }] } });
         const response = await axiosRequest(graphqlQueryObj);
-        const whatsappMessages = response.data.data.whatsappMessages;
+        const whatsappMessages = response?.data?.data?.whatsappMessages;
         if (!whatsappMessages || whatsappMessages?.edges?.length === 0) {
           console.log("No more data to fetch.");
           break;

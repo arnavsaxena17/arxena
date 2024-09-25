@@ -116,7 +116,7 @@ export default class CandidateEngagementArx {
       // THis is for when we want to engage people only after 3 minutes of receiving their response
       const filteredCandidatesToEngage = sortedPeopleData.filter(person => {
         // Check if the person has candidates
-        if (person.candidates?.edges?.length > 0) {
+        if (person?.candidates?.edges?.length > 0) {
             const candidate = person.candidates.edges[0].node;
             // Check if the candidate has engagement status
             if (candidate.engagementStatus) {
@@ -170,7 +170,7 @@ export default class CandidateEngagementArx {
     const filteredCandidates: allDataObjects.PersonNode[] = this.filterCandidates(sortedPeopleData);
     console.log('Number processCandidateof filtered candidates to engage:', filteredCandidates?.length);
     for (const personNode of filteredCandidates) {
-      console.log("This is the personNode?.candidates?.edges[0]?.node:: for which we will start engagement", personNode?.candidates?.edges[0]?.node.name)
+      console.log("This is the personNode?.candidates?.edges[0]?.node:: for which we will start engagement", personNode?.candidates?.edges[0]?.node?.name)
       await new FetchAndUpdateCandidatesChatsWhatsapps().updateEngagementStatusBeforeRunningEngageCandidates(personNode?.candidates?.edges[0]?.node?.id);
       console.log('Updated engagement status to false for candidate and going to process their candidature:', personNode?.name?.firstName);
       await this.processCandidate(personNode, 'engage');
