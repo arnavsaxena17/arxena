@@ -9,11 +9,14 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
       console.log('Fetching candidates to engage');
       const candidates = await this.fetchAllCandidatesWithStartChatTrue();
       console.log(`Fetched ${candidates?.length} candidates`); 
-      const candidateIds = candidates?.map(c => c?.people?.id);
+      const candidateIds = candidates?.map(c => c?.people?.id).filter(id => id !== null);
+      console.log("Got a total of ", candidateIds?.length, "candidate ids");
+      console.log("These are candidate ids:", candidateIds)
       const people = await this.fetchAllPeopleByCandidateIds(candidateIds);
       console.log(`Fetched ${people?.length} people in fetch all People`);
       return people
     } catch (error) {
+      console.log("This is the error in error in fetchPeopleToEngageByCheckingOnly StartChat", error);
       console.error('An error occurred:', error);
     }
   }
