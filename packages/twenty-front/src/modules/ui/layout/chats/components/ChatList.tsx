@@ -8,13 +8,6 @@ import { TabListScope } from '@/ui/layout/tab/scopes/TabListScope';
 import { ScrollWrapper } from '@/ui/utilities/scroll/components/ScrollWrapper';
 import { IconArrowBackUp, IconUserCircle } from 'twenty-ui';
 
-import { Chat } from './Chat';
-
-import { ReactNode } from 'react';
-import { Button } from '@/ui/input/button/components/Button';
-
-
-
 type SingleTabProps = {
   title: string;
   Icon?: IconComponent;
@@ -56,9 +49,9 @@ export const ChatList = () => {
       <ScrollWrapper hideY>
         <StyledContainer>
     
-        <Button Icon={IconSend} title="Reply" variant="secondary" accent="default" onClick={handleSubmit} />
+        {/* <Button Icon={IconSend} title="Reply" variant="secondary" accent="default" onClick={handleSubmit} />
         <Button Icon={IconRefresh} title="Refetch" variant="secondary" accent="default" onClick={handleSubmit} />
-        <Button Icon={IconUserCircle} title="Share" variant="secondary" accent="default" onClick={handleSubmit} />
+        <Button Icon={IconUserCircle} title="Share" variant="secondary" accent="default" onClick={handleSubmit} /> */}
           </StyledContainer>
 
         

@@ -401,8 +401,7 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
             </StyledChatInputBox>
           </StyledWindow>
         ) || (
-          <div>
-            <div></div>
+          <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
             <img src="/images/placeholders/moving-image/empty_inbox.png" alt="" />
             <p>Select a chat to start talking</p>
           </div>
