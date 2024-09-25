@@ -10,7 +10,7 @@ import { Job } from "../types/front-chat-types";
 const StyledSidebarContainer = styled.div`
   display: flex;
   flex-direction: column;
-  width: 15vw;
+  width: 20vw;
   height: 100%;
   overflow-y: auto;
 `;

@@ -253,6 +253,11 @@ export class OpenAIArxMultiStepClient {
 
   async sendWhatsappMessageToCandidate(messageText: string, mostRecentMessageArr: allDataObjects.ChatHistoryItem[], functionSource: string, isChatEnabled?: boolean) {
     console.log('Called sendWhatsappMessage ToCandidate to send message via any whatsapp api::', functionSource, "message text::", messageText);
+    if (mostRecentMessageArr[0].role != 'system' && mostRecentMessageArr.length==1) {
+      console.log('Found a single sneaky message which is coming out:: ', messageText);
+      return;
+    }
+
     if (messageText.includes('#DONTRESPOND#') || messageText.includes('DONTRESPOND') && messageText) {
       console.log('Found a #DONTRESPOND# message, so not sending any message');
       return;
