@@ -185,6 +185,7 @@ export class CandidateSourcingController {
     const arxenaJobId = body?.job_id;
     const data: UserProfile[] = body?.data;
     console.log("Going to add and process candidate profiles")
+    console.log("Going to add and arxena job Id", arxenaJobId)
     try {
       const jobObject = await this.getJobDetails(arxenaJobId);
       // const { manyPersonObjects, manyCandidateObjects } = await this.processProfiles(data, jobObject);
@@ -257,7 +258,9 @@ export class CandidateSourcingController {
       const data = body;
       const arxenaJobId = data?.job_id;
       const jobObject = await this.getJobDetails(arxenaJobId);
+      console.log("getJobDetails:", jobObject);
       const questions = data?.questions || [];
+      console.log("Number Questions:", questions.length);
       for (const question of questions) {
         const graphqlVariables = { input: { name: question, jobsId: jobObject.id } };
         const graphqlQueryObj = JSON.stringify({ query: CreateOneJob, variables: graphqlVariables });

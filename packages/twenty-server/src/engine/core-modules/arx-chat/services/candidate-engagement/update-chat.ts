@@ -4,31 +4,28 @@ import { v4 } from 'uuid';
 import { axiosRequest } from '../../utils/arx-chat-agent-utils';
 import axios from 'axios';
 export class FetchAndUpdateCandidatesChatsWhatsapps {
-  async fetchPeopleToEngageByCheckingOnlyStartChat(){
+  async fetchPeopleToEngageByCheckingOnlyStartChat() {
     try {
       console.log('Fetching candidates to engage');
       const candidates = await this.fetchAllCandidatesWithStartChatTrue();
-      console.log(`Fetched ${candidates?.length} candidates`); 
+      console.log(`Fetched ${candidates?.length} candidates`);
+  
       const candidateIds = candidates
-      ?.map((c, index) => {
-        if (!c?.people?.id) {
-          console.log(`Candidate at index ${index} has undefined or null ID.`);
-          return null; 
-        }
-        return c.people.id;
-      })
-      .filter(id => id !== null && id !== undefined); 
+        ?.filter(c => c?.people?.id)
+        .map(c => c.people.id);
+  
       console.log("Got a total of ", candidateIds?.length, "candidate ids");
       // console.log("These are candidate ids:", candidateIds)
+  
       const people = await this.fetchAllPeopleByCandidateIds(candidateIds);
       console.log(`Fetched ${people?.length} people in fetch all People`);
-      return people
+      return people;
     } catch (error) {
-      console.log("This is the error in error in fetchPeopleToEngageByCheckingOnly StartChat", error);
+      console.log("This is the error in fetchPeopleToEngageByCheckingOnlyStartChat", error);
       console.error('An error occurred:', error);
+      throw error; // Re-throw the error to be handled by the caller
     }
   }
-
   async fetchActiveCandidatesByJobId(jobId: string): Promise<string[]> {
     let allCandidates: string[] = [];
     let hasNextPage = true;
