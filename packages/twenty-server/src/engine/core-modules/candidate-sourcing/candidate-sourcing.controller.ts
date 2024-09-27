@@ -1,7 +1,7 @@
 import { Body, Controller, Post } from '@nestjs/common';
 import { chunk } from 'lodash';
 
-import { CreateManyCandidates, CreateManyPeople, graphQltoStartChat, CreateOneJob, graphqlToFindManyJobByArxenaSiteId } from './graphql-queries';
+import { CreateManyCandidates, CreateManyPeople, graphQltoStartChat, CreateOneJob, createOneQuestion, graphqlToFindManyJobByArxenaSiteId } from './graphql-queries';
 import {FetchAndUpdateCandidatesChatsWhatsapps} from '../arx-chat/services/candidate-engagement/update-chat';
 import * as allDataObjects from '../arx-chat/services/data-model-objects';
 import * as allGraphQLQueries from '../arx-chat/services/candidate-engagement/graphql-queries-chatbot';
@@ -260,16 +260,17 @@ export class CandidateSourcingController {
       const jobObject = await this.getJobDetails(arxenaJobId);
       console.log("getJobDetails:", jobObject);
       const questions = data?.questions || [];
-      console.log("Number Questions:", questions.length);
+      console.log("Number Questions:", questions?.length);
       for (const question of questions) {
-        const graphqlVariables = { input: { name: question, jobsId: jobObject.id } };
-        const graphqlQueryObj = JSON.stringify({ query: CreateOneJob, variables: graphqlVariables });
+        const graphqlVariables = { input: { name: question, jobsId: jobObject?.id } };
+        const graphqlQueryObj = JSON.stringify({ query: createOneQuestion, variables: graphqlVariables });
+        console.log("graphqlQueryObj:", graphqlQueryObj);
         const response = await axiosRequest(graphqlQueryObj);
         console.log('Response from adding question:', response.data);
       }
       return { status: 'success' };
     } catch (error) {
-      console.log('Error in postJob', error);
+      console.log('Error in add questions', error);
       return { error: error.message };
     }
   }
