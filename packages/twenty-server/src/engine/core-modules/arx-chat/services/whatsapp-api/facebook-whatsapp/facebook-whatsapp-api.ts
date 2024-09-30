@@ -19,7 +19,7 @@ if (process.env.FACEBOOK_WHATSAPP_PERMANENT_API) {
   whatsappAPIToken = process.env.FACEBOOK_WHATSAPP_API_TOKEN;
 }
 
-const templates = ['hello_world', 'recruitment','application','application02'];
+const templates = ['hello_world', 'recruitment','application','application02', 'application03'];
 export class FacebookWhatsappChatApi {
   async uploadAndSendFileToWhatsApp(attachmentMessage: allDataObjects.AttachmentMessageObject) {
     console.log('Send file');
@@ -125,10 +125,10 @@ export class FacebookWhatsappChatApi {
                 type: 'text',
                 text: sendTemplateMessageObj.recruiterCompanyDescription,
               },
-              {
-                type: 'text',
-                text: sendTemplateMessageObj.jobCode,
-              },
+              // {
+              //   type: 'text',
+              //   text: sendTemplateMessageObj.jobCode,
+              // },
               {
                 type: 'text',
                 text: sendTemplateMessageObj.jobPositionName,
@@ -494,7 +494,7 @@ export class FacebookWhatsappChatApi {
         console.log('This is the template api message to send in whatappUpdateMessageObj.phoneNumberFrom, ', whatappUpdateMessageObj.phoneNumberFrom);
         const sendTemplateMessageObj = {
           recipient: whatappUpdateMessageObj.phoneNumberTo.replace('+', ''),
-          template_name: templates[3],
+          template_name: templates[4],
           candidateFirstName: whatappUpdateMessageObj.candidateFirstName,
           recruiterName: allDataObjects.recruiterProfile.name,
           recruiterJobTitle: allDataObjects.recruiterProfile.job_title,
