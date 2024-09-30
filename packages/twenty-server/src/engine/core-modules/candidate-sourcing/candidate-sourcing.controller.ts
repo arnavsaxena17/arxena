@@ -254,19 +254,19 @@ export class CandidateSourcingController {
   @Post('add-questions')
   async addQuestions(@Body() body: any) {
     try {
-      console.log(body); 
+      // console.log(body); 
       const data = body;
       const arxenaJobId = data?.job_id;
       const jobObject = await this.getJobDetails(arxenaJobId);
-      console.log("getJobDetails:", jobObject);
+      // console.log("getJobDetails:", jobObject);
       const questions = data?.questions || [];
       console.log("Number Questions:", questions?.length);
       for (const question of questions) {
         const graphqlVariables = { input: { name: question, jobsId: jobObject?.id } };
         const graphqlQueryObj = JSON.stringify({ query: createOneQuestion, variables: graphqlVariables });
-        console.log("graphqlQueryObj:", graphqlQueryObj);
+        // console.log("graphqlQueryObj:", graphqlQueryObj);
         const response = await axiosRequest(graphqlQueryObj);
-        console.log('Response from adding question:', response.data);
+        // console.log('Response from adding question:', response.data);
       }
       return { status: 'success' };
     } catch (error) {
