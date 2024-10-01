@@ -165,7 +165,7 @@ const StyledTopBar = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  width: 66%;
+  width: 62vw;
   background-color: rgba(255, 255, 255, 0.8);
   filter: drop-shadow(0px 2px 4px rgba(0, 0, 0, 0.1));
   z-index: 1;
@@ -187,7 +187,10 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
   const [qrCode, setQrCode] = useState('');
   const chatViewRef = useRef<HTMLDivElement>(null);
 
-  const currentIndividual = props?.individuals?.find(individual => individual?.id === props.selectedIndividual);
+
+  const allIndividuals = props?.individuals
+
+  const currentIndividual = allIndividuals?.find(individual => individual?.id === props.selectedIndividual);
   const currentCandidateId = currentIndividual?.candidates?.edges[0]?.node?.id;
 
   useEffect(() => {
@@ -327,6 +330,21 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
     );
   };
 
+
+  const allIndividualsForCurrentJob = allIndividuals?.filter(individual => individual?.candidates?.edges[0]?.node?.jobs.id === currentIndividual?.candidates?.edges[0]?.node?.jobs.id);
+
+  const lastStatus = currentIndividual?.candidates?.edges[0]?.node?.status
+  const totalCandidates = allIndividualsForCurrentJob?.length
+  const screeningState = allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.status === "SCREENING").length
+  const screeningPercent = (allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.status === "SCREENING").length/allIndividualsForCurrentJob.length*100).toFixed(1)
+  const unresponsive = allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.status === null).length;
+  const unresponsivePercent = (allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.status === null).length/allIndividualsForCurrentJob.length*100).toFixed(1);
+  const notInterested = allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.status === "NOT_INTERESTED").length;
+  const notInterestedPercent = (allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.status === "NOT_INTERESTED").length/allIndividualsForCurrentJob.length*100).toFixed(1);
+  const notFit = allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.status === "NOT_FIT").length;
+  const notFitPercent = (allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.status === "NOT_FIT").length/allIndividualsForCurrentJob.length*100).toFixed(1);
+  const recruiterInterviews = allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.status === "RECRUITER_INTERVIEW").length;
+  const recruiterInterviewsPercent = (allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.status === "RECRUITER_INTERVIEW").length/allIndividualsForCurrentJob.length*100).toFixed(1);
   
 
   return (
@@ -390,13 +408,13 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
                 <StyledButtonBottom onClick={handleShareJD}>Share JD</StyledButtonBottom>
               </div>
               <div style={{ display: 'flex' }}>
-                Last Status: {currentIndividual?.candidates?.edges[0]?.node?.status} | 
-                Total: {props?.individuals?.length} | 
-                Screening: {props?.individuals?.filter(individual => individual?.candidates?.edges[0]?.node?.status === "SCREENING").length} ({(props?.individuals?.filter(individual => individual?.candidates?.edges[0]?.node?.status === "SCREENING").length/props.individuals.length*100).toFixed(1)}%) | 
-                Unresponsive:{props?.individuals?.filter(individual => individual?.candidates?.edges[0]?.node?.status === null).length} ({(props?.individuals?.filter(individual => individual?.candidates?.edges[0]?.node?.status === null).length/props.individuals.length*100).toFixed(1)}%) | 
-                Not Interested: {props?.individuals?.filter(individual => individual?.candidates?.edges[0]?.node?.status === "NOT_INTERESTED").length} ({(props?.individuals?.filter(individual => individual?.candidates?.edges[0]?.node?.status === "NOT_INTERESTED").length/props.individuals.length*100).toFixed(1)}%) | 
-                Not Fit: {props?.individuals?.filter(individual => individual?.candidates?.edges[0]?.node?.status === "NOT_FIT").length} ({(props?.individuals?.filter(individual => individual?.candidates?.edges[0]?.node?.status === "NOT_FIT").length/props.individuals.length*100).toFixed(1)}%) | 
-                Recruiter Interviews: {props?.individuals?.filter(individual => individual?.candidates?.edges[0]?.node?.status === "RECRUITER_INTERVIEW").length} ({(props?.individuals?.filter(individual => individual?.candidates?.edges[0]?.node?.status === "RECRUITER_INTERVIEW").length/props.individuals.length*100).toFixed(1)}%) | 
+                Last Status: {lastStatus} | 
+                Total: {totalCandidates} | 
+                Screening: {screeningState} ({screeningPercent}%) | 
+                Unresponsive: {unresponsive} ({unresponsivePercent}%) | 
+                Not Interested: {notInterested} ({notInterestedPercent}%) | 
+                Not Fit: {notFit} ({notFitPercent}%) | 
+                Recruiter Interviews: {recruiterInterviews} ({recruiterInterviewsPercent}%)
               </div>
             </StyledChatInputBox>
           </StyledWindow>
