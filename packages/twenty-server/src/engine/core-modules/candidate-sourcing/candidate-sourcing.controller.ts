@@ -1,7 +1,7 @@
 import { Body, Controller, Post } from '@nestjs/common';
 import { chunk } from 'lodash';
 
-import { CreateManyCandidates, CreateManyPeople, graphQltoStartChat, CreateOneJob, createOneQuestion, graphqlToFindManyJobByArxenaSiteId } from './graphql-queries';
+import { CreateManyCandidates, CreateManyPeople, graphQltoStartChat, CreateOneJob, graphQltoStopChat, createOneQuestion, graphqlToFindManyJobByArxenaSiteId } from './graphql-queries';
 import {FetchAndUpdateCandidatesChatsWhatsapps} from '../arx-chat/services/candidate-engagement/update-chat';
 import * as allDataObjects from '../arx-chat/services/data-model-objects';
 import * as allGraphQLQueries from '../arx-chat/services/candidate-engagement/graphql-queries-chatbot';
@@ -287,6 +287,25 @@ export class CandidateSourcingController {
     }
     const graphqlQueryObj = JSON.stringify({
       query: graphQltoStartChat,
+      variables: graphqlVariables,
+    });
+
+    const response = await axiosRequest(graphqlQueryObj);
+    console.log('Response from create startChat', response.data);
+  }
+
+
+  @Post('stop-chat')
+  async stopChat(@Body() body: any) {
+
+    const graphqlVariables = {
+      "idToUpdate": body.candidateId,
+      "input": {
+        "stopChat": true
+      }
+    }
+    const graphqlQueryObj = JSON.stringify({
+      query: graphQltoStopChat,
       variables: graphqlVariables,
     });
 

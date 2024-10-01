@@ -22,6 +22,7 @@ const PersonIcon = () => (
     <circle cx="12" cy="7" r="4"></circle>
   </svg>
 );
+
 const CandidateIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
@@ -31,6 +32,13 @@ const CandidateIcon = () => (
   </svg>
 );
 
+const StopIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+    <line x1="9" y1="9" x2="15" y2="15" />
+    <line x1="15" y1="9" x2="9" y2="15" />
+  </svg>
+);
 
 const StyledButtonGroup = styled.div`
   display: flex;
@@ -191,7 +199,7 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
 
   const allIndividuals = props?.individuals
 
-  const currentIndividual = allIndividuals?.find(individual => individual?.id === props.selectedIndividual);
+  const currentIndividual = allIndividuals?.find(individual => individual?.id === props?.selectedIndividual);
   const currentCandidateId = currentIndividual?.candidates?.edges[0]?.node?.id;
 
   useEffect(() => {
@@ -210,6 +218,19 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
     navigate(`/object/candidate/${currentCandidateId}`);
   };
 
+
+  const handleStopCandidate = async () => {
+    try {
+      const response = await axios.post(
+        process.env.REACT_APP_SERVER_BASE_URL + '/candidate-sourcing/stop-chat',
+        { candidateId: currentCandidateId },
+        { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } }
+      );
+      console.log('Response:', response);
+    } catch (error) {
+      console.error('Error stopping candidate:', error);
+    }
+  }
   
   async function getlistOfMessages(currentCandidateId: string) {
     try {
@@ -366,6 +387,9 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
               {`Messages: ${messageHistory.length} || Last Status: ${currentIndividual?.candidates?.edges[0]?.node?.status} || Current Job: ${currentIndividual?.candidates?.edges[0]?.node?.jobs.name}`}
             </div>
                 <StyledButtonGroup>
+                  <StyledButton onClick={handleStopCandidate} bgColor="black" data-tooltip="Person">
+                    <StopIcon />
+                  </StyledButton>
                   <StyledButton onClick={handleNavigateToPersonPage} bgColor="black" data-tooltip="Person">
                     <PersonIcon />
                   </StyledButton>
