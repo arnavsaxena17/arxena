@@ -43,6 +43,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   const filteredIndividuals = individuals.filter((individual) => {
     const matchesSearch = 
       individual?.name?.firstName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (individual?.name?.firstName?.toLowerCase() + " " + individual?.name?.lastName?.toLowerCase()).includes(searchQuery.toLowerCase()) ||
       individual?.name?.lastName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       individual?.candidates?.edges[0]?.node?.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       individual?.phone.toLowerCase().includes(searchQuery.toLowerCase()) ||
