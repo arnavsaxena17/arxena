@@ -218,7 +218,7 @@ export class ArxChatEndpoint {
   async getAllMessagesByPhoneNumber(@Req() request: any): Promise<object> {
     console.log("Going to get all messages by phone Number for :", request.body.phoneNumber);
     const personObj: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(request.body.phoneNumber);
-    const candidateId = personObj.candidates.edges[0].node.id;
+    const candidateId = personObj?.candidates?.edges[0]?.node?.id;
     const allWhatsappMessages = await new FetchAndUpdateCandidatesChatsWhatsapps().fetchAllWhatsappMessages(candidateId);
     const formattedMessages = await new FetchAndUpdateCandidatesChatsWhatsapps().formatChat(allWhatsappMessages);
     console.log("All messages length:", allWhatsappMessages?.length, "for phone number:", request.body.phoneNumber);
@@ -228,8 +228,10 @@ export class ArxChatEndpoint {
   @Post('get-candidate-status-by-phone-number')
   @UseGuards(JwtAuthGuard)
   async getCandidateStatusByPhoneNumber(@Req() request: any): Promise<object> {
+    console.log("Going to get candidate status by phone Number for :", request.body.phoneNumber);
     const personObj: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(request.body.phoneNumber);
-    const candidateStatus = personObj.candidates.edges[0].node.status
+    const candidateStatus = personObj?.candidates?.edges[0]?.node?.status
+    console.log("Candidate satus:", candidateStatus, "for phone number:", request.body.phoneNumber);
     return {"status":candidateStatus};
   }
   
@@ -237,7 +239,7 @@ export class ArxChatEndpoint {
   @UseGuards(JwtAuthGuard)
   async getCandidateIdsByPhoneNumbers(@Req() request: any): Promise<object> {
     const personObj: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(request.body.phoneNumber);
-    const candidateId = personObj.candidates.edges[0].node.id
+    const candidateId = personObj?.candidates?.edges[0]?.node?.id
     console.log('candidateId to fetch all messages:', candidateId);
     return {"candidateId":candidateId};
   }

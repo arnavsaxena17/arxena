@@ -75,7 +75,7 @@ interface ChatTileProps {
   id: string;
 }
 
-export const statusesArray = ['SCREENING', 'CV_SENT', 'RECRUITER_INTERVIEW', 'CV_RECEIVED', "NOT_INTERESTED", 'CLIENT_RECEIVED', 'NEGOTIATION'] as const;
+export const statusesArray = ['SCREENING', 'CV_SENT', 'RECRUITER_INTERVIEW', 'CV_RECEIVED', "INTERESTED","NOT_INTERESTED", 'CLIENT_RECEIVED', 'NEGOTIATION'] as const;
 type Status = typeof statusesArray[number];
 
 const statusMapping: Record<Status, string> = {
@@ -85,6 +85,7 @@ const statusMapping: Record<Status, string> = {
   "RECRUITER_INTERVIEW": "Recruiter Interview",
   "CLIENT_RECEIVED": "Client Received",
   "NEGOTIATION": "Negotiation",
+  "INTERESTED": "Interested",
   "NOT_INTERESTED": "Not Interested"
 };
 

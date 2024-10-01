@@ -46,13 +46,10 @@ export default function ChatMain() {
 
   function getUnreadMessageListManyCandidates(personNodes: frontChatTypes.PersonNode[]): frontChatTypes.UnreadMessageListManyCandidates {
     const listOfUnreadMessages: frontChatTypes.UnreadMessagesPerOneCandidate[] = [];
-
     personNodes?.forEach((personNode: frontChatTypes.PersonNode) => {
       // const personNode: frontChatTypes.PersonNode = personNode;
-
       personNode?.candidates?.edges?.forEach((candidateEdge: frontChatTypes.CandidatesEdge) => {
         const candidateNode: frontChatTypes.CandidateNode = candidateEdge?.node;
-
         const ManyUnreadMessages: frontChatTypes.OneUnreadMessage[] = candidateNode?.whatsappMessages?.edges
           ?.map((whatsappMessagesEdge: frontChatTypes.WhatsAppMessagesEdge) => whatsappMessagesEdge?.node)
           ?.filter((messageNode: frontChatTypes.MessageNode) => messageNode?.whatsappDeliveryStatus === 'receivedFromCandidate')
@@ -63,7 +60,6 @@ export default function ChatMain() {
               whatsappDeliveryStatus: messageNode?.whatsappDeliveryStatus,
             }),
           );
-
         if (ManyUnreadMessages.length > 0) {
           listOfUnreadMessages?.push({
             candidateId: candidateNode.id,
@@ -91,17 +87,13 @@ export default function ChatMain() {
             },
           })
       ]);
-    
       const availablePeople: frontChatTypes.PersonNode[] = peopleResponse.data.filter((person: frontChatTypes.PersonNode) => person?.candidates?.edges?.length > 0 &&  person?.candidates?.edges[0].node.startChat);
-
       console.log("All people:", peopleResponse?.data);
       console.log("Available people:", availablePeople);
       setPeople(peopleResponse.data);
       setIndividuals(availablePeople);
       setJobs(jobsResponse.data.jobs);
-
       console.log(peopleResponse?.data.filter((person: frontChatTypes.PersonNode) => person?.candidates?.edges?.length > 0));
-
       const unreadMessagesList = getUnreadMessageListManyCandidates(availablePeople);
       console.log(unreadMessagesList);
       setCurrentUnreadMessages(unreadMessagesList?.listOfUnreadMessages?.length);
