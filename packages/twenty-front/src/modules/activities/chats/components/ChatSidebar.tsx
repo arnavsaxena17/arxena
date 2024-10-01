@@ -56,6 +56,19 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     return matchesSearch && matchesJob;
   });
 
+  const sortedIndividuals = filteredIndividuals.sort((a, b) => {
+    const aLastMessageTimestamp = a.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.createdAt || '';
+    const bLastMessageTimestamp = b.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.createdAt || '';
+    
+    // Convert timestamps to Date objects for comparison
+    const aDate = new Date(aLastMessageTimestamp);
+    const bDate = new Date(bLastMessageTimestamp);
+    
+    // Sort in descending order (most recent first)
+    return bDate.getTime() - aDate.getTime();
+  });
+
+  
   return (
     <StyledSidebarContainer>
       <JobDropdown 
