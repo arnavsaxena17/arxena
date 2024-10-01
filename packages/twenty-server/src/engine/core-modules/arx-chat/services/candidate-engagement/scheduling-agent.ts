@@ -10,8 +10,11 @@ if(process.env.NODE_ENV === 'development'){
 }
 else{
   // cron to run every 5 minutes
-  timeScheduleCron = '*/5 * * * *'
+  timeScheduleCron = '*/3 * * * *'
 }
+
+
+
 
 @Injectable()
 export class TasksService {

@@ -216,10 +216,12 @@ export class ArxChatEndpoint {
   @Post('get-all-messages-by-phone-number')
   @UseGuards(JwtAuthGuard)
   async getAllMessagesByPhoneNumber(@Req() request: any): Promise<object> {
+    console.log("Going to get all messages by phone Number for :", request.body.phoneNumber);
     const personObj: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(request.body.phoneNumber);
-    const candidateId = personObj.candidates.edges[0].node.id
+    const candidateId = personObj.candidates.edges[0].node.id;
     const allWhatsappMessages = await new FetchAndUpdateCandidatesChatsWhatsapps().fetchAllWhatsappMessages(candidateId);
-    const formattedMessages = await new FetchAndUpdateCandidatesChatsWhatsapps().formatChat(allWhatsappMessages)
+    const formattedMessages = await new FetchAndUpdateCandidatesChatsWhatsapps().formatChat(allWhatsappMessages);
+    console.log("All messages length:", allWhatsappMessages?.length, "for phone number:", request.body.phoneNumber);
     return {"formattedMessages":formattedMessages};
   }
   

@@ -126,6 +126,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
 
 
   async fetchAllWhatsappMessages(candidateId: string): Promise<object[]> {
+    console.log("Fetching all whatsapp messages for candidate ID:", candidateId);
     let allWhatsappMessages: object[] = [];
     let lastCursor = null;
     while (true) {
