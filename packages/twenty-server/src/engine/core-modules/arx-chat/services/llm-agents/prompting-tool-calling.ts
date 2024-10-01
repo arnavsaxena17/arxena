@@ -125,8 +125,6 @@ export class ToolsForAgents {
     I'm hiring for a ${jobProfile.name} role for ${jobProfile?.companies?.descriptionOneliner} based out of ${jobProfile.jobLocation} and got your application on my job posting. I believe this might be a good fit.
     Wanted to speak to you in regards your interests in our new role. Would you be available for a short call sometime today?
     `;
-
-    
     return SYSTEM_PROMPT;
   }
 

@@ -230,7 +230,7 @@ export class ArxChatEndpoint {
   async getCandidateStatusByPhoneNumber(@Req() request: any): Promise<object> {
     console.log("Going to get candidate status by phone Number for :", request.body.phoneNumber);
     const personObj: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(request.body.phoneNumber);
-    const candidateStatus = personObj?.candidates?.edges[0]?.node?.status
+    const candidateStatus = personObj?.candidates?.edges[0]?.node?.status || "Unknown";
     console.log("Candidate satus:", candidateStatus, "for phone number:", request.body.phoneNumber);
     return {"status":candidateStatus};
   }
