@@ -12,6 +12,7 @@ import { io } from 'socket.io-client';
 import QRCode from 'react-qr-code';
 import { p } from 'node_modules/msw/lib/core/GraphQLHandler-907fc607';
 import { useHotkeys } from 'react-hotkeys-hook';
+import dayjs from 'dayjs';
 
 import { useNavigate } from 'react-router-dom';
 
@@ -144,6 +145,7 @@ const StyledDateComponent = styled.span`
 
 const StyledScrollingView = styled.div`
   padding-top: 5rem;
+  margin-bottom:5rem;
 `;
 
 const StyledButtonsBelowChatMessage = styled.div`
@@ -217,7 +219,12 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
         { candidateId: currentCandidateId },
         { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } }
       );
-      setMessageHistory(response.data);
+
+      const sortedMessages = response.data.sort((a: frontChatTypes.MessageNode, b: frontChatTypes.MessageNode) => {
+        return dayjs(a.createdAt).valueOf() - dayjs(b.createdAt).valueOf();
+      });
+
+      setMessageHistory(sortedMessages);
     } catch (error) {
       console.error('Error fetching messages:', error);
       setMessageHistory([]);
