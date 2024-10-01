@@ -52,7 +52,6 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     const matchesJob = 
       selectedJob === "" || 
       individual?.candidates?.edges[0]?.node?.jobs?.id === selectedJob;
-
     return matchesSearch && matchesJob;
   });
 
@@ -81,7 +80,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
       />
-      {filteredIndividuals.map((individual) => (
+      {sortedIndividuals.map((individual) => (
         <ChatTile
           key={individual.id}
           id={individual.id}
