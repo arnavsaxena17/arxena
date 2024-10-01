@@ -55,19 +55,49 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
       individual?.candidates?.edges[0]?.node?.jobs?.id === selectedJob;
     return matchesSearch && matchesJob;
   });
+  
 
-  const sortedIndividuals = filteredIndividuals.sort((a, b) => {
-    const aLastMessageTimestamp = a.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.createdAt || '';
-    const bLastMessageTimestamp = b.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.createdAt || '';
+  // const sortedIndividuals = filteredIndividuals.sort((a, b) => {
+  //   const aLastMessageTimestamp = a.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.createdAt || '';
+  //   const bLastMessageTimestamp = b.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.createdAt || '';
     
-    // Convert timestamps to Date objects for comparison
-    const aDate = new Date(aLastMessageTimestamp);
-    const bDate = new Date(bLastMessageTimestamp);
+  //   // Convert timestamps to Date objects for comparison
+  //   const aDate = new Date(aLastMessageTimestamp);
+  //   const bDate = new Date(bLastMessageTimestamp);
     
-    // Sort in descending order (most recent first)
-    return bDate.getTime() - aDate.getTime();
-  });
+  //   // Sort in descending order (most recent first)
+  //   return bDate.getTime() - aDate.getTime();
+  // });
 
+
+
+    const sortedIndividuals = filteredIndividuals.sort((a, b) => {
+      // Function to get the latest message timestamp from an individual's whatsappMessages edges
+      const getLastMessageTimestamp = (individual: frontChatTypes.PersonNode) => {
+        const messagesEdges = individual.candidates?.edges[0]?.node?.whatsappMessages?.edges || [];
+        
+        // Find the most recent message
+        const latestMessage = messagesEdges.reduce((latest, edge) => {
+          const messageTimestamp = edge.node?.createdAt || '';
+          const messageDate = new Date(messageTimestamp);
+    
+          // Check if this message is more recent than the current latest
+          return messageDate > latest ? messageDate : latest;
+        }, new Date(0)); // Initialize with the oldest possible date
+    
+        return latestMessage;
+      };
+    
+      // Get the latest message timestamps for both individuals
+      const aDate = getLastMessageTimestamp(a);
+      const bDate = getLastMessageTimestamp(b);
+    
+      // Sort in descending order (most recent first)
+      return bDate.getTime() - aDate.getTime();
+    });
+  
+
+  console.log("Sorted individuals:", sortedIndividuals); // Debug log
   
   return (
     <StyledSidebarContainer>
