@@ -149,3 +149,9 @@ export const graphqlToFindManyJobByArxenaSiteId = `
     position
   }
 }`
+
+  export const graphQltoStopChat = `mutation UpdateOneCandidate($idToUpdate: ID!, $input: CandidateUpdateInput!) {
+  updateCandidate(id: $idToUpdate, data: $input) {
+    __typename
+  }
+}`

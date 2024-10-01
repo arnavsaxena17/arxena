@@ -131,6 +131,12 @@ export const graphqlQueryToUpdateCandidateEngagementStatus = `mutation UpdateOne
     }
   }`;
 
+export const graphQlToStopChat = `mutation UpdateOneCandidate($idToUpdate: ID!, $input: CandidateUpdateInput!) {
+  updateCandidate(id: $idToUpdate, data: $input) {
+    __typename
+  }
+}`
+
 export const graphqlQueryToUpdateCandidateStatus = `mutation UpdateOneCandidate($idToUpdate: ID!, $input: CandidateUpdateInput!) {
   updateCandidate(id: $idToUpdate, data: $input) {
     __typename
