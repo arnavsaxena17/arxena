@@ -110,8 +110,30 @@ const ChatTile: React.FC<ChatTileProps> = ({
   const status = individual?.candidates?.edges[0]?.node?.status as Status | undefined;
   const statusText = status && status in statusMapping ? statusMapping[status] : "Unknown";
 
-  const lastMessage = individual.candidates.edges[0]?.node?.whatsappMessages?.edges[0]?.node;
-  const lastMessageTimestamp = lastMessage?.createdAt;
+  // const lastMessage = individual.candidates.edges[0]?.node?.whatsappMessages?.edges[0]?.node;
+  // const lastMessageTimestamp = lastMessage?.createdAt;
+
+
+  const getLastMessageTimestamp = (individual: frontChatTypes.PersonNode): string => {
+    const messages = individual.candidates?.edges[0]?.node?.whatsappMessages?.edges || [];
+    let lastMessageTimestamp = '';
+  
+    for (const messageEdge of messages) {
+      const currentTimestamp = messageEdge.node.createdAt;
+      if (!lastMessageTimestamp || new Date(currentTimestamp) > new Date(lastMessageTimestamp)) {
+        lastMessageTimestamp = currentTimestamp;
+      }
+    }
+  
+    return lastMessageTimestamp;
+  };
+  
+  // Usage:
+  const lastMessageTimestamp = getLastMessageTimestamp(individual);
+  
+
+
+
   const chatCount = individual.candidates.edges[0].node.whatsappMessages.edges.length;
 
   return (
