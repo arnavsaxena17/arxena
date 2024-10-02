@@ -372,7 +372,8 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
   const notFitPercent = (allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.status === "NOT_FIT").length/allIndividualsForCurrentJob.length*100).toFixed(1);
   const recruiterInterviews = allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.status === "RECRUITER_INTERVIEW").length;
   const recruiterInterviewsPercent = (allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.status === "RECRUITER_INTERVIEW").length/allIndividualsForCurrentJob.length*100).toFixed(1);
-  
+  const candidateEngagementStatus = currentIndividual?.candidates?.edges[0]?.node?.engagementStatus;  
+  const candidateStopChatStatus = currentIndividual?.candidates?.edges[0]?.node?.stopChat;  
 
   return (
     <>
