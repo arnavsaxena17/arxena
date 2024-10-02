@@ -283,6 +283,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
           email: personWithActiveJob?.node?.email,
           input: userMessage?.messages[0]?.content,
           startChat: activeJobCandidateObj?.node?.startChat,
+          stopChat: activeJobCandidateObj?.node?.stopChat,
           whatsappMessages: activeJobCandidateObj?.node?.whatsappMessages,
           status: activeJobCandidateObj?.node?.status,
 
