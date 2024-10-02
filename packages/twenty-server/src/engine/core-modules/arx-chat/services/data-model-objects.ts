@@ -160,6 +160,7 @@ export interface CandidateNode {
   email: string;
   input: string;
   startChat: boolean;
+  stopChat: boolean;
   status:string;
   whatsappMessages: WhatsAppMessages;
   emailMessages: EmailMessages;
@@ -389,6 +390,7 @@ export const emptyCandidateProfileObj: CandidateNode = {
   email: '',
   input: '',
   startChat: false,
+  stopChat: false,
   whatsappMessages: {
     edges: [
       {

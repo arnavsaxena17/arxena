@@ -209,6 +209,7 @@ export interface ArxenaCandidateNode {
   // phoneNumber: string;
   // email: string;
   startChat: boolean;
+  stopChat: boolean;
   jobsId: string;
   jobSpecificFields: any;
   peopleId: string;

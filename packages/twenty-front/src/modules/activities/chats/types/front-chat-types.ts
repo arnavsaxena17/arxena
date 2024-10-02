@@ -145,6 +145,7 @@ export interface CandidateNode {
   input: string;
   startChat: boolean;
   status:string;
+  stopChat: boolean;
   whatsappMessages: WhatsAppMessages;
   emailMessages: EmailMessages;
   jobs: Jobs;
@@ -332,6 +333,7 @@ export const emptyCandidateProfileObj: CandidateNode = {
   input: "",
   status:"",
   startChat: false,
+  stopChat: false,
   whatsappMessages: {
     edges: [
       {
