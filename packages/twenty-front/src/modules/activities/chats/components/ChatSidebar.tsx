@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import * as frontChatTypes from "../types/front-chat-types";
 import ChatTile from "./ChatTile";
 import styled from "@emotion/styled";
@@ -34,10 +34,29 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedJob, setSelectedJob] = useState("");
 
+  const sidebarRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     console.log("Jobs received in ChatSidebar:", jobs); // Debug log
   }, [jobs]);
+
+  useEffect(() => {
+    // Function to handle clicks outside the sidebar
+    const handleClickOutside = (event: MouseEvent) => {
+      if (sidebarRef.current && !sidebarRef.current.contains(event.target as Node)) {
+        // If the click is outside the sidebar, clear the search query
+        setSearchQuery("");
+      }
+    };
+
+    // Add event listener
+    document.addEventListener("mousedown", handleClickOutside);
+
+    // Remove event listener on cleanup
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
 
   const filteredIndividuals = individuals.filter((individual) => {
@@ -100,7 +119,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   console.log("Sorted individuals:", sortedIndividuals); // Debug log
   
   return (
-    <StyledSidebarContainer>
+    <StyledSidebarContainer ref={sidebarRef}>
       <JobDropdown 
         jobs={jobs} 
         selectedJob={selectedJob} 
