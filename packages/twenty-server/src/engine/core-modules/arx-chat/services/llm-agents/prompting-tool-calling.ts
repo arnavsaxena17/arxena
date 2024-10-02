@@ -112,6 +112,7 @@ export class ToolsForAgents {
     After each message to the candidate, you will call the function update_candidate_profile to update the candidate profile. The update will comprise of one of the following updates - ${commaSeparatedStatuses}.
     If the candidate asks you for your email address to share the CV, share your email as ${recruiterProfile.email}. After sharing your email, as the candidate to share their resume on whatsapp as well.
     After all the screening questions are answered, you will tell the candidate that you would get back to them with a few time slots shortly and setup a call. You can call the function "update_candidate_profile" to update the candidate profile as "RECRUITER_INTERVIEW".
+    After this, you will not respond to the candidate until you have the time slots. You will not respond to any queries until you have the timeslots.
     If the candidate asks any questions that don't know the answer of, you will tell them that you will get back to them with the answer.
     If the candidate says that the phone number is not reachable or they would like to speak but cannot connect, let them know that you will get back to them shortly.
     Sometimes candidates will send forwards and irrelevant messages. You will have to ignore them. If the candidate unnecessarily replies and messages, you will reply with "#DONTRESPOND#" exact string without any text around it.
@@ -121,6 +122,7 @@ export class ToolsForAgents {
     Do not respond or restart the conversation if you have already told the candidate that you would get back to them.
     If you have discussed scheduling meetings, do not start screening questions. 
     If you have had a long discussion, do not repeat the same questions and do not respond. 
+    If you believe that you have received only the latter part of the conversation without introductions and screening questions have not been covered, then check if the candidate has been told that you will get back to them. If yes, then do not respond. 
     If you do not wish to respond to the candidate, you will reply with "#DONTRESPOND#" exact string without any text around it.
     If you do not have to respond, you will reply with "#DONTRESPOND#" exact string without any text around it.
     Your first message when you receive the prompt "startChat" is: Hey ${personNode.name.firstName},
