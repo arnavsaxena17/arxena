@@ -28,6 +28,8 @@ import { ShowPageSummaryCard } from '@/ui/layout/show-page/components/ShowPageSu
 import { ShowPageRecoilScopeContext } from '@/ui/layout/states/ShowPageRecoilScopeContext';
 import { RecoilScope } from '@/ui/utilities/recoil-scope/components/RecoilScope';
 import { useIsMobile } from '@/ui/utilities/responsive/hooks/useIsMobile';
+import { useNavigate } from 'react-router-dom';
+
 import {
   FieldMetadataType,
   FileFolder,
@@ -35,6 +37,7 @@ import {
 } from '~/generated/graphql';
 import { isDefined } from '~/utils/isDefined';
 import { isUndefinedOrNull } from '~/utils/isUndefinedOrNull';
+import React from 'react';
 
 type RecordShowContainerProps = {
   objectNameSingular: string;
@@ -49,6 +52,9 @@ export const RecordShowContainer = ({
   loading,
   isInRightDrawer = false,
 }: RecordShowContainerProps) => {
+
+  const navigate = useNavigate();
+
   const { objectMetadataItem } = useObjectMetadataItem({
     objectNameSingular,
   });
@@ -72,6 +78,37 @@ export const RecordShowContainer = ({
       recordId: objectRecordId,
     }),
   );
+
+  
+  const showChatIcon = React.useMemo(() => {
+    if (objectNameSingular === 'person') {
+      return Array.isArray(recordFromStore?.candidates) && recordFromStore.candidates.length > 0;
+    }
+    if (objectNameSingular === 'candidate') {
+      return isDefined(recordFromStore?.people);
+    }
+    return false;
+  }, [objectNameSingular, recordFromStore]);
+
+  const handleChatIconClick = React.useCallback(() => {
+    let chatObjectId;
+
+    if (objectNameSingular === 'person' && Array.isArray(recordFromStore?.candidates) && recordFromStore.candidates.length > 0) {
+      chatObjectId = recordFromStore.candidates[0].id;
+    } else if (objectNameSingular === 'candidate') {
+      chatObjectId = objectRecordId; // Use the candidate ID directly
+    }
+
+    if (chatObjectId) {
+      navigate(`/chats/${chatObjectId}`);
+    }
+  }, [objectNameSingular, recordFromStore, objectRecordId, navigate]);
+
+  console.log("showChatIcon:", showChatIcon);
+  console.log("recordFromStore:", recordFromStore);
+
+
+
 
   const [uploadImage] = useUploadImageMutation();
   const { updateOneRecord } = useUpdateOneRecord({ objectNameSingular });
@@ -178,6 +215,9 @@ export const RecordShowContainer = ({
             onUploadPicture={
               objectNameSingular === 'person' ? onUploadPicture : undefined
             }
+            showChatIcon={showChatIcon}
+            onChatIconClick={handleChatIconClick}
+
           />
           <PropertyBox>
             {isPrefetchLoading ? (
