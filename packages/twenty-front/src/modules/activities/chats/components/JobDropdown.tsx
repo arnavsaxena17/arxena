@@ -25,7 +25,7 @@ const JobDropdown: React.FC<JobDropdownProps> = ({ jobs, selectedJob, onJobChang
     <DropdownContainer>
       <Select value={selectedJob} onChange={(e) => onJobChange(e.target.value)}>
         <option value="">Show All Jobs</option>
-        {jobs.map((job) => (
+        {jobs?.map((job) => (
           <option key={job.node.id} value={job.node.id}>
             {job.node.name}
           </option>

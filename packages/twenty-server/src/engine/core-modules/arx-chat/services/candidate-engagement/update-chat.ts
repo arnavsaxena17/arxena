@@ -77,7 +77,9 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
     while (true) {
       const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlToFetchAllCandidatesByStartChat, variables: {lastCursor, limit: 30, filter: {startChat: {eq: true},stopChat: { eq: false }}}});
       const response = await axiosRequest(graphqlQueryObj);
+      console.log("Response from fetchAllCandidatesWithStartChatTrue:", response.data);
       const edges = response?.data?.data?.candidates?.edges;
+      
       console.log("Number of candidate edges:", edges?.length)
       if (!edges || edges?.length === 0) break;
       allCandidates = allCandidates?.concat(edges.map((edge: any) => edge.node));

@@ -208,6 +208,11 @@ export class CandidateSourcingController {
       return { error: error.message };
     }
   }
+
+  @Post('get-job-details')
+  async getJobDetailsByArxenaId(arxenaJobId: string): Promise<Jobs> {
+    return this.getJobDetails(arxenaJobId);
+  }
   
 
   @Post('get-all-jobs')
