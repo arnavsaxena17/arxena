@@ -147,13 +147,12 @@ const createRouter = (isBillingEnabled?: boolean) =>
           <Route path={AppPath.SyncEmails} element={<SyncEmails />} />
           <Route path={AppPath.InviteTeam} element={<InviteTeam />} />
           <Route path={AppPath.PlanRequired} element={<ChooseYourPlan />} />
-          <Route
-            path={AppPath.PlanRequiredSuccess}
-            element={<PaymentSuccess />}
-          />
+          <Route path={AppPath.PlanRequiredSuccess} element={<PaymentSuccess />} />
           <Route path={indexAppPath.getIndexAppPath()} element={<></>} />
           <Route path={AppPath.TasksPage} element={<Tasks />} />
           <Route path={AppPath.ChatsPage} element={<Chats />} />
+          <Route path={`${AppPath.ChatsPage}/:candidateId`} element={<Chats />} />
+
           <Route path={AppPath.Impersonate} element={<ImpersonateEffect />} />
           <Route path={AppPath.RecordIndexPage} element={<RecordIndexPage />} />
           <Route path={AppPath.RecordShowPage} element={<RecordShowPage />} />

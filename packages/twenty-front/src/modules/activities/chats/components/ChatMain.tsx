@@ -12,9 +12,11 @@ import { currentUnreadMessagesState } from '@/activities/chats/states/currentUnr
 
 import { Job } from "../types/front-chat-types";
 
+interface ChatMainProps {
+  initialCandidateId?: string;
+}
 
-
-export default function ChatMain() {
+export default function ChatMain({ initialCandidateId }: ChatMainProps) {
 
   const [inputMessage, setInputMessage] = useState('');
   const [selectedIndividual, setSelectedIndividual] = useState<string>('');
@@ -23,6 +25,15 @@ export default function ChatMain() {
   const [unreadMessages, setUnreadMessages] = useState<frontChatTypes.UnreadMessageListManyCandidates>({
     listOfUnreadMessages: [],
   });
+
+  useEffect(() => {
+    if (initialCandidateId && individuals.length > 0) {
+      const individual = individuals.find(ind => ind.candidates?.edges[0]?.node?.id === initialCandidateId);
+      if (individual) {
+        setSelectedIndividual(individual.id);
+      }
+    }
+  }, [initialCandidateId, individuals]);
 
 
 
