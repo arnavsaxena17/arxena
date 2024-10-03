@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from "react";
 import * as frontChatTypes from "../types/front-chat-types";
 import ChatTile from "./ChatTile";
 import styled from "@emotion/styled";
+import { useNavigate } from 'react-router-dom';
+
 import SearchBox from "./SearchBox";
 import JobDropdown from "./JobDropdown";
 
@@ -31,10 +33,23 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   unreadMessages,
   jobs,
 }) => {
+
+  const navigate = useNavigate();
+
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedJob, setSelectedJob] = useState("");
 
   const sidebarRef = useRef<HTMLDivElement>(null);
+
+  const handleIndividualSelect = (id: string) => {
+    setSelectedIndividual(id);
+    const individual = individuals.find(ind => ind.id === id);
+    const candidateId = individual?.candidates?.edges[0]?.node?.id;
+    if (candidateId) {
+      navigate(`/chats/${candidateId}`);
+    }
+  };
+
 
   useEffect(() => {
     console.log("Jobs received in ChatSidebar:", jobs); // Debug log
@@ -135,7 +150,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
           key={individual.id}
           id={individual.id}
           individual={individual}
-          setSelectedIndividual={setSelectedIndividual}
+          setSelectedIndividual={handleIndividualSelect}
           selectedIndividual={selectedIndividual}
           unreadMessagesCount={
             unreadMessages.listOfUnreadMessages
