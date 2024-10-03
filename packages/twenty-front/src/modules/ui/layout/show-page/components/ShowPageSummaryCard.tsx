@@ -11,6 +11,7 @@ import {
   beautifyPastDateRelativeToNow,
 } from '~/utils/date-utils';
 import { isDefined } from '~/utils/isDefined';
+import React from 'react';
 
 type ShowPageSummaryCardProps = {
   avatarPlaceholder: string;
@@ -21,7 +22,33 @@ type ShowPageSummaryCardProps = {
   onUploadPicture?: (file: File) => void;
   title: ReactNode;
   loading: boolean;
+  showChatIcon?: boolean;
+  onChatIconClick?: () => void;
+
 };
+
+const ChatIcon = ({ onClick }: { onClick?: () => void }) => (
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    onClick={(e) => {
+      e.stopPropagation(); // Prevent event bubbling
+      console.log("Chat icon clicked"); // Debug log
+      onClick?.();
+    }}
+    style={{ cursor: 'pointer' }}
+  >
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+    <line x1="9" y1="10" x2="15" y2="10"></line>
+    <line x1="9" y1="14" x2="15" y2="14"></line>
+  </svg>
+);
 
 export const StyledShowPageSummaryCard = styled.div`
   align-items: center;
@@ -107,6 +134,9 @@ export const ShowPageSummaryCard = ({
   onUploadPicture,
   title,
   loading,
+  showChatIcon = false,
+  onChatIconClick,
+
 }: ShowPageSummaryCardProps) => {
   const beautifiedCreatedAt =
     date !== '' ? beautifyPastDateRelativeToNow(date) : '';
@@ -129,6 +159,20 @@ export const ShowPageSummaryCard = ({
       </StyledShowPageSummaryCard>
     );
 
+  console.log("Current ID for this page is :", id);
+  console.log("Current title for this page is :", title);
+  if (React.isValidElement(title)) {
+    console.log("Current title value for this page is :", title.props.value);
+    console.log("Current title valjue for this page is : margin", title?.props?.value?.entityId);
+    console.log("Current title valjue for this page is : margin", title?.props?.value?.fieldDefinition?.metadata?.objectMetadataNameSingular);
+    const objectId = title?.props?.value?.entityId;
+    const objectName = title?.props?.value?.fieldDefinition?.metadata?.objectMetadataNameSingular;
+  }
+  // console.log("Current title for this page is :", title?.props?.value.fieldMetadataId);
+  // console.log("Current title for this page is :", title?.props?.value.metadata.objectMetadataNameSingular);
+  console.log("Current avatarType for this page is :", avatarType);
+
+  console.log("This is the cshowChatIcon:", showChatIcon);
   return (
     <StyledShowPageSummaryCard>
       <StyledAvatarWrapper>
@@ -161,6 +205,15 @@ export const ShowPageSummaryCard = ({
           place="right"
         />
       </StyledInfoContainer>
+      {showChatIcon && (
+        <div onClick={(e) => {
+          e.stopPropagation();
+          console.log("Chat icon container clicked"); // Debug log
+          onChatIconClick?.();
+        }} style={{ cursor: 'pointer' }}>
+          <ChatIcon onClick={onChatIconClick} />
+        </div>
+      )}
     </StyledShowPageSummaryCard>
   );
 };
