@@ -30,6 +30,8 @@
     "workerDirectory": "public"
   },
   "dependencies": {
+    "react-player": "^2.16.0",
     "transliteration": "^2.3.5"
-  }
+  },
+  "proxy": "http://localhost:3000"
 }

@@ -1,13 +1,7 @@
-import {
-  DynamicModule,
-  MiddlewareConsumer,
-  Module,
-  RequestMethod,
-} from '@nestjs/common';
+import { DynamicModule, MiddlewareConsumer, Module, RequestMethod } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { GraphQLModule } from '@nestjs/graphql';
-
 import { existsSync } from 'fs';
 import { DevtoolsModule } from '@nestjs/devtools-integration';
 
@@ -30,9 +24,11 @@ import { IntegrationsModule } from './engine/integrations/integrations.module';
 import { CoreEngineModule } from './engine/core-modules/core-engine.module';
 import { EnvironmentService } from 'src/engine/integrations/environment/environment.service';
 import { ScheduleModule } from '@nestjs/schedule';
+import { VideoInterviewModule } from './engine/core-modules/video-interview/video-interview.module';
 
 @Module({
   imports: [
+    VideoInterviewModule,
     // Nest.js devtools, use devtools.nestjs.com to debug
     DevtoolsModule.registerAsync({
       useFactory: (environmentService: EnvironmentService) => ({
@@ -91,12 +87,8 @@ export class AppModule {
   }
 
   configure(consumer: MiddlewareConsumer) {
-    consumer
-      .apply(GraphQLHydrateRequestFromTokenMiddleware)
-      .forRoutes({ path: 'graphql', method: RequestMethod.ALL });
+    consumer.apply(GraphQLHydrateRequestFromTokenMiddleware).forRoutes({ path: 'graphql', method: RequestMethod.ALL });
 
-    consumer
-      .apply(GraphQLHydrateRequestFromTokenMiddleware)
-      .forRoutes({ path: 'metadata', method: RequestMethod.ALL });
+    consumer.apply(GraphQLHydrateRequestFromTokenMiddleware).forRoutes({ path: 'metadata', method: RequestMethod.ALL });
   }
 }
