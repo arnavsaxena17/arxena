@@ -13,9 +13,6 @@ else{
   timeScheduleCron = '*/3 * * * *'
 }
 
-
-
-
 @Injectable()
 export class TasksService {
   private readonly logger = new Logger(TasksService.name);
