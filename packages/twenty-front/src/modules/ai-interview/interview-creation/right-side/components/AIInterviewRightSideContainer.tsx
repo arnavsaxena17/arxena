@@ -49,21 +49,7 @@ const StyledListItem = styled.li`
   }
 `;
 
-<<<<<<< HEAD
-export const AIInterviewRightSideContainer = ({
-  aIModelsArr,
-  closeModal,
-  objectNameSingular,
-  objectRecordId,
-}: {
-  aIModelsArr: any;
-  closeModal: () => void;
-  objectNameSingular: string;
-  objectRecordId: string;
-}) => {
-=======
 export const AIInterviewRightSideContainer = ({ aIModelsArr, closeModal, objectNameSingular, objectRecordId }: { aIModelsArr: any; closeModal: () => void; objectNameSingular: string; objectRecordId: string }) => {
->>>>>>> f1b1a1a513bb5002db9aa29394eaf568639c18b4
   const { questionsArr } = useAddRemoveAIInterviewQuestion();
 
   const { convertFormData } = useFormDataConversion();
