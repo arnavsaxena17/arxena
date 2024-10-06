@@ -36,57 +36,26 @@ export const MultipleFiltersDropdownContent = ({
   const selectedOperandInDropdown = useRecoilValue(
     selectedOperandInDropdownState,
   );
-
+  console.log("filterDefinitionUsedInDropdown:", filterDefinitionUsedInDropdown)
+  console.log("selectedOperandInDropdown:", selectedOperandInDropdown)
   return (
+    console.log("isObjectFilterDropdownOperandSelectUnfolded:", filterDefinitionUsedInDropdown),
+
     <>
-      {!filterDefinitionUsedInDropdown ? (
-        <ObjectFilterDropdownFilterSelect />
-      ) : isObjectFilterDropdownOperandSelectUnfolded ? (
-        <ObjectFilterDropdownOperandSelect />
-      ) : (
+      {!filterDefinitionUsedInDropdown ? ( <ObjectFilterDropdownFilterSelect /> ) : isObjectFilterDropdownOperandSelectUnfolded ? ( <ObjectFilterDropdownOperandSelect /> ) : (
         selectedOperandInDropdown && (
           <>
             <ObjectFilterDropdownOperandButton />
             <DropdownMenuSeparator />
-            {[
-              'TEXT',
-              'EMAIL',
-              'PHONE',
-              'FULL_NAME',
-              'LINK',
-              'LINKS',
-              'ADDRESS',
-            ].includes(filterDefinitionUsedInDropdown.type) && (
-              <ObjectFilterDropdownTextSearchInput />
-            )}
-            {['NUMBER', 'CURRENCY'].includes(
-              filterDefinitionUsedInDropdown.type,
-            ) && <ObjectFilterDropdownNumberInput />}
-            {filterDefinitionUsedInDropdown.type === 'DATE_TIME' && (
-              <ObjectFilterDropdownDateInput />
-            )}
-            {filterDefinitionUsedInDropdown.type === 'RELATION' && (
-              <>
-                <ObjectFilterDropdownSearchInput />
-                <DropdownMenuSeparator />
-                <ObjectFilterDropdownRecordSelect />
-              </>
-            )}
-            {filterDefinitionUsedInDropdown.type === 'SELECT' && (
-              <>
-                <ObjectFilterDropdownSearchInput />
-                <DropdownMenuSeparator />
-                <ObjectFilterDropdownOptionSelect />
-              </>
-            )}
+            {[ 'TEXT', 'EMAIL', 'PHONE', 'FULL_NAME', 'LINK', 'LINKS', 'ADDRESS', ].includes(filterDefinitionUsedInDropdown.type) && ( <ObjectFilterDropdownTextSearchInput /> )}
+            {['NUMBER', 'CURRENCY'].includes( filterDefinitionUsedInDropdown.type, ) && <ObjectFilterDropdownNumberInput />}
+            {filterDefinitionUsedInDropdown.type === 'DATE_TIME' && ( <ObjectFilterDropdownDateInput /> )}
+            {filterDefinitionUsedInDropdown.type === 'RELATION' && ( <> <ObjectFilterDropdownSearchInput /> <DropdownMenuSeparator /> <ObjectFilterDropdownRecordSelect /> </> )}
+            {filterDefinitionUsedInDropdown.type === 'SELECT' && ( <> <ObjectFilterDropdownSearchInput /> <DropdownMenuSeparator /> <ObjectFilterDropdownOptionSelect /> </> )}
           </>
         )
       )}
-      <MultipleFiltersDropdownFilterOnFilterChangedEffect
-        filterDefinitionUsedInDropdownType={
-          filterDefinitionUsedInDropdown?.type
-        }
-      />
+      <MultipleFiltersDropdownFilterOnFilterChangedEffect filterDefinitionUsedInDropdownType={ filterDefinitionUsedInDropdown?.type } />
     </>
   );
 };

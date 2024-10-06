@@ -1,4 +1,6 @@
 import styled from "@emotion/styled";
+import { useParams } from 'react-router-dom';
+
 import { IconArchive, IconCheck, IconCheckbox } from "twenty-ui";
 
 import { TasksRecoilScopeContext } from "@/activities/states/recoil-scope-contexts/TasksRecoilScopeContext";
@@ -16,7 +18,6 @@ import { TopBar } from "@/ui/layout/top-bar/TopBar";
 import { RecoilScope } from "@/ui/utilities/recoil-scope/components/RecoilScope";
 
 import ChatMain from "@/activities/chats/components/ChatMain";
-import { ChatList } from "@/ui/layout/chats/components/ChatList";
 
 
 const StyledTasksContainer = styled.div`
@@ -34,6 +35,8 @@ const StyledTabListContainer = styled.div`
 `;
 
 export const Chats = () => {
+  const { candidateId } = useParams<{ candidateId: string }>();
+
   return (
     <PageContainer>
       <RecordFieldValueSelectorContextProvider>
@@ -43,10 +46,9 @@ export const Chats = () => {
           </PageHeader>
           <PageBody>
               <TopBar leftComponent={ <StyledTabListContainer>
-                <ChatList /> 
               </StyledTabListContainer> } />
-            <ChatMain />
-          </PageBody>
+              <ChatMain initialCandidateId={candidateId} />
+              </PageBody>
         </RecoilScope>
       </RecordFieldValueSelectorContextProvider>
     </PageContainer>

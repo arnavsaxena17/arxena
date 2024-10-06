@@ -22,15 +22,15 @@ export const KeyboardShortcutMenu = () => {
   );
   const { closeCommandMenu } = useCommandMenu();
 
-  useScopedHotkeys(
-    'shift+?,meta+?',
-    () => {
-      closeCommandMenu();
-      toggleKeyboardShortcutMenu();
-    },
-    AppHotkeyScope.KeyboardShortcutMenu,
-    [toggleKeyboardShortcutMenu],
-  );
+  // useScopedHotkeys(
+  //   'shift+?,meta+?',
+  //   () => {
+  //     closeCommandMenu();
+  //     toggleKeyboardShortcutMenu();
+  //   },
+  //   AppHotkeyScope.KeyboardShortcutMenu,
+  //   [toggleKeyboardShortcutMenu],
+  // );
 
   useScopedHotkeys(
     [Key.Escape],

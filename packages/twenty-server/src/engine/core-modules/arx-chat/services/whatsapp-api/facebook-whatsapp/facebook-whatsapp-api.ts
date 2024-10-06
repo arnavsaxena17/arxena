@@ -1,25 +1,11 @@
-// import { ChatRequestBody, candidateChatMessageType, recruiterProfile, sendWhatsappTemplateMessageObjectType } from "../../../services/data-model-objects";
-// import {UpdateChat} from '../candidateEngagement/updateChat';
-// import  CandidateEngagement  from "../../../services/candidateEngagement/checkCandidateEngagement";
 import * as allDataObjects from '../../../services/data-model-objects';
-// import { promisify } from 'util';
-// import { response } from 'express';
 import fs from 'fs';
 import path from 'path';
-// const mimePromise = import('mime');
-
-// const phoneNumberIDs = {
-//     "14155793982": "228382133694523",
-//     "918591724917": "213381881866663"
-// }
 const FormData = require('form-data');
 import { createReadStream, createWriteStream } from 'fs';
 import { getContentTypeFromFileName } from '../../../utils/arx-chat-agent-utils';
 import { AttachmentProcessingService } from '../../../services/candidate-engagement/attachment-processing';
-import CandidateEngagement from '../../../services/candidate-engagement/check-candidate-engagement';
 import CandidateEngagementArx from '../../../services/candidate-engagement/check-candidate-engagement';
-// import { lookup } from 'mime';
-// const mime = require('mime');
 const axios = require('axios');
 import { getTranscriptionFromWhisper } from '../../../utils/arx-chat-agent-utils';
 import { FetchAndUpdateCandidatesChatsWhatsapps } from '../../candidate-engagement/update-chat';
@@ -33,7 +19,7 @@ if (process.env.FACEBOOK_WHATSAPP_PERMANENT_API) {
   whatsappAPIToken = process.env.FACEBOOK_WHATSAPP_API_TOKEN;
 }
 
-const templates = ['hello_world', 'recruitment'];
+const templates = ['hello_world', 'recruitment','application','application02', 'application03'];
 export class FacebookWhatsappChatApi {
   async uploadAndSendFileToWhatsApp(attachmentMessage: allDataObjects.AttachmentMessageObject) {
     console.log('Send file');
@@ -51,17 +37,12 @@ export class FacebookWhatsappChatApi {
       mediaFileName: fileName ?? 'AttachmentFile',
       mediaID: mediaID,
     };
-
     const personObj = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(phoneNumberTo);
-
     const mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.messageObj;
-
-    mostRecentMessageArr.push({
-      role: 'user',
-      content: 'Sharing the JD',
-    });
+    mostRecentMessageArr.push({ role: 'user', content: 'Sharing the JD' });
     new FacebookWhatsappChatApi().sendWhatsappAttachmentMessage(sendTextMessageObj, personObj, mostRecentMessageArr);
   }
+  
   getTemplateMessageObj(sendTemplateMessageObj: allDataObjects.sendWhatsappTemplateMessageObjectType) {
     const templateMessageObj = JSON.stringify({
       messaging_product: 'whatsapp',
@@ -112,13 +93,68 @@ export class FacebookWhatsappChatApi {
     // console.log("This is the template message object created:", templateMessageObj)
     return templateMessageObj;
   }
+  getUtilityMessageObj(sendTemplateMessageObj: allDataObjects.sendWhatsappUtilityMessageObjectType) {
+    const templateMessageObj = JSON.stringify({
+      messaging_product: 'whatsapp',
+      to: sendTemplateMessageObj.recipient,
+      type: 'template',
+      template: {
+        name: sendTemplateMessageObj.template_name,
+        language: { code: 'en' },
+        components: [
+          {
+            type: 'body',
+            parameters: [
+              {
+                type: 'text',
+                text: sendTemplateMessageObj.candidateFirstName,
+              },
+              {
+                type: 'text',
+                text: sendTemplateMessageObj.recruiterName,
+              },
+              {
+                type: 'text',
+                text: sendTemplateMessageObj.recruiterJobTitle,
+              },
+              {
+                type: 'text',
+                text: sendTemplateMessageObj.recruiterCompanyName,
+              },
+              {
+                type: 'text',
+                text: sendTemplateMessageObj.recruiterCompanyDescription,
+              },
+              // {
+              //   type: 'text',
+              //   text: sendTemplateMessageObj.jobCode,
+              // },
+              {
+                type: 'text',
+                text: sendTemplateMessageObj.jobPositionName,
+              },
+              {
+                type: 'text',
+                text: sendTemplateMessageObj.descriptionOneliner,
+              },
+              {
+                type: 'text',
+                text: sendTemplateMessageObj.jobLocation,
+              },
+            ],
+          },
+        ],
+      },
+    });
+    return templateMessageObj;
+  }
   async sendWhatsappTextMessage(sendTextMessageObj: allDataObjects.ChatRequestBody) {
-    console.log('Sending a message to ::', sendTextMessageObj.phoneNumberTo);
+    console.log('Sending a message to ::', sendTextMessageObj.phoneNumberTo.replace("+",""));
     console.log('Sending message text ::', sendTextMessageObj.messages);
     const text_message = {
       messaging_product: 'whatsapp',
       recipient_type: 'individual',
-      to: sendTextMessageObj.phoneNumberTo,
+      to: sendTextMessageObj.phoneNumberTo.replace("+",""),
       type: 'text',
       text: { preview_url: false, body: sendTextMessageObj.messages },
     };
@@ -135,13 +171,14 @@ export class FacebookWhatsappChatApi {
     // console.log("This is the config in sendWhatsappTextMessage:", config)
 
     const response = await axios.request(config);
+    console.log("Status on sending that whatsaapp message::", response?.status)
 
     return response;
   }
 
   async fetchFileFromTwentyGetLocalPath() {
     const fileUrl =
-      'http://localhost:3000/files/attachment/2604e253-36e3-4e87-9638-bdbb661a0547.pdf?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHBpcmF0aW9uX2RhdGUiOiIyMDI0LTA1LTI3VDEwOjE3OjM5Ljk2MFoiLCJhdHRhY2htZW50X2lkIjoiZjIwYjE5YzUtZDAwYy00NzBjLWI5YjAtNzY2MTgwOTdhZjkyIiwiaWF0IjoxNzE2NzE4NjU5LCJleHAiOjE3MTY4OTg2NTl9.NP6CvbDKTh3W0T0uP0JKUfnV_PmN6rIz6FanK7Hp_us';
+      process.env.SERVER_BASE_URL+'/files/attachment/2604e253-36e3-4e87-9638-bdbb661a0547.pdf?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHBpcmF0aW9uX2RhdGUiOiIyMDI0LTA1LTI3VDEwOjE3OjM5Ljk2MFoiLCJhdHRhY2htZW50X2lkIjoiZjIwYjE5YzUtZDAwYy00NzBjLWI5YjAtNzY2MTgwOTdhZjkyIiwiaWF0IjoxNzE2NzE4NjU5LCJleHAiOjE3MTY4OTg2NTl9.NP6CvbDKTh3W0T0uP0JKUfnV_PmN6rIz6FanK7Hp_us';
     const response = await axios.get(fileUrl, { responseType: 'stream' });
     console.log('Response status received:', response.status);
     console.log('Response.data:', response.data);
@@ -177,10 +214,6 @@ export class FacebookWhatsappChatApi {
       const filePath = attachmentMessage?.fileData?.filePath.slice();
 
       const fileName = path.basename(filePath);
-      // Get the content type
-      // const contentType = mime.lookup(fileName) || 'application/octet-stream';
-      // const fileData = await fileTypeFromFile(filePath)
-      // const contentType = fileData?.mime || 'application/octet-stream';
       const contentType = await getContentTypeFromFileName(fileName);
       console.log('This is the content type:', contentType);
       console.log('This is the file name:', fileName);
@@ -196,33 +229,20 @@ export class FacebookWhatsappChatApi {
       formData.append('messaging_product', 'whatsapp');
       let response;
       try {
-        // response = await axios.post(
-        //   `https://graph.facebook.com/v19.0/${process.env.FACEBOOK_WHATSAPP_PHONE_NUMBER_ID}/media`,
-        //   formData,
-        //   {
-        //     headers: {
-        //       Authorization: `Bearer ${whatsappAPIToken}`,
-        //       ...formData.getHeaders(),
-        //     },
-        //   }
-        // );
         let response;
-        response = await axios.post('http://localhost:3000/whatsapp-controller/uploadFile', { filePath: filePath });
+        response = await axios.post(process.env.SERVER_BASE_URL+'/whatsapp-controller/uploadFile', { filePath: filePath });
         if (!response?.data?.mediaID) {
           console.error('Failed to upload JD to WhatsApp. Retrying it again...');
-          response = await axios.post('http://localhost:3000/whatsapp-controller/uploadFile', { filePath: filePath });
+          response = await axios.post(process.env.SERVER_BASE_URL+'/whatsapp-controller/uploadFile', { filePath: filePath });
           if (!response?.data?.mediaID) {
             console.error('Failed to upload JD to WhatsApp the second time. Bad luck! :(');
             const phoneNumberTo = attachmentMessage?.phoneNumberTo;
 
             const personObj = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(phoneNumberTo);
-
+            
             const mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.messageObj;
 
-            mostRecentMessageArr.push({
-              role: 'user',
-              content: 'Failed to send JD to the candidate.',
-            });
+            mostRecentMessageArr.push({ role: 'user', content: 'Failed to send JD to the candidate.' });
 
             const whatappUpdateMessageObj = await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj(
               'failed',
@@ -267,13 +287,7 @@ export class FacebookWhatsappChatApi {
     // debugger;
     try {
       const filePath = filePathArg.slice();
-      // "/home/ninad/Documents/twenty/packages/twenty-server/.attachments/ec0cd07a-914c-4539-b0e5-ac18c03199bc/file-sample_150kB.pdf";
-      // Get the file name
       const fileName = path.basename(filePath);
-      // Get the content type
-      // const contentType = mime.lookup(fileName) || 'application/octet-stream';
-      // const fileData = await fileTypeFromFile(filePath)
-      // const contentType = fileData?.mime || 'application/octet-stream';
       const contentType = await getContentTypeFromFileName(fileName);
       console.log('This is the content type:', contentType);
       console.log('This is the file name:', fileName);
@@ -385,6 +399,35 @@ export class FacebookWhatsappChatApi {
       console.log('This is error in facebook graph api when sending messaging template::', error);
     }
   }
+  async sendWhatsappUtilityMessage(sendUtilityMessageObj: allDataObjects.sendWhatsappUtilityMessageObjectType) {
+    console.log('Received this utiltuy message object:', sendUtilityMessageObj);
+    let utilityMessage = this.getUtilityMessageObj(sendUtilityMessageObj);
+    console.log('This is the utlity message object:', utilityMessage);
+    let config = {
+      method: 'post',
+      maxBodyLength: Infinity,
+      url: 'https://graph.facebook.com/v18.0/' + process.env.FACEBOOK_WHATSAPP_PHONE_NUMBER_ID + '/messages',
+      headers: {
+        Authorization: 'Bearer ' + whatsappAPIToken,
+        'Content-Type': 'application/json',
+      },
+      data: utilityMessage,
+    };
+    // console.log("This is the config in sendWhatsappTemplateMessage:", config);
+    try {
+      const response = await axios.request(config);
+      // console.log("This is the response:", response)
+      // console.log("This is the response data:", response.data)
+      if (response?.data?.messages[0]?.message_status === 'accepted') {
+        console.log('Message sent successfully and accepted by FACEBOOK API with id::', response?.data?.messages[0]?.id);
+        return response?.data;
+        // wamid.HBgMOTE4NDExOTM3NzY5FQIAERgSNjI0NkM1RjlCNzBGMEE5MjY5AA
+      }
+      console.log('This is the message sent successfully');
+    } catch (error) {
+      console.log('This is error in facebook graph api when sending messaging template::', error);
+    }
+  }
 
   async downloadWhatsappAttachmentMessage(
     sendTemplateMessageObj: {
@@ -405,13 +448,12 @@ export class FacebookWhatsappChatApi {
       },
       responseType: 'json',
     };
-    // console.log("This is the config in downloadWhatsappAttachmentMessage", config);
     const response = await axios.request(config);
     const url = response.data.url;
     config.url = url;
     config.responseType = 'stream';
     const fileDownloadResponse = await axios.request(config);
-    console.log('This is the response: bpdy', response.body);
+    console.log('This is the response: body in the download Attachment', response.body);
     const fileName = sendTemplateMessageObj.filename; // Set the desired file name
     const filePath = `${process.cwd()}/${fileName}`;
     const writeStream = fs.createWriteStream(filePath);
@@ -420,14 +462,11 @@ export class FacebookWhatsappChatApi {
       console.log('File saved successfully at', filePath);
       const attachmentObj = await new AttachmentProcessingService().uploadAttachmentToTwenty(filePath);
       console.log(attachmentObj);
-      // debugger
-      // attachmentObj.uploadFile
-      // candidateProfileData.id
       const dataToUploadInAttachmentTable = {
         input: {
           authorId: candidateProfileData.jobs.recruiterId,
           name: filePath.replace(`${process.cwd()}/`, ''),
-          fullPath: attachmentObj.data.uploadFile,
+          fullPath: attachmentObj?.data?.uploadFile,
           type: 'TextDocument',
           candidateId: constCandidateProfileData.id,
         },
@@ -446,20 +485,28 @@ export class FacebookWhatsappChatApi {
     if (whatappUpdateMessageObj.messageType === 'botMessage') {
       console.log('TEmplate Message or Text Message depends on :', whatappUpdateMessageObj.messages[0].content);
 
+      if (whatappUpdateMessageObj.messages[0].content.includes('#DONTRESPOND#') || whatappUpdateMessageObj.messages[0].content.includes('DONTRESPOND') || whatappUpdateMessageObj.messages[0].content.includes('DONOTRESPOND')) {
+        console.log('Found a #DONTRESPOND# message in STAGE 2, so not sending any message');
+        return;
+      }
+
       if (whatappUpdateMessageObj.messages[0].content.includes('Based Recruitment Company') || whatappUpdateMessageObj.messages[0].content.includes('assist')) {
         console.log('This is the template api message to send in whatappUpdateMessageObj.phoneNumberFrom, ', whatappUpdateMessageObj.phoneNumberFrom);
         const sendTemplateMessageObj = {
           recipient: whatappUpdateMessageObj.phoneNumberTo.replace('+', ''),
-          template_name: templates[1],
+          template_name: templates[4],
           candidateFirstName: whatappUpdateMessageObj.candidateFirstName,
           recruiterName: allDataObjects.recruiterProfile.name,
           recruiterJobTitle: allDataObjects.recruiterProfile.job_title,
           recruiterCompanyName: allDataObjects.recruiterProfile.job_company_name,
           recruiterCompanyDescription: allDataObjects.recruiterProfile.company_description_oneliner,
           jobPositionName: whatappUpdateMessageObj?.candidateProfile?.jobs?.name,
+          descriptionOneliner:whatappUpdateMessageObj?.candidateProfile?.jobs?.companies?.descriptionOneliner,
+          jobCode: whatappUpdateMessageObj?.candidateProfile?.jobs?.jobCode,
           jobLocation: whatappUpdateMessageObj?.candidateProfile?.jobs?.jobLocation,
         };
-        response = await this.sendWhatsappTemplateMessage(sendTemplateMessageObj);
+        // response = await this.sendWhatsappTemplateMessage(sendTemplateMessageObj);
+        response = await this.sendWhatsappUtilityMessage(sendTemplateMessageObj);
         const whatappUpdateMessageObjAfterWAMidUpdate = await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj(response?.data?.messages[0]?.id || response.messages[0].id, personNode, mostRecentMessageArr);
         await new CandidateEngagementArx().updateCandidateEngagementDataInTable(whatappUpdateMessageObjAfterWAMidUpdate);
       } else {
@@ -473,8 +520,7 @@ export class FacebookWhatsappChatApi {
         };
         response = await this.sendWhatsappTextMessage(sendTextMessageObj);
         const whatappUpdateMessageObjAfterWAMidUpdate = await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj(
-          response?.data?.messages[0]?.id || response.messages[0].id, // whatsapp message id response.messages[0].id
-          // response,
+          response?.data?.messages[0]?.id || response.messages[0].id,
           personNode,
           mostRecentMessageArr,
         );
@@ -499,7 +545,6 @@ export class FacebookWhatsappChatApi {
     };
 
     await fs.promises.mkdir(process.cwd() + '/.voice-messages/' + candidateProfileData?.id, { recursive: true });
-    // console.log("This is the config in downloadWhatsappAttachmentMessage", config);
     const filePath = `${process.cwd()}/.voice-messages/${candidateProfileData?.id}/${audioMessageObject?.filename}`;
     let uploadFilePath = '';
 
@@ -529,7 +574,7 @@ export class FacebookWhatsappChatApi {
             console.log(err);
           });
           const attachmentObj = await new AttachmentProcessingService().uploadAttachmentToTwenty(filePath);
-          console.log(attachmentObj);
+          // console.log(attachmentObj);
           uploadFilePath = attachmentObj?.data?.uploadFile;
         } catch (uploadError) {
           console.error('Error during file upload:', uploadError);
@@ -540,74 +585,8 @@ export class FacebookWhatsappChatApi {
     } catch (axiosError) {
       console.error('Error with axios request:', axiosError);
     }
-    // debugger
-    // attachmentObj.uploadFile
-    // candidateProfileData.id
-
-    // ------------------
-    // const dataToUploadInAttachmentTable = {
-    //   input: {
-    //     authorId: candidateProfileData?.jobs?.recruiterId,
-    //     name: filePath.replace(`${process.cwd()}/`, ""),
-    //     fullPath: attachmentObj.data.uploadFile,
-    //     type: "AudioFile",
-    //     candidateId: constCandidateProfileData?.id,
-    //   },
-    // };
-    //   debugger
-
     audioTranscriptionText = await getTranscriptionFromWhisper(filePath);
-
-    // await new AttachmentProcessingService().createOneAttachmentFromFilePath(
-    //   dataToUploadInAttachmentTable
-    // );
     console.log(`DONEE`);
-    // } else {
-    //   throw new Error("File not saved");
-    // }
-    // config.url = url;
-    // config.responseType = "stream";
-    // const fileDownloadResponse = await axios.request(config);
-
-    // console.log(fileDownloadResponse?.data);
-    // // debugger
-    // // console.log("This is the response:", response.data)
-    // console.log("This is the response: bpdy", response.body);
-    // const fileName = audioMessageObject?.filename; // Set the desired file name
-    // const filePath = `${process.cwd()}/${fileName}`;
-    // const writeStream = fs.createWriteStream(filePath);
-    // fileDownloadResponse.data.pipe(writeStream); // Pipe response stream to file stream
-
-    // writeStream.on("finish", async () => {
-    //   console.log("File saved successfully at", filePath);
-    //   const attachmentObj =
-    //     await new AttachmentProcessingService().uploadAttachmentToTwenty(
-    //       filePath
-    //     );
-    //   console.log(attachmentObj);
-    //   // debugger
-    //   // attachmentObj.uploadFile
-    //   // candidateProfileData.id
-    //   const dataToUploadInAttachmentTable = {
-    //     input: {
-    //       authorId: candidateProfileData?.jobs?.recruiterId,
-    //       name: filePath.replace(`${process.cwd()}/`, ""),
-    //       fullPath: attachmentObj.data.uploadFile,
-    //       type: "AudioFile",
-    //       candidateId: constCandidateProfileData?.id,
-    //     },
-    //   };
-    //   //   debugger
-
-    //   audioTranscriptionText = await getTranscriptionFromWhisper(filePath);
-
-    //   await new AttachmentProcessingService().createOneAttachmentFromFilePath(
-    //     dataToUploadInAttachmentTable
-    //   );
-    // });
-    // writeStream.on("error", (error) => {
-    //   console.error("Error saving file:", error);
-    // });
     console.log('Uploaded here', uploadFilePath);
     return {
       databaseFilePath: uploadFilePath,

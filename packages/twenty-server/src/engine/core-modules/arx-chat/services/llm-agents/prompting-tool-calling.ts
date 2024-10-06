@@ -10,15 +10,17 @@ import { SendEmailFunctionality } from '../candidate-engagement/send-gmail';
 import { GmailMessageData } from 'src/engine/core-modules/gmail-sender/services/gmail-sender-objects-types';
 import * as allGraphQLQueries from '../candidate-engagement/graphql-queries-chatbot';
 import { addHoursInDate, axiosRequest, toIsoString } from '../../utils/arx-chat-agent-utils';
-import { add } from 'date-fns';
+
+
+const commaSeparatedStatuses = allDataObjects.statusesArray.join(', ');
+
+
 
 const recruiterProfile = allDataObjects.recruiterProfile;
 // const candidateProfileObjAllData =  candidateProfile
-const jobProfile = allDataObjects.jobProfile;
-const availableTimeSlots = '12PM-3PM, 4PM -6PM on the 24th and 25th January 2024.';
+const availableTimeSlots = '12PM-3PM, 4PM -6PM on the 24th and 25th August 2024.';
 
 export class ToolsForAgents {
-
   async convertToBulletPoints(steps: { [x: string]: any; 1?: string; 2?: string; 3?: string; 4?: string }) {
     let result = '';
     for (let key in steps) {
@@ -31,7 +33,6 @@ export class ToolsForAgents {
     const recruitmentSteps = [
       'Initial Outreach: The recruiter introduces themselves and their company, mentions the specific role, and the candidate has responded in some manner.',
       // "Share Role Details: Provide a JD of the role and company. Check if the candidate has heard of the company. Assess the candidate's interest level and fit for the role, including their ability to relocate if needed.",
-
       'Share screening questions: Share screening questions and record responses',
       // "Schedule Screening Meeting: Propose times for a call to discuss the role, company, and candidate's experience more deeply, aiming for a 30-minute discussion."
       'Acknowledge and postpone: Let the candidate know that you will get back',
@@ -49,7 +50,6 @@ export class ToolsForAgents {
     Here are the stages to choose from:
     ${stepsBulleted}
     When deciding the next step:
-
     If there is no  conversation history or only a greeting, default to stage 1.
     Your response should be a single number between 1 and ${Object.keys(steps).length}, representing the appropriate stage.
     Do not include any additional text or instructions in your response.
@@ -57,10 +57,11 @@ export class ToolsForAgents {
     If the candidate's answer is not specific enough or doesn't provide exact numerical value when needed, do not progress to the next stage or call update_answer tool call and ask the candidate to be more specific.
     Your decision should not be influenced by the output itself. Do not respond to the user input when determining the appropriate stage.
     Your response should be a only a single number between 1 and ${Object.keys(steps).length}, representing the appropriate stage.
+    Never repeat your response. If you feel like you have to repeat your response, reply with "#DONTRESPOND#" exact string without any text around it.
     Do not schedule a meeting outside the given timeslots even if the candidate requests or insists. Tell the candidate that these are the only available timeslots and you cannot schedule a meeting outside of these timeslots.
-     Do not tell the candidate you are updating their profile or status.
-     If the candidate tells they will share details after a certain time or later in the stage or in later stages, do not progress to the next stage. Push the candidate to share the details now.
-     Do not progress to the next stage before completing the current stage.
+    Do not tell the candidate you are updating their profile or status.
+    If the candidate tells they will share details after a certain time or later in the stage or in later stages, do not progress to the next stage. Push the candidate to share the details now.
+    Do not progress to the next stage before completing the current stage.
     `;
 
     return STAGE_SYSTEM_PROMPT;
@@ -71,50 +72,64 @@ export class ToolsForAgents {
     // const formattedQuestions = questions.map((question, index) =>  `${index + 1}. ${question.replace("{location}", location)}`).join("\n");
     // return formattedQuestions
     const jobId = personNode?.candidates?.edges[0]?.node?.jobs?.id;
+    console.log("Job Name:", personNode?.candidates?.edges[0]?.node?.jobs?.name)
     // console.log('This is the job Id:', jobId);
     const { questionArray, questionIdArray } = await new FetchAndUpdateCandidatesChatsWhatsapps().fetchQuestionsByJobId(jobId);
     // Hardcoded questions to ask if no questions are found in the database
     if (questionArray.length == 0) {
-      return ['What is your current & expected CTC?', 'Who do you report to and which functions report to you?', 'Are you okay to relocate to {location}?'];
+      return ['Are you okay to relocate to {location}?','What is your current & expected CTC?', 'What is your notice period?'];
     }
     return questionArray;
   }
 
   async getSystemPrompt(personNode: allDataObjects.PersonNode) {
-    // console.log('This is the candidate profile:', personNode);
+    let receiveCV
+    receiveCV = `If they have shared their interest after going through the JD, ask the candidate to share a copy of their updated CV prior to the meeting.
+    If they say that you can take the CV from naukri, tell them that you would require a copy for records directly from them for candidate confirmation purposes.`
+    receiveCV = ``
+    const jobProfile = personNode?.candidates?.edges[0]?.node?.jobs;
     const questionArray = await this.getQuestionsToAsk(personNode);
-    const formattedQuestions = questionArray.map((question, index) => `${index + 1}. ${question}`).join('\n');
-    // console.log('Formtted Questions:', formattedQuestions);
+    const formattedQuestions = '\t'+questionArray.map((question, index) => `${index + 1}. ${question}`).join('\n\t');
     const SYSTEM_PROMPT = `
     You will drive the conversation with candidates like the recruiter. Your goal is to assess the candidates for interest and fitment.
-    If found reasonably fit, your goal is to setup a meeting at a available time.
+    The conversations are happening on whatsapp. So be short, conversational and to the point.
     You will start the chat with asking if they are interested and available for a call.
-    They may either ask questions or show interest or provide a time slot. You will first ask them a few screening questions before confirming a time.
-
-    ##STAGE_PROMPT
-
-    Your screening questions are :
+    They may either ask questions or show interest or provide a time slot. Do not schedule a meeting before he is fully qualified.
+    Next, share the JD with him/ her by calling the function "share_jd". Ask them if they would be keen on the role. Ask them if they are interested in the role only after sharing the JD.
+    ${receiveCV}
+    Your screening questions for understanding their profile are :
     ${formattedQuestions}
-    After the candidate answers each question, you will call the function update_answer.
-        If the candidate's answer is not specific enough, do not update the answer and ask the candidate to be more specific.
-    If the candidate, asks details about the role or the company, share the JD with him/ her by calling the function "share_jd".
-    Even if the candidate doesn't ask about the role or the company, do share the JD with him/ her by calling the function "share_jd". 
-    Apart from your starting sentence, have small chats and not long winded sentences.
+    Ask these questions in any order one by one and ensure a natural continuous conversation. Call the function update_answer after the candidate answers each question.
+    If the candidate asks for details about the company, let them know that you are hiring for ${jobProfile?.companies?.name}, ${jobProfile?.companies?.descriptionOneliner}
+    If the candidate's answer is not specific enough, do not update the answer but ask the candidate to be more specific.
     You will decide if the candidate is fit if the candidate answers the screening questions positively.
-    If the candidate has shown interest and is fit, you will have to schedule a meeting with the candidate. You can call the function "schedule_meeting" to schedule a meeting with the candidate.***********
-    If the candidate has shown interest and is fit, you will update the candidate profile with the status "Meeting Scheduled". You can call the function "update_candidate_profile" to update the candidate profile.
-    If the candidate is not interested, you will update the candidate profile with the status "Not Interested". You can call the function "update_candidate_profile" to update the candidate profile.
-    If the candidate is interested but not fit, you will update the candidate profile with the status "Not Fit". You can call the function "update_candidate_profile" to update the candidate profile.
-    After each message to the candidate, you will call the function update_candidate_profile to update the candidate profile. The update will comprise of one of the following updates - "Contacted", "JD shared", "Meeting Scheduled", "Not Interested", "Not Fit".
-    If the candidate asks to send job description on email, call the function "send_email" to send the job description to the candidate.
-    Candidate might ask you to send the JD on a specified email. You will send the JD by just calling the "share_jd" function. You will not ask for the email.
-    Sometimes candidates will send forwards and irrelevant messages. You will have to ignore them. If the candidate unnecessarily replies and messages, you will reply with "#DONTRESPOND#" exact string. 
+    When you start screening, also call the function "update_candidate_profile" to update the candidate profile as "SCREENING".
+    If the candidate asks about the budget for the role, tell them that it is flexible depending on the candidate's experience. Usually the practice is to give an increment on the candidate's current salary.
+    If the candidate has shown interest and is fit, you will call the function "update_candidate_profile" and update the status as "INTERESTED".
+    If the candidate has sent an attachment or a resume, you will you will call the function "update_candidate_profile" and update the status as "CV_RECEIVED".
+    If the candidate is not interested, you will call the function "update_candidate_profile" and update the status as "NOT_INTERESTED".
+    If the candidate is interested but not fit, you will call the function "update_candidate_profile" and update the candidate profile with the status "NOT_FIT".
+    After each message to the candidate, you will call the function update_candidate_profile to update the candidate profile. The update will comprise of one of the following updates - ${commaSeparatedStatuses}.
+    If the candidate asks you for your email address to share the CV, share your email as ${recruiterProfile.email}. After sharing your email, as the candidate to share their resume on whatsapp as well.
+    After all the screening questions are answered, you will tell the candidate that you would get back to them with a few time slots shortly and setup a call. You can call the function "update_candidate_profile" to update the candidate profile as "RECRUITER_INTERVIEW".
+    After this, you will not respond to the candidate until you have the time slots. You will not respond to any queries until you have the timeslots.
+    If the candidate asks any questions that don't know the answer of, you will tell them that you will get back to them with the answer.
+    If the candidate says that the phone number is not reachable or they would like to speak but cannot connect, let them know that you will get back to them shortly.
+    Sometimes candidates will send forwards and irrelevant messages. You will have to ignore them. If the candidate unnecessarily replies and messages, you will reply with "#DONTRESPOND#" exact string without any text around it.
     You will not indicate any updates to the candidate. You will only ask questions and share the JD. You will not provide any feedback to the candidate. The candidate might ask for feedback, you will not provide any feedback. They can ask any queries unrelated to the role or the background inside any related questions. You will not respond to any queries unrelated to the role.
-    Available timeslots are: ${availableTimeSlots}
+    Apart from your starting sentence, Be direct, firm and to the point. No need to be overly polite or formal. Do not sound excited.
+    Your reponses will not show enthusiasm or joy or excitement. You will be neutral and to the point.
+    Do not respond or restart the conversation if you have already told the candidate that you would get back to them.
+    If you have discussed scheduling meetings, do not start screening questions. 
+    If you have had a long discussion, do not repeat the same questions and do not respond. 
+    If you believe that you have received only the latter part of the conversation without introductions and screening questions have not been covered, then check if the candidate has been told that you will get back to them. If yes, then do not respond. 
+    If you do not wish to respond to the candidate, you will reply with "#DONTRESPOND#" exact string without any text around it.
+    If you do not have to respond, you will reply with "#DONTRESPOND#" exact string without any text around it.
     Your first message when you receive the prompt "startChat" is: Hey ${personNode.name.firstName},
     I'm ${recruiterProfile.first_name}, ${recruiterProfile.job_title} at ${recruiterProfile.job_company_name}, ${recruiterProfile.company_description_oneliner}.
-    I'm hiring for a ${jobProfile.name} role for ${jobProfile.company.descriptionOneliner} and got your application on my job posting. I believe this might be a good fit.
-    Wanted to speak to you in regards your interests in our new role. Would you be available for a short call sometime today?`;
+    I'm hiring for a ${jobProfile.name} role for ${jobProfile?.companies?.descriptionOneliner} based out of ${jobProfile.jobLocation} and got your application on my job posting. I believe this might be a good fit.
+    Wanted to speak to you in regards your interests in our new role. Would you be available for a short call sometime today?
+    `;
     return SYSTEM_PROMPT;
   }
 
@@ -132,45 +147,28 @@ export class ToolsForAgents {
     const REMINDER_SYSTEM_PROMPT = `
     Read the message history. This candidate hasn't responded in a while. Remind this candidate. If the candidate has already been reminded, reply with "#DONTRESPOND#" exact string.
     `;
+    console.log('Using reminder prompt');
     return REMINDER_SYSTEM_PROMPT;
   }
 
   async getCandidateFacingSystemPromptBasedOnStage(personNode: allDataObjects.PersonNode, stage: string) {
     if (stage == 'remind_candidate') {
       return await this.getReminderSystemPrompt();
-    }
-    else{
+    } else {
       const systemPrompt = await this.getSystemPrompt(personNode);
       // const updatedSystemPromptWithStagePrompt = systemPrompt.replace('##STAGE_PROMPT', stage);
-      const updatedSystemPromptWithStagePrompt = systemPrompt;
-      // console.log(updatedSystemPromptWithStagePrompt);
-      return updatedSystemPromptWithStagePrompt;
+      const updatedCandidatePromptWithStagePrompt = systemPrompt;
+      // console.log('Updated Candidate Prompt ::', updatedCandidatePromptWithStagePrompt);
+      return updatedCandidatePromptWithStagePrompt;
     }
   }
 
   async getSystemFacingSystemPromptBasedOnStage(personNode: allDataObjects.PersonNode, stage: string) {
     const systemPrompt = await this.getSystemPrompt(personNode);
     const updatedSystemPromptWithStagePrompt = systemPrompt.replace('##STAGE_PROMPT', stage);
-    // console.log(updatedSystemPromptWithStagePrompt);
+    console.log('Updated System Prompt ::', updatedSystemPromptWithStagePrompt);
     return updatedSystemPromptWithStagePrompt;
   }
-
-  // async getTimeManagementPromptBasedOnStage(personNode: allDataObjects.PersonNode, stage: string) {
-  //   const timeManagementPrompt = await this.getTimeManagementPrompt(personNode);
-  //   const updatedTimeManagementPromptWithStagePrompt = timeManagementPrompt.replace('##TIME_MANAGEMENT_PROMPT', stage);
-  //   return updatedTimeManagementPromptWithStagePrompt;
-  // }
-
-  // async getToolCallsByStage() {
-  //   const toolCallsByStage = {
-  //     'Initial Outreach': ['update_candidate_profile'],
-  //     'Share Role Details': ['share_jd'],
-  //     'Share screening questions': ['update_answer', 'update_candidate_profile'],
-  //     'Create Reminder': ['update_candidate_profile', 'schedule_meeting'],
-  //     'Schedule Screening Meeting': ['update_candidate_profile', 'schedule_meeting'],
-  //   };
-  //   return toolCallsByStage;
-  // }
 
   async getStageWiseActivity() {
     const stageWiseActions = {
@@ -183,7 +181,7 @@ export class ToolsForAgents {
       ],
       'Share Role Details': [
         `
-        Provide a JD of the role and describe in short the details of the company. Ask the candidate if they would be keen on the role wiht the company.
+        Provide a JD of the role and describe in short the details of the company. Ask the candidate if they would be keen on the role with the company.
         `,
       ],
       'Share screening questions': [
@@ -258,12 +256,14 @@ export class ToolsForAgents {
     }
     return 'Shared the JD with the candidate and updated the database.';
   }
+  
 
   async updateCandidateProfile(inputs: any, personNode: allDataObjects.PersonNode) {
     try {
+      console.log('UPDATE CANDIDATE PROFILE CALLED AND UPDATING TO ::', inputs);
       console.log('Function Called:  candidateProfileDataNodeObj:any', personNode);
-      const status = 'Meeting Scheduled';
-      await updateCandidateStatus(personNode, status);
+      // const status: allDataObjects.statuses = 'RECRUITER_INTERVIEW';
+      await updateCandidateStatus(personNode, inputs.candidateStatus);
       return 'Updated the candidate profile.';
     } catch (error) {
       console.log('Error in updateCandidateProfile:', error);
@@ -279,23 +279,16 @@ export class ToolsForAgents {
     const matches = results.map(function (el) {
       return el.string;
     });
-
     console.log('The matches are:', matches);
     const mostSimilarQuestion = questionIdArray.filter(questionObj => questionObj.question == matches[0]);
-
-    const AnswerMessageObj = {
-      questionsId: mostSimilarQuestion[0]?.questionId,
-      name: inputs.answer,
-      // "position": "first",
-      candidateId: candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.id,
-    };
+    const AnswerMessageObj = { questionsId: mostSimilarQuestion[0]?.questionId, name: inputs.answer, candidateId: candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.id };
 
     await updateAnswerInDatabase(candidateProfileDataNodeObj, AnswerMessageObj);
     try {
       console.log('Function Called:  candidateProfileDataNodeObj:any', candidateProfileDataNodeObj);
       console.log('Function Called: updateAnswer');
     } catch {
-      debugger;
+      console.log('Update Answer in Database working');
     }
     return 'Updated the candidate updateAnswer.';
   }
@@ -310,14 +303,8 @@ export class ToolsForAgents {
       typeOfMeeting: gptInputs?.typeOfMeeting || 'Virtual',
       location: gptInputs?.location || 'Google Meet',
       description: gptInputs?.description || 'This meeting is scheduled to discuss the role and the company.',
-      start: {
-        dateTime: gptInputs?.startDateTime,
-        timeZone: gptInputs?.timeZone,
-      },
-      end: {
-        dateTime: gptInputs?.endDateTime,
-        timeZone: gptInputs?.timeZone,
-      },
+      start: { dateTime: gptInputs?.startDateTime, timeZone: gptInputs?.timeZone },
+      end: { dateTime: gptInputs?.endDateTime, timeZone: gptInputs?.timeZone },
       attendees: [{ email: candidateProfileDataNodeObj.email }],
       reminders: {
         useDefault: false,
@@ -331,14 +318,11 @@ export class ToolsForAgents {
     return 'scheduleMeeting the candidate meeting.';
   }
 
-
-
   async getCandidateFacingToolsByStage(stage: string) {
     let tools;
-    if (stage == "remind_candidate"){
-      tools = this.getTimeManagementTools()
-    }
-    else{
+    if (stage == 'remind_candidate') {
+      tools = this.getTimeManagementTools();
+    } else {
       tools = [
         {
           type: 'function',
@@ -499,5 +483,4 @@ export class ToolsForAgents {
     ];
     return tools;
   }
-
 }

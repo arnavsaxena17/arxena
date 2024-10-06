@@ -4,14 +4,14 @@ import * as frontChatTypes from "../types/front-chat-types";
 import dayjs from "dayjs";
 import axios from "axios";
 import { set } from "date-fns";
-import { IconCheck, IconChecks, IconAlertCircle } from "@tabler/icons-react";
+import { IconChecks,IconCheck,  IconAlertCircle } from "@tabler/icons-react";
 
 const IconChecksBlue = () => {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      width={24}
-      height={24}
+      width={18}
+      height={18}
       viewBox="0 0 24 24"
       fill="none"
       stroke="#007bff"
@@ -27,6 +27,9 @@ const IconChecksBlue = () => {
   );
 };
 
+
+
+
 interface MessageStatusType {
   [key: string]: ReactElement;
   sent: ReactElement;
@@ -37,8 +40,8 @@ interface MessageStatusType {
 }
 
 const MessageStatus: MessageStatusType = {
-  sent: <IconCheck />,
-  delivered: <IconChecks />,
+  sent: <IconCheck size = {18} />,
+  delivered: <IconChecks size = {18} />,
   read: <IconChecksBlue />,
   failed: <IconAlertCircle />,
   readByRecruiter: <IconChecksBlue />,
@@ -59,8 +62,8 @@ const StyledTime = styled.span`
 `;
 
 const ChatMessageInfo = (props: {
-  messageName: string;
-  messageTime: string;
+  messageName: string | undefined;
+  messageTime: string | undefined;
   messageReadStatus: string;
 }) => {
   return (
@@ -77,29 +80,23 @@ const ChatMessageInfo = (props: {
 };
 
 export default function SingleChatContainer(props: {
-  message: frontChatTypes.WhatsAppMessagesEdge;
-  messageName: string;
-  phoneNumber: string;
-  // latestResponseGenerated: string;
-  // setLatestResponseGenerated: React.Dispatch<React.SetStateAction<string>>;
-  // listOfToolCalls: string[];
-  // setListOfToolCalls: React.Dispatch<React.SetStateAction<string[]>>;
-  // messageHistory: [];
-  // setMessageHistory: React.Dispatch<React.SetStateAction<[]>>;
+  message: frontChatTypes.MessageNode;
+  messageName: string | undefined;
+  phoneNumber: string | undefined;
 }) {
   return (
     <div>
       <StyledContainer>
         <ChatMessageInfo
           messageName={
-            props.message?.node?.name === "candidateMessage"
+            props.message?.name === "candidateMessage"
               ? props.messageName
               : "You"
           }
-          messageTime={props.message?.node?.createdAt}
-          messageReadStatus={props.message?.node?.whatsappDeliveryStatus}
+          messageTime={props.message?.createdAt}
+          messageReadStatus={props.message?.whatsappDeliveryStatus}
         />
-        <p>{props.message?.node?.message}</p>
+        <p>{props.message?.message}</p>
         {/* {props.message?.node?.name !== "candidateMessage" && (
           
         )} */}

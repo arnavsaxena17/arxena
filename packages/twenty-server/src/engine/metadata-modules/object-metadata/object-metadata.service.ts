@@ -94,7 +94,7 @@ export class ObjectMetadataService extends TypeOrmQueryService<ObjectMetadataEnt
 
     const end = performance.now();
 
-    console.log(`metadata query time: ${end - start} ms`);
+    // console.log(`metadata query time: ${end - start} ms`);
 
     return result;
   }

@@ -17,7 +17,6 @@ import {
 import { useTabList } from '@/ui/layout/tab/hooks/useTabList';
 
 import { AddTaskButton } from './AddTaskButton';
-import { ChatList } from './ChatList';
 
 const StyledContainer = styled.div`
   display: flex;

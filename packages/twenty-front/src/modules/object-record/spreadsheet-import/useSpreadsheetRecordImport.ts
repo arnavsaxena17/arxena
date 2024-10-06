@@ -22,15 +22,7 @@ export const useSpreadsheetRecordImport = (objectNameSingular: string) => {
   const { objectMetadataItem } = useObjectMetadataItem({
     objectNameSingular,
   });
-  const fields = objectMetadataItem.fields
-    .filter(
-      (x) =>
-        x.isActive &&
-        !x.isSystem &&
-        x.name !== 'createdAt' &&
-        (x.type !== FieldMetadataType.Relation || x.toRelationMetadata),
-    )
-    .sort((a, b) => a.name.localeCompare(b.name));
+  const fields = objectMetadataItem.fields.filter(x => x.isActive && !x.isSystem && x.name !== 'createdAt' && (x.type !== FieldMetadataType.Relation || x.toRelationMetadata)).sort((a, b) => a.name.localeCompare(b.name));
 
   const templateFields: {
     icon: IconComponent;
@@ -50,10 +42,7 @@ export const useSpreadsheetRecordImport = (objectNameSingular: string) => {
         fieldType: {
           type: 'input',
         },
-        validations: getSpreadSheetValidation(
-          field.type,
-          `${firstName} (${field.label})`,
-        ),
+        validations: getSpreadSheetValidation(field.type, `${firstName} (${field.label})`),
       });
       templateFields.push({
         icon: getIcon(field.icon),
@@ -62,10 +51,7 @@ export const useSpreadsheetRecordImport = (objectNameSingular: string) => {
         fieldType: {
           type: 'input',
         },
-        validations: getSpreadSheetValidation(
-          field.type,
-          `${lastName} (${field.label})`,
-        ),
+        validations: getSpreadSheetValidation(field.type, `${lastName} (${field.label})`),
       });
     } else if (field.type === FieldMetadataType.Relation) {
       templateFields.push({
@@ -75,10 +61,7 @@ export const useSpreadsheetRecordImport = (objectNameSingular: string) => {
         fieldType: {
           type: 'input',
         },
-        validations: getSpreadSheetValidation(
-          field.type,
-          field.label + ' (ID)',
-        ),
+        validations: getSpreadSheetValidation(field.type, field.label + ' (ID)'),
       });
     } else {
       templateFields.push({
@@ -97,13 +80,11 @@ export const useSpreadsheetRecordImport = (objectNameSingular: string) => {
     objectNameSingular,
   });
 
-  const openRecordSpreadsheetImport = (
-    options?: Omit<SpreadsheetOptions<any>, 'fields' | 'isOpen' | 'onClose'>,
-  ) => {
+  const openRecordSpreadsheetImport = (options?: Omit<SpreadsheetOptions<any>, 'fields' | 'isOpen' | 'onClose'>) => {
     openSpreadsheetImport({
       ...options,
-      onSubmit: async (data) => {
-        const createInputs = data.validData.map((record) => {
+      onSubmit: async data => {
+        const createInputs = data.validData.map(record => {
           const fieldMapping: Record<string, any> = {};
           for (const field of fields) {
             const value = record[field.name];
@@ -133,20 +114,12 @@ export const useSpreadsheetRecordImport = (objectNameSingular: string) => {
                 }
                 break;
               case FieldMetadataType.Relation:
-                if (
-                  isDefined(value) &&
-                  (isNonEmptyString(value) || value !== false)
-                ) {
+                if (isDefined(value) && (isNonEmptyString(value) || value !== false)) {
                   fieldMapping[field.name + 'Id'] = value;
                 }
                 break;
               case FieldMetadataType.FullName:
-                if (
-                  isDefined(
-                    record[`${firstName} (${field.name})`] ||
-                      record[`${lastName} (${field.name})`],
-                  )
-                ) {
+                if (isDefined(record[`${firstName} (${field.name})`] || record[`${lastName} (${field.name})`])) {
                   fieldMapping[field.name] = {
                     firstName: record[`${firstName} (${field.name})`] || '',
                     lastName: record[`${lastName} (${field.name})`] || '',

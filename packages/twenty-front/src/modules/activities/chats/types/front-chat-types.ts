@@ -13,6 +13,21 @@ export interface ChatMessage {
   name?: string; // Optional, only for tool messages
 }
 
+
+export interface JobDropdownProps {
+  jobs: Job[];
+  selectedJob: string;
+  onJobChange: (jobId: string) => void;
+}
+
+
+export interface Job {
+  node:{
+    id: string;
+    name: string;
+  }
+}
+
 // Interface for chat message with tool call
 export interface ToolChatMessage {
   tool_call_id: string;
@@ -114,6 +129,7 @@ export interface sendWhatsappTemplateMessageObjectType {
 
 export interface WhatsAppMessagesEdge {
   node: MessageNode;
+  
 }
 
 export interface WhatsAppMessages {
@@ -128,6 +144,8 @@ export interface CandidateNode {
   email: string;
   input: string;
   startChat: boolean;
+  status:string;
+  stopChat: boolean;
   whatsappMessages: WhatsAppMessages;
   emailMessages: EmailMessages;
   jobs: Jobs;
@@ -313,7 +331,9 @@ export const emptyCandidateProfileObj: CandidateNode = {
   phoneNumber: "",
   email: "",
   input: "",
+  status:"",
   startChat: false,
+  stopChat: false,
   whatsappMessages: {
     edges: [
       {
