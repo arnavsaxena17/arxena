@@ -1,14 +1,5 @@
 import { StrictMode } from 'react';
-import {
-  createBrowserRouter,
-  createRoutesFromElements,
-  Outlet,
-  redirect,
-  Route,
-  RouterProvider,
-  Routes,
-  useLocation,
-} from 'react-router-dom';
+import { createBrowserRouter, createRoutesFromElements, Outlet, redirect, Route, RouterProvider, Routes, useLocation } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
 
 import { ApolloProvider } from '@/apollo/components/ApolloProvider';
@@ -84,7 +75,8 @@ import { SettingsWorkspaceMembers } from '~/pages/settings/SettingsWorkspaceMemb
 import { Tasks } from '~/pages/tasks/Tasks';
 import { Chats } from '~/pages/chats/Chats';
 import { getPageTitleFromPath } from '~/utils/title-utils';
-
+import { VideoInterviewResponsePage } from '@/ai-interview/interview-response/Test';
+import { Split } from '@/ai-interview/interview-response/split';
 const ProvidersThatNeedRouterContext = () => {
   const { pathname } = useLocation();
   const pageTitle = getPageTitleFromPath(pathname);
@@ -135,8 +127,7 @@ const createRouter = (isBillingEnabled?: boolean) =>
         element={<ProvidersThatNeedRouterContext />}
         // To switch state to `loading` temporarily to enable us
         // to set scroll position before the page is rendered
-        loader={async () => Promise.resolve(null)}
-      >
+        loader={async () => Promise.resolve(null)}>
         <Route element={<DefaultLayout />}>
           <Route path={AppPath.Verify} element={<VerifyEffect />} />
           <Route path={AppPath.SignInUp} element={<SignInUp />} />
@@ -147,10 +138,7 @@ const createRouter = (isBillingEnabled?: boolean) =>
           <Route path={AppPath.SyncEmails} element={<SyncEmails />} />
           <Route path={AppPath.InviteTeam} element={<InviteTeam />} />
           <Route path={AppPath.PlanRequired} element={<ChooseYourPlan />} />
-          <Route
-            path={AppPath.PlanRequiredSuccess}
-            element={<PaymentSuccess />}
-          />
+          <Route path={AppPath.PlanRequiredSuccess} element={<PaymentSuccess />} />
           <Route path={indexAppPath.getIndexAppPath()} element={<></>} />
           <Route path={AppPath.TasksPage} element={<Tasks />} />
           <Route path={AppPath.ChatsPage} element={<Chats />} />
@@ -298,6 +286,8 @@ const createRouter = (isBillingEnabled?: boolean) =>
         <Route element={<BlankLayout />}>
           <Route path={AppPath.Authorize} element={<Authorize />} />
         </Route>
+        <Route path={AppPath.VideoInterview} element={<VideoInterviewResponsePage />} />
+        <Route path={AppPath.VideoInterviewReview} element={<Split />} />
       </Route>,
     ),
   );

@@ -49,6 +49,7 @@ const StyledListItem = styled.li`
   }
 `;
 
+<<<<<<< HEAD
 export const AIInterviewRightSideContainer = ({
   aIModelsArr,
   closeModal,
@@ -60,6 +61,9 @@ export const AIInterviewRightSideContainer = ({
   objectNameSingular: string;
   objectRecordId: string;
 }) => {
+=======
+export const AIInterviewRightSideContainer = ({ aIModelsArr, closeModal, objectNameSingular, objectRecordId }: { aIModelsArr: any; closeModal: () => void; objectNameSingular: string; objectRecordId: string }) => {
+>>>>>>> f1b1a1a513bb5002db9aa29394eaf568639c18b4
   const { questionsArr } = useAddRemoveAIInterviewQuestion();
 
   const { convertFormData } = useFormDataConversion();
@@ -91,14 +95,9 @@ export const AIInterviewRightSideContainer = ({
       <StyledFormElement onSubmit={handleSubmit} id="NewAIInterviewForm">
         <AIInterviewName closeModal={closeModal} />
         <StyledQuestionsContainer type="1">
-          <AIInterviewIntroduction
-            id={'introduction'}
-            aIModelsArr={aIModelsArr}
-          />
+          <AIInterviewIntroduction id={'introduction'} aIModelsArr={aIModelsArr} />
           {questionsArr.map((question, index) => (
-            <StyledListItem key={question.id}>
-              {question.rightQuestion(index + 1)}
-            </StyledListItem>
+            <StyledListItem key={question.id}>{question.rightQuestion(index + 1)}</StyledListItem>
           ))}
         </StyledQuestionsContainer>
       </StyledFormElement>

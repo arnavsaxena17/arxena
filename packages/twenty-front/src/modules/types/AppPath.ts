@@ -34,4 +34,8 @@ export enum AppPath {
   // 404 page not found
   NotFoundWildcard = '*',
   NotFound = '/not-found',
+
+  // Video Interviews
+  VideoInterview = '/video-interview/:videoInterviewId',
+  VideoInterviewReview = '/video-interview-review',
 }

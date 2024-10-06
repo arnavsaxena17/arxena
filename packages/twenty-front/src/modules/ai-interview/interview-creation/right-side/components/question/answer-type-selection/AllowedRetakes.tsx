@@ -8,25 +8,12 @@ const StyledContainer = styled.div`
   width: 200px;
 `;
 
-export const AllowedRetakes = ({
-  questionNumber,
-}: {
-  questionNumber: number;
-}) => {
+export const AllowedRetakes = ({ questionNumber }: { questionNumber: number }) => {
   const name = `newAIInterview[${questionNumber}][retakes]`;
 
   return (
     <StyledContainer>
-      <TextInput
-        label="Retakes Allowed"
-        placeholder="Max 5"
-        type="number"
-        min={0}
-        max={5}
-        step={1}
-        required
-        name={name}
-      />
+      <TextInput label="Retakes Allowed" placeholder="Max 2" type="number" min={0} max={2} step={1} required name={name} />
     </StyledContainer>
   );
 };

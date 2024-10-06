@@ -15,49 +15,27 @@ const StyledHiddenInput = styled.input`
   display: none;
 `;
 
-export const QuestionTypeSelect = ({
-  id,
-  questionNumber,
-}: {
-  id: string;
-  questionNumber: number;
-}) => {
-  const [selectedQuestionType, setSelectedQuestionType] =
-    useState<string>('VIDEO');
+export const QuestionTypeSelect = ({ id, questionNumber }: { id: string; questionNumber: number }) => {
+  const [selectedQuestionType, setSelectedQuestionType] = useState<string>('VIDEO');
 
   const onChange = (value: string) => {
     setSelectedQuestionType(value);
   };
 
   const options: SelectOption<string>[] = useMemo(() => {
-    return questionOrAnswerOptions.map<SelectOption<string>>(
-      ({ label, value, Icon }) => ({
-        label: label,
-        value: value,
-        Icon: Icon,
-      }),
-    );
+    return questionOrAnswerOptions.map<SelectOption<string>>(({ label, value, Icon }) => ({
+      label: label,
+      value: value,
+      Icon: Icon,
+    }));
   }, []);
 
   const name = `newAIInterview[${questionNumber}][questionType]`;
 
   return (
     <StyledContainer>
-      <Select
-        fullWidth
-        dropdownId={id}
-        options={options}
-        label="Question Type"
-        withSearchInput
-        onChange={onChange}
-        value={selectedQuestionType}
-        emptyOption={undefined}
-      />
-      <StyledHiddenInput
-        name={name}
-        value={selectedQuestionType}
-        readOnly={true}
-      />
+      <Select fullWidth dropdownId={id} options={options} label="Question Type" withSearchInput onChange={onChange} value={selectedQuestionType} emptyOption={undefined} />
+      <StyledHiddenInput name={name} value={selectedQuestionType} readOnly={true} />
     </StyledContainer>
   );
 };

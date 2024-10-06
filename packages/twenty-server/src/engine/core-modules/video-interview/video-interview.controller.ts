@@ -1,7 +1,6 @@
-import { Controller, Post, Body, UploadedFile, Req, UseInterceptors, HttpException, HttpStatus, Query, UseGuards  } from '@nestjs/common';
+import { Controller, Post, Body, UploadedFiles, Req, UseInterceptors, InternalServerErrorException, Logger, HttpException, HttpStatus, Query, UseGuards, BadRequestException } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/engine/guards/jwt.auth.guard';
-import { Express } from 'express'
-
+import { Express } from 'express';
 
 // import { FileInterceptor } from '@nestjs/platform-express';
 import OpenAI from 'openai';
@@ -10,15 +9,18 @@ import { createReadStream } from 'fs';
 import { TranscriptionService } from 'src/engine/core-modules/video-interview/transcription.service';
 import { Multer } from 'multer';
 import { de } from 'date-fns/locale';
+import { extname } from 'path';
+import * as multer from 'multer';
+import { FileInterceptor, FileFieldsInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
 
 // @Controller('video-interview')
 // export class VideoInterviewController {
-//     // constructor(private readonly transcriptionService: TranscriptionService) {}
+//     constructor(private readonly transcriptionService: TranscriptionService) {}
 
 //     @Post('transcribe')
 //     // @UseGuards(JwtAuthGuard)
 //     @UseInterceptors(FileInterceptor('file'))
-    
 //     async transcribeVideo(
 //       @Req() request: Request,
 //       @Body() body: any,
@@ -26,7 +28,6 @@ import { de } from 'date-fns/locale';
 //       @Query('question2') question2: string,
 //       @Query('model') model: string,
 //       @UploadedFile() file: Express.Multer.File,
-      
 //     ): Promise<string>  {
 //       console.log("These are the /request body", request.body);
 //       // console.log("These are the /request ", request);
@@ -39,37 +40,71 @@ import { de } from 'date-fns/locale';
 //       console.log(file);
 //       console.log("transcribeVideo");
 //       const defaultModel = 'whisper-1'; // default model, can be replaced with @Query('model') model: string
-//       // const transcription = await this.transcriptionService.transcribeVideo(file, question, model || defaultModel);
+//       const transcription = await this.transcriptionService.transcribeVideo(file, question, model || defaultModel);
 //       return  defaultModel;
 //     }
 // }
 
-
-// import { Controller, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-
 @Controller('video-interview')
 export class VideoInterviewController {
+  constructor(private transcriptionService: TranscriptionService) {}
   @Post('upload')
-  @UseInterceptors(FileInterceptor('file', {
-    storage: diskStorage({
-      destination: './uploads',
-      filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, file.fieldname + '-' + uniqueSuffix + '.mp3');
+  @UseInterceptors(
+    FileFieldsInterceptor(
+      [
+        { name: 'video', maxCount: 1 },
+        { name: 'audio', maxCount: 1 },
+      ],
+      {
+        storage: multer.diskStorage({
+          destination: './uploads',
+          filename: (req, file, callback) => {
+            callback(null, file.originalname);
+          },
+        }),
+        limits: { fileSize: 100 * 1024 * 1024 }, // 10MB file size limit
+        fileFilter: (req, file, callback) => {
+          if (file.fieldname === 'video' && file.mimetype !== 'video/webm') {
+            return callback(new BadRequestException('Only webm files are allowed'), false);
+          }
+          if (file.fieldname === 'audio' && file.mimetype !== 'audio/wav') {
+            return callback(new BadRequestException('Only WAV files are allowed'), false);
+          }
+          callback(null, true);
+        },
       },
-    }),
-  }))
-  uploadFile(@UploadedFile() file: Express.Multer.File) {
-    console.log(file);
-    return { message: 'File uploaded successfully' };
+    ),
+  )
+  async handleMultipartData(@UploadedFiles() files: { video?: Express.Multer.File[]; audio?: Express.Multer.File[] }, @Body() body: any) {
+    console.log('Uploaded File:', files);
+    console.log('Form Data:', body);
+
+    // Check if file is present
+    if (!files.audio || !files.video) {
+      throw new BadRequestException('Both Files is required');
+    }
+
+    const audioFile = files.audio[0];
+    const videoFile = files.video[0];
+
+    try {
+      const transcript = await this.transcriptionService.transcribeAudio(audioFile.path);
+
+      return {
+        message: 'Files uploaded and audio transcribed successfully',
+        transcript: transcript,
+        videoFile: videoFile.filename,
+        audioFile: audioFile.filename,
+        formData: body,
+      };
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new BadRequestException('Error processing the upload');
+    }
   }
 }
-
-
-
-
 
 // @Controller('video-interview')
 // export class VideoInterviewController {
@@ -112,4 +147,3 @@ export class VideoInterviewController {
 //       throw new HttpException('Error', HttpStatus.INTERNAL_SERVER_ERROR);
 //     }
 //   }
-
