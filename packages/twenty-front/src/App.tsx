@@ -142,6 +142,8 @@ const createRouter = (isBillingEnabled?: boolean) =>
           <Route path={indexAppPath.getIndexAppPath()} element={<></>} />
           <Route path={AppPath.TasksPage} element={<Tasks />} />
           <Route path={AppPath.ChatsPage} element={<Chats />} />
+          <Route path={`${AppPath.ChatsPage}/:candidateId`} element={<Chats />} />
+
           <Route path={AppPath.Impersonate} element={<ImpersonateEffect />} />
           <Route path={AppPath.RecordIndexPage} element={<RecordIndexPage />} />
           <Route path={AppPath.RecordShowPage} element={<RecordShowPage />} />

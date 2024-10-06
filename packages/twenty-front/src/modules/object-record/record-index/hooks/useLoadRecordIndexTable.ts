@@ -1,4 +1,4 @@
-import { useRecoilValue, useSetRecoilState } from 'recoil';
+import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 
 import { currentWorkspaceState } from '@/auth/states/currentWorkspaceState';
 import { useObjectMetadataItem } from '@/object-metadata/hooks/useObjectMetadataItem';
@@ -9,25 +9,20 @@ import { useRecordTableRecordGqlFields } from '@/object-record/record-index/hook
 import { useRecordTableStates } from '@/object-record/record-table/hooks/internal/useRecordTableStates';
 import { useRecordTable } from '@/object-record/record-table/hooks/useRecordTable';
 import { SIGN_IN_BACKGROUND_MOCK_COMPANIES } from '@/sign-in-background-mock/constants/SignInBackgroundMockCompanies';
+import { useEffect } from 'react';
+import { refetchFunctionAtom } from '@/object-record/record-table/states/refetchFunctionAtom';
 
-export const useFindManyParams = (
-  objectNameSingular: string,
-  recordTableId?: string,
-) => {
+export const useFindManyParams = (objectNameSingular: string, recordTableId?: string) => {
   const { objectMetadataItem } = useObjectMetadataItem({
     objectNameSingular,
   });
 
-  const { tableFiltersState, tableSortsState } =
-    useRecordTableStates(recordTableId);
+  const { tableFiltersState, tableSortsState } = useRecordTableStates(recordTableId);
 
   const tableFilters = useRecoilValue(tableFiltersState);
   const tableSorts = useRecoilValue(tableSortsState);
 
-  const filter = turnObjectDropdownFilterIntoQueryFilter(
-    tableFilters,
-    objectMetadataItem?.fields ?? [],
-  );
+  const filter = turnObjectDropdownFilterIntoQueryFilter(tableFilters, objectMetadataItem?.fields ?? []);
 
   const orderBy = turnSortsIntoOrderBy(objectMetadataItem, tableSorts);
 
@@ -39,8 +34,7 @@ export const useLoadRecordIndexTable = (objectNameSingular: string) => {
     objectNameSingular,
   });
 
-  const { setRecordTableData, setIsRecordTableInitialLoading } =
-    useRecordTable();
+  const { setRecordTableData, setIsRecordTableInitialLoading } = useRecordTable();
   const { tableLastRowVisibleState } = useRecordTableStates();
   const setLastRowVisible = useSetRecoilState(tableLastRowVisibleState);
   const currentWorkspace = useRecoilValue(currentWorkspaceState);
@@ -48,13 +42,7 @@ export const useLoadRecordIndexTable = (objectNameSingular: string) => {
 
   const recordGqlFields = useRecordTableRecordGqlFields({ objectMetadataItem });
 
-  const {
-    records,
-    loading,
-    totalCount,
-    fetchMoreRecords,
-    queryStateIdentifier,
-  } = useFindManyRecords({
+  const { records, loading, totalCount, fetchMoreRecords, queryStateIdentifier, refetchRecords } = useFindManyRecords({
     ...params,
     recordGqlFields,
     onCompleted: () => {
@@ -66,15 +54,19 @@ export const useLoadRecordIndexTable = (objectNameSingular: string) => {
     },
   });
 
+  const [, setRefetchFunction] = useRecoilState(refetchFunctionAtom);
+
+  useEffect(() => {
+    setRefetchFunction(() => refetchRecords);
+  }, [objectNameSingular]);
+
   return {
-    records:
-      currentWorkspace?.activationStatus === 'active'
-        ? records
-        : SIGN_IN_BACKGROUND_MOCK_COMPANIES,
+    records: currentWorkspace?.activationStatus === 'active' ? records : SIGN_IN_BACKGROUND_MOCK_COMPANIES,
     totalCount: totalCount,
     loading,
     fetchMoreRecords,
     queryStateIdentifier,
     setRecordTableData,
+    refetchRecords,
   };
 };

@@ -26,15 +26,11 @@ export type ViewBarProps = {
   viewBarId: string;
   className?: string;
   optionsDropdownButton: ReactNode;
+  handleRefresh?: () => void;
   onCurrentViewChange: (view: GraphQLView | undefined) => void | Promise<void>;
 };
 
-export const ViewBar = ({
-  viewBarId,
-  className,
-  optionsDropdownButton,
-  onCurrentViewChange,
-}: ViewBarProps) => {
+export const ViewBar = ({ viewBarId, className, optionsDropdownButton, onCurrentViewChange, handleRefresh }: ViewBarProps) => {
   const { objectNamePlural } = useParams();
 
   const filterDropdownId = 'view-filter';
@@ -47,10 +43,7 @@ export const ViewBar = ({
   }
 
   return (
-    <ViewScope
-      viewScopeId={viewBarId}
-      onCurrentViewChange={onCurrentViewChange}
-    >
+    <ViewScope viewScopeId={viewBarId} onCurrentViewChange={onCurrentViewChange}>
       <ViewBarEffect viewBarId={viewBarId} />
       <ViewBarFilterEffect filterDropdownId={filterDropdownId} />
       <ViewBarSortEffect sortDropdownId={sortDropdownId} />
@@ -60,9 +53,8 @@ export const ViewBar = ({
       <ViewBarPageTitle viewBarId={viewBarId} />
       <TopBar
         className={className}
-        leftComponent={
-          loading ? <ViewBarSkeletonLoader /> : <ViewPickerDropdown />
-        }
+        handleRefresh={handleRefresh}
+        leftComponent={loading ? <ViewBarSkeletonLoader /> : <ViewPickerDropdown />}
         displayBottomBorder={false}
         rightComponent={
           <>

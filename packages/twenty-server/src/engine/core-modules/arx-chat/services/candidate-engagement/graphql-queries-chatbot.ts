@@ -1,3 +1,50 @@
+export const graphqlToFetchOneWhatsappMessageByWhatsappId = `
+query FindOneWhatsappMessage($whatsappMessageId: String!) {
+  whatsappMessage(filter: {whatsappMessageId: {eq: $whatsappMessageId}}) {
+    id
+    candidateId
+    whatsappMessageId
+    message
+    messageObj
+  }
+}
+`;
+
+export const graphqlToFetchActiveJob = `query FindManyJobs($filter: JobFilterInput, $orderBy: [JobOrderByInput], $lastCursor: String, $limit: Int) {
+        jobs(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
+          edges {
+            node {
+              candidates {
+                edges {
+                  node {
+                    id
+                  }
+                }
+              }
+            }
+          }
+        }
+      }`
+
+
+export const graphqlQueryToFindMessageByWAMId = `query FindManyWhatsappMessages($filter: WhatsappMessageFilterInput, $orderBy: [WhatsappMessageOrderByInput], $lastCursor: String, $limit: Int) {
+  whatsappMessages(
+    filter: $filter
+    orderBy: $orderBy
+    first: $limit
+    after: $lastCursor
+  ) {
+    edges {
+      node {
+        __typename
+        id
+        whatsappMessageId
+      }
+  }
+}}
+  `;
+
+
 export const graphqlQueryToFindPeopleByPhoneNumber = `query FindManyPeople($filter: PersonFilterInput, $orderBy: [PersonOrderByInput], $lastCursor: String, $limit: Int) {
   people(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
     edges {
@@ -10,6 +57,7 @@ export const graphqlQueryToFindPeopleByPhoneNumber = `query FindManyPeople($filt
             edges{
                 node {
                     id
+                    name
                     engagementStatus
                     jobs{
                         id
@@ -17,10 +65,12 @@ export const graphqlQueryToFindPeopleByPhoneNumber = `query FindManyPeople($filt
                         isActive
                         recruiterId
                         jobLocation
+                        jobCode
                         createdAt
                         companies {
                             name
                             id
+                            domainName
                             descriptionOneliner
                         }
 
@@ -72,22 +122,7 @@ export const graphqlQueryToCreateOneNewWhatsappMessage = `mutation CreateOneWhat
     }
   }`;
 
-export const graphqlQueryToFindMessageByWAMId = `query FindManyWhatsappMessages($filter: WhatsappMessageFilterInput, $orderBy: [WhatsappMessageOrderByInput], $lastCursor: String, $limit: Int) {
-  whatsappMessages(
-    filter: $filter
-    orderBy: $orderBy
-    first: $limit
-    after: $lastCursor
-  ) {
-    edges {
-      node {
-        __typename
-        id
-        whatsappMessageId
-      }
-  }
-}}
-  `;
+
 
 export const graphqlQueryToUpdateCandidateEngagementStatus = `mutation UpdateOneCandidate($idToUpdate: ID!, $input: CandidateUpdateInput!) {
     updateCandidate(id: $idToUpdate, data: $input) {
@@ -96,8 +131,20 @@ export const graphqlQueryToUpdateCandidateEngagementStatus = `mutation UpdateOne
     }
   }`;
 
+export const graphQlToStopChat = `mutation UpdateOneCandidate($idToUpdate: ID!, $input: CandidateUpdateInput!) {
+  updateCandidate(id: $idToUpdate, data: $input) {
+    __typename
+  }
+}`
 
-  export const graphqlQueryToUpdateReminderStatus = `mutation UpdateOneReminder($idToUpdate: ID!, $input: ReminderUpdateInput!) {
+export const graphqlQueryToUpdateCandidateStatus = `mutation UpdateOneCandidate($idToUpdate: ID!, $input: CandidateUpdateInput!) {
+  updateCandidate(id: $idToUpdate, data: $input) {
+    __typename
+    status
+    }
+  }`;
+
+export const graphqlQueryToUpdateReminderStatus = `mutation UpdateOneReminder($idToUpdate: ID!, $input: ReminderUpdateInput!) {
     updateReminder(id: $idToUpdate, data: $input) {
       updatedAt
       id
@@ -111,28 +158,74 @@ export const graphqlQueryToUpdateMessageDeliveryStatus = `
     whatsappDeliveryStatus
     whatsappMessageId
   }
-}
-  `;
+}`;
 
-export const graphqlQueryToFindEngagedCandidates = `query FindManyPeople($filter: PersonFilterInput, $orderBy: [PersonOrderByInput], $lastCursor: String, $limit: Int) {
-    people(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
+export const graphQlToFetchWhatsappMessages = `query FindManyWhatsappMessages($filter: WhatsappMessageFilterInput, $orderBy: [WhatsappMessageOrderByInput], $lastCursor: String, $limit: Int) {
+  whatsappMessages(
+    filter: $filter
+    orderBy: $orderBy
+    first: $limit
+    after: $lastCursor
+  ) {
+    edges {
+      node {
+        __typename
+        message
+        name
+        typeOfMessage
+        whatsappMessageId
+        audioFilePath
+        candidateId
+        whatsappDeliveryStatus
+        createdAt
+        whatsappProvider
+        phoneFrom
+        id
+        phoneTo
+        position
+      }
+      cursor
+      __typename
+    }
+    pageInfo {
+      hasNextPage
+      startCursor
+      endCursor
+      __typename
+    }
+    totalCount
+    __typename
+  }
+}
+`
+
+export const graphqlQueryToFindEngagedCandidates = `query FindManyPeople($filter: PersonFilterInput, $orderBy: [PersonOrderByInput], $lastCursor: String, ) {
+    people(filter: $filter, orderBy: $orderBy,  after: $lastCursor) {
       edges {
+        cursor
         node {
           candidates {
               edges{
                   node{
                       id
+                      name
                       jobs {
                          name
                          id
                          jobLocation
+                         jobCode
+                         recruiterId
                          companies{
                           name
+                          id
+                          domainName
                           descriptionOneliner
                         }
                       }
                       engagementStatus
                       startChat
+                      status
+                      stopChat
                       candidateReminders{
                         edges{
                             node{
@@ -178,6 +271,29 @@ export const graphqlQueryToFindEngagedCandidates = `query FindManyPeople($filter
       }
     }
   }`;
+
+  export const graphqlToFetchAllCandidatesByStartChat = `
+  query FindManyCandidates($lastCursor: String, $limit: Int, $filter: CandidateFilterInput) {
+    candidates(after: $lastCursor, first: $limit, filter: $filter) {
+      edges {
+        cursor
+        node {
+          id
+          name
+          people {
+            id
+            name {
+              firstName
+              lastName
+            }
+          }
+          startChat
+          stopChat
+        }
+      }
+    }
+  }
+`
 
 export const graphqlQueryTofindManyAttachmentsByJobId = `query FindManyAttachments($filter: AttachmentFilterInput, $orderBy: [AttachmentOrderByInput], $lastCursor: String, $limit: Int) {
     attachments(
@@ -245,6 +361,7 @@ export const graphqlQueryToFindManyQuestionsByJobId = `query FindManyQuestions($
             createdAt
             isActive
             jobLocation
+            jobCode
             updatedAt
           }
           name
@@ -301,6 +418,7 @@ export const graphqlToFindManyAnswers = `query FindManyAnswers($filter: AnswerFi
             createdAt
             updatedAt
             startChat
+            stopChat
           }
           id
         }

@@ -1,3 +1,5 @@
+packages/twenty-server/sessionIds.json
+**/**/sessionIds.json
 **/**/.env
 .DS_Store
 /.idea

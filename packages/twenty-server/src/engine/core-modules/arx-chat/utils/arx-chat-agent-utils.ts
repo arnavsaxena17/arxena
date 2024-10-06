@@ -12,29 +12,25 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 ffmpeg.setFfmpegPath(ffmpegPath);
 ``;
 
-export function sortWhatsAppMessages(peopleData: allDataObjects.People) {
+export function sortWhatsAppMessages(candidateResponseEngagementArr: allDataObjects.PersonNode[]) {
+  console.log("Number of candidates being sorted:", candidateResponseEngagementArr.length)
   // console.log("This is the people data:", JSON.stringify(peopleData));
-  const sortedPeopleData = peopleData; // Deep copy to avoid mutating the original data
-  sortedPeopleData?.edges?.forEach((personEdge) => {
-    personEdge?.node?.candidates?.edges.forEach((candidateEdge) => {
+  const sortedPeopleData:allDataObjects.PersonNode[] = candidateResponseEngagementArr; // Deep copy to avoid mutating the original data
+  candidateResponseEngagementArr?.forEach((personEdge) => {
+    personEdge?.candidates?.edges.forEach((candidateEdge) => {
       candidateEdge?.node?.whatsappMessages?.edges.sort((a, b) => {
         // Sorting in descending order by the createdAt timestamp
-        return (
-          new Date(b.node.createdAt).getTime() -
-          new Date(a.node.createdAt).getTime()
-        );
+        return ( new Date(b.node.createdAt).getTime() - new Date(a.node.createdAt).getTime() );
       });
     });
   });
-  console.log("Candidates have been sorted by the latest WhatsApp message");
+  console.log("Total candidates have been sorted by the latest WhatsApp message::", sortedPeopleData.length);
   return sortedPeopleData;
 }
 
 export function getContentTypeFromFileName(filename: string) {
   const extension = filename?.split(".").pop()?.toLowerCase() ?? "";
-
   let contentType;
-
   switch (extension) {
     case "doc":
       contentType = "application/msword";
@@ -53,6 +49,7 @@ export function getContentTypeFromFileName(filename: string) {
 }
 
 export async function axiosRequest(data: string) {
+  // console.log("Sending a post request to the graphql server:: with data", data);
   const response = await axios.request({
     method: "post",
     url: process.env.GRAPHQL_URL,

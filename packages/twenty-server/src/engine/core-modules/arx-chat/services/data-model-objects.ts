@@ -1,10 +1,15 @@
-import { ChainValues } from '@langchain/core/utils/types';
-import { BaseMessage } from '@langchain/core/messages';
 import Anthropic from '@anthropic-ai/sdk';
 import OpenAI from 'openai';
 
 // Define the possible roles in the chat
 export type ChatRole = 'system' | 'user' | 'tool' | 'assistant';
+
+// export const statusesArray = ['INTERESTED','NOT_INTERESTED','SCREENING','NOT_FIT', 'CV_RECEIVED','RECRUITER_INTERVIEW', 'NEGOTIATION'] as const;
+export const statusesArray = ['SCREENING', "INTERESTED", "NOT_INTERESTED", "NOT_FIT",'CV_SENT',"CV_RECEIVED",'RECRUITER_INTERVIEW','CLIENT_INTERVIEW','NEGOTIATION'] as const;
+// 
+export type statuses = typeof statusesArray[number];
+
+// export type statuses = 'SCREENING' | 'RECRUITER_INTERVIEW' | 'CV_SENT' | 'CLIENT_INTERVIEW' | 'NEGOTIATION';
 
 // Interface for chat message without tool call
 export interface ChatMessage {
@@ -111,6 +116,19 @@ export interface sendWhatsappTemplateMessageObjectType {
   jobPositionName: string;
   jobLocation: string;
 }
+export interface sendWhatsappUtilityMessageObjectType {
+  template_name: string;
+  recipient: string;
+  recruiterName: string;
+  candidateFirstName: string;
+  recruiterJobTitle: string;
+  recruiterCompanyName: string;
+  recruiterCompanyDescription: string;
+  descriptionOneliner:string
+  jobPositionName: string;
+  jobCode: string;
+  jobLocation: string;
+}
 
 export interface WhatsAppMessagesEdge {
   node: MessageNode;
@@ -118,6 +136,20 @@ export interface WhatsAppMessagesEdge {
 
 export interface WhatsAppMessages {
   edges: WhatsAppMessagesEdge[];
+}
+
+
+export interface Candidate {
+  id: string;
+  name: string;
+  startChat: boolean;
+  people: {
+    id: string;
+    name: {
+      firstName: string;
+      lastName: string;
+    };
+  };
 }
 
 export interface CandidateNode {
@@ -128,11 +160,22 @@ export interface CandidateNode {
   email: string;
   input: string;
   startChat: boolean;
+  stopChat: boolean;
+  status:string;
   whatsappMessages: WhatsAppMessages;
   emailMessages: EmailMessages;
   jobs: Jobs;
   candidateReminders: Reminders;
 }
+
+// export interface ArxJobs {
+//   name: string;
+//   id: string;
+//   recruiterId: string;
+//   // companies: Companies;
+//   jobLocation: string;
+//   // whatsappMessages: WhatsAppMessages;
+// }
 
 export interface Reminders {
   edges: ReminderEdge[];
@@ -221,6 +264,7 @@ export interface companyInfoType {
 }
 
 export interface Companies {
+  domainName: any;
   name: string;
   companyId: string;
   descriptionOneliner: string;
@@ -238,6 +282,7 @@ export interface Jobs {
   id: string;
   recruiterId: string;
   jobLocation: string;
+  jobCode:string;
   companies: Companies;
   whatsappMessages: WhatsAppMessages;
 }
@@ -277,7 +322,7 @@ export const jobProfile: jobProfileType = {
 };
 
 export const recruiterProfile: recruiterProfileType = {
-  name: 'Arnav Doe',
+  name: 'Arnav Saxena',
   first_name: 'Arnav',
   phone: '919326970534',
   email: 'arnav@arxena.com',
@@ -298,9 +343,11 @@ export const emptyCandidateProfileObj: CandidateNode = {
     companies: {
       name: '',
       companyId: '',
+      domainName: '',
       descriptionOneliner: '',
     },
     jobLocation: '',
+    jobCode: "",
 
     whatsappMessages: {
       edges: [
@@ -337,12 +384,13 @@ export const emptyCandidateProfileObj: CandidateNode = {
       },
     ],
   },
-
+  status:"",
   engagementStatus: false,
   phoneNumber: '',
   email: '',
   input: '',
   startChat: false,
+  stopChat: false,
   whatsappMessages: {
     edges: [
       {
