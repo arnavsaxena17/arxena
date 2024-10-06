@@ -43,6 +43,7 @@ packages/twenty-server/auth_info_baileys/*
 packages/twenty-server/uploads/*
 packages/twenty-server/baileys_store_multi.json
 packages/twenty-server/baileys_auth_info/*
+packages/twenty-server/uploads/*
 
 .env*
 *.log
