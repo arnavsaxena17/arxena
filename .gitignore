@@ -40,7 +40,7 @@ storybook-static
 packages/twenty-server/.attachments/*
 packages/twenty-server/.voice-messages/*
 packages/twenty-server/auth_info_baileys/*
-
+packages/twenty-server/uploads/*
 packages/twenty-server/baileys_store_multi.json
 packages/twenty-server/baileys_auth_info/*
 
