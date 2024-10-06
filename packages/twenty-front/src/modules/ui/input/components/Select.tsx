@@ -68,12 +68,7 @@ const StyledControlLabel = styled.div`
 `;
 
 const StyledIconChevronDown = styled(IconChevronDown)<{ disabled?: boolean }>`
-<<<<<<< HEAD
-  color: ${({ disabled, theme }) =>
-    disabled ? theme.font.color.extraLight : theme.font.color.tertiary};
-=======
   color: ${({ disabled, theme }) => (disabled ? theme.font.color.extraLight : theme.font.color.tertiary)};
->>>>>>> f1b1a1a513bb5002db9aa29394eaf568639c18b4
 `;
 
 export const Select = <Value extends string | number | null>({
@@ -96,47 +91,17 @@ export const Select = <Value extends string | number | null>({
   const theme = useTheme();
   const [searchInputValue, setSearchInputValue] = useState('');
 
-<<<<<<< HEAD
-  const selectedOption =
-    options.find(({ value: key }) => key === value) ||
-    options[0] ||
-    emptyOption;
-  const filteredOptions = useMemo(
-    () =>
-      searchInputValue
-        ? options.filter(({ label }) =>
-            label.toLowerCase().includes(searchInputValue.toLowerCase()),
-          )
-        : options,
-    [options, searchInputValue],
-  );
-
-  const isDisabled = disabledFromProps || options.length <= 1;
-=======
   const selectedOption = options.find(({ value: key }) => key === value) || emptyOption;
   const filteredOptions = useMemo(() => (searchInputValue ? options.filter(({ label }) => label.toLowerCase().includes(searchInputValue.toLowerCase())) : options), [options, searchInputValue]);
 
   const isDisabled = disabledFromProps || options.length <= 0;
->>>>>>> f1b1a1a513bb5002db9aa29394eaf568639c18b4
 
   const { closeDropdown } = useDropdown(dropdownId);
 
   const selectControl = (
     <StyledControlContainer disabled={isDisabled}>
       <StyledControlLabel>
-<<<<<<< HEAD
-        {!!selectedOption?.Icon && (
-          <selectedOption.Icon
-            color={
-              isDisabled ? theme.font.color.light : theme.font.color.primary
-            }
-            size={theme.icon.size.md}
-            stroke={theme.icon.stroke.sm}
-          />
-        )}
-=======
         {!!selectedOption?.Icon && <selectedOption.Icon color={isDisabled ? theme.font.color.light : theme.font.color.primary} size={theme.icon.size.md} stroke={theme.icon.stroke.sm} />}
->>>>>>> f1b1a1a513bb5002db9aa29394eaf568639c18b4
         {selectedOption?.label}
       </StyledControlLabel>
       <StyledIconChevronDown disabled={isDisabled} size={theme.icon.size.md} />
@@ -144,17 +109,7 @@ export const Select = <Value extends string | number | null>({
   );
 
   return (
-<<<<<<< HEAD
-    <StyledContainer
-      className={className}
-      fullWidth={fullWidth}
-      tabIndex={0}
-      onBlur={onBlur}
-      ref={selectContainerRef}
-    >
-=======
     <StyledContainer className={className} fullWidth={fullWidth} tabIndex={0} onBlur={onBlur} ref={selectContainerRef}>
->>>>>>> f1b1a1a513bb5002db9aa29394eaf568639c18b4
       {!!label && <StyledLabel>{label}</StyledLabel>}
       {isDisabled ? (
         selectControl
@@ -167,27 +122,11 @@ export const Select = <Value extends string | number | null>({
           disableBlur={disableBlur}
           dropdownComponents={
             <>
-<<<<<<< HEAD
-              {!!withSearchInput && (
-                <DropdownMenuSearchInput
-                  autoFocus
-                  value={searchInputValue}
-                  onChange={(event) => setSearchInputValue(event.target.value)}
-                />
-              )}
-              {!!withSearchInput && !!filteredOptions.length && (
-                <DropdownMenuSeparator />
-              )}
-              {!!filteredOptions.length && (
-                <DropdownMenuItemsContainer hasMaxHeight>
-                  {filteredOptions.map((option) => (
-=======
               {!!withSearchInput && <DropdownMenuSearchInput autoFocus value={searchInputValue} onChange={event => setSearchInputValue(event.target.value)} />}
               {!!withSearchInput && !!filteredOptions.length && <DropdownMenuSeparator />}
               {!!filteredOptions.length && (
                 <DropdownMenuItemsContainer hasMaxHeight>
                   {filteredOptions.map(option => (
->>>>>>> f1b1a1a513bb5002db9aa29394eaf568639c18b4
                     <MenuItem
                       key={option.value}
                       LeftIcon={option.Icon}
