@@ -82,6 +82,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
       individual?.candidates?.edges[0]?.node?.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       individual?.phone.toLowerCase().includes(searchQuery.toLowerCase()) ||
       individual?.candidates?.edges[0]?.node?.id?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      individual?.candidates?.edges[0]?.node.status.toLowerCase().includes(searchQuery.toLowerCase()) ||
       individual?.id?.toLowerCase().includes(searchQuery.toLowerCase());
 
     const matchesJob = 
