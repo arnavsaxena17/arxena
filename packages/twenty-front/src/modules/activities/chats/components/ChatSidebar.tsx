@@ -15,8 +15,37 @@ const StyledSidebarContainer = styled.div`
   width: 20vw;
   height: 100%;
   overflow-y: auto;
+  background-color: #f5f5f5;
+  border-right: 1px solid #e0e0e0;
 `;
 
+const StyledDropdownContainer = styled.div`
+  display: flex;
+  justify-content: space-between;
+  padding: 10px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e0e0e0;
+`;
+
+const StyledSelect = styled.select`
+  padding: 8px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  background-color: white;
+  font-size: 14px;
+  color: #333;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.3s;
+
+  &:hover, &:focus {
+    border-color: #007bff;
+  }
+`;
+
+const StyledSearchBox = styled(SearchBox)`
+  margin: 10px;
+`;
 
 interface ChatSidebarProps {
   individuals: frontChatTypes.PersonNode[];
@@ -26,6 +55,18 @@ interface ChatSidebarProps {
   jobs: Job[];
 }
 
+const statusLabels: { [key: string]: string } = {
+  "NOT_INTERESTED": "Not Interested",
+  "INTERESTED": "Interested",
+  "CV_RECEIVED": "CV Received",
+  "NOT_FIT": "Not Fit",
+  "SCREENING": "Screening",
+  "RECRUITER_INTERVIEW": "Recruiter Interview",
+  "CV_SENT": "CV Sent",
+  "CLIENT_INTERVIEW": "Client Interview",
+  "NEGOTIATION": "Negotiation"
+};
+
 const ChatSidebar: React.FC<ChatSidebarProps> = ({
   individuals,
   selectedIndividual,
@@ -33,11 +74,11 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   unreadMessages,
   jobs,
 }) => {
-
   const navigate = useNavigate();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedJob, setSelectedJob] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState("");
 
   const sidebarRef = useRef<HTMLDivElement>(null);
 
@@ -50,29 +91,23 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     }
   };
 
-
   useEffect(() => {
-    console.log("Jobs received in ChatSidebar:", jobs); // Debug log
+    console.log("Jobs received in ChatSidebar:", jobs);
   }, [jobs]);
 
   useEffect(() => {
-    // Function to handle clicks outside the sidebar
     const handleClickOutside = (event: MouseEvent) => {
       if (sidebarRef.current && !sidebarRef.current.contains(event.target as Node)) {
-        // If the click is outside the sidebar, clear the search query
         setSearchQuery("");
       }
     };
 
-    // Add event listener
     document.addEventListener("mousedown", handleClickOutside);
 
-    // Remove event listener on cleanup
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
-
 
   const filteredIndividuals = individuals.filter((individual) => {
     const matchesSearch = 
@@ -88,60 +123,63 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     const matchesJob = 
       selectedJob === "" || 
       individual?.candidates?.edges[0]?.node?.jobs?.id === selectedJob;
-    return matchesSearch && matchesJob;
+
+    const matchesStatus =
+      selectedStatus === "" ||
+      individual?.candidates?.edges[0]?.node?.status === selectedStatus;
+
+    return matchesSearch && matchesJob && matchesStatus;
   });
+
+  const sortedIndividuals = filteredIndividuals.sort((a, b) => {
+    const getLastMessageTimestamp = (individual: frontChatTypes.PersonNode) => {
+      const messagesEdges = individual.candidates?.edges[0]?.node?.whatsappMessages?.edges || [];
+      
+      const latestMessage = messagesEdges.reduce((latest, edge) => {
+        const messageTimestamp = edge.node?.createdAt || '';
+        const messageDate = new Date(messageTimestamp);
   
-
-  // const sortedIndividuals = filteredIndividuals.sort((a, b) => {
-  //   const aLastMessageTimestamp = a.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.createdAt || '';
-  //   const bLastMessageTimestamp = b.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.createdAt || '';
-    
-  //   // Convert timestamps to Date objects for comparison
-  //   const aDate = new Date(aLastMessageTimestamp);
-  //   const bDate = new Date(bLastMessageTimestamp);
-    
-  //   // Sort in descending order (most recent first)
-  //   return bDate.getTime() - aDate.getTime();
-  // });
-
-
-
-    const sortedIndividuals = filteredIndividuals.sort((a, b) => {
-      // Function to get the latest message timestamp from an individual's whatsappMessages edges
-      const getLastMessageTimestamp = (individual: frontChatTypes.PersonNode) => {
-        const messagesEdges = individual.candidates?.edges[0]?.node?.whatsappMessages?.edges || [];
-        
-        // Find the most recent message
-        const latestMessage = messagesEdges.reduce((latest, edge) => {
-          const messageTimestamp = edge.node?.createdAt || '';
-          const messageDate = new Date(messageTimestamp);
-    
-          // Check if this message is more recent than the current latest
-          return messageDate > latest ? messageDate : latest;
-        }, new Date(0)); // Initialize with the oldest possible date
-    
-        return latestMessage;
-      };
-    
-      // Get the latest message timestamps for both individuals
-      const aDate = getLastMessageTimestamp(a);
-      const bDate = getLastMessageTimestamp(b);
-    
-      // Sort in descending order (most recent first)
-      return bDate.getTime() - aDate.getTime();
-    });
+        return messageDate > latest ? messageDate : latest;
+      }, new Date(0));
   
+      return latestMessage;
+    };
+  
+    const aDate = getLastMessageTimestamp(a);
+    const bDate = getLastMessageTimestamp(b);
+  
+    return bDate.getTime() - aDate.getTime();
+  });
 
-  console.log("Sorted individuals:", sortedIndividuals); // Debug log
+  console.log("Sorted individuals:", sortedIndividuals);
   
   return (
     <StyledSidebarContainer ref={sidebarRef}>
-      <JobDropdown 
-        jobs={jobs} 
-        selectedJob={selectedJob} 
-        onJobChange={setSelectedJob} 
-      />
-      <SearchBox
+      <StyledDropdownContainer>
+        <StyledSelect
+          value={selectedJob}
+          onChange={(e) => setSelectedJob(e.target.value)}
+        >
+          <option value="">All Jobs</option>
+          {jobs.map((job) => (
+            <option key={job.node.id} value={job.node.id}>
+              {job.node.name}
+            </option>
+          ))}
+        </StyledSelect>
+        <StyledSelect
+          value={selectedStatus}
+          onChange={(e) => setSelectedStatus(e.target.value)}
+        >
+          <option value="">All Statuses</option>
+          {Object.entries(statusLabels).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </StyledSelect>
+      </StyledDropdownContainer>
+      <StyledSearchBox
         placeholder="Search chats"
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
