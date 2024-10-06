@@ -14,7 +14,33 @@ import { p } from 'node_modules/msw/lib/core/GraphQLHandler-907fc607';
 import { useHotkeys } from 'react-hotkeys-hook';
 
 import { useNavigate } from 'react-router-dom';
+// import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
+
+const statusLabels: { [key: string]: string } = {
+  "NOT_INTERESTED": "Not Interested",
+  "INTERESTED": "Interested",
+  "CV_RECEIVED": "CV Received",
+  "NOT_FIT": "Not Fit",
+  "SCREENING": "Screening",
+  "RECRUITER_INTERVIEW": "Recruiter Interview",
+  "CV_SENT": "CV Sent",
+  "CLIENT_INTERVIEW": "Client Interview",
+  "NEGOTIATION": "Negotiation"
+};
+
+const statusesArray = Object.keys(statusLabels);
+
+
+
+const StyledSelect = styled.select`
+  padding: 0.5em;
+  margin-right: 1em;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: white;
+  font-size: 14px;
+`;
 
 const PersonIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -306,6 +332,45 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
     );
   };
 
+    const handleStatusUpdate = async (newStatus: string) => {
+      try {
+        const response = await axios.post(
+          process.env.REACT_APP_SERVER_BASE_URL+'/graphql',
+          {
+            query: `
+              mutation UpdateOneCandidate($idToUpdate: ID!, $input: CandidateUpdateInput!) {
+                updateCandidate(id: $idToUpdate, data: $input) {
+                  whatsappProvider
+                  startChat
+                  status
+                  jobsId
+                  createdAt
+                  updatedAt
+                  stopChat
+                }
+              }
+            `,
+            variables: {
+              idToUpdate: currentCandidateId,
+              input: { status: newStatus }
+            }
+          },
+          {
+            headers: {
+              'authorization': `Bearer ${tokenPair?.accessToken?.token}`,
+              'content-type': 'application/json',
+              'x-schema-version': '66',
+            }
+          }
+        );
+        console.log('Status updated:', response.data);
+        // You might want to refresh the candidate data here
+      } catch (error) {
+        console.error('Error updating status:', error);
+      }
+    };
+  
+
     const handleRetrieveBotMessage = async (
     phoneNumber: string | undefined,
     latestResponseGenerated: string,
@@ -382,13 +447,25 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
           <StyledWindow>
             <ChatView ref={chatViewRef}>
             <StyledTopBar>
-            <div>
-              {`${currentIndividual?.name.firstName} ${currentIndividual?.name.lastName} || ${currentIndividual?.phone} || Person: ${currentIndividual?.id} || Candidate: ${currentIndividual?.candidates.edges[0].node.id}`}
-              <br />
-              {`Messages: ${messageHistory.length} || Last Status: ${currentIndividual?.candidates?.edges[0]?.node?.status} || Current Job: ${currentIndividual?.candidates?.edges[0]?.node?.jobs.name}`}
-            </div>
+              <div>
+                {`${currentIndividual?.name.firstName} ${currentIndividual?.name.lastName} || ${currentIndividual?.phone} || Person: ${currentIndividual?.id} || Candidate: ${currentIndividual?.candidates.edges[0].node.id}`}
+                <br />
+                {`Messages: ${messageHistory.length} || Current Job: ${currentIndividual?.candidates?.edges[0]?.node?.jobs.name}`}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center' }}>
+                <StyledSelect 
+                  value={lastStatus || ''}
+                  onChange={(e) => handleStatusUpdate(e.target.value)}
+                >
+                  <option value="" disabled>Update Status</option>
+                  {statusesArray.map((status) => (
+                    <option key={status} value={status}>
+                      {statusLabels[status]}
+                    </option>
+                  ))}
+                </StyledSelect>
                 <StyledButtonGroup>
-                  <StyledButton onClick={handleStopCandidate} bgColor="black" data-tooltip="Person">
+                  <StyledButton onClick={handleStopCandidate} bgColor="black" data-tooltip="Stop Chat">
                     <StopIcon />
                   </StyledButton>
                   <StyledButton onClick={handleNavigateToPersonPage} bgColor="black" data-tooltip="Person">
@@ -398,7 +475,9 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
                     <CandidateIcon />
                   </StyledButton>
                 </StyledButtonGroup>
-              </StyledTopBar>
+              </div>
+            </StyledTopBar>
+
               <StyledScrollingView>
                 {messageHistory.map((message, index) => {
                   const showDateSeparator = index === 0 || formatDate(messageHistory[index - 1]?.createdAt) !== formatDate(message?.createdAt);
