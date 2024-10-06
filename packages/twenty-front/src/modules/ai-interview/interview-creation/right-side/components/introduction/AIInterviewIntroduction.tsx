@@ -15,20 +15,11 @@ const StyledContainer = styled.div`
   scroll-behavior: smooth;
 `;
 
-export const AIInterviewIntroduction = ({
-  id,
-  aIModelsArr,
-}: {
-  id: string;
-  aIModelsArr: any;
-}) => {
+export const AIInterviewIntroduction = ({ id, aIModelsArr }: { id: string; aIModelsArr: any }) => {
   const { questionToDisplay } = useQuestionToDisplay();
 
   return (
-    <StyledContainer
-      id={id}
-      style={{ display: id === questionToDisplay ? 'flex' : 'none' }}
-    >
+    <StyledContainer id={id} style={{ display: id === questionToDisplay ? 'flex' : 'none' }}>
       <EthnicityAndModelSelectionContainer aIModelsArr={aIModelsArr} />
       <AdditionalInformation />
       <Instructions />

@@ -9,13 +9,7 @@ const StyledContainer = styled.div`
   flex-direction: column;
 `;
 
-export const QuestionTypeSelectionContainer = ({
-  id,
-  questionNumber,
-}: {
-  id: string;
-  questionNumber: number;
-}) => {
+export const QuestionTypeSelectionContainer = ({ id, questionNumber }: { id: string; questionNumber: number }) => {
   return (
     <StyledContainer>
       <H2Title title={`Question ${questionNumber}`} />

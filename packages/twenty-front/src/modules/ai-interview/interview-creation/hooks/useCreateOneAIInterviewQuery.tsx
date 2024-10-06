@@ -3,15 +3,9 @@ import { useMutation } from '@apollo/client';
 import { CREATE_ONE_AI_INTERVIEW } from '@/ai-interview/interview-creation/queries/createOneAIInterview';
 
 export const useCreateOneAIInterviewQuery = () => {
-  const [createOneAIInterview, { data, loading, error }] = useMutation(
-    CREATE_ONE_AI_INTERVIEW,
-  );
+  const [createOneAIInterview, { data, loading, error }] = useMutation(CREATE_ONE_AI_INTERVIEW);
 
-  const createAIInterview = async (
-    introduction: any,
-    objectRecordId: string,
-    newAIInterviewID: string,
-  ) => {
+  const createAIInterview = async (introduction: any, objectRecordId: string, newAIInterviewID: string) => {
     let instructionsAll: string | undefined = undefined;
 
     if (introduction.instructions !== undefined) {
@@ -20,6 +14,8 @@ export const useCreateOneAIInterviewQuery = () => {
         instructionsAll = instructionsAll + introduction.instructions[i];
       }
     }
+
+    console.log(introduction.aIModelId);
 
     const input = {
       id: newAIInterviewID,

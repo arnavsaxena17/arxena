@@ -17,6 +17,9 @@ import { AppModule } from './app.module';
 import { generateFrontConfig } from './utils/generate-front-config';
 import { settings } from './engine/constants/settings';
 import { LoggerService } from './engine/integrations/logger/logger.service';
+import { json, urlencoded } from 'express';
+import * as express from 'express';
+import * as path from 'path';
 // import { BaileysModule } from 'src/engine/core-modules/baileys/baileys.module';
 
 const bootstrap = async () => {
@@ -67,6 +70,18 @@ const bootstrap = async () => {
 
   // Create the env-config.js of the front at runtime
   generateFrontConfig();
+
+  app.enableCors({
+    origin: ['http://localhost:3001', 'http://127.0.0.1:3001'],
+    methods: 'GET,POST,PUT,DELETE,OPTIONS,HEAD,PATCH',
+    allowedHeaders: 'Content-Type, Authorization, x-schema-version',
+    credentials: true,
+  });
+
+  app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
+
+  app.use(json({ limit: '50mb' }));
+  app.use(urlencoded({ limit: '50mb', extended: true }));
 
   await app.listen(process.env.PORT ?? 3000);
 

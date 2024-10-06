@@ -41,15 +41,10 @@ const StyledEthnicityDropdownsContainer = styled.div`
   gap: 4px;
 `;
 
-export const EthnicityAndModelSelectionContainer = ({
-  aIModelsArr,
-}: {
-  aIModelsArr: any;
-}) => {
+export const EthnicityAndModelSelectionContainer = ({ aIModelsArr }: { aIModelsArr: any }) => {
   const [selectedCountry, setSelectedCountry] = useState<Country>();
   const countriesArr = useCountries();
-  const [selectedLanguage, setSelectedLanguage] =
-    useState<string>('Select Language');
+  const [selectedLanguage, setSelectedLanguage] = useState<string>('Select Language');
 
   const availableLanguages: string[] = useMemo(() => {
     const availableLanguagesArr: any = [];
@@ -63,10 +58,7 @@ export const EthnicityAndModelSelectionContainer = ({
     const languagesArr: string[] = [];
 
     for (let i = 0; i < availableLanguagesArr.length; i++) {
-      if (
-        languagesArr.find((e: string) => e === availableLanguagesArr[i]) ===
-        undefined
-      ) {
+      if (languagesArr.find((e: string) => e === availableLanguagesArr[i]) === undefined) {
         languagesArr.push(availableLanguagesArr[i]);
       }
     }
@@ -81,9 +73,7 @@ export const EthnicityAndModelSelectionContainer = ({
   const aIModelsCountries: string[] = [];
 
   for (let i = 0; i < aIModelsCountriesArr.length; i++) {
-    if (
-      aIModelsCountries.find((e) => e === aIModelsCountriesArr[i]) === undefined
-    ) {
+    if (aIModelsCountries.find(e => e === aIModelsCountriesArr[i]) === undefined) {
       aIModelsCountries.push(aIModelsCountriesArr[i]);
     }
   }
@@ -91,9 +81,7 @@ export const EthnicityAndModelSelectionContainer = ({
   const countries: Country[] = [];
 
   for (let i = 0; i < aIModelsCountries.length; i++) {
-    const country = countriesArr.find(
-      (e) => e.countryCode === aIModelsCountries[i],
-    );
+    const country = countriesArr.find(e => e.countryCode === aIModelsCountries[i]);
     if (country !== undefined) {
       countries.push(country);
     }
@@ -117,23 +105,11 @@ export const EthnicityAndModelSelectionContainer = ({
         <StyledEthnicityContainer>
           <StyledLabel>{'Ethnicity'}</StyledLabel>
           <StyledEthnicityDropdownsContainer>
-            <EthnicityCountryPickerDropdownButton
-              countries={countries}
-              selectedCountry={selectedCountry}
-              onChange={handleCountryChange}
-            />
-            <EthnicityLanguageSelect
-              selectedLanguage={selectedLanguage}
-              availableLanguages={availableLanguages}
-              onChange={handleLanguageChange}
-            />
+            <EthnicityCountryPickerDropdownButton countries={countries} selectedCountry={selectedCountry} onChange={handleCountryChange} />
+            <EthnicityLanguageSelect selectedLanguage={selectedLanguage} availableLanguages={availableLanguages} onChange={handleLanguageChange} />
           </StyledEthnicityDropdownsContainer>
         </StyledEthnicityContainer>
-        <EthnicityModelSelect
-          aIModelsArr={aIModelsArr}
-          selectedLanguage={selectedLanguage}
-          selectedCountry={selectedCountry}
-        />
+        <EthnicityModelSelect aIModelsArr={aIModelsArr} selectedLanguage={selectedLanguage} selectedCountry={selectedCountry} />
       </StyledDropdownsContianer>
     </StyledEthnicitySelectionContainer>
   );

@@ -15,28 +15,13 @@ const StyledContainer = styled.div`
   scroll-behavior: smooth;
 `;
 
-export const AIInterviewQuestion = ({
-  id,
-  questionNumber,
-}: {
-  id: string;
-  questionNumber: number;
-}) => {
+export const AIInterviewQuestion = ({ id, questionNumber }: { id: string; questionNumber: number }) => {
   const { questionToDisplay } = useQuestionToDisplay();
 
   return (
-    <StyledContainer
-      id={id}
-      style={{ display: id === questionToDisplay ? 'flex' : 'none' }}
-    >
-      <QuestionTypeSelectionContainer
-        id={`${SELECT_QUESTION_TYPE_DROPDOWN_ID}-${id}`}
-        questionNumber={questionNumber}
-      />
-      <AnswerTypeSelect
-        id={`${SELECT_ANSWER_TYPE_DROPDOWN_ID}-${id}`}
-        questionNumber={questionNumber}
-      />
+    <StyledContainer id={id} style={{ display: id === questionToDisplay ? 'flex' : 'none' }}>
+      <QuestionTypeSelectionContainer id={`${SELECT_QUESTION_TYPE_DROPDOWN_ID}-${id}`} questionNumber={questionNumber} />
+      <AnswerTypeSelect id={`${SELECT_ANSWER_TYPE_DROPDOWN_ID}-${id}`} questionNumber={questionNumber} />
     </StyledContainer>
   );
 };

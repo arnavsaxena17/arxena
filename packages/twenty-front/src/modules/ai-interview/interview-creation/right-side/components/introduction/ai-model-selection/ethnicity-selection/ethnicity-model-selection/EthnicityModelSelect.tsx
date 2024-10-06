@@ -10,15 +10,7 @@ const StyledHiddenInput = styled.input`
   display: none;
 `;
 
-export const EthnicityModelSelect = ({
-  selectedLanguage,
-  aIModelsArr,
-  selectedCountry,
-}: {
-  selectedLanguage: string | undefined;
-  aIModelsArr: any;
-  selectedCountry: Country | undefined;
-}) => {
+export const EthnicityModelSelect = ({ selectedLanguage, aIModelsArr, selectedCountry }: { selectedLanguage: string | undefined; aIModelsArr: any; selectedCountry: Country | undefined }) => {
   const [selectedModel, setSelectedModel] = useState<string>('Select Model');
 
   type model = {
@@ -30,10 +22,7 @@ export const EthnicityModelSelect = ({
     const availableModelsArr: any = [];
 
     for (let i = 0; i < aIModelsArr.length; i++) {
-      if (
-        aIModelsArr[i].node.country === selectedCountry?.countryCode &&
-        aIModelsArr[i].node.language === selectedLanguage
-      ) {
+      if (aIModelsArr[i].node.country === selectedCountry?.countryCode && aIModelsArr[i].node.language === selectedLanguage) {
         const aIModel = {
           id: aIModelsArr[i].node.id,
           name: aIModelsArr[i].node.name,
@@ -50,7 +39,7 @@ export const EthnicityModelSelect = ({
   };
 
   const options: SelectOption<string>[] = useMemo(() => {
-    return availableModels.map<SelectOption<string>>((model) => ({
+    return availableModels.map<SelectOption<string>>(model => ({
       label: model.name,
       value: model.id,
     }));
@@ -60,16 +49,7 @@ export const EthnicityModelSelect = ({
 
   return (
     <>
-      <Select
-        fullWidth
-        dropdownId={SELECT_ETHNICITY_MODEL_DROPDOWN_ID}
-        options={options}
-        label="Model"
-        withSearchInput
-        onChange={onChange}
-        value={selectedModel}
-        emptyOption={undefined}
-      />
+      <Select fullWidth dropdownId={SELECT_ETHNICITY_MODEL_DROPDOWN_ID} options={options} label="Model" withSearchInput onChange={onChange} value={selectedModel} emptyOption={undefined} />
       <StyledHiddenInput name={name} value={selectedModel} readOnly={true} />
     </>
   );

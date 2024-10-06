@@ -42,3 +42,6 @@ packages/twenty-server/auth_info_baileys/*
 packages/twenty-server/baileys_store_multi.json
 packages/twenty-server/baileys_auth_info/*
 
+.env*
+*.log
+node_modules/
