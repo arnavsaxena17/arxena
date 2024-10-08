@@ -95,9 +95,9 @@ export default defineConfig(({ command, mode }) => {
       },
     },
 
-    // optimizeDeps: {
-    //   include: ['pdfjs-dist/build/pdf.worker.min.js'],
-    // },
+    optimizeDeps: {
+      include: ['pdfjs-dist/build/pdf.worker.min.js'],
+    },
   
     css: {
       modules: {

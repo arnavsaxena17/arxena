@@ -4,13 +4,19 @@ import styled from '@emotion/styled';
 import { useRecoilState } from 'recoil';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import mammoth from 'mammoth';
-// @ts-ignore
-import { Document, Page, pdfjs } from 'react-pdf';
+import PDFViewer from './pdfViewer';
+import { Document } from 'react-pdf'
+
 import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
 
-pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.min.mjs`;
+// console.log("pdfjs.version:",pdfjs.version)
+// pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.min.mjs`;
+// pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.mjs`;
 
-console.log('PDF.js version:', pdfjs.version);
+// console.log('PDF.js worker src:', pdfjs.GlobalWorkerOptions.workerSrc);
+
+
+// console.log('PDF.js version:', pdfjs.version);
 
 const PanelContainer = styled.div<{ isOpen: boolean }>`
   position: fixed;
@@ -116,14 +122,11 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({ isOpen, onClose, cand
     }
   }, [isOpen, candidateId]);
   function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
+    console.log("numPages loadec", numPages);
     setNumPages(numPages);
     setIsPdfLoading(false);
   }
-  const PDFContainer = styled.div`
-    width: 100%;
-    height: 100%;
-    overflow: auto;
-  `;
+
 
   const fetchAttachment = async () => {
     try {
@@ -177,7 +180,7 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({ isOpen, onClose, cand
       }
     };
   }, [fileContent]);
-
+  let attachmentFilePath
   const fetchFileContent = async (attachment: { id: string; name: string; fullPath: string }) => {
     try {
       if (!attachment || fileContent) return; // Prevent unnecessary fetches
@@ -188,23 +191,40 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({ isOpen, onClose, cand
       setDownloadUrl(null);
 
       const response = await axios.get(`${process.env.REACT_APP_SERVER_BASE_URL}/files/${attachment.fullPath}`, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` }, responseType: 'arraybuffer' });
-    console.log("Attachment:", attachment)
+      console.log('Attachment:', attachment);
       console.log('Response received:', response.status, response.headers['content-type']);
+      console.log('Response headers:', response.headers);
       console.log('Response:', response);
 
-      let contentType = response.headers['content-type'];
+      let contentType = response.headers['content-type'] || attachment?.fullPath?.split('?')[0]?.split('.').pop()?.toLowerCase() || 'application/octet-stream';
+      contentType = contentType.split(';')[0]; // Remove charset if present
       console.log('Content Type:', contentType);
+
       if (!contentType) {
         const fileExtension = attachment.name.split('.').pop()?.toLowerCase();
         contentType = getContentTypeFromExtension(fileExtension);
       }
-      const blob = new Blob([response.data], { type: contentType || 'application/octet-stream' });
+      //   const blob = new Blob([response.data], { type: contentType || 'application/octet-stream' });
+
+      let blob;
+      try {
+        blob = new Blob([response.data], { type: contentType || 'application/octet-stream' });
+        console.log('Blob created successfully. Size:', blob.size);
+      } catch (error) {
+        console.error('Error creating Blob:', error);
+        setError('Failed to process the file. Please try again.');
+        return;
+      }
+
       console.log('Blob size:', blob.size);
+      console.log("This ithe content type:", contentType)
       if (contentType && contentType.includes('pdf')) {
         const url = URL.createObjectURL(blob);
-        setFileContent(url); // Ensures Blob URL is created and passed
-      } else if (contentType && (contentType.includes('word') || contentType.includes('msword') || contentType.includes('openxmlformats-officedocument.wordprocessingml.document'))) {
+        setFileContent(url)
+      } else if (contentType && (contentType.includes('word') ||  contentType.includes('docx') || contentType.includes('msword') || contentType.includes('openxmlformats-officedocument.wordprocessingml.document'))) {
+        console.log("Word file")
         try {
+
           const arrayBuffer = await blob.arrayBuffer();
           const result = await mammoth.convertToHtml({ arrayBuffer: arrayBuffer });
           setFileContent(result.value);
@@ -258,11 +278,13 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({ isOpen, onClose, cand
 
   const documentOptions = useMemo(
     () => ({
-      cMapUrl: 'https://unpkg.com/pdfjs-dist@2.9.359/cmaps/',
+    cMapUrl: 'https://unpkg.com/pdfjs-dist@2.9.359/cmaps/',
       cMapPacked: true,
+      standardFontDataUrl: 'https://unpkg.com/pdfjs-dist@2.9.359/standard_fonts/'
     }),
     [],
   );
+  
 
   const LoadingMessage = styled.div`
     text-align: center;
@@ -270,11 +292,10 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({ isOpen, onClose, cand
   `;
 
   const PdfViewer = styled.iframe`
-  width: 100%;
-  height: 100%;
-  border: none;
-`;
-
+    width: 100%;
+    height: 100%;
+    border: none;
+  `;
 
   console.log('Rendering with fileContent:', fileContent);
 
@@ -290,29 +311,18 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({ isOpen, onClose, cand
       <ContentContainer>
         {error ? (
           <ErrorMessage>{error}</ErrorMessage>
+        
+        // ) : fileContent ? (
+        //   typeof fileContent === 'string' && fileContent.startsWith('blob:') && (
+        //     <iframe 
+        //       src={fileContent} 
+        //       style={{ width: '100%', height: '500px', border: 'none' }} 
+        //       title="PDF Viewer"
+        //     />
+        //   )
         ) : fileContent ? (
           typeof fileContent === 'string' && fileContent.startsWith('blob:') ? (
-            <>
-              {/* <PDFContainer>
-                {isPdfLoading && <LoadingMessage>Loading PDF...</LoadingMessage>}
-                <Document
-                  file={fileContent}
-                  onLoadSuccess={onDocumentLoadSuccess}
-                  onLoadError={(error: Error) => {
-                    console.error('Error loading PDF:', error);
-                    setPdfError(`Error loading PDF: ${error.message}`);
-                    setIsPdfLoading(false);
-                  }}
-                  options={documentOptions}>
-                  {numPages !== null && <Page pageNumber={pageNumber} />}
-                </Document>
-                {pdfError && <ErrorMessage>{pdfError}</ErrorMessage>}
-              </PDFContainer> */
-}
-              
-                <PdfViewer src={fileContent} />
-
-            </>
+            <PDFViewer fileContent={fileContent} />
           ) : typeof fileContent === 'string' && fileContent.startsWith('<') ? (
             <DocxViewer dangerouslySetInnerHTML={{ __html: fileContent }} />
           ) : (
