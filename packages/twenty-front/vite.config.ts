@@ -94,6 +94,11 @@ export default defineConfig(({ command, mode }) => {
         REACT_APP_SERVER_SOCKET_URL,
       },
     },
+
+    // optimizeDeps: {
+    //   include: ['pdfjs-dist/build/pdf.worker.min.js'],
+    // },
+  
     css: {
       modules: {
         localsConvention: 'camelCaseOnly',
