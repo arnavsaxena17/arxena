@@ -8,7 +8,7 @@ import axios from 'axios';
 import { useRecoilState } from 'recoil';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import mammoth from 'mammoth';
-import PDFViewer  from './PDFViewer';
+import PdfViewer  from './PdfViewer';
 import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
 
 const PanelContainer = styled.div<{ isOpen: boolean }>`
@@ -345,7 +345,7 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({ isOpen, onClose, cand
           <ErrorMessage>{error}</ErrorMessage>
         ) : fileContent ? (
           typeof fileContent === 'string' && fileContent.startsWith('blob:') ? (
-            <PDFViewer fileContent={fileContent} />
+            <PdfViewer fileContent={fileContent} />
           ) : typeof fileContent === 'string' && fileContent.startsWith('<') ? (
             <DocxViewer dangerouslySetInnerHTML={{ __html: fileContent }} />
           ) : (
