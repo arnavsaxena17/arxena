@@ -7,14 +7,13 @@ import mammoth from 'mammoth';
 import PDFViewer from './PDFViewer';
 import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
 
-
 const PanelContainer = styled.div<{ isOpen: boolean }>`
   position: fixed;
   top: 0;
   right: ${props => (props.isOpen ? '0' : '-40%')};
   width: 40%;
   height: 100vh;
-  background-color: white;
+  background-color: #f5f5f5;
   box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
   transition: right 0.3s ease-in-out;
   overflow-y: auto;
@@ -23,37 +22,19 @@ const PanelContainer = styled.div<{ isOpen: boolean }>`
   flex-direction: column;
 `;
 
-
-
-const NavigationContainer = styled.div`
+const Header = styled.div`
+  padding: 15px;
+  
+  border-bottom: 1px solid #e0e0e0;
+  width:80%;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 15px;
-  background-color: #f5f5f5;
-  border-top: 1px solid #e0e0e0;
 `;
 
-const NavButton = styled.button`
-  background: none;
-  border: none;
-  font-size: 24px;
-  cursor: pointer;
-  color: #333;
-  &:disabled {
-    color: #ccc;
-    cursor: not-allowed;
-  }
-`;
-
-const AttachmentCounter = styled.span`
-  font-size: 14px;
-  color: #666;
-`;
-const Header = styled.div`
-  padding: 15px;
-  background-color: #f5f5f5;
-  border-bottom: 1px solid #e0e0e0;
+const CandidateInfo = styled.div`
+  flex-grow: 1;
+  width:50%;
 `;
 
 const CandidateName = styled.h2`
@@ -65,6 +46,33 @@ const FileName = styled.h3`
   margin: 0;
   color: #666;
   font-size: 1em;
+`;
+
+const NavigationContainer = styled.div`
+  display: flex;
+  align-items: center;
+`;
+
+const NavButton = styled.button`
+  background: none;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  color: #333;
+  padding: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  &:disabled {
+    color: #ccc;
+    cursor: not-allowed;
+  }
+`;
+
+const AttachmentCounter = styled.span`
+  font-size: 14px;
+  color: #666;
+  margin: 0 10px;
 `;
 
 const ContentContainer = styled.div`
@@ -83,6 +91,9 @@ const CloseButton = styled.button`
   cursor: pointer;
   z-index: 1001;
 `;
+
+
+
 
 const ErrorMessage = styled.div`
   color: red;
@@ -309,8 +320,21 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({ isOpen, onClose, cand
     <PanelContainer isOpen={isOpen}>
       <CloseButton onClick={onClose}>&times;</CloseButton>
       <Header>
-        <CandidateName>{candidateName}</CandidateName>
-        {currentAttachment && <FileName>{currentAttachment.name}</FileName>}
+        <CandidateInfo>
+          <CandidateName>{candidateName}</CandidateName>
+          {currentAttachment && <FileName>{currentAttachment.name}</FileName>}
+        </CandidateInfo>
+        <NavigationContainer>
+          <NavButton onClick={handlePrevAttachment} disabled={currentAttachmentIndex === 0}>
+            &#9650;
+          </NavButton>
+          <AttachmentCounter>
+            {currentAttachmentIndex + 1} of {attachments.length}
+          </AttachmentCounter>
+          <NavButton onClick={handleNextAttachment} disabled={currentAttachmentIndex === attachments.length - 1}>
+            &#9660;
+          </NavButton>
+        </NavigationContainer>
       </Header>
       <ContentContainer>
         {error ? (
@@ -328,22 +352,10 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({ isOpen, onClose, cand
         )}
         {downloadUrl && (
           <a href={downloadUrl} download={currentAttachment?.name}>
-          Download {currentAttachment?.name}
-        </a>
-      )}
+            Download {currentAttachment?.name}
+          </a>
+        )}
       </ContentContainer>
-      <NavigationContainer>
-        <NavButton onClick={handlePrevAttachment} disabled={currentAttachmentIndex === 0}>
-          &#9650;
-        </NavButton>
-        <AttachmentCounter>
-          {currentAttachmentIndex + 1} of {attachments.length}
-        </AttachmentCounter>
-        <NavButton onClick={handleNextAttachment} disabled={currentAttachmentIndex === attachments.length - 1}>
-          &#9660;
-        </NavButton>
-      </NavigationContainer>
-
     </PanelContainer>
   );
 };
