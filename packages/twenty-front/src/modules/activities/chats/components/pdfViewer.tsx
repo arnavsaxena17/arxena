@@ -22,7 +22,7 @@ interface PDFViewerProps {
     fileContent: string;
   }
 
-const PDFViewer: React.FC<PDFViewerProps> = React.memo(({ fileContent }) => {
+const PdfViewer: React.FC<PDFViewerProps> = React.memo(({ fileContent }) => {
     const [numPages, setNumPages] = useState<number | null>(null);
     const [pageNumber, setPageNumber] = useState(1);
     const [error, setError] = useState<string | null>(null);
@@ -75,4 +75,4 @@ const PDFViewer: React.FC<PDFViewerProps> = React.memo(({ fileContent }) => {
     );
   });
   
-  export default PDFViewer;
+  export default PdfViewer;
