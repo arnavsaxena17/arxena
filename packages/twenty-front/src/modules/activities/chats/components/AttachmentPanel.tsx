@@ -9,6 +9,8 @@ import { useRecoilState } from 'recoil';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import mammoth from 'mammoth';
 import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
+import {Document, Page, pdfjs} from 'react-pdf';
+
 
 
 pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.mjs`;
