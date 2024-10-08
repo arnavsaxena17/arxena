@@ -1,6 +1,10 @@
 import React, { useState, useEffect,useCallback, useMemo } from 'react';
+import ChatTile from "./ChatTile";
+import styled from "@emotion/styled";
+import { useNavigate } from 'react-router-dom';
+import SearchBox from "./SearchBox";
+import JobDropdown from "./JobDropdown";
 import axios from 'axios';
-import styled from '@emotion/styled';
 import { useRecoilState } from 'recoil';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import mammoth from 'mammoth';
