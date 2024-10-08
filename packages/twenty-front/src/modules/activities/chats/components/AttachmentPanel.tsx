@@ -8,8 +8,11 @@ import axios from 'axios';
 import { useRecoilState } from 'recoil';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import mammoth from 'mammoth';
-import PdfViewer  from './PdfViewer';
 import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
+
+
+pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.mjs`;
+
 
 const PanelContainer = styled.div<{ isOpen: boolean }>`
   position: fixed;
@@ -72,6 +75,19 @@ const NavButton = styled.button`
     cursor: not-allowed;
   }
 `;
+
+
+
+const PDFContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+`;
+
+
 
 const AttachmentCounter = styled.span`
   font-size: 14px;
@@ -145,6 +161,37 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({ isOpen, onClose, cand
 
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
 
+  const [numPages, setNumPages] = useState<number | null>(null);
+  const [pageNumber, setPageNumber] = useState(1);
+
+
+  
+  const onDocumentLoadSuccess = useCallback(({ numPages }: { numPages: number }) => {
+    setNumPages(numPages);
+    console.log('PDF loaded successfully. Number of pages:', numPages);
+  }, []);
+
+  const options = useMemo(() => ({
+    cMapUrl: 'cmaps/',
+    cMapPacked: true,
+  }), []);
+
+  function onDocumentLoadError(error: Error) {
+      console.error("Error loading PDF:", error);
+      setError(error.message);
+    }
+  
+  
+
+  const handlePrevPage = useCallback(() => {
+    setPageNumber((prevPageNumber) => Math.max(prevPageNumber - 1, 1));
+  }, []);
+
+  const handleNextPage = useCallback(() => {
+    setPageNumber((prevPageNumber) => Math.min(prevPageNumber + 1, numPages || 1));
+  }, [numPages]);
+
+  
   useEffect(() => {
     if (isOpen && candidateId) {
       fetchAttachments();
@@ -345,8 +392,36 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({ isOpen, onClose, cand
           <ErrorMessage>{error}</ErrorMessage>
         ) : fileContent ? (
           typeof fileContent === 'string' && fileContent.startsWith('blob:') ? (
-            <PdfViewer fileContent={fileContent} />
-          ) : typeof fileContent === 'string' && fileContent.startsWith('<') ? (
+
+
+
+            <PDFContainer>
+            <Document
+              file={fileContent}
+              onLoadSuccess={onDocumentLoadSuccess}
+              onLoadError={onDocumentLoadError}
+              options={options}
+            >
+              {Array.from(new Array(numPages), (el, index) => (
+                <Page
+                  key={`page_${index + 1}`}
+                  pageNumber={index + 1}
+                  renderTextLayer={false}
+                  renderAnnotationLayer={false}
+                />
+              ))}
+            </Document>
+            {/* Add navigation controls for PDF if needed */}
+          </PDFContainer>
+
+
+            // <PdfViewer fileContent={fileContent} />
+          
+        
+        
+        
+        
+        ) : typeof fileContent === 'string' && fileContent.startsWith('<') ? (
             <DocxViewer dangerouslySetInnerHTML={{ __html: fileContent }} />
           ) : (
             <ContentViewer>{typeof fileContent === 'string' ? fileContent : 'Unsupported file type'}</ContentViewer>
