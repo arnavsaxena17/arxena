@@ -8,7 +8,7 @@ import ChatWindow from './ChatWindow';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import ChatSidebar from './ChatSidebar';
-import { currentUnreadMessagesState } from '@/activities/chats/states/currentUnreadMessagesState';
+import { currentUnreadChatMessagesState } from '@/activities/chats/states/currentUnreadChatMessagesState';
 
 import { Job } from "../types/front-chat-types";
 
@@ -45,7 +45,7 @@ export default function ChatMain({ initialCandidateId }: ChatMainProps) {
 
   const [tokenPair] = useRecoilState(tokenPairState);
 
-  const [currentUnreadMessages, setCurrentUnreadMessages] = useRecoilState(currentUnreadMessagesState);
+  const [currentUnreadMessages, setCurrentUnreadMessages] = useRecoilState(currentUnreadChatMessagesState);
 
   const handleSubmit = () => {
     console.log('submit');

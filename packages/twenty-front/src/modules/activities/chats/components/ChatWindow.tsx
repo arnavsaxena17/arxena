@@ -4,7 +4,6 @@ import axios from 'axios';
 import { useRecoilState } from 'recoil';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import FileUpload from './FileUpload';
-import styled from '@emotion/styled';
 import SingleChatContainer from './SingleChatContainer';
 import dayjs from 'dayjs';
 import { Server } from 'socket.io';
@@ -12,6 +11,8 @@ import { io } from 'socket.io-client';
 import QRCode from 'react-qr-code';
 import { p } from 'node_modules/msw/lib/core/GraphQLHandler-907fc607';
 import { useHotkeys } from 'react-hotkeys-hook';
+import styled from '@emotion/styled';
+import AttachmentPanel from './AttachmentPanel';
 
 import { useNavigate } from 'react-router-dom';
 // import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -113,6 +114,10 @@ const StyledButton = styled.button<{ bgColor: string }>`
   }
 `;
 
+const AttachmentButton = styled(StyledButton)`
+  background-color: #4CAF50;
+`;
+
 const StyledButtonBottom = styled.button`
   padding: 0.5em;
   background-color: black;
@@ -207,6 +212,14 @@ const StyledTopBar = styled.div`
   backdrop-filter: saturate(180%) blur(10px);
 `;
 
+
+const AttachmentIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+  </svg>
+);
+
+
 const formatDate = (date: string) => dayjs(date).format('YYYY-MM-DD');
 
 export default function ChatWindow(props: { selectedIndividual: string; individuals: frontChatTypes.PersonNode[] }) {
@@ -215,6 +228,7 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
   const [messageHistory, setMessageHistory] = useState<frontChatTypes.MessageNode[]>([]);
   const [latestResponseGenerated, setLatestResponseGenerated] = useState('');
   const [listOfToolCalls, setListOfToolCalls] = useState<string[]>([]);
+  const [isAttachmentPanelOpen, setIsAttachmentPanelOpen] = useState(false);
 
   const botResponsePreviewRef = useRef(null);
   const inputRef = useRef(null);
@@ -227,6 +241,7 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
 
   const currentIndividual = allIndividuals?.find(individual => individual?.id === props?.selectedIndividual);
   const currentCandidateId = currentIndividual?.candidates?.edges[0]?.node?.id;
+  const currentCandidateName = currentIndividual?.name.firstName + " " + currentIndividual?.name.lastName
 
   useEffect(() => {
     if (currentCandidateId) {
@@ -421,6 +436,9 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
         .map((obj: any) => obj?.tool_calls?.map((tool: any) => tool?.function?.name)),
     );
   };
+  const handleToggleAttachmentPanel = () => {
+    setIsAttachmentPanelOpen(!isAttachmentPanelOpen);
+  };
 
 
   const allIndividualsForCurrentJob = allIndividuals?.filter(individual => individual?.candidates?.edges[0]?.node?.jobs.id === currentIndividual?.candidates?.edges[0]?.node?.jobs.id);
@@ -453,10 +471,7 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
                 {`Messages: ${messageHistory.length} || Current Job: ${currentIndividual?.candidates?.edges[0]?.node?.jobs.name}`}
               </div>
               <div style={{ display: 'flex', alignItems: 'center' }}>
-                <StyledSelect 
-                  value={lastStatus || ''}
-                  onChange={(e) => handleStatusUpdate(e.target.value)}
-                >
+                <StyledSelect value={lastStatus || ''} onChange={(e) => handleStatusUpdate(e.target.value)} >
                   <option value="" disabled>Update Status</option>
                   {statusesArray.map((status) => (
                     <option key={status} value={status}>
@@ -474,6 +489,9 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
                   <StyledButton onClick={handleNavigateToCandidatePage} bgColor="black" data-tooltip="Candidate">
                     <CandidateIcon />
                   </StyledButton>
+                  <AttachmentButton onClick={handleToggleAttachmentPanel} bgColor="#4CAF50" data-tooltip="View Attachments">
+                    <AttachmentIcon />
+                  </AttachmentButton>
                 </StyledButtonGroup>
               </div>
             </StyledTopBar>
@@ -535,6 +553,8 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
           </div>
         )}
       </div>
+      <AttachmentPanel isOpen={isAttachmentPanelOpen} onClose={() => setIsAttachmentPanelOpen(false)} candidateId={currentCandidateId || ''} candidateName={currentCandidateName} />
+
     </>
   );
 }
