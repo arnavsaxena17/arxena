@@ -4,7 +4,7 @@ import styled from '@emotion/styled';
 import { useRecoilState } from 'recoil';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import mammoth from 'mammoth';
-import PDFViewer from './PDFViewer';
+import PDFViewer from '@/activities/chats/components/PDFViewer';
 import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
 
 const PanelContainer = styled.div<{ isOpen: boolean }>`

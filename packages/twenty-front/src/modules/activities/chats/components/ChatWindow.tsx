@@ -115,7 +115,7 @@ const StyledButton = styled.button<{ bgColor: string }>`
 `;
 
 const AttachmentButton = styled(StyledButton)`
-  background-color: #4CAF50;
+  background-color: black;
 `;
 
 const StyledButtonBottom = styled.button`
@@ -489,7 +489,7 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
                   <StyledButton onClick={handleNavigateToCandidatePage} bgColor="black" data-tooltip="Candidate">
                     <CandidateIcon />
                   </StyledButton>
-                  <AttachmentButton onClick={handleToggleAttachmentPanel} bgColor="#4CAF50" data-tooltip="View Attachments">
+                  <AttachmentButton onClick={handleToggleAttachmentPanel} bgColor="black" data-tooltip="View Attachments">
                     <AttachmentIcon />
                   </AttachmentButton>
                 </StyledButtonGroup>
