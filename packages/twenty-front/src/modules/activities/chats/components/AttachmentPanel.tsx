@@ -1,22 +1,12 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect,useCallback, useMemo } from 'react';
 import axios from 'axios';
 import styled from '@emotion/styled';
 import { useRecoilState } from 'recoil';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import mammoth from 'mammoth';
-import PDFViewer from './pdfViewer';
-import { Document } from 'react-pdf'
-
+import PDFViewer from './PDFViewer';
 import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
 
-// console.log("pdfjs.version:",pdfjs.version)
-// pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.min.mjs`;
-// pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.mjs`;
-
-// console.log('PDF.js worker src:', pdfjs.GlobalWorkerOptions.workerSrc);
-
-
-// console.log('PDF.js version:', pdfjs.version);
 
 const PanelContainer = styled.div<{ isOpen: boolean }>`
   position: fixed;
@@ -33,6 +23,33 @@ const PanelContainer = styled.div<{ isOpen: boolean }>`
   flex-direction: column;
 `;
 
+
+
+const NavigationContainer = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 15px;
+  background-color: #f5f5f5;
+  border-top: 1px solid #e0e0e0;
+`;
+
+const NavButton = styled.button`
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #333;
+  &:disabled {
+    color: #ccc;
+    cursor: not-allowed;
+  }
+`;
+
+const AttachmentCounter = styled.span`
+  font-size: 14px;
+  color: #666;
+`;
 const Header = styled.div`
   padding: 15px;
   background-color: #f5f5f5;
@@ -104,31 +121,24 @@ interface AttachmentPanelProps {
 }
 
 const AttachmentPanel: React.FC<AttachmentPanelProps> = ({ isOpen, onClose, candidateId, candidateName }) => {
-  const [attachment, setAttachment] = useState<{ id: string; name: string; fullPath: string } | null>(null);
+    const [attachments, setAttachments] = useState<Array<{ id: string; name: string; fullPath: string }>>([]);
+    const [currentAttachmentIndex, setCurrentAttachmentIndex] = useState(0);
   const [fileContent, setFileContent] = useState<string | ArrayBuffer | null>(null);
   const [tokenPair] = useRecoilState(tokenPairState);
-  const [numPages, setNumPages] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [pageNumber, setPageNumber] = useState<number>(1);
   const [error, setError] = useState<string | null>(null);
-  const [isPdfLoading, setIsPdfLoading] = useState(true);
-  const [pdfError, setPdfError] = useState<string | null>(null);
 
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen && candidateId) {
-      fetchAttachment();
+      fetchAttachments();
     }
   }, [isOpen, candidateId]);
-  function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
-    console.log("numPages loadec", numPages);
-    setNumPages(numPages);
-    setIsPdfLoading(false);
-  }
 
+  const fetchAttachments = useCallback(async () => {
+    if (!isOpen || !candidateId) return;
 
-  const fetchAttachment = async () => {
     try {
       setError(null);
       const response = await axios.post(
@@ -138,10 +148,9 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({ isOpen, onClose, cand
           variables: {
             filter: { candidateId: { eq: candidateId } },
             orderBy: [{ createdAt: 'DescNullsFirst' }],
-            limit: 1,
           },
-          query: `query FindManyAttachments($filter: AttachmentFilterInput, $orderBy: [AttachmentOrderByInput], $limit: Int) {
-              attachments(filter: $filter, orderBy: $orderBy, first: $limit) {
+          query: `query FindManyAttachments($filter: AttachmentFilterInput, $orderBy: [AttachmentOrderByInput]) {
+              attachments(filter: $filter, orderBy: $orderBy) {
                 edges {
                   node {
                     id
@@ -158,21 +167,32 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({ isOpen, onClose, cand
             'Content-Type': 'application/json',
             'x-schema-version': '135',
           },
-        },
+        }
       );
 
-      const fetchedAttachment = response.data.data.attachments.edges[0]?.node;
-      if (fetchedAttachment) {
-        setAttachment(fetchedAttachment);
-        fetchFileContent(fetchedAttachment);
-      } else {
-        setError('No attachments found for this candidate.');
-      }
+      const fetchedAttachments = response.data.data.attachments.edges.map((edge: any) => edge.node);
+      setAttachments(fetchedAttachments);
+      setCurrentAttachmentIndex(0);
+      console.log('Total Attachments: ', fetchedAttachments.length);
     } catch (error) {
-      console.error('Error fetching attachment:', error);
-      setError('Failed to fetch attachment. Please try again.');
+      console.error('Error fetching attachments:', error);
+      setError('Failed to fetch attachments. Please try again.');
     }
-  };
+  }, [isOpen, candidateId, tokenPair]);
+
+
+
+
+  const handlePrevAttachment = useCallback(() => {
+    setCurrentAttachmentIndex((prevIndex) => Math.max(prevIndex - 1, 0));
+  }, []);
+
+  const handleNextAttachment = useCallback(() => {
+    setCurrentAttachmentIndex((prevIndex) => Math.min(prevIndex + 1, attachments.length - 1));
+  }, [attachments.length]);
+
+
+
   useEffect(() => {
     return () => {
       if (fileContent && typeof fileContent === 'string' && fileContent.startsWith('blob:')) {
@@ -180,8 +200,10 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({ isOpen, onClose, cand
       }
     };
   }, [fileContent]);
-  let attachmentFilePath
-  const fetchFileContent = async (attachment: { id: string; name: string; fullPath: string }) => {
+
+
+
+  const fetchFileContent = useCallback(async (attachment: { id: string; name: string; fullPath: string }) => {
     try {
       if (!attachment || fileContent) return; // Prevent unnecessary fetches
 
@@ -204,8 +226,6 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({ isOpen, onClose, cand
         const fileExtension = attachment.name.split('.').pop()?.toLowerCase();
         contentType = getContentTypeFromExtension(fileExtension);
       }
-      //   const blob = new Blob([response.data], { type: contentType || 'application/octet-stream' });
-
       let blob;
       try {
         blob = new Blob([response.data], { type: contentType || 'application/octet-stream' });
@@ -224,7 +244,6 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({ isOpen, onClose, cand
       } else if (contentType && (contentType.includes('word') ||  contentType.includes('docx') || contentType.includes('msword') || contentType.includes('openxmlformats-officedocument.wordprocessingml.document'))) {
         console.log("Word file")
         try {
-
           const arrayBuffer = await blob.arrayBuffer();
           const result = await mammoth.convertToHtml({ arrayBuffer: arrayBuffer });
           setFileContent(result.value);
@@ -248,7 +267,7 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({ isOpen, onClose, cand
       setError(`Failed to load file content: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
     setIsLoading(false);
-  };
+}, [tokenPair]);
 
   const getContentTypeFromExtension = (extension?: string): string => {
     switch (extension) {
@@ -274,52 +293,28 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({ isOpen, onClose, cand
     }
   };
 
-  console.log('File content:', fileContent);
 
-  const documentOptions = useMemo(
-    () => ({
-    cMapUrl: 'https://unpkg.com/pdfjs-dist@2.9.359/cmaps/',
-      cMapPacked: true,
-      standardFontDataUrl: 'https://unpkg.com/pdfjs-dist@2.9.359/standard_fonts/'
-    }),
-    [],
-  );
-  
+  useEffect(() => {
+    if (attachments.length > 0) {
+      fetchFileContent(attachments[currentAttachmentIndex]);
+    }
+  }, [currentAttachmentIndex, attachments, fetchFileContent]);
 
-  const LoadingMessage = styled.div`
-    text-align: center;
-    padding: 20px;
-  `;
+  const currentAttachment = useMemo(() => attachments[currentAttachmentIndex], [attachments, currentAttachmentIndex]);
 
-  const PdfViewer = styled.iframe`
-    width: 100%;
-    height: 100%;
-    border: none;
-  `;
 
-  console.log('Rendering with fileContent:', fileContent);
-
-  console.log('Blob URL:', fileContent);
-
+  console.log("Current Attachment ::", currentAttachment)
+  console.log("Total Attachments : ", attachments.length)
   return (
     <PanelContainer isOpen={isOpen}>
       <CloseButton onClick={onClose}>&times;</CloseButton>
       <Header>
         <CandidateName>{candidateName}</CandidateName>
-        {attachment && <FileName>{attachment.name}</FileName>}
+        {currentAttachment && <FileName>{currentAttachment.name}</FileName>}
       </Header>
       <ContentContainer>
         {error ? (
           <ErrorMessage>{error}</ErrorMessage>
-        
-        // ) : fileContent ? (
-        //   typeof fileContent === 'string' && fileContent.startsWith('blob:') && (
-        //     <iframe 
-        //       src={fileContent} 
-        //       style={{ width: '100%', height: '500px', border: 'none' }} 
-        //       title="PDF Viewer"
-        //     />
-        //   )
         ) : fileContent ? (
           typeof fileContent === 'string' && fileContent.startsWith('blob:') ? (
             <PDFViewer fileContent={fileContent} />
@@ -332,11 +327,23 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({ isOpen, onClose, cand
           <div>Loading...</div>
         )}
         {downloadUrl && (
-          <a href={downloadUrl} download={attachment?.name}>
-            Download {attachment?.name}
-          </a>
-        )}
+          <a href={downloadUrl} download={currentAttachment?.name}>
+          Download {currentAttachment?.name}
+        </a>
+      )}
       </ContentContainer>
+      <NavigationContainer>
+        <NavButton onClick={handlePrevAttachment} disabled={currentAttachmentIndex === 0}>
+          &#9650;
+        </NavButton>
+        <AttachmentCounter>
+          {currentAttachmentIndex + 1} of {attachments.length}
+        </AttachmentCounter>
+        <NavButton onClick={handleNextAttachment} disabled={currentAttachmentIndex === attachments.length - 1}>
+          &#9660;
+        </NavButton>
+      </NavigationContainer>
+
     </PanelContainer>
   );
 };

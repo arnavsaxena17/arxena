@@ -1,42 +1,60 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { Document, Page, pdfjs} from 'react-pdf';
 import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
+import styled from '@emotion/styled';
+
 
 // Set the worker source
 pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.mjs`;
 
-const PDFViewer: React.FC<{ fileContent: string }> = ({ fileContent }) => {
-  const [numPages, setNumPages] = useState<number | null>(null);
-  const [pageNumber, setPageNumber] = useState(1);
-  const [error, setError] = useState<string | null>(null);
 
-  function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
-    console.log("PDF loaded successfully. Number of pages:", numPages);
-    setNumPages(numPages);
+const PDFContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+`;
+
+
+interface PDFViewerProps {
+    fileContent: string;
   }
 
-  function onDocumentLoadError(error: Error) {
-    console.error("Error loading PDF:", error);
-    setError(error.message);
-  }
+const PDFViewer: React.FC<PDFViewerProps> = React.memo(({ fileContent }) => {
+    const [numPages, setNumPages] = useState<number | null>(null);
+    const [pageNumber, setPageNumber] = useState(1);
+    const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    console.log("Attempting to load PDF with content:", fileContent);
-  }, [fileContent]);
+  
+    const onDocumentLoadSuccess = useCallback(({ numPages }: { numPages: number }) => {
+      setNumPages(numPages);
+      console.log('PDF loaded successfully. Number of pages:', numPages);
+    }, []);
+  
+    const options = useMemo(() => ({
+      cMapUrl: 'cmaps/',
+      cMapPacked: true,
+    }), []);
 
-
-  const options = {
-    cMapUrl: 'https://unpkg.com/pdfjs-dist@2.9.359/cmaps/',
-    cMapPacked: true,
-  };
-
-
-
-  return (
-    <div style={{ height: '100vh', overflow: 'auto' }}>
-      {error ? (
-        <div>Error loading PDF: {error}</div>
-      ) : (
+    function onDocumentLoadError(error: Error) {
+        console.error("Error loading PDF:", error);
+        setError(error.message);
+      }
+    
+    
+  
+    const handlePrevPage = useCallback(() => {
+      setPageNumber((prevPageNumber) => Math.max(prevPageNumber - 1, 1));
+    }, []);
+  
+    const handleNextPage = useCallback(() => {
+      setPageNumber((prevPageNumber) => Math.min(prevPageNumber + 1, numPages || 1));
+    }, [numPages]);
+  
+    return (
+      <PDFContainer>
         <Document
           file={fileContent}
           onLoadSuccess={onDocumentLoadSuccess}
@@ -52,9 +70,9 @@ const PDFViewer: React.FC<{ fileContent: string }> = ({ fileContent }) => {
             />
           ))}
         </Document>
-      )}
-    </div>
-  );
-};
 
-export default PDFViewer;
+      </PDFContainer>
+    );
+  });
+  
+  export default PDFViewer;
