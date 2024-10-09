@@ -9,7 +9,9 @@ type TopBarProps = {
   rightComponent?: ReactNode;
   bottomComponent?: ReactNode;
   displayBottomBorder?: boolean;
+  showRefetch?:boolean;
   handleRefresh?: () => void;
+
 };
 
 const StyledContainer = styled.div`
@@ -41,11 +43,20 @@ const StyledRightSection = styled.div`
   gap: ${({ theme }) => theme.betweenSiblingsGap};
 `;
 
-export const TopBar = ({ className, leftComponent, rightComponent, bottomComponent, handleRefresh, displayBottomBorder = true }: TopBarProps) => (
+export const TopBar = ({ className, leftComponent, rightComponent, bottomComponent, handleRefresh, displayBottomBorder = true, showRefetch=true }: TopBarProps) => (
   <StyledContainer className={className}>
     <StyledTopBar displayBottomBorder={displayBottomBorder}>
       <StyledLeftSection>{leftComponent}</StyledLeftSection>
-      <Button Icon={IconRefresh} title="Refetch" variant="secondary" accent="default" onClick={handleRefresh} />
+      {showRefetch && (
+        <Button
+          Icon={IconRefresh}
+          title="Refetch"
+          variant="secondary"
+          accent="default"
+          onClick={handleRefresh}
+        />
+      )}
+
       <StyledRightSection>{rightComponent}</StyledRightSection>
     </StyledTopBar>
     {bottomComponent}

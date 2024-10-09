@@ -45,8 +45,7 @@ export const Chats = () => {
             <PageAddChatButton />
           </PageHeader>
           <PageBody>
-              <TopBar leftComponent={ <StyledTabListContainer>
-              </StyledTabListContainer> } />
+              <TopBar leftComponent={ <StyledTabListContainer> </StyledTabListContainer>} showRefetch = {false}  />
               <ChatMain initialCandidateId={candidateId} />
               </PageBody>
         </RecoilScope>

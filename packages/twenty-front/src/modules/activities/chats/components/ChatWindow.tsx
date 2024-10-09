@@ -12,7 +12,10 @@ import QRCode from 'react-qr-code';
 import { p } from 'node_modules/msw/lib/core/GraphQLHandler-907fc607';
 import { useHotkeys } from 'react-hotkeys-hook';
 import styled from '@emotion/styled';
+import { css } from '@emotion/react';
+
 import AttachmentPanel from './AttachmentPanel';
+import { mutationToUpdateOneCandidate } from '../graphql-queries-chat/chat-queries';
 
 import { useNavigate } from 'react-router-dom';
 // import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -213,6 +216,55 @@ const StyledTopBar = styled.div`
 `;
 
 
+const TopbarContainer = styled.div`
+  background-color: #f3f4f6;
+  padding: 8px;
+  border-radius: 4px;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+`;
+
+const FieldsContainer = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  font-size: 14px;
+`;
+
+const AdditionalInfo = styled.div`
+  margin-top: 8px;
+  font-size: 12px;
+  color: #4b5563;
+`;
+
+const CopyableField = styled.span`
+  cursor: pointer;
+  &:hover {
+    text-decoration: underline;
+  }
+  display: flex;
+  align-items: center;
+  gap: 4px;
+`;
+
+const iconStyles = css`
+  width: 16px;
+  height: 16px;
+`;
+
+const CopyIcon = () => (
+  <svg css={iconStyles} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M8 4v12a2 2 0 002 2h8a2 2 0 002-2V7.242a2 2 0 00-.602-1.43L16.083 2.57A2 2 0 0014.685 2H10a2 2 0 00-2 2z" />
+    <path d="M16 18v2a2 2 0 01-2 2H6a2 2 0 01-2-2V9a2 2 0 012-2h2" />
+  </svg>
+);
+
+const CheckIcon = () => (
+  <svg css={iconStyles} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M20 6L9 17l-5-5" />
+  </svg>
+);
+
+
 const AttachmentIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
@@ -235,6 +287,7 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
   const [tokenPair] = useRecoilState(tokenPairState);
   const [qrCode, setQrCode] = useState('');
   const chatViewRef = useRef<HTMLDivElement>(null);
+  const [copiedField, setCopiedField] = useState(null);
 
 
   const allIndividuals = props?.individuals
@@ -352,19 +405,7 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
         const response = await axios.post(
           process.env.REACT_APP_SERVER_BASE_URL+'/graphql',
           {
-            query: `
-              mutation UpdateOneCandidate($idToUpdate: ID!, $input: CandidateUpdateInput!) {
-                updateCandidate(id: $idToUpdate, data: $input) {
-                  whatsappProvider
-                  startChat
-                  status
-                  jobsId
-                  createdAt
-                  updatedAt
-                  stopChat
-                }
-              }
-            `,
+            query: mutationToUpdateOneCandidate,
             variables: {
               idToUpdate: currentCandidateId,
               input: { status: newStatus }
@@ -440,6 +481,20 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
     setIsAttachmentPanelOpen(!isAttachmentPanelOpen);
   };
 
+  
+    const copyToClipboard = (text, field) => {
+      navigator.clipboard.writeText(text);
+      setCopiedField(field);
+      setTimeout(() => setCopiedField(null), 2000);
+    };
+  
+    const CopyableFieldComponent = ({ label, value, field, alwaysShowFull = false }) => (
+      <CopyableField onClick={() => copyToClipboard(value, field)} title={copiedField === field ? 'Copied!' : 'Click to copy'} >
+      {label}: {alwaysShowFull ? value : ``}
+      {copiedField === field ? <CheckIcon /> : <CopyIcon />}
+      </CopyableField>
+    );
+
 
   const allIndividualsForCurrentJob = allIndividuals?.filter(individual => individual?.candidates?.edges[0]?.node?.jobs.id === currentIndividual?.candidates?.edges[0]?.node?.jobs.id);
 
@@ -465,11 +520,37 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
           <StyledWindow>
             <ChatView ref={chatViewRef}>
             <StyledTopBar>
-              <div>
-                {`${currentIndividual?.name.firstName} ${currentIndividual?.name.lastName} || ${currentIndividual?.phone} || Person: ${currentIndividual?.id} || Candidate: ${currentIndividual?.candidates.edges[0].node.id}`}
-                <br />
-                {`Messages: ${messageHistory.length} || Current Job: ${currentIndividual?.candidates?.edges[0]?.node?.jobs.name}`}
-              </div>
+
+            <TopbarContainer>
+              <FieldsContainer>
+                <CopyableFieldComponent 
+                  label="Name"
+                  value={`${currentIndividual?.name.firstName} ${currentIndividual?.name.lastName}`}
+                  field="name"
+                  alwaysShowFull = {true}
+                />
+                <CopyableFieldComponent 
+                  label="Phone"
+                  value={currentIndividual?.phone}
+                  field="phone"
+                />
+                <CopyableFieldComponent 
+                  label="Person ID"
+                  value={currentIndividual?.id}
+                  field="personId"
+                />
+                <CopyableFieldComponent 
+                  label="Candidate ID"
+                  value={currentIndividual?.candidates.edges[0].node.id}
+                  field="candidateId"
+                />
+              </FieldsContainer>
+              <AdditionalInfo>
+                Messages: {messageHistory?.length || 0} | 
+                Current Job: {currentIndividual?.candidates?.edges[0]?.node?.jobs?.name || 'N/A'}
+              </AdditionalInfo>
+            </TopbarContainer>
+
               <div style={{ display: 'flex', alignItems: 'center' }}>
                 <StyledSelect value={lastStatus || ''} onChange={(e) => handleStatusUpdate(e.target.value)} >
                   <option value="" disabled>Update Status</option>
