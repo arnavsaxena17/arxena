@@ -8,13 +8,13 @@ export const mapArxCandidateToPersonNode = candidate => {
     },
     email: Array.isArray(candidate.email_address) 
       ? candidate.email_address[0] 
-      : candidate.email_address || null,
+      : candidate.email_address || "",
     phone: candidate.phone_numbers && candidate.phone_numbers.length > 0
       ? (typeof candidate.phone_numbers[0] === 'string' 
         ? candidate.phone_numbers[0] 
-        : candidate.phone_numbers[0]?.number) || null
-      : null,
-    jobTitle: candidate.job_title || 'Unknown', // Provide a default value if null or undefined
+        : candidate.phone_numbers[0]?.number) || ""
+      : "",
+    jobTitle: candidate.job_title || '', 
   };
   return personNode;
 };

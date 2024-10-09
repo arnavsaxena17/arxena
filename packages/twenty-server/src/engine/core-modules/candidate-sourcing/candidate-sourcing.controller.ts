@@ -26,7 +26,7 @@ export class CandidateSourcingController {
     return response.data?.data?.jobs?.edges[0]?.node;
   }
   
-  async  createPeople(manyPersonObjects: ArxenaPersonNode[]): Promise<string[]> {
+  async  createPeople(manyPersonObjects: ArxenaPersonNode[]): Promise<any> {
     const graphqlVariablesForPerson = { data: manyPersonObjects };
     const graphqlQueryObjForPerson = JSON.stringify({
       query: CreateManyPeople,
@@ -36,7 +36,8 @@ export class CandidateSourcingController {
     try {
       const responseForPerson = await axiosRequest(graphqlQueryObjForPerson);
       console.log("Response from graphqlQueryObjForPerson:", responseForPerson.status);
-      return responseForPerson.data.data.createPeople.map((person: any) => person.id);
+      console.log("Response from graphqlQueryObjForPerson:", responseForPerson.status);
+      return responseForPerson;
     } catch (error) {
       console.error('Error in creating people', error);
       throw error;
@@ -55,7 +56,7 @@ export class CandidateSourcingController {
     try {
       const responseForCandidate = await axiosRequest(graphqlQueryObjForCandidate);
       console.log('Response from creating candidates', responseForCandidate.data);
-      return responseForCandidate.data;
+      return responseForCandidate;
     } catch (error) {
       console.error('Error in creating candidates', error);
       throw error;
@@ -145,24 +146,21 @@ export class CandidateSourcingController {
   }
   
   async processProfilesWithRateLimiting(data: UserProfile[], jobObject: Jobs): Promise<{ manyPersonObjects: ArxenaPersonNode[], manyCandidateObjects: ArxenaCandidateNode[] }> {
-    console.log("")
+    console.log("Total number of profiles received:", data.length)
     const manyPersonObjects: ArxenaPersonNode[] = [];
     const manyCandidateObjects: ArxenaCandidateNode[] = [];
     const batchSize = 25; // Adjust based on your API's limits
     const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-  
+
     for (let i = 0; i < data.length; i += batchSize) {
       const batch = data.slice(i, i + batchSize);
       const phoneNumbers = batch.map(profile => profile.phone_number).filter(Boolean);
-      
       const personDetailsMap = await this.batchGetPersonDetails(phoneNumbers);
   
       for (const profile of batch) {
         const current_phone_number = profile?.phone_number;
-        if (!current_phone_number) continue;
-  
+        // if (!current_phone_number) continue;
         const personObj = personDetailsMap.get(current_phone_number);
-  
         if (!personObj || !personObj.name) {
           const { personNode, candidateNode } = processArxCandidate(profile, jobObject);
           manyPersonObjects.push(personNode);
@@ -175,9 +173,10 @@ export class CandidateSourcingController {
         await delay(1000); // 1 second delay, adjust as needed
       }
     }
-    console.log("Received total numbers in processProfilesWithRateLimiting:", manyCandidateObjects.length)
+    console.log("Received total numbers in manyCandidateObjects:", manyCandidateObjects.length)
+    console.log("Received total numbers in manyPersonObjects:", manyPersonObjects.length)
   
-    return { manyPersonObjects, manyCandidateObjects };
+    return { manyPersonObjects:manyPersonObjects, manyCandidateObjects:manyCandidateObjects };
   }
   @Post('post-candidates')
   async sourceCandidates(@Body() body: any) {
@@ -190,19 +189,25 @@ export class CandidateSourcingController {
       const jobObject = await this.getJobDetails(arxenaJobId);
       // const { manyPersonObjects, manyCandidateObjects } = await this.processProfiles(data, jobObject);
       const { manyPersonObjects, manyCandidateObjects } = await this.processProfilesWithRateLimiting(data, jobObject);
-
+      console.log("Number of person objects created:", manyPersonObjects.length)
+      console.log("Number of person candidates created:", manyPersonObjects.length)
       if (manyPersonObjects.length === 0) {
         return { message: 'All candidates already exist' };
       }
   
-      const arrayOfPersonIds = await this.createPeople(manyPersonObjects);
+      const responseForPerson = await this.createPeople(manyPersonObjects);
+      const arrayOfPersonIds = responseForPerson?.data?.data?.createPeople?.map((person: any) => person.id)
+
+      console.log("Number of person Ids Created:", arrayOfPersonIds.length)
+      
   
       manyCandidateObjects.forEach((candidate, index) => {
         candidate.peopleId = arrayOfPersonIds[index];
       });
   
-      const result = await this.createCandidates(manyCandidateObjects);
-      return { data: result };
+      const responseForCandidate = await this.createCandidates(manyCandidateObjects);
+      
+      return { "candidates": responseForCandidate.data, "people": responseForPerson.data };
     } catch (error) {
       console.error('Error in sourceCandidates:', error);
       return { error: error.message };
