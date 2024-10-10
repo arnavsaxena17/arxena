@@ -240,7 +240,7 @@ export class ArxChatEndpoint {
   async getCandidateIdsByPhoneNumbers(@Req() request: any): Promise<object> {
     const personObj: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(request.body.phoneNumber);
     const candidateId = personObj?.candidates?.edges[0]?.node?.id
-    console.log('candidateId to fetch all messages:', candidateId);
+    console.log('candidateId to fetch all candidateby phonenumber:', candidateId);
     return {"candidateId":candidateId};
   }
   
