@@ -146,17 +146,15 @@ export class CandidateSourcingController {
   }
   
   async processProfilesWithRateLimiting(data: UserProfile[], jobObject: Jobs): Promise<{ manyPersonObjects: ArxenaPersonNode[], manyCandidateObjects: ArxenaCandidateNode[] }> {
-    console.log("Total number of profiles received:", data.length)
+    console.log("Total number of profiles received:", data.length);
     const manyPersonObjects: ArxenaPersonNode[] = [];
     const manyCandidateObjects: ArxenaCandidateNode[] = [];
-    const batchSize = 25; // Adjust based on your API's limits
+    const batchSize = 25; 
     const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
     for (let i = 0; i < data.length; i += batchSize) {
       const batch = data.slice(i, i + batchSize);
       const phoneNumbers = batch.map(profile => profile.phone_number).filter(Boolean);
       const personDetailsMap = await this.batchGetPersonDetails(phoneNumbers);
-  
       for (const profile of batch) {
         const current_phone_number = profile?.phone_number;
         // if (!current_phone_number) continue;
@@ -167,17 +165,15 @@ export class CandidateSourcingController {
           manyCandidateObjects.push(candidateNode);
         }
       }
-  
-      // Add a delay between batches to avoid rate limiting
       if (i + batchSize < data.length) {
-        await delay(1000); // 1 second delay, adjust as needed
+        await delay(1000); 
       }
     }
-    console.log("Received total numbers in manyCandidateObjects:", manyCandidateObjects.length)
-    console.log("Received total numbers in manyPersonObjects:", manyPersonObjects.length)
-  
+    console.log("Received total numbers in manyCandidateObjects:", manyCandidateObjects.length);
+    console.log("Received total numbers in manyPersonObjects:", manyPersonObjects.length);
     return { manyPersonObjects:manyPersonObjects, manyCandidateObjects:manyCandidateObjects };
   }
+  
   @Post('post-candidates')
   async sourceCandidates(@Body() body: any) {
     console.log("Called post candidates API")
