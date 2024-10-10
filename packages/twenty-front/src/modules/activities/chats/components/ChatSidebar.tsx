@@ -21,7 +21,6 @@ const StyledSidebarContainer = styled.div`
 
 const StyledDropdownContainer = styled.div`
   display: flex;
-  justify-content: space-between;
   padding: 10px;
   background-color: #ffffff;
   border-bottom: 1px solid #e0e0e0;
@@ -37,11 +36,74 @@ const StyledSelect = styled.select`
   cursor: pointer;
   outline: none;
   transition: border-color 0.3s;
-
   &:hover, &:focus {
     border-color: #007bff;
   }
 `;
+
+const StyledMultiSelect = styled.select`
+  padding: 8px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  background-color: white;
+  font-size: 14px;
+  color: #333;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.3s;
+  &:hover, &:focus {
+    border-color: #007bff;
+  }
+  height: auto;
+`;
+
+
+const DropdownContainer = styled.div`
+  // position: relative;
+  margin-right: 10px;
+`;
+
+const DropdownButton = styled.button`
+  padding: 8px 12px;
+  background-color: #ffffff;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  min-width: 150px;
+  text-align: left;
+
+  &:hover {
+    background-color: #f0f0f0;
+  }
+`;
+
+const DropdownContent = styled.div<{ isOpen: boolean }>`
+  display: ${props => props.isOpen ? 'block' : 'none'};
+  position: absolute;
+  background-color: #f9f9f9;
+  min-width: 160px;
+  box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+  z-index: 1;
+  max-height: 300px;
+  overflow-y: auto;
+`;
+
+const CheckboxLabel = styled.label`
+  display: block;
+  padding: 8px 12px;
+  cursor: pointer;
+
+  &:hover {
+    background-color: #f0f0f0;
+  }
+`;
+
+const Checkbox = styled.input`
+  margin-right: 8px;
+`;
+
+
 
 const StyledSearchBox = styled(SearchBox)`
   margin: 10px;
@@ -79,8 +141,16 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedJob, setSelectedJob] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("");
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
+  const [selectedJobs, setSelectedJobs] = useState<string[]>([]);
+  const [isJobDropdownOpen, setIsJobDropdownOpen] = useState(false);
+  const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
+
 
   const sidebarRef = useRef<HTMLDivElement>(null);
+  const jobDropdownRef = useRef<HTMLDivElement>(null);
+  const statusDropdownRef = useRef<HTMLDivElement>(null);
+
 
   const handleIndividualSelect = (id: string) => {
     setSelectedIndividual(id);
@@ -100,6 +170,14 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
       if (sidebarRef.current && !sidebarRef.current.contains(event.target as Node)) {
         setSearchQuery("");
       }
+
+      if (jobDropdownRef.current && !jobDropdownRef.current.contains(event.target as Node)) {
+        setIsJobDropdownOpen(false);
+      }
+      if (statusDropdownRef.current && !statusDropdownRef.current.contains(event.target as Node)) {
+        setIsStatusDropdownOpen(false);
+      }
+      
     };
 
     document.addEventListener("mousedown", handleClickOutside);
@@ -109,7 +187,9 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     };
   }, []);
 
+
   const filteredIndividuals = individuals.filter((individual) => {
+    const messagesList = individual.candidates?.edges[0]?.node?.whatsappMessages?.edges.map(x => x.node.message) || [];
     const matchesSearch = 
       individual?.name?.firstName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (individual?.name?.firstName?.toLowerCase() + " " + individual?.name?.lastName?.toLowerCase()).includes(searchQuery.toLowerCase()) ||
@@ -118,16 +198,26 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
       individual?.phone?.toLowerCase()?.includes(searchQuery?.toLowerCase()) ||
       individual?.candidates?.edges[0]?.node?.id?.toLowerCase()?.includes(searchQuery.toLowerCase()) ||
       individual?.candidates?.edges[0]?.node?.status?.toLowerCase()?.includes(searchQuery.toLowerCase()) ||
-      individual?.id?.toLowerCase()?.includes(searchQuery.toLowerCase());
+      individual?.id?.toLowerCase()?.includes(searchQuery.toLowerCase()) ||
+      messagesList.some(message => message.toLowerCase().includes(searchQuery.toLowerCase()))
+
+
+    // const matchesJob = 
+    //   selectedJob === "" || 
+    //   individual?.candidates?.edges[0]?.node?.jobs?.id === selectedJob;
+
+    // const matchesStatus =
+    //   selectedStatus === "" ||
+    //   individual?.candidates?.edges[0]?.node?.status === selectedStatus;
+
 
     const matchesJob = 
-      selectedJob === "" || 
-      individual?.candidates?.edges[0]?.node?.jobs?.id === selectedJob;
+      selectedJobs.length === 0 || 
+      selectedJobs.includes(individual?.candidates?.edges[0]?.node?.jobs?.id || "");
 
     const matchesStatus =
-      selectedStatus === "" ||
-      individual?.candidates?.edges[0]?.node?.status === selectedStatus;
-
+      selectedStatuses.length === 0 ||
+      selectedStatuses.includes(individual?.candidates?.edges[0]?.node?.status || "");
     return matchesSearch && matchesJob && matchesStatus;
   });
 
@@ -151,12 +241,94 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     return bDate.getTime() - aDate.getTime();
   });
 
+
+  const handleJobChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedOptions = Array.from(event.target.selectedOptions, option => option.value);
+    setSelectedJobs(selectedOptions);
+  };
+
+  const handleStatusChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedOptions = Array.from(event.target.selectedOptions, option => option.value);
+    setSelectedStatuses(selectedOptions);
+  };
+
+  const handleJobToggle = (jobId: string) => {
+    setSelectedJobs(prev =>
+      prev.includes(jobId) ? prev.filter(id => id !== jobId) : [...prev, jobId]
+    );
+  };
+
+  const handleStatusToggle = (status: string) => {
+    setSelectedStatuses(prev =>
+      prev.includes(status) ? prev.filter(s => s !== status) : [...prev, status]
+    );
+  };
+
+
   console.log("Sorted individuals:", sortedIndividuals);
   
   return (
     <StyledSidebarContainer ref={sidebarRef}>
       <StyledDropdownContainer>
-        <StyledSelect
+      <DropdownContainer ref={jobDropdownRef}>
+          <DropdownButton onClick={() => setIsJobDropdownOpen(!isJobDropdownOpen)}>
+            {selectedJobs.length > 0 ? `${selectedJobs.length} Jobs Selected` : 'All Jobs'}
+          </DropdownButton>
+          <DropdownContent isOpen={isJobDropdownOpen}>
+            {jobs.map((job) => (
+              <CheckboxLabel key={job.node.id}>
+                <Checkbox
+                  type="checkbox"
+                  checked={selectedJobs.includes(job.node.id)}
+                  onChange={() => handleJobToggle(job.node.id)}
+                />
+                {job.node.name}
+              </CheckboxLabel>
+            ))}
+          </DropdownContent>
+        </DropdownContainer>
+        <DropdownContainer ref={statusDropdownRef}>
+          <DropdownButton onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}>
+            {selectedStatuses.length > 0 ? `${selectedStatuses.length} Statuses Selected` : 'All Statuses'}
+          </DropdownButton>
+          <DropdownContent isOpen={isStatusDropdownOpen}>
+            {Object.entries(statusLabels).map(([value, label]) => (
+              <CheckboxLabel key={value}>
+                <Checkbox
+                  type="checkbox"
+                  checked={selectedStatuses.includes(value)}
+                  onChange={() => handleStatusToggle(value)}
+                />
+                {label}
+              </CheckboxLabel>
+            ))}
+          </DropdownContent>
+        </DropdownContainer>
+
+      {/* <StyledMultiSelect
+          multiple
+          value={selectedJobs}
+          onChange={handleJobChange}
+        >
+          {jobs.map((job) => (
+            <option key={job.node.id} value={job.node.id}>
+              {job.node.name}
+            </option>
+          ))}
+        </StyledMultiSelect>
+        <StyledMultiSelect
+          multiple
+          value={selectedStatuses}
+          onChange={handleStatusChange}
+        >
+          {Object.entries(statusLabels).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </StyledMultiSelect> */}
+
+        {/* <StyledSelect
           value={selectedJob}
           onChange={(e) => setSelectedJob(e.target.value)}
         >
@@ -177,7 +349,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
               {label}
             </option>
           ))}
-        </StyledSelect>
+        </StyledSelect> */}
       </StyledDropdownContainer>
       <StyledSearchBox
         placeholder="Search chats"

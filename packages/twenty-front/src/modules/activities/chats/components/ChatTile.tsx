@@ -14,7 +14,6 @@ const StyledChatTile = styled.div<{ $selected: boolean }>`
   display: flex;
   justify-content: space-between;
   align-items: center;
-
   &:hover {
     background-color: ${(props) => (props.$selected ? "#f5f9fd" : "#f0f0f0")};
   }
