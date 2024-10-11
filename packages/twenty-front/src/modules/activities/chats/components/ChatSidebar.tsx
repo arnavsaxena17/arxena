@@ -41,44 +41,33 @@ const FixedHeader = styled.div`
   z-index:2;
 `;
 
-const StyledTable = styled.div`
-  display: table;
+const StyledTable = styled.table`
   width: max-content;
-  // width: 100%;
   border-collapse: collapse;
 `;
 
-const StyledTableCell = styled.div`
-  display: table-cell;
+const StyledTableCell = styled.td`
   padding: 10px;
-    white-space: nowrap;
   border-bottom: 1px solid #e0e0e0;
+  white-space: nowrap;
 `;
 
-const StyledTableHeaderCell = styled(StyledTableCell)`
-  font-weight: bold;
-    padding: 10px;
+
+const StyledTableHeaderCell = styled.th`
+  padding: 10px;
   text-align: left;
-
-    white-space: nowrap;
-
-`;
-
-
+  white-space: nowrap;`
+  ;
 
 const StyledTableBody = styled.div`
   display: table-row-group;
     background-color: #ffffff;
-
 `;
 
-
-const StyledTableHeader = styled.th`
-position: sticky;
-  background-color: #f0f0f0;
-  padding: 10px;
+const StyledTableHeader = styled.thead`
+  position: sticky;
   top: 0;
-
+  background-color: #f0f0f0;
   z-index: 1;
 `;
 
@@ -89,6 +78,8 @@ const StyledTableRow = styled.tr<{ $selected: boolean }>`
     background-color: ${(props) => (props.$selected ? "#f5f9fd" : "#f0f0f0")};
   }
 `;
+
+
 
 const StyledMultiSelect = styled.select`
   padding: 8px;
@@ -325,7 +316,6 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   return (
     <StyledSidebarContainer ref={sidebarRef}>
     <FixedHeader>
-
       <StyledDropdownContainer>
       <DropdownContainer ref={jobDropdownRef}>
           <DropdownButton onClick={() => setIsJobDropdownOpen(!isJobDropdownOpen)}>
@@ -357,7 +347,6 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
       <ScrollableContent>
         <StyledTable>
         <StyledTableHeader>
-            <tr>
               <StyledTableHeaderCell>Name</StyledTableHeaderCell>
               <StyledTableHeaderCell>Salary</StyledTableHeaderCell>
               <StyledTableHeaderCell>City</StyledTableHeaderCell>
@@ -367,7 +356,6 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
               <StyledTableHeaderCell>Job Title</StyledTableHeaderCell>
               <StyledTableHeaderCell>Job Title</StyledTableHeaderCell>
               <StyledTableHeaderCell>Job Title</StyledTableHeaderCell>
-            </tr>
             </StyledTableHeader>
         </StyledTable>
         <StyledTable>
