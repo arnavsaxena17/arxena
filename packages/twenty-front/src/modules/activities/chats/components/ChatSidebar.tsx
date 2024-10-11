@@ -23,6 +23,8 @@ const StyledDropdownContainer = styled.div`
   padding: 10px;
   background-color: #ffffff;
   border-bottom: 1px solid #e0e0e0;
+  overflow: hidden; // Hide overflow on the container
+
 `;
 
 const ScrollableContent = styled.div`
@@ -38,35 +40,28 @@ const FixedHeader = styled.div`
   background-color: #f5f5f5;
   z-index:2;
 `;
-const StyledSelect = styled.select`
-  padding: 8px;
-  border-radius: 4px;
-  border: 1px solid #ccc;
-  background-color: white;
-  font-size: 14px;
-  color: #333;
-  cursor: pointer;
-  outline: none;
-  transition: border-color 0.3s;
-  &:hover, &:focus {
-    border-color: #007bff;
-  }
-`;
 
 const StyledTable = styled.div`
   display: table;
-  width: 100%;
+  width: max-content;
+  // width: 100%;
   border-collapse: collapse;
 `;
 
 const StyledTableCell = styled.div`
   display: table-cell;
   padding: 10px;
+    white-space: nowrap;
   border-bottom: 1px solid #e0e0e0;
 `;
 
 const StyledTableHeaderCell = styled(StyledTableCell)`
   font-weight: bold;
+    padding: 10px;
+  text-align: left;
+
+    white-space: nowrap;
+
 `;
 
 
@@ -79,10 +74,10 @@ const StyledTableBody = styled.div`
 
 
 const StyledTableHeader = styled.th`
+position: sticky;
   background-color: #f0f0f0;
   padding: 10px;
   top: 0;
-  position: sticky;
 
   z-index: 1;
 `;
@@ -363,15 +358,15 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
         <StyledTable>
         <StyledTableHeader>
             <tr>
-              <StyledTableHeader>Name</StyledTableHeader>
-              <StyledTableHeader>Salary</StyledTableHeader>
-              <StyledTableHeader>City</StyledTableHeader>
-              <StyledTableHeader>Status</StyledTableHeader>
-              <StyledTableHeader>Job Title</StyledTableHeader>
-              <StyledTableHeader>Job Title</StyledTableHeader>
-              <StyledTableHeader>Job Title</StyledTableHeader>
-              <StyledTableHeader>Job Title</StyledTableHeader>
-              <StyledTableHeader>Job Title</StyledTableHeader>
+              <StyledTableHeaderCell>Name</StyledTableHeaderCell>
+              <StyledTableHeaderCell>Salary</StyledTableHeaderCell>
+              <StyledTableHeaderCell>City</StyledTableHeaderCell>
+              <StyledTableHeaderCell>Status</StyledTableHeaderCell>
+              <StyledTableHeaderCell>Job Title</StyledTableHeaderCell>
+              <StyledTableHeaderCell>Job Title</StyledTableHeaderCell>
+              <StyledTableHeaderCell>Job Title</StyledTableHeaderCell>
+              <StyledTableHeaderCell>Job Title</StyledTableHeaderCell>
+              <StyledTableHeaderCell>Job Title</StyledTableHeaderCell>
             </tr>
             </StyledTableHeader>
         </StyledTable>
