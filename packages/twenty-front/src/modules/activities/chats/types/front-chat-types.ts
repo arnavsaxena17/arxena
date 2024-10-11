@@ -190,6 +190,8 @@ export interface Name {
 export interface PersonNode {
   phone: string;
   email: string;
+  suitabilityDescription?: string;
+
   jobTitle: string;
   id: string;
   position: number;

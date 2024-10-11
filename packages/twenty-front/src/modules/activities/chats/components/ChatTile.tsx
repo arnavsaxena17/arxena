@@ -12,11 +12,22 @@ const StyledChatTile = styled.div<{ $selected: boolean }>`
   transition: all 0.3s;
   cursor: pointer;
   display: flex;
+  // width: 20vw;
   justify-content: space-between;
   align-items: center;
   &:hover {
     background-color: ${(props) => (props.$selected ? "#f5f9fd" : "#f0f0f0")};
   }
+`;
+
+const DescriptionContainer = styled.div`
+  font-size: 0.8rem;
+  color: #666;
+  margin-top: 0.25rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
 `;
 
 const NameContainer = styled.div`
@@ -126,14 +137,21 @@ const ChatTile: React.FC<ChatTileProps> = ({
   
     return lastMessageTimestamp;
   };
-  
   // Usage:
   const lastMessageTimestamp = getLastMessageTimestamp(individual);
-  
-
-
-
   const chatCount = individual.candidates.edges[0].node.whatsappMessages.edges.length;
+  const getCandidateDescription = (individual: frontChatTypes.PersonNode): string => {
+    // This is a placeholder. Replace with actual logic to get the description from your data.
+    const descriptions = [
+      "Strong fit for the role, 5 years relevant experience",
+      "Potential candidate, needs further screening",
+      "Excellent communication skills, lacks technical background",
+      "Perfect technical skills, limited industry experience"
+    ];
+    return descriptions[Math.floor(Math.random() * descriptions.length)];
+  };
+
+  const candidateDescription = individual.jobTitle
 
   return (
     <StyledChatTile
@@ -144,6 +162,8 @@ const ChatTile: React.FC<ChatTileProps> = ({
         <span>{individual.name.firstName} {individual.name.lastName}</span>
         <ChatCount>{chatCount}</ChatCount>
       </NameContainer>
+      <DescriptionContainer>{candidateDescription}</DescriptionContainer>
+
       <InfoContainer>
         <StatusBadge>{statusText}</StatusBadge>
         {unreadMessagesCount > 0 && (
