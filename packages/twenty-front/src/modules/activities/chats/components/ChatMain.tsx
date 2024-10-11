@@ -5,6 +5,8 @@ import { useFindManyPeople } from '../hooks/useFindManyPeople';
 
 import * as frontChatTypes from '../types/front-chat-types';
 import ChatWindow from './ChatWindow';
+import styled from '@emotion/styled';
+
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import ChatSidebar from './ChatSidebar';
@@ -15,6 +17,24 @@ import { Job } from "../types/front-chat-types";
 interface ChatMainProps {
   initialCandidateId?: string;
 }
+const ChatContainer = styled.div`
+  display: flex;
+  height: 100vh;
+`;
+
+const SidebarContainer = styled.div`
+  // width: 50%;
+  overflow-x: auto;
+  display: flex;
+  height: 100vh;
+
+`;
+
+const ChatWindowContainer = styled.div`
+  // width: 120%;
+  z-index: 1;
+`;
+
 
 export default function ChatMain({ initialCandidateId }: ChatMainProps) {
 
@@ -151,18 +171,19 @@ export default function ChatMain({ initialCandidateId }: ChatMainProps) {
   }, [selectedIndividual, individuals]);
 
   return (
-    <>
-      <div>
-        <div>
-          <div style={{ display: 'flex' }}>
-            <ChatSidebar individuals={individuals} selectedIndividual={selectedIndividual} setSelectedIndividual={setSelectedIndividual} unreadMessages={unreadMessages} jobs={jobs}
-            />
-            <div>
-              <ChatWindow selectedIndividual={selectedIndividual} individuals={individuals} />
-            </div>
-          </div>
-        </div>
-      </div>
-    </>
+    <ChatContainer>
+      <SidebarContainer>
+        <ChatSidebar
+          individuals={individuals}
+          selectedIndividual={selectedIndividual}
+          setSelectedIndividual={setSelectedIndividual}
+          unreadMessages={unreadMessages}
+          jobs={jobs}
+        />
+      </SidebarContainer>
+      <ChatWindowContainer>
+        <ChatWindow selectedIndividual={selectedIndividual} individuals={individuals} />
+      </ChatWindowContainer>
+    </ChatContainer>
   );
 }

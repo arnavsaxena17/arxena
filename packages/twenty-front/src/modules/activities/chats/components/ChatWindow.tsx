@@ -85,6 +85,7 @@ const StyledButtonGroup = styled.div`
 const ChatContainer = styled.div`
   display: flex;
   height: 90vh;
+  z-index: 3;
 `;
 
 
@@ -156,6 +157,7 @@ const StyledWindow = styled.div`
   flex-direction: column;
   height: 90vh;
   margin: 0 auto;
+  z-index:2;
 `;
 
 const StyledChatInput = styled.input`
@@ -206,6 +208,7 @@ const StyledDateComponent = styled.span`
 const StyledScrollingView = styled.div`
   padding-top: 5rem;
   margin-bottom:5rem;
+  z-index: 1;
 `;
 
 const StyledButtonsBelowChatMessage = styled.div`
@@ -629,7 +632,6 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
                       <input value={city} onChange={(e) => setCity(e.target.value)} onBlur={handleCityUpdate} onKeyPress={(e) => e.key === 'Enter' && handleCityUpdate()} autoFocus />
                     ) : ( `City: ${city || 'N/A'}` )}
                   </EditableField>
-
                 </AdditionalInfo>
               </TopbarContainer>
                 <div style={{ display: 'flex', alignItems: 'center' }}>
