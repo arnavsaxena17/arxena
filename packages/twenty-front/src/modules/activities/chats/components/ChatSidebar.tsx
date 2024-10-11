@@ -14,7 +14,6 @@ const StyledSidebarContainer = styled.div`
   flex-direction: column;
   width: 20vw;
   height: 100%;
-  overflow-y: auto;
   background-color: #f5f5f5;
   border-right: 1px solid #e0e0e0;
 `;
@@ -26,6 +25,19 @@ const StyledDropdownContainer = styled.div`
   border-bottom: 1px solid #e0e0e0;
 `;
 
+const ScrollableContent = styled.div`
+  flex-grow: 1;
+  overflow-y: auto;
+  overflow-x: auto;
+
+`;
+
+const FixedHeader = styled.div`
+  position: sticky;
+  top: 0;
+  background-color: #f5f5f5;
+  z-index:2;
+`;
 const StyledSelect = styled.select`
   padding: 8px;
   border-radius: 4px;
@@ -38,6 +50,48 @@ const StyledSelect = styled.select`
   transition: border-color 0.3s;
   &:hover, &:focus {
     border-color: #007bff;
+  }
+`;
+
+const StyledTable = styled.div`
+  display: table;
+  width: 100%;
+  border-collapse: collapse;
+`;
+
+const StyledTableCell = styled.div`
+  display: table-cell;
+  padding: 10px;
+  border-bottom: 1px solid #e0e0e0;
+`;
+
+const StyledTableHeaderCell = styled(StyledTableCell)`
+  font-weight: bold;
+`;
+
+
+
+const StyledTableBody = styled.div`
+  display: table-row-group;
+    background-color: #ffffff;
+
+`;
+
+
+const StyledTableHeader = styled.th`
+  background-color: #f0f0f0;
+  padding: 10px;
+  top: 0;
+  position: sticky;
+
+  z-index: 1;
+`;
+
+const StyledTableRow = styled.tr<{ $selected: boolean }>`
+  background-color: ${(props) => (props.$selected ? "#f5f9fd" : "white")};
+  cursor: pointer;
+  &:hover {
+    background-color: ${(props) => (props.$selected ? "#f5f9fd" : "#f0f0f0")};
   }
 `;
 
@@ -72,6 +126,7 @@ const DropdownButton = styled.button`
   font-size: 14px;
   min-width: 150px;
   text-align: left;
+  z-index: 1;
 
   &:hover {
     background-color: #f0f0f0;
@@ -84,7 +139,7 @@ const DropdownContent = styled.div<{ isOpen: boolean }>`
   background-color: #f9f9f9;
   min-width: 160px;
   box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
-  z-index: 1;
+  z-index: 10;
   max-height: 300px;
   overflow-y: auto;
 `;
@@ -108,6 +163,11 @@ const Checkbox = styled.input`
 const StyledSearchBox = styled(SearchBox)`
   margin: 10px;
 `;
+
+const StyledTopBarSideBar = styled.div`
+  position: fixed;
+  display: flex;
+`
 
 interface ChatSidebarProps {
   individuals: frontChatTypes.PersonNode[];
@@ -269,6 +329,8 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   
   return (
     <StyledSidebarContainer ref={sidebarRef}>
+    <FixedHeader>
+
       <StyledDropdownContainer>
       <DropdownContainer ref={jobDropdownRef}>
           <DropdownButton onClick={() => setIsJobDropdownOpen(!isJobDropdownOpen)}>
@@ -277,12 +339,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
           <DropdownContent isOpen={isJobDropdownOpen}>
             {jobs.map((job) => (
               <CheckboxLabel key={job.node.id}>
-                <Checkbox
-                  type="checkbox"
-                  checked={selectedJobs.includes(job.node.id)}
-                  onChange={() => handleJobToggle(job.node.id)}
-                />
-                {job.node.name}
+                <Checkbox type="checkbox" checked={selectedJobs.includes(job.node.id)} onChange={() => handleJobToggle(job.node.id)} /> {job.node.name}
               </CheckboxLabel>
             ))}
           </DropdownContent>
@@ -294,82 +351,48 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
           <DropdownContent isOpen={isStatusDropdownOpen}>
             {Object.entries(statusLabels).map(([value, label]) => (
               <CheckboxLabel key={value}>
-                <Checkbox
-                  type="checkbox"
-                  checked={selectedStatuses.includes(value)}
-                  onChange={() => handleStatusToggle(value)}
-                />
-                {label}
+                <Checkbox type="checkbox" checked={selectedStatuses.includes(value)} onChange={() => handleStatusToggle(value)} /> {label}
               </CheckboxLabel>
             ))}
           </DropdownContent>
         </DropdownContainer>
-
-      {/* <StyledMultiSelect
-          multiple
-          value={selectedJobs}
-          onChange={handleJobChange}
-        >
-          {jobs.map((job) => (
-            <option key={job.node.id} value={job.node.id}>
-              {job.node.name}
-            </option>
-          ))}
-        </StyledMultiSelect>
-        <StyledMultiSelect
-          multiple
-          value={selectedStatuses}
-          onChange={handleStatusChange}
-        >
-          {Object.entries(statusLabels).map(([value, label]) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </StyledMultiSelect> */}
-
-        {/* <StyledSelect
-          value={selectedJob}
-          onChange={(e) => setSelectedJob(e.target.value)}
-        >
-          <option value="">All Jobs</option>
-          {jobs.map((job) => (
-            <option key={job.node.id} value={job.node.id}>
-              {job.node.name}
-            </option>
-          ))}
-        </StyledSelect>
-        <StyledSelect
-          value={selectedStatus}
-          onChange={(e) => setSelectedStatus(e.target.value)}
-        >
-          <option value="">All Statuses</option>
-          {Object.entries(statusLabels).map(([value, label]) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </StyledSelect> */}
       </StyledDropdownContainer>
-      <StyledSearchBox
-        placeholder="Search chats"
-        value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
-      />
-      {sortedIndividuals.map((individual) => (
-        <ChatTile
-          key={individual.id}
-          id={individual.id}
-          individual={individual}
-          setSelectedIndividual={handleIndividualSelect}
-          selectedIndividual={selectedIndividual}
-          unreadMessagesCount={
-            unreadMessages.listOfUnreadMessages
-              ?.filter((unread) => unread.candidateId === individual.candidates?.edges[0]?.node?.id)
-              [0]?.ManyUnreadMessages.length || 0
-          }
-        />
-      ))}
+      <StyledSearchBox placeholder="Search chats" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+      </FixedHeader>
+      <ScrollableContent>
+        <StyledTable>
+        <StyledTableHeader>
+            <tr>
+              <StyledTableHeader>Name</StyledTableHeader>
+              <StyledTableHeader>Salary</StyledTableHeader>
+              <StyledTableHeader>City</StyledTableHeader>
+              <StyledTableHeader>Status</StyledTableHeader>
+              <StyledTableHeader>Job Title</StyledTableHeader>
+              <StyledTableHeader>Job Title</StyledTableHeader>
+              <StyledTableHeader>Job Title</StyledTableHeader>
+              <StyledTableHeader>Job Title</StyledTableHeader>
+              <StyledTableHeader>Job Title</StyledTableHeader>
+            </tr>
+            </StyledTableHeader>
+        </StyledTable>
+        <StyledTable>
+          <StyledTableBody>
+            {sortedIndividuals.map((individual) => (
+              <StyledTableRow key={individual.id} $selected={selectedIndividual === individual.id} onClick={() => handleIndividualSelect(individual.id)} >
+                <StyledTableCell>{`${individual.name.firstName} ${individual.name.lastName}`}</StyledTableCell>
+                <StyledTableCell>{individual.salary || 'N/A'}</StyledTableCell>
+                <StyledTableCell>{individual.city || 'N/A'}</StyledTableCell>
+                <StyledTableCell>{individual.candidates?.edges[0]?.node?.status || 'N/A'}</StyledTableCell>
+                <StyledTableCell>{individual.jobTitle || 'N/A'}</StyledTableCell>
+                <StyledTableCell>{individual.jobTitle || 'N/A'}</StyledTableCell>
+                <StyledTableCell>{individual.jobTitle || 'N/A'}</StyledTableCell>
+                <StyledTableCell>{individual.jobTitle || 'N/A'}</StyledTableCell>
+                <StyledTableCell>{individual.jobTitle || 'N/A'}</StyledTableCell>
+              </StyledTableRow>
+            ))}
+          </StyledTableBody>
+        </StyledTable>
+      </ScrollableContent>
     </StyledSidebarContainer>
   );
 };

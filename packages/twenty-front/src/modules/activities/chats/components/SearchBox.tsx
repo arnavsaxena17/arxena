@@ -3,6 +3,7 @@ import styled from "@emotion/styled";
 
 const SearchBoxContainer = styled.div`
   display: flex;
+  // position:fixed;
   align-items: center;
   border-bottom: 1px solid #ccc;
   padding: 1rem 0.5rem;
