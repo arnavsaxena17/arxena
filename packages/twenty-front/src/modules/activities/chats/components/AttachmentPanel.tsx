@@ -1,9 +1,5 @@
 import React, { useState, useEffect,useCallback, useMemo } from 'react';
-import ChatTile from "./ChatTile";
 import styled from "@emotion/styled";
-import { useNavigate } from 'react-router-dom';
-import SearchBox from "./SearchBox";
-import JobDropdown from "./JobDropdown";
 import axios from 'axios';
 import { useRecoilState } from 'recoil';
 import { tokenPairState } from '@/auth/states/tokenPairState';
@@ -11,10 +7,7 @@ import mammoth from 'mammoth';
 import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
 import {Document, Page, pdfjs} from 'react-pdf';
 
-
-
 pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.mjs`;
-
 
 const PanelContainer = styled.div<{ isOpen: boolean }>`
   position: fixed;
