@@ -18,7 +18,7 @@ pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pd
 
 const PanelContainer = styled.div<{ isOpen: boolean }>`
   position: fixed;
-  top: 0;
+  top: 10;
   right: ${props => (props.isOpen ? '0' : '-40%')};
   width: 40%;
   height: 100vh;
@@ -33,7 +33,6 @@ const PanelContainer = styled.div<{ isOpen: boolean }>`
 
 const Header = styled.div`
   padding: 15px;
-  
   border-bottom: 1px solid #e0e0e0;
   width:80%;
   display: flex;
@@ -143,6 +142,7 @@ const ContentViewer = styled.pre`
   padding: 8px;
   border: 1px solid #ccc;
   border-radius: 4px;
+  top:200px;
   font-size: 0.9em;
 `;
 
@@ -415,13 +415,6 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({ isOpen, onClose, cand
             </Document>
             {/* Add navigation controls for PDF if needed */}
           </PDFContainer>
-
-
-            // <PdfViewer fileContent={fileContent} />
-          
-        
-        
-        
         
         ) : typeof fileContent === 'string' && fileContent.startsWith('<') ? (
             <DocxViewer dangerouslySetInnerHTML={{ __html: fileContent }} />
