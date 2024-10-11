@@ -13,6 +13,7 @@ import { p } from 'node_modules/msw/lib/core/GraphQLHandler-907fc607';
 import { useHotkeys } from 'react-hotkeys-hook';
 import styled from '@emotion/styled';
 import { css } from '@emotion/react';
+import { Notes } from '@/activities/notes/components/Notes';
 
 import AttachmentPanel from './AttachmentPanel';
 import { mutationToUpdateOneCandidate } from '../graphql-queries-chat/chat-queries';
@@ -76,6 +77,11 @@ const StyledButtonGroup = styled.div`
 `;
 
 
+const ChatContainer = styled.div`
+  display: flex;
+  height: 90vh;
+`;
+
 
 const StyledButton = styled.button<{ bgColor: string }>`
   display: flex;
@@ -111,10 +117,16 @@ const StyledButton = styled.button<{ bgColor: string }>`
     pointer-events: none;
     white-space: nowrap;
   }
-
   &:hover::after {
     opacity: 1;
   }
+`;
+
+const NotesPanel = styled.div`
+  margin-top:100px;
+  width: 800px;
+  border-left: 1px solid #ccc;
+  overflow-y: scroll;
 `;
 
 const AttachmentButton = styled(StyledButton)`
@@ -141,7 +153,7 @@ const StyledWindow = styled.div`
 
 const StyledChatInput = styled.input`
   padding: 0.5em;
-  width: 100%;
+  // width: 100%;
   display: block;
   flex: 1;
   border: 1px solid #ccc;
@@ -170,8 +182,8 @@ const ChatView = styled.div`
   position: relative;
   border: 1px solid #ccc;
   overflow-y: scroll;
+  width: 100%;
   height: 70vh;
-  width: auto;
 `;
 
 const StyledDateComponent = styled.span`
@@ -251,17 +263,21 @@ const iconStyles = css`
   height: 16px;
 `;
 
+const StyledSvg = styled.svg`
+  ${iconStyles}
+`;
+
 const CopyIcon = () => (
-  <svg css={iconStyles} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+  <StyledSvg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <path d="M8 4v12a2 2 0 002 2h8a2 2 0 002-2V7.242a2 2 0 00-.602-1.43L16.083 2.57A2 2 0 0014.685 2H10a2 2 0 00-2 2z" />
     <path d="M16 18v2a2 2 0 01-2 2H6a2 2 0 01-2-2V9a2 2 0 012-2h2" />
-  </svg>
+  </StyledSvg>
 );
 
 const CheckIcon = () => (
-  <svg css={iconStyles} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+  <StyledSvg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <path d="M20 6L9 17l-5-5" />
-  </svg>
+  </StyledSvg>
 );
 
 
@@ -270,7 +286,6 @@ const AttachmentIcon = () => (
     <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
   </svg>
 );
-
 
 const formatDate = (date: string) => dayjs(date).format('YYYY-MM-DD');
 
@@ -482,13 +497,13 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
   };
 
   
-    const copyToClipboard = (text, field) => {
+    const copyToClipboard = (text:any, field:any) => {
       navigator.clipboard.writeText(text);
       setCopiedField(field);
       setTimeout(() => setCopiedField(null), 2000);
     };
   
-    const CopyableFieldComponent = ({ label, value, field, alwaysShowFull = false }) => (
+    const CopyableFieldComponent: React.FC<{ label: string; value: string; field: string; alwaysShowFull?: boolean }> = ({ label, value, field, alwaysShowFull = false }) => (
       <CopyableField onClick={() => copyToClipboard(value, field)} title={copiedField === field ? 'Copied!' : 'Click to copy'} >
       {label}: {alwaysShowFull ? value : ``}
       {copiedField === field ? <CheckIcon /> : <CopyIcon />}
@@ -518,65 +533,63 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
       <div style={{ display: 'flex', flexDirection: 'column' }}>
         {props.selectedIndividual && (
           <StyledWindow>
+            <ChatContainer>
             <ChatView ref={chatViewRef}>
-            <StyledTopBar>
-
-            <TopbarContainer>
-              <FieldsContainer>
-                <CopyableFieldComponent 
-                  label="Name"
-                  value={`${currentIndividual?.name.firstName} ${currentIndividual?.name.lastName}`}
-                  field="name"
-                  alwaysShowFull = {true}
-                />
-                <CopyableFieldComponent 
-                  label="Phone"
-                  value={currentIndividual?.phone}
-                  field="phone"
-                />
-                <CopyableFieldComponent 
-                  label="Person ID"
-                  value={currentIndividual?.id}
-                  field="personId"
-                />
-                <CopyableFieldComponent 
-                  label="Candidate ID"
-                  value={currentIndividual?.candidates.edges[0].node.id}
-                  field="candidateId"
-                />
-              </FieldsContainer>
-              <AdditionalInfo>
-                Messages: {messageHistory?.length || 0} | 
-                Current Job: {currentIndividual?.candidates?.edges[0]?.node?.jobs?.name || 'N/A'}
-              </AdditionalInfo>
-            </TopbarContainer>
-
-              <div style={{ display: 'flex', alignItems: 'center' }}>
-                <StyledSelect value={lastStatus || ''} onChange={(e) => handleStatusUpdate(e.target.value)} >
-                  <option value="" disabled>Update Status</option>
-                  {statusesArray.map((status) => (
-                    <option key={status} value={status}>
-                      {statusLabels[status]}
-                    </option>
-                  ))}
-                </StyledSelect>
-                <StyledButtonGroup>
-                  <StyledButton onClick={handleStopCandidate} bgColor="black" data-tooltip="Stop Chat">
-                    <StopIcon />
-                  </StyledButton>
-                  <StyledButton onClick={handleNavigateToPersonPage} bgColor="black" data-tooltip="Person">
-                    <PersonIcon />
-                  </StyledButton>
-                  <StyledButton onClick={handleNavigateToCandidatePage} bgColor="black" data-tooltip="Candidate">
-                    <CandidateIcon />
-                  </StyledButton>
-                  <AttachmentButton onClick={handleToggleAttachmentPanel} bgColor="black" data-tooltip="View Attachments">
-                    <AttachmentIcon />
-                  </AttachmentButton>
-                </StyledButtonGroup>
-              </div>
-            </StyledTopBar>
-
+              <StyledTopBar>
+              <TopbarContainer>
+                <FieldsContainer>
+                  <CopyableFieldComponent 
+                    label="Name"
+                    value={`${currentIndividual?.name.firstName} ${currentIndividual?.name.lastName}`}
+                    field="name"
+                    alwaysShowFull = {true}
+                  />
+                  <CopyableFieldComponent 
+                    label="Phone"
+                    value={currentIndividual?.phone || ''}
+                    field="phone"
+                  />
+                  <CopyableFieldComponent 
+                    label="Person ID"
+                    value={currentIndividual?.id || ''}
+                    field="personId"
+                  />
+                  <CopyableFieldComponent 
+                    label="Candidate ID"
+                    value={currentIndividual?.candidates.edges[0].node.id || ""}
+                    field="candidateId"
+                  />
+                </FieldsContainer>
+                <AdditionalInfo>
+                  Messages: {messageHistory?.length || 0} | 
+                  Current Job: {currentIndividual?.candidates?.edges[0]?.node?.jobs?.name || 'N/A'}
+                </AdditionalInfo>
+              </TopbarContainer>
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                  <StyledSelect value={lastStatus || ''} onChange={(e) => handleStatusUpdate(e.target.value)} >
+                    <option value="" disabled>Update Status</option>
+                    {statusesArray.map((status) => (
+                      <option key={status} value={status}>
+                        {statusLabels[status]}
+                      </option>
+                    ))}
+                  </StyledSelect>
+                  <StyledButtonGroup>
+                    <StyledButton onClick={handleStopCandidate} bgColor="black" data-tooltip="Stop Chat">
+                      <StopIcon />
+                    </StyledButton>
+                    <StyledButton onClick={handleNavigateToPersonPage} bgColor="black" data-tooltip="Person">
+                      <PersonIcon />
+                    </StyledButton>
+                    <StyledButton onClick={handleNavigateToCandidatePage} bgColor="black" data-tooltip="Candidate">
+                      <CandidateIcon />
+                    </StyledButton>
+                    <AttachmentButton onClick={handleToggleAttachmentPanel} bgColor="black" data-tooltip="View Attachments">
+                      <AttachmentIcon />
+                    </AttachmentButton>
+                  </StyledButtonGroup>
+                </div>
+              </StyledTopBar>
               <StyledScrollingView>
                 {messageHistory.map((message, index) => {
                   const showDateSeparator = index === 0 || formatDate(messageHistory[index - 1]?.createdAt) !== formatDate(message?.createdAt);
@@ -593,6 +606,17 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
                 })}
               </StyledScrollingView>
             </ChatView>
+            <NotesPanel>
+              {currentCandidateId && (
+                <Notes
+                  targetableObject={{
+                    targetObjectNameSingular: "candidate",
+                    id: currentCandidateId
+                  }}
+                />
+              )}
+            </NotesPanel>
+          </ChatContainer>
             <StyledChatInputBox>
               <div>
                 <textarea name="" id="" cols={100} disabled ref={botResponsePreviewRef} placeholder="Bot Response Preview will appear here..."></textarea>

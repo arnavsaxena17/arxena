@@ -22,6 +22,14 @@ const StyledNotesContainer = styled.div`
   overflow: auto;
 `;
 
+import { useLocation } from 'react-router-dom';
+
+const useShouldShowPlusButton = () => {
+  const location = useLocation();
+  // return !location.pathname.includes('chats');
+  return true;
+};
+
 export const Notes = ({
   targetableObject,
 }: {
@@ -37,23 +45,25 @@ export const Notes = ({
         <AnimatedPlaceholder type="noNote" />
         <AnimatedPlaceholderEmptyTextContainer>
           <AnimatedPlaceholderEmptyTitle>
-            No notes
+        No notes
           </AnimatedPlaceholderEmptyTitle>
           <AnimatedPlaceholderEmptySubTitle>
-            There are no associated notes with this record.
+        There are no associated notes with this record.
           </AnimatedPlaceholderEmptySubTitle>
         </AnimatedPlaceholderEmptyTextContainer>
-        <Button
-          Icon={IconPlus}
-          title="New note"
-          variant="secondary"
-          onClick={() =>
-            openCreateActivity({
-              type: 'Note',
-              targetableObjects: [targetableObject],
-            })
-          }
-        />
+        {useShouldShowPlusButton() && (
+          <Button
+        Icon={IconPlus}
+        title="New note"
+        variant="secondary"
+        onClick={() =>
+          openCreateActivity({
+            type: 'Note',
+            targetableObjects: [targetableObject || "candidate"],
+          })
+        }
+          />
+        )}
       </AnimatedPlaceholderEmptyContainer>
     );
   }
@@ -61,22 +71,24 @@ export const Notes = ({
   return (
     <StyledNotesContainer>
       <NoteList
-        title="All"
-        notes={notes ?? []}
-        button={
-          <Button
-            Icon={IconPlus}
-            size="small"
-            variant="secondary"
-            title="Add note"
-            onClick={() =>
-              openCreateActivity({
-                type: 'Note',
-                targetableObjects: [targetableObject],
-              })
-            }
-          ></Button>
-        }
+      title="All"
+      notes={notes ?? []}
+      button={
+        useShouldShowPlusButton() && (
+        <Button
+          Icon={IconPlus}
+          size="small"
+          variant="secondary"
+          title="Add note"
+          onClick={() =>
+          openCreateActivity({
+            type: 'Note',
+            targetableObjects: [targetableObject || "candidate"],
+          })
+          }
+        ></Button>
+        )
+      }
       />
     </StyledNotesContainer>
   );
