@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import * as frontChatTypes from "../types/front-chat-types";
 import ChatTile from "./ChatTile";
 import styled from "@emotion/styled";
@@ -241,6 +241,29 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   };
 
 
+  const jobCounts = useMemo(() => {
+    const counts: { [key: string]: number } = {};
+    filteredIndividuals.forEach((individual) => {
+      const jobId = individual?.candidates?.edges[0]?.node?.jobs?.id;
+      if (jobId) {
+        counts[jobId] = (counts[jobId] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [filteredIndividuals]);
+
+  const statusCounts = useMemo(() => {
+    const counts: { [key: string]: number } = {};
+    filteredIndividuals.forEach((individual) => {
+      const status = individual?.candidates?.edges[0]?.node?.status;
+      if (status) {
+        counts[status] = (counts[status] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [filteredIndividuals]);
+
+
   console.log("Sorted individuals:", sortedIndividuals);
   
   return (
@@ -252,23 +275,33 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
             {selectedJobs.length > 0 ? `${selectedJobs.length} Jobs Selected` : 'All Jobs'}
           </DropdownButton>
           <DropdownContent isOpen={isJobDropdownOpen}>
-            {jobs.map((job) => (
-              <CheckboxLabel key={job.node.id}>
-                <Checkbox type="checkbox" checked={selectedJobs.includes(job.node.id)} onChange={() => handleJobToggle(job.node.id)} /> {job.node.name}
-              </CheckboxLabel>
-            ))}
-          </DropdownContent>
+              {jobs.map((job) => (
+                <CheckboxLabel key={job.node.id}>
+                  <Checkbox 
+                    type="checkbox" 
+                    checked={selectedJobs.includes(job.node.id)} 
+                    onChange={() => handleJobToggle(job.node.id)} 
+                  /> 
+                  {job.node.name} ({jobCounts[job.node.id] || 0})
+                </CheckboxLabel>
+              ))}
+            </DropdownContent>
         </DropdownContainer>
         <DropdownContainer ref={statusDropdownRef}>
           <DropdownButton onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}>
             {selectedStatuses.length > 0 ? `${selectedStatuses.length} Statuses Selected` : 'All Statuses'}
           </DropdownButton>
           <DropdownContent isOpen={isStatusDropdownOpen}>
-            {Object.entries(statusLabels).map(([value, label]) => (
-              <CheckboxLabel key={value}>
-                <Checkbox type="checkbox" checked={selectedStatuses.includes(value)} onChange={() => handleStatusToggle(value)} /> {label}
-              </CheckboxLabel>
-            ))}
+              {Object.entries(statusLabels).map(([value, label]) => (
+                <CheckboxLabel key={value}>
+                  <Checkbox 
+                    type="checkbox" 
+                    checked={selectedStatuses.includes(value)} 
+                    onChange={() => handleStatusToggle(value)} 
+                  /> 
+                  {label} ({statusCounts[value] || 0})
+                </CheckboxLabel>
+              ))}
           </DropdownContent>
         </DropdownContainer>
       </StyledDropdownContainer>
