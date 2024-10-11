@@ -356,6 +356,13 @@ export type FullName = {
   lastName: Scalars['String']['output'];
 };
 
+export type Salary = {
+  __typename?: 'Salary';
+  salary: Scalars['String']['output'];
+  currency: Scalars['String']['output'];
+  salaryNumeric: Scalars['Int']['output'];
+};
+
 export type InvalidatePassword = {
   __typename?: 'InvalidatePassword';
   /** Boolean that confirms query was dispatched */

@@ -16,7 +16,7 @@ import { css } from '@emotion/react';
 import { Notes } from '@/activities/notes/components/Notes';
 
 import AttachmentPanel from './AttachmentPanel';
-import { mutationToUpdateOneCandidate } from '../graphql-queries-chat/chat-queries';
+import { mutationToUpdateOneCandidate, mutationToUpdateOnePerson } from '../graphql-queries-chat/chat-queries';
 
 import { useNavigate } from 'react-router-dom';
 // import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -36,7 +36,12 @@ const statusLabels: { [key: string]: string } = {
 
 const statusesArray = Object.keys(statusLabels);
 
-
+const EditableField = styled.span<{ isEditing: boolean }>`
+  cursor: ${props => props.isEditing ? 'text' : 'pointer'};
+  &:hover {
+    text-decoration: ${props => props.isEditing ? 'none' : 'underline'};
+  }
+`;
 
 const StyledSelect = styled.select`
   padding: 0.5em;
@@ -124,9 +129,11 @@ const StyledButton = styled.button<{ bgColor: string }>`
 
 const NotesPanel = styled.div`
   margin-top:100px;
+  display: flex;
+  position: relative;
+  overflow-y: scroll;
   width: 800px;
   border-left: 1px solid #ccc;
-  overflow-y: scroll;
 `;
 
 const AttachmentButton = styled(StyledButton)`
@@ -290,6 +297,11 @@ const AttachmentIcon = () => (
 const formatDate = (date: string) => dayjs(date).format('YYYY-MM-DD');
 
 export default function ChatWindow(props: { selectedIndividual: string; individuals: frontChatTypes.PersonNode[] }) {
+  const allIndividuals = props?.individuals
+
+  const currentIndividual = allIndividuals?.find(individual => individual?.id === props?.selectedIndividual);
+  const currentCandidateId = currentIndividual?.candidates?.edges[0]?.node?.id;
+
   const navigate = useNavigate();
 
   const [messageHistory, setMessageHistory] = useState<frontChatTypes.MessageNode[]>([]);
@@ -303,12 +315,20 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
   const [qrCode, setQrCode] = useState('');
   const chatViewRef = useRef<HTMLDivElement>(null);
   const [copiedField, setCopiedField] = useState(null);
+  const [isEditingSalary, setIsEditingSalary] = useState(false);
+  const [isEditingCity, setIsEditingCity] = useState(false);
+  const [salary, setSalary] = useState(currentIndividual?.salary || '');
+  const [city, setCity] = useState(currentIndividual?.city || '');
 
 
-  const allIndividuals = props?.individuals
 
-  const currentIndividual = allIndividuals?.find(individual => individual?.id === props?.selectedIndividual);
-  const currentCandidateId = currentIndividual?.candidates?.edges[0]?.node?.id;
+  useEffect(() => {
+    setSalary(currentIndividual?.salary || '');
+    setCity(currentIndividual?.city || '');
+  }, [currentIndividual]);
+
+
+
   const currentCandidateName = currentIndividual?.name.firstName + " " + currentIndividual?.name.lastName
 
   useEffect(() => {
@@ -325,6 +345,59 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
   };
   const handleNavigateToCandidatePage = () => {
     navigate(`/object/candidate/${currentCandidateId}`);
+  };
+
+
+  const handleSalaryUpdate = async () => {
+    try {
+      const response = await axios.post(
+        process.env.REACT_APP_SERVER_BASE_URL+'/graphql',
+        {
+          query: mutationToUpdateOnePerson,
+          variables: {
+            idToUpdate: currentIndividual?.id,
+            input: { salary: salary }
+          }
+        },
+        {
+          headers: {
+            'authorization': `Bearer ${tokenPair?.accessToken?.token}`,
+            'content-type': 'application/json',
+            'x-schema-version': '136',
+          }
+        }
+      );
+      console.log('Salary updated:', response.data);
+      setIsEditingSalary(false);
+    } catch (error) {
+      console.error('Error updating salary:', error);
+    }
+  };
+
+  const handleCityUpdate = async () => {
+    try {
+      const response = await axios.post(
+        process.env.REACT_APP_SERVER_BASE_URL+'/graphql',
+        {
+          query: mutationToUpdateOnePerson,
+          variables: {
+            idToUpdate: currentIndividual?.id,
+            input: { city: city }
+          }
+        },
+        {
+          headers: {
+            'authorization': `Bearer ${tokenPair?.accessToken?.token}`,
+            'content-type': 'application/json',
+            'x-schema-version': '136',
+          }
+        }
+      );
+      console.log('City updated:', response.data);
+      setIsEditingCity(false);
+    } catch (error) {
+      console.error('Error updating city:', error);
+    }
   };
 
 
@@ -538,41 +611,31 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
               <StyledTopBar>
               <TopbarContainer>
                 <FieldsContainer>
-                  <CopyableFieldComponent 
-                    label="Name"
-                    value={`${currentIndividual?.name.firstName} ${currentIndividual?.name.lastName}`}
-                    field="name"
-                    alwaysShowFull = {true}
-                  />
-                  <CopyableFieldComponent 
-                    label="Phone"
-                    value={currentIndividual?.phone || ''}
-                    field="phone"
-                  />
-                  <CopyableFieldComponent 
-                    label="Person ID"
-                    value={currentIndividual?.id || ''}
-                    field="personId"
-                  />
-                  <CopyableFieldComponent 
-                    label="Candidate ID"
-                    value={currentIndividual?.candidates.edges[0].node.id || ""}
-                    field="candidateId"
-                  />
+                  <CopyableFieldComponent label="Name" value={`${currentIndividual?.name.firstName} ${currentIndividual?.name.lastName}`} field="name" alwaysShowFull = {true} />
+                  <CopyableFieldComponent label="Phone" value={currentIndividual?.phone || ''} field="phone" />
+                  <CopyableFieldComponent label="Person ID" value={currentIndividual?.id || ''} field="personId" />
+                  <CopyableFieldComponent label="Candidate ID" value={currentIndividual?.candidates.edges[0].node.id || ""} field="candidateId" />
                 </FieldsContainer>
                 <AdditionalInfo>
                   Messages: {messageHistory?.length || 0} | 
-                  Current Job: {currentIndividual?.candidates?.edges[0]?.node?.jobs?.name || 'N/A'}
+                  Current Job: {currentIndividual?.candidates?.edges[0]?.node?.jobs?.name || 'N/A'} | 
+                  <EditableField isEditing={isEditingSalary} onDoubleClick={() => setIsEditingSalary(true)} >
+                    {isEditingSalary ? (
+                      <input value={salary} onChange={(e) => setSalary(e.target.value)} onBlur={handleSalaryUpdate} onKeyPress={(e) => e.key === 'Enter' && handleSalaryUpdate()} autoFocus />
+                    ) : ( `Salary: ${salary || 'N/A'}` )}
+                  </EditableField> | 
+                  <EditableField isEditing={isEditingCity} onDoubleClick={() => setIsEditingCity(true)} >
+                    {isEditingCity ? (
+                      <input value={city} onChange={(e) => setCity(e.target.value)} onBlur={handleCityUpdate} onKeyPress={(e) => e.key === 'Enter' && handleCityUpdate()} autoFocus />
+                    ) : ( `City: ${city || 'N/A'}` )}
+                  </EditableField>
+
                 </AdditionalInfo>
               </TopbarContainer>
                 <div style={{ display: 'flex', alignItems: 'center' }}>
                   <StyledSelect value={lastStatus || ''} onChange={(e) => handleStatusUpdate(e.target.value)} >
                     <option value="" disabled>Update Status</option>
-                    {statusesArray.map((status) => (
-                      <option key={status} value={status}>
-                        {statusLabels[status]}
-                      </option>
-                    ))}
+                    {statusesArray.map((status) => ( <option key={status} value={status}> {statusLabels[status]} </option> ))}
                   </StyledSelect>
                   <StyledButtonGroup>
                     <StyledButton onClick={handleStopCandidate} bgColor="black" data-tooltip="Stop Chat">
@@ -595,7 +658,7 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
                   const showDateSeparator = index === 0 || formatDate(messageHistory[index - 1]?.createdAt) !== formatDate(message?.createdAt);
                   return (
                     <React.Fragment key={index}>
-                      {showDateSeparator && (
+                      { showDateSeparator && (
                         <p style={{ textAlign: 'center' }}>
                           <StyledDateComponent>{dayjs(message?.createdAt).format("ddd DD MMM, 'YY")}</StyledDateComponent>
                         </p>

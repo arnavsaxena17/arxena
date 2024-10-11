@@ -15,3 +15,12 @@ export const mutationToUpdateOneCandidate = `mutation UpdateOneCandidate($idToUp
     }
     }
 `
+
+export const mutationToUpdateOnePerson = `mutation UpdateOnePerson($idToUpdate: ID!, $input: PersonUpdateInput!) {
+  updatePerson(id: $idToUpdate, data: $input) {
+    __typename
+    city
+    salary
+  }
+}
+`

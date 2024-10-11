@@ -264,6 +264,8 @@ export const graphqlQueryToFindEngagedCandidates = `query FindManyPeople($filter
             lastName
           }
           email
+          salary
+          city
           jobTitle
           id
           position 
