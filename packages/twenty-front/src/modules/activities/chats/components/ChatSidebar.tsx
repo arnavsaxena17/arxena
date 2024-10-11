@@ -3,9 +3,9 @@ import * as frontChatTypes from "../types/front-chat-types";
 import ChatTile from "./ChatTile";
 import styled from "@emotion/styled";
 import { useNavigate } from 'react-router-dom';
-
+import ChatTable from "./ChatTable";
 import SearchBox from "./SearchBox";
-import JobDropdown from "./JobDropdown";
+
 
 import { Job } from "../types/front-chat-types";
 
@@ -39,62 +39,6 @@ const FixedHeader = styled.div`
   top: 0;
   background-color: #f5f5f5;
   z-index:2;
-`;
-
-const StyledTable = styled.table`
-  width: max-content;
-  border-collapse: collapse;
-`;
-
-const StyledTableCell = styled.td`
-  padding: 10px;
-  border-bottom: 1px solid #e0e0e0;
-  white-space: nowrap;
-`;
-
-
-const StyledTableHeaderCell = styled.th`
-  padding: 10px;
-  text-align: left;
-  white-space: nowrap;`
-  ;
-
-const StyledTableBody = styled.div`
-  display: table-row-group;
-    background-color: #ffffff;
-`;
-
-const StyledTableHeader = styled.thead`
-  position: sticky;
-  top: 0;
-  background-color: #f0f0f0;
-  z-index: 1;
-`;
-
-const StyledTableRow = styled.tr<{ $selected: boolean }>`
-  background-color: ${(props) => (props.$selected ? "#f5f9fd" : "white")};
-  cursor: pointer;
-  &:hover {
-    background-color: ${(props) => (props.$selected ? "#f5f9fd" : "#f0f0f0")};
-  }
-`;
-
-
-
-const StyledMultiSelect = styled.select`
-  padding: 8px;
-  border-radius: 4px;
-  border: 1px solid #ccc;
-  background-color: white;
-  font-size: 14px;
-  color: #333;
-  cursor: pointer;
-  outline: none;
-  transition: border-color 0.3s;
-  &:hover, &:focus {
-    border-color: #007bff;
-  }
-  height: auto;
 `;
 
 
@@ -144,16 +88,11 @@ const Checkbox = styled.input`
   margin-right: 8px;
 `;
 
-
-
 const StyledSearchBox = styled(SearchBox)`
   margin: 10px;
 `;
 
-const StyledTopBarSideBar = styled.div`
-  position: fixed;
-  display: flex;
-`
+
 
 interface ChatSidebarProps {
   individuals: frontChatTypes.PersonNode[];
@@ -248,15 +187,6 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
       messagesList.some(message => message.toLowerCase().includes(searchQuery.toLowerCase()))
 
 
-    // const matchesJob = 
-    //   selectedJob === "" || 
-    //   individual?.candidates?.edges[0]?.node?.jobs?.id === selectedJob;
-
-    // const matchesStatus =
-    //   selectedStatus === "" ||
-    //   individual?.candidates?.edges[0]?.node?.status === selectedStatus;
-
-
     const matchesJob = 
       selectedJobs.length === 0 || 
       selectedJobs.includes(individual?.candidates?.edges[0]?.node?.jobs?.id || "");
@@ -345,36 +275,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
       <StyledSearchBox placeholder="Search chats" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
       </FixedHeader>
       <ScrollableContent>
-        <StyledTable>
-        <StyledTableHeader>
-              <StyledTableHeaderCell>Name</StyledTableHeaderCell>
-              <StyledTableHeaderCell>Salary</StyledTableHeaderCell>
-              <StyledTableHeaderCell>City</StyledTableHeaderCell>
-              <StyledTableHeaderCell>Status</StyledTableHeaderCell>
-              <StyledTableHeaderCell>Job Title</StyledTableHeaderCell>
-              <StyledTableHeaderCell>Job Title</StyledTableHeaderCell>
-              <StyledTableHeaderCell>Job Title</StyledTableHeaderCell>
-              <StyledTableHeaderCell>Job Title</StyledTableHeaderCell>
-              <StyledTableHeaderCell>Job Title</StyledTableHeaderCell>
-            </StyledTableHeader>
-        </StyledTable>
-        <StyledTable>
-          <StyledTableBody>
-            {sortedIndividuals.map((individual) => (
-              <StyledTableRow key={individual.id} $selected={selectedIndividual === individual.id} onClick={() => handleIndividualSelect(individual.id)} >
-                <StyledTableCell>{`${individual.name.firstName} ${individual.name.lastName}`}</StyledTableCell>
-                <StyledTableCell>{individual.salary || 'N/A'}</StyledTableCell>
-                <StyledTableCell>{individual.city || 'N/A'}</StyledTableCell>
-                <StyledTableCell>{individual.candidates?.edges[0]?.node?.status || 'N/A'}</StyledTableCell>
-                <StyledTableCell>{individual.jobTitle || 'N/A'}</StyledTableCell>
-                <StyledTableCell>{individual.jobTitle || 'N/A'}</StyledTableCell>
-                <StyledTableCell>{individual.jobTitle || 'N/A'}</StyledTableCell>
-                <StyledTableCell>{individual.jobTitle || 'N/A'}</StyledTableCell>
-                <StyledTableCell>{individual.jobTitle || 'N/A'}</StyledTableCell>
-              </StyledTableRow>
-            ))}
-          </StyledTableBody>
-        </StyledTable>
+      <ChatTable individuals={sortedIndividuals} selectedIndividual={selectedIndividual} onIndividualSelect={handleIndividualSelect} />
       </ScrollableContent>
     </StyledSidebarContainer>
   );
