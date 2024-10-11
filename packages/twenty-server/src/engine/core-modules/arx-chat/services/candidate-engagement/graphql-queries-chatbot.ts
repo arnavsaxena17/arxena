@@ -53,6 +53,8 @@ export const graphqlQueryToFindPeopleByPhoneNumber = `query FindManyPeople($filt
           firstName
           lastName
         }
+        city
+        salary
         candidates{
             edges{
                 node {
