@@ -191,6 +191,8 @@ export interface PersonNode {
   phone: string;
   email: string;
   suitabilityDescription?: string;
+  salary:string;
+  city:string;
 
   jobTitle: string;
   id: string;

@@ -51,7 +51,7 @@ export const Notes = ({
         There are no associated notes with this record.
           </AnimatedPlaceholderEmptySubTitle>
         </AnimatedPlaceholderEmptyTextContainer>
-        {useShouldShowPlusButton() && (
+        {
           <Button
         Icon={IconPlus}
         title="New note"
@@ -63,7 +63,7 @@ export const Notes = ({
           })
         }
           />
-        )}
+        }
       </AnimatedPlaceholderEmptyContainer>
     );
   }
@@ -74,7 +74,7 @@ export const Notes = ({
       title="All"
       notes={notes ?? []}
       button={
-        useShouldShowPlusButton() && (
+        
         <Button
           Icon={IconPlus}
           size="small"
@@ -87,7 +87,7 @@ export const Notes = ({
           })
           }
         ></Button>
-        )
+        
       }
       />
     </StyledNotesContainer>
