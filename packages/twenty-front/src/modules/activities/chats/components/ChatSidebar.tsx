@@ -194,7 +194,9 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     const matchesStatus =
       selectedStatuses.length === 0 ||
       selectedStatuses.includes(individual?.candidates?.edges[0]?.node?.status || "");
-    return matchesSearch && matchesJob && matchesStatus;
+
+
+    return matchesSearch && matchesJob;
   });
 
   const sortedIndividuals = filteredIndividuals.sort((a, b) => {
@@ -218,15 +220,6 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   });
 
 
-  const handleJobChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedOptions = Array.from(event.target.selectedOptions, option => option.value);
-    setSelectedJobs(selectedOptions);
-  };
-
-  const handleStatusChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedOptions = Array.from(event.target.selectedOptions, option => option.value);
-    setSelectedStatuses(selectedOptions);
-  };
 
   const handleJobToggle = (jobId: string) => {
     setSelectedJobs(prev =>
