@@ -196,7 +196,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
       selectedStatuses.includes(individual?.candidates?.edges[0]?.node?.status || "");
 
 
-    return matchesSearch && matchesJob;
+    return matchesSearch && matchesJob && matchesStatus;
   });
 
   const sortedIndividuals = filteredIndividuals.sort((a, b) => {
@@ -287,11 +287,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
           <DropdownContent isOpen={isStatusDropdownOpen}>
               {Object.entries(statusLabels).map(([value, label]) => (
                 <CheckboxLabel key={value}>
-                  <Checkbox 
-                    type="checkbox" 
-                    checked={selectedStatuses.includes(value)} 
-                    onChange={() => handleStatusToggle(value)} 
-                  /> 
+                  <Checkbox type="checkbox" checked={selectedStatuses.includes(value)} onChange={() => handleStatusToggle(value)} /> 
                   {label} ({statusCounts[value] || 0})
                 </CheckboxLabel>
               ))}

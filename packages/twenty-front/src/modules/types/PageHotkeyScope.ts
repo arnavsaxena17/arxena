@@ -2,6 +2,7 @@ export enum PageHotkeyScope {
   Settings = 'settings',
   CreateWokspace = 'create-workspace',
   SignInUp = 'sign-in-up',
+  ChatsPage = 'chats',
   CreateProfile = 'create-profile',
   InviteTeam = 'invite-team',
   SyncEmail = 'sync-email',
