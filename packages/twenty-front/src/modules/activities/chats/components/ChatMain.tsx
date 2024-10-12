@@ -11,41 +11,46 @@ import { useRecoilState, useRecoilValue } from 'recoil';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import ChatSidebar from './ChatSidebar';
 import { currentUnreadChatMessagesState } from '@/activities/chats/states/currentUnreadChatMessagesState';
-
 import { Job } from "../types/front-chat-types";
+// import { useCreateActivityInCache } from '@/activities/hooks/useCreateActivityInCache';
+
+// import { mockedTasks } from '~/testing/mock-data/activities';
+
+
 
 interface ChatMainProps {
   initialCandidateId?: string;
 }
 const ChatContainer = styled.div`
-  display: flex;
-  height: 100vh;
+display: flex;
+height: 100vh;
 `;
 
 const SidebarContainer = styled.div`
-  // width: 50%;
-  overflow-x: auto;
-  display: flex;
-  height: 100vh;
+// width: 50%;
+overflow-x: auto;
+display: flex;
+height: 100vh;
 
 `;
 
 const ChatWindowContainer = styled.div`
-  // width: 120%;
-  z-index: 1;
+// width: 120%;
+z-index: 1;
 `;
 
 
 export default function ChatMain({ initialCandidateId }: ChatMainProps) {
-
+  
   const [inputMessage, setInputMessage] = useState('');
   const [selectedIndividual, setSelectedIndividual] = useState<string>('');
   const [individuals, setIndividuals] = useState<frontChatTypes.PersonNode[]>([]);
-
+  
   const [unreadMessages, setUnreadMessages] = useState<frontChatTypes.UnreadMessageListManyCandidates>({
     listOfUnreadMessages: [],
   });
-
+  // const { createActivityInCache } = useCreateActivityInCache();
+  
   useEffect(() => {
     if (initialCandidateId && individuals.length > 0) {
       const individual = individuals.find(ind => ind.candidates?.edges[0]?.node?.id === initialCandidateId);
@@ -54,7 +59,6 @@ export default function ChatMain({ initialCandidateId }: ChatMainProps) {
       }
     }
   }, [initialCandidateId, individuals]);
-
 
 
   const inputRef = useRef(null);
@@ -69,16 +73,14 @@ export default function ChatMain({ initialCandidateId }: ChatMainProps) {
 
   const handleSubmit = () => {
     console.log('submit');
-    // console.log(inputRef?.current?.value);
   };
+
   const variable = useChats();
   const variable2 = useFindManyPeople();
-
 
   function getUnreadMessageListManyCandidates(personNodes: frontChatTypes.PersonNode[]): frontChatTypes.UnreadMessageListManyCandidates {
     const listOfUnreadMessages: frontChatTypes.UnreadMessagesPerOneCandidate[] = [];
     personNodes?.forEach((personNode: frontChatTypes.PersonNode) => {
-      // const personNode: frontChatTypes.PersonNode = personNode;
       personNode?.candidates?.edges?.forEach((candidateEdge: frontChatTypes.CandidatesEdge) => {
         const candidateNode: frontChatTypes.CandidateNode = candidateEdge?.node;
         const ManyUnreadMessages: frontChatTypes.OneUnreadMessage[] = candidateNode?.whatsappMessages?.edges
@@ -99,7 +101,6 @@ export default function ChatMain({ initialCandidateId }: ChatMainProps) {
         }
       });
     });
-
     return { listOfUnreadMessages };
   }
 
@@ -139,14 +140,10 @@ export default function ChatMain({ initialCandidateId }: ChatMainProps) {
     }
 
     fetchData();
-    //! Change later: Fetch data every 5 seconds
     const interval = setInterval(fetchData, 10000);
-
     return () => clearInterval(interval);
   }, []);
-
   console.log("Current jobs in state:", jobs); // Debug log outside useEffect
-
   const updateUnreadMessagesStatus = async (selectedIndividual: string) => {
     const listOfMessagesIds = unreadMessages?.listOfUnreadMessages
       ?.filter(unreadMessage => unreadMessage?.candidateId === individuals?.filter(individual => individual?.id === selectedIndividual)[0]?.candidates?.edges[0]?.node?.id)[0]
@@ -154,21 +151,21 @@ export default function ChatMain({ initialCandidateId }: ChatMainProps) {
     if (listOfMessagesIds === undefined) return;
     const response = await axios.post(
       process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/update-whatsapp-delivery-status',
-      {
-        listOfMessagesIds: listOfMessagesIds,
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
-        },
-      },
+      { listOfMessagesIds: listOfMessagesIds, },
+      { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}`, }, },
     );
   };
-
+  
   useEffect(() => {
     console.log('selectedindividuals', selectedIndividual);
     updateUnreadMessagesStatus(selectedIndividual);
   }, [selectedIndividual, individuals]);
+  
+  
+  // const { createdActivityInCache } = createActivityInCache({
+  //   type:'Note',
+  //   targetObject: {"id":mockedTasks[0].authorId, "targetObjectNameSingular": "person"},
+  // });
 
   return (
     <ChatContainer>
