@@ -93,10 +93,13 @@ export const useCreateActivityInCache = () => {
             },
           };
         }
-
+        console.log("useCreateActivityInCache -> targetObject", targetObject)
+        console.log("useCreateActivityInCache -> recordStoreFamilyState(targetObject.id).id", recordStoreFamilyState(targetObject.id))
         const targetObjectRecord = snapshot
           .getLoadable(recordStoreFamilyState(targetObject.id))
           .getValue() ;
+        
+        console.log("useCreateActivityInCache -> targetObjectRecord", targetObjectRecord)
 
         if (isUndefinedOrNull(targetObjectRecord)) {
           throw new Error('Failed to find target object record');

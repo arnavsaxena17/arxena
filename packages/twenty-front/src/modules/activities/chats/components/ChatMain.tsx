@@ -2,19 +2,14 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useChats } from '../hooks/useChats';
 import axios from 'axios';
 import { useFindManyPeople } from '../hooks/useFindManyPeople';
-
 import * as frontChatTypes from '../types/front-chat-types';
 import ChatWindow from './ChatWindow';
 import styled from '@emotion/styled';
-
-import { useRecoilState, useRecoilValue } from 'recoil';
+import { useRecoilState } from 'recoil';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import ChatSidebar from './ChatSidebar';
 import { currentUnreadChatMessagesState } from '@/activities/chats/states/currentUnreadChatMessagesState';
 import { Job } from "../types/front-chat-types";
-// import { useCreateActivityInCache } from '@/activities/hooks/useCreateActivityInCache';
-
-// import { mockedTasks } from '~/testing/mock-data/activities';
 
 
 
@@ -41,16 +36,14 @@ z-index: 1;
 
 
 export default function ChatMain({ initialCandidateId }: ChatMainProps) {
-  
+
   const [inputMessage, setInputMessage] = useState('');
   const [selectedIndividual, setSelectedIndividual] = useState<string>('');
   const [individuals, setIndividuals] = useState<frontChatTypes.PersonNode[]>([]);
-  
   const [unreadMessages, setUnreadMessages] = useState<frontChatTypes.UnreadMessageListManyCandidates>({
     listOfUnreadMessages: [],
   });
-  // const { createActivityInCache } = useCreateActivityInCache();
-  
+
   useEffect(() => {
     if (initialCandidateId && individuals.length > 0) {
       const individual = individuals.find(ind => ind.candidates?.edges[0]?.node?.id === initialCandidateId);
@@ -164,7 +157,7 @@ export default function ChatMain({ initialCandidateId }: ChatMainProps) {
   
   // const { createdActivityInCache } = createActivityInCache({
   //   type:'Note',
-  //   targetObject: {"id":mockedTasks[0].authorId, "targetObjectNameSingular": "person"},
+  //   targetObject: {"id":"79c22a03-8c19-4fd2-a24b-d63dd8ef3d53", "targetObjectNameSingular": "candidate"},
   // });
 
   return (

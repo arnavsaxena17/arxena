@@ -6,6 +6,14 @@ import { tokenPairState } from '@/auth/states/tokenPairState';
 import mammoth from 'mammoth';
 import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
 import {Document, Page, pdfjs} from 'react-pdf';
+// import { extractRawText } from 'docx2html';
+
+
+// Add a type declaration for the handleDocFile function
+type DocHandlerResult = {
+  value: string;
+};
+
 
 pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.mjs`;
 
@@ -260,9 +268,9 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({ isOpen, onClose, cand
 
 
 
-  const fetchFileContent = useCallback(async (attachment: { id: string; name: string; fullPath: string }) => {
+    const fetchFileContent = useCallback(async (attachment: { id: string; name: string; fullPath: string }) => {
     try {
-      if (!attachment || fileContent) return; // Prevent unnecessary fetches
+      if (!attachment || fileContent) return;
 
       setIsLoading(true);
       setError(null);
@@ -270,45 +278,42 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({ isOpen, onClose, cand
       setDownloadUrl(null);
 
       const response = await axios.get(`${process.env.REACT_APP_SERVER_BASE_URL}/files/${attachment.fullPath}`, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` }, responseType: 'arraybuffer' });
-      console.log('Attachment:', attachment);
-      console.log('Response received:', response.status, response.headers['content-type']);
-      console.log('Response headers:', response.headers);
-      console.log('Response:', response);
 
       let contentType = response.headers['content-type'] || attachment?.fullPath?.split('?')[0]?.split('.').pop()?.toLowerCase() || 'application/octet-stream';
-      contentType = contentType.split(';')[0]; // Remove charset if present
-      console.log('Content Type:', contentType);
+      contentType = contentType.split(';')[0];
 
       if (!contentType) {
         const fileExtension = attachment.name.split('.').pop()?.toLowerCase();
         contentType = getContentTypeFromExtension(fileExtension);
       }
-      let blob;
-      try {
-        blob = new Blob([response.data], { type: contentType || 'application/octet-stream' });
-        console.log('Blob created successfully. Size:', blob.size);
-      } catch (error) {
-        console.error('Error creating Blob:', error);
-        setError('Failed to process the file. Please try again.');
-        return;
-      }
 
-      console.log('Blob size:', blob.size);
-      console.log("This ithe content type:", contentType)
+      const blob = new Blob([response.data], { type: contentType || 'application/octet-stream' });
+
       if (contentType && contentType.includes('pdf')) {
         const url = URL.createObjectURL(blob);
-        setFileContent(url)
-      } else if (contentType && (contentType.includes('word') ||  contentType.includes('docx') || contentType.includes('msword') || contentType.includes('openxmlformats-officedocument.wordprocessingml.document'))) {
-        console.log("Word file")
+        setFileContent(url);
+      } else if (contentType && (contentType.includes('word') || contentType.includes('doc') || contentType.includes('docx') || contentType.includes('msword') || contentType.includes('openxmlformats-officedocument.wordprocessingml.document'))) {
         try {
           const arrayBuffer = await blob.arrayBuffer();
-          const result = await mammoth.convertToHtml({ arrayBuffer: arrayBuffer });
+          let result: DocHandlerResult;
+
+
+          
+          if (contentType.includes('doc') && !contentType.includes('docx')) {
+            // For .doc files, we need to use a different library or API
+            // Here, we'll use a placeholder for the actual implementation
+            result = await handleDocFile(arrayBuffer);
+          } else {
+            // For .docx files, we can use mammoth
+            result = await mammoth.convertToHtml({ arrayBuffer: arrayBuffer });
+          }
+          
           setFileContent(result.value);
-        } catch (mammothError) {
-          console.error('Mammoth conversion failed:', mammothError);
+        } catch (conversionError) {
+          console.error('Document conversion failed:', conversionError);
           const url = URL.createObjectURL(blob);
           setDownloadUrl(url);
-          setFileContent(`Unable to display the Word document. Click the link below to download the ${attachment.name} file.`);
+          setFileContent(`Unable to display the document. Click the link below to download the ${attachment.name} file.`);
         }
       } else if (contentType && (contentType.includes('text') || contentType.includes('xml') || contentType.includes('json'))) {
         const decoder = new TextDecoder('utf-8');
@@ -324,7 +329,28 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({ isOpen, onClose, cand
       setError(`Failed to load file content: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
     setIsLoading(false);
-}, [tokenPair]);
+  }, [tokenPair]);
+
+
+
+  const handleDocFile = async (arrayBuffer: ArrayBuffer): Promise<DocHandlerResult> => {
+    try {
+      // Attempt to extract text using a simple method
+      const uint8Array = new Uint8Array(arrayBuffer);
+      let text = '';
+      for (let i = 0; i < uint8Array.length; i++) {
+        const char = String.fromCharCode(uint8Array[i]);
+        if (char.match(/[\x20-\x7E]/)) {  // Only include printable ASCII characters
+          text += char;
+        }
+      }
+      return { value: `<pre>${text}</pre>` };
+    } catch (error) {
+      console.error('Error processing .doc file:', error);
+      return { value: '<p>Unable to read .doc file content. The file may be corrupt or use unsupported features.</p>' };
+    }
+  };
+
 
   const getContentTypeFromExtension = (extension?: string): string => {
     switch (extension) {

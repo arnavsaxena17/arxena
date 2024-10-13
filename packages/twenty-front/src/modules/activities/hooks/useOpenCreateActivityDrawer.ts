@@ -49,10 +49,14 @@ export const useOpenCreateActivityDrawer = () => {
     targetableObjects: ActivityTargetableObject[];
     customAssignee?: WorkspaceMember;
   }) => {
+    console.log("useOpenCreateActivityDrawer -> type", type)
+    console.log("useOpenCreateActivityDrawer -> targetObject", targetableObjects)
+    console.log("useOpenCreateActivityDrawer -> customAssignee", customAssignee)
+  
+  
     const { createdActivityInCache } = createActivityInCache({
       type,
       targetObject: targetableObjects[0],
-      customAssignee,
     });
 
     setActivityIdInDrawer(createdActivityInCache.id);
