@@ -676,7 +676,8 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
                 <Notes
                   targetableObject={{
                     targetObjectNameSingular: "candidate",
-                    id: currentCandidateId
+                    id: currentCandidateId,
+                    
                   }}
                 />
               )}

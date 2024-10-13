@@ -1,8 +1,12 @@
 import styled from '@emotion/styled';
 import { IconPlus } from 'twenty-ui';
-
+import { mockedTasks } from '~/testing/mock-data/activities';
 import { useOpenCreateActivityDrawer } from '@/activities/hooks/useOpenCreateActivityDrawer';
+import { useRecoilState, useRecoilValue } from 'recoil';
+
 import { NoteList } from '@/activities/notes/components/NoteList';
+import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
+
 import { useNotes } from '@/activities/notes/hooks/useNotes';
 import { ActivityTargetableObject } from '@/activities/types/ActivityTargetableEntity';
 import { Button } from '@/ui/input/button/components/Button';
@@ -36,9 +40,10 @@ export const Notes = ({
   targetableObject: ActivityTargetableObject;
 }) => {
   const { notes } = useNotes(targetableObject);
+  const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
 
   const openCreateActivity = useOpenCreateActivityDrawer();
-
+  console.log("This is the targetableObject::", targetableObject);
   if (notes?.length === 0) {
     return (
       <AnimatedPlaceholderEmptyContainer>
@@ -59,7 +64,7 @@ export const Notes = ({
         onClick={() =>
           openCreateActivity({
             type: 'Note',
-            targetableObjects: [targetableObject || "candidate"],
+            targetableObjects: [targetableObject || {"id":"79c22a03-8c19-4fd2-a24b-d63dd8ef3d53", "targetObjectNameSingular":"candidate",  "assigneeId":currentWorkspaceMember}],
           })
         }
           />
@@ -67,6 +72,7 @@ export const Notes = ({
       </AnimatedPlaceholderEmptyContainer>
     );
   }
+
 
   return (
     <StyledNotesContainer>
@@ -83,7 +89,7 @@ export const Notes = ({
           onClick={() =>
           openCreateActivity({
             type: 'Note',
-            targetableObjects: [targetableObject || "candidate"],
+            targetableObjects: [targetableObject || {"id":"79c22a03-8c19-4fd2-a24b-d63dd8ef3d53", "targetObjectNameSingular":"candidate", "assigneeId":currentWorkspaceMember}],
           })
           }
         ></Button>

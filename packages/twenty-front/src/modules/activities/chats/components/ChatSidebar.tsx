@@ -1,13 +1,21 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
+import { useRecoilValue, useSetRecoilState } from 'recoil';
+
 import * as frontChatTypes from "../types/front-chat-types";
 import ChatTile from "./ChatTile";
 import styled from "@emotion/styled";
 import { useNavigate } from 'react-router-dom';
 import ChatTable from "./ChatTable";
 import SearchBox from "./SearchBox";
+// import { viewableRecordIdState } from '@/object-record/record-right-drawer/states/viewableRecordIdState';
+// import { viewableRecordNameSingularState } from '@/object-record/record-right-drawer/states/viewableRecordNameSingularState';
+// import { RecordShowContainer } from '@/object-record/record-show/components/RecordShowContainer';
+// import { useRightDrawer } from '@/ui/layout/right-drawer/hooks/useRightDrawer';
+// import { useOpenCreateActivityDrawer } from '@/activities/hooks/useOpenCreateActivityDrawer';
 
 
 import { Job } from "../types/front-chat-types";
+
 
 const StyledSidebarContainer = styled.div`
   display: flex;
@@ -122,6 +130,9 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   jobs,
 }) => {
   const navigate = useNavigate();
+  // const openCreateActivity = useOpenCreateActivityDrawer();
+  // const { openRightDrawer } = useRightDrawer();
+
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedJob, setSelectedJob] = useState("");
@@ -130,13 +141,17 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   const [selectedJobs, setSelectedJobs] = useState<string[]>([]);
   const [isJobDropdownOpen, setIsJobDropdownOpen] = useState(false);
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
-
+  // const setViewableRecordId = useSetRecoilState(viewableRecordIdState);
+  // const setViewableRecordNameSingular = useSetRecoilState(
+  //   viewableRecordNameSingularState,
+  // );
 
   const sidebarRef = useRef<HTMLDivElement>(null);
   const jobDropdownRef = useRef<HTMLDivElement>(null);
   const statusDropdownRef = useRef<HTMLDivElement>(null);
 
-
+  
+  
   const handleIndividualSelect = (id: string) => {
     setSelectedIndividual(id);
     const individual = individuals.find(ind => ind.id === id);
@@ -144,6 +159,17 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     if (candidateId) {
       navigate(`/chats/${candidateId}`);
     }
+    console.log("Sorted individuals:", sortedIndividuals);
+
+    // if (candidateId) {
+    //   setViewableRecordId(candidateId);
+    //   setViewableRecordNameSingular('candidate');
+    // }
+  
+    // const viewableRecordId = useRecoilValue(viewableRecordIdState);
+    // console.log("viewableRecordId::::", viewableRecordId);
+    console.log("viewableRecordId selectedIndividual::::", selectedIndividual);
+  
   };
 
   useEffect(() => {
@@ -257,7 +283,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   }, [filteredIndividuals]);
 
 
-  console.log("Sorted individuals:", sortedIndividuals);
+
   
   return (
     <StyledSidebarContainer ref={sidebarRef}>
