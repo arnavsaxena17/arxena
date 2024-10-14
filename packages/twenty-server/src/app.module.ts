@@ -24,11 +24,11 @@ import { IntegrationsModule } from './engine/integrations/integrations.module';
 import { CoreEngineModule } from './engine/core-modules/core-engine.module';
 import { EnvironmentService } from 'src/engine/integrations/environment/environment.service';
 import { ScheduleModule } from '@nestjs/schedule';
-import { VideoInterviewModule } from './engine/core-modules/video-interview/video-interview.module';
+// import { VideoInterviewModule } from './engine/core-modules/video-interview/video-interview.module';
 
 @Module({
   imports: [
-    VideoInterviewModule,
+    // VideoInterviewModule,
     // Nest.js devtools, use devtools.nestjs.com to debug
     DevtoolsModule.registerAsync({
       useFactory: (environmentService: EnvironmentService) => ({

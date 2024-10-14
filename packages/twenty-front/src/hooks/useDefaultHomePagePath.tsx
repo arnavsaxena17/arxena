@@ -17,6 +17,10 @@ export const useDefaultHomePagePath = () => {
   const { records } = usePrefetchedData(PrefetchKey.AllViews);
 
   if (!isDefined(currentUser)) {
+    if (location.pathname.includes("video-interview")) {
+      return { defaultHomePagePath: location.pathname };
+    }
+    console.log("currentUser is not defined and hence going to signinup")
     return { defaultHomePagePath: AppPath.SignInUp };
   }
 

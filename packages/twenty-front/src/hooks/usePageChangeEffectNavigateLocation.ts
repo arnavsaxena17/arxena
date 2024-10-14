@@ -11,14 +11,9 @@ export const usePageChangeEffectNavigateLocation = () => {
   const onboardingStatus = useOnboardingStatus();
   const { defaultHomePagePath } = useDefaultHomePagePath();
 
-  const isMatchingOpenRoute =
-    isMatchingLocation(AppPath.Invite) ||
-    isMatchingLocation(AppPath.ResetPassword);
+  const isMatchingOpenRoute = isMatchingLocation(AppPath.Invite) || isMatchingLocation(AppPath.ResetPassword);
 
-  const isMatchingOngoingUserCreationRoute =
-    isMatchingOpenRoute ||
-    isMatchingLocation(AppPath.SignInUp) ||
-    isMatchingLocation(AppPath.Verify);
+  const isMatchingOngoingUserCreationRoute = isMatchingOpenRoute || isMatchingLocation(AppPath.SignInUp) || isMatchingLocation(AppPath.Verify);
 
   const isMatchingOnboardingRoute =
     isMatchingOngoingUserCreationRoute ||
@@ -33,76 +28,43 @@ export const usePageChangeEffectNavigateLocation = () => {
     return;
   }
 
-  if (
-    onboardingStatus === OnboardingStatus.OngoingUserCreation &&
-    !isMatchingOngoingUserCreationRoute
-  ) {
+  if (onboardingStatus === OnboardingStatus.OngoingUserCreation && !isMatchingOngoingUserCreationRoute) {
+    if (location.pathname.includes('video-interview')) {
+      return;
+    }
+    console.log('Is mathcing ongoing user creation route henc egoing eot signin up');
     return AppPath.SignInUp;
   }
 
-  if (
-    onboardingStatus === OnboardingStatus.Incomplete &&
-    !isMatchingLocation(AppPath.PlanRequired)
-  ) {
+  if (onboardingStatus === OnboardingStatus.Incomplete && !isMatchingLocation(AppPath.PlanRequired)) {
     return AppPath.PlanRequired;
   }
 
-  if (
-    isDefined(onboardingStatus) &&
-    [OnboardingStatus.Unpaid, OnboardingStatus.Canceled].includes(
-      onboardingStatus,
-    ) &&
-    !(
-      isMatchingLocation(AppPath.SettingsCatchAll) ||
-      isMatchingLocation(AppPath.PlanRequired)
-    )
-  ) {
-    return `${AppPath.SettingsCatchAll.replace('/*', '')}/${
-      SettingsPath.Billing
-    }`;
+  if (isDefined(onboardingStatus) && [OnboardingStatus.Unpaid, OnboardingStatus.Canceled].includes(onboardingStatus) && !(isMatchingLocation(AppPath.SettingsCatchAll) || isMatchingLocation(AppPath.PlanRequired))) {
+    return `${AppPath.SettingsCatchAll.replace('/*', '')}/${SettingsPath.Billing}`;
   }
 
-  if (
-    onboardingStatus === OnboardingStatus.OngoingWorkspaceActivation &&
-    !isMatchingLocation(AppPath.CreateWorkspace) &&
-    !isMatchingLocation(AppPath.PlanRequiredSuccess)
-  ) {
+  if (onboardingStatus === OnboardingStatus.OngoingWorkspaceActivation && !isMatchingLocation(AppPath.CreateWorkspace) && !isMatchingLocation(AppPath.PlanRequiredSuccess)) {
     return AppPath.CreateWorkspace;
   }
 
-  if (
-    onboardingStatus === OnboardingStatus.OngoingProfileCreation &&
-    !isMatchingLocation(AppPath.CreateProfile)
-  ) {
+  if (onboardingStatus === OnboardingStatus.OngoingProfileCreation && !isMatchingLocation(AppPath.CreateProfile)) {
     return AppPath.CreateProfile;
   }
 
-  if (
-    onboardingStatus === OnboardingStatus.OngoingSyncEmail &&
-    !isMatchingLocation(AppPath.SyncEmails)
-  ) {
+  if (onboardingStatus === OnboardingStatus.OngoingSyncEmail && !isMatchingLocation(AppPath.SyncEmails)) {
     return AppPath.SyncEmails;
   }
 
-  if (
-    onboardingStatus === OnboardingStatus.OngoingInviteTeam &&
-    !isMatchingLocation(AppPath.InviteTeam)
-  ) {
+  if (onboardingStatus === OnboardingStatus.OngoingInviteTeam && !isMatchingLocation(AppPath.InviteTeam)) {
     return AppPath.InviteTeam;
   }
 
-  if (
-    onboardingStatus === OnboardingStatus.Completed &&
-    isMatchingOnboardingRoute
-  ) {
+  if (onboardingStatus === OnboardingStatus.Completed && isMatchingOnboardingRoute) {
     return defaultHomePagePath;
   }
 
-  if (
-    onboardingStatus === OnboardingStatus.CompletedWithoutSubscription &&
-    isMatchingOnboardingRoute &&
-    !isMatchingLocation(AppPath.PlanRequired)
-  ) {
+  if (onboardingStatus === OnboardingStatus.CompletedWithoutSubscription && isMatchingOnboardingRoute && !isMatchingLocation(AppPath.PlanRequired)) {
     return defaultHomePagePath;
   }
 
