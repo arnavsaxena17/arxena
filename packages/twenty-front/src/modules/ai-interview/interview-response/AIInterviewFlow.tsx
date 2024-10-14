@@ -94,6 +94,8 @@ export const AIInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId
     try {
       console.log("Going to handle next question, let sed if this submists")
       console.log("This is process.env.REACT_APP_SERVER_BASE_URL:", process.env.REACT_APP_SERVER_BASE_URL)
+      responseData.append('interviewData', JSON.stringify(interviewData));
+
       const response = await axios.post(process.env.REACT_APP_SERVER_BASE_URL+'/video-interview/submit-response', responseData, {
         headers: {
           'Content-Type': 'multipart/form-data',
@@ -114,9 +116,9 @@ export const AIInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId
 
   const handleSubmitFeedback = async (feedback: string) => {
     try {
-      await axios.post(`${process.env.REACT_APP_SERVER_BASE_URL}/video-interview/submit-feedback`, { interviewId, feedback });
+      const response = await axios.post(`${process.env.REACT_APP_SERVER_BASE_URL}/video-interview/update-feedback`, { interviewId, feedback });
 
-      console.log('Interview completed, feedback submitted');
+      console.log('Interview completed, feedback submitted:', response.status);
       // Consider implementing a success message or redirect after submission
     } catch (error) {
       console.error('Error submitting feedback:', error);

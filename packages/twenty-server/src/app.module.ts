@@ -41,6 +41,10 @@ import { ScheduleModule } from '@nestjs/schedule';
 
     ConfigModule.forRoot({
       isGlobal: true,
+      envFilePath: '.env',
+      ignoreEnvFile: false,
+      ignoreEnvVars: true,    
+
     }),
     GraphQLModule.forRootAsync<YogaDriverConfig>({
       driver: YogaDriver,

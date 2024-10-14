@@ -1,6 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import styled from '@emotion/styled';
 import Webcam from 'react-webcam';
+import { createFFmpeg, fetchFile } from '@ffmpeg/ffmpeg';
+
+import { v4 as uuid } from 'uuid';
 
 const StyledContainer = styled.div`
   display: flex;
@@ -103,21 +106,25 @@ interface InterviewPageProps {
   onFinish: () => void;
 }
 
-export const InterviewPage: React.FC<InterviewPageProps> = ({ questions,currentQuestionIndex, onNextQuestion, onFinish }) => {
-  const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [recording, setRecording] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [recorded, setRecorded] = useState(false);
-  const [feedback, setFeedback] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [hasCamera, setHasCamera] = useState(false);
-  const [timer, setTimer] = useState<number | null>(null);
-  const [recordedChunks, setRecordedChunks] = useState<Blob[]>([]);
-  const [submissionStatus, setSubmissionStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const webcamRef = useRef<Webcam>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+
+const ffmpeg = createFFmpeg({
+    // corePath: `/ffmpeg/ffmpeg-core.js`,
+    // I've included a default import above (and files in the public directory), but you can also use a CDN like this:
+    corePath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js',
+    log: true,
+  });
   
+  export const InterviewPage: React.FC<InterviewPageProps> = ({ questions, currentQuestionIndex, onNextQuestion, onFinish }) => {
+    const [recording, setRecording] = useState(false);
+    const [submitting, setSubmitting] = useState(false);
+    const [recorded, setRecorded] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [hasCamera, setHasCamera] = useState(false);
+    const [timer, setTimer] = useState<number | null>(null);
+    const [recordedChunks, setRecordedChunks] = useState<Blob[]>([]);
+    const webcamRef = useRef<Webcam>(null);
+    const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+    
   useEffect(() => {
     checkCamera();
   }, []);
@@ -162,15 +169,16 @@ export const InterviewPage: React.FC<InterviewPageProps> = ({ questions,currentQ
     if (stream) {
       mediaRecorderRef.current = new MediaRecorder(stream, { mimeType: 'video/webm' });
       mediaRecorderRef.current.ondataavailable = handleDataAvailable;
-      mediaRecorderRef.current.onstop = handleSubmit;
       mediaRecorderRef.current.start();
     }
   };
 
   const handleStopRecording = () => {
-    mediaRecorderRef.current?.stop();
-    setRecording(false);
-    setRecorded(true);
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+      mediaRecorderRef.current.stop();
+      setRecording(false);
+      setRecorded(true);
+    }
   };
 
   const handleDataAvailable = (event: BlobEvent) => {
@@ -179,22 +187,44 @@ export const InterviewPage: React.FC<InterviewPageProps> = ({ questions,currentQ
     }
   };
 
+  useEffect(() => {
+    if (recorded && recordedChunks.length > 0) {
+      handleSubmit();
+    }
+  }, [recorded, recordedChunks]);
 
- const handleSubmit = async () => {
+
+  const handleSubmit = async () => {
     if (recordedChunks.length) {
       setError(null);
-      
+      const file = new Blob(recordedChunks, {
+        type: `video/webm`,
+      });
       try {
-        const videoBlob = new Blob(recordedChunks, { type: 'video/webm' });
-        const audioBlob = await extractAudioFromVideo(videoBlob);
+        const unique_id = uuid();
+        if (!ffmpeg.isLoaded()) {
+            await ffmpeg.load();
+        }
+
+        ffmpeg.FS('writeFile', `${unique_id}.webm`, await fetchFile(file));
+        await ffmpeg.run('-i', `${unique_id}.webm`, '-vn', '-acodec', 'pcm_s16le', '-ac', '1', '-ar', '16000', `${unique_id}.wav`);
+        // This reads the converted file from the file system
+        const fileData = ffmpeg.FS('readFile', `${unique_id}.wav`);
+        const output = new Blob([fileData], {
+            type: 'audio/wav',
+          });
         const formData = new FormData();
-        formData.append('video', videoBlob, 'interview.webm');
-        formData.append('audio', audioBlob, 'audio.wav');
-        formData.append('aIInterviewQuestionId', questions[currentQuestionIndex].id);
-        formData.append('isLastQuestion', (currentQuestionIndex === questions.length - 1).toString());
-        
+        formData.append('operations', '{}');
+        formData.append('map', '{}');
+        formData.append('model', 'whisper-12');
+        formData.append('question2', 'Whats the question');
+        formData.append('video', file, `${unique_id}.webm`);
+        formData.append('video', file, `${unique_id}.webm`);
+        formData.append('audio', output, `${unique_id}.wav`);
+        formData.forEach((value, key) => {
+            console.log(key, value);
+        });
         await onNextQuestion(formData);
-        
         setSubmitting(false);
         setTimer(5); // Start 5-second countdown after successful submission
       } catch (error) {
@@ -205,114 +235,6 @@ export const InterviewPage: React.FC<InterviewPageProps> = ({ questions,currentQ
     }
   };
 
-
-
-  useEffect(() => {
-    if (submissionStatus === 'success' && timer !== null) {
-      if (timer > 0) {
-        const timerId = setTimeout(() => setTimer(timer - 1), 1000);
-        return () => clearTimeout(timerId);
-      } else {
-        if (currentQuestionIndex < questions.length - 1) {
-          setRecorded(false);
-          setFeedback('');
-          setError('');
-          setTimer(null);
-          setRecordedChunks([]);
-          setSubmissionStatus('idle');
-        } else {
-          onFinish();
-        }
-      }
-    }
-  }, [submissionStatus, timer, currentQuestionIndex, questions.length, onFinish]);
-  
-  async function extractAudioFromVideo(videoBlob: Blob): Promise<Blob> {
-    return new Promise((resolve, reject) => {
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const reader = new FileReader();
-  
-      reader.onload = async (event) => {
-        if (event.target?.result instanceof ArrayBuffer) {
-          try {
-            const audioBuffer = await audioContext.decodeAudioData(event.target.result);
-            const offlineAudioContext = new OfflineAudioContext(
-              audioBuffer.numberOfChannels,
-              audioBuffer.length,
-              audioBuffer.sampleRate
-            );
-  
-            const source = offlineAudioContext.createBufferSource();
-            source.buffer = audioBuffer;
-            source.connect(offlineAudioContext.destination);
-            source.start();
-            const renderedBuffer = await offlineAudioContext.startRendering();
-            const wavBlob = bufferToWav(renderedBuffer);
-            resolve(wavBlob);
-          } catch (error) {
-            reject(error);
-          }
-        } else {
-          reject(new Error('Failed to read video file'));
-        }
-      };
-  
-      reader.onerror = (error) => reject(error);
-      reader.readAsArrayBuffer(videoBlob);
-    });
-  }
-  
-  function bufferToWav(buffer: AudioBuffer): Blob {
-    const numOfChan = buffer.numberOfChannels;
-    const length = buffer.length * numOfChan * 2 + 44;
-    const data = new Uint8Array(length);
-  
-    let offset = 0;
-  
-    const writeString = (str: string) => {
-      for (let i = 0; i < str.length; i++) {
-        data.set(new Uint8Array([str.charCodeAt(i)]), offset + i);
-      }
-      offset += str.length;
-    };
-  
-    const writeUint16 = (num: number) => {
-      data.set(new Uint8Array([num & 0xff, (num >> 8) & 0xff]), offset);
-      offset += 2;
-    };
-  
-    const writeUint32 = (num: number) => {
-      data.set(new Uint8Array([num & 0xff, (num >> 8) & 0xff, (num >> 16) & 0xff, (num >> 24) & 0xff]), offset);
-      offset += 4;
-    };
-    
-      // Write WAV header
-      writeString('RIFF');
-      writeUint32(length - 8);
-      writeString('WAVE');
-      writeString('fmt ');
-      writeUint32(16);
-      writeUint16(1);
-      writeUint16(numOfChan);
-      writeUint32(buffer.sampleRate);
-      writeUint32(buffer.sampleRate * 2 * numOfChan);
-      writeUint16(numOfChan * 2);
-      writeUint16(16);
-      writeString('data');
-      writeUint32(length - 44);
-    
-    // Write audio data
-    for (let i = 0; i < buffer.length; i++) {
-      for (let channel = 0; channel < numOfChan; channel++) {
-        const sample = Math.max(-1, Math.min(1, buffer.getChannelData(channel)[i]));
-        const int16 = sample < 0 ? sample * 0x8000 : sample * 0x7fff;
-        writeUint16(int16);
-      }
-    }
-  
-    return new Blob([data], { type: 'audio/wav' });
-  }
-  
 
   if (!hasCamera) {
     return <StyledError>{error}</StyledError>;
