@@ -75,7 +75,9 @@ import { SettingsWorkspaceMembers } from '~/pages/settings/SettingsWorkspaceMemb
 import { Tasks } from '~/pages/tasks/Tasks';
 import { Chats } from '~/pages/chats/Chats';
 import { getPageTitleFromPath } from '~/utils/title-utils';
-import { VideoInterviewResponsePage } from '@/ai-interview/interview-response/Test';
+// import { VideoInterviewResponsePage } from '@/ai-interview/interview-response/VideoInterviewResponsePage';
+import { AIInterviewFlow } from '@/ai-interview/interview-response/AIInterviewFlow';
+
 import { Split } from '@/ai-interview/interview-response/split';
 const ProvidersThatNeedRouterContext = () => {
   const { pathname } = useLocation();
@@ -168,10 +170,7 @@ const createRouter = (isBillingEnabled?: boolean) =>
                   path={SettingsPath.NewAccount}
                   element={<SettingsNewAccount />}
                 />
-                <Route
-                  path={SettingsPath.AccountsCalendars}
-                  element={<SettingsAccountsCalendars />}
-                />
+                <Route path={SettingsPath.AccountsCalendars} element={<SettingsAccountsCalendars />} />
                 <Route
                   path={SettingsPath.AccountsCalendarsSettings}
                   element={<SettingsAccountsCalendarsSettings />}
@@ -285,12 +284,15 @@ const createRouter = (isBillingEnabled?: boolean) =>
           />
           <Route path={AppPath.NotFoundWildcard} element={<NotFound />} />
         </Route>
+
         <Route element={<BlankLayout />}>
           <Route path={AppPath.Authorize} element={<Authorize />} />
         </Route>
-        <Route path={AppPath.VideoInterview} element={<VideoInterviewResponsePage />} />
-        <Route path={AppPath.VideoInterviewReview} element={<Split />} />
-      </Route>,
+        <Route>
+          <Route path={AppPath.VideoInterview} element={<AIInterviewFlow interviewId={window.location.pathname} />} />
+          <Route path={AppPath.VideoInterviewReview} element={<Split />} />
+        </Route>      
+        </Route>,
     ),
   );
 

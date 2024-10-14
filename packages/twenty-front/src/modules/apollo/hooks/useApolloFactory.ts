@@ -65,6 +65,7 @@ export const useApolloFactory = (options: Partial<Options<any>> = {}) => {
         setTokenPair(tokenPair);
       },
       onUnauthenticatedError: () => {
+        console.log("This is unauthenticated error")
         setTokenPair(null);
         setCurrentUser(null);
         setCurrentWorkspaceMember(null);
@@ -76,7 +77,16 @@ export const useApolloFactory = (options: Partial<Options<any>> = {}) => {
           !isMatchingLocation(AppPath.Invite) &&
           !isMatchingLocation(AppPath.ResetPassword)
         ) {
+          console.log("This is unauthenticated errorand lcoation is ::", location)
+          if (location.pathname.includes("video-interview")) {
+            console.log("is matching, lets see and navigate")
+            console.log("This is the app path video interview", AppPath.VideoInterview)
+            console.log("This is the windlo location", location.pathname)
+            navigate(location.pathname)
+            return
+          }
           setPreviousUrl(`${location.pathname}${location.search}`);
+          console.log("Redirecting to signinup from here")
           navigate(AppPath.SignInUp);
         }
       },

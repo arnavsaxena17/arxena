@@ -16,7 +16,15 @@ export const VerifyEffect = () => {
 
   useEffect(() => {
     const getTokens = async () => {
+      // Bypass verification for the video-interview route
+      console.log("Location. paghment, ", location.pathname)
+      if (location.pathname.startsWith('/video-interview')) {
+        navigate(location.pathname);
+        return;
+      }
+
       if (!loginToken) {
+        console.log("No login token so going to signin up")
         navigate(AppPath.SignInUp);
       } else {
         await verify(loginToken);
@@ -26,9 +34,10 @@ export const VerifyEffect = () => {
     if (!isLogged) {
       getTokens();
     }
-    // Verify only needs to run once at mount
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isLogged, loginToken, location.pathname]);
+
+
 
   return <></>;
 };
