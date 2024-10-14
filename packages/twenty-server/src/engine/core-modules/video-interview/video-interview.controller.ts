@@ -56,10 +56,12 @@ export class VideoInterviewController {
     ),
   )
   async submitResponse(@Req() req, @UploadedFiles() files: { video?: Express.Multer.File[]; audio?: Express.Multer.File[] }, @Body() responseData: any) {
-    console.log("submitResponse method called");
+    console.log("submitResponse method called::", req.body);
+    
     try {
       console.log("Received files:", JSON.stringify(files, null, 2));
       console.log("Received response data:", JSON.stringify(responseData, null, 2));
+      const interviewData = JSON.parse(req?.body?.interviewData)
 
       if (!files.audio || !files.video) {
         throw new BadRequestException('Both video and audio files are required');
@@ -74,7 +76,7 @@ export class VideoInterviewController {
       // Transcribe audio
       console.log("Starting audio transcription");
       const transcript = await this.transcriptionService.transcribeAudio(audioFile.path);
-      console.log("Transcription completed");
+      console.log("Transcription completed::", transcript);
 
       const token = req.user?.accessToken;
       console.log("User token:", token ? "Present" : "Missing");
@@ -108,7 +110,7 @@ export class VideoInterviewController {
         variables: createResponseVariables,
       });
 
-      console.log("Sending GraphQL mutation for response creation");
+      console.log("Sending GraphQL mutation for response creation::", graphqlQueryObjForCreationOfResponse);
       const responseResult = (await axiosRequest(graphqlQueryObjForCreationOfResponse)).data;
       console.log("Response creation result:", JSON.stringify(responseResult, null, 2));
 
@@ -124,9 +126,9 @@ export class VideoInterviewController {
           }
         }
       `;
-
+      
       const updateStatusVariables = {
-        idToUpdate: responseData.aIInterviewStatusId,
+        idToUpdate: interviewData.id,
         input: {
           interviewStarted: true,
           interviewCompleted: responseData.isLastQuestion,
@@ -136,6 +138,7 @@ export class VideoInterviewController {
         query: updateStatusMutation,
         variables: updateStatusVariables,
       });
+      console.log("graphqlQueryObjForUpdationForStatus::", graphqlQueryObjForUpdationForStatus)
 
       console.log("Sending GraphQL mutation for status update");
       const statusResult = (await axiosRequest(graphqlQueryObjForUpdationForStatus)).data;
@@ -203,10 +206,32 @@ export class VideoInterviewController {
   }
 
 
-  @Post('test-questions')
-  async testQuestions(@Req() req, @Body() interviewData: { aIInterviewId: string }) {
-    console.log("tested questions")
-    return  {"tested questions":"Tested questions"};
+  @Post('update-feedback')
+  async updateFeedback(@Req() req, @Body() feedbackData) {
+    const updateStatusMutation = `mutation UpdateOneAIInterviewStatus($idToUpdate: ID!, $input: AIInterviewStatusUpdateInput!) {
+      updateAIInterviewStatus(id: $idToUpdate, data: $input) {
+        id
+        interviewStarted
+        interviewCompleted
+        updatedAt
+      }
+    }
+  `;
+  console.log("This is the feedback obj", feedbackData)
+  const updateStatusVariables = {
+    idToUpdate: feedbackData.interviewId,
+    input: {
+      feedback: feedbackData.feedback,
+    },
+  };
+  const graphqlQueryObjForUpdationForStatus = JSON.stringify({
+    query: updateStatusMutation,
+    variables: updateStatusVariables,
+  });
+  console.log("graphqlQueryObjForUpdationForStatus::", graphqlQueryObjForUpdationForStatus)
+
+  const response =  await axiosRequest(graphqlQueryObjForUpdationForStatus);
+  return {"status": response.status};
   }
 
   @Post('get-interview-details')

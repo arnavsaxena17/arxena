@@ -20,9 +20,28 @@ import { LoggerService } from './engine/integrations/logger/logger.service';
 import { json, urlencoded } from 'express';
 import * as express from 'express';
 import * as path from 'path';
+import * as fs from 'fs';
 // import { BaileysModule } from 'src/engine/core-modules/baileys/baileys.module';
+import * as dotenv from 'dotenv';
+
 
 const bootstrap = async () => {
+  dotenv.config();
+  console.log('Current working directory:', process.cwd());
+
+
+  const envPath = '.env';
+  if (fs.existsSync(envPath)) {
+    console.log('.env file found');
+    // 3. Log .env file contents
+    // console.log('.env file contents:');
+    // console.log(fs.readFileSync(envPath, 'utf8'));
+  } else {
+    console.log('.env file not found');
+  }
+
+  dotenv.config();
+
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     cors: true,
     bufferLogs: process.env.LOGGER_IS_BUFFER_ENABLED === 'true',

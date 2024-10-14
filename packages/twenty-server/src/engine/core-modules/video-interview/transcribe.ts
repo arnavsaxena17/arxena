@@ -9,12 +9,13 @@ export const config = {
   },
 };
 
+
 export default async function handler(req: any, res: any) {
+  console.log("Using api key :, process.env.OPENAI_API_KEY), process.env.OPENAI_API_KEY" , process.env.OPENAI_API_KEY)
   const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
   });
 
-  // Here, we create a temporary file to store the audio file using Vercel's tmp directory
   // As we compressed the file and are limiting recordings to 2.5 minutes, we won't run into trouble with storage capacity
   const fData = await new Promise<{ fields: any; files: any }>(
     (resolve, reject) => {

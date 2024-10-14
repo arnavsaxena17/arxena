@@ -7,9 +7,9 @@ export class TranscriptionService {
   private openai: OpenAI;
 
   constructor() {
-    console.log('OPENAI_API_KEY:', process.env.OPENAI_API_KEY);
+    console.log('Going to use for transcprition OPENAI_API_KEY:', process.env.OPENAI_KEY);
     this.openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
+      apiKey: process.env.OPENAI_KEY,
     });
   }
 
