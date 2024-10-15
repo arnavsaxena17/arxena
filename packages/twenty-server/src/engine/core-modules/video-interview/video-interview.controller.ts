@@ -310,7 +310,6 @@ export class VideoInterviewController {
                     name
                     aIModelId
                     aIInterviewQuestions{
-                      __typename
                       edges{
                           node{
                               name
@@ -318,6 +317,7 @@ export class VideoInterviewController {
                               timeLimit
                               questionType
                               questionValue
+                              createdAt
                           }
                       }
                     }

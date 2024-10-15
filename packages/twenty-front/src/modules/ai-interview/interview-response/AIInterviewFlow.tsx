@@ -67,13 +67,6 @@ export const AIInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId
 
     try {
       console.log('Going to handle next question, let sed if this submists');
-      console.log('This is process.env.REACT_APP_SERVER_BASE_URL:', process.env.REACT_APP_SERVER_BASE_URL);
-      responseData.append('interviewData', JSON.stringify(interviewData));
-      const response = await axios.post(process.env.REACT_APP_SERVER_BASE_URL + '/video-interview/submit-response', responseData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      console.log('This isreht ersponse:', response);
-      console.log("The calue of interviewData!.aIInterview.aIInterviewQuestions.edges.length is ::", interviewData!.aIInterview.aIInterviewQuestions.edges.length)
       setCurrentQuestionIndex(prevIndex => {
         const nextIndex = prevIndex + 1;
         if (nextIndex === (interviewData?.aIInterview?.aIInterviewQuestions?.edges?.length ?? 0)) {
@@ -81,6 +74,14 @@ export const AIInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId
         }
         return nextIndex;
       });
+      console.log('This is process.env.REACT_APP_SERVER_BASE_URL:', process.env.REACT_APP_SERVER_BASE_URL);
+      responseData.append('interviewData', JSON.stringify(interviewData));
+      const response = await axios.post(process.env.REACT_APP_SERVER_BASE_URL + '/video-interview/submit-response', responseData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      console.log('This isreht ersponse:', response);
+      console.log("The calue of interviewData!.aIInterview.aIInterviewQuestions.edges.length is ::", interviewData!.aIInterview.aIInterviewQuestions.edges.length)
+
     } catch (error) {
       console.error('Error submitting response:', error);
     }
@@ -118,7 +119,9 @@ export const AIInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId
           <ErrorBoundary>
             <InterviewPage
               InterviewData={interviewData}
-              questions={interviewData.aIInterview.aIInterviewQuestions.edges.map(edge => edge.node)}
+              questions={interviewData.aIInterview.aIInterviewQuestions.edges
+                .map(edge => edge.node)
+                .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())}
               currentQuestionIndex={currentQuestionIndex}
               onNextQuestion={handleNextQuestion}
               onFinish={handleFinish}

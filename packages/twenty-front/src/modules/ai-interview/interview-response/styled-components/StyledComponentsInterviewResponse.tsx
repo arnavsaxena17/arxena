@@ -26,9 +26,46 @@ export const StyledContainer = styled.div`
 //   font-weight: ${({ theme }) => theme.font.weight.semiBold};
 // `;
 
+export const StyledLeftPanelContentBox = styled.div`
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+gap: 24px;
+flex: 1 0 0;
+align-self: stretch;
+box-sizing: border-box
+padding: 44px 32px;
+`
+
+export const StyledTextLeftPanelTextHeadline = styled.div`
+display: flex;
+padding: var(--Spacing-4px, 4px) 12px;
+align-items: flex-start;
+gap: 6px;
+align-self: stretch;
+border-left: var(--Spacing-2px, 2px) solid #999;
+`
+
+export const StyledTextLeftPanelVideoPane = styled.div`
+height: 300px;
+align-self: stretch;
+border-radius: 16px;
+background: var(--John, url(/videos/Video.png) lightgray 50% / cover no-repeat);
+`
+
+export const StyledTextLeftPaneldisplay = styled.div`
+color: #808080;
+leading-trim: both;
+text-edge: cap;
+font-family: Inter;
+font-size: 14px;
+font-style: normal;
+font-weight: 600;
+line-height: 150%`
 
 
-export const StyledTextLeftPanel = styled.div`
+
+export const StyledTextLeftPanelHeadline = styled.div`
 color: #333;
 font-family: Inter;
 font-size: 24px;
@@ -38,7 +75,6 @@ line-height: 120%;`
 
 export const StyledLeftPanel = styled.div`
   width: calc(100% * (1 / 3));
-  max-width: 300px;
   min-width: 224px;
   padding: 44px 32px;
   color: ${({ theme }) => theme.font.color.secondary};
@@ -56,6 +92,14 @@ export const StyledRightPanel = styled.div`
   display: flex;
   flex-direction: column;
   gap: 44px;
+  color: #808080;
+leading-trim: both;
+text-edge: cap;
+font-family: Inter;
+font-size: 16px;
+font-style: normal;
+font-weight: 600;
+line-height: 150%; /* 24px */
 `;
 // const StyledRightPanel = styled.div`
 //   width: calc(100% * (2 / 3));
@@ -85,6 +129,7 @@ export const StyledButton = styled.button`
   border: none;
   border-radius: 4px;
   cursor: pointer;
+  width: 10%;
   font-size: ${({ theme }) => theme.font.size.md};
 `;
 
