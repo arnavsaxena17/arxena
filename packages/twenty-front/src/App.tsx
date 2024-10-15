@@ -77,8 +77,7 @@ import { Chats } from '~/pages/chats/Chats';
 import { getPageTitleFromPath } from '~/utils/title-utils';
 // import { VideoInterviewResponsePage } from '@/ai-interview/interview-response/VideoInterviewResponsePage';
 import { AIInterviewFlow } from '@/ai-interview/interview-response/AIInterviewFlow';
-
-import { Split } from '@/ai-interview/interview-response/split';
+import { VideoInterviewResponseViewer } from '@/ai-interview/interview-response/VideoInterviewResponseViewer';
 const ProvidersThatNeedRouterContext = () => {
   const { pathname } = useLocation();
   const pageTitle = getPageTitleFromPath(pathname);
@@ -145,14 +144,12 @@ const createRouter = (isBillingEnabled?: boolean) =>
           <Route path={AppPath.TasksPage} element={<Tasks />} />
           <Route path={AppPath.ChatsPage} element={<Chats />} />
           <Route path={`${AppPath.ChatsPage}/:candidateId`} element={<Chats />} />
-
+          <Route path={`${AppPath.VideoInterviewReview}/:candidateId`} element={<VideoInterviewResponseViewer interviewId={window.location.pathname} />} />
           <Route path={AppPath.Impersonate} element={<ImpersonateEffect />} />
           <Route path={AppPath.RecordIndexPage} element={<RecordIndexPage />} />
           <Route path={AppPath.RecordShowPage} element={<RecordShowPage />} />
 
-          <Route
-            path={AppPath.SettingsCatchAll}
-            element={
+          <Route path={AppPath.SettingsCatchAll} element={
               <Routes>
                 <Route
                   path={SettingsPath.ProfilePage}
@@ -289,10 +286,9 @@ const createRouter = (isBillingEnabled?: boolean) =>
           <Route path={AppPath.Authorize} element={<Authorize />} />
         </Route>
         <Route>
-          <Route path={AppPath.VideoInterview} element={<AIInterviewFlow interviewId={window.location.pathname} />} />
-          <Route path={AppPath.VideoInterviewReview} element={<Split />} />
+          <Route path={`${AppPath.VideoInterview}`} element={<AIInterviewFlow interviewId={window.location.pathname} />} />
         </Route>      
-        </Route>,
+      </Route>,
     ),
   );
 

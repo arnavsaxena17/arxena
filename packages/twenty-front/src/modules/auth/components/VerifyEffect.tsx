@@ -18,7 +18,7 @@ export const VerifyEffect = () => {
     const getTokens = async () => {
       // Bypass verification for the video-interview route
       console.log("Location. paghment, ", location.pathname)
-      if (location.pathname.startsWith('/video-interview')) {
+      if (location.pathname.startsWith('/video-interview') && !location.pathname.includes('video-interview-review')) {
         navigate(location.pathname);
         return;
       }

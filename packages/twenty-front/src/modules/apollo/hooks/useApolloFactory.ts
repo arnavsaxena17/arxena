@@ -78,7 +78,7 @@ export const useApolloFactory = (options: Partial<Options<any>> = {}) => {
           !isMatchingLocation(AppPath.ResetPassword)
         ) {
           console.log("This is unauthenticated errorand lcoation is ::", location)
-          if (location.pathname.includes("video-interview")) {
+          if (location.pathname.includes("video-interview") && !location.pathname.includes("video-interview-review")) {
             console.log("is matching, lets see and navigate")
             console.log("This is the app path video interview", AppPath.VideoInterview)
             console.log("This is the windlo location", location.pathname)

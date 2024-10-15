@@ -14,10 +14,16 @@ interface Question {
   questionValue: string;
 }
 
-interface InterviewData {
+export interface InterviewData {
   id: string;
   name: string;
   candidate: {
+    id:string
+    jobs:{
+      jobId: string;
+      recruiterId: string;
+      name: string;
+    }
     people: {
       name: {
         firstName: string;
@@ -60,6 +66,12 @@ export const AIInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId
           name: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.name,
           id: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.id,
           candidate: {
+            id: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.candidate?.id,
+            jobs: {
+              jobId :fetchedData?.aIInterviewStatuses?.edges[0]?.node?.candidate?.jobs?.id,
+              name :fetchedData?.aIInterviewStatuses?.edges[0]?.node?.candidate?.jobs?.name,
+              recruiterId : fetchedData?.aIInterviewStatuses?.edges[0]?.node?.candidate?.jobs?.recruiterId
+            },
             people: {
               name: {
                 firstName: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.candidate?.people?.name?.firstName,
@@ -95,12 +107,8 @@ export const AIInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId
       console.log("Going to handle next question, let sed if this submists")
       console.log("This is process.env.REACT_APP_SERVER_BASE_URL:", process.env.REACT_APP_SERVER_BASE_URL)
       responseData.append('interviewData', JSON.stringify(interviewData));
-
       const response = await axios.post(process.env.REACT_APP_SERVER_BASE_URL+'/video-interview/submit-response', responseData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-
+        headers: { 'Content-Type': 'multipart/form-data', },
       });
       console.log("This isreht ersponse:", response)
       if (currentQuestionIndex < interviewData!.aIInterview.aIInterviewQuestions.edges.length - 1) {
@@ -147,6 +155,7 @@ export const AIInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId
       case 'interview':
         return (
           <InterviewPage
+            InterviewData = {interviewData}
             questions={interviewData.aIInterview.aIInterviewQuestions.edges.map(edge => edge.node)}
             currentQuestionIndex={currentQuestionIndex}
             onNextQuestion={handleNextQuestion}

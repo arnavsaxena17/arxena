@@ -29,7 +29,7 @@ export const usePageChangeEffectNavigateLocation = () => {
   }
 
   if (onboardingStatus === OnboardingStatus.OngoingUserCreation && !isMatchingOngoingUserCreationRoute) {
-    if (location.pathname.includes('video-interview')) {
+    if (location.pathname.includes('video-interview') && !location.pathname.includes('video-interview-review')) {
       return;
     }
     console.log('Is mathcing ongoing user creation route henc egoing eot signin up');
