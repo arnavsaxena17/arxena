@@ -297,12 +297,10 @@ export const InterviewPage: React.FC<InterviewResponseTypes.InterviewPageProps> 
       </>
       </StyledLeftPanel>
     <StyledRightPanel>
-      {activeCameraFeed &&  (
         <div>
           <h2>{questions[currentQuestionIndex].name}</h2>
           <p>{questions[currentQuestionIndex].questionValue}</p>
         </div>
-      )}
       {activeCameraFeed &&  (
         <StyledVideoContainer>
           <Webcam audio={true} ref={webcamRef} width="100%" height="100%" />
