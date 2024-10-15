@@ -1,50 +1,61 @@
 import React, { useState } from 'react';
 import styled from '@emotion/styled';
+import {
+  StyledContainer,
+  StyledLeftPanel,
+  StyledRightPanel,
+} from './styled-components/StyledComponentsInterviewResponse';
 
-const StyledContainer = styled.div`
-  display: flex;
-  height: 100vh;
-  background-color: ${({ theme }) => theme.background.tertiary};
-`;
-
-const StyledLeftPanel = styled.div`
-  width: calc(100% * (1 / 3));
-  max-width: 300px;
-  min-width: 224px;
-  padding: 44px 32px;
-  color: ${({ theme }) => theme.font.color.secondary};
-  font-family: ${({ theme }) => theme.font.family};
-  font-size: ${({ theme }) => theme.font.size.lg};
-  font-weight: ${({ theme }) => theme.font.weight.semiBold};
-`;
-
-const StyledRightPanel = styled.div`
-  width: calc(100% * (2 / 3));
-  min-width: 264px;
-  padding: 44px 32px;
-  background-color: ${({ theme }) => theme.background.primary};
+const FeedbackContainer = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 44px;
+  gap: 20px;
 `;
 
 const StyledTextArea = styled.textarea`
   width: 100%;
-  height: 100px;
-  margin-bottom: 20px;
-  padding: 10px;
-  font-family: ${({ theme }) => theme.font.family};
-  font-size: ${({ theme }) => theme.font.size.md};
+  height: 150px;
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-family: 'Inter', sans-serif;
+  font-size: 16px;
+  resize: vertical;
+  &:focus {
+    outline: none;
+    border-color: #4285f4;
+    box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.2);
+  }
 `;
 
-const StyledButton = styled.button`
-  padding: 10px 20px;
+const SubmitButton = styled.button`
   background-color: #4285f4;
   color: white;
   border: none;
   border-radius: 4px;
+  padding: 12px 24px;
+  font-size: 16px;
+  font-weight: 600;
   cursor: pointer;
-  font-size: ${({ theme }) => theme.font.size.md};
+  transition: background-color 0.3s ease;
+  align-self: flex-start;
+
+  &:hover {
+    background-color: #3367d6;
+  }
+`;
+
+const ThankYouMessage = styled.h1`
+  font-size: 24px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 20px;
+`;
+
+const FeedbackPrompt = styled.p`
+  font-size: 16px;
+  color: #666;
+  margin-bottom: 20px;
 `;
 
 const StyledMessage = styled.div`
@@ -52,9 +63,8 @@ const StyledMessage = styled.div`
   padding: 10px;
   background-color: #e8f5e9;
   border-radius: 4px;
-  font-size: ${({ theme }) => theme.font.size.md};
+  font-size: 16px;
 `;
-
 
 export const EndInterviewPage: React.FC<{ onSubmit: (feedback: string) => void }> = ({ onSubmit }) => {
   const [feedback, setFeedback] = useState('');
@@ -65,23 +75,6 @@ export const EndInterviewPage: React.FC<{ onSubmit: (feedback: string) => void }
     setSubmitted(true);
   };
 
-  if (submitted) {
-    return (
-      <StyledContainer>
-        <StyledLeftPanel>
-          <h2>AI Interview</h2>
-          <p>Interview Complete</p>
-        </StyledLeftPanel>
-        <StyledRightPanel>
-          <h1>Thank You for Your Feedback</h1>
-          <StyledMessage>
-            Your feedback has been submitted successfully. You may now close this window.
-          </StyledMessage>
-        </StyledRightPanel>
-      </StyledContainer>
-    );
-  }
-
   return (
     <StyledContainer>
       <StyledLeftPanel>
@@ -89,14 +82,30 @@ export const EndInterviewPage: React.FC<{ onSubmit: (feedback: string) => void }
         <p>Interview Complete</p>
       </StyledLeftPanel>
       <StyledRightPanel>
-        <h1>Thank You for Completing the Interview</h1>
-        <p>We appreciate your time and effort. Please provide any feedback you have about the interview process.</p>
-        <StyledTextArea
-          value={feedback}
-          onChange={(e) => setFeedback(e.target.value)}
-          placeholder="Enter your feedback here..."
-        />
-        <StyledButton onClick={handleSubmit}>Submit Feedback</StyledButton>
+        {submitted ? (
+          <>
+            <FeedbackContainer>
+            <ThankYouMessage>Thank You for Your Feedback</ThankYouMessage>
+            <StyledMessage>
+              Your feedback has been submitted successfully. You may now close this window.
+            </StyledMessage>
+            </FeedbackContainer>
+
+          </>
+        ) : (
+          <FeedbackContainer>
+            <ThankYouMessage>Thank You for Completing the Interview</ThankYouMessage>
+            <FeedbackPrompt>
+              We appreciate your time and effort. Please share any additional inputs you have for the interviewer or about the interview process.
+            </FeedbackPrompt>
+            <StyledTextArea
+              value={feedback}
+              onChange={(e) => setFeedback(e.target.value)}
+              placeholder="Enter your feedback here..."
+            />
+            <SubmitButton onClick={handleSubmit}>Share Feedback</SubmitButton>
+          </FeedbackContainer>
+        )}
       </StyledRightPanel>
     </StyledContainer>
   );

@@ -5,28 +5,70 @@ import { createFFmpeg, fetchFile } from '@ffmpeg/ffmpeg';
 import { v4 as uuid } from 'uuid';
 import * as InterviewResponseTypes from './types/interviewResponseTypes';
 
+import {
+  StyledContainer,
+  StyledLeftPanelContentBox,
+  StyledTextLeftPanelHeadline,
+  StyledTextLeftPanelTextHeadline,
+  StyledTextLeftPanelVideoPane,
+  StyledTextLeftPaneldisplay,
+  StyledLeftPanel,
+  StyledRightPanel,
+  StyledButton,
+} from './styled-components/StyledComponentsInterviewResponse';
 
-const StyledContainer = styled.div`
+// const StyledLeftPanel = styled.div`
+//   width: calc(100% * (1 / 3));
+//   max-width: 300px;
+//   min-width: 224px;
+//   padding: 44px 32px;
+//   color: ${({ theme }) => theme.font.color.secondary};
+//   font-family: ${({ theme }) => theme.font.family};
+//   font-size: ${({ theme }) => theme.font.size.lg};
+//   font-weight: ${({ theme }) => theme.font.weight.semiBold};
+// `;
+
+const StyledRecordButton = styled.button<{ isRecording: boolean }>`
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: ${props => (props.isRecording ? '#ff4136' : '#4285f4')};
+  border: none;
+  cursor: pointer;
   display: flex;
-  height: 100vh;
-  background-color: ${({ theme }) => theme.background.tertiary};
+  align-items: center;
+  justify-content: center;
+  margin: 0 10px;
+`;
+const StyledIcon = styled.div`
+  width: 20px;
+  height: 20px;
+  background-color: white;
 `;
 
-const StyledLeftPanel = styled.div`
-  width: calc(100% * (1 / 3));
-  max-width: 300px;
-  min-width: 224px;
-  padding: 44px 32px;
-  color: ${({ theme }) => theme.font.color.secondary};
-  font-family: ${({ theme }) => theme.font.family};
-  font-size: ${({ theme }) => theme.font.size.lg};
-  font-weight: ${({ theme }) => theme.font.weight.semiBold};
+const RecordIcon = () => <StyledIcon style={{ borderRadius: '50%' }} />;
+
+const StopIcon = () => <StyledIcon style={{ width: '14px', height: '14px' }} />;
+
+const StyledControlsOverlay = styled.div`
+  position: absolute;
+  bottom: 20%;
+  left: 66%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.5);
+  border-radius: 20px;
+  padding: 10px;
+  cursor: pointer;
+  color: white;
 `;
 
 const StyledAnswerTimer = styled.div`
   position: absolute;
-  bottom: 20px;
-  right: 20px;
+  bottom: 15%;
+  right: 31%;
   font-size: ${({ theme }) => theme.font.size.lg};
   font-weight: ${({ theme }) => theme.font.weight.semiBold};
   color: white;
@@ -35,12 +77,10 @@ const StyledAnswerTimer = styled.div`
   border-radius: 5px;
 `;
 
-
-
 const StyledCountdownOverlay = styled.div`
   position: absolute;
-  top: 40%;
-  left: 50%;
+  top: 45%;
+  left: 66.5%;
   transform: translate(-50%, -50%);
   font-size: 72px;
   color: white;
@@ -54,15 +94,15 @@ const StyledCountdownOverlay = styled.div`
   align-items: center;
 `;
 
-const StyledRightPanel = styled.div`
-  width: calc(100% * (2 / 3));
-  min-width: 264px;
-  padding: 44px 32px;
-  background-color: ${({ theme }) => theme.background.primary};
-  display: flex;
-  flex-direction: column;
-  gap: 44px;
-`;
+// const StyledRightPanel = styled.div`
+//   width: calc(100% * (2 / 3));
+//   min-width: 264px;
+//   padding: 44px 32px;
+//   background-color: ${({ theme }) => theme.background.primary};
+//   display: flex;
+//   flex-direction: column;
+//   gap: 44px;
+// `;
 
 const StyledVideoContainer = styled.div`
   background-color: black;
@@ -70,16 +110,15 @@ const StyledVideoContainer = styled.div`
   margin-bottom: 20px;
 `;
 
-const StyledButton = styled.button`
-  padding: 10px 20px;
-  background-color: #4285f4;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: ${({ theme }) => theme.font.size.md};
-`;
-
+// const StyledButton = styled.button`
+//   padding: 10px 20px;
+//   background-color: #4285f4;
+//   color: white;
+//   border: none;
+//   border-radius: 4px;
+//   cursor: pointer;
+//   font-size: ${({ theme }) => theme.font.size.md};
+// `;
 
 const StyledMessage = styled.div`
   margin-top: 20px;
@@ -113,7 +152,7 @@ const ffmpeg = createFFmpeg({
 });
 
 export const InterviewPage: React.FC<InterviewResponseTypes.InterviewPageProps> = ({ InterviewData, questions, currentQuestionIndex, onNextQuestion, onFinish }) => {
-
+  console.log('These are questions::', questions);
 
   const [recording, setRecording] = useState(false);
   const [activeCameraFeed, setActiveCameraFeed] = useState(true);
@@ -130,7 +169,6 @@ export const InterviewPage: React.FC<InterviewResponseTypes.InterviewPageProps> 
 
   const isLastQuestion = currentQuestionIndex === questions.length - 1;
 
-
   useEffect(() => {
     checkCamera();
   }, []);
@@ -144,7 +182,6 @@ export const InterviewPage: React.FC<InterviewResponseTypes.InterviewPageProps> 
     }
   }, [timer]);
 
-
   useEffect(() => {
     if (answerTimer !== null && answerTimer > 0) {
       const answerTimerId = setTimeout(() => setAnswerTimer(answerTimer - 1), 1000);
@@ -153,8 +190,6 @@ export const InterviewPage: React.FC<InterviewResponseTypes.InterviewPageProps> 
       handleStopRecording();
     }
   }, [answerTimer]);
-
-
 
   useEffect(() => {
     if (countdown !== null && countdown > 0) {
@@ -167,6 +202,7 @@ export const InterviewPage: React.FC<InterviewResponseTypes.InterviewPageProps> 
   }, [countdown]);
 
   const handleStartRecording = () => {
+    setRecording(true);
     setCountdown(2);
   };
 
@@ -175,7 +211,7 @@ export const InterviewPage: React.FC<InterviewResponseTypes.InterviewPageProps> 
     setRecorded(false);
     setError(null);
     setRecordedChunks([]);
-    setAnswerTimer(30); // Start the 30-second timer
+    setAnswerTimer(10); // Start the 30-second timer
     const stream = webcamRef.current?.stream;
     if (stream) {
       mediaRecorderRef.current = new MediaRecorder(stream, { mimeType: 'video/webm' });
@@ -185,7 +221,7 @@ export const InterviewPage: React.FC<InterviewResponseTypes.InterviewPageProps> 
   };
 
   const moveToNextQuestion = () => {
-    console.log("Currnet question index:", currentQuestionIndex)
+    console.log('Currnet question index:', currentQuestionIndex);
     if (currentQuestionIndex < questions.length) {
       setRecordedChunks([]);
       setError(null);
@@ -218,7 +254,7 @@ export const InterviewPage: React.FC<InterviewResponseTypes.InterviewPageProps> 
       setActiveCameraFeed(false);
       setRecording(false);
       setRecorded(true);
-      setAnswerTimer(null); // Reset the answer timer
+      setAnswerTimer(null);
     }
   };
 
@@ -274,7 +310,6 @@ export const InterviewPage: React.FC<InterviewResponseTypes.InterviewPageProps> 
         if (isLastQuestion) {
           onFinish();
         }
-
       } catch (error) {
         console.error('Error submitting response:', error);
         setSubmitting(false);
@@ -283,50 +318,56 @@ export const InterviewPage: React.FC<InterviewResponseTypes.InterviewPageProps> 
     }
   };
 
+  // const formatTime = (seconds: number | null): string => {
+  //   if (seconds === null) return '0:00';
+  //   const mins = Math.floor(seconds / 60);
+  //   const secs = seconds % 60;
+  //   return `${mins}:${secs.toString().padStart(2, '0')}`;
+  // };
+
   if (!hasCamera) {
     return <StyledError>{error}</StyledError>;
   }
   return (
     <StyledContainer>
       <StyledLeftPanel>
-      <>
-      <h2>AI Interview</h2>
-      <p>
-          Question {currentQuestionIndex + 1} of {questions.length}
-        </p>
-      </>
+        <h2>Interview - .NET Developer II</h2>
+        <StyledLeftPanelContentBox>
+          <StyledTextLeftPanelTextHeadline>
+            Question {currentQuestionIndex + 1} of {questions.length}
+          </StyledTextLeftPanelTextHeadline>
+          <StyledTextLeftPanelVideoPane />
+          <h3>Transcript</h3>
+          <StyledTextLeftPaneldisplay>{questions[currentQuestionIndex].questionValue}</StyledTextLeftPaneldisplay>
+        </StyledLeftPanelContentBox>
       </StyledLeftPanel>
-    <StyledRightPanel>
+      <StyledRightPanel>
         <div>
           <h2>{questions[currentQuestionIndex].name}</h2>
           <p>{questions[currentQuestionIndex].questionValue}</p>
         </div>
-      {activeCameraFeed &&  (
-        <StyledVideoContainer>
-          <Webcam audio={true} ref={webcamRef} width="100%" height="100%" />
-          {countdown !== null && <StyledCountdownOverlay>{countdown}</StyledCountdownOverlay>}
-          {answerTimer !== null && <StyledAnswerTimer>Time left: {answerTimer}s</StyledAnswerTimer>}
-        </StyledVideoContainer>
-      )}
-      {recording && (currentQuestionIndex < questions.length) ? (
-        <StyledButton onClick={handleStopRecording}>Stop Recording</StyledButton>
-      ) : (
-        activeCameraFeed &&  (
-          <StyledButton onClick={handleStartRecording} disabled={submitting || countdown !== null}>
-            {countdown !== null ? 'Starting...' : 'Start Recording'}
-          </StyledButton>
-        )
-      )}
-      {submitting && <StyledMessage>Submitting your response...</StyledMessage>}
-
-      {timer !== null &&(
-        <>
-          <StyledMessage>Response submitted successfully! Moving to next question in:</StyledMessage>
-          <StyledTimer>{timer}</StyledTimer>
-        </>
-      )}
-      {error && <StyledError>{error}</StyledError>}
-    </StyledRightPanel>
-  </StyledContainer>
-);
+        {activeCameraFeed && (
+          <StyledVideoContainer>
+            <Webcam audio={true} ref={webcamRef} width="100%" height="100%" />
+            {countdown !== null && <StyledCountdownOverlay>{countdown}</StyledCountdownOverlay>}
+            {answerTimer !== null && <StyledAnswerTimer>Time left: {answerTimer}s</StyledAnswerTimer>}
+            <StyledControlsOverlay onClick={handleStartRecording}>
+              <StyledRecordButton onClick={recording ? handleStopRecording : handleStartRecording} isRecording={recording} disabled={submitting || countdown !== null}>
+                {recording ? <StopIcon /> : <RecordIcon />}
+              </StyledRecordButton>
+              {recording ? timer : 'Click to record your response'}
+            </StyledControlsOverlay>
+          </StyledVideoContainer>
+        )}
+        {submitting && <StyledMessage>Submitting your response...</StyledMessage>}
+        {timer !== null && (
+          <>
+            <StyledMessage>Response submitted successfully! Moving to next question in:</StyledMessage>
+            <StyledTimer>{timer}</StyledTimer>
+          </>
+        )}
+        {error && <StyledError>{error}</StyledError>}
+      </StyledRightPanel>
+    </StyledContainer>
+  );
 };

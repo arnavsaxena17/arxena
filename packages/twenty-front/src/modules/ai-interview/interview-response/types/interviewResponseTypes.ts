@@ -3,6 +3,7 @@ export interface Question {
     name: string;
     timeLimit: number;
     questionType: string;
+    createdAt: string;
     questionValue: string;
   }
   
