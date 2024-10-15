@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect,useRef } from 'react';
 import styled from '@emotion/styled';
 import * as InterviewResponseTypes from './types/interviewResponseTypes';
 // import * as InterviewResponseStyles from './styled-components/StyledComponentsInterviewResponse';
@@ -12,33 +12,23 @@ import {
   StyledLeftPanel,
   StyledRightPanel,
   StyledButton,
+  StyledButtonCameraAccess,
+  InstructionSection,
+  InstructionList,
+  AccessMessage,
+  TermsLink
   
 } from './styled-components/StyledComponentsInterviewResponse';
+// Updated styled component for video
 
+import { VideoPlayer } from './utils/videoPlaybackUtils';
 
-const InstructionSection = styled.div`
-  margin-bottom: 15px;
-`;
-
-const InstructionList = styled.ol`
-  padding-left: 20px;
-  margin: 5px 0;
-`;
-
-const AccessMessage = styled.p`
-  color: green;
-  margin: 10px 0;
-`;
-
-const TermsLink = styled.a`
-  color: blue;
-  text-decoration: underline;
-  margin-bottom: 10px;
-  display: inline-block;
-`;
 export const StartInterviewPage: React.FC<InterviewResponseTypes.StartInterviewPageProps> = ({ onStart, candidateName, positionName, introduction, instructions }) => {
 
   const [hasAccess, setHasAccess] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
 
   useEffect(() => {
     checkMediaAccess();
@@ -65,13 +55,19 @@ export const StartInterviewPage: React.FC<InterviewResponseTypes.StartInterviewP
   };
 
 
+
   return (
     <StyledContainer>
     <StyledLeftPanel>
       <h2>Interview - .NET Developer II</h2>
       <StyledLeftPanelContentBox>
         <StyledTextLeftPanelTextHeadline>Introduction</StyledTextLeftPanelTextHeadline>
-        <StyledTextLeftPanelVideoPane />
+        <VideoPlayer
+            src={`http://localhost:3000/files/attachment/820ddd1e-6228-4459-9c8d-a792252d2002.mp4`}
+            videoRef={videoRef}
+            isPlaying={isPlaying}
+            setIsPlaying={setIsPlaying}
+          />
         <h3>Transcript</h3>
         <StyledTextLeftPaneldisplay>
           Hi, I am John and I will be your guide to this interview. Congratulations on making it this far. On the right side of this page you will find instructions related to the interview process. Kindly follow them for a smooth interview
@@ -92,7 +88,7 @@ export const StartInterviewPage: React.FC<InterviewResponseTypes.StartInterviewP
         </InstructionSection>
         
         {!hasAccess && (
-          <StyledButton onClick={requestMediaAccess}>Give camera and microphone access</StyledButton>
+          <StyledButtonCameraAccess onClick={requestMediaAccess}>Give camera and microphone access</StyledButtonCameraAccess>
         )}
         {hasAccess && (
           <AccessMessage>✓ Camera and microphone access granted</AccessMessage>
