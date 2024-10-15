@@ -4,145 +4,29 @@ import Webcam from 'react-webcam';
 import { createFFmpeg, fetchFile } from '@ffmpeg/ffmpeg';
 import { v4 as uuid } from 'uuid';
 import * as InterviewResponseTypes from './types/interviewResponseTypes';
+import { VideoPlayer } from './utils/videoPlaybackUtils';
 
 import {
   StyledContainer,
   StyledLeftPanelContentBox,
-  StyledTextLeftPanelHeadline,
   StyledTextLeftPanelTextHeadline,
   StyledTextLeftPanelVideoPane,
   StyledTextLeftPaneldisplay,
   StyledLeftPanel,
   StyledRightPanel,
   StyledButton,
+  StyledVideoContainer,
+  StyledCountdownOverlay,
+  StyledAnswerTimer,
+  StyledControlsOverlay,
+  StyledRecordButton,
+  StyledMessage,
+  StyledTimer,
+  StopIcon,
+  RecordIcon,
+  StyledError
 } from './styled-components/StyledComponentsInterviewResponse';
 
-// const StyledLeftPanel = styled.div`
-//   width: calc(100% * (1 / 3));
-//   max-width: 300px;
-//   min-width: 224px;
-//   padding: 44px 32px;
-//   color: ${({ theme }) => theme.font.color.secondary};
-//   font-family: ${({ theme }) => theme.font.family};
-//   font-size: ${({ theme }) => theme.font.size.lg};
-//   font-weight: ${({ theme }) => theme.font.weight.semiBold};
-// `;
-
-const StyledRecordButton = styled.button<{ isRecording: boolean }>`
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background-color: ${props => (props.isRecording ? '#ff4136' : '#4285f4')};
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 10px;
-`;
-const StyledIcon = styled.div`
-  width: 20px;
-  height: 20px;
-  background-color: white;
-`;
-
-const RecordIcon = () => <StyledIcon style={{ borderRadius: '50%' }} />;
-
-const StopIcon = () => <StyledIcon style={{ width: '14px', height: '14px' }} />;
-
-const StyledControlsOverlay = styled.div`
-  position: absolute;
-  bottom: 20%;
-  left: 66%;
-  transform: translateX(-50%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: rgba(0, 0, 0, 0.5);
-  border-radius: 20px;
-  padding: 10px;
-  cursor: pointer;
-  color: white;
-`;
-
-const StyledAnswerTimer = styled.div`
-  position: absolute;
-  bottom: 15%;
-  right: 31%;
-  font-size: ${({ theme }) => theme.font.size.lg};
-  font-weight: ${({ theme }) => theme.font.weight.semiBold};
-  color: white;
-  background-color: rgba(0, 0, 0, 0.5);
-  padding: 10px;
-  border-radius: 5px;
-`;
-
-const StyledCountdownOverlay = styled.div`
-  position: absolute;
-  top: 45%;
-  left: 66.5%;
-  transform: translate(-50%, -50%);
-  font-size: 72px;
-  color: white;
-  background-color: rgba(0, 0, 0, 0.5);
-  padding: 20px;
-  border-radius: 50%;
-  width: 120px;
-  height: 120px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-`;
-
-// const StyledRightPanel = styled.div`
-//   width: calc(100% * (2 / 3));
-//   min-width: 264px;
-//   padding: 44px 32px;
-//   background-color: ${({ theme }) => theme.background.primary};
-//   display: flex;
-//   flex-direction: column;
-//   gap: 44px;
-// `;
-
-const StyledVideoContainer = styled.div`
-  background-color: black;
-  height: 60%;
-  margin-bottom: 20px;
-`;
-
-// const StyledButton = styled.button`
-//   padding: 10px 20px;
-//   background-color: #4285f4;
-//   color: white;
-//   border: none;
-//   border-radius: 4px;
-//   cursor: pointer;
-//   font-size: ${({ theme }) => theme.font.size.md};
-// `;
-
-const StyledMessage = styled.div`
-  margin-top: 20px;
-  padding: 10px;
-  background-color: #e8f5e9;
-  border-radius: 4px;
-  font-size: ${({ theme }) => theme.font.size.md};
-  text-align: center;
-`;
-
-const StyledTimer = styled.div`
-  font-size: ${({ theme }) => theme.font.size.lg};
-  font-weight: ${({ theme }) => theme.font.weight.semiBold};
-  margin-top: 20px;
-  text-align: center;
-`;
-
-const StyledError = styled.div`
-  margin-top: 20px;
-  padding: 10px;
-  background-color: #ffcdd2;
-  border-radius: 4px;
-  font-size: ${({ theme }) => theme.font.size.md};
-`;
 
 const ffmpeg = createFFmpeg({
   // corePath: `/ffmpeg/ffmpeg-core.js`,
@@ -153,6 +37,8 @@ const ffmpeg = createFFmpeg({
 
 export const InterviewPage: React.FC<InterviewResponseTypes.InterviewPageProps> = ({ InterviewData, questions, currentQuestionIndex, onNextQuestion, onFinish }) => {
   console.log('These are questions::', questions);
+  const [isPlaying, setIsPlaying] = useState(false);
+
 
   const [recording, setRecording] = useState(false);
   const [activeCameraFeed, setActiveCameraFeed] = useState(true);
@@ -166,6 +52,7 @@ export const InterviewPage: React.FC<InterviewResponseTypes.InterviewPageProps> 
   const [recordedChunks, setRecordedChunks] = useState<Blob[]>([]);
   const webcamRef = useRef<Webcam>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   const isLastQuestion = currentQuestionIndex === questions.length - 1;
 
@@ -317,14 +204,6 @@ export const InterviewPage: React.FC<InterviewResponseTypes.InterviewPageProps> 
       }
     }
   };
-
-  // const formatTime = (seconds: number | null): string => {
-  //   if (seconds === null) return '0:00';
-  //   const mins = Math.floor(seconds / 60);
-  //   const secs = seconds % 60;
-  //   return `${mins}:${secs.toString().padStart(2, '0')}`;
-  // };
-
   if (!hasCamera) {
     return <StyledError>{error}</StyledError>;
   }
@@ -336,7 +215,12 @@ export const InterviewPage: React.FC<InterviewResponseTypes.InterviewPageProps> 
           <StyledTextLeftPanelTextHeadline>
             Question {currentQuestionIndex + 1} of {questions.length}
           </StyledTextLeftPanelTextHeadline>
-          <StyledTextLeftPanelVideoPane />
+          <VideoPlayer
+            src={`http://localhost:3000/files/attachment/820ddd1e-6228-4459-9c8d-a792252d2002.mp4`}
+            videoRef={videoRef}
+            isPlaying={isPlaying}
+            setIsPlaying={setIsPlaying}
+          />
           <h3>Transcript</h3>
           <StyledTextLeftPaneldisplay>{questions[currentQuestionIndex].questionValue}</StyledTextLeftPaneldisplay>
         </StyledLeftPanelContentBox>
