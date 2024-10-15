@@ -191,7 +191,7 @@ export const VideoInterviewResponsePage = () => {
 
       setStatus('Transcribing');
 
-      const upload = await axios.post('http://localhost:3000/video-interview/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } }).then(res => {
+      const upload = await axios.post(`${process.env.REACT_APP_SERVER_BASE_URL}'/video-interview/upload`, formData, { headers: { 'Content-Type': 'multipart/form-data' } }).then(res => {
         console.log(res);
         return res;
       });

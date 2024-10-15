@@ -5,7 +5,7 @@ import { GraphQLClient } from 'graphql-request';
 import axios from "axios";
 import * as multer from 'multer';
 import { TranscriptionService } from './transcription.service';
-
+import { AttachmentProcessingService } from '../arx-chat/services/candidate-engagement/attachment-processing';
 
 export async function axiosRequest(data: string) {
   // console.log("Sending a post request to the graphql server:: with data", data);
@@ -56,12 +56,11 @@ export class VideoInterviewController {
     ),
   )
   async submitResponse(@Req() req, @UploadedFiles() files: { video?: Express.Multer.File[]; audio?: Express.Multer.File[] }, @Body() responseData: any) {
-    console.log("submitResponse method called::", req.body);
     
     try {
       console.log("Received files:", JSON.stringify(files, null, 2));
       console.log("Received response data:", JSON.stringify(responseData, null, 2));
-      const interviewData = JSON.parse(req?.body?.interviewData)
+      const interviewData = JSON.parse(req?.body?.interviewData);
 
       if (!files.audio || !files.video) {
         throw new BadRequestException('Both video and audio files are required');
@@ -70,10 +69,46 @@ export class VideoInterviewController {
       const audioFile = files.audio[0];
       const videoFile = files.video[0];
 
+      // Upload video file to Twenty
+      const videoFilePath = `uploads/${videoFile.originalname}`;
+      const videoAttachmentObj = await new AttachmentProcessingService().uploadAttachmentToTwenty(videoFilePath);
+      console.log("Video attachment upload response:", videoAttachmentObj);
+
+      // Upload audio file to Twenty
+      const audioFilePath = `uploads/${audioFile.originalname}`;
+      
+      const audioAttachmentObj = await new AttachmentProcessingService().uploadAttachmentToTwenty(audioFilePath);
+      console.log("Audio attachment upload response:", audioAttachmentObj);
+      console.log("interviewData::",interviewData)
+      // Prepare data for attachment table
+      const videoDataToUploadInAttachmentTable = {
+        input: {
+          authorId: interviewData.candidate.jobs.recruiterId,
+          name: videoFilePath.replace(`${process.cwd()}/`, ''),
+          fullPath: videoAttachmentObj?.data?.uploadFile,
+          type: 'Video',
+          candidateId: interviewData.candidate.id,
+        },
+      };
+      console.log("This is the video. Data to Uplaod in Attachment Table::", videoDataToUploadInAttachmentTable);
+      await new AttachmentProcessingService().createOneAttachmentFromFilePath(videoDataToUploadInAttachmentTable);
+
+      const audioDataToUploadInAttachmentTable = {
+        input: {
+          authorId: interviewData.candidate.jobs.recruiterId,
+          name: audioFilePath.replace(`${process.cwd()}/`, ''),
+          fullPath: audioAttachmentObj?.data?.uploadFile,
+          type: 'Audio',
+          candidateId: interviewData.candidate.id,
+        },
+      };
+      console.log("This is the audio. Data to Uplaod in Attachment Table::", audioDataToUploadInAttachmentTable);
+      await new AttachmentProcessingService().createOneAttachmentFromFilePath(audioDataToUploadInAttachmentTable);
+
       console.log("Audio file:", JSON.stringify(audioFile, null, 2));
       console.log("Video file:", JSON.stringify(videoFile, null, 2));
+    
 
-      // Transcribe audio
       console.log("Starting audio transcription");
       const transcript = await this.transcriptionService.transcribeAudio(audioFile.path);
       console.log("Transcription completed::", transcript);
@@ -251,8 +286,10 @@ export class VideoInterviewController {
                   interviewStarted
                   position
                   candidate {
-                    jobs{
+                  id  
+                  jobs{
                       name
+                      recruiterId
                     }
                     people{
                       id

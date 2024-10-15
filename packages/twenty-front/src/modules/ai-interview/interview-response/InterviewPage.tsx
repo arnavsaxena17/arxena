@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import styled from '@emotion/styled';
 import Webcam from 'react-webcam';
 import { createFFmpeg, fetchFile } from '@ffmpeg/ffmpeg';
-
+import { InterviewData } from './AIInterviewFlow';
 import { v4 as uuid } from 'uuid';
 
 const StyledContainer = styled.div`
@@ -20,6 +20,23 @@ const StyledLeftPanel = styled.div`
   font-family: ${({ theme }) => theme.font.family};
   font-size: ${({ theme }) => theme.font.size.lg};
   font-weight: ${({ theme }) => theme.font.weight.semiBold};
+`;
+
+const StyledCountdownOverlay = styled.div`
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 72px;
+  color: white;
+  background-color: rgba(0, 0, 0, 0.5);
+  padding: 20px;
+  border-radius: 50%;
+  width: 120px;
+  height: 120px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 `;
 
 const StyledRightPanel = styled.div`
@@ -100,31 +117,34 @@ interface Question {
 }
 
 interface InterviewPageProps {
+  InterviewData: InterviewData;
   questions: Question[];
   currentQuestionIndex: number;
   onNextQuestion: (responseData: FormData) => void;
   onFinish: () => void;
 }
 
-
 const ffmpeg = createFFmpeg({
-    // corePath: `/ffmpeg/ffmpeg-core.js`,
-    // I've included a default import above (and files in the public directory), but you can also use a CDN like this:
-    corePath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js',
-    log: true,
-  });
-  
-  export const InterviewPage: React.FC<InterviewPageProps> = ({ questions, currentQuestionIndex, onNextQuestion, onFinish }) => {
-    const [recording, setRecording] = useState(false);
-    const [submitting, setSubmitting] = useState(false);
-    const [recorded, setRecorded] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [hasCamera, setHasCamera] = useState(false);
-    const [timer, setTimer] = useState<number | null>(null);
-    const [recordedChunks, setRecordedChunks] = useState<Blob[]>([]);
-    const webcamRef = useRef<Webcam>(null);
-    const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-    
+  // corePath: `/ffmpeg/ffmpeg-core.js`,
+  // I've included a default import above (and files in the public directory), but you can also use a CDN like this:
+  corePath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js',
+  log: true,
+});
+
+export const InterviewPage: React.FC<InterviewPageProps> = ({ InterviewData, questions, currentQuestionIndex, onNextQuestion, onFinish }) => {
+  const [recording, setRecording] = useState(false);
+  const [activeCameraFeed, setActiveCameraFeed] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [recorded, setRecorded] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [countdown, setCountdown] = useState<number | null>(null);
+
+  const [hasCamera, setHasCamera] = useState(false);
+  const [timer, setTimer] = useState<number | null>(null);
+  const [recordedChunks, setRecordedChunks] = useState<Blob[]>([]);
+  const webcamRef = useRef<Webcam>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+
   useEffect(() => {
     checkCamera();
   }, []);
@@ -138,29 +158,21 @@ const ffmpeg = createFFmpeg({
     }
   }, [timer]);
 
-  const moveToNextQuestion = () => {
-    if (currentQuestionIndex < questions.length - 1) {
-      setRecordedChunks([]);
-      setError(null);
-      setTimer(null);
-    } else {
-      onFinish();
+  useEffect(() => {
+    if (countdown !== null && countdown > 0) {
+      const countdownId = setTimeout(() => setCountdown(countdown - 1), 1000);
+      return () => clearTimeout(countdownId);
+    } else if (countdown === 0) {
+      setCountdown(null);
+      startRecording();
     }
-  };
-
-
-  const checkCamera = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      setHasCamera(true);
-      stream.getTracks().forEach(track => track.stop());
-    } catch (err) {
-      setHasCamera(false);
-      setError('Camera not available. Please check your device settings.');
-    }
-  };
+  }, [countdown]);
 
   const handleStartRecording = () => {
+    setCountdown(5);
+  };
+
+  const startRecording = () => {
     setRecording(true);
     setRecorded(false);
     setError(null);
@@ -173,9 +185,44 @@ const ffmpeg = createFFmpeg({
     }
   };
 
+  const moveToNextQuestion = () => {
+    if (currentQuestionIndex < questions.length - 1) {
+      setRecordedChunks([]);
+      setError(null);
+      setTimer(null);
+    } else {
+      onFinish();
+    }
+  };
+
+  const checkCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      setHasCamera(true);
+      stream.getTracks().forEach(track => track.stop());
+    } catch (err) {
+      setHasCamera(false);
+      setError('Camera not available. Please check your device settings.');
+    }
+  };
+
+  // const handleStartRecording = () => {
+  //   setRecording(true);
+  //   setRecorded(false);
+  //   setError(null);
+  //   setRecordedChunks([]);
+  //   const stream = webcamRef.current?.stream;
+  //   if (stream) {
+  //     mediaRecorderRef.current = new MediaRecorder(stream, { mimeType: 'video/webm' });
+  //     mediaRecorderRef.current.ondataavailable = handleDataAvailable;
+  //     mediaRecorderRef.current.start();
+  //   }
+  // };
+
   const handleStopRecording = () => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
       mediaRecorderRef.current.stop();
+      setActiveCameraFeed(false);
       setRecording(false);
       setRecorded(true);
     }
@@ -183,7 +230,7 @@ const ffmpeg = createFFmpeg({
 
   const handleDataAvailable = (event: BlobEvent) => {
     if (event.data && event.data.size > 0) {
-      setRecordedChunks((prev) => [...prev, event.data]);
+      setRecordedChunks(prev => [...prev, event.data]);
     }
   };
 
@@ -192,7 +239,6 @@ const ffmpeg = createFFmpeg({
       handleSubmit();
     }
   }, [recorded, recordedChunks]);
-
 
   const handleSubmit = async () => {
     if (recordedChunks.length) {
@@ -203,7 +249,7 @@ const ffmpeg = createFFmpeg({
       try {
         const unique_id = uuid();
         if (!ffmpeg.isLoaded()) {
-            await ffmpeg.load();
+          await ffmpeg.load();
         }
 
         ffmpeg.FS('writeFile', `${unique_id}.webm`, await fetchFile(file));
@@ -211,20 +257,20 @@ const ffmpeg = createFFmpeg({
         // This reads the converted file from the file system
         const fileData = ffmpeg.FS('readFile', `${unique_id}.wav`);
         const output = new Blob([fileData], {
-            type: 'audio/wav',
-          });
+          type: 'audio/wav',
+        });
         const formData = new FormData();
         formData.append('operations', '{}');
         formData.append('map', '{}');
         formData.append('model', 'whisper-12');
         formData.append('question2', 'Whats the question');
-        formData.append('video', file, `${unique_id}.webm`);
-        formData.append('video', file, `${unique_id}.webm`);
-        formData.append('audio', output, `${unique_id}.wav`);
+        formData.append('video', file, `${InterviewData.id}-video-${unique_id}.webm`);
+        formData.append('video', file, `${InterviewData.id}-video-${unique_id}.webm`);
+        formData.append('audio', output, `${InterviewData.id}-audio-${unique_id}.wav`);
         formData.forEach((value, key) => {
-            console.log(key, value);
+          console.log(key, value);
         });
-        await onNextQuestion(formData);
+        onNextQuestion(formData);
         setSubmitting(false);
         setTimer(5); // Start 5-second countdown after successful submission
       } catch (error) {
@@ -235,36 +281,42 @@ const ffmpeg = createFFmpeg({
     }
   };
 
-
   if (!hasCamera) {
     return <StyledError>{error}</StyledError>;
   }
-
+  console.log('This is the timer ::', timer);
   return (
     <StyledContainer>
       <StyledLeftPanel>
         <h2>AI Interview</h2>
-        <p>Question {currentQuestionIndex + 1} of {questions.length}</p>
+        <p>
+          Question {currentQuestionIndex + 1} of {questions.length}
+        </p>
       </StyledLeftPanel>
       <StyledRightPanel>
-        <h2>{questions[currentQuestionIndex].name}</h2>
-        <p>{questions[currentQuestionIndex].questionValue}</p>
-        <StyledVideoContainer>
-          <Webcam
-            audio={true}
-            ref={webcamRef}
-            width="100%"
-            height="100%"
-          />
-        </StyledVideoContainer>
+        {activeCameraFeed && (
+          <div>
+            <h2>{questions[currentQuestionIndex].name}</h2>
+            <p>{questions[currentQuestionIndex].questionValue}</p>
+          </div>
+        )}
+        {activeCameraFeed && (
+          <StyledVideoContainer>
+            <Webcam audio={true} ref={webcamRef} width="100%" height="100%" />
+            {countdown !== null && <StyledCountdownOverlay>{countdown}</StyledCountdownOverlay>}
+          </StyledVideoContainer>
+        )}
         {recording ? (
           <StyledButton onClick={handleStopRecording}>Stop Recording</StyledButton>
         ) : (
-          <StyledButton onClick={handleStartRecording} disabled={submitting}>Start Recording</StyledButton>
+          activeCameraFeed && (
+            <StyledButton onClick={handleStartRecording} disabled={submitting || countdown !== null}>
+              {countdown !== null ? 'Starting...' : 'Start Recording'}
+            </StyledButton>
+          )
         )}
-        {submitting && (
-          <StyledMessage>Submitting your response...</StyledMessage>
-        )}
+        {submitting && <StyledMessage>Submitting your response...</StyledMessage>}
+
         {timer !== null && (
           <>
             <StyledMessage>Response submitted successfully! Moving to next question in:</StyledMessage>

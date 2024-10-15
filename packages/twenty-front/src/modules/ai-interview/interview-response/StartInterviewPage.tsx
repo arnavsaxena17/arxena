@@ -4,6 +4,7 @@ import styled from '@emotion/styled';
 const StyledContainer = styled.div`
   display: flex;
   height: 100vh;
+  width:100vw;
   background-color: ${({ theme }) => theme.background.tertiary};
 `;
 
