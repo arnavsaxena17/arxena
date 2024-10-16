@@ -35,7 +35,7 @@ const ffmpeg = createFFmpeg({
   log: true,
 });
 
-export const InterviewPage: React.FC<InterviewResponseTypes.InterviewPageProps> = ({ InterviewData, questions, currentQuestionIndex, onNextQuestion, onFinish }) => {
+export const InterviewPage: React.FC<InterviewResponseTypes.InterviewPageProps> = ({ InterviewData, questions, introductionVideoAttachment, questionsVideoAttachment, currentQuestionIndex, onNextQuestion, onFinish }) => {
   console.log('These are questions::', questions);
   const [isPlaying, setIsPlaying] = useState(false);
 

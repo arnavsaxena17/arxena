@@ -23,7 +23,7 @@ import {
 
 import { VideoPlayer } from './utils/videoPlaybackUtils';
 
-export const StartInterviewPage: React.FC<InterviewResponseTypes.StartInterviewPageProps> = ({ onStart, candidateName, positionName, introduction, instructions }) => {
+export const StartInterviewPage: React.FC<InterviewResponseTypes.StartInterviewPageProps> = ({ onStart, InterviewData, introductionVideoData }) => {
 
   const [hasAccess, setHasAccess] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -55,11 +55,11 @@ export const StartInterviewPage: React.FC<InterviewResponseTypes.StartInterviewP
   };
 
 
-
+  console.log("This is the intorduction interview data::", introductionVideoData)
   return (
     <StyledContainer>
     <StyledLeftPanel>
-      <h2>Interview - .NET Developer II</h2>
+      <h2>{InterviewData.candidate.jobs.name}</h2>
       <StyledLeftPanelContentBox>
         <StyledTextLeftPanelTextHeadline>Introduction</StyledTextLeftPanelTextHeadline>
         <VideoPlayer
@@ -70,19 +70,28 @@ export const StartInterviewPage: React.FC<InterviewResponseTypes.StartInterviewP
           />
         <h3>Transcript</h3>
         <StyledTextLeftPaneldisplay>
-          Hi, I am John and I will be your guide to this interview. Congratulations on making it this far. On the right side of this page you will find instructions related to the interview process. Kindly follow them for a smooth interview
-          process.
+        {InterviewData.aIInterview.introduction}
         </StyledTextLeftPaneldisplay>
       </StyledLeftPanelContentBox>
     </StyledLeftPanel>
     <StyledRightPanel>
       <div>
+
+      <InstructionSection>
+          <h2>Hi, {InterviewData.candidate.people.name.firstName} (Application for {InterviewData.candidate.jobs.name} at {InterviewData.candidate.jobs.companyName})</h2>
+          <h3></h3>
+          <InstructionList>
+            <li>We are looking forward for your application to the position of {InterviewData.candidate.jobs.name} at {InterviewData.candidate.jobs.companyName}.</li>
+            <li>For the course of this interview, some questions require responses in real time video recording format and some require responses in textual format. For every question, you will be provided with transcript for clarity about the questions</li>
+            <li>Please provide your browser access to camera and microphone on your device to start interview</li>
+          </InstructionList>
+        </InstructionSection>
         <InstructionSection>
           <h2>Instructions</h2>
           <h3>General</h3>
           <InstructionList>
-            <li>Please make sure you have a stable internet connection and use a fully charged device for giving the interview. Kindly avoid closing or refreshing the tab or browser to prevent loss of progress.</li>
-            <li>For the course of this interview, some questions require responses in real time video recording format and some require responses in textual format. For every question, you will be provided with transcript for clarity about the questions</li>
+            <li>Give the interview in one go. Avoid closing or refreshing the tab or browser to prevent loss of progress.</li>
+            <li>Please make sure you have a stable internet connection and use a fully charged device for giving the interview.</li>
             <li>Please provide your browser access to camera and microphone on your device to start interview</li>
           </InstructionList>
         </InstructionSection>
@@ -94,13 +103,13 @@ export const StartInterviewPage: React.FC<InterviewResponseTypes.StartInterviewP
           <AccessMessage>✓ Camera and microphone access granted</AccessMessage>
         )}
         
-        <InstructionSection>
+        {/* <InstructionSection>
           <h3>Responses</h3>
           <InstructionList>
             <li>Every question which requires a real time recording will have a time limit depending on the question length and complexity. As for questions which require textual responses, there will be no time limit</li>
             <li>A maximum of 3 retakes are allowed for real time video recording responses. Uploading a pre-recorded video is not allowed and the timer will start as soon as video recording starts</li>
           </InstructionList>
-        </InstructionSection>
+        </InstructionSection> */}
         
         <InstructionSection>
           <h3>Others</h3>
