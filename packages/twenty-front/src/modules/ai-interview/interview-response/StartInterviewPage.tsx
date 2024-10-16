@@ -56,6 +56,9 @@ export const StartInterviewPage: React.FC<InterviewResponseTypes.StartInterviewP
 
 
   console.log("This is the intorduction interview data::", introductionVideoData)
+  console.log("This is the intorduction interview data::", introductionVideoData?.data?.attachments?.edges[0]?.node.fullPath)
+  const introductionVideoURL = process.env.REACT_APP_SERVER_BASE_URL+"/"+introductionVideoData?.data?.attachments?.edges[0]?.node.fullPath;
+  console.log("THis is introductionVideoURL:", introductionVideoURL)
   return (
     <StyledContainer>
     <StyledLeftPanel>
@@ -63,7 +66,7 @@ export const StartInterviewPage: React.FC<InterviewResponseTypes.StartInterviewP
       <StyledLeftPanelContentBox>
         <StyledTextLeftPanelTextHeadline>Introduction</StyledTextLeftPanelTextHeadline>
         <VideoPlayer
-            src={`http://localhost:3000/files/attachment/820ddd1e-6228-4459-9c8d-a792252d2002.mp4`}
+            src={process.env.REACT_APP_SERVER_BASE_URL+"/files/"+introductionVideoData?.data?.attachments?.edges[0]?.node.fullPath}
             videoRef={videoRef}
             isPlaying={isPlaying}
             setIsPlaying={setIsPlaying}

@@ -13,7 +13,12 @@ export interface ChatMessage {
   name?: string; // Optional, only for tool messages
 }
 
-
+export interface ChatTableProps {
+  individuals: PersonNode[];
+  selectedIndividual: string;
+  unreadMessages: UnreadMessageListManyCandidates;
+  onIndividualSelect: (id: string) => void;
+}
 export interface JobDropdownProps {
   jobs: Job[];
   selectedJob: string;

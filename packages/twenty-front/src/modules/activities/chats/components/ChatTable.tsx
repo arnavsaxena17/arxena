@@ -1,6 +1,6 @@
 import React from 'react';
 import styled from "@emotion/styled";
-import { PersonNode } from "../types/front-chat-types";
+import * as frontChatTypes from "../types/front-chat-types";
 
 const StyledTable = styled.table`
   width: max-content;
@@ -37,18 +37,28 @@ const StyledTableRow = styled.tr<{ $selected: boolean }>`
     background-color: ${(props) => (props.$selected ? "#f5f9fd" : "#f0f0f0")};
   }
 `;
+const UnreadIndicator = styled.span`
+  background-color: red;
+  color: white;
+  border-radius: 50%;
+  padding: 0.5rem;
+  margin-left: 0.5rem;
+  font-size: 0.8rem;
+  min-height: 1rem;
+  width: 1rem;
+`;
 
-interface ChatTableProps {
-  individuals: PersonNode[];
-  selectedIndividual: string;
-  onIndividualSelect: (id: string) => void;
-}
 
-const ChatTable: React.FC<ChatTableProps> = ({
+
+
+const ChatTable: React.FC<frontChatTypes.ChatTableProps> = ({
   individuals,
   selectedIndividual,
+  unreadMessages,
   onIndividualSelect,
 }) => {
+
+
   return (
     <StyledTable>
       <StyledTableHeader>
@@ -61,13 +71,14 @@ const ChatTable: React.FC<ChatTableProps> = ({
         </tr>
       </StyledTableHeader>
       <StyledTableBody>
-        {individuals.map((individual) => (
+        {individuals.map((individual:any) => (
           <StyledTableRow
             key={individual.id}
             $selected={selectedIndividual === individual.id}
             onClick={() => onIndividualSelect(individual.id)}
           >
             <StyledTableCell>{`${individual.name.firstName} ${individual.name.lastName}`}</StyledTableCell>
+
             <StyledTableCell>{individual.candidates?.edges[0]?.node?.status || 'N/A'}</StyledTableCell>
             <StyledTableCell>{individual.salary || 'N/A'}</StyledTableCell>
             <StyledTableCell>{individual.city || 'N/A'}</StyledTableCell>

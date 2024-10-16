@@ -323,7 +323,12 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
       <StyledSearchBox placeholder="Search chats" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
       </FixedHeader>
       <ScrollableContent>
-      <ChatTable individuals={sortedIndividuals} selectedIndividual={selectedIndividual} onIndividualSelect={handleIndividualSelect} />
+      <ChatTable 
+      individuals={sortedIndividuals} 
+      selectedIndividual={selectedIndividual} 
+      unreadMessages={unreadMessages}
+
+      onIndividualSelect={handleIndividualSelect} />
       </ScrollableContent>
     </StyledSidebarContainer>
   );

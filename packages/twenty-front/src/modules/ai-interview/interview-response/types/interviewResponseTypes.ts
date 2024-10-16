@@ -1,4 +1,5 @@
 export interface Question {
+  attachments: any;
   id: string;
   name: string;
   timeLimit: number;
@@ -47,6 +48,7 @@ export interface Question {
 }
 
 export interface VideoInterviewAttachment {
+  data: any;
   id: string;
   fullPath: string;
   name: string;
