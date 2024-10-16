@@ -9,10 +9,12 @@ import * as InterviewResponseTypes from './types/interviewResponseTypes';
 
 
 
-
 export const AIInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) => {
   const [stage, setStage] = useState<'start' | 'interview' | 'end'> ('start');
   const [interviewData, setInterviewData] = useState<InterviewResponseTypes.InterviewData | null>(null);
+  const [introductionVideoData, setintroductionVideoData] = useState< InterviewResponseTypes.VideoInterviewAttachment| null>(null);
+  const [questionsVideoData, setquestionsVideoData] = useState<InterviewResponseTypes.VideoInterviewAttachment[]>([]);
+
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
 
   useEffect(() => {
@@ -23,8 +25,11 @@ export const AIInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId
     try {
       const response = await axios.post(`${process.env.REACT_APP_SERVER_BASE_URL}/video-interview/get-interview-details`, { interviewId });
       console.log('This is the response:', response);
-      const fetchedData = response.data.data;
-      if (fetchedData) {
+      const responseObj:InterviewResponseTypes.GetInterviewDetailsResponse = response.data;
+      if (responseObj) {
+        console.log("responseObj:", responseObj)
+        const fetchedData:any = response.data.responseFromInterviewRequests.data;
+        console.log("fetchedData:", fetchedData)
         const formattedData: InterviewResponseTypes.InterviewData = {
           name: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.name,
           id: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.id,
@@ -34,6 +39,7 @@ export const AIInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId
               jobId: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.candidate?.jobs?.id,
               name: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.candidate?.jobs?.name,
               recruiterId: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.candidate?.jobs?.recruiterId,
+              companyName: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.candidate?.jobs?.companies?.name,
             },
             people: {
               name: {
@@ -52,6 +58,8 @@ export const AIInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId
           },
         };
         setInterviewData(formattedData);
+        setintroductionVideoData(responseObj?.videoInterviewAttachmentResponse);
+        setquestionsVideoData(Array.isArray(responseObj?.questionsAttachments) ? responseObj.questionsAttachments : []);
       } else {
         console.error('No interview data found');
       }
@@ -108,10 +116,8 @@ export const AIInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId
         return (
           <StartInterviewPage
             onStart={handleStart}
-            candidateName={`${interviewData.candidate.people.name.firstName} ${interviewData.candidate.people.name.lastName}`}
-            positionName={interviewData.aIInterview.name}
-            introduction={interviewData.aIInterview.introduction}
-            instructions={interviewData.aIInterview.instructions}
+            InterviewData = {interviewData}
+            introductionVideoData = {introductionVideoData!}
           />
         );
       case 'interview':
@@ -122,6 +128,8 @@ export const AIInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId
               questions={interviewData.aIInterview.aIInterviewQuestions.edges
                 .map(edge => edge.node)
                 .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())}
+                introductionVideoAttachment={introductionVideoData!}
+                questionsVideoAttachment={questionsVideoData || []}
               currentQuestionIndex={currentQuestionIndex}
               onNextQuestion={handleNextQuestion}
               onFinish={handleFinish}

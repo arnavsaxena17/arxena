@@ -31,15 +31,12 @@ export const EndInterviewPage: React.FC<{ onSubmit: (feedback: string) => void }
       </StyledLeftPanel>
       <StyledRightPanel>
         {submitted ? (
-          <>
             <FeedbackContainer>
             <ThankYouMessage>Thank You for Your Feedback</ThankYouMessage>
             <StyledMessage>
               Your feedback has been submitted successfully. You may now close this window.
             </StyledMessage>
             </FeedbackContainer>
-
-          </>
         ) : (
           <FeedbackContainer>
             <ThankYouMessage>Thank You for Completing the Interview</ThankYouMessage>
