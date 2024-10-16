@@ -385,7 +385,7 @@ export class VideoInterviewController {
       });
       try {
         const response = await axiosRequest(graphqlQueryObjForaIInterviewQuestions);
-        console.log("REhis response:", response.data.data)
+        // console.log("REhis response:", response.data.data)
         responseFromInterviewRequests =  response.data;
       } catch (error) {
         console.error('Error fetching interview data:', error);
@@ -393,7 +393,7 @@ export class VideoInterviewController {
       }
 
       const videoInterviewId = responseFromInterviewRequests?.data?.aIInterviewStatuses?.edges[0]?.node?.aIInterview?.id;
-      console.log("Received videoInterviewId:", videoInterviewId);
+      // console.log("Received videoInterviewId:", videoInterviewId);
       const videoInterviewIntroductionAttachmentDataQuery = JSON.stringify({
         query: `query FindManyAttachments($filter: AttachmentFilterInput, $orderBy: [AttachmentOrderByInput], $lastCursor: String, $limit: Int) {
           attachments(
@@ -426,7 +426,7 @@ export class VideoInterviewController {
         .map((edge: { node: { id: string; createdAt: string } }) => edge.node)
         .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
         .map(node => node.id);
-      console.log("Received allQuestionIds:", allQuestionIds);
+      // console.log("Received allQuestionIds:", allQuestionIds);
   
       if (!allQuestionIds || allQuestionIds.length === 0) {
         throw new Error("No question IDs found");
@@ -470,8 +470,8 @@ export class VideoInterviewController {
         response.data?.data?.attachments?.edges?.map((edge: { node: { id: string; fullPath: string; name: string } }) => edge.node) || []
       );
   
-      console.log("Received responseForVideoInterviewIntroductionAttachment:", responseForVideoInterviewIntroductionAttachment.data);
-      console.log("This is the result for questionsAttachments:", questionsAttachmentsResponse);
+      // console.log("Received responseForVideoInterviewIntroductionAttachment:", responseForVideoInterviewIntroductionAttachment.data);
+      // console.log("This is the result for questionsAttachments:", questionsAttachmentsResponse);
   
       const result: GetInterviewDetailsResponse = {
         responseFromInterviewRequests,

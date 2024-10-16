@@ -7,7 +7,7 @@ export const settings: Settings = {
       'workspace-logo': ['original'],
       'person-picture': ['original'],
     },
-    maxFileSize: '10MB',
+    maxFileSize: '20MB',
   },
   minLengthOfStringForDuplicateCheck: 3,
 };

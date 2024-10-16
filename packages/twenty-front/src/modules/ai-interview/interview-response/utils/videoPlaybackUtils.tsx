@@ -1,84 +1,6 @@
 import React, { RefObject, useState, useEffect } from 'react';
-import styled from '@emotion/styled';
+import { StyledVideoPane, StyledVideo, StyledVideoControls, StyledVideoButton, StyledLoadingMessage } from './StyledComponents';
 
-// Styled components remain the same
-export const StyledVideoPane = styled.div`
-  height: 300px;
-  align-self: stretch;
-  border-radius: 16px;
-  overflow: hidden;
-  position: relative;
-`;
-
-export const StyledVideo = styled.video`
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-`;
-
-export const StyledVideoControls = styled.div`
-  position: absolute;
-  bottom: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  gap: 10px;
-`;
-
-export const StyledVideoButton = styled.button`
-  background-color: rgba(255, 255, 255, 0.7);
-  border: none;
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  &:hover {
-    background-color: rgba(255, 255, 255, 0.9);
-  }
-`;
-
-const StyledLoadingMessage = styled.div`
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  color: white;
-  background-color: rgba(0, 0, 0, 0.5);
-  padding: 10px;
-  border-radius: 5px;
-`;
-
-// Utility functions for video playback
-export const handlePlayPause = (
-  videoRef: RefObject<HTMLVideoElement>,
-  isPlaying: boolean,
-  setIsPlaying: React.Dispatch<React.SetStateAction<boolean>>
-): void => {
-  if (videoRef.current) {
-    if (isPlaying) {
-      videoRef.current.pause();
-    } else {
-      videoRef.current.play();
-    }
-    setIsPlaying(!isPlaying);
-  }
-};
-
-export const handleReplay = (
-  videoRef: RefObject<HTMLVideoElement>,
-  setIsPlaying: React.Dispatch<React.SetStateAction<boolean>>
-): void => {
-  if (videoRef.current) {
-    videoRef.current.currentTime = 0;
-    videoRef.current.play();
-    setIsPlaying(true);
-  }
-};
-
-// React component for video player
 interface VideoPlayerProps {
   src: string;
   videoRef: RefObject<HTMLVideoElement>;
@@ -87,23 +9,44 @@ interface VideoPlayerProps {
 }
 
 export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, videoRef, isPlaying, setIsPlaying }) => {
-  const [videoBlob, setVideoBlob] = useState<string | null>(null);
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [downloadProgress, setDownloadProgress] = useState<number>(0);
 
   useEffect(() => {
+    const abortController = new AbortController();
+    const signal = abortController.signal;
+
     const downloadVideo = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch(src);
-        if (!response.ok) {
-          throw new Error('Network response was not ok');
+        setError(null);
+
+        const response = await fetch(src, { signal });
+        if (!response.ok) throw new Error('Network response was not ok');
+
+        const contentLength = response.headers.get('Content-Length');
+        const total = contentLength ? parseInt(contentLength, 10) : 0;
+        let loaded = 0;
+
+        const reader = response.body!.getReader();
+        const chunks: Uint8Array[] = [];
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          chunks.push(value);
+          loaded += value.length;
+          setDownloadProgress(total ? (loaded / total) * 100 : 0);
         }
-        const blob = await response.blob();
-        const videoUrl = URL.createObjectURL(blob);
-        setVideoBlob(videoUrl);
+
+        const blob = new Blob(chunks, { type: 'video/mp4' });
+        const url = URL.createObjectURL(blob);
+        setVideoUrl(url);
         setIsLoading(false);
       } catch (err) {
+        if ((err as any).name === 'AbortError') return;
         console.error('Error downloading video:', err);
         setError('Failed to load video. Please try again.');
         setIsLoading(false);
@@ -112,18 +55,45 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, videoRef, isPlayi
 
     downloadVideo();
 
-    // Cleanup function to revoke the blob URL when component unmounts
     return () => {
-      if (videoBlob) {
-        URL.revokeObjectURL(videoBlob);
-      }
+      abortController.abort();
+      if (videoUrl) URL.revokeObjectURL(videoUrl);
     };
   }, [src]);
+
+  const handlePlayPause = () => {
+    const video = videoRef.current;
+    if (video) {
+      if (isPlaying) {
+        video.pause();
+      } else {
+        video.play().catch(e => {
+          console.error('Error playing video:', e);
+          setError('Unable to play video. Please try again.');
+        });
+      }
+      setIsPlaying(!isPlaying);
+    }
+  };
+
+  const handleReplay = () => {
+    const video = videoRef.current;
+    if (video) {
+      video.currentTime = 0;
+      video.play().catch(e => {
+        console.error('Error replaying video:', e);
+        setError('Unable to replay video. Please try again.');
+      });
+      setIsPlaying(true);
+    }
+  };
 
   if (isLoading) {
     return (
       <StyledVideoPane>
-        <StyledLoadingMessage>Loading video...</StyledLoadingMessage>
+        <StyledLoadingMessage>
+          Loading video... {downloadProgress.toFixed(0)}%
+        </StyledLoadingMessage>
       </StyledVideoPane>
     );
   }
@@ -140,14 +110,14 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, videoRef, isPlayi
     <StyledVideoPane>
       <StyledVideo
         ref={videoRef}
-        src={videoBlob || undefined}
+        src={videoUrl || undefined}
         onEnded={() => setIsPlaying(false)}
       />
       <StyledVideoControls>
-        <StyledVideoButton onClick={() => handlePlayPause(videoRef, isPlaying, setIsPlaying)}>
+        <StyledVideoButton onClick={handlePlayPause}>
           {isPlaying ? '⏸' : '▶️'}
         </StyledVideoButton>
-        <StyledVideoButton onClick={() => handleReplay(videoRef, setIsPlaying)}>
+        <StyledVideoButton onClick={handleReplay}>
           🔁
         </StyledVideoButton>
       </StyledVideoControls>
