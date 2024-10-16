@@ -97,7 +97,7 @@ export class VideoInterviewController {
           candidateId: interviewData.candidate.id,
         },
       };
-      console.log('This is the video. Data to Uplaod in Attachment Table::', videoDataToUploadInAttachmentTable);
+      // console.log('This is the video. Data to Uplaod in Attachment Table::', videoDataToUploadInAttachmentTable);
       await new AttachmentProcessingService().createOneAttachmentFromFilePath(videoDataToUploadInAttachmentTable);
 
       const audioDataToUploadInAttachmentTable = {
@@ -109,18 +109,18 @@ export class VideoInterviewController {
           candidateId: interviewData.candidate.id,
         },
       };
-      console.log('This is the audio. Data to Uplaod in Attachment Table::', audioDataToUploadInAttachmentTable);
+      // console.log('This is the audio. Data to Uplaod in Attachment Table::', audioDataToUploadInAttachmentTable);
       await new AttachmentProcessingService().createOneAttachmentFromFilePath(audioDataToUploadInAttachmentTable);
 
       console.log('Audio file:', JSON.stringify(audioFile, null, 2));
       console.log('Video file:', JSON.stringify(videoFile, null, 2));
 
-      console.log('Starting audio transcription');
+      // console.log('Starting audio transcription');
       const transcript = await this.transcriptionService.transcribeAudio(audioFile.path);
       console.log('Transcription completed::', transcript);
 
       const token = req.user?.accessToken;
-      console.log('User token:', token ? 'Present' : 'Missing');
+      // console.log('User token:', token ? 'Present' : 'Missing');
 
       // Create response mutation
       console.log('Preparing GraphQL mutation for response creation');
@@ -151,12 +151,12 @@ export class VideoInterviewController {
         variables: createResponseVariables,
       });
 
-      console.log('Sending GraphQL mutation for response creation::', graphqlQueryObjForCreationOfResponse);
+      // console.log('Sending GraphQL mutation for response creation::', graphqlQueryObjForCreationOfResponse);
       const responseResult = (await axiosRequest(graphqlQueryObjForCreationOfResponse)).data;
-      console.log('Response creation result:', JSON.stringify(responseResult, null, 2));
+      // console.log('Response creation result:', JSON.stringify(responseResult, null, 2));
 
       // Update AI Interview Status mutation
-      console.log('Preparing GraphQL mutation for status update');
+      // console.log('Preparing GraphQL mutation for status update');
       const updateStatusMutation = `
         mutation UpdateOneAIInterviewStatus($idToUpdate: ID!, $input: AIInterviewStatusUpdateInput!) {
           updateAIInterviewStatus(id: $idToUpdate, data: $input) {
@@ -179,20 +179,20 @@ export class VideoInterviewController {
         query: updateStatusMutation,
         variables: updateStatusVariables,
       });
-      console.log('graphqlQueryObjForUpdationForStatus::', graphqlQueryObjForUpdationForStatus);
+      // console.log('graphqlQueryObjForUpdationForStatus::', graphqlQueryObjForUpdationForStatus);
 
-      console.log('Sending GraphQL mutation for status update');
+      // console.log('Sending GraphQL mutation for status update');
       const statusResult = (await axiosRequest(graphqlQueryObjForUpdationForStatus)).data;
-      console.log('Status update result:', JSON.stringify(statusResult, null, 2));
+      // console.log('Status update result:', JSON.stringify(statusResult, null, 2));
 
-      console.log('Preparing response');
+      // console.log('Preparing response');
       const response = {
         response: responseResult.createResponse,
         status: statusResult.updateAIInterviewStatus,
         videoFile: videoFile.filename,
         audioFile: audioFile.filename,
       };
-      console.log('Final response:', JSON.stringify(response, null, 2));
+      // console.log('Final response:', JSON.stringify(response, null, 2));
 
       return response;
     } catch (error) {
@@ -463,9 +463,11 @@ export class VideoInterviewController {
         axiosRequest(videoInterviewIntroductionAttachmentDataQuery),
         ...questionsAttachmentDataQueries.map(query => axiosRequest(query))
       ]);
+
+      // console.log("This i shte responseForVideoInterviewQuestionAttachments ", responseForVideoInterviewQuestionAttachments[0].data.data.attachments.edges);
   
       const questionsAttachmentsResponse = responseForVideoInterviewQuestionAttachments.flatMap(response => 
-        response.data?.attachments?.edges?.map((edge: { node: { id: string; fullPath: string; name: string } }) => edge.node) || []
+        response.data?.data?.attachments?.edges?.map((edge: { node: { id: string; fullPath: string; name: string } }) => edge.node) || []
       );
   
       console.log("Received responseForVideoInterviewIntroductionAttachment:", responseForVideoInterviewIntroductionAttachment.data);
@@ -477,7 +479,7 @@ export class VideoInterviewController {
         questionsAttachments: questionsAttachmentsResponse
       };
   
-      console.log("This is the result:", result);
+      // console.log("This is the result:", result);
       return result;
     } else {
       console.log('Invalid request method');

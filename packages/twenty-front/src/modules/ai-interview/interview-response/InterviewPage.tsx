@@ -38,8 +38,6 @@ const ffmpeg = createFFmpeg({
 export const InterviewPage: React.FC<InterviewResponseTypes.InterviewPageProps> = ({ InterviewData, questions, introductionVideoAttachment, questionsVideoAttachment, currentQuestionIndex, onNextQuestion, onFinish }) => {
   console.log('These are questions::', questions);
   const [isPlaying, setIsPlaying] = useState(false);
-
-
   const [recording, setRecording] = useState(false);
   const [activeCameraFeed, setActiveCameraFeed] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -207,6 +205,17 @@ export const InterviewPage: React.FC<InterviewResponseTypes.InterviewPageProps> 
   if (!hasCamera) {
     return <StyledError>{error}</StyledError>;
   }
+
+  console.log("Current question interview attachment: for question index:", currentQuestionIndex);
+  console.log("Current question interview questionsVideoAttachment:", questionsVideoAttachment);
+  
+  const currentQuestionInterviewAttachment = questionsVideoAttachment.find(
+    (attachment) => attachment.id === questions[currentQuestionIndex].attachments.edges[0].node.id
+  )?.fullPath;
+
+
+  const currentQuestionVideoURL = process.env.REACT_APP_SERVER_BASE_URL + "/files/" + currentQuestionInterviewAttachment;
+  console.log("This is the currentQuestionVideoURL::", currentQuestionVideoURL)
   return (
     <StyledContainer>
       <StyledLeftPanel>
@@ -216,7 +225,7 @@ export const InterviewPage: React.FC<InterviewResponseTypes.InterviewPageProps> 
             Question {currentQuestionIndex + 1} of {questions.length}
           </StyledTextLeftPanelTextHeadline>
           <VideoPlayer
-            src={`http://localhost:3000/files/attachment/820ddd1e-6228-4459-9c8d-a792252d2002.mp4`}
+            src={currentQuestionVideoURL}
             videoRef={videoRef}
             isPlaying={isPlaying}
             setIsPlaying={setIsPlaying}
