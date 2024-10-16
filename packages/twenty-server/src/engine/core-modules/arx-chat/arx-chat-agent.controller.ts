@@ -247,7 +247,7 @@ export class ArxChatEndpoint {
   @Get('get-candidates-and-chats')
   @UseGuards(JwtAuthGuard)
   async getCandidatesAndChats(@Req() request: any): Promise<object> {
-    const allPeople = await new FetchAndUpdateCandidatesChatsWhatsapps().fetchAllPeople()
+    const allPeople = await new FetchAndUpdateCandidatesChatsWhatsapps().fetchAllPeopleWithStartChatTrue()
     console.log("All people length:", allPeople?.length)
     return allPeople
   }

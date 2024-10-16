@@ -10,14 +10,14 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
       const candidates = await this.fetchAllCandidatesWithStartChatTrue();
       console.log(`Fetched ${candidates?.length} candidates`);
   
-      const candidateIds = candidates
+      const candidatePeopleIds = candidates
         ?.filter(c => c?.people?.id)
         .map(c => c.people.id);
   
-      console.log("Got a total of ", candidateIds?.length, "candidate ids");
+      console.log("Got a total of ", candidatePeopleIds?.length, "candidate ids");
       // console.log("These are candidate ids:", candidateIds)
   
-      const people = await this.fetchAllPeopleByCandidateIds(candidateIds);
+      const people = await this.fetchAllPeopleByCandidatePeopleIds(candidatePeopleIds);
       console.log(`Fetched ${people?.length} people in fetch all People`);
       return people;
     } catch (error) {
@@ -86,11 +86,11 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
     }
     return allCandidates;
   }
-  async fetchAllPeopleByCandidateIds(candidateIds: string[]): Promise<allDataObjects.PersonNode[]> {
+  async fetchAllPeopleByCandidatePeopleIds(candidatePeopleIds: string[]): Promise<allDataObjects.PersonNode[]> {
     let allPeople: allDataObjects.PersonNode[] = [];
     let lastCursor: string | null = null;
     while (true) {
-      const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindEngagedCandidates, variables: {filter: {id: {in: candidateIds}}, lastCursor}});
+      const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindManyPeopleEngagedCandidates, variables: {filter: {id: {in: candidatePeopleIds}}, lastCursor}});
       const response = await axiosRequest(graphqlQueryObj);
       const edges = response?.data?.data?.people?.edges;
       if (!edges || edges?.length === 0) break;
@@ -104,7 +104,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
     let lastCursor = null;
     while (true) {
       try {
-        const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindEngagedCandidates, variables: { "limit": 30, "lastCursor": lastCursor } });
+        const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindManyPeopleEngagedCandidates, variables: { "limit": 30, "lastCursor": lastCursor } });
         const response = await axiosRequest(graphqlQueryObj);
         const peopleData = response?.data?.data?.people;
         if (!peopleData || !peopleData?.edges || peopleData?.edges?.length === 0) {
@@ -124,6 +124,39 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
     }
     return allPeople;
   }
+
+  async fetchAllPeopleWithStartChatTrue() {
+    let allPeople = [];
+    let allCandidates: allDataObjects.Candidate[] = [];
+    let lastCursorCandidates: string | null = null;
+    while (true) {
+
+      const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlToFetchAllCandidatesByStartChat, variables: {"lastCursor": lastCursorCandidates, limit: 30, filter: {startChat: {eq: true}}}});
+      const response = await axiosRequest(graphqlQueryObj);
+      if (response.data.errors) {
+        console.log("Errors in response:", response.data.errors);
+      }
+      const edges = response?.data?.data?.candidates?.edges;
+      console.log("Number of edges:", edges?.length)
+      if (!edges || edges?.length === 0) break;
+      allCandidates = allCandidates?.concat(edges.map((edge: any) => edge.node));
+      lastCursorCandidates = edges[edges.length - 1].cursor;
+    }
+    const allCandidatePeopleIds = allCandidates.map(candidate => candidate.people.id);
+    console.log("Candidates whose start chat is true:", allCandidatePeopleIds.length)
+    let lastCursorPeople: string | null = null;
+    while (true) {
+      const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindManyPeopleEngagedCandidates, variables: {filter: {id: {in: allCandidatePeopleIds}}, "lastCursor": lastCursorPeople }});
+      const response = await axiosRequest(graphqlQueryObj);
+      const edges = response?.data?.data?.people?.edges;
+      if (!edges || edges?.length === 0) break;
+      allPeople = allPeople.concat(edges.map((edge: any) => edge?.node));
+      lastCursorPeople = edges[edges.length - 1].cursor;
+    }
+    console.log("Number of people for whom start chat is true:", allPeople.length);
+    return allPeople
+  }
+
 
 
   async fetchAllWhatsappMessages(candidateId: string): Promise<object[]> {
@@ -194,7 +227,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
   //   let numberLoops = 0;
   //   while (allCandidates.size < limit && hasNextPage) {
   //     numberLoops++;
-  //     const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindEngagedCandidates, variables: {limit: 60, lastCursor: lastCursor, orderBy: { position: "DescNullsFirst" }, } });
+  //     const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindManyPeopleEngagedCandidates, variables: {limit: 60, lastCursor: lastCursor, orderBy: { position: "DescNullsFirst" }, } });
   //     // console.log("GrahqlQueryObj:", graphqlQueryObj)
   //     try {
   //       const response = await axiosRequest(graphqlQueryObj);
