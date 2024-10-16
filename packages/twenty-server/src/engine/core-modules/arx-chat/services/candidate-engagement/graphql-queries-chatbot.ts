@@ -201,7 +201,7 @@ export const graphQlToFetchWhatsappMessages = `query FindManyWhatsappMessages($f
 }
 `
 
-export const graphqlQueryToFindEngagedCandidates = `query FindManyPeople($filter: PersonFilterInput, $orderBy: [PersonOrderByInput], $lastCursor: String, ) {
+export const graphqlQueryToFindManyPeopleEngagedCandidates = `query FindManyPeople($filter: PersonFilterInput, $orderBy: [PersonOrderByInput], $lastCursor: String, ) {
     people(filter: $filter, orderBy: $orderBy,  after: $lastCursor) {
       edges {
         cursor
