@@ -23,6 +23,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 // import { BaileysModule } from 'src/engine/core-modules/baileys/baileys.module';
 import * as dotenv from 'dotenv';
+// import { CoopCoepMiddleware } from './utils/coop-coep.middleware';
 
 
 const bootstrap = async () => {
@@ -33,9 +34,6 @@ const bootstrap = async () => {
   const envPath = '.env';
   if (fs.existsSync(envPath)) {
     console.log('.env file found');
-    // 3. Log .env file contents
-    // console.log('.env file contents:');
-    // console.log(fs.readFileSync(envPath, 'utf8'));
   } else {
     console.log('.env file not found');
   }
@@ -98,9 +96,10 @@ const bootstrap = async () => {
   });
 
   app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
-
   app.use(json({ limit: '50mb' }));
   app.use(urlencoded({ limit: '50mb', extended: true }));
+  // app.use(CoopCoepMiddleware);
+
 
   await app.listen(process.env.PORT ?? 3000);
 
