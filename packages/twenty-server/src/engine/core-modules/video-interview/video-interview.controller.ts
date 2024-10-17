@@ -66,27 +66,31 @@ export class VideoInterviewController {
   async submitResponse(@Req() req, @UploadedFiles() files: { video?: Express.Multer.File[]; audio?: Express.Multer.File[] }, @Body() responseData: any) {
     try {
       console.log('Received files:', JSON.stringify(files, null, 2));
-      console.log('Received response data:', JSON.stringify(responseData, null, 2));
+      // console.log('Received response data:', JSON.stringify(responseData, null, 2));
       const interviewData = JSON.parse(req?.body?.interviewData);
 
       if (!files.audio || !files.video) {
         throw new BadRequestException('Both video and audio files are required');
+
+      }
+      else{
+        console.log("Both files received")
       }
 
       const audioFile = files.audio[0];
       const videoFile = files.video[0];
 
+      console.log("audio file received:", audioFile)
+      console.log("video file received:", videoFile)
       // Upload video file to Twenty
       const videoFilePath = `uploads/${videoFile.originalname}`;
       const videoAttachmentObj = await new AttachmentProcessingService().uploadAttachmentToTwenty(videoFilePath);
-      console.log('Video attachment upload response:', videoAttachmentObj);
-
       // Upload audio file to Twenty
       const audioFilePath = `uploads/${audioFile.originalname}`;
 
       const audioAttachmentObj = await new AttachmentProcessingService().uploadAttachmentToTwenty(audioFilePath);
-      console.log('Audio attachment upload response:', audioAttachmentObj);
-      console.log('interviewData::', interviewData);
+      // console.log('Audio attachment upload response:', audioAttachmentObj);
+      // console.log('interviewData::', interviewData);
       // Prepare data for attachment table
       const videoDataToUploadInAttachmentTable = {
         input: {
@@ -112,8 +116,8 @@ export class VideoInterviewController {
       // console.log('This is the audio. Data to Uplaod in Attachment Table::', audioDataToUploadInAttachmentTable);
       await new AttachmentProcessingService().createOneAttachmentFromFilePath(audioDataToUploadInAttachmentTable);
 
-      console.log('Audio file:', JSON.stringify(audioFile, null, 2));
-      console.log('Video file:', JSON.stringify(videoFile, null, 2));
+      // console.log('Audio file:', JSON.stringify(audioFile, null, 2));
+      // console.log('Video file:', JSON.stringify(videoFile, null, 2));
 
       // console.log('Starting audio transcription');
       const transcript = await this.transcriptionService.transcribeAudio(audioFile.path);
