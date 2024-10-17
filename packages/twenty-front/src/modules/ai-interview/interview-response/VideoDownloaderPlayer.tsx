@@ -45,6 +45,8 @@ const VideoDownloaderPlayer: React.FC<VideoDownloaderPlayerProps> = ({ videoUrl 
     <ReactPlayer
       url={localVideoUrl}
       controls
+      muted={true}
+      playsinline
       width="100%"
       height="auto"
       onError={(e) => {

@@ -1,6 +1,5 @@
 import React, { RefObject, useState, useEffect } from 'react';
-import { StyledVideoPane, StyledVideo, StyledVideoControls, StyledVideoButton, StyledLoadingMessage } from '../styled-components/StyledComponentsInterviewResponse';
-import VideoDownloaderPlayer from '../VideoDownloaderPlayer';
+import { StyledVideoPane, StyledVideo, StyledVideoControls, StyledVideoButton, StyledLoadingMessage } from './StyledComponents';
 
 interface VideoPlayerProps {
   src: string;
@@ -13,30 +12,43 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, videoRef, isPlayi
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  // const [downloadProgress, setDownloadProgress] = useState<number>(0);
+  const [downloadProgress, setDownloadProgress] = useState<number>(0);
 
   useEffect(() => {
-    // const abortController = new AbortController();
-    // const signal = abortController.signal;
+    const abortController = new AbortController();
+    const signal = abortController.signal;
 
     const downloadVideo = async () => {
       try {
         setIsLoading(true);
         setError(null);
 
-        const response = await fetch(src);
+        const response = await fetch(src, { signal });
         if (!response.ok) throw new Error('Network response was not ok');
 
-        const blob = await response.blob();
+        const contentLength = response.headers.get('Content-Length');
+        const total = contentLength ? parseInt(contentLength, 10) : 0;
+        let loaded = 0;
+
+        const reader = response.body!.getReader();
+        const chunks: Uint8Array[] = [];
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          chunks.push(value);
+          loaded += value.length;
+          setDownloadProgress(total ? (loaded / total) * 100 : 0);
+        }
+
+        const blob = new Blob(chunks, { type: 'video/mp4' });
         const url = URL.createObjectURL(blob);
-
-
         setVideoUrl(url);
         setIsLoading(false);
       } catch (err) {
         if ((err as any).name === 'AbortError') return;
         console.error('Error downloading video:', err);
-        setError('Loading video...');
+        setError('Failed to load video. Please try again.');
         setIsLoading(false);
       }
     };
@@ -44,59 +56,10 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, videoRef, isPlayi
     downloadVideo();
 
     return () => {
-      // abortController.abort();
+      abortController.abort();
       if (videoUrl) URL.revokeObjectURL(videoUrl);
     };
   }, [src]);
-
-
-
-  useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.addEventListener('error', handleVideoError);
-      return () => {
-        if (videoRef.current) {
-          videoRef.current.removeEventListener('error', handleVideoError);
-        }
-      };
-    }
-  }, [videoRef]);
-
-  const handleVideoError = (e:any) => {
-    setError(`Error: ${e.target.error.message}`);
-    setIsPlaying(false);
-  };
-
-  const handleRetry = () => {
-    setError(null);
-    if (videoRef.current) {
-      videoRef.current.load();
-    }
-  };
-
-
-  // useEffect(() => {
-  //   const video = videoRef.current;
-  //   if (!video) return;
-
-  //   const handleCanPlay = () => {
-  //     if (shouldAutoplay) {
-  //       video.play().then(() => {
-  //         setIsPlaying(true);
-  //         setShouldAutoplay(false);
-  //       }).catch((error) => {
-  //         console.error('Autoplay failed:', error);
-  //         setShouldAutoplay(false);
-  //       });
-  //     }
-  //   };
-
-  //   video.addEventListener('canplay', handleCanPlay);
-
-  //   return () => {
-  //     video.removeEventListener('canplay', handleCanPlay);
-  //   };
-  // }, [videoRef, shouldAutoplay, setIsPlaying]);
 
   const handlePlayPause = () => {
     const video = videoRef.current;
@@ -129,7 +92,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, videoRef, isPlayi
     return (
       <StyledVideoPane>
         <StyledLoadingMessage>
-          Loading video...
+          Loading video... {downloadProgress.toFixed(0)}%
         </StyledLoadingMessage>
       </StyledVideoPane>
     );
@@ -142,6 +105,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, videoRef, isPlayi
       </StyledVideoPane>
     );
   }
+
   const playButton = (
     <svg xmlns="http://www.w3.org/2000/svg" width="97" height="97" viewBox="0 0 97 97" fill="none">
       <g opacity="0.8">
@@ -151,33 +115,26 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, videoRef, isPlayi
     </svg>
   );
 
-  const replayButton = <svg fill="#000000" height="200px" width="200px" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg"  viewBox="0 0 490.89 490.89"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <g id="XMLID_231_"> <path id="XMLID_233_" d="M97.38,292.692V181.229c0-24.324,19.792-44.125,44.134-44.125h170.733v19.506 c0,5.525,3.065,10.59,7.941,13.162c4.884,2.59,10.786,2.229,15.343-0.885l100.888-69.057c3.607-2.475,5.771-6.557,5.788-10.934 c0.015-4.377-2.124-8.49-5.722-10.965L335.63,7.956c-4.548-3.146-10.483-3.508-15.383-0.949c-4.91,2.557-7.975,7.653-7.975,13.178 v19.539H141.515C63.483,39.724,0,103.208,0,181.229v111.463c0,26.881,21.801,48.684,48.689,48.684 C75.58,341.376,97.38,319.573,97.38,292.692z"></path> <path id="XMLID_232_" d="M442.199,149.513c-26.891,0-48.691,21.801-48.691,48.701V309.64c0,24.342-19.793,44.143-44.134,44.143 H178.641v-19.506c0-5.523-3.065-10.588-7.941-13.162c-4.884-2.572-10.786-2.23-15.343,0.887L54.468,391.056 c-3.606,2.477-5.771,6.572-5.786,10.951c-0.017,4.359,2.122,8.475,5.72,10.965l100.856,69.961 c4.548,3.147,10.482,3.504,15.384,0.965c4.908-2.572,7.974-7.654,7.974-13.195v-19.539h170.756 c78.031,0,141.516-63.498,141.516-141.523V198.214C490.89,171.313,469.088,149.513,442.199,149.513z"></path> </g> </g></svg>
-
   return (
     <StyledVideoPane>
-
-    <VideoDownloaderPlayer videoUrl={videoUrl || ''} />
-
-      {/* <StyledVideo
+      <StyledVideo
         ref={videoRef}
-        preload="none"  
-        playsInline 
-        controls
-        autoPlay
-        onPlay={() => setIsPlaying(true)}
-        onPause={() => setIsPlaying(false)}
         src={videoUrl || undefined}
         onEnded={() => setIsPlaying(false)}
+        playsInline
+        muted
+        autoPlay
+        loop
+        controls
       />
-        <source src={videoUrl || undefined} type="video/mp4" />
-        <source src={videoUrl?.replace('.mp4', '.webm') || undefined} type="video/webm" />
-        Your browser does not support the video tag. */}
-      {/* <StyledVideoControls>
+      <StyledVideoControls>
         <StyledVideoButton onClick={handlePlayPause}>
           {isPlaying ? '⏸' : playButton}
         </StyledVideoButton>
-        
-      </StyledVideoControls> */}
+        <StyledVideoButton onClick={handleReplay}>
+          🔁
+        </StyledVideoButton>
+      </StyledVideoControls>
     </StyledVideoPane>
   );
 };
