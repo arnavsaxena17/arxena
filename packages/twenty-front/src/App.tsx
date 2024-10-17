@@ -285,7 +285,7 @@ const createRouter = (isBillingEnabled?: boolean) =>
         <Route element={<BlankLayout />}>
           <Route path={AppPath.Authorize} element={<Authorize />} />
         </Route>
-        <Route>
+        <Route elemnet = {<BlankLayout/>}>
           <Route path={`${AppPath.VideoInterview}`} element={<AIInterviewFlow interviewId={window.location.pathname} />} />
         </Route>      
       </Route>,

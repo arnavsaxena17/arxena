@@ -244,7 +244,7 @@ export const InterviewPage: React.FC<InterviewResponseTypes.InterviewPageProps> 
             <Webcam audio={true} ref={webcamRef} width="100%" height="100%" />
             {countdown !== null && <StyledCountdownOverlay>{countdown}</StyledCountdownOverlay>}
             {answerTimer !== null && <StyledAnswerTimer>Time left: {answerTimer}s</StyledAnswerTimer>}
-            <StyledControlsOverlay onClick={handleStartRecording}>
+            <StyledControlsOverlay onClick={recording ? handleStopRecording : handleStartRecording}>
               <StyledRecordButton onClick={recording ? handleStopRecording : handleStartRecording} isRecording={recording} disabled={submitting || countdown !== null}>
                 {recording ? <StopIcon /> : <RecordIcon />}
               </StyledRecordButton>

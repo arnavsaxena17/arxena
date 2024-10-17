@@ -62,18 +62,18 @@ export const StartInterviewPage: React.FC<InterviewResponseTypes.StartInterviewP
   return (
     <StyledContainer>
     <StyledLeftPanel>
-      <h2>{InterviewData.candidate.jobs.name}</h2>
+      <h2>{InterviewData?.candidate?.jobs?.name}</h2>
       <StyledLeftPanelContentBox>
         <StyledTextLeftPanelTextHeadline>Introduction</StyledTextLeftPanelTextHeadline>
         <VideoPlayer
-            src={process.env.REACT_APP_SERVER_BASE_URL+"/files/"+introductionVideoData?.data?.attachments?.edges[0]?.node.fullPath}
+            src={process.env.REACT_APP_SERVER_BASE_URL+"/files/"+introductionVideoData?.data?.attachments?.edges[0]?.node?.fullPath}
             videoRef={videoRef}
             isPlaying={isPlaying}
             setIsPlaying={setIsPlaying}
           />
         <h3>Transcript</h3>
         <StyledTextLeftPaneldisplay>
-        {InterviewData.aIInterview.introduction}
+        {InterviewData?.aIInterview?.introduction}
         </StyledTextLeftPaneldisplay>
       </StyledLeftPanelContentBox>
     </StyledLeftPanel>
@@ -81,10 +81,10 @@ export const StartInterviewPage: React.FC<InterviewResponseTypes.StartInterviewP
       <div>
 
       <InstructionSection>
-          <h2>Hi, {InterviewData.candidate.people.name.firstName} (Application for {InterviewData.candidate.jobs.name} at {InterviewData.candidate.jobs.companyName})</h2>
+          <h2>Hi, {InterviewData?.candidate?.people?.name?.firstName} (Application for {InterviewData?.candidate?.jobs?.name} at {InterviewData?.candidate?.jobs?.companyName})</h2>
           <h3></h3>
           <InstructionList>
-            <li>We are looking forward for your application to the position of {InterviewData.candidate.jobs.name} at {InterviewData.candidate.jobs.companyName}.</li>
+            <li>We are looking forward for your application to the position of {InterviewData?.candidate?.jobs?.name} at {InterviewData?.candidate?.jobs?.companyName}.</li>
             <li>For the course of this interview, some questions require responses in real time video recording format and some require responses in textual format. For every question, you will be provided with transcript for clarity about the questions</li>
             <li>Please provide your browser access to camera and microphone on your device to start interview</li>
           </InstructionList>

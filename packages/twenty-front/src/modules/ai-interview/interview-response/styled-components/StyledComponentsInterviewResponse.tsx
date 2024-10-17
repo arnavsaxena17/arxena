@@ -145,13 +145,13 @@ export const StyledRightPanel = styled.div`
   flex-direction: column;
   gap: 44px;
   color: #808080;
-leading-trim: both;
-text-edge: cap;
-font-family: Inter;
-font-size: 16px;
-font-style: normal;
-font-weight: 600;
-line-height: 150%; /* 24px */
+  leading-trim: both;
+  text-edge: cap;
+  font-family: Inter;
+  font-size: 16px;
+  font-style: normal;
+  font-weight: 600;
+  line-height: 150%; /* 24px */
 `;
 // const StyledRightPanel = styled.div`
 //   width: calc(100% * (2 / 3));
@@ -207,11 +207,12 @@ export const StyledButton = styled.button`
 
 
 
-export const StyledVideoContainer = styled.div`
-  background-color: black;
-  height: 60%;
-  margin-bottom: 20px;
-`;
+// export const StyledVideoContainer = styled.div`
+//   background-color: black;
+//   height: 60%;
+//   margin-bottom: 20px;
+// `;
+
 
 
 
@@ -266,10 +267,35 @@ export const RecordIcon = () => <StyledIcon style={{ borderRadius: '50%' }} />;
 
 export const StopIcon = () => <StyledIcon style={{ width: '14px', height: '14px' }} />;
 
+// export const StyledControlsOverlay = styled.div`
+//   position: absolute;
+//   bottom: 20%;
+//   left: 66%;
+//   transform: translateX(-50%);
+//   display: flex;
+//   align-items: center;
+//   justify-content: center;
+//   background-color: rgba(0, 0, 0, 0.5);
+//   border-radius: 20px;
+//   padding: 10px;
+//   cursor: pointer;
+//   color: white;
+// `;
+
+
+
+export const StyledVideoContainer = styled.div`
+  position: relative;
+  background-color: black;
+  height: 60%;
+  margin-bottom: 20px;
+  overflow: hidden;
+`;
+
 export const StyledControlsOverlay = styled.div`
   position: absolute;
-  bottom: 20%;
-  left: 66%;
+  bottom: 20px;
+  left: 50%;
   transform: translateX(-50%);
   display: flex;
   align-items: center;
@@ -279,24 +305,26 @@ export const StyledControlsOverlay = styled.div`
   padding: 10px;
   cursor: pointer;
   color: white;
+  z-index: 10;
 `;
 
 export const StyledAnswerTimer = styled.div`
   position: absolute;
-  bottom: 15%;
-  right: 31%;
+  bottom: 20px;
+  right: 20px;
   font-size: ${({ theme }) => theme.font.size.lg};
   font-weight: ${({ theme }) => theme.font.weight.semiBold};
   color: white;
   background-color: rgba(0, 0, 0, 0.5);
   padding: 10px;
   border-radius: 5px;
+  z-index: 10;
 `;
 
 export const StyledCountdownOverlay = styled.div`
   position: absolute;
-  top: 45%;
-  left: 66.5%;
+  top: 50%;
+  left: 50%;
   transform: translate(-50%, -50%);
   font-size: 72px;
   color: white;
@@ -308,8 +336,8 @@ export const StyledCountdownOverlay = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
+  z-index: 20;
 `;
-
 // const StyledRightPanel = styled.div`
 //   width: calc(100% * (2 / 3));
 //   min-width: 264px;
@@ -329,3 +357,6 @@ export const StyledCountdownOverlay = styled.div`
 //   cursor: pointer;
 //   font-size: ${({ theme }) => theme.font.size.md};
 // `;
+
+
+
