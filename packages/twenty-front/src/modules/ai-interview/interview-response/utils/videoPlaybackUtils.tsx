@@ -1,5 +1,6 @@
 import React, { RefObject, useState, useEffect } from 'react';
 import { StyledVideoPane, StyledVideo, StyledVideoControls, StyledVideoButton, StyledLoadingMessage } from '../styled-components/StyledComponentsInterviewResponse';
+import VideoDownloaderPlayer from '../VideoDownloaderPlayer';
 
 interface VideoPlayerProps {
   src: string;
@@ -154,11 +155,15 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, videoRef, isPlayi
 
   return (
     <StyledVideoPane>
-      <StyledVideo
+
+    <VideoDownloaderPlayer videoUrl={videoUrl || ''} />
+
+      {/* <StyledVideo
         ref={videoRef}
         preload="none"  
         playsInline 
         controls
+        autoPlay
         onPlay={() => setIsPlaying(true)}
         onPause={() => setIsPlaying(false)}
         src={videoUrl || undefined}
@@ -166,7 +171,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, videoRef, isPlayi
       />
         <source src={videoUrl || undefined} type="video/mp4" />
         <source src={videoUrl?.replace('.mp4', '.webm') || undefined} type="video/webm" />
-        Your browser does not support the video tag.
+        Your browser does not support the video tag. */}
       {/* <StyledVideoControls>
         <StyledVideoButton onClick={handlePlayPause}>
           {isPlaying ? '⏸' : playButton}
