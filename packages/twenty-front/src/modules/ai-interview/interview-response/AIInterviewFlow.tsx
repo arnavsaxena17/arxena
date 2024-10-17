@@ -9,7 +9,7 @@ import * as InterviewResponseTypes from './types/interviewResponseTypes';
 
 
 
-export const AIInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) => {
+const AIInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) => {
   const [stage, setStage] = useState<'start' | 'interview' | 'end'> ('start');
   const [interviewData, setInterviewData] = useState<InterviewResponseTypes.InterviewData | null>(null);
   const [introductionVideoData, setintroductionVideoData] = useState< InterviewResponseTypes.VideoInterviewAttachment| null>(null);
@@ -57,6 +57,7 @@ export const AIInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId
             aIInterviewQuestions: fetchedData.aIInterviewStatuses.edges[0].node.aIInterview.aIInterviewQuestions,
           },
         };
+        
         setInterviewData(formattedData);
         setintroductionVideoData(responseObj?.videoInterviewAttachmentResponse);
         setquestionsVideoData(Array.isArray(responseObj?.questionsAttachments) ? responseObj.questionsAttachments : []);
@@ -181,3 +182,5 @@ export const AIInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId
 
   return <div className="ai-interview-flow">{renderCurrentStage()}</div>;
 };
+
+export default AIInterviewFlow;
