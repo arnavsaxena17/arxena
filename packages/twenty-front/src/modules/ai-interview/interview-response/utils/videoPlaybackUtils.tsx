@@ -26,23 +26,6 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, videoRef, isPlayi
         const response = await fetch(src);
         if (!response.ok) throw new Error('Network response was not ok');
 
-        // const contentLength = response.headers.get('Content-Length');
-        // const total = contentLength ? parseInt(contentLength, 10) : 0;
-        // let loaded = 0;
-
-        // const reader = response.body!.getReader();
-        // const chunks: Uint8Array[] = [];
-
-        // while (true) {
-        //   const { done, value } = await reader.read();
-        //   if (done) break;
-        //   chunks.push(value);
-        //   loaded += value.length;
-        //   setDownloadProgress(total ? (loaded / total) * 100 : 0);
-        // }
-        // const blob = new Blob(chunks, { type: 'video/mp4' });
-        // const blob = await response.blob();
-        // const url = URL.createObjectURL(blob);
         const blob = await response.blob();
         const url = URL.createObjectURL(blob);
 
@@ -174,19 +157,22 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, videoRef, isPlayi
       <StyledVideo
         ref={videoRef}
         preload="none"  
-        playsInline // Add this attribute for better mobile support
+        playsInline 
         controls
         onPlay={() => setIsPlaying(true)}
         onPause={() => setIsPlaying(false)}
         src={videoUrl || undefined}
         onEnded={() => setIsPlaying(false)}
       />
-      <StyledVideoControls>
+        <source src={videoUrl || undefined} type="video/mp4" />
+        <source src={videoUrl?.replace('.mp4', '.webm') || undefined} type="video/webm" />
+        Your browser does not support the video tag.
+      {/* <StyledVideoControls>
         <StyledVideoButton onClick={handlePlayPause}>
           {isPlaying ? '⏸' : playButton}
         </StyledVideoButton>
         
-      </StyledVideoControls>
+      </StyledVideoControls> */}
     </StyledVideoPane>
   );
 };
