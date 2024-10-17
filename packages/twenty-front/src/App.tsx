@@ -84,9 +84,7 @@ const VideoInterviewResponseViewer = lazy(() => import('@/ai-interview/interview
 const MinimalProviders: React.FC = () => (
   <ApolloProvider>
     <AppThemeProvider>
-      <Suspense fallback={<div>Loading...</div>}>
         <Outlet />
-      </Suspense>
     </AppThemeProvider>
   </ApolloProvider>
 );
