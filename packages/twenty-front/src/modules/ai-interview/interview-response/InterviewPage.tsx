@@ -5,27 +5,25 @@ import { createFFmpeg, fetchFile } from '@ffmpeg/ffmpeg';
 import { v4 as uuid } from 'uuid';
 import * as InterviewResponseTypes from './types/interviewResponseTypes';
 import { VideoPlayer } from './utils/videoPlaybackUtils';
+import VideoContainer from './VideoContainer';
 
 import {
-  StyledContainer,
   StyledLeftPanelContentBox,
   StyledTextLeftPanelTextHeadline,
-  StyledTextLeftPanelVideoPane,
   StyledTextLeftPaneldisplay,
-  StyledLeftPanel,
-  StyledRightPanel,
-  StyledButton,
-  StyledVideoContainer,
+  // StyledLeftPanel,
+  // StyledRightPanel,
   StyledCountdownOverlay,
-  StyledAnswerTimer,
-  StyledControlsOverlay,
-  StyledRecordButton,
   StyledMessage,
   StyledTimer,
-  StopIcon,
-  RecordIcon,
-  StyledError
+  StyledError,
+  SnapScrollContainer,
+  StyledLeftPanel,
+  StyledRightPanel,
+
 } from './styled-components/StyledComponentsInterviewResponse';
+
+
 
 
 const ffmpeg = createFFmpeg({
@@ -216,8 +214,9 @@ export const InterviewPage: React.FC<InterviewResponseTypes.InterviewPageProps> 
 
   const currentQuestionVideoURL = process.env.REACT_APP_SERVER_BASE_URL + "/files/" + currentQuestionInterviewAttachment;
   console.log("This is the currentQuestionVideoURL::", currentQuestionVideoURL)
+
   return (
-    <StyledContainer>
+    <SnapScrollContainer>
       <StyledLeftPanel>
         <h2>Interview - .NET Developer II</h2>
         <StyledLeftPanelContentBox>
@@ -240,17 +239,14 @@ export const InterviewPage: React.FC<InterviewResponseTypes.InterviewPageProps> 
           <p>{questions[currentQuestionIndex].questionValue}</p>
         </div>
         {activeCameraFeed && (
-          <StyledVideoContainer>
+          <VideoContainer
+            answerTimer={answerTimer}
+            isRecording={recording}
+            onRecordingClick={recording ? handleStopRecording : handleStartRecording}
+          >
             <Webcam audio={true} ref={webcamRef} width="100%" height="100%" />
             {countdown !== null && <StyledCountdownOverlay>{countdown}</StyledCountdownOverlay>}
-            {answerTimer !== null && <StyledAnswerTimer>Time left: {answerTimer}s</StyledAnswerTimer>}
-            <StyledControlsOverlay onClick={recording ? handleStopRecording : handleStartRecording}>
-              <StyledRecordButton onClick={recording ? handleStopRecording : handleStartRecording} isRecording={recording} disabled={submitting || countdown !== null}>
-                {recording ? <StopIcon /> : <RecordIcon />}
-              </StyledRecordButton>
-              {recording ? timer : 'Click to record your response'}
-            </StyledControlsOverlay>
-          </StyledVideoContainer>
+          </VideoContainer>
         )}
         {submitting && <StyledMessage>Submitting your response...</StyledMessage>}
         {timer !== null && (
@@ -261,6 +257,6 @@ export const InterviewPage: React.FC<InterviewResponseTypes.InterviewPageProps> 
         )}
         {error && <StyledError>{error}</StyledError>}
       </StyledRightPanel>
-    </StyledContainer>
+    </SnapScrollContainer>
   );
 };
