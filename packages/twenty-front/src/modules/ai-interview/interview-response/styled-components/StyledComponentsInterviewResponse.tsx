@@ -19,6 +19,12 @@ export const SnapScrollContainer = styled.div`
   overflow-y: scroll;
   scroll-snap-type: y mandatory;
 
+  @media (min-width: 768px) {
+    display: flex;
+    overflow-y: visible;
+    height: auto;
+  }
+
   @media (max-width: 767px) {
     flex-direction: column;
     height: auto;
