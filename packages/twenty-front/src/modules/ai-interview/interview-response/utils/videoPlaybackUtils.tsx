@@ -48,7 +48,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, videoRef, isPlayi
       } catch (err) {
         if ((err as any).name === 'AbortError') return;
         console.error('Error downloading video:', err);
-        setError('Failed to load video. Please try again.');
+        setError('Loading video...');
         setIsLoading(false);
       }
     };
