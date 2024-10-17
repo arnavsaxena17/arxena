@@ -1,5 +1,5 @@
 import React, { RefObject, useState, useEffect } from 'react';
-import { StyledVideoPane, StyledVideo, StyledVideoControls, StyledVideoButton, StyledLoadingMessage } from './StyledComponents';
+import { StyledVideoPane, StyledVideo, StyledVideoControls, StyledVideoButton, StyledLoadingMessage } from '../styled-components/StyledComponentsInterviewResponse';
 
 interface VideoPlayerProps {
   src: string;
@@ -41,7 +41,6 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, videoRef, isPlayi
           loaded += value.length;
           setDownloadProgress(total ? (loaded / total) * 100 : 0);
         }
-
         const blob = new Blob(chunks, { type: 'video/mp4' });
         const url = URL.createObjectURL(blob);
         setVideoUrl(url);
@@ -49,7 +48,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, videoRef, isPlayi
       } catch (err) {
         if ((err as any).name === 'AbortError') return;
         console.error('Error downloading video:', err);
-        setError('Failed to load video. Please try again.');
+        setError('Loding video...');
         setIsLoading(false);
       }
     };

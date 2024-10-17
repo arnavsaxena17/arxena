@@ -6,7 +6,7 @@ import { EthnicityAndModelSelectionContainer } from '@/ai-interview/interview-cr
 import { Instructions } from '@/ai-interview/interview-creation/right-side/components/introduction/instructions/Instructions';
 const StyledContainer = styled.div`
   flex-direction: column;
-  gap: 44px;
+  // gap: 44px;
   overflow-y: scroll;
   scroll-behavior: smooth;
   flex-grow: 1;

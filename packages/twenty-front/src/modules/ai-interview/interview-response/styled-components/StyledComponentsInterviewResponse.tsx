@@ -1,41 +1,254 @@
 
 import styled from '@emotion/styled';
 
-
 export const StyledContainer = styled.div`
   display: flex;
+  flex-direction: column;
+  // background-color: ${({ theme }) => theme.background.tertiary};
+  max-width: 100%;
+  overflow-x: hidden;
+  min-height: 100vh;
+  background-color: white;
+
+  @media (min-width: 768px) {
+    flex-direction: row;
+  }
+`;
+export const SnapScrollContainer = styled.div`
   height: 100vh;
-  width:100vw;
-  background-color: ${({ theme }) => theme.background.tertiary};
+  overflow-y: scroll;
+  scroll-snap-type: y mandatory;
+
+  @media (min-width: 768px) {
+    display: flex;
+    overflow-y: visible;
+    height: auto;
+  }
+
+  @media (max-width: 767px) {
+    flex-direction: column;
+    height: auto;
+  }
+`;
+export const StyledLeftPanel = styled.div`
+  width: 40%;
+  padding: 16px;
+  background-color: ${({ theme }) => theme.background.secondary};
+  color: ${({ theme }) => theme.font.color.secondary};
+  font-family: ${({ theme }) => theme.font.family};
+  font-size: ${({ theme }) => theme.font.size.md};
+  font-weight: ${({ theme }) => theme.font.weight.regular};
+
+  @media (max-width: 767px) {
+    width: 90%;
+    padding: 16px;
+    font-size: ${({ theme }) => theme.font.size.sm};
+  }
 `;
 
 
+
+export const StyledAnswerTimer = styled.div`
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: white;
+  background-color: rgba(0, 0, 0, 0.5);
+  padding: 5px 10px;
+  border-radius: 15px;
+  z-index: 20;
+
+  @media (max-width: 768px) {
+    top: 5px;
+    right: 5px;
+    font-size: 12px;
+    padding: 3px 8px;
+  }
+`;
+
+export const StyledControlsOverlay = styled.div`
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.5);
+  border-radius: 20px;
+  padding: 10px 20px;
+  cursor: pointer;
+  color: white;
+  z-index: 10;
+  white-space: nowrap;
+  font-size: 14px;
+  
+  @media (max-width: 768px) {
+    width: 80%;
+    flex-direction: column;
+    padding: 10px;
+    bottom: 10px;
+  }
+`;
+
+interface StyledRecordButtonProps {
+  isRecording: boolean;
+}
+
+
+export const StyledRecordButton = styled.button<StyledRecordButtonProps>`
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: ${props => (props.isRecording ? '#ff4136' : '#4285f4')};
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 10px;
+
+  @media (max-width: 768px) {
+    margin-right: 0;
+    margin-bottom: 5px;
+  }
+`;
+
+export const ButtonText = styled.span`
+  @media (max-width: 768px) {
+    text-align: center;
+    font-size: 12px;
+  }
+`;
+
+export const ButtonContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  margin-top: 24px;
+`;
+
+
+// Styled components remain the same
+export const StyledVideoPane = styled.div`
+  height: 300px;
+  align-self: stretch;
+  border-radius: 16px;
+  overflow: hidden;
+  position: relative;
+`;
+
+export const StyledVideo = styled.video`
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+`;
+
+export const StyledVideoControls = styled.div`
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 10px;
+`;
+
+export const StyledVideoButton = styled.button`
+  background-color: rgba(255, 255, 255, 0.7);
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.9);
+  }
+`;
+
+export const StyledLoadingMessage = styled.div`
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  background-color: rgba(0, 0, 0, 0.5);
+  padding: 10px;
+  border-radius: 5px;
+`;
+
+
+
+export const StyledButton = styled.button`
+  padding: 10px 16px;
+  background-color: #4285f4;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  width: 100%;
+  max-width: 250px;
+  transition: background-color 0.3s ease;
+
+  &:hover {
+    background-color: #3367d6;
+  }
+
+  &:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+  }
+
+  @media (min-width: 768px) {
+    padding: 12px 24px;
+    font-size: 16px;
+    max-width: 300px;
+  }
+`;
+
+export const AccessMessage = styled.p`
+  color: #4caf50;
+  font-weight: 600;
+  margin: 16px 0;
+`;
+
 export const StyledLeftPanelContentBox = styled.div`
-display: flex;
-flex-direction: column;
-align-items: flex-start;
-gap: 24px;
-flex: 1 0 0;
-align-self: stretch;
-box-sizing: border-box
-padding: 44px 32px;
-`
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+
+  @media (max-width: 767px) {
+    gap: 8px;
+  }
+`;
+
+
 
 export const StyledTextLeftPanelTextHeadline = styled.div`
-display: flex;
-padding: var(--Spacing-4px, 4px) 12px;
-align-items: flex-start;
-gap: 6px;
-align-self: stretch;
-border-left: var(--Spacing-2px, 2px) solid #999;
-`
+  display: flex;
+  padding: 4px 8px;
+  align-items: flex-start;
+  gap: 4px;
+  align-self: stretch;
+  border-left: 2px solid #999;
+  font-size: 16px;
+  font-weight: 600;
 
-export const StyledTextLeftPanelVideoPane = styled.div`
-height: 300px;
-align-self: stretch;
-border-radius: 16px;
-background: var(--John, url(/videos/Video.png) lightgray 50% / cover no-repeat);
-`
+  @media (max-width: 767px) {
+    font-size: 14px;
+    padding: 2px 6px;
+  }
+`;
+
 export const FeedbackContainer = styled.div`
   display: flex;
   flex-direction: column;
@@ -48,7 +261,7 @@ export const StyledTextArea = styled.textarea`
   padding: 12px;
   border: 1px solid #ccc;
   border-radius: 8px;
-  font-family: 'Inter', sans-serif;
+  font-family: ${({ theme }) => theme.font.family};
   font-size: 16px;
   resize: vertical;
   &:focus {
@@ -90,129 +303,100 @@ export const FeedbackPrompt = styled.p`
 
 
 export const StyledTextLeftPaneldisplay = styled.div`
-color: #808080;
-leading-trim: both;
-text-edge: cap;
-font-family: Inter;
-font-size: 14px;
-font-style: normal;
-font-weight: 600;
-line-height: 150%`
+  color: #808080;
+  font-size: ${({ theme }) => theme.font.size.md};
+  line-height: 150%;
 
+  @media (max-width: 767px) {
+    font-size: ${({ theme }) => theme.font.size.sm};
+    line-height: 140%;
+  }
+`;
 
 export const InstructionSection = styled.div`
-  margin-bottom: 15px;
+  margin-bottom: 16px;
 `;
 
 export const InstructionList = styled.ol`
   padding-left: 20px;
-  margin: 5px 0;
+  margin: 8px 0;
+  font-size: 12px;
+
+  @media (min-width: 768px) {
+    font-size: 14px;
+    margin: 12px 0;
+  }
 `;
 
+export const PageTitle = styled.h1`
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 12px;
 
-export const TermsLink = styled.a`
-  color: blue;
-  text-decoration: underline;
-  margin-bottom: 10px;
-  display: inline-block;
+  @media (min-width: 768px) {
+    font-size: 24px;
+    margin-bottom: 16px;
+  }
 `;
 
-export const StyledTextLeftPanelHeadline = styled.div`
-color: #333;
-font-family: Inter;
-font-size: 24px;
-font-style: normal;
-font-weight: 600;
-line-height: 120%;`
+export const SubTitle = styled.h2`
+  font-size: 16px;
+  font-weight: 500;
+  margin-bottom: 8px;
 
-export const StyledLeftPanel = styled.div`
-  width: calc(100% * (1 / 3));
-  min-width: 224px;
-  padding: 44px 32px;
-  color: ${({ theme }) => theme.font.color.secondary};
-  font-family: ${({ theme }) => theme.font.family};
-  font-size: ${({ theme }) => theme.font.size.lg};
-  font-weight: ${({ theme }) => theme.font.weight.semiBold};
+  @media (min-width: 768px) {
+    font-size: 18px;
+    margin-bottom: 12px;
+  }
 `;
 
 
 export const StyledRightPanel = styled.div`
-  width: calc(100% * (2 / 3));
-  min-width: 264px;
-  padding: 44px 32px;
+  width: 60%;
+  padding: 16px;
   background-color: ${({ theme }) => theme.background.primary};
   display: flex;
   flex-direction: column;
-  gap: 44px;
+  gap: 16px;
   color: #808080;
-  leading-trim: both;
-  text-edge: cap;
-  font-family: Inter;
-  font-size: 16px;
+  font-family: ${({ theme }) => theme.font.family};
+  font-size: ${({ theme }) => theme.font.size.md};
   font-style: normal;
-  font-weight: 600;
-  line-height: 150%; /* 24px */
-`;
-// const StyledRightPanel = styled.div`
-//   width: calc(100% * (2 / 3));
-//   min-width: 264px;
-//   padding: 44px 32px;
-//   background-color: ${({ theme }) => theme.background.primary};
-//   display: flex;
-//   flex-direction: column;
-//   gap: 44px;
-// `;
+  font-weight: 400;
+  line-height: 150%;
 
-
-// export const StyledButton = styled.button`
-//   padding: 10px 20px;
-//   background-color: #4285f4;
-//   color: white;
-//   border: none;
-//   border-radius: 4px;
-//   cursor: pointer;
-//   font-size: ${({ theme }) => theme.font.size.md};
-// `;
-
-export const StyledButtonCameraAccess = styled.button`
-  padding: 10px 20px;
-  background-color: #4285f4;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  width: 10%;
-  font-size: ${({ theme }) => theme.font.size.md};
-`;
-
-export const AccessMessage = styled.p`
-      color: green;
-    padding: 10px 20px;
-
-    width: 10%;
-
-
-`;
-
-export const StyledButton = styled.button`
-  padding: 10px 20px;
-  background-color: #4285f4;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  width: 10%;
-  font-size: ${({ theme }) => theme.font.size.md};
+  @media (max-width: 767px) {
+    width: 90%;
+    padding: 16px;
+    font-size: ${({ theme }) => theme.font.size.sm};
+    gap: 12px;
+  }
 `;
 
 
+export const StyledVideoContainer = styled.div`
+  position: relative;
+  background-color: white;
+  border-radius: 30px;
+  margin-bottom: 20px;
+  overflow: hidden;
+  width: 100%;
+  padding-top: 56.25%; // 16:9 aspect ratio
 
-// export const StyledVideoContainer = styled.div`
-//   background-color: black;
-//   height: 60%;
-//   margin-bottom: 20px;
-// `;
+  video, .react-webcam {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
 
+  @media (max-width: 767px) {
+    border-radius: 15px;
+    margin-bottom: 10px;
+  }
+`;
 
 
 
@@ -241,86 +425,6 @@ export const StyledError = styled.div`
   font-size: ${({ theme }) => theme.font.size.md};
 `;
 
-
-
-
-
-export const StyledRecordButton = styled.button<{ isRecording: boolean }>`
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background-color: ${props => (props.isRecording ? '#ff4136' : '#4285f4')};
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 10px;
-`;
-export const StyledIcon = styled.div`
-  width: 20px;
-  height: 20px;
-  background-color: white;
-`;
-
-export const RecordIcon = () => <StyledIcon style={{ borderRadius: '50%' }} />;
-
-export const StopIcon = () => <StyledIcon style={{ width: '14px', height: '14px' }} />;
-
-// export const StyledControlsOverlay = styled.div`
-//   position: absolute;
-//   bottom: 20%;
-//   left: 66%;
-//   transform: translateX(-50%);
-//   display: flex;
-//   align-items: center;
-//   justify-content: center;
-//   background-color: rgba(0, 0, 0, 0.5);
-//   border-radius: 20px;
-//   padding: 10px;
-//   cursor: pointer;
-//   color: white;
-// `;
-
-
-
-export const StyledVideoContainer = styled.div`
-  position: relative;
-  background-color: black;
-  height: 60%;
-  margin-bottom: 20px;
-  overflow: hidden;
-`;
-
-export const StyledControlsOverlay = styled.div`
-  position: absolute;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: rgba(0, 0, 0, 0.5);
-  border-radius: 20px;
-  padding: 10px;
-  cursor: pointer;
-  color: white;
-  z-index: 10;
-`;
-
-export const StyledAnswerTimer = styled.div`
-  position: absolute;
-  bottom: 20px;
-  right: 20px;
-  font-size: ${({ theme }) => theme.font.size.lg};
-  font-weight: ${({ theme }) => theme.font.weight.semiBold};
-  color: white;
-  background-color: rgba(0, 0, 0, 0.5);
-  padding: 10px;
-  border-radius: 5px;
-  z-index: 10;
-`;
-
 export const StyledCountdownOverlay = styled.div`
   position: absolute;
   top: 50%;
@@ -338,25 +442,3 @@ export const StyledCountdownOverlay = styled.div`
   align-items: center;
   z-index: 20;
 `;
-// const StyledRightPanel = styled.div`
-//   width: calc(100% * (2 / 3));
-//   min-width: 264px;
-//   padding: 44px 32px;
-//   background-color: ${({ theme }) => theme.background.primary};
-//   display: flex;
-//   flex-direction: column;
-//   gap: 44px;
-// `;
-
-// const StyledButton = styled.button`
-//   padding: 10px 20px;
-//   background-color: #4285f4;
-//   color: white;
-//   border: none;
-//   border-radius: 4px;
-//   cursor: pointer;
-//   font-size: ${({ theme }) => theme.font.size.md};
-// `;
-
-
-
