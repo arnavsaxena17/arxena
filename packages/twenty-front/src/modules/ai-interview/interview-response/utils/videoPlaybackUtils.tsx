@@ -147,6 +147,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, videoRef, isPlayi
     <StyledVideoPane>
       <StyledVideo
         ref={videoRef}
+        preload="metadata"  
         src={videoUrl || undefined}
         onEnded={() => setIsPlaying(false)}
       />
