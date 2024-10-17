@@ -12,43 +12,47 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, videoRef, isPlayi
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [downloadProgress, setDownloadProgress] = useState<number>(0);
-  const [shouldAutoplay, setShouldAutoplay] = useState<boolean>(true);
+  // const [downloadProgress, setDownloadProgress] = useState<number>(0);
 
   useEffect(() => {
-    const abortController = new AbortController();
-    const signal = abortController.signal;
+    // const abortController = new AbortController();
+    // const signal = abortController.signal;
 
     const downloadVideo = async () => {
       try {
         setIsLoading(true);
         setError(null);
 
-        const response = await fetch(src, { signal });
+        const response = await fetch(src);
         if (!response.ok) throw new Error('Network response was not ok');
 
-        const contentLength = response.headers.get('Content-Length');
-        const total = contentLength ? parseInt(contentLength, 10) : 0;
-        let loaded = 0;
+        // const contentLength = response.headers.get('Content-Length');
+        // const total = contentLength ? parseInt(contentLength, 10) : 0;
+        // let loaded = 0;
 
-        const reader = response.body!.getReader();
-        const chunks: Uint8Array[] = [];
+        // const reader = response.body!.getReader();
+        // const chunks: Uint8Array[] = [];
 
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          chunks.push(value);
-          loaded += value.length;
-          setDownloadProgress(total ? (loaded / total) * 100 : 0);
-        }
-        const blob = new Blob(chunks, { type: 'video/mp4' });
+        // while (true) {
+        //   const { done, value } = await reader.read();
+        //   if (done) break;
+        //   chunks.push(value);
+        //   loaded += value.length;
+        //   setDownloadProgress(total ? (loaded / total) * 100 : 0);
+        // }
+        // const blob = new Blob(chunks, { type: 'video/mp4' });
+        // const blob = await response.blob();
+        // const url = URL.createObjectURL(blob);
+        const blob = await response.blob();
         const url = URL.createObjectURL(blob);
+
+
         setVideoUrl(url);
         setIsLoading(false);
       } catch (err) {
         if ((err as any).name === 'AbortError') return;
         console.error('Error downloading video:', err);
-        setError('Loding video...');
+        setError('Loading video...');
         setIsLoading(false);
       }
     };
@@ -56,7 +60,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, videoRef, isPlayi
     downloadVideo();
 
     return () => {
-      abortController.abort();
+      // abortController.abort();
       if (videoUrl) URL.revokeObjectURL(videoUrl);
     };
   }, [src]);
@@ -115,7 +119,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, videoRef, isPlayi
     return (
       <StyledVideoPane>
         <StyledLoadingMessage>
-          Loading video... {downloadProgress.toFixed(0)}%
+          Loading video...
         </StyledLoadingMessage>
       </StyledVideoPane>
     );
