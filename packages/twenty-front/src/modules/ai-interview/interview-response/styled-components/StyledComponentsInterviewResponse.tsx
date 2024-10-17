@@ -288,12 +288,12 @@ export const SubmitButton = styled.button`
   }
 `;
 
-export const ThankYouMessage = styled.h1`
-  font-size: 24px;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 20px;
-`;
+// export const ThankYouMessage = styled.h1`
+//   font-size: 24px;
+//   font-weight: 600;
+//   color: #333;
+//   margin-bottom: 20px;
+// `;
 
 export const FeedbackPrompt = styled.p`
   font-size: 16px;
@@ -366,7 +366,7 @@ export const StyledRightPanel = styled.div`
   line-height: 150%;
 
   @media (max-width: 767px) {
-    width: 90%;
+    width: 93%;
     padding: 16px;
     font-size: ${({ theme }) => theme.font.size.sm};
     gap: 12px;

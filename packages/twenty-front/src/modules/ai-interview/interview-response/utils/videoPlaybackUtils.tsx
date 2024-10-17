@@ -61,28 +61,28 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, videoRef, isPlayi
     };
   }, [src]);
 
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
+  // useEffect(() => {
+  //   const video = videoRef.current;
+  //   if (!video) return;
 
-    const handleCanPlay = () => {
-      if (shouldAutoplay) {
-        video.play().then(() => {
-          setIsPlaying(true);
-          setShouldAutoplay(false);
-        }).catch((error) => {
-          console.error('Autoplay failed:', error);
-          setShouldAutoplay(false);
-        });
-      }
-    };
+  //   const handleCanPlay = () => {
+  //     if (shouldAutoplay) {
+  //       video.play().then(() => {
+  //         setIsPlaying(true);
+  //         setShouldAutoplay(false);
+  //       }).catch((error) => {
+  //         console.error('Autoplay failed:', error);
+  //         setShouldAutoplay(false);
+  //       });
+  //     }
+  //   };
 
-    video.addEventListener('canplay', handleCanPlay);
+  //   video.addEventListener('canplay', handleCanPlay);
 
-    return () => {
-      video.removeEventListener('canplay', handleCanPlay);
-    };
-  }, [videoRef, shouldAutoplay, setIsPlaying]);
+  //   return () => {
+  //     video.removeEventListener('canplay', handleCanPlay);
+  //   };
+  // }, [videoRef, shouldAutoplay, setIsPlaying]);
 
   const handlePlayPause = () => {
     const video = videoRef.current;

@@ -4,7 +4,6 @@ import {
   StyledContainer,
   FeedbackContainer,
   StyledMessage,
-  ThankYouMessage,
   FeedbackPrompt,
   StyledTextArea,
   SubmitButton,
@@ -32,14 +31,14 @@ export const EndInterviewPage: React.FC<{ onSubmit: (feedback: string) => void }
       <StyledRightPanel>
         {submitted ? (
             <FeedbackContainer>
-            <ThankYouMessage>Thank You for Your Feedback</ThankYouMessage>
+            <h2>Thank You for Your Feedback</h2>
             <StyledMessage>
               Your feedback has been submitted successfully. You may now close this window.
             </StyledMessage>
             </FeedbackContainer>
         ) : (
           <FeedbackContainer>
-            <ThankYouMessage>Thank You for Completing the Interview</ThankYouMessage>
+            <h2>Thank You for Completing the Interview</h2>
             <FeedbackPrompt>
               We appreciate your time and effort. Please share any additional inputs you have for the interviewer or about the interview process.
             </FeedbackPrompt>
