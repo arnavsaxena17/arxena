@@ -26,7 +26,7 @@ const DebugInfo = styled.div`
   font-family: monospace;
 `;
 
-export const VideoInterviewResponseViewer: React.FC<{ interviewId: string }> = ({ interviewId }) => {
+const VideoInterviewResponseViewer: React.FC<{ interviewId: string }> = ({ interviewId }) => {
   const [playing, setPlaying] = useState(false);
   const [volume, setVolume] = useState(0.8);
   const [played, setPlayed] = useState(0);
@@ -72,3 +72,5 @@ console.log("videoUrl::", videoUrl)
     </StyledContainer>
   );
 };
+
+export default VideoInterviewResponseViewer;

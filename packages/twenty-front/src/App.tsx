@@ -1,4 +1,4 @@
-import { StrictMode } from 'react';
+import React, { StrictMode, lazy, Suspense } from 'react';
 import { createBrowserRouter, createRoutesFromElements, Outlet, redirect, Route, RouterProvider, Routes, useLocation } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
 
@@ -76,80 +76,103 @@ import { Tasks } from '~/pages/tasks/Tasks';
 import { Chats } from '~/pages/chats/Chats';
 import { getPageTitleFromPath } from '~/utils/title-utils';
 // import { VideoInterviewResponsePage } from '@/ai-interview/interview-response/VideoInterviewResponsePage';
-import { AIInterviewFlow } from '@/ai-interview/interview-response/AIInterviewFlow';
-import { VideoInterviewResponseViewer } from '@/ai-interview/interview-response/VideoInterviewResponseViewer';
-const ProvidersThatNeedRouterContext = () => {
+const AIInterviewFlow = lazy(() => import('@/ai-interview/interview-response/AIInterviewFlow'));
+const VideoInterviewResponseViewer = lazy(() => import('@/ai-interview/interview-response/VideoInterviewResponseViewer'));
+
+
+
+const MinimalProviders: React.FC = () => (
+  <ApolloProvider>
+    <AppThemeProvider>
+      <Suspense fallback={<div>Loading...</div>}>
+        <Outlet />
+      </Suspense>
+    </AppThemeProvider>
+  </ApolloProvider>
+);
+
+
+
+const FullProviders: React.FC = () => {
   const { pathname } = useLocation();
   const pageTitle = getPageTitleFromPath(pathname);
 
   return (
-    <>
-      <ApolloProvider>
-        <ClientConfigProviderEffect />
-        <ClientConfigProvider>
-          <ChromeExtensionSidecarEffect />
-          <ChromeExtensionSidecarProvider>
-            <UserProviderEffect />
-            <UserProvider>
-              <ApolloMetadataClientProvider>
-                <ObjectMetadataItemsProvider>
-                  <PrefetchDataProvider>
-                    <AppThemeProvider>
-                      <SnackBarProvider>
-                        <DialogManagerScope dialogManagerScopeId="dialog-manager">
-                          <DialogManager>
-                            <StrictMode>
-                              <PromiseRejectionEffect />
-                              <CommandMenuEffect />
-                              <GotoHotkeysEffect />
-                              <PageTitle title={pageTitle} />
-                              <Outlet />
-                            </StrictMode>
-                          </DialogManager>
-                        </DialogManagerScope>
-                      </SnackBarProvider>
-                    </AppThemeProvider>
-                  </PrefetchDataProvider>
-                  <PageChangeEffect />
-                </ObjectMetadataItemsProvider>
-              </ApolloMetadataClientProvider>
-            </UserProvider>
-          </ChromeExtensionSidecarProvider>
-        </ClientConfigProvider>
-      </ApolloProvider>
-    </>
+    <ApolloProvider>
+      <ClientConfigProviderEffect />
+      <ClientConfigProvider>
+        <UserProviderEffect />
+        <UserProvider>
+          <ApolloMetadataClientProvider>
+            <ObjectMetadataItemsProvider>
+              <PrefetchDataProvider>
+                <AppThemeProvider>
+                  <SnackBarProvider>
+                    <DialogManagerScope dialogManagerScopeId="dialog-manager">
+                      <DialogManager>
+                        <StrictMode>
+                          <PromiseRejectionEffect />
+                          <CommandMenuEffect />
+                          <GotoHotkeysEffect />
+                          <PageTitle title={pageTitle} />
+                          <Outlet />
+                          <PageChangeEffect />
+                        </StrictMode>
+                      </DialogManager>
+                    </DialogManagerScope>
+                  </SnackBarProvider>
+                </AppThemeProvider>
+              </PrefetchDataProvider>
+            </ObjectMetadataItemsProvider>
+          </ApolloMetadataClientProvider>
+        </UserProvider>
+      </ClientConfigProvider>
+    </ApolloProvider>
   );
 };
+
 
 const createRouter = (isBillingEnabled?: boolean) =>
   createBrowserRouter(
     createRoutesFromElements(
-      <Route
-        element={<ProvidersThatNeedRouterContext />}
-        // To switch state to `loading` temporarily to enable us
-        // to set scroll position before the page is rendered
-        loader={async () => Promise.resolve(null)}>
-        <Route element={<DefaultLayout />}>
-          <Route path={AppPath.Verify} element={<VerifyEffect />} />
-          <Route path={AppPath.SignInUp} element={<SignInUp />} />
-          <Route path={AppPath.Invite} element={<Invite />} />
-          <Route path={AppPath.ResetPassword} element={<PasswordReset />} />
-          <Route path={AppPath.CreateWorkspace} element={<CreateWorkspace />} />
-          <Route path={AppPath.CreateProfile} element={<CreateProfile />} />
-          <Route path={AppPath.SyncEmails} element={<SyncEmails />} />
-          <Route path={AppPath.InviteTeam} element={<InviteTeam />} />
-          <Route path={AppPath.PlanRequired} element={<ChooseYourPlan />} />
-          <Route path={AppPath.PlanRequiredSuccess} element={<PaymentSuccess />} />
-          <Route path={indexAppPath.getIndexAppPath()} element={<></>} />
-          <Route path={AppPath.TasksPage} element={<Tasks />} />
-          <Route path={AppPath.ChatsPage} element={<Chats />} />
-          <Route path={`${AppPath.ChatsPage}/:candidateId`} element={<Chats />} />
-          <Route path={`${AppPath.VideoInterviewReview}/:candidateId`} element={<VideoInterviewResponseViewer interviewId={window.location.pathname} />} />
-          <Route path={AppPath.Impersonate} element={<ImpersonateEffect />} />
-          <Route path={AppPath.RecordIndexPage} element={<RecordIndexPage />} />
-          <Route path={AppPath.RecordShowPage} element={<RecordShowPage />} />
+      <Route>
+        <Route element={<MinimalProviders />}>
+          <Route element={<BlankLayout />}>
+            <Route
+              path={`${AppPath.VideoInterview}/*`}
+              element={<AIInterviewFlow interviewId={window.location.pathname} />}
+            />
+            <Route
+              path={`${AppPath.VideoInterviewReview}/:candidateId`}
+              element={<VideoInterviewResponseViewer interviewId={window.location.pathname} />}
+            />
+          </Route>
+        </Route>
 
-          <Route path={AppPath.SettingsCatchAll} element={
+        <Route element={<FullProviders />}>
+          <Route element={<DefaultLayout />}>
+            <Route path={AppPath.Verify} element={<VerifyEffect />} />
+
+
+             <Route path={AppPath.SignInUp} element={<SignInUp />} />
+             <Route path={AppPath.Invite} element={<Invite />} />
+             <Route path={AppPath.ResetPassword} element={<PasswordReset />} />
+             <Route path={AppPath.CreateWorkspace} element={<CreateWorkspace />} />
+             <Route path={AppPath.CreateProfile} element={<CreateProfile />} />
+             <Route path={AppPath.SyncEmails} element={<SyncEmails />} />
+             <Route path={AppPath.InviteTeam} element={<InviteTeam />} />
+             <Route path={AppPath.PlanRequired} element={<ChooseYourPlan />} />
+             <Route path={AppPath.PlanRequiredSuccess} element={<PaymentSuccess />} />
+             <Route path={indexAppPath.getIndexAppPath()} element={<></>} />
+             <Route path={AppPath.TasksPage} element={<Tasks />} />
+             <Route path={AppPath.ChatsPage} element={<Chats />} />
+             <Route path={`${AppPath.ChatsPage}/:candidateId`} element={<Chats />} />
+             <Route path={`${AppPath.VideoInterviewReview}/:candidateId`} element={<VideoInterviewResponseViewer interviewId={window.location.pathname} />} />
+             <Route path={AppPath.Impersonate} element={<ImpersonateEffect />} />
+             <Route path={AppPath.RecordIndexPage} element={<RecordIndexPage />} />
+             <Route path={AppPath.RecordShowPage} element={<RecordShowPage />} />
+            
+             <Route path={AppPath.SettingsCatchAll} element={
               <Routes>
                 <Route
                   path={SettingsPath.ProfilePage}
@@ -277,23 +300,23 @@ const createRouter = (isBillingEnabled?: boolean) =>
                 />
                 <Route path={SettingsPath.Releases} element={<Releases />} />
               </Routes>
-            }
-          />
-          <Route path={AppPath.NotFoundWildcard} element={<NotFound />} />
-        </Route>
+            } />
+            
+            <Route path={AppPath.NotFoundWildcard} element={<NotFound />} />
+          </Route>
 
-        <Route element={<BlankLayout />}>
-          <Route path={AppPath.Authorize} element={<Authorize />} />
+          <Route element={<BlankLayout />}>
+            <Route path={AppPath.Authorize} element={<Authorize />} />
+          </Route>
         </Route>
-        <Route element = {<BlankLayout/>}>
-          <Route path={`${AppPath.VideoInterview}`} element={<AIInterviewFlow interviewId={window.location.pathname} />} />
-        </Route>      
-      </Route>,
-    ),
+      </Route>
+    )
   );
 
-export const App = () => {
+export const App: React.FC = () => {
   const billing = useRecoilValue(billingState);
 
   return <RouterProvider router={createRouter(billing?.isBillingEnabled)} />;
 };
+
+export default App;
