@@ -20,7 +20,11 @@ import {
   SnapScrollContainer,
   StyledLeftPanel,
   StyledRightPanel,
-
+  StyledButton,
+  ButtonContainer,
+  InstructionSection,
+  InstructionList,
+  AccessMessage,
 } from './styled-components/StyledComponentsInterviewResponse';
 
 

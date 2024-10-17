@@ -8,8 +8,11 @@ import axios from 'axios';
 import * as multer from 'multer';
 import { TranscriptionService } from './transcription.service';
 import { AttachmentProcessingService } from '../arx-chat/services/candidate-engagement/attachment-processing';
+import * as path from 'path';
+import * as fs from 'fs';
 
 
+import * as ffmpeg from 'fluent-ffmpeg';
 
 interface GetInterviewDetailsResponse {
   responseFromInterviewRequests: any;
@@ -52,8 +55,8 @@ export class VideoInterviewController {
         limits: { fileSize: 100 * 1024 * 1024 },
         fileFilter: (req, file, callback) => {
           console.log(`Received file: ${file.fieldname}, mimetype: ${file.mimetype}`);
-          if (file.fieldname === 'video' && file.mimetype !== 'video/webm') {
-            return callback(new BadRequestException('Only webm files are allowed'), false);
+          if (file.fieldname === 'video' && !['video/webm', 'video/mp4'].includes(file.mimetype)) {
+            return callback(new BadRequestException('Only webm or mp4 files are allowed for video'), false);
           }
           if (file.fieldname === 'audio' && file.mimetype !== 'audio/wav') {
             return callback(new BadRequestException('Only WAV files are allowed'), false);
@@ -63,6 +66,27 @@ export class VideoInterviewController {
       },
     ),
   )
+  private async convertToWebM(inputPath: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const outputPath = inputPath.replace(path.extname(inputPath), '.webm');
+      ffmpeg(inputPath)
+        .outputOptions('-c:v libvpx-vp9')
+        .outputOptions('-crf 30')
+        .outputOptions('-b:v 0')
+        .outputOptions('-b:a 128k')
+        .outputOptions('-c:a libopus')
+        .save(outputPath)
+        .on('end', () => {
+          fs.unlinkSync(inputPath);  // Remove the original file
+          resolve(outputPath);
+        })
+        .on('error', (err) => {
+          reject(new Error(`Error converting video: ${err.message}`));
+        });
+    });
+  }
+
+
   async submitResponse(@Req() req, @UploadedFiles() files: { video?: Express.Multer.File[]; audio?: Express.Multer.File[] }, @Body() responseData: any) {
     try {
       console.log('Received files:', JSON.stringify(files, null, 2));
@@ -83,7 +107,12 @@ export class VideoInterviewController {
       console.log("audio file received:", audioFile)
       console.log("video file received:", videoFile)
       // Upload video file to Twenty
-      const videoFilePath = `uploads/${videoFile.originalname}`;
+      let videoFilePath = `uploads/${videoFile.originalname}`;
+
+      if (videoFile.mimetype !== 'video/webm') {
+        videoFilePath = await this.convertToWebM(videoFilePath);
+      }
+
       const videoAttachmentObj = await new AttachmentProcessingService().uploadAttachmentToTwenty(videoFilePath);
       // Upload audio file to Twenty
       const audioFilePath = `uploads/${audioFile.originalname}`;
