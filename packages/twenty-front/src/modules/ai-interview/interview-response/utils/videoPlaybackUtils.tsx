@@ -65,6 +65,32 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, videoRef, isPlayi
     };
   }, [src]);
 
+
+
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.addEventListener('error', handleVideoError);
+      return () => {
+        if (videoRef.current) {
+          videoRef.current.removeEventListener('error', handleVideoError);
+        }
+      };
+    }
+  }, [videoRef]);
+
+  const handleVideoError = (e:any) => {
+    setError(`Error: ${e.target.error.message}`);
+    setIsPlaying(false);
+  };
+
+  const handleRetry = () => {
+    setError(null);
+    if (videoRef.current) {
+      videoRef.current.load();
+    }
+  };
+
+
   // useEffect(() => {
   //   const video = videoRef.current;
   //   if (!video) return;
@@ -147,7 +173,11 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, videoRef, isPlayi
     <StyledVideoPane>
       <StyledVideo
         ref={videoRef}
-        preload="metadata"  
+        preload="none"  
+        playsInline // Add this attribute for better mobile support
+        controls
+        onPlay={() => setIsPlaying(true)}
+        onPause={() => setIsPlaying(false)}
         src={videoUrl || undefined}
         onEnded={() => setIsPlaying(false)}
       />
