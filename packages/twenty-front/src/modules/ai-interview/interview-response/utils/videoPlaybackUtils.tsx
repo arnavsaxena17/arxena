@@ -127,14 +127,14 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, videoRef, isPlayi
         loop
         controls
       />
-      <StyledVideoControls>
+      {/* <StyledVideoControls>
         <StyledVideoButton onClick={handlePlayPause}>
           {isPlaying ? '⏸' : playButton}
         </StyledVideoButton>
         <StyledVideoButton onClick={handleReplay}>
           🔁
         </StyledVideoButton>
-      </StyledVideoControls>
+      </StyledVideoControls> */}
     </StyledVideoPane>
   );
 };
