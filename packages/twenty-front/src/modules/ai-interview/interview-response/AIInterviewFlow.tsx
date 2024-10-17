@@ -109,7 +109,43 @@ export const AIInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId
   };
 
   const renderCurrentStage = () => {
-    if (!interviewData) return <div>Loading...</div>;
+    if (!interviewData) {
+      return (
+      <StartInterviewPage
+        onStart={handleStart}
+        InterviewData={{
+          id: '',
+          name: '',
+          candidate: {
+            id: '',
+            jobs: {
+              jobId: '',
+              name: '',
+              recruiterId: '',
+              companyName: '',
+            },
+            people: {
+              name: {
+                firstName: '',
+                lastName: '',
+              },
+              email: '',
+              phone: '',
+            },
+          },
+          aIInterview: {
+            name: '',
+            introduction: '',
+            instructions: '',
+            aIInterviewQuestions: {
+              edges: [],
+            },
+          },
+        }}
+        introductionVideoData={introductionVideoData!}
+      />
+      );
+    }
 
     switch (stage) {
       case 'start':
