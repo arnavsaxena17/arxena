@@ -117,15 +117,15 @@ export const CommandMenu = () => {
 
   const isMobile = useIsMobile();
 
-  useScopedHotkeys(
-    'ctrl+k,meta+k',
-    () => {
-      closeKeyboardShortcutMenu();
-      toggleCommandMenu();
-    },
-    AppHotkeyScope.CommandMenu,
-    [toggleCommandMenu],
-  );
+  // useScopedHotkeys(
+  //   'ctrl+k,meta+k',
+  //   () => {
+  //     closeKeyboardShortcutMenu();
+  //     toggleCommandMenu();
+  //   },
+  //   AppHotkeyScope.CommandMenu,
+  //   [toggleCommandMenu],
+  // );
 
   useScopedHotkeys(
     [Key.Escape],

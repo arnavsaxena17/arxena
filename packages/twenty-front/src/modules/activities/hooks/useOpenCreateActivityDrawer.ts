@@ -1,4 +1,4 @@
-import { useRecoilState, useSetRecoilState } from 'recoil';
+import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 
 import { useCreateActivityInCache } from '@/activities/hooks/useCreateActivityInCache';
 import { activityIdInDrawerState } from '@/activities/states/activityIdInDrawerState';
@@ -13,8 +13,8 @@ import { RightDrawerHotkeyScope } from '@/ui/layout/right-drawer/types/RightDraw
 import { RightDrawerPages } from '@/ui/layout/right-drawer/types/RightDrawerPages';
 import { useSetHotkeyScope } from '@/ui/utilities/hotkey/hooks/useSetHotkeyScope';
 import { WorkspaceMember } from '@/workspace-member/types/WorkspaceMember';
-
 import { ActivityTargetableObject } from '../types/ActivityTargetableEntity';
+import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 
 export const useOpenCreateActivityDrawer = () => {
   const { openRightDrawer } = useRightDrawer();
@@ -40,6 +40,9 @@ export const useOpenCreateActivityDrawer = () => {
     isUpsertingActivityInDBState,
   );
 
+  // const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
+
+
   const openCreateActivityDrawer = async ({
     type,
     targetableObjects,
@@ -53,7 +56,8 @@ export const useOpenCreateActivityDrawer = () => {
     console.log("useOpenCreateActivityDrawer -> targetObject", targetableObjects)
     console.log("useOpenCreateActivityDrawer -> customAssignee", customAssignee)
   
-  
+
+
     const { createdActivityInCache } = createActivityInCache({
       type,
       targetObject: targetableObjects[0],

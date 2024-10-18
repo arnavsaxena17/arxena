@@ -26,7 +26,7 @@ import { PageTitle } from '@/ui/utilities/page-title/PageTitle';
 import { UserProvider } from '@/users/components/UserProvider';
 import { UserProviderEffect } from '@/users/components/UserProviderEffect';
 import { CommandMenuEffect } from '~/effect-components/CommandMenuEffect';
-import { GotoHotkeysEffect } from '~/effect-components/GotoHotkeysEffect';
+// import { GotoHotkeysEffect } from '~/effect-components/GotoHotkeysEffect';
 import { PageChangeEffect } from '~/effect-components/PageChangeEffect';
 import { Authorize } from '~/pages/auth/Authorize';
 import { Invite } from '~/pages/auth/Invite';
@@ -111,7 +111,7 @@ const FullProviders: React.FC = () => {
                         <StrictMode>
                           <PromiseRejectionEffect />
                           <CommandMenuEffect />
-                          <GotoHotkeysEffect />
+                          {/* <GotoHotkeysEffect /> */}
                           <PageTitle title={pageTitle} />
                           <Outlet />
                           <PageChangeEffect />

@@ -47,7 +47,7 @@ const TextInputComponent: ForwardRefRenderFunction<
       }
     },
     InputHotkeyScope.TextInput,
-    { enabled: !disableHotkeys },
+    { enabled: !disableHotkeys } as any,
   );
 
   return (
