@@ -105,4 +105,3 @@ export const StartInterviewPage: React.FC<InterviewResponseTypes.StartInterviewP
   </StyledContainer>
 ); 
 };
-

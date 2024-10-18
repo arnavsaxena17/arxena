@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as frontChatTypes from '../types/front-chat-types';
 import axios from 'axios';
-import { useRecoilState } from 'recoil';
+import { useRecoilState, useRecoilValue } from 'recoil';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import FileUpload from './FileUpload';
 import SingleChatContainer from './SingleChatContainer';
@@ -14,12 +14,14 @@ import { useHotkeys } from 'react-hotkeys-hook';
 import styled from '@emotion/styled';
 import { css } from '@emotion/react';
 import { Notes } from '@/activities/notes/components/Notes';
+import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 
 import AttachmentPanel from './AttachmentPanel';
 import { mutationToUpdateOneCandidate, mutationToUpdateOnePerson } from '../graphql-queries-chat/chat-queries';
 
 import { useNavigate } from 'react-router-dom';
 // import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
 
 
 const statusLabels: { [key: string]: string } = {
@@ -604,6 +606,10 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
   const candidateEngagementStatus = currentIndividual?.candidates?.edges[0]?.node?.engagementStatus;  
   const candidateStopChatStatus = currentIndividual?.candidates?.edges[0]?.node?.stopChat;  
 
+  const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
+
+console.log("Current Individual::", currentIndividual)
+console.log("Current currentWorkspaceMember::", currentWorkspaceMember)
   return (
     <>
       <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -674,9 +680,10 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
             <NotesPanel>
               {currentCandidateId && (
                 <Notes
-                  targetableObject={{
+                  targetableObject={{ 
                     targetObjectNameSingular: "candidate",
                     id: currentCandidateId,
+                    // assigneeId:currentWorkspaceMember
                     
                   }}
                 />

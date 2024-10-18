@@ -37,17 +37,26 @@ const StyledTableRow = styled.tr<{ $selected: boolean }>`
     background-color: ${(props) => (props.$selected ? "#f5f9fd" : "#f0f0f0")};
   }
 `;
+
 const UnreadIndicator = styled.span`
   background-color: red;
   color: white;
   border-radius: 50%;
-  padding: 0.5rem;
+  padding: 0.25rem 0.5rem;
   margin-left: 0.5rem;
   font-size: 0.8rem;
   min-height: 1rem;
-  width: 1rem;
+  min-width: 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 `;
 
+
+const NameCell = styled.div`
+  display: flex;
+  align-items: center;
+`;
 
 
 
@@ -58,7 +67,14 @@ const ChatTable: React.FC<frontChatTypes.ChatTableProps> = ({
   onIndividualSelect,
 }) => {
 
-
+  const getUnreadCount = (individualId: string) => {
+    const unreadInfo = unreadMessages.listOfUnreadMessages.find(
+      (item) => item.candidateId === individualId
+    );
+    return unreadInfo ? unreadInfo.ManyUnreadMessages.length : 0;
+  };
+  
+  
   return (
     <StyledTable>
       <StyledTableHeader>
@@ -71,20 +87,20 @@ const ChatTable: React.FC<frontChatTypes.ChatTableProps> = ({
         </tr>
       </StyledTableHeader>
       <StyledTableBody>
-        {individuals.map((individual:any) => (
-          <StyledTableRow
-            key={individual.id}
-            $selected={selectedIndividual === individual.id}
-            onClick={() => onIndividualSelect(individual.id)}
-          >
-            <StyledTableCell>{`${individual.name.firstName} ${individual.name.lastName}`}</StyledTableCell>
-
-            <StyledTableCell>{individual.candidates?.edges[0]?.node?.status || 'N/A'}</StyledTableCell>
-            <StyledTableCell>{individual.salary || 'N/A'}</StyledTableCell>
-            <StyledTableCell>{individual.city || 'N/A'}</StyledTableCell>
-            <StyledTableCell>{individual.jobTitle || 'N/A'}</StyledTableCell>
-          </StyledTableRow>
-        ))}
+        {individuals.map((individual: frontChatTypes.PersonNode) => {
+          const unreadCount = getUnreadCount(individual.id);
+          return (
+            <StyledTableRow key={individual.id} $selected={selectedIndividual === individual.id} onClick={() => onIndividualSelect(individual.id)} >
+              <StyledTableCell>
+                <NameCell> {`${individual.name.firstName} ${individual.name.lastName}`} {unreadCount > 0 && ( <UnreadIndicator>{unreadCount}</UnreadIndicator> )} </NameCell>
+              </StyledTableCell>
+              <StyledTableCell>{individual.candidates?.edges[0]?.node?.status || 'N/A'}</StyledTableCell>
+              <StyledTableCell>{individual.salary || 'N/A'}</StyledTableCell>
+              <StyledTableCell>{individual.city || 'N/A'}</StyledTableCell>
+              <StyledTableCell>{individual.jobTitle || 'N/A'}</StyledTableCell>
+            </StyledTableRow>
+          );
+        })}
       </StyledTableBody>
     </StyledTable>
   );

@@ -57,10 +57,5 @@ export const ChatGroups = ({
     );
   }
 
-  return (
 
-        <>
-        </>
-
-  );
 };
