@@ -21,6 +21,7 @@ export class GoogleAPIsProviderEnabledGuard implements CanActivate {
   ) {}
 
   async canActivate(): Promise<boolean> {
+    console.log("GoogleAPIsProviderEnabledGuard.canActivate()");
     if (
       !this.environmentService.get('MESSAGING_PROVIDER_GMAIL_ENABLED') &&
       !this.environmentService.get('CALENDAR_PROVIDER_GOOGLE_ENABLED')

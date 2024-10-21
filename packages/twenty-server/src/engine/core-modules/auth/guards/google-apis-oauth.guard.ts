@@ -10,6 +10,7 @@ export class GoogleAPIsOauthGuard extends AuthGuard('google-apis') {
   }
 
   async canActivate(context: ExecutionContext) {
+    console.log("Can Activate")
     const request = context.switchToHttp().getRequest();
     const transientToken = request.query.transientToken;
     const redirectLocation = request.query.redirectLocation;
