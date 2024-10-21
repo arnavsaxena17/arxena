@@ -72,6 +72,7 @@ export class GoogleAPIsStrategy extends PassportStrategy(
   authenticate(req: any, options: any) {
     console.log("GoogleAPIsStrategy.authenticate()");
     console.log("GoogleAPIsStrategy.req.params()", req.params);
+    console.log("GoogleAPIsStrategy.options", options);
     options = {
       ...options,
       accessType: "offline",
@@ -83,6 +84,7 @@ export class GoogleAPIsStrategy extends PassportStrategy(
         messageVisibility: req.params.messageVisibility,
       }),
     };
+    console.log("GoogleAPIsStrategy.options", options);
 
     return super.authenticate(req, options);
   }
