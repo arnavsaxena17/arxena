@@ -15,10 +15,13 @@ export type MenuItemDraggableProps = {
   isTooltipOpen?: boolean;
   onClick?: () => void;
   text: string;
-  isDragDisabled?: boolean;
   className?: string;
   isIconDisplayedOnHoverOnly?: boolean;
+  showGrip?: boolean;
+  isDragDisabled?: boolean;
+  isHoverDisabled?: boolean;
 };
+
 export const MenuItemDraggable = ({
   LeftIcon,
   accent = 'default',
@@ -28,8 +31,15 @@ export const MenuItemDraggable = ({
   isDragDisabled = false,
   className,
   isIconDisplayedOnHoverOnly = true,
+  showGrip = false,
 }: MenuItemDraggableProps) => {
   const showIconButtons = Array.isArray(iconButtons) && iconButtons.length > 0;
+
+  const cursorType = showGrip
+    ? isDragDisabled
+      ? 'not-allowed'
+      : 'drag'
+    : 'default';
 
   return (
     <StyledHoverableMenuItemBase
@@ -37,11 +47,13 @@ export const MenuItemDraggable = ({
       accent={accent}
       className={className}
       isIconDisplayedOnHoverOnly={isIconDisplayedOnHoverOnly}
+      cursor={cursorType}
     >
       <MenuItemLeftContent
         LeftIcon={LeftIcon}
         text={text}
-        showGrip={!isDragDisabled}
+        isDisabled={isDragDisabled}
+        showGrip={showGrip}
       />
       {showIconButtons && (
         <LightIconButtonGroup

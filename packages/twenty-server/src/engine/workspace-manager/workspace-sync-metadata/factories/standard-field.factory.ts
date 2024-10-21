@@ -1,21 +1,23 @@
 import { Injectable } from '@nestjs/common';
 
-import { WorkspaceSyncContext } from 'src/engine/workspace-manager/workspace-sync-metadata/interfaces/workspace-sync-context.interface';
 import { FeatureFlagMap } from 'src/engine/core-modules/feature-flag/interfaces/feature-flag-map.interface';
+import { WorkspaceDynamicRelationMetadataArgs } from 'src/engine/twenty-orm/interfaces/workspace-dynamic-relation-metadata-args.interface';
+import { WorkspaceEntityMetadataArgs } from 'src/engine/twenty-orm/interfaces/workspace-entity-metadata-args.interface';
+import { WorkspaceFieldMetadataArgs } from 'src/engine/twenty-orm/interfaces/workspace-field-metadata-args.interface';
+import { WorkspaceRelationMetadataArgs } from 'src/engine/twenty-orm/interfaces/workspace-relation-metadata-args.interface';
 import {
   PartialComputedFieldMetadata,
   PartialFieldMetadata,
 } from 'src/engine/workspace-manager/workspace-sync-metadata/interfaces/partial-field-metadata.interface';
-import { WorkspaceEntityMetadataArgs } from 'src/engine/twenty-orm/interfaces/workspace-entity-metadata-args.interface';
-import { WorkspaceFieldMetadataArgs } from 'src/engine/twenty-orm/interfaces/workspace-field-metadata-args.interface';
-import { WorkspaceDynamicRelationMetadataArgs } from 'src/engine/twenty-orm/interfaces/workspace-dynamic-relation-metadata-args.interface';
-import { WorkspaceRelationMetadataArgs } from 'src/engine/twenty-orm/interfaces/workspace-relation-metadata-args.interface';
+import { WorkspaceSyncContext } from 'src/engine/workspace-manager/workspace-sync-metadata/interfaces/workspace-sync-context.interface';
 
-import { isGatedAndNotEnabled } from 'src/engine/workspace-manager/workspace-sync-metadata/utils/is-gate-and-not-enabled.util';
-import { metadataArgsStorage } from 'src/engine/twenty-orm/storage/metadata-args.storage';
-import { BaseWorkspaceEntity } from 'src/engine/twenty-orm/base.workspace-entity';
 import { FieldMetadataType } from 'src/engine/metadata-modules/field-metadata/field-metadata.entity';
+import { RelationMetadataType } from 'src/engine/metadata-modules/relation-metadata/relation-metadata.entity';
+import { BaseWorkspaceEntity } from 'src/engine/twenty-orm/base.workspace-entity';
+import { metadataArgsStorage } from 'src/engine/twenty-orm/storage/metadata-args.storage';
+import { getJoinColumn } from 'src/engine/twenty-orm/utils/get-join-column.util';
 import { createDeterministicUuid } from 'src/engine/workspace-manager/workspace-sync-metadata/utils/create-deterministic-uuid.util';
+import { isGatedAndNotEnabled } from 'src/engine/workspace-manager/workspace-sync-metadata/utils/is-gate-and-not-enabled.util';
 
 @Injectable()
 export class StandardFieldFactory {
@@ -23,10 +25,53 @@ export class StandardFieldFactory {
     target: typeof BaseWorkspaceEntity,
     context: WorkspaceSyncContext,
     workspaceFeatureFlagsMap: FeatureFlagMap,
-  ): Array<PartialFieldMetadata | PartialComputedFieldMetadata> {
+  ): (PartialFieldMetadata | PartialComputedFieldMetadata)[];
+
+  create(
+    targets: (typeof BaseWorkspaceEntity)[],
+    context: WorkspaceSyncContext,
+    workspaceFeatureFlagsMap: FeatureFlagMap, // Map of standardId to field metadata
+  ): Map<string, (PartialFieldMetadata | PartialComputedFieldMetadata)[]>;
+
+  create(
+    targetOrTargets:
+      | typeof BaseWorkspaceEntity
+      | (typeof BaseWorkspaceEntity)[],
+    context: WorkspaceSyncContext,
+    workspaceFeatureFlagsMap: FeatureFlagMap,
+  ):
+    | (PartialFieldMetadata | PartialComputedFieldMetadata)[]
+    | Map<string, (PartialFieldMetadata | PartialComputedFieldMetadata)[]> {
+    if (Array.isArray(targetOrTargets)) {
+      return targetOrTargets.reduce((acc, target) => {
+        const workspaceEntityMetadataArgs =
+          metadataArgsStorage.filterEntities(target);
+
+        if (!workspaceEntityMetadataArgs) {
+          return acc;
+        }
+
+        if (
+          isGatedAndNotEnabled(
+            workspaceEntityMetadataArgs.gate,
+            workspaceFeatureFlagsMap,
+          )
+        ) {
+          return acc;
+        }
+
+        acc.set(
+          workspaceEntityMetadataArgs.standardId,
+          this.create(target, context, workspaceFeatureFlagsMap),
+        );
+
+        return acc;
+      }, new Map<string, (PartialFieldMetadata | PartialComputedFieldMetadata)[]>());
+    }
+
     const workspaceEntityMetadataArgs =
-      metadataArgsStorage.filterEntities(target);
-    const metadataCollections = this.collectMetadata(target);
+      metadataArgsStorage.filterEntities(targetOrTargets);
+    const metadataCollections = this.collectMetadata(targetOrTargets);
 
     return [
       ...this.processMetadata(
@@ -116,12 +161,15 @@ export class StandardFieldFactory {
         description: workspaceFieldMetadataArgs.description,
         defaultValue: workspaceFieldMetadataArgs.defaultValue,
         options: workspaceFieldMetadataArgs.options,
+        settings: workspaceFieldMetadataArgs.settings,
         workspaceId: context.workspaceId,
         isNullable: workspaceFieldMetadataArgs.isNullable,
-        isCustom: false,
-        isSystem:
-          workspaceEntityMetadataArgs?.isSystem ||
-          workspaceFieldMetadataArgs.isSystem,
+        isUnique: workspaceFieldMetadataArgs.isUnique,
+        isCustom: workspaceFieldMetadataArgs.isDeprecated ? true : false,
+        isSystem: workspaceFieldMetadataArgs.isSystem ?? false,
+        isActive: workspaceFieldMetadataArgs.isActive ?? true,
+        asExpression: workspaceFieldMetadataArgs.asExpression,
+        generatedType: workspaceFieldMetadataArgs.generatedType,
       },
     ];
   }
@@ -139,6 +187,14 @@ export class StandardFieldFactory {
     const foreignKeyStandardId = createDeterministicUuid(
       workspaceRelationMetadataArgs.standardId,
     );
+    const joinColumnMetadataArgsCollection =
+      metadataArgsStorage.filterJoinColumns(
+        workspaceRelationMetadataArgs.target,
+      );
+    const joinColumn = getJoinColumn(
+      joinColumnMetadataArgsCollection,
+      workspaceRelationMetadataArgs,
+    );
 
     if (
       isGatedAndNotEnabled(
@@ -149,11 +205,11 @@ export class StandardFieldFactory {
       return [];
     }
 
-    if (workspaceRelationMetadataArgs.joinColumn) {
+    if (joinColumn) {
       fieldMetadataCollection.push({
         type: FieldMetadataType.UUID,
         standardId: foreignKeyStandardId,
-        name: workspaceRelationMetadataArgs.joinColumn,
+        name: joinColumn,
         label: `${workspaceRelationMetadataArgs.label} id (foreign key)`,
         description: `${workspaceRelationMetadataArgs.description} id foreign key`,
         icon: workspaceRelationMetadataArgs.icon,
@@ -164,6 +220,10 @@ export class StandardFieldFactory {
         isCustom: false,
         isSystem: true,
         isNullable: workspaceRelationMetadataArgs.isNullable,
+        isUnique:
+          workspaceRelationMetadataArgs.type ===
+          RelationMetadataType.ONE_TO_ONE,
+        isActive: workspaceRelationMetadataArgs.isActive ?? true,
       });
     }
 
@@ -181,6 +241,9 @@ export class StandardFieldFactory {
         workspaceEntityMetadataArgs?.isSystem ||
         workspaceRelationMetadataArgs.isSystem,
       isNullable: true,
+      isUnique:
+        workspaceRelationMetadataArgs.type === RelationMetadataType.ONE_TO_ONE,
+      isActive: workspaceRelationMetadataArgs.isActive ?? true,
     });
 
     return fieldMetadataCollection;

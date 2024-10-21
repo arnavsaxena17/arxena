@@ -1,16 +1,16 @@
+import styled from '@emotion/styled';
 import { useMemo } from 'react';
 import { useFormContext } from 'react-hook-form';
-import styled from '@emotion/styled';
 
 import { ObjectMetadataItem } from '@/object-metadata/types/ObjectMetadataItem';
 import { getLabelIdentifierFieldMetadataItem } from '@/object-metadata/utils/getLabelIdentifierFieldMetadataItem';
 import { SettingsDataModelCardTitle } from '@/settings/data-model/components/SettingsDataModelCardTitle';
 import { SettingsDataModelFieldPreviewCard } from '@/settings/data-model/fields/preview/components/SettingsDataModelFieldPreviewCard';
+import { SettingsDataModelObjectSummary } from '@/settings/data-model/objects/components/SettingsDataModelObjectSummary';
 import {
   SettingsDataModelObjectIdentifiersForm,
   SettingsDataModelObjectIdentifiersFormValues,
 } from '@/settings/data-model/objects/forms/components/SettingsDataModelObjectIdentifiersForm';
-import { SettingsDataModelObjectSummary } from '@/settings/data-model/objects/SettingsDataModelObjectSummary';
 import { Card } from '@/ui/layout/card/components/Card';
 import { CardContent } from '@/ui/layout/card/components/CardContent';
 
@@ -78,6 +78,9 @@ export const SettingsDataModelObjectSettingsFormCard = ({
       <CardContent>
         <SettingsDataModelObjectIdentifiersForm
           objectMetadataItem={objectMetadataItem}
+          defaultLabelIdentifierFieldMetadataId={
+            labelIdentifierFieldMetadataItem?.id
+          }
         />
       </CardContent>
     </Card>

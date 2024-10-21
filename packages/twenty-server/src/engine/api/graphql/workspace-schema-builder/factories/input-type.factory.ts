@@ -4,13 +4,13 @@ import { GraphQLInputObjectType, GraphQLInputType, GraphQLList } from 'graphql';
 
 import { WorkspaceBuildSchemaOptions } from 'src/engine/api/graphql/workspace-schema-builder/interfaces/workspace-build-schema-optionts.interface';
 
+import { FilterIs } from 'src/engine/api/graphql/workspace-schema-builder/graphql-types/input/filter-is.input-type';
 import {
   TypeMapperService,
   TypeOptions,
 } from 'src/engine/api/graphql/workspace-schema-builder/services/type-mapper.service';
 import { TypeDefinitionsStorage } from 'src/engine/api/graphql/workspace-schema-builder/storages/type-definitions.storage';
 import { FieldMetadataType } from 'src/engine/metadata-modules/field-metadata/field-metadata.entity';
-import { FilterIs } from 'src/engine/api/graphql/workspace-schema-builder/graphql-types/input/filter-is.input-type';
 import { isEnumFieldMetadataType } from 'src/engine/metadata-modules/field-metadata/utils/is-enum-field-metadata-type.util';
 
 import { InputTypeDefinitionKind } from './input-type-definition.factory';
@@ -75,14 +75,14 @@ export class InputTypeFactory {
     inputType ??= this.typeDefinitionsStorage.getInputTypeByKey(target, kind);
 
     if (!inputType) {
-      this.logger.error(`Could not find a GraphQL type for ${target}`, {
+      this.logger.error(`Could not find a GraphQL type for ${target}, kind: ${kind}, , buildOptions: ${buildOptions}, typeOptions: ${typeOptions},`, {
         type,
         kind,
         buildOptions,
         typeOptions,
       });
 
-      throw new Error(`Could not find a GraphQL type for ${target}`);
+      throw new Error(`Could not find a GraphQL type for ${target}, kind: ${kind}, , buildOptions: ${buildOptions}, typeOptions: ${typeOptions},`);
     }
 
     return this.typeMapperService.mapToGqlType(inputType, typeOptions);

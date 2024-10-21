@@ -10,10 +10,10 @@ export type CurrentWorkspace = Pick<
   | 'displayName'
   | 'allowImpersonation'
   | 'featureFlags'
-  | 'subscriptionStatus'
   | 'activationStatus'
   | 'currentBillingSubscription'
-  | 'currentCacheVersion'
+  | 'workspaceMembersCount'
+  | 'metadataVersion'
 >;
 
 export const currentWorkspaceState = createState<CurrentWorkspace | null>({

@@ -1,12 +1,12 @@
-import { useEffect } from 'react';
 import { Decorator, Meta, StoryObj } from '@storybook/react';
 import { expect, fn, userEvent, waitFor, within } from '@storybook/test';
+import { useEffect } from 'react';
 
 import { useSetHotkeyScope } from '@/ui/utilities/hotkey/hooks/useSetHotkeyScope';
 import { FieldMetadataType } from '~/generated/graphql';
 import { SnackBarDecorator } from '~/testing/decorators/SnackBarDecorator';
 
-import { FieldContextProvider } from '../../../__stories__/FieldContextProvider';
+import { FieldContextProvider } from '../../../components/FieldContextProvider';
 import { useTextField } from '../../../hooks/useTextField';
 import { TextFieldInput, TextFieldInputProps } from '../TextFieldInput';
 
@@ -22,11 +22,11 @@ const TextFieldValueSetterEffect = ({ value }: { value: string }) => {
 
 type TextFieldInputWithContextProps = TextFieldInputProps & {
   value: string;
-  entityId?: string;
+  recordId?: string;
 };
 
 const TextFieldInputWithContext = ({
-  entityId,
+  recordId,
   value,
   onEnter,
   onEscape,
@@ -54,7 +54,7 @@ const TextFieldInputWithContext = ({
             objectMetadataNameSingular: 'person',
           },
         }}
-        entityId={entityId}
+        recordId={recordId}
       >
         <TextFieldValueSetterEffect value={value} />
         <TextFieldInput

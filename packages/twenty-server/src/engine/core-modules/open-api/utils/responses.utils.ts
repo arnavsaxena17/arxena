@@ -3,7 +3,12 @@ import { capitalize } from 'src/utils/capitalize';
 
 export const getFindManyResponse200 = (
   item: Pick<ObjectMetadataEntity, 'nameSingular' | 'namePlural'>,
+  fromMetadata = false,
 ) => {
+  const schemaRef = `#/components/schemas/${capitalize(
+    item.nameSingular,
+  )} for Response`;
+
   return {
     description: 'Successful operation',
     content: {
@@ -17,9 +22,7 @@ export const getFindManyResponse200 = (
                 [item.namePlural]: {
                   type: 'array',
                   items: {
-                    $ref: `#/components/schemas/${capitalize(
-                      item.nameSingular,
-                    )} with Relations`,
+                    $ref: schemaRef,
                   },
                 },
               },
@@ -28,28 +31,21 @@ export const getFindManyResponse200 = (
               type: 'object',
               properties: {
                 hasNextPage: { type: 'boolean' },
-                startCursor: { type: 'string' },
-                endCursor: { type: 'string' },
+                startCursor: {
+                  type: 'string',
+                  format: 'uuid',
+                },
+                endCursor: {
+                  type: 'string',
+                  format: 'uuid',
+                },
               },
             },
-            totalCount: {
-              type: 'integer',
-            },
-          },
-          example: {
-            data: {
-              [item.namePlural]: [
-                `${capitalize(item.nameSingular)}Object1`,
-                `${capitalize(item.nameSingular)}Object2`,
-                '...',
-              ],
-            },
-            pageInfo: {
-              hasNextPage: true,
-              startCursor: '56f411fb-0900-4ffb-b942-d7e8d6709eff',
-              endCursor: '93adf3c6-6cf7-4a86-adcd-75f77857ba67',
-            },
-            totalCount: 132,
+            ...(!fromMetadata && {
+              totalCount: {
+                type: 'integer',
+              },
+            }),
           },
         },
       },
@@ -60,6 +56,8 @@ export const getFindManyResponse200 = (
 export const getFindOneResponse200 = (
   item: Pick<ObjectMetadataEntity, 'nameSingular'>,
 ) => {
+  const schemaRef = `#/components/schemas/${capitalize(item.nameSingular)} for Response`;
+
   return {
     description: 'Successful operation',
     content: {
@@ -71,16 +69,9 @@ export const getFindOneResponse200 = (
               type: 'object',
               properties: {
                 [item.nameSingular]: {
-                  $ref: `#/components/schemas/${capitalize(
-                    item.nameSingular,
-                  )} with Relations`,
+                  $ref: schemaRef,
                 },
               },
-            },
-          },
-          example: {
-            data: {
-              [item.nameSingular]: `${capitalize(item.nameSingular)}Object`,
             },
           },
         },
@@ -94,6 +85,7 @@ export const getCreateOneResponse201 = (
   fromMetadata = false,
 ) => {
   const one = fromMetadata ? 'One' : '';
+  const schemaRef = `#/components/schemas/${capitalize(item.nameSingular)} for Response`;
 
   return {
     description: 'Successful operation',
@@ -106,16 +98,9 @@ export const getCreateOneResponse201 = (
               type: 'object',
               properties: {
                 [`create${one}${capitalize(item.nameSingular)}`]: {
-                  $ref: `#/components/schemas/${capitalize(item.nameSingular)}`,
+                  $ref: schemaRef,
                 },
               },
-            },
-          },
-          example: {
-            data: {
-              [`create${one}${capitalize(item.nameSingular)}`]: `${capitalize(
-                item.nameSingular,
-              )}Object`,
             },
           },
         },
@@ -127,6 +112,10 @@ export const getCreateOneResponse201 = (
 export const getCreateManyResponse201 = (
   item: Pick<ObjectMetadataEntity, 'nameSingular' | 'namePlural'>,
 ) => {
+  const schemaRef = `#/components/schemas/${capitalize(
+    item.nameSingular,
+  )} for Response`;
+
   return {
     description: 'Successful operation',
     content: {
@@ -140,21 +129,10 @@ export const getCreateManyResponse201 = (
                 [`create${capitalize(item.namePlural)}`]: {
                   type: 'array',
                   items: {
-                    $ref: `#/components/schemas/${capitalize(
-                      item.nameSingular,
-                    )}`,
+                    $ref: schemaRef,
                   },
                 },
               },
-            },
-          },
-          example: {
-            data: {
-              [`create${capitalize(item.namePlural)}`]: [
-                `${capitalize(item.nameSingular)}Object1`,
-                `${capitalize(item.nameSingular)}Object2`,
-                '...',
-              ],
             },
           },
         },
@@ -168,6 +146,7 @@ export const getUpdateOneResponse200 = (
   fromMetadata = false,
 ) => {
   const one = fromMetadata ? 'One' : '';
+  const schemaRef = `#/components/schemas/${capitalize(item.nameSingular)} for Response`;
 
   return {
     description: 'Successful operation',
@@ -180,16 +159,9 @@ export const getUpdateOneResponse200 = (
               type: 'object',
               properties: {
                 [`update${one}${capitalize(item.nameSingular)}`]: {
-                  $ref: `#/components/schemas/${capitalize(item.nameSingular)}`,
+                  $ref: schemaRef,
                 },
               },
-            },
-          },
-          example: {
-            data: {
-              [`update${one}${capitalize(item.nameSingular)}`]: `${capitalize(
-                item.nameSingular,
-              )}Object`,
             },
           },
         },
@@ -223,13 +195,6 @@ export const getDeleteResponse200 = (
                     },
                   },
                 },
-              },
-            },
-          },
-          example: {
-            data: {
-              [`delete${one}${capitalize(item.nameSingular)}`]: {
-                id: 'ffe75ac3-9786-4846-b56f-640685c3631e',
               },
             },
           },
@@ -287,6 +252,56 @@ export const getJsonResponse = () => {
             },
             tags: {
               type: 'object',
+            },
+          },
+        },
+      },
+    },
+  };
+};
+
+export const getFindDuplicatesResponse200 = (
+  item: Pick<ObjectMetadataEntity, 'nameSingular'>,
+) => {
+  const schemaRef = `#/components/schemas/${capitalize(
+    item.nameSingular,
+  )} for Response`;
+
+  return {
+    description: 'Successful operation',
+    content: {
+      'application/json': {
+        schema: {
+          type: 'object',
+          properties: {
+            data: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  totalCount: { type: 'number' },
+                  pageInfo: {
+                    type: 'object',
+                    properties: {
+                      hasNextPage: { type: 'boolean' },
+                      startCursor: {
+                        type: 'string',
+                        format: 'uuid',
+                      },
+                      endCursor: {
+                        type: 'string',
+                        format: 'uuid',
+                      },
+                    },
+                  },
+                  companyDuplicates: {
+                    type: 'array',
+                    items: {
+                      $ref: schemaRef,
+                    },
+                  },
+                },
+              },
             },
           },
         },

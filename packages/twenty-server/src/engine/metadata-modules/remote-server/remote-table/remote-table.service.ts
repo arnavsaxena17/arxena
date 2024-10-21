@@ -1,45 +1,49 @@
-import { BadRequestException, Logger, NotFoundException } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
-import { Repository } from 'typeorm';
-import { plural } from 'pluralize';
 import isEmpty from 'lodash.isempty';
+import { plural } from 'pluralize';
+import { Repository } from 'typeorm';
 
+import { DataSourceService } from 'src/engine/metadata-modules/data-source/data-source.service';
+import { CreateFieldInput } from 'src/engine/metadata-modules/field-metadata/dtos/create-field.input';
+import { FieldMetadataEntity } from 'src/engine/metadata-modules/field-metadata/field-metadata.entity';
+import { FieldMetadataService } from 'src/engine/metadata-modules/field-metadata/field-metadata.service';
+import { CreateObjectInput } from 'src/engine/metadata-modules/object-metadata/dtos/create-object.input';
+import { ObjectMetadataService } from 'src/engine/metadata-modules/object-metadata/object-metadata.service';
 import {
-  RemoteServerType,
   RemoteServerEntity,
+  RemoteServerType,
 } from 'src/engine/metadata-modules/remote-server/remote-server.entity';
+import { DistantTableService } from 'src/engine/metadata-modules/remote-server/remote-table/distant-table/distant-table.service';
+import { sortDistantTables } from 'src/engine/metadata-modules/remote-server/remote-table/distant-table/utils/sort-distant-tables.util';
+import { RemoteTableInput } from 'src/engine/metadata-modules/remote-server/remote-table/dtos/remote-table-input';
 import {
   DistantTableUpdate,
   RemoteTableStatus,
 } from 'src/engine/metadata-modules/remote-server/remote-table/dtos/remote-table.dto';
+import { ForeignTableService } from 'src/engine/metadata-modules/remote-server/remote-table/foreign-table/foreign-table.service';
+import { RemoteTableSchemaUpdateService } from 'src/engine/metadata-modules/remote-server/remote-table/remote-table-schema-update/remote-table-schema-update.service';
+import { RemoteTableEntity } from 'src/engine/metadata-modules/remote-server/remote-table/remote-table.entity';
+import {
+  RemoteTableException,
+  RemoteTableExceptionCode,
+} from 'src/engine/metadata-modules/remote-server/remote-table/remote-table.exception';
+import { fetchTableColumns } from 'src/engine/metadata-modules/remote-server/remote-table/utils/fetch-table-columns.util';
+import { getRemoteTableLocalName } from 'src/engine/metadata-modules/remote-server/remote-table/utils/get-remote-table-local-name.util';
 import {
   mapUdtNameToFieldSettings,
   mapUdtNameToFieldType,
 } from 'src/engine/metadata-modules/remote-server/remote-table/utils/udt-name-mapper.util';
-import { RemoteTableInput } from 'src/engine/metadata-modules/remote-server/remote-table/dtos/remote-table-input';
-import { DataSourceService } from 'src/engine/metadata-modules/data-source/data-source.service';
-import { ObjectMetadataService } from 'src/engine/metadata-modules/object-metadata/object-metadata.service';
-import { CreateObjectInput } from 'src/engine/metadata-modules/object-metadata/dtos/create-object.input';
-import { FieldMetadataService } from 'src/engine/metadata-modules/field-metadata/field-metadata.service';
-import { WorkspaceCacheVersionService } from 'src/engine/metadata-modules/workspace-cache-version/workspace-cache-version.service';
-import { camelCase } from 'src/utils/camel-case';
-import { camelToTitleCase } from 'src/utils/camel-to-title-case';
-import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
-import { RemoteTableEntity } from 'src/engine/metadata-modules/remote-server/remote-table/remote-table.entity';
-import { getRemoteTableLocalName } from 'src/engine/metadata-modules/remote-server/remote-table/utils/get-remote-table-local-name.util';
-import { DistantTableService } from 'src/engine/metadata-modules/remote-server/remote-table/distant-table/distant-table.service';
 import { PostgresTableSchemaColumn } from 'src/engine/metadata-modules/remote-server/types/postgres-table-schema-column';
-import { fetchTableColumns } from 'src/engine/metadata-modules/remote-server/remote-table/utils/fetch-table-columns.util';
-import { ForeignTableService } from 'src/engine/metadata-modules/remote-server/remote-table/foreign-table/foreign-table.service';
-import { RemoteTableSchemaUpdateService } from 'src/engine/metadata-modules/remote-server/remote-table/remote-table-schema-update/remote-table-schema-update.service';
-import { sortDistantTables } from 'src/engine/metadata-modules/remote-server/remote-table/distant-table/utils/sort-distant-tables.util';
+import { WorkspaceMetadataVersionService } from 'src/engine/metadata-modules/workspace-metadata-version/services/workspace-metadata-version.service';
 import {
   WorkspaceMigrationColumnAction,
   WorkspaceMigrationColumnActionType,
 } from 'src/engine/metadata-modules/workspace-migration/workspace-migration.entity';
-import { CreateFieldInput } from 'src/engine/metadata-modules/field-metadata/dtos/create-field.input';
-import { FieldMetadataEntity } from 'src/engine/metadata-modules/field-metadata/field-metadata.entity';
+import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
+import { camelCase } from 'src/utils/camel-case';
+import { camelToTitleCase } from 'src/utils/camel-to-title-case';
 
 export class RemoteTableService {
   private readonly logger = new Logger(RemoteTableService.name);
@@ -51,7 +55,7 @@ export class RemoteTableService {
     private readonly remoteServerRepository: Repository<
       RemoteServerEntity<RemoteServerType>
     >,
-    private readonly workspaceCacheVersionService: WorkspaceCacheVersionService,
+    private readonly workspaceMetadataVersionService: WorkspaceMetadataVersionService,
     private readonly dataSourceService: DataSourceService,
     private readonly objectMetadataService: ObjectMetadataService,
     private readonly fieldMetadataService: FieldMetadataService,
@@ -74,7 +78,10 @@ export class RemoteTableService {
     });
 
     if (!remoteServer) {
-      throw new NotFoundException('Remote server does not exist');
+      throw new RemoteTableException(
+        'Remote server does not exist',
+        RemoteTableExceptionCode.INVALID_REMOTE_TABLE_INPUT,
+      );
     }
 
     const currentRemoteTables = await this.findRemoteTablesByServerId({
@@ -148,7 +155,10 @@ export class RemoteTableService {
     });
 
     if (!remoteServer) {
-      throw new NotFoundException('Remote server does not exist');
+      throw new RemoteTableException(
+        'Remote server does not exist',
+        RemoteTableExceptionCode.INVALID_REMOTE_TABLE_INPUT,
+      );
     }
 
     const currentRemoteTableWithSameDistantName =
@@ -161,7 +171,10 @@ export class RemoteTableService {
       });
 
     if (currentRemoteTableWithSameDistantName) {
-      throw new BadRequestException('Remote table already exists');
+      throw new RemoteTableException(
+        'Remote server does not exist',
+        RemoteTableExceptionCode.REMOTE_TABLE_ALREADY_EXISTS,
+      );
     }
 
     const dataSourceMetatada =
@@ -200,7 +213,10 @@ export class RemoteTableService {
       );
 
     if (!distantTableColumns) {
-      throw new BadRequestException('Table not found');
+      throw new RemoteTableException(
+        'Remote server does not exist',
+        RemoteTableExceptionCode.REMOTE_TABLE_NOT_FOUND,
+      );
     }
 
     // We only support remote tables with an id column for now.
@@ -209,7 +225,10 @@ export class RemoteTableService {
     );
 
     if (!distantTableIdColumn) {
-      throw new BadRequestException('Remote table must have an id column');
+      throw new RemoteTableException(
+        'Remote server does not exist',
+        RemoteTableExceptionCode.INVALID_REMOTE_TABLE_INPUT,
+      );
     }
 
     await this.foreignTableService.createForeignTable(
@@ -231,7 +250,9 @@ export class RemoteTableService {
 
     await this.remoteTableRepository.save(remoteTableEntity);
 
-    await this.workspaceCacheVersionService.incrementVersion(workspaceId);
+    await this.workspaceMetadataVersionService.incrementMetadataVersion(
+      workspaceId,
+    );
 
     return {
       id: remoteTableEntity.id,
@@ -250,7 +271,10 @@ export class RemoteTableService {
     });
 
     if (!remoteServer) {
-      throw new NotFoundException('Remote server does not exist');
+      throw new RemoteTableException(
+        'Remote server does not exist',
+        RemoteTableExceptionCode.INVALID_REMOTE_TABLE_INPUT,
+      );
     }
 
     const remoteTable = await this.remoteTableRepository.findOne({
@@ -262,7 +286,10 @@ export class RemoteTableService {
     });
 
     if (!remoteTable) {
-      throw new NotFoundException('Remote table does not exist');
+      throw new RemoteTableException(
+        'Remote table does not exist',
+        RemoteTableExceptionCode.REMOTE_TABLE_NOT_FOUND,
+      );
     }
 
     await this.unsyncOne(workspaceId, remoteTable, remoteServer);
@@ -302,7 +329,10 @@ export class RemoteTableService {
     });
 
     if (!remoteServer) {
-      throw new NotFoundException('Remote server does not exist');
+      throw new RemoteTableException(
+        'Remote server does not exist',
+        RemoteTableExceptionCode.INVALID_REMOTE_TABLE_INPUT,
+      );
     }
 
     const remoteTable = await this.remoteTableRepository.findOne({
@@ -314,7 +344,10 @@ export class RemoteTableService {
     });
 
     if (!remoteTable) {
-      throw new NotFoundException('Remote table does not exist');
+      throw new RemoteTableException(
+        'Remote table does not exist',
+        RemoteTableExceptionCode.REMOTE_TABLE_NOT_FOUND,
+      );
     }
 
     const distantTableColumns =
@@ -379,7 +412,10 @@ export class RemoteTableService {
       );
 
     if (!currentForeignTableNames.includes(remoteTable.localTableName)) {
-      throw new NotFoundException('Foreign table does not exist');
+      throw new RemoteTableException(
+        'Foreign table does not exist',
+        RemoteTableExceptionCode.NO_FOREIGN_TABLES_FOUND,
+      );
     }
 
     const objectMetadata =
@@ -401,7 +437,9 @@ export class RemoteTableService {
 
     await this.remoteTableRepository.delete(remoteTable.id);
 
-    await this.workspaceCacheVersionService.incrementVersion(workspaceId);
+    await this.workspaceMetadataVersionService.incrementMetadataVersion(
+      workspaceId,
+    );
   }
 
   private async createRemoteTableMetadata(
@@ -507,8 +545,9 @@ export class RemoteTableService {
       });
 
     if (!objectMetadata) {
-      throw new NotFoundException(
+      throw new RemoteTableException(
         `Cannot find associated object for table ${foreignTableName}`,
+        RemoteTableExceptionCode.NO_OBJECT_METADATA_FOUND,
       );
     }
     for (const columnUpdate of columnsUpdates) {
@@ -547,8 +586,9 @@ export class RemoteTableService {
         });
 
       if (!fieldMetadataToDelete) {
-        throw new NotFoundException(
+        throw new RemoteTableException(
           `Cannot find associated field metadata for column ${columnName}`,
+          RemoteTableExceptionCode.NO_FIELD_METADATA_FOUND,
         );
       }
 
@@ -561,7 +601,7 @@ export class RemoteTableService {
     columnName: string,
     columnType: string,
     objectMetadataId: string,
-  ): Promise<FieldMetadataEntity<'default'>> {
+  ): Promise<FieldMetadataEntity> {
     return this.fieldMetadataService.createOne({
       name: columnName,
       label: camelToTitleCase(columnName),

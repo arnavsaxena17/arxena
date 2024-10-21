@@ -1,4 +1,4 @@
-import { Global, Module, DynamicModule, Provider } from '@nestjs/common';
+import { DynamicModule, Global, Module, Provider } from '@nestjs/common';
 
 import { metadataToRepositoryMapping } from 'src/engine/object-metadata-repository/metadata-to-repository.mapping';
 import { WorkspaceDataSourceModule } from 'src/engine/workspace-datasource/workspace-datasource.module';
@@ -12,6 +12,10 @@ export class ObjectMetadataRepositoryModule {
   static forFeature(objectMetadatas): DynamicModule {
     const providers: Provider[] = objectMetadatas.map((objectMetadata) => {
       const repositoryClass = metadataToRepositoryMapping[objectMetadata.name];
+      // console.log("This is the objectMetadata.name:" ,  objectMetadata.name);
+      // console.log("This is objectMetadatas:" ,  objectMetadatas);
+      // console.log("This is the metadataToRepositoryMapping:" ,  metadataToRepositoryMapping);
+      // console.log("This is the repositoryClass:" ,  repositoryClass);
 
       if (!repositoryClass) {
         throw new Error(`No repository found for ${objectMetadata.name}`);

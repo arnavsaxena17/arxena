@@ -1,24 +1,34 @@
 import styled from '@emotion/styled';
-import { isNonEmptyArray, isNull } from '@sniptt/guards';
-import { useRecoilState, useSetRecoilState } from 'recoil';
+import { isNull } from '@sniptt/guards';
+import { useRecoilCallback, useRecoilState, useSetRecoilState } from 'recoil';
 import { v4 } from 'uuid';
 
 import { useUpsertActivity } from '@/activities/hooks/useUpsertActivity';
+import { ActivityTargetObjectRecordEffect } from '@/activities/inline-cell/components/ActivityTargetObjectRecordEffect';
 import { isActivityInCreateModeState } from '@/activities/states/isActivityInCreateModeState';
-import { Activity } from '@/activities/types/Activity';
-import { ActivityTarget } from '@/activities/types/ActivityTarget';
 import { ActivityTargetWithTargetRecord } from '@/activities/types/ActivityTargetObject';
+import { Note } from '@/activities/types/Note';
+import { NoteTarget } from '@/activities/types/NoteTarget';
+import { Task } from '@/activities/types/Task';
+import { TaskTarget } from '@/activities/types/TaskTarget';
 import { getActivityTargetObjectFieldIdName } from '@/activities/utils/getActivityTargetObjectFieldIdName';
-import { getActivityTargetObjectFieldName } from '@/activities/utils/getActivityTargetObjectFieldName';
+import { getJoinObjectNameSingular } from '@/activities/utils/getJoinObjectNameSingular';
 import { useObjectMetadataItem } from '@/object-metadata/hooks/useObjectMetadataItem';
 import { CoreObjectNameSingular } from '@/object-metadata/types/CoreObjectNameSingular';
 import { useCreateManyRecordsInCache } from '@/object-record/cache/hooks/useCreateManyRecordsInCache';
 import { useCreateManyRecords } from '@/object-record/hooks/useCreateManyRecords';
 import { useDeleteManyRecords } from '@/object-record/hooks/useDeleteManyRecords';
+import { activityTargetObjectRecordFamilyState } from '@/object-record/record-field/states/activityTargetObjectRecordFamilyState';
+import { objectRecordMultiSelectCheckedRecordsIdsComponentState } from '@/object-record/record-field/states/objectRecordMultiSelectCheckedRecordsIdsComponentState';
+import {
+  ObjectRecordAndSelected,
+  objectRecordMultiSelectComponentFamilyState,
+} from '@/object-record/record-field/states/objectRecordMultiSelectComponentFamilyState';
 import { useInlineCell } from '@/object-record/record-inline-cell/hooks/useInlineCell';
 import { recordStoreFamilyState } from '@/object-record/record-store/states/recordStoreFamilyState';
-import { MultipleObjectRecordSelect } from '@/object-record/relation-picker/components/MultipleObjectRecordSelect';
-import { ObjectRecordForSelect } from '@/object-record/relation-picker/hooks/useMultiObjectSearch';
+import { ActivityTargetInlineCellEditModeMultiRecordsEffect } from '@/object-record/relation-picker/components/ActivityTargetInlineCellEditModeMultiRecordsEffect';
+import { MultiRecordSelect } from '@/object-record/relation-picker/components/MultiRecordSelect';
+import { RelationPickerScope } from '@/object-record/relation-picker/scopes/RelationPickerScope';
 import { prefillRecord } from '@/object-record/utils/prefillRecord';
 
 const StyledSelectContainer = styled.div`
@@ -28,15 +38,20 @@ const StyledSelectContainer = styled.div`
 `;
 
 type ActivityTargetInlineCellEditModeProps = {
-  activity: Activity;
+  activity: Task | Note;
   activityTargetWithTargetRecords: ActivityTargetWithTargetRecord[];
+  activityObjectNameSingular:
+    | CoreObjectNameSingular.Note
+    | CoreObjectNameSingular.Task;
 };
 
 export const ActivityTargetInlineCellEditMode = ({
   activity,
   activityTargetWithTargetRecords,
+  activityObjectNameSingular,
 }: ActivityTargetInlineCellEditModeProps) => {
   const [isActivityInCreateMode] = useRecoilState(isActivityInCreateModeState);
+  const relationPickerScopeId = `relation-picker-${activity.id}`;
 
   const selectedTargetObjectIds = activityTargetWithTargetRecords.map(
     (activityTarget) => ({
@@ -45,24 +60,27 @@ export const ActivityTargetInlineCellEditMode = ({
     }),
   );
 
-  const { createManyRecords: createManyActivityTargets } =
-    useCreateManyRecords<ActivityTarget>({
-      objectNameSingular: CoreObjectNameSingular.ActivityTarget,
-    });
+  const { createManyRecords: createManyActivityTargets } = useCreateManyRecords<
+    NoteTarget | TaskTarget
+  >({
+    objectNameSingular: getJoinObjectNameSingular(activityObjectNameSingular),
+  });
 
   const { deleteManyRecords: deleteManyActivityTargets } = useDeleteManyRecords(
     {
-      objectNameSingular: CoreObjectNameSingular.ActivityTarget,
+      objectNameSingular: getJoinObjectNameSingular(activityObjectNameSingular),
     },
   );
 
   const { closeInlineCell: closeEditableField } = useInlineCell();
 
-  const { upsertActivity } = useUpsertActivity();
+  const { upsertActivity } = useUpsertActivity({
+    activityObjectNameSingular,
+  });
 
   const { objectMetadataItem: objectMetadataItemActivityTarget } =
     useObjectMetadataItem({
-      objectNameSingular: CoreObjectNameSingular.ActivityTarget,
+      objectNameSingular: getJoinObjectNameSingular(activityObjectNameSingular),
     });
 
   const setActivityFromStore = useSetRecoilState(
@@ -70,113 +88,199 @@ export const ActivityTargetInlineCellEditMode = ({
   );
 
   const { createManyRecordsInCache: createManyActivityTargetsInCache } =
-    useCreateManyRecordsInCache<ActivityTarget>({
-      objectNameSingular: CoreObjectNameSingular.ActivityTarget,
+    useCreateManyRecordsInCache<NoteTarget | TaskTarget>({
+      objectNameSingular: getJoinObjectNameSingular(activityObjectNameSingular),
     });
 
-  const handleSubmit = async (selectedRecords: ObjectRecordForSelect[]) => {
-    closeEditableField();
+  const handleSubmit = useRecoilCallback(
+    ({ snapshot }) =>
+      async () => {
+        const activityTargetsAfterUpdate =
+          activityTargetWithTargetRecords.filter((activityTarget) => {
+            const record = snapshot
+              .getLoadable(
+                objectRecordMultiSelectComponentFamilyState({
+                  scopeId: relationPickerScopeId,
+                  familyKey: activityTarget.targetObject.id,
+                }),
+              )
+              .getValue() as ObjectRecordAndSelected;
 
-    const activityTargetsToDelete = activityTargetWithTargetRecords.filter(
-      (activityTargetObjectRecord) =>
-        !selectedRecords.some(
-          (selectedRecord) =>
-            selectedRecord.recordIdentifier.id ===
-            activityTargetObjectRecord.targetObject.id,
-        ),
-    );
+            return record.selected;
+          });
+        setActivityFromStore((currentActivity) => {
+          if (isNull(currentActivity)) {
+            return null;
+          }
 
-    const selectedTargetObjectsToCreate = selectedRecords.filter(
-      (selectedRecord) =>
-        !activityTargetWithTargetRecords.some(
-          (activityTargetWithTargetRecord) =>
-            activityTargetWithTargetRecord.targetObject.id ===
-            selectedRecord.recordIdentifier.id,
-        ),
-    );
-
-    const existingActivityTargets = activityTargetWithTargetRecords.map(
-      (activityTargetObjectRecord) => activityTargetObjectRecord.activityTarget,
-    );
-
-    let activityTargetsAfterUpdate = Array.from(existingActivityTargets);
-
-    const activityTargetsToCreate = selectedTargetObjectsToCreate.map(
-      (selectedRecord) => {
-        const emptyActivityTarget = prefillRecord<ActivityTarget>({
-          objectMetadataItem: objectMetadataItemActivityTarget,
-          input: {
-            id: v4(),
-            activityId: activity.id,
-            activity,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            [getActivityTargetObjectFieldName({
-              nameSingular: selectedRecord.objectMetadataItem.nameSingular,
-            })]: selectedRecord.record,
-            [getActivityTargetObjectFieldIdName({
-              nameSingular: selectedRecord.objectMetadataItem.nameSingular,
-            })]: selectedRecord.recordIdentifier.id,
-          },
+          return {
+            ...currentActivity,
+            activityTargets: activityTargetsAfterUpdate,
+          };
         });
-
-        return emptyActivityTarget;
+        closeEditableField();
       },
-    );
+    [
+      activityTargetWithTargetRecords,
+      closeEditableField,
+      relationPickerScopeId,
+      setActivityFromStore,
+    ],
+  );
 
-    activityTargetsAfterUpdate.push(...activityTargetsToCreate);
-
-    if (isNonEmptyArray(activityTargetsToDelete)) {
-      activityTargetsAfterUpdate = activityTargetsAfterUpdate.filter(
-        (activityTarget) =>
-          !activityTargetsToDelete.some(
-            (activityTargetToDelete) =>
-              activityTargetToDelete.activityTarget.id === activityTarget.id,
-          ),
-      );
-    }
-
-    if (isActivityInCreateMode) {
-      createManyActivityTargetsInCache(activityTargetsToCreate);
-      upsertActivity({
-        activity,
-        input: {
-          activityTargets: activityTargetsAfterUpdate,
-        },
-      });
-    } else {
-      if (activityTargetsToCreate.length > 0) {
-        await createManyActivityTargets(activityTargetsToCreate);
-      }
-
-      if (activityTargetsToDelete.length > 0) {
-        await deleteManyActivityTargets(
-          activityTargetsToDelete.map(
-            (activityTargetObjectRecord) =>
-              activityTargetObjectRecord.activityTarget.id,
-          ),
+  const handleChange = useRecoilCallback(
+    ({ snapshot, set }) =>
+      async (recordId: string) => {
+        const existingActivityTargets = activityTargetWithTargetRecords.map(
+          (activityTargetObjectRecord) =>
+            activityTargetObjectRecord.activityTarget,
         );
-      }
-    }
 
-    setActivityFromStore((currentActivity) => {
-      if (isNull(currentActivity)) {
-        return null;
-      }
+        let activityTargetsAfterUpdate = Array.from(existingActivityTargets);
 
-      return {
-        ...currentActivity,
-        activityTargets: activityTargetsAfterUpdate,
-      };
-    });
-  };
+        const previouslyCheckedRecordsIds = snapshot
+          .getLoadable(
+            objectRecordMultiSelectCheckedRecordsIdsComponentState({
+              scopeId: relationPickerScopeId,
+            }),
+          )
+          .getValue();
+
+        const isNewlySelected = !previouslyCheckedRecordsIds.includes(recordId);
+
+        if (isNewlySelected) {
+          const record = snapshot
+            .getLoadable(
+              objectRecordMultiSelectComponentFamilyState({
+                scopeId: relationPickerScopeId,
+                familyKey: recordId,
+              }),
+            )
+            .getValue();
+
+          if (!record) {
+            throw new Error(
+              `Could not find selected record with id ${recordId}`,
+            );
+          }
+
+          set(
+            objectRecordMultiSelectCheckedRecordsIdsComponentState({
+              scopeId: relationPickerScopeId,
+            }),
+            (prev) => [...prev, recordId],
+          );
+
+          const newActivityTargetId = v4();
+          const fieldName = record.objectMetadataItem.nameSingular;
+          const fieldNameWithIdSuffix = getActivityTargetObjectFieldIdName({
+            nameSingular: record.objectMetadataItem.nameSingular,
+          });
+
+          const newActivityTarget = prefillRecord<NoteTarget | TaskTarget>({
+            objectMetadataItem: objectMetadataItemActivityTarget,
+            input: {
+              id: newActivityTargetId,
+              taskId:
+                activityObjectNameSingular === CoreObjectNameSingular.Task
+                  ? activity.id
+                  : null,
+              noteId:
+                activityObjectNameSingular === CoreObjectNameSingular.Note
+                  ? activity.id
+                  : null,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+              [fieldName]: record.record,
+              [fieldNameWithIdSuffix]: recordId,
+            },
+          });
+
+          activityTargetsAfterUpdate.push(newActivityTarget);
+
+          if (isActivityInCreateMode) {
+            createManyActivityTargetsInCache([newActivityTarget]);
+            upsertActivity({
+              activity,
+              input: {
+                [activityObjectNameSingular === CoreObjectNameSingular.Task
+                  ? 'taskTargets'
+                  : activityObjectNameSingular === CoreObjectNameSingular.Note
+                    ? 'noteTargets'
+                    : '']: activityTargetsAfterUpdate,
+              },
+            });
+          } else {
+            await createManyActivityTargets([newActivityTarget]);
+          }
+
+          set(activityTargetObjectRecordFamilyState(recordId), {
+            activityTargetId: newActivityTargetId,
+          });
+        } else {
+          const activityTargetToDeleteId = snapshot
+            .getLoadable(activityTargetObjectRecordFamilyState(recordId))
+            .getValue().activityTargetId;
+
+          if (!activityTargetToDeleteId) {
+            throw new Error('Could not delete this activity target.');
+          }
+
+          set(
+            objectRecordMultiSelectCheckedRecordsIdsComponentState({
+              scopeId: relationPickerScopeId,
+            }),
+            previouslyCheckedRecordsIds.filter((id) => id !== recordId),
+          );
+          activityTargetsAfterUpdate = activityTargetsAfterUpdate.filter(
+            (activityTarget) => activityTarget.id !== activityTargetToDeleteId,
+          );
+
+          if (isActivityInCreateMode) {
+            upsertActivity({
+              activity,
+              input: {
+                [activityObjectNameSingular === CoreObjectNameSingular.Task
+                  ? 'taskTargets'
+                  : activityObjectNameSingular === CoreObjectNameSingular.Note
+                    ? 'noteTargets'
+                    : '']: activityTargetsAfterUpdate,
+              },
+            });
+          } else {
+            await deleteManyActivityTargets([activityTargetToDeleteId]);
+          }
+
+          set(activityTargetObjectRecordFamilyState(recordId), {
+            activityTargetId: null,
+          });
+        }
+      },
+    [
+      activity,
+      activityTargetWithTargetRecords,
+      createManyActivityTargets,
+      createManyActivityTargetsInCache,
+      deleteManyActivityTargets,
+      isActivityInCreateMode,
+      objectMetadataItemActivityTarget,
+      relationPickerScopeId,
+      upsertActivity,
+      activityObjectNameSingular,
+    ],
+  );
 
   return (
     <StyledSelectContainer>
-      <MultipleObjectRecordSelect
-        selectedObjectRecordIds={selectedTargetObjectIds}
-        onSubmit={handleSubmit}
-      />
+      <RelationPickerScope relationPickerScopeId={relationPickerScopeId}>
+        <ActivityTargetObjectRecordEffect
+          activityTargetWithTargetRecords={activityTargetWithTargetRecords}
+        />
+        <ActivityTargetInlineCellEditModeMultiRecordsEffect
+          selectedObjectRecordIds={selectedTargetObjectIds}
+        />
+        <MultiRecordSelect onSubmit={handleSubmit} onChange={handleChange} />
+      </RelationPickerScope>
     </StyledSelectContainer>
   );
 };

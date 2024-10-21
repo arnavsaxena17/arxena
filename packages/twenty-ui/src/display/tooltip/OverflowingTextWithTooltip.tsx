@@ -1,10 +1,10 @@
+import { styled } from '@linaria/react';
 import { useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { styled } from '@linaria/react';
 
 import { THEME_COMMON } from '@ui/theme';
 
-import { AppTooltip } from './AppTooltip';
+import { AppTooltip, TooltipDelay } from './AppTooltip';
 
 const spacing4 = THEME_COMMON.spacing(4);
 
@@ -86,13 +86,13 @@ export const OverflowingTextWithTooltip = ({
           <div onClick={handleTooltipClick}>
             <AppTooltip
               anchorSelect={`#${textElementId}`}
-              content={mutliline ? undefined : text ?? ''}
-              delayHide={1}
+              content={mutliline ? undefined : (text ?? '')}
               offset={5}
               isOpen
               noArrow
               place="bottom"
               positionStrategy="absolute"
+              delay={TooltipDelay.mediumDelay}
             >
               {mutliline ? <pre>{text}</pre> : ''}
             </AppTooltip>

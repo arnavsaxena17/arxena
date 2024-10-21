@@ -15,7 +15,7 @@ import {
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { IDataloaders } from 'src/engine/dataloaders/dataloader.interface';
 import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorator';
-import { JwtAuthGuard } from 'src/engine/guards/jwt.auth.guard';
+import { WorkspaceAuthGuard } from 'src/engine/guards/workspace-auth.guard';
 import { CreateOneFieldMetadataInput } from 'src/engine/metadata-modules/field-metadata/dtos/create-field.input';
 import { DeleteOneFieldInput } from 'src/engine/metadata-modules/field-metadata/dtos/delete-field.input';
 import { FieldMetadataDTO } from 'src/engine/metadata-modules/field-metadata/dtos/field-metadata.dto';
@@ -23,32 +23,41 @@ import { RelationDefinitionDTO } from 'src/engine/metadata-modules/field-metadat
 import { UpdateOneFieldMetadataInput } from 'src/engine/metadata-modules/field-metadata/dtos/update-field.input';
 import { FieldMetadataType } from 'src/engine/metadata-modules/field-metadata/field-metadata.entity';
 import { FieldMetadataService } from 'src/engine/metadata-modules/field-metadata/field-metadata.service';
+import { fieldMetadataGraphqlApiExceptionHandler } from 'src/engine/metadata-modules/field-metadata/utils/field-metadata-graphql-api-exception-handler.util';
 
-@UseGuards(JwtAuthGuard)
+@UseGuards(WorkspaceAuthGuard)
 @Resolver(() => FieldMetadataDTO)
 export class FieldMetadataResolver {
   constructor(private readonly fieldMetadataService: FieldMetadataService) {}
 
   @Mutation(() => FieldMetadataDTO)
-  createOneField(
+  async createOneField(
     @Args('input') input: CreateOneFieldMetadataInput,
     @AuthWorkspace() { id: workspaceId }: Workspace,
   ) {
-    return this.fieldMetadataService.createOne({
-      ...input.field,
-      workspaceId,
-    });
+    try {
+      return await this.fieldMetadataService.createOne({
+        ...input.field,
+        workspaceId,
+      });
+    } catch (error) {
+      fieldMetadataGraphqlApiExceptionHandler(error);
+    }
   }
 
   @Mutation(() => FieldMetadataDTO)
-  updateOneField(
+  async updateOneField(
     @Args('input') input: UpdateOneFieldMetadataInput,
     @AuthWorkspace() { id: workspaceId }: Workspace,
   ) {
-    return this.fieldMetadataService.updateOne(input.id, {
-      ...input.update,
-      workspaceId,
-    });
+    try {
+      return await this.fieldMetadataService.updateOne(input.id, {
+        ...input.update,
+        workspaceId,
+      });
+    } catch (error) {
+      fieldMetadataGraphqlApiExceptionHandler(error);
+    }
   }
 
   @Mutation(() => FieldMetadataDTO)
@@ -85,27 +94,36 @@ export class FieldMetadataResolver {
       );
     }
 
-    return this.fieldMetadataService.deleteOneField(input, workspaceId);
+    try {
+      return await this.fieldMetadataService.deleteOneField(input, workspaceId);
+    } catch (error) {
+      fieldMetadataGraphqlApiExceptionHandler(error);
+    }
   }
 
   @ResolveField(() => RelationDefinitionDTO, { nullable: true })
   async relationDefinition(
+    @AuthWorkspace() workspace: Workspace,
     @Parent() fieldMetadata: FieldMetadataDTO,
     @Context() context: { loaders: IDataloaders },
-  ): Promise<RelationDefinitionDTO | null> {
+  ): Promise<RelationDefinitionDTO | null | undefined> {
     if (fieldMetadata.type !== FieldMetadataType.RELATION) {
       return null;
     }
 
-    const relationMetadataItem =
-      await context.loaders.relationMetadataLoader.load(fieldMetadata.id);
+    try {
+      const relationMetadataItem =
+        await context.loaders.relationMetadataLoader.load({
+          fieldMetadata,
+          workspaceId: workspace.id,
+        });
 
-    const relationDefinition =
-      await this.fieldMetadataService.getRelationDefinitionFromRelationMetadata(
+      return await this.fieldMetadataService.getRelationDefinitionFromRelationMetadata(
         fieldMetadata,
         relationMetadataItem,
       );
-
-    return relationDefinition;
+    } catch (error) {
+      fieldMetadataGraphqlApiExceptionHandler(error);
+    }
   }
 }

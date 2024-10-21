@@ -1,8 +1,8 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
 import isPropValid from '@emotion/is-prop-valid';
 import { css, useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
+import React from 'react';
+import { Link } from 'react-router-dom';
 import { IconComponent, Pill } from 'twenty-ui';
 
 export type ButtonSize = 'medium' | 'small';
@@ -27,6 +27,7 @@ export type ButtonProps = {
   onClick?: (event: React.MouseEvent<HTMLButtonElement>) => void;
   to?: string;
   target?: string;
+  dataTestId?: string;
 } & React.ComponentProps<'button'>;
 
 const StyledButton = styled('button', {
@@ -335,6 +336,7 @@ const StyledButton = styled('button', {
   flex-direction: row;
   font-family: ${({ theme }) => theme.font.family};
   font-weight: 500;
+  font-size: ${({ theme }) => theme.font.size.md};
   gap: ${({ theme }) => theme.spacing(1)};
   height: ${({ size }) => (size === 'small' ? '24px' : '32px')};
   justify-content: ${({ justify }) => justify};
@@ -374,6 +376,7 @@ export const Button = ({
   onClick,
   to,
   target,
+  dataTestId,
 }: ButtonProps) => {
   const theme = useTheme();
 
@@ -393,6 +396,7 @@ export const Button = ({
       to={to}
       as={to ? Link : 'button'}
       target={target}
+      data-testid={dataTestId}
     >
       {Icon && <Icon size={theme.icon.size.sm} />}
       {title}

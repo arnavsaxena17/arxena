@@ -1,11 +1,12 @@
-import { ReactElement, useState } from 'react';
 import styled from '@emotion/styled';
+import { ReactElement, useState } from 'react';
 
 import { DropZone } from '@/activities/files/components/DropZone';
 import { useUploadAttachmentFile } from '@/activities/files/hooks/useUploadAttachmentFile';
 import { Attachment } from '@/activities/files/types/Attachment';
 import { ActivityTargetableObject } from '@/activities/types/ActivityTargetableEntity';
 
+import { ActivityList } from '@/activities/components/ActivityList';
 import { AttachmentRow } from './AttachmentRow';
 
 type AttachmentListProps = {
@@ -22,6 +23,9 @@ const StyledContainer = styled.div`
   flex-direction: column;
   justify-content: center;
   padding: ${({ theme }) => theme.spacing(2, 6, 6)};
+
+  width: calc(100% - ${({ theme }) => theme.spacing(12)});
+
   height: 100%;
 `;
 
@@ -34,7 +38,7 @@ const StyledTitleBar = styled.h3`
   width: 100%;
 `;
 
-const StyledTitle = styled.h3`
+const StyledTitle = styled.span`
   color: ${({ theme }) => theme.font.color.primary};
   font-weight: ${({ theme }) => theme.font.weight.semiBold};
 `;
@@ -44,21 +48,11 @@ const StyledCount = styled.span`
   margin-left: ${({ theme }) => theme.spacing(2)};
 `;
 
-const StyledAttachmentContainer = styled.div`
-  align-items: flex-start;
-  align-self: stretch;
-  background: ${({ theme }) => theme.background.secondary};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  border-radius: ${({ theme }) => theme.border.radius.md};
-  display: flex;
-  flex-flow: column nowrap;
-  justify-content: center;
-  width: 100%;
-`;
-
 const StyledDropZoneContainer = styled.div`
   height: 100%;
   width: 100%;
+
+  overflow: auto;
 `;
 
 export const AttachmentList = ({
@@ -91,11 +85,11 @@ export const AttachmentList = ({
                 onUploadFile={onUploadFile}
               />
             ) : (
-              <StyledAttachmentContainer>
+              <ActivityList>
                 {attachments.map((attachment) => (
                   <AttachmentRow key={attachment.id} attachment={attachment} />
                 ))}
-              </StyledAttachmentContainer>
+              </ActivityList>
             )}
           </StyledDropZoneContainer>
         </StyledContainer>

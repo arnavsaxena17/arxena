@@ -1,12 +1,12 @@
-import { useEffect } from 'react';
 import { Decorator, Meta, StoryObj } from '@storybook/react';
 import { expect, fn, userEvent, waitFor, within } from '@storybook/test';
+import { useEffect } from 'react';
 
 import { useSetHotkeyScope } from '@/ui/utilities/hotkey/hooks/useSetHotkeyScope';
 import { FieldMetadataType } from '~/generated/graphql';
 import { SnackBarDecorator } from '~/testing/decorators/SnackBarDecorator';
 
-import { FieldContextProvider } from '../../../__stories__/FieldContextProvider';
+import { FieldContextProvider } from '@/object-record/record-field/meta-types/components/FieldContextProvider';
 import { useNumberField } from '../../../hooks/useNumberField';
 import { NumberFieldInput, NumberFieldInputProps } from '../NumberFieldInput';
 
@@ -22,11 +22,11 @@ const NumberFieldValueSetterEffect = ({ value }: { value: number }) => {
 
 type NumberFieldInputWithContextProps = NumberFieldInputProps & {
   value: number;
-  entityId?: string;
+  recordId?: string;
 };
 
 const NumberFieldInputWithContext = ({
-  entityId,
+  recordId,
   value,
   onEnter,
   onEscape,
@@ -54,7 +54,7 @@ const NumberFieldInputWithContext = ({
             objectMetadataNameSingular: 'person',
           },
         }}
-        entityId={entityId}
+        recordId={recordId}
       >
         <NumberFieldValueSetterEffect value={value} />
         <NumberFieldInput

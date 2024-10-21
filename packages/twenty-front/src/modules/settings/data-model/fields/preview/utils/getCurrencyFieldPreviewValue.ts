@@ -16,9 +16,11 @@ export const getCurrencyFieldPreviewValue = ({
 }): FieldCurrencyValue | null => {
   if (fieldMetadataItem.type !== FieldMetadataType.Currency) return null;
 
-  const placeholderDefaultValue = getSettingsFieldTypeConfig(
+  const currencyFieldTypeConfig = getSettingsFieldTypeConfig(
     FieldMetadataType.Currency,
-  ).defaultValue;
+  );
+
+  const placeholderDefaultValue = currencyFieldTypeConfig.exampleValue;
 
   return currencyFieldDefaultValueSchema
     .transform((value) => ({

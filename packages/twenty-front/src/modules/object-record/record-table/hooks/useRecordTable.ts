@@ -42,9 +42,11 @@ export const useRecordTable = (props?: useRecordTableProps) => {
     isRecordTableInitialLoadingState,
     tableLastRowVisibleState,
     selectedRowIdsSelector,
+    unselectedRowIdsSelector,
     onToggleColumnFilterState,
     onToggleColumnSortState,
     pendingRecordIdState,
+    hasUserSelectedAllRowsState,
   } = useRecordTableStates(recordTableId);
 
   const setAvailableTableColumns = useRecoilCallback(
@@ -222,9 +224,11 @@ export const useRecordTable = (props?: useRecordTableProps) => {
     setSoftFocusPosition,
     isSomeCellInEditModeState,
     selectedRowIdsSelector,
+    unselectedRowIdsSelector,
     setHasUserSelectedAllRows,
     setOnToggleColumnFilter,
     setOnToggleColumnSort,
     setPendingRecordId,
+    hasUserSelectedAllRowsState,
   };
 };

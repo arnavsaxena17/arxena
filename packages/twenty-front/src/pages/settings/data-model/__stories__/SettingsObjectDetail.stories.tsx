@@ -8,11 +8,11 @@ import {
 import { graphqlMocks } from '~/testing/graphqlMocks';
 import { sleep } from '~/utils/sleep';
 
-import { SettingsObjectDetail } from '../SettingsObjectDetail';
+import { SettingsObjectDetailPage } from '../SettingsObjectDetailPage';
 
 const meta: Meta<PageDecoratorArgs> = {
   title: 'Pages/Settings/DataModel/SettingsObjectDetail',
-  component: SettingsObjectDetail,
+  component: SettingsObjectDetailPage,
   decorators: [PageDecorator],
   args: {
     routePath: '/settings/objects/:objectSlug',
@@ -25,7 +25,7 @@ const meta: Meta<PageDecoratorArgs> = {
 
 export default meta;
 
-export type Story = StoryObj<typeof SettingsObjectDetail>;
+export type Story = StoryObj<typeof SettingsObjectDetailPage>;
 
 export const StandardObject: Story = {
   play: async () => {
@@ -35,15 +35,13 @@ export const StandardObject: Story = {
 
 export const CustomObject: Story = {
   args: {
-    routeParams: { ':objectSlug': 'workspaces' },
+    routeParams: { ':objectSlug': 'my-customs' },
   },
 };
 
 export const ObjectDropdownMenu: Story = {
-  play: async ({ canvasElement }) => {
-    await sleep(100);
-
-    const canvas = within(canvasElement);
+  play: async () => {
+    const canvas = within(document.body);
     const objectSummaryVerticalDotsIconButton = await canvas.findByRole(
       'button',
       {
@@ -59,10 +57,8 @@ export const ObjectDropdownMenu: Story = {
 };
 
 export const FieldDropdownMenu: Story = {
-  play: async ({ canvasElement }) => {
-    await sleep(100);
-
-    const canvas = within(canvasElement);
+  play: async () => {
+    const canvas = within(document.body);
     const [fieldVerticalDotsIconButton] = await canvas.findAllByRole('button', {
       name: 'Active Field Options',
     });

@@ -1,6 +1,6 @@
-import * as React from 'react';
 import styled from '@emotion/styled';
 import { motion } from 'framer-motion';
+import * as React from 'react';
 import { RGBA } from 'twenty-ui';
 
 import { RadioGroup } from './RadioGroup';
@@ -105,6 +105,7 @@ const StyledLabel = styled.label<LabelProps>`
 export type RadioProps = {
   checked?: boolean;
   className?: string;
+  name?: string;
   disabled?: boolean;
   label?: string;
   labelPosition?: LabelPosition;
@@ -118,6 +119,7 @@ export type RadioProps = {
 export const Radio = ({
   checked,
   className,
+  name = 'input-radio',
   disabled = false,
   label,
   labelPosition = LabelPosition.Right,
@@ -131,12 +133,14 @@ export const Radio = ({
     onCheckedChange?.(event.target.checked);
   };
 
+  const optionId = React.useId();
+
   return (
     <StyledContainer className={className} labelPosition={labelPosition}>
       <StyledRadioInput
         type="radio"
-        id="input-radio"
-        name="input-radio"
+        id={optionId}
+        name={name}
         data-testid="input-radio"
         checked={checked}
         value={value || label}
@@ -149,7 +153,7 @@ export const Radio = ({
       />
       {label && (
         <StyledLabel
-          htmlFor="input-radio"
+          htmlFor={optionId}
           labelPosition={labelPosition}
           disabled={disabled}
         >

@@ -1,11 +1,15 @@
-import { Injectable, Type } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
 import { EntitySchema } from 'typeorm';
 
+import {
+  ObjectMetadataMap,
+  ObjectMetadataMapItem,
+} from 'src/engine/metadata-modules/utils/generate-object-metadata-map.util';
 import { EntitySchemaColumnFactory } from 'src/engine/twenty-orm/factories/entity-schema-column.factory';
 import { EntitySchemaRelationFactory } from 'src/engine/twenty-orm/factories/entity-schema-relation.factory';
-import { metadataArgsStorage } from 'src/engine/twenty-orm/storage/metadata-args.storage';
-import { ObjectLiteralStorage } from 'src/engine/twenty-orm/storage/object-literal.storage';
+import { WorkspaceEntitiesStorage } from 'src/engine/twenty-orm/storage/workspace-entities.storage';
+import { computeTableName } from 'src/engine/utils/compute-table-name.util';
 
 @Injectable()
 export class EntitySchemaFactory {
@@ -14,36 +18,36 @@ export class EntitySchemaFactory {
     private readonly entitySchemaRelationFactory: EntitySchemaRelationFactory,
   ) {}
 
-  create<T>(target: Type<T>): EntitySchema {
-    const entityMetadataArgs = metadataArgsStorage.filterEntities(target);
-
-    if (!entityMetadataArgs) {
-      throw new Error('Entity metadata args are missing on this target');
-    }
-
-    const fieldMetadataArgsCollection =
-      metadataArgsStorage.filterFields(target);
-    const relationMetadataArgsCollection =
-      metadataArgsStorage.filterRelations(target);
-
+  async create(
+    workspaceId: string,
+    metadataVersion: number,
+    objectMetadata: ObjectMetadataMapItem,
+    objectMetadataMap: ObjectMetadataMap,
+  ): Promise<EntitySchema> {
     const columns = this.entitySchemaColumnFactory.create(
-      fieldMetadataArgsCollection,
-      relationMetadataArgsCollection,
+      objectMetadata.fields,
     );
 
-    const relations = this.entitySchemaRelationFactory.create(
-      target,
-      relationMetadataArgsCollection,
+    const relations = await this.entitySchemaRelationFactory.create(
+      objectMetadata.fields,
+      objectMetadataMap,
     );
 
     const entitySchema = new EntitySchema({
-      name: entityMetadataArgs.nameSingular,
-      tableName: entityMetadataArgs.nameSingular,
+      name: objectMetadata.nameSingular,
+      tableName: computeTableName(
+        objectMetadata.nameSingular,
+        objectMetadata.isCustom,
+      ),
       columns,
       relations,
     });
 
-    ObjectLiteralStorage.setObjectLiteral(entitySchema, target);
+    WorkspaceEntitiesStorage.setEntitySchema(
+      workspaceId,
+      objectMetadata.nameSingular,
+      entitySchema,
+    );
 
     return entitySchema;
   }

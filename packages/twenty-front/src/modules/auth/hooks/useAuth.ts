@@ -1,5 +1,5 @@
-import { useCallback } from 'react';
 import { useApolloClient } from '@apollo/client';
+import { useCallback } from 'react';
 import {
   snapshot_UNSTABLE,
   useGotoRecoilSnapshot,
@@ -21,7 +21,6 @@ import { isClientConfigLoadedState } from '@/client-config/states/isClientConfig
 import { isDebugModeState } from '@/client-config/states/isDebugModeState';
 import { isSignInPrefilledState } from '@/client-config/states/isSignInPrefilledState';
 import { supportChatState } from '@/client-config/states/supportChatState';
-import { telemetryState } from '@/client-config/states/telemetryState';
 import { ColorScheme } from '@/workspace-member/types/WorkspaceMember';
 import { REACT_APP_SERVER_BASE_URL } from '~/config';
 import {
@@ -32,6 +31,15 @@ import {
 } from '~/generated/graphql';
 import { isDefined } from '~/utils/isDefined';
 
+import { currentWorkspaceMembersState } from '@/auth/states/currentWorkspaceMembersStates';
+import { DateFormat } from '@/localization/constants/DateFormat';
+import { TimeFormat } from '@/localization/constants/TimeFormat';
+import { dateTimeFormatState } from '@/localization/states/dateTimeFormatState';
+import { detectDateFormat } from '@/localization/utils/detectDateFormat';
+import { detectTimeFormat } from '@/localization/utils/detectTimeFormat';
+import { detectTimeZone } from '@/localization/utils/detectTimeZone';
+import { getDateFormatFromWorkspaceDateFormat } from '@/localization/utils/getDateFormatFromWorkspaceDateFormat';
+import { getTimeFormatFromWorkspaceTimeFormat } from '@/localization/utils/getTimeFormatFromWorkspaceTimeFormat';
 import { currentUserState } from '../states/currentUserState';
 import { tokenPairState } from '../states/tokenPairState';
 
@@ -40,6 +48,9 @@ export const useAuth = () => {
   const setCurrentUser = useSetRecoilState(currentUserState);
   const setCurrentWorkspaceMember = useSetRecoilState(
     currentWorkspaceMemberState,
+  );
+  const setCurrentWorkspaceMembers = useSetRecoilState(
+    currentWorkspaceMembersState,
   );
 
   const setCurrentWorkspace = useSetRecoilState(currentWorkspaceState);
@@ -55,6 +66,8 @@ export const useAuth = () => {
   const client = useApolloClient();
 
   const goToRecoilSnapshot = useGotoRecoilSnapshot();
+
+  const setDateTimeFormat = useSetRecoilState(dateTimeFormatState);
 
   const handleChallenge = useCallback(
     async (email: string, password: string, captchaToken?: string) => {
@@ -96,17 +109,55 @@ export const useAuth = () => {
       setTokenPair(verifyResult.data?.verify.tokens);
 
       const user = verifyResult.data?.verify.user;
+
       let workspaceMember = null;
+
       setCurrentUser(user);
+
+      if (isDefined(user.workspaceMembers)) {
+        const workspaceMembers = user.workspaceMembers.map(
+          (workspaceMember) => ({
+            ...workspaceMember,
+            colorScheme: workspaceMember.colorScheme as ColorScheme,
+            locale: workspaceMember.locale ?? 'en',
+          }),
+        );
+
+        setCurrentWorkspaceMembers(workspaceMembers);
+      }
+
       if (isDefined(user.workspaceMember)) {
         workspaceMember = {
           ...user.workspaceMember,
           colorScheme: user.workspaceMember?.colorScheme as ColorScheme,
+          locale: user.workspaceMember?.locale ?? 'en',
         };
+
         setCurrentWorkspaceMember(workspaceMember);
+
+        // TODO: factorize with UserProviderEffect
+        setDateTimeFormat({
+          timeZone:
+            workspaceMember.timeZone && workspaceMember.timeZone !== 'system'
+              ? workspaceMember.timeZone
+              : detectTimeZone(),
+          dateFormat: isDefined(user.workspaceMember.dateFormat)
+            ? getDateFormatFromWorkspaceDateFormat(
+                user.workspaceMember.dateFormat,
+              )
+            : DateFormat[detectDateFormat()],
+          timeFormat: isDefined(user.workspaceMember.timeFormat)
+            ? getTimeFormatFromWorkspaceTimeFormat(
+                user.workspaceMember.timeFormat,
+              )
+            : TimeFormat[detectTimeFormat()],
+        });
       }
+
       const workspace = user.defaultWorkspace ?? null;
+
       setCurrentWorkspace(workspace);
+
       if (isDefined(verifyResult.data?.verify.user.workspaces)) {
         const validWorkspaces = verifyResult.data?.verify.user.workspaces
           .filter(
@@ -117,6 +168,7 @@ export const useAuth = () => {
 
         setWorkspaces(validWorkspaces);
       }
+
       return {
         user,
         workspaceMember,
@@ -128,8 +180,10 @@ export const useAuth = () => {
       verify,
       setTokenPair,
       setCurrentUser,
-      setCurrentWorkspaceMember,
       setCurrentWorkspace,
+      setCurrentWorkspaceMembers,
+      setCurrentWorkspaceMember,
+      setDateTimeFormat,
       setWorkspaces,
     ],
   );
@@ -171,7 +225,6 @@ export const useAuth = () => {
           .getLoadable(isSignInPrefilledState)
           .getValue();
         const supportChat = snapshot.getLoadable(supportChatState).getValue();
-        const telemetry = snapshot.getLoadable(telemetryState).getValue();
         const isDebugMode = snapshot.getLoadable(isDebugModeState).getValue();
         const captchaProvider = snapshot
           .getLoadable(captchaProviderState)
@@ -189,7 +242,6 @@ export const useAuth = () => {
           set(billingState, billing);
           set(isSignInPrefilledState, isSignInPrefilled);
           set(supportChatState, supportChat);
-          set(telemetryState, telemetry);
           set(isDebugModeState, isDebugMode);
           set(captchaProviderState, captchaProvider);
           set(isClientConfigLoadedState, isClientConfigLoaded);
@@ -201,6 +253,7 @@ export const useAuth = () => {
 
         await client.clearStore();
         sessionStorage.clear();
+        localStorage.clear();
       },
     [client, goToRecoilSnapshot],
   );
@@ -210,6 +263,7 @@ export const useAuth = () => {
       email: string,
       password: string,
       workspaceInviteHash?: string,
+      workspacePersonalInviteToken?: string,
       captchaToken?: string,
     ) => {
       setIsVerifyPendingState(true);
@@ -219,6 +273,7 @@ export const useAuth = () => {
           email,
           password,
           workspaceInviteHash,
+          workspacePersonalInviteToken,
           captchaToken,
         },
       });
@@ -242,21 +297,43 @@ export const useAuth = () => {
     [setIsVerifyPendingState, signUp, handleVerify],
   );
 
-  const handleGoogleLogin = useCallback((workspaceInviteHash?: string) => {
+  const buildRedirectUrl = (
+    path: string,
+    params: {
+      workspacePersonalInviteToken?: string;
+      workspaceInviteHash?: string;
+    },
+  ) => {
     const authServerUrl = REACT_APP_SERVER_BASE_URL;
-    window.location.href =
-      `${authServerUrl}/auth/google/${
-        workspaceInviteHash ? '?inviteHash=' + workspaceInviteHash : ''
-      }` || '';
-  }, []);
+    const url = new URL(`${authServerUrl}${path}`);
+    if (isDefined(params.workspaceInviteHash)) {
+      url.searchParams.set('inviteHash', params.workspaceInviteHash);
+    }
+    if (isDefined(params.workspacePersonalInviteToken)) {
+      url.searchParams.set('inviteToken', params.workspacePersonalInviteToken);
+    }
+    return url.toString();
+  };
 
-  const handleMicrosoftLogin = useCallback((workspaceInviteHash?: string) => {
-    const authServerUrl = REACT_APP_SERVER_BASE_URL;
-    window.location.href =
-      `${authServerUrl}/auth/microsoft/${
-        workspaceInviteHash ? '?inviteHash=' + workspaceInviteHash : ''
-      }` || '';
-  }, []);
+  const handleGoogleLogin = useCallback(
+    (params: {
+      workspacePersonalInviteToken?: string;
+      workspaceInviteHash?: string;
+    }) => {
+      window.location.href = buildRedirectUrl('/auth/google', params);
+    },
+    [],
+  );
+
+  const handleMicrosoftLogin = useCallback(
+    (params: {
+      workspacePersonalInviteToken?: string;
+      workspaceInviteHash?: string;
+    }) => {
+      window.location.href = buildRedirectUrl('/auth/microsoft', params);
+    },
+    [],
+  );
 
   return {
     challenge: handleChallenge,

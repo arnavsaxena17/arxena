@@ -19,6 +19,7 @@ export const useFieldContext = ({
   objectNameSingular,
   objectRecordId,
   customUseUpdateOneObjectHook,
+  overridenIsFieldEmpty,
 }: {
   clearable?: boolean;
   fieldMetadataName: string;
@@ -27,6 +28,7 @@ export const useFieldContext = ({
   objectNameSingular: string;
   objectRecordId: string;
   customUseUpdateOneObjectHook?: RecordUpdateHook;
+  overridenIsFieldEmpty?: boolean;
 }) => {
   const { objectMetadataItem } = useObjectMetadataItem({
     objectNameSingular,
@@ -64,7 +66,7 @@ export const useFieldContext = ({
               basePathToShowPage: isLabelIdentifier
                 ? basePathToShowPage
                 : undefined,
-              entityId: objectRecordId,
+              recordId: objectRecordId,
               recoilScopeId: objectRecordId + fieldMetadataItem.id,
               isLabelIdentifier,
               fieldDefinition: formatFieldMetadataItemAsColumnDefinition({
@@ -78,6 +80,7 @@ export const useFieldContext = ({
                 customUseUpdateOneObjectHook ?? useUpdateOneObjectMutation,
               hotkeyScope: InlineCellHotkeyScope.InlineCell,
               clearable,
+              overridenIsFieldEmpty,
             }}
           >
             {children}

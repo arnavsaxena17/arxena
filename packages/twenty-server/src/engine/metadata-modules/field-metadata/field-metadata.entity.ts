@@ -1,36 +1,36 @@
 import {
-  Entity,
-  Unique,
-  PrimaryGeneratedColumn,
   Column,
-  ManyToOne,
-  JoinColumn,
-  OneToOne,
   CreateDateColumn,
-  UpdateDateColumn,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  OneToMany,
+  OneToOne,
+  PrimaryGeneratedColumn,
   Relation,
+  Unique,
+  UpdateDateColumn,
 } from 'typeorm';
 
-import { FieldMetadataInterface } from 'src/engine/metadata-modules/field-metadata/interfaces/field-metadata.interface';
 import { FieldMetadataDefaultValue } from 'src/engine/metadata-modules/field-metadata/interfaces/field-metadata-default-value.interface';
 import { FieldMetadataOptions } from 'src/engine/metadata-modules/field-metadata/interfaces/field-metadata-options.interface';
 import { FieldMetadataSettings } from 'src/engine/metadata-modules/field-metadata/interfaces/field-metadata-settings.interface';
+import { FieldMetadataInterface } from 'src/engine/metadata-modules/field-metadata/interfaces/field-metadata.interface';
 
+import { IndexFieldMetadataEntity } from 'src/engine/metadata-modules/index-metadata/index-field-metadata.entity';
 import { ObjectMetadataEntity } from 'src/engine/metadata-modules/object-metadata/object-metadata.entity';
 import { RelationMetadataEntity } from 'src/engine/metadata-modules/relation-metadata/relation-metadata.entity';
 
 export enum FieldMetadataType {
   UUID = 'UUID',
   TEXT = 'TEXT',
-  PHONE = 'PHONE',
-  EMAIL = 'EMAIL',
+  PHONES = 'PHONES',
+  EMAILS = 'EMAILS',
   DATE_TIME = 'DATE_TIME',
   DATE = 'DATE',
   BOOLEAN = 'BOOLEAN',
   NUMBER = 'NUMBER',
   NUMERIC = 'NUMERIC',
-  PROBABILITY = 'PROBABILITY',
-  LINK = 'LINK',
   LINKS = 'LINKS',
   CURRENCY = 'CURRENCY',
   FULL_NAME = 'FULL_NAME',
@@ -41,6 +41,10 @@ export enum FieldMetadataType {
   POSITION = 'POSITION',
   ADDRESS = 'ADDRESS',
   RAW_JSON = 'RAW_JSON',
+  RICH_TEXT = 'RICH_TEXT',
+  ACTOR = 'ACTOR',
+  ARRAY = 'ARRAY',
+  TS_VECTOR = 'TS_VECTOR',
 }
 
 @Entity('fieldMetadata')
@@ -104,6 +108,9 @@ export class FieldMetadataEntity<
   @Column({ nullable: true, default: true })
   isNullable: boolean;
 
+  @Column({ nullable: true, default: false })
+  isUnique: boolean;
+
   @Column({ nullable: false, type: 'uuid' })
   workspaceId: string;
 
@@ -118,6 +125,16 @@ export class FieldMetadataEntity<
     (relation: RelationMetadataEntity) => relation.toFieldMetadata,
   )
   toRelationMetadata: Relation<RelationMetadataEntity>;
+
+  @OneToMany(
+    () => IndexFieldMetadataEntity,
+    (indexFieldMetadata: IndexFieldMetadataEntity) =>
+      indexFieldMetadata.indexMetadata,
+    {
+      cascade: true,
+    },
+  )
+  indexFieldMetadatas: Relation<IndexFieldMetadataEntity>;
 
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;

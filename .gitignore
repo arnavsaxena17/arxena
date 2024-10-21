@@ -13,6 +13,7 @@ packages/twenty-server/FileUploads/*
 .nx/cache
 .env
 .env.local
+projectStructure.cache.json
 
 .pnp.*
 .yarn/*
@@ -30,7 +31,6 @@ dist
 storybook-static
 *.tsbuildinfo
 .eslintcache
-.cache
 .nyc_output
 **/**/*.pdf
 .vscode/
@@ -48,3 +48,5 @@ packages/twenty-server/uploads/*
 .env*
 *.log
 node_modules/
+test-results/
+dump.rdb

@@ -1,40 +1,98 @@
 import { Injectable } from '@nestjs/common';
 
-import { InjectObjectMetadataRepository } from 'src/engine/object-metadata-repository/object-metadata-repository.decorator';
-import { MessageThreadRepository } from 'src/modules/messaging/common/repositories/message-thread.repository';
-import { MessageRepository } from 'src/modules/messaging/common/repositories/message.repository';
+import { EntityManager, IsNull } from 'typeorm';
+
+import { TwentyORMManager } from 'src/engine/twenty-orm/twenty-orm.manager';
 import { MessageThreadWorkspaceEntity } from 'src/modules/messaging/common/standard-objects/message-thread.workspace-entity';
 import { MessageWorkspaceEntity } from 'src/modules/messaging/common/standard-objects/message.workspace-entity';
 import { deleteUsingPagination } from 'src/modules/messaging/message-cleaner/utils/delete-using-pagination.util';
 
 @Injectable()
 export class MessagingMessageCleanerService {
-  constructor(
-    @InjectObjectMetadataRepository(MessageWorkspaceEntity)
-    private readonly messageRepository: MessageRepository,
-    @InjectObjectMetadataRepository(MessageThreadWorkspaceEntity)
-    private readonly messageThreadRepository: MessageThreadRepository,
-  ) {}
+  constructor(private readonly twentyORMManager: TwentyORMManager) {}
 
   public async cleanWorkspaceThreads(workspaceId: string) {
-    await deleteUsingPagination(
-      workspaceId,
-      500,
-      this.messageRepository.getNonAssociatedMessageIdsPaginated.bind(
-        this.messageRepository,
-      ),
-      this.messageRepository.deleteByIds.bind(this.messageRepository),
-    );
+    const messageThreadRepository =
+      await this.twentyORMManager.getRepository<MessageThreadWorkspaceEntity>(
+        'messageThread',
+      );
 
-    await deleteUsingPagination(
-      workspaceId,
-      500,
-      this.messageThreadRepository.getOrphanThreadIdsPaginated.bind(
-        this.messageThreadRepository,
-      ),
-      this.messageThreadRepository.deleteByIds.bind(
-        this.messageThreadRepository,
-      ),
-    );
+    const messageRepository =
+      await this.twentyORMManager.getRepository<MessageWorkspaceEntity>(
+        'message',
+      );
+
+    const workspaceDataSource = await this.twentyORMManager.getDatasource();
+
+    await workspaceDataSource.transaction(async (transactionManager) => {
+      await deleteUsingPagination(
+        workspaceId,
+        500,
+        async (
+          limit: number,
+          offset: number,
+          workspaceId: string,
+          transactionManager: EntityManager,
+        ) => {
+          const nonAssociatedMessages = await messageRepository.find(
+            {
+              where: {
+                messageChannelMessageAssociations: {
+                  id: IsNull(),
+                },
+              },
+              take: limit,
+              skip: offset,
+              relations: ['messageChannelMessageAssociations'],
+            },
+            transactionManager,
+          );
+
+          return nonAssociatedMessages.map(({ id }) => id);
+        },
+        async (
+          ids: string[],
+          workspaceId: string,
+          transactionManager?: EntityManager,
+        ) => {
+          await messageRepository.delete(ids, transactionManager);
+        },
+        transactionManager,
+      );
+
+      await deleteUsingPagination(
+        workspaceId,
+        500,
+        async (
+          limit: number,
+          offset: number,
+          workspaceId: string,
+          transactionManager?: EntityManager,
+        ) => {
+          const orphanThreads = await messageThreadRepository.find(
+            {
+              where: {
+                messages: {
+                  id: IsNull(),
+                },
+              },
+              take: limit,
+              skip: offset,
+            },
+            transactionManager,
+          );
+
+          return orphanThreads.map(({ id }) => id);
+        },
+        async (
+          ids: string[],
+          workspaceId: string,
+          transactionManager?: EntityManager,
+        ) => {
+          await messageThreadRepository.delete(ids, transactionManager);
+        },
+        transactionManager,
+      );
+    });
   }
 }

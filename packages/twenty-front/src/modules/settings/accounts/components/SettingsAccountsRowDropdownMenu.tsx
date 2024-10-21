@@ -9,7 +9,7 @@ import {
 
 import { ConnectedAccount } from '@/accounts/types/ConnectedAccount';
 import { CoreObjectNameSingular } from '@/object-metadata/types/CoreObjectNameSingular';
-import { useDeleteOneRecord } from '@/object-record/hooks/useDeleteOneRecord';
+import { useDestroyOneRecord } from '@/object-record/hooks/useDestroyOneRecord';
 import { useTriggerGoogleApisOAuth } from '@/settings/accounts/hooks/useTriggerGoogleApisOAuth';
 import { LightIconButton } from '@/ui/input/button/components/LightIconButton';
 import { Dropdown } from '@/ui/layout/dropdown/components/Dropdown';
@@ -32,7 +32,7 @@ export const SettingsAccountsRowDropdownMenu = ({
   const navigate = useNavigate();
   const { closeDropdown } = useDropdown(dropdownId);
 
-  const { deleteOneRecord } = useDeleteOneRecord({
+  const { destroyOneRecord } = useDestroyOneRecord({
     objectNameSingular: CoreObjectNameSingular.ConnectedAccount,
   });
 
@@ -54,9 +54,7 @@ export const SettingsAccountsRowDropdownMenu = ({
               LeftIcon={IconMail}
               text="Emails settings"
               onClick={() => {
-                navigate(
-                  `/settings/accounts/emails/${account.messageChannels[0].id}`,
-                );
+                navigate(`/settings/accounts/emails`);
                 closeDropdown();
               }}
             />
@@ -64,9 +62,7 @@ export const SettingsAccountsRowDropdownMenu = ({
               LeftIcon={IconCalendarEvent}
               text="Calendar settings"
               onClick={() => {
-                navigate(
-                  `/settings/accounts/calendars/${account.calendarChannels[0].id}`,
-                );
+                navigate(`/settings/accounts/calendars`);
                 closeDropdown();
               }}
             />
@@ -85,7 +81,7 @@ export const SettingsAccountsRowDropdownMenu = ({
               LeftIcon={IconTrash}
               text="Remove account"
               onClick={() => {
-                deleteOneRecord(account.id);
+                destroyOneRecord(account.id);
                 closeDropdown();
               }}
             />

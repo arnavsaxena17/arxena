@@ -63,11 +63,6 @@ export interface WorkspaceRelationMetadataArgs {
   readonly onDelete?: RelationOnDeleteAction;
 
   /**
-   * Relation join column.
-   */
-  readonly joinColumn?: string;
-
-  /**
    * Is primary field.
    */
   readonly isPrimary: boolean;
@@ -86,4 +81,9 @@ export interface WorkspaceRelationMetadataArgs {
    * Field gate.
    */
   readonly gate?: Gate;
+
+  /**
+   * Is active field.
+   */
+  readonly isActive?: boolean;
 }

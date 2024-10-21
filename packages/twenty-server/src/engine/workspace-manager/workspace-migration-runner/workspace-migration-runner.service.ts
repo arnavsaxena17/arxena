@@ -1,31 +1,35 @@
 import { Injectable } from '@nestjs/common';
 
+import { isDefined } from 'class-validator';
 import {
   QueryRunner,
   Table,
   TableColumn,
   TableForeignKey,
+  TableIndex,
   TableUnique,
 } from 'typeorm';
 
-import { WorkspaceMigrationService } from 'src/engine/metadata-modules/workspace-migration/workspace-migration.service';
-import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
+import { IndexType } from 'src/engine/metadata-modules/index-metadata/index-metadata.entity';
 import {
-  WorkspaceMigrationTableAction,
   WorkspaceMigrationColumnAction,
   WorkspaceMigrationColumnActionType,
+  WorkspaceMigrationColumnAlter,
   WorkspaceMigrationColumnCreate,
   WorkspaceMigrationColumnCreateRelation,
-  WorkspaceMigrationColumnAlter,
   WorkspaceMigrationColumnDropRelation,
-  WorkspaceMigrationTableActionType,
   WorkspaceMigrationForeignTable,
+  WorkspaceMigrationIndexAction,
+  WorkspaceMigrationIndexActionType,
+  WorkspaceMigrationTableAction,
+  WorkspaceMigrationTableActionType,
 } from 'src/engine/metadata-modules/workspace-migration/workspace-migration.entity';
-import { WorkspaceCacheVersionService } from 'src/engine/metadata-modules/workspace-cache-version/workspace-cache-version.service';
+import { WorkspaceMigrationService } from 'src/engine/metadata-modules/workspace-migration/workspace-migration.service';
+import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
 import { WorkspaceMigrationEnumService } from 'src/engine/workspace-manager/workspace-migration-runner/services/workspace-migration-enum.service';
 import { convertOnDeleteActionToOnDelete } from 'src/engine/workspace-manager/workspace-migration-runner/utils/convert-on-delete-action-to-on-delete.util';
+import { tableDefaultColumns } from 'src/engine/workspace-manager/workspace-migration-runner/utils/table-default-column.util';
 
-import { customTableDefaultColumns } from './utils/custom-table-default-column.util';
 import { WorkspaceMigrationTypeService } from './services/workspace-migration-type.service';
 
 @Injectable()
@@ -33,7 +37,6 @@ export class WorkspaceMigrationRunnerService {
   constructor(
     private readonly workspaceDataSourceService: WorkspaceDataSourceService,
     private readonly workspaceMigrationService: WorkspaceMigrationService,
-    private readonly workspaceCacheVersionService: WorkspaceCacheVersionService,
     private readonly workspaceMigrationEnumService: WorkspaceMigrationEnumService,
     private readonly workspaceMigrationTypeService: WorkspaceMigrationTypeService,
   ) {}
@@ -76,6 +79,8 @@ export class WorkspaceMigrationRunnerService {
     const schemaName =
       this.workspaceDataSourceService.getSchemaName(workspaceId);
 
+    await queryRunner.query(`SET LOCAL search_path TO ${schemaName}`);
+
     try {
       // Loop over each migration and create or update the table
       for (const migration of flattenedPendingMigrations) {
@@ -117,7 +122,12 @@ export class WorkspaceMigrationRunnerService {
   ) {
     switch (tableMigration.action) {
       case WorkspaceMigrationTableActionType.CREATE:
-        await this.createTable(queryRunner, schemaName, tableMigration.name);
+        await this.createTable(
+          queryRunner,
+          schemaName,
+          tableMigration.name,
+          tableMigration.columns,
+        );
         break;
       case WorkspaceMigrationTableActionType.ALTER: {
         if (tableMigration.newName) {
@@ -137,6 +147,7 @@ export class WorkspaceMigrationRunnerService {
             tableMigration.columns,
           );
         }
+
         break;
       }
       case WorkspaceMigrationTableActionType.DROP:
@@ -163,10 +174,70 @@ export class WorkspaceMigrationRunnerService {
           tableMigration.columns,
         );
         break;
+
+      case WorkspaceMigrationTableActionType.ALTER_INDEXES:
+        if (tableMigration.indexes && tableMigration.indexes.length > 0) {
+          await this.handleIndexesChanges(
+            queryRunner,
+            schemaName,
+            tableMigration.newName ?? tableMigration.name,
+            tableMigration.indexes,
+          );
+        }
+        break;
       default:
         throw new Error(
           `Migration table action ${tableMigration.action} not supported`,
         );
+    }
+  }
+
+  private async handleIndexesChanges(
+    queryRunner: QueryRunner,
+    schemaName: string,
+    tableName: string,
+    indexes: WorkspaceMigrationIndexAction[],
+  ) {
+    for (const index of indexes) {
+      switch (index.action) {
+        case WorkspaceMigrationIndexActionType.CREATE:
+          if (isDefined(index.type) && index.type !== IndexType.BTREE) {
+            const quotedColumns = index.columns.map((column) => `"${column}"`);
+
+            await queryRunner.query(`
+              CREATE INDEX "${index.name}" ON "${schemaName}"."${tableName}" USING ${index.type} (${quotedColumns.join(', ')})
+          `);
+          } else {
+            await queryRunner.createIndex(
+              `${schemaName}.${tableName}`,
+              new TableIndex({
+                name: index.name,
+                columnNames: index.columns,
+                isUnique: index.isUnique,
+                where: index.where ?? undefined,
+              }),
+            );
+          }
+          break;
+        case WorkspaceMigrationIndexActionType.DROP:
+          try {
+            await queryRunner.dropIndex(
+              `${schemaName}.${tableName}`,
+              index.name,
+            );
+          } catch (error) {
+            // Ignore error if index does not exist
+            if (
+              error.message ===
+              `Supplied index ${index.name} was not found in table ${schemaName}.${tableName}`
+            ) {
+              continue;
+            }
+          }
+          break;
+        default:
+          throw new Error(`Migration index action not supported`);
+      }
     }
   }
 
@@ -181,20 +252,25 @@ export class WorkspaceMigrationRunnerService {
     queryRunner: QueryRunner,
     schemaName: string,
     tableName: string,
+    columns?: WorkspaceMigrationColumnAction[],
   ) {
     await queryRunner.createTable(
       new Table({
         name: tableName,
         schema: schemaName,
-        columns: customTableDefaultColumns,
+        columns: tableDefaultColumns(),
       }),
       true,
     );
 
-    // Enable totalCount for the table
-    await queryRunner.query(`
-      COMMENT ON TABLE "${schemaName}"."${tableName}" IS '@graphql({"totalCount": {"enabled": true}})';
-    `);
+    if (columns && columns.length > 0) {
+      await this.handleColumnChanges(
+        queryRunner,
+        schemaName,
+        tableName,
+        columns,
+      );
+    }
   }
 
   /**
@@ -326,6 +402,12 @@ export class WorkspaceMigrationRunnerService {
         enumName: enumName,
         isArray: migrationColumn.isArray,
         isNullable: migrationColumn.isNullable,
+        /* For now unique constraints are created at a higher level
+        as we need to handle soft-delete and a bug on empty strings
+        */
+        // isUnique: migrationColumn.isUnique,
+        asExpression: migrationColumn.asExpression,
+        generatedType: migrationColumn.generatedType,
       }),
     );
   }
@@ -379,6 +461,7 @@ export class WorkspaceMigrationRunnerService {
         ),
         isArray: migrationColumn.currentColumnDefinition.isArray,
         isNullable: migrationColumn.currentColumnDefinition.isNullable,
+        isUnique: migrationColumn.currentColumnDefinition.isUnique,
       }),
       new TableColumn({
         name: migrationColumn.alteredColumnDefinition.columnName,
@@ -389,6 +472,9 @@ export class WorkspaceMigrationRunnerService {
         ),
         isArray: migrationColumn.alteredColumnDefinition.isArray,
         isNullable: migrationColumn.alteredColumnDefinition.isNullable,
+        asExpression: migrationColumn.alteredColumnDefinition.asExpression,
+        generatedType: migrationColumn.alteredColumnDefinition.generatedType,
+        isUnique: migrationColumn.alteredColumnDefinition.isUnique,
       }),
     );
   }

@@ -6,7 +6,6 @@ import {
   GraphQLObjectType,
 } from 'graphql';
 
-import { FieldMetadataType } from 'src/engine/metadata-modules/field-metadata/field-metadata.entity';
 import { EnumTypeDefinition } from 'src/engine/api/graphql/workspace-schema-builder/factories/enum-type-definition.factory';
 import {
   InputTypeDefinition,
@@ -16,6 +15,7 @@ import {
   ObjectTypeDefinition,
   ObjectTypeDefinitionKind,
 } from 'src/engine/api/graphql/workspace-schema-builder/factories/object-type-definition.factory';
+import { FieldMetadataType } from 'src/engine/metadata-modules/field-metadata/field-metadata.entity';
 
 export type GqlInputType = InputTypeDefinition | EnumTypeDefinition;
 
@@ -89,9 +89,19 @@ export class TypeDefinitionsStorage {
   ): GraphQLObjectType | GraphQLEnumType | undefined {
     const key = this.generateCompositeKey(target, kind);
     let definition: GqlOutputType | undefined;
+    
 
     definition ??= this.objectTypeDefinitions.get(key);
     definition ??= this.enumTypeDefinitions.get(target);
+    if (target =='03c1ad8b-132a-4f6a-bd29-1a3155ef08af') {
+      console.log("key of this is 03c1ad8b-132a-4f6a-bd29-1a3155ef08af:", key);
+      console.log("kind of this is 03c1ad8b-132a-4f6a-bd29-kind 1a3155ef08af:", kind);
+      console.log("target of this is 03c1ad8b-132a-4f6a-bd29-1a3155ef08af:", target);
+      console.log("definition of this is 03c1ad8b-132a-4f6a-bd29-1a3155ef08af:", definition);
+      // console.log("this.objectTypeDefinitions:", this.objectTypeDefinitions)
+      // console.log("this.enumTypeDefinitions:", this.enumTypeDefinitions)
+      return 
+    }
 
     return definition?.type;
   }

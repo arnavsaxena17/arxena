@@ -1,7 +1,8 @@
+/* eslint-disable no-console */
 import react from '@vitejs/plugin-react-swc';
 import wyw from '@wyw-in-js/vite';
 import path from 'path';
-import { defineConfig, loadEnv } from 'vite';
+import { defineConfig, loadEnv, searchForWorkspaceRoot } from 'vite';
 import checker from 'vite-plugin-checker';
 import svgr from 'vite-plugin-svgr';
 import tsconfigPaths from 'vite-tsconfig-paths';
@@ -14,9 +15,9 @@ export default defineConfig(({ command, mode }) => {
   /*
     Using explicit env variables, there is no need to expose all of them (security).
   */
-  const { REACT_APP_SERVER_BASE_URL, VITE_BUILD_SOURCEMAP, REACT_APP_SOCKET_PATH_FRONT, REACT_APP_SERVER_SOCKET_URL } = env;
+  // const { } = env;
 
-  const isBuildCommand = command === 'build';
+  // const isBuildCommand = command === 'build';
 
   // const checkers: Checkers = {
   //   typescript: {
@@ -31,6 +32,51 @@ export default defineConfig(({ command, mode }) => {
   //       'eslint . --report-unused-disable-directives --max-warnings 0 --config .eslintrc.cjs',
   //   };
   // }
+  const {
+    REACT_APP_SERVER_BASE_URL,
+    VITE_BUILD_SOURCEMAP,
+    VITE_DISABLE_TYPESCRIPT_CHECKER,
+    VITE_DISABLE_ESLINT_CHECKER,
+    REACT_APP_SOCKET_PATH_FRONT, 
+    REACT_APP_SERVER_SOCKET_URL
+  } = env;
+
+  const isBuildCommand = command === 'build';
+
+  const tsConfigPath = isBuildCommand
+    ? path.resolve(__dirname, './tsconfig.build.json')
+    : path.resolve(__dirname, './tsconfig.dev.json');
+
+  const checkers: Checkers = {
+    overlay: false,
+  };
+
+  if (VITE_DISABLE_TYPESCRIPT_CHECKER === 'true') {
+    console.log(
+      `VITE_DISABLE_TYPESCRIPT_CHECKER: ${VITE_DISABLE_TYPESCRIPT_CHECKER}`,
+    );
+  }
+
+  if (VITE_DISABLE_ESLINT_CHECKER === 'true') {
+    console.log(`VITE_DISABLE_ESLINT_CHECKER: ${VITE_DISABLE_ESLINT_CHECKER}`);
+  }
+
+  if (VITE_BUILD_SOURCEMAP === 'true') {
+    console.log(`VITE_BUILD_SOURCEMAP: ${VITE_BUILD_SOURCEMAP}`);
+  }
+
+  if (VITE_DISABLE_TYPESCRIPT_CHECKER !== 'true') {
+    checkers['typescript'] = {
+      tsconfigPath: tsConfigPath,
+    };
+  }
+
+  if (VITE_DISABLE_ESLINT_CHECKER !== 'true') {
+    checkers['eslint'] = {
+      lintCommand:
+        'cd ../.. && eslint packages/twenty-front --report-unused-disable-directives --max-warnings 0 --config .eslintrc.cjs',
+    };
+  }
 
   return {
     root: __dirname,
@@ -39,6 +85,12 @@ export default defineConfig(({ command, mode }) => {
     server: {
       port: 3001,
       host: 'localhost',
+      fs: {
+        allow: [
+          searchForWorkspaceRoot(process.cwd()),
+          '**/@blocknote/core/src/fonts/**',
+        ],
+      },
     },
 
     plugins: [
@@ -73,6 +125,16 @@ export default defineConfig(({ command, mode }) => {
           '**/Tag.tsx',
           '**/MultiSelectFieldDisplay.tsx',
           '**/RatingInput.tsx',
+          '**/RecordTableCellContainer.tsx',
+          '**/RecordTableCellDisplayContainer.tsx',
+          '**/Avatar.tsx',
+          '**/RecordTableBodyDroppable.tsx',
+          '**/RecordTableCellBaseContainer.tsx',
+          '**/RecordTableCellTd.tsx',
+          '**/RecordTableTd.tsx',
+          '**/RecordTableHeaderDragDropColumn.tsx',
+          '**/ActorDisplay.tsx',
+          '**/AvatarChip.tsx',
         ],
         babelOptions: {
           presets: ['@babel/preset-typescript', '@babel/preset-react'],
@@ -102,6 +164,11 @@ export default defineConfig(({ command, mode }) => {
     css: {
       modules: {
         localsConvention: 'camelCaseOnly',
+      },
+    },
+    resolve: {
+      alias: {
+        path: 'rollup-plugin-node-polyfills/polyfills/path',
       },
     },
   };

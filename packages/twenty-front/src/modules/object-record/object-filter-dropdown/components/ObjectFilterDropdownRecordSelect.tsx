@@ -3,17 +3,24 @@ import { useRecoilValue } from 'recoil';
 import { v4 } from 'uuid';
 
 import { useFilterDropdown } from '@/object-record/object-filter-dropdown/hooks/useFilterDropdown';
-import { MultipleRecordSelectDropdown } from '@/object-record/select/components/MultipleRecordSelectDropdown';
+import { RelationPickerHotkeyScope } from '@/object-record/relation-picker/types/RelationPickerHotkeyScope';
+import { MultipleSelectDropdown } from '@/object-record/select/components/MultipleSelectDropdown';
 import { useRecordsForSelect } from '@/object-record/select/hooks/useRecordsForSelect';
-import { SelectableRecord } from '@/object-record/select/types/SelectableRecord';
-import { useCombinedViewFilters } from '@/views/hooks/useCombinedViewFilters';
+import { SelectableItem } from '@/object-record/select/types/SelectableItem';
+import { useDeleteCombinedViewFilters } from '@/views/hooks/useDeleteCombinedViewFilters';
 import { useGetCurrentView } from '@/views/hooks/useGetCurrentView';
 import { isDefined } from '~/utils/isDefined';
 
 export const EMPTY_FILTER_VALUE = '[]';
 export const MAX_RECORDS_TO_DISPLAY = 3;
 
-export const ObjectFilterDropdownRecordSelect = () => {
+type ObjectFilterDropdownRecordSelectProps = {
+  viewComponentId?: string;
+};
+
+export const ObjectFilterDropdownRecordSelect = ({
+  viewComponentId,
+}: ObjectFilterDropdownRecordSelectProps) => {
   const {
     filterDefinitionUsedInDropdownState,
     objectFilterDropdownSearchInputState,
@@ -25,8 +32,11 @@ export const ObjectFilterDropdownRecordSelect = () => {
     emptyFilterButKeepDefinition,
   } = useFilterDropdown();
 
-  const { removeCombinedViewFilter } = useCombinedViewFilters();
-  const { currentViewWithCombinedFiltersAndSorts } = useGetCurrentView();
+  const { deleteCombinedViewFilter } =
+    useDeleteCombinedViewFilters(viewComponentId);
+
+  const { currentViewWithCombinedFiltersAndSorts } =
+    useGetCurrentView(viewComponentId);
 
   const filterDefinitionUsedInDropdown = useRecoilValue(
     filterDefinitionUsedInDropdownState,
@@ -56,7 +66,7 @@ export const ObjectFilterDropdownRecordSelect = () => {
     });
 
   const handleMultipleRecordSelectChange = (
-    recordToSelect: SelectableRecord,
+    recordToSelect: SelectableItem,
     newSelectedValue: boolean,
   ) => {
     if (loading) {
@@ -71,7 +81,7 @@ export const ObjectFilterDropdownRecordSelect = () => {
 
     if (newSelectedRecordIds.length === 0) {
       emptyFilterButKeepDefinition();
-      removeCombinedViewFilter(fieldId);
+      deleteCombinedViewFilter(fieldId);
       return;
     }
 
@@ -124,13 +134,15 @@ export const ObjectFilterDropdownRecordSelect = () => {
   };
 
   return (
-    <MultipleRecordSelectDropdown
-      recordsToSelect={recordsToSelect}
-      filteredSelectedRecords={filteredSelectedRecords}
-      selectedRecords={selectedRecords}
+    <MultipleSelectDropdown
+      selectableListId="object-filter-record-select-id"
+      hotkeyScope={RelationPickerHotkeyScope.RelationPicker}
+      itemsToSelect={recordsToSelect}
+      filteredSelectedItems={filteredSelectedRecords}
+      selectedItems={selectedRecords}
       onChange={handleMultipleRecordSelectChange}
       searchFilter={objectFilterDropdownSearchInput}
-      loadingRecords={loading}
+      loadingItems={loading}
     />
   );
 };

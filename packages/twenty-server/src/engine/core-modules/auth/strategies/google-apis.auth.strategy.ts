@@ -1,11 +1,14 @@
-import { PassportStrategy } from "@nestjs/passport";
 import { Injectable } from "@nestjs/common";
+import { PassportStrategy } from "@nestjs/passport";
 
-import { Strategy, VerifyCallback } from "passport-google-oauth20";
 import { Request } from "express";
+import { Strategy, VerifyCallback } from "passport-google-oauth20";
+import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 
-import { EnvironmentService } from "src/engine/integrations/environment/environment.service";
-import { CalendarChannelVisibility } from "src/modules/calendar/standard-objects/calendar-channel.workspace-entity";
+// import { EnvironmentService } from "src/engine/integrations/environment/environment.service";
+// import { CalendarChannelVisibility } from "src/modules/calendar/standard-objects/calendar-channel.workspace-entity";
+import { CalendarChannelVisibility } from 'src/modules/calendar/common/standard-objects/calendar-channel.workspace-entity';
+
 import { MessageChannelVisibility } from "src/modules/messaging/common/standard-objects/message-channel.workspace-entity";
 
 export type GoogleAPIsRequest = Omit<

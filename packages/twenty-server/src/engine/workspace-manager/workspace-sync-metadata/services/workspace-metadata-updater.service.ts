@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
 import {
   EntityManager,
@@ -7,26 +7,31 @@ import {
   In,
   ObjectLiteral,
 } from 'typeorm';
-import { v4 as uuidV4 } from 'uuid';
 import { DeepPartial } from 'typeorm/common/DeepPartial';
+import { v4 as uuidV4 } from 'uuid';
 
 import { PartialFieldMetadata } from 'src/engine/workspace-manager/workspace-sync-metadata/interfaces/partial-field-metadata.interface';
+import { PartialIndexMetadata } from 'src/engine/workspace-manager/workspace-sync-metadata/interfaces/partial-index-metadata.interface';
 
-import { ObjectMetadataEntity } from 'src/engine/metadata-modules/object-metadata/object-metadata.entity';
+import { compositeTypeDefinitions } from 'src/engine/metadata-modules/field-metadata/composite-types';
+import { FieldMetadataComplexOption } from 'src/engine/metadata-modules/field-metadata/dtos/options.input';
 import {
   FieldMetadataEntity,
   FieldMetadataType,
 } from 'src/engine/metadata-modules/field-metadata/field-metadata.entity';
+import { isCompositeFieldMetadataType } from 'src/engine/metadata-modules/field-metadata/utils/is-composite-field-metadata-type.util';
+import { IndexFieldMetadataEntity } from 'src/engine/metadata-modules/index-metadata/index-field-metadata.entity';
+import { IndexMetadataEntity } from 'src/engine/metadata-modules/index-metadata/index-metadata.entity';
+import { ObjectMetadataEntity } from 'src/engine/metadata-modules/object-metadata/object-metadata.entity';
 import { RelationMetadataEntity } from 'src/engine/metadata-modules/relation-metadata/relation-metadata.entity';
-import { FieldMetadataComplexOption } from 'src/engine/metadata-modules/field-metadata/dtos/options.input';
-import { WorkspaceSyncStorage } from 'src/engine/workspace-manager/workspace-sync-metadata/storage/workspace-sync.storage';
+import { CompositeFieldMetadataType } from 'src/engine/metadata-modules/workspace-migration/factories/composite-column-action.factory';
 import { FieldMetadataUpdate } from 'src/engine/workspace-manager/workspace-migration-builder/factories/workspace-migration-field.factory';
 import { ObjectMetadataUpdate } from 'src/engine/workspace-manager/workspace-migration-builder/factories/workspace-migration-object.factory';
+import { WorkspaceSyncStorage } from 'src/engine/workspace-manager/workspace-sync-metadata/storage/workspace-sync.storage';
+import { capitalize } from 'src/utils/capitalize';
 
 @Injectable()
 export class WorkspaceMetadataUpdaterService {
-  private readonly logger = new Logger(WorkspaceMetadataUpdaterService.name);
-
   async updateObjectMetadata(
     manager: EntityManager,
     storage: WorkspaceSyncStorage,
@@ -45,9 +50,6 @@ export class WorkspaceMetadataUpdaterService {
         storage.objectMetadataCreateCollection.map((objectMetadata) => ({
           ...objectMetadata,
           isActive: true,
-          fields: objectMetadata.fields.map((field) =>
-            this.prepareFieldMetadataForCreation(field),
-          ),
         })) as DeepPartial<ObjectMetadataEntity>[],
       );
     const identifiers = createdPartialObjectMetadataCollection.map(
@@ -105,7 +107,6 @@ export class WorkspaceMetadataUpdaterService {
             ),
           }
         : {}),
-      isActive: true,
     };
   }
 
@@ -126,6 +127,16 @@ export class WorkspaceMetadataUpdaterService {
     updatedFieldMetadataCollection: FieldMetadataUpdate[];
   }> {
     const fieldMetadataRepository = manager.getRepository(FieldMetadataEntity);
+    /**
+     * Update field metadata
+     */
+    const updatedFieldMetadataCollection =
+      await this.updateEntities<FieldMetadataEntity>(
+        manager,
+        FieldMetadataEntity,
+        storage.fieldMetadataUpdateCollection,
+        ['objectMetadataId', 'workspaceId'],
+      );
 
     /**
      * Create field metadata
@@ -135,16 +146,6 @@ export class WorkspaceMetadataUpdaterService {
         this.prepareFieldMetadataForCreation(field),
       ) as DeepPartial<FieldMetadataEntity>[],
     );
-
-    /**
-     * Update field metadata
-     */
-    const updatedFieldMetadataCollection = await this.updateEntities<
-      FieldMetadataEntity<'default'>
-    >(manager, FieldMetadataEntity, storage.fieldMetadataUpdateCollection, [
-      'objectMetadataId',
-      'workspaceId',
-    ]);
 
     /**
      * Delete field metadata
@@ -227,6 +228,101 @@ export class WorkspaceMetadataUpdaterService {
     return {
       createdRelationMetadataCollection,
       updatedRelationMetadataCollection,
+    };
+  }
+
+  async updateIndexMetadata(
+    manager: EntityManager,
+    storage: WorkspaceSyncStorage,
+    originalObjectMetadataCollection: ObjectMetadataEntity[],
+  ): Promise<{
+    createdIndexMetadataCollection: IndexMetadataEntity[];
+  }> {
+    const indexMetadataRepository = manager.getRepository(IndexMetadataEntity);
+
+    const convertIndexMetadataForSaving = (
+      indexMetadata: PartialIndexMetadata,
+    ) => {
+      const convertIndexFieldMetadataForSaving = (
+        column: string,
+        order: number,
+      ): DeepPartial<IndexFieldMetadataEntity> => {
+        // Ensure correct type
+        const fieldMetadata = originalObjectMetadataCollection
+          .find((object) => object.id === indexMetadata.objectMetadataId)
+          ?.fields.find((field) => {
+            if (field.name === column) {
+              return true;
+            }
+
+            if (!isCompositeFieldMetadataType(field.type)) {
+              return;
+            }
+
+            const compositeType = compositeTypeDefinitions.get(
+              field.type as CompositeFieldMetadataType,
+            );
+
+            if (!compositeType) {
+              throw new Error(
+                `Composite type definition not found for type: ${field.type}`,
+              );
+            }
+
+            const columnNames = compositeType.properties.reduce(
+              (acc, column) => {
+                acc.push(`${field.name}${capitalize(column.name)}`);
+
+                return acc;
+              },
+              [] as string[],
+            );
+
+            if (columnNames.includes(column)) {
+              return true;
+            }
+          });
+
+        if (!fieldMetadata) {
+          throw new Error(`
+            Field metadata not found for column ${column} in object ${indexMetadata.objectMetadataId}
+          `);
+        }
+
+        return {
+          fieldMetadataId: fieldMetadata.id,
+          order,
+        };
+      };
+
+      return {
+        ...indexMetadata,
+        indexFieldMetadatas: indexMetadata.columns.map((column, index) =>
+          convertIndexFieldMetadataForSaving(column, index),
+        ),
+      };
+    };
+
+    /**
+     * Create index metadata
+     */
+    const createdIndexMetadataCollection = await indexMetadataRepository.save(
+      storage.indexMetadataCreateCollection.map(convertIndexMetadataForSaving),
+    );
+
+    /**
+     * Delete index metadata
+     */
+    if (storage.indexMetadataDeleteCollection.length > 0) {
+      await indexMetadataRepository.delete(
+        storage.indexMetadataDeleteCollection.map(
+          (indexMetadata) => indexMetadata.id,
+        ),
+      );
+    }
+
+    return {
+      createdIndexMetadataCollection,
     };
   }
 

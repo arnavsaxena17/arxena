@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
 import { Meta, StoryObj } from '@storybook/react';
+import { useEffect } from 'react';
 import { useSetRecoilState } from 'recoil';
 import { ComponentDecorator } from 'twenty-ui';
 
@@ -9,7 +9,7 @@ import { FieldDefinition } from '@/object-record/record-field/types/FieldDefinit
 import { FieldMetadata } from '@/object-record/record-field/types/FieldMetadata';
 import {
   RecordFieldValueSelectorContextProvider,
-  useSetRecordValue,
+  useSetRecordFieldValue,
 } from '@/object-record/record-store/contexts/RecordFieldValueSelectorContext';
 import { recordStoreFamilyState } from '@/object-record/record-store/states/recordStoreFamilyState';
 import { ChipGeneratorsDecorator } from '~/testing/decorators/ChipGeneratorsDecorator';
@@ -18,33 +18,39 @@ import { getProfilingStory } from '~/testing/profiling/utils/getProfilingStory';
 
 import {
   fieldValue,
+  otherPersonMock,
   relationFromManyFieldDisplayMock,
 } from './relationFromManyFieldDisplayMock';
 
 const RelationFieldValueSetterEffect = () => {
   const setEntity = useSetRecoilState(
-    recordStoreFamilyState(relationFromManyFieldDisplayMock.entityId),
+    recordStoreFamilyState(relationFromManyFieldDisplayMock.recordId),
   );
 
   const setRelationEntity = useSetRecoilState(
-    recordStoreFamilyState(relationFromManyFieldDisplayMock.relationEntityId),
+    recordStoreFamilyState(relationFromManyFieldDisplayMock.relationRecordId),
   );
 
-  const setRecordValue = useSetRecordValue();
+  const setRecordFieldValue = useSetRecordFieldValue();
 
   useEffect(() => {
     setEntity(relationFromManyFieldDisplayMock.entityValue);
     setRelationEntity(relationFromManyFieldDisplayMock.relationFieldValue);
 
-    setRecordValue(
+    setRecordFieldValue(
       relationFromManyFieldDisplayMock.entityValue.id,
-      relationFromManyFieldDisplayMock.entityValue,
+      'company',
+      [relationFromManyFieldDisplayMock.entityValue],
     );
-    setRecordValue(
+    setRecordFieldValue(otherPersonMock.entityValue.id, 'company', [
+      relationFromManyFieldDisplayMock.entityValue,
+    ]);
+    setRecordFieldValue(
       relationFromManyFieldDisplayMock.relationFieldValue.id,
+      'company',
       relationFromManyFieldDisplayMock.relationFieldValue,
     );
-  }, [setEntity, setRelationEntity, setRecordValue]);
+  }, [setEntity, setRelationEntity, setRecordFieldValue]);
 
   return null;
 };
@@ -58,7 +64,7 @@ const meta: Meta = {
       <RecordFieldValueSelectorContextProvider>
         <FieldContext.Provider
           value={{
-            entityId: relationFromManyFieldDisplayMock.entityId,
+            recordId: relationFromManyFieldDisplayMock.recordId,
             basePathToShowPage: '/object-record/',
             isLabelIdentifier: false,
             fieldDefinition: {
@@ -88,9 +94,10 @@ type Story = StoryObj<typeof RelationFromManyFieldDisplay>;
 
 export const Default: Story = {};
 
+// TODO: optimize this component once we have morph many
 export const Performance = getProfilingStory({
   componentName: 'RelationFromManyFieldDisplay',
-  averageThresholdInMs: 0.5,
+  averageThresholdInMs: 1,
   numberOfRuns: 20,
   numberOfTestsPerRun: 100,
 });

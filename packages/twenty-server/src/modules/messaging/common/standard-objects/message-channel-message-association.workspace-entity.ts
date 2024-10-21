@@ -1,18 +1,22 @@
 import { Relation } from 'src/engine/workspace-manager/workspace-sync-metadata/interfaces/relation.interface';
 
 import { FieldMetadataType } from 'src/engine/metadata-modules/field-metadata/field-metadata.entity';
-import { MESSAGE_CHANNEL_MESSAGE_ASSOCIATION_STANDARD_FIELD_IDS } from 'src/engine/workspace-manager/workspace-sync-metadata/constants/standard-field-ids';
-import { STANDARD_OBJECT_IDS } from 'src/engine/workspace-manager/workspace-sync-metadata/constants/standard-object-ids';
+import { RelationMetadataType } from 'src/engine/metadata-modules/relation-metadata/relation-metadata.entity';
 import { BaseWorkspaceEntity } from 'src/engine/twenty-orm/base.workspace-entity';
 import { WorkspaceEntity } from 'src/engine/twenty-orm/decorators/workspace-entity.decorator';
-import { WorkspaceIsNotAuditLogged } from 'src/engine/twenty-orm/decorators/workspace-is-not-audit-logged.decorator';
-import { WorkspaceIsSystem } from 'src/engine/twenty-orm/decorators/workspace-is-system.decorator';
 import { WorkspaceField } from 'src/engine/twenty-orm/decorators/workspace-field.decorator';
+import { WorkspaceIsNotAuditLogged } from 'src/engine/twenty-orm/decorators/workspace-is-not-audit-logged.decorator';
 import { WorkspaceIsNullable } from 'src/engine/twenty-orm/decorators/workspace-is-nullable.decorator';
+import { WorkspaceIsSystem } from 'src/engine/twenty-orm/decorators/workspace-is-system.decorator';
+import { WorkspaceJoinColumn } from 'src/engine/twenty-orm/decorators/workspace-join-column.decorator';
 import { WorkspaceRelation } from 'src/engine/twenty-orm/decorators/workspace-relation.decorator';
-import { RelationMetadataType } from 'src/engine/metadata-modules/relation-metadata/relation-metadata.entity';
+import {
+  MESSAGE_CHANNEL_MESSAGE_ASSOCIATION_STANDARD_FIELD_IDS,
+  MESSAGE_STANDARD_FIELD_IDS,
+} from 'src/engine/workspace-manager/workspace-sync-metadata/constants/standard-field-ids';
+import { STANDARD_OBJECT_IDS } from 'src/engine/workspace-manager/workspace-sync-metadata/constants/standard-object-ids';
+import { MessageDirection } from 'src/modules/messaging/common/enums/message-direction.enum';
 import { MessageChannelWorkspaceEntity } from 'src/modules/messaging/common/standard-objects/message-channel.workspace-entity';
-import { MessageThreadWorkspaceEntity } from 'src/modules/messaging/common/standard-objects/message-thread.workspace-entity';
 import { MessageWorkspaceEntity } from 'src/modules/messaging/common/standard-objects/message.workspace-entity';
 
 @WorkspaceEntity({
@@ -35,7 +39,7 @@ export class MessageChannelMessageAssociationWorkspaceEntity extends BaseWorkspa
     icon: 'IconHash',
   })
   @WorkspaceIsNullable()
-  messageExternalId: string;
+  messageExternalId: string | null;
 
   @WorkspaceField({
     standardId:
@@ -46,7 +50,31 @@ export class MessageChannelMessageAssociationWorkspaceEntity extends BaseWorkspa
     icon: 'IconHash',
   })
   @WorkspaceIsNullable()
-  messageThreadExternalId: string;
+  messageThreadExternalId: string | null;
+
+  @WorkspaceField({
+    standardId: MESSAGE_STANDARD_FIELD_IDS.direction,
+    type: FieldMetadataType.SELECT,
+    label: 'Direction',
+    description: 'Message Direction',
+    icon: 'IconDirection',
+    options: [
+      {
+        value: MessageDirection.INCOMING,
+        label: 'Incoming',
+        position: 0,
+        color: 'green',
+      },
+      {
+        value: MessageDirection.OUTGOING,
+        label: 'Outgoing',
+        position: 1,
+        color: 'blue',
+      },
+    ],
+    defaultValue: `'${MessageDirection.INCOMING}'`,
+  })
+  direction: MessageDirection;
 
   @WorkspaceRelation({
     standardId:
@@ -55,12 +83,14 @@ export class MessageChannelMessageAssociationWorkspaceEntity extends BaseWorkspa
     label: 'Message Channel Id',
     description: 'Message Channel Id',
     icon: 'IconHash',
-    joinColumn: 'messageChannelId',
     inverseSideTarget: () => MessageChannelWorkspaceEntity,
     inverseSideFieldKey: 'messageChannelMessageAssociations',
   })
   @WorkspaceIsNullable()
-  messageChannel: Relation<MessageChannelWorkspaceEntity>;
+  messageChannel: Relation<MessageChannelWorkspaceEntity> | null;
+
+  @WorkspaceJoinColumn('messageChannel')
+  messageChannelId: string;
 
   @WorkspaceRelation({
     standardId: MESSAGE_CHANNEL_MESSAGE_ASSOCIATION_STANDARD_FIELD_IDS.message,
@@ -68,24 +98,12 @@ export class MessageChannelMessageAssociationWorkspaceEntity extends BaseWorkspa
     label: 'Message Id',
     description: 'Message Id',
     icon: 'IconHash',
-    joinColumn: 'messageId',
     inverseSideTarget: () => MessageWorkspaceEntity,
     inverseSideFieldKey: 'messageChannelMessageAssociations',
   })
   @WorkspaceIsNullable()
-  message: Relation<MessageWorkspaceEntity>;
+  message: Relation<MessageWorkspaceEntity> | null;
 
-  @WorkspaceRelation({
-    standardId:
-      MESSAGE_CHANNEL_MESSAGE_ASSOCIATION_STANDARD_FIELD_IDS.messageThread,
-    type: RelationMetadataType.MANY_TO_ONE,
-    label: 'Message Thread Id',
-    description: 'Message Thread Id',
-    icon: 'IconHash',
-    joinColumn: 'messageThreadId',
-    inverseSideTarget: () => MessageThreadWorkspaceEntity,
-    inverseSideFieldKey: 'messageChannelMessageAssociations',
-  })
-  @WorkspaceIsNullable()
-  messageThread: Relation<MessageThreadWorkspaceEntity>;
+  @WorkspaceJoinColumn('message')
+  messageId: string;
 }

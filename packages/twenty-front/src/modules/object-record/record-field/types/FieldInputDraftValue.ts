@@ -1,34 +1,42 @@
 import { CurrencyCode } from '@/object-record/record-field/types/CurrencyCode';
 import {
+  FieldActorValue,
   FieldAddressValue,
   FieldBooleanValue,
   FieldCurrencyValue,
   FieldDateTimeValue,
-  FieldEmailValue,
+  FieldEmailsValue,
   FieldFullNameValue,
   FieldJsonValue,
   FieldLinksValue,
-  FieldLinkValue,
   FieldMultiSelectValue,
   FieldNumberValue,
-  FieldPhoneValue,
+  FieldPhonesValue,
   FieldRatingValue,
-  FieldRelationValue,
+  FieldRelationFromManyValue,
+  FieldRelationToOneValue,
   FieldSelectValue,
   FieldTextValue,
   FieldUUidValue,
+  PhoneRecord,
 } from '@/object-record/record-field/types/FieldMetadata';
-import { EntityForSelect } from '@/object-record/relation-picker/types/EntityForSelect';
 
 export type FieldTextDraftValue = string;
-export type FieldNumberDraftValue = string;
+export type FieldNumberDraftValue = number;
 export type FieldDateTimeDraftValue = string;
-export type FieldPhoneDraftValue = string;
-export type FieldEmailDraftValue = string;
+export type FieldPhonesDraftValue = {
+  primaryPhoneNumber: string;
+  primaryPhoneCountryCode: string;
+  additionalPhones?: PhoneRecord[] | null;
+};
+export type FieldEmailsDraftValue = {
+  primaryEmail: string;
+  additionalEmails: string[] | null;
+};
 export type FieldSelectDraftValue = string;
 export type FieldMultiSelectDraftValue = string[];
 export type FieldRelationDraftValue = string;
-export type FieldLinkDraftValue = { url: string; label: string };
+export type FieldRelationManyDraftValue = string[];
 export type FieldLinksDraftValue = {
   primaryLinkLabel: string;
   primaryLinkUrl: string;
@@ -50,6 +58,11 @@ export type FieldAddressDraftValue = {
   addressLng: number | null;
 };
 export type FieldJsonDraftValue = string;
+export type FieldActorDraftValue = {
+  source: string;
+  workspaceMemberId?: string;
+  name: string;
+};
 
 export type FieldInputDraftValue<FieldValue> = FieldValue extends FieldTextValue
   ? FieldTextDraftValue
@@ -61,30 +74,30 @@ export type FieldInputDraftValue<FieldValue> = FieldValue extends FieldTextValue
         ? FieldNumberDraftValue
         : FieldValue extends FieldBooleanValue
           ? FieldBooleanValue
-          : FieldValue extends FieldPhoneValue
-            ? FieldPhoneDraftValue
-            : FieldValue extends FieldEmailValue
-              ? FieldEmailDraftValue
-              : FieldValue extends FieldLinkValue
-                ? FieldLinkDraftValue
-                : FieldValue extends FieldLinksValue
-                  ? FieldLinksDraftValue
-                  : FieldValue extends FieldCurrencyValue
-                    ? FieldCurrencyDraftValue
-                    : FieldValue extends FieldFullNameValue
-                      ? FieldFullNameDraftValue
-                      : FieldValue extends FieldRatingValue
-                        ? FieldRatingValue
-                        : FieldValue extends FieldSelectValue
-                          ? FieldSelectDraftValue
-                          : FieldValue extends FieldMultiSelectValue
-                            ? FieldMultiSelectDraftValue
-                            : FieldValue extends
-                                  | FieldRelationValue<EntityForSelect>
-                                  | FieldRelationValue<EntityForSelect[]>
-                              ? FieldRelationDraftValue
+          : FieldValue extends FieldPhonesValue
+            ? FieldPhonesDraftValue
+            : FieldValue extends FieldEmailsValue
+              ? FieldEmailsDraftValue
+              : FieldValue extends FieldLinksValue
+                ? FieldLinksDraftValue
+                : FieldValue extends FieldCurrencyValue
+                  ? FieldCurrencyDraftValue
+                  : FieldValue extends FieldFullNameValue
+                    ? FieldFullNameDraftValue
+                    : FieldValue extends FieldRatingValue
+                      ? FieldRatingValue
+                      : FieldValue extends FieldSelectValue
+                        ? FieldSelectDraftValue
+                        : FieldValue extends FieldMultiSelectValue
+                          ? FieldMultiSelectDraftValue
+                          : FieldValue extends FieldRelationToOneValue
+                            ? FieldRelationDraftValue
+                            : FieldValue extends FieldRelationFromManyValue
+                              ? FieldRelationManyDraftValue
                               : FieldValue extends FieldAddressValue
                                 ? FieldAddressDraftValue
                                 : FieldValue extends FieldJsonValue
                                   ? FieldJsonDraftValue
-                                  : never;
+                                  : FieldValue extends FieldActorValue
+                                    ? FieldActorDraftValue
+                                    : never;

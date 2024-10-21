@@ -5,7 +5,8 @@ import { FieldMetadataModule } from 'src/engine/metadata-modules/field-metadata/
 import { ObjectMetadataModule } from 'src/engine/metadata-modules/object-metadata/object-metadata.module';
 import { RelationMetadataModule } from 'src/engine/metadata-modules/relation-metadata/relation-metadata.module';
 import { RemoteServerModule } from 'src/engine/metadata-modules/remote-server/remote-server.module';
-import { WorkspaceCacheVersionModule } from 'src/engine/metadata-modules/workspace-cache-version/workspace-cache-version.module';
+import { ServerlessFunctionModule } from 'src/engine/metadata-modules/serverless-function/serverless-function.module';
+import { WorkspaceMetadataVersionModule } from 'src/engine/metadata-modules/workspace-metadata-version/workspace-metadata-version.module';
 import { WorkspaceMigrationModule } from 'src/engine/metadata-modules/workspace-migration/workspace-migration.module';
 
 @Module({
@@ -14,7 +15,8 @@ import { WorkspaceMigrationModule } from 'src/engine/metadata-modules/workspace-
     FieldMetadataModule,
     ObjectMetadataModule,
     RelationMetadataModule,
-    WorkspaceCacheVersionModule,
+    ServerlessFunctionModule,
+    WorkspaceMetadataVersionModule,
     WorkspaceMigrationModule,
     RemoteServerModule,
   ],
@@ -24,6 +26,7 @@ import { WorkspaceMigrationModule } from 'src/engine/metadata-modules/workspace-
     FieldMetadataModule,
     ObjectMetadataModule,
     RelationMetadataModule,
+    ServerlessFunctionModule,
     RemoteServerModule,
   ],
 })

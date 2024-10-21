@@ -1,14 +1,14 @@
 import styled from '@emotion/styled';
 import { IconPlus } from 'twenty-ui';
-import { mockedTasks } from '~/testing/mock-data/activities';
+
+import { SkeletonLoader } from '@/activities/components/SkeletonLoader';
 import { useOpenCreateActivityDrawer } from '@/activities/hooks/useOpenCreateActivityDrawer';
-import { useRecoilState, useRecoilValue } from 'recoil';
 
 import { NoteList } from '@/activities/notes/components/NoteList';
-import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 
 import { useNotes } from '@/activities/notes/hooks/useNotes';
 import { ActivityTargetableObject } from '@/activities/types/ActivityTargetableEntity';
+import { CoreObjectNameSingular } from '@/object-metadata/types/CoreObjectNameSingular';
 import { Button } from '@/ui/input/button/components/Button';
 import AnimatedPlaceholder from '@/ui/layout/animated-placeholder/components/AnimatedPlaceholder';
 import {
@@ -16,6 +16,7 @@ import {
   AnimatedPlaceholderEmptySubTitle,
   AnimatedPlaceholderEmptyTextContainer,
   AnimatedPlaceholderEmptyTitle,
+  EMPTY_PLACEHOLDER_TRANSITION_PROPS,
 } from '@/ui/layout/animated-placeholder/components/EmptyPlaceholderStyled';
 
 const StyledNotesContainer = styled.div`
@@ -39,14 +40,24 @@ export const Notes = ({
 }: {
   targetableObject: ActivityTargetableObject;
 }) => {
-  const { notes } = useNotes(targetableObject);
-  const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
+  const { notes, loading } = useNotes(targetableObject);
 
-  const openCreateActivity = useOpenCreateActivityDrawer();
-  console.log("This is the targetableObject::", targetableObject);
-  if (notes?.length === 0) {
+  const openCreateActivity = useOpenCreateActivityDrawer({
+    activityObjectNameSingular: CoreObjectNameSingular.Note,
+  });
+
+  const isNotesEmpty = !notes || notes.length === 0;
+
+  if (loading && isNotesEmpty) {
+    return <SkeletonLoader />;
+  }
+
+  if (isNotesEmpty) {
     return (
-      <AnimatedPlaceholderEmptyContainer>
+      <AnimatedPlaceholderEmptyContainer
+        // eslint-disable-next-line react/jsx-props-no-spreading
+        {...EMPTY_PLACEHOLDER_TRANSITION_PROPS}
+      >
         <AnimatedPlaceholder type="noNote" />
         <AnimatedPlaceholderEmptyTextContainer>
           <AnimatedPlaceholderEmptyTitle>
@@ -56,19 +67,16 @@ export const Notes = ({
         There are no associated notes with this record.
           </AnimatedPlaceholderEmptySubTitle>
         </AnimatedPlaceholderEmptyTextContainer>
-        {
-          <Button
-        Icon={IconPlus}
-        title="New note"
-        variant="secondary"
-        onClick={() =>
-          openCreateActivity({
-            type: 'Note',
-            targetableObjects: [targetableObject || {"id":"79c22a03-8c19-4fd2-a24b-d63dd8ef3d53", "targetObjectNameSingular":"candidate",  "assigneeId":currentWorkspaceMember}],
-          })
-        }
-          />
-        }
+        <Button
+          Icon={IconPlus}
+          title="New note"
+          variant="secondary"
+          onClick={() =>
+            openCreateActivity({
+              targetableObjects: [targetableObject],
+            })
+          }
+        />
       </AnimatedPlaceholderEmptyContainer>
     );
   }
@@ -77,24 +85,21 @@ export const Notes = ({
   return (
     <StyledNotesContainer>
       <NoteList
-      title="All"
-      notes={notes ?? []}
-      button={
-        
-        <Button
-          Icon={IconPlus}
-          size="small"
-          variant="secondary"
-          title="Add note"
-          onClick={() =>
-          openCreateActivity({
-            type: 'Note',
-            targetableObjects: [targetableObject || {"id":"79c22a03-8c19-4fd2-a24b-d63dd8ef3d53", "targetObjectNameSingular":"candidate", "assigneeId":currentWorkspaceMember}],
-          })
-          }
-        ></Button>
-        
-      }
+        title="All"
+        notes={notes}
+        button={
+          <Button
+            Icon={IconPlus}
+            size="small"
+            variant="secondary"
+            title="Add note"
+            onClick={() =>
+              openCreateActivity({
+                targetableObjects: [targetableObject],
+              })
+            }
+          ></Button>
+        }
       />
     </StyledNotesContainer>
   );

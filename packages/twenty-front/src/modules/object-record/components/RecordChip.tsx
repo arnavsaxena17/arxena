@@ -1,14 +1,16 @@
-import { EntityChip, EntityChipVariant } from 'twenty-ui';
+import { AvatarChip, AvatarChipVariant } from 'twenty-ui';
 
-import { useMapToObjectRecordIdentifier } from '@/object-metadata/hooks/useMapToObjectRecordIdentifier';
+import { getLinkToShowPage } from '@/object-metadata/utils/getLinkToShowPage';
+import { useRecordChipData } from '@/object-record/hooks/useRecordChipData';
 import { ObjectRecord } from '@/object-record/types/ObjectRecord';
-import { getImageAbsoluteURIOrBase64 } from '~/utils/image/getImageAbsoluteURIOrBase64';
+import { UndecoratedLink } from '@/ui/navigation/link/components/UndecoratedLink';
+import { MouseEvent } from 'react';
 
 export type RecordChipProps = {
   objectNameSingular: string;
   record: ObjectRecord;
   className?: string;
-  variant?: EntityChipVariant;
+  variant?: AvatarChipVariant;
 };
 
 export const RecordChip = ({
@@ -17,23 +19,29 @@ export const RecordChip = ({
   className,
   variant,
 }: RecordChipProps) => {
-  const { mapToObjectRecordIdentifier } = useMapToObjectRecordIdentifier({
+  const { recordChipData } = useRecordChipData({
     objectNameSingular,
+    record,
   });
 
-  const objectRecordIdentifier = mapToObjectRecordIdentifier(record);
+  const handleClick = (e: MouseEvent<HTMLAnchorElement>) => {
+    e.stopPropagation();
+  };
 
   return (
-    <EntityChip
-      entityId={record.id}
-      name={objectRecordIdentifier.name}
-      avatarType={objectRecordIdentifier.avatarType}
-      avatarUrl={
-        getImageAbsoluteURIOrBase64(objectRecordIdentifier.avatarUrl) || ''
-      }
-      linkToEntity={objectRecordIdentifier.linkToShowPage}
-      className={className}
-      variant={variant}
-    />
+    <UndecoratedLink
+      onClick={handleClick}
+      to={getLinkToShowPage(objectNameSingular, record)}
+    >
+      <AvatarChip
+        placeholderColorSeed={record.id}
+        name={recordChipData.name}
+        avatarType={recordChipData.avatarType}
+        avatarUrl={recordChipData.avatarUrl ?? ''}
+        className={className}
+        variant={variant}
+        onClick={() => {}}
+      />
+    </UndecoratedLink>
   );
 };

@@ -5,10 +5,11 @@ import { useRecordFieldInput } from '@/object-record/record-field/hooks/useRecor
 import { FieldNumberValue } from '@/object-record/record-field/types/FieldMetadata';
 import { recordStoreFamilySelector } from '@/object-record/record-store/states/selectors/recordStoreFamilySelector';
 import { FieldMetadataType } from '~/generated-metadata/graphql';
+
 import {
-  canBeCastAsIntegerOrNull,
-  castAsIntegerOrNull,
-} from '~/utils/cast-as-integer-or-null';
+  canBeCastAsNumberOrNull,
+  castAsNumberOrNull,
+} from '~/utils/cast-as-number-or-null';
 
 import { FieldContext } from '../../contexts/FieldContext';
 import { usePersistField } from '../../hooks/usePersistField';
@@ -16,7 +17,7 @@ import { assertFieldMetadata } from '../../types/guards/assertFieldMetadata';
 import { isFieldNumber } from '../../types/guards/isFieldNumber';
 
 export const useNumberField = () => {
-  const { entityId, fieldDefinition, hotkeyScope } = useContext(FieldContext);
+  const { recordId, fieldDefinition, hotkeyScope } = useContext(FieldContext);
 
   assertFieldMetadata(FieldMetadataType.Number, isFieldNumber, fieldDefinition);
 
@@ -24,7 +25,7 @@ export const useNumberField = () => {
 
   const [fieldValue, setFieldValue] = useRecoilState<number | null>(
     recordStoreFamilySelector({
-      recordId: entityId,
+      recordId,
       fieldName: fieldName,
     }),
   );
@@ -32,17 +33,17 @@ export const useNumberField = () => {
   const persistField = usePersistField();
 
   const persistNumberField = (newValue: string) => {
-    if (!canBeCastAsIntegerOrNull(newValue)) {
+    if (!canBeCastAsNumberOrNull(newValue)) {
       return;
     }
 
-    const castedValue = castAsIntegerOrNull(newValue);
+    const castedValue = castAsNumberOrNull(newValue);
 
     persistField(castedValue);
   };
 
   const { setDraftValue, getDraftValueSelector } =
-    useRecordFieldInput<FieldNumberValue>(`${entityId}-${fieldName}`);
+    useRecordFieldInput<FieldNumberValue>(`${recordId}-${fieldName}`);
 
   const draftValue = useRecoilValue(getDraftValueSelector());
 

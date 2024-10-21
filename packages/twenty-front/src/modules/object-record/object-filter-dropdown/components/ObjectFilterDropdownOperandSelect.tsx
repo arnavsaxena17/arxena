@@ -7,8 +7,9 @@ import { MenuItem } from '@/ui/navigation/menu-item/components/MenuItem';
 import { ViewFilterOperand } from '@/views/types/ViewFilterOperand';
 import { isDefined } from '~/utils/isDefined';
 
+import { getInitialFilterValue } from '@/object-record/object-filter-dropdown/utils/getInitialFilterValue';
 import { getOperandLabel } from '../utils/getOperandLabel';
-import { getOperandsForFilterType } from '../utils/getOperandsForFilterType';
+import { getOperandsForFilterDefinition } from '../utils/getOperandsForFilterType';
 
 export const ObjectFilterDropdownOperandSelect = () => {
   const {
@@ -30,24 +31,51 @@ export const ObjectFilterDropdownOperandSelect = () => {
 
   const selectedFilter = useRecoilValue(selectedFilterState);
 
-  const operandsForFilterType = getOperandsForFilterType(
-    filterDefinitionUsedInDropdown?.type,
-  );
+  const operandsForFilterType = isDefined(filterDefinitionUsedInDropdown)
+    ? getOperandsForFilterDefinition(filterDefinitionUsedInDropdown)
+    : [];
 
-  const handleOperangeChange = (newOperand: ViewFilterOperand) => {
+  const handleOperandChange = (newOperand: ViewFilterOperand) => {
+    const isValuelessOperand = [
+      ViewFilterOperand.IsEmpty,
+      ViewFilterOperand.IsNotEmpty,
+      ViewFilterOperand.IsInPast,
+      ViewFilterOperand.IsInFuture,
+      ViewFilterOperand.IsToday,
+    ].includes(newOperand);
+
     setSelectedOperandInDropdown(newOperand);
     setIsObjectFilterDropdownOperandSelectUnfolded(false);
+
+    if (isValuelessOperand && isDefined(filterDefinitionUsedInDropdown)) {
+      selectFilter?.({
+        id: v4(),
+        fieldMetadataId: filterDefinitionUsedInDropdown?.fieldMetadataId ?? '',
+        displayValue: '',
+        operand: newOperand,
+        value: '',
+        definition: filterDefinitionUsedInDropdown,
+      });
+      return;
+    }
 
     if (
       isDefined(filterDefinitionUsedInDropdown) &&
       isDefined(selectedFilter)
     ) {
+      const { value, displayValue } = getInitialFilterValue(
+        filterDefinitionUsedInDropdown.type,
+        newOperand,
+        selectedFilter.value,
+        selectedFilter.displayValue,
+      );
+
       selectFilter?.({
         id: selectedFilter.id ? selectedFilter.id : v4(),
         fieldMetadataId: selectedFilter.fieldMetadataId,
-        displayValue: selectedFilter.displayValue,
+        displayValue,
         operand: newOperand,
-        value: selectedFilter.value,
+        value,
         definition: filterDefinitionUsedInDropdown,
       });
     }
@@ -63,7 +91,7 @@ export const ObjectFilterDropdownOperandSelect = () => {
         <MenuItem
           key={`select-filter-operand-${index}`}
           onClick={() => {
-            handleOperangeChange(filterOperand);
+            handleOperandChange(filterOperand);
           }}
           text={getOperandLabel(filterOperand)}
         />

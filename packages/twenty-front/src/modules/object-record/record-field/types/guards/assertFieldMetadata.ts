@@ -2,12 +2,15 @@ import { FieldMetadataType } from '~/generated-metadata/graphql';
 
 import { FieldDefinition } from '../FieldDefinition';
 import {
+  FieldActorMetadata,
   FieldAddressMetadata,
+  FieldArrayMetadata,
   FieldBooleanMetadata,
   FieldCurrencyMetadata,
   FieldDateMetadata,
   FieldDateTimeMetadata,
   FieldEmailMetadata,
+  FieldEmailsMetadata,
   FieldFullNameMetadata,
   FieldLinkMetadata,
   FieldLinksMetadata,
@@ -15,6 +18,7 @@ import {
   FieldMultiSelectMetadata,
   FieldNumberMetadata,
   FieldPhoneMetadata,
+  FieldPhonesMetadata,
   FieldRatingMetadata,
   FieldRawJsonMetadata,
   FieldRelationMetadata,
@@ -37,22 +41,22 @@ type AssertFieldMetadataFunction = <
             ? FieldDateMetadata
             : E extends 'EMAIL'
               ? FieldEmailMetadata
-              : E extends 'SELECT'
-                ? FieldSelectMetadata
-                : E extends 'MULTI_SELECT'
-                  ? FieldMultiSelectMetadata
-                  : E extends 'RATING'
-                    ? FieldRatingMetadata
-                    : E extends 'LINK'
-                      ? FieldLinkMetadata
-                      : E extends 'LINKS'
-                        ? FieldLinksMetadata
-                        : E extends 'NUMBER'
-                          ? FieldNumberMetadata
-                          : E extends 'PHONE'
-                            ? FieldPhoneMetadata
-                            : E extends 'PROBABILITY'
-                              ? FieldRatingMetadata
+              : E extends 'EMAILS'
+                ? FieldEmailsMetadata
+                : E extends 'SELECT'
+                  ? FieldSelectMetadata
+                  : E extends 'MULTI_SELECT'
+                    ? FieldMultiSelectMetadata
+                    : E extends 'RATING'
+                      ? FieldRatingMetadata
+                      : E extends 'LINK'
+                        ? FieldLinkMetadata
+                        : E extends 'LINKS'
+                          ? FieldLinksMetadata
+                          : E extends 'NUMBER'
+                            ? FieldNumberMetadata
+                            : E extends 'PHONE'
+                              ? FieldPhoneMetadata
                               : E extends 'RELATION'
                                 ? FieldRelationMetadata
                                 : E extends 'TEXT'
@@ -63,7 +67,15 @@ type AssertFieldMetadataFunction = <
                                       ? FieldAddressMetadata
                                       : E extends 'RAW_JSON'
                                         ? FieldRawJsonMetadata
-                                        : never,
+                                        : E extends 'RICH_TEXT'
+                                          ? FieldTextMetadata
+                                          : E extends 'ACTOR'
+                                            ? FieldActorMetadata
+                                            : E extends 'ARRAY'
+                                              ? FieldArrayMetadata
+                                              : E extends 'PHONES'
+                                                ? FieldPhonesMetadata
+                                                : never,
 >(
   fieldType: E,
   fieldTypeGuard: (

@@ -1,9 +1,10 @@
 module.exports = {
-  schema: process.env.REACT_APP_SERVER_BASE_URL + '/graphql',
+  schema: (process.env.REACT_APP_SERVER_BASE_URL ?? 'http://localhost:3000') + '/graphql',
   documents: [
     '!./src/modules/databases/**',
     '!./src/modules/object-metadata/**',
     '!./src/modules/object-record/**',
+    '!./src/modules/settings/serverless-functions/**',
     './src/modules/**/*.tsx',
     './src/modules/**/*.ts',
     '!./src/**/*.test.tsx',

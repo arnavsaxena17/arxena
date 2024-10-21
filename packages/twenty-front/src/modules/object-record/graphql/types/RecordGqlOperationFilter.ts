@@ -9,6 +9,11 @@ export type UUIDFilter = {
   is?: IsFilter;
 };
 
+export type RelationFilter = {
+  is?: IsFilter;
+  in?: UUIDFilterValue[];
+};
+
 export type BooleanFilter = {
   eq?: boolean;
   is?: IsFilter;
@@ -80,6 +85,25 @@ export type AddressFilter = {
   addressPostcode?: StringFilter;
 };
 
+export type LinksFilter = {
+  primaryLinkUrl?: StringFilter;
+  primaryLinkLabel?: StringFilter;
+};
+
+export type ActorFilter = {
+  name?: StringFilter;
+  source?: IsFilter;
+};
+
+export type EmailsFilter = {
+  primaryEmail?: StringFilter;
+};
+
+export type PhonesFilter = {
+  primaryPhoneNumber?: StringFilter;
+  primaryPhoneCountryCode?: StringFilter;
+};
+
 export type LeafFilter =
   | UUIDFilter
   | StringFilter
@@ -90,6 +114,9 @@ export type LeafFilter =
   | FullNameFilter
   | BooleanFilter
   | AddressFilter
+  | LinksFilter
+  | ActorFilter
+  | PhonesFilter
   | undefined;
 
 export type AndObjectRecordFilter = {

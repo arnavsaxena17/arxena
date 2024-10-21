@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { H2Title, IconSettings } from 'twenty-ui';
+import { H2Title } from 'twenty-ui';
 
 import { useGetDatabaseConnections } from '@/databases/hooks/useGetDatabaseConnections';
 import { SettingsPageContainer } from '@/settings/components/SettingsPageContainer';
@@ -11,9 +11,8 @@ import { useSettingsIntegrationCategories } from '@/settings/integrations/hooks/
 import { getSettingsPagePath } from '@/settings/utils/getSettingsPagePath';
 import { AppPath } from '@/types/AppPath';
 import { SettingsPath } from '@/types/SettingsPath';
-import { SubMenuTopBarContainer } from '@/ui/layout/page/SubMenuTopBarContainer';
+import { SubMenuTopBarContainer } from '@/ui/layout/page/components/SubMenuTopBarContainer';
 import { Section } from '@/ui/layout/section/components/Section';
-import { Breadcrumb } from '@/ui/navigation/bread-crumb/components/Breadcrumb';
 
 export const SettingsIntegrationDatabase = () => {
   const { databaseKey = '' } = useParams();
@@ -42,17 +41,21 @@ export const SettingsIntegrationDatabase = () => {
   if (!isIntegrationAvailable) return null;
 
   return (
-    <SubMenuTopBarContainer Icon={IconSettings} title="Settings">
+    <SubMenuTopBarContainer
+      title={integration.text}
+      links={[
+        {
+          children: 'Workspace',
+          href: getSettingsPagePath(SettingsPath.Workspace),
+        },
+        {
+          children: 'Integrations',
+          href: getSettingsPagePath(SettingsPath.Integrations),
+        },
+        { children: integration.text },
+      ]}
+    >
       <SettingsPageContainer>
-        <Breadcrumb
-          links={[
-            {
-              children: 'Integrations',
-              href: getSettingsPagePath(SettingsPath.Integrations),
-            },
-            { children: integration.text },
-          ]}
-        />
         <SettingsIntegrationPreview
           integrationLogoUrl={integration.from.image}
         />

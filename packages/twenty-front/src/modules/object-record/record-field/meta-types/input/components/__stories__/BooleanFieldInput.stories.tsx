@@ -1,12 +1,12 @@
-import { useEffect } from 'react';
 import { Meta, StoryObj } from '@storybook/react';
 import { expect, fn, userEvent, within } from '@storybook/test';
+import { useEffect } from 'react';
 import { useSetRecoilState } from 'recoil';
 
 import { recordStoreFamilyState } from '@/object-record/record-store/states/recordStoreFamilyState';
 import { FieldMetadataType } from '~/generated/graphql';
 
-import { FieldContextProvider } from '../../../__stories__/FieldContextProvider';
+import { FieldContextProvider } from '@/object-record/record-field/meta-types/components/FieldContextProvider';
 import {
   BooleanFieldInput,
   BooleanFieldInputProps,
@@ -14,28 +14,28 @@ import {
 
 const BooleanFieldValueSetterEffect = ({
   value,
-  entityId,
+  recordId,
 }: {
   value: boolean;
-  entityId: string;
+  recordId: string;
 }) => {
-  const setField = useSetRecoilState(recordStoreFamilyState(entityId));
+  const setField = useSetRecoilState(recordStoreFamilyState(recordId));
 
   useEffect(() => {
-    setField({ id: entityId, Boolean: value, __typename: 'Person' });
-  }, [entityId, setField, value]);
+    setField({ id: recordId, Boolean: value, __typename: 'Person' });
+  }, [recordId, setField, value]);
 
   return <></>;
 };
 
 type BooleanFieldInputWithContextProps = BooleanFieldInputProps & {
   value: boolean;
-  entityId?: string;
+  recordId?: string;
 };
 
 const BooleanFieldInputWithContext = ({
   value,
-  entityId,
+  recordId,
   onSubmit,
 }: BooleanFieldInputWithContextProps) => {
   return (
@@ -51,9 +51,9 @@ const BooleanFieldInputWithContext = ({
           objectMetadataNameSingular: 'person',
         },
       }}
-      entityId={entityId}
+      recordId={recordId}
     >
-      <BooleanFieldValueSetterEffect value={value} entityId={entityId ?? ''} />
+      <BooleanFieldValueSetterEffect value={value} recordId={recordId ?? ''} />
       <BooleanFieldInput onSubmit={onSubmit} testId="boolean-field-input" />
     </FieldContextProvider>
   );
@@ -64,7 +64,7 @@ const meta: Meta = {
   component: BooleanFieldInputWithContext,
   args: {
     value: true,
-    entityId: 'id-1',
+    recordId: 'id-1',
   },
 };
 

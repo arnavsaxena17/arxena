@@ -1,6 +1,6 @@
-import { useMemo, useRef, useState } from 'react';
 import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
+import { MouseEvent, useMemo, useRef, useState } from 'react';
 import { IconChevronDown, IconComponent } from 'twenty-ui';
 
 import { Dropdown } from '@/ui/layout/dropdown/components/Dropdown';
@@ -10,11 +10,18 @@ import { DropdownMenuSeparator } from '@/ui/layout/dropdown/components/DropdownM
 import { useDropdown } from '@/ui/layout/dropdown/hooks/useDropdown';
 import { MenuItem } from '@/ui/navigation/menu-item/components/MenuItem';
 
+import { isDefined } from '~/utils/isDefined';
 import { SelectHotkeyScope } from '../types/SelectHotkeyScope';
 
 export type SelectOption<Value extends string | number | null> = {
   value: Value;
   label: string;
+  Icon?: IconComponent;
+};
+
+type CallToActionButton = {
+  text: string;
+  onClick: (event: MouseEvent<HTMLDivElement>) => void;
   Icon?: IconComponent;
 };
 
@@ -32,6 +39,7 @@ export type SelectProps<Value extends string | number | null> = {
   options: SelectOption<Value>[];
   value?: Value;
   withSearchInput?: boolean;
+  callToActionButton?: CallToActionButton;
 };
 
 const StyledContainer = styled.div<{ fullWidth?: boolean }>`
@@ -67,8 +75,11 @@ const StyledControlLabel = styled.div`
   gap: ${({ theme }) => theme.spacing(1)};
 `;
 
-const StyledIconChevronDown = styled(IconChevronDown)<{ disabled?: boolean }>`
-  color: ${({ disabled, theme }) => (disabled ? theme.font.color.extraLight : theme.font.color.tertiary)};
+const StyledIconChevronDown = styled(IconChevronDown)<{
+  disabled?: boolean;
+}>`
+  color: ${({ disabled, theme }) =>
+    disabled ? theme.font.color.extraLight : theme.font.color.tertiary};
 `;
 
 export const Select = <Value extends string | number | null>({
@@ -85,16 +96,30 @@ export const Select = <Value extends string | number | null>({
   options,
   value,
   withSearchInput,
+  callToActionButton,
 }: SelectProps<Value>) => {
   const selectContainerRef = useRef<HTMLDivElement>(null);
 
   const theme = useTheme();
   const [searchInputValue, setSearchInputValue] = useState('');
 
-  const selectedOption = options.find(({ value: key }) => key === value) || emptyOption;
-  const filteredOptions = useMemo(() => (searchInputValue ? options.filter(({ label }) => label.toLowerCase().includes(searchInputValue.toLowerCase())) : options), [options, searchInputValue]);
+  const selectedOption =
+    options.find(({ value: key }) => key === value) ||
+    emptyOption ||
+    options[0];
+  const filteredOptions = useMemo(
+    () =>
+      searchInputValue
+        ? options.filter(({ label }) =>
+            label.toLowerCase().includes(searchInputValue.toLowerCase()),
+          )
+        : options,
+    [options, searchInputValue],
+  );
 
-  const isDisabled = disabledFromProps || options.length <= 0;
+  const isDisabled =
+    disabledFromProps ||
+    (options.length <= 1 && !isDefined(callToActionButton));
 
   const { closeDropdown } = useDropdown(dropdownId);
 
@@ -138,6 +163,18 @@ export const Select = <Value extends string | number | null>({
                       }}
                     />
                   ))}
+                </DropdownMenuItemsContainer>
+              )}
+              {!!callToActionButton && !!filteredOptions.length && (
+                <DropdownMenuSeparator />
+              )}
+              {!!callToActionButton && (
+                <DropdownMenuItemsContainer hasMaxHeight>
+                  <MenuItem
+                    onClick={callToActionButton.onClick}
+                    LeftIcon={callToActionButton.Icon}
+                    text={callToActionButton.text}
+                  />
                 </DropdownMenuItemsContainer>
               )}
             </>

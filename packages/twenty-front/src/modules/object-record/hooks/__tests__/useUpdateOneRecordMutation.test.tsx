@@ -1,37 +1,21 @@
 import { renderHook } from '@testing-library/react';
 import { print } from 'graphql';
-import { RecoilRoot } from 'recoil';
 
+import { PERSON_FRAGMENT_WITH_DEPTH_ZERO_RELATIONS } from '@/object-record/hooks/__mocks__/personFragments';
 import { useUpdateOneRecordMutation } from '@/object-record/hooks/useUpdateOneRecordMutation';
+import { getJestMetadataAndApolloMocksWrapper } from '~/testing/jest/getJestMetadataAndApolloMocksWrapper';
+import { normalizeGQLQuery } from '~/utils/normalizeGQLQuery';
 
 const expectedQueryTemplate = `
 mutation UpdateOnePerson($idToUpdate: ID!, $input: PersonUpdateInput!) {
   updatePerson(id: $idToUpdate, data: $input) {
-    __typename
-    xLink {
-      label
-      url
-    }
-    id
-    createdAt
-    city
-    email
-    jobTitle
-    name {
-      firstName
-      lastName
-    }
-    phone
-    linkedinLink {
-      label
-      url
-    }
-    updatedAt
-    avatarUrl
-    companyId
+      ${PERSON_FRAGMENT_WITH_DEPTH_ZERO_RELATIONS}
   }
-}
-`.replace(/\s/g, '');
+}`;
+
+const Wrapper = getJestMetadataAndApolloMocksWrapper({
+  apolloMocks: [],
+});
 
 describe('useUpdateOneRecordMutation', () => {
   it('should return a valid createManyRecordsMutation', () => {
@@ -43,7 +27,7 @@ describe('useUpdateOneRecordMutation', () => {
           objectNameSingular,
         }),
       {
-        wrapper: RecoilRoot,
+        wrapper: Wrapper,
       },
     );
 
@@ -51,11 +35,10 @@ describe('useUpdateOneRecordMutation', () => {
 
     expect(updateOneRecordMutation).toBeDefined();
 
-    const printedReceivedQuery = print(updateOneRecordMutation).replace(
-      /\s/g,
-      '',
-    );
+    const printedReceivedQuery = print(updateOneRecordMutation);
 
-    expect(printedReceivedQuery).toEqual(expectedQueryTemplate);
+    expect(normalizeGQLQuery(printedReceivedQuery)).toEqual(
+      normalizeGQLQuery(expectedQueryTemplate),
+    );
   });
 });

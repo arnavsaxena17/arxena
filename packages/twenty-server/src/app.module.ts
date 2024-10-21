@@ -1,29 +1,31 @@
 import { DynamicModule, MiddlewareConsumer, Module, RequestMethod } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { ServeStaticModule } from '@nestjs/serve-static';
 import { GraphQLModule } from '@nestjs/graphql';
-import { existsSync } from 'fs';
+import { ServeStaticModule } from '@nestjs/serve-static';
+
 import { DevtoolsModule } from '@nestjs/devtools-integration';
+import { existsSync } from 'fs';
 
 import { join } from 'path';
 
-import { YogaDriverConfig, YogaDriver } from '@graphql-yoga/nestjs';
+import { YogaDriver, YogaDriverConfig } from '@graphql-yoga/nestjs';
 
-import { RestApiModule } from 'src/engine/api/rest/rest-api.module';
-import { ModulesModule } from 'src/modules/modules.module';
 import { CoreGraphQLApiModule } from 'src/engine/api/graphql/core-graphql-api.module';
-import { MetadataGraphQLApiModule } from 'src/engine/api/graphql/metadata-graphql-api.module';
 import { GraphQLConfigModule } from 'src/engine/api/graphql/graphql-config/graphql-config.module';
 import { GraphQLConfigService } from 'src/engine/api/graphql/graphql-config/graphql-config.service';
-import { WorkspaceCacheVersionModule } from 'src/engine/metadata-modules/workspace-cache-version/workspace-cache-version.module';
+import { MetadataGraphQLApiModule } from 'src/engine/api/graphql/metadata-graphql-api.module';
+import { RestApiModule } from 'src/engine/api/rest/rest-api.module';
+import { MessageQueueDriverType } from 'src/engine/core-modules/message-queue/interfaces';
+import { MessageQueueModule } from 'src/engine/core-modules/message-queue/message-queue.module';
 import { GraphQLHydrateRequestFromTokenMiddleware } from 'src/engine/middlewares/graphql-hydrate-request-from-token.middleware';
-import { MessageQueueModule } from 'src/engine/integrations/message-queue/message-queue.module';
-import { MessageQueueDriverType } from 'src/engine/integrations/message-queue/interfaces';
+import { TwentyORMModule } from 'src/engine/twenty-orm/twenty-orm.module';
+import { WorkspaceCacheStorageModule } from 'src/engine/workspace-cache-storage/workspace-cache-storage.module';
+import { ModulesModule } from 'src/modules/modules.module';
 
-import { IntegrationsModule } from './engine/integrations/integrations.module';
-import { CoreEngineModule } from './engine/core-modules/core-engine.module';
-import { EnvironmentService } from 'src/engine/integrations/environment/environment.service';
 import { ScheduleModule } from '@nestjs/schedule';
+import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
+
+import { CoreEngineModule } from './engine/core-modules/core-engine.module';
 // import { VideoInterviewModule } from './engine/core-modules/video-interview/video-interview.module';
 
 @Module({
@@ -41,24 +43,23 @@ import { ScheduleModule } from '@nestjs/schedule';
 
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: '.env',
+      envFilePath: process.env.NODE_ENV === 'test' ? '.env.test' : '.env',
       ignoreEnvFile: false,
       ignoreEnvVars: true,    
 
     }),
     GraphQLModule.forRootAsync<YogaDriverConfig>({
       driver: YogaDriver,
-      imports: [CoreEngineModule, GraphQLConfigModule],
+      imports: [GraphQLConfigModule],
       useClass: GraphQLConfigService,
     }),
-    // Integrations module, contains all the integrations with other services
-    IntegrationsModule,
+    TwentyORMModule,
     // Core engine module, contains all the core modules
     CoreEngineModule,
     // Modules module, contains all business logic modules
     ModulesModule,
     // Needed for the user workspace middleware
-    WorkspaceCacheVersionModule,
+    WorkspaceCacheStorageModule,
     // Api modules
     CoreGraphQLApiModule,
     MetadataGraphQLApiModule,

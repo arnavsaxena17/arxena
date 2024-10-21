@@ -1,7 +1,6 @@
-import * as React from 'react';
 import styled from '@emotion/styled';
+import * as React from 'react';
 import { IconCheck, IconMinus } from 'twenty-ui';
-import { v4 } from 'uuid';
 
 export enum CheckboxVariant {
   Primary = 'primary',
@@ -49,10 +48,14 @@ const StyledInputContainer = styled.div<InputProps>`
   border-radius: ${({ theme, shape }) =>
     shape === CheckboxShape.Rounded
       ? theme.border.radius.rounded
-      : theme.border.radius.sm};
+      : theme.border.radius.md};
 
   cursor: ${({ disabled }) => (disabled ? 'not-allowed' : 'pointer')};
   display: flex;
+  padding: ${({ theme, checkboxSize }) =>
+    checkboxSize === CheckboxSize.Large
+      ? theme.spacing(1.5)
+      : theme.spacing(1.25)};
   position: relative;
   ${({ hoverable, isChecked, theme, indeterminate, disabled }) => {
     if (!hoverable || disabled === true) return '';
@@ -126,10 +129,9 @@ const StyledInput = styled.input<InputProps>`
   }
 
   & + label > svg {
-    --padding: ${({ checkboxSize }) =>
-      checkboxSize === CheckboxSize.Large ? '2px' : '1px'};
+    --padding: 0px;
     --size: ${({ checkboxSize }) =>
-      checkboxSize === CheckboxSize.Large ? '16px' : '12px'};
+      checkboxSize === CheckboxSize.Large ? '20px' : '14px'};
     height: var(--size);
     left: var(--padding);
     position: absolute;
@@ -164,7 +166,7 @@ export const Checkbox = ({
     setIsInternalChecked(event.target.checked ?? false);
   };
 
-  const checkboxId = 'checkbox' + v4();
+  const checkboxId = React.useId();
 
   return (
     <StyledInputContainer

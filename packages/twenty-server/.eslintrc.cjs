@@ -90,6 +90,13 @@ module.exports = {
         'unicorn/filename-case': 'off',
         'prefer-arrow/prefer-arrow-functions': 'off',
         '@nx/workspace-max-consts-per-file': 'off',
+        '@nx/workspace-inject-workspace-repository': 'warn',
+      },
+    },
+    {
+      files: ['scripts/**/*.ts'],
+      parserOptions: {
+        project: ['packages/twenty-server/tsconfig.scripts.json'],
       },
     },
   ],

@@ -1,15 +1,17 @@
-import { useContext, useRef } from 'react';
 import styled from '@emotion/styled';
 import { DragDropContext, OnDragEndResponder } from '@hello-pangea/dnd'; // Atlassian dnd does not support StrictMode from RN 18, so we use a fork @hello-pangea/dnd https://github.com/atlassian/react-beautiful-dnd/issues/2350
+import { useContext, useRef } from 'react';
 import { useRecoilCallback, useRecoilValue } from 'recoil';
 import { Key } from 'ts-key-enum';
 
+import { RecordBoardHeader } from '@/object-record/record-board/components/RecordBoardHeader';
+import { RecordBoardStickyHeaderEffect } from '@/object-record/record-board/components/RecordBoardStickyHeaderEffect';
 import { RecordBoardContext } from '@/object-record/record-board/contexts/RecordBoardContext';
 import { useRecordBoardStates } from '@/object-record/record-board/hooks/internal/useRecordBoardStates';
 import { useRecordBoardSelection } from '@/object-record/record-board/hooks/useRecordBoardSelection';
 import { RecordBoardColumn } from '@/object-record/record-board/record-board-column/components/RecordBoardColumn';
 import { RecordBoardScope } from '@/object-record/record-board/scopes/RecordBoardScope';
-import { getDraggedRecordPosition } from '@/object-record/record-board/utils/get-dragged-record-position.util';
+import { getDraggedRecordPosition } from '@/object-record/record-board/utils/getDraggedRecordPosition';
 import { recordStoreFamilyState } from '@/object-record/record-store/states/recordStoreFamilyState';
 import { TableHotkeyScope } from '@/object-record/record-table/types/TableHotkeyScope';
 import { DragSelect } from '@/ui/utilities/drag-select/components/DragSelect';
@@ -19,29 +21,26 @@ import { getScopeIdFromComponentId } from '@/ui/utilities/recoil-scope/utils/get
 import { ScrollWrapper } from '@/ui/utilities/scroll/components/ScrollWrapper';
 import { useScrollRestoration } from '~/hooks/useScrollRestoration';
 
-export type RecordBoardProps = {
-  recordBoardId: string;
-};
-
 const StyledContainer = styled.div`
-  border-top: 1px solid ${({ theme }) => theme.border.color.light};
   display: flex;
   flex: 1;
   flex-direction: row;
+  min-height: calc(100% - 1px);
+  height: 100%;
 `;
 
-const StyledWrapper = styled.div`
+const StyledColumnContainer = styled.div`
+  display: flex;
+`;
+
+const StyledContainerContainer = styled.div`
   display: flex;
   flex-direction: column;
-  height: 100%;
-  overflow: hidden;
-  position: relative;
-  width: 100%;
 `;
 
-const StyledBoardHeader = styled.div`
-  position: relative;
-  z-index: 1;
+const StyledBoardContentContainer = styled.div`
+  display: flex;
+  flex-direction: column;
 `;
 
 const RecordBoardScrollRestoreEffect = () => {
@@ -49,8 +48,8 @@ const RecordBoardScrollRestoreEffect = () => {
   return null;
 };
 
-export const RecordBoard = ({ recordBoardId }: RecordBoardProps) => {
-  const { updateOneRecord, selectFieldMetadataItem } =
+export const RecordBoard = () => {
+  const { updateOneRecord, selectFieldMetadataItem, recordBoardId } =
     useContext(RecordBoardContext);
   const boardRef = useRef<HTMLDivElement>(null);
 
@@ -67,13 +66,13 @@ export const RecordBoard = ({ recordBoardId }: RecordBoardProps) => {
 
   useListenClickOutsideByClassName({
     classNames: ['record-board-card'],
-    excludeClassNames: ['action-bar', 'context-menu'],
+    excludeClassNames: ['bottom-bar', 'action-menu-dropdown'],
     callback: resetRecordSelection,
   });
 
   useScopedHotkeys([Key.Escape], resetRecordSelection, TableHotkeyScope.Table);
 
-  const onDragEnd: OnDragEndResponder = useRecoilCallback(
+  const handleDragEnd: OnDragEndResponder = useRecoilCallback(
     ({ snapshot }) =>
       (result) => {
         if (!result.destination) return;
@@ -144,27 +143,32 @@ export const RecordBoard = ({ recordBoardId }: RecordBoardProps) => {
       onColumnsChange={() => {}}
       onFieldsChange={() => {}}
     >
-      <StyledWrapper>
-        <StyledBoardHeader />
-        <ScrollWrapper>
-          <StyledContainer ref={boardRef}>
-            <DragDropContext onDragEnd={onDragEnd}>
-              {columnIds.map((columnId) => (
-                <RecordBoardColumn
-                  key={columnId}
-                  recordBoardColumnId={columnId}
-                />
-              ))}
-            </DragDropContext>
-          </StyledContainer>
-          <RecordBoardScrollRestoreEffect />
-        </ScrollWrapper>
-        <DragSelect
-          dragSelectable={boardRef}
-          onDragSelectionStart={resetRecordSelection}
-          onDragSelectionChange={setRecordAsSelected}
-        />
-      </StyledWrapper>
+      <ScrollWrapper contextProviderName="recordBoard">
+        <RecordBoardStickyHeaderEffect />
+        <StyledContainerContainer>
+          <RecordBoardHeader />
+          <StyledBoardContentContainer>
+            <StyledContainer ref={boardRef}>
+              <DragDropContext onDragEnd={handleDragEnd}>
+                <StyledColumnContainer>
+                  {columnIds.map((columnId) => (
+                    <RecordBoardColumn
+                      key={columnId}
+                      recordBoardColumnId={columnId}
+                    />
+                  ))}
+                </StyledColumnContainer>
+              </DragDropContext>
+            </StyledContainer>
+            <RecordBoardScrollRestoreEffect />
+            <DragSelect
+              dragSelectable={boardRef}
+              onDragSelectionStart={resetRecordSelection}
+              onDragSelectionChange={setRecordAsSelected}
+            />
+          </StyledBoardContentContainer>
+        </StyledContainerContainer>
+      </ScrollWrapper>
     </RecordBoardScope>
   );
 };

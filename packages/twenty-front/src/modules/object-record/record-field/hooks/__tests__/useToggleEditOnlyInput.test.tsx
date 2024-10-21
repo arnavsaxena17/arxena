@@ -1,8 +1,7 @@
-import { ReactNode } from 'react';
 import { gql } from '@apollo/client';
-import { MockedProvider, MockedResponse } from '@apollo/client/testing';
-import { act, renderHook, waitFor } from '@testing-library/react';
-import { RecoilRoot } from 'recoil';
+import { MockedResponse } from '@apollo/client/testing';
+import { renderHook, waitFor } from '@testing-library/react';
+import { ReactNode, act } from 'react';
 
 import { CoreObjectNameSingular } from '@/object-metadata/types/CoreObjectNameSingular';
 import { useUpdateOneRecord } from '@/object-record/hooks/useUpdateOneRecord';
@@ -13,8 +12,10 @@ import {
   RecordUpdateHookParams,
 } from '@/object-record/record-field/contexts/FieldContext';
 import { useToggleEditOnlyInput } from '@/object-record/record-field/hooks/useToggleEditOnlyInput';
+import { generateEmptyJestRecordNode } from '~/testing/jest/generateEmptyJestRecordNode';
+import { getJestMetadataAndApolloMocksWrapper } from '~/testing/jest/getJestMetadataAndApolloMocksWrapper';
 
-const entityId = 'entityId';
+const recordId = 'recordId';
 
 const mocks: MockedResponse[] = [
   {
@@ -26,39 +27,285 @@ const mocks: MockedResponse[] = [
         ) {
           updateCompany(id: $idToUpdate, data: $input) {
             __typename
-            xLink {
-              label
-              url
+            accountOwner {
+              __typename
+              avatarUrl
+              colorScheme
+              createdAt
+              dateFormat
+              deletedAt
+              id
+              locale
+              name {
+                firstName
+                lastName
+              }
+              timeFormat
+              timeZone
+              updatedAt
+              userEmail
+              userId
             }
-            linkedinLink {
-              label
-              url
+            accountOwnerId
+            activityTargets {
+              edges {
+                node {
+                  __typename
+                  activityId
+                  companyId
+                  createdAt
+                  deletedAt
+                  id
+                  opportunityId
+                  personId
+                  rocketId
+                  updatedAt
+                }
+              }
             }
-            domainName
+            address {
+              addressStreet1
+              addressStreet2
+              addressCity
+              addressState
+              addressCountry
+              addressPostcode
+              addressLat
+              addressLng
+            }
             annualRecurringRevenue {
               amountMicros
               currencyCode
             }
+            attachments {
+              edges {
+                node {
+                  __typename
+                  activityId
+                  authorId
+                  companyId
+                  createdAt
+                  deletedAt
+                  fullPath
+                  id
+                  name
+                  noteId
+                  opportunityId
+                  personId
+                  rocketId
+                  taskId
+                  type
+                  updatedAt
+                }
+              }
+            }
             createdAt
-            address
-            updatedAt
-            name
-            accountOwnerId
+            createdBy {
+              source
+              workspaceMemberId
+              name
+            }
+            deletedAt
+            domainName {
+              primaryLinkUrl
+              primaryLinkLabel
+              secondaryLinks
+            }
             employees
+            favorites {
+              edges {
+                node {
+                  __typename
+                  companyId
+                  createdAt
+                  deletedAt
+                  id
+                  noteId
+                  opportunityId
+                  personId
+                  position
+                  rocketId
+                  taskId
+                  updatedAt
+                  viewId
+                  workflowId
+                  workspaceMemberId
+                }
+              }
+            }
             id
             idealCustomerProfile
+            introVideo {
+              primaryLinkUrl
+              primaryLinkLabel
+              secondaryLinks
+            }
+            linkedinLink {
+              primaryLinkUrl
+              primaryLinkLabel
+              secondaryLinks
+            }
+            name
+            noteTargets {
+              edges {
+                node {
+                  __typename
+                  companyId
+                  createdAt
+                  deletedAt
+                  id
+                  noteId
+                  opportunityId
+                  personId
+                  rocketId
+                  updatedAt
+                }
+              }
+            }
+            opportunities {
+              edges {
+                node {
+                  __typename
+                  amount {
+                    amountMicros
+                    currencyCode
+                  }
+                  closeDate
+                  companyId
+                  createdAt
+                  createdBy {
+                    source
+                    workspaceMemberId
+                    name
+                  }
+                  deletedAt
+                  id
+                  name
+                  pointOfContactId
+                  position
+                  stage
+                  updatedAt
+                }
+              }
+            }
+            people {
+              edges {
+                node {
+                  __typename
+                  avatarUrl
+                  city
+                  companyId
+                  createdAt
+                  createdBy {
+                    source
+                    workspaceMemberId
+                    name
+                  }
+                  deletedAt
+                  emails {
+                    primaryEmail
+                    additionalEmails
+                  }
+                  id
+                  intro
+                  jobTitle
+                  linkedinLink {
+                    primaryLinkUrl
+                    primaryLinkLabel
+                    secondaryLinks
+                  }
+                  name {
+                    firstName
+                    lastName
+                  }
+                  performanceRating
+                  phones {
+                    primaryPhoneNumber
+                    primaryPhoneCountryCode
+                    additionalPhones
+                  }
+                  position
+                  updatedAt
+                  whatsapp {
+                    primaryPhoneNumber
+                    primaryPhoneCountryCode
+                    additionalPhones
+                  }
+                  workPreference
+                  xLink {
+                    primaryLinkUrl
+                    primaryLinkLabel
+                    secondaryLinks
+                  }
+                }
+              }
+            }
+            position
+            tagline
+            taskTargets {
+              edges {
+                node {
+                  __typename
+                  companyId
+                  createdAt
+                  deletedAt
+                  id
+                  opportunityId
+                  personId
+                  rocketId
+                  taskId
+                  updatedAt
+                }
+              }
+            }
+            timelineActivities {
+              edges {
+                node {
+                  __typename
+                  companyId
+                  createdAt
+                  deletedAt
+                  happensAt
+                  id
+                  linkedObjectMetadataId
+                  linkedRecordCachedName
+                  linkedRecordId
+                  name
+                  noteId
+                  opportunityId
+                  personId
+                  properties
+                  rocketId
+                  taskId
+                  updatedAt
+                  workspaceMemberId
+                }
+              }
+            }
+            updatedAt
+            visaSponsorship
+            workPolicy
+            xLink {
+              primaryLinkUrl
+              primaryLinkLabel
+              secondaryLinks
+            }
           }
         }
       `,
       variables: {
-        idToUpdate: 'entityId',
+        idToUpdate: 'recordId',
         input: { idealCustomerProfile: true },
       },
     },
     result: jest.fn(() => ({
       data: {
-        updateWorkspaceMember: {
-          id: 'entityId',
+        updateCompany: {
+          ...generateEmptyJestRecordNode({
+            objectNameSingular: CoreObjectNameSingular.Company,
+            input: { id: recordId },
+            withDepthOneRelation: true,
+          }),
         },
       },
     })),
@@ -81,20 +328,25 @@ const Wrapper = ({ children }: { children: ReactNode }) => {
     return [updateEntity, { loading: false }];
   };
 
+  const JestMetadataAndApolloMocksWrapper =
+    getJestMetadataAndApolloMocksWrapper({
+      apolloMocks: mocks,
+    });
+
   return (
-    <MockedProvider mocks={mocks} addTypename={false}>
+    <JestMetadataAndApolloMocksWrapper>
       <FieldContext.Provider
         value={{
           fieldDefinition: booleanFieldDefinition,
-          entityId,
+          recordId,
           hotkeyScope: 'hotkeyScope',
           isLabelIdentifier: false,
           useUpdateRecord: useUpdateOneRecordMutation,
         }}
       >
-        <RecoilRoot>{children}</RecoilRoot>
+        {children}
       </FieldContext.Provider>
-    </MockedProvider>
+    </JestMetadataAndApolloMocksWrapper>
   );
 };
 

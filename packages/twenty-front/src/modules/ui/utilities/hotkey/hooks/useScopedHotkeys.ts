@@ -4,7 +4,7 @@ import { useRecoilState } from 'recoil';
 
 import { pendingHotkeyState } from '../states/internal/pendingHotkeysState';
 
-import { isDefined } from '~/utils/isDefined';
+import { isDefined } from 'twenty-ui';
 import { useScopedHotkeyCallback } from './useScopedHotkeyCallback';
 
 type UseHotkeysOptionsWithoutBuggyOptions = Omit<Options, 'enabled'>;
@@ -21,15 +21,15 @@ export const useScopedHotkeys = (
   const callScopedHotkeyCallback = useScopedHotkeyCallback(dependencies);
 
   const enableOnContentEditable = isDefined(options?.enableOnContentEditable)
-    ? options?.enableOnContentEditable
+    ? options.enableOnContentEditable
     : true;
 
   const enableOnFormTags = isDefined(options?.enableOnFormTags)
-    ? options?.enableOnFormTags
+    ? options.enableOnFormTags
     : true;
 
   const preventDefault = isDefined(options?.preventDefault)
-    ? options?.preventDefault === true
+    ? options.preventDefault === true
     : true;
 
   return useHotkeys(

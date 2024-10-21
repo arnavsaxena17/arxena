@@ -1,23 +1,20 @@
 import { ForbiddenException } from '@nestjs/common';
 
 import groupBy from 'lodash.groupby';
+import { Any } from 'typeorm';
 
 import { InjectObjectMetadataRepository } from 'src/engine/object-metadata-repository/object-metadata-repository.decorator';
-import { ConnectedAccountRepository } from 'src/modules/connected-account/repositories/connected-account.repository';
+import { TwentyORMManager } from 'src/engine/twenty-orm/twenty-orm.manager';
 import { ConnectedAccountWorkspaceEntity } from 'src/modules/connected-account/standard-objects/connected-account.workspace-entity';
-import { MessageChannelRepository } from 'src/modules/messaging/common/repositories/message-channel.repository';
 import { MessageChannelWorkspaceEntity } from 'src/modules/messaging/common/standard-objects/message-channel.workspace-entity';
 import { WorkspaceMemberRepository } from 'src/modules/workspace-member/repositories/workspace-member.repository';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 
 export class CanAccessMessageThreadService {
   constructor(
-    @InjectObjectMetadataRepository(MessageChannelWorkspaceEntity)
-    private readonly messageChannelService: MessageChannelRepository,
-    @InjectObjectMetadataRepository(ConnectedAccountWorkspaceEntity)
-    private readonly connectedAccountRepository: ConnectedAccountRepository,
     @InjectObjectMetadataRepository(WorkspaceMemberWorkspaceEntity)
     private readonly workspaceMemberRepository: WorkspaceMemberRepository,
+    private readonly twentyORMManager: TwentyORMManager,
   ) {}
 
   public async canAccessMessageThread(
@@ -25,12 +22,20 @@ export class CanAccessMessageThreadService {
     workspaceId: string,
     messageChannelMessageAssociations: any[],
   ) {
-    const messageChannels = await this.messageChannelService.getByIds(
-      messageChannelMessageAssociations.map(
-        (association) => association.messageChannelId,
-      ),
-      workspaceId,
-    );
+    const messageChannelRepository =
+      await this.twentyORMManager.getRepository<MessageChannelWorkspaceEntity>(
+        'messageChannel',
+      );
+    const messageChannels = await messageChannelRepository.find({
+      select: ['id', 'visibility'],
+      where: {
+        id: Any(
+          messageChannelMessageAssociations.map(
+            (association) => association.messageChannelId,
+          ),
+        ),
+      },
+    });
 
     const messageChannelsGroupByVisibility = groupBy(
       messageChannels,
@@ -44,18 +49,20 @@ export class CanAccessMessageThreadService {
     const currentWorkspaceMember =
       await this.workspaceMemberRepository.getByIdOrFail(userId, workspaceId);
 
-    const messageChannelsConnectedAccounts =
-      await this.connectedAccountRepository.getByIds(
-        messageChannels.map((channel) => channel.connectedAccountId),
-        workspaceId,
+    const connectedAccountRepository =
+      await this.twentyORMManager.getRepository<ConnectedAccountWorkspaceEntity>(
+        'connectedAccount',
       );
 
-    const messageChannelsWorkspaceMemberIds =
-      messageChannelsConnectedAccounts.map(
-        (connectedAccount) => connectedAccount.accountOwnerId,
-      );
+    const connectedAccounts = await connectedAccountRepository.find({
+      select: ['id'],
+      where: {
+        messageChannels: Any(messageChannels.map((channel) => channel.id)),
+        accountOwnerId: currentWorkspaceMember.id,
+      },
+    });
 
-    if (messageChannelsWorkspaceMemberIds.includes(currentWorkspaceMember.id)) {
+    if (connectedAccounts.length > 0) {
       return;
     }
 

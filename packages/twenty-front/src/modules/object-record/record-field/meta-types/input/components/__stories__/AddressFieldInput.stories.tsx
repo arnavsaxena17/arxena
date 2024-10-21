@@ -1,6 +1,6 @@
-import { useEffect } from 'react';
 import { Decorator, Meta, StoryObj } from '@storybook/react';
 import { expect, fn, userEvent, waitFor } from '@storybook/test';
+import { useEffect } from 'react';
 
 import { useAddressField } from '@/object-record/record-field/meta-types/hooks/useAddressField';
 import { FieldAddressDraftValue } from '@/object-record/record-field/types/FieldInputDraftValue';
@@ -11,7 +11,7 @@ import {
 import { useSetHotkeyScope } from '@/ui/utilities/hotkey/hooks/useSetHotkeyScope';
 import { FieldMetadataType } from '~/generated-metadata/graphql';
 
-import { FieldContextProvider } from '../../../__stories__/FieldContextProvider';
+import { FieldContextProvider } from '@/object-record/record-field/meta-types/components/FieldContextProvider';
 
 const AddressValueSetterEffect = ({
   value,
@@ -29,11 +29,11 @@ const AddressValueSetterEffect = ({
 
 type AddressInputWithContextProps = AddressInputProps & {
   value: string;
-  entityId?: string;
+  recordId?: string;
 };
 
 const AddressInputWithContext = ({
-  entityId,
+  recordId,
   value,
   onEnter,
   onEscape,
@@ -61,7 +61,7 @@ const AddressInputWithContext = ({
             objectMetadataNameSingular: 'person',
           },
         }}
-        entityId={entityId}
+        recordId={recordId}
       >
         <AddressValueSetterEffect value={value} />
         <AddressInput

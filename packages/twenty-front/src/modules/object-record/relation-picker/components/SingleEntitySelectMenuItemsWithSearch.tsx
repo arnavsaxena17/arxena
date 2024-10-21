@@ -1,14 +1,12 @@
-import { ObjectMetadataItemsRelationPickerEffect } from '@/object-metadata/components/ObjectMetadataItemsRelationPickerEffect';
 import {
   SingleEntitySelectMenuItems,
   SingleEntitySelectMenuItemsProps,
 } from '@/object-record/relation-picker/components/SingleEntitySelectMenuItems';
+import { useEntitySelectSearch } from '@/object-record/relation-picker/hooks/useEntitySelectSearch';
 import { useRelationPickerEntitiesOptions } from '@/object-record/relation-picker/hooks/useRelationPickerEntitiesOptions';
 import { DropdownMenuSearchInput } from '@/ui/layout/dropdown/components/DropdownMenuSearchInput';
 import { DropdownMenuSeparator } from '@/ui/layout/dropdown/components/DropdownMenuSeparator';
 import { isDefined } from '~/utils/isDefined';
-
-import { useEntitySelectSearch } from '../hooks/useEntitySelectSearch';
 
 export type SingleEntitySelectMenuItemsWithSearchProps = {
   excludedRelationRecordIds?: string[];
@@ -44,7 +42,6 @@ export const SingleEntitySelectMenuItemsWithSearch = ({
   const { entities, relationPickerSearchFilter } =
     useRelationPickerEntitiesOptions({
       relationObjectNameSingular,
-      relationPickerScopeId,
       selectedRelationRecordIds,
       excludedRelationRecordIds,
     });
@@ -67,9 +64,6 @@ export const SingleEntitySelectMenuItemsWithSearch = ({
 
   return (
     <>
-      <ObjectMetadataItemsRelationPickerEffect
-        relationPickerScopeId={relationPickerScopeId}
-      />
       <DropdownMenuSearchInput onChange={handleSearchFilterChange} autoFocus />
       <DropdownMenuSeparator />
       <SingleEntitySelectMenuItems
@@ -81,6 +75,7 @@ export const SingleEntitySelectMenuItemsWithSearch = ({
             ? entities.selectedEntities[0]
             : undefined)
         }
+        hotkeyScope={relationPickerScopeId}
         onCreate={onCreateWithInput}
         {...{
           EmptyIcon,

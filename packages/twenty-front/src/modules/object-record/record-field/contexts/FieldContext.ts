@@ -22,7 +22,7 @@ export type RecordUpdateHook = () => [
 export type GenericFieldContextType = {
   fieldDefinition: FieldDefinition<FieldMetadata>;
   useUpdateRecord?: RecordUpdateHook;
-  entityId: string;
+  recordId: string;
   recoilScopeId?: string;
   hotkeyScope: string;
   isLabelIdentifier: boolean;
@@ -30,6 +30,7 @@ export type GenericFieldContextType = {
   clearable?: boolean;
   maxWidth?: number;
   isCentered?: boolean;
+  overridenIsFieldEmpty?: boolean;
 };
 
 export const FieldContext = createContext<GenericFieldContextType>(

@@ -1,4 +1,4 @@
-import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
+import { ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { WsException } from '@nestjs/websockets';
 
@@ -7,8 +7,8 @@ import { Socket } from 'socket.io';
 
 import { assert } from 'src/utils/assert';
 import { getRequest } from 'src/utils/extract-request';
-import { AuthService } from '../core-modules/auth/services/auth.service';
-import { TokenService } from '../core-modules/auth/services/token.service';
+// import { TokenService } from '../core-modules/auth/services/token.service';
+import { TokenService } from 'src/engine/core-modules/auth/token/services/token.service';
 
 @Injectable()
 export class JwtAuthGuard extends AuthGuard(['jwt']) {

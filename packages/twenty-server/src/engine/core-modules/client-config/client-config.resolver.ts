@@ -1,6 +1,6 @@
-import { Resolver, Query } from '@nestjs/graphql';
+import { Query, Resolver } from '@nestjs/graphql';
 
-import { EnvironmentService } from 'src/engine/integrations/environment/environment.service';
+import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 
 import { ClientConfig } from './client-config.entity';
 
@@ -16,9 +16,6 @@ export class ClientConfigResolver {
         magicLink: false,
         password: this.environmentService.get('AUTH_PASSWORD_ENABLED'),
         microsoft: this.environmentService.get('AUTH_MICROSOFT_ENABLED'),
-      },
-      telemetry: {
-        enabled: this.environmentService.get('TELEMETRY_ENABLED'),
       },
       billing: {
         isBillingEnabled: this.environmentService.get('IS_BILLING_ENABLED'),
@@ -46,6 +43,12 @@ export class ClientConfigResolver {
         siteKey: this.environmentService.get('CAPTCHA_SITE_KEY'),
       },
       chromeExtensionId: this.environmentService.get('CHROME_EXTENSION_ID'),
+      api: {
+        mutationMaximumAffectedRecords: this.environmentService.get(
+          'MUTATION_MAXIMUM_AFFECTED_RECORDS',
+        ),
+      },
+      analyticsEnabled: this.environmentService.get('ANALYTICS_ENABLED'),
     };
 
     return Promise.resolve(clientConfig);

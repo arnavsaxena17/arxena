@@ -1,47 +1,55 @@
-import { Logger } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
 
-import { Command, CommandRunner, Option } from 'nest-commander';
+import { Command, Option } from 'nest-commander';
+import { Repository } from 'typeorm';
 
+import { ActiveWorkspacesCommandRunner } from 'src/database/commands/active-workspaces.command';
+import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { DataSourceService } from 'src/engine/metadata-modules/data-source/data-source.service';
-import { WorkspaceSyncMetadataService } from 'src/engine/workspace-manager/workspace-sync-metadata/workspace-sync-metadata.service';
 import { WorkspaceHealthService } from 'src/engine/workspace-manager/workspace-health/workspace-health.service';
-import { WorkspaceService } from 'src/engine/core-modules/workspace/services/workspace.service';
+import { WorkspaceSyncMetadataService } from 'src/engine/workspace-manager/workspace-sync-metadata/workspace-sync-metadata.service';
 
 import { SyncWorkspaceLoggerService } from './services/sync-workspace-logger.service';
 
 // TODO: implement dry-run
 interface RunWorkspaceMigrationsOptions {
-  workspaceId?: string;
   dryRun?: boolean;
   force?: boolean;
+  workspaceId?: string;
 }
 
 @Command({
   name: 'workspace:sync-metadata',
   description: 'Sync metadata',
 })
-export class SyncWorkspaceMetadataCommand extends CommandRunner {
-  private readonly logger = new Logger(SyncWorkspaceMetadataCommand.name);
-
+export class SyncWorkspaceMetadataCommand extends ActiveWorkspacesCommandRunner {
   constructor(
+    @InjectRepository(Workspace, 'core')
+    protected readonly workspaceRepository: Repository<Workspace>,
     private readonly workspaceSyncMetadataService: WorkspaceSyncMetadataService,
     private readonly workspaceHealthService: WorkspaceHealthService,
     private readonly dataSourceService: DataSourceService,
     private readonly syncWorkspaceLoggerService: SyncWorkspaceLoggerService,
-    private readonly workspaceService: WorkspaceService,
   ) {
-    super();
+    super(workspaceRepository);
   }
 
-  async run(
+  async executeActiveWorkspacesCommand(
     _passedParam: string[],
     options: RunWorkspaceMigrationsOptions,
+    workspaceIds: string[],
   ): Promise<void> {
-    const workspaceIds = options.workspaceId
-      ? [options.workspaceId]
-      : await this.workspaceService.getWorkspaceIds();
+    this.logger.log(`Attempting to sync ${workspaceIds.length} workspaces.`);
+
+    let count = 1;
+
+    const errorsDuringSync: string[] = [];
 
     for (const workspaceId of workspaceIds) {
+      this.logger.log(
+        `Running workspace sync for workspace: ${workspaceId} (${count} out of ${workspaceIds.length})`,
+      );
+      count++;
       try {
         const issues =
           await this.workspaceHealthService.healthCheck(workspaceId);
@@ -60,7 +68,7 @@ export class SyncWorkspaceMetadataCommand extends CommandRunner {
               'Please use `workspace:health` command to check issues and fix them before running this command.',
             );
 
-            return;
+            continue;
           }
 
           this.logger.warn(
@@ -78,37 +86,46 @@ export class SyncWorkspaceMetadataCommand extends CommandRunner {
         );
       }
 
-      const dataSourceMetadata =
-        await this.dataSourceService.getLastDataSourceMetadataFromWorkspaceIdOrFail(
-          workspaceId,
-        );
-
-      const { storage, workspaceMigrations } =
-        await this.workspaceSyncMetadataService.synchronize(
-          {
+      try {
+        const dataSourceMetadata =
+          await this.dataSourceService.getLastDataSourceMetadataFromWorkspaceIdOrFail(
             workspaceId,
-            dataSourceId: dataSourceMetadata.id,
-          },
-          { applyChanges: !options.dryRun },
+          );
+
+        const { storage, workspaceMigrations } =
+          await this.workspaceSyncMetadataService.synchronize(
+            {
+              workspaceId,
+              dataSourceId: dataSourceMetadata.id,
+            },
+            { applyChanges: !options.dryRun },
+          );
+
+        if (options.dryRun) {
+          await this.syncWorkspaceLoggerService.saveLogs(
+            workspaceId,
+            storage,
+            workspaceMigrations,
+          );
+        }
+      } catch (error) {
+        errorsDuringSync.push(
+          `Failed to synchronize workspace ${workspaceId}: ${error.message}`,
         );
 
-      if (options.dryRun) {
-        await this.syncWorkspaceLoggerService.saveLogs(
-          workspaceId,
-          storage,
-          workspaceMigrations,
-        );
+        continue;
       }
     }
-  }
 
-  @Option({
-    flags: '-w, --workspace-id [workspace_id]',
-    description: 'workspace id',
-    required: false,
-  })
-  parseWorkspaceId(value: string): string {
-    return value;
+    this.logger.log(
+      `Finished synchronizing all active workspaces (${
+        workspaceIds.length
+      } workspaces). ${
+        errorsDuringSync.length > 0
+          ? 'Errors during sync:\n' + errorsDuringSync.join('.\n')
+          : ''
+      }`,
+    );
   }
 
   @Option({

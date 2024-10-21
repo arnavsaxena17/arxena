@@ -1,25 +1,23 @@
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
-import { makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, downloadMediaMessage } from '@whiskeysockets/baileys';
+import { DisconnectReason, downloadMediaMessage, fetchLatestBaileysVersion, makeWASocket, useMultiFileAuthState } from '@whiskeysockets/baileys';
 // import {Mimetype} from '@whiskeysockets/baileys'
-import { AIMessage, HumanMessage, BaseMessage } from '@langchain/core/messages';
 import { SocksProxyAgent } from 'socks-proxy-agent';
-import * as tls from 'tls';
-import { HttpsProxyAgent } from 'https-proxy-agent';
 
-import { writeFile } from 'fs/promises';
 import { Boom } from '@hapi/boom';
+import { IsNotEmpty, IsString, Matches } from 'class-validator';
 import * as fs from 'fs';
+import { writeFile } from 'fs/promises';
 import * as path from 'path';
-const logger = require('pino')();
-import { IsString, Matches, validate, IsNotEmpty } from 'class-validator';
 import { SocketGateway } from './socket-gateway/socket.gateway';
 import { FileDataDto } from './types/baileys-types';
-import { formatGoogleCalendarEvent } from 'src/modules/calendar/utils/format-google-calendar-event.util';
+const logger = require('pino')();
+// import { formatGoogleCalendarEvent } from '/src/modules/calendar/calendar-event-import-manager/drivers/google-calendar/utils/format-google-calendar-event.util';
+
 // import {  } from 'src/engine/core-modules/recruitment-agent/services/whatsapp-api/baileys/callBaileys';
-import { IncomingWhatsappMessages } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/incoming-messages';
 import { FetchAndUpdateCandidatesChatsWhatsapps } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/update-chat';
 import * as allDataObjects from 'src/engine/core-modules/arx-chat/services/data-model-objects';
+import { IncomingWhatsappMessages } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/incoming-messages';
 console.log('Baileys being called!!!');
 
 const agent = new SocksProxyAgent(process.env.SMART_PROXY_URL || '');

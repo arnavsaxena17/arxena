@@ -5,6 +5,7 @@ import { NestjsQueryTypeOrmModule } from '@ptc-org/nestjs-query-typeorm';
 
 import { TypeORMModule } from 'src/database/typeorm/typeorm.module';
 import { FeatureFlagEntity } from 'src/engine/core-modules/feature-flag/feature-flag.entity';
+import { FeatureFlagService } from 'src/engine/core-modules/feature-flag/services/feature-flag.service';
 
 @Module({
   imports: [
@@ -17,7 +18,7 @@ import { FeatureFlagEntity } from 'src/engine/core-modules/feature-flag/feature-
       resolvers: [],
     }),
   ],
-  exports: [],
-  providers: [],
+  exports: [FeatureFlagService],
+  providers: [FeatureFlagService],
 })
 export class FeatureFlagModule {}

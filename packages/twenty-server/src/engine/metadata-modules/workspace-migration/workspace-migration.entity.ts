@@ -5,6 +5,7 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 
+import { IndexType } from 'src/engine/metadata-modules/index-metadata/index-metadata.entity';
 import { RelationOnDeleteAction } from 'src/engine/metadata-modules/relation-metadata/relation-metadata.entity';
 
 export enum WorkspaceMigrationColumnActionType {
@@ -18,13 +19,30 @@ export enum WorkspaceMigrationColumnActionType {
 export type WorkspaceMigrationRenamedEnum = { from: string; to: string };
 export type WorkspaceMigrationEnum = string | WorkspaceMigrationRenamedEnum;
 
+export enum WorkspaceMigrationIndexActionType {
+  CREATE = 'CREATE',
+  DROP = 'DROP',
+}
+
 export interface WorkspaceMigrationColumnDefinition {
   columnName: string;
   columnType: string;
   enum?: WorkspaceMigrationEnum[];
   isArray?: boolean;
-  isNullable?: boolean;
-  defaultValue?: any;
+  isNullable: boolean;
+  isUnique?: boolean;
+  defaultValue: any;
+  generatedType?: 'STORED' | 'VIRTUAL';
+  asExpression?: string;
+}
+
+export interface WorkspaceMigrationIndexAction {
+  action: WorkspaceMigrationIndexActionType;
+  name: string;
+  columns: string[];
+  isUnique: boolean;
+  where?: string | null;
+  type?: IndexType;
 }
 
 export interface WorkspaceMigrationColumnCreate
@@ -105,6 +123,7 @@ export enum WorkspaceMigrationTableActionType {
   CREATE_FOREIGN_TABLE = 'create_foreign_table',
   DROP_FOREIGN_TABLE = 'drop_foreign_table',
   ALTER_FOREIGN_TABLE = 'alter_foreign_table',
+  ALTER_INDEXES = 'alter_indexes',
 }
 
 export type WorkspaceMigrationTableAction = {
@@ -113,6 +132,7 @@ export type WorkspaceMigrationTableAction = {
   action: WorkspaceMigrationTableActionType;
   columns?: WorkspaceMigrationColumnAction[];
   foreignTable?: WorkspaceMigrationForeignTable;
+  indexes?: WorkspaceMigrationIndexAction[];
 };
 
 @Entity('workspaceMigration')

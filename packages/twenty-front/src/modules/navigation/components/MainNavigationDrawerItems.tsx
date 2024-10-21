@@ -1,30 +1,43 @@
 import { useLocation } from "react-router-dom";
-import { useRecoilValue, useSetRecoilState } from "recoil";
+import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
 import { IconCheckbox, IconSearch, IconSettings } from "twenty-ui";
 
-import { CurrentUserDueTaskCountEffect } from "@/activities/tasks/components/CurrentUserDueTaskCountEffect";
-import { currentUserDueTaskCountState } from "@/activities/tasks/states/currentUserTaskCountState";
+// import { CurrentUserDueTaskCountEffect } from "@/activities/tasks/components/CurrentUserDueTaskCountEffect";
 import { useCommandMenu } from "@/command-menu/hooks/useCommandMenu";
-import { Favorites } from "@/favorites/components/Favorites";
-import { ObjectMetadataNavItems } from "@/object-metadata/components/ObjectMetadataNavItems";
 import { NavigationDrawerItem } from "@/ui/navigation/navigation-drawer/components/NavigationDrawerItem";
 import { NavigationDrawerSection } from "@/ui/navigation/navigation-drawer/components/NavigationDrawerSection";
 import { navigationMemorizedUrlState } from "@/ui/navigation/states/navigationMemorizedUrlState";
 import { useIsMobile } from "@/ui/utilities/responsive/hooks/useIsMobile";
 
-import { useIsTasksPage } from "../hooks/useIsTasksPage";
 import { IconMessage } from "@tabler/icons-react";
+
+// import { CurrentUserDueTaskCountEffect } from "@/activities/chats/components/CurrentUserDueTaskCountEffect";
 import { currentUnreadMessagesState } from "@/activities/tasks/states/currentUnreadMessagesState";
+import { CurrentWorkspaceMemberFavorites } from '@/favorites/components/CurrentWorkspaceMemberFavorites';
+import { WorkspaceFavorites } from '@/favorites/components/WorkspaceFavorites';
+import { NavigationDrawerOpenedSection } from '@/object-metadata/components/NavigationDrawerOpenedSection';
+import { NavigationDrawerSectionForObjectMetadataItemsWrapper } from '@/object-metadata/components/NavigationDrawerSectionForObjectMetadataItemsWrapper';
+import { isNavigationDrawerExpandedState } from '@/ui/navigation/states/isNavigationDrawerExpanded';
+import { navigationDrawerExpandedMemorizedState } from '@/ui/navigation/states/navigationDrawerExpandedMemorizedState';
+import { useIsFeatureEnabled } from '@/workspace/hooks/useIsFeatureEnabled';
 
 export const MainNavigationDrawerItems = () => {
   const isMobile = useIsMobile();
   const { toggleCommandMenu } = useCommandMenu();
-  const isTasksPage = useIsTasksPage();
-  const currentUserDueTaskCount = useRecoilValue(currentUserDueTaskCountState);
+  // const isTasksPage = useIsTasksPage();
+  // const currentUserDueTaskCount = useRecoilValue<number | undefined>(currentUserDueTaskCountState);
   const currentUnreadMessages = useRecoilValue(currentUnreadMessagesState);
   const location = useLocation();
   const setNavigationMemorizedUrl = useSetRecoilState(
     navigationMemorizedUrlState
+  );
+  const isWorkspaceFavoriteEnabled = useIsFeatureEnabled(
+    'IS_WORKSPACE_FAVORITE_ENABLED',
+  );
+  const [isNavigationDrawerExpanded, setIsNavigationDrawerExpanded] =
+    useRecoilState(isNavigationDrawerExpandedState);
+  const setNavigationDrawerExpandedMemorized = useSetRecoilState(
+    navigationDrawerExpandedMemorizedState,
   );
 
   return (
@@ -41,17 +54,19 @@ export const MainNavigationDrawerItems = () => {
             label="Settings"
             to={"/settings/profile"}
             onClick={() => {
+              setNavigationDrawerExpandedMemorized(isNavigationDrawerExpanded);
+              setIsNavigationDrawerExpanded(true);
               setNavigationMemorizedUrl(location.pathname + location.search);
             }}
             Icon={IconSettings}
           />
-          <CurrentUserDueTaskCountEffect />
+          {/* <CurrentUserDueTaskCountEffect /> */}
           <NavigationDrawerItem
             label="Tasks"
             to="/tasks"
-            active={isTasksPage}
+            // active={isTasksPage}
             Icon={IconCheckbox}
-            count={currentUserDueTaskCount}
+            // count={currentUserDueTaskCount}
           />
           <NavigationDrawerItem
             label="Chats"
@@ -62,10 +77,18 @@ export const MainNavigationDrawerItems = () => {
         </NavigationDrawerSection>
       )}
 
-      <Favorites />
+      {isWorkspaceFavoriteEnabled && <NavigationDrawerOpenedSection />}
 
-      <ObjectMetadataNavItems isRemote={false} />
-      <ObjectMetadataNavItems isRemote={true} />
+      <CurrentWorkspaceMemberFavorites />
+
+      {isWorkspaceFavoriteEnabled ? (
+        <WorkspaceFavorites />
+      ) : (
+        <NavigationDrawerSectionForObjectMetadataItemsWrapper
+          isRemote={false}
+        />
+      )}
+      <NavigationDrawerSectionForObjectMetadataItemsWrapper isRemote={true} />
     </>
   );
 };

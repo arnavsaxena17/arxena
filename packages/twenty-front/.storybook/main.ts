@@ -45,17 +45,13 @@ const config: StorybookConfig = {
     name: '@storybook/react-vite',
     options: {},
   },
-  build: {
-    test: {
-      disableMDXEntries: true,
-      disabledAddons: [
-        '@storybook/addon-docs',
-        '@storybook/addon-essentials/docs',
-      ],
-    },
-  },
-  docs: {
-    autodocs: false,
+  viteFinal: async (config) => {
+    // Merge custom configuration into the default config
+    const { mergeConfig } = await import('vite');
+
+    return mergeConfig(config, {
+      // Add dependencies to pre-optimization
+    });
   },
 };
 export default config;

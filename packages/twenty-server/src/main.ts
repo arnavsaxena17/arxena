@@ -1,30 +1,29 @@
 process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = '0';
 
-import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
+import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 
-import * as Sentry from '@sentry/node';
-import { graphqlUploadExpress } from 'graphql-upload';
 import bytes from 'bytes';
 import { useContainer } from 'class-validator';
-import '@sentry/tracing';
+import { graphqlUploadExpress } from 'graphql-upload';
 
+import { LoggerService } from 'src/engine/core-modules/logger/logger.service';
 import { ApplyCorsToExceptions } from 'src/utils/apply-cors-to-exceptions';
 
 import { AppModule } from './app.module';
+import './instrument';
 
-import { generateFrontConfig } from './utils/generate-front-config';
-import { settings } from './engine/constants/settings';
-import { LoggerService } from './engine/integrations/logger/logger.service';
-import { json, urlencoded } from 'express';
 import * as express from 'express';
-import * as path from 'path';
+import { json, urlencoded } from 'express';
 import * as fs from 'fs';
+import * as path from 'path';
+import { settings } from './engine/constants/settings';
 // import { BaileysModule } from 'src/engine/core-modules/baileys/baileys.module';
 import * as dotenv from 'dotenv';
 // import { CoopCoepMiddleware } from './utils/coop-coep.middleware';
 
+import { generateFrontConfig } from './utils/generate-front-config';
 
 const bootstrap = async () => {
   dotenv.config();
@@ -57,11 +56,6 @@ const bootstrap = async () => {
 
   // Use our logger
   app.useLogger(logger);
-
-  if (Sentry.isInitialized()) {
-    app.use(Sentry.Handlers.requestHandler());
-    app.use(Sentry.Handlers.tracingHandler());
-  }
 
   app.useGlobalFilters(new ApplyCorsToExceptions());
 

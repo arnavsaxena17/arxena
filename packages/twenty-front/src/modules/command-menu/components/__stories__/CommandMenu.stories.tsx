@@ -1,8 +1,8 @@
-import { useEffect } from 'react';
 import { action } from '@storybook/addon-actions';
 import { Meta, StoryObj } from '@storybook/react';
 import { expect, userEvent, within } from '@storybook/test';
-import { useSetRecoilState } from 'recoil';
+import { useEffect } from 'react';
+import { useRecoilValue, useSetRecoilState } from 'recoil';
 import { IconCheckbox, IconNotes } from 'twenty-ui';
 
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
@@ -14,16 +14,15 @@ import { ObjectMetadataItemsDecorator } from '~/testing/decorators/ObjectMetadat
 import { SnackBarDecorator } from '~/testing/decorators/SnackBarDecorator';
 import { graphqlMocks } from '~/testing/graphqlMocks';
 import { getCompaniesMock } from '~/testing/mock-data/companies';
-import { getPeopleMock } from '~/testing/mock-data/people';
 import {
   mockDefaultWorkspace,
   mockedWorkspaceMemberData,
 } from '~/testing/mock-data/users';
 import { sleep } from '~/utils/sleep';
 
+import { objectMetadataItemsState } from '@/object-metadata/states/objectMetadataItemsState';
 import { CommandMenu } from '../CommandMenu';
 
-const peopleMock = getPeopleMock();
 const companiesMock = getCompaniesMock();
 
 const openTimeout = 50;
@@ -37,14 +36,21 @@ const meta: Meta<typeof CommandMenu> = {
       const setCurrentWorkspaceMember = useSetRecoilState(
         currentWorkspaceMemberState,
       );
-      const { addToCommandMenu, setToInitialCommandMenu, openCommandMenu } =
+      const objectMetadataItems = useRecoilValue(objectMetadataItemsState);
+
+      const { addToCommandMenu, setObjectsInCommandMenu, openCommandMenu } =
         useCommandMenu();
 
       setCurrentWorkspace(mockDefaultWorkspace);
       setCurrentWorkspaceMember(mockedWorkspaceMemberData);
 
       useEffect(() => {
-        setToInitialCommandMenu();
+        const nonSystemActiveObjects = objectMetadataItems.filter(
+          (object) => !object.isSystem && object.isActive,
+        );
+
+        setObjectsInCommandMenu(nonSystemActiveObjects);
+
         addToCommandMenu([
           {
             id: 'create-task',
@@ -64,7 +70,12 @@ const meta: Meta<typeof CommandMenu> = {
           },
         ]);
         openCommandMenu();
-      }, [addToCommandMenu, setToInitialCommandMenu, openCommandMenu]);
+      }, [
+        addToCommandMenu,
+        setObjectsInCommandMenu,
+        openCommandMenu,
+        objectMetadataItems,
+      ]);
 
       return <Story />;
     },
@@ -84,7 +95,9 @@ export const DefaultWithoutSearch: Story = {
   play: async () => {
     const canvas = within(document.body);
 
-    expect(await canvas.findByText('Create Task')).toBeInTheDocument();
+    expect(
+      await canvas.findByText('Create Task', undefined, { timeout: 10000 }),
+    ).toBeInTheDocument();
     expect(await canvas.findByText('Go to People')).toBeInTheDocument();
     expect(await canvas.findByText('Go to Companies')).toBeInTheDocument();
     expect(await canvas.findByText('Go to Opportunities')).toBeInTheDocument();
@@ -99,13 +112,8 @@ export const MatchingPersonCompanyActivityCreateNavigate: Story = {
     const searchInput = await canvas.findByPlaceholderText('Search');
     await sleep(openTimeout);
     await userEvent.type(searchInput, 'n');
-    expect(
-      await canvas.findByText(
-        peopleMock[0].name.firstName + ' ' + peopleMock[0].name.lastName,
-      ),
-    ).toBeInTheDocument();
+    expect(await canvas.findByText('Linkedin')).toBeInTheDocument();
     expect(await canvas.findByText(companiesMock[0].name)).toBeInTheDocument();
-    expect(await canvas.findByText('My very first note')).toBeInTheDocument();
     expect(await canvas.findByText('Create Note')).toBeInTheDocument();
     expect(await canvas.findByText('Go to Companies')).toBeInTheDocument();
   },
@@ -128,21 +136,6 @@ export const AtleastMatchingOnePerson: Story = {
     const searchInput = await canvas.findByPlaceholderText('Search');
     await sleep(openTimeout);
     await userEvent.type(searchInput, 'alex');
-    expect(
-      await canvas.findByText(
-        peopleMock[0].name.firstName + ' ' + peopleMock[0].name.lastName,
-      ),
-    ).toBeInTheDocument();
-  },
-};
-
-export const NotMatchingAnything: Story = {
-  play: async () => {
-    const canvas = within(document.body);
-    const searchInput = await canvas.findByPlaceholderText('Search');
-    await sleep(openTimeout);
-    await userEvent.type(searchInput, 'asdasdasd');
-    // FIXME: We need to fix the filters in graphql
-    // expect(await canvas.findByText('No results found')).toBeInTheDocument();
+    expect(await canvas.findByText('Sylvie Palmer')).toBeInTheDocument();
   },
 };

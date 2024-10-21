@@ -16,13 +16,14 @@ import {
   IconUsers,
 } from 'twenty-ui';
 
-import { Favorites } from '@/favorites/components/Favorites';
 import { getSettingsPagePath } from '@/settings/utils/getSettingsPagePath';
 import { SettingsPath } from '@/types/SettingsPath';
 import { GithubVersionLink } from '@/ui/navigation/link/components/GithubVersionLink';
 import { ComponentWithRouterDecorator } from '~/testing/decorators/ComponentWithRouterDecorator';
 import { SnackBarDecorator } from '~/testing/decorators/SnackBarDecorator';
 
+import { CurrentWorkspaceMemberFavorites } from '@/favorites/components/CurrentWorkspaceMemberFavorites';
+import { NavigationDrawerSubItem } from '@/ui/navigation/navigation-drawer/components/NavigationDrawerSubItem';
 import { NavigationDrawer } from '../NavigationDrawer';
 import { NavigationDrawerItem } from '../NavigationDrawerItem';
 import { NavigationDrawerItemGroup } from '../NavigationDrawerItemGroup';
@@ -53,6 +54,11 @@ export const Default: Story = {
             soon={true}
           />
           <NavigationDrawerItem
+            label="Search"
+            Icon={IconSearch}
+            keyboard={['⌘', 'K']}
+          />
+          <NavigationDrawerItem
             label="Settings"
             to="/settings/profile"
             Icon={IconSettings}
@@ -65,7 +71,7 @@ export const Default: Story = {
           />
         </NavigationDrawerSection>
 
-        <Favorites />
+        <CurrentWorkspaceMemberFavorites />
 
         <NavigationDrawerSection>
           <NavigationDrawerSectionTitle label="Workspace" />
@@ -83,9 +89,8 @@ export const Default: Story = {
   },
 };
 
-export const Submenu: Story = {
+export const Settings: Story = {
   args: {
-    isSubMenu: true,
     title: 'Settings',
     children: (
       <>
@@ -108,17 +113,17 @@ export const Submenu: Story = {
               to={getSettingsPagePath(SettingsPath.Accounts)}
               Icon={IconAt}
             />
-            <NavigationDrawerItem
-              level={2}
+            <NavigationDrawerSubItem
               label="Emails"
               to={getSettingsPagePath(SettingsPath.AccountsEmails)}
               Icon={IconMail}
+              subItemState="intermediate-before-selected"
             />
-            <NavigationDrawerItem
-              level={2}
+            <NavigationDrawerSubItem
               label="Calendar"
               to={getSettingsPagePath(SettingsPath.AccountsCalendars)}
               Icon={IconCalendarEvent}
+              subItemState="last-selected"
             />
           </NavigationDrawerItemGroup>
         </NavigationDrawerSection>

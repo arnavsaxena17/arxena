@@ -1,27 +1,19 @@
-import { ReactNode } from 'react';
-import { MockedProvider, MockedResponse } from '@apollo/client/testing';
+import { MockedResponse } from '@apollo/client/testing';
 import { act, renderHook } from '@testing-library/react';
 import gql from 'graphql-tag';
 import pick from 'lodash.pick';
-import { RecoilRoot } from 'recoil';
 
 import { useCreateActivityInDB } from '@/activities/hooks/useCreateActivityInDB';
-import { SnackBarProviderScope } from '@/ui/feedback/snack-bar-manager/scopes/SnackBarProviderScope';
-import { mockedActivities } from '~/testing/mock-data/activities';
+import { CoreObjectNameSingular } from '@/object-metadata/types/CoreObjectNameSingular';
+import { getJestMetadataAndApolloMocksWrapper } from '~/testing/jest/getJestMetadataAndApolloMocksWrapper';
+import { mockedTasks } from '~/testing/mock-data/tasks';
 
 const mockedDate = '2024-03-15T12:00:00.000Z';
 const toISOStringMock = jest.fn(() => mockedDate);
 global.Date.prototype.toISOString = toISOStringMock;
 
 const mockedActivity = {
-  ...pick(mockedActivities[0], [
-    'id',
-    'title',
-    'body',
-    'type',
-    'completedAt',
-    'dueAt',
-  ]),
+  ...pick(mockedTasks[0], ['id', 'title', 'body', 'type', 'status', 'dueAt']),
   updatedAt: mockedDate,
 };
 
@@ -29,20 +21,47 @@ const mocks: MockedResponse[] = [
   {
     request: {
       query: gql`
-        mutation CreateOneActivity($input: ActivityCreateInput!) {
-          createActivity(data: $input) {
+        mutation CreateOneTask($input: TaskCreateInput!) {
+          createTask(data: $input) {
             __typename
-            createdAt
-            reminderAt
-            authorId
-            title
-            completedAt
-            updatedAt
-            body
-            dueAt
-            type
-            id
+            assignee {
+              __typename
+              id
+              name {
+                firstName
+                lastName
+              }
+            }
             assigneeId
+            attachments {
+              edges {
+                node {
+                  __typename
+                  activityId
+                  authorId
+                  companyId
+                  createdAt
+                  deletedAt
+                  fullPath
+                  id
+                  name
+                  noteId
+                  opportunityId
+                  personId
+                  rocketId
+                  taskId
+                  type
+                  updatedAt
+                }
+              }
+            }
+            body
+            createdAt
+            dueAt
+            id
+            status
+            title
+            updatedAt
           }
         }
       `,
@@ -52,7 +71,7 @@ const mocks: MockedResponse[] = [
     },
     result: jest.fn(() => ({
       data: {
-        createActivity: {
+        createTask: {
           ...mockedActivity,
           __typename: 'Activity',
           assigneeId: '',
@@ -65,26 +84,25 @@ const mocks: MockedResponse[] = [
   },
 ];
 
-const Wrapper = ({ children }: { children: ReactNode }) => (
-  <RecoilRoot>
-    <MockedProvider mocks={mocks} addTypename={false}>
-      <SnackBarProviderScope snackBarManagerScopeId="snack-bar-manager">
-        {children}
-      </SnackBarProviderScope>
-    </MockedProvider>
-  </RecoilRoot>
-);
+const Wrapper = getJestMetadataAndApolloMocksWrapper({
+  apolloMocks: mocks,
+});
 
 describe('useCreateActivityInDB', () => {
   it('Should create activity in DB', async () => {
-    const { result } = renderHook(() => useCreateActivityInDB(), {
-      wrapper: Wrapper,
-    });
+    const { result } = renderHook(
+      () =>
+        useCreateActivityInDB({
+          activityObjectNameSingular: CoreObjectNameSingular.Task,
+        }),
+      {
+        wrapper: Wrapper,
+      },
+    );
 
     await act(async () => {
       await result.current.createActivityInDB({
         ...mockedActivity,
-        __typename: 'Activity',
       });
     });
 

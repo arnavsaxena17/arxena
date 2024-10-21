@@ -2,16 +2,17 @@ import { Injectable } from '@nestjs/common';
 
 import { ColumnType, EntitySchemaColumnOptions } from 'typeorm';
 
-import { WorkspaceFieldMetadataArgs } from 'src/engine/twenty-orm/interfaces/workspace-field-metadata-args.interface';
-import { WorkspaceRelationMetadataArgs } from 'src/engine/twenty-orm/interfaces/workspace-relation-metadata-args.interface';
+import { FieldMetadataInterface } from 'src/engine/metadata-modules/field-metadata/interfaces/field-metadata.interface';
 
-import { fieldMetadataTypeToColumnType } from 'src/engine/metadata-modules/workspace-migration/utils/field-metadata-type-to-column-type.util';
-import { isEnumFieldMetadataType } from 'src/engine/metadata-modules/field-metadata/utils/is-enum-field-metadata-type.util';
-import { serializeDefaultValue } from 'src/engine/metadata-modules/field-metadata/utils/serialize-default-value';
+import { compositeTypeDefinitions } from 'src/engine/metadata-modules/field-metadata/composite-types';
+import { FieldMetadataType } from 'src/engine/metadata-modules/field-metadata/field-metadata.entity';
 import { computeCompositeColumnName } from 'src/engine/metadata-modules/field-metadata/utils/compute-column-name.util';
 import { isCompositeFieldMetadataType } from 'src/engine/metadata-modules/field-metadata/utils/is-composite-field-metadata-type.util';
-import { compositeTypeDefintions } from 'src/engine/metadata-modules/field-metadata/composite-types';
-import { FieldMetadataType } from 'src/engine/metadata-modules/field-metadata/field-metadata.entity';
+import { isEnumFieldMetadataType } from 'src/engine/metadata-modules/field-metadata/utils/is-enum-field-metadata-type.util';
+import { serializeDefaultValue } from 'src/engine/metadata-modules/field-metadata/utils/serialize-default-value';
+import { FieldMetadataMap } from 'src/engine/metadata-modules/utils/generate-object-metadata-map.util';
+import { fieldMetadataTypeToColumnType } from 'src/engine/metadata-modules/workspace-migration/utils/field-metadata-type-to-column-type.util';
+import { isRelationFieldMetadataType } from 'src/engine/utils/is-relation-field-metadata-type.util';
 
 type EntitySchemaColumnMap = {
   [key: string]: EntitySchemaColumnOptions;
@@ -19,17 +20,45 @@ type EntitySchemaColumnMap = {
 
 @Injectable()
 export class EntitySchemaColumnFactory {
-  create(
-    fieldMetadataArgsCollection: WorkspaceFieldMetadataArgs[],
-    relationMetadataArgsCollection: WorkspaceRelationMetadataArgs[],
-  ): EntitySchemaColumnMap {
+  create(fieldMetadataMap: FieldMetadataMap): EntitySchemaColumnMap {
     let entitySchemaColumnMap: EntitySchemaColumnMap = {};
 
-    for (const fieldMetadataArgs of fieldMetadataArgsCollection) {
-      const key = fieldMetadataArgs.name;
+    const fieldMetadataCollection = Object.values(fieldMetadataMap);
 
-      if (isCompositeFieldMetadataType(fieldMetadataArgs.type)) {
-        const compositeColumns = this.createCompositeColumns(fieldMetadataArgs);
+    for (const fieldMetadata of fieldMetadataCollection) {
+      const key = fieldMetadata.name;
+
+      if (isRelationFieldMetadataType(fieldMetadata.type)) {
+        const relationMetadata =
+          fieldMetadata.fromRelationMetadata ??
+          fieldMetadata.toRelationMetadata;
+
+        if (!relationMetadata) {
+          throw new Error(
+            `Relation metadata is missing for field ${fieldMetadata.name}`,
+          );
+        }
+
+        const joinColumnKey = fieldMetadata.name + 'Id';
+        const joinColumn = fieldMetadataCollection.find(
+          (field) => field.name === joinColumnKey,
+        )
+          ? joinColumnKey
+          : null;
+
+        if (joinColumn) {
+          entitySchemaColumnMap[joinColumn] = {
+            name: joinColumn,
+            type: 'uuid',
+            nullable: fieldMetadata.isNullable,
+          };
+        }
+
+        continue;
+      }
+
+      if (isCompositeFieldMetadataType(fieldMetadata.type)) {
+        const compositeColumns = this.createCompositeColumns(fieldMetadata);
 
         entitySchemaColumnMap = {
           ...entitySchemaColumnMap,
@@ -39,34 +68,24 @@ export class EntitySchemaColumnFactory {
         continue;
       }
 
-      const columnType = fieldMetadataTypeToColumnType(fieldMetadataArgs.type);
-      const defaultValue = serializeDefaultValue(
-        fieldMetadataArgs.defaultValue,
-      );
+      const columnType = fieldMetadataTypeToColumnType(fieldMetadata.type);
+      const defaultValue = serializeDefaultValue(fieldMetadata.defaultValue);
 
       entitySchemaColumnMap[key] = {
         name: key,
         type: columnType as ColumnType,
-        primary: fieldMetadataArgs.isPrimary,
-        nullable: fieldMetadataArgs.isNullable,
+        // TODO: We should double check that
+        primary: key === 'id',
+        nullable: fieldMetadata.isNullable,
         createDate: key === 'createdAt',
         updateDate: key === 'updatedAt',
-        array: fieldMetadataArgs.type === FieldMetadataType.MULTI_SELECT,
+        deleteDate: key === 'deletedAt',
+        array: fieldMetadata.type === FieldMetadataType.MULTI_SELECT,
         default: defaultValue,
       };
 
-      for (const relationMetadataArgs of relationMetadataArgsCollection) {
-        if (relationMetadataArgs.joinColumn) {
-          entitySchemaColumnMap[relationMetadataArgs.joinColumn] = {
-            name: relationMetadataArgs.joinColumn,
-            type: 'uuid',
-            nullable: relationMetadataArgs.isNullable,
-          };
-        }
-      }
-
-      if (isEnumFieldMetadataType(fieldMetadataArgs.type)) {
-        const values = fieldMetadataArgs.options?.map((option) => option.value);
+      if (isEnumFieldMetadataType(fieldMetadata.type)) {
+        const values = fieldMetadata.options?.map((option) => option.value);
 
         if (values && values.length > 0) {
           entitySchemaColumnMap[key].enum = values;
@@ -78,25 +97,25 @@ export class EntitySchemaColumnFactory {
   }
 
   private createCompositeColumns(
-    fieldMetadataArgs: WorkspaceFieldMetadataArgs,
+    fieldMetadata: FieldMetadataInterface,
   ): EntitySchemaColumnMap {
     const entitySchemaColumnMap: EntitySchemaColumnMap = {};
-    const compositeType = compositeTypeDefintions.get(fieldMetadataArgs.type);
+    const compositeType = compositeTypeDefinitions.get(fieldMetadata.type);
 
     if (!compositeType) {
       throw new Error(
-        `Composite type ${fieldMetadataArgs.type} is not defined in compositeTypeDefintions`,
+        `Composite type ${fieldMetadata.type} is not defined in compositeTypeDefinitions`,
       );
     }
 
     for (const compositeProperty of compositeType.properties) {
       const columnName = computeCompositeColumnName(
-        fieldMetadataArgs.name,
+        fieldMetadata.name,
         compositeProperty,
       );
       const columnType = fieldMetadataTypeToColumnType(compositeProperty.type);
       const defaultValue = serializeDefaultValue(
-        fieldMetadataArgs.defaultValue?.[compositeProperty.name],
+        fieldMetadata.defaultValue?.[compositeProperty.name],
       );
 
       entitySchemaColumnMap[columnName] = {
@@ -107,7 +126,11 @@ export class EntitySchemaColumnFactory {
       };
 
       if (isEnumFieldMetadataType(compositeProperty.type)) {
-        throw new Error('Enum composite properties are not yet supported');
+        const values = compositeProperty.options?.map((option) => option.value);
+
+        if (values && values.length > 0) {
+          entitySchemaColumnMap[columnName].enum = values;
+        }
       }
     }
 

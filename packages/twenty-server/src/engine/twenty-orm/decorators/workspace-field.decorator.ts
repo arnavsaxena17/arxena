@@ -1,11 +1,12 @@
 import { FieldMetadataDefaultValue } from 'src/engine/metadata-modules/field-metadata/interfaces/field-metadata-default-value.interface';
 import { FieldMetadataOptions } from 'src/engine/metadata-modules/field-metadata/interfaces/field-metadata-options.interface';
+import { FieldMetadataSettings } from 'src/engine/metadata-modules/field-metadata/interfaces/field-metadata-settings.interface';
 
 import { FieldMetadataType } from 'src/engine/metadata-modules/field-metadata/field-metadata.entity';
+import { generateDefaultValue } from 'src/engine/metadata-modules/field-metadata/utils/generate-default-value';
 import { ObjectMetadataEntity } from 'src/engine/metadata-modules/object-metadata/object-metadata.entity';
 import { metadataArgsStorage } from 'src/engine/twenty-orm/storage/metadata-args.storage';
 import { TypedReflect } from 'src/utils/typed-reflect';
-import { generateDefaultValue } from 'src/engine/metadata-modules/field-metadata/utils/generate-default-value';
 
 export interface WorkspaceFieldOptions<
   T extends FieldMetadataType | 'default',
@@ -17,6 +18,10 @@ export interface WorkspaceFieldOptions<
   icon?: string;
   defaultValue?: FieldMetadataDefaultValue<T>;
   options?: FieldMetadataOptions<T>;
+  settings?: FieldMetadataSettings<T>;
+  isActive?: boolean;
+  generatedType?: 'STORED' | 'VIRTUAL';
+  asExpression?: string;
 }
 
 export function WorkspaceField<T extends FieldMetadataType>(
@@ -46,10 +51,21 @@ export function WorkspaceField<T extends FieldMetadataType>(
       object,
       propertyKey.toString(),
     );
+    const isDeprecated =
+      TypedReflect.getMetadata(
+        'workspace:is-deprecated-field-metadata-args',
+        object,
+        propertyKey.toString(),
+      ) ?? false;
+    const isUnique =
+      TypedReflect.getMetadata(
+        'workspace:is-unique-metadata-args',
+        object,
+        propertyKey.toString(),
+      ) ?? false;
+
     const defaultValue = (options.defaultValue ??
-      generateDefaultValue(
-        options.type,
-      )) as FieldMetadataDefaultValue<'default'> | null;
+      generateDefaultValue(options.type)) as FieldMetadataDefaultValue | null;
 
     metadataArgsStorage.addFields({
       target: object.constructor,
@@ -61,10 +77,16 @@ export function WorkspaceField<T extends FieldMetadataType>(
       icon: options.icon,
       defaultValue,
       options: options.options,
+      settings: options.settings,
       isPrimary,
       isNullable,
       isSystem,
       gate,
+      isDeprecated,
+      isUnique,
+      isActive: options.isActive,
+      asExpression: options.asExpression,
+      generatedType: options.generatedType,
     });
   };
 }

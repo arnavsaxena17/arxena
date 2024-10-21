@@ -6,23 +6,25 @@ import {
   FieldMetadataDefaultValue,
 } from 'src/engine/metadata-modules/field-metadata/interfaces/field-metadata-default-value.interface';
 
-import { FieldMetadataType } from 'src/engine/metadata-modules/field-metadata/field-metadata.entity';
 import {
+  FieldMetadataDefaultActor,
   FieldMetadataDefaultValueAddress,
   FieldMetadataDefaultValueBoolean,
   FieldMetadataDefaultValueCurrency,
+  FieldMetadataDefaultValueDate,
   FieldMetadataDefaultValueDateTime,
+  FieldMetadataDefaultValueEmails,
   FieldMetadataDefaultValueFullName,
-  FieldMetadataDefaultValueRawJson,
-  FieldMetadataDefaultValueLink,
+  FieldMetadataDefaultValueLinks,
+  FieldMetadataDefaultValueNowFunction,
   FieldMetadataDefaultValueNumber,
+  FieldMetadataDefaultValuePhones,
+  FieldMetadataDefaultValueRawJson,
   FieldMetadataDefaultValueString,
   FieldMetadataDefaultValueStringArray,
-  FieldMetadataDefaultValueNowFunction,
   FieldMetadataDefaultValueUuidFunction,
-  FieldMetadataDefaultValueDate,
-  FieldMetadataDefaultValueLinks,
 } from 'src/engine/metadata-modules/field-metadata/dtos/default-value.input';
+import { FieldMetadataType } from 'src/engine/metadata-modules/field-metadata/field-metadata.entity';
 import { isCompositeFieldMetadataType } from 'src/engine/metadata-modules/field-metadata/utils/is-composite-field-metadata-type.util';
 
 export const defaultValueValidatorsMap = {
@@ -31,8 +33,6 @@ export const defaultValueValidatorsMap = {
     FieldMetadataDefaultValueUuidFunction,
   ],
   [FieldMetadataType.TEXT]: [FieldMetadataDefaultValueString],
-  [FieldMetadataType.PHONE]: [FieldMetadataDefaultValueString],
-  [FieldMetadataType.EMAIL]: [FieldMetadataDefaultValueString],
   [FieldMetadataType.DATE_TIME]: [
     FieldMetadataDefaultValueDateTime,
     FieldMetadataDefaultValueNowFunction,
@@ -41,16 +41,18 @@ export const defaultValueValidatorsMap = {
   [FieldMetadataType.BOOLEAN]: [FieldMetadataDefaultValueBoolean],
   [FieldMetadataType.NUMBER]: [FieldMetadataDefaultValueNumber],
   [FieldMetadataType.NUMERIC]: [FieldMetadataDefaultValueString],
-  [FieldMetadataType.PROBABILITY]: [FieldMetadataDefaultValueNumber],
-  [FieldMetadataType.LINK]: [FieldMetadataDefaultValueLink],
   [FieldMetadataType.CURRENCY]: [FieldMetadataDefaultValueCurrency],
   [FieldMetadataType.FULL_NAME]: [FieldMetadataDefaultValueFullName],
   [FieldMetadataType.RATING]: [FieldMetadataDefaultValueString],
   [FieldMetadataType.SELECT]: [FieldMetadataDefaultValueString],
   [FieldMetadataType.MULTI_SELECT]: [FieldMetadataDefaultValueStringArray],
   [FieldMetadataType.ADDRESS]: [FieldMetadataDefaultValueAddress],
+  [FieldMetadataType.RICH_TEXT]: [FieldMetadataDefaultValueString],
   [FieldMetadataType.RAW_JSON]: [FieldMetadataDefaultValueRawJson],
   [FieldMetadataType.LINKS]: [FieldMetadataDefaultValueLinks],
+  [FieldMetadataType.ACTOR]: [FieldMetadataDefaultActor],
+  [FieldMetadataType.EMAILS]: [FieldMetadataDefaultValueEmails],
+  [FieldMetadataType.PHONES]: [FieldMetadataDefaultValuePhones],
 };
 
 type ValidationResult = {

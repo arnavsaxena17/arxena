@@ -1,4 +1,6 @@
 import { StorybookConfig } from '@storybook/react-vite';
+import * as path from 'path';
+import checker from 'vite-plugin-checker';
 
 const config: StorybookConfig = {
   stories: ['../src/**/*.stories.@(js|jsx|ts|tsx|mdx)'],
@@ -16,14 +18,18 @@ const config: StorybookConfig = {
     name: '@storybook/react-vite',
     options: {},
   },
-  build: {
-    test: {
-      disableMDXEntries: true,
-      disabledAddons: [
-        '@storybook/addon-docs',
-        '@storybook/addon-essentials/docs',
+  viteFinal: (config) => {
+    return {
+      ...config,
+      plugins: [
+        ...(config.plugins ?? []),
+        checker({
+          typescript: {
+            tsconfigPath: path.resolve(__dirname, '../tsconfig.dev.json'),
+          },
+        }),
       ],
-    },
+    };
   },
 };
 

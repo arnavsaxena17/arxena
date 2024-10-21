@@ -1,14 +1,20 @@
-import React, { ReactElement, useContext } from 'react';
-import { Tooltip } from 'react-tooltip';
 import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
-import { IconComponent } from 'twenty-ui';
+import { ReactElement, useContext } from 'react';
+import {
+  AppTooltip,
+  IconComponent,
+  OverflowingTextWithTooltip,
+  TooltipDelay,
+} from 'twenty-ui';
 
 import { FieldContext } from '@/object-record/record-field/contexts/FieldContext';
 import { useFieldFocus } from '@/object-record/record-field/hooks/useFieldFocus';
 import { RecordInlineCellValue } from '@/object-record/record-inline-cell/components/RecordInlineCellValue';
-import { EllipsisDisplay } from '@/ui/field/display/components/EllipsisDisplay';
+import { getRecordFieldInputId } from '@/object-record/utils/getRecordFieldInputId';
 import { HotkeyScope } from '@/ui/utilities/hotkey/types/HotkeyScope';
+
+import { useRecordInlineCellContext } from './RecordInlineCellContext';
 
 const StyledIconContainer = styled.div`
   align-items: center;
@@ -36,6 +42,7 @@ const StyledValueContainer = styled.div`
   display: flex;
   flex-grow: 1;
   min-width: 0;
+  position: relative;
 `;
 
 const StyledLabelContainer = styled.div<{ width?: number }>`
@@ -49,21 +56,10 @@ const StyledInlineCellBaseContainer = styled.div`
   box-sizing: border-box;
   width: 100%;
   display: flex;
-
+  height: 24px;
   gap: ${({ theme }) => theme.spacing(1)};
-
   user-select: none;
-`;
-
-const StyledTooltip = styled(Tooltip)`
-  background-color: ${({ theme }) => theme.background.primary};
-  box-shadow: ${({ theme }) => theme.boxShadow.light};
-
-  color: ${({ theme }) => theme.font.color.primary};
-
-  font-size: ${({ theme }) => theme.font.size.sm};
-  font-weight: ${({ theme }) => theme.font.weight.regular};
-  padding: ${({ theme }) => theme.spacing(2)};
+  justify-content: center;
 `;
 
 export const StyledSkeletonDiv = styled.div`
@@ -81,29 +77,16 @@ export type RecordInlineCellContainerProps = {
   editModeContentOnly?: boolean;
   displayModeContent: ReactElement;
   customEditHotkeyScope?: HotkeyScope;
-  isDisplayModeContentEmpty?: boolean;
   isDisplayModeFixHeight?: boolean;
   disableHoverEffect?: boolean;
   loading?: boolean;
 };
 
-export const RecordInlineCellContainer = ({
-  readonly,
-  IconLabel,
-  label,
-  labelWidth,
-  showLabel,
-  buttonIcon,
-  editModeContent,
-  displayModeContent,
-  customEditHotkeyScope,
-  isDisplayModeContentEmpty,
-  editModeContentOnly,
-  isDisplayModeFixHeight,
-  disableHoverEffect,
-  loading = false,
-}: RecordInlineCellContainerProps) => {
-  const { entityId, fieldDefinition } = useContext(FieldContext);
+export const RecordInlineCellContainer = () => {
+  const { readonly, IconLabel, label, labelWidth, showLabel } =
+    useRecordInlineCellContext();
+
+  const { recordId, fieldDefinition } = useContext(FieldContext);
 
   const { setIsFocused } = useFieldFocus();
 
@@ -120,7 +103,10 @@ export const RecordInlineCellContainer = ({
   };
 
   const theme = useTheme();
-  const labelId = `label-${entityId}-${fieldDefinition?.metadata?.fieldName}`;
+  const labelId = `label-${getRecordFieldInputId(
+    recordId,
+    fieldDefinition?.metadata?.fieldName,
+  )}`;
 
   return (
     <StyledInlineCellBaseContainer
@@ -136,39 +122,25 @@ export const RecordInlineCellContainer = ({
           )}
           {showLabel && label && (
             <StyledLabelContainer width={labelWidth}>
-              <EllipsisDisplay maxWidth={labelWidth}>{label}</EllipsisDisplay>
+              <OverflowingTextWithTooltip text={label} />
             </StyledLabelContainer>
           )}
           {/* TODO: Displaying Tooltips on the board is causing performance issues https://react-tooltip.com/docs/examples/render */}
           {!showLabel && !fieldDefinition?.disableTooltip && (
-            <StyledTooltip
+            <AppTooltip
               anchorSelect={`#${labelId}`}
               content={label}
               clickable
               noArrow
               place="bottom"
               positionStrategy="fixed"
+              delay={TooltipDelay.shortDelay}
             />
           )}
         </StyledLabelAndIconContainer>
       )}
       <StyledValueContainer>
-        <RecordInlineCellValue
-          {...{
-            displayModeContent,
-            customEditHotkeyScope,
-            disableHoverEffect,
-            editModeContent,
-            editModeContentOnly,
-            isDisplayModeContentEmpty,
-            isDisplayModeFixHeight,
-            buttonIcon,
-            label,
-            loading,
-            readonly,
-            showLabel,
-          }}
-        />
+        <RecordInlineCellValue />
       </StyledValueContainer>
     </StyledInlineCellBaseContainer>
   );

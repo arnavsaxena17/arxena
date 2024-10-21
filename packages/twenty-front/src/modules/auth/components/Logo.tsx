@@ -1,6 +1,6 @@
 import styled from '@emotion/styled';
 
-import { getImageAbsoluteURIOrBase64 } from '~/utils/image/getImageAbsoluteURIOrBase64';
+import { getImageAbsoluteURI } from '~/utils/image/getImageAbsoluteURI';
 
 type LogoProps = {
   workspaceLogo?: string | null;
@@ -58,7 +58,7 @@ export const Logo = ({ workspaceLogo }: LogoProps) => {
 
   return (
     <StyledContainer>
-      <StyledMainLogo logo={getImageAbsoluteURIOrBase64(workspaceLogo)} />
+      <StyledMainLogo logo={getImageAbsoluteURI(workspaceLogo)} />
       <StyledTwentyLogoContainer>
         <StyledTwentyLogo src="/icons/arxena/arxena-icon-black-icon.png" />
       </StyledTwentyLogoContainer>

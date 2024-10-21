@@ -2,14 +2,14 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { GraphQLFieldConfigMap, GraphQLObjectType } from 'graphql';
 
-import { WorkspaceBuildSchemaOptions } from 'src/engine/api/graphql/workspace-schema-builder/interfaces/workspace-build-schema-optionts.interface';
 import { WorkspaceResolverBuilderMethodNames } from 'src/engine/api/graphql/workspace-resolver-builder/interfaces/workspace-resolvers-builder.interface';
+import { WorkspaceBuildSchemaOptions } from 'src/engine/api/graphql/workspace-schema-builder/interfaces/workspace-build-schema-optionts.interface';
 import { ObjectMetadataInterface } from 'src/engine/metadata-modules/field-metadata/interfaces/object-metadata.interface';
 
-import { TypeDefinitionsStorage } from 'src/engine/api/graphql/workspace-schema-builder/storages/type-definitions.storage';
-import { getResolverName } from 'src/engine/utils/get-resolver-name.util';
-import { getResolverArgs } from 'src/engine/api/graphql/workspace-schema-builder/utils/get-resolver-args.util';
 import { TypeMapperService } from 'src/engine/api/graphql/workspace-schema-builder/services/type-mapper.service';
+import { TypeDefinitionsStorage } from 'src/engine/api/graphql/workspace-schema-builder/storages/type-definitions.storage';
+import { getResolverArgs } from 'src/engine/api/graphql/workspace-schema-builder/utils/get-resolver-args.util';
+import { getResolverName } from 'src/engine/utils/get-resolver-name.util';
 
 import { ArgsFactory } from './args.factory';
 import { ObjectTypeDefinitionKind } from './object-type-definition.factory';
@@ -74,9 +74,7 @@ export class RootTypeFactory {
         const args = getResolverArgs(methodName);
         const objectType = this.typeDefinitionsStorage.getObjectTypeByKey(
           objectMetadata.id,
-          ['findMany', 'findDuplicates'].includes(methodName)
-            ? ObjectTypeDefinitionKind.Connection
-            : ObjectTypeDefinitionKind.Plain,
+          this.getObjectTypeDefinitionKindByMethodName(methodName),
         );
         const argsType = this.argsFactory.create(
           {
@@ -88,7 +86,8 @@ export class RootTypeFactory {
 
         if (!objectType) {
           this.logger.error(
-            `Could not find a GraphQL type for ${objectMetadata.id} for method ${methodName}`,
+            // `Could not find a GraphQL type for ${objectMetadata.id} for method ${methodName}`,
+            `Could not find a GraphQL type for ${objectMetadata.id}, method: ${methodName}, , options: ${options}, args: ${args},`,
             {
               objectMetadata,
               methodName,
@@ -97,14 +96,21 @@ export class RootTypeFactory {
           );
 
           throw new Error(
-            `Could not find a GraphQL type for ${objectMetadata.id} for method ${methodName}`,
+            `Could not find a GraphQL type for ${objectMetadata.id}, method: ${methodName}, , options: ${options}, args: ${args},`,
           );
         }
 
+        const allowedMethodNames = [
+          'updateMany',
+          'deleteMany',
+          'createMany',
+          'findDuplicates',
+          'restoreMany',
+          'destroyMany',
+        ];
+
         const outputType = this.typeMapperService.mapToGqlType(objectType, {
-          isArray: ['updateMany', 'deleteMany', 'createMany'].includes(
-            methodName,
-          ),
+          isArray: allowedMethodNames.includes(methodName),
         });
 
         fieldConfigMap[name] = {
@@ -116,5 +122,18 @@ export class RootTypeFactory {
     }
 
     return fieldConfigMap;
+  }
+
+  private getObjectTypeDefinitionKindByMethodName(
+    methodName: WorkspaceResolverBuilderMethodNames,
+  ): ObjectTypeDefinitionKind {
+    switch (methodName) {
+      case 'findMany':
+      case 'findDuplicates':
+      case 'search':
+        return ObjectTypeDefinitionKind.Connection;
+      default:
+        return ObjectTypeDefinitionKind.Plain;
+    }
   }
 }

@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
-import { useIMask } from 'react-imask';
 import { css } from '@emotion/react';
 import styled from '@emotion/styled';
 import { DateTime } from 'luxon';
+import { useCallback, useEffect, useState } from 'react';
+import { useIMask } from 'react-imask';
 
 import { DATE_BLOCKS } from '@/ui/input/components/internal/date/constants/DateBlocks';
 import { DATE_MASK } from '@/ui/input/components/internal/date/constants/DateMask';
@@ -12,10 +12,13 @@ import { MAX_DATE } from '@/ui/input/components/internal/date/constants/MaxDate'
 import { MIN_DATE } from '@/ui/input/components/internal/date/constants/MinDate';
 
 const StyledInputContainer = styled.div`
-  width: 100%;
-  display: flex;
+  align-items: center;
   border-bottom: 1px solid ${({ theme }) => theme.border.color.light};
+  border-top-left-radius: ${({ theme }) => theme.border.radius.md};
+  border-top-right-radius: ${({ theme }) => theme.border.radius.md};
+  display: flex;
   height: ${({ theme }) => theme.spacing(8)};
+  width: 100%;
 `;
 
 const StyledInput = styled.input<{ hasError?: boolean }>`
@@ -23,7 +26,7 @@ const StyledInput = styled.input<{ hasError?: boolean }>`
   border: none;
   color: ${({ theme }) => theme.font.color.primary};
   outline: none;
-  padding: 8px;
+  padding: 4px 8px 4px 8px;
   font-weight: 500;
   font-size: ${({ theme }) => theme.font.size.md};
   width: 100%;
@@ -38,6 +41,7 @@ type DateTimeInputProps = {
   onChange?: (date: Date | null) => void;
   date: Date | null;
   isDateTimeInput?: boolean;
+  userTimezone?: string;
   onError?: (error: Error) => void;
 };
 
@@ -45,6 +49,7 @@ export const DateTimeInput = ({
   date,
   onChange,
   isDateTimeInput,
+  userTimezone,
 }: DateTimeInputProps) => {
   const parsingFormat = isDateTimeInput ? 'MM/dd/yyyy HH:mm' : 'MM/dd/yyyy';
 
@@ -52,20 +57,34 @@ export const DateTimeInput = ({
 
   const parseDateToString = useCallback(
     (date: any) => {
-      const dateParsed = DateTime.fromJSDate(date);
+      const dateParsed = DateTime.fromJSDate(date, { zone: userTimezone });
 
-      const formattedDate = dateParsed.toFormat(parsingFormat);
+      const dateWithoutTime = DateTime.fromJSDate(date)
+        .toLocal()
+        .set({
+          day: date.getUTCDate(),
+          month: date.getUTCMonth() + 1,
+          year: date.getUTCFullYear(),
+          hour: 0,
+          minute: 0,
+          second: 0,
+          millisecond: 0,
+        });
+
+      const formattedDate = isDateTimeInput
+        ? dateParsed.setZone(userTimezone).toFormat(parsingFormat)
+        : dateWithoutTime.toFormat(parsingFormat);
 
       return formattedDate;
     },
-    [parsingFormat],
+    [parsingFormat, isDateTimeInput, userTimezone],
   );
 
   const parseStringToDate = (str: string) => {
     setHasError(false);
 
     const parsedDate = isDateTimeInput
-      ? DateTime.fromFormat(str, parsingFormat)
+      ? DateTime.fromFormat(str, parsingFormat, { zone: userTimezone })
       : DateTime.fromFormat(str, parsingFormat, { zone: 'utc' });
 
     const isValid = parsedDate.isValid;

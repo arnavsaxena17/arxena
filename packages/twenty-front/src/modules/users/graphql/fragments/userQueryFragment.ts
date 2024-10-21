@@ -8,16 +8,12 @@ export const USER_QUERY_FRAGMENT = gql`
     email
     canImpersonate
     supportUserHash
-    onboardingStep
+    onboardingStatus
     workspaceMember {
-      id
-      name {
-        firstName
-        lastName
-      }
-      colorScheme
-      avatarUrl
-      locale
+      ...WorkspaceMemberQueryFragment
+    }
+    workspaceMembers {
+      ...WorkspaceMemberQueryFragment
     }
     defaultWorkspace {
       id
@@ -26,7 +22,6 @@ export const USER_QUERY_FRAGMENT = gql`
       domainName
       inviteHash
       allowImpersonation
-      subscriptionStatus
       activationStatus
       featureFlags {
         id
@@ -34,12 +29,13 @@ export const USER_QUERY_FRAGMENT = gql`
         value
         workspaceId
       }
-      currentCacheVersion
+      metadataVersion
       currentBillingSubscription {
         id
         status
         interval
       }
+      workspaceMembersCount
     }
     workspaces {
       workspace {
@@ -49,5 +45,6 @@ export const USER_QUERY_FRAGMENT = gql`
         domainName
       }
     }
+    userVars
   }
 `;

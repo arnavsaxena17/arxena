@@ -1,36 +1,16 @@
 import { renderHook } from '@testing-library/react';
 import { print } from 'graphql';
-import { RecoilRoot } from 'recoil';
 
+import { PERSON_FRAGMENT_WITH_DEPTH_ZERO_RELATIONS } from '@/object-record/hooks/__mocks__/personFragments';
 import { useFindDuplicateRecordsQuery } from '@/object-record/hooks/useFindDuplicatesRecordsQuery';
+import { getJestMetadataAndApolloMocksWrapper } from '~/testing/jest/getJestMetadataAndApolloMocksWrapper';
 
 const expectedQueryTemplate = `
-  query FindDuplicatePerson($id: ID!) {
-    personDuplicates(id: $id) {
+  query FindDuplicatePerson($ids: [ID!]!) {
+    personDuplicates(ids: $ids) {
       edges {
         node {
-          __typename
-          xLink {
-            label
-            url
-          }
-          id
-          createdAt
-          city
-          email
-          jobTitle
-          name {
-            firstName
-            lastName
-          }
-          phone
-          linkedinLink {
-            label
-            url
-          }
-         updatedAt
-          avatarUrl
-          companyId
+      ${PERSON_FRAGMENT_WITH_DEPTH_ZERO_RELATIONS}
         }
        cursor
       }
@@ -39,10 +19,13 @@ const expectedQueryTemplate = `
         startCursor
         endCursor
       }
-      totalCount
      }
     }
 `.replace(/\s/g, '');
+
+const Wrapper = getJestMetadataAndApolloMocksWrapper({
+  apolloMocks: [],
+});
 
 describe('useFindDuplicateRecordsQuery', () => {
   it('should return a valid findDuplicateRecordsQuery', () => {
@@ -54,7 +37,7 @@ describe('useFindDuplicateRecordsQuery', () => {
           objectNameSingular,
         }),
       {
-        wrapper: RecoilRoot,
+        wrapper: Wrapper,
       },
     );
 

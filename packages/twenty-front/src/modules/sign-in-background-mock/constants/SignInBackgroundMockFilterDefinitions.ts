@@ -5,7 +5,7 @@ export const SIGN_IN_BACKGROUND_MOCK_FILTER_DEFINITIONS = [
     fieldMetadataId: '20202020-5e4e-4007-a630-8a2617914889',
     label: 'Domain Name',
     iconName: 'IconLink',
-    type: 'TEXT',
+    type: 'LINKS',
   },
   {
     fieldMetadataId: '20202020-7fbd-41ad-b64d-25a15ff62f04',
@@ -14,7 +14,7 @@ export const SIGN_IN_BACKGROUND_MOCK_FILTER_DEFINITIONS = [
     type: 'NUMBER',
   },
   {
-    fieldMetadataId: '20202020-6d30-4111-9f40-b4301906fd3c',
+    fieldMetadataId: 'REPLACE_ME',
     label: 'Name',
     iconName: 'IconBuildingSkyscraper',
     type: 'TEXT',
@@ -23,7 +23,7 @@ export const SIGN_IN_BACKGROUND_MOCK_FILTER_DEFINITIONS = [
     fieldMetadataId: '20202020-ad10-4117-a039-3f04b7a5f939',
     label: 'Address',
     iconName: 'IconMap',
-    type: 'TEXT',
+    type: 'ADDRESS',
   },
   {
     fieldMetadataId: '20202020-0739-495d-8e70-c0807f6b2268',
@@ -43,13 +43,13 @@ export const SIGN_IN_BACKGROUND_MOCK_FILTER_DEFINITIONS = [
     fieldMetadataId: '20202020-a61d-4b78-b998-3fd88b4f73a1',
     label: 'Linkedin',
     iconName: 'IconBrandLinkedin',
-    type: 'LINK',
+    type: 'LINKS',
   },
   {
     fieldMetadataId: '20202020-46e3-479a-b8f4-77137c74daa6',
     label: 'X',
     iconName: 'IconBrandX',
-    type: 'LINK',
+    type: 'LINKS',
   },
   {
     fieldMetadataId: '20202020-4a5a-466f-92d9-c3870d9502a9',

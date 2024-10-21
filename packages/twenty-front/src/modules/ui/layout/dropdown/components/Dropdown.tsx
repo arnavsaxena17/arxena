@@ -1,12 +1,13 @@
-import { useRef } from 'react';
-import { Keys } from 'react-hotkeys-hook';
 import {
   autoUpdate,
   flip,
+  FloatingPortal,
   offset,
   Placement,
   useFloating,
 } from '@floating-ui/react';
+import { MouseEvent, useRef } from 'react';
+import { Keys } from 'react-hotkeys-hook';
 import { Key } from 'ts-key-enum';
 
 import { DropdownScope } from '@/ui/layout/dropdown/scopes/DropdownScope';
@@ -39,6 +40,7 @@ type DropdownProps = {
   dropdownStrategy?: 'fixed' | 'absolute';
   disableBlur?: boolean;
   onClickOutside?: () => void;
+  usePortal?: boolean;
   onClose?: () => void;
   onOpen?: () => void;
 };
@@ -55,6 +57,7 @@ export const Dropdown = ({
   dropdownStrategy = 'absolute',
   dropdownOffset = { x: 0, y: 0 },
   disableBlur = false,
+  usePortal = false,
   onClickOutside,
   onClose,
   onOpen,
@@ -63,6 +66,7 @@ export const Dropdown = ({
 
   const { isDropdownOpen, toggleDropdown, closeDropdown, dropdownWidth } =
     useDropdown(dropdownId);
+
   const offsetMiddlewares = [];
 
   if (isDefined(dropdownOffset.x)) {
@@ -84,8 +88,16 @@ export const Dropdown = ({
     toggleDropdown();
   };
 
+  const handleClickableComponentClick = (event: MouseEvent) => {
+    event.stopPropagation();
+    event.preventDefault();
+
+    toggleDropdown();
+    onClickOutside?.();
+  };
+
   useListenClickOutside({
-    refs: [containerRef],
+    refs: [refs.floating],
     callback: () => {
       onClickOutside?.();
 
@@ -115,10 +127,7 @@ export const Dropdown = ({
         {clickableComponent && (
           <div
             ref={refs.setReference}
-            onClick={() => {
-              toggleDropdown();
-              onClickOutside?.();
-            }}
+            onClick={handleClickableComponentClick}
             className={className}
           >
             {clickableComponent}
@@ -130,7 +139,20 @@ export const Dropdown = ({
             onHotkeyTriggered={handleHotkeyTriggered}
           />
         )}
-        {isDropdownOpen && (
+        {isDropdownOpen && usePortal && (
+          <FloatingPortal>
+            <DropdownMenu
+              disableBlur={disableBlur}
+              width={dropdownMenuWidth ?? dropdownWidth}
+              data-select-disable
+              ref={refs.setFloating}
+              style={floatingStyles}
+            >
+              {dropdownComponents}
+            </DropdownMenu>
+          </FloatingPortal>
+        )}
+        {isDropdownOpen && !usePortal && (
           <DropdownMenu
             disableBlur={disableBlur}
             width={dropdownMenuWidth ?? dropdownWidth}

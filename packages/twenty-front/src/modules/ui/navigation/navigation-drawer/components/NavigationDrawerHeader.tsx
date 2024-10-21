@@ -7,15 +7,19 @@ import { DEFAULT_WORKSPACE_LOGO } from '@/ui/navigation/navigation-drawer/consta
 import { DEFAULT_WORKSPACE_NAME } from '@/ui/navigation/navigation-drawer/constants/DefaultWorkspaceName';
 import { useIsMobile } from '@/ui/utilities/responsive/hooks/useIsMobile';
 
+import { isNavigationDrawerExpandedState } from '@/ui/navigation/states/isNavigationDrawerExpanded';
+import { isNonEmptyString } from '@sniptt/guards';
 import { NavigationDrawerCollapseButton } from './NavigationDrawerCollapseButton';
+import { NavigationDrawerAnimatedCollapseWrapper } from '@/ui/navigation/navigation-drawer/components/NavigationDrawerAnimatedCollapseWrapper';
 
 const StyledContainer = styled.div`
   align-items: center;
   display: flex;
-  gap: ${({ theme }) => theme.spacing(2)};
-  height: ${({ theme }) => theme.spacing(6)};
-  padding: ${({ theme }) => theme.spacing(1)};
+  height: ${({ theme }) => theme.spacing(8)};
   user-select: none;
+`;
+const StyledSingleWorkspaceContainer = styled(StyledContainer)`
+  gap: ${({ theme }) => theme.spacing(2)};
 `;
 
 const StyledLogo = styled.div<{ logo: string }>`
@@ -55,19 +59,26 @@ export const NavigationDrawerHeader = ({
 }: NavigationDrawerHeaderProps) => {
   const isMobile = useIsMobile();
   const workspaces = useRecoilValue(workspacesState);
+  const isMultiWorkspace = workspaces !== null && workspaces.length > 1;
+  const isNavigationDrawerExpanded = useRecoilValue(
+    isNavigationDrawerExpandedState,
+  );
 
   return (
     <StyledContainer>
-      {workspaces !== null && workspaces.length > 1 ? (
+      {isMultiWorkspace ? (
         <MultiWorkspaceDropdownButton workspaces={workspaces} />
       ) : (
-        <>
-          <StyledLogo logo={logo} />
-          <StyledName>{name}</StyledName>
-        </>
+        <StyledSingleWorkspaceContainer>
+          <StyledLogo
+            logo={isNonEmptyString(logo) ? logo : DEFAULT_WORKSPACE_LOGO}
+          />
+          <NavigationDrawerAnimatedCollapseWrapper>
+            <StyledName>{name}</StyledName>
+          </NavigationDrawerAnimatedCollapseWrapper>
+        </StyledSingleWorkspaceContainer>
       )}
-
-      {!isMobile && (
+      {!isMobile && isNavigationDrawerExpanded && (
         <StyledNavigationDrawerCollapseButton
           direction="left"
           show={showCollapseButton}

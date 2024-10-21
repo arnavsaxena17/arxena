@@ -1,14 +1,17 @@
-import { useOnboardingStatus } from '@/auth/hooks/useOnboardingStatus';
-import { OnboardingStatus } from '@/auth/utils/getOnboardingStatus';
+import { useIsLogged } from '@/auth/hooks/useIsLogged';
+import { useDefaultHomePagePath } from '@/navigation/hooks/useDefaultHomePagePath';
+import { useOnboardingStatus } from '@/onboarding/hooks/useOnboardingStatus';
 import { AppPath } from '@/types/AppPath';
 import { SettingsPath } from '@/types/SettingsPath';
-import { useDefaultHomePagePath } from '~/hooks/useDefaultHomePagePath';
+import { useSubscriptionStatus } from '@/workspace/hooks/useSubscriptionStatus';
+import { OnboardingStatus, SubscriptionStatus } from '~/generated/graphql';
 import { useIsMatchingLocation } from '~/hooks/useIsMatchingLocation';
-import { isDefined } from '~/utils/isDefined';
 
 export const usePageChangeEffectNavigateLocation = () => {
   const isMatchingLocation = useIsMatchingLocation();
+  const isLoggedIn = useIsLogged();
   const onboardingStatus = useOnboardingStatus();
+  const subscriptionStatus = useSubscriptionStatus();
   const { defaultHomePagePath } = useDefaultHomePagePath();
 
   const isMatchingOpenRoute = isMatchingLocation(AppPath.Invite) || isMatchingLocation(AppPath.ResetPassword);
@@ -28,47 +31,84 @@ export const usePageChangeEffectNavigateLocation = () => {
     return;
   }
 
-  if (onboardingStatus === OnboardingStatus.OngoingUserCreation && !isMatchingOngoingUserCreationRoute) {
-    if (location.pathname.includes('video-interview') && !location.pathname.includes('video-interview-review')) {
-      return;
-    }
-    console.log('Is mathcing ongoing user creation route henc egoing eot signin up');
+  if (!isLoggedIn && !isMatchingOngoingUserCreationRoute) {
     return AppPath.SignInUp;
   }
 
-  if (onboardingStatus === OnboardingStatus.Incomplete && !isMatchingLocation(AppPath.PlanRequired)) {
+  if (
+    onboardingStatus === OnboardingStatus.PlanRequired &&
+    !isMatchingLocation(AppPath.PlanRequired)
+  ) {
     return AppPath.PlanRequired;
   }
 
-  if (isDefined(onboardingStatus) && [OnboardingStatus.Unpaid, OnboardingStatus.Canceled].includes(onboardingStatus) && !(isMatchingLocation(AppPath.SettingsCatchAll) || isMatchingLocation(AppPath.PlanRequired))) {
-    return `${AppPath.SettingsCatchAll.replace('/*', '')}/${SettingsPath.Billing}`;
+  if (
+    subscriptionStatus === SubscriptionStatus.Unpaid &&
+    !isMatchingLocation(AppPath.SettingsCatchAll)
+  ) {
+    return `${AppPath.SettingsCatchAll.replace('/*', '')}/${
+      SettingsPath.Billing
+    }`;
   }
 
-  if (onboardingStatus === OnboardingStatus.OngoingWorkspaceActivation && !isMatchingLocation(AppPath.CreateWorkspace) && !isMatchingLocation(AppPath.PlanRequiredSuccess)) {
+  if (
+    subscriptionStatus === SubscriptionStatus.Canceled &&
+    !(
+      isMatchingLocation(AppPath.SettingsCatchAll) ||
+      isMatchingLocation(AppPath.PlanRequired)
+    )
+  ) {
+    return `${AppPath.SettingsCatchAll.replace('/*', '')}/${
+      SettingsPath.Billing
+    }`;
+  }
+
+  if (
+    onboardingStatus === OnboardingStatus.WorkspaceActivation &&
+    !isMatchingLocation(AppPath.CreateWorkspace) &&
+    !isMatchingLocation(AppPath.PlanRequiredSuccess)
+  ) {
     return AppPath.CreateWorkspace;
   }
 
-  if (onboardingStatus === OnboardingStatus.OngoingProfileCreation && !isMatchingLocation(AppPath.CreateProfile)) {
+  if (
+    onboardingStatus === OnboardingStatus.ProfileCreation &&
+    !isMatchingLocation(AppPath.CreateProfile)
+  ) {
     return AppPath.CreateProfile;
   }
 
-  if (onboardingStatus === OnboardingStatus.OngoingSyncEmail && !isMatchingLocation(AppPath.SyncEmails)) {
+  if (
+    onboardingStatus === OnboardingStatus.SyncEmail &&
+    !isMatchingLocation(AppPath.SyncEmails)
+  ) {
     return AppPath.SyncEmails;
   }
 
-  if (onboardingStatus === OnboardingStatus.OngoingInviteTeam && !isMatchingLocation(AppPath.InviteTeam)) {
+  if (
+    onboardingStatus === OnboardingStatus.InviteTeam &&
+    !isMatchingLocation(AppPath.InviteTeam)
+  ) {
     return AppPath.InviteTeam;
   }
 
-  if (onboardingStatus === OnboardingStatus.Completed && isMatchingOnboardingRoute) {
+  if (
+    onboardingStatus === OnboardingStatus.Completed &&
+    subscriptionStatus === SubscriptionStatus.Canceled &&
+    isMatchingLocation(AppPath.PlanRequired)
+  ) {
+    return;
+  }
+
+  if (
+    onboardingStatus === OnboardingStatus.Completed &&
+    isMatchingOnboardingRoute &&
+    isLoggedIn
+  ) {
     return defaultHomePagePath;
   }
 
-  if (onboardingStatus === OnboardingStatus.CompletedWithoutSubscription && isMatchingOnboardingRoute && !isMatchingLocation(AppPath.PlanRequired)) {
-    return defaultHomePagePath;
-  }
-
-  if (isMatchingLocation(AppPath.Index)) {
+  if (isMatchingLocation(AppPath.Index) && isLoggedIn) {
     return defaultHomePagePath;
   }
 

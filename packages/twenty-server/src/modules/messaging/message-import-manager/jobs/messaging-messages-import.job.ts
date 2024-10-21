@@ -1,36 +1,37 @@
-import { Process } from 'src/engine/integrations/message-queue/decorators/process.decorator';
-import { Processor } from 'src/engine/integrations/message-queue/decorators/processor.decorator';
-import { MessageQueue } from 'src/engine/integrations/message-queue/message-queue.constants';
-import { InjectObjectMetadataRepository } from 'src/engine/object-metadata-repository/object-metadata-repository.decorator';
-import { ConnectedAccountRepository } from 'src/modules/connected-account/repositories/connected-account.repository';
-import { ConnectedAccountWorkspaceEntity } from 'src/modules/connected-account/standard-objects/connected-account.workspace-entity';
-import { MessageChannelRepository } from 'src/modules/messaging/common/repositories/message-channel.repository';
-import { MessagingTelemetryService } from 'src/modules/messaging/common/services/messaging-telemetry.service';
+import { Scope } from '@nestjs/common';
+
+import { Process } from 'src/engine/core-modules/message-queue/decorators/process.decorator';
+import { Processor } from 'src/engine/core-modules/message-queue/decorators/processor.decorator';
+import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
+import { TwentyORMManager } from 'src/engine/twenty-orm/twenty-orm.manager';
+import { isThrottled } from 'src/modules/connected-account/utils/is-throttled';
 import {
   MessageChannelSyncStage,
   MessageChannelWorkspaceEntity,
 } from 'src/modules/messaging/common/standard-objects/message-channel.workspace-entity';
-import { MessagingGmailMessagesImportService } from 'src/modules/messaging/message-import-manager/drivers/gmail/services/messaging-gmail-messages-import.service';
-import { isThrottled } from 'src/modules/messaging/message-import-manager/drivers/gmail/utils/is-throttled';
+import { MessagingMessagesImportService } from 'src/modules/messaging/message-import-manager/services/messaging-messages-import.service';
+import { MessagingTelemetryService } from 'src/modules/messaging/monitoring/services/messaging-telemetry.service';
 
 export type MessagingMessagesImportJobData = {
   messageChannelId: string;
   workspaceId: string;
 };
 
-@Processor(MessageQueue.messagingQueue)
+@Processor({
+  queueName: MessageQueue.messagingQueue,
+  scope: Scope.REQUEST,
+})
 export class MessagingMessagesImportJob {
   constructor(
-    @InjectObjectMetadataRepository(ConnectedAccountWorkspaceEntity)
-    private readonly connectedAccountRepository: ConnectedAccountRepository,
-    private readonly gmailFetchMessageContentFromCacheService: MessagingGmailMessagesImportService,
-    @InjectObjectMetadataRepository(MessageChannelWorkspaceEntity)
-    private readonly messageChannelRepository: MessageChannelRepository,
+    private readonly messagingMessagesImportService: MessagingMessagesImportService,
     private readonly messagingTelemetryService: MessagingTelemetryService,
+    private readonly twentyORMManager: TwentyORMManager,
   ) {}
 
   @Process(MessagingMessagesImportJob.name)
   async handle(data: MessagingMessagesImportJobData): Promise<void> {
+    console.time('MessagingMessagesImportJob time');
+
     const { messageChannelId, workspaceId } = data;
 
     await this.messagingTelemetryService.track({
@@ -39,10 +40,17 @@ export class MessagingMessagesImportJob {
       messageChannelId,
     });
 
-    const messageChannel = await this.messageChannelRepository.getById(
-      messageChannelId,
-      workspaceId,
-    );
+    const messageChannelRepository =
+      await this.twentyORMManager.getRepository<MessageChannelWorkspaceEntity>(
+        'messageChannel',
+      );
+
+    const messageChannel = await messageChannelRepository.findOne({
+      where: {
+        id: messageChannelId,
+      },
+      relations: ['connectedAccount'],
+    });
 
     if (!messageChannel) {
       await this.messagingTelemetryService.track({
@@ -53,12 +61,6 @@ export class MessagingMessagesImportJob {
 
       return;
     }
-
-    const connectedAccount =
-      await this.connectedAccountRepository.getConnectedAccountOrThrow(
-        workspaceId,
-        messageChannel.connectedAccountId,
-      );
 
     if (!messageChannel?.isSyncEnabled) {
       return;
@@ -80,10 +82,12 @@ export class MessagingMessagesImportJob {
       return;
     }
 
-    await this.gmailFetchMessageContentFromCacheService.processMessageBatchImport(
+    await this.messagingMessagesImportService.processMessageBatchImport(
       messageChannel,
-      connectedAccount,
+      messageChannel.connectedAccount,
       workspaceId,
     );
+
+    console.timeEnd('MessagingMessagesImportJob time');
   }
 }

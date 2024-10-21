@@ -1,18 +1,18 @@
-import { useRecoilValue } from 'recoil';
-
-import { ObjectFilterDropdownSearchInput } from '@/object-record/object-filter-dropdown/components/ObjectFilterDropdownSearchInput';
 import { useFilterDropdown } from '@/object-record/object-filter-dropdown/hooks/useFilterDropdown';
-import { DropdownMenuSeparator } from '@/ui/layout/dropdown/components/DropdownMenuSeparator';
 
+import { ObjectFilterDropdownFilterInput } from '@/object-record/object-filter-dropdown/components/ObjectFilterDropdownFilterInput';
+import { ObjectFilterDropdownFilterSelectCompositeFieldSubMenu } from '@/object-record/object-filter-dropdown/components/ObjectFilterDropdownFilterSelectCompositeFieldSubMenu';
+import { objectFilterDropdownFilterIsSelectedComponentState } from '@/object-record/object-filter-dropdown/states/objectFilterDropdownFilterIsSelectedComponentState';
+import { objectFilterDropdownIsSelectingCompositeFieldComponentState } from '@/object-record/object-filter-dropdown/states/objectFilterDropdownIsSelectingCompositeFieldComponentState';
+import { useRecoilComponentStateV2 } from '@/ui/utilities/state/component-state/hooks/useRecoilComponentStateV2';
+import styled from '@emotion/styled';
+import { useRecoilValue } from 'recoil';
 import { MultipleFiltersDropdownFilterOnFilterChangedEffect } from './MultipleFiltersDropdownFilterOnFilterChangedEffect';
-import { ObjectFilterDropdownDateInput } from './ObjectFilterDropdownDateInput';
 import { ObjectFilterDropdownFilterSelect } from './ObjectFilterDropdownFilterSelect';
-import { ObjectFilterDropdownNumberInput } from './ObjectFilterDropdownNumberInput';
-import { ObjectFilterDropdownOperandButton } from './ObjectFilterDropdownOperandButton';
-import { ObjectFilterDropdownOperandSelect } from './ObjectFilterDropdownOperandSelect';
-import { ObjectFilterDropdownOptionSelect } from './ObjectFilterDropdownOptionSelect';
-import { ObjectFilterDropdownRecordSelect } from './ObjectFilterDropdownRecordSelect';
-import { ObjectFilterDropdownTextSearchInput } from './ObjectFilterDropdownTextSearchInput';
+
+const StyledContainer = styled.div`
+  position: relative;
+`;
 
 type MultipleFiltersDropdownContentProps = {
   filterDropdownId?: string;
@@ -21,41 +21,44 @@ type MultipleFiltersDropdownContentProps = {
 export const MultipleFiltersDropdownContent = ({
   filterDropdownId,
 }: MultipleFiltersDropdownContentProps) => {
-  const {
-    isObjectFilterDropdownOperandSelectUnfoldedState,
-    filterDefinitionUsedInDropdownState,
-    selectedOperandInDropdownState,
-  } = useFilterDropdown({ filterDropdownId });
+  const { filterDefinitionUsedInDropdownState } = useFilterDropdown({
+    filterDropdownId,
+  });
 
-  const isObjectFilterDropdownOperandSelectUnfolded = useRecoilValue(
-    isObjectFilterDropdownOperandSelectUnfoldedState,
+  const [objectFilterDropdownIsSelectingCompositeField] =
+    useRecoilComponentStateV2(
+      objectFilterDropdownIsSelectingCompositeFieldComponentState,
+      filterDropdownId,
+    );
+
+  const [objectFilterDropdownFilterIsSelected] = useRecoilComponentStateV2(
+    objectFilterDropdownFilterIsSelectedComponentState,
+    filterDropdownId,
   );
+
   const filterDefinitionUsedInDropdown = useRecoilValue(
     filterDefinitionUsedInDropdownState,
   );
-  const selectedOperandInDropdown = useRecoilValue(
-    selectedOperandInDropdownState,
-  );
-  console.log("filterDefinitionUsedInDropdown:", filterDefinitionUsedInDropdown)
-  console.log("selectedOperandInDropdown:", selectedOperandInDropdown)
-  return (
-    console.log("isObjectFilterDropdownOperandSelectUnfolded:", filterDefinitionUsedInDropdown),
 
-    <>
-      {!filterDefinitionUsedInDropdown ? ( <ObjectFilterDropdownFilterSelect /> ) : isObjectFilterDropdownOperandSelectUnfolded ? ( <ObjectFilterDropdownOperandSelect /> ) : (
-        selectedOperandInDropdown && (
-          <>
-            <ObjectFilterDropdownOperandButton />
-            <DropdownMenuSeparator />
-            {[ 'TEXT', 'EMAIL', 'PHONE', 'FULL_NAME', 'LINK', 'LINKS', 'ADDRESS', ].includes(filterDefinitionUsedInDropdown.type) && ( <ObjectFilterDropdownTextSearchInput /> )}
-            {['NUMBER', 'CURRENCY'].includes( filterDefinitionUsedInDropdown.type, ) && <ObjectFilterDropdownNumberInput />}
-            {filterDefinitionUsedInDropdown.type === 'DATE_TIME' && ( <ObjectFilterDropdownDateInput /> )}
-            {filterDefinitionUsedInDropdown.type === 'RELATION' && ( <> <ObjectFilterDropdownSearchInput /> <DropdownMenuSeparator /> <ObjectFilterDropdownRecordSelect /> </> )}
-            {filterDefinitionUsedInDropdown.type === 'SELECT' && ( <> <ObjectFilterDropdownSearchInput /> <DropdownMenuSeparator /> <ObjectFilterDropdownOptionSelect /> </> )}
-          </>
-        )
+  const shouldShowCompositeSelectionSubMenu =
+    objectFilterDropdownIsSelectingCompositeField;
+
+  const shoudShowFilterInput = objectFilterDropdownFilterIsSelected;
+
+  return (
+    <StyledContainer>
+      {shoudShowFilterInput ? (
+        <ObjectFilterDropdownFilterInput filterDropdownId={filterDropdownId} />
+      ) : shouldShowCompositeSelectionSubMenu ? (
+        <ObjectFilterDropdownFilterSelectCompositeFieldSubMenu />
+      ) : (
+        <ObjectFilterDropdownFilterSelect />
       )}
-      <MultipleFiltersDropdownFilterOnFilterChangedEffect filterDefinitionUsedInDropdownType={ filterDefinitionUsedInDropdown?.type } />
-    </>
+      <MultipleFiltersDropdownFilterOnFilterChangedEffect
+        filterDefinitionUsedInDropdownType={
+          filterDefinitionUsedInDropdown?.type
+        }
+      />
+    </StyledContainer>
   );
 };

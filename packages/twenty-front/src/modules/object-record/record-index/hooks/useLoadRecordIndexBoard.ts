@@ -5,13 +5,13 @@ import { useObjectMetadataItem } from '@/object-metadata/hooks/useObjectMetadata
 import { useFindManyRecords } from '@/object-record/hooks/useFindManyRecords';
 import { turnSortsIntoOrderBy } from '@/object-record/object-sort-dropdown/utils/turnSortsIntoOrderBy';
 import { useRecordBoard } from '@/object-record/record-board/hooks/useRecordBoard';
-import { turnObjectDropdownFilterIntoQueryFilter } from '@/object-record/record-filter/utils/turnObjectDropdownFilterIntoQueryFilter';
+import { turnFiltersIntoQueryFilter } from '@/object-record/record-filter/utils/turnFiltersIntoQueryFilter';
 import { useRecordBoardRecordGqlFields } from '@/object-record/record-index/hooks/useRecordBoardRecordGqlFields';
 import { recordIndexFieldDefinitionsState } from '@/object-record/record-index/states/recordIndexFieldDefinitionsState';
 import { recordIndexFiltersState } from '@/object-record/record-index/states/recordIndexFiltersState';
 import { recordIndexIsCompactModeActiveState } from '@/object-record/record-index/states/recordIndexIsCompactModeActiveState';
 import { recordIndexSortsState } from '@/object-record/record-index/states/recordIndexSortsState';
-import { useSetRecordInStore } from '@/object-record/record-store/hooks/useSetRecordInStore';
+import { useUpsertRecordsInStore } from '@/object-record/record-store/hooks/useUpsertRecordsInStore';
 import { useSetRecordCountInCurrentView } from '@/views/hooks/useSetRecordCountInCurrentView';
 
 type UseLoadRecordIndexBoardProps = {
@@ -33,7 +33,7 @@ export const useLoadRecordIndexBoard = ({
     setFieldDefinitions,
     isCompactModeActiveState,
   } = useRecordBoard(recordBoardId);
-  const { setRecords: setRecordsInStore } = useSetRecordInStore();
+  const { upsertRecords: upsertRecordsInStore } = useUpsertRecordsInStore();
 
   const recordIndexFieldDefinitions = useRecoilValue(
     recordIndexFieldDefinitionsState,
@@ -44,7 +44,7 @@ export const useLoadRecordIndexBoard = ({
 
   const recordIndexFilters = useRecoilValue(recordIndexFiltersState);
   const recordIndexSorts = useRecoilValue(recordIndexSortsState);
-  const requestFilters = turnObjectDropdownFilterIntoQueryFilter(
+  const requestFilters = turnFiltersIntoQueryFilter(
     recordIndexFilters,
     objectMetadataItem?.fields ?? [],
   );
@@ -82,8 +82,8 @@ export const useLoadRecordIndexBoard = ({
   }, [records, setRecordIdsInBoard]);
 
   useEffect(() => {
-    setRecordsInStore(records);
-  }, [records, setRecordsInStore]);
+    upsertRecordsInStore(records);
+  }, [records, upsertRecordsInStore]);
 
   useEffect(() => {
     setRecordCountInCurrentView(totalCount);

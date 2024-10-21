@@ -1,5 +1,5 @@
-import { Controller, Get, Post, Req, Res, UnauthorizedException, UseGuards } from '@nestjs/common';
-import { TokenService } from '../services/token.service';
+import { Controller, Get, Req } from '@nestjs/common';
+import { TokenService } from 'src/engine/core-modules/auth/token/services/token.service';
 
 @Controller('socket-auth')
 export class SocketVerifyAuth {

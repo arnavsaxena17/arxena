@@ -1,6 +1,6 @@
 import { Field, ObjectType } from '@nestjs/graphql';
 
-import { CaptchaDriverType } from 'src/engine/integrations/captcha/interfaces';
+import { CaptchaDriverType } from 'src/engine/core-modules/captcha/interfaces';
 
 @ObjectType()
 class AuthProviders {
@@ -66,12 +66,15 @@ class Captcha {
 }
 
 @ObjectType()
+class ApiConfig {
+  @Field(() => Number, { nullable: false })
+  mutationMaximumAffectedRecords: number;
+}
+
+@ObjectType()
 export class ClientConfig {
   @Field(() => AuthProviders, { nullable: false })
   authProviders: AuthProviders;
-
-  @Field(() => Telemetry, { nullable: false })
-  telemetry: Telemetry;
 
   @Field(() => Billing, { nullable: false })
   billing: Billing;
@@ -85,6 +88,9 @@ export class ClientConfig {
   @Field(() => Boolean)
   debugMode: boolean;
 
+  @Field(() => Boolean)
+  analyticsEnabled: boolean;
+
   @Field(() => Support)
   support: Support;
 
@@ -96,4 +102,7 @@ export class ClientConfig {
 
   @Field(() => String, { nullable: true })
   chromeExtensionId: string | undefined;
+
+  @Field(() => ApiConfig)
+  api: ApiConfig;
 }

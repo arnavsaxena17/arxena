@@ -1,5 +1,5 @@
-import React from 'react';
 import { useTheme } from '@emotion/react';
+import React from 'react';
 import { useRecoilValue } from 'recoil';
 import { IconChevronDown } from 'twenty-ui';
 
@@ -11,11 +11,14 @@ import { StyledHeaderDropdownButton } from '@/ui/layout/dropdown/components/Styl
 import { HotkeyScope } from '@/ui/utilities/hotkey/types/HotkeyScope';
 import { ViewFilterOperand } from '@/views/types/ViewFilterOperand';
 
-import { getOperandsForFilterType } from '../utils/getOperandsForFilterType';
-
+import { useRecoilComponentValueV2 } from '@/ui/utilities/state/component-state/hooks/useRecoilComponentValueV2';
+import { availableFilterDefinitionsComponentState } from '@/views/states/availableFilterDefinitionsComponentState';
+import { getOperandsForFilterDefinition } from '../utils/getOperandsForFilterType';
 import { GenericEntityFilterChip } from './GenericEntityFilterChip';
 import { ObjectFilterDropdownRecordSelect } from './ObjectFilterDropdownRecordSelect';
 import { ObjectFilterDropdownSearchInput } from './ObjectFilterDropdownSearchInput';
+
+const SINGLE_ENTITY_FILTER_DROPDOWN_ID = 'single-entity-filter-dropdown';
 
 export const SingleEntityObjectFilterDropdownButton = ({
   hotkeyScope,
@@ -23,25 +26,26 @@ export const SingleEntityObjectFilterDropdownButton = ({
   hotkeyScope: HotkeyScope;
 }) => {
   const {
-    availableFilterDefinitionsState,
     selectedFilterState,
     setFilterDefinitionUsedInDropdown,
     setSelectedOperandInDropdown,
   } = useFilterDropdown();
 
-  const availableFilterDefinitions = useRecoilValue(
-    availableFilterDefinitionsState,
+  const availableFilterDefinitions = useRecoilComponentValueV2(
+    availableFilterDefinitionsComponentState,
   );
   const selectedFilter = useRecoilValue(selectedFilterState);
 
-  const availableFilter = availableFilterDefinitions[0];
+  const availableFilterDefinition = availableFilterDefinitions[0];
 
   React.useEffect(() => {
-    setFilterDefinitionUsedInDropdown(availableFilter);
-    const defaultOperand = getOperandsForFilterType(availableFilter?.type)[0];
+    setFilterDefinitionUsedInDropdown(availableFilterDefinition);
+    const defaultOperand = getOperandsForFilterDefinition(
+      availableFilterDefinition,
+    )[0];
     setSelectedOperandInDropdown(defaultOperand);
   }, [
-    availableFilter,
+    availableFilterDefinition,
     setFilterDefinitionUsedInDropdown,
     setSelectedOperandInDropdown,
   ]);
@@ -50,7 +54,7 @@ export const SingleEntityObjectFilterDropdownButton = ({
 
   return (
     <Dropdown
-      dropdownId="single-entity-filter-dropdown"
+      dropdownId={SINGLE_ENTITY_FILTER_DROPDOWN_ID}
       dropdownHotkeyScope={hotkeyScope}
       dropdownOffset={{ x: 0, y: -28 }}
       clickableComponent={
@@ -60,7 +64,7 @@ export const SingleEntityObjectFilterDropdownButton = ({
               filter={selectedFilter}
               Icon={
                 selectedFilter.operand === ViewFilterOperand.IsNotNull
-                  ? availableFilter.SelectAllIcon
+                  ? availableFilterDefinition.SelectAllIcon
                   : undefined
               }
             />
@@ -75,7 +79,9 @@ export const SingleEntityObjectFilterDropdownButton = ({
           <ObjectFilterDropdownSearchInput />
           <DropdownMenuSeparator />
           <ObjectFilterDropdownRecordRemoveFilterMenuItem />
-          <ObjectFilterDropdownRecordSelect />
+          <ObjectFilterDropdownRecordSelect
+            viewComponentId={SINGLE_ENTITY_FILTER_DROPDOWN_ID}
+          />
         </>
       }
     />

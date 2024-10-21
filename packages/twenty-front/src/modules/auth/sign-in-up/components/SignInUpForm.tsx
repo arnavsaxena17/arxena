@@ -1,8 +1,8 @@
-import { useMemo, useState } from 'react';
-import { Controller } from 'react-hook-form';
 import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
 import { motion } from 'framer-motion';
+import { useMemo, useState } from 'react';
+import { Controller } from 'react-hook-form';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { Key } from 'ts-key-enum';
 import { IconGoogle, IconMicrosoft } from 'twenty-ui';
@@ -76,6 +76,10 @@ export const SignInUpForm = () => {
       if (signInUpStep === SignInUpStep.Init) {
         continueWithEmail();
       } else if (signInUpStep === SignInUpStep.Email) {
+        if (isDefined(form?.formState?.errors?.email)) {
+          setShowErrors(true);
+          return;
+        }
         continueWithCredentials();
       } else if (signInUpStep === SignInUpStep.Password) {
         if (!form.formState.isSubmitting) {
@@ -238,6 +242,10 @@ export const SignInUpForm = () => {
                   return;
                 }
                 if (signInUpStep === SignInUpStep.Email) {
+                  if (isDefined(form?.formState?.errors?.email)) {
+                    setShowErrors(true);
+                    return;
+                  }
                   continueWithCredentials();
                   return;
                 }
@@ -258,7 +266,23 @@ export const SignInUpForm = () => {
       )}
       {signInUpStep === SignInUpStep.Init && (
         <FooterNote>
-          By using Arxena, you agree to the Terms of Service and Privacy Policy.
+          By using Arxena, you agree to the{' '}
+          <a
+            href="https://arxena.com/terms"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Terms of Service
+          </a>{' '}
+          and{' '}
+          <a
+            href="https://arxena.com/privacy"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Privacy Policy
+          </a>
+          .
         </FooterNote>
       )}
     </>

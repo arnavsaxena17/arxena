@@ -1,17 +1,18 @@
+import { useTheme } from '@emotion/react';
+import styled from '@emotion/styled';
 import {
   ChangeEvent,
   FocusEventHandler,
   ForwardedRef,
-  forwardRef,
   InputHTMLAttributes,
+  forwardRef,
+  useId,
   useRef,
   useState,
 } from 'react';
-import { useTheme } from '@emotion/react';
-import styled from '@emotion/styled';
-import { IconAlertCircle, IconComponent, IconEye, IconEyeOff } from 'twenty-ui';
-
+import { IconComponent, IconEye, IconEyeOff } from 'twenty-ui';
 import { useCombinedRefs } from '~/hooks/useCombinedRefs';
+import { turnIntoEmptyStringIfWhitespacesOnly } from '~/utils/string/turnIntoEmptyStringIfWhitespacesOnly';
 
 const StyledContainer = styled.div<
   Pick<TextInputV2ComponentProps, 'fullWidth'>
@@ -21,7 +22,7 @@ const StyledContainer = styled.div<
   width: ${({ fullWidth }) => (fullWidth ? `100%` : 'auto')};
 `;
 
-const StyledLabel = styled.span`
+const StyledLabel = styled.label`
   color: ${({ theme }) => theme.font.color.light};
   font-size: ${({ theme }) => theme.font.size.xs};
   font-weight: ${({ theme }) => theme.font.weight.semiBold};
@@ -35,10 +36,12 @@ const StyledInputContainer = styled.div`
 `;
 
 const StyledInput = styled.input<
-  Pick<TextInputV2ComponentProps, 'fullWidth' | 'LeftIcon'>
+  Pick<TextInputV2ComponentProps, 'fullWidth' | 'LeftIcon' | 'error'>
 >`
   background-color: ${({ theme }) => theme.background.transparent.lighter};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
+  border: 1px solid
+    ${({ theme, error }) =>
+      error ? theme.border.color.danger : theme.border.color.medium};
   border-bottom-left-radius: ${({ theme, LeftIcon }) =>
     !LeftIcon && theme.border.radius.sm};
   border-right: none;
@@ -86,10 +89,14 @@ const StyledLeftIconContainer = styled.div`
   padding-left: ${({ theme }) => theme.spacing(2)};
 `;
 
-const StyledTrailingIconContainer = styled.div`
+const StyledTrailingIconContainer = styled.div<
+  Pick<TextInputV2ComponentProps, 'error'>
+>`
   align-items: center;
   background-color: ${({ theme }) => theme.background.transparent.lighter};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
+  border: 1px solid
+    ${({ theme, error }) =>
+      error ? theme.border.color.danger : theme.border.color.medium};
   border-bottom-right-radius: ${({ theme }) => theme.border.radius.sm};
   border-left: none;
   border-top-right-radius: ${({ theme }) => theme.border.radius.sm};
@@ -122,6 +129,7 @@ export type TextInputV2ComponentProps = Omit<
   LeftIcon?: IconComponent;
   onKeyDown?: (event: React.KeyboardEvent<HTMLInputElement>) => void;
   onBlur?: FocusEventHandler<HTMLInputElement>;
+  dataTestId?: string;
 };
 
 const TextInputV2Component = (
@@ -145,7 +153,8 @@ const TextInputV2Component = (
     RightIcon,
     LeftIcon,
     autoComplete,
-    name,
+    maxLength,
+    dataTestId,
   }: TextInputV2ComponentProps,
   // eslint-disable-next-line @nx/workspace-component-props-naming
   ref: ForwardedRef<HTMLInputElement>,
@@ -161,9 +170,15 @@ const TextInputV2Component = (
     setPasswordVisible(!passwordVisible);
   };
 
+  const inputId = useId();
+
   return (
     <StyledContainer className={className} fullWidth={fullWidth ?? false}>
-      {label && <StyledLabel>{label + (required ? '*' : '')}</StyledLabel>}
+      {label && (
+        <StyledLabel htmlFor={inputId}>
+          {label + (required ? '*' : '')}
+        </StyledLabel>
+      )}
       <StyledInputContainer>
         {!!LeftIcon && (
           <StyledLeftIconContainer>
@@ -173,6 +188,8 @@ const TextInputV2Component = (
           </StyledLeftIconContainer>
         )}
         <StyledInput
+          id={inputId}
+          data-testid={dataTestId}
           autoComplete={autoComplete || 'off'}
           ref={combinedRef}
           tabIndex={tabIndex ?? 0}
@@ -180,18 +197,23 @@ const TextInputV2Component = (
           onBlur={onBlur}
           type={passwordVisible ? 'text' : type}
           onChange={(event: ChangeEvent<HTMLInputElement>) => {
-            onChange?.(event.target.value);
+            onChange?.(
+              turnIntoEmptyStringIfWhitespacesOnly(event.target.value),
+            );
           }}
           onKeyDown={onKeyDown}
-          {...{ autoFocus, disabled, placeholder, required, value, LeftIcon }}
-          name={name}
+          {...{
+            autoFocus,
+            disabled,
+            placeholder,
+            required,
+            value,
+            LeftIcon,
+            maxLength,
+            error,
+          }}
         />
-        <StyledTrailingIconContainer>
-          {error && (
-            <StyledTrailingIcon>
-              <IconAlertCircle size={16} color={theme.color.red} />
-            </StyledTrailingIcon>
-          )}
+        <StyledTrailingIconContainer {...{ error }}>
           {!error && type === INPUT_TYPE_PASSWORD && (
             <StyledTrailingIcon
               onClick={handleTogglePasswordVisibility}

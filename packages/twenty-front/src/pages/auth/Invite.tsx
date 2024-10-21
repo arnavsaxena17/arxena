@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
 import styled from '@emotion/styled';
+import { useMemo } from 'react';
 import { useRecoilValue } from 'recoil';
 
 import { Logo } from '@/auth/components/Logo';
@@ -13,7 +13,11 @@ import { Loader } from '@/ui/feedback/loader/components/Loader';
 import { MainButton } from '@/ui/input/button/components/MainButton';
 import { useWorkspaceSwitching } from '@/ui/navigation/navigation-drawer/hooks/useWorkspaceSwitching';
 import { AnimatedEaseIn } from '@/ui/utilities/animation/components/AnimatedEaseIn';
-import { useAddUserToWorkspaceMutation } from '~/generated/graphql';
+import { useSearchParams } from 'react-router-dom';
+import {
+  useAddUserToWorkspaceByInviteTokenMutation,
+  useAddUserToWorkspaceMutation,
+} from '~/generated/graphql';
 import { isDefined } from '~/utils/isDefined';
 
 const StyledContentContainer = styled.div`
@@ -24,26 +28,40 @@ const StyledContentContainer = styled.div`
 export const Invite = () => {
   const { workspace: workspaceFromInviteHash, workspaceInviteHash } =
     useWorkspaceFromInviteHash();
+
   const { form } = useSignInUpForm();
   const currentWorkspace = useRecoilValue(currentWorkspaceState);
   const [addUserToWorkspace] = useAddUserToWorkspaceMutation();
+  const [addUserToWorkspaceByInviteToken] =
+    useAddUserToWorkspaceByInviteTokenMutation();
   const { switchWorkspace } = useWorkspaceSwitching();
+  const [searchParams] = useSearchParams();
+  const workspaceInviteToken = searchParams.get('inviteToken');
 
   const title = useMemo(() => {
     return `Join ${workspaceFromInviteHash?.displayName ?? ''} team`;
   }, [workspaceFromInviteHash?.displayName]);
 
   const handleUserJoinWorkspace = async () => {
-    if (
-      !(isDefined(workspaceInviteHash) && isDefined(workspaceFromInviteHash))
+    if (isDefined(workspaceInviteToken) && isDefined(workspaceFromInviteHash)) {
+      await addUserToWorkspaceByInviteToken({
+        variables: {
+          inviteToken: workspaceInviteToken,
+        },
+      });
+    } else if (
+      isDefined(workspaceInviteHash) &&
+      isDefined(workspaceFromInviteHash)
     ) {
+      await addUserToWorkspace({
+        variables: {
+          inviteHash: workspaceInviteHash,
+        },
+      });
+    } else {
       return;
     }
-    await addUserToWorkspace({
-      variables: {
-        inviteHash: workspaceInviteHash,
-      },
-    });
+
     await switchWorkspace(workspaceFromInviteHash.id);
   };
 
@@ -74,8 +92,23 @@ export const Invite = () => {
             />
           </StyledContentContainer>
           <FooterNote>
-            By using Arxena, you agree to the Terms of Service and Privacy
-            Policy.
+            By using Arxena, you agree to the{' '}
+            <a
+              href="https://arxena.com/terms"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Terms of Service
+            </a>{' '}
+            and{' '}
+            <a
+              href="https://arxena.com/privacy"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Privacy Policy
+            </a>
+            .
           </FooterNote>
         </>
       ) : (

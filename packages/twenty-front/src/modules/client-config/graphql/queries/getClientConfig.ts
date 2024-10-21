@@ -16,9 +16,7 @@ export const GET_CLIENT_CONFIG = gql`
       signInPrefilled
       signUpDisabled
       debugMode
-      telemetry {
-        enabled
-      }
+      analyticsEnabled
       support {
         supportDriver
         supportFrontChatId
@@ -31,6 +29,9 @@ export const GET_CLIENT_CONFIG = gql`
       captcha {
         provider
         siteKey
+      }
+      api {
+        mutationMaximumAffectedRecords
       }
       chromeExtensionId
     }

@@ -15,16 +15,19 @@ export enum AppPath {
 
   // Onboarded
   Index = '/',
-  TasksPage = '/tasks',
+  // TasksPage = '/tasks',
   ChatsPage = '/chats',
 
+  TasksPage = '/objects/tasks',
   OpportunitiesPage = '/objects/opportunities',
 
   RecordIndexPage = '/objects/:objectNamePlural',
   RecordShowPage = '/object/:objectNameSingular/:objectRecordId',
 
-  SettingsCatchAll = `/settings/*`,
-  DevelopersCatchAll = `/developers/*`,
+  Settings = `settings`,
+  SettingsCatchAll = `/${Settings}/*`,
+  Developers = `developers`,
+  DevelopersCatchAll = `/${Developers}/*`,
 
   // Impersonate
   Impersonate = '/impersonate/:userId',

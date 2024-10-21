@@ -1,18 +1,17 @@
-import { useEffect } from 'react';
 import { Meta, StoryObj } from '@storybook/react';
+import { useEffect } from 'react';
 import { useRecoilState, useSetRecoilState } from 'recoil';
 import { ComponentDecorator } from 'twenty-ui';
 
 import { objectMetadataItemsState } from '@/object-metadata/states/objectMetadataItemsState';
 import { getBasePathToShowPage } from '@/object-metadata/utils/getBasePathToShowPage';
-import { getObjectMetadataItemsMock } from '@/object-metadata/utils/getObjectMetadataItemsMock';
+
 import { FieldContext } from '@/object-record/record-field/contexts/FieldContext';
 import {
   RecordFieldValueSelectorContextProvider,
   useSetRecordValue,
 } from '@/object-record/record-store/contexts/RecordFieldValueSelectorContext';
 import { recordStoreFamilyState } from '@/object-record/record-store/states/recordStoreFamilyState';
-import { RecordTableCellFieldContextWrapper } from '@/object-record/record-table/components/RecordTableCellFieldContextWrapper';
 import { RecordTableCellContext } from '@/object-record/record-table/contexts/RecordTableCellContext';
 import { RecordTableContext } from '@/object-record/record-table/contexts/RecordTableContext';
 import { RecordTableRowContext } from '@/object-record/record-table/contexts/RecordTableRowContext';
@@ -21,17 +20,17 @@ import { ChipGeneratorsDecorator } from '~/testing/decorators/ChipGeneratorsDeco
 import { MemoryRouterDecorator } from '~/testing/decorators/MemoryRouterDecorator';
 import { getProfilingStory } from '~/testing/profiling/utils/getProfilingStory';
 
+import { RecordTableCellFieldContextWrapper } from '@/object-record/record-table/record-table-cell/components/RecordTableCellFieldContextWrapper';
+import { generatedMockObjectMetadataItems } from '~/testing/mock-data/generatedMockObjectMetadataItems';
 import { mockPerformance } from './mock';
-
-const objectMetadataItems = getObjectMetadataItemsMock();
 
 const RelationFieldValueSetterEffect = () => {
   const setEntity = useSetRecoilState(
-    recordStoreFamilyState(mockPerformance.entityId),
+    recordStoreFamilyState(mockPerformance.recordId),
   );
 
   const setRelationEntity = useSetRecoilState(
-    recordStoreFamilyState(mockPerformance.relationEntityId),
+    recordStoreFamilyState(mockPerformance.relationRecordId),
   );
 
   const setRecordValue = useSetRecordValue();
@@ -48,7 +47,7 @@ const RelationFieldValueSetterEffect = () => {
       mockPerformance.relationFieldValue,
     );
 
-    setObjectMetadataItems(objectMetadataItems);
+    setObjectMetadataItems(generatedMockObjectMetadataItems);
   }, [setEntity, setRelationEntity, setRecordValue, setObjectMetadataItems]);
 
   return null;
@@ -64,15 +63,19 @@ const meta: Meta = {
         <RecordFieldValueSelectorContextProvider>
           <RecordTableContext.Provider
             value={{
+              viewBarId: mockPerformance.recordId,
               objectMetadataItem: mockPerformance.objectMetadataItem as any,
               onUpsertRecord: () => {},
               onOpenTableCell: () => {},
               onMoveFocus: () => {},
               onCloseTableCell: () => {},
               onMoveSoftFocusToCell: () => {},
-              onContextMenu: () => {},
+              onActionMenuDropdownOpened: () => {},
               onCellMouseEnter: () => {},
               visibleTableColumns: mockPerformance.visibleTableColumns as any,
+              objectNameSingular:
+                mockPerformance.objectMetadataItem.nameSingular,
+              recordTableId: 'recordTableId',
             }}
           >
             <RecordTableScope
@@ -83,26 +86,33 @@ const meta: Meta = {
                 value={{
                   objectNameSingular:
                     mockPerformance.entityValue.__typename.toLocaleLowerCase(),
-                  recordId: mockPerformance.entityId,
+                  recordId: mockPerformance.recordId,
                   rowIndex: 0,
                   pathToShowPage:
                     getBasePathToShowPage({
                       objectNameSingular:
                         mockPerformance.entityValue.__typename.toLocaleLowerCase(),
-                    }) + mockPerformance.entityId,
+                    }) + mockPerformance.recordId,
                   isSelected: false,
                   isReadOnly: false,
+                  isDragging: false,
+                  dragHandleProps: null,
+                  inView: true,
+                  isPendingRow: false,
                 }}
               >
                 <RecordTableCellContext.Provider
                   value={{
                     columnDefinition: mockPerformance.fieldDefinition,
                     columnIndex: 0,
+                    cellPosition: { row: 0, column: 0 },
+                    hasSoftFocus: false,
+                    isInEditMode: false,
                   }}
                 >
                   <FieldContext.Provider
                     value={{
-                      entityId: mockPerformance.entityId,
+                      recordId: mockPerformance.recordId,
                       basePathToShowPage: '/object-record/',
                       isLabelIdentifier: false,
                       fieldDefinition: {

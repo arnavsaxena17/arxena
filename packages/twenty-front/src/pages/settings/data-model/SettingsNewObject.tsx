@@ -1,13 +1,12 @@
+import { zodResolver } from '@hookform/resolvers/zod';
 import { FormProvider, useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { H2Title, IconSettings } from 'twenty-ui';
+import { H2Title } from 'twenty-ui';
 import { z } from 'zod';
 
 import { useCreateOneObjectMetadataItem } from '@/object-metadata/hooks/useCreateOneObjectMetadataItem';
 import { getObjectSlug } from '@/object-metadata/utils/getObjectSlug';
 import { SaveAndCancelButtons } from '@/settings/components/SaveAndCancelButtons/SaveAndCancelButtons';
-import { SettingsHeaderContainer } from '@/settings/components/SettingsHeaderContainer';
 import { SettingsPageContainer } from '@/settings/components/SettingsPageContainer';
 import {
   SettingsDataModelObjectAboutForm,
@@ -18,9 +17,8 @@ import { getSettingsPagePath } from '@/settings/utils/getSettingsPagePath';
 import { SettingsPath } from '@/types/SettingsPath';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
-import { SubMenuTopBarContainer } from '@/ui/layout/page/SubMenuTopBarContainer';
+import { SubMenuTopBarContainer } from '@/ui/layout/page/components/SubMenuTopBarContainer';
 import { Section } from '@/ui/layout/section/components/Section';
-import { Breadcrumb } from '@/ui/navigation/bread-crumb/components/Breadcrumb';
 
 const newObjectFormSchema = settingsDataModelObjectAboutFormSchema;
 
@@ -40,8 +38,8 @@ export const SettingsNewObject = () => {
     resolver: zodResolver(newObjectFormSchema),
   });
 
-  const canSave =
-    formConfig.formState.isValid && !formConfig.formState.isSubmitting;
+  const { isValid, isSubmitting } = formConfig.formState;
+  const canSave = isValid && !isSubmitting;
 
   const handleSave = async (
     formValues: SettingsDataModelNewObjectFormValues,
@@ -70,24 +68,29 @@ export const SettingsNewObject = () => {
   return (
     // eslint-disable-next-line react/jsx-props-no-spreading
     <FormProvider {...formConfig}>
-      <SubMenuTopBarContainer Icon={IconSettings} title="Settings">
+      <SubMenuTopBarContainer
+        title="New Object"
+        links={[
+          {
+            children: 'Workspace',
+            href: getSettingsPagePath(SettingsPath.Workspace),
+          },
+          {
+            children: 'Objects',
+            href: settingsObjectsPagePath,
+          },
+          { children: 'New' },
+        ]}
+        actionButton={
+          <SaveAndCancelButtons
+            isSaveDisabled={!canSave}
+            isCancelDisabled={isSubmitting}
+            onCancel={() => navigate(settingsObjectsPagePath)}
+            onSave={formConfig.handleSubmit(handleSave)}
+          />
+        }
+      >
         <SettingsPageContainer>
-          <SettingsHeaderContainer>
-            <Breadcrumb
-              links={[
-                {
-                  children: 'Objects',
-                  href: settingsObjectsPagePath,
-                },
-                { children: 'New' },
-              ]}
-            />
-            <SaveAndCancelButtons
-              isSaveDisabled={!canSave}
-              onCancel={() => navigate(settingsObjectsPagePath)}
-              onSave={formConfig.handleSubmit(handleSave)}
-            />
-          </SettingsHeaderContainer>
           <Section>
             <H2Title
               title="About"

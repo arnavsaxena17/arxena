@@ -1,17 +1,16 @@
-import { useContext } from 'react';
-import { createPortal } from 'react-dom';
+import { RecordInlineCellContext } from '@/object-record/record-inline-cell/components/RecordInlineCellContext';
 import styled from '@emotion/styled';
 import { autoUpdate, flip, offset, useFloating } from '@floating-ui/react';
-
-import { FieldContext } from '@/object-record/record-field/contexts/FieldContext';
+import { useContext } from 'react';
+import { createPortal } from 'react-dom';
 
 const StyledInlineCellEditModeContainer = styled.div`
   align-items: center;
 
   display: flex;
+  width: 100%;
+  position: absolute;
   height: 24px;
-
-  margin-left: -${({ theme }) => theme.spacing(1)};
 `;
 
 const StyledInlineCellInput = styled.div`
@@ -19,7 +18,8 @@ const StyledInlineCellInput = styled.div`
   display: flex;
 
   min-height: 32px;
-  min-width: 200px;
+  min-width: 240px;
+
   width: inherit;
 
   z-index: 1000;
@@ -29,23 +29,25 @@ type RecordInlineCellEditModeProps = {
   children: React.ReactNode;
 };
 
+// TODO: Refactor this to avoid setting absolute px values.
 export const RecordInlineCellEditMode = ({
   children,
 }: RecordInlineCellEditModeProps) => {
-  const { isCentered } = useContext(FieldContext);
+  const { isCentered } = useContext(RecordInlineCellContext);
 
   const { refs, floatingStyles } = useFloating({
-    placement: isCentered ? undefined : 'right-start',
+    placement: isCentered ? 'bottom' : 'bottom-start',
     middleware: [
       flip(),
       offset(
         isCentered
           ? {
-              mainAxis: -30,
+              mainAxis: -26,
+              crossAxis: 0,
             }
           : {
+              mainAxis: -28,
               crossAxis: -4,
-              mainAxis: -4,
             },
       ),
     ],

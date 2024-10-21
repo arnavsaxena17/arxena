@@ -1,4 +1,4 @@
-import { FocusEventHandler, forwardRef, ForwardRefRenderFunction } from 'react';
+import { FocusEventHandler, useEffect, useRef, useState } from 'react';
 import { Key } from 'ts-key-enum';
 
 import {
@@ -10,14 +10,41 @@ import { usePreviousHotkeyScope } from '@/ui/utilities/hotkey/hooks/usePreviousH
 import { useScopedHotkeys } from '@/ui/utilities/hotkey/hooks/useScopedHotkeys';
 import { isDefined } from '~/utils/isDefined';
 
-export type TextInputComponentProps = TextInputV2ComponentProps & {
+export type TextInputProps = TextInputV2ComponentProps & {
   disableHotkeys?: boolean;
+  onInputEnter?: () => void;
+  dataTestId?: string;
+  autoFocusOnMount?: boolean;
+  autoSelectOnMount?: boolean;
 };
 
-const TextInputComponent: ForwardRefRenderFunction<
-  HTMLInputElement,
-  TextInputComponentProps
-> = ({ onFocus, onBlur, disableHotkeys = false, ...props }, ref) => {
+export const TextInput = ({
+  onFocus,
+  onBlur,
+  onInputEnter,
+  disableHotkeys = false,
+  autoFocusOnMount,
+  autoSelectOnMount,
+  dataTestId,
+  ...props
+}: TextInputProps) => {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const [isFocused, setIsFocused] = useState(false);
+
+  useEffect(() => {
+    if (autoFocusOnMount === true) {
+      inputRef.current?.focus();
+      setIsFocused(true);
+    }
+  }, [autoFocusOnMount]);
+
+  useEffect(() => {
+    if (autoSelectOnMount === true) {
+      inputRef.current?.select();
+    }
+  }, [autoSelectOnMount]);
+
   const {
     goBackToPreviousHotkeyScope,
     setHotkeyScopeAndMemorizePreviousScope,
@@ -25,6 +52,7 @@ const TextInputComponent: ForwardRefRenderFunction<
 
   const handleFocus: FocusEventHandler<HTMLInputElement> = (e) => {
     onFocus?.(e);
+    setIsFocused(true);
 
     if (!disableHotkeys) {
       setHotkeyScopeAndMemorizePreviousScope(InputHotkeyScope.TextInput);
@@ -33,6 +61,7 @@ const TextInputComponent: ForwardRefRenderFunction<
 
   const handleBlur: FocusEventHandler<HTMLInputElement> = (e) => {
     onBlur?.(e);
+    setIsFocused(false);
 
     if (!disableHotkeys) {
       goBackToPreviousHotkeyScope();
@@ -40,25 +69,52 @@ const TextInputComponent: ForwardRefRenderFunction<
   };
 
   useScopedHotkeys(
-    [Key.Escape, Key.Enter],
+    [Key.Escape],
     () => {
-      if (isDefined(ref) && 'current' in ref) {
-        ref.current?.blur();
+      if (!isFocused) {
+        return;
+      }
+
+      if (isDefined(inputRef) && 'current' in inputRef) {
+        inputRef.current?.blur();
+        setIsFocused(false);
       }
     },
     InputHotkeyScope.TextInput,
-    { enabled: !disableHotkeys } as any,
+    [inputRef, isFocused],
+    {
+      preventDefault: false,
+    },
+  );
+
+  useScopedHotkeys(
+    [Key.Enter],
+    () => {
+      if (!isFocused) {
+        return;
+      }
+
+      onInputEnter?.();
+
+      if (isDefined(inputRef) && 'current' in inputRef) {
+        setIsFocused(false);
+      }
+    },
+    InputHotkeyScope.TextInput,
+    [inputRef, isFocused, onInputEnter],
+    {
+      preventDefault: false,
+    },
   );
 
   return (
     <TextInputV2
-      ref={ref}
+      ref={inputRef}
       // eslint-disable-next-line react/jsx-props-no-spreading
       {...props}
+      dataTestId={dataTestId}
       onFocus={handleFocus}
       onBlur={handleBlur}
     />
   );
 };
-
-export const TextInput = forwardRef(TextInputComponent);

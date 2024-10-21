@@ -1,10 +1,8 @@
 import styled from '@emotion/styled';
-import { IconCheckbox, IconNotes, IconPlus, IconScan } from 'twenty-ui';
+import { IconCheckbox, IconNotes, IconPlus } from 'twenty-ui';
 
 import { useOpenCreateActivityDrawer } from '@/activities/hooks/useOpenCreateActivityDrawer';
-import { ActivityType } from '@/activities/types/Activity';
 import { ActivityTargetableObject } from '@/activities/types/ActivityTargetableEntity';
-import { useInterviewCreationModal } from '@/ai-interview/interview-creation/hooks/useInterviewCreationModal';
 import { CoreObjectNameSingular } from '@/object-metadata/types/CoreObjectNameSingular';
 import { PageHotkeyScope } from '@/types/PageHotkeyScope';
 import { IconButton } from '@/ui/input/button/components/IconButton';
@@ -26,115 +24,73 @@ export const ShowPageAddButton = ({
   activityTargetObject: ActivityTargetableObject;
 }) => {
   const { closeDropdown, toggleDropdown } = useDropdown('add-show-page');
-  const openCreateActivity = useOpenCreateActivityDrawer();
+  const openNote = useOpenCreateActivityDrawer({
+    activityObjectNameSingular: CoreObjectNameSingular.Note,
+  });
+  const openTask = useOpenCreateActivityDrawer({
+    activityObjectNameSingular: CoreObjectNameSingular.Task,
+  });
 
-  const handleSelect = (type: ActivityType) => {
-    openCreateActivity({
-      type,
-      targetableObjects: [activityTargetObject],
-    });
+  const handleSelect = (objectNameSingular: CoreObjectNameSingular) => {
+    if (objectNameSingular === CoreObjectNameSingular.Note) {
+      openNote({
+        targetableObjects: [activityTargetObject],
+      });
+    }
+    if (objectNameSingular === CoreObjectNameSingular.Task) {
+      openTask({
+        targetableObjects: [activityTargetObject],
+      });
+    }
 
     closeDropdown();
   };
 
-  const { openModal } = useInterviewCreationModal();
-
-  const handleModal = () => {
-    openModal();
-    closeDropdown();
-  };
-
-  const shouldDisplayAIInterview =
+  if (
     activityTargetObject.targetObjectNameSingular ===
-      CoreObjectNameSingular.Job ||
+      CoreObjectNameSingular.Task ||
     activityTargetObject.targetObjectNameSingular ===
-      CoreObjectNameSingular.Candidate ||
-    activityTargetObject.targetObjectNameSingular ===
-      CoreObjectNameSingular.Person;
-
-  if (!shouldDisplayAIInterview) {
-    return (
-      <StyledContainer>
-        <Dropdown
-          dropdownId={SHOW_PAGE_ADD_BUTTON_DROPDOWN_ID}
-          clickableComponent={
-            <IconButton
-              Icon={IconPlus}
-              size="medium"
-              dataTestId="add-showpage-button"
-              accent="default"
-              variant="secondary"
-              onClick={toggleDropdown}
-            />
-          }
-          dropdownComponents={
-            <DropdownMenu>
-              <DropdownMenuItemsContainer>
-                <MenuItem
-                  onClick={() => handleSelect('Note')}
-                  accent="default"
-                  LeftIcon={IconNotes}
-                  text="Note"
-                />
-                <MenuItem
-                  onClick={() => handleSelect('Task')}
-                  accent="default"
-                  LeftIcon={IconCheckbox}
-                  text="Task"
-                />
-              </DropdownMenuItemsContainer>
-            </DropdownMenu>
-          }
-          dropdownHotkeyScope={{
-            scope: PageHotkeyScope.ShowPage,
-          }}
-        />
-      </StyledContainer>
-    );
-  } else {
-    return (
-      <StyledContainer>
-        <Dropdown
-          dropdownId={SHOW_PAGE_ADD_BUTTON_DROPDOWN_ID}
-          clickableComponent={
-            <IconButton
-              Icon={IconPlus}
-              size="medium"
-              dataTestId="add-showpage-button"
-              accent="default"
-              variant="secondary"
-              onClick={toggleDropdown}
-            />
-          }
-          dropdownComponents={
-            <DropdownMenu>
-              <DropdownMenuItemsContainer>
-                <MenuItem
-                  onClick={() => handleSelect('Note')}
-                  accent="default"
-                  LeftIcon={IconNotes}
-                  text="Note"
-                />
-                <MenuItem
-                  onClick={() => handleSelect('Task')}
-                  accent="default"
-                  LeftIcon={IconCheckbox}
-                  text="Task"
-                />
-                <MenuItem
-                  onClick={() => handleModal()}
-                  accent="default"
-                  LeftIcon={IconScan}
-                  text="AI Interview"
-                />
-              </DropdownMenuItemsContainer>
-            </DropdownMenu>
-          }
-          dropdownHotkeyScope={{
-            scope: PageHotkeyScope.ShowPage,
-          }}
-        />
-      </StyledContainer>
-    );
+      CoreObjectNameSingular.Note
+  ) {
+    return;
   }
+
+  return (
+    <StyledContainer>
+      <Dropdown
+        dropdownId={SHOW_PAGE_ADD_BUTTON_DROPDOWN_ID}
+        clickableComponent={
+          <IconButton
+            Icon={IconPlus}
+            size="medium"
+            dataTestId="add-showpage-button"
+            accent="default"
+            variant="secondary"
+            onClick={toggleDropdown}
+          />
+        }
+        dropdownComponents={
+          <DropdownMenu>
+            <DropdownMenuItemsContainer>
+              <MenuItem
+                onClick={() => handleSelect(CoreObjectNameSingular.Note)}
+                accent="default"
+                LeftIcon={IconNotes}
+                text="Note"
+              />
+              <MenuItem
+                onClick={() => handleSelect(CoreObjectNameSingular.Task)}
+                accent="default"
+                LeftIcon={IconCheckbox}
+                text="Task"
+              />
+            </DropdownMenuItemsContainer>
+          </DropdownMenu>
+        }
+        dropdownHotkeyScope={{
+          scope: PageHotkeyScope.ShowPage,
+        }}
+      />
+    </StyledContainer>
+  );
 };

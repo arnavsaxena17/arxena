@@ -4,7 +4,7 @@ import { ObjectMetadataItem } from '@/object-metadata/types/ObjectMetadataItem';
 import { mapObjectMetadataToGraphQLQuery } from '@/object-metadata/utils/mapObjectMetadataToGraphQLQuery';
 import {
   FieldMetadataType,
-  RelationMetadataType,
+  RelationDefinitionType,
 } from '~/generated-metadata/graphql';
 
 import { FieldMetadataItem } from '../types/FieldMetadataItem';
@@ -17,10 +17,7 @@ export const mapFieldMetadataToGraphQLQuery = ({
   computeReferences = false,
 }: {
   objectMetadataItems: ObjectMetadataItem[];
-  field: Pick<
-    FieldMetadataItem,
-    'name' | 'type' | 'toRelationMetadata' | 'fromRelationMetadata'
-  >;
+  field: Pick<FieldMetadataItem, 'name' | 'type' | 'relationDefinition'>;
   relationrecordFields?: Record<string, any>;
   computeReferences?: boolean;
 }): any => {
@@ -29,10 +26,8 @@ export const mapFieldMetadataToGraphQLQuery = ({
   const fieldIsSimpleValue = [
     FieldMetadataType.Uuid,
     FieldMetadataType.Text,
-    FieldMetadataType.Phone,
     FieldMetadataType.DateTime,
     FieldMetadataType.Date,
-    FieldMetadataType.Email,
     FieldMetadataType.Number,
     FieldMetadataType.Boolean,
     FieldMetadataType.Rating,
@@ -40,6 +35,8 @@ export const mapFieldMetadataToGraphQLQuery = ({
     FieldMetadataType.MultiSelect,
     FieldMetadataType.Position,
     FieldMetadataType.RawJson,
+    FieldMetadataType.RichText,
+    FieldMetadataType.Array,
   ].includes(fieldType);
 
   if (fieldIsSimpleValue) {
@@ -48,12 +45,12 @@ export const mapFieldMetadataToGraphQLQuery = ({
 
   if (
     fieldType === FieldMetadataType.Relation &&
-    field.toRelationMetadata?.relationType === RelationMetadataType.OneToMany
+    field.relationDefinition?.direction === RelationDefinitionType.ManyToOne
   ) {
     const relationMetadataItem = objectMetadataItems.find(
       (objectMetadataItem) =>
         objectMetadataItem.id ===
-        (field.toRelationMetadata as any)?.fromObjectMetadata?.id,
+        field.relationDefinition?.targetObjectMetadata.id,
     );
 
     if (isUndefined(relationMetadataItem)) {
@@ -72,12 +69,12 @@ ${mapObjectMetadataToGraphQLQuery({
 
   if (
     fieldType === FieldMetadataType.Relation &&
-    field.fromRelationMetadata?.relationType === RelationMetadataType.OneToMany
+    field.relationDefinition?.direction === RelationDefinitionType.OneToMany
   ) {
     const relationMetadataItem = objectMetadataItems.find(
       (objectMetadataItem) =>
         objectMetadataItem.id ===
-        (field.fromRelationMetadata as any)?.toObjectMetadata?.id,
+        field.relationDefinition?.targetObjectMetadata.id,
     );
 
     if (isUndefined(relationMetadataItem)) {
@@ -95,14 +92,6 @@ ${mapObjectMetadataToGraphQLQuery({
       isRootLevel: false,
     })}
   }
-}`;
-  }
-
-  if (fieldType === FieldMetadataType.Link) {
-    return `${field.name}
-{
-  label
-  url
 }`;
   }
 
@@ -144,6 +133,32 @@ ${mapObjectMetadataToGraphQLQuery({
   addressLat
   addressLng
 }`;
+  }
+
+  if (fieldType === FieldMetadataType.Actor) {
+    return `${field.name}
+{
+    source
+    workspaceMemberId
+    name
+}`;
+  }
+
+  if (fieldType === FieldMetadataType.Emails) {
+    return `${field.name}
+{
+  primaryEmail
+  additionalEmails
+}`;
+  }
+
+  if (fieldType === FieldMetadataType.Phones) {
+    return `${field.name}
+    {
+      primaryPhoneNumber
+      primaryPhoneCountryCode
+      additionalPhones
+    }`;
   }
 
   return '';

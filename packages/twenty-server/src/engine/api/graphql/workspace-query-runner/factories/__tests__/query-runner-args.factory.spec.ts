@@ -19,7 +19,7 @@ describe('QueryRunnerArgsFactory', () => {
       { name: 'testNumber', type: FieldMetadataType.NUMBER },
     ] as FieldMetadataInterface[],
     objectMetadataItem: { isCustom: true, nameSingular: 'test' },
-    workspaceId,
+    authContext: { workspace: { id: workspaceId } },
   } as WorkspaceQueryRunnerOptions;
 
   let factory: QueryRunnerArgsFactory;
@@ -149,11 +149,12 @@ describe('QueryRunnerArgsFactory', () => {
           { name: 'testNumber', type: FieldMetadataType.NUMBER },
         ] as FieldMetadataInterface[],
         objectMetadataItem: { isCustom: true, nameSingular: 'test' },
+        authContext: { workspace: { id: workspaceId } },
       } as WorkspaceQueryRunnerOptions;
 
       const args = {
-        id: '123',
-        data: { testNumber: '1', otherField: 'test' },
+        ids: ['123'],
+        data: [{ testNumber: '1', otherField: 'test' }],
       };
 
       const result = await factory.create(
@@ -163,8 +164,8 @@ describe('QueryRunnerArgsFactory', () => {
       );
 
       expect(result).toEqual({
-        id: 123,
-        data: { testNumber: 1, otherField: 'test' },
+        ids: [123],
+        data: [{ testNumber: 1, position: 2, otherField: 'test' }],
       });
     });
   });

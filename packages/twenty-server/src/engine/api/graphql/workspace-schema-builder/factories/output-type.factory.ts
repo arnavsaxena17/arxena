@@ -26,7 +26,7 @@ export class OutputTypeFactory {
     target: string,
     type: FieldMetadataType,
     kind: ObjectTypeDefinitionKind,
-    buildOtions: WorkspaceBuildSchemaOptions,
+    buildOptions: WorkspaceBuildSchemaOptions,
     typeOptions: TypeOptions,
   ): GraphQLOutputType {
     let gqlType: GraphQLOutputType | undefined =
@@ -37,15 +37,17 @@ export class OutputTypeFactory {
       );
 
     gqlType ??= this.typeDefinitionsStorage.getOutputTypeByKey(target, kind);
+    console.log("gqlType:", gqlType, "for target:", target, "kind:", kind);
 
     if (!gqlType) {
-      this.logger.error(`Could not find a GraphQL type for ${target}`, {
+      this.logger.error(`Could not find a GraphQL type for ${target}, kind: ${kind}, , buildOptions: ${buildOptions}, typeOptions: ${typeOptions},`, {
+        kind,
         type,
-        buildOtions,
+        buildOptions,
         typeOptions,
       });
 
-      throw new Error(`Could not find a GraphQL type for ${target}`);
+      throw new Error(`Could not find a GraphQL type for ${target}, kind: ${kind}, , buildOptions: ${buildOptions}, typeOptions: ${typeOptions},` );
     }
 
     return this.typeMapperService.mapToGqlType(gqlType, typeOptions);

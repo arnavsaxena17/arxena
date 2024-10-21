@@ -1,14 +1,11 @@
-import { useRef } from 'react';
 import styled from '@emotion/styled';
-import { useRecoilCallback, useRecoilValue } from 'recoil';
+import { useRef } from 'react';
+import { useRecoilCallback } from 'recoil';
 
-import { useObjectMetadataItem } from '@/object-metadata/hooks/useObjectMetadataItem';
 import { useDeleteOneRecord } from '@/object-record/hooks/useDeleteOneRecord';
 import { FieldMetadata } from '@/object-record/record-field/types/FieldMetadata';
 import { RecordTable } from '@/object-record/record-table/components/RecordTable';
-import { RecordTableEmptyState } from '@/object-record/record-table/components/RecordTableEmptyState';
 import { EntityDeleteContext } from '@/object-record/record-table/contexts/EntityDeleteHookContext';
-import { useRecordTableStates } from '@/object-record/record-table/hooks/internal/useRecordTableStates';
 import { ColumnDefinition } from '@/object-record/record-table/types/ColumnDefinition';
 import { DragSelect } from '@/ui/utilities/drag-select/components/DragSelect';
 import { ScrollWrapper } from '@/ui/utilities/scroll/components/ScrollWrapper';
@@ -31,92 +28,66 @@ const StyledTableContainer = styled.div`
   position: relative;
 `;
 
+const StyledTableInternalContainer = styled.div`
+  height: 100%;
+`;
+
 type RecordTableWithWrappersProps = {
   objectNameSingular: string;
   recordTableId: string;
   viewBarId: string;
   updateRecordMutation: (params: any) => void;
-  createRecord: () => Promise<void>;
 };
 
 export const RecordTableWithWrappers = ({
   updateRecordMutation,
-  createRecord,
   objectNameSingular,
   recordTableId,
   viewBarId,
 }: RecordTableWithWrappersProps) => {
   const tableBodyRef = useRef<HTMLDivElement>(null);
 
-  const { isRecordTableInitialLoadingState, tableRowIdsState } =
-    useRecordTableStates(recordTableId);
-
-  const isRecordTableInitialLoading = useRecoilValue(
-    isRecordTableInitialLoadingState,
-  );
-
-  const tableRowIds = useRecoilValue(tableRowIdsState);
-
   const { resetTableRowSelection, setRowSelected } = useRecordTable({
     recordTableId,
   });
-
-  const { objectMetadataItem: foundObjectMetadataItem } = useObjectMetadataItem(
-    {
-      objectNameSingular,
-    },
-  );
 
   const { saveViewFields } = useSaveCurrentViewFields(viewBarId);
 
   const { deleteOneRecord } = useDeleteOneRecord({ objectNameSingular });
 
-  const objectLabel = foundObjectMetadataItem?.labelSingular;
-
-  const isRemote = foundObjectMetadataItem?.isRemote ?? false;
+  const handleColumnsChange = useRecoilCallback(
+    () => (columns) => {
+      saveViewFields(
+        mapColumnDefinitionsToViewFields(
+          columns as ColumnDefinition<FieldMetadata>[],
+        ),
+      );
+    },
+    [saveViewFields],
+  );
 
   return (
     <EntityDeleteContext.Provider value={deleteOneRecord}>
-      <ScrollWrapper>
+      <ScrollWrapper contextProviderName="recordTableWithWrappers">
         <RecordUpdateContext.Provider value={updateRecordMutation}>
           <StyledTableWithHeader>
             <StyledTableContainer>
-              <div ref={tableBodyRef}>
+              <StyledTableInternalContainer ref={tableBodyRef}>
                 <RecordTable
+                  viewBarId={viewBarId}
                   recordTableId={recordTableId}
                   objectNameSingular={objectNameSingular}
-                  onColumnsChange={useRecoilCallback(
-                    () => (columns) => {
-                      saveViewFields(
-                        mapColumnDefinitionsToViewFields(
-                          columns as ColumnDefinition<FieldMetadata>[],
-                        ),
-                      );
-                    },
-                    [saveViewFields],
-                  )}
-                  createRecord={createRecord}
+                  onColumnsChange={handleColumnsChange}
                 />
                 <DragSelect
                   dragSelectable={tableBodyRef}
-                  onDragSelectionStart={resetTableRowSelection}
+                  onDragSelectionStart={() => {
+                    resetTableRowSelection();
+                  }}
                   onDragSelectionChange={setRowSelected}
                 />
-              </div>
-              <RecordTableInternalEffect
-                recordTableId={recordTableId}
-                tableBodyRef={tableBodyRef}
-              />
-              {!isRecordTableInitialLoading &&
-                // we cannot rely on count states because this is not available for remote objects
-                tableRowIds.length === 0 && (
-                  <RecordTableEmptyState
-                    objectNameSingular={objectNameSingular}
-                    objectLabel={objectLabel}
-                    createRecord={createRecord}
-                    isRemote={isRemote}
-                  />
-                )}
+              </StyledTableInternalContainer>
+              <RecordTableInternalEffect recordTableId={recordTableId} />
             </StyledTableContainer>
           </StyledTableWithHeader>
         </RecordUpdateContext.Provider>

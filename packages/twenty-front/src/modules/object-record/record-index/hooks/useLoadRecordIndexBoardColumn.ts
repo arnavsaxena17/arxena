@@ -5,17 +5,18 @@ import { useObjectMetadataItem } from '@/object-metadata/hooks/useObjectMetadata
 import { useFindManyRecords } from '@/object-record/hooks/useFindManyRecords';
 import { turnSortsIntoOrderBy } from '@/object-record/object-sort-dropdown/utils/turnSortsIntoOrderBy';
 import { useRecordBoard } from '@/object-record/record-board/hooks/useRecordBoard';
-import { turnObjectDropdownFilterIntoQueryFilter } from '@/object-record/record-filter/utils/turnObjectDropdownFilterIntoQueryFilter';
+import { turnFiltersIntoQueryFilter } from '@/object-record/record-filter/utils/turnFiltersIntoQueryFilter';
 import { useRecordBoardRecordGqlFields } from '@/object-record/record-index/hooks/useRecordBoardRecordGqlFields';
 import { recordIndexFiltersState } from '@/object-record/record-index/states/recordIndexFiltersState';
 import { recordIndexSortsState } from '@/object-record/record-index/states/recordIndexSortsState';
-import { useSetRecordInStore } from '@/object-record/record-store/hooks/useSetRecordInStore';
+import { useUpsertRecordsInStore } from '@/object-record/record-store/hooks/useUpsertRecordsInStore';
+import { isDefined } from '~/utils/isDefined';
 
 type UseLoadRecordIndexBoardProps = {
   objectNameSingular: string;
   boardFieldMetadataId: string | null;
   recordBoardId: string;
-  columnFieldSelectValue: string;
+  columnFieldSelectValue: string | null;
   columnId: string;
 };
 
@@ -30,11 +31,11 @@ export const useLoadRecordIndexBoardColumn = ({
     objectNameSingular,
   });
   const { setRecordIdsForColumn } = useRecordBoard(recordBoardId);
-  const { setRecords: setRecordsInStore } = useSetRecordInStore();
+  const { upsertRecords: upsertRecordsInStore } = useUpsertRecordsInStore();
 
   const recordIndexFilters = useRecoilValue(recordIndexFiltersState);
   const recordIndexSorts = useRecoilValue(recordIndexSortsState);
-  const requestFilters = turnObjectDropdownFilterIntoQueryFilter(
+  const requestFilters = turnFiltersIntoQueryFilter(
     recordIndexFilters,
     objectMetadataItem?.fields ?? [],
   );
@@ -51,9 +52,11 @@ export const useLoadRecordIndexBoardColumn = ({
 
   const filter = {
     ...requestFilters,
-    [recordIndexKanbanFieldMetadataItem?.name ?? '']: {
-      in: [columnFieldSelectValue],
-    },
+    [recordIndexKanbanFieldMetadataItem?.name ?? '']: isDefined(
+      columnFieldSelectValue,
+    )
+      ? { in: [columnFieldSelectValue] }
+      : { is: 'NULL' },
   };
 
   const {
@@ -75,8 +78,8 @@ export const useLoadRecordIndexBoardColumn = ({
   }, [records, setRecordIdsForColumn, columnId]);
 
   useEffect(() => {
-    setRecordsInStore(records);
-  }, [records, setRecordsInStore]);
+    upsertRecordsInStore(records);
+  }, [records, upsertRecordsInStore]);
 
   return {
     records,

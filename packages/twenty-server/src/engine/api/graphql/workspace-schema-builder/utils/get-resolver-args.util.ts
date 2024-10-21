@@ -1,4 +1,4 @@
-import { GraphQLString, GraphQLInt, GraphQLID } from 'graphql';
+import { GraphQLBoolean, GraphQLID, GraphQLInt, GraphQLString } from 'graphql';
 
 import { WorkspaceResolverBuilderMethodNames } from 'src/engine/api/graphql/workspace-resolver-builder/interfaces/workspace-resolvers-builder.interface';
 import { ArgMetadata } from 'src/engine/api/graphql/workspace-schema-builder/interfaces/param-metadata.interface';
@@ -56,12 +56,22 @@ export const getResolverArgs = (
           isNullable: false,
           isArray: true,
         },
+        upsert: {
+          type: GraphQLBoolean,
+          isNullable: true,
+          isArray: false,
+        },
       };
     case 'createOne':
       return {
         data: {
           kind: InputTypeDefinitionKind.Create,
           isNullable: false,
+        },
+        upsert: {
+          type: GraphQLBoolean,
+          isNullable: true,
+          isArray: false,
         },
       };
     case 'updateOne':
@@ -77,13 +87,15 @@ export const getResolverArgs = (
       };
     case 'findDuplicates':
       return {
-        id: {
+        ids: {
           type: GraphQLID,
           isNullable: true,
+          isArray: true,
         },
         data: {
           kind: InputTypeDefinitionKind.Create,
           isNullable: true,
+          isArray: true,
         },
       };
     case 'deleteOne':
@@ -93,7 +105,7 @@ export const getResolverArgs = (
           isNullable: false,
         },
       };
-    case 'executeQuickActionOnOne':
+    case 'destroyOne':
       return {
         id: {
           type: GraphQLID,
@@ -109,6 +121,35 @@ export const getResolverArgs = (
         filter: {
           kind: InputTypeDefinitionKind.Filter,
           isNullable: false,
+        },
+      };
+    case 'restoreMany':
+      return {
+        filter: {
+          kind: InputTypeDefinitionKind.Filter,
+          isNullable: false,
+        },
+      };
+    case 'destroyMany':
+      return {
+        filter: {
+          kind: InputTypeDefinitionKind.Filter,
+          isNullable: false,
+        },
+      };
+    case 'search':
+      return {
+        searchInput: {
+          type: GraphQLString,
+          isNullable: true,
+        },
+        limit: {
+          type: GraphQLInt,
+          isNullable: true,
+        },
+        filter: {
+          kind: InputTypeDefinitionKind.Filter,
+          isNullable: true,
         },
       };
     default:

@@ -1,8 +1,10 @@
 import { ThemeColor } from 'twenty-ui';
 
 import { RATING_VALUES } from '@/object-record/record-field/meta-types/constants/RatingValues';
+import { ZodHelperLiteral } from '@/object-record/record-field/types/ZodHelperLiteral';
 import { EntityForSelect } from '@/object-record/relation-picker/types/EntityForSelect';
 
+import { RelationDefinitionType } from '~/generated-metadata/graphql';
 import { CurrencyCode } from './CurrencyCode';
 
 export type FieldUuidMetadata = {
@@ -25,12 +27,18 @@ export type FieldDateTimeMetadata = {
   objectMetadataNameSingular?: string;
   placeHolder: string;
   fieldName: string;
+  settings?: {
+    displayAsRelativeDate?: boolean;
+  };
 };
 
 export type FieldDateMetadata = {
   objectMetadataNameSingular?: string;
   placeHolder: string;
   fieldName: string;
+  settings?: {
+    displayAsRelativeDate?: boolean;
+  };
 };
 
 export type FieldNumberMetadata = {
@@ -70,6 +78,11 @@ export type FieldEmailMetadata = {
   fieldName: string;
 };
 
+export type FieldEmailsMetadata = {
+  objectMetadataNameSingular?: string;
+  fieldName: string;
+};
+
 export type FieldPhoneMetadata = {
   objectMetadataNameSingular?: string;
   placeHolder: string;
@@ -93,11 +106,15 @@ export type FieldRawJsonMetadata = {
   placeHolder: string;
 };
 
-export type FieldDefinitionRelationType =
-  | 'FROM_MANY_OBJECTS'
-  | 'FROM_ONE_OBJECT'
-  | 'TO_MANY_OBJECTS'
-  | 'TO_ONE_OBJECT';
+export type FieldRichTextMetadata = {
+  objectMetadataNameSingular?: string;
+  fieldName: string;
+};
+
+export type FieldPositionMetadata = {
+  objectMetadataNameSingular?: string;
+  fieldName: string;
+};
 
 export type FieldRelationMetadata = {
   fieldName: string;
@@ -105,7 +122,7 @@ export type FieldRelationMetadata = {
   relationFieldMetadataId: string;
   relationObjectMetadataNamePlural: string;
   relationObjectMetadataNameSingular: string;
-  relationType?: FieldDefinitionRelationType;
+  relationType?: RelationDefinitionType;
   targetFieldMetadataName?: string;
   useEditButton?: boolean;
 };
@@ -114,12 +131,34 @@ export type FieldSelectMetadata = {
   objectMetadataNameSingular?: string;
   fieldName: string;
   options: { label: string; color: ThemeColor; value: string }[];
+  isNullable: boolean;
 };
 
 export type FieldMultiSelectMetadata = {
   objectMetadataNameSingular?: string;
   fieldName: string;
   options: { label: string; color: ThemeColor; value: string }[];
+};
+
+export type FieldActorMetadata = {
+  objectMetadataNameSingular?: string;
+  fieldName: string;
+};
+
+export type FieldArrayMetadata = {
+  objectMetadataNameSingular?: string;
+  fieldName: string;
+  values: { label: string; value: string }[];
+};
+
+export type FieldPhonesMetadata = {
+  objectMetadataNameSingular?: string;
+  fieldName: string;
+};
+
+export type FieldTsVectorMetadata = {
+  objectMetadataNameSingular?: string;
+  fieldName: string;
 };
 
 export type FieldMetadata =
@@ -138,18 +177,21 @@ export type FieldMetadata =
   | FieldMultiSelectMetadata
   | FieldTextMetadata
   | FieldUuidMetadata
-  | FieldAddressMetadata;
-
+  | FieldAddressMetadata
+  | FieldActorMetadata
+  | FieldArrayMetadata
+  | FieldTsVectorMetadata;
 export type FieldTextValue = string;
-export type FieldUUidValue = string;
+export type FieldUUidValue = string; // TODO: can we replace with a template literal type, or maybe overkill ?
 export type FieldDateTimeValue = string | null;
 export type FieldDateValue = string | null;
 export type FieldNumberValue = number | null;
 export type FieldBooleanValue = boolean;
 
-export type FieldPhoneValue = string;
-export type FieldEmailValue = string;
-export type FieldLinkValue = { url: string; label: string };
+export type FieldEmailsValue = {
+  primaryEmail: string;
+  additionalEmails: string[] | null;
+};
 export type FieldLinksValue = {
   primaryLinkLabel: string;
   primaryLinkUrl: string;
@@ -170,14 +212,35 @@ export type FieldAddressValue = {
   addressLat: number | null;
   addressLng: number | null;
 };
-export type FieldRatingValue = (typeof RATING_VALUES)[number];
+export type FieldRatingValue = (typeof RATING_VALUES)[number] | null;
 export type FieldSelectValue = string | null;
 export type FieldMultiSelectValue = string[] | null;
 
-export type FieldRelationValue<T extends EntityForSelect | EntityForSelect[]> =
-  T | null;
+export type FieldRelationToOneValue = EntityForSelect | null;
 
-// See https://zod.dev/?id=json-type
-type Literal = string | number | boolean | null;
-export type Json = Literal | { [key: string]: Json } | Json[];
+export type FieldRelationFromManyValue = EntityForSelect[] | [];
+
+export type FieldRelationValue<
+  T extends FieldRelationToOneValue | FieldRelationFromManyValue,
+> = T;
+
+export type Json = ZodHelperLiteral | { [key: string]: Json } | Json[];
 export type FieldJsonValue = Record<string, Json> | Json[] | null;
+
+export type FieldRichTextValue = Record<string, Json> | Json[] | null;
+
+export type FieldActorValue = {
+  source: string;
+  workspaceMemberId?: string;
+  name: string;
+};
+
+export type FieldArrayValue = string[];
+
+export type PhoneRecord = { number: string; countryCode: string };
+
+export type FieldPhonesValue = {
+  primaryPhoneNumber: string;
+  primaryPhoneCountryCode: string;
+  additionalPhones?: PhoneRecord[] | null;
+};

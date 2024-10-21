@@ -20,7 +20,9 @@ export enum ResolverArgsType {
   UpdateMany = 'UpdateMany',
   DeleteOne = 'DeleteOne',
   DeleteMany = 'DeleteMany',
-  ExecuteQuickActionOnOne = 'ExecuteQuickActionOnOne',
+  RestoreMany = 'RestoreMany',
+  DestroyMany = 'DestroyMany',
+  DestroyOne = 'DestroyOne',
 }
 
 export interface FindManyResolverArgs<
@@ -39,26 +41,44 @@ export interface FindOneResolverArgs<Filter = any> {
   filter?: Filter;
 }
 
-export interface FindDuplicatesResolverArgs<Data extends Record = Record> {
-  id?: string;
-  data?: Data;
+export interface FindDuplicatesResolverArgs<
+  Data extends Partial<Record> = Partial<Record>,
+> {
+  ids?: string[];
+  data?: Data[];
 }
 
-export interface CreateOneResolverArgs<Data extends Record = Record> {
+export interface SearchResolverArgs<
+  Filter extends RecordFilter = RecordFilter,
+> {
+  searchInput?: string;
+  filter?: Filter;
+  limit?: number;
+}
+
+export interface CreateOneResolverArgs<
+  Data extends Partial<Record> = Partial<Record>,
+> {
   data: Data;
+  upsert?: boolean;
 }
 
-export interface CreateManyResolverArgs<Data extends Record = Record> {
+export interface CreateManyResolverArgs<
+  Data extends Partial<Record> = Partial<Record>,
+> {
   data: Data[];
+  upsert?: boolean;
 }
 
-export interface UpdateOneResolverArgs<Data extends Record = Record> {
+export interface UpdateOneResolverArgs<
+  Data extends Partial<Record> = Partial<Record>,
+> {
   id: string;
   data: Data;
 }
 
 export interface UpdateManyResolverArgs<
-  Data extends Record = Record,
+  Data extends Partial<Record> = Partial<Record>,
   Filter = any,
 > {
   filter: Filter;
@@ -69,11 +89,19 @@ export interface DeleteOneResolverArgs {
   id: string;
 }
 
-export interface ExecuteQuickActionOnOneResolverArgs {
+export interface DeleteManyResolverArgs<Filter = any> {
+  filter: Filter;
+}
+
+export interface RestoreManyResolverArgs<Filter = any> {
+  filter: Filter;
+}
+
+export interface DestroyOneResolverArgs {
   id: string;
 }
 
-export interface DeleteManyResolverArgs<Filter = any> {
+export interface DestroyManyResolverArgs<Filter = any> {
   filter: Filter;
 }
 
@@ -101,4 +129,7 @@ export type ResolverArgs =
   | FindOneResolverArgs
   | FindDuplicatesResolverArgs
   | UpdateManyResolverArgs
-  | UpdateOneResolverArgs;
+  | UpdateOneResolverArgs
+  | DestroyManyResolverArgs
+  | RestoreManyResolverArgs
+  | SearchResolverArgs;

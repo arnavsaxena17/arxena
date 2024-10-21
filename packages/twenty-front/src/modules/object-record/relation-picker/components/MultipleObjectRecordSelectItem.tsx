@@ -1,14 +1,15 @@
 import styled from '@emotion/styled';
 import { useRecoilValue } from 'recoil';
 import { Avatar } from 'twenty-ui';
-import { v4 } from 'uuid';
 
+import { useObjectRecordMultiSelectScopedStates } from '@/activities/hooks/useObjectRecordMultiSelectScopedStates';
 import { MULTI_OBJECT_RECORD_SELECT_SELECTABLE_LIST_ID } from '@/object-record/relation-picker/constants/MultiObjectRecordSelectSelectableListId';
-import { ObjectRecordForSelect } from '@/object-record/relation-picker/hooks/useMultiObjectSearch';
+import { RelationPickerScopeInternalContext } from '@/object-record/relation-picker/scopes/scope-internal-context/RelationPickerScopeInternalContext';
 import { SelectableItem } from '@/ui/layout/selectable-list/components/SelectableItem';
 import { useSelectableList } from '@/ui/layout/selectable-list/hooks/useSelectableList';
 import { MenuItemMultiSelectAvatar } from '@/ui/navigation/menu-item/components/MenuItemMultiSelectAvatar';
-import { getImageAbsoluteURIOrBase64 } from '~/utils/image/getImageAbsoluteURIOrBase64';
+import { useAvailableScopeIdOrThrow } from '@/ui/utilities/recoil-scope/scopes-internal/hooks/useAvailableScopeId';
+import { isDefined } from '~/utils/isDefined';
 
 export const StyledSelectableItem = styled(SelectableItem)`
   height: 100%;
@@ -16,45 +17,72 @@ export const StyledSelectableItem = styled(SelectableItem)`
 `;
 
 export const MultipleObjectRecordSelectItem = ({
-  objectRecordForSelect,
-  onSelectedChange,
-  selected,
+  objectRecordId,
+  onChange,
 }: {
-  objectRecordForSelect: ObjectRecordForSelect;
-  onSelectedChange?: (selected: boolean) => void;
-  selected: boolean;
+  objectRecordId: string;
+  onChange?: (changedRecordForSelectId: string) => void;
 }) => {
   const { isSelectedItemIdSelector } = useSelectableList(
     MULTI_OBJECT_RECORD_SELECT_SELECTABLE_LIST_ID,
   );
 
   const isSelectedByKeyboard = useRecoilValue(
-    isSelectedItemIdSelector(objectRecordForSelect.record.id),
+    isSelectedItemIdSelector(objectRecordId),
+  );
+  const scopeId = useAvailableScopeIdOrThrow(
+    RelationPickerScopeInternalContext,
   );
 
+  const {
+    objectRecordMultiSelectFamilyState,
+    objectRecordMultiSelectCheckedRecordsIdsState,
+  } = useObjectRecordMultiSelectScopedStates(scopeId);
+
+  const record = useRecoilValue(
+    objectRecordMultiSelectFamilyState(objectRecordId),
+  );
+
+  const objectRecordMultiSelectCheckedRecordsIds = useRecoilValue(
+    objectRecordMultiSelectCheckedRecordsIdsState,
+  );
+
+  if (!record) {
+    return null;
+  }
+
+  const handleSelectChange = () => {
+    onChange?.(objectRecordId);
+  };
+
+  const { recordIdentifier } = record;
+
+  if (!isDefined(recordIdentifier)) {
+    return null;
+  }
+
+  const selected = objectRecordMultiSelectCheckedRecordsIds.find(
+    (checkedObjectRecord) => checkedObjectRecord === objectRecordId,
+  )
+    ? true
+    : false;
+
   return (
-    <StyledSelectableItem
-      itemId={objectRecordForSelect.record.id}
-      key={objectRecordForSelect.record.id + v4()}
-    >
+    <StyledSelectableItem itemId={objectRecordId} key={objectRecordId}>
       <MenuItemMultiSelectAvatar
-        selected={selected}
-        onSelectChange={onSelectedChange}
+        onSelectChange={(_isNewlySelectedValue) => handleSelectChange()}
         isKeySelected={isSelectedByKeyboard}
+        selected={selected}
         avatar={
           <Avatar
-            avatarUrl={getImageAbsoluteURIOrBase64(
-              objectRecordForSelect.recordIdentifier.avatarUrl,
-            )}
-            entityId={objectRecordForSelect.record.id}
-            placeholder={objectRecordForSelect.recordIdentifier.name}
+            avatarUrl={recordIdentifier.avatarUrl}
+            placeholderColorSeed={objectRecordId}
+            placeholder={recordIdentifier.name}
             size="md"
-            type={
-              objectRecordForSelect.recordIdentifier.avatarType ?? 'rounded'
-            }
+            type={recordIdentifier.avatarType ?? 'rounded'}
           />
         }
-        text={objectRecordForSelect.recordIdentifier.name}
+        text={recordIdentifier.name}
       />
     </StyledSelectableItem>
   );

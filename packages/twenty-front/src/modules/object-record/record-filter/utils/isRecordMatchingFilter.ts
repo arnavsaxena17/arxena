@@ -2,18 +2,22 @@ import { isObject } from '@sniptt/guards';
 
 import { ObjectMetadataItem } from '@/object-metadata/types/ObjectMetadataItem';
 import {
+  ActorFilter,
   AddressFilter,
   AndObjectRecordFilter,
   BooleanFilter,
   CurrencyFilter,
   DateFilter,
+  EmailsFilter,
   FloatFilter,
   FullNameFilter,
+  LeafObjectRecordFilter,
+  LinksFilter,
   NotObjectRecordFilter,
   OrObjectRecordFilter,
+  PhonesFilter,
   RecordGqlOperationFilter,
   StringFilter,
-  URLFilter,
   UUIDFilter,
 } from '@/object-record/graphql/types/RecordGqlOperationFilter';
 import { isMatchingBooleanFilter } from '@/object-record/record-filter/utils/isMatchingBooleanFilter';
@@ -25,6 +29,12 @@ import { isMatchingUUIDFilter } from '@/object-record/record-filter/utils/isMatc
 import { FieldMetadataType } from '~/generated-metadata/graphql';
 import { isDefined } from '~/utils/isDefined';
 import { isEmptyObject } from '~/utils/isEmptyObject';
+
+const isLeafFilter = (
+  filter: RecordGqlOperationFilter,
+): filter is LeafObjectRecordFilter => {
+  return !isAndFilter(filter) && !isOrFilter(filter) && !isNotFilter(filter);
+};
 
 const isAndFilter = (
   filter: RecordGqlOperationFilter,
@@ -47,7 +57,7 @@ export const isRecordMatchingFilter = ({
   filter: RecordGqlOperationFilter;
   objectMetadataItem: ObjectMetadataItem;
 }): boolean => {
-  if (Object.keys(filter).length === 0) {
+  if (Object.keys(filter).length === 0 && record.deletedAt === null) {
     return true;
   }
 
@@ -117,6 +127,12 @@ export const isRecordMatchingFilter = ({
     );
   }
 
+  if (isLeafFilter(filter)) {
+    if (isDefined(record.deletedAt) && filter.deletedAt === undefined) {
+      return false;
+    }
+  }
+
   return Object.entries(filter).every(([filterKey, filterValue]) => {
     if (!isDefined(filterValue)) {
       throw new Error(
@@ -140,31 +156,14 @@ export const isRecordMatchingFilter = ({
     }
 
     switch (objectMetadataField.type) {
-      case FieldMetadataType.Email:
-      case FieldMetadataType.Phone:
       case FieldMetadataType.Select:
+      case FieldMetadataType.Rating:
       case FieldMetadataType.MultiSelect:
       case FieldMetadataType.Text: {
         return isMatchingStringFilter({
           stringFilter: filterValue as StringFilter,
           value: record[filterKey],
         });
-      }
-      case FieldMetadataType.Link: {
-        const urlFilter = filterValue as URLFilter;
-
-        return (
-          (urlFilter.url === undefined ||
-            isMatchingStringFilter({
-              stringFilter: urlFilter.url,
-              value: record[filterKey].url,
-            })) &&
-          (urlFilter.label === undefined ||
-            isMatchingStringFilter({
-              stringFilter: urlFilter.label,
-              value: record[filterKey].label,
-            }))
-        );
       }
       case FieldMetadataType.FullName: {
         const fullNameFilter = filterValue as FullNameFilter;
@@ -206,6 +205,24 @@ export const isRecordMatchingFilter = ({
           });
         });
       }
+      case FieldMetadataType.Links: {
+        const linksFilter = filterValue as LinksFilter;
+
+        const keys = ['primaryLinkLabel', 'primaryLinkUrl'] as const;
+
+        return keys.some((key) => {
+          const value = linksFilter[key];
+          if (value === undefined) {
+            return false;
+          }
+
+          return isMatchingStringFilter({
+            stringFilter: value,
+            value: record[filterKey][key],
+          });
+        });
+      }
+      case FieldMetadataType.Date:
       case FieldMetadataType.DateTime: {
         return isMatchingDateFilter({
           dateFilter: filterValue as DateFilter,
@@ -237,13 +254,58 @@ export const isRecordMatchingFilter = ({
           value: record[filterKey].amountMicros,
         });
       }
+      case FieldMetadataType.Actor: {
+        const actorFilter = filterValue as ActorFilter;
+
+        return (
+          actorFilter.name === undefined ||
+          isMatchingStringFilter({
+            stringFilter: actorFilter.name,
+            value: record[filterKey].name,
+          })
+        );
+      }
+      case FieldMetadataType.Emails: {
+        const emailsFilter = filterValue as EmailsFilter;
+
+        if (emailsFilter.primaryEmail === undefined) {
+          return false;
+        }
+
+        return isMatchingStringFilter({
+          stringFilter: emailsFilter.primaryEmail,
+          value: record[filterKey].primaryEmail,
+        });
+      }
+      case FieldMetadataType.Phones: {
+        const phonesFilter = filterValue as PhonesFilter;
+
+        const keys: (keyof PhonesFilter)[] = [
+          'primaryPhoneNumber',
+          'primaryPhoneCountryCode',
+        ];
+
+        return keys.some((key) => {
+          const value = phonesFilter[key];
+          if (value === undefined) {
+            return false;
+          }
+
+          return isMatchingStringFilter({
+            stringFilter: value,
+            value: record[filterKey][key],
+          });
+        });
+      }
       case FieldMetadataType.Relation: {
         throw new Error(
           `Not implemented yet, use UUID filter instead on the corredponding "${filterKey}Id" field`,
         );
       }
       default: {
-        throw new Error('Not implemented yet');
+        throw new Error(
+          `Not implemented yet for field type "${objectMetadataField.type}"`,
+        );
       }
     }
   });

@@ -1,3 +1,6 @@
+import { useTheme } from '@emotion/react';
+import styled from '@emotion/styled';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useCallback } from 'react';
 import {
   Controller,
@@ -5,9 +8,6 @@ import {
   useFieldArray,
   useForm,
 } from 'react-hook-form';
-import { useTheme } from '@emotion/react';
-import styled from '@emotion/styled';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { useRecoilValue } from 'recoil';
 import { Key } from 'ts-key-enum';
 import { IconCopy } from 'twenty-ui';
@@ -17,7 +17,7 @@ import { SubTitle } from '@/auth/components/SubTitle';
 import { Title } from '@/auth/components/Title';
 import { currentUserState } from '@/auth/states/currentUserState';
 import { currentWorkspaceState } from '@/auth/states/currentWorkspaceState';
-import { useSetNextOnboardingStep } from '@/onboarding/hooks/useSetNextOnboardingStep';
+import { useSetNextOnboardingStatus } from '@/onboarding/hooks/useSetNextOnboardingStatus';
 import { PageHotkeyScope } from '@/types/PageHotkeyScope';
 import { SeparatorLineText } from '@/ui/display/text/components/SeparatorLineText';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
@@ -27,8 +27,9 @@ import { MainButton } from '@/ui/input/button/components/MainButton';
 import { TextInputV2 } from '@/ui/input/components/TextInputV2';
 import { AnimatedTranslation } from '@/ui/utilities/animation/components/AnimatedTranslation';
 import { useScopedHotkeys } from '@/ui/utilities/hotkey/hooks/useScopedHotkeys';
-import { OnboardingStep, useSendInviteLinkMutation } from '~/generated/graphql';
+import { OnboardingStatus } from '~/generated/graphql';
 import { isDefined } from '~/utils/isDefined';
+import { useCreateWorkspaceInvitation } from '../../modules/workspace-invitation/hooks/useCreateWorkspaceInvitation';
 
 const StyledAnimatedContainer = styled.div`
   display: flex;
@@ -62,8 +63,9 @@ type FormInput = z.infer<typeof validationSchema>;
 export const InviteTeam = () => {
   const theme = useTheme();
   const { enqueueSnackBar } = useSnackBar();
-  const [sendInviteLink] = useSendInviteLinkMutation();
-  const setNextOnboardingStep = useSetNextOnboardingStep();
+  const { sendInvitation } = useCreateWorkspaceInvitation();
+
+  const setNextOnboardingStatus = useSetNextOnboardingStatus();
   const currentUser = useRecoilValue(currentUserState);
   const currentWorkspace = useRecoilValue(currentWorkspaceState);
   const {
@@ -99,15 +101,15 @@ export const InviteTeam = () => {
 
   const getPlaceholder = (emailIndex: number) => {
     if (emailIndex === 0) {
-      return 'tim@apple.dev';
+      return 'tim@apple.com';
     }
     if (emailIndex === 1) {
-      return 'craig@apple.dev';
+      return 'phil@apple.com';
     }
     if (emailIndex === 2) {
-      return 'mike@apple.dev';
+      return 'jony@apple.com';
     }
-    return 'phil@apple.dev';
+    return 'craig@apple.com';
   };
 
   const copyInviteLink = () => {
@@ -131,9 +133,9 @@ export const InviteTeam = () => {
             .filter((email) => email.length > 0),
         ),
       );
-      const result = await sendInviteLink({ variables: { emails } });
+      const result = await sendInvitation({ emails });
 
-      setNextOnboardingStep(OnboardingStep.InviteTeam);
+      setNextOnboardingStatus();
 
       if (isDefined(result.errors)) {
         throw result.errors;
@@ -145,7 +147,7 @@ export const InviteTeam = () => {
         });
       }
     },
-    [enqueueSnackBar, sendInviteLink, setNextOnboardingStep],
+    [enqueueSnackBar, sendInvitation, setNextOnboardingStatus],
   );
 
   useScopedHotkeys(
@@ -157,7 +159,7 @@ export const InviteTeam = () => {
     [handleSubmit],
   );
 
-  if (currentUser?.onboardingStep !== OnboardingStep.InviteTeam) {
+  if (currentUser?.onboardingStatus !== OnboardingStatus.InviteTeam) {
     return <></>;
   }
 

@@ -1,32 +1,12 @@
 import { gql } from '@apollo/client';
 
+import { PERSON_FRAGMENT_WITH_DEPTH_ONE_RELATIONS } from '@/object-record/hooks/__mocks__/personFragments';
 import { Person } from '@/people/types/Person';
 
 export const query = gql`
-  mutation CreatePeople($data: [PersonCreateInput!]!) {
-    createPeople(data: $data) {
-      __typename
-      xLink {
-        label
-        url
-      }
-      id
-      createdAt
-      city
-      email
-      jobTitle
-      name {
-        firstName
-        lastName
-      }
-      phone
-      linkedinLink {
-        label
-        url
-      }
-      updatedAt
-      avatarUrl
-      companyId
+  mutation CreatePeople($data: [PersonCreateInput!]!, $upsert: Boolean) {
+    createPeople(data: $data, upsert: $upsert) {
+      ${PERSON_FRAGMENT_WITH_DEPTH_ONE_RELATIONS}
     }
   }
 `;
@@ -44,8 +24,9 @@ export const variables = { data };
 export const responseData = {
   __typeName: '',
   xLink: {
-    label: '',
-    url: '',
+    primaryLinkUrl: '',
+    primaryLinkLabel: '',
+    secondaryLinks: null,
   },
   createdAt: '',
   city: '',
@@ -55,10 +36,14 @@ export const responseData = {
     firstName: '',
     lastName: '',
   },
-  phone: '',
+  phones: {
+    primaryPhoneCountryCode: '',
+    primaryPhoneNumber: '',
+  },
   linkedinLink: {
-    label: '',
-    url: '',
+    primaryLinkUrl: '',
+    primaryLinkLabel: '',
+    secondaryLinks: null,
   },
   updatedAt: '',
   avatarUrl: '',

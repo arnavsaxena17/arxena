@@ -1,4 +1,10 @@
-import { IconArchiveOff, IconDotsVertical, IconTrash } from 'twenty-ui';
+import {
+  IconArchiveOff,
+  IconDotsVertical,
+  IconEye,
+  IconPencil,
+  IconTrash,
+} from 'twenty-ui';
 
 import { LightIconButton } from '@/ui/input/button/components/LightIconButton';
 import { Dropdown } from '@/ui/layout/dropdown/components/Dropdown';
@@ -12,6 +18,7 @@ type SettingsObjectFieldInactiveActionDropdownProps = {
   isCustomField?: boolean;
   fieldType?: FieldMetadataType;
   onActivate: () => void;
+  onEdit: () => void;
   onDelete: () => void;
   scopeKey: string;
 };
@@ -20,8 +27,8 @@ export const SettingsObjectFieldInactiveActionDropdown = ({
   onActivate,
   scopeKey,
   onDelete,
+  onEdit,
   isCustomField,
-  fieldType,
 }: SettingsObjectFieldInactiveActionDropdownProps) => {
   const dropdownId = `${scopeKey}-settings-field-disabled-action-dropdown`;
 
@@ -37,7 +44,12 @@ export const SettingsObjectFieldInactiveActionDropdown = ({
     closeDropdown();
   };
 
-  const isDeletable = isCustomField && fieldType !== FieldMetadataType.Address;
+  const handleEdit = () => {
+    onEdit();
+    closeDropdown();
+  };
+
+  const isDeletable = isCustomField;
 
   return (
     <Dropdown
@@ -48,6 +60,11 @@ export const SettingsObjectFieldInactiveActionDropdown = ({
       dropdownComponents={
         <DropdownMenu width="160px">
           <DropdownMenuItemsContainer>
+            <MenuItem
+              text={isCustomField ? 'Edit' : 'View'}
+              LeftIcon={isCustomField ? IconPencil : IconEye}
+              onClick={handleEdit}
+            />
             <MenuItem
               text="Activate"
               LeftIcon={IconArchiveOff}

@@ -1,26 +1,28 @@
-import { InjectRepository } from '@nestjs/typeorm';
 import { BadRequestException } from '@nestjs/common';
+import { ModuleRef } from '@nestjs/core';
+import { InjectRepository } from '@nestjs/typeorm';
 
 import assert from 'assert';
 
 import { TypeOrmQueryService } from '@ptc-org/nestjs-query-typeorm';
 import { Repository } from 'typeorm';
-import { SendInviteLinkEmail } from 'twenty-emails';
-import { render } from '@react-email/render';
 
-import { WorkspaceManagerService } from 'src/engine/workspace-manager/workspace-manager.service';
-import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
-import { User } from 'src/engine/core-modules/user/user.entity';
-import { ActivateWorkspaceInput } from 'src/engine/core-modules/workspace/dtos/activate-workspace-input';
+import { BillingSubscriptionService } from 'src/engine/core-modules/billing/services/billing-subscription.service';
+import { FeatureFlagService } from 'src/engine/core-modules/feature-flag/services/feature-flag.service';
 import { UserWorkspace } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
 import { UserWorkspaceService } from 'src/engine/core-modules/user-workspace/user-workspace.service';
-import { BillingService } from 'src/engine/core-modules/billing/billing.service';
-import { SendInviteLink } from 'src/engine/core-modules/workspace/dtos/send-invite-link.entity';
-import { EmailService } from 'src/engine/integrations/email/email.service';
-import { EnvironmentService } from 'src/engine/integrations/environment/environment.service';
-import { OnboardingService } from 'src/engine/core-modules/onboarding/onboarding.service';
+import { User } from 'src/engine/core-modules/user/user.entity';
+import { ActivateWorkspaceInput } from 'src/engine/core-modules/workspace/dtos/activate-workspace-input';
+import {
+  Workspace,
+  WorkspaceActivationStatus,
+} from 'src/engine/core-modules/workspace/workspace.entity';
+import { WorkspaceManagerService } from 'src/engine/workspace-manager/workspace-manager.service';
+import { DEFAULT_FEATURE_FLAGS } from 'src/engine/workspace-manager/workspace-sync-metadata/constants/default-feature-flags';
 
+// eslint-disable-next-line @nx/workspace-inject-workspace-repository
 export class WorkspaceService extends TypeOrmQueryService<Workspace> {
+  private userWorkspaceService: UserWorkspaceService;
   constructor(
     @InjectRepository(Workspace, 'core')
     private readonly workspaceRepository: Repository<Workspace>,
@@ -29,33 +31,63 @@ export class WorkspaceService extends TypeOrmQueryService<Workspace> {
     @InjectRepository(UserWorkspace, 'core')
     private readonly userWorkspaceRepository: Repository<UserWorkspace>,
     private readonly workspaceManagerService: WorkspaceManagerService,
-    private readonly userWorkspaceService: UserWorkspaceService,
-    private readonly billingService: BillingService,
-    private readonly environmentService: EnvironmentService,
-    private readonly emailService: EmailService,
-    private readonly onboardingService: OnboardingService,
+    private readonly featureFlagService: FeatureFlagService,
+    private readonly billingSubscriptionService: BillingSubscriptionService,
+    private moduleRef: ModuleRef,
   ) {
     super(workspaceRepository);
+    this.userWorkspaceService = this.moduleRef.get(UserWorkspaceService, {
+      strict: false,
+    });
   }
 
   async activateWorkspace(user: User, data: ActivateWorkspaceInput) {
     if (!data.displayName || !data.displayName.length) {
       throw new BadRequestException("'displayName' not provided");
     }
-    await this.workspaceRepository.update(user.defaultWorkspace.id, {
-      displayName: data.displayName,
+
+    const existingWorkspace = await this.workspaceRepository.findOneBy({
+      id: user.defaultWorkspaceId,
     });
-    await this.workspaceManagerService.init(user.defaultWorkspace.id);
-    await this.userWorkspaceService.createWorkspaceMember(
-      user.defaultWorkspace.id,
-      user,
+
+    if (!existingWorkspace) {
+      throw new Error('Workspace not found');
+    }
+
+    if (
+      existingWorkspace.activationStatus ===
+      WorkspaceActivationStatus.ONGOING_CREATION
+    ) {
+      throw new Error('Workspace is already being created');
+    }
+
+    if (
+      existingWorkspace.activationStatus !==
+      WorkspaceActivationStatus.PENDING_CREATION
+    ) {
+      throw new Error('Workspace is not pending creation');
+    }
+
+    await this.workspaceRepository.update(user.defaultWorkspaceId, {
+      activationStatus: WorkspaceActivationStatus.ONGOING_CREATION,
+    });
+
+    await this.featureFlagService.enableFeatureFlags(
+      DEFAULT_FEATURE_FLAGS,
+      user.defaultWorkspaceId,
     );
 
-    return user.defaultWorkspace;
-  }
+    await this.workspaceManagerService.init(user.defaultWorkspaceId);
+    await this.userWorkspaceService.createWorkspaceMember(
+      user.defaultWorkspaceId,
+      user,
+    );
+    await this.workspaceRepository.update(user.defaultWorkspaceId, {
+      displayName: data.displayName,
+      activationStatus: WorkspaceActivationStatus.ACTIVE,
+    });
 
-  async isWorkspaceActivated(id: string): Promise<boolean> {
-    return await this.workspaceManagerService.doesDataSourceExist(id);
+    return existingWorkspace;
   }
 
   async softDeleteWorkspace(id: string) {
@@ -64,7 +96,7 @@ export class WorkspaceService extends TypeOrmQueryService<Workspace> {
     assert(workspace, 'Workspace not found');
 
     await this.userWorkspaceRepository.delete({ workspaceId: id });
-    await this.billingService.deleteSubscription(workspace.id);
+    await this.billingSubscriptionService.deleteSubscription(workspace.id);
 
     await this.workspaceManagerService.delete(id);
 
@@ -87,63 +119,12 @@ export class WorkspaceService extends TypeOrmQueryService<Workspace> {
     return workspace;
   }
 
-  async getWorkspaceIds() {
-    return this.workspaceRepository
-      .find()
-      .then((workspaces) => workspaces.map((workspace) => workspace.id));
-  }
-
   async handleRemoveWorkspaceMember(workspaceId: string, userId: string) {
     await this.userWorkspaceRepository.delete({
       userId,
       workspaceId,
     });
-    await this.onboardingService.skipInviteTeamOnboardingStep(workspaceId);
     await this.reassignOrRemoveUserDefaultWorkspace(workspaceId, userId);
-  }
-
-  async sendInviteLink(
-    emails: string[],
-    workspace: Workspace,
-    sender: User,
-  ): Promise<SendInviteLink> {
-    if (!workspace?.inviteHash) {
-      return { success: false };
-    }
-
-    const frontBaseURL = this.environmentService.get('FRONT_BASE_URL');
-    const inviteLink = `${frontBaseURL}/invite/${workspace.inviteHash}`;
-
-    for (const email of emails) {
-      const emailData = {
-        link: inviteLink,
-        workspace: { name: workspace.displayName, logo: workspace.logo },
-        sender: { email: sender.email, firstName: sender.firstName },
-        serverUrl: this.environmentService.get('SERVER_URL'),
-      };
-      const emailTemplate = SendInviteLinkEmail(emailData);
-      const html = render(emailTemplate, {
-        pretty: true,
-      });
-
-      const text = render(emailTemplate, {
-        plainText: true,
-      });
-
-      await this.emailService.send({
-        from: `${this.environmentService.get(
-          'EMAIL_FROM_NAME',
-        )} <${this.environmentService.get('EMAIL_FROM_ADDRESS')}>`,
-        to: email,
-        subject: 'Join your team on Twenty',
-        text,
-        html,
-      });
-    }
-
-    await this.onboardingService.skipInviteTeamOnboardingStep(workspace.id);
-
-    return { success: true };
   }
 
   private async reassignOrRemoveUserDefaultWorkspace(

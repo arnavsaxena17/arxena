@@ -1,23 +1,38 @@
-import { useCallback, useMemo, useState } from 'react';
-// @ts-expect-error Todo: remove usage of react-data-grid
-import { RowsChangeData } from 'react-data-grid';
 import styled from '@emotion/styled';
+import {
+  Dispatch,
+  SetStateAction,
+  useCallback,
+  useMemo,
+  useState,
+} from 'react';
+// @ts-expect-error Todo: remove usage of react-data-grid`
+import { RowsChangeData } from 'react-data-grid';
 import { IconTrash } from 'twenty-ui';
 
 import { Heading } from '@/spreadsheet-import/components/Heading';
+import { SpreadsheetImportTable } from '@/spreadsheet-import/components/SpreadsheetImportTable';
 import { StepNavigationButton } from '@/spreadsheet-import/components/StepNavigationButton';
-import { Table } from '@/spreadsheet-import/components/Table';
 import { useSpreadsheetImportInternal } from '@/spreadsheet-import/hooks/useSpreadsheetImportInternal';
-import { Data } from '@/spreadsheet-import/types';
+import {
+  Columns,
+  ColumnType,
+} from '@/spreadsheet-import/steps/components/MatchColumnsStep/MatchColumnsStep';
+import {
+  ImportedStructuredRow,
+  ImportValidationResult,
+} from '@/spreadsheet-import/types';
 import { addErrorsAndRunHooks } from '@/spreadsheet-import/utils/dataMutations';
 import { useDialogManager } from '@/ui/feedback/dialog-manager/hooks/useDialogManager';
 import { Button } from '@/ui/input/button/components/Button';
 import { Toggle } from '@/ui/input/components/Toggle';
-import { Modal } from '@/ui/layout/modal/components/Modal';
 import { isDefined } from '~/utils/isDefined';
 
+import { SpreadsheetImportStep } from '@/spreadsheet-import/steps/types/SpreadsheetImportStep';
+import { SpreadsheetImportStepType } from '@/spreadsheet-import/steps/types/SpreadsheetImportStepType';
+import { Modal } from '@/ui/layout/modal/components/Modal';
 import { generateColumns } from './components/columns';
-import { Meta } from './types';
+import { ImportedStructuredRowMetadata } from './types';
 
 const StyledContent = styled(Modal.Content)`
   padding-left: ${({ theme }) => theme.spacing(6)};
@@ -61,23 +76,27 @@ const StyledNoRowsContainer = styled.div`
 `;
 
 type ValidationStepProps<T extends string> = {
-  initialData: Data<T>[];
+  initialData: ImportedStructuredRow<T>[];
+  importedColumns: Columns<string>;
   file: File;
-  onSubmitStart?: () => void;
   onBack: () => void;
+  setCurrentStepState: Dispatch<SetStateAction<SpreadsheetImportStep>>;
 };
 
 export const ValidationStep = <T extends string>({
   initialData,
+  importedColumns,
   file,
-  onSubmitStart,
+  setCurrentStepState,
   onBack,
 }: ValidationStepProps<T>) => {
   const { enqueueDialog } = useDialogManager();
   const { fields, onClose, onSubmit, rowHook, tableHook } =
     useSpreadsheetImportInternal<T>();
 
-  const [data, setData] = useState<(Data<T> & Meta)[]>(
+  const [data, setData] = useState<
+    (ImportedStructuredRow<T> & ImportedStructuredRowMetadata)[]
+  >(
     useMemo(
       () => addErrorsAndRunHooks<T>(initialData, fields, rowHook, tableHook),
       // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -88,6 +107,7 @@ export const ValidationStep = <T extends string>({
     ReadonlySet<number | string>
   >(new Set());
   const [filterByErrors, setFilterByErrors] = useState(false);
+  const [showUnmatchedColumns, setShowUnmatchedColumns] = useState(false);
 
   const updateData = useCallback(
     (rows: typeof data) => {
@@ -127,7 +147,30 @@ export const ValidationStep = <T extends string>({
     [data, updateData],
   );
 
-  const columns = useMemo(() => generateColumns(fields), [fields]);
+  const columns = useMemo(
+    () =>
+      generateColumns(fields)
+        .map((column) => {
+          const hasBeenImported =
+            importedColumns.filter(
+              (importColumn) =>
+                (importColumn.type === ColumnType.matched &&
+                  importColumn.value === column.key) ||
+                (importColumn.type === ColumnType.matchedSelect &&
+                  importColumn.value === column.key) ||
+                (importColumn.type === ColumnType.matchedSelectOptions &&
+                  importColumn.value === column.key) ||
+                (importColumn.type === ColumnType.matchedCheckbox &&
+                  importColumn.value === column.key) ||
+                column.key === 'select-row',
+            ).length > 0;
+
+          if (!hasBeenImported && !showUnmatchedColumns) return null;
+          return column;
+        })
+        .filter(Boolean),
+    [fields, importedColumns, showUnmatchedColumns],
+  );
 
   const tableData = useMemo(() => {
     if (filterByErrors) {
@@ -143,7 +186,11 @@ export const ValidationStep = <T extends string>({
     return data;
   }, [data, filterByErrors]);
 
-  const rowKeyGetter = useCallback((row: Data<T> & Meta) => row.__index, []);
+  const rowKeyGetter = useCallback(
+    (row: ImportedStructuredRow<T> & ImportedStructuredRowMetadata) =>
+      row.__index,
+    [],
+  );
 
   const submitData = async () => {
     const calculatedData = data.reduce(
@@ -152,17 +199,29 @@ export const ValidationStep = <T extends string>({
         if (isDefined(__errors)) {
           for (const key in __errors) {
             if (__errors[key].level === 'error') {
-              acc.invalidData.push(values as unknown as Data<T>);
+              acc.invalidStructuredRows.push(
+                values as unknown as ImportedStructuredRow<T>,
+              );
               return acc;
             }
           }
         }
-        acc.validData.push(values as unknown as Data<T>);
+        acc.validStructuredRows.push(
+          values as unknown as ImportedStructuredRow<T>,
+        );
         return acc;
       },
-      { validData: [] as Data<T>[], invalidData: [] as Data<T>[], all: data },
+      {
+        validStructuredRows: [] as ImportedStructuredRow<T>[],
+        invalidStructuredRows: [] as ImportedStructuredRow<T>[],
+        allStructuredRows: data,
+      } satisfies ImportValidationResult<T>,
     );
-    onSubmitStart?.();
+
+    setCurrentStepState({
+      type: SpreadsheetImportStepType.loading,
+    });
+
     await onSubmit(calculatedData, file);
     onClose();
   };
@@ -212,6 +271,15 @@ export const ValidationStep = <T extends string>({
               Show only rows with errors
             </StyledErrorToggleDescription>
           </StyledErrorToggle>
+          <StyledErrorToggle>
+            <Toggle
+              value={showUnmatchedColumns}
+              onChange={() => setShowUnmatchedColumns(!showUnmatchedColumns)}
+            />
+            <StyledErrorToggleDescription>
+              Show unmatched columns
+            </StyledErrorToggleDescription>
+          </StyledErrorToggle>
           <Button
             Icon={IconTrash}
             title="Remove"
@@ -221,7 +289,7 @@ export const ValidationStep = <T extends string>({
           />
         </StyledToolbar>
         <StyledScrollContainer>
-          <Table
+          <SpreadsheetImportTable
             rowKeyGetter={rowKeyGetter}
             rows={tableData}
             onRowsChange={updateRow}

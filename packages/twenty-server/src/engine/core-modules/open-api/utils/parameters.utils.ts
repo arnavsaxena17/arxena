@@ -2,12 +2,14 @@ import { OpenAPIV3_1 } from 'openapi-types';
 
 import { OrderByDirection } from 'src/engine/api/graphql/workspace-query-builder/interfaces/record.interface';
 
-import { FilterComparators } from 'src/engine/api/rest/rest-api-core-query-builder/factories/input-factories/filter-utils/parse-base-filter.utils';
-import { Conjunctions } from 'src/engine/api/rest/rest-api-core-query-builder/factories/input-factories/filter-utils/parse-filter.utils';
-import { DEFAULT_ORDER_DIRECTION } from 'src/engine/api/rest/rest-api-core-query-builder/factories/input-factories/order-by-input.factory';
-import { DEFAULT_CONJUNCTION } from 'src/engine/api/rest/rest-api-core-query-builder/factories/input-factories/filter-utils/add-default-conjunction.utils';
+import { DEFAULT_CONJUNCTION } from 'src/engine/api/rest/core/query-builder/utils/filter-utils/add-default-conjunction.utils';
+import { FilterComparators } from 'src/engine/api/rest/core/query-builder/utils/filter-utils/parse-base-filter.utils';
+import { Conjunctions } from 'src/engine/api/rest/core/query-builder/utils/filter-utils/parse-filter.utils';
+import { DEFAULT_ORDER_DIRECTION } from 'src/engine/api/rest/input-factories/order-by-input.factory';
 
-export const computeLimitParameters = (): OpenAPIV3_1.ParameterObject => {
+export const computeLimitParameters = (
+  fromMetadata = false,
+): OpenAPIV3_1.ParameterObject => {
   return {
     name: 'limit',
     in: 'query',
@@ -16,8 +18,8 @@ export const computeLimitParameters = (): OpenAPIV3_1.ParameterObject => {
     schema: {
       type: 'integer',
       minimum: 0,
-      maximum: 60,
-      default: 60,
+      maximum: fromMetadata ? 1000 : 60,
+      default: fromMetadata ? 1000 : 60,
     },
   };
 };
@@ -53,11 +55,15 @@ export const computeDepthParameters = (): OpenAPIV3_1.ParameterObject => {
   return {
     name: 'depth',
     in: 'query',
-    description: 'Limits the depth objects returned.',
+    description: `Determines the level of nested related objects to include in the response.  
+    - 0: Returns only the primary object's information.  
+    - 1: Returns the primary object along with its directly related objects (with no additional nesting for related objects).  
+    - 2: Returns the primary object, its directly related objects, and the related objects of those related objects.`,
     required: false,
     schema: {
       type: 'integer',
-      enum: [1, 2],
+      enum: [0, 1, 2],
+      default: 1,
     },
   };
 };
@@ -67,7 +73,9 @@ export const computeFilterParameters = (): OpenAPIV3_1.ParameterObject => {
     name: 'filter',
     in: 'query',
     description: `Filters objects returned.  
-    Should have the following shape: **field_1[COMPARATOR]:value_1,field_2[COMPARATOR]:value_2,...**  
+    Should have the following shape: **field_1[COMPARATOR]:value_1,field_2[COMPARATOR]:value_2...
+    To filter on composite type fields use **field.subField[COMPARATOR]:value_1
+    **
     Available comparators are **${Object.values(FilterComparators).join(
       '**, **',
     )}**.  
@@ -77,6 +85,7 @@ export const computeFilterParameters = (): OpenAPIV3_1.ParameterObject => {
     Default root conjunction is **${DEFAULT_CONJUNCTION}**.  
     To filter **null** values use **field[is]:NULL** or **field[is]:NOT_NULL**  
     To filter using **boolean** values use **field[eq]:true** or **field[eq]:false**`,
+
     required: false,
     schema: {
       type: 'string',
@@ -85,6 +94,10 @@ export const computeFilterParameters = (): OpenAPIV3_1.ParameterObject => {
       simple: {
         value: 'createdAt[gte]:"2023-01-01"',
         description: 'A simple filter param',
+      },
+      simpleNested: {
+        value: 'emails.primaryEmail[eq]:foo99@example.com',
+        description: 'A simple composite type filter param',
       },
       complex: {
         value:

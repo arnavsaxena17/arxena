@@ -19,50 +19,50 @@ export const useSetRecordTableData = ({
     tableRowIdsState,
     numberOfTableRowsState,
     isRowSelectedFamilyState,
-    hasUserSelectedAllRowState,
+    hasUserSelectedAllRowsState,
   } = useRecordTableStates(recordTableId);
 
   return useRecoilCallback(
     ({ set, snapshot }) =>
-      <T extends ObjectRecord>(newEntityArray: T[], totalCount?: number) => {
-        for (const entity of newEntityArray) {
+      <T extends ObjectRecord>(newRecords: T[], totalCount?: number) => {
+        for (const record of newRecords) {
           // TODO: refactor with scoped state later
-          const currentEntity = snapshot
-            .getLoadable(recordStoreFamilyState(entity.id))
+          const currentRecord = snapshot
+            .getLoadable(recordStoreFamilyState(record.id))
             .getValue();
 
-          if (JSON.stringify(currentEntity) !== JSON.stringify(entity)) {
-            set(recordStoreFamilyState(entity.id), entity);
+          if (JSON.stringify(currentRecord) !== JSON.stringify(record)) {
+            set(recordStoreFamilyState(record.id), record);
           }
         }
+
         const currentRowIds = getSnapshotValue(snapshot, tableRowIdsState);
 
         const hasUserSelectedAllRows = getSnapshotValue(
           snapshot,
-          hasUserSelectedAllRowState,
+          hasUserSelectedAllRowsState,
         );
 
-        const entityIds = newEntityArray.map((entity) => entity.id);
+        const recordIds = newRecords.map((record) => record.id);
 
-        if (!isDeeplyEqual(currentRowIds, entityIds)) {
-          set(tableRowIdsState, entityIds);
-        }
-
-        if (hasUserSelectedAllRows) {
-          for (const rowId of entityIds) {
-            set(isRowSelectedFamilyState(rowId), true);
+        if (!isDeeplyEqual(currentRowIds, recordIds)) {
+          if (hasUserSelectedAllRows) {
+            for (const rowId of recordIds) {
+              set(isRowSelectedFamilyState(rowId), true);
+            }
           }
-        }
 
-        set(numberOfTableRowsState, totalCount ?? 0);
-        onEntityCountChange(totalCount);
+          set(tableRowIdsState, recordIds);
+          set(numberOfTableRowsState, totalCount ?? 0);
+          onEntityCountChange(totalCount);
+        }
       },
     [
       numberOfTableRowsState,
       tableRowIdsState,
       onEntityCountChange,
       isRowSelectedFamilyState,
-      hasUserSelectedAllRowState,
+      hasUserSelectedAllRowsState,
     ],
   );
 };

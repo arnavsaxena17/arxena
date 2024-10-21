@@ -1,42 +1,41 @@
-import { Logger } from '@nestjs/common';
+import { Logger, Scope } from '@nestjs/common';
 
-import { Process } from 'src/engine/integrations/message-queue/decorators/process.decorator';
-import { Processor } from 'src/engine/integrations/message-queue/decorators/processor.decorator';
-import { MessageQueue } from 'src/engine/integrations/message-queue/message-queue.constants';
-import { InjectObjectMetadataRepository } from 'src/engine/object-metadata-repository/object-metadata-repository.decorator';
-import { ConnectedAccountRepository } from 'src/modules/connected-account/repositories/connected-account.repository';
-import { ConnectedAccountWorkspaceEntity } from 'src/modules/connected-account/standard-objects/connected-account.workspace-entity';
-import { MessageChannelRepository } from 'src/modules/messaging/common/repositories/message-channel.repository';
-import { MessagingTelemetryService } from 'src/modules/messaging/common/services/messaging-telemetry.service';
+import { Process } from 'src/engine/core-modules/message-queue/decorators/process.decorator';
+import { Processor } from 'src/engine/core-modules/message-queue/decorators/processor.decorator';
+import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
+import { TwentyORMManager } from 'src/engine/twenty-orm/twenty-orm.manager';
+import { isThrottled } from 'src/modules/connected-account/utils/is-throttled';
 import {
   MessageChannelSyncStage,
   MessageChannelWorkspaceEntity,
 } from 'src/modules/messaging/common/standard-objects/message-channel.workspace-entity';
-import { MessagingGmailFullMessageListFetchService } from 'src/modules/messaging/message-import-manager/drivers/gmail/services/messaging-gmail-full-message-list-fetch.service';
-import { MessagingGmailPartialMessageListFetchService } from 'src/modules/messaging/message-import-manager/drivers/gmail/services/messaging-gmail-partial-message-list-fetch.service';
-import { isThrottled } from 'src/modules/messaging/message-import-manager/drivers/gmail/utils/is-throttled';
+import { MessagingFullMessageListFetchService } from 'src/modules/messaging/message-import-manager/services/messaging-full-message-list-fetch.service';
+import { MessagingPartialMessageListFetchService } from 'src/modules/messaging/message-import-manager/services/messaging-partial-message-list-fetch.service';
+import { MessagingTelemetryService } from 'src/modules/messaging/monitoring/services/messaging-telemetry.service';
 
 export type MessagingMessageListFetchJobData = {
   messageChannelId: string;
   workspaceId: string;
 };
 
-@Processor(MessageQueue.messagingQueue)
+@Processor({
+  queueName: MessageQueue.messagingQueue,
+  scope: Scope.REQUEST,
+})
 export class MessagingMessageListFetchJob {
   private readonly logger = new Logger(MessagingMessageListFetchJob.name);
 
   constructor(
-    private readonly gmailFullMessageListFetchService: MessagingGmailFullMessageListFetchService,
-    private readonly gmailPartialMessageListFetchV2Service: MessagingGmailPartialMessageListFetchService,
-    @InjectObjectMetadataRepository(ConnectedAccountWorkspaceEntity)
-    private readonly connectedAccountRepository: ConnectedAccountRepository,
-    @InjectObjectMetadataRepository(MessageChannelWorkspaceEntity)
-    private readonly messageChannelRepository: MessageChannelRepository,
+    private readonly messagingFullMessageListFetchService: MessagingFullMessageListFetchService,
+    private readonly messagingPartialMessageListFetchService: MessagingPartialMessageListFetchService,
     private readonly messagingTelemetryService: MessagingTelemetryService,
+    private readonly twentyORMManager: TwentyORMManager,
   ) {}
 
   @Process(MessagingMessageListFetchJob.name)
   async handle(data: MessagingMessageListFetchJobData): Promise<void> {
+    console.time('MessagingMessageListFetchJob time');
+
     const { messageChannelId, workspaceId } = data;
 
     await this.messagingTelemetryService.track({
@@ -45,10 +44,17 @@ export class MessagingMessageListFetchJob {
       workspaceId,
     });
 
-    const messageChannel = await this.messageChannelRepository.getById(
-      messageChannelId,
-      workspaceId,
-    );
+    const messageChannelRepository =
+      await this.twentyORMManager.getRepository<MessageChannelWorkspaceEntity>(
+        'messageChannel',
+      );
+
+    const messageChannel = await messageChannelRepository.findOne({
+      where: {
+        id: messageChannelId,
+      },
+      relations: ['connectedAccount'],
+    });
 
     if (!messageChannel) {
       await this.messagingTelemetryService.track({
@@ -57,16 +63,6 @@ export class MessagingMessageListFetchJob {
         workspaceId,
       });
 
-      return;
-    }
-
-    const connectedAccount =
-      await this.connectedAccountRepository.getByIdOrFail(
-        messageChannel.connectedAccountId,
-        workspaceId,
-      );
-
-    if (!messageChannel?.isSyncEnabled) {
       return;
     }
 
@@ -88,20 +84,20 @@ export class MessagingMessageListFetchJob {
         await this.messagingTelemetryService.track({
           eventName: 'partial_message_list_fetch.started',
           workspaceId,
-          connectedAccountId: connectedAccount.id,
+          connectedAccountId: messageChannel.connectedAccount.id,
           messageChannelId: messageChannel.id,
         });
 
-        await this.gmailPartialMessageListFetchV2Service.processMessageListFetch(
+        await this.messagingPartialMessageListFetchService.processMessageListFetch(
           messageChannel,
-          connectedAccount,
+          messageChannel.connectedAccount,
           workspaceId,
         );
 
         await this.messagingTelemetryService.track({
           eventName: 'partial_message_list_fetch.completed',
           workspaceId,
-          connectedAccountId: connectedAccount.id,
+          connectedAccountId: messageChannel.connectedAccount.id,
           messageChannelId: messageChannel.id,
         });
 
@@ -109,26 +105,26 @@ export class MessagingMessageListFetchJob {
 
       case MessageChannelSyncStage.FULL_MESSAGE_LIST_FETCH_PENDING:
         this.logger.log(
-          `Fetching full message list for workspace ${workspaceId} and account ${connectedAccount.id}`,
+          `Fetching full message list for workspace ${workspaceId} and account ${messageChannel.connectedAccount.id}`,
         );
 
         await this.messagingTelemetryService.track({
           eventName: 'full_message_list_fetch.started',
           workspaceId,
-          connectedAccountId: connectedAccount.id,
+          connectedAccountId: messageChannel.connectedAccount.id,
           messageChannelId: messageChannel.id,
         });
 
-        await this.gmailFullMessageListFetchService.processMessageListFetch(
+        await this.messagingFullMessageListFetchService.processMessageListFetch(
           messageChannel,
-          connectedAccount,
+          messageChannel.connectedAccount,
           workspaceId,
         );
 
         await this.messagingTelemetryService.track({
           eventName: 'full_message_list_fetch.completed',
           workspaceId,
-          connectedAccountId: connectedAccount.id,
+          connectedAccountId: messageChannel.connectedAccount.id,
           messageChannelId: messageChannel.id,
         });
 
@@ -137,5 +133,7 @@ export class MessagingMessageListFetchJob {
       default:
         break;
     }
+
+    console.timeEnd('MessagingMessageListFetchJob time');
   }
 }

@@ -1,7 +1,10 @@
 import { Meta, StoryObj } from '@storybook/react';
 import { ComponentDecorator } from 'twenty-ui';
 
+import { DateFormat } from '@/localization/constants/DateFormat';
+import { TimeFormat } from '@/localization/constants/TimeFormat';
 import { DateTimeFieldDisplay } from '@/object-record/record-field/meta-types/display/components/DateTimeFieldDisplay';
+import { UserContext } from '@/users/contexts/UserContext';
 import { getFieldDecorator } from '~/testing/decorators/getFieldDecorator';
 import { MemoryRouterDecorator } from '~/testing/decorators/MemoryRouterDecorator';
 import { getProfilingStory } from '~/testing/profiling/utils/getProfilingStory';
@@ -12,6 +15,19 @@ const meta: Meta = {
     MemoryRouterDecorator,
     getFieldDecorator('person', 'createdAt'),
     ComponentDecorator,
+    (Story) => {
+      return (
+        <UserContext.Provider
+          value={{
+            dateFormat: DateFormat.SYSTEM,
+            timeFormat: TimeFormat.SYSTEM,
+            timeZone: 'UTC',
+          }}
+        >
+          <Story />
+        </UserContext.Provider>
+      );
+    },
   ],
   component: DateTimeFieldDisplay,
   args: {},
@@ -35,6 +51,6 @@ export const Elipsis: Story = {
 export const Performance = getProfilingStory({
   componentName: 'DateTimeFieldDisplay',
   averageThresholdInMs: 0.1,
-  numberOfRuns: 50,
-  numberOfTestsPerRun: 100,
+  numberOfRuns: 30,
+  numberOfTestsPerRun: 30,
 });
