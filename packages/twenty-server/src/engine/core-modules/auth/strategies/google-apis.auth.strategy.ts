@@ -40,20 +40,26 @@ export class GoogleAPIsStrategy extends PassportStrategy(
     environmentService: EnvironmentService,
     scopeConfig: GoogleAPIScopeConfig
   ) {
+    console.log("GoogleAPIsStrategy.constructor()");
     const scope = ["email", "profile"];
 
     if (environmentService.get("MESSAGING_PROVIDER_GMAIL_ENABLED")) {
+      console.log("Gmail enabled");
       scope.push("https://www.googleapis.com/auth/gmail.readonly");
       scope.push("https://www.googleapis.com/auth/gmail.send");
     }
+    console.log("scopeConfig", scopeConfig);
 
     if (
       environmentService.get("CALENDAR_PROVIDER_GOOGLE_ENABLED") &&
       scopeConfig?.isCalendarEnabled
     ) {
+      console.log("Cal enabled");
       scope.push("https://www.googleapis.com/auth/calendar.events");
     }
-
+    console.log("environmentService.get('AUTH_GOOGLE_CLIENT_ID')", environmentService.get("AUTH_GOOGLE_CLIENT_ID"))
+    console.log("environmentService.get('AUTH_GOOGLE_CLIENT_SECRET')", environmentService.get("AUTH_GOOGLE_CLIENT_SECRET"))
+    console.log("environmentService.get('AUTH_GOOGLE_APIS_CALLBACK_URL')", environmentService.get("AUTH_GOOGLE_APIS_CALLBACK_URL"))
     super({
       clientID: environmentService.get("AUTH_GOOGLE_CLIENT_ID"),
       clientSecret: environmentService.get("AUTH_GOOGLE_CLIENT_SECRET"),
@@ -64,6 +70,8 @@ export class GoogleAPIsStrategy extends PassportStrategy(
   }
 
   authenticate(req: any, options: any) {
+    console.log("GoogleAPIsStrategy.authenticate()");
+    console.log("GoogleAPIsStrategy.req.params()", req.params);
     options = {
       ...options,
       accessType: "offline",
@@ -86,6 +94,7 @@ export class GoogleAPIsStrategy extends PassportStrategy(
     profile: any,
     done: VerifyCallback
   ): Promise<void> {
+    console.log("GoogleAPIsStrategy.validate()");
     const { name, emails, photos } = profile;
 
     const state =
