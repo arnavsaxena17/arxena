@@ -78,7 +78,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
       if (response.data.errors) {
         console.log("Errors in response:", response.data.errors);
       }
-      const edges = response?.data?.data?.candidates?.edges;
+      const edges = response?.data?.data?.candidates?.edges || [];
       console.log("Number of candidate edges:", edges?.length)
       if (!edges || edges?.length === 0) break;
       allCandidates = allCandidates?.concat(edges.map((edge: any) => edge.node));
