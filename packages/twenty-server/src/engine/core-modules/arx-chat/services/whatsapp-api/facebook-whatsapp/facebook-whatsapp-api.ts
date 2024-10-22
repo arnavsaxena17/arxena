@@ -8,6 +8,7 @@ import { AttachmentProcessingService } from '../../../services/candidate-engagem
 import CandidateEngagementArx from '../../../services/candidate-engagement/check-candidate-engagement';
 const axios = require('axios');
 import { getTranscriptionFromWhisper } from '../../../utils/arx-chat-agent-utils';
+import {WhatsappTemplateMessages} from './template-messages';
 import { FetchAndUpdateCandidatesChatsWhatsapps } from '../../candidate-engagement/update-chat';
 const { exec } = require('child_process');
 
@@ -43,111 +44,7 @@ export class FacebookWhatsappChatApi {
     new FacebookWhatsappChatApi().sendWhatsappAttachmentMessage(sendTextMessageObj, personObj, mostRecentMessageArr);
   }
   
-  getTemplateMessageObj(sendTemplateMessageObj: allDataObjects.sendWhatsappTemplateMessageObjectType) {
-    const templateMessageObj = JSON.stringify({
-      messaging_product: 'whatsapp',
-      to: sendTemplateMessageObj.recipient,
-      type: 'template',
-      template: {
-        name: sendTemplateMessageObj.template_name,
-        language: {
-          code: 'en',
-        },
-        components: [
-          {
-            type: 'body',
-            parameters: [
-              {
-                type: 'text',
-                text: sendTemplateMessageObj.candidateFirstName,
-              },
-              {
-                type: 'text',
-                text: sendTemplateMessageObj.recruiterName,
-              },
-              {
-                type: 'text',
-                text: sendTemplateMessageObj.recruiterJobTitle,
-              },
-              {
-                type: 'text',
-                text: sendTemplateMessageObj.recruiterCompanyName,
-              },
-              {
-                type: 'text',
-                text: sendTemplateMessageObj.recruiterCompanyDescription,
-              },
-              {
-                type: 'text',
-                text: sendTemplateMessageObj.jobPositionName,
-              },
-              {
-                type: 'text',
-                text: sendTemplateMessageObj.jobLocation,
-              },
-            ],
-          },
-        ],
-      },
-    });
-    // console.log("This is the template message object created:", templateMessageObj)
-    return templateMessageObj;
-  }
-  getUtilityMessageObj(sendTemplateMessageObj: allDataObjects.sendWhatsappUtilityMessageObjectType) {
-    const templateMessageObj = JSON.stringify({
-      messaging_product: 'whatsapp',
-      to: sendTemplateMessageObj.recipient,
-      type: 'template',
-      template: {
-        name: sendTemplateMessageObj.template_name,
-        language: { code: 'en' },
-        components: [
-          {
-            type: 'body',
-            parameters: [
-              {
-                type: 'text',
-                text: sendTemplateMessageObj.candidateFirstName,
-              },
-              {
-                type: 'text',
-                text: sendTemplateMessageObj.recruiterName,
-              },
-              {
-                type: 'text',
-                text: sendTemplateMessageObj.recruiterJobTitle,
-              },
-              {
-                type: 'text',
-                text: sendTemplateMessageObj.recruiterCompanyName,
-              },
-              {
-                type: 'text',
-                text: sendTemplateMessageObj.recruiterCompanyDescription,
-              },
-              // {
-              //   type: 'text',
-              //   text: sendTemplateMessageObj.jobCode,
-              // },
-              {
-                type: 'text',
-                text: sendTemplateMessageObj.jobPositionName,
-              },
-              {
-                type: 'text',
-                text: sendTemplateMessageObj.descriptionOneliner,
-              },
-              {
-                type: 'text',
-                text: sendTemplateMessageObj.jobLocation,
-              },
-            ],
-          },
-        ],
-      },
-    });
-    return templateMessageObj;
-  }
+
   async sendWhatsappTextMessage(sendTextMessageObj: allDataObjects.ChatRequestBody) {
     console.log('Sending a message to ::', sendTextMessageObj.phoneNumberTo.replace("+",""));
     console.log('Sending message text ::', sendTextMessageObj.messages);
@@ -372,7 +269,7 @@ export class FacebookWhatsappChatApi {
 
   async sendWhatsappTemplateMessage(sendTemplateMessageObj: allDataObjects.sendWhatsappTemplateMessageObjectType) {
     console.log('Received this template message object:', sendTemplateMessageObj);
-    let templateMessage = this.getTemplateMessageObj(sendTemplateMessageObj);
+    let templateMessage = new WhatsappTemplateMessages().getTemplateMessageObj(sendTemplateMessageObj);
     console.log('This is the template message object:', templateMessage);
     let config = {
       method: 'post',
@@ -401,7 +298,7 @@ export class FacebookWhatsappChatApi {
   }
   async sendWhatsappUtilityMessage(sendUtilityMessageObj: allDataObjects.sendWhatsappUtilityMessageObjectType) {
     console.log('Received this utiltuy message object:', sendUtilityMessageObj);
-    let utilityMessage = this.getUtilityMessageObj(sendUtilityMessageObj);
+    let utilityMessage = new WhatsappTemplateMessages().getUpdatedUtilityMessageObj(sendUtilityMessageObj);
     console.log('This is the utlity message object:', utilityMessage);
     let config = {
       method: 'post',
@@ -494,13 +391,14 @@ export class FacebookWhatsappChatApi {
         console.log('This is the template api message to send in whatappUpdateMessageObj.phoneNumberFrom, ', whatappUpdateMessageObj.phoneNumberFrom);
         const sendTemplateMessageObj = {
           recipient: whatappUpdateMessageObj.phoneNumberTo.replace('+', ''),
-          template_name: templates[4],
+          template_name: whatappUpdateMessageObj?.whatsappMessageType || 'application03',
           candidateFirstName: whatappUpdateMessageObj.candidateFirstName,
           recruiterName: allDataObjects.recruiterProfile.name,
           recruiterJobTitle: allDataObjects.recruiterProfile.job_title,
           recruiterCompanyName: allDataObjects.recruiterProfile.job_company_name,
           recruiterCompanyDescription: allDataObjects.recruiterProfile.company_description_oneliner,
           jobPositionName: whatappUpdateMessageObj?.candidateProfile?.jobs?.name,
+          companyName: whatappUpdateMessageObj?.candidateProfile?.jobs?.companies?.name,
           descriptionOneliner:whatappUpdateMessageObj?.candidateProfile?.jobs?.companies?.descriptionOneliner,
           jobCode: whatappUpdateMessageObj?.candidateProfile?.jobs?.jobCode,
           jobLocation: whatappUpdateMessageObj?.candidateProfile?.jobs?.jobLocation,

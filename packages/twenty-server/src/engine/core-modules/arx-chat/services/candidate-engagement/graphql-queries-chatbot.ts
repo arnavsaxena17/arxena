@@ -18,6 +18,7 @@ export const graphqlToFetchActiveJob = `query FindManyJobs($filter: JobFilterInp
                 edges {
                   node {
                     id
+                    whatsappProvider
                   }
                 }
               }
@@ -60,6 +61,7 @@ export const graphqlQueryToFindPeopleByPhoneNumber = `query FindManyPeople($filt
                 node {
                     id
                     name
+                    whatsappProvider
                     engagementStatus
                     jobs{
                         id
@@ -211,6 +213,7 @@ export const graphqlQueryToFindManyPeopleEngagedCandidates = `query FindManyPeop
                   node{
                       id
                       name
+                      whatsappProvider
                       jobs {
                          name
                          id
@@ -284,6 +287,7 @@ export const graphqlQueryToFindManyPeopleEngagedCandidates = `query FindManyPeop
         node {
           id
           name
+          whatsappProvider
           people {
             id
             name {

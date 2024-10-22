@@ -203,6 +203,7 @@ export class BaileysBot {
         const messageBeingSent = m?.messages[0]?.message?.extendedTextMessage?.text || m?.messages[0]?.message?.conversation || '';
         const userMessage: allDataObjects.candidateChatMessageType = {
           phoneNumberFrom: phoneNumberFrom,
+          whatsappMessageType: '',
           phoneNumberTo: m?.messages[0]?.key?.remoteJid?.replace('@s.whatsapp.net', ''),
           messages: [{ text: messageBeingSent }],
           candidateFirstName: candidateProfileData?.name,

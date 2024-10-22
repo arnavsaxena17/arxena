@@ -90,10 +90,10 @@ export interface candidateChatMessageType {
   messages: { [x: string]: any }[];
   phoneNumberFrom: string;
   phoneNumberTo: string;
+  whatsappMessageType: string | "";
   messageType: string;
-  whatsappDeliveryStatus: string;
-
-  whatsappMessageId: string;
+  whatsappDeliveryStatus?: string;
+  whatsappMessageId?: string;
   type?: string;
   databaseFilePath?: string;
 }
@@ -117,17 +117,22 @@ export interface sendWhatsappTemplateMessageObjectType {
   jobLocation: string;
 }
 export interface sendWhatsappUtilityMessageObjectType {
-  template_name: string;
-  recipient: string;
-  recruiterName: string;
-  candidateFirstName: string;
-  recruiterJobTitle: string;
-  recruiterCompanyName: string;
-  recruiterCompanyDescription: string;
-  descriptionOneliner:string
-  jobPositionName: string;
-  jobCode: string;
-  jobLocation: string;
+  discussionDate?: string | "";
+  nextStep?: string | "";
+  availableDate?: string | "";
+  template_name?: string | "";
+  recipient?: string | "";
+  recruiterName?: string | "";
+  recruiterFirstName?: string | "";
+  candidateFirstName?: string | "";
+  recruiterJobTitle?: string | "";
+  recruiterCompanyName?: string | "";
+  recruiterCompanyDescription?: string | "";
+  descriptionOneliner?:string | "";
+  companyName?: string | "";
+  jobPositionName?: string | "";
+  jobCode?: string | "";
+  jobLocation?: string | "";
 }
 
 export interface WhatsAppMessagesEdge {
@@ -153,6 +158,7 @@ export interface Candidate {
 }
 
 export interface CandidateNode {
+  whatsappProvider?: string | "application03";
   name: string;
   id: string;
   engagementStatus: boolean;
@@ -336,6 +342,7 @@ export const recruiterProfile: recruiterProfileType = {
 export const emptyCandidateProfileObj: CandidateNode = {
   name: '',
   id: '',
+  whatsappProvider: '',
   jobs: {
     name: '',
     id: '',
@@ -348,7 +355,6 @@ export const emptyCandidateProfileObj: CandidateNode = {
     },
     jobLocation: '',
     jobCode: "",
-
     whatsappMessages: {
       edges: [
         {

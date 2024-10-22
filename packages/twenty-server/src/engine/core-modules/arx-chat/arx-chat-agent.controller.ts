@@ -24,6 +24,7 @@ export class UpdateChatEndpoint {
       const userMessage: allDataObjects.candidateChatMessageType = {
         phoneNumberFrom,
         phoneNumberTo,
+        whatsappMessageType: 'application03',
         messages: [{ text: userMessageBody.messages }],
         candidateFirstName: '',
         messageObj: [],
@@ -155,6 +156,7 @@ export class ArxChatEndpoint {
       candidateProfile: personObj?.candidates?.edges[0]?.node,
       candidateFirstName: personObj?.name?.firstName,
       phoneNumberFrom: personObj?.phone,
+      whatsappMessageType : personObj?.candidates?.edges[0]?.node.whatsappProvider || "application03",
       phoneNumberTo: recruiterProfile.phone,
       messages: [{ content: chatReply }],
       messageType: 'candidateMessage',
@@ -185,6 +187,7 @@ export class ArxChatEndpoint {
       candidateProfile: personObj?.candidates?.edges[0]?.node,
       candidateFirstName: personObj?.name?.firstName,
       phoneNumberFrom: recruiterProfile.phone,
+      whatsappMessageType: personObj?.candidates?.edges[0]?.node.whatsappProvider || "application03",
       phoneNumberTo: personObj?.phone,
       messages: [{ content: request?.body?.messageToSend }],
       messageType: 'recruiterMessage',
@@ -438,10 +441,45 @@ export class TwilioControllers {
         to: 'whatsapp:+918411937769',
       }).then(message => console.log(message.sid)).done();
   }
+
+
+
 }
+
+
 
 @Controller('whatsapp-test')
 export class WhatsappTestAPI {
+
+  @Post('send-template-message')
+  async sendTemplateMessage(@Req() request: Request): Promise<object> {
+
+    const requestBody = request.body as any;
+    const personObj: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(requestBody.phoneNumberTo);
+    const sendTemplateMessageObj = {
+      recipient: personObj.phone.replace('+', ''),
+      template_name: requestBody.template_name,
+      candidateFirstName: personObj.name.firstName,
+      recruiterName: allDataObjects.recruiterProfile.name,
+      recruiterJobTitle: allDataObjects.recruiterProfile.job_title,
+      recruiterCompanyName: allDataObjects.recruiterProfile.job_company_name,
+      recruiterCompanyDescription: allDataObjects.recruiterProfile.company_description_oneliner,
+      jobPositionName: personObj?.candidates?.edges[0]?.node?.jobs?.name,
+      companyName: personObj?.candidates?.edges[0]?.node?.jobs?.companies?.name,
+      descriptionOneliner:personObj?.candidates?.edges[0]?.node?.jobs?.companies?.descriptionOneliner,
+      jobCode: personObj?.candidates?.edges[0]?.node?.jobs?.jobCode,
+      jobLocation: personObj?.candidates?.edges[0]?.node?.jobs?.jobLocation,
+    };
+    console.log("This is the sendTemplateMessageObj:", sendTemplateMessageObj)
+
+    const response = await new FacebookWhatsappChatApi().sendWhatsappUtilityMessage(sendTemplateMessageObj);
+    console.log("This is ther esponse:", response.data)
+    return { status: 'success' };
+  }
+
+
+
+
   @Post('template')
   async create(@Req() request: Request): Promise<object> {
     const sendMessageObj: allDataObjects.sendWhatsappTemplateMessageObjectType = request.body as unknown as allDataObjects.sendWhatsappTemplateMessageObjectType;

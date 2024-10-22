@@ -298,6 +298,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
         const candidateProfileObj: allDataObjects.CandidateNode = {
           name: personWithActiveJob?.node?.name?.firstName || "",
           id: activeJobCandidateObj?.node?.id,
+          whatsappProvider : activeJobCandidateObj?.node?.whatsappProvider,
           jobs: {
             name: activeJobCandidateObj?.node?.jobs?.name || "",
             id: activeJobCandidateObj?.node?.jobs?.id,

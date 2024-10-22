@@ -250,6 +250,7 @@ export class IncomingWhatsappMessages {
     let whatappUpdateMessageObj: allDataObjects.candidateChatMessageType = {
       // executorResultObj: {},
       candidateProfile: candidateProfileDataNodeObj,
+      whatsappMessageType: candidateProfileDataNodeObj?.whatsappProvider || '',
       candidateFirstName: candidateProfileDataNodeObj.name,
       phoneNumberFrom: candidateProfileDataNodeObj?.phoneNumber,
       phoneNumberTo: recruiterProfile.phone,
