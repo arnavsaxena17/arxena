@@ -20,11 +20,11 @@ import {
   SnapScrollContainer,
   StyledLeftPanel,
   StyledRightPanel,
-  StyledButton,
-  ButtonContainer,
-  InstructionSection,
-  InstructionList,
-  AccessMessage,
+  // StyledButton,
+  // ButtonContainer,
+  // InstructionSection,
+  // InstructionList,
+  // AccessMessage,
 } from './styled-components/StyledComponentsInterviewResponse';
 
 
@@ -185,13 +185,14 @@ export const InterviewPage: React.FC<InterviewResponseTypes.InterviewPageProps> 
         formData.append('operations', '{}');
         formData.append('map', '{}');
         formData.append('model', 'whisper-12');
-        formData.append('question2', 'Whats the question');
+        // formData.append('question2', 'Whats the question');
         formData.append('video', file, `${InterviewData.id}-video-${unique_id}.webm`);
         formData.append('video', file, `${InterviewData.id}-video-${unique_id}.webm`);
         formData.append('audio', output, `${InterviewData.id}-audio-${unique_id}.wav`);
-        formData.forEach((value, key) => {
-          console.log(key, value);
-        });
+        // formData.forEach((value, key) => {
+          // console.log(key, value);
+        // });
+        console.log('This is the form data:', formData);
         onNextQuestion(formData);
         setSubmitting(false);
         if (isLastQuestion) {
@@ -212,7 +213,7 @@ export const InterviewPage: React.FC<InterviewResponseTypes.InterviewPageProps> 
   console.log("Current question interview questionsVideoAttachment:", questionsVideoAttachment);
   
   const currentQuestionInterviewAttachment = questionsVideoAttachment.find(
-    (attachment) => attachment.id === questions[currentQuestionIndex].attachments.edges[0].node.id
+    (attachment) => attachment?.id === questions[currentQuestionIndex]?.attachments?.edges[0]?.node?.id
   )?.fullPath;
 
 

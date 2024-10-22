@@ -9,8 +9,8 @@ import path from "path";
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 // Set the path for the ffmpeg binary
-ffmpeg.setFfmpegPath(ffmpegPath);
-``;
+// ffmpeg.setFfmpegPath(ffmpegPath);
+// ``;
 
 export function sortWhatsAppMessages(candidateResponseEngagementArr: allDataObjects.PersonNode[]) {
   console.log("Number of candidates being sorted:", candidateResponseEngagementArr.length)

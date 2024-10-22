@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UploadedFiles, Req, UseInterceptors, BadRequestException, UseGuards, InternalServerErrorException } from '@nestjs/common';
+import { Controller, Post, Body, UploadedFiles, Req, UseInterceptors, BadRequestException, UseGuards, InternalServerErrorException, HttpException } from '@nestjs/common';
 
 
 import { AuthGuard } from '@nestjs/passport';
@@ -10,9 +10,7 @@ import { TranscriptionService } from './transcription.service';
 import { AttachmentProcessingService } from '../arx-chat/services/candidate-engagement/attachment-processing';
 import * as path from 'path';
 import * as fs from 'fs';
-
-
-import * as ffmpeg from 'fluent-ffmpeg';
+import ffmpeg from 'fluent-ffmpeg';
 
 interface GetInterviewDetailsResponse {
   responseFromInterviewRequests: any;
@@ -36,8 +34,11 @@ export async function axiosRequest(data: string) {
 
 @Controller('video-interview')
 export class VideoInterviewController {
-  constructor(private readonly transcriptionService: TranscriptionService) {}
-
+  constructor(private readonly transcriptionService: TranscriptionService) {
+    console.log('GraphQL URL configured as:', process.env.GRAPHQL_URL);
+    console.log('JWT Secret present:', !!process.env.TWENTY_JWT_SECRET);
+  }
+  
   @Post('submit-response')
   @UseInterceptors(
     FileFieldsInterceptor(
@@ -49,47 +50,54 @@ export class VideoInterviewController {
         storage: multer.diskStorage({
           destination: './uploads',
           filename: (req, file, callback) => {
-            callback(null, file.originalname);
+            try {
+              console.log(`Received file in the uploads multer disk storage: ${file.originalname}`);
+              // Ensure uploads directory exists
+              if (!fs.existsSync('./uploads')) {
+                fs.mkdirSync('./uploads', { recursive: true });
+              }
+              callback(null, file.originalname);
+            } catch (error) {
+              console.error('Error in multer filename callback:', error);
+              callback(error, "");
+            }
           },
         }),
         limits: { fileSize: 100 * 1024 * 1024 },
         fileFilter: (req, file, callback) => {
-          console.log(`Received file: ${file.fieldname}, mimetype: ${file.mimetype}`);
-          if (file.fieldname === 'video' && !['video/webm', 'video/mp4'].includes(file.mimetype)) {
-            return callback(new BadRequestException('Only webm or mp4 files are allowed for video'), false);
+          try {
+            console.log(`Received file: ${file.fieldname}, mimetype: ${file.mimetype}`);
+            
+            if (!file.mimetype) {
+              return callback(new BadRequestException('Missing mimetype'), false);
+            }
+
+            if (file.fieldname === 'video' && !['video/webm', 'video/mp4'].includes(file.mimetype)) {
+              return callback(new BadRequestException(`Invalid video format: ${file.mimetype}. Only webm or mp4 files are allowed.`), false);
+            }
+            
+            if (file.fieldname === 'audio' && file.mimetype !== 'audio/wav') {
+              return callback(new BadRequestException(`Invalid audio format: ${file.mimetype}. Only WAV files are allowed.`), false);
+            }
+            
+            callback(null, true);
+          } catch (error) {
+            console.error('Error in multer fileFilter:', error);
+            callback(error, false);
           }
-          if (file.fieldname === 'audio' && file.mimetype !== 'audio/wav') {
-            return callback(new BadRequestException('Only WAV files are allowed'), false);
-          }
-          callback(null, true);
         },
       },
     ),
   )
-  private async convertToWebM(inputPath: string): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const outputPath = inputPath.replace(path.extname(inputPath), '.webm');
-      ffmpeg(inputPath)
-        .outputOptions('-c:v libvpx-vp9')
-        .outputOptions('-crf 30')
-        .outputOptions('-b:v 0')
-        .outputOptions('-b:a 128k')
-        .outputOptions('-c:a libopus')
-        .save(outputPath)
-        .on('end', () => {
-          fs.unlinkSync(inputPath);  // Remove the original file
-          resolve(outputPath);
-        })
-        .on('error', (err) => {
-          reject(new Error(`Error converting video: ${err.message}`));
-        });
-    });
-  }
-
 
   async submitResponse(@Req() req, @UploadedFiles() files: { video?: Express.Multer.File[]; audio?: Express.Multer.File[] }, @Body() responseData: any) {
+    console.log("Received request data:: will start download")
     try {
-      console.log('Received files:', JSON.stringify(files, null, 2));
+      console.log("Step 1: Starting submission process");
+      console.log("Response data:", responseData);
+  
+      console.log("REceived response data::", responseData)
+      // console.log('Received files:', JSON.stringify(files, null, 2));
       // console.log('Received response data:', JSON.stringify(responseData, null, 2));
       const interviewData = JSON.parse(req?.body?.interviewData);
 
@@ -118,8 +126,8 @@ export class VideoInterviewController {
       const audioFilePath = `uploads/${audioFile.originalname}`;
 
       const audioAttachmentObj = await new AttachmentProcessingService().uploadAttachmentToTwenty(audioFilePath);
-      // console.log('Audio attachment upload response:', audioAttachmentObj);
-      // console.log('interviewData::', interviewData);
+      console.log('Audio attachment upload response:', audioAttachmentObj);
+      console.log('interviewData::', interviewData);
       // Prepare data for attachment table
       const videoDataToUploadInAttachmentTable = {
         input: {
@@ -130,7 +138,7 @@ export class VideoInterviewController {
           candidateId: interviewData.candidate.id,
         },
       };
-      // console.log('This is the video. Data to Uplaod in Attachment Table::', videoDataToUploadInAttachmentTable);
+      console.log('This is the video. Data to Uplaod in Attachment Table::', videoDataToUploadInAttachmentTable);
       await new AttachmentProcessingService().createOneAttachmentFromFilePath(videoDataToUploadInAttachmentTable);
 
       const audioDataToUploadInAttachmentTable = {
@@ -142,18 +150,18 @@ export class VideoInterviewController {
           candidateId: interviewData.candidate.id,
         },
       };
-      // console.log('This is the audio. Data to Uplaod in Attachment Table::', audioDataToUploadInAttachmentTable);
+      console.log('This is the audio. Data to Uplaod in Attachment Table::', audioDataToUploadInAttachmentTable);
       await new AttachmentProcessingService().createOneAttachmentFromFilePath(audioDataToUploadInAttachmentTable);
 
       // console.log('Audio file:', JSON.stringify(audioFile, null, 2));
       // console.log('Video file:', JSON.stringify(videoFile, null, 2));
 
-      // console.log('Starting audio transcription');
+      console.log('Starting audio transcription');
       const transcript = await this.transcriptionService.transcribeAudio(audioFile.path);
       console.log('Transcription completed::', transcript);
 
       const token = req.user?.accessToken;
-      // console.log('User token:', token ? 'Present' : 'Missing');
+      console.log('User token:', token ? 'Present' : 'Missing');
 
       // Create response mutation
       console.log('Preparing GraphQL mutation for response creation');
@@ -184,12 +192,12 @@ export class VideoInterviewController {
         variables: createResponseVariables,
       });
 
-      // console.log('Sending GraphQL mutation for response creation::', graphqlQueryObjForCreationOfResponse);
+      console.log('Sending GraphQL mutation for response creation::', graphqlQueryObjForCreationOfResponse);
       const responseResult = (await axiosRequest(graphqlQueryObjForCreationOfResponse)).data;
       // console.log('Response creation result:', JSON.stringify(responseResult, null, 2));
 
       // Update AI Interview Status mutation
-      // console.log('Preparing GraphQL mutation for status update');
+      console.log('Preparing GraphQL mutation for status update');
       const updateStatusMutation = `
         mutation UpdateOneAIInterviewStatus($idToUpdate: ID!, $input: AIInterviewStatusUpdateInput!) {
           updateAIInterviewStatus(id: $idToUpdate, data: $input) {
@@ -212,20 +220,20 @@ export class VideoInterviewController {
         query: updateStatusMutation,
         variables: updateStatusVariables,
       });
-      // console.log('graphqlQueryObjForUpdationForStatus::', graphqlQueryObjForUpdationForStatus);
+      console.log('graphqlQueryObjForUpdationForStatus::', graphqlQueryObjForUpdationForStatus);
 
       // console.log('Sending GraphQL mutation for status update');
       const statusResult = (await axiosRequest(graphqlQueryObjForUpdationForStatus)).data;
       // console.log('Status update result:', JSON.stringify(statusResult, null, 2));
 
-      // console.log('Preparing response');
+      console.log('Preparing response');
       const response = {
         response: responseResult.createResponse,
         status: statusResult.updateAIInterviewStatus,
         videoFile: videoFile.filename,
         audioFile: audioFile.filename,
       };
-      // console.log('Final response:', JSON.stringify(response, null, 2));
+      console.log('Final response:', JSON.stringify(response, null, 2));
 
       return response;
     } catch (error) {
@@ -237,6 +245,28 @@ export class VideoInterviewController {
     }
   }
 
+
+  private async convertToWebM(inputPath: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const outputPath = inputPath.replace(path.extname(inputPath), '.webm');
+      ffmpeg(inputPath)
+        .outputOptions('-c:v libvpx-vp9')
+        .outputOptions('-crf 30')
+        .outputOptions('-b:v 0')
+        .outputOptions('-b:a 128k')
+        .outputOptions('-c:a libopus')
+        .save(outputPath)
+        .on('end', () => {
+          fs.unlinkSync(inputPath);  // Remove the original file
+          resolve(outputPath);
+        })
+        .on('error', (err) => {
+          reject(new Error(`Error converting video: ${err.message}`));
+        });
+    });
+  }
+
+  
   @Post('get-questions')
   async getQuestions(@Req() req, @Body() interviewData: { aIInterviewId: string }) {
     const token = req.interviewId;
@@ -287,8 +317,8 @@ export class VideoInterviewController {
         interviewCompleted
         updatedAt
       }
-    }
-  `;
+    }`;
+  
     console.log('This is the feedback obj', feedbackData);
     const updateStatusVariables = {
       idToUpdate: feedbackData.interviewId,
@@ -296,16 +326,30 @@ export class VideoInterviewController {
         feedback: feedbackData.feedback,
       },
     };
+    
     const graphqlQueryObjForUpdationForStatus = JSON.stringify({
       query: updateStatusMutation,
       variables: updateStatusVariables,
     });
-    console.log('graphqlQueryObjForUpdationForStatus::', graphqlQueryObjForUpdationForStatus);
-
-    const response = await axiosRequest(graphqlQueryObjForUpdationForStatus);
-    return { status: response.status };
+  
+    try {
+      const response = await axiosRequest(graphqlQueryObjForUpdationForStatus);
+      
+      // Just send a simple response object instead of the full response
+      return {
+        statusCode: 200,
+        message: 'Feedback updated successfully'
+      };
+      
+    } catch (error) {
+      // Handle the error without trying to serialize the full error object
+      throw new HttpException({
+        statusCode: 500,
+        message: 'Failed to update feedback'
+      }, 500);
+    }
   }
-
+  
   @Post('get-interview-details')
   async getInterViewDetails(@Req() req: any): Promise<GetInterviewDetailsResponse> {
     if (req.method === 'POST') {
@@ -348,6 +392,7 @@ export class VideoInterviewController {
                         name
                     }
                   }
+                  id
                   people{
                     id
                     name{
@@ -418,15 +463,16 @@ export class VideoInterviewController {
       });
       try {
         const response = await axiosRequest(graphqlQueryObjForaIInterviewQuestions);
-        // console.log("REhis response:", response.data.data)
+        console.log("REhis response:", response.data.data)
         responseFromInterviewRequests =  response.data;
       } catch (error) {
+        console.log("There an error:", error)
         console.error('Error fetching interview data:', error);
         responseFromInterviewRequests = null
       }
 
       const videoInterviewId = responseFromInterviewRequests?.data?.aIInterviewStatuses?.edges[0]?.node?.aIInterview?.id;
-      // console.log("Received videoInterviewId:", videoInterviewId);
+      console.log("Received videoInterviewId:", videoInterviewId);
       const videoInterviewIntroductionAttachmentDataQuery = JSON.stringify({
         query: `query FindManyAttachments($filter: AttachmentFilterInput, $orderBy: [AttachmentOrderByInput], $lastCursor: String, $limit: Int) {
           attachments(
@@ -459,7 +505,7 @@ export class VideoInterviewController {
         .map((edge: { node: { id: string; createdAt: string } }) => edge.node)
         .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
         .map(node => node.id);
-      // console.log("Received allQuestionIds:", allQuestionIds);
+      console.log("Received allQuestionIds:", allQuestionIds);
   
       if (!allQuestionIds || allQuestionIds.length === 0) {
         throw new Error("No question IDs found");

@@ -141,7 +141,7 @@ const createRouter = (isBillingEnabled?: boolean) =>
               element={<AIInterviewFlow interviewId={window.location.pathname} />}
             />
             <Route
-              path={`${AppPath.VideoInterviewReview}/:candidateId`}
+              path={`${AppPath.VideoInterview}/:candidateId`}
               element={<VideoInterviewResponseViewer interviewId={window.location.pathname} />}
             />
           </Route>
