@@ -29,6 +29,7 @@ export default class CandidateEngagementArx {
       candidateProfile: candidateProfileDataNodeObj?.candidates?.edges[0]?.node,
       candidateFirstName: candidateProfileDataNodeObj?.name?.firstName,
       phoneNumberFrom: candidateProfileDataNodeObj?.phone,
+      whatsappMessageType :candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.whatsappProvider || "application03",
       phoneNumberTo: recruiterProfile.phone,
       messages: [{ content: chatReply }],
       messageType: 'candidateMessage',
@@ -97,6 +98,7 @@ export default class CandidateEngagementArx {
       // executorResultObj: result,
       messageObj: chatHistory,
       candidateProfile: candidateNode,
+      whatsappMessageType :candidateNode?.whatsappProvider || "application03",
       candidateFirstName: personNode.name?.firstName,
       phoneNumberFrom: allDataObjects.recruiterProfile?.phone,
       phoneNumberTo: personNode.phone,
@@ -112,19 +114,12 @@ export default class CandidateEngagementArx {
     console.log("The number of sorted people::", sortedPeopleData.length)
     const minutesToWait = 2;
     const twoMinutesAgo = new Date(Date.now() - minutesToWait * 60 * 1000);
-      // return sortedPeopleData?.filter(edge => edge?.candidates?.edges?.length > 0 && edge?.candidates?.edges[0]?.node?.engagementStatus);
-      // THis is for when we want to engage people only after 3 minutes of receiving their response
       const filteredCandidatesToEngage = sortedPeopleData.filter(person => {
-        // Check if the person has candidates
         if (person?.candidates?.edges?.length > 0) {
             const candidate = person.candidates.edges[0].node;
-            // Check if the candidate has engagement status
             if (candidate.engagementStatus) {
-                // Check if the candidate has WhatsApp messages
                 if (candidate.whatsappMessages?.edges?.length > 0) {
-                    // Get the latest WhatsApp message
                     const latestMessage = candidate.whatsappMessages.edges[0].node;
-                    // Check if the latest message is older than 3 minutes
                     const messageDate = new Date(latestMessage.createdAt);
                     if (messageDate >= twoMinutesAgo) {
                         console.log("Candidate messaged less than "+ minutesToWait.toString() +" minutes ago::"+candidate.name);

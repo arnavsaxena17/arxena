@@ -27,6 +27,7 @@ export async function updateCandidateStatus(person: allDataObjects.PersonNode, s
   const candidateProfileObj = person?.candidates?.edges[0]?.node;
   let UpdateCandidateMessageObj: allDataObjects.candidateChatMessageType = {
     // executorResultObj: {},
+    whatsappMessageType: "",
     candidateProfile: person?.candidates?.edges[0]?.node,
     candidateFirstName: person?.name?.firstName,
     phoneNumberFrom: person?.phone,
@@ -49,6 +50,7 @@ export async function scheduleCandidateInterview(person: allDataObjects.PersonNo
   const candidateProfileObj = person?.candidates?.edges[0]?.node;
   let whatappUpdateMessageObj: allDataObjects.candidateChatMessageType = {
     // executorResultObj: {},
+    whatsappMessageType: "",
     candidateProfile: person?.candidates?.edges[0]?.node,
     candidateFirstName: person?.name?.firstName,
     phoneNumberFrom: person?.phone,
