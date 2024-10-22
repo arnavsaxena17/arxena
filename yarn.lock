@@ -17331,6 +17331,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/fluent-ffmpeg@npm:^2.1.26":
+  version: 2.1.26
+  resolution: "@types/fluent-ffmpeg@npm:2.1.26"
+  dependencies:
+    "@types/node": "npm:*"
+  checksum: 10c0/bc5a532b0fd4cab8c42e6980f1f2317c19a7be11537e5e278f8291cddcbedc54f6822770d769d6aa2630a5ec03cbe2003d57700fae191d89c5de525a3c968ced
+  languageName: node
+  linkType: hard
+
 "@types/geojson@npm:*":
   version: 7946.0.14
   resolution: "@types/geojson@npm:7946.0.14"
@@ -17924,12 +17933,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/multer@npm:^1.4.11":
-  version: 1.4.11
-  resolution: "@types/multer@npm:1.4.11"
+"@types/multer@npm:^1.4.12":
+  version: 1.4.12
+  resolution: "@types/multer@npm:1.4.12"
   dependencies:
     "@types/express": "npm:*"
-  checksum: 10c0/ace8e9f5ac7d2d7f6e0c35b790504f582a2f82a84cc06a7b90315527599b95256595bc0bb5bba60220c20a558554f0c21b96b94848b885987ab69512a3a9865e
+  checksum: 10c0/1250a32a66b7c5929cc5b005dae4ad0768ded9b6b52ba6f90931ff39b4ed775b09a0fd9d880f0836bcac16a9a7febed6a479c6bf108a52a244c4c53badb82a7b
   languageName: node
   linkType: hard
 
@@ -49903,6 +49912,7 @@ __metadata:
     "@types/dompurify": "npm:^3.0.5"
     "@types/express": "npm:^4.17.13"
     "@types/facepaint": "npm:^1.2.5"
+    "@types/fluent-ffmpeg": "npm:^2.1.26"
     "@types/graphql-fields": "npm:^1.3.6"
     "@types/graphql-upload": "npm:^8.0.12"
     "@types/jest": "npm:^29.5.11"
@@ -49925,7 +49935,7 @@ __metadata:
     "@types/lodash.upperfirst": "npm:^4.3.7"
     "@types/luxon": "npm:^3.3.0"
     "@types/ms": "npm:^0.7.31"
-    "@types/multer": "npm:^1.4.11"
+    "@types/multer": "npm:^1.4.12"
     "@types/node": "npm:18.19.26"
     "@types/nodemailer": "npm:^6.4.14"
     "@types/passport-google-oauth20": "npm:^2.0.11"

@@ -13,7 +13,10 @@ packages/twenty-server/FileUploads/*
 .nx/cache
 .env
 .env.local
-
+dump.sql
+migrate_remote_tables.sh
+person_schema.sql
+*.sql
 .pnp.*
 .yarn/*
 !.yarn/patches

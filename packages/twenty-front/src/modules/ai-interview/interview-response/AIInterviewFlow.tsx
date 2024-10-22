@@ -24,40 +24,41 @@ const AIInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) => 
   const fetchInterviewData = async () => {
     try {
       const response = await axios.post(`${process.env.REACT_APP_SERVER_BASE_URL}/video-interview/get-interview-details`, { interviewId });
-      console.log('This is the response:', response);
+      console.log('This is the response to fetch interview data:', response);
       const responseObj:InterviewResponseTypes.GetInterviewDetailsResponse = response.data;
       if (responseObj) {
-        console.log("responseObj:", responseObj)
+        console.log("responseObj to fetch interview data:", responseObj)
         const fetchedData:any = response.data.responseFromInterviewRequests.data;
-        console.log("fetchedData:", fetchedData)
+        console.log("fetchedData to fetch interview data:", fetchedData)
+        // debugger;
         const formattedData: InterviewResponseTypes.InterviewData = {
-          name: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.name,
-          id: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.id,
+          name: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.name || "",
+          id: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.id || "",
           candidate: {
-            id: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.candidate?.id,
+            id: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.candidate?.id || "",
             jobs: {
-              jobId: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.candidate?.jobs?.id,
-              name: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.candidate?.jobs?.name,
-              recruiterId: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.candidate?.jobs?.recruiterId,
-              companyName: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.candidate?.jobs?.companies?.name,
+              jobId: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.candidate?.jobs?.id || "",
+              name: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.candidate?.jobs?.name || "",
+              recruiterId: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.candidate?.jobs?.recruiterId || "",
+              companyName: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.candidate?.jobs?.companies?.name || "",
             },
             people: {
               name: {
-                firstName: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.candidate?.people?.name?.firstName,
-                lastName: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.candidate?.people?.name?.lastName,
+                firstName: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.candidate?.people?.name?.firstName || "",
+                lastName: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.candidate?.people?.name?.lastName || "",
               },
-              email: fetchedData?.candidate?.people?.email,
-              phone: fetchedData?.candidate?.people?.phone,
+              email: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.candidate?.people?.email || "",
+              phone: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.candidate?.people?.phone || "",
             },
           },
           aIInterview: {
-            name: fetchedData.aIInterviewStatuses.edges[0].node?.aIInterview?.name,
-            introduction: fetchedData.aIInterviewStatuses.edges[0].node.aIInterview.introduction,
-            instructions: fetchedData.aIInterviewStatuses.edges[0].node.aIInterview.instructions,
-            aIInterviewQuestions: fetchedData.aIInterviewStatuses.edges[0].node.aIInterview.aIInterviewQuestions,
+            name: fetchedData.aIInterviewStatuses.edges[0].node?.aIInterview?.name || "",
+            introduction: fetchedData.aIInterviewStatuses.edges[0].node.aIInterview.introduction || "",
+            instructions: fetchedData.aIInterviewStatuses.edges[0].node.aIInterview.instructions || "",
+            aIInterviewQuestions: fetchedData.aIInterviewStatuses.edges[0].node.aIInterview.aIInterviewQuestions || "",
           },
         };
-        
+        console.log("setting formatted interview data:", formattedData)
         setInterviewData(formattedData);
         setintroductionVideoData(responseObj?.videoInterviewAttachmentResponse);
         setquestionsVideoData(Array.isArray(responseObj?.questionsAttachments) ? responseObj.questionsAttachments : []);
@@ -84,7 +85,12 @@ const AIInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) => 
         return nextIndex;
       });
       console.log('This is process.env.REACT_APP_SERVER_BASE_URL:', process.env.REACT_APP_SERVER_BASE_URL);
+      console.log("This is the appending of the rinterview dat:", interviewData)
       responseData.append('interviewData', JSON.stringify(interviewData));
+      responseData.forEach((value, key) => {
+        console.log("key for response data:", key, "::",value);
+      });
+      // console.log("Final resposne data being setnt:", responseData)
       const response = await axios.post(process.env.REACT_APP_SERVER_BASE_URL + '/video-interview/submit-response', responseData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
