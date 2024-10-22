@@ -210,7 +210,7 @@ export class VideoInterviewController {
       `;
 
       const updateStatusVariables = {
-        idToUpdate: interviewData.id,
+        idToUpdate: interviewData.id.replace("/video-interview/", ""),
         input: {
           interviewStarted: true,
           interviewCompleted: responseData.isLastQuestion,
@@ -266,7 +266,7 @@ export class VideoInterviewController {
     });
   }
 
-  
+
   @Post('get-questions')
   async getQuestions(@Req() req, @Body() interviewData: { aIInterviewId: string }) {
     const token = req.interviewId;
@@ -321,7 +321,7 @@ export class VideoInterviewController {
   
     console.log('This is the feedback obj', feedbackData);
     const updateStatusVariables = {
-      idToUpdate: feedbackData.interviewId,
+      idToUpdate: feedbackData.interviewId.replace("/video-interview/", ""),
       input: {
         feedback: feedbackData.feedback,
       },
@@ -331,10 +331,11 @@ export class VideoInterviewController {
       query: updateStatusMutation,
       variables: updateStatusVariables,
     });
+    console.log("This is the graphqlQueryObjForUpdationForStatus::", graphqlQueryObjForUpdationForStatus);
   
     try {
       const response = await axiosRequest(graphqlQueryObjForUpdationForStatus);
-      
+      console.log('Feedback updated successfully:', response.data);
       // Just send a simple response object instead of the full response
       return {
         statusCode: 200,

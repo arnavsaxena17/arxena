@@ -16,12 +16,10 @@ import {
 export const EndInterviewPage: React.FC<{ onSubmit: (feedback: string) => void }> = ({ onSubmit }) => {
   const [feedback, setFeedback] = useState('');
   const [submitted, setSubmitted] = useState(false);
-
   const handleSubmit = () => {
     onSubmit(feedback);
     setSubmitted(true);
   };
-
   return (
     <StyledContainer>
       <StyledLeftPanel>
