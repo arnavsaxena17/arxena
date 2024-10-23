@@ -28,7 +28,7 @@ export class OpenAIArxMultiStepClient {
     processorType = 'candidate-facing';
     mostRecentMessageArr = await this.runCandidateFacingAgentsAlongWithToolCalls(mostRecentMessageArr, personNode, stage, processorType, isChatEnabled);
     console.log('After running the stage and candidate facing agents, the mostRecentMessageArr is::', mostRecentMessageArr);
-    processorType = 'system-facing';
+    // processorType = 'system-facing';
     return mostRecentMessageArr;
   }
   async checkIfResponseMessageSoundsHumanLike(responseMessage:{content:string|null}){
