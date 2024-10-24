@@ -8,9 +8,9 @@ import axios from 'axios';
 
 const baseUrl = 'http://localhost:' + process.env.PORT; // Base URL of your GraphQL server
 export class WhatsappAPISelector {
-  async sendWhatsappMessage(whatappUpdateMessageObj: allDataObjects.candidateChatMessageType, personNode: allDataObjects.PersonNode, mostRecentMessageArr: allDataObjects.ChatHistoryItem[]) {
+  async sendWhatsappMessage(whatappUpdateMessageObj: allDataObjects.candidateChatMessageType, personNode: allDataObjects.PersonNode, mostRecentMessageArr: allDataObjects.ChatHistoryItem[], chatControl: allDataObjects.chatControls) {
     if (process.env.WHATSAPP_API === 'facebook') {
-      const response = await new FacebookWhatsappChatApi().sendWhatsappMessageVIAFacebookAPI(whatappUpdateMessageObj, personNode, mostRecentMessageArr);
+      const response = await new FacebookWhatsappChatApi().sendWhatsappMessageVIAFacebookAPI(whatappUpdateMessageObj, personNode, mostRecentMessageArr, chatControl);
     } else if (process.env.WHATSAPP_API === 'baileys') {
       await sendWhatsappMessageVIABaileysAPI(whatappUpdateMessageObj, personNode, mostRecentMessageArr);
     } else {

@@ -12,7 +12,7 @@ const rl = readline.createInterface({
 });
 
 export default class CandidateEngagementArx {
-  async createAndUpdateCandidateStartChatChatMessage(chatReply: string, candidateProfileDataNodeObj: allDataObjects.PersonNode) {
+  async createAndUpdateCandidateStartChatChatMessage(chatReply: string, candidateProfileDataNodeObj: allDataObjects.PersonNode, chatControl) {
     // console.log("This is the candidate profile data node obj:", candidateProfileDataNodeObj);
     console.log('This is the chat reply in create And Update Candidate Start Chat Chat Message :', chatReply);
     const recruiterProfile = allDataObjects.recruiterProfile;
@@ -24,12 +24,18 @@ export default class CandidateEngagementArx {
     } else {
       chatHistory = candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.messageObj;
     }
+    let whatsappTemplate:string
+    if (chatControl === 'startChat') {
+      whatsappTemplate = "application03"
+    }
+    else{
+      whatsappTemplate = candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.whatsappProvider || 'application03'
+    }
     let whatappUpdateMessageObj: allDataObjects.candidateChatMessageType = {
-      // executorResultObj: {},
       candidateProfile: candidateProfileDataNodeObj?.candidates?.edges[0]?.node,
       candidateFirstName: candidateProfileDataNodeObj?.name?.firstName,
       phoneNumberFrom: candidateProfileDataNodeObj?.phone,
-      whatsappMessageType :candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.whatsappProvider || "application03",
+      whatsappMessageType :whatsappTemplate,
       phoneNumberTo: recruiterProfile.phone,
       messages: [{ content: chatReply }],
       messageType: 'candidateMessage',
@@ -45,9 +51,9 @@ export default class CandidateEngagementArx {
     return whatappUpdateMessageObj;
   }
 
-  async processCandidate(personNode: allDataObjects.PersonNode, engagementType: 'remind' | 'engage') {
+  async processCandidate(personNode: allDataObjects.PersonNode, chatControl: allDataObjects.chatControls) {
     // console.log('The edge is ::', edge);
-    console.log('Engagement Type:', engagementType, "for the candidate ::", personNode.name.firstName + " " + personNode.name.lastName);
+    console.log('Engagement Type:', "the candidate ::", personNode.name.firstName + " " + personNode.name.lastName);
     try {
       const candidateNode = personNode.candidates.edges[0].node;
       // console.log('This is candidate Node:', candidateNode);
@@ -58,7 +64,7 @@ export default class CandidateEngagementArx {
       if (mostRecentMessageArr?.length > 0) {
         console.log('Taking MULTI Step Client for - Prompt Engineering type:', process.env.PROMPT_ENGINEERING_TYPE);
         let chatAgent = new OpenAIArxMultiStepClient(personNode);
-        await chatAgent.createCompletion(mostRecentMessageArr, personNode, engagementType);
+        await chatAgent.createCompletion(mostRecentMessageArr, personNode, chatControl);
       }
       else{
         console.log("mostRecentMessageArr?.length is not greater than 0, hence no engagement:: (length)::", mostRecentMessageArr?.length)
@@ -92,13 +98,12 @@ export default class CandidateEngagementArx {
     return { status: 'success', message: 'Candidate engagement status updated successfully' };
   }
 
-  async updateChatHistoryObjCreateWhatsappMessageObj(wamId: string, personNode: allDataObjects.PersonNode, chatHistory: allDataObjects.ChatHistoryItem[]) {
+  async updateChatHistoryObjCreateWhatsappMessageObj(wamId: string, personNode: allDataObjects.PersonNode, chatHistory: allDataObjects.ChatHistoryItem[]): Promise<allDataObjects.candidateChatMessageType> {
     const candidateNode = personNode.candidates.edges[0].node;
-    const updatedChatHistoryObj = {
-      // executorResultObj: result,
+    const updatedChatHistoryObj: allDataObjects.candidateChatMessageType = {
       messageObj: chatHistory,
       candidateProfile: candidateNode,
-      whatsappMessageType :candidateNode?.whatsappProvider || "application03",
+      whatsappMessageType: candidateNode?.whatsappProvider || "application03",
       candidateFirstName: personNode.name?.firstName,
       phoneNumberFrom: allDataObjects.recruiterProfile?.phone,
       phoneNumberTo: personNode.phone,
@@ -148,9 +153,9 @@ export default class CandidateEngagementArx {
     console.log('Number of candidates to start chat ::', filteredCandidatesWhoHaveNoWhatsappHistory?.length);
     for (let i = 0; i < filteredCandidatesWhoHaveNoWhatsappHistory?.length; i++) {
       const chatReply = 'startChat';
+      const chatControl = 'startChat';
       const candidateProfileDataNodeObj = filteredCandidatesWhoHaveNoWhatsappHistory[i];
-
-      await new CandidateEngagementArx().createAndUpdateCandidateStartChatChatMessage(chatReply, candidateProfileDataNodeObj);
+      await new CandidateEngagementArx().createAndUpdateCandidateStartChatChatMessage(chatReply, candidateProfileDataNodeObj, chatControl);
 
     }
   }
@@ -168,7 +173,8 @@ export default class CandidateEngagementArx {
       console.log("This is the personNode?.candidates?.edges[0]?.node:: for which we will start engagement", personNode?.candidates?.edges[0]?.node?.name)
       await new FetchAndUpdateCandidatesChatsWhatsapps().updateEngagementStatusBeforeRunningEngageCandidates(personNode?.candidates?.edges[0]?.node?.id);
       console.log('Updated engagement status to false for candidate and going to process their candidature:', personNode?.name?.firstName);
-      await this.processCandidate(personNode, 'engage');
+      const chatControl = 'startChat'; //
+      await this.processCandidate(personNode, chatControl);
     }
   }
 
