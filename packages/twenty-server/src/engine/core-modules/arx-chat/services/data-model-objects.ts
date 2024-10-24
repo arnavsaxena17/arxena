@@ -8,6 +8,7 @@ export type ChatRole = 'system' | 'user' | 'tool' | 'assistant';
 export const statusesArray = ['SCREENING', "INTERESTED", "NOT_INTERESTED", "NOT_FIT",'CV_SENT',"CV_RECEIVED",'RECRUITER_INTERVIEW','CLIENT_INTERVIEW','NEGOTIATION'] as const;
 // 
 export type statuses = typeof statusesArray[number];
+export type chatControls = "startChat" | "videoInterview" | "engage"
 
 // export type statuses = 'SCREENING' | 'RECRUITER_INTERVIEW' | 'CV_SENT' | 'CLIENT_INTERVIEW' | 'NEGOTIATION';
 
