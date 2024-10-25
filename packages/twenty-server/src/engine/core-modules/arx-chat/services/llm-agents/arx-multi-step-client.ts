@@ -7,30 +7,27 @@ import CandidateEngagementArx from '../../services/candidate-engagement/check-ca
 import { WhatsappAPISelector } from '../../services/whatsapp-api/whatsapp-controls';
 import Anthropic from '@anthropic-ai/sdk';
 import { checkIfResponseMessageSoundsHumanLike } from './human-or-bot-type-response-classification'
+import {LLMProviders} from './llm-agents'
 export class OpenAIArxMultiStepClient {
   personNode: allDataObjects.PersonNode;
-  openAIclient: OpenAI;
-  anthropic: Anthropic;
+  LLMProviders: LLMProviders;
   constructor(personNode: allDataObjects.PersonNode) {
-    this.openAIclient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
     this.personNode = personNode;
-    this.anthropic = new Anthropic({
-      apiKey: process.env['ANTHROPIC_API_KEY'], 
-    });
+    this.LLMProviders = new LLMProviders();
   }
-  // THis is the entry point
   async createCompletion(mostRecentMessageArr: allDataObjects.ChatHistoryItem[],chatControl:allDataObjects.chatControls, isChatEnabled: boolean = true) {
     mostRecentMessageArr = await this.runAgentAlongWithToolCalls(mostRecentMessageArr, chatControl, isChatEnabled);
     console.log('After running the stage and candidate facing agents, the mostRecentMessageArr is::', mostRecentMessageArr);
     return mostRecentMessageArr;
   }
+
   async getHumanLikeResponseMessageFromLLM( mostRecentMessageArr: allDataObjects.ChatHistoryItem[], tools: any ): Promise<ChatCompletionMessage | null> {
     try {
       console.log("Going to get human like response from llm");
       const MAX_ATTEMPTS = 3;
       for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
         // @ts-ignore
-        const response = await this.openAIclient.chat.completions.create({ model: modelName, messages: mostRecentMessageArr, tools: tools, tool_choice: 'auto' }); 
+        const response = await this.LLMProviders.openAIclient.chat.completions.create({ model: modelName, messages: mostRecentMessageArr, tools: tools, tool_choice: 'auto' }); 
         const responseMessage = response.choices[0].message;
         console.log(`Response from attempt ${attempt}:`, response.choices[0]);
         if (!responseMessage.content) {
@@ -108,7 +105,7 @@ export class OpenAIArxMultiStepClient {
       }
       const tools = await new ToolsForAgents().getTools();
       // @ts-ignore
-      const response = await this.openAIclient.chat.completions.create({ model: modelName, messages: mostRecentMessageArr, tools: tools, tool_choice: 'auto' });
+      const response = await this.LLMProviders.openAIclient.chat.completions.create({ model: modelName, messages: mostRecentMessageArr, tools: tools, tool_choice: 'auto' });
       console.log('BOT_MESSAGE in runCandidateFacingAgentsAlongWithToolCalls_stage2 :', "at::", new Date().toString(), ' ::: ' ,JSON.stringify(responseMessage));
       mostRecentMessageArr.push(response.choices[0].message);
       let firstStageMessageArr = mostRecentMessageArr.slice(-1)
