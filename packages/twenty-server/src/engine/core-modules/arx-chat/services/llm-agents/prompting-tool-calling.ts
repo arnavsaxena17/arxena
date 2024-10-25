@@ -109,7 +109,8 @@ export class ToolsForAgents {
     If you do not have to respond, you will reply with "#DONTRESPOND#" exact string without any text around it.`
   }
 
-  async getSystemPrompt(personNode: allDataObjects.PersonNode) {
+  async getSystemPrompt(personNode: allDataObjects.PersonNode,chatControl:allDataObjects.chatControls) {
+    console.log("This is the chatControl:", chatControl)
     let receiveCV
     receiveCV = `If they have shared their interest after going through the JD, ask the candidate to share a copy of their updated CV prior to the meeting.
     If they say that you can take the CV from naukri, tell them that you would require a copy for records directly from them for candidate confirmation purposes.`

@@ -229,6 +229,8 @@ export const graphqlQueryToFindManyPeopleEngagedCandidates = `query FindManyPeop
                         }
                       }
                       engagementStatus
+                      startVideoInterviewChat
+                      startMeetingSchedulingChat
                       startChat
                       status
                       stopChat
@@ -297,6 +299,8 @@ export const graphqlQueryToFindManyPeopleEngagedCandidates = `query FindManyPeop
             }
           }
           startChat
+          startVideoInterviewChat
+          startMeetingSchedulingChat
           stopChat
         }
       }
@@ -428,6 +432,8 @@ export const graphqlToFindManyAnswers = `query FindManyAnswers($filter: AnswerFi
             updatedAt
             whatsappProvider
             startChat
+            startVideoInterviewChat
+            startMeetingSchedulingChat
             stopChat
           }
           id

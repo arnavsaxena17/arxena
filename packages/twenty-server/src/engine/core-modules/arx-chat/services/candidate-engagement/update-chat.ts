@@ -4,21 +4,16 @@ import { v4 } from 'uuid';
 import { axiosRequest } from '../../utils/arx-chat-agent-utils';
 import axios from 'axios';
 export class FetchAndUpdateCandidatesChatsWhatsapps {
-  async fetchPeopleToEngageByCheckingOnlyStartChat() {
+
+  async fetchSpecificPeopleToEngageBasedOnChatControl(chatControl: allDataObjects.chatControls): Promise<allDataObjects.PersonNode[]> {
     try {
       console.log('Fetching candidates to engage');
-      const candidates = await this.fetchAllCandidatesWithStartChatTrue();
-      console.log(`Fetched ${candidates?.length} candidates`);
-  
-      const candidatePeopleIds = candidates
-        ?.filter(c => c?.people?.id)
-        .map(c => c.people.id);
-  
+      const candidates = await this.fetchAllCandidatesWithSpecificChatControl(chatControl);
+      console.log("Fetched", candidates?.length, " candidates with chatControl", chatControl);
+      const candidatePeopleIds = candidates ?.filter(c => c?.people?.id) .map(c => c.people.id);
       console.log("Got a total of ", candidatePeopleIds?.length, "candidate ids");
-      // console.log("These are candidate ids:", candidateIds)
-  
       const people = await this.fetchAllPeopleByCandidatePeopleIds(candidatePeopleIds);
-      console.log(`Fetched ${people?.length} people in fetch all People`);
+      console.log("Fetched", people?.length ,"people in fetch all People", "with chatControl", chatControl);
       return people;
     } catch (error) {
       console.log("This is the error in fetchPeopleToEngageByCheckingOnlyStartChat", error);
@@ -26,66 +21,36 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
       throw error; // Re-throw the error to be handled by the caller
     }
   }
-  async fetchActiveCandidatesByJobId(jobId: string): Promise<string[]> {
-    let allCandidates: string[] = [];
-    let hasNextPage = true;
-    let endCursor: string | null = null;
-  
-    while (hasNextPage) {
-      const graphqlQueryObj = JSON.stringify({
-        query: allGraphQLQueries.graphqlToFetchActiveJob,
-        variables: { "limit": 30, "orderBy": [{"position": "AscNullsFirst"}], "filter": {"id": {"eq": jobId}}, "after": endCursor } });
-      try {
-        const response = await axiosRequest(graphqlQueryObj);
-        const jobData = response?.data?.data?.jobs?.edges[0]?.node;
-        const candidates = jobData?.candidates?.edges?.map(edge => edge?.node?.id);
-        allCandidates = allCandidates.concat(candidates);
-        hasNextPage = jobData?.candidates?.pageInfo?.hasNextPage;
-        endCursor = jobData?.candidates?.pageInfo?.endCursor;
-      } catch (error) {
-        console.error('Error fetching active candidates:', error);
-        hasNextPage = false;
-      }
-    }
-  
-    return allCandidates;
-  }
-  
-  async fetchAllChatsByJobId(jobId: string): Promise<{ [candidateId: string]: object[] }> {
-    const allChats: { [candidateId: string]: object[] } = {};
-    try {
-      const activeCandidates = await this.fetchActiveCandidatesByJobId(jobId);
-      for (const candidateId of activeCandidates) {
-        const candidateChats = await this.fetchAllWhatsappMessages(candidateId);
-        allChats[candidateId] = candidateChats;
-      }
-      
-      return allChats;
-    } catch (error) {
-      console.error('Error fetching all chats by job ID:', error);
-      return {};
-    }
-  }
-  
-
-  async fetchAllCandidatesWithStartChatTrue(): Promise<allDataObjects.Candidate[]> {
+  async fetchAllCandidatesWithSpecificChatControl(chatControl:allDataObjects.chatControls): Promise<allDataObjects.Candidate[]> {
     let allCandidates: allDataObjects.Candidate[] = [];
     let lastCursor: string | null = null;
+    let graphqlQueryObj;
     while (true) {
-      const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlToFetchAllCandidatesByStartChat, variables: {lastCursor, limit: 30, filter: {startChat: {eq: true},stopChat: { eq: false }}}});
+      if (chatControl === "startChat"){
+        graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlToFetchAllCandidatesByStartChat, variables: {lastCursor, limit: 30, filter: {startChat: {eq: true}, stopChat: { eq: false }, startVideoInterviewChat: {eq: false}}}});
+      }
+      if (chatControl === "allStartedAndStoppedChats"){
+        graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlToFetchAllCandidatesByStartChat, variables: {lastCursor, limit: 30, filter: {startChat: {eq: true}}}});
+      }
+      else if (chatControl === "startVideoInterviewChat"){
+        graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlToFetchAllCandidatesByStartChat, variables: {lastCursor, limit: 30, filter: {startVideoInterviewChat: {eq: true}, stopChat: { eq: false }}}});
+      }
+      else if (chatControl === "startMeetingSchedulingChat"){
+        graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlToFetchAllCandidatesByStartChat, variables: {lastCursor, limit: 30, filter: {startMeetingSchedulingChat: {eq: true}, startVideoInterviewChat: {eq: true}, stopChat: { eq: false }}}});
+      }
       const response = await axiosRequest(graphqlQueryObj);
-      // console.log("Response from fetchAllCandidatesWithStartChatTrue:", response.data);
       if (response.data.errors) {
         console.log("Errors in response:", response.data.errors);
       }
       const edges = response?.data?.data?.candidates?.edges || [];
-      console.log("Number of candidate edges:", edges?.length)
       if (!edges || edges?.length === 0) break;
       allCandidates = allCandidates?.concat(edges.map((edge: any) => edge.node));
       lastCursor = edges[edges.length - 1].cursor;
     }
+    console.log("Number of candidates from fetchedcandidates:", allCandidates?.length, "for chatControl", chatControl)
     return allCandidates;
   }
+
   async fetchAllPeopleByCandidatePeopleIds(candidatePeopleIds: string[]): Promise<allDataObjects.PersonNode[]> {
     let allPeople: allDataObjects.PersonNode[] = [];
     let lastCursor: string | null = null;
@@ -99,67 +64,10 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
     }
     return allPeople;
   }
-  async fetchAllPeople() {
-    let allPeople = [];
-    let lastCursor = null;
-    while (true) {
-      try {
-        const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindManyPeopleEngagedCandidates, variables: { "limit": 30, "lastCursor": lastCursor } });
-        const response = await axiosRequest(graphqlQueryObj);
-        const peopleData = response?.data?.data?.people;
-        if (!peopleData || !peopleData?.edges || peopleData?.edges?.length === 0) {
-          console.log("No more data to fetch.");
-          break;
-        }
-        const newPeople = peopleData?.edges?.map(edge => edge?.node);
-        allPeople = allPeople?.concat(newPeople);
-        lastCursor = peopleData?.edges[peopleData?.edges?.length - 1].cursor;
-        if (newPeople.length < 30) {  // Assuming 1000 is the maximum limit per request
-          break;
-        }
-      } catch (error) {
-        console.error('Error fetching people:', error);
-        break;
-      }
-    }
-    return allPeople;
-  }
-
-  async fetchAllPeopleWithStartChatTrue() {
-    let allPeople = [];
-    let allCandidates: allDataObjects.Candidate[] = [];
-    let lastCursorCandidates: string | null = null;
-    while (true) {
-
-      const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlToFetchAllCandidatesByStartChat, variables: {"lastCursor": lastCursorCandidates, limit: 30, filter: {startChat: {eq: true}}}});
-      const response = await axiosRequest(graphqlQueryObj);
-      if (response.data.errors) {
-        console.log("Errors in response:", response.data.errors);
-      }
-      const edges = response?.data?.data?.candidates?.edges;
-      console.log("Number of edges:", edges?.length)
-      if (!edges || edges?.length === 0) break;
-      allCandidates = allCandidates?.concat(edges.map((edge: any) => edge.node));
-      lastCursorCandidates = edges[edges.length - 1].cursor;
-    }
-    const allCandidatePeopleIds = allCandidates.map(candidate => candidate.people.id);
-    console.log("Candidates whose start chat is true:", allCandidatePeopleIds.length)
-    let lastCursorPeople: string | null = null;
-    while (true) {
-      const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindManyPeopleEngagedCandidates, variables: {filter: {id: {in: allCandidatePeopleIds}}, "lastCursor": lastCursorPeople }});
-      const response = await axiosRequest(graphqlQueryObj);
-      const edges = response?.data?.data?.people?.edges;
-      if (!edges || edges?.length === 0) break;
-      allPeople = allPeople.concat(edges.map((edge: any) => edge?.node));
-      lastCursorPeople = edges[edges.length - 1].cursor;
-    }
-    console.log("Number of people for whom start chat is true:", allPeople.length);
-    return allPeople
-  }
-
-  async fetchAllWhatsappMessages(candidateId: string): Promise<allDataObjects.WhatsAppMessagesEdge[]> {
+  
+  async fetchAllWhatsappMessages(candidateId: string): Promise<allDataObjects.MessageNode[]> {
     console.log("Fetching all whatsapp messages for candidate ID:", candidateId);
-    let allWhatsappMessages: allDataObjects.WhatsAppMessagesEdge[] = [];
+    let allWhatsappMessages: allDataObjects.MessageNode[] = [];
     let lastCursor = null;
     while (true) {
       try {
@@ -215,41 +123,6 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
   }
   
   
-
-  
-  // async fetchCandidatesToEngage(limit: number) {
-  //   console.log("Limit:", limit)
-  //   let allCandidates = new Map();
-  //   let lastCursor = null;
-  //   let hasNextPage = true;
-  //   let numberLoops = 0;
-  //   while (allCandidates.size < limit && hasNextPage) {
-  //     numberLoops++;
-  //     const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindManyPeopleEngagedCandidates, variables: {limit: 60, lastCursor: lastCursor, orderBy: { position: "DescNullsFirst" }, } });
-  //     // console.log("GrahqlQueryObj:", graphqlQueryObj)
-  //     try {
-  //       const response = await axiosRequest(graphqlQueryObj);
-  //       // console.log("Pringint :", response.data.data)
-  //       const data = response.data.data.people;
-  //       console.log("fetchCandidatesToEngage Data edges length:", data.edges.length)
-  //       data.edges.forEach(edge => {
-  //         const candidate = edge.node;
-  //         if (!allCandidates.has(candidate.id)) {
-  //           allCandidates.set(candidate.id, candidate);
-  //         }
-  //       });
-  //       // console.log("In this case the size of allCandidates is:", data.edges.length);
-  //       lastCursor = data.edges[data.edges.length - 1]?.cursor;
-  //       hasNextPage = data.edges.length === 30;
-  //     } catch (error) {
-  //       console.log("There is an erorr in fetchCandidatesToEngage::", error, "data::");
-  //     }
-  //   }
-  //   console.log("Number of loops:", numberLoops);
-  //   console.log("Number of candidates:", allCandidates.size);
-  //   return Array.from(allCandidates.values()).slice(0, limit);  // Ensure we only return the requested number of results
-  // }
-
   async getPersonDetailsByPhoneNumber(phoneNumber: string) {
     console.log('Trying to get person details by phone number:', phoneNumber);
     const graphVariables = { filter: { phone: { ilike: '%' + phoneNumber + '%' } }, orderBy: { position: 'AscNullsFirst' } };
@@ -316,6 +189,8 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
           email: personWithActiveJob?.node?.email,
           input: userMessage?.messages[0]?.content,
           startChat: activeJobCandidateObj?.node?.startChat,
+          startMeetingSchedulingChat: activeJobCandidateObj?.node?.startMeetingSchedulingChat,
+          startVideoInterviewChat: activeJobCandidateObj?.node?.startVideoInterviewChat,
           stopChat: activeJobCandidateObj?.node?.stopChat,
           whatsappMessages: activeJobCandidateObj?.node?.whatsappMessages,
           status: activeJobCandidateObj?.node?.status,
@@ -335,55 +210,6 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
       return allDataObjects.emptyCandidateProfileObj;
     }
   }
-
-  // async getCandidateInformationToSendMessageTo(userMessage: allDataObjects.chatMessageType) {
-  //   // Get the candidate information from the user message
-  //   const graphVariables = { filter: { phone: { ilike: '%' + userMessage.phoneNumberTo + '%' } }, orderBy: { position: 'AscNullsFirst' } };
-  //   try {
-  //     const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindPeopleByPhoneNumber, variables: graphVariables });
-  //     const response = await axiosRequest(graphqlQueryObj);
-  //     const candidateDataObjs = response.data?.data?.people?.edges[0]?.node?.candidates?.edges;
-  //     console.log('This is the number of candidates', candidateDataObjs?.length);
-  //     const personWithActiveJob = response?.data?.data?.people?.edges?.find((person: { node: { candidates: { edges: any[] } } }) => person?.node?.candidates?.edges?.some(candidate => candidate?.node?.jobs?.isActive));
-  //     const candidateProfileObj: allDataObjects.CandidateNode = {
-  //       name: personWithActiveJob?.node?.name?.firstName,
-  //       id: candidateDataObjs?.node?.id,
-  //       jobs: {
-  //         name: candidateDataObjs?.node?.jobs?.name,
-  //         id: candidateDataObjs?.node?.jobs?.id,
-  //         recruiterId: candidateDataObjs?.node?.jobs?.recruiterId,
-  //         companies: {
-  //           name: candidateDataObjs?.node?.jobs?.companies?.name,
-  //           companyId: candidateDataObjs?.node?.jobs?.companies?.id,
-  //           domainName: candidateDataObjs?.node?.jobs?.companies?.domainName,
-  //           descriptionOneliner: candidateDataObjs?.node?.jobs?.companies?.descriptionOneliner,
-  //         },
-  //         jobLocation: candidateDataObjs?.node?.jobs?.jobLocation,
-  //         jobCode: candidateDataObjs?.node?.jobs?.jobCode,
-  //         whatsappMessages: candidateDataObjs?.node?.jobs?.whatsappMessages,
-  //       },
-  //       engagementStatus: candidateDataObjs?.node?.engagementStatus,
-  //       phoneNumber: personWithActiveJob?.node?.phone,
-  //       email: personWithActiveJob?.node?.email,
-  //       status:personWithActiveJob.node.status,
-  //       input: userMessage?.messages[0]?.content,
-  //       startChat: candidateDataObjs?.node?.startChat,
-  //       whatsappMessages: candidateDataObjs?.node?.whatsappMessages,
-  //       // *! TO CHECK LATER
-  //       emailMessages: {
-  //         edges: candidateDataObjs?.node?.emailMessages?.edges,
-  //       },
-  //       candidateReminders: {
-  //         edges: candidateDataObjs?.node?.candidateReminders?.edges,
-  //       },
-  //     };
-  //     return candidateProfileObj;
-  //   } catch (error) {
-  //     console.log('Getting an error and returning empty candidate profile objeect:', error);
-  //     return allDataObjects.emptyCandidateProfileObj;
-  //   }
-  // }
-
   async fetchQuestionsByJobId(jobId: string): Promise<{ questionIdArray: { questionId: string; question: string }[]; questionArray: string[] }> {
     console.log("Going to fetch questions for job id:", jobId)
     const data = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindManyQuestionsByJobId, variables: { filter: { jobsId: { in: [`${jobId}`] } }, orderBy: { position: 'DescNullsFirst' } } });
@@ -528,6 +354,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
   }
 
   async updateEngagementStatusBeforeRunningEngageCandidates(candidateId: string) {
+    
     const updateCandidateObjectVariables = { idToUpdate: candidateId, input: { engagementStatus: false } };
     const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToUpdateCandidateEngagementStatus, variables: updateCandidateObjectVariables });
     try {

@@ -50,8 +50,8 @@ export class ArxChatEndpoint {
     const personObj: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(request.body.phoneNumberFrom);
     const personCandidateNode = personObj?.candidates?.edges[0]?.node;
     // const messagesList = personCandidateNode?.whatsappMessages?.edges;
-    const whatsappMessagesEdges: allDataObjects.WhatsAppMessagesEdge[] = await new FetchAndUpdateCandidatesChatsWhatsapps().fetchAllWhatsappMessages(personCandidateNode.id);
-    const messagesList: allDataObjects.MessageNode[] = whatsappMessagesEdges.map(edge => edge.node);
+    const messagesList: allDataObjects.MessageNode[] = await new FetchAndUpdateCandidatesChatsWhatsapps().fetchAllWhatsappMessages(personCandidateNode.id);
+    // const messagesList: allDataObjects.MessageNode[] = whatsappMessagesEdges.map(edge => edge?.node);
 
     console.log('Current Messages list:', messagesList);
 
@@ -73,8 +73,7 @@ export class ArxChatEndpoint {
     try {
       const personCandidateNode = personObj?.candidates?.edges[0]?.node;
       // const messagesList = personCandidateNode?.whatsappMessages?.edges;
-      const whatsappMessagesEdges: allDataObjects.WhatsAppMessagesEdge[] = await new FetchAndUpdateCandidatesChatsWhatsapps().fetchAllWhatsappMessages(personCandidateNode.id);
-      const messagesList: allDataObjects.MessageNode[] = whatsappMessagesEdges.map(edge => edge.node);  
+      const messagesList: allDataObjects.MessageNode[] = await new FetchAndUpdateCandidatesChatsWhatsapps().fetchAllWhatsappMessages(personCandidateNode.id);
       let mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = new CandidateEngagementArx().getMostRecentMessageFromMessagesList(messagesList);
       const isChatEnabled: boolean = false;
       if (mostRecentMessageArr?.length > 0) {
@@ -107,7 +106,8 @@ export class ArxChatEndpoint {
   async getSystemPrompt(@Req() request: any): Promise<object> {
     console.log('JSON.string', JSON.stringify(request.body));
     const personObj: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(request.body.phoneNumber);
-    const systemPrompt = await new ToolsForAgents().getSystemPrompt(personObj)
+    const chatControl = 'startChat';
+    const systemPrompt = await new ToolsForAgents().getSystemPrompt(personObj, chatControl)
     console.log("This is the system prompt::", systemPrompt)
     return {"system_prompt":systemPrompt};
   }
@@ -156,7 +156,8 @@ export class ArxChatEndpoint {
     const chatMessages = personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges;
     let chatHistory = chatMessages[0]?.node?.messageObj || [];
     if (chatReply === 'startChat' && chatMessages.length === 0) {
-      const SYSTEM_PROMPT = await new ToolsForAgents().getSystemPrompt(personObj);
+      const chatControl = 'startChat';
+      const SYSTEM_PROMPT = await new ToolsForAgents().getSystemPrompt(personObj, chatControl);
       chatHistory.push({ role: 'system', content: SYSTEM_PROMPT });
       chatHistory.push({ role: 'user', content: 'startChat' });
     } else {
@@ -260,7 +261,8 @@ export class ArxChatEndpoint {
   @Get('get-candidates-and-chats')
   @UseGuards(JwtAuthGuard)
   async getCandidatesAndChats(@Req() request: any): Promise<object> {
-    const allPeople = await new FetchAndUpdateCandidatesChatsWhatsapps().fetchAllPeopleWithStartChatTrue()
+    // const allPeople = await new FetchAndUpdateCandidatesChatsWhatsapps().fetchAllPeopleWithStartChatTrue()
+    const allPeople = await new FetchAndUpdateCandidatesChatsWhatsapps().fetchSpecificPeopleToEngageBasedOnChatControl("allStartedAndStoppedChats");
     console.log("All people length:", allPeople?.length)
     return allPeople
   }
