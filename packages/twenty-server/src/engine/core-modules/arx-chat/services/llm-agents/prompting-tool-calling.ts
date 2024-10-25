@@ -178,24 +178,7 @@ export class ToolsForAgents {
     return REMINDER_SYSTEM_PROMPT;
   }
 
-  async getCandidateFacingSystemPromptBasedOnStage(personNode: allDataObjects.PersonNode, stage: string) {
-    if (stage == 'remind_candidate') {
-      return await this.getReminderSystemPrompt();
-    } else {
-      const systemPrompt = await this.getSystemPrompt(personNode);
-      // const updatedSystemPromptWithStagePrompt = systemPrompt.replace('##STAGE_PROMPT', stage);
-      const updatedCandidatePromptWithStagePrompt = systemPrompt;
-      // console.log('Updated Candidate Prompt ::', updatedCandidatePromptWithStagePrompt);
-      return updatedCandidatePromptWithStagePrompt;
-    }
-  }
 
-  async getSystemFacingSystemPromptBasedOnStage(personNode: allDataObjects.PersonNode, stage: string) {
-    const systemPrompt = await this.getSystemPrompt(personNode);
-    const updatedSystemPromptWithStagePrompt = systemPrompt.replace('##STAGE_PROMPT', stage);
-    console.log('Updated System Prompt ::', updatedSystemPromptWithStagePrompt);
-    return updatedSystemPromptWithStagePrompt;
-  }
 
   async getStageWiseActivity() {
     const stageWiseActions = {
@@ -345,11 +328,8 @@ export class ToolsForAgents {
     return 'scheduleMeeting the candidate meeting.';
   }
 
-  async getCandidateFacingToolsByStage(stage: string) {
+  async getTools() {
     let tools;
-    if (stage == 'remind_candidate') {
-      tools = this.getTimeManagementTools();
-    } else {
       tools = [
         {
           type: 'function',
@@ -459,7 +439,6 @@ export class ToolsForAgents {
           },
         },
       ];
-    }
     return tools;
   }
 
@@ -484,7 +463,9 @@ export class ToolsForAgents {
       },
     ];
   }
-  async getSystemFacingToolsByStage(stage: string) {
+
+
+  async getSystemFacingToolsByStage() {
     const tools = [
       {
         type: 'function',
