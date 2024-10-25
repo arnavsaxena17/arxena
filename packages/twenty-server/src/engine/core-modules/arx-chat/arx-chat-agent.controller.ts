@@ -5,6 +5,7 @@ import { FacebookWhatsappChatApi } from './services/whatsapp-api/facebook-whatsa
 import CandidateEngagementArx from './services/candidate-engagement/check-candidate-engagement';
 import { IncomingWhatsappMessages } from './services/whatsapp-api/incoming-messages';
 import { FetchAndUpdateCandidatesChatsWhatsapps } from './services/candidate-engagement/update-chat';
+import { getStageOfTheConversation } from './services/llm-agents/get-stage-wise-classification';
 import { OpenAIArxMultiStepClient } from './services/llm-agents/arx-multi-step-client';
 import { ToolsForAgents } from 'src/engine/core-modules/arx-chat/services/llm-agents/prompting-tool-calling';
 import { axiosRequest } from './utils/arx-chat-agent-utils';
@@ -111,7 +112,7 @@ export class ArxChatEndpoint {
     let chatAgent = new OpenAIArxMultiStepClient(personObj);
     const engagementType = 'engage';
     const processorType = 'stage';
-    const stage = await chatAgent.getStageOfTheConversation(messagesList, engagementType, processorType);
+    const stage = getStageOfTheConversation(personObj, messagesList, engagementType, processorType);
     return { stage: stage };
   }
 

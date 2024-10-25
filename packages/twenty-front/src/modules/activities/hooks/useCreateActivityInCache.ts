@@ -28,7 +28,7 @@ export const useCreateActivityInCache = () => {
 
     
     const cache = useApolloClient().cache;
-    console.log("useCreateActivityInCache -> createManyActivityTargetsInCache", createManyActivityTargetsInCache)
+    // console.log("useCreateActivityInCache -> createManyActivityTargetsInCache", createManyActivityTargetsInCache)
 
   const objectMetadataItems = useRecoilValue(objectMetadataItemsState);
   const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
