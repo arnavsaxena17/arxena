@@ -5,9 +5,42 @@ import fs from 'fs';
 import path from 'path';
 import mime from 'mime-types';
 import axios from 'axios';
+import CandidateEngagementArx from '../candidate-engagement/check-candidate-engagement';
 
 const baseUrl = 'http://localhost:' + process.env.PORT; // Base URL of your GraphQL server
 export class WhatsappAPISelector {
+
+  async sendWhatsappMessageToCandidate(messageText: string,personNode:allDataObjects.PersonNode,  mostRecentMessageArr: allDataObjects.ChatHistoryItem[], functionSource: string,chatControl:allDataObjects.chatControls, isChatEnabled?: boolean, ) {
+    console.log('Called sendWhatsappMessage ToCandidate to send message via any whatsapp api::', functionSource, "message text::", messageText);
+    if (mostRecentMessageArr[0].role != 'system' && mostRecentMessageArr.length==1) {
+      console.log('Found a single sneaky message which is coming out:: ', messageText);
+      return;
+    }
+    if (messageText.includes('#DONTRESPOND#') || messageText.includes('DONTRESPOND') && messageText) {
+      console.log('Found a #DONTRESPOND# message, so not sending any message');
+      return;
+    }
+    console.log("Going to create whatsaappupdatemessage obj for message text::", messageText)
+    const whatappUpdateMessageObj:allDataObjects.candidateChatMessageType = await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj('sendWhatsappMessageToCandidateMulti', personNode, mostRecentMessageArr);
+    if (whatappUpdateMessageObj.messages[0].content?.includes('#DONTRESPOND#') || whatappUpdateMessageObj.messages[0].content?.includes('DONTRESPOND') && whatappUpdateMessageObj.messages[0].content) {
+      console.log('Found a #DONTRESPOND# message, so not sending any message');
+      return;
+    }
+    if ((!messageText || messageText == "") && (!whatappUpdateMessageObj.messages[0].content || whatappUpdateMessageObj.messages[0].content=="") ) {
+      console.log('Message text is empty, so not sending any message');
+      console.log('Current messageText::', messageText);
+      console.log('Current whatappUpdateMessageObj.messages[0].content::', whatappUpdateMessageObj.messages[0].content);
+      return;
+    }
+    if (whatappUpdateMessageObj.messages[0].content ||  messageText) {
+      if (process.env.WHATSAPP_ENABLED === 'true' && (isChatEnabled === undefined || isChatEnabled)) {
+        await new WhatsappAPISelector().sendWhatsappMessage(whatappUpdateMessageObj, personNode, mostRecentMessageArr, chatControl);
+      } else {
+        console.log('Whatsapp is not enabled, so not sending message:', whatappUpdateMessageObj.messages[0].content);
+      }
+    }
+  }
+
   async sendWhatsappMessage(whatappUpdateMessageObj: allDataObjects.candidateChatMessageType, personNode: allDataObjects.PersonNode, mostRecentMessageArr: allDataObjects.ChatHistoryItem[], chatControl: allDataObjects.chatControls) {
     if (process.env.WHATSAPP_API === 'facebook') {
       const response = await new FacebookWhatsappChatApi().sendWhatsappMessageVIAFacebookAPI(whatappUpdateMessageObj, personNode, mostRecentMessageArr, chatControl);
