@@ -56,8 +56,11 @@ export default class CandidateEngagementArx {
     console.log('Engagement Type:', "the candidate ::", personNode.name.firstName + " " + personNode.name.lastName);
     try {
       const candidateNode = personNode.candidates.edges[0].node;
-      // console.log('This is candidate Node:', candidateNode);
-      const messagesList: allDataObjects.WhatsAppMessagesEdge[] = candidateNode?.whatsappMessages?.edges;
+      // // console.log('This is candidate Node:', candidateNode);
+      // const messagesList: allDataObjects.WhatsAppMessagesEdge[] = candidateNode?.whatsappMessages?.edges;
+      const whatsappMessagesEdges: allDataObjects.WhatsAppMessagesEdge[] = await new FetchAndUpdateCandidatesChatsWhatsapps().fetchAllWhatsappMessages(candidateNode.id);
+      const messagesList: allDataObjects.MessageNode[] = whatsappMessagesEdges.map(edge => edge.node);
+
       console.log('Current Messages list:', messagesList);
       let mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = this.getMostRecentMessageFromMessagesList(messagesList);
       // console.log('mostRecentMessageArr before chatCompletion:', mostRecentMessageArr);
@@ -73,12 +76,16 @@ export default class CandidateEngagementArx {
       console.log('This is the error in processCandidate', error);
     }
   }
-  getMostRecentMessageFromMessagesList(messagesList: allDataObjects.WhatsAppMessagesEdge[]) {
+  getMostRecentMessageFromMessagesList(messagesList: allDataObjects.MessageNode[]) {
     let mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = [];
+    console.log("messages list in getMostRecentMessageFromMessagesList::", messagesList);
     if (messagesList) {
-      messagesList.sort((a, b) => new Date(b.node.createdAt).getTime() - new Date(a.node.createdAt).getTime());
-      mostRecentMessageArr = messagesList[0]?.node?.messageObj;
-      // console.log(mostRecentMessageArr);
+      // messagesList.sort((a, b) => new Date(b?.node?.createdAt).getTime() - new Date(a?.node?.createdAt).getTime());
+      messagesList.sort((a, b) => new Date(b?.createdAt).getTime() - new Date(a?.createdAt).getTime());
+      console.log("messages list after sorting in getMostRecentMessageFromMessagesList::", messagesList);
+      mostRecentMessageArr = messagesList[0]?.messageObj;
+
+      console.log("This is the most recent messages arr:", mostRecentMessageArr);
     }
     return mostRecentMessageArr;
   }
