@@ -64,7 +64,7 @@ export default class CandidateEngagementArx {
       if (mostRecentMessageArr?.length > 0) {
         console.log('Taking MULTI Step Client for - Prompt Engineering type:', process.env.PROMPT_ENGINEERING_TYPE);
         let chatAgent = new OpenAIArxMultiStepClient(personNode);
-        await chatAgent.createCompletion(mostRecentMessageArr, personNode, chatControl);
+        await chatAgent.createCompletion(mostRecentMessageArr,chatControl);
       }
       else{
         console.log("mostRecentMessageArr?.length is not greater than 0, hence no engagement:: (length)::", mostRecentMessageArr?.length)
@@ -100,6 +100,7 @@ export default class CandidateEngagementArx {
 
   async updateChatHistoryObjCreateWhatsappMessageObj(wamId: string, personNode: allDataObjects.PersonNode, chatHistory: allDataObjects.ChatHistoryItem[]): Promise<allDataObjects.candidateChatMessageType> {
     const candidateNode = personNode.candidates.edges[0].node;
+    
     const updatedChatHistoryObj: allDataObjects.candidateChatMessageType = {
       messageObj: chatHistory,
       candidateProfile: candidateNode,
