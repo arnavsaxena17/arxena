@@ -182,6 +182,7 @@ export const graphQlToFetchWhatsappMessages = `query FindManyWhatsappMessages($f
         candidateId
         whatsappDeliveryStatus
         createdAt
+        messageObj
         whatsappProvider
         phoneFrom
         id
@@ -425,6 +426,7 @@ export const graphqlToFindManyAnswers = `query FindManyAnswers($filter: AnswerFi
             status
             createdAt
             updatedAt
+            whatsappProvider
             startChat
             stopChat
           }

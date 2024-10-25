@@ -11,6 +11,7 @@ import { ToolsForAgents } from 'src/engine/core-modules/arx-chat/services/llm-ag
 import { axiosRequest } from './utils/arx-chat-agent-utils';
 import * as allGraphQLQueries from './services/candidate-engagement/graphql-queries-chatbot';
 import { shareJDtoCandidate } from './services/llm-agents/tool-calls-processing';
+import { checkIfResponseMessageSoundsHumanLike } from './services/llm-agents/human-or-bot-type-response-classification';
 import twilio from 'twilio';
 
 @Controller('updateChat')
@@ -48,7 +49,12 @@ export class ArxChatEndpoint {
   async evaluate(@Req() request: any) {
     const personObj: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(request.body.phoneNumberFrom);
     const personCandidateNode = personObj?.candidates?.edges[0]?.node;
-    const messagesList = personCandidateNode?.whatsappMessages?.edges;
+    // const messagesList = personCandidateNode?.whatsappMessages?.edges;
+    const whatsappMessagesEdges: allDataObjects.WhatsAppMessagesEdge[] = await new FetchAndUpdateCandidatesChatsWhatsapps().fetchAllWhatsappMessages(personCandidateNode.id);
+    const messagesList: allDataObjects.MessageNode[] = whatsappMessagesEdges.map(edge => edge.node);
+
+    console.log('Current Messages list:', messagesList);
+
     let mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = new CandidateEngagementArx().getMostRecentMessageFromMessagesList(messagesList);
     if (mostRecentMessageArr?.length > 0) {
       let chatAgent: OpenAIArxMultiStepClient;
@@ -66,7 +72,9 @@ export class ArxChatEndpoint {
     // debugger;
     try {
       const personCandidateNode = personObj?.candidates?.edges[0]?.node;
-      const messagesList = personCandidateNode?.whatsappMessages?.edges;
+      // const messagesList = personCandidateNode?.whatsappMessages?.edges;
+      const whatsappMessagesEdges: allDataObjects.WhatsAppMessagesEdge[] = await new FetchAndUpdateCandidatesChatsWhatsapps().fetchAllWhatsappMessages(personCandidateNode.id);
+      const messagesList: allDataObjects.MessageNode[] = whatsappMessagesEdges.map(edge => edge.node);  
       let mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = new CandidateEngagementArx().getMostRecentMessageFromMessagesList(messagesList);
       const isChatEnabled: boolean = false;
       if (mostRecentMessageArr?.length > 0) {
@@ -112,7 +120,7 @@ export class ArxChatEndpoint {
     let chatAgent = new OpenAIArxMultiStepClient(personObj);
     const engagementType = 'engage';
     const processorType = 'stage';
-    const stage = getStageOfTheConversation(personObj, messagesList, engagementType, processorType);
+    const stage = getStageOfTheConversation(personObj, messagesList);
     return { stage: stage };
   }
 
@@ -282,7 +290,7 @@ export class ArxChatEndpoint {
     try {
       const personObj: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(request.body.phoneNumberFrom);
       console.log("Person object receiveed::", personObj)
-      const checkHumanLike = await new OpenAIArxMultiStepClient(personObj).checkIfResponseMessageSoundsHumanLike(request.body.contentObj);
+      const checkHumanLike = await checkIfResponseMessageSoundsHumanLike(request.body.contentObj);
       console.log("checkHumanLike:", checkHumanLike)
       return { status: 'Success' };
     } catch (err) {

@@ -157,11 +157,9 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
     return allPeople
   }
 
-
-
-  async fetchAllWhatsappMessages(candidateId: string): Promise<object[]> {
+  async fetchAllWhatsappMessages(candidateId: string): Promise<allDataObjects.WhatsAppMessagesEdge[]> {
     console.log("Fetching all whatsapp messages for candidate ID:", candidateId);
-    let allWhatsappMessages: object[] = [];
+    let allWhatsappMessages: allDataObjects.WhatsAppMessagesEdge[] = [];
     let lastCursor = null;
     while (true) {
       try {
