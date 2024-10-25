@@ -6,12 +6,9 @@ interface CustomMongoClientOptions extends MongoClientOptions {
     useUnifiedTopology?: boolean;
 }
 console.log("This is the environment variable for mongo node env", process.env.NODE_ENV);
-const uri='mongodb://arxena:Page321123a321afarx@ec2-18-208-198-96.compute-1.amazonaws.com:27017/admin?authSource=admin'
+const uri='mongodb://arxena:Page321123a321afarx@ec2-34-233-125-208.compute-1.amazonaws.com:27017/admin?authSource=admin'
 
-
-// const uri = process.env.NODE_ENV === 'production' ? process.env.MONGO_PROD : process.env.MONGO_DEV;
 console.log("This is url:",uri);
-
 
 export async function createClient () {
     let client = new MongoClient(uri, { useUnifiedTopology: true } as CustomMongoClientOptions);
@@ -24,10 +21,6 @@ export async function connectToDatabase() {
     const db = client.db('users'); // Assumes your database is named 'users'
     return { client, db };
 }
-
-// export async function disconnectFromDatabase(client : MongoClient) {
-//     await client.close();
-// }
 
 export async function upsertMessages(messages, phoneNumber) {
     console.log("This is the messages to be inserted", messages);
