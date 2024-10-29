@@ -6,7 +6,7 @@ interface CustomMongoClientOptions extends MongoClientOptions {
     useUnifiedTopology?: boolean;
 }
 console.log("This is the environment variable for mongo node env", process.env.NODE_ENV);
-const uri='mongodb://arxena:Page321123a321afarx@ec2-34-233-125-208.compute-1.amazonaws.com:27017/admin?authSource=admin'
+const uri=process.env.MONGO_DEV || 'mongodb://localhost:27017';
 
 console.log("This is url:",uri);
 
