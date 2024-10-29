@@ -87,20 +87,9 @@ export const StartInterviewPage: React.FC<InterviewResponseTypes.StartInterviewP
         </InstructionList>
       </InstructionSection>
           <ButtonContainer>
-          {!hasAccess ? (
-            <StyledButton onClick={requestMediaAccess}>
-              Give camera and microphone access
-            </StyledButton>
-          ) : (
-            <AccessMessage>✓ Camera and microphone access granted</AccessMessage>
-          )}
-
-          {hasAccess && (
-            <StyledButton onClick={onStart}>
-              Start Interview
-            </StyledButton>
-          )}
-        </ButtonContainer>
+            {!hasAccess ? ( <StyledButton onClick={requestMediaAccess}> Give camera and microphone access </StyledButton> ) : ( <AccessMessage>✓ Camera and microphone access granted</AccessMessage> )}
+            {hasAccess && ( <StyledButton onClick={onStart}> Start Interview </StyledButton> )}
+          </ButtonContainer>
     </StyledRightPanel>
   </StyledContainer>
 ); 

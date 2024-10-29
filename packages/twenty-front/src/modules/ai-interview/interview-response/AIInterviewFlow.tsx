@@ -4,17 +4,79 @@ import { StartInterviewPage } from './StartInterviewPage';
 import { InterviewPage } from './InterviewPage';
 import { EndInterviewPage } from './EndInterviewPage';
 import { ErrorBoundary } from './ErrorBoundary'; // Import the ErrorBoundary component
+import styled from '@emotion/styled';
 
 import * as InterviewResponseTypes from './types/interviewResponseTypes';
 
+const LoaderOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+`;
+
+const LoaderCard = styled.div`
+  background-color: white;
+  padding: 32px;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+`;
+
+const SpinnerContainer = styled.div`
+  width: 48px;
+  height: 48px;
+  position: relative;
+`;
+
+const Spinner = styled.div`
+  width: 100%;
+  height: 100%;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #3498db;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+`;
+
+const LoaderText = styled.p`
+  font-size: 18px;
+  font-weight: 500;
+  color: #333;
+`;
+
+const InterviewLoader = () => (
+  <LoaderOverlay>
+    <LoaderCard>
+      <SpinnerContainer>
+        <Spinner />
+      </SpinnerContainer>
+      <LoaderText>Preparing your interview...</LoaderText>
+    </LoaderCard>
+  </LoaderOverlay>
+);
 
 
 const AIInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) => {
   const [stage, setStage] = useState<'start' | 'interview' | 'end'> ('start');
+  const [loading, setLoading] = useState(false);
   const [interviewData, setInterviewData] = useState<InterviewResponseTypes.InterviewData | null>(null);
   const [introductionVideoData, setintroductionVideoData] = useState< InterviewResponseTypes.VideoInterviewAttachment| null>(null);
   const [questionsVideoData, setquestionsVideoData] = useState<InterviewResponseTypes.VideoInterviewAttachment[]>([]);
-
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
 
   useEffect(() => {
@@ -71,6 +133,19 @@ const AIInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) => 
   };
 
   const handleStart = () => setStage('interview');
+  // const handleStart = async () => {
+  //   setLoading(true);
+  //   setStage('interview');
+  //   try {
+  //     // Simulate some loading time to ensure videos are ready
+  //     await new Promise(resolve => setTimeout(resolve, 500));
+  //   } catch (error) {
+  //     console.error('Error starting interview:', error);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
 
   const handleNextQuestion = async (responseData: FormData) => {
     console.log("Currnet question  index in handle Next Question:", currentQuestionIndex)
@@ -157,11 +232,17 @@ const AIInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) => 
     switch (stage) {
       case 'start':
         return (
-          <StartInterviewPage
-            onStart={handleStart}
-            InterviewData = {interviewData}
-            introductionVideoData = {introductionVideoData!}
-          />
+          <>
+            {introductionVideoData && (
+              <StartInterviewPage
+                onStart={handleStart}
+                InterviewData={interviewData}
+                introductionVideoData={introductionVideoData}
+              />
+            )}
+            {loading && <InterviewLoader />}
+          </>
+
         );
       case 'interview':
         return (
@@ -180,13 +261,14 @@ const AIInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) => 
           </ErrorBoundary>
         );
       case 'end':
-        return <EndInterviewPage onSubmit={handleSubmitFeedback} />;
+        return <EndInterviewPage interviewData={interviewData}
+         onSubmit={handleSubmitFeedback} />;
       default:
         return null;
     }
   };
 
-  return <div className="ai-interview-flow">{renderCurrentStage()}</div>;
+  return <div>{renderCurrentStage()}</div>;
 };
 
 export default AIInterviewFlow;
