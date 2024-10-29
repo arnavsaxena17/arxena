@@ -1,19 +1,20 @@
 import React, { useState } from 'react';
 import styled from '@emotion/styled';
 import {
-  StyledContainer,
+  EndInterviewStyledContainer,
   FeedbackContainer,
   StyledMessage,
   FeedbackPrompt,
   StyledTextArea,
   SubmitButton,
-  StyledLeftPanel,
-  StyledRightPanel,
+  EndInterviewStyledLeftPanel,
+  EndInterviewStyledRightPanel,
 } from './styled-components/StyledComponentsInterviewResponse';
+import { InterviewData } from './types/interviewResponseTypes';
 
 
 
-export const EndInterviewPage: React.FC<{ onSubmit: (feedback: string) => void }> = ({ onSubmit }) => {
+export const EndInterviewPage: React.FC<{ interviewData:InterviewData, onSubmit: (feedback: string) => void }> = ({ interviewData, onSubmit }) => {
   const [feedback, setFeedback] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const handleSubmit = () => {
@@ -21,12 +22,12 @@ export const EndInterviewPage: React.FC<{ onSubmit: (feedback: string) => void }
     setSubmitted(true);
   };
   return (
-    <StyledContainer>
-      <StyledLeftPanel>
-        <h2>AI Interview</h2>
+    <EndInterviewStyledContainer>
+      <EndInterviewStyledLeftPanel>
+        <h2>{interviewData.candidate.jobs.name}</h2>
         <p>Interview Complete</p>
-      </StyledLeftPanel>
-      <StyledRightPanel>
+      </EndInterviewStyledLeftPanel>
+      <EndInterviewStyledRightPanel>
         {submitted ? (
             <FeedbackContainer>
             <h2>Thank You for Your Feedback</h2>
@@ -48,7 +49,7 @@ export const EndInterviewPage: React.FC<{ onSubmit: (feedback: string) => void }
             <SubmitButton onClick={handleSubmit}>Share Feedback</SubmitButton>
           </FeedbackContainer>
         )}
-      </StyledRightPanel>
-    </StyledContainer>
+      </EndInterviewStyledRightPanel>
+    </EndInterviewStyledContainer>
   );
 };

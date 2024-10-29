@@ -7,11 +7,24 @@ export const StyledContainer = styled.div`
   // background-color: ${({ theme }) => theme.background.tertiary};
   max-width: 100%;
   overflow-x: hidden;
-  min-height: 100vh;
+  min-height: 100%;
   background-color: white;
-
   @media (min-width: 768px) {
     flex-direction: row;
+    
+  }
+`;
+export const EndInterviewStyledContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  // background-color: ${({ theme }) => theme.background.tertiary};
+  max-width: 100%;
+  overflow-x: hidden;
+  min-height: 100%;
+  background-color: white;
+  @media (min-width: 768px) {
+    flex-direction: row;
+    
   }
 `;
 export const SnapScrollContainer = styled.div`
@@ -28,10 +41,12 @@ export const SnapScrollContainer = styled.div`
   @media (max-width: 767px) {
     flex-direction: column;
     height: auto;
+    width:100%
+    
   }
 `;
 export const StyledLeftPanel = styled.div`
-  width: 40%;
+  width: 30%;
   padding: 16px;
   background-color: ${({ theme }) => theme.background.secondary};
   color: ${({ theme }) => theme.font.color.secondary};
@@ -41,6 +56,25 @@ export const StyledLeftPanel = styled.div`
 
   @media (max-width: 767px) {
     width: 90%;
+    padding: 16px;
+    font-size: ${({ theme }) => theme.font.size.sm};
+  }
+`;
+
+
+export const EndInterviewStyledLeftPanel = styled.div`
+  width: 30%;
+  padding: 16px;
+  background-color: ${({ theme }) => theme.background.secondary};
+  color: ${({ theme }) => theme.font.color.secondary};
+  font-family: ${({ theme }) => theme.font.family};
+  font-size: ${({ theme }) => theme.font.size.md};
+  font-weight: ${({ theme }) => theme.font.weight.regular};
+  height:100vh;
+
+  @media (max-width: 767px) {
+    width: 90%;
+    height:auto;
     padding: 16px;
     font-size: ${({ theme }) => theme.font.size.sm};
   }
@@ -253,6 +287,7 @@ export const FeedbackContainer = styled.div`
   display: flex;
   flex-direction: column;
   gap: 20px;
+  width:80%
 `;
 
 export const StyledTextArea = styled.textarea`
@@ -352,7 +387,7 @@ export const SubTitle = styled.h2`
 
 
 export const StyledRightPanel = styled.div`
-  width: 60%;
+  width: 70%;
   padding: 16px;
   background-color: ${({ theme }) => theme.background.primary};
   display: flex;
@@ -372,6 +407,28 @@ export const StyledRightPanel = styled.div`
     gap: 12px;
   }
 `;
+export const EndInterviewStyledRightPanel = styled.div`
+  width: 70%;
+  padding: 16px;
+  background-color: ${({ theme }) => theme.background.primary};
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  color: #808080;
+  font-family: ${({ theme }) => theme.font.family};
+  font-size: ${({ theme }) => theme.font.size.md};
+  font-style: normal;
+  font-weight: 400;
+  line-height: 150%;
+
+  @media (max-width: 767px) {
+    width: 93%;
+    height:100vh;
+    padding: 16px;
+    font-size: ${({ theme }) => theme.font.size.sm};
+    gap: 12px;
+  }
+`;
 
 
 export const StyledVideoContainer = styled.div`
@@ -379,6 +436,7 @@ export const StyledVideoContainer = styled.div`
   background-color: white;
   border-radius: 30px;
   margin-bottom: 20px;
+
   overflow: hidden;
   width: 100%;
   padding-top: 56.25%; // 16:9 aspect ratio
@@ -395,6 +453,7 @@ export const StyledVideoContainer = styled.div`
   @media (max-width: 767px) {
     border-radius: 15px;
     margin-bottom: 10px;
+    height: 45vh;
   }
 `;
 

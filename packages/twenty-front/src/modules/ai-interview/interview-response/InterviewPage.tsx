@@ -7,6 +7,8 @@ import * as InterviewResponseTypes from './types/interviewResponseTypes';
 import { VideoPlayer } from './utils/videoPlaybackUtils';
 import VideoContainer from './VideoContainer';
 
+
+
 import {
   StyledLeftPanelContentBox,
   StyledTextLeftPanelTextHeadline,
@@ -26,6 +28,32 @@ import {
   // InstructionList,
   // AccessMessage,
 } from './styled-components/StyledComponentsInterviewResponse';
+
+const UnmirroredWebcam = styled(Webcam as any)`
+  width: 100%;
+  height: 100%;
+  transform: scaleX(1) !important;
+  -webkit-transform: scaleX(1) !important;
+  
+  /* Target the internal video element specifically */
+  & video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform: scaleX(1) !important;
+    -webkit-transform: scaleX(1) !important;
+  }
+  
+  /* Safari-specific fixes */
+  @media not all and (min-resolution:.001dpcm) { 
+    @supports (-webkit-appearance:none) {
+      & video {
+        transform: scaleX(1) !important;
+        -webkit-transform: scaleX(1) !important;
+      }
+    }
+  }
+`;
 
 
 
@@ -53,7 +81,6 @@ export const InterviewPage: React.FC<InterviewResponseTypes.InterviewPageProps> 
   const webcamRef = useRef<Webcam>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
-
   const isLastQuestion = currentQuestionIndex === questions.length - 1;
 
   useEffect(() => {
@@ -89,8 +116,9 @@ export const InterviewPage: React.FC<InterviewResponseTypes.InterviewPageProps> 
   }, [countdown]);
 
   const handleStartRecording = () => {
+    resetAndStopVideo(); // Stop and reset video before starting recording
     setRecording(true);
-    setCountdown(2);
+    setCountdown(5);
   };
 
   const startRecording = () => {
@@ -98,7 +126,7 @@ export const InterviewPage: React.FC<InterviewResponseTypes.InterviewPageProps> 
     setRecorded(false);
     setError(null);
     setRecordedChunks([]);
-    setAnswerTimer(10); // Start the 30-second timer
+    setAnswerTimer(240);
     const stream = webcamRef.current?.stream;
     if (stream) {
       mediaRecorderRef.current = new MediaRecorder(stream, { mimeType: 'video/webm' });
@@ -107,6 +135,23 @@ export const InterviewPage: React.FC<InterviewResponseTypes.InterviewPageProps> 
     }
   };
 
+  useEffect(() => {
+    if (videoRef.current) {
+      if (isPlaying) {
+        videoRef.current.play();
+      } else {
+        videoRef.current.pause();
+      }
+    }
+  }, [isPlaying]);
+
+  const resetAndStopVideo = () => {
+    if (videoRef.current) {
+      videoRef.current.pause();
+      videoRef.current.currentTime = 0;
+      setIsPlaying(false);
+    }
+  };
   const moveToNextQuestion = () => {
     console.log('Currnet question index:', currentQuestionIndex);
     if (currentQuestionIndex < questions.length) {
@@ -138,6 +183,7 @@ export const InterviewPage: React.FC<InterviewResponseTypes.InterviewPageProps> 
   const handleStopRecording = () => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
       mediaRecorderRef.current.stop();
+      resetAndStopVideo();
       setActiveCameraFeed(false);
       setRecording(false);
       setRecorded(true);
@@ -162,7 +208,7 @@ export const InterviewPage: React.FC<InterviewResponseTypes.InterviewPageProps> 
       setError(null);
       setSubmitting(true);
       if (!isLastQuestion) {
-        setTimer(2);
+        setTimer(5);
       }
 
       const file = new Blob(recordedChunks, {
@@ -219,11 +265,22 @@ export const InterviewPage: React.FC<InterviewResponseTypes.InterviewPageProps> 
 
   const currentQuestionVideoURL = process.env.REACT_APP_SERVER_BASE_URL + "/files/" + currentQuestionInterviewAttachment;
   console.log("This is the currentQuestionVideoURL::", currentQuestionVideoURL)
+  // Add videoConstraints inside the component
+  const videoConstraints = {
+    width: 1280,
+    height: 720,
+    facingMode: "user",
+    advanced: [{
+      transform: "none"
+    }]
+  };
+  
+
 
   return (
     <SnapScrollContainer>
       <StyledLeftPanel>
-        <h2>Interview - .NET Developer II</h2>
+        <h2>{InterviewData.candidate.jobs.name}</h2>
         <StyledLeftPanelContentBox>
           <StyledTextLeftPanelTextHeadline>
             Question {currentQuestionIndex + 1} of {questions.length}
@@ -248,8 +305,20 @@ export const InterviewPage: React.FC<InterviewResponseTypes.InterviewPageProps> 
             answerTimer={answerTimer}
             isRecording={recording}
             onRecordingClick={recording ? handleStopRecording : handleStartRecording}
+            setIsPlaying={setIsPlaying}  
           >
-            <Webcam audio={true} ref={webcamRef} width="100%" height="100%" />
+          <UnmirroredWebcam
+            audio={true}
+            ref={webcamRef}
+            videoConstraints={videoConstraints}
+            mirrored={false}
+            screenshotFormat="image/jpeg"
+            style={{
+              transform: 'scaleX(1)',
+              WebkitTransform: 'scaleX(1)'
+            }}
+          />
+            {/* {countdown !== null && <StyledCountdownOverlay>{countdown}</StyledCountdownOverlay>} */}
             {countdown !== null && <StyledCountdownOverlay>{countdown}</StyledCountdownOverlay>}
           </VideoContainer>
         )}

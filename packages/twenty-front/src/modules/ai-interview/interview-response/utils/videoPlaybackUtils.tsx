@@ -8,11 +8,54 @@ interface VideoPlayerProps {
   setIsPlaying: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
+
+const StyledProgressContainer = {
+  position: 'absolute' as const,
+  top: 0,
+  left: 0,
+  width: '100%',
+  height: '4px',
+  backgroundColor: 'rgba(255, 255, 255, 0.3)',
+  cursor: 'pointer',
+  zIndex: 20, // Increased z-index
+  opacity: 1, // Ensure visibility
+};
+
+const StyledProgress = {
+  position: 'absolute' as const, // Added position absolute
+  top: 0,
+  left: 0,
+  height: '100%',
+  backgroundColor: '#3b82f6',
+  transition: 'width 0.1s linear',
+  opacity: 1, // Ensure visibility
+};
+
+// New wrapper style to ensure proper positioning context
+const StyledVideoWrapper = {
+  position: 'relative' as const,
+  width: '100%',
+  height: '100%',
+};
+
+
 export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, videoRef, isPlaying, setIsPlaying }) => {
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [downloadProgress, setDownloadProgress] = useState<number>(0);
+  const [progress, setProgress] = useState<number>(0);
+  // Reset video and progress when playback stops
+  
+  
+  const resetVideo = () => {
+    if (videoRef.current) {
+      videoRef.current.currentTime = 0;
+      setProgress(0);
+      setIsPlaying(false);
+    }
+  };
+
 
   useEffect(() => {
     const abortController = new AbortController();
@@ -61,31 +104,124 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, videoRef, isPlayi
     };
   }, [src]);
 
+  // useEffect(() => {
+  //   const video = videoRef.current;
+  //   if (!video) return;
+
+  //   const updateProgress = () => {
+  //     if (video.duration) {
+  //       const percent = (video.currentTime / video.duration) * 100;
+  //       setProgress(percent);
+  //     }
+  //   };
+
+  //   if (isPlaying) {
+  //     // Update progress immediately when starting playback
+  //     updateProgress();
+  //     const interval = setInterval(updateProgress, 100); // Update every 100ms
+  //     video.addEventListener('timeupdate', updateProgress);
+      
+  //     return () => {
+  //       clearInterval(interval);
+  //       video.removeEventListener('timeupdate', updateProgress);
+  //     };
+  //   }
+  // }, [isPlaying, videoRef]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const updateProgress = () => {
+      if (video.duration) {
+        const percent = (video.currentTime / video.duration) * 100;
+        setProgress(percent);
+      }
+    };
+
+    // Handle progress updates
+    video.addEventListener('timeupdate', updateProgress);
+    
+    // Handle video end
+    const handleVideoEnd = () => {
+      resetVideo();
+    };
+    video.addEventListener('ended', handleVideoEnd);
+
+    if (isPlaying) {
+      // Update progress immediately when starting playback
+      updateProgress();
+      const interval = setInterval(updateProgress, 100); // Update every 100ms
+      video.addEventListener('timeupdate', updateProgress);
+      
+      return () => {
+        clearInterval(interval);
+        video.removeEventListener('timeupdate', updateProgress);
+      };
+    }
+
+    return () => {
+      video.removeEventListener('timeupdate', updateProgress);
+      video.removeEventListener('ended', handleVideoEnd);
+    };
+  }, [isPlaying, videoRef]);
+
+
+
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    if (!isPlaying) {
+      resetVideo();
+    }
+
+  }, [isPlaying]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    if (!isPlaying && video.currentTime === 0) {
+      setProgress(0);
+    }
+  }, [isPlaying]);
+
+
   const handlePlayPause = () => {
     const video = videoRef.current;
-    if (video) {
-      if (isPlaying) {
-        video.pause();
-      } else {
-        video.play().catch(e => {
-          console.error('Error playing video:', e);
-          setError('Unable to play video. Please try again.');
-        });
-      }
-      setIsPlaying(!isPlaying);
-    }
-  };
+    if (!video) return;
 
-  const handleReplay = () => {
-    const video = videoRef.current;
-    if (video) {
-      video.currentTime = 0;
+    if (isPlaying) {
+      video.pause();
+      setIsPlaying(false);
+    } else {
+      if (video.muted) {
+        video.muted = false;
+      }
       video.play().catch(e => {
-        console.error('Error replaying video:', e);
-        setError('Unable to replay video. Please try again.');
+        console.error('Error playing video:', e);
+        setError('Unable to play video. Please try again.');
       });
       setIsPlaying(true);
     }
+  };
+
+
+
+
+
+  const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const progressBar = e.currentTarget;
+    const rect = progressBar.getBoundingClientRect();
+    const clickPosition = (e.clientX - rect.left) / rect.width;
+    
+    video.currentTime = clickPosition * video.duration;
+    setProgress(clickPosition * 100);
   };
 
   if (isLoading) {
@@ -117,24 +253,25 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, videoRef, isPlayi
 
   return (
     <StyledVideoPane>
-      <StyledVideo
-        ref={videoRef}
-        src={videoUrl || undefined}
-        onEnded={() => setIsPlaying(false)}
-        playsInline
-        muted
-        autoPlay
-        loop
-        controls
-      />
-      {/* <StyledVideoControls>
-        <StyledVideoButton onClick={handlePlayPause}>
-          {isPlaying ? '⏸' : playButton}
-        </StyledVideoButton>
-        <StyledVideoButton onClick={handleReplay}>
-          🔁
-        </StyledVideoButton>
-      </StyledVideoControls> */}
+      <div style={StyledVideoWrapper}>
+        <div style={StyledProgressContainer} onClick={handleProgressClick}>
+          <div style={{ ...StyledProgress, width: `${progress}%` }} />
+        </div>
+        <StyledVideo
+          ref={videoRef}
+          src={videoUrl || undefined}
+          onEnded={() => setIsPlaying(false)}
+          playsInline
+          muted
+          autoPlay
+          loop
+        />
+        <StyledVideoControls>
+          <StyledVideoButton onClick={handlePlayPause}>
+            {isPlaying ? '⏹' : playButton}
+          </StyledVideoButton>
+        </StyledVideoControls>
+      </div>
     </StyledVideoPane>
   );
 };
