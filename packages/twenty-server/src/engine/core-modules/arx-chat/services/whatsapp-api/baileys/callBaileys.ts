@@ -7,7 +7,7 @@ const FormData = require('form-data');
 const fs = require('fs');
 const baseUrl = process.env.SERVER_BASE_URL+'/whatsapp'; // Adjust the base URL as needed
 
-export async function sendWhatsappMessageVIABaileysAPI(whatappUpdateMessageObj: allDataObjects.candidateChatMessageType, personNode: allDataObjects.PersonNode, mostRecentMessageArr: allDataObjects.ChatHistoryItem[]) {
+export async function sendWhatsappMessageVIABaileysAPI(whatappUpdateMessageObj: allDataObjects.candidateChatMessageType, personNode: allDataObjects.PersonNode, mostRecentMessageArr: allDataObjects.ChatHistoryItem[], chatControl: allDataObjects.chatControls) {
   console.log('Sending message to whatsapp via baileys api');
   console.log('whatappUpdateMessageObj.messageType', whatappUpdateMessageObj.messageType);
   if (whatappUpdateMessageObj.messageType === 'botMessage') {
@@ -21,7 +21,7 @@ export async function sendWhatsappMessageVIABaileysAPI(whatappUpdateMessageObj: 
     const response = await sendWhatsappTextMessageViaBaileys(sendTextMessageObj, personNode);
     console.log(response);
     // console.log('99493:: response is here', response);
-    const whatappUpdateMessageObjAfterWAMidUpdate = await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj( response?.messageId || 'placeholdermessageid', personNode, mostRecentMessageArr, );
+    const whatappUpdateMessageObjAfterWAMidUpdate = await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj( response?.messageId || 'placeholdermessageid', personNode, mostRecentMessageArr,chatControl );
     let candidateProfileObj = whatappUpdateMessageObj.messageType !== 'botMessage' ? await new FetchAndUpdateCandidatesChatsWhatsapps().getCandidateInformation(whatappUpdateMessageObj) : whatappUpdateMessageObj.candidateProfile;
 
     await new CandidateEngagementArx().updateCandidateEngagementDataInTable(whatappUpdateMessageObjAfterWAMidUpdate, true);

@@ -40,6 +40,7 @@ export const graphqlQueryToFindMessageByWAMId = `query FindManyWhatsappMessages(
         __typename
         id
         whatsappMessageId
+        lastEngagementChatControl
       }
   }
 }}
@@ -62,6 +63,7 @@ export const graphqlQueryToFindPeopleByPhoneNumber = `query FindManyPeople($filt
                     id
                     name
                     whatsappProvider
+                    lastEngagementChatControl
                     engagementStatus
                     jobs{
                         id
@@ -79,6 +81,16 @@ export const graphqlQueryToFindPeopleByPhoneNumber = `query FindManyPeople($filt
                         }
 
                     }
+                    aIInterviewStatus{
+                        edges{
+                            node{
+                                id
+                                interviewLink{
+                                  url
+                                }
+                            }
+                        }
+                    }
                     whatsappMessages{
                         edges{
                             node{
@@ -88,6 +100,7 @@ export const graphqlQueryToFindPeopleByPhoneNumber = `query FindManyPeople($filt
                                 jobsId
                                 messageObj
                                 position
+                                lastEngagementChatControl
                                 phoneTo
                                 updatedAt
                                 createdAt
@@ -119,6 +132,7 @@ export const graphqlQueryToCreateOneNewWhatsappMessage = `mutation CreateOneWhat
       candidateId
       name
       messageObj
+      lastEngagementChatControl
       whatsappDeliveryStatus
       whatsappMessageId
       typeOfMessage
@@ -180,6 +194,7 @@ export const graphQlToFetchWhatsappMessages = `query FindManyWhatsappMessages($f
         whatsappMessageId
         audioFilePath
         candidateId
+        lastEngagementChatControl
         whatsappDeliveryStatus
         createdAt
         messageObj
@@ -215,6 +230,7 @@ export const graphqlQueryToFindManyPeopleEngagedCandidates = `query FindManyPeop
                       id
                       name
                       whatsappProvider
+                      lastEngagementChatControl
                       jobs {
                          name
                          id
@@ -226,6 +242,16 @@ export const graphqlQueryToFindManyPeopleEngagedCandidates = `query FindManyPeop
                           id
                           domainName
                           descriptionOneliner
+                        }
+                      }
+                      aIInterviewStatus{
+                        edges{
+                            node{
+                                id
+                                interviewLink{
+                                  url
+                                }
+                            }
                         }
                       }
                       engagementStatus
@@ -256,6 +282,7 @@ export const graphqlQueryToFindManyPeopleEngagedCandidates = `query FindManyPeop
                             messageObj
                             updatedAt
                             createdAt
+                            lastEngagementChatControl
                             id
                             name
                             phoneFrom
@@ -299,6 +326,17 @@ export const graphqlQueryToFindManyPeopleEngagedCandidates = `query FindManyPeop
             }
           }
           startChat
+          aIInterviewStatus{
+              edges{
+                  node{
+                      id
+                      interviewLink{
+                        url
+                      }
+                  }
+              }
+          }
+          lastEngagementChatControl
           startVideoInterviewChat
           startMeetingSchedulingChat
           stopChat

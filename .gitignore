@@ -1,4 +1,6 @@
 packages/twenty-server/sessionIds.json
+packages/twenty-server/token-full.json
+packages/twenty-server/.attachments/token-full.json
 **/**/sessionIds.json
 **/**/.env
 .DS_Store

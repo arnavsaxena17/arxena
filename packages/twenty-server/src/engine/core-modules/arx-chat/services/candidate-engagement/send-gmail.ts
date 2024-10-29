@@ -8,7 +8,14 @@ export class SendEmailFunctionality {
     // Create a new calendar event
     const mailerService = new MailerService();
     const mailerController = new MailerController(mailerService);
-    await mailerController.sendEmailOfController(gmailMessageData).catch(console.error);
-    // console.log("This is the response from the calendar event creation", calendarEventResponse.data);
+    const response = await mailerController.sendEmailOfController(gmailMessageData).catch(console.error);
+    return response;
   }
+  async sendEmailWithAttachmentFunction(gmailMessageData: GmailMessageData) {
+    const mailerService = new MailerService();
+    const mailerController = new MailerController(mailerService);
+    const response = await mailerController.sendEmailWithAttachmentsController(gmailMessageData).catch(console.error);
+    return response;
+  }
+
 }

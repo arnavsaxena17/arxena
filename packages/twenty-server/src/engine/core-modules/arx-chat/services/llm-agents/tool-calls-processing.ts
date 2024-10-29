@@ -2,8 +2,9 @@ import * as allDataObjects from '../../services/data-model-objects';
 import { AttachmentProcessingService } from '../../services/candidate-engagement/attachment-processing';
 import { WhatsappAPISelector } from '../../services/whatsapp-api/whatsapp-controls';
 import { FetchAndUpdateCandidatesChatsWhatsapps } from '../../services/candidate-engagement/update-chat';
+// import { chat } from 'googleapis/build/src/apis/chat';
 
-export async function shareJDtoCandidate(person: allDataObjects.PersonNode) {
+export async function shareJDtoCandidate(person: allDataObjects.PersonNode, chatControl: allDataObjects.chatControls) {
   console.log('This is the person for which we are trying to send the JD:', person);
   const candidateId = person?.candidates?.edges[0]?.node?.id;
   console.log('This is the candidateID for which we are trying to send the JD:', candidateId);
@@ -17,7 +18,7 @@ export async function shareJDtoCandidate(person: allDataObjects.PersonNode) {
     console.log('No attachments found for this job');
   }
   const attachment = jobAttachments?.node ?? '';
-  await new WhatsappAPISelector().sendJDViaWhatsapp( person, attachment );
+  await new WhatsappAPISelector().sendJDViaWhatsapp( person, attachment, chatControl);
 }
 
 export async function updateCandidateStatus(person: allDataObjects.PersonNode, status: string) {
@@ -30,6 +31,7 @@ export async function updateCandidateStatus(person: allDataObjects.PersonNode, s
     whatsappMessageType: "",
     candidateProfile: person?.candidates?.edges[0]?.node,
     candidateFirstName: person?.name?.firstName,
+    lastEngagementChatControl: person?.candidates?.edges[0]?.node?.lastEngagementChatControl,
     phoneNumberFrom: person?.phone,
     phoneNumberTo: allDataObjects.recruiterProfile.phone,
     messages: [{ content: status }],
@@ -54,6 +56,7 @@ export async function scheduleCandidateInterview(person: allDataObjects.PersonNo
     candidateProfile: person?.candidates?.edges[0]?.node,
     candidateFirstName: person?.name?.firstName,
     phoneNumberFrom: person?.phone,
+    lastEngagementChatControl: person?.candidates?.edges[0]?.node?.lastEngagementChatControl,
     phoneNumberTo: allDataObjects.recruiterProfile.phone,
     messages: [{ content: status }],
     messageType: status,

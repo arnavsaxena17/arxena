@@ -83,10 +83,14 @@ export class ToolsForAgents {
   }
 
 
-  async getVideoInterviewPrompt(){
-    return `You will drive the conversation with candidates like a recruiter. Your goal is to guide candidates to appear for a video interview for the role of {current_job_position}. 
+  async getVideoInterviewPrompt(personNode: allDataObjects.PersonNode) {
+    const jobProfile = personNode?.candidates?.edges[0]?.node?.jobs;
+    const current_job_position = jobProfile.name;
+
+    const candidate_conversation_summary = "The candidate has mentioned that he/ she is interested in the role. They are okay to relocate and their salary falls in the bracket that the client is hiring for";
+    return `You will drive the conversation with candidates like a recruiter. Your goal is to guide candidates to appear for a video interview for the role of ${current_job_position}. 
     Following is the summary of the conversations that have happened with the candidate for reference :
-    {candidate_conversation_summary}
+    ${candidate_conversation_summary}
     First you start with telling the candidate that you discussed internally and liked their candidature and would like to get to know more about them.
     Explain to them telling the candidate the interviewing process of the role comprises of the following steps - 
     1. Video Interview - HR Round
@@ -106,11 +110,14 @@ export class ToolsForAgents {
     Sometimes candidates will send forwards and irrelevant messages. You will have to ignore them. If the candidate unnecessarily replies and messages, you will reply with "#DONTRESPOND#" exact string without any text around it.
     You will not indicate any updates to the candidate. The candidate might ask for feedback, you will not provide any feedback. They can ask any queries unrelated to the role or the background inside any related questions. You will not respond to any queries unrelated to the role.
     If you do not wish to respond to the candidate, you will reply with "#DONTRESPOND#" exact string without any text around it.
-    If you do not have to respond, you will reply with "#DONTRESPOND#" exact string without any text around it.`
+    If you do not have to respond, you will reply with "#DONTRESPOND#" exact string without any text around it.
+    Your first message when you receive the prompt "startVideoInterview" is: Hey ${personNode.name.firstName},
+    We like your candidature and are keen to know more about you. We would like to start with a quick 15 minute video interview as part of the client's hiring process. 
+    Would you be available for the same?
+    `
   }
 
-  async getSystemPrompt(personNode: allDataObjects.PersonNode,chatControl:allDataObjects.chatControls) {
-    console.log("This is the chatControl:", chatControl)
+  async getStartChatPrompt(personNode: allDataObjects.PersonNode) {
     let receiveCV
     receiveCV = `If they have shared their interest after going through the JD, ask the candidate to share a copy of their updated CV prior to the meeting.
     If they say that you can take the CV from naukri, tell them that you would require a copy for records directly from them for candidate confirmation purposes.`
@@ -159,6 +166,20 @@ export class ToolsForAgents {
     Wanted to speak to you in regards your interests in our new role. Would you be available for a short call sometime today?
     `;
     return SYSTEM_PROMPT;
+  }
+
+  async getSystemPrompt(personNode: allDataObjects.PersonNode,chatControl:allDataObjects.chatControls) {
+    console.log("This is the chatControl:", chatControl)
+    if (chatControl == 'startVideoInterviewChat') {
+      return this.getVideoInterviewPrompt(personNode);
+    }
+    else if (chatControl === "startChat"){
+      return this.getStartChatPrompt(personNode);
+    }
+    else{
+      return this.getStartChatPrompt(personNode);
+    }
+    
   }
 
   async getTimeManagementPrompt(personNode: allDataObjects.PersonNode) {
@@ -217,7 +238,21 @@ export class ToolsForAgents {
       schedule_meeting: this.scheduleMeeting,
       send_email: this.sendEmail,
       create_reminder: this.createReminder,
+      share_interview_link: this.shareInterviewLink,
+
     };
+  }
+  async shareInterviewLink(inputs: any, personNode: allDataObjects.PersonNode) {
+    const jobProfile = personNode?.candidates?.edges[0]?.node?.jobs;
+    const interviewLink = 'https://meet.google.com/abc-def-ghi';
+    const interviewLinkMessage = `Here is the link to the interview: ${interviewLink}`;
+    await new SendEmailFunctionality().sendEmailFunction({
+      sendEmailFrom: recruiterProfile?.email,
+      sendEmailTo: personNode?.email,
+      subject: 'Interview Link',
+      message: interviewLinkMessage,
+    });
+    return 'Interview link shared successfully.';
   }
 
   async createReminder(inputs: { reminderDuration: string }, candidateProfileDataNodeObj: allDataObjects.PersonNode) {
@@ -257,10 +292,10 @@ export class ToolsForAgents {
     return 'Email sent successfully.';
   }
 
-  async shareJD(inputs: any, personNode: allDataObjects.PersonNode) {
+  async shareJD(inputs: any, personNode: allDataObjects.PersonNode, chatControl: allDataObjects.chatControls) {
     try {
       console.log('Function Called: shareJD');
-      await shareJDtoCandidate(personNode);
+      await shareJDtoCandidate(personNode,  chatControl);
       console.log('Function Called:  candidateProfileDataNodeObj:any', personNode);
     } catch {
       debugger;
@@ -329,7 +364,32 @@ export class ToolsForAgents {
     return 'scheduleMeeting the candidate meeting.';
   }
 
-  async getTools() {
+
+
+  async getTools(chatControl){
+    if (chatControl === 'startChat') {
+      return this.getStartChatTools()
+    }
+    else if (chatControl === 'startVideoInterviewChat') {
+      return this.getVideoInterviewTools()
+    }
+  }
+
+  async getVideoInterviewTools(){
+    let tools;
+      tools = [
+        {
+          type: 'function',
+          function: {
+            name: 'share_interview_link',
+            description: 'Share the interview link with the candidate',
+          },
+        },
+      ]
+      return tools;
+  }
+
+  async getStartChatTools() {
     let tools;
       tools = [
         {

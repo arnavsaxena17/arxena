@@ -39,6 +39,67 @@ export class WhatsappTemplateMessages{
         console.log("Going to get utiltiy messages")
     
         switch (sendTemplateMessageObj.template_name) {
+          case 'share_video_interview_link_with_start_link':
+            templateMessageObj = JSON.stringify({
+              messaging_product: 'whatsapp',
+              to: sendTemplateMessageObj.recipient,
+              type: 'template',
+              template: {
+                name: sendTemplateMessageObj.template_name,
+                language: { code: 'en' },
+                components: [
+                  {
+                    type: 'body',
+                    parameters: [
+                      { type: 'text', text: sendTemplateMessageObj.candidateFirstName },
+                      { type: 'text', text: "10 mins" },
+                      { type: 'text', text: sendTemplateMessageObj.videoInterviewLink },
+                      { type: 'text', text: "15 mins" },
+                      { type: 'text', text: "3-4 questions" },
+                    ],
+                  },
+                  {
+                    "type": "BUTTONS",
+                    "buttons": [
+                      {
+                          "type": "URL",
+                          "text": "Start Interview",
+                          "url": "https://arxena.com/video-interview/1ebf22e0-7865-44c7-b266-c0d08121f4c1/{{1}}",
+                          "example": [
+                              "https://arxena.com/video-interview/1ebf22e0-7865-44c7-b266-c0d08121f4c1"
+                          ]
+                      }
+                  ]
+                }
+                ],
+              },
+            });
+            break;
+          case 'share_video_interview_link_direct':
+            templateMessageObj = JSON.stringify({
+              messaging_product: 'whatsapp',
+              to: sendTemplateMessageObj.recipient,
+              type: 'template',
+              template: {
+                name: sendTemplateMessageObj.template_name,
+                language: { code: 'en' },
+                components: [
+                  {
+                    type: 'body',
+                    parameters: [
+                      { type: 'text', text: sendTemplateMessageObj.candidateFirstName },
+                      { type: 'text', text: "10 mins" },
+                      { type: 'text', text: sendTemplateMessageObj.videoInterviewLink },
+                      { type: 'text', text: "15 mins" },
+                      { type: 'text', text: "3-4 questions" },
+                    ],
+                  },
+                ],
+              },
+            });
+            break;
+
+
           case 'recruitment':
             // First template example
             templateMessageObj = JSON.stringify({

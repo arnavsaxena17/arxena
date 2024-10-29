@@ -227,7 +227,7 @@ export class IncomingWhatsappMessages {
   }
   async createAndUpdateIncomingCandidateChatMessage(
     replyObject: { whatsappDeliveryStatus: string; chatReply: string; whatsappMessageId: string; databaseFilePath?: string | null; type?: string; isFromMe?: boolean },
-    candidateProfileDataNodeObj: allDataObjects.CandidateNode,
+    candidateProfileDataNodeObj: allDataObjects.CandidateNode, 
   ) {
     const recruiterProfile = allDataObjects.recruiterProfile;
     const messagesList = candidateProfileDataNodeObj?.whatsappMessages?.edges;
@@ -257,6 +257,7 @@ export class IncomingWhatsappMessages {
       messages: [{ content: replyObject.chatReply }],
       messageType: 'candidateMessage',
       messageObj: mostRecentMessageObj,
+      lastEngagementChatControl: candidateProfileDataNodeObj?.lastEngagementChatControl,
       whatsappDeliveryStatus: replyObject.whatsappDeliveryStatus,
       whatsappMessageId: replyObject.whatsappMessageId,
       type: replyObject.type || 'text',

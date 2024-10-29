@@ -21,7 +21,7 @@ export class WhatsappAPISelector {
       return;
     }
     console.log("Going to create whatsaappupdatemessage obj for message text::", messageText)
-    const whatappUpdateMessageObj:allDataObjects.candidateChatMessageType = await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj('sendWhatsappMessageToCandidateMulti', personNode, mostRecentMessageArr);
+    const whatappUpdateMessageObj:allDataObjects.candidateChatMessageType = await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj('sendWhatsappMessageToCandidateMulti', personNode, mostRecentMessageArr, chatControl);
     if (whatappUpdateMessageObj.messages[0].content?.includes('#DONTRESPOND#') || whatappUpdateMessageObj.messages[0].content?.includes('DONTRESPOND') && whatappUpdateMessageObj.messages[0].content) {
       console.log('Found a #DONTRESPOND# message, so not sending any message');
       return;
@@ -45,21 +45,21 @@ export class WhatsappAPISelector {
     if (process.env.WHATSAPP_API === 'facebook') {
       const response = await new FacebookWhatsappChatApi().sendWhatsappMessageVIAFacebookAPI(whatappUpdateMessageObj, personNode, mostRecentMessageArr, chatControl);
     } else if (process.env.WHATSAPP_API === 'baileys') {
-      await sendWhatsappMessageVIABaileysAPI(whatappUpdateMessageObj, personNode, mostRecentMessageArr);
+      await sendWhatsappMessageVIABaileysAPI(whatappUpdateMessageObj, personNode, mostRecentMessageArr, chatControl);
     } else {
       console.log('No valid whatsapp API selected');
     }
   }
-  async sendAttachmentMessageOnWhatsapp(attachmentMessage: allDataObjects.AttachmentMessageObject, personNode: allDataObjects.PersonNode) {
+  async sendAttachmentMessageOnWhatsapp(attachmentMessage: allDataObjects.AttachmentMessageObject, personNode: allDataObjects.PersonNode, chatControl: allDataObjects.chatControls) {
     console.log('attachmentMessage received to send attachment:', attachmentMessage);
     if (process.env.WHATSAPP_API === 'facebook') {
-      await new FacebookWhatsappChatApi().uploadAndSendFileToWhatsApp(attachmentMessage);
+      await new FacebookWhatsappChatApi().uploadAndSendFileToWhatsApp(attachmentMessage, chatControl);
     } else if (process.env.WHATSAPP_API === 'baileys') {
       await sendAttachmentMessageViaBaileys(attachmentMessage, personNode);
     }
   }
 
-  async sendJDViaWhatsapp( person: allDataObjects.PersonNode, attachment: allDataObjects.Attachment, ) {
+  async sendJDViaWhatsapp( person: allDataObjects.PersonNode, attachment: allDataObjects.Attachment, chatControl: allDataObjects.chatControls) {
     const fullPath = attachment?.fullPath;
     const name = attachment?.name || 'attachment.pdf';
     console.log('This is attachment name:', name);
@@ -99,6 +99,6 @@ export class WhatsappAPISelector {
         mimetype: mime.lookup(name) || 'application/octet-stream',
       },
     };
-    await new WhatsappAPISelector().sendAttachmentMessageOnWhatsapp(attachmentMessageObj, person);
+    await new WhatsappAPISelector().sendAttachmentMessageOnWhatsapp(attachmentMessageObj, person, chatControl);
   }
 }

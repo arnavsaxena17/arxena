@@ -22,13 +22,13 @@ if (process.env.FACEBOOK_WHATSAPP_PERMANENT_API) {
 
 const templates = ['hello_world', 'recruitment','application','application02', 'application03'];
 export class FacebookWhatsappChatApi {
-  async uploadAndSendFileToWhatsApp(attachmentMessage: allDataObjects.AttachmentMessageObject) {
+  async uploadAndSendFileToWhatsApp(attachmentMessage: allDataObjects.AttachmentMessageObject, chatControl:allDataObjects.chatControls) {
     console.log('Send file');
     console.log('sendFileObj::y::', attachmentMessage);
     const filePath = attachmentMessage?.fileData?.filePath;
     const phoneNumberTo = attachmentMessage?.phoneNumberTo;
     const attachmentText = 'Sharing the JD';
-    const response = await new FacebookWhatsappChatApi().uploadFileToWhatsApp(attachmentMessage);
+    const response = await new FacebookWhatsappChatApi().uploadFileToWhatsApp(attachmentMessage, chatControl);
     const mediaID = response?.mediaID;
     const fileName = attachmentMessage?.fileData?.fileName;
     const sendTextMessageObj = {
@@ -41,7 +41,7 @@ export class FacebookWhatsappChatApi {
     const personObj = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(phoneNumberTo);
     const mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.messageObj;
     mostRecentMessageArr.push({ role: 'user', content: 'Sharing the JD' });
-    new FacebookWhatsappChatApi().sendWhatsappAttachmentMessage(sendTextMessageObj, personObj, mostRecentMessageArr);
+    new FacebookWhatsappChatApi().sendWhatsappAttachmentMessage(sendTextMessageObj, personObj, mostRecentMessageArr, chatControl);
   }
   
 
@@ -65,8 +65,6 @@ export class FacebookWhatsappChatApi {
       },
       data: text_message,
     };
-    // console.log("This is the config in sendWhatsappTextMessage:", config)
-
     const response = await axios.request(config);
     console.log("Status on sending that whatsaapp message::", response?.status)
 
@@ -102,7 +100,7 @@ export class FacebookWhatsappChatApi {
     return { filePath, fileName, contentType };
   }
 
-  async uploadFileToWhatsApp(attachmentMessage: allDataObjects.AttachmentMessageObject) {
+  async uploadFileToWhatsApp(attachmentMessage: allDataObjects.AttachmentMessageObject, chatControl:allDataObjects.chatControls) {
     console.log('This is the upload file to whatsapp in arx chat');
 
     try {
@@ -137,7 +135,7 @@ export class FacebookWhatsappChatApi {
             const personObj = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(phoneNumberTo);
             const mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.messageObj;
             mostRecentMessageArr.push({ role: 'user', content: 'Failed to send JD to the candidate.' });
-            const whatappUpdateMessageObj:allDataObjects.candidateChatMessageType = await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj( 'failed', personObj, mostRecentMessageArr, );
+            const whatappUpdateMessageObj:allDataObjects.candidateChatMessageType = await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj( 'failed', personObj, mostRecentMessageArr, chatControl);
             await new CandidateEngagementArx().updateCandidateEngagementDataInTable(whatappUpdateMessageObj);
           }
         }
@@ -216,7 +214,7 @@ export class FacebookWhatsappChatApi {
     }
   }
 
-  async sendWhatsappAttachmentMessage(sendWhatsappAttachmentTextMessageObj: allDataObjects.FacebookWhatsappAttachmentChatRequestBody, personObj: allDataObjects.PersonNode, mostRecentMessageArr: allDataObjects.ChatHistoryItem[]) {
+  async sendWhatsappAttachmentMessage(sendWhatsappAttachmentTextMessageObj: allDataObjects.FacebookWhatsappAttachmentChatRequestBody, personObj: allDataObjects.PersonNode, mostRecentMessageArr: allDataObjects.ChatHistoryItem[],chatControl:allDataObjects.chatControls) {
     console.log('sending whatsapp attachment message');
     const text_message = {
       messaging_product: 'whatsapp',
@@ -240,7 +238,6 @@ export class FacebookWhatsappChatApi {
       },
       data: text_message,
     };
-    //   console.log("This is the config in sendWhatsappAttachmentMessage:", config)
 
     try {
       const response = await axios.request(config);
@@ -251,6 +248,7 @@ export class FacebookWhatsappChatApi {
         // response,
         personObj,
         mostRecentMessageArr,
+        chatControl
       );
       await new CandidateEngagementArx().updateCandidateEngagementDataInTable(whatappUpdateMessageObj);
     } catch (error) {
@@ -305,7 +303,7 @@ export class FacebookWhatsappChatApi {
     try {
       const response = await axios.request(config);
       // console.log("This is the response:", response)
-      // console.log("This is the response data:", response.data)
+      console.log("This is the response data:", response.data)
       if (response?.data?.messages[0]?.message_status === 'accepted') {
         console.log('Message sent successfully and accepted by FACEBOOK API with id::', response?.data?.messages[0]?.id);
         return response?.data;
@@ -314,6 +312,7 @@ export class FacebookWhatsappChatApi {
       console.log('This is the message sent successfully');
     } catch (error) {
       console.log('This is error in facebook graph api when sending messaging template::', error);
+      console.log('This is error in facebook graph api when sending messaging template::', JSON.stringify(error));
     }
   }
 
@@ -365,7 +364,7 @@ export class FacebookWhatsappChatApi {
       console.error('Error saving file:', error);
     });
   }
-  async sendWhatsappMessageVIAFacebookAPI(whatappUpdateMessageObj: allDataObjects.candidateChatMessageType, personNode: allDataObjects.PersonNode, mostRecentMessageArr: allDataObjects.ChatHistoryItem[], chatControl:string) {
+  async sendWhatsappMessageVIAFacebookAPI(whatappUpdateMessageObj: allDataObjects.candidateChatMessageType, personNode: allDataObjects.PersonNode, mostRecentMessageArr: allDataObjects.ChatHistoryItem[], chatControl:allDataObjects.chatControls) {
     console.log('Sending message to whatsapp via facebook api');
     console.log('whatappUpdateMessageObj.messageType', whatappUpdateMessageObj.messageType);
     console.log('whatappUpdateMessageObj.messageType chat controles', chatControl);
@@ -389,6 +388,7 @@ export class FacebookWhatsappChatApi {
         const sendTemplateMessageObj:allDataObjects.sendWhatsappUtilityMessageObjectType = {
           recipient: whatappUpdateMessageObj.phoneNumberTo.replace('+', ''),
           template_name: messageTempalate,
+          recruiterFirstName: allDataObjects.recruiterProfile.name,
           candidateFirstName: whatappUpdateMessageObj.candidateFirstName,
           recruiterName: allDataObjects.recruiterProfile.name,
           recruiterJobTitle: allDataObjects.recruiterProfile.job_title,
@@ -399,6 +399,9 @@ export class FacebookWhatsappChatApi {
           descriptionOneliner:whatappUpdateMessageObj?.candidateProfile?.jobs?.companies?.descriptionOneliner,
           jobCode: whatappUpdateMessageObj?.candidateProfile?.jobs?.jobCode,
           jobLocation: whatappUpdateMessageObj?.candidateProfile?.jobs?.jobLocation,
+          // videoInterviewLink: process.env.SERVER_BASE_URL+personNode?.candidates?.edges[0]?.node?.aIInterviewStatus?.edges[0].node.interviewLink?.url || "",
+          videoInterviewLink: "https://arxena.com"+personNode?.candidates?.edges[0]?.node?.aIInterviewStatus?.edges[0].node.interviewLink?.url || "",
+          
         };
         response = await this.sendWhatsappUtilityMessage(sendTemplateMessageObj);
       } else {
@@ -412,7 +415,7 @@ export class FacebookWhatsappChatApi {
         response = await this.sendWhatsappTextMessage(sendTextMessageObj);
         // whatappUpdateMessageObjAfterWAMidUpdate = await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj( response?.data?.messages[0]?.id || response.messages[0].id, personNode, mostRecentMessageArr, );
       }
-      whatappUpdateMessageObjAfterWAMidUpdate = await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj(response?.data?.messages[0]?.id || response.messages[0].id, personNode, mostRecentMessageArr);
+      whatappUpdateMessageObjAfterWAMidUpdate = await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj(response?.data?.messages[0]?.id || response.messages[0].id, personNode, mostRecentMessageArr, chatControl);
       await new CandidateEngagementArx().updateCandidateEngagementDataInTable(whatappUpdateMessageObjAfterWAMidUpdate);
 
     } else {

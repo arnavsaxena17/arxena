@@ -9,8 +9,9 @@ async createNewCalendarEvent(calendarEventData: CalendarEventType) {
     // Create a new calendar event
     const googleCalendarService = new GoogleCalendarService();
     const googleCalendarController =  new GoogleCalendarController(googleCalendarService);
-    await googleCalendarController.createEventOfController(calendarEventData).catch(console.error);
+    const response = await googleCalendarController.createEventOfController(calendarEventData).catch(console.error);
     // console.log("This is the response from the calendar event creation", calendarEventResponse.data);
+    return response;
 }
 
 }

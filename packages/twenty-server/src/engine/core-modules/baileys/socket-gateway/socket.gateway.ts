@@ -73,7 +73,7 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     console.log(`client:(${client.id}) connected...`, authToken);
     (async () => {
       try {
-        this.baileys = await new BaileysBot('sendWhatsappMessagehandleConnection').initApp(this, 'started from handleConnection');
+        this.baileys = await new BaileysBot('sendWhatsappMessagehandleConnection').initApp(this, 'started from handleConnection',"startChat");
         console.log('Baileys service initialized from SocketGateway.handleConnection.');
       } catch (error) {
         this.handleError(error);
@@ -97,7 +97,7 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
         // throw new Error("Baileys service is not initialized.");
         (async () => {
           try {
-            this.baileys = await new BaileysBot('sendMessageServiceNotInitilaised').initApp(this, 'because service is not initilised');
+            this.baileys = await new BaileysBot('sendMessageServiceNotInitilaised').initApp(this, 'because service is not initilised',"startChat");
             // await delay(2000);
             return await this.sendMessageToBaileys(body); // ! Recursion
             // let { jid, message } = body;

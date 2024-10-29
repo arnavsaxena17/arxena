@@ -1,10 +1,11 @@
 import { Module } from "@nestjs/common";
-import { MailerService } from "./gmail-sender.service";
-import { MailerController } from "./gmail-sender.controller";
+import { GoogleAuthService, MailerService } from "./gmail-sender.service";
+import { GoogleAuthController, MailerController } from "./gmail-sender.controller";
 
 @Module({
-  controllers: [MailerController],
-  providers: [MailerService],
+  imports: [],
+  controllers: [MailerController, GoogleAuthController],
+  providers: [MailerService, GoogleAuthService],
   exports: [MailerService],
 })
 export class MailerModule {}
