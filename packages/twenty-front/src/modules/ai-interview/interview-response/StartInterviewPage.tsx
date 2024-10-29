@@ -8,8 +8,8 @@ import {
   StyledLeftPanelContentBox,
   StyledTextLeftPanelTextHeadline,
   StyledTextLeftPaneldisplay,
-  StyledLeftPanel,
-  StyledRightPanel,
+  StartInterviewStyledLeftPanel,
+  StartInterviewStyledRightPanel,
   StyledButton,
   ButtonContainer,
   InstructionSection,
@@ -54,23 +54,18 @@ export const StartInterviewPage: React.FC<InterviewResponseTypes.StartInterviewP
   console.log("THis is introductionVideoURL:", introductionVideoURL)
   return (
     <StyledContainer>
-    <StyledLeftPanel>
+    <StartInterviewStyledLeftPanel>
       <h2>{InterviewData?.candidate?.jobs?.name}</h2>
       <StyledLeftPanelContentBox>
         <StyledTextLeftPanelTextHeadline>Introduction</StyledTextLeftPanelTextHeadline>
-        <VideoPlayer
-            src={process.env.REACT_APP_SERVER_BASE_URL+"/files/"+introductionVideoData?.data?.attachments?.edges[0]?.node?.fullPath}
-            videoRef={videoRef}
-            isPlaying={isPlaying}
-            setIsPlaying={setIsPlaying}
-          />
+        <VideoPlayer src={process.env.REACT_APP_SERVER_BASE_URL+"/files/"+introductionVideoData?.data?.attachments?.edges[0]?.node?.fullPath} videoRef={videoRef} isPlaying={isPlaying} setIsPlaying={setIsPlaying} />
         <h3>Transcript</h3>
         <StyledTextLeftPaneldisplay>
         {InterviewData?.aIInterview?.introduction}
         </StyledTextLeftPaneldisplay>
       </StyledLeftPanelContentBox>
-    </StyledLeftPanel>
-    <StyledRightPanel>
+    </StartInterviewStyledLeftPanel>
+    <StartInterviewStyledRightPanel>
       <InstructionSection>
         <h2>Hi, {InterviewData?.candidate?.people?.name?.firstName} (Application for {InterviewData?.candidate?.jobs?.name} at {InterviewData?.candidate?.jobs?.companyName})</h2>
         <InstructionList>
@@ -90,7 +85,7 @@ export const StartInterviewPage: React.FC<InterviewResponseTypes.StartInterviewP
             {!hasAccess ? ( <StyledButton onClick={requestMediaAccess}> Give camera and microphone access </StyledButton> ) : ( <AccessMessage>✓ Camera and microphone access granted</AccessMessage> )}
             {hasAccess && ( <StyledButton onClick={onStart}> Start Interview </StyledButton> )}
           </ButtonContainer>
-    </StyledRightPanel>
+    </StartInterviewStyledRightPanel>
   </StyledContainer>
 ); 
 };
