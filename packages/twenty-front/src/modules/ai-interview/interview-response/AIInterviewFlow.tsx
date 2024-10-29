@@ -48,8 +48,12 @@ const Spinner = styled.div`
   animation: spin 1s linear infinite;
 
   @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
   }
 `;
 
@@ -70,12 +74,11 @@ const InterviewLoader = () => (
   </LoaderOverlay>
 );
 
-
 const AIInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) => {
-  const [stage, setStage] = useState<'start' | 'interview' | 'end'> ('start');
+  const [stage, setStage] = useState<'start' | 'interview' | 'end'>('start');
   const [loading, setLoading] = useState(false);
   const [interviewData, setInterviewData] = useState<InterviewResponseTypes.InterviewData | null>(null);
-  const [introductionVideoData, setintroductionVideoData] = useState< InterviewResponseTypes.VideoInterviewAttachment| null>(null);
+  const [introductionVideoData, setintroductionVideoData] = useState<InterviewResponseTypes.VideoInterviewAttachment | null>(null);
   const [questionsVideoData, setquestionsVideoData] = useState<InterviewResponseTypes.VideoInterviewAttachment[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
 
@@ -87,40 +90,39 @@ const AIInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) => 
     try {
       const response = await axios.post(`${process.env.REACT_APP_SERVER_BASE_URL}/video-interview/get-interview-details`, { interviewId });
       console.log('This is the response to fetch interview data:', response);
-      const responseObj:InterviewResponseTypes.GetInterviewDetailsResponse = response.data;
+      const responseObj: InterviewResponseTypes.GetInterviewDetailsResponse = response.data;
       if (responseObj) {
-        console.log("responseObj to fetch interview data:", responseObj)
-        const fetchedData:any = response.data.responseFromInterviewRequests.data;
-        console.log("fetchedData to fetch interview data:", fetchedData)
-        // debugger;
+        console.log('responseObj to fetch interview data:', responseObj);
+        const fetchedData: any = response.data.responseFromInterviewRequests.data;
+        console.log('fetchedData to fetch interview data:', fetchedData);
         const formattedData: InterviewResponseTypes.InterviewData = {
-          name: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.name || "",
-          id: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.id || "",
+          name: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.name || '',
+          id: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.id || '',
           candidate: {
-            id: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.candidate?.id || "",
+            id: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.candidate?.id || '',
             jobs: {
-              jobId: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.candidate?.jobs?.id || "",
-              name: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.candidate?.jobs?.name || "",
-              recruiterId: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.candidate?.jobs?.recruiterId || "",
-              companyName: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.candidate?.jobs?.companies?.name || "",
+              jobId: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.candidate?.jobs?.id || '',
+              name: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.candidate?.jobs?.name || '',
+              recruiterId: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.candidate?.jobs?.recruiterId || '',
+              companyName: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.candidate?.jobs?.companies?.name || '',
             },
             people: {
               name: {
-                firstName: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.candidate?.people?.name?.firstName || "",
-                lastName: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.candidate?.people?.name?.lastName || "",
+                firstName: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.candidate?.people?.name?.firstName || '',
+                lastName: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.candidate?.people?.name?.lastName || '',
               },
-              email: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.candidate?.people?.email || "",
-              phone: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.candidate?.people?.phone || "",
+              email: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.candidate?.people?.email || '',
+              phone: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.candidate?.people?.phone || '',
             },
           },
           aIInterview: {
-            name: fetchedData.aIInterviewStatuses.edges[0].node?.aIInterview?.name || "",
-            introduction: fetchedData.aIInterviewStatuses.edges[0].node.aIInterview.introduction || "",
-            instructions: fetchedData.aIInterviewStatuses.edges[0].node.aIInterview.instructions || "",
-            aIInterviewQuestions: fetchedData.aIInterviewStatuses.edges[0].node.aIInterview.aIInterviewQuestions || "",
+            name: fetchedData.aIInterviewStatuses.edges[0].node?.aIInterview?.name || '',
+            introduction: fetchedData.aIInterviewStatuses.edges[0].node.aIInterview.introduction || '',
+            instructions: fetchedData.aIInterviewStatuses.edges[0].node.aIInterview.instructions || '',
+            aIInterviewQuestions: fetchedData.aIInterviewStatuses.edges[0].node.aIInterview.aIInterviewQuestions || '',
           },
         };
-        console.log("setting formatted interview data:", formattedData)
+        console.log('setting formatted interview data:', formattedData);
         setInterviewData(formattedData);
         setintroductionVideoData(responseObj?.videoInterviewAttachmentResponse);
         setquestionsVideoData(Array.isArray(responseObj?.questionsAttachments) ? responseObj.questionsAttachments : []);
@@ -133,23 +135,8 @@ const AIInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) => 
   };
 
   const handleStart = () => setStage('interview');
-  // const handleStart = async () => {
-  //   setLoading(true);
-  //   setStage('interview');
-  //   try {
-  //     // Simulate some loading time to ensure videos are ready
-  //     await new Promise(resolve => setTimeout(resolve, 500));
-  //   } catch (error) {
-  //     console.error('Error starting interview:', error);
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
-
   const handleNextQuestion = async (responseData: FormData) => {
-    console.log("Currnet question  index in handle Next Question:", currentQuestionIndex)
-
+    console.log('Currnet question  index in handle Next Question:', currentQuestionIndex);
     try {
       console.log('Going to handle next question, let sed if this submists');
       setCurrentQuestionIndex(prevIndex => {
@@ -160,18 +147,17 @@ const AIInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) => 
         return nextIndex;
       });
       console.log('This is process.env.REACT_APP_SERVER_BASE_URL:', process.env.REACT_APP_SERVER_BASE_URL);
-      console.log("This is the appending of the rinterview dat:", interviewData)
+      console.log('This is the appending of the rinterview dat:', interviewData);
       responseData.append('interviewData', JSON.stringify(interviewData));
       responseData.forEach((value, key) => {
-        console.log("key for response data:", key, "::",value);
+        console.log('key for response data:', key, '::', value);
       });
       // console.log("Final resposne data being setnt:", responseData)
       const response = await axios.post(process.env.REACT_APP_SERVER_BASE_URL + '/video-interview/submit-response', responseData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       console.log('This isreht ersponse:', response);
-      console.log("The calue of interviewData!.aIInterview.aIInterviewQuestions.edges.length is ::", interviewData!.aIInterview.aIInterviewQuestions.edges.length)
-
+      console.log('The calue of interviewData!.aIInterview.aIInterviewQuestions.edges.length is ::', interviewData!.aIInterview.aIInterviewQuestions.edges.length);
     } catch (error) {
       console.error('Error submitting response:', error);
     }
@@ -193,39 +179,39 @@ const AIInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) => 
   const renderCurrentStage = () => {
     if (!interviewData) {
       return (
-      <StartInterviewPage
-        onStart={handleStart}
-        InterviewData={{
-          id: '',
-          name: '',
-          candidate: {
+        <StartInterviewPage
+          onStart={handleStart}
+          InterviewData={{
             id: '',
-            jobs: {
-              jobId: '',
-              name: '',
-              recruiterId: '',
-              companyName: '',
-            },
-            people: {
-              name: {
-                firstName: '',
-                lastName: '',
-              },
-              email: '',
-              phone: '',
-            },
-          },
-          aIInterview: {
             name: '',
-            introduction: '',
-            instructions: '',
-            aIInterviewQuestions: {
-              edges: [],
+            candidate: {
+              id: '',
+              jobs: {
+                jobId: '',
+                name: '',
+                recruiterId: '',
+                companyName: '',
+              },
+              people: {
+                name: {
+                  firstName: '',
+                  lastName: '',
+                },
+                email: '',
+                phone: '',
+              },
             },
-          },
-        }}
-        introductionVideoData={introductionVideoData!}
-      />
+            aIInterview: {
+              name: '',
+              introduction: '',
+              instructions: '',
+              aIInterviewQuestions: {
+                edges: [],
+              },
+            },
+          }}
+          introductionVideoData={introductionVideoData!}
+        />
       );
     }
 
@@ -233,27 +219,18 @@ const AIInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) => 
       case 'start':
         return (
           <>
-            {introductionVideoData && (
-              <StartInterviewPage
-                onStart={handleStart}
-                InterviewData={interviewData}
-                introductionVideoData={introductionVideoData}
-              />
-            )}
+            {introductionVideoData && <StartInterviewPage onStart={handleStart} InterviewData={interviewData} introductionVideoData={introductionVideoData} />}
             {loading && <InterviewLoader />}
           </>
-
         );
       case 'interview':
         return (
           <ErrorBoundary>
             <InterviewPage
               InterviewData={interviewData}
-              questions={interviewData.aIInterview.aIInterviewQuestions.edges
-                .map(edge => edge.node)
-                .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())}
-                introductionVideoAttachment={introductionVideoData!}
-                questionsVideoAttachment={questionsVideoData || []}
+              questions={interviewData.aIInterview.aIInterviewQuestions.edges.map(edge => edge.node).sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())}
+              introductionVideoAttachment={introductionVideoData!}
+              questionsVideoAttachment={questionsVideoData || []}
               currentQuestionIndex={currentQuestionIndex}
               onNextQuestion={handleNextQuestion}
               onFinish={handleFinish}
@@ -261,8 +238,7 @@ const AIInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) => 
           </ErrorBoundary>
         );
       case 'end':
-        return <EndInterviewPage interviewData={interviewData}
-         onSubmit={handleSubmitFeedback} />;
+        return <EndInterviewPage interviewData={interviewData} onSubmit={handleSubmitFeedback} />;
       default:
         return null;
     }

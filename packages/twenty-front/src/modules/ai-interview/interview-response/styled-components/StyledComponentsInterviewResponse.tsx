@@ -60,6 +60,21 @@ export const StyledLeftPanel = styled.div`
     font-size: ${({ theme }) => theme.font.size.sm};
   }
 `;
+export const StartInterviewStyledLeftPanel = styled.div`
+  width: 30%;
+  padding: 16px;
+  background-color: ${({ theme }) => theme.background.secondary};
+  color: ${({ theme }) => theme.font.color.secondary};
+  font-family: ${({ theme }) => theme.font.family};
+  font-size: ${({ theme }) => theme.font.size.md};
+  font-weight: ${({ theme }) => theme.font.weight.regular};
+
+  @media (max-width: 767px) {
+    width: 90%;
+    padding: 16px;
+    font-size: ${({ theme }) => theme.font.size.sm};
+  }
+`;
 
 
 export const EndInterviewStyledLeftPanel = styled.div`
@@ -399,6 +414,29 @@ export const StyledRightPanel = styled.div`
   font-style: normal;
   font-weight: 400;
   line-height: 150%;
+  height:100vh;
+
+  @media (max-width: 767px) {
+    width: 93%;
+    padding: 16px;
+    font-size: ${({ theme }) => theme.font.size.sm};
+    gap: 12px;
+  }
+`;
+export const StartInterviewStyledRightPanel = styled.div`
+  width: 70%;
+  padding: 16px;
+  background-color: ${({ theme }) => theme.background.primary};
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  color: #808080;
+  font-family: ${({ theme }) => theme.font.family};
+  font-size: ${({ theme }) => theme.font.size.md};
+  font-style: normal;
+  font-weight: 400;
+  line-height: 150%;
+  height:100vh;
 
   @media (max-width: 767px) {
     width: 93%;
