@@ -30,7 +30,7 @@ export class BaileysBot {
     this.source = source;
     console.log('BaileysBot being called from the source of !!!', this.source);
   }
-  async initApp(arxSocket: SocketGateway, source: string) {
+  async initApp(arxSocket: SocketGateway, source: string, chatControl:allDataObjects.chatControls) {
     console.log('InitApp being calledW by thius source!!!-->', source);
     return new Promise(async (resolve, reject) => {
       console.log('Going to try and save creds for source:', this.source);
@@ -43,7 +43,7 @@ export class BaileysBot {
         await this.handleBaileysConnection(updatedConnection, arxSocket, 'socketConnectionUpdate');
       });
       // this will be called as soon as the message send or received
-      socket.ev.on('messages.upsert', async (message: any) => await this.handleMessage(message, arxSocket, socket));
+      socket.ev.on('messages.upsert', async (message: any) => await this.handleMessage(message, arxSocket, socket, chatControl));
       // this will be called as soon as the credentials are updated
       socket.ev.on('creds.update', saveCreds);
 
@@ -115,7 +115,7 @@ export class BaileysBot {
     };
   };
 
-  async handleMessage(m: any, arxSocket: SocketGateway, socket: any) {
+  async handleMessage(m: any, arxSocket: SocketGateway, socket: any, chatControl:allDataObjects.chatControls) {
     // console.log("This is the m object", m)
     // console.log("This is the socket object", socket)
     // console.log("This is the arxSocket socket object", arxSocket)
@@ -142,7 +142,7 @@ export class BaileysBot {
     // console.log("Incoming phone NUmber", arxSocket.baileys.user.id.replace(":40@s.whatsapp.net",""))
     // console.log("This is the calue of arxSocket User server", Object.keys(arxSocket.server))
     try {
-      await this.processBaileysMessages(m, arxSocket, socket);
+      await this.processBaileysMessages(m, arxSocket, socket, chatControl);
       arxSocket?.server?.emit(event, data);
       await this.downloadAllMediaFiles(m, socket, data.fromRemoteJid);
     } catch (error) {
@@ -152,7 +152,7 @@ export class BaileysBot {
     }
   }
 
-  async processBaileysMessages(m: any, arxSocket: SocketGateway, socket: any) {
+  async processBaileysMessages(m: any, arxSocket: SocketGateway, socket: any, chatControl:allDataObjects.chatControls) {
     console.log('processBaileysMessages::', m);
 
     if (m.messages[0].key.fromMe === false) {
@@ -204,6 +204,7 @@ export class BaileysBot {
         const userMessage: allDataObjects.candidateChatMessageType = {
           phoneNumberFrom: phoneNumberFrom,
           whatsappMessageType: '',
+          lastEngagementChatControl:chatControl,
           phoneNumberTo: m?.messages[0]?.key?.remoteJid?.replace('@s.whatsapp.net', ''),
           messages: [{ text: messageBeingSent }],
           candidateFirstName: candidateProfileData?.name,
@@ -326,19 +327,19 @@ export class BaileysBot {
       console.log('This is the value of isLoggedOut ', {
         isConnectionRefreshed,
       });
-
+    const chatControl = "startChat";
       // reconnect if not logged out
       if (shouldReconnect) {
         if (!isConnectionRefreshed) {
           console.log('its saying to init app again because it says should reconnec tand that connections is not refreshed');
-          this.initApp(arxSocket, 'because should reconnect and connection is not refreshed');
+          this.initApp(arxSocket, 'because should reconnect and connection is not refreshed', chatControl);
         } else {
           console.log('Tried to do an init app and not sure if it has workedd ');
         }
       }
       if (isLoggedOut) {
         this.deleteFile('./auth_info_baileys/creds.json');
-        this.initApp(arxSocket, 'is loggedout and hence deleting creds and init app again');
+        this.initApp(arxSocket, 'is loggedout and hence deleting creds and init app again',chatControl);
       }
     } else if (connection === 'open') {
       console.log('opened connection');

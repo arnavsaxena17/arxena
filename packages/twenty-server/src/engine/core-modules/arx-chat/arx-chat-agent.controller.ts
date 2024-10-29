@@ -13,6 +13,11 @@ import * as allGraphQLQueries from './services/candidate-engagement/graphql-quer
 import { shareJDtoCandidate } from './services/llm-agents/tool-calls-processing';
 import { checkIfResponseMessageSoundsHumanLike } from './services/llm-agents/human-or-bot-type-response-classification';
 import twilio from 'twilio';
+import { GmailMessageData } from '../gmail-sender/services/gmail-sender-objects-types';
+import { SendEmailFunctionality } from './services/candidate-engagement/send-gmail';
+import { CalendarEventType } from '../calendar-events/services/calendar-data-objects-types';
+import { CalendarEmailService } from './services/candidate-engagement/calendar-email';
+import moment from 'moment-timezone';
 
 @Controller('updateChat')
 export class UpdateChatEndpoint {
@@ -21,12 +26,15 @@ export class UpdateChatEndpoint {
     console.log('These are the request body', request.body);
     const userMessageBody: allDataObjects.ChatRequestBody | null = request?.body as allDataObjects.ChatRequestBody | null; // Type assertion
     console.log('This is the user message', userMessageBody);
+    const chatControl = 'startChat';
+
     if (userMessageBody !== null) {
       const { phoneNumberFrom, phoneNumberTo, messages } = userMessageBody;
       const userMessage: allDataObjects.candidateChatMessageType = {
         phoneNumberFrom,
         phoneNumberTo,
         whatsappMessageType: 'application03',
+        lastEngagementChatControl: chatControl,
         messages: [{ text: userMessageBody.messages }],
         candidateFirstName: '',
         messageObj: [],
@@ -61,7 +69,7 @@ export class ArxChatEndpoint {
       chatAgent = new OpenAIArxMultiStepClient(personObj);
       const chatControl = "startChat";
       await chatAgent.createCompletion(mostRecentMessageArr,chatControl);
-      const whatappUpdateMessageObj:allDataObjects.candidateChatMessageType = await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj('ArxChatEndpoint', personObj, mostRecentMessageArr);
+      const whatappUpdateMessageObj:allDataObjects.candidateChatMessageType = await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj('ArxChatEndpoint', personObj, mostRecentMessageArr, chatControl);
       return whatappUpdateMessageObj;
     }
   }
@@ -155,8 +163,8 @@ export class ArxChatEndpoint {
     console.log('Recruiter profile', recruiterProfile);
     const chatMessages = personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges;
     let chatHistory = chatMessages[0]?.node?.messageObj || [];
+    const chatControl = 'startChat';
     if (chatReply === 'startChat' && chatMessages.length === 0) {
-      const chatControl = 'startChat';
       const SYSTEM_PROMPT = await new ToolsForAgents().getSystemPrompt(personObj, chatControl);
       chatHistory.push({ role: 'system', content: SYSTEM_PROMPT });
       chatHistory.push({ role: 'user', content: 'startChat' });
@@ -172,6 +180,7 @@ export class ArxChatEndpoint {
       messages: [{ content: chatReply }],
       messageType: 'candidateMessage',
       messageObj: chatHistory,
+      lastEngagementChatControl: chatControl,
       whatsappDeliveryStatus: 'startChatTriggered',
       whatsappMessageId: 'startChat',
     };
@@ -193,6 +202,7 @@ export class ArxChatEndpoint {
     console.log('Recruiter profile', recruiterProfile);
     const chatMessages = personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges;
     let chatHistory = chatMessages[0]?.node?.messageObj || [];
+    const chatControl = 'startChat';
     chatHistory = personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.messageObj;
     let whatappUpdateMessageObj: allDataObjects.candidateChatMessageType = {
       candidateProfile: personObj?.candidates?.edges[0]?.node,
@@ -203,6 +213,7 @@ export class ArxChatEndpoint {
       messages: [{ content: request?.body?.messageToSend }],
       messageType: 'recruiterMessage',
       messageObj: chatHistory,
+      lastEngagementChatControl: chatControl,
       whatsappDeliveryStatus: 'created',
       whatsappMessageId: 'startChat',
     };
@@ -278,7 +289,7 @@ export class ArxChatEndpoint {
     console.log('This is the request body', request.body);
     const personObj: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(request.body.phoneNumberTo);
     try {
-      await shareJDtoCandidate(personObj);
+      await shareJDtoCandidate(personObj, 'startChat');
       return { status: 'Success' };
     } catch (err) {
       return { status: err };
@@ -391,6 +402,106 @@ export class WhatsappControllers {
   }
 }
 
+
+
+@Controller('google-mail-calendar-contacts')
+export class GoogleControllers {
+  @Post('send-mail')
+  async sendEmail(@Req() request: any): Promise<object> {
+    const person: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(request.body.phoneNumber);
+    const emailData: GmailMessageData = {
+      sendEmailFrom: allDataObjects.recruiterProfile?.email,
+      sendEmailTo: person?.email,
+      subject: request.body?.subject || 'Email from the recruiter',
+      message: request.body?.message || 'This is a test email',
+    };
+    console.log("This is the email Data:", emailData)
+    const response = await new SendEmailFunctionality().sendEmailFunction(emailData);
+    console.log("This is the response:", response)
+    return response || {}; // Return an empty object if the response is undefined
+  }
+
+  @Post('send-mail-with-attachment')
+  async sendEmailWithAttachment(@Req() request: any): Promise<object> {
+    const person: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(request.body.phoneNumber);
+    
+    const emailData: GmailMessageData = {
+      sendEmailFrom: allDataObjects.recruiterProfile?.email,
+      sendEmailTo: person?.email,
+      subject: request.body?.subject || 'Email from the recruiter',
+      message: request.body?.message || 'This is a test email',
+      attachments: [
+        {
+          filename: 'Resume - JC Sharma.pdf',
+          path: '/Users/arnavsaxena/Downloads/Resumes - Executive Director (MIL)/JC Sharma.pdf'
+        }
+      ]
+    };
+
+    const response = await new SendEmailFunctionality().sendEmailWithAttachmentFunction(emailData);
+    return response || {};
+  }
+
+
+  @Post('send-calendar-invite')
+  async sendCalendarInvite(@Req() request: any): Promise<object> {
+    const person: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(request.body.phoneNumber);
+    const gptInputs = request.body;
+
+    const convertToUTC = (dateTime: string, timeZone: string): string => {
+      if (!dateTime) {
+          // If no datetime provided, use tomorrow's date
+          return moment.tz(timeZone).add(1, 'day').utc().format();
+      }
+      return moment.tz(dateTime, timeZone).utc().format();
+    };
+    const timeZone = gptInputs?.timeZone || "Asia/Kolkata";
+    // Convert start and end times to UTC
+    const defaultStart = moment.tz(timeZone).add(1, 'day').hour(13).minute(30);
+    const defaultEnd = moment(defaultStart).add(2, 'hours');
+    console.log("This is default start", defaultStart.format('YYYY-MM-DDTHH:mm:ss'))
+    console.log("This is default end", defaultEnd.format('YYYY-MM-DDTHH:mm:ss'))
+    
+
+    const startTimeUTC = convertToUTC(gptInputs?.startDateTime || defaultStart.format('YYYY-MM-DDTHH:mm:ss'), timeZone);
+    const endTimeUTC = convertToUTC(gptInputs?.endDateTime || defaultEnd.format('YYYY-MM-DDTHH:mm:ss'), timeZone);
+
+    console.log("This is the start time:", startTimeUTC)
+    console.log("This is the endTimeUTC:", endTimeUTC)
+
+
+    console.log('Function Called: scheduleMeeting');
+    const calendarEventObj: CalendarEventType = {
+      summary: person.name.firstName + ' ' + person.name.lastName + ' <> ' + allDataObjects.recruiterProfile.first_name + ' ' + allDataObjects.recruiterProfile.last_name ||  gptInputs?.summary,
+      typeOfMeeting: gptInputs?.typeOfMeeting || 'Virtual',
+      location: gptInputs?.location || 'Google Meet',
+      description: gptInputs?.description || 'This meeting is scheduled to discuss the role and the company.',
+      start: { 
+        dateTime: startTimeUTC,
+        timeZone: timeZone
+      },
+      end: { 
+        dateTime: endTimeUTC,
+        timeZone: timeZone
+      },
+      attendees: [{ email: person.email }, { email: allDataObjects.recruiterProfile.email }],
+      reminders: {
+        useDefault: false,
+        overrides: [
+          { method: 'email', minutes: 24 * 60 },
+          { method: 'email', minutes: 15 },
+          { method: 'popup', minutes: 10 },
+        ],
+      },
+    };
+    const response = await new CalendarEmailService().createNewCalendarEvent(calendarEventObj);
+    console.log("Response data:", (response as any)?.data)
+    return { status: 'scheduleMeeting the candidate meeting.' };
+  }
+}
+
+
+
 @Controller('twilio')
 export class TwilioControllers {
   @Post('sendMessage')
@@ -453,10 +564,12 @@ export class TwilioControllers {
         to: 'whatsapp:+918411937769',
       }).then(message => console.log(message.sid)).done();
   }
-
-
-
 }
+
+
+
+
+
 
 
 
@@ -468,11 +581,13 @@ export class WhatsappTestAPI {
 
     const requestBody = request.body as any;
     const personObj: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(requestBody.phoneNumberTo);
+    // console.log("This is the person object:", JSON.stringify(personObj))
     const sendTemplateMessageObj = {
       recipient: personObj.phone.replace('+', ''),
       template_name: requestBody.template_name,
       candidateFirstName: personObj.name.firstName,
       recruiterName: allDataObjects.recruiterProfile.name,
+      recruiterFirstName: allDataObjects.recruiterProfile.name.split(' ')[0],
       recruiterJobTitle: allDataObjects.recruiterProfile.job_title,
       recruiterCompanyName: allDataObjects.recruiterProfile.job_company_name,
       recruiterCompanyDescription: allDataObjects.recruiterProfile.company_description_oneliner,
@@ -481,6 +596,8 @@ export class WhatsappTestAPI {
       descriptionOneliner:personObj?.candidates?.edges[0]?.node?.jobs?.companies?.descriptionOneliner,
       jobCode: personObj?.candidates?.edges[0]?.node?.jobs?.jobCode,
       jobLocation: personObj?.candidates?.edges[0]?.node?.jobs?.jobLocation,
+      // videoInterviewLink: process.env.SERVER_BASE_URL+personObj?.candidates?.edges[0]?.node?.aIInterviewStatus?.edges[0].node.interviewLink.url,
+      videoInterviewLink: "https://arxena.com"+personObj?.candidates?.edges[0]?.node?.aIInterviewStatus?.edges[0].node.interviewLink.url,
     };
     console.log("This is the sendTemplateMessageObj:", sendTemplateMessageObj)
 
@@ -488,8 +605,6 @@ export class WhatsappTestAPI {
     console.log("This is ther esponse:", response.data)
     return { status: 'success' };
   }
-
-
 
 
   @Post('template')
@@ -520,7 +635,8 @@ export class WhatsappTestAPI {
     console.log('upload file to whatsapp api');
     const requestBody = request?.body;
     const filePath = requestBody?.filePath;
-    const response = await new FacebookWhatsappChatApi().uploadFileToWhatsApp(filePath);
+    const chatControl = 'startChat';
+    const response = await new FacebookWhatsappChatApi().uploadFileToWhatsApp(filePath, chatControl);
     return response || {}; 
   }
 
@@ -541,7 +657,8 @@ export class WhatsappTestAPI {
   @Post('sendFile')
   async uploadAndSendFileToFBWAAPIUser(@Req() request: any): Promise<object> {
     const sendFileObj = request.body;
-    new FacebookWhatsappChatApi().uploadAndSendFileToWhatsApp(sendFileObj);
+    const chatControl = 'startChat';
+    new FacebookWhatsappChatApi().uploadAndSendFileToWhatsApp(sendFileObj, chatControl);
     return { status: 'success' };
   }
 

@@ -14,7 +14,7 @@ export class BaileysController {
     private readonly socket: SocketGateway,
   ) {
     (async () => {
-      let b = await new BaileysBot('baileysController').initApp(this.socket, 'because baileyscontroller wants it');
+      let b = await new BaileysBot('baileysController').initApp(this.socket, 'because baileyscontroller wants it', 'startChat');
       // this.socket.setBaileys(b);
     })();
   }

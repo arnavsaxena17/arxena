@@ -24,11 +24,12 @@ export default class CandidateEngagementArx {
       chatHistory = candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.messageObj;
     }
     let whatsappTemplate:string
+    
     if (chatControl === 'startChat') {
       whatsappTemplate = "application03"
     }
-    else{
-      whatsappTemplate = candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.whatsappProvider || 'application03'
+    else{ 
+      whatsappTemplate = candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.whatsappProvider || 'application03' 
     }
     let whatappUpdateMessageObj: allDataObjects.candidateChatMessageType = {
       candidateProfile: candidateProfileDataNodeObj?.candidates?.edges[0]?.node,
@@ -37,6 +38,7 @@ export default class CandidateEngagementArx {
       whatsappMessageType :whatsappTemplate,
       phoneNumberTo: recruiterProfile.phone,
       messages: [{ content: chatReply }],
+      lastEngagementChatControl: chatControl,
       messageType: 'candidateMessage',
       messageObj: chatHistory,
       whatsappDeliveryStatus: 'startChatTriggered',
@@ -97,7 +99,7 @@ export default class CandidateEngagementArx {
     return { status: 'success', message: 'Candidate engagement status updated successfully' };
   }
 
-  async updateChatHistoryObjCreateWhatsappMessageObj(wamId: string, personNode: allDataObjects.PersonNode, chatHistory: allDataObjects.ChatHistoryItem[]): Promise<allDataObjects.candidateChatMessageType> {
+  async updateChatHistoryObjCreateWhatsappMessageObj(wamId: string, personNode: allDataObjects.PersonNode, chatHistory: allDataObjects.ChatHistoryItem[], chatControl:allDataObjects.chatControls): Promise<allDataObjects.candidateChatMessageType> {
     const candidateNode = personNode.candidates.edges[0].node;
     
     const updatedChatHistoryObj: allDataObjects.candidateChatMessageType = {
@@ -107,6 +109,7 @@ export default class CandidateEngagementArx {
       candidateFirstName: personNode.name?.firstName,
       phoneNumberFrom: allDataObjects.recruiterProfile?.phone,
       phoneNumberTo: personNode.phone,
+      lastEngagementChatControl: chatControl,
       messages: chatHistory.slice(-1),
       messageType: 'botMessage',
       whatsappDeliveryStatus: 'created',
@@ -114,45 +117,59 @@ export default class CandidateEngagementArx {
     };
     return updatedChatHistoryObj;
   }
+  async filterCandidatesWhereEngagementStatusIsTrueAndByLastMessagedTime(sortedPeopleData: allDataObjects.PersonNode[], chatControl: allDataObjects.chatControls): Promise<allDataObjects.PersonNode[]> {
 
-  filterCandidatesByTimeSchedule(sortedPeopleData: allDataObjects.PersonNode[]): allDataObjects.PersonNode[] {
     console.log("The number of sorted people::", sortedPeopleData.length)
     const minutesToWait = 2;
     const twoMinutesAgo = new Date(Date.now() - minutesToWait * 60 * 1000);
-      const filteredCandidatesToEngage = sortedPeopleData.filter(person => {
-        if (person?.candidates?.edges?.length > 0) {
-            const candidate = person.candidates.edges[0].node;
-            if (candidate.engagementStatus) {
-                if (candidate.whatsappMessages?.edges?.length > 0) {
-                    const latestMessage = candidate.whatsappMessages.edges[0].node;
-                    const messageDate = new Date(latestMessage.createdAt);
-                    if (messageDate >= twoMinutesAgo) {
-                        console.log("Candidate messaged less than "+ minutesToWait.toString() +" minutes ago::"+candidate.name);
-                        return false;
-                    }
-                    return true;
-                }
-                return true;
-            }
+    const filteredCandidatesToEngage = sortedPeopleData.filter(person => {
+      if (person?.candidates?.edges?.length > 0) {
+        const candidate = person.candidates.edges[0].node;
+        // Basic engagement status check
+        if (!candidate.engagementStatus) {
+          return false;
         }
-        return false;
-      });
-      console.log("Number of candidates who are filtered and will be engaged:", filteredCandidatesToEngage.length)
-      return  filteredCandidatesToEngage
-    }
-
+        // Check if this engagement was initiated by the current chat control
+        if (candidate.lastEngagementChatControl !== chatControl) {
+          console.log(`Skipping candidate ${candidate.name} because engagement was initiated by ${candidate.lastEngagementChatControl} not ${chatControl}`);
+          return false;
+        }
+        // Additional checks for video interview chat
+        if (chatControl === 'startVideoInterviewChat') {
+          if (!candidate.startVideoInterviewChat || !candidate.startChat) {
+            return false;
+          }
+        }
+        // Message timing check
+        if (candidate.whatsappMessages?.edges?.length > 0) {
+          const latestMessage = candidate.whatsappMessages.edges[0].node;
+          const messageDate = new Date(latestMessage.createdAt);
+          if (messageDate >= twoMinutesAgo) {
+            console.log("Candidate messaged less than "+ minutesToWait.toString() +" minutes ago::" + candidate.name, "for chatControl:", chatControl);
+            return false;
+          }
+          return true;
+        }
+        return true;
+      }
+      return false;
+    });
+    console.log("Number of candidates who are filtered and will be engaged:", filteredCandidatesToEngage.length, "for chatControl:", chatControl)
+    return filteredCandidatesToEngage;
+  }
+  
   async startChatEngagement(peopleCandidateResponseEngagementArr: allDataObjects.PersonNode[],  chatControl: allDataObjects.chatControls) {
     console.log('Total number of candidates fetched to filter for start chat::', peopleCandidateResponseEngagementArr?.length, "for chatControl:", chatControl);
     let filteredCandidatesToStartEngagement: allDataObjects.PersonNode[];
     if (chatControl === 'startChat') {
       filteredCandidatesToStartEngagement = peopleCandidateResponseEngagementArr?.filter(personNode => {
-        return personNode?.candidates?.edges?.length > 0 && personNode?.candidates?.edges[0]?.node?.startChat === true && personNode?.candidates?.edges[0]?.node?.whatsappMessages?.edges.length === 0;
+        return personNode?.candidates?.edges?.length > 0 && personNode?.candidates?.edges[0]?.node?.startChat === true && personNode?.candidates?.edges[0]?.node?.whatsappMessages?.edges.length === 0 && personNode?.candidates?.edges[0]?.node?.startVideoInterviewChat === false;
       });
       console.log('Number of candidates to who have no filteredCandidates StartEngagement ::', filteredCandidatesToStartEngagement?.length, "for chatControl:", chatControl);
     }
     else if (chatControl === 'startVideoInterviewChat') {
       filteredCandidatesToStartEngagement = peopleCandidateResponseEngagementArr?.filter(personNode => {
-        return personNode?.candidates?.edges?.length > 0 && personNode?.candidates?.edges[0]?.node?.startChat === true && personNode?.candidates?.edges[0]?.node?.whatsappMessages?.edges.length >0 && personNode?.candidates?.edges[0]?.node?.startVideoInterviewChat === true;
+        return personNode?.candidates?.edges?.length > 0 && personNode?.candidates?.edges[0]?.node?.startChat === true && personNode?.candidates?.edges[0]?.node?.whatsappMessages?.edges.length >0 && personNode?.candidates?.edges[0]?.node?.startVideoInterviewChat === true && personNode?.candidates?.edges[0]?.node?.lastEngagementChatControl !== "startVideoInterviewChat";
       });
       console.log('Number of candidates to who have no filteredCandidates StartEngagement ::', filteredCandidatesToStartEngagement?.length, "for chatControl:", chatControl);
     }
@@ -177,8 +194,8 @@ export default class CandidateEngagementArx {
   async engageCandidates(peopleCandidateResponseEngagementArr: allDataObjects.PersonNode[], chatControl: allDataObjects.chatControls) {
     console.log("These are the candidates who we want to engage ::",peopleCandidateResponseEngagementArr.length , "for chat Contro:", chatControl);
     const sortedPeopleData: allDataObjects.PersonNode[] = sortWhatsAppMessages(peopleCandidateResponseEngagementArr);
-    const filteredCandidates: allDataObjects.PersonNode[] = this.filterCandidatesByTimeSchedule(sortedPeopleData);
-    console.log('Number processCandidateof filtered candidates to engage after time scheduleing:', filteredCandidates?.length, "for cahtControol", chatControl);
+    const filteredCandidates: allDataObjects.PersonNode[] = await this.filterCandidatesWhereEngagementStatusIsTrueAndByLastMessagedTime(sortedPeopleData, chatControl);
+    console.log('Number processCandidateof filtered candidates to engage after time scheduling: ', filteredCandidates?.length, "for chatcontrol", chatControl);
     for (const personNode of filteredCandidates) {
       console.log("This is the personNode?.candidates?.edges[0]?.node:: for which we will start engagement", personNode?.candidates?.edges[0]?.node?.name, "for chatControl:", chatControl);
       await new FetchAndUpdateCandidatesChatsWhatsapps().updateEngagementStatusBeforeRunningEngageCandidates(personNode?.candidates?.edges[0]?.node?.id);
@@ -211,7 +228,7 @@ export default class CandidateEngagementArx {
       return;
     }
     catch(error){
-      console.log("This is the error in checkCandidateEngagement", error);
+      console.log("This is the error in checkCandidate Engagement", error);
     }
   }
 }

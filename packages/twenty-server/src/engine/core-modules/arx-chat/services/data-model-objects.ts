@@ -10,7 +10,7 @@ export const statusesArray = ['SCREENING', "INTERESTED", "NOT_INTERESTED", "NOT_
 export type statuses = typeof statusesArray[number];
 export type chatControls = "startChat" | "allStartedAndStoppedChats" | "startVideoInterviewChat" | "startMeetingSchedulingChat"
 
-// export type statuses = 'SCREENING' | 'RECRUITER_INTERVIEW' | 'CV_SENT' | 'CLIENT_INTERVIEW' | 'NEGOTIATION';
+
 
 // Interface for chat message without tool call
 export interface ChatMessage {
@@ -93,6 +93,8 @@ export interface candidateChatMessageType {
   phoneNumberTo: string;
   whatsappMessageType: string | "";
   messageType: string;
+  lastEngagementChatControl?:chatControls;
+  videoInterviewLink?: string;
   whatsappDeliveryStatus?: string;
   whatsappMessageId?: string;
   type?: string;
@@ -121,19 +123,20 @@ export interface sendWhatsappUtilityMessageObjectType {
   discussionDate?: string | "";
   nextStep?: string | "";
   availableDate?: string | "";
-  template_name?: string | "";
-  recipient?: string | "";
-  recruiterName?: string | "";
-  recruiterFirstName?: string | "";
-  candidateFirstName?: string | "";
-  recruiterJobTitle?: string | "";
-  recruiterCompanyName?: string | "";
-  recruiterCompanyDescription?: string | "";
-  descriptionOneliner?:string | "";
-  companyName?: string | "";
-  jobPositionName?: string | "";
-  jobCode?: string | "";
-  jobLocation?: string | "";
+  template_name: string | "";
+  recipient: string | "";
+  recruiterName: string | "";
+  recruiterFirstName: string | "";
+  candidateFirstName: string | "";
+  recruiterJobTitle: string | "";
+  recruiterCompanyName: string | "";
+  recruiterCompanyDescription: string | "";
+  descriptionOneliner:string | "";
+  companyName: string | "";
+  jobPositionName: string | "";
+  videoInterviewLink: string;
+  jobCode: string | "";
+  jobLocation: string | "";
 }
 
 export interface WhatsAppMessagesEdge {
@@ -158,14 +161,33 @@ export interface Candidate {
   };
 }
 
+
+export interface aIInterviewStatus {
+  edges: AIInterviewStatusEdge[];
+}
+
+export interface AIInterviewStatusEdge {
+  node: AIInterviewStatusNode;
+}
+
+export interface AIInterviewStatusNode {
+  id: string;
+  interviewLink: InterviewLink;
+}
+
+export interface InterviewLink {
+  url: string;
+}
+
 export interface CandidateNode {
+  aIInterviewStatus: aIInterviewStatus;
   whatsappProvider?: string | "application03";
   name: string;
   id: string;
   engagementStatus: boolean;
   startVideoInterviewChat: boolean;
   startMeetingSchedulingChat: boolean;
-  
+  lastEngagementChatControl: chatControls;
   phoneNumber: string;
   email: string;
   input: string;
@@ -302,6 +324,7 @@ export interface recruiterProfileType {
   job_company_name: any;
   company_description_oneliner: any;
   first_name: any;
+  last_name: any;
   status: string;
   name: string;
   email: string;
@@ -334,6 +357,7 @@ export const jobProfile: jobProfileType = {
 export const recruiterProfile: recruiterProfileType = {
   name: 'Arnav Saxena',
   first_name: 'Arnav',
+  last_name: 'Saxena',
   phone: '919326970534',
   email: 'arnav@arxena.com',
   input: '',
@@ -381,6 +405,18 @@ export const emptyCandidateProfileObj: CandidateNode = {
       ],
     },
   },
+  aIInterviewStatus: {
+    edges: [
+      {
+        node: {
+          id: '',
+          interviewLink: {
+            url: '',
+          },
+        },
+      },
+    ],
+  },
   candidateReminders: {
     edges: [
       {
@@ -401,6 +437,7 @@ export const emptyCandidateProfileObj: CandidateNode = {
   input: '',
   startChat: false,
   startMeetingSchedulingChat:false,
+  lastEngagementChatControl: 'startChat',
   startVideoInterviewChat: false,
   stopChat: false,
   whatsappMessages: {

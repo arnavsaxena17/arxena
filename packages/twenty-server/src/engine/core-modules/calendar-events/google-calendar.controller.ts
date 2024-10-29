@@ -13,8 +13,9 @@ export class GoogleCalendarController {
     console.log("Calendar create event request body::", calendarEventDataObj);
     try {
       const auth = await this.googleCalendarService.authorize();
-      await this.googleCalendarService.createEvent(auth, calendarEventDataObj);
-      return { status: "Event created successfully" };
+      const eventCreationResponse = await this.googleCalendarService.createEvent(auth, calendarEventDataObj);
+      console.log("Event creation response::", eventCreationResponse);
+      return { status: eventCreationResponse };
     } catch (error) {
       console.error("Error creating event: ", error);
       return { status: "Error creating event", error: error.message };

@@ -33,14 +33,6 @@ export class GoogleCalendarService {
       process.env.AUTH_GOOGLE_CLIENT_SECRET,
       process.env.AUTH_GOOGLE_CALLBACK_URL
     );
-    // this.oauth2Client.setCredentials({
-    //   access_token: 'YOUR_ACCESS_TOKEN',
-    //   refresh_token: 'YOUR_REFRESH_TOKEN',
-    //   scope: 'https://www.googleapis.com/auth/calendar',
-    //   token_type: 'Bearer',
-    //   //@ts-ignore
-    //   expiry_date: moment().add(1, 'hour').unix(),
-    // });
   }
 
   /**
@@ -49,22 +41,6 @@ export class GoogleCalendarService {
    * @return {Promise<OAuth2Client|null>}
    */
   async loadSavedCredentialsIfExist() {
-    // try {
-    //   const content = await fs.readFile(TOKEN_PATH);
-    //   const credentials = JSON.parse(content.toString());
-    //   return google.auth.fromJSON(credentials);
-    // } catch (err) {
-    //   return null;
-    // }
-
-    // const graphVariables = {};
-
-    // const graphqlQueryObj = JSON.stringify({
-    //   query: graphqlQueryToGetCurrentUser,
-    //   variables: graphVariables,
-    // });
-
-    // const queryResponse = await axiosRequest(graphqlQueryObj);
 
     const connectedAccountsResponse = await axios.request({
       method: "get",
@@ -76,24 +52,8 @@ export class GoogleCalendarService {
     });
 
     if (connectedAccountsResponse?.data?.data?.connectedAccounts?.length > 0) {
-      const refreshToken =
-        connectedAccountsResponse?.data?.data?.connectedAccounts[0]
-          ?.refreshToken;
-      // const graphqlQueryObj2 = JSON.stringify({
-      //   query: graphqlQueryToGetCurrentUser,
-      //   variables: graphVariables,
-      // });
-
-      // const queryResponse2 = await axiosRequest(graphqlQueryObj);
-
-      // const graphVariables2 = {
-      //   objectRecordId: workspaceMemberId,
-      // };
-
-      // const refreshToken =
-      //   queryResponse2?.data?.data?.workspaceMember?.connectedAccounts?.edges[0]
-      //     ?.node?.refreshToken;
-
+      const connectedAccountToUse = connectedAccountsResponse?.data?.data?.connectedAccounts.filter(x => x.handle === process.env.EMAIL_SMTP_USER)[0];
+      const refreshToken = connectedAccountToUse ?.refreshToken;
       if (!refreshToken) {
         return null;
       }
@@ -111,10 +71,7 @@ export class GoogleCalendarService {
         return null;
       }
     }
-
-    // const workspaceMemberId =
-    //   queryResponse?.data?.data?.currentUser?.workspaces[0]?.workspace?.id;
-  }
+    }
 
   /**
    * Serializes credentials to a file compatible with GoogleAuth.fromJSON.
@@ -153,21 +110,12 @@ export class GoogleCalendarService {
   /**
    * @param {google.auth.OAuth2} auth An authorized OAuth2 client.
    */
-  async createEvent(auth, calendarEventData: CalendarEventType): Promise<void> {
+  async createEvent(auth, calendarEventData: CalendarEventType): Promise<object> {
     if (!auth?.credentials?.refresh_token) {
       throw new Error("No access token found");
     }
     try {
       const calendar = google.calendar({ version: "v3", auth: auth });
-      // const response = await axios.post('https://www.googleapis.com/calendar/v3/freeBusy', {
-      //   items: [{ id: 'primary' }],
-      //   timeMin: new Date().toISOString(),
-      //   timeMax: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-      // }, {
-      //   headers: {
-      //     Authorization: `Bearer ${auth?.credentials?.access_token}`,
-      //   }
-      // });
       let calendarEventDataObj = {
         ...calendarEventData,
       };
@@ -204,6 +152,7 @@ export class GoogleCalendarService {
           console.log("Event created: %s", event.htmlLink);
         }
       );
+      return { status: "Event created successfully" };
     } catch (error) {
       throw new Error(`Error creating event: ${error.message}`);
     }

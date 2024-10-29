@@ -21,7 +21,7 @@ export class OpenAIArxMultiStepClient {
 
       const newSystemPrompt = await new ToolsForAgents().getSystemPrompt(this.personNode, chatControl);
       const updatedMostRecentMessagesBasedOnNewSystemPrompt = await updateMostRecentMessagesBasedOnNewSystemPrompt(mostRecentMessageArr, newSystemPrompt);
-      const tools = await new ToolsForAgents().getTools();
+      const tools = await new ToolsForAgents().getTools(chatControl);
       const responseMessage = await this.getHumanLikeResponseMessageFromLLM(updatedMostRecentMessagesBasedOnNewSystemPrompt, tools)
       console.log('BOT_MESSAGE in  :', "at::", new Date().toString(), ' ::: ' ,JSON.stringify(responseMessage));
       if (responseMessage){
@@ -90,7 +90,7 @@ export class OpenAIArxMultiStepClient {
         const responseFromFunction = await functionToCall(functionArgs, this.personNode);
         mostRecentMessageArr.push({ tool_call_id: toolCall.id, role: 'tool', name: functionName, content: responseFromFunction });
       }
-      const tools = await new ToolsForAgents().getTools();
+      const tools = await new ToolsForAgents().getTools(chatControl);
       // @ts-ignore
       const response = await this.LLMProviders.openAIclient.chat.completions.create({ model: modelName, messages: mostRecentMessageArr, tools: tools, tool_choice: 'auto' });
       console.log('BOT_MESSAGE in runCandidateFacingAgentsAlongWithToolCalls_stage2 :', "at::", new Date().toString(), ' ::: ' ,JSON.stringify(responseMessage));

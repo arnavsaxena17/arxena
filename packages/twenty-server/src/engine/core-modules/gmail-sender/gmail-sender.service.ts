@@ -9,6 +9,7 @@ import { google } from "googleapis";
 import { env } from "process";
 import * as gmailSenderTypes from "./services/gmail-sender-objects-types";
 import axios from "axios";
+import * as mime from "mime-types";
 
 // If modifying these scopes, delete token.json.
 const SCOPES = [
@@ -19,22 +20,13 @@ const SCOPES = [
 // created automatically when the authorization flow completes for the first
 // time.
 const TOKEN_PATH = process.cwd() + "/token.json";
+console.log("This is the process cwd:", process.cwd());
 const CREDENTIALS_PATH = process.cwd() + "/credentials.json";
-
+console.log("This is the token path:", TOKEN_PATH);
+console.log("This is the CREDENTIALS_PATH path:", CREDENTIALS_PATH);
 @Injectable()
 export class MailerService {
   private transporter;
-
-  // constructor() {
-  //   // this.transporter = nodemailer.createTransport({
-  //   //   service: 'gmail',
-  //   //   auth: {
-  //   //     user: '',
-  //   //     pass: 'your-email-password', // Use environment variables for security
-  //   //   },
-  //   // });
-  // }
-
   private oauth2Client;
 
   constructor() {
@@ -60,14 +52,6 @@ export class MailerService {
    * @return {Promise<OAuth2Client|null>}
    */
   async loadSavedCredentialsIfExist() {
-    // try {
-    //   const content = await fs.readFile(TOKEN_PATH);
-    //   const credentials = JSON.parse(content.toString());
-    //   return google.auth.fromJSON(credentials);
-    // } catch (err) {
-    //   return null;
-    // }
-
     const connectedAccountsResponse = await axios.request({
       method: "get",
       url: "http://localhost:3000/rest/connectedAccounts",
@@ -76,26 +60,9 @@ export class MailerService {
         "content-type": "application/json",
       },
     });
-
     if (connectedAccountsResponse?.data?.data?.connectedAccounts?.length > 0) {
-      const refreshToken =
-        connectedAccountsResponse?.data?.data?.connectedAccounts[0]
-          ?.refreshToken;
-      // const graphqlQueryObj2 = JSON.stringify({
-      //   query: graphqlQueryToGetCurrentUser,
-      //   variables: graphVariables,
-      // });
-
-      // const queryResponse2 = await axiosRequest(graphqlQueryObj);
-
-      // const graphVariables2 = {
-      //   objectRecordId: workspaceMemberId,
-      // };
-
-      // const refreshToken =
-      //   queryResponse2?.data?.data?.workspaceMember?.connectedAccounts?.edges[0]
-      //     ?.node?.refreshToken;
-      debugger;
+      const connectedAccountToUse = connectedAccountsResponse?.data?.data?.connectedAccounts.filter(x => x.handle === process.env.EMAIL_SMTP_USER)[0];
+      const refreshToken = connectedAccountToUse ?.refreshToken;
       if (!refreshToken) {
         return null;
       }
@@ -122,9 +89,6 @@ export class MailerService {
    * @return {Promise<void>}
    */
   async saveCredentials(client) {
-    // const content = await fs.readFile(CREDENTIALS_PATH);
-    // const keys = JSON.parse(content.toString());
-    // const key = keys.installed || keys.web;
     const payload = JSON.stringify({
       type: "authorized_user",
       client_id: process.env.AUTH_GOOGLE_CLIENT_ID,
@@ -138,6 +102,7 @@ export class MailerService {
     if (client) {
       return client;
     }
+
     // @ts-ignore
     client = await authenticate({
       scopes: SCOPES,
@@ -147,6 +112,7 @@ export class MailerService {
     if (client.credentials) {
       await this.saveCredentials(client);
     }
+
     return client;
   }
 
@@ -156,27 +122,11 @@ export class MailerService {
   async sendMails(auth, gmailMessageData: gmailSenderTypes.GmailMessageData) {
     const gmail = google.gmail({ version: "v1", auth });
 
-    // const res = await gmail.users.messages.list({
-    //   userId: 'me',
-    //   maxResults: 10,
-    // });
-
-    // console.log(res.data);
-
-    // const messages = res.data.messages;
-
-    // for (const message of messages) {
-    //   const msg = await gmail.users.messages.get({
-    //     userId: 'me',
-    //     id: message.id,
-    //   });
-    //   //@ts-ignore
-    //   console.log(`Subject: ${msg.data.subject}`);
-    // }
     const emailLines = [
-      `From: "me"`,
+      `From: "${process.env.EMAIL_SMTP_USER_NAME}" <${process.env.EMAIL_SMTP_USER}>`,
       `To: ${gmailMessageData.sendEmailTo}`,
       "Content-type: text/html;charset=iso-8859-1",
+      "X-Mailer: Arxena-App",
       "MIME-Version: 1.0",
       `Subject: ${gmailMessageData.subject}`,
       "",
@@ -192,5 +142,117 @@ export class MailerService {
         raw: base64Email,
       },
     });
+  }
+
+  async sendMailsWithAttachments(auth, gmailMessageData: gmailSenderTypes.GmailMessageData) {
+    const gmail = google.gmail({ version: "v1", auth });
+
+    // Create email boundary for multipart message
+    const boundary = "boundary" + Date.now().toString();
+
+    // Construct email headers
+    const emailHeaders = [
+      `From: "${process.env.EMAIL_SMTP_USER_NAME}" <${process.env.EMAIL_SMTP_USER}>`,
+      `To: ${gmailMessageData.sendEmailTo}`,
+      "MIME-Version: 1.0",
+      `Subject: ${gmailMessageData.subject}`,
+      `Content-Type: multipart/mixed; boundary="${boundary}"`,
+      "",
+      `--${boundary}`,
+      "Content-Type: text/html; charset=utf-8",
+      "",
+      gmailMessageData.message,
+    ];
+
+    // Add attachments if they exist
+    if (gmailMessageData.attachments && gmailMessageData.attachments.length > 0) {
+      for (const attachment of gmailMessageData.attachments) {
+        try {
+          const fileContent = await fs.readFile(attachment.path);
+          const mimeType = mime.lookup(attachment.path) || 'application/octet-stream';
+          
+          emailHeaders.push(`--${boundary}`);
+          emailHeaders.push(`Content-Type: ${mimeType}`);
+          emailHeaders.push('Content-Transfer-Encoding: base64');
+          emailHeaders.push(`Content-Disposition: attachment; filename="${attachment.filename}"`);
+          emailHeaders.push('');
+          emailHeaders.push(fileContent.toString('base64').replace(/(.{76})/g, "$1\n"));
+        } catch (error) {
+          console.error(`Error processing attachment ${attachment.filename}:`, error);
+          throw new Error(`Failed to process attachment ${attachment.filename}`);
+        }
+      }
+    }
+    // Add final boundary
+    emailHeaders.push(`--${boundary}--`);
+    // Create the email
+    const email = emailHeaders.join("\r\n").trim();
+    const base64Email = Buffer.from(email).toString("base64")
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/, '');
+
+    // Send the email
+    await gmail.users.messages.send({
+      userId: "me",
+      requestBody: {
+        raw: base64Email,
+      },
+    });
+  }
+}
+
+
+
+@Injectable()
+export class GoogleAuthService {
+  private oauth2Client;
+  private readonly SCOPES = [
+    'https://www.googleapis.com/auth/gmail.send',
+    'https://www.googleapis.com/auth/gmail.compose',
+    'https://www.googleapis.com/auth/gmail.modify'
+  ];
+
+  constructor() {
+    this.oauth2Client = new google.auth.OAuth2(
+      process.env.AUTH_GOOGLE_CLIENT_ID,
+      process.env.AUTH_GOOGLE_CLIENT_SECRET,
+      'http://localhost:3000/auth/google/redirect'  // Matching your configured redirect URI
+    );
+  }
+
+  async getAuthUrl(): Promise<string> {
+    return this.oauth2Client.generateAuthUrl({
+      access_type: 'offline',
+      scope: this.SCOPES,
+      prompt: 'consent',
+      include_granted_scopes: true
+    });
+  }
+
+  async handleAuthCallback(code: string): Promise<void> {
+    try {
+      const { tokens } = await this.oauth2Client.getToken(code);
+      
+      // Create token.json with the exact format Google expects
+      const tokenData = {
+        type: "authorized_user",
+        client_id: process.env.AUTH_GOOGLE_CLIENT_ID,
+        client_secret: process.env.AUTH_GOOGLE_CLIENT_SECRET,
+        refresh_token: tokens.refresh_token,
+        token_uri: "https://oauth2.googleapis.com/token",
+        universe_domain: "googleapis.com"
+      };
+
+      await fs.writeFile('token.json', JSON.stringify(tokenData, null, 2));
+      console.log('Token saved successfully to token.json');
+      
+      // Also save the full token response for debugging
+      await fs.writeFile('token-full.json', JSON.stringify(tokens, null, 2));
+      console.log('Full token response saved to token-full.json');
+    } catch (error) {
+      console.error('Error in handleAuthCallback:', error);
+      throw error;
+    }
   }
 }
