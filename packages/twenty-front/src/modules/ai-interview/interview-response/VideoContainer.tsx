@@ -56,12 +56,14 @@ const UnmirroredWebcam =styled(Webcam as any)`
   }
 `;
 
-
 const TimerContainer = styled.div`
   display: flex;
   gap: 8px;
   margin-bottom: 16px;
   font-family: sans-serif;
+  // justify-content: flex-end; /* This will float the container to the right */
+  justify-content: center; /* This will float the container to the center */
+
 `;
 
 const TimerBox = styled.div`
