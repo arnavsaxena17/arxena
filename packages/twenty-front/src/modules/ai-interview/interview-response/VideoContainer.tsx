@@ -1,16 +1,61 @@
 import React, { useEffect } from 'react';
 import styled from '@emotion/styled';
+import Webcam from 'react-webcam';
 
-import { StyledControlsOverlay,StyledAnswerTimer, StyledVideoContainer,  StyledRecordButton, ButtonText } from './styled-components/StyledComponentsInterviewResponse';
+import { StyledControlsOverlay,StyledAnswerTimer, StyledCountdownOverlay,StyledVideoContainer,  StyledRecordButton, ButtonText } from './styled-components/StyledComponentsInterviewResponse';
 import { is } from 'date-fns/locale';
 
 interface VideoContainerProps {
-  children: React.ReactNode;
+  countdown: number | null;
   answerTimer: number | null;
   isRecording: boolean;
   onRecordingClick: () => void;
+  webcamRef: React.RefObject<Webcam>;
+
   setIsPlaying: (isPlaying: boolean) => void;
 }
+
+
+// const UnmirroredWebcam = styled(Webcam as any)`
+//   width: 100%;
+//   height: 100%;
+//   transform: scaleX(1) !important;
+//   -webkit-transform: scaleX(1) !important;
+  
+//   & video {
+//     width: 100%;
+//     height: 100%;
+//     object-fit: cover;
+//     transform: scaleX(1) !important;
+//     -webkit-transform: scaleX(1) !important;
+//   }
+  
+//   @media not all and (min-resolution:.001dpcm) { 
+//     @supports (-webkit-appearance:none) {
+//       & video {
+//         transform: scaleX(1) !important;
+//         -webkit-transform: scaleX(1) !important;
+//       }
+//     }
+//   }
+// `;
+
+const UnmirroredWebcam =styled(Webcam as any)`
+  width: 100%;
+  height: 100%;
+  transform: scaleX(1);
+  -webkit-transform: scaleX(1);
+  
+  /* Target the internal video element */
+  & video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform: scaleX(1) !important;
+    -webkit-transform: scaleX(1) !important;
+  }
+`;
+
 
 const TimerContainer = styled.div`
   display: flex;
@@ -51,11 +96,12 @@ export const RecordIcon = () => <StyledIcon style={{ borderRadius: '50%' }} />;
 export const StopIcon = () => <StyledIcon style={{ width: '14px', height: '14px' }} />;
 
 const VideoContainer: React.FC<VideoContainerProps> = ({ 
-  children, 
   answerTimer, 
   isRecording, 
   onRecordingClick,
-  setIsPlaying
+  setIsPlaying,
+  countdown,
+  webcamRef,
 
 }) => {
   console.log("Anshwer TIme:", answerTimer, "isRecording:", isRecording)
@@ -63,6 +109,11 @@ const VideoContainer: React.FC<VideoContainerProps> = ({
   const timeRemaining = isRecording ? (answerTimer ?? totalTime) : totalTime;
   console.log("timeRemaining:", timeRemaining)
   const isNearingEnd = (timeRemaining ?? totalTime) <= 30;
+  const videoConstraints = {
+    width: 1280,
+    height: 720,
+    facingMode: "user",
+  };
 
 
   useEffect(() => {
@@ -94,7 +145,13 @@ const VideoContainer: React.FC<VideoContainerProps> = ({
       </TimerContainer>
 
       <StyledVideoContainer>
-        {children}
+      <UnmirroredWebcam
+          audio={true}
+          ref={webcamRef}
+          videoConstraints={videoConstraints}
+          mirrored={true}
+          screenshotFormat="image/jpeg"
+        />
         <StyledControlsOverlay onClick={handleRecordingClick}>
           <StyledRecordButton isRecording={isRecording}>
             {isRecording ? <StopIcon /> : <RecordIcon />}
@@ -103,6 +160,8 @@ const VideoContainer: React.FC<VideoContainerProps> = ({
             {isRecording ? 'Stop recording' : 'Click to record your response'}
           </ButtonText>
         </StyledControlsOverlay>
+        {countdown !== null && <StyledCountdownOverlay>{countdown}</StyledCountdownOverlay>}
+
       </StyledVideoContainer>
     </div>
   );
