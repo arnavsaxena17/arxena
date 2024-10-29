@@ -7,8 +7,6 @@ import * as InterviewResponseTypes from './types/interviewResponseTypes';
 import { VideoPlayer } from './utils/videoPlaybackUtils';
 import VideoContainer from './VideoContainer';
 
-
-
 import {
   StyledLeftPanelContentBox,
   StyledTextLeftPanelTextHeadline,
@@ -34,7 +32,7 @@ const UnmirroredWebcam = styled(Webcam as any)`
   height: 100%;
   transform: scaleX(1) !important;
   -webkit-transform: scaleX(1) !important;
-  
+
   /* Target the internal video element specifically */
   & video {
     width: 100%;
@@ -43,10 +41,10 @@ const UnmirroredWebcam = styled(Webcam as any)`
     transform: scaleX(1) !important;
     -webkit-transform: scaleX(1) !important;
   }
-  
+
   /* Safari-specific fixes */
-  @media not all and (min-resolution:.001dpcm) { 
-    @supports (-webkit-appearance:none) {
+  @media not all and (min-resolution: 0.001dpcm) {
+    @supports (-webkit-appearance: none) {
       & video {
         transform: scaleX(1) !important;
         -webkit-transform: scaleX(1) !important;
@@ -54,9 +52,6 @@ const UnmirroredWebcam = styled(Webcam as any)`
     }
   }
 `;
-
-
-
 
 const ffmpeg = createFFmpeg({
   // corePath: `/ffmpeg/ffmpeg-core.js`,
@@ -236,7 +231,7 @@ export const InterviewPage: React.FC<InterviewResponseTypes.InterviewPageProps> 
         formData.append('video', file, `${InterviewData.id}-video-${unique_id}.webm`);
         formData.append('audio', output, `${InterviewData.id}-audio-${unique_id}.wav`);
         // formData.forEach((value, key) => {
-          // console.log(key, value);
+        // console.log(key, value);
         // });
         console.log('This is the form data:', formData);
         onNextQuestion(formData);
@@ -255,27 +250,24 @@ export const InterviewPage: React.FC<InterviewResponseTypes.InterviewPageProps> 
     return <StyledError>{error}</StyledError>;
   }
 
-  console.log("Current question interview attachment: for question index:", currentQuestionIndex);
-  console.log("Current question interview questionsVideoAttachment:", questionsVideoAttachment);
-  
-  const currentQuestionInterviewAttachment = questionsVideoAttachment.find(
-    (attachment) => attachment?.id === questions[currentQuestionIndex]?.attachments?.edges[0]?.node?.id
-  )?.fullPath;
+  console.log('Current question interview attachment: for question index:', currentQuestionIndex);
+  console.log('Current question interview questionsVideoAttachment:', questionsVideoAttachment);
 
+  const currentQuestionInterviewAttachment = questionsVideoAttachment.find(attachment => attachment?.id === questions[currentQuestionIndex]?.attachments?.edges[0]?.node?.id)?.fullPath;
 
-  const currentQuestionVideoURL = process.env.REACT_APP_SERVER_BASE_URL + "/files/" + currentQuestionInterviewAttachment;
-  console.log("This is the currentQuestionVideoURL::", currentQuestionVideoURL)
+  const currentQuestionVideoURL = process.env.REACT_APP_SERVER_BASE_URL + '/files/' + currentQuestionInterviewAttachment;
+  console.log('This is the currentQuestionVideoURL::', currentQuestionVideoURL);
   // Add videoConstraints inside the component
   const videoConstraints = {
     width: 1280,
     height: 720,
-    facingMode: "user",
-    advanced: [{
-      transform: "none"
-    }]
+    facingMode: 'user',
+    advanced: [
+      {
+        transform: 'none',
+      },
+    ],
   };
-  
-
 
   return (
     <SnapScrollContainer>
@@ -285,12 +277,7 @@ export const InterviewPage: React.FC<InterviewResponseTypes.InterviewPageProps> 
           <StyledTextLeftPanelTextHeadline>
             Question {currentQuestionIndex + 1} of {questions.length}
           </StyledTextLeftPanelTextHeadline>
-          <VideoPlayer
-            src={currentQuestionVideoURL}
-            videoRef={videoRef}
-            isPlaying={isPlaying}
-            setIsPlaying={setIsPlaying}
-          />
+          <VideoPlayer src={currentQuestionVideoURL} videoRef={videoRef} isPlaying={isPlaying} setIsPlaying={setIsPlaying} />
           <h3>Transcript</h3>
           <StyledTextLeftPaneldisplay>{questions[currentQuestionIndex].questionValue}</StyledTextLeftPaneldisplay>
         </StyledLeftPanelContentBox>
@@ -301,26 +288,7 @@ export const InterviewPage: React.FC<InterviewResponseTypes.InterviewPageProps> 
           <p>{questions[currentQuestionIndex].questionValue}</p>
         </div>
         {activeCameraFeed && (
-          <VideoContainer
-            answerTimer={answerTimer}
-            isRecording={recording}
-            onRecordingClick={recording ? handleStopRecording : handleStartRecording}
-            setIsPlaying={setIsPlaying}  
-          >
-          <UnmirroredWebcam
-            audio={true}
-            ref={webcamRef}
-            videoConstraints={videoConstraints}
-            mirrored={false}
-            screenshotFormat="image/jpeg"
-            style={{
-              transform: 'scaleX(1)',
-              WebkitTransform: 'scaleX(1)'
-            }}
-          />
-            {/* {countdown !== null && <StyledCountdownOverlay>{countdown}</StyledCountdownOverlay>} */}
-            {countdown !== null && <StyledCountdownOverlay>{countdown}</StyledCountdownOverlay>}
-          </VideoContainer>
+          <VideoContainer answerTimer={answerTimer} isRecording={recording} onRecordingClick={recording ? handleStopRecording : handleStartRecording} setIsPlaying={setIsPlaying} countdown={countdown} webcamRef={webcamRef}></VideoContainer>
         )}
         {submitting && <StyledMessage>Submitting your response...</StyledMessage>}
         {timer !== null && (
