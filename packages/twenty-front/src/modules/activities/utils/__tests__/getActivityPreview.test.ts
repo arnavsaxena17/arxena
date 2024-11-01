@@ -75,7 +75,7 @@ describe('getActivityPreview', () => {
         props: {
           backgroundColor: 'default',
           textAlignment: 'left',
-          url: 'https://favicon.twenty.com/qonto.com',
+          url: 'https://www.google.com/s2/favicons?domain=qonto.com',
           caption: '',
           width: 230,
         },

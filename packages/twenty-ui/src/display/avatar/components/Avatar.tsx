@@ -4,7 +4,11 @@ import clsx from 'clsx';
 
 import { Nullable, stringToHslColor } from '@ui/utilities';
 
+
+// /Users/arnavsaxena/arxena/twenty/packages/twenty-front/src/utils/index.ts
+
 import styles from './Avatar.module.css';
+import React from 'react';
 
 export type AvatarType = 'squared' | 'rounded';
 
@@ -45,6 +49,8 @@ const propertiesBySize = {
   },
 };
 
+
+
 export const Avatar = ({
   avatarUrl,
   size = 'md',
@@ -66,6 +72,29 @@ export const Avatar = ({
   const handleImageError = () => {
     setIsInvalidAvatarUrl(true);
   };
+  const sanitizeURL = (link: string) => {
+    console.log("Link:", link)
+    const updatedLink = link?.replace(/(https?:\/\/)|(www\.)/g, '').replace(/\/$/, '').replace(/(http?:\/\/)|(www\.)/g, '').replace('localhost:3000/files/', '').replace("/api/favicon-proxy?domain=","")
+    console.log("Updated Link:", updatedLink)
+    return link ? updatedLink : '';
+  };
+  
+  
+  const getFaviconUrl = (domain: string): string => {
+    const sanitizedDomain = sanitizeURL(domain);
+    console.log("sanitizedDomain:",sanitizedDomain)
+    return `/api/favicon-proxy?domain=${encodeURIComponent(sanitizedDomain)}`;
+  };
+
+  
+  const imageUrl = React.useMemo(() => {
+    if (avatarUrl) {
+      return getFaviconUrl(avatarUrl);
+    }
+    return avatarUrl || 'NONE';
+  }, [avatarUrl]);
+
+
 
   const fixedColor = color ?? stringToHslColor(entityId ?? '', 75, 25);
   const fixedBackgroundColor =
@@ -74,32 +103,10 @@ export const Avatar = ({
   const showBackgroundColor = showPlaceholder;
 
   return (
-    <div
-      className={clsx({
-        [styles.avatar]: true,
-        [styles.rounded]: type === 'rounded',
-        [styles.avatarOnClick]: !isUndefined(onClick),
-      })}
+    <div className={clsx({ [styles.avatar]: true, [styles.rounded]: type === 'rounded', [styles.avatarOnClick]: !isUndefined(onClick), })}
       onClick={onClick}
-      style={{
-        color: fixedColor,
-        backgroundColor: showBackgroundColor ? fixedBackgroundColor : 'none',
-        width: propertiesBySize[size].width,
-        height: propertiesBySize[size].width,
-        fontSize: propertiesBySize[size].fontSize,
-      }}
-    >
-      {showPlaceholder ? (
-        placeholderChar
-      ) : (
-        <img
-          crossOrigin="anonymous"
-          src={avatarUrl}
-          className={styles.avatarImage}
-          onError={handleImageError}
-          alt=""
-        />
-      )}
+      style={{ color: fixedColor, backgroundColor: showBackgroundColor ? fixedBackgroundColor : 'none', width: propertiesBySize[size].width, height: propertiesBySize[size].width, fontSize: propertiesBySize[size].fontSize, }}>
+      {showPlaceholder ? placeholderChar : <img  src={imageUrl} className={styles.avatarImage} onError={handleImageError} alt="" />}
     </div>
   );
 };
