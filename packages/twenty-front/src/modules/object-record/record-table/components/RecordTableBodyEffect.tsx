@@ -74,6 +74,7 @@ export const RecordTableBodyEffect = ({ objectNameSingular }: RecordTableBodyEff
   }, [records, totalCount, setRecordTableData, loading]);
 
   useEffect(() => {
+    console.log('tableLastRowVisible:::', tableLastRowVisible);
     if (tableLastRowVisible && !isFetchingMoreObjects) {
       fetchMoreObjects();
     }

@@ -112,6 +112,7 @@ const gabarito = Gabarito({
 });
 
 const Icon = styled.img`
+  crossOrigin: 'anonymous';
   height: 24px;
   width: 24px;
   border-radius: 4px;
@@ -124,7 +125,7 @@ export const Card = ({ data }: { data: OssData }) => {
   return (
     <Container>
       <StyledContent>
-        <Icon src={`https://favicon.twenty.com/${removeProtocol(data.href)}`} />
+        <Icon crossOrigin="anonymous"  src={`https://favicon.twenty.com/${removeProtocol(data.href)}`} />
         <Title>{data.name}</Title>
         <Description>{data.description}</Description>
       </StyledContent>

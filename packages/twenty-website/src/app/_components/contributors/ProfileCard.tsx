@@ -86,10 +86,11 @@ export const ProfileCard = ({
   avatarUrl,
   firstContributionAt,
 }: ProfileCardProps) => {
+  console.log("avaraUrl", avatarUrl);
   return (
     <ProfileContainer>
       <Avatar>
-        <img src={avatarUrl} alt={username} width={100} height={100} />
+        <img crossOrigin="anonymous" src={avatarUrl} alt={username} width={100} height={100} />
       </Avatar>
       <Details>
         <h3 className="username">

@@ -7,6 +7,7 @@ const logoStyle = {
 export const Logo = () => {
   return (
     <Img
+      crossOrigin="anonymous"
       src="/icons/arxena/arxena-icon-black.jpg"
       alt="Twenty logo"
       width="40"

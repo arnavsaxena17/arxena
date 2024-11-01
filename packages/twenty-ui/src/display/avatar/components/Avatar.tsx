@@ -93,6 +93,7 @@ export const Avatar = ({
         placeholderChar
       ) : (
         <img
+          crossOrigin="anonymous"
           src={avatarUrl}
           className={styles.avatarImage}
           onError={handleImageError}

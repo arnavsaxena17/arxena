@@ -12,7 +12,6 @@ import { DropdownMenuItemsContainer } from '@/ui/layout/dropdown/components/Drop
 import { useDropdown } from '@/ui/layout/dropdown/hooks/useDropdown';
 import { SHOW_PAGE_ADD_BUTTON_DROPDOWN_ID } from '@/ui/layout/show-page/constants/ShowPageAddButtonDropdownId';
 import { MenuItem } from '@/ui/navigation/menu-item/components/MenuItem';
-
 import { Dropdown } from '../../dropdown/components/Dropdown';
 import { DropdownMenu } from '../../dropdown/components/DropdownMenu';
 
@@ -20,11 +19,8 @@ const StyledContainer = styled.div`
   z-index: 1;
 `;
 
-export const ShowPageAddButton = ({
-  activityTargetObject,
-}: {
-  activityTargetObject: ActivityTargetableObject;
-}) => {
+
+export const ShowPageAddButton = ({ activityTargetObject }: { activityTargetObject: ActivityTargetableObject }) => {
   const { closeDropdown, toggleDropdown } = useDropdown('add-show-page');
   const openCreateActivity = useOpenCreateActivityDrawer();
 
@@ -44,97 +40,48 @@ export const ShowPageAddButton = ({
     closeDropdown();
   };
 
-  const shouldDisplayAIInterview =
-    activityTargetObject.targetObjectNameSingular ===
-      CoreObjectNameSingular.Job ||
-    activityTargetObject.targetObjectNameSingular ===
-      CoreObjectNameSingular.Candidate ||
-    activityTargetObject.targetObjectNameSingular ===
-      CoreObjectNameSingular.Person;
+  const isAIInterviewEnabled = [CoreObjectNameSingular.Job, CoreObjectNameSingular.Candidate, CoreObjectNameSingular.Person].includes(activityTargetObject.targetObjectNameSingular as CoreObjectNameSingular);
 
-  if (!shouldDisplayAIInterview) {
-    return (
-      <StyledContainer>
-        <Dropdown
-          dropdownId={SHOW_PAGE_ADD_BUTTON_DROPDOWN_ID}
-          clickableComponent={
-            <IconButton
-              Icon={IconPlus}
-              size="medium"
-              dataTestId="add-showpage-button"
-              accent="default"
-              variant="secondary"
-              onClick={toggleDropdown}
-            />
-          }
-          dropdownComponents={
-            <DropdownMenu>
-              <DropdownMenuItemsContainer>
-                <MenuItem
-                  onClick={() => handleSelect('Note')}
-                  accent="default"
-                  LeftIcon={IconNotes}
-                  text="Note"
-                />
-                <MenuItem
-                  onClick={() => handleSelect('Task')}
-                  accent="default"
-                  LeftIcon={IconCheckbox}
-                  text="Task"
-                />
-              </DropdownMenuItemsContainer>
-            </DropdownMenu>
-          }
-          dropdownHotkeyScope={{
-            scope: PageHotkeyScope.ShowPage,
-          }}
-        />
-      </StyledContainer>
-    );
-  } else {
-    return (
-      <StyledContainer>
-        <Dropdown
-          dropdownId={SHOW_PAGE_ADD_BUTTON_DROPDOWN_ID}
-          clickableComponent={
-            <IconButton
-              Icon={IconPlus}
-              size="medium"
-              dataTestId="add-showpage-button"
-              accent="default"
-              variant="secondary"
-              onClick={toggleDropdown}
-            />
-          }
-          dropdownComponents={
-            <DropdownMenu>
-              <DropdownMenuItemsContainer>
-                <MenuItem
-                  onClick={() => handleSelect('Note')}
-                  accent="default"
-                  LeftIcon={IconNotes}
-                  text="Note"
-                />
-                <MenuItem
-                  onClick={() => handleSelect('Task')}
-                  accent="default"
-                  LeftIcon={IconCheckbox}
-                  text="Task"
-                />
-                <MenuItem
-                  onClick={() => handleModal()}
-                  accent="default"
-                  LeftIcon={IconScan}
-                  text="AI Interview"
-                />
-              </DropdownMenuItemsContainer>
-            </DropdownMenu>
-          }
-          dropdownHotkeyScope={{
-            scope: PageHotkeyScope.ShowPage,
-          }}
-        />
-      </StyledContainer>
-    );
-  }
-};
+  const menuItems = [
+    {
+      text: 'Note',
+      icon: IconNotes,
+      onClick: () => handleSelect('Note'),
+    },
+    {
+      text: 'Task',
+      icon: IconCheckbox,
+      onClick: () => handleSelect('Task'),
+    },
+    ...(isAIInterviewEnabled
+      ? [
+          {
+            text: 'AI Interview',
+            icon: IconScan,
+            onClick: () => handleModal(),
+          },
+        ]
+      : []),
+  ];
+
+  return (
+    <StyledContainer>
+      <Dropdown
+        dropdownId={SHOW_PAGE_ADD_BUTTON_DROPDOWN_ID}
+        clickableComponent={<IconButton Icon={IconPlus} size="medium" dataTestId="add-showpage-button" accent="default" variant="secondary" onClick={toggleDropdown} />}
+        dropdownComponents={
+          <DropdownMenu>
+            <DropdownMenuItemsContainer>
+              {menuItems.map(item => (
+                <MenuItem key={item.text} onClick={item.onClick} accent="default" LeftIcon={item.icon} text={item.text} />
+              ))}
+            </DropdownMenuItemsContainer>
+          </DropdownMenu>
+        }
+        dropdownHotkeyScope={{
+          scope: PageHotkeyScope.ShowPage,
+        }}
+      />
+    </StyledContainer>
+  );
+  };
