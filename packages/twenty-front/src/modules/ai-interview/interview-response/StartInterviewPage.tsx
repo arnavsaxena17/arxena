@@ -2,6 +2,8 @@ import React, { useState, useEffect,useRef } from 'react';
 import styled from '@emotion/styled';
 import * as InterviewResponseTypes from './types/interviewResponseTypes';
 import { VideoPlayer } from './utils/videoPlaybackUtils';
+import {recruiterProfile} from '../../activities/chats/types/front-chat-types';
+
 
 import {
   StyledContainer,
@@ -68,17 +70,16 @@ export const StartInterviewPage: React.FC<InterviewResponseTypes.StartInterviewP
     <StartInterviewStyledRightPanel>
       <InstructionSection>
         <h2>Hi, {InterviewData?.candidate?.people?.name?.firstName} (Application for {InterviewData?.candidate?.jobs?.name} at {InterviewData?.candidate?.jobs?.companyName})</h2>
-        <InstructionList>
-          <li>We are looking forward for your application to the position of {InterviewData?.candidate?.jobs?.name} at {InterviewData?.candidate?.jobs?.companyName}.</li>
-          <li>For the course of this interview, some questions require responses in real time video recording format and some require responses in textual format. For every question, you will be provided with transcript for clarity about the questions</li>
-          <li>Please provide your browser access to camera and microphone on your device to start interview</li>
-        </InstructionList>
+
         <br></br>
         <h3>Instructions</h3>
         <InstructionList>
-          <li>Give the interview in one go. Avoid closing or refreshing the tab or browser to prevent loss of progress.</li>
-          <li>Please make sure you have a stable internet connection and use a fully charged device for giving the interview.</li>
+          <li>You have to answer {InterviewData?.aIInterview?.aIInterviewQuestions.edges.length} questions and will have 4 minutes per question.</li>
+          <li>Answer all {InterviewData?.aIInterview?.aIInterviewQuestions.edges.length} questions in one go. Do not click back, close or refresh the tab to prevent loss of progress.</li>
+          <li>Do not worry about the quality of your video. Focus only on the quality of answers.</li>
           <li>Please provide your browser access to camera and microphone on your device to start interview</li>
+          <li>Please make sure you have a stable internet connection and use a fully charged device for giving the interview.</li>
+          <li>If you need assistance, write to me <a href={`mailto:${recruiterProfile.email}`}>{recruiterProfile.email}</a> or call/ whatsapp at <a href={`tel:${recruiterProfile.phone}`}>{recruiterProfile.phone}</a></li>
         </InstructionList>
       </InstructionSection>
           <ButtonContainer>
