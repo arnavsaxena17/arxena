@@ -83,7 +83,12 @@ export const Avatar = ({
   const getFaviconUrl = (domain: string): string => {
     const sanitizedDomain = sanitizeURL(domain);
     console.log("sanitizedDomain:",sanitizedDomain)
-    return `/api/favicon-proxy?domain=${encodeURIComponent(sanitizedDomain)}`;
+    if (process.env.NODE_ENV === 'development') {
+      return `/api/favicon-proxy?domain=${encodeURIComponent(sanitizedDomain)}`;
+    }
+    // In production, use Google's service directly with a fallback
+    return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(sanitizedDomain)}&sz=32`;
+  
   };
 
   
