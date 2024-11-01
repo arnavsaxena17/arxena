@@ -726,12 +726,7 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
     setMessageHistory(response.data);
     const newMessageHistory = response.data;
 
-    // const latestObject = response.data[response.data.length - 1];
-    // setLatestResponseGenerated(latestObject.content ?? "");
-    // const newLatestResponseGenerated = latestObject.content ?? "";
-    // botResponsePreviewRef.current.value = newLatestResponseGenerated;
-    // listOfMessages.push(newLatestResponseGenerated);
-    // console.log("latest:", newLatestResponseGenerated);
+
     const newLength = newMessageHistory.length;
     const diff = newLength - oldLength;
     const arrObjOfToolCalls = response.data.slice(newLength - diff, newLength + 1);
@@ -905,7 +900,6 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
                     targetableObject={{
                       targetObjectNameSingular: 'candidate',
                       id: currentCandidateId,
-                      // assigneeId:currentWorkspaceMember
                     }}
                   />
                 )}
@@ -913,7 +907,7 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
             </ChatContainer>
             <StyledChatInputBox>
               <Container>
-                <PreviewSection>
+                {/* <PreviewSection>
                   <SectionHeader>
                     <HeaderIcon viewBox="0 0 24 24" fill="none" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
@@ -928,7 +922,7 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
                     <ActionButton onClick={() => handleInvokeChatAndRunToolCalls(currentIndividual?.phone, latestResponseGenerated, setLatestResponseGenerated, setListOfToolCalls)}>Invoke Chat + Run tool calls</ActionButton>
                     <ToolCallsText>Tools Called: {listOfToolCalls?.map(tool => tool + ', ')}</ToolCallsText>
                   </ButtonContainer>
-                </PreviewSection>
+                </PreviewSection> */}
 
                 <PreviewSection>
                   <SectionHeader>
@@ -937,12 +931,9 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
                     </HeaderIcon>
                     <HeaderText>Templates & Chat Layers</HeaderText>
                   </SectionHeader>
-
-                  <div>
+                    <div>
                     <Select value={selectedTemplate} onChange={e => setSelectedTemplate(e.target.value)}>
-                      <option value="" disabled>
-                        Select a template
-                      </option>
+                      <option value="" disabled> Select a template </option>
                       <option value="Template1">Template1</option>
                       <option value="Template2">Template2</option>
                       <option value="Template3">Template3</option>
@@ -950,13 +941,13 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
                       <option value="Template5">Template5</option>
                     </Select>
                     <ActionButton onClick={() => handleTemplateSend(selectedTemplate)}>Send Template</ActionButton>
-                  </div>
+                    </div>
 
-                  <div>
+                    <br />
+
+                    <div>
                     <Select value={selectedChatLayer} onChange={e => setSelectedChatLayer(e.target.value)}>
-                      <option value="" disabled>
-                        Select a ChatLayer
-                      </option>
+                      <option value="" disabled> Select a ChatLayer </option>
                       <option value="ChatLayer1">ChatLayer1</option>
                       <option value="ChatLayer2">ChatLayer2</option>
                       <option value="ChatLayer3">ChatLayer3</option>
@@ -964,7 +955,7 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
                       <option value="ChatLayer5">ChatLayer5</option>
                     </Select>
                     <ActionButton onClick={() => handleStartNewChatLayer(selectedTemplate)}>Start New Chat Layer</ActionButton>
-                  </div>
+                    </div>
                 </PreviewSection>
               </Container>
 

@@ -32,9 +32,10 @@ const StyledTableCell = styled.div`
   padding: 1rem;
   border-bottom: 1px solid #e0e0e0;
   // vertical-align: middle;
-  
+  width: 150px; // Set width for each cell
+
   @media (max-width: 768px) {
-    display: flex;
+    // display: flex;
     padding: 0.5rem 0;
     border: none;
     
@@ -120,6 +121,9 @@ const NameCell = styled.div`
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   
   @media (max-width: 768px) {
     font-weight: 600;
