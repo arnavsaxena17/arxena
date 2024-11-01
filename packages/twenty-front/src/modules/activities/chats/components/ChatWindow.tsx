@@ -942,9 +942,7 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
                     </Select>
                     <ActionButton onClick={() => handleTemplateSend(selectedTemplate)}>Send Template</ActionButton>
                     </div>
-
                     <br />
-
                     <div>
                     <Select value={selectedChatLayer} onChange={e => setSelectedChatLayer(e.target.value)}>
                       <option value="" disabled> Select a ChatLayer </option>
