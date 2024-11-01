@@ -74,7 +74,7 @@ export const Avatar = ({
   };
   const sanitizeURL = (link: string) => {
     console.log("Link:", link)
-    const updatedLink = link?.replace(/(https?:\/\/)|(www\.)/g, '').replace(/\/$/, '').replace(/(http?:\/\/)|(www\.)/g, '').replace('localhost:3000/files/', '').replace("/api/favicon-proxy?domain=","")
+    const updatedLink = link?.replace(/(https?:\/\/)|(www\.)/g, '').replace(/\/$/, '').replace(/(http?:\/\/)|(www\.)/g, '').replace('localhost:3000/files/', '').replace("/api/favicon-proxy?domain=","").replace('app.arxena.com/app/files/', '')
     console.log("Updated Link:", updatedLink)
     return link ? updatedLink : '';
   };

@@ -19,7 +19,7 @@ import { VideoInterviewModule } from 'src/engine/core-modules/video-interview/vi
 import { AnalyticsModule } from './analytics/analytics.module';
 import { FileModule } from './file/file.module';
 import { ClientConfigModule } from './client-config/client-config.module';
-// import { GoogleCalendarModule } from 'src/engine/core-modules/calendar-events/google-calendar.module';
+import { GoogleCalendarModule } from 'src/engine/core-modules/calendar-events/google-calendar.module';
 import { MailerModule } from './gmail-sender/gmail-sender.module';
 // import { BaileysModule } from './baileys/baileys.module';
 // import { WhatsappModule } from './whiskeysocket-baileys/whiskeysocket-baileys.module';
@@ -29,7 +29,7 @@ import { CandidateSourcingModule } from './candidate-sourcing/candidate-sourcing
 @Module({
   imports: [
     MailerModule,
-    // GoogleCalendarModule,
+    GoogleCalendarModule,
     // BaileysModule,
     HealthModule,
     AnalyticsModule,
@@ -67,7 +67,7 @@ import { CandidateSourcingModule } from './candidate-sourcing/candidate-sourcing
     VideoInterviewModule,
     // WhatsappModule,
     MailerModule,
-    // GoogleCalendarModule,
+    GoogleCalendarModule,
     // EventsGateway,
   ],
 })
