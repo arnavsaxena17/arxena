@@ -217,7 +217,7 @@ export class GoogleAuthService {
     this.oauth2Client = new google.auth.OAuth2(
       process.env.AUTH_GOOGLE_CLIENT_ID,
       process.env.AUTH_GOOGLE_CLIENT_SECRET,
-      'http://localhost:3000/auth/google/redirect'  // Matching your configured redirect URI
+      process.env.AUTH_GOOGLE_CALLBACK_URL,
     );
   }
 
