@@ -2,62 +2,127 @@ import React from 'react';
 import styled from "@emotion/styled";
 import * as frontChatTypes from "../types/front-chat-types";
 
-const StyledTable = styled.table`
-  width: max-content;
+
+
+const TableContainer = styled.div`
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  
+  @media (max-width: 768px) {
+    margin: 0;
+    padding: 0;
+  }
+`;
+
+const StyledTable = styled.div`
+  width: 100%;
+  display: table;
   border-collapse: collapse;
+  
+  @media (max-width: 768px) {
+    display: block;
+  }
 `;
 
-const StyledTableCell = styled.td`
-  padding: 10px;
+const StyledTableCell = styled.div`
+  display: table-cell;
+  padding: 1rem;
   border-bottom: 1px solid #e0e0e0;
-  white-space: nowrap;
+  vertical-align: middle;
+  
+  @media (max-width: 768px) {
+    display: flex;
+    padding: 0.5rem 0;
+    border: none;
+    
+    &:before {
+      content: attr(data-label);
+      font-weight: 600;
+      width: 100px;
+      min-width: 100px;
+    }
+  }
 `;
-
-const StyledTableHeaderCell = styled.th`
-  padding: 10px;
+const StyledTableHeaderCell = styled.div`
+  display: table-cell;
+  padding: 1rem;
+  font-weight: 600;
   text-align: left;
-  white-space: nowrap;
+  border-bottom: 2px solid #e0e0e0;
 `;
 
-const StyledTableBody = styled.tbody`
-  background-color: #ffffff;
+
+const StyledTableBody = styled.div`
+  display: table-row-group;
+  
+  @media (max-width: 768px) {
+    display: block;
+  }
 `;
 
-const StyledTableHeader = styled.thead`
+
+const StyledTableHeader = styled.div`
+  display: table-header-group;
+  background-color: #f0f0f0;
   position: sticky;
   top: 0;
-  background-color: #f0f0f0;
   z-index: 1;
+  
+  @media (max-width: 768px) {
+    display: none;
+  }
 `;
 
-const StyledTableRow = styled.tr<{ $selected: boolean }>`
+
+const StyledTableRow = styled.div<{ $selected: boolean }>`
+  display: table-row;
   background-color: ${(props) => (props.$selected ? "#f5f9fd" : "white")};
   cursor: pointer;
+  
   &:hover {
     background-color: ${(props) => (props.$selected ? "#f5f9fd" : "#f0f0f0")};
   }
+  
+  @media (max-width: 768px) {
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+    border-bottom: 1px solid #e0e0e0;
+    position: relative;
+  }
 `;
+
 
 const UnreadIndicator = styled.span`
   background-color: red;
   color: white;
   border-radius: 50%;
   padding: 0.25rem 0.5rem;
-  margin-left: 0.5rem;
   font-size: 0.8rem;
   min-height: 1rem;
   min-width: 1rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  
+  @media (max-width: 768px) {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+  }
 `;
 
 
 const NameCell = styled.div`
   display: flex;
   align-items: center;
+  gap: 0.5rem;
+  
+  @media (max-width: 768px) {
+    font-weight: 600;
+  }
 `;
-
 
 
 const ChatTable: React.FC<frontChatTypes.ChatTableProps> = ({
@@ -76,6 +141,8 @@ const ChatTable: React.FC<frontChatTypes.ChatTableProps> = ({
   
   
   return (
+    <TableContainer>
+
     <StyledTable>
       <StyledTableHeader>
         <tr>
@@ -103,7 +170,9 @@ const ChatTable: React.FC<frontChatTypes.ChatTableProps> = ({
         })}
       </StyledTableBody>
     </StyledTable>
+    </TableContainer>
   );
+
 };
 
 export default ChatTable;

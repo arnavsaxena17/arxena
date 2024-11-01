@@ -21,38 +21,47 @@ import { mutationToUpdateOneCandidate, mutationToUpdateOnePerson } from '../grap
 
 import { useNavigate } from 'react-router-dom';
 // import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-
-
+import {   TopbarContainer,
+  FieldsContainer,
+  AdditionalInfo,
+  CopyableField,
+  StyledTopBar,
+  EditableField,
+  ButtonGroup,
+  MainInfo,
+  StyledSelect,
+  AdditionalInfoAndButtons,
+  AdditionalInfoContent} from './TopbarComponents';
 
 const statusLabels: { [key: string]: string } = {
-  "NOT_INTERESTED": "Not Interested",
-  "INTERESTED": "Interested",
-  "CV_RECEIVED": "CV Received",
-  "NOT_FIT": "Not Fit",
-  "SCREENING": "Screening",
-  "RECRUITER_INTERVIEW": "Recruiter Interview",
-  "CV_SENT": "CV Sent",
-  "CLIENT_INTERVIEW": "Client Interview",
-  "NEGOTIATION": "Negotiation"
+  NOT_INTERESTED: 'Not Interested',
+  INTERESTED: 'Interested',
+  CV_RECEIVED: 'CV Received',
+  NOT_FIT: 'Not Fit',
+  SCREENING: 'Screening',
+  RECRUITER_INTERVIEW: 'Recruiter Interview',
+  CV_SENT: 'CV Sent',
+  CLIENT_INTERVIEW: 'Client Interview',
+  NEGOTIATION: 'Negotiation',
 };
 
 const statusesArray = Object.keys(statusLabels);
 
-const EditableField = styled.span<{ isEditing: boolean }>`
-  cursor: ${props => props.isEditing ? 'text' : 'pointer'};
-  &:hover {
-    text-decoration: ${props => props.isEditing ? 'none' : 'underline'};
-  }
-`;
+// const EditableField = styled.span<{ isEditing: boolean }>`
+//   cursor: ${props => props.isEditing ? 'text' : 'pointer'};
+//   &:hover {
+//     text-decoration: ${props => props.isEditing ? 'none' : 'underline'};
+//   }
+// `;
 
-const StyledSelect = styled.select`
-  padding: 0.5em;
-  margin-right: 1em;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  background-color: white;
-  font-size: 14px;
-`;
+// const StyledSelect = styled.select`
+//   padding: 0.5em;
+//   margin-right: 1em;
+//   border: 1px solid #ccc;
+//   border-radius: 4px;
+//   background-color: white;
+//   font-size: 14px;
+// `;
 
 const PersonIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -78,18 +87,16 @@ const StopIcon = () => (
   </svg>
 );
 
-const StyledButtonGroup = styled.div`
-  display: flex;
-  gap: 8px;
-`;
-
+// const StyledButtonGroup = styled.div`
+//   display: flex;
+//   gap: 8px;
+// `;
 
 const ChatContainer = styled.div`
   display: flex;
   height: 90vh;
   z-index: 3;
 `;
-
 
 const StyledButton = styled.button<{ bgColor: string }>`
   display: flex;
@@ -131,7 +138,7 @@ const StyledButton = styled.button<{ bgColor: string }>`
 `;
 
 const NotesPanel = styled.div`
-  margin-top:100px;
+  margin-top: 100px;
   display: flex;
   position: relative;
   overflow-y: scroll;
@@ -159,7 +166,7 @@ const StyledWindow = styled.div`
   flex-direction: column;
   height: 90vh;
   margin: 0 auto;
-  z-index:2;
+  z-index: 2;
 `;
 
 const StyledChatInput = styled.input`
@@ -206,10 +213,9 @@ const StyledDateComponent = styled.span`
   border-radius: 4px;
 `;
 
-
 const StyledScrollingView = styled.div`
   padding-top: 5rem;
-  margin-bottom:5rem;
+  margin-bottom: 5rem;
   z-index: 1;
 `;
 
@@ -226,49 +232,48 @@ const StyledButton2 = styled.button`
   margin-right: 0.5rem;
 `;
 
-const StyledTopBar = styled.div`
-  padding: 1.5rem;
-  position: fixed;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 62vw;
-  background-color: rgba(255, 255, 255, 0.8);
-  filter: drop-shadow(0px 2px 4px rgba(0, 0, 0, 0.1));
-  z-index: 1;
-  backdrop-filter: saturate(180%) blur(10px);
-`;
+// const StyledTopBar = styled.div`
+//   padding: 1.5rem;
+//   position: fixed;
+//   display: flex;
+//   justify-content: space-between;
+//   align-items: center;
+//   width: 62vw;
+//   background-color: rgba(255, 255, 255, 0.8);
+//   filter: drop-shadow(0px 2px 4px rgba(0, 0, 0, 0.1));
+//   z-index: 1;
+//   backdrop-filter: saturate(180%) blur(10px);
+// `;
 
+// const TopbarContainer = styled.div`
+//   background-color: #f3f4f6;
+//   padding: 8px;
+//   border-radius: 4px;
+//   box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+// `;
 
-const TopbarContainer = styled.div`
-  background-color: #f3f4f6;
-  padding: 8px;
-  border-radius: 4px;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-`;
+// const FieldsContainer = styled.div`
+//   display: flex;
+//   flex-wrap: wrap;
+//   gap: 16px;
+//   font-size: 14px;
+// `;
 
-const FieldsContainer = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  font-size: 14px;
-`;
+// const AdditionalInfo = styled.div`
+//   margin-top: 8px;
+//   font-size: 12px;
+//   color: #4b5563;
+// `;
 
-const AdditionalInfo = styled.div`
-  margin-top: 8px;
-  font-size: 12px;
-  color: #4b5563;
-`;
-
-const CopyableField = styled.span`
-  cursor: pointer;
-  &:hover {
-    text-decoration: underline;
-  }
-  display: flex;
-  align-items: center;
-  gap: 4px;
-`;
+// const CopyableField = styled.span`
+//   cursor: pointer;
+//   &:hover {
+//     text-decoration: underline;
+//   }
+//   display: flex;
+//   align-items: center;
+//   gap: 4px;
+// `;
 
 const iconStyles = css`
   width: 16px;
@@ -292,7 +297,6 @@ const CheckIcon = () => (
   </StyledSvg>
 );
 
-
 const AttachmentIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
@@ -302,7 +306,7 @@ const AttachmentIcon = () => (
 const formatDate = (date: string) => dayjs(date).format('YYYY-MM-DD');
 
 export default function ChatWindow(props: { selectedIndividual: string; individuals: frontChatTypes.PersonNode[] }) {
-  const allIndividuals = props?.individuals
+  const allIndividuals = props?.individuals;
 
   const currentIndividual = allIndividuals?.find(individual => individual?.id === props?.selectedIndividual);
   const currentCandidateId = currentIndividual?.candidates?.edges[0]?.node?.id;
@@ -325,16 +329,12 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
   const [salary, setSalary] = useState(currentIndividual?.salary || '');
   const [city, setCity] = useState(currentIndividual?.city || '');
 
-
-
   useEffect(() => {
     setSalary(currentIndividual?.salary || '');
     setCity(currentIndividual?.city || '');
   }, [currentIndividual]);
 
-
-
-  const currentCandidateName = currentIndividual?.name.firstName + " " + currentIndividual?.name.lastName
+  const currentCandidateName = currentIndividual?.name.firstName + ' ' + currentIndividual?.name.lastName;
 
   useEffect(() => {
     if (currentCandidateId) {
@@ -342,8 +342,7 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
         scrollToBottom();
       });
     }
-    }, [props.selectedIndividual, currentCandidateId, messageHistory.length]);
-
+  }, [props.selectedIndividual, currentCandidateId, messageHistory.length]);
 
   const handleNavigateToPersonPage = () => {
     navigate(`/object/person/${currentIndividual?.id}`);
@@ -352,25 +351,24 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
     navigate(`/object/candidate/${currentCandidateId}`);
   };
 
-
   const handleSalaryUpdate = async () => {
     try {
       const response = await axios.post(
-        process.env.REACT_APP_SERVER_BASE_URL+'/graphql',
+        process.env.REACT_APP_SERVER_BASE_URL + '/graphql',
         {
           query: mutationToUpdateOnePerson,
           variables: {
             idToUpdate: currentIndividual?.id,
-            input: { salary: salary }
-          }
+            input: { salary: salary },
+          },
         },
         {
           headers: {
-            'authorization': `Bearer ${tokenPair?.accessToken?.token}`,
+            authorization: `Bearer ${tokenPair?.accessToken?.token}`,
             'content-type': 'application/json',
             'x-schema-version': '136',
-          }
-        }
+          },
+        },
       );
       console.log('Salary updated:', response.data);
       setIsEditingSalary(false);
@@ -382,21 +380,21 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
   const handleCityUpdate = async () => {
     try {
       const response = await axios.post(
-        process.env.REACT_APP_SERVER_BASE_URL+'/graphql',
+        process.env.REACT_APP_SERVER_BASE_URL + '/graphql',
         {
           query: mutationToUpdateOnePerson,
           variables: {
             idToUpdate: currentIndividual?.id,
-            input: { city: city }
-          }
+            input: { city: city },
+          },
         },
         {
           headers: {
-            'authorization': `Bearer ${tokenPair?.accessToken?.token}`,
+            authorization: `Bearer ${tokenPair?.accessToken?.token}`,
             'content-type': 'application/json',
             'x-schema-version': '136',
-          }
-        }
+          },
+        },
       );
       console.log('City updated:', response.data);
       setIsEditingCity(false);
@@ -405,27 +403,18 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
     }
   };
 
-
   const handleStopCandidate = async () => {
     try {
-      const response = await axios.post(
-        process.env.REACT_APP_SERVER_BASE_URL + '/candidate-sourcing/stop-chat',
-        { candidateId: currentCandidateId },
-        { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } }
-      );
+      const response = await axios.post(process.env.REACT_APP_SERVER_BASE_URL + '/candidate-sourcing/stop-chat', { candidateId: currentCandidateId }, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } });
       console.log('Response:', response);
     } catch (error) {
       console.error('Error stopping candidate:', error);
     }
-  }
-  
+  };
+
   async function getlistOfMessages(currentCandidateId: string) {
     try {
-      const response = await axios.post(
-        process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/get-all-messages-by-candidate-id',
-        { candidateId: currentCandidateId },
-        { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } }
-      );
+      const response = await axios.post(process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/get-all-messages-by-candidate-id', { candidateId: currentCandidateId }, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } });
 
       const sortedMessages = response.data.sort((a: frontChatTypes.MessageNode, b: frontChatTypes.MessageNode) => {
         return dayjs(a.createdAt).valueOf() - dayjs(b.createdAt).valueOf();
@@ -437,10 +426,15 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
       setMessageHistory([]);
     }
   }
-  console.log("Current Individual::", currentIndividual)
+  console.log('Current Individual::', currentIndividual);
   let currentMessageObject = currentIndividual?.candidates?.edges[0]?.node?.whatsappMessages?.edges[currentIndividual?.candidates?.edges[0]?.node?.whatsappMessages?.edges?.length - 1]?.node?.messageObj;
 
-  const handleInvokeChatAndRunToolCalls = async (phoneNumber: string | undefined, latestResponseGenerated: string, setLatestResponseGenerated: React.Dispatch<React.SetStateAction<string>>, setListOfToolCalls: React.Dispatch<React.SetStateAction<string[]>>) => {
+  const handleInvokeChatAndRunToolCalls = async (
+    phoneNumber: string | undefined,
+    latestResponseGenerated: string,
+    setLatestResponseGenerated: React.Dispatch<React.SetStateAction<string>>,
+    setListOfToolCalls: React.Dispatch<React.SetStateAction<string[]>>,
+  ) => {
     console.log('Invoke Chat + Run tool calls');
     debugger;
     console.log('Retrieve Bot Message');
@@ -466,11 +460,7 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
 
   const sendMessage = async (messageText: string) => {
     console.log('send message');
-    const response = await axios.post(
-      process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/send-chat',
-      { messageToSend: messageText, phoneNumberTo: currentIndividual?.phone },
-      { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } }
-    );
+    const response = await axios.post(process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/send-chat', { messageToSend: messageText, phoneNumberTo: currentIndividual?.phone }, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } });
   };
 
   const handleSubmit = () => {
@@ -486,41 +476,36 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
   const handleShareJD = async () => {
     console.log('share JD');
     //@ts-ignore
-    const response = await axios.post(
-      process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/send-jd-from-frontend',
-      { phoneNumberTo: currentIndividual?.phone },
-      { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } }
-    );
+    const response = await axios.post(process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/send-jd-from-frontend', { phoneNumberTo: currentIndividual?.phone }, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } });
   };
 
-    const handleStatusUpdate = async (newStatus: string) => {
-      try {
-        const response = await axios.post(
-          process.env.REACT_APP_SERVER_BASE_URL+'/graphql',
-          {
-            query: mutationToUpdateOneCandidate,
-            variables: {
-              idToUpdate: currentCandidateId,
-              input: { status: newStatus }
-            }
+  const handleStatusUpdate = async (newStatus: string) => {
+    try {
+      const response = await axios.post(
+        process.env.REACT_APP_SERVER_BASE_URL + '/graphql',
+        {
+          query: mutationToUpdateOneCandidate,
+          variables: {
+            idToUpdate: currentCandidateId,
+            input: { status: newStatus },
           },
-          {
-            headers: {
-              'authorization': `Bearer ${tokenPair?.accessToken?.token}`,
-              'content-type': 'application/json',
-              'x-schema-version': '66',
-            }
-          }
-        );
-        console.log('Status updated:', response.data);
-        // You might want to refresh the candidate data here
-      } catch (error) {
-        console.error('Error updating status:', error);
-      }
-    };
-  
+        },
+        {
+          headers: {
+            authorization: `Bearer ${tokenPair?.accessToken?.token}`,
+            'content-type': 'application/json',
+            'x-schema-version': '66',
+          },
+        },
+      );
+      console.log('Status updated:', response.data);
+      // You might want to refresh the candidate data here
+    } catch (error) {
+      console.error('Error updating status:', error);
+    }
+  };
 
-    const handleRetrieveBotMessage = async (
+  const handleRetrieveBotMessage = async (
     phoneNumber: string | undefined,
     latestResponseGenerated: string,
     setLatestResponseGenerated: React.Dispatch<React.SetStateAction<string>>,
@@ -554,9 +539,7 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
 
     let latestObjectText = arrObjOfToolCalls?.filter((obj: any) => obj?.role === 'assistant' && (obj?.content !== null || obj?.content !== '')).pop()?.content || 'Failed to retrieve bot message';
 
-    if (
-      arrObjOfToolCalls.filter((obj: any) => obj?.tool_calls?.length > 0)?.length > 0
-    ) {
+    if (arrObjOfToolCalls.filter((obj: any) => obj?.tool_calls?.length > 0)?.length > 0) {
       latestObjectText = 'Tool Calls being called';
     }
     //@ts-ignore
@@ -574,122 +557,140 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
     setIsAttachmentPanelOpen(!isAttachmentPanelOpen);
   };
 
-  
-    const copyToClipboard = (text:any, field:any) => {
-      navigator.clipboard.writeText(text);
-      setCopiedField(field);
-      setTimeout(() => setCopiedField(null), 2000);
-    };
-  
-    const CopyableFieldComponent: React.FC<{ label: string; value: string; field: string; alwaysShowFull?: boolean }> = ({ label, value, field, alwaysShowFull = false }) => (
-      <CopyableField onClick={() => copyToClipboard(value, field)} title={copiedField === field ? 'Copied!' : 'Click to copy'} >
+  const copyToClipboard = (text: any, field: any) => {
+    navigator.clipboard.writeText(text);
+    setCopiedField(field);
+    setTimeout(() => setCopiedField(null), 2000);
+  };
+
+  const CopyableFieldComponent: React.FC<{ label: string; value: string; field: string; alwaysShowFull?: boolean }> = ({ label, value, field, alwaysShowFull = false }) => (
+    <CopyableField onClick={() => copyToClipboard(value, field)} title={copiedField === field ? 'Copied!' : 'Click to copy'}>
       {label}: {alwaysShowFull ? value : ``}
       {copiedField === field ? <CheckIcon /> : <CopyIcon />}
-      </CopyableField>
-    );
-
+    </CopyableField>
+  );
 
   const allIndividualsForCurrentJob = allIndividuals?.filter(individual => individual?.candidates?.edges[0]?.node?.jobs.id === currentIndividual?.candidates?.edges[0]?.node?.jobs.id);
 
-  const lastStatus = currentIndividual?.candidates?.edges[0]?.node?.status
-  const totalCandidates = allIndividualsForCurrentJob?.length
-  const screeningState = allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.status === "SCREENING").length
-  const screeningPercent = (allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.status === "SCREENING").length/allIndividualsForCurrentJob.length*100).toFixed(1)
+  const lastStatus = currentIndividual?.candidates?.edges[0]?.node?.status;
+  const totalCandidates = allIndividualsForCurrentJob?.length;
+  const screeningState = allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.status === 'SCREENING').length;
+  const screeningPercent = ((allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.status === 'SCREENING').length / allIndividualsForCurrentJob.length) * 100).toFixed(1);
   const unresponsive = allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.status === null).length;
-  const unresponsivePercent = (allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.status === null).length/allIndividualsForCurrentJob.length*100).toFixed(1);
-  const notInterested = allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.status === "NOT_INTERESTED").length;
-  const notInterestedPercent = (allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.status === "NOT_INTERESTED").length/allIndividualsForCurrentJob.length*100).toFixed(1);
-  const notFit = allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.status === "NOT_FIT").length;
-  const notFitPercent = (allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.status === "NOT_FIT").length/allIndividualsForCurrentJob.length*100).toFixed(1);
-  const recruiterInterviews = allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.status === "RECRUITER_INTERVIEW").length;
-  const recruiterInterviewsPercent = (allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.status === "RECRUITER_INTERVIEW").length/allIndividualsForCurrentJob.length*100).toFixed(1);
-  const candidateEngagementStatus = currentIndividual?.candidates?.edges[0]?.node?.engagementStatus;  
-  const candidateStopChatStatus = currentIndividual?.candidates?.edges[0]?.node?.stopChat;  
+  const unresponsivePercent = ((allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.status === null).length / allIndividualsForCurrentJob.length) * 100).toFixed(1);
+  const notInterested = allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.status === 'NOT_INTERESTED').length;
+  const notInterestedPercent = ((allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.status === 'NOT_INTERESTED').length / allIndividualsForCurrentJob.length) * 100).toFixed(1);
+  const notFit = allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.status === 'NOT_FIT').length;
+  const notFitPercent = ((allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.status === 'NOT_FIT').length / allIndividualsForCurrentJob.length) * 100).toFixed(1);
+  const recruiterInterviews = allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.status === 'RECRUITER_INTERVIEW').length;
+  const recruiterInterviewsPercent = ((allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.status === 'RECRUITER_INTERVIEW').length / allIndividualsForCurrentJob.length) * 100).toFixed(1);
+  const candidateEngagementStatus = currentIndividual?.candidates?.edges[0]?.node?.engagementStatus;
+  const candidateStopChatStatus = currentIndividual?.candidates?.edges[0]?.node?.stopChat;
 
   const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
 
-console.log("Current Individual::", currentIndividual)
-console.log("Current currentWorkspaceMember::", currentWorkspaceMember)
+  console.log('Current Individual::', currentIndividual);
+  console.log('Current currentWorkspaceMember::', currentWorkspaceMember);
   return (
     <>
       <div style={{ display: 'flex', flexDirection: 'column' }}>
-        {props.selectedIndividual && (
+        {(props.selectedIndividual && (
           <StyledWindow>
             <ChatContainer>
-            <ChatView ref={chatViewRef}>
-              <StyledTopBar>
-              <TopbarContainer>
-                <FieldsContainer>
-                  <CopyableFieldComponent label="Name" value={`${currentIndividual?.name.firstName} ${currentIndividual?.name.lastName}`} field="name" alwaysShowFull = {true} />
-                  <CopyableFieldComponent label="Phone" value={currentIndividual?.phone || ''} field="phone" />
-                  <CopyableFieldComponent label="Person ID" value={currentIndividual?.id || ''} field="personId" />
-                  <CopyableFieldComponent label="Candidate ID" value={currentIndividual?.candidates.edges[0].node.id || ""} field="candidateId" />
-                </FieldsContainer>
-                <AdditionalInfo>
-                  Messages: {messageHistory?.length || 0} | 
-                  Current Job: {currentIndividual?.candidates?.edges[0]?.node?.jobs?.name || 'N/A'} | 
-                  <EditableField isEditing={isEditingSalary} onDoubleClick={() => setIsEditingSalary(true)} >
-                    {isEditingSalary ? (
-                      <input value={salary} onChange={(e) => setSalary(e.target.value)} onBlur={handleSalaryUpdate} onKeyPress={(e) => e.key === 'Enter' && handleSalaryUpdate()} autoFocus />
-                    ) : ( `Salary: ${salary || 'N/A'}` )}
-                  </EditableField> | 
-                  <EditableField isEditing={isEditingCity} onDoubleClick={() => setIsEditingCity(true)} >
-                    {isEditingCity ? (
-                      <input value={city} onChange={(e) => setCity(e.target.value)} onBlur={handleCityUpdate} onKeyPress={(e) => e.key === 'Enter' && handleCityUpdate()} autoFocus />
-                    ) : ( `City: ${city || 'N/A'}` )}
-                  </EditableField>
-                </AdditionalInfo>
-              </TopbarContainer>
-                <div style={{ display: 'flex', alignItems: 'center' }}>
-                  <StyledSelect value={lastStatus || ''} onChange={(e) => handleStatusUpdate(e.target.value)} >
-                    <option value="" disabled>Update Status</option>
-                    {statusesArray.map((status) => ( <option key={status} value={status}> {statusLabels[status]} </option> ))}
-                  </StyledSelect>
-                  <StyledButtonGroup>
+              <ChatView ref={chatViewRef}>
+                <StyledTopBar>
+                  <TopbarContainer>
+                <MainInfo>
+
+                    <FieldsContainer>
+                      <CopyableFieldComponent label="Name" value={`${currentIndividual?.name.firstName} ${currentIndividual?.name.lastName}`} field="name" alwaysShowFull={true} />
+                      <CopyableFieldComponent label="Phone" value={currentIndividual?.phone || ''} field="phone" />
+                      <CopyableFieldComponent label="Person ID" value={currentIndividual?.id || ''} field="personId" />
+                      <CopyableFieldComponent label="Candidate ID" value={currentIndividual?.candidates.edges[0].node.id || ''} field="candidateId" />
+                    </FieldsContainer>
+                    <AdditionalInfoAndButtons>
+                    <AdditionalInfo>
+                      <AdditionalInfoContent
+                        messageCount={messageHistory?.length || 0}
+                        jobName={currentIndividual?.candidates?.edges[0]?.node?.jobs?.name || ''}
+                        salary={salary}
+                        city={city}
+                        isEditingSalary={isEditingSalary}
+                        isEditingCity={isEditingCity}
+                        onSalaryEdit={() => setIsEditingSalary(true)}
+                        onCityEdit={() => setIsEditingCity(true)}
+                        onSalaryUpdate={handleSalaryUpdate}
+                        onCityUpdate={handleCityUpdate}
+                        setSalary={setSalary}
+                        setCity={setCity}
+                      />
+                    </AdditionalInfo>
+                  <ButtonGroup>
+                    <StyledSelect value={lastStatus || ''} onChange={e => handleStatusUpdate(e.target.value)}>
+                      {' '}
+                      <option value="" disabled>
+                        Update Status
+                      </option>{' '}
+                      {statusesArray.map(status => (
+                        <option key={status} value={status}>
+                          {' '}
+                          {statusLabels[status]}{' '}
+                        </option>
+                      ))}{' '}
+                    </StyledSelect>
                     <StyledButton onClick={handleStopCandidate} bgColor="black" data-tooltip="Stop Chat">
-                      <StopIcon />
+                      {' '}
+                      <StopIcon />{' '}
                     </StyledButton>
                     <StyledButton onClick={handleNavigateToPersonPage} bgColor="black" data-tooltip="Person">
-                      <PersonIcon />
+                      {' '}
+                      <PersonIcon />{' '}
                     </StyledButton>
                     <StyledButton onClick={handleNavigateToCandidatePage} bgColor="black" data-tooltip="Candidate">
-                      <CandidateIcon />
+                      {' '}
+                      <CandidateIcon />{' '}
                     </StyledButton>
+
                     <AttachmentButton onClick={handleToggleAttachmentPanel} bgColor="black" data-tooltip="View Attachments">
+                      {' '}
                       <AttachmentIcon />
                     </AttachmentButton>
-                  </StyledButtonGroup>
-                </div>
-              </StyledTopBar>
-              <StyledScrollingView>
-                {messageHistory.map((message, index) => {
-                  const showDateSeparator = index === 0 || formatDate(messageHistory[index - 1]?.createdAt) !== formatDate(message?.createdAt);
-                  return (
-                    <React.Fragment key={index}>
-                      { showDateSeparator && (
-                        <p style={{ textAlign: 'center' }}>
-                          <StyledDateComponent>{dayjs(message?.createdAt).format("ddd DD MMM, 'YY")}</StyledDateComponent>
-                        </p>
-                      )}
-                      <SingleChatContainer phoneNumber={currentIndividual?.phone} message={message} messageName={`${currentIndividual?.name.firstName} ${currentIndividual?.name.lastName}`} />
-                    </React.Fragment>
-                  );
-                })}
-              </StyledScrollingView>
-            </ChatView>
-            <NotesPanel>
-              {currentCandidateId && (
-                <Notes
-                  targetableObject={{ 
-                    targetObjectNameSingular: "candidate",
-                    id: currentCandidateId,
-                    // assigneeId:currentWorkspaceMember
-                    
-                  }}
-                />
-              )}
-            </NotesPanel>
-          </ChatContainer>
+                  </ButtonGroup>
+                  </AdditionalInfoAndButtons>
+
+                  </MainInfo>
+
+                  </TopbarContainer>
+
+                </StyledTopBar>
+                <StyledScrollingView>
+                  {messageHistory.map((message, index) => {
+                    const showDateSeparator = index === 0 || formatDate(messageHistory[index - 1]?.createdAt) !== formatDate(message?.createdAt);
+                    return (
+                      <React.Fragment key={index}>
+                        {showDateSeparator && (
+                          <p style={{ textAlign: 'center' }}>
+                            <StyledDateComponent>{dayjs(message?.createdAt).format("ddd DD MMM, 'YY")}</StyledDateComponent>
+                          </p>
+                        )}
+                        <SingleChatContainer phoneNumber={currentIndividual?.phone} message={message} messageName={`${currentIndividual?.name.firstName} ${currentIndividual?.name.lastName}`} />
+                      </React.Fragment>
+                    );
+                  })}
+                </StyledScrollingView>
+              </ChatView>
+              <NotesPanel>
+                {currentCandidateId && (
+                  <Notes
+                    targetableObject={{
+                      targetObjectNameSingular: 'candidate',
+                      id: currentCandidateId,
+                      // assigneeId:currentWorkspaceMember
+                    }}
+                  />
+                )}
+              </NotesPanel>
+            </ChatContainer>
             <StyledChatInputBox>
               <div>
                 <textarea name="" id="" cols={100} disabled ref={botResponsePreviewRef} placeholder="Bot Response Preview will appear here..."></textarea>
@@ -714,17 +715,12 @@ console.log("Current currentWorkspaceMember::", currentWorkspaceMember)
                 <StyledButtonBottom onClick={handleShareJD}>Share JD</StyledButtonBottom>
               </div>
               <div style={{ display: 'flex' }}>
-                Last Status: {lastStatus} | 
-                Total: {totalCandidates} | 
-                Screening: {screeningState} ({screeningPercent}%) | 
-                Unresponsive: {unresponsive} ({unresponsivePercent}%) | 
-                Not Interested: {notInterested} ({notInterestedPercent}%) | 
-                Not Fit: {notFit} ({notFitPercent}%) | 
-                Recruiter Interviews: {recruiterInterviews} ({recruiterInterviewsPercent}%)
+                Last Status: {lastStatus} | Total: {totalCandidates} | Screening: {screeningState} ({screeningPercent}%) | Unresponsive: {unresponsive} ({unresponsivePercent}%) | Not Interested: {notInterested} ({notInterestedPercent}%) | Not Fit:{' '}
+                {notFit} ({notFitPercent}%) | Recruiter Interviews: {recruiterInterviews} ({recruiterInterviewsPercent}%)
               </div>
             </StyledChatInputBox>
           </StyledWindow>
-        ) || (
+        )) || (
           <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
             <img src="/images/placeholders/moving-image/empty_inbox.png" alt="" />
             <p>Select a chat to start talking</p>
@@ -732,7 +728,6 @@ console.log("Current currentWorkspaceMember::", currentWorkspaceMember)
         )}
       </div>
       <AttachmentPanel isOpen={isAttachmentPanelOpen} onClose={() => setIsAttachmentPanelOpen(false)} candidateId={currentCandidateId || ''} candidateName={currentCandidateName} />
-
     </>
   );
 }
