@@ -16,30 +16,6 @@ interface VideoContainerProps {
 }
 
 
-// const UnmirroredWebcam = styled(Webcam as any)`
-//   width: 100%;
-//   height: 100%;
-//   transform: scaleX(1) !important;
-//   -webkit-transform: scaleX(1) !important;
-  
-//   & video {
-//     width: 100%;
-//     height: 100%;
-//     object-fit: cover;
-//     transform: scaleX(1) !important;
-//     -webkit-transform: scaleX(1) !important;
-//   }
-  
-//   @media not all and (min-resolution:.001dpcm) { 
-//     @supports (-webkit-appearance:none) {
-//       & video {
-//         transform: scaleX(1) !important;
-//         -webkit-transform: scaleX(1) !important;
-//       }
-//     }
-//   }
-// `;
-
 const UnmirroredWebcam =styled(Webcam as any)`
   width: 100%;
   height: 100%;
