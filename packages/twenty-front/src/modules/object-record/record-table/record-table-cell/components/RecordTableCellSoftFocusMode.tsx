@@ -69,9 +69,9 @@ export const RecordTableCellSoftFocusMode = ({
     },
     TableHotkeyScope.TableSoftFocus,
     [clearField, isFieldClearable, isFieldInputOnly],
-    {
-      enabled: !isFieldInputOnly,
-    },
+    // {
+    //   enabled: !isFieldInputOnly,
+    // },
   );
 
   useScopedHotkeys(

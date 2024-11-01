@@ -39,6 +39,47 @@ export default defineConfig(({ command, mode }) => {
     server: {
       port: 3001,
       host: 'localhost',
+      proxy: {
+        '^/api/favicon-proxy': {  // Add ^ to ensure exact path matching
+          target: 'https://www.google.com',
+          // target: 'https://favicon.twenty.com',
+          changeOrigin: true,
+          secure: false,
+
+          rewrite: (path) => {
+            const searchParams = new URLSearchParams(path.split('?')[1]);
+            const domain = searchParams.get('domain');
+            // return `/${domain}`;
+            return `/s2/favicons?domain=${domain}&sz=32`;
+          },
+            middleware: (req:any, res:any, next:any) => {
+            // Remove any double slashes in the path
+            req.url = req.url.replace(/\/+/g, '/');
+            next();
+          },      
+          configure: (proxy, options) => {
+            // Add error handling
+            proxy.on('error', (err, req, res) => {
+              console.error('Proxy error:', err);
+            });
+            // Add logging if needed
+            proxy.on('proxyRes', (proxyRes, req, res) => {
+              // Add CORS headers
+              proxyRes.headers['Access-Control-Allow-Origin'] = '*';
+              // Remove COEP headers
+              delete proxyRes.headers['Cross-Origin-Embedder-Policy'];
+              delete proxyRes.headers['Cross-Origin-Resource-Policy'];
+            });
+            }  
+        },
+      },
+          headers: {
+      // Remove COEP headers for development
+      'Cross-Origin-Embedder-Policy': 'credentialless',
+      'Cross-Origin-Opener-Policy': 'same-origin'
+    }
+
+  
     },
 
     plugins: [
@@ -51,8 +92,10 @@ export default defineConfig(({ command, mode }) => {
         name: 'configure-response-headers',
         configureServer: server => {
           server.middlewares.use((_req, res, next) => {
+            res.setHeader('Access-Control-Allow-Origin', '*');
             res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
             res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+
             next();
           });
         },
