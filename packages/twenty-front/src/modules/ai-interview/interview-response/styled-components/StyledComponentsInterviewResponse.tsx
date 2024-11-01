@@ -517,7 +517,8 @@ export const StyledTimer = styled.div`
 export const StyledError = styled.div`
   margin-top: 20px;
   padding: 10px;
-  background-color: #ffcdd2;
+  background-color: black;
+  color:white;
   border-radius: 4px;
   font-size: ${({ theme }) => theme.font.size.md};
 `;

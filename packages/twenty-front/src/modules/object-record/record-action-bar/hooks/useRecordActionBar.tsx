@@ -115,6 +115,17 @@ export const useRecordActionBar = ({
       }),
     );
   }, [callback, executeQuickActionOnOneRecord, selectedRecordIds]);
+  
+  const executeQuickAddToPeople = async (recordId:string) => console.log("This ishte response:!, ", recordId)
+  
+  const handleExecuteAddToPeople = useCallback(async () => {
+    callback?.();
+    await Promise.all(
+      selectedRecordIds.map(async (recordId) => {
+        await executeQuickAddToPeople(recordId);
+      }),
+    );
+  }, [callback, executeQuickAddToPeople, selectedRecordIds]);
 
   const { progress, download } = useExportTableData({
     delayMs: 100,
@@ -170,9 +181,11 @@ export const useRecordActionBar = ({
     ],
   );
 
-  const dataExecuteQuickActionOnmentEnabled = useIsFeatureEnabled(
-    'IS_QUICK_ACTIONS_ENABLED',
-  );
+  // const dataExecuteQuickActionOnmentEnabled = useIsFeatureEnabled( 'IS_QUICK_ACTIONS_ENABLED');
+  const dataExecuteQuickActionOnmentEnabled = true;
+  
+
+  console.log("dataExecuteQuickActionOnmentEnabled:", dataExecuteQuickActionOnmentEnabled)
 
   const hasOnlyOneRecordSelected = selectedRecordIds.length === 1;
 
@@ -213,7 +226,7 @@ export const useRecordActionBar = ({
       isRemoteObject,
       setContextMenuEntries,
     ]),
-
+    
     setActionBarEntries: useCallback(() => {
       setActionBarEntriesState([
         ...(dataExecuteQuickActionOnmentEnabled
@@ -226,6 +239,11 @@ export const useRecordActionBar = ({
                     label: 'Enrich',
                     Icon: IconPuzzle,
                     onClick: handleExecuteQuickActionOnClick,
+                  },
+                  {
+                    label: 'Add to People',
+                    Icon: IconPuzzle,
+                    onClick: handleExecuteAddToPeople,
                   },
                   {
                     label: 'Send to mailjet',
