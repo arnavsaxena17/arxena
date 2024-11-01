@@ -21,17 +21,7 @@ import { mutationToUpdateOneCandidate, mutationToUpdateOnePerson } from '../grap
 
 import { useNavigate } from 'react-router-dom';
 // import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import {   TopbarContainer,
-  FieldsContainer,
-  AdditionalInfo,
-  CopyableField,
-  StyledTopBar,
-  EditableField,
-  ButtonGroup,
-  MainInfo,
-  StyledSelect,
-  AdditionalInfoAndButtons,
-  AdditionalInfoContent} from './TopbarComponents';
+import { TopbarContainer, FieldsContainer, AdditionalInfo, CopyableField, StyledTopBar, EditableField, ButtonGroup, MainInfo, StyledSelect, AdditionalInfoAndButtons, AdditionalInfoContent } from './TopbarComponents';
 
 const statusLabels: { [key: string]: string } = {
   NOT_INTERESTED: 'Not Interested',
@@ -46,23 +36,6 @@ const statusLabels: { [key: string]: string } = {
 };
 
 const statusesArray = Object.keys(statusLabels);
-
-// const EditableField = styled.span<{ isEditing: boolean }>`
-//   cursor: ${props => props.isEditing ? 'text' : 'pointer'};
-//   &:hover {
-//     text-decoration: ${props => props.isEditing ? 'none' : 'underline'};
-//   }
-// `;
-
-// const StyledSelect = styled.select`
-//   padding: 0.5em;
-//   margin-right: 1em;
-//   border: 1px solid #ccc;
-//   border-radius: 4px;
-//   background-color: white;
-//   font-size: 14px;
-// `;
-
 const PersonIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
@@ -92,9 +65,107 @@ const StopIcon = () => (
 //   gap: 8px;
 // `;
 
+const Container = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2rem;
+  padding: 1.5rem;
+  background-color: #f9fafb;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+`;
+
+const PreviewSection = styled.div`
+  // display: flex;
+  flex-direction: column;
+  gap: 1rem;
+`;
+
+const SectionHeader = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+`;
+
+const HeaderIcon = styled.svg`
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #2563eb;
+`;
+
+const HeaderText = styled.h3`
+  font-weight: 500;
+  color: #111827;
+  margin: 0;
+`;
+
+const StyledTextArea = styled.textarea`
+  width: 100%;
+  height: 8rem;
+  padding: 0.75rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem;
+  resize: none;
+  background-color: ${props => (props.disabled ? '#f3f4f6' : 'white')};
+
+  &:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+  }
+`;
+
+const ButtonContainer = styled.div`
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+`;
+
+const ActionButton = styled.button`
+  padding: 0.5rem 1rem;
+  background-color: black;
+  color: white;
+  border: none;
+  border-radius: 0.375rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: grey;
+  }
+
+  &:disabled {
+    background-color: #9ca3af;
+    cursor: not-allowed;
+  }
+`;
+
+const ToolCallsText = styled.span`
+  color: #6b7280;
+  font-size: 0.875rem;
+`;
+
+const Select = styled.select`
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem;
+  background-color: white;
+  margin-bottom: 0.5rem;
+
+  &:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+  }
+`;
+
 const ChatContainer = styled.div`
   display: flex;
-  height: 90vh;
+  // height: 90vh;
   z-index: 3;
 `;
 
@@ -184,7 +255,7 @@ const StyledChatInputBox = styled.div`
   display: flex;
   background-color: rgba(255, 255, 255, 0.8);
   filter: drop-shadow(0px -2px 4px rgba(0, 0, 0, 0.1));
-  z-index: 1;
+  // z-index: 1;
   backdrop-filter: saturate(180%) blur(10px);
   max-width: auto;
   padding: 1rem;
@@ -201,7 +272,7 @@ const ChatView = styled.div`
   border: 1px solid #ccc;
   overflow-y: scroll;
   width: 100%;
-  height: 70vh;
+  height: 50vh;
 `;
 
 const StyledDateComponent = styled.span`
@@ -230,6 +301,26 @@ const StyledButton2 = styled.button`
   color: white;
   cursor: pointer;
   margin-right: 0.5rem;
+`;
+
+const BotResponseContainer = styled.div`
+  display: flex;
+  gap: 1rem;
+  width: 100%;
+  align-items: flex-start;
+
+  textarea {
+    flex: 1;
+    min-height: 100px;
+    resize: vertical;
+  }
+
+  .buttons-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
 `;
 
 // const StyledTopBar = styled.div`
@@ -274,6 +365,42 @@ const StyledButton2 = styled.button`
 //   align-items: center;
 //   gap: 4px;
 // `;
+const ChatInputContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem;
+  background-color: rgba(255, 255, 255, 0.8);
+  backdrop-filter: saturate(180%) blur(10px);
+`;
+
+const ResponsePreviewContainer = styled.div`
+  display: flex;
+  gap: 1rem;
+  width: 100%;
+`;
+
+// const PreviewSection = styled.div`
+//   flex: 1;
+//   display: flex;
+//   flex-direction: column;
+//   gap: 0.5rem;
+//   margin: 1rem;
+//   textarea {
+//     width: 100%;
+//     min-height: 100px;
+//     resize: vertical;
+//     padding: 0.5rem;
+//     border: 1px solid #ccc;
+//     border-radius: 4px;
+//   }
+// `;
+
+const ButtonsRow = styled.div`
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+`;
 
 const iconStyles = css`
   width: 16px;
@@ -283,6 +410,60 @@ const iconStyles = css`
 const StyledSvg = styled.svg`
   ${iconStyles}
 `;
+
+const NotificationContainer = styled.div`
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+`;
+
+const Notification = styled.div<{ type: 'success' | 'error' }>`
+  padding: 1rem;
+  border-radius: 0.375rem;
+  background-color: ${props => (props.type === 'success' ? '#34d399' : '#f87171')};
+  color: white;
+  min-width: 300px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  animation: slideIn 0.3s ease-out;
+
+  @keyframes slideIn {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+`;
+
+const CloseButton = styled.button`
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  padding: 0.25rem;
+  opacity: 0.8;
+  transition: opacity 0.2s;
+
+  &:hover {
+    opacity: 1;
+  }
+`;
+
+interface Toast {
+  id: number;
+  message: string;
+  type: 'success' | 'error';
+}
 
 const CopyIcon = () => (
   <StyledSvg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -328,6 +509,8 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
   const [isEditingCity, setIsEditingCity] = useState(false);
   const [salary, setSalary] = useState(currentIndividual?.salary || '');
   const [city, setCity] = useState(currentIndividual?.city || '');
+
+  const [toasts, setToasts] = useState<Toast[]>([]);
 
   useEffect(() => {
     setSalary(currentIndividual?.salary || '');
@@ -410,6 +593,22 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
     } catch (error) {
       console.error('Error stopping candidate:', error);
     }
+  };
+
+  const addToast = (message: string, type: 'success' | 'error') => {
+    const newToast = {
+      id: Date.now(),
+      message,
+      type,
+    };
+    setToasts(prev => [...prev, newToast]);
+    setTimeout(() => {
+      removeToast(newToast.id);
+    }, 5000);
+  };
+
+  const removeToast = (id: number) => {
+    setToasts(prev => prev.filter(toast => toast.id !== id));
   };
 
   async function getlistOfMessages(currentCandidateId: string) {
@@ -589,6 +788,31 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
 
   const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
 
+  const [selectedTemplate, setSelectedTemplate] = useState('');
+  const [selectedChatLayer, setSelectedChatLayer] = useState('');
+
+  const handleTemplateSend = async (templateName: string) => {
+    try {
+      await axios.post(process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/send-whatsapp-template', { templateName, phoneNumberTo: currentIndividual?.phone }, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } });
+      addToast('Template sent successfully', 'success');
+      setSelectedTemplate(''); // Reset selection after successful send
+    } catch (error) {
+      addToast('Failed to send template', 'error');
+      console.error('Error sending template:', error);
+    }
+  };
+
+  const handleStartNewChatLayer = async (chatLayer: string) => {
+    try {
+      await axios.post(process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/send-chatLayer-start', { chatLayer, phoneNumberTo: currentIndividual?.phone }, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } });
+      addToast('Chat layer started successfully', 'success');
+      setSelectedChatLayer(''); // Reset selection after successful start
+    } catch (error) {
+      addToast('Failed to start chat layer', 'error');
+      console.error('Error starting chat layer:', error);
+    }
+  };
+
   console.log('Current Individual::', currentIndividual);
   console.log('Current currentWorkspaceMember::', currentWorkspaceMember);
   return (
@@ -600,68 +824,64 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
               <ChatView ref={chatViewRef}>
                 <StyledTopBar>
                   <TopbarContainer>
-                <MainInfo>
+                    <MainInfo>
+                      <FieldsContainer>
+                        <CopyableFieldComponent label="Name" value={`${currentIndividual?.name.firstName} ${currentIndividual?.name.lastName}`} field="name" alwaysShowFull={true} />
+                        <CopyableFieldComponent label="Phone" value={currentIndividual?.phone || ''} field="phone" />
+                        <CopyableFieldComponent label="Person ID" value={currentIndividual?.id || ''} field="personId" />
+                        <CopyableFieldComponent label="Candidate ID" value={currentIndividual?.candidates.edges[0].node.id || ''} field="candidateId" />
+                      </FieldsContainer>
+                      <AdditionalInfoAndButtons>
+                        <AdditionalInfo>
+                          <AdditionalInfoContent
+                            messageCount={messageHistory?.length || 0}
+                            jobName={currentIndividual?.candidates?.edges[0]?.node?.jobs?.name || ''}
+                            salary={salary}
+                            city={city}
+                            isEditingSalary={isEditingSalary}
+                            isEditingCity={isEditingCity}
+                            onSalaryEdit={() => setIsEditingSalary(true)}
+                            onCityEdit={() => setIsEditingCity(true)}
+                            onSalaryUpdate={handleSalaryUpdate}
+                            onCityUpdate={handleCityUpdate}
+                            setSalary={setSalary}
+                            setCity={setCity}
+                          />
+                        </AdditionalInfo>
+                        <ButtonGroup>
+                          <StyledSelect value={lastStatus || ''} onChange={e => handleStatusUpdate(e.target.value)}>
+                            {' '}
+                            <option value="" disabled>
+                              Update Status
+                            </option>{' '}
+                            {statusesArray.map(status => (
+                              <option key={status} value={status}>
+                                {' '}
+                                {statusLabels[status]}{' '}
+                              </option>
+                            ))}{' '}
+                          </StyledSelect>
+                          <StyledButton onClick={handleStopCandidate} bgColor="black" data-tooltip="Stop Chat">
+                            {' '}
+                            <StopIcon />{' '}
+                          </StyledButton>
+                          <StyledButton onClick={handleNavigateToPersonPage} bgColor="black" data-tooltip="Person">
+                            {' '}
+                            <PersonIcon />{' '}
+                          </StyledButton>
+                          <StyledButton onClick={handleNavigateToCandidatePage} bgColor="black" data-tooltip="Candidate">
+                            {' '}
+                            <CandidateIcon />{' '}
+                          </StyledButton>
 
-                    <FieldsContainer>
-                      <CopyableFieldComponent label="Name" value={`${currentIndividual?.name.firstName} ${currentIndividual?.name.lastName}`} field="name" alwaysShowFull={true} />
-                      <CopyableFieldComponent label="Phone" value={currentIndividual?.phone || ''} field="phone" />
-                      <CopyableFieldComponent label="Person ID" value={currentIndividual?.id || ''} field="personId" />
-                      <CopyableFieldComponent label="Candidate ID" value={currentIndividual?.candidates.edges[0].node.id || ''} field="candidateId" />
-                    </FieldsContainer>
-                    <AdditionalInfoAndButtons>
-                    <AdditionalInfo>
-                      <AdditionalInfoContent
-                        messageCount={messageHistory?.length || 0}
-                        jobName={currentIndividual?.candidates?.edges[0]?.node?.jobs?.name || ''}
-                        salary={salary}
-                        city={city}
-                        isEditingSalary={isEditingSalary}
-                        isEditingCity={isEditingCity}
-                        onSalaryEdit={() => setIsEditingSalary(true)}
-                        onCityEdit={() => setIsEditingCity(true)}
-                        onSalaryUpdate={handleSalaryUpdate}
-                        onCityUpdate={handleCityUpdate}
-                        setSalary={setSalary}
-                        setCity={setCity}
-                      />
-                    </AdditionalInfo>
-                  <ButtonGroup>
-                    <StyledSelect value={lastStatus || ''} onChange={e => handleStatusUpdate(e.target.value)}>
-                      {' '}
-                      <option value="" disabled>
-                        Update Status
-                      </option>{' '}
-                      {statusesArray.map(status => (
-                        <option key={status} value={status}>
-                          {' '}
-                          {statusLabels[status]}{' '}
-                        </option>
-                      ))}{' '}
-                    </StyledSelect>
-                    <StyledButton onClick={handleStopCandidate} bgColor="black" data-tooltip="Stop Chat">
-                      {' '}
-                      <StopIcon />{' '}
-                    </StyledButton>
-                    <StyledButton onClick={handleNavigateToPersonPage} bgColor="black" data-tooltip="Person">
-                      {' '}
-                      <PersonIcon />{' '}
-                    </StyledButton>
-                    <StyledButton onClick={handleNavigateToCandidatePage} bgColor="black" data-tooltip="Candidate">
-                      {' '}
-                      <CandidateIcon />{' '}
-                    </StyledButton>
-
-                    <AttachmentButton onClick={handleToggleAttachmentPanel} bgColor="black" data-tooltip="View Attachments">
-                      {' '}
-                      <AttachmentIcon />
-                    </AttachmentButton>
-                  </ButtonGroup>
-                  </AdditionalInfoAndButtons>
-
-                  </MainInfo>
-
+                          <AttachmentButton onClick={handleToggleAttachmentPanel} bgColor="black" data-tooltip="View Attachments">
+                            {' '}
+                            <AttachmentIcon />
+                          </AttachmentButton>
+                        </ButtonGroup>
+                      </AdditionalInfoAndButtons>
+                    </MainInfo>
                   </TopbarContainer>
-
                 </StyledTopBar>
                 <StyledScrollingView>
                   {messageHistory.map((message, index) => {
@@ -692,23 +912,71 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
               </NotesPanel>
             </ChatContainer>
             <StyledChatInputBox>
-              <div>
-                <textarea name="" id="" cols={100} disabled ref={botResponsePreviewRef} placeholder="Bot Response Preview will appear here..."></textarea>
-              </div>
-              <div>
-                <StyledButtonsBelowChatMessage>
-                  <StyledButton2 onClick={() => handleRetrieveBotMessage(currentIndividual?.phone, latestResponseGenerated, setLatestResponseGenerated, listOfToolCalls, setListOfToolCalls, messageHistory, setMessageHistory)}>
-                    Retrieve Bot Response
-                  </StyledButton2>
-                  <StyledButton2
-                    onClick={() => {
-                      handleInvokeChatAndRunToolCalls(currentIndividual?.phone, latestResponseGenerated, setLatestResponseGenerated, setListOfToolCalls);
-                    }}>
-                    Invoke Chat + Run tool calls
-                  </StyledButton2>
-                  <span>Tools Called: {listOfToolCalls?.map(tool => tool + ', ')}</span>
-                </StyledButtonsBelowChatMessage>
-              </div>
+              <Container>
+                <PreviewSection>
+                  <SectionHeader>
+                    <HeaderIcon viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                    </HeaderIcon>
+                    <HeaderText>Bot Response Preview</HeaderText>
+                  </SectionHeader>
+                  <StyledTextArea ref={botResponsePreviewRef} placeholder="Bot Response Preview will appear here..." disabled />
+                  <ButtonContainer>
+                    <ActionButton onClick={() => handleRetrieveBotMessage(currentIndividual?.phone, latestResponseGenerated, setLatestResponseGenerated, listOfToolCalls, setListOfToolCalls, messageHistory, setMessageHistory)}>
+                      Retrieve Bot Response
+                    </ActionButton>
+                    <ActionButton onClick={() => handleInvokeChatAndRunToolCalls(currentIndividual?.phone, latestResponseGenerated, setLatestResponseGenerated, setListOfToolCalls)}>Invoke Chat + Run tool calls</ActionButton>
+                    <ToolCallsText>Tools Called: {listOfToolCalls?.map(tool => tool + ', ')}</ToolCallsText>
+                  </ButtonContainer>
+                </PreviewSection>
+
+                <PreviewSection>
+                  <SectionHeader>
+                    <HeaderIcon viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 5h16a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V7a2 2 0 012-2z" />
+                    </HeaderIcon>
+                    <HeaderText>Templates & Chat Layers</HeaderText>
+                  </SectionHeader>
+
+                  <div>
+                    <Select value={selectedTemplate} onChange={e => setSelectedTemplate(e.target.value)}>
+                      <option value="" disabled>
+                        Select a template
+                      </option>
+                      <option value="Template1">Template1</option>
+                      <option value="Template2">Template2</option>
+                      <option value="Template3">Template3</option>
+                      <option value="Template4">Template4</option>
+                      <option value="Template5">Template5</option>
+                    </Select>
+                    <ActionButton onClick={() => handleTemplateSend(selectedTemplate)}>Send Template</ActionButton>
+                  </div>
+
+                  <div>
+                    <Select value={selectedChatLayer} onChange={e => setSelectedChatLayer(e.target.value)}>
+                      <option value="" disabled>
+                        Select a ChatLayer
+                      </option>
+                      <option value="ChatLayer1">ChatLayer1</option>
+                      <option value="ChatLayer2">ChatLayer2</option>
+                      <option value="ChatLayer3">ChatLayer3</option>
+                      <option value="ChatLayer4">ChatLayer4</option>
+                      <option value="ChatLayer5">ChatLayer5</option>
+                    </Select>
+                    <ActionButton onClick={() => handleStartNewChatLayer(selectedTemplate)}>Start New Chat Layer</ActionButton>
+                  </div>
+                </PreviewSection>
+              </Container>
+
+              <NotificationContainer>
+                {toasts.map(toast => (
+                  <Notification key={toast.id} type={toast.type}>
+                    <span>{toast.message}</span>
+                    <CloseButton onClick={() => removeToast(toast.id)}>✕</CloseButton>
+                  </Notification>
+                ))}
+              </NotificationContainer>
+
               <div style={{ display: 'flex' }}>
                 <StyledChatInput type="text" ref={inputRef} placeholder="Type your message" />
                 <StyledButtonBottom onClick={handleSubmit}>Submit</StyledButtonBottom>

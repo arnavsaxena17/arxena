@@ -13,6 +13,7 @@ interface VideoContainerProps {
   webcamRef: React.RefObject<Webcam>;
 
   setIsPlaying: (isPlaying: boolean) => void;
+  interviewTime: number;
 }
 
 
@@ -80,10 +81,11 @@ const VideoContainer: React.FC<VideoContainerProps> = ({
   setIsPlaying,
   countdown,
   webcamRef,
+  interviewTime
 
 }) => {
   console.log("Anshwer TIme:", answerTimer, "isRecording:", isRecording)
-  const totalTime = 240; // 4 minutes in seconds
+  const totalTime = interviewTime; // 4 minutes in seconds
   const timeRemaining = isRecording ? (answerTimer ?? totalTime) : totalTime;
   console.log("timeRemaining:", timeRemaining)
   const isNearingEnd = (timeRemaining ?? totalTime) <= 30;

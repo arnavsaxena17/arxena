@@ -7,6 +7,8 @@ import * as frontChatTypes from "../types/front-chat-types";
 const TableContainer = styled.div`
   width: 100%;
   overflow-x: auto;
+  white-space: nowrap; 
+  text-overflow: ellipsis
   -webkit-overflow-scrolling: touch;
   
   @media (max-width: 768px) {
@@ -29,7 +31,7 @@ const StyledTableCell = styled.div`
   display: table-cell;
   padding: 1rem;
   border-bottom: 1px solid #e0e0e0;
-  vertical-align: middle;
+  // vertical-align: middle;
   
   @media (max-width: 768px) {
     display: flex;

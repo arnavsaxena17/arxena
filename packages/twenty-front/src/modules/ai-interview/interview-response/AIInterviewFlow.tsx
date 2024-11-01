@@ -46,7 +46,6 @@ const Spinner = styled.div`
   border-top: 4px solid #3498db;
   border-radius: 50%;
   animation: spin 1s linear infinite;
-
   @keyframes spin {
     0% {
       transform: rotate(0deg);
@@ -226,6 +225,7 @@ const AIInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) => 
       case 'interview':
         return (
           <ErrorBoundary>
+          {loading && <InterviewLoader />}
             <InterviewPage
               InterviewData={interviewData}
               questions={interviewData.aIInterview.aIInterviewQuestions.edges.map(edge => edge.node).sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())}

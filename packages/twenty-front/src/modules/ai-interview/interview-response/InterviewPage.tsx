@@ -11,8 +11,6 @@ import {
   StyledLeftPanelContentBox,
   StyledTextLeftPanelTextHeadline,
   StyledTextLeftPaneldisplay,
-  // StyledLeftPanel,
-  // StyledRightPanel,
   StyledCountdownOverlay,
   StyledMessage,
   StyledTimer,
@@ -20,38 +18,33 @@ import {
   SnapScrollContainer,
   StyledLeftPanel,
   StyledRightPanel,
-  // StyledButton,
-  // ButtonContainer,
-  // InstructionSection,
-  // InstructionList,
-  // AccessMessage,
 } from './styled-components/StyledComponentsInterviewResponse';
 
-const UnmirroredWebcam = styled(Webcam as any)`
-  width: 100%;
-  height: 100%;
-  transform: scaleX(1) !important;
-  -webkit-transform: scaleX(1) !important;
+// const UnmirroredWebcam = styled(Webcam as any)`
+//   width: 100%;
+//   height: 100%;
+//   transform: scaleX(1) !important;
+//   -webkit-transform: scaleX(1) !important;
 
-  /* Target the internal video element specifically */
-  & video {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transform: scaleX(1) !important;
-    -webkit-transform: scaleX(1) !important;
-  }
+//   /* Target the internal video element specifically */
+//   & video {
+//     width: 100%;
+//     height: 100%;
+//     object-fit: cover;
+//     transform: scaleX(1) !important;
+//     -webkit-transform: scaleX(1) !important;
+//   }
 
-  /* Safari-specific fixes */
-  @media not all and (min-resolution: 0.001dpcm) {
-    @supports (-webkit-appearance: none) {
-      & video {
-        transform: scaleX(1) !important;
-        -webkit-transform: scaleX(1) !important;
-      }
-    }
-  }
-`;
+//   /* Safari-specific fixes */
+//   @media not all and (min-resolution: 0.001dpcm) {
+//     @supports (-webkit-appearance: none) {
+//       & video {
+//         transform: scaleX(1) !important;
+//         -webkit-transform: scaleX(1) !important;
+//       }
+//     }
+//   }
+// `;
 
 const ffmpeg = createFFmpeg({
   // corePath: `/ffmpeg/ffmpeg-core.js`,
@@ -77,6 +70,7 @@ export const InterviewPage: React.FC<InterviewResponseTypes.InterviewPageProps> 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const isLastQuestion = currentQuestionIndex === questions.length - 1;
+  const interviewTime = 240; // 4 minutes
 
   useEffect(() => {
     checkCamera();
@@ -112,8 +106,8 @@ export const InterviewPage: React.FC<InterviewResponseTypes.InterviewPageProps> 
 
   const handleStartRecording = () => {
     resetAndStopVideo(); // Stop and reset video before starting recording
-    setRecording(true);
     setCountdown(5);
+    setRecording(true);
   };
 
   const startRecording = () => {
@@ -121,7 +115,7 @@ export const InterviewPage: React.FC<InterviewResponseTypes.InterviewPageProps> 
     setRecorded(false);
     setError(null);
     setRecordedChunks([]);
-    setAnswerTimer(240);
+    setAnswerTimer(interviewTime);
     const stream = webcamRef.current?.stream;
     if (stream) {
       mediaRecorderRef.current = new MediaRecorder(stream, { mimeType: 'video/webm' });
@@ -288,7 +282,7 @@ export const InterviewPage: React.FC<InterviewResponseTypes.InterviewPageProps> 
           <p>{questions[currentQuestionIndex].questionValue}</p>
         </div>
         {activeCameraFeed && (
-          <VideoContainer answerTimer={answerTimer} isRecording={recording} onRecordingClick={recording ? handleStopRecording : handleStartRecording} setIsPlaying={setIsPlaying} countdown={countdown} webcamRef={webcamRef}></VideoContainer>
+          <VideoContainer answerTimer={answerTimer} isRecording={recording} onRecordingClick={recording ? handleStopRecording : handleStartRecording} setIsPlaying={setIsPlaying} countdown={countdown} webcamRef={webcamRef} interviewTime={interviewTime}></VideoContainer>
         )}
         {submitting && <StyledMessage>Submitting your response...</StyledMessage>}
         {timer !== null && (

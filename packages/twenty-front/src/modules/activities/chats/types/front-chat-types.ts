@@ -288,7 +288,7 @@ export const jobProfile: jobProfileType = {
 };
 
 export const recruiterProfile: recruiterProfileType = {
-  name: "Arnav Doe",
+  name: "Arnav Saxena",
   first_name: "Arnav",
   phone: "919326970534",
   email: "arnav@arxena.com",
