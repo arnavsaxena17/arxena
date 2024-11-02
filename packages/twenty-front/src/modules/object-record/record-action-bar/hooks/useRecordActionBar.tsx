@@ -229,6 +229,7 @@ export const useRecordActionBar = ({
     
     setActionBarEntries: useCallback(() => {
       setActionBarEntriesState([
+        ...(isRemoteObject ? [] : deletionActions),
         ...(dataExecuteQuickActionOnmentEnabled
           ? [
               {
@@ -253,7 +254,6 @@ export const useRecordActionBar = ({
               },
             ]
           : []),
-        ...(isRemoteObject ? [] : deletionActions),
         ...baseActions,
       ]);
     }, [
