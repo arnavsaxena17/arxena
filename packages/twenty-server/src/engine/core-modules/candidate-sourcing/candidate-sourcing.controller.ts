@@ -27,6 +27,7 @@ export class CandidateSourcingController {
   }
   
   async  createPeople(manyPersonObjects: ArxenaPersonNode[]): Promise<any> {
+    console.log("Creating people, manyPersonObjects:", manyPersonObjects.length);
     const graphqlVariablesForPerson = { data: manyPersonObjects };
     const graphqlQueryObjForPerson = JSON.stringify({
       query: CreateManyPeople,
@@ -137,9 +138,13 @@ export class CandidateSourcingController {
       console.log("Number of person objects created:", manyPersonObjects.length)
       console.log("Number of person candidates created:", manyPersonObjects.length)
       if (manyPersonObjects.length === 0) {
+        console.log("All candidates already exist")
         return { message: 'All candidates already exist' };
       }
-  
+      else{
+        console.log("candidates do not exist, will create new candidates")
+      }
+      console.log("Creating people and candidates")
       const responseForPerson = await this.createPeople(manyPersonObjects);
       const arrayOfPersonIds = responseForPerson?.data?.data?.createPeople?.map((person: any) => person.id)
 
