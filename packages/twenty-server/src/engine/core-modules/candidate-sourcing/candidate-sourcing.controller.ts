@@ -154,10 +154,12 @@ export class CandidateSourcingController {
     for (let i = 0; i < data.length; i += batchSize) {
       const batch = data.slice(i, i + batchSize);
       const phoneNumbers = batch.map(profile => profile.phone_number).filter(Boolean);
+      console.log("Total number of phone numbers in batch:", phoneNumbers.length);
       const personDetailsMap = await this.batchGetPersonDetails(phoneNumbers);
+      console.log("personDetailsMap:", personDetailsMap)
       for (const profile of batch) {
         const current_phone_number = profile?.phone_number;
-        // if (!current_phone_number) continue;
+
         const personObj = personDetailsMap.get(current_phone_number);
         if (!personObj || !personObj.name) {
           const { personNode, candidateNode } = processArxCandidate(profile, jobObject);

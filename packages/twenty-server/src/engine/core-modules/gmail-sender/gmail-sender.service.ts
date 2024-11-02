@@ -214,6 +214,7 @@ export class GoogleAuthService {
   ];
 
   constructor() {
+    console.log('GoogleAuthService constructor:', process.env.AUTH_GOOGLE_CLIENT_ID, process.env.AUTH_GOOGLE_CLIENT_SECRET, process.env.AUTH_GOOGLE_CALLBACK_URL);
     this.oauth2Client = new google.auth.OAuth2(
       process.env.AUTH_GOOGLE_CLIENT_ID,
       process.env.AUTH_GOOGLE_CLIENT_SECRET,
