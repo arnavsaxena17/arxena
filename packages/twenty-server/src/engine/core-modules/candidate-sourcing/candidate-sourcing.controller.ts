@@ -63,66 +63,6 @@ export class CandidateSourcingController {
     }
   }
 
-  // async exponentialBackoffRequest(requestFn: () => Promise<any>, maxRetries = 5) {
-  //   console.log("have hit exponentialBackoffRequest");
-  //   for (let attempt = 0; attempt < maxRetries; attempt++) {
-  //     const resp = await requestFn()
-  //     // console.log("Response status is 200 and respo is ::", resp.data);
-  //     if (resp?.data?.errors?.length>0 && resp?.data?.errors[0]?.extensions?.response){
-  //       console.log("Error in response is ::", resp?.data?.errors[0]?.extensions?.response);
-  //       console.log("Attempt ::", attempt);
-  //     }
-  //     if (resp?.data?.errors?.length>0 && resp?.data?.errors[0]?.extensions?.response === "Too many requests." && attempt < maxRetries - 1) {
-  //       const delay = Math.pow(2, attempt) * 1000; // Exponential backoff
-  //       console.log(`Rate limit hit. Retrying in ${delay}ms...`);
-  //       await new Promise(resolve => setTimeout(resolve, delay));
-  //     }
-  //     else{
-  //       return resp;
-  //     }
-  //   }
-  // }
-  
-  
-  // async getPersonDetailsByPhoneNumber(phoneNumber: string) {
-  //   console.log('Trying to get person details by phone number:', phoneNumber);
-  //   const graphVariables = { filter: { phone: { ilike: '%' + phoneNumber + '%' } }, orderBy: { position: 'AscNullsFirst' } };
-  //   try {
-  //     // console.log('going to get candidate information');
-  //     const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindPeopleByPhoneNumber, variables: graphVariables });
-  //     const response = await this.exponentialBackoffRequest(() => axiosRequest(graphqlQueryObj));
-  //     console.log('This is the response from getCandidate Information FROM PHONENUMBER', response.data.data);
-  //     if (response.data?.data?.people?.edges.length === 0) {
-  //       console.log('Returning None');
-  //       return ;
-  //     }
-  //     else{
-  //       const personObj = response.data?.data?.people?.edges[0].node;
-  //       console.log('Personobj exists:', personObj);
-  //       return personObj;
-  //     }
-  //   } catch (error) {
-  //     console.log('Getting an error and returning empty candidate profile objeect:', error);
-  //     }
-  // }
-
-  // async processProfiles(data: UserProfile[], jobObject: Jobs): Promise<{ manyPersonObjects: ArxenaPersonNode[], manyCandidateObjects: ArxenaCandidateNode[] }> {
-  //   const manyPersonObjects: ArxenaPersonNode[] = [];
-  //   const manyCandidateObjects: ArxenaCandidateNode[] = [];
-  
-  //   for (let profile of data) {
-  //     const current_phone_number = profile?.phone_number;
-  //     const personObj: allDataObjects.PersonNode = await this.getPersonDetailsByPhoneNumber(current_phone_number);
-  //     // @ts-ignore
-  //     if (!personObj) {
-  //       const { personNode, candidateNode } = processArxCandidate(profile, jobObject);
-  //       manyPersonObjects.push(personNode);
-  //       manyCandidateObjects.push(candidateNode);
-  //     }
-  //   }
-  
-  //   return { manyPersonObjects, manyCandidateObjects };
-  // }
   async batchGetPersonDetails(phoneNumbers: string[]): Promise<Map<string, allDataObjects.PersonNode>> {
     const graphqlVariables = {
       filter: { phone: { in: phoneNumbers } },
@@ -158,13 +98,20 @@ export class CandidateSourcingController {
       const personDetailsMap = await this.batchGetPersonDetails(phoneNumbers);
       console.log("personDetailsMap:", personDetailsMap)
       for (const profile of batch) {
+        console.log("this is the prfoile:", profile)
         const current_phone_number = profile?.phone_number;
-
+        console.log("current_phone_number:", current_phone_number)
+        console.log("current_phone_number profile:", profile)
         const personObj = personDetailsMap.get(current_phone_number);
+        console.log("personObj:", personObj)
         if (!personObj || !personObj.name) {
+          console.log("person obj not foiund, will creatre a new person object")
           const { personNode, candidateNode } = processArxCandidate(profile, jobObject);
           manyPersonObjects.push(personNode);
           manyCandidateObjects.push(candidateNode);
+        }
+        else{
+          console.log("Person object already exists for phone number:", current_phone_number);
         }
       }
       if (i + batchSize < data.length) {
