@@ -370,15 +370,15 @@ export class FacebookWhatsappChatApi {
     console.log('whatappUpdateMessageObj.messageType chat controles', chatControl);
     // console.log('whatappUpdateMessageObj.messageType whatappUpdateMessageObj.messages ', JSON.stringify(whatappUpdateMessageObj));
     let response;
-    if (whatappUpdateMessageObj.messages[0].content.includes('#DONTRESPOND#') || whatappUpdateMessageObj.messages[0].content.includes('DONTRESPOND') || whatappUpdateMessageObj.messages[0].content.includes('DONOTRESPOND')) {
+    if (whatappUpdateMessageObj.messages[0].content.includes('#DONTRESPOND#') || whatappUpdateMessageObj.messages[0].content.includes('DONTRESPOND') || whatappUpdateMessageObj.messages[0]?.content?.includes('DONOTRESPOND')) {
       console.log('Found a #DONTRESPOND# message in STAGE 2, so not sending any message');
       return;
     }
-    if (whatappUpdateMessageObj.messageType === 'botMessage') {
-      console.log('TEmplate Message or Text Message depends on :', whatappUpdateMessageObj.messages[0].content);
+    if (whatappUpdateMessageObj?.messageType === 'botMessage') {
+      console.log('TEmplate Message or Text Message depends on :', whatappUpdateMessageObj?.messages[0]?.content);
       let whatappUpdateMessageObjAfterWAMidUpdate:allDataObjects.candidateChatMessageType;
-      if (whatappUpdateMessageObj.messages[0].content.includes('Based Recruitment Company') || whatappUpdateMessageObj.messages[0].content.includes('assist')) {
-        console.log('This is the template api message to send in whatappUpdateMessageObj.phoneNumberFrom, ', whatappUpdateMessageObj.phoneNumberFrom);
+      if (whatappUpdateMessageObj?.messages[0]?.content?.includes('Based Recruitment Company') || whatappUpdateMessageObj?.messages[0]?.content.includes('assist')) {
+        console.log('This is the template api message to send in whatappUpdateMessageObj.phoneNumberFrom, ', whatappUpdateMessageObj?.phoneNumberFrom);
         let messageTempalate:string
         if (chatControl === 'startChat') {
           messageTempalate = 'application03'
@@ -400,7 +400,7 @@ export class FacebookWhatsappChatApi {
           jobCode: whatappUpdateMessageObj?.candidateProfile?.jobs?.jobCode,
           jobLocation: whatappUpdateMessageObj?.candidateProfile?.jobs?.jobLocation,
           // videoInterviewLink: process.env.SERVER_BASE_URL+personNode?.candidates?.edges[0]?.node?.aIInterviewStatus?.edges[0].node.interviewLink?.url || "",
-          videoInterviewLink: "https://arxena.com"+personNode?.candidates?.edges[0]?.node?.aIInterviewStatus?.edges[0].node.interviewLink?.url || "",
+          videoInterviewLink: "https://arxena.com"+personNode?.candidates?.edges[0]?.node?.aIInterviewStatus?.edges[0]?.node?.interviewLink?.url || "",
           
         };
         response = await this.sendWhatsappUtilityMessage(sendTemplateMessageObj);
