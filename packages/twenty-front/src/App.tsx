@@ -1,7 +1,7 @@
 import React, { StrictMode, lazy, Suspense } from 'react';
 import { createBrowserRouter, createRoutesFromElements, Outlet, redirect, Route, RouterProvider, Routes, useLocation } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
-
+import { Mixpanel } from './mixpanel';
 import { ApolloProvider } from '@/apollo/components/ApolloProvider';
 import { VerifyEffect } from '@/auth/components/VerifyEffect';
 import { ChromeExtensionSidecarEffect } from '@/chrome-extension-sidecar/components/ChromeExtensionSidecarEffect';
