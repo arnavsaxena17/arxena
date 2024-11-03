@@ -38,13 +38,13 @@ export const EndInterviewPage: React.FC<{ interviewData:InterviewData, onSubmit:
         ) : (
           <FeedbackContainer>
             <h2>Thank You for Completing the Interview</h2>
-            <FeedbackPrompt> We appreciate your time and effort. Please share any additional inputs you have for the interviewer or about the interview process. </FeedbackPrompt>
-            <StyledTextArea
+            <FeedbackPrompt> You can now close this window. </FeedbackPrompt>
+            {/* <StyledTextArea
               value={feedback}
               onChange={(e) => setFeedback(e.target.value)}
               placeholder="Enter your feedback here..."
-            />
-            <SubmitButton onClick={handleSubmit}>Share Feedback</SubmitButton>
+            /> */}
+            {/* <SubmitButton onClick={handleSubmit}>Share Feedback</SubmitButton> */}
           </FeedbackContainer>
         )}
       </EndInterviewStyledRightPanel>

@@ -144,6 +144,7 @@ const AIInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) => 
       const responseObj: InterviewResponseTypes.GetInterviewDetailsResponse = response.data;
       if (responseObj) {
         // console.log('responseObj to fetch interview data:', responseObj);
+        // console.log('responseObj to fetch interview data:', responseObj);
         const fetchedData: any = response?.data?.responseFromInterviewRequests?.data;
         console.log('fetchedData to fetch interview data:', fetchedData);
         const formattedData: InterviewResponseTypes.InterviewData = {
@@ -208,7 +209,7 @@ const AIInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) => 
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       console.log('This isreht ersponse:', response);
-      console.log('The calue of interviewData!.aIInterview.aIInterviewQuestions.edges.length is ::', interviewData!.aIInterview.aIInterviewQuestions.edges.length);
+      console.log('The calue of interviewData!.aIInterview.aIInterviewQuestions.edges.length is ::', interviewData!.aIInterview?.aIInterviewQuestions?.edges?.length);
     } catch (error) {
       console.error('Error submitting response:', error);
     }
@@ -227,6 +228,7 @@ const AIInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) => 
     setStage('end');
   };
 
+  console.log('This is the interview questions:', interviewData?.aIInterview?.aIInterviewQuestions?.edges);
   const renderCurrentStage = () => {
     if (!interviewData) {
       return (
@@ -251,7 +253,7 @@ const AIInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) => 
           {loading && <InterviewLoader />}
             <InterviewPage
               InterviewData={interviewData}
-              questions={interviewData.aIInterview.aIInterviewQuestions.edges.map(edge => edge.node).sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())}
+              questions={interviewData?.aIInterview?.aIInterviewQuestions?.edges?.map(edge => edge?.node).sort((a, b) => new Date(a?.createdAt).getTime() - new Date(b?.createdAt).getTime())}
               introductionVideoAttachment={introductionVideoData!}
               questionsVideoAttachment={questionsVideoData || []}
               currentQuestionIndex={currentQuestionIndex}
