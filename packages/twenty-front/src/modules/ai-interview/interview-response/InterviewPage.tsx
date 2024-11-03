@@ -291,17 +291,7 @@ export const InterviewPage: React.FC<InterviewResponseTypes.InterviewPageProps> 
 
   const currentQuestionVideoURL = getQuestionVideoURL(currentQuestionIndex);
   console.log('This is the currentQuestionVideoURL::', currentQuestionVideoURL);
-  // Add videoConstraints inside the component
-  const videoConstraints = {
-    width: 1280,
-    height: 720,
-    facingMode: 'user',
-    advanced: [
-      {
-        transform: 'none',
-      },
-    ],
-  };
+
 
 
   return (
