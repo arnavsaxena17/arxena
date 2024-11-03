@@ -54,6 +54,8 @@ export const InterviewPage: React.FC<InterviewResponseTypes.InterviewPageProps> 
   const interviewTime = 240; // 4 minutes
   const [isVideoLoading, setIsVideoLoading] = useState(true);
   const [nextQuestionVideoUrl, setNextQuestionVideoUrl] = useState<string | null>(null);
+  const [videoLoadError, setVideoLoadError] = useState<string | null>(null);
+  const [preloadedVideos, setPreloadedVideos] = useState<Record<string, boolean>>({});
 
 
   // Function to get video URL for a specific question index

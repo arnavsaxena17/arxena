@@ -108,7 +108,7 @@ export const StartInterviewPage: React.FC<InterviewResponseTypes.StartInterviewP
         <br></br>
         <h3>Instructions: Please read this before continuing</h3>
         <InstructionList>
-          <li>Please provide your browser access to camera and microphone on your device</li>
+          <li>Sit in a quiet, noise free place and provide your browser access to camera and microphone on your device</li>
           <li>You have to answer {InterviewData?.aIInterview?.aIInterviewQuestions?.edges?.length} questions and have 4 minutes per question.</li>
           <li>Answer all {InterviewData?.aIInterview?.aIInterviewQuestions?.edges?.length} questions in one go. Do not click back, close or refresh the tab to prevent loss of progress.</li>
           <li>Please make sure you have a stable internet connection and use a fully charged device for giving the interview.</li>

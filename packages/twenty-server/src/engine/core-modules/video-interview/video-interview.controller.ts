@@ -316,6 +316,7 @@ export class VideoInterviewController {
         interviewStarted
         interviewCompleted
         updatedAt
+        createdAt
       }
     }`;
   
@@ -412,11 +413,12 @@ export class VideoInterviewController {
                   jobId
                   name
                   aIModelId
-                  aIInterviewQuestions{
+                  aIInterviewQuestions {
                     edges{
                         node{
                             name
                             id
+                            createdAt
                             timeLimit
                             questionType
                             questionValue
