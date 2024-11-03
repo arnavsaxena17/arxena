@@ -5,7 +5,9 @@ interface VideoPlayerProps {
   src: string;
   videoRef: RefObject<HTMLVideoElement>;
   isPlaying: boolean;
-  setIsPlaying: React.Dispatch<React.SetStateAction<boolean>>;
+  isMuted: boolean;
+  setIsPlaying: (isPlaying: boolean) => void;
+
   onLoadStart?: () => void;
   onCanPlay?: () => void;
 
@@ -42,7 +44,14 @@ const StyledVideoWrapper = {
 };
 
 
-export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, videoRef, isPlaying, setIsPlaying,   onLoadStart, onCanPlay }) => {
+export const VideoPlayer: React.FC<VideoPlayerProps> = ({   src,
+  videoRef,
+  isPlaying,
+  isMuted,
+  setIsPlaying,
+  onLoadStart,
+  onCanPlay
+ }) => {
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -51,6 +60,19 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, videoRef, isPlayi
   // Reset video and progress when playback stops
   
   
+  useEffect(() => {
+    if (videoRef.current) {
+      if (isPlaying) {
+        videoRef.current.play();
+      } else {
+        videoRef.current.pause();
+      }
+      videoRef.current.muted = isMuted;
+    }
+  }, [isPlaying, isMuted]);
+
+
+
   const resetVideo = () => {
     if (videoRef.current) {
       videoRef.current.currentTime = 0;

@@ -20,12 +20,24 @@ import {
 
 } from './styled-components/StyledComponentsInterviewResponse';
 
-export const StartInterviewPage: React.FC<InterviewResponseTypes.StartInterviewPageProps> = ({ onStart, InterviewData, introductionVideoData }) => {
+interface StartInterviewPageProps extends InterviewResponseTypes.StartInterviewPageProps {
+  videoPlaybackState: { isPlaying: boolean; isMuted: boolean };
+  onVideoStateChange: (state: { isPlaying: boolean; isMuted: boolean }) => void;
+}
+
+export const StartInterviewPage: React.FC<StartInterviewPageProps> = ({ onStart, InterviewData, introductionVideoData, videoPlaybackState,  onVideoStateChange }) => {
 
   const [hasAccess, setHasAccess] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isVideoLoading, setIsVideoLoading] = useState(true);
+
+  const handlePlaybackChange = (isPlaying: boolean) => {
+    onVideoStateChange({
+      ...videoPlaybackState,
+      isPlaying
+    });
+  };
 
 
 
@@ -88,13 +100,14 @@ export const StartInterviewPage: React.FC<InterviewResponseTypes.StartInterviewP
       <StyledLeftPanelContentBox>
         <StyledTextLeftPanelTextHeadline>Introduction</StyledTextLeftPanelTextHeadline>
         <VideoPlayer 
-            src={`${process.env.REACT_APP_SERVER_BASE_URL}/files/${introductionVideoData?.data?.attachments?.edges[0]?.node?.fullPath}`}
-            videoRef={videoRef}
-            isPlaying={isPlaying}
-            setIsPlaying={setIsPlaying}
-            onLoadStart={handleVideoLoadStart}
-            onCanPlay={handleVideoCanPlay}
-          />
+          src={`${process.env.REACT_APP_SERVER_BASE_URL}/files/${introductionVideoData?.data?.attachments?.edges[0]?.node?.fullPath}`}
+          videoRef={videoRef}
+          isPlaying={videoPlaybackState.isPlaying}
+          setIsPlaying={handlePlaybackChange}
+          isMuted={videoPlaybackState.isMuted}
+          onLoadStart={handleVideoLoadStart}
+          onCanPlay={handleVideoCanPlay}
+        />
         <h3>Transcript</h3>
         <StyledTextLeftPaneldisplay>
         <div dangerouslySetInnerHTML={{ __html: InterviewData?.aIInterview?.introduction.replace(/\n/g, '<br />') }}></div>
