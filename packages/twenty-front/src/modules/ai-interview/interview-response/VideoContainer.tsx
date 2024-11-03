@@ -96,6 +96,15 @@ const VideoContainer: React.FC<VideoContainerProps> = ({
   };
 
 
+  const audioConstraints = {
+    echoCancellation: true,
+    noiseSuppression: true,
+    autoGainControl: true,
+    sampleRate: 44100,
+  };
+
+
+
   useEffect(() => {
     if (isRecording) {
       setIsPlaying(false);
@@ -129,8 +138,16 @@ const VideoContainer: React.FC<VideoContainerProps> = ({
           audio={true}
           ref={webcamRef}
           videoConstraints={videoConstraints}
+          audioConstraints={audioConstraints}
           mirrored={true}
           screenshotFormat="image/jpeg"
+          onUserMedia={(stream:any) => {
+            // Mute the audio output when the stream starts
+            if (webcamRef.current && webcamRef.current.video) {
+              webcamRef.current.video.muted = true;
+            }
+          }}
+
         />
         <StyledControlsOverlay onClick={handleRecordingClick}>
           <StyledRecordButton isRecording={isRecording}>

@@ -231,7 +231,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, videoRef, isPlayi
     return (
       <StyledVideoPane>
         <StyledLoadingMessage>
-          Loading video... {downloadProgress.toFixed(0)}%
+          Loading video...
         </StyledLoadingMessage>
       </StyledVideoPane>
     );
