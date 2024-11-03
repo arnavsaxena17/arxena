@@ -80,12 +80,64 @@ const AIInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) => 
   const [introductionVideoData, setintroductionVideoData] = useState<InterviewResponseTypes.VideoInterviewAttachment | null>(null);
   const [questionsVideoData, setquestionsVideoData] = useState<InterviewResponseTypes.VideoInterviewAttachment[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [videoLoadingStatus, setVideoLoadingStatus] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     fetchInterviewData();
   }, [interviewId]);
 
+
+
+  // Function to preload a video
+  const preloadVideo = async (url: string) => {
+    return new Promise((resolve) => {
+      const video = document.createElement('video');
+      video.preload = 'auto';
+      video.src = url;
+      
+      video.oncanplaythrough = () => {
+        setVideoLoadingStatus(prev => ({
+          ...prev,
+          [url]: true
+        }));
+        resolve(true);
+      };
+      
+      video.load();
+    });
+  };
+
+  // Preload all videos when interview data is fetched
+  useEffect(() => {
+    const preloadAllVideos = async () => {
+      if (introductionVideoData?.data?.attachments?.edges[0]?.node?.fullPath) {
+        const introUrl = `${process.env.REACT_APP_SERVER_BASE_URL}/files/${introductionVideoData.data.attachments.edges[0].node.fullPath}`;
+        preloadVideo(introUrl);
+      }
+
+      // Preload all question videos
+      if (questionsVideoData?.length > 0) {
+        questionsVideoData.forEach(attachment => {
+          if (attachment?.fullPath) {
+            const videoUrl = `${process.env.REACT_APP_SERVER_BASE_URL}/files/${attachment.fullPath}`;
+            preloadVideo(videoUrl);
+          }
+        });
+      }
+    };
+
+    if (interviewData) {
+      setLoading(true);
+      preloadAllVideos().finally(() => {
+        setLoading(false);
+      });
+    }
+  }, [interviewData, introductionVideoData, questionsVideoData]);
+
+
   const fetchInterviewData = async () => {
+    setLoading(true);
+
     try {
       const response = await axios.post(`${process.env.REACT_APP_SERVER_BASE_URL}/video-interview/get-interview-details`, { interviewId });
       console.log('This is the response to fetch interview data:', response);
