@@ -6,6 +6,9 @@ interface VideoPlayerProps {
   videoRef: RefObject<HTMLVideoElement>;
   isPlaying: boolean;
   setIsPlaying: React.Dispatch<React.SetStateAction<boolean>>;
+  onLoadStart?: () => void;
+  onCanPlay?: () => void;
+
 }
 
 
@@ -39,7 +42,7 @@ const StyledVideoWrapper = {
 };
 
 
-export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, videoRef, isPlaying, setIsPlaying }) => {
+export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, videoRef, isPlaying, setIsPlaying,   onLoadStart, onCanPlay }) => {
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -261,10 +264,15 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, videoRef, isPlayi
           ref={videoRef}
           src={videoUrl || undefined}
           onEnded={() => setIsPlaying(false)}
+          onPlay={() => setIsPlaying(true)}
+          onPause={() => setIsPlaying(false)}    
+          onLoadStart={onLoadStart}
+          onCanPlay={onCanPlay}    
           playsInline
           muted
           autoPlay
           loop
+          preload="auto"
         />
         <StyledVideoControls>
           <StyledVideoButton onClick={handlePlayPause}>

@@ -312,7 +312,7 @@ export const InterviewPage: React.FC<InterviewResponseTypes.InterviewPageProps> 
           <StyledTextLeftPanelTextHeadline>
             Question {currentQuestionIndex + 1} of {questions.length}
           </StyledTextLeftPanelTextHeadline>
-          <VideoPlayer src={currentQuestionVideoURL} videoRef={videoRef} isPlaying={isPlaying} setIsPlaying={setIsPlaying} />
+          <VideoPlayer src={currentQuestionVideoURL || ''} videoRef={videoRef} isPlaying={isPlaying} setIsPlaying={setIsPlaying} onLoadStart={handleVideoLoadStart} onCanPlay={handleVideoCanPlay} />
           <h3>Question</h3>
           <StyledTextLeftPaneldisplay>{questions[currentQuestionIndex].questionValue}</StyledTextLeftPaneldisplay>
         </StyledLeftPanelContentBox>
