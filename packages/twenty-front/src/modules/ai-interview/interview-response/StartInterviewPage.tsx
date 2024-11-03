@@ -25,6 +25,33 @@ export const StartInterviewPage: React.FC<InterviewResponseTypes.StartInterviewP
   const [hasAccess, setHasAccess] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [isVideoLoading, setIsVideoLoading] = useState(true);
+
+
+
+    // Preload the introduction video when component mounts
+    useEffect(() => {
+      if (introductionVideoData?.data?.attachments?.edges[0]?.node?.fullPath) {
+        const videoUrl = `${process.env.REACT_APP_SERVER_BASE_URL}/files/${introductionVideoData.data.attachments.edges[0].node.fullPath}`;
+        // Create a new video element for preloading
+        const preloadVideo = document.createElement('video');
+        preloadVideo.src = videoUrl;
+        preloadVideo.preload = 'auto';
+        // Start loading the video
+        preloadVideo.load();
+      }
+    }, [introductionVideoData]);
+  
+    // Handle video loading state
+    const handleVideoLoadStart = () => {
+      setIsVideoLoading(true);
+    };
+
+    const handleVideoCanPlay = () => {
+      setIsVideoLoading(false);
+    };
+
+
 
   useEffect(() => {
     checkMediaAccess();
@@ -60,7 +87,14 @@ export const StartInterviewPage: React.FC<InterviewResponseTypes.StartInterviewP
       <h2>{InterviewData?.candidate?.jobs?.name} at {InterviewData?.candidate?.jobs?.companyName}</h2>
       <StyledLeftPanelContentBox>
         <StyledTextLeftPanelTextHeadline>Introduction</StyledTextLeftPanelTextHeadline>
-        <VideoPlayer src={process.env.REACT_APP_SERVER_BASE_URL+"/files/"+introductionVideoData?.data?.attachments?.edges[0]?.node?.fullPath} videoRef={videoRef} isPlaying={isPlaying} setIsPlaying={setIsPlaying} />
+        <VideoPlayer 
+            src={`${process.env.REACT_APP_SERVER_BASE_URL}/files/${introductionVideoData?.data?.attachments?.edges[0]?.node?.fullPath}`}
+            videoRef={videoRef}
+            isPlaying={isPlaying}
+            setIsPlaying={setIsPlaying}
+            onLoadStart={handleVideoLoadStart}
+            onCanPlay={handleVideoCanPlay}
+          />
         <h3>Transcript</h3>
         <StyledTextLeftPaneldisplay>
         <div dangerouslySetInnerHTML={{ __html: InterviewData?.aIInterview?.introduction.replace(/\n/g, '<br />') }}></div>
