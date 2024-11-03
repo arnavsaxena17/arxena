@@ -82,6 +82,17 @@ const AIInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) => 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [videoLoadingStatus, setVideoLoadingStatus] = useState<Record<string, boolean>>({});
 
+  const [globalVideoPlaybackState, setGlobalVideoPlaybackState] = useState({
+    isPlaying: false,
+    isMuted: false
+  });
+
+  const handleVideoStateChange = (newState: { isPlaying: boolean; isMuted: boolean }) => {
+    setGlobalVideoPlaybackState(newState);
+  };
+
+
+
   useEffect(() => {
     fetchInterviewData();
   }, [interviewId]);
@@ -236,14 +247,16 @@ const AIInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) => 
         onStart={handleStart}
         InterviewData={InterviewResponseTypes.emptyInterviewData}
         introductionVideoData={introductionVideoData!}
-      />
+        videoPlaybackState={globalVideoPlaybackState}
+        onVideoStateChange={handleVideoStateChange}
+    />
       );
     }
     switch (stage) {
       case 'start':
         return (
           <>
-            {introductionVideoData && <StartInterviewPage onStart={handleStart} InterviewData={interviewData} introductionVideoData={introductionVideoData} />}
+            {introductionVideoData && <StartInterviewPage onStart={handleStart} InterviewData={interviewData} introductionVideoData={introductionVideoData} videoPlaybackState={globalVideoPlaybackState} onVideoStateChange={handleVideoStateChange} />}
             {loading && <InterviewLoader />}
           </>
         );
@@ -259,6 +272,9 @@ const AIInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) => 
               currentQuestionIndex={currentQuestionIndex}
               onNextQuestion={handleNextQuestion}
               onFinish={handleFinish}
+              videoPlaybackState={globalVideoPlaybackState}
+              onVideoStateChange={handleVideoStateChange}
+
             />
           </ErrorBoundary>
         );

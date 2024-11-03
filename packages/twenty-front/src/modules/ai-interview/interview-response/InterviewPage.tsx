@@ -34,7 +34,13 @@ const PreloadVideo: React.FC<{ src: string }> = ({ src }) => (
   <link rel="preload" as="video" href={src} />
 );
 
-export const InterviewPage: React.FC<InterviewResponseTypes.InterviewPageProps> = ({ InterviewData, questions, introductionVideoAttachment, questionsVideoAttachment, currentQuestionIndex, onNextQuestion, onFinish }) => {
+
+interface InterviewPageProps extends InterviewResponseTypes.InterviewPageProps {
+  videoPlaybackState: { isPlaying: boolean; isMuted: boolean };
+  onVideoStateChange: (state: { isPlaying: boolean; isMuted: boolean }) => void;
+}
+
+export const InterviewPage: React.FC<InterviewPageProps> = ({ InterviewData, questions, introductionVideoAttachment, questionsVideoAttachment, currentQuestionIndex, onNextQuestion, onFinish, videoPlaybackState, onVideoStateChange }) => {
   console.log('These are questions::', questions);
   const [isPlaying, setIsPlaying] = useState(false);
   const [recording, setRecording] = useState(false);
@@ -56,6 +62,13 @@ export const InterviewPage: React.FC<InterviewResponseTypes.InterviewPageProps> 
   const [nextQuestionVideoUrl, setNextQuestionVideoUrl] = useState<string | null>(null);
   const [videoLoadError, setVideoLoadError] = useState<string | null>(null);
   const [preloadedVideos, setPreloadedVideos] = useState<Record<string, boolean>>({});
+
+  const handlePlaybackChange = (isPlaying: boolean) => {
+    onVideoStateChange({
+      ...videoPlaybackState,
+      isPlaying
+    });
+  };
 
 
   // Function to get video URL for a specific question index
@@ -169,6 +182,8 @@ export const InterviewPage: React.FC<InterviewResponseTypes.InterviewPageProps> 
       setIsPlaying(false);
     }
   };
+
+
   const moveToNextQuestion = () => {
     console.log('Currnet question index:', currentQuestionIndex);
     if (currentQuestionIndex < questions.length) {
@@ -304,7 +319,15 @@ export const InterviewPage: React.FC<InterviewResponseTypes.InterviewPageProps> 
           <StyledTextLeftPanelTextHeadline>
             Question {currentQuestionIndex + 1} of {questions.length}
           </StyledTextLeftPanelTextHeadline>
-          <VideoPlayer src={currentQuestionVideoURL || ''} videoRef={videoRef} isPlaying={isPlaying} setIsPlaying={setIsPlaying} onLoadStart={handleVideoLoadStart} onCanPlay={handleVideoCanPlay} />
+          <VideoPlayer 
+            src={currentQuestionVideoURL || ''} 
+            videoRef={videoRef} 
+            isPlaying={videoPlaybackState.isPlaying} 
+            setIsPlaying={handlePlaybackChange}
+            isMuted={videoPlaybackState.isMuted}
+            onLoadStart={handleVideoLoadStart} 
+            onCanPlay={handleVideoCanPlay} 
+          />
           <h3>Question</h3>
           <StyledTextLeftPaneldisplay>{questions[currentQuestionIndex].questionValue}</StyledTextLeftPaneldisplay>
         </StyledLeftPanelContentBox>
