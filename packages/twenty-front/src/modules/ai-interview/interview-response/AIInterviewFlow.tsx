@@ -91,8 +91,8 @@ const AIInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) => 
       console.log('This is the response to fetch interview data:', response);
       const responseObj: InterviewResponseTypes.GetInterviewDetailsResponse = response.data;
       if (responseObj) {
-        console.log('responseObj to fetch interview data:', responseObj);
-        const fetchedData: any = response.data.responseFromInterviewRequests.data;
+        // console.log('responseObj to fetch interview data:', responseObj);
+        const fetchedData: any = response?.data?.responseFromInterviewRequests?.data;
         console.log('fetchedData to fetch interview data:', fetchedData);
         const formattedData: InterviewResponseTypes.InterviewData = {
           name: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.name || '',
@@ -115,10 +115,10 @@ const AIInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) => 
             },
           },
           aIInterview: {
-            name: fetchedData.aIInterviewStatuses.edges[0].node?.aIInterview?.name || '',
-            introduction: fetchedData.aIInterviewStatuses.edges[0].node.aIInterview.introduction || '',
-            instructions: fetchedData.aIInterviewStatuses.edges[0].node.aIInterview.instructions || '',
-            aIInterviewQuestions: fetchedData.aIInterviewStatuses.edges[0].node.aIInterview.aIInterviewQuestions || '',
+            name: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.aIInterview?.name || '',
+            introduction: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.aIInterview?.introduction || '',
+            instructions: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.aIInterview?.instructions || '',
+            aIInterviewQuestions: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.aIInterview?.aIInterviewQuestions || '',
           },
         };
         console.log('setting formatted interview data:', formattedData);
@@ -178,42 +178,13 @@ const AIInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) => 
   const renderCurrentStage = () => {
     if (!interviewData) {
       return (
-        <StartInterviewPage
-          onStart={handleStart}
-          InterviewData={{
-            id: '',
-            name: '',
-            candidate: {
-              id: '',
-              jobs: {
-                jobId: '',
-                name: '',
-                recruiterId: '',
-                companyName: '',
-              },
-              people: {
-                name: {
-                  firstName: '',
-                  lastName: '',
-                },
-                email: '',
-                phone: '',
-              },
-            },
-            aIInterview: {
-              name: '',
-              introduction: '',
-              instructions: '',
-              aIInterviewQuestions: {
-                edges: [],
-              },
-            },
-          }}
-          introductionVideoData={introductionVideoData!}
-        />
+      <StartInterviewPage
+        onStart={handleStart}
+        InterviewData={InterviewResponseTypes.emptyInterviewData}
+        introductionVideoData={introductionVideoData!}
+      />
       );
     }
-
     switch (stage) {
       case 'start':
         return (

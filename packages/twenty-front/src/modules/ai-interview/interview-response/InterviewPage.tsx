@@ -20,31 +20,7 @@ import {
   StyledRightPanel,
 } from './styled-components/StyledComponentsInterviewResponse';
 
-// const UnmirroredWebcam = styled(Webcam as any)`
-//   width: 100%;
-//   height: 100%;
-//   transform: scaleX(1) !important;
-//   -webkit-transform: scaleX(1) !important;
-
-//   /* Target the internal video element specifically */
-//   & video {
-//     width: 100%;
-//     height: 100%;
-//     object-fit: cover;
-//     transform: scaleX(1) !important;
-//     -webkit-transform: scaleX(1) !important;
-//   }
-
-//   /* Safari-specific fixes */
-//   @media not all and (min-resolution: 0.001dpcm) {
-//     @supports (-webkit-appearance: none) {
-//       & video {
-//         transform: scaleX(1) !important;
-//         -webkit-transform: scaleX(1) !important;
-//       }
-//     }
-//   }
-// `;
+import { Mixpanel } from '~/mixpanel'
 
 const ffmpeg = createFFmpeg({
   // corePath: `/ffmpeg/ffmpeg-core.js`,
@@ -52,6 +28,11 @@ const ffmpeg = createFFmpeg({
   corePath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js',
   log: true,
 });
+
+
+const PreloadVideo: React.FC<{ src: string }> = ({ src }) => (
+  <link rel="preload" as="video" href={src} />
+);
 
 export const InterviewPage: React.FC<InterviewResponseTypes.InterviewPageProps> = ({ InterviewData, questions, introductionVideoAttachment, questionsVideoAttachment, currentQuestionIndex, onNextQuestion, onFinish }) => {
   console.log('These are questions::', questions);
@@ -71,10 +52,55 @@ export const InterviewPage: React.FC<InterviewResponseTypes.InterviewPageProps> 
   const videoRef = useRef<HTMLVideoElement>(null);
   const isLastQuestion = currentQuestionIndex === questions.length - 1;
   const interviewTime = 240; // 4 minutes
+  const [isVideoLoading, setIsVideoLoading] = useState(true);
+  const [nextQuestionVideoUrl, setNextQuestionVideoUrl] = useState<string | null>(null);
+
+
+  // Function to get video URL for a specific question index
+  const getQuestionVideoURL = (index: number) => {
+    const attachment = questionsVideoAttachment.find(
+      attachment => attachment?.id === questions[index]?.attachments?.edges[0]?.node?.id
+    )?.fullPath;
+    return attachment ? `${process.env.REACT_APP_SERVER_BASE_URL}/files/${attachment}` : null;
+  };
+
+
+    // Preload next question's video
+    useEffect(() => {
+      if (currentQuestionIndex < questions.length - 1) {
+        const nextVideoUrl = getQuestionVideoURL(currentQuestionIndex + 1);
+        setNextQuestionVideoUrl(nextVideoUrl);
+      }
+    }, [currentQuestionIndex, questions, questionsVideoAttachment]);
+
+    
+      // Handle video loading state
+  const handleVideoLoadStart = () => {
+    setIsVideoLoading(true);
+  };
+
+  const handleVideoCanPlay = () => {
+    setIsVideoLoading(false);
+  };
+
+
 
   useEffect(() => {
     checkCamera();
   }, []);
+
+  // In your component:
+  useEffect(() => {
+    if (InterviewData?.candidate?.id) {
+      Mixpanel.identify(InterviewData.candidate.id);
+      Mixpanel.track('Interview Page View', {
+        jobTitle: InterviewData?.candidate?.jobs?.name,
+        company: InterviewData?.candidate?.jobs?.companyName,
+        questionCount: questions.length
+      });
+    }
+  }, [InterviewData]);
+  
 
   useEffect(() => {
     if (timer !== null && timer > 0) {
@@ -144,6 +170,8 @@ export const InterviewPage: React.FC<InterviewResponseTypes.InterviewPageProps> 
   const moveToNextQuestion = () => {
     console.log('Currnet question index:', currentQuestionIndex);
     if (currentQuestionIndex < questions.length) {
+      setIsVideoLoading(true);
+
       setRecordedChunks([]);
       setError(null);
       setTimer(null);
@@ -153,6 +181,10 @@ export const InterviewPage: React.FC<InterviewResponseTypes.InterviewPageProps> 
       setSubmitting(false);
       setCountdown(null);
       setAnswerTimer(null);
+      if (videoRef.current) {
+        videoRef.current.load();
+      }
+
     } else {
       onFinish();
     }
@@ -244,12 +276,18 @@ export const InterviewPage: React.FC<InterviewResponseTypes.InterviewPageProps> 
     return <StyledError>{error}</StyledError>;
   }
 
+  
+  // At the top of your file:
+
+  // const currentQuestionVideoURL = getQuestionVideoURL(currentQuestionIndex);
+
+
   console.log('Current question interview attachment: for question index:', currentQuestionIndex);
   console.log('Current question interview questionsVideoAttachment:', questionsVideoAttachment);
 
   const currentQuestionInterviewAttachment = questionsVideoAttachment.find(attachment => attachment?.id === questions[currentQuestionIndex]?.attachments?.edges[0]?.node?.id)?.fullPath;
 
-  const currentQuestionVideoURL = process.env.REACT_APP_SERVER_BASE_URL + '/files/' + currentQuestionInterviewAttachment;
+  const currentQuestionVideoURL = getQuestionVideoURL(currentQuestionIndex);
   console.log('This is the currentQuestionVideoURL::', currentQuestionVideoURL);
   // Add videoConstraints inside the component
   const videoConstraints = {
@@ -263,22 +301,25 @@ export const InterviewPage: React.FC<InterviewResponseTypes.InterviewPageProps> 
     ],
   };
 
+
   return (
+    
     <SnapScrollContainer>
       <StyledLeftPanel>
-        <h2>{InterviewData.candidate.jobs.name}</h2>
+      <h2>{InterviewData?.candidate?.jobs?.name} at {InterviewData?.candidate?.jobs?.companyName}</h2>
+      {/* <h2>Group Manufacturing Head at Luthra Group LLP</h2> */}
         <StyledLeftPanelContentBox>
           <StyledTextLeftPanelTextHeadline>
             Question {currentQuestionIndex + 1} of {questions.length}
           </StyledTextLeftPanelTextHeadline>
           <VideoPlayer src={currentQuestionVideoURL} videoRef={videoRef} isPlaying={isPlaying} setIsPlaying={setIsPlaying} />
-          <h3>Transcript</h3>
+          <h3>Question</h3>
           <StyledTextLeftPaneldisplay>{questions[currentQuestionIndex].questionValue}</StyledTextLeftPaneldisplay>
         </StyledLeftPanelContentBox>
       </StyledLeftPanel>
       <StyledRightPanel>
         <div>
-          <h2>{questions[currentQuestionIndex].name}</h2>
+          <h2>Question {currentQuestionIndex + 1} of {questions.length}</h2>
           <p>{questions[currentQuestionIndex].questionValue}</p>
         </div>
         {activeCameraFeed && (

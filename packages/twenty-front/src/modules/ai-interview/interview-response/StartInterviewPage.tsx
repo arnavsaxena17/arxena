@@ -57,27 +57,26 @@ export const StartInterviewPage: React.FC<InterviewResponseTypes.StartInterviewP
   return (
     <StyledContainer>
     <StartInterviewStyledLeftPanel>
-      <h2>{InterviewData?.candidate?.jobs?.name}</h2>
+      <h2>{InterviewData?.candidate?.jobs?.name} at {InterviewData?.candidate?.jobs?.companyName}</h2>
       <StyledLeftPanelContentBox>
         <StyledTextLeftPanelTextHeadline>Introduction</StyledTextLeftPanelTextHeadline>
         <VideoPlayer src={process.env.REACT_APP_SERVER_BASE_URL+"/files/"+introductionVideoData?.data?.attachments?.edges[0]?.node?.fullPath} videoRef={videoRef} isPlaying={isPlaying} setIsPlaying={setIsPlaying} />
         <h3>Transcript</h3>
         <StyledTextLeftPaneldisplay>
-        {InterviewData?.aIInterview?.introduction}
+        <div dangerouslySetInnerHTML={{ __html: InterviewData?.aIInterview?.introduction.replace(/\n/g, '<br />') }}></div>
         </StyledTextLeftPaneldisplay>
       </StyledLeftPanelContentBox>
     </StartInterviewStyledLeftPanel>
     <StartInterviewStyledRightPanel>
       <InstructionSection>
-        <h2>Hi, {InterviewData?.candidate?.people?.name?.firstName} (Application for {InterviewData?.candidate?.jobs?.name} at {InterviewData?.candidate?.jobs?.companyName})</h2>
+        <h2>Hi, {InterviewData?.candidate?.people?.name?.firstName} - Applicant for {InterviewData?.candidate?.jobs?.name} at {InterviewData?.candidate?.jobs?.companyName}</h2>
 
         <br></br>
-        <h3>Instructions</h3>
+        <h3>Instructions: Please read this before continuing</h3>
         <InstructionList>
-          <li>You have to answer {InterviewData?.aIInterview?.aIInterviewQuestions.edges.length} questions and will have 4 minutes per question.</li>
-          <li>Answer all {InterviewData?.aIInterview?.aIInterviewQuestions.edges.length} questions in one go. Do not click back, close or refresh the tab to prevent loss of progress.</li>
-          <li>Do not worry about the quality of your video. Focus only on the quality of answers.</li>
-          <li>Please provide your browser access to camera and microphone on your device to start interview</li>
+          <li>Please provide your browser access to camera and microphone on your device</li>
+          <li>You have to answer {InterviewData?.aIInterview?.aIInterviewQuestions?.edges?.length} questions and have 4 minutes per question.</li>
+          <li>Answer all {InterviewData?.aIInterview?.aIInterviewQuestions?.edges?.length} questions in one go. Do not click back, close or refresh the tab to prevent loss of progress.</li>
           <li>Please make sure you have a stable internet connection and use a fully charged device for giving the interview.</li>
           <li>If you need assistance, write to me <a href={`mailto:${recruiterProfile.email}`}>{recruiterProfile.email}</a> or call/ whatsapp at <a href={`tel:${recruiterProfile.phone}`}>{recruiterProfile.phone}</a></li>
         </InstructionList>

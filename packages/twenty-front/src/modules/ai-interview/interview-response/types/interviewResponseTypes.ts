@@ -8,6 +8,36 @@ export interface Question {
   questionValue: string;
 }
 
+export const emptyInterviewData: InterviewData = {
+  id: '',
+  name: '',
+  candidate: {
+    id: '',
+    jobs: {
+    jobId: '',
+    name: '',
+    recruiterId: '',
+    companyName: '',
+    },
+    people: {
+    name: {
+      firstName: '',
+      lastName: '',
+    },
+    email: '',
+    phone: '',
+    },
+  },
+  aIInterview: {
+    name: '',
+    introduction: '',
+    instructions: '',
+    aIInterviewQuestions: {
+    edges: [],
+    },
+  },
+  };
+
 export interface InterviewData {
   id: string;
   name: string;
