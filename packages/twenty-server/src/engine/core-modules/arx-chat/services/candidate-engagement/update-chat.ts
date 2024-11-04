@@ -4,8 +4,8 @@ import { v4 } from 'uuid';
 import { axiosRequest } from '../../utils/arx-chat-agent-utils';
 import axios from 'axios';
 import { last } from 'rxjs';
+import { MicroserviceHealthIndicator } from '@nestjs/terminus';
 export class FetchAndUpdateCandidatesChatsWhatsapps {
-
   async fetchSpecificPeopleToEngageBasedOnChatControl(chatControl: allDataObjects.chatControls): Promise<allDataObjects.PersonNode[]> {
     try {
       console.log('Fetching candidates to engage');
@@ -51,7 +51,19 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
     console.log("Number of candidates from fetchedcandidates:", allCandidates?.length, "for chatControl", chatControl)
     return allCandidates;
   }
-
+  async fetchCandidateByCandidateId(candidateId: string): Promise<allDataObjects.CandidateNode> {
+    try {
+      const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindOneCandidateById, variables: { filter: { id: { eq: candidateId } } } });
+      const response = await axiosRequest(graphqlQueryObj);
+      console.log("Fetched candidate by candidate ID:", response?.data);
+      const candidateObj = response?.data?.data?.candidates?.edges[0]?.node;
+      // console.log("Fetched candidate by candidate Obj ID:", candidateObj);
+      return candidateObj;
+    } catch (error) {
+      console.log('Error in fetching candidate by candidate ID:', error);
+      return allDataObjects.emptyCandidateProfileObj;
+    }
+  }
   async fetchAllPeopleByCandidatePeopleIds(candidatePeopleIds: string[]): Promise<allDataObjects.PersonNode[]> {
     let allPeople: allDataObjects.PersonNode[] = [];
     let lastCursor: string | null = null;
@@ -96,7 +108,56 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
     return allWhatsappMessages;
   }
 
+  async getInterviewByJobId(jobId: string){
+    try {
+      const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindInterviewsByJobId, variables: { "filter": { "jobId": { "in": [ jobId ] } }, "orderBy": [ { "position": "AscNullsFirst" } ] } });
+      const response = await axiosRequest(graphqlQueryObj);
+      const interviewObj = response?.data?.data?.aIInterviews.edges[0].node;
+      return interviewObj;
+    } catch (error) {
+      console.log('Error in fetching interviews:', error);
+    }
+  }
+  async createVideoInterviewForCandidate(candidateId : string){
+    try {
+      const candidateObj:allDataObjects.CandidateNode = await this.fetchCandidateByCandidateId(candidateId);
+      const jobId = candidateObj?.jobs?.id;
+      const interviewObj = await this.getInterviewByJobId(jobId);
+      const interviewStatusId = v4();
+      const graphqlQueryObj = JSON.stringify({
+        query: allGraphQLQueries.graphqlQueryToCreateVideoInterview,
+        variables: {
+        input: {
+          id: interviewStatusId,
+          candidateId: candidateObj?.id,
+          name: "Interview - "+ candidateObj.name + " for "+ candidateObj?.jobs?.name,
+          aIInterviewId: interviewObj?.id,
+          interviewStarted:false,
+          interviewCompleted:false,
+          interviewLink:{
+            url:"/video-interview/"+interviewStatusId,
+            label: "/video-interview/"+interviewStatusId,
+          },
+          cameraOn:false,
+          micOn:false,
+          position: "first"
+        }
+        }
+      });
+    
+      const response = await axiosRequest(graphqlQueryObj);
+      if (response.data.errors) {
+        console.log("Errors in response:", response.data.errors);
+      }else{
+        console.log('Video Interview created successfully');
+      }
 
+      return response.data;
+
+    } catch (error) {
+      console.log('Error in creating video interview:', error.message);
+    }
+  }
 
   async formatChat(messages) {
     // Sort messages by position in ascending order

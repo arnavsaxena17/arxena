@@ -10,6 +10,78 @@ query FindOneWhatsappMessage($whatsappMessageId: String!) {
 }
 `;
 
+
+
+export const graphqlQueryToCreateVideoInterview = `mutation CreateOneAIInterviewStatus($input: AIInterviewStatusCreateInput!) {
+  createAIInterviewStatus(data: $input) {
+    micOn
+    interviewStarted
+    position
+    candidateId
+    interviewCompleted
+    updatedAt
+    interviewLink {
+      label
+      url
+    }
+    createdAt
+    id
+    cameraOn
+    name
+    aIInterviewId
+  }
+}`
+
+export const graphqlQueryToFindInterviewsByJobId = `query FindManyAIInterviews($filter: AIInterviewFilterInput, $orderBy: [AIInterviewOrderByInput], $lastCursor: String, $limit: Int) {
+  aIInterviews(
+    filter: $filter
+    orderBy: $orderBy
+    first: $limit
+    after: $lastCursor
+  ) {
+    edges {
+      node {
+        instructions
+        introduction
+        name
+        createdAt
+        position
+        id
+        aIModel {
+          language
+          createdAt
+          name
+          country
+          id
+          position
+          updatedAt
+        }
+        job {
+          recruiterId
+          updatedAt
+          arxenaSiteId
+          companiesId
+          name
+          position
+          id
+          clientContactsId
+          jobLocation
+          createdAt
+          jobCode
+          isActive
+        }
+      }
+      cursor
+    }
+    pageInfo {
+      hasNextPage
+      startCursor
+      endCursor
+    }
+    totalCount
+  }
+}`;
+
 export const graphqlToFetchActiveJob = `query FindManyJobs($filter: JobFilterInput, $orderBy: [JobOrderByInput], $lastCursor: String, $limit: Int) {
         jobs(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
           edges {
@@ -326,6 +398,55 @@ export const graphqlQueryToFindManyPeopleEngagedCandidates = `query FindManyPeop
             }
           }
           startChat
+          aIInterviewStatus{
+              edges{
+                  node{
+                      id
+                      interviewLink{
+                        url
+                      }
+                  }
+              }
+          }
+          lastEngagementChatControl
+          startVideoInterviewChat
+          startMeetingSchedulingChat
+          stopChat
+        }
+      }
+    }
+  }
+`
+  export const graphqlQueryToFindOneCandidateById = `
+  query FindManyCandidates($lastCursor: String, $limit: Int, $filter: CandidateFilterInput) {
+    candidates(after: $lastCursor, first: $limit, filter: $filter) {
+      edges {
+        cursor
+        node {
+          id
+          name
+          whatsappProvider
+          people {
+            id
+            name {
+              firstName
+              lastName
+            }
+          }
+          startChat
+          jobs {
+            id
+            name
+            jobLocation
+            jobCode
+            recruiterId
+            companies{
+              name
+              id
+              domainName
+              descriptionOneliner
+            }
+          }
           aIInterviewStatus{
               edges{
                   node{

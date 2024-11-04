@@ -70,7 +70,6 @@ export const InterviewPage: React.FC<InterviewPageProps> = ({ InterviewData, que
     });
   };
 
-
   // Function to get video URL for a specific question index
   const getQuestionVideoURL = (index: number) => {
     const attachment = questionsVideoAttachment.find(
@@ -79,17 +78,16 @@ export const InterviewPage: React.FC<InterviewPageProps> = ({ InterviewData, que
     return attachment ? `${process.env.REACT_APP_SERVER_BASE_URL}/files/${attachment}` : null;
   };
 
+  // Preload next question's video
+  useEffect(() => {
+    if (currentQuestionIndex < questions.length - 1) {
+      const nextVideoUrl = getQuestionVideoURL(currentQuestionIndex + 1);
+      setNextQuestionVideoUrl(nextVideoUrl);
+    }
+  }, [currentQuestionIndex, questions, questionsVideoAttachment]);
 
-    // Preload next question's video
-    useEffect(() => {
-      if (currentQuestionIndex < questions.length - 1) {
-        const nextVideoUrl = getQuestionVideoURL(currentQuestionIndex + 1);
-        setNextQuestionVideoUrl(nextVideoUrl);
-      }
-    }, [currentQuestionIndex, questions, questionsVideoAttachment]);
-
-    
-      // Handle video loading state
+  
+  // Handle video loading state
   const handleVideoLoadStart = () => {
     setIsVideoLoading(true);
   };
@@ -97,8 +95,6 @@ export const InterviewPage: React.FC<InterviewPageProps> = ({ InterviewData, que
   const handleVideoCanPlay = () => {
     setIsVideoLoading(false);
   };
-
-
 
   useEffect(() => {
     checkCamera();
@@ -146,7 +142,7 @@ export const InterviewPage: React.FC<InterviewPageProps> = ({ InterviewData, que
   }, [countdown]);
 
   const handleStartRecording = () => {
-    resetAndStopVideo(); // Stop and reset video before starting recording
+    resetAndStopVideo(); 
     setCountdown(5);
     setRecording(true);
   };
@@ -293,24 +289,16 @@ export const InterviewPage: React.FC<InterviewPageProps> = ({ InterviewData, que
     return <StyledError>{error}</StyledError>;
   }
 
-  
   // At the top of your file:
-
   // const currentQuestionVideoURL = getQuestionVideoURL(currentQuestionIndex);
-
 
   console.log('Current question interview attachment: for question index:', currentQuestionIndex);
   console.log('Current question interview questionsVideoAttachment:', questionsVideoAttachment);
-
   const currentQuestionInterviewAttachment = questionsVideoAttachment.find(attachment => attachment?.id === questions[currentQuestionIndex]?.attachments?.edges[0]?.node?.id)?.fullPath;
-
   const currentQuestionVideoURL = getQuestionVideoURL(currentQuestionIndex);
   console.log('This is the currentQuestionVideoURL::', currentQuestionVideoURL);
 
-
-
   return (
-    
     <SnapScrollContainer>
       <StyledLeftPanel>
       <h2>{InterviewData?.candidate?.jobs?.name} at {InterviewData?.candidate?.jobs?.companyName}</h2>

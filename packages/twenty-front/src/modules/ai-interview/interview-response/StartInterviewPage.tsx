@@ -117,7 +117,6 @@ export const StartInterviewPage: React.FC<StartInterviewPageProps> = ({ onStart,
     <StartInterviewStyledRightPanel>
       <InstructionSection>
         <h2>Hi, {InterviewData?.candidate?.people?.name?.firstName} - Applicant for {InterviewData?.candidate?.jobs?.name} at {InterviewData?.candidate?.jobs?.companyName}</h2>
-
         <br></br>
         <h3>Instructions: Please read this before continuing</h3>
         <InstructionList>
@@ -133,6 +132,6 @@ export const StartInterviewPage: React.FC<StartInterviewPageProps> = ({ onStart,
             {hasAccess && ( <StyledButton onClick={onStart}> Start Interview </StyledButton> )}
           </ButtonContainer>
     </StartInterviewStyledRightPanel>
-  </StyledContainer>
-); 
+    </StyledContainer>
+  ); 
 };
