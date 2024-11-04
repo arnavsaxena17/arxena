@@ -15,6 +15,7 @@ import { useFavorites } from '@/favorites/hooks/useFavorites';
 import { ObjectMetadataItem } from '@/object-metadata/types/ObjectMetadataItem';
 import { useDeleteManyRecords } from '@/object-record/hooks/useDeleteManyRecords';
 import { useExecuteQuickActionOnOneRecord } from '@/object-record/hooks/useExecuteQuickActionOnOneRecord';
+import { useCloneOneRecord } from '@/object-record/hooks/useCloneOneRecord'; // Import the new hook
 import {
   displayedExportProgress,
   useExportTableData,
@@ -42,6 +43,7 @@ export const useRecordActionBar = ({
   const setActionBarEntriesState = useSetRecoilState(actionBarEntriesState);
   const [isDeleteRecordsModalOpen, setIsDeleteRecordsModalOpen] =
     useState(false);
+  const [currentRecordId, setCurrentRecordId] = useState<string | undefined>();
 
   const { createFavorite, favorites, deleteFavorite } = useFavorites();
 
@@ -53,6 +55,73 @@ export const useRecordActionBar = ({
     objectNameSingular: objectMetadataItem.nameSingular,
   });
 
+  const { cloneRecord, loading: isCloning, isReady } = useCloneOneRecord({
+    objectNameSingular: objectMetadataItem.nameSingular,
+    recordIdToClone: selectedRecordIds[0], // We'll handle multiple records in handleClone
+  });
+
+  const handleCloneRecord = useCallback(async (recordId: string) => {
+    try {
+      setCurrentRecordId(recordId);
+      
+      const { cloneRecord, isReady, loading } = useCloneOneRecord({
+        objectNameSingular: objectMetadataItem.nameSingular,
+        recordIdToClone: recordId,
+      });
+  
+      // Wait for the hook to be ready
+      let attempts = 0;
+      while (!isReady && attempts < 5) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        attempts++;
+      }
+  
+      const clonedRecord = await cloneRecord();
+      
+      if (clonedRecord) {
+        console.log("Successfully cloned record:", clonedRecord);
+      } else {
+        console.log("Could not clone record - check if data is available");
+      }
+    } catch (error) {
+      console.error("Error cloning record:", error);
+    } finally {
+      setCurrentRecordId(undefined);
+    }
+  }, [cloneRecord, objectMetadataItem.nameSingular]);
+  
+  
+  const handleClone = useCallback(async () => {
+    callback?.();
+    console.log("Going to try and clone:", selectedRecordIds);
+    
+    try {
+      // Wait for hook to be ready
+      if (!isReady) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+      
+      // Clone records sequentially
+      for (const recordId of selectedRecordIds) {
+        // Update the recordIdToClone through state updates
+        const clonedRecord = await cloneRecord();
+        
+        if (clonedRecord) {
+          console.log("Successfully cloned record:", clonedRecord);
+        } else {
+          console.log("Could not clone record - check if data is available");
+        }
+        
+        // Add delay between clones
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+    } catch (error) {
+      console.error("Error cloning record:", error);
+    }
+  }, [callback, cloneRecord, isReady, selectedRecordIds]);
+
+
+  
   const handleFavoriteButtonClick = useRecoilCallback(
     ({ snapshot }) =>
       () => {
@@ -126,6 +195,9 @@ export const useRecordActionBar = ({
       }),
     );
   }, [callback, executeQuickAddToPeople, selectedRecordIds]);
+
+
+
 
   const { progress, download } = useExportTableData({
     delayMs: 100,
@@ -242,6 +314,11 @@ export const useRecordActionBar = ({
                     onClick: handleExecuteQuickActionOnClick,
                   },
                   {
+                    label: 'Clone',
+                    Icon: IconPuzzle,
+                    onClick: handleClone,
+                  },
+                  {
                     label: 'Add to People',
                     Icon: IconPuzzle,
                     onClick: handleExecuteAddToPeople,
@@ -261,6 +338,8 @@ export const useRecordActionBar = ({
       dataExecuteQuickActionOnmentEnabled,
       deletionActions,
       handleExecuteQuickActionOnClick,
+      handleClone,
+      isCloning,
       isRemoteObject,
       setActionBarEntriesState,
     ]),

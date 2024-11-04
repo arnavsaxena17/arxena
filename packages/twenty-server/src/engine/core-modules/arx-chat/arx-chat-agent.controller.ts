@@ -277,6 +277,15 @@ export class ArxChatEndpoint {
     console.log("All people length:", allPeople?.length)
     return allPeople
   }
+  @Post('create-video-interview')
+  @UseGuards(JwtAuthGuard)
+  async createVideoInterviewForCandidate(@Req() request: any): Promise<object> {
+    const candidateId = request.body.candidateId;
+    console.log('candidateId to create video-interview:', candidateId);
+    const createVideoInterviewResponse = await new FetchAndUpdateCandidatesChatsWhatsapps().createVideoInterviewForCandidate(candidateId);
+    console.log("createVideoInterviewResponse:", createVideoInterviewResponse)
+    return createVideoInterviewResponse;
+  }
 
   @Post('remove-chats')
   async removeChats(@Req() request: any): Promise<object> {

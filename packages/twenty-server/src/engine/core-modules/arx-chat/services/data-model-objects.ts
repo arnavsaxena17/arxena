@@ -198,6 +198,7 @@ export interface CandidateNode {
   emailMessages: EmailMessages;
   jobs: Jobs;
   candidateReminders: Reminders;
+  // person?.PersonNode
 }
 
 // export interface ArxJobs {

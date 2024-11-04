@@ -168,6 +168,7 @@ export default class CandidateEngagementArx {
       console.log('Number of candidates to who have no filteredCandidates StartEngagement ::', filteredCandidatesToStartEngagement?.length, "for chatControl:", chatControl);
     }
     else if (chatControl === 'startVideoInterviewChat') {
+
       filteredCandidatesToStartEngagement = peopleCandidateResponseEngagementArr?.filter(personNode => {
         return personNode?.candidates?.edges?.length > 0 && personNode?.candidates?.edges[0]?.node?.startChat === true && personNode?.candidates?.edges[0]?.node?.whatsappMessages?.edges.length >0 && personNode?.candidates?.edges[0]?.node?.startVideoInterviewChat === true && personNode?.candidates?.edges[0]?.node?.lastEngagementChatControl !== "startVideoInterviewChat";
       });
@@ -204,6 +205,23 @@ export default class CandidateEngagementArx {
     }
   }
 
+  async setupVideoInterviewLinks(peopleEngagementStartVideoInterviewChatArr:allDataObjects.PersonNode[], chatControl: allDataObjects.chatControls) {
+    if (chatControl === 'startVideoInterviewChat') {
+      for (const personNode of peopleEngagementStartVideoInterviewChatArr) {
+        const candidateNode = personNode?.candidates?.edges[0]?.node;
+        const aiInterviewStatus = candidateNode?.aIInterviewStatus?.edges[0]?.node;
+        
+        if (!aiInterviewStatus || !aiInterviewStatus.interviewLink?.url) {
+          console.log(`Creating video interview link for candidate: ${candidateNode.name}`);
+          await new FetchAndUpdateCandidatesChatsWhatsapps().createVideoInterviewForCandidate(candidateNode.id );
+        } else {
+          console.log(`Skipping candidate ${candidateNode.name} as they already have a video interview link.`);
+        }
+      }
+
+    }
+  }
+
   async checkCandidateEngagement() {
     try{
       console.log("Cron running and cycle started to check candidate engagement");
@@ -219,6 +237,9 @@ export default class CandidateEngagementArx {
       chatControl = "startVideoInterviewChat";
       const peopleEngagementStartVideoInterviewChatArr = await new FetchAndUpdateCandidatesChatsWhatsapps().fetchSpecificPeopleToEngageBasedOnChatControl(chatControl);
       console.log("Number of people for videointerview to start engagement or engage::", peopleEngagementStartVideoInterviewChatArr.length, "for chatControl:", chatControl);
+      if (peopleEngagementStartVideoInterviewChatArr) {
+        await this.setupVideoInterviewLinks(peopleEngagementStartVideoInterviewChatArr, chatControl);
+      }      
       if (peopleEngagementStartVideoInterviewChatArr) {
         await this.startChatEngagement(peopleEngagementStartVideoInterviewChatArr, chatControl);
       }      
