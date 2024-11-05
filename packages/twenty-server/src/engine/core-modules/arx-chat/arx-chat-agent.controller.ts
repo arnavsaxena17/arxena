@@ -18,6 +18,7 @@ import { SendEmailFunctionality } from './services/candidate-engagement/send-gma
 import { CalendarEventType } from '../calendar-events/services/calendar-data-objects-types';
 import { CalendarEmailService } from './services/candidate-engagement/calendar-email';
 import moment from 'moment-timezone';
+import axios from 'axios';
 
 @Controller('updateChat')
 export class UpdateChatEndpoint {
@@ -289,6 +290,28 @@ export class ArxChatEndpoint {
 
   @Post('remove-chats')
   async removeChats(@Req() request: any): Promise<object> {
+    return { status: 'Success' };
+  }
+
+  @Post('create-interview-videos')
+  async createInterviewVideos(@Req() request: any): Promise<object> {
+    console.log("This is the request body:", request.body);
+    const jobId = request.body.jobId;
+    const url = process.env.NODE_ENV === 'production' ? 'https://arxena.com/create-interview-videos' : 'http://localhost:5050/create-interview-videos';
+
+    try {
+      const response = await axios.post(url, { jobId }, {
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', }, 
+        timeout: 10000,
+        validateStatus: (status) => status >= 200 && status < 500,
+        proxy: false,
+        family: 4,
+      }
+      );
+      console.log('Response from /create-interview-videos:', response.data);
+    } catch (error) {
+      console.error('Error sending request to /create-interview-videos:', error);
+    }
     return { status: 'Success' };
   }
 
