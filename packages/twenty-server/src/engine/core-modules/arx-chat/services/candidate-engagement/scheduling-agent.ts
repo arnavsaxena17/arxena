@@ -10,7 +10,9 @@ if(process.env.NODE_ENV === 'development'){
 }
 else{
   // cron to run every 5 minutes
-  timeScheduleCron = '*/3 * * * *'
+  // timeScheduleCron = '*/3 * * * *'
+  timeScheduleCron = '*/30 * * * * *'
+
 }
 
 @Injectable()
