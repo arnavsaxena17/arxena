@@ -297,8 +297,10 @@ export class ArxChatEndpoint {
   async createInterviewVideos(@Req() request: any): Promise<object> {
     console.log("This is the request body:", request.body);
     const jobId = request.body.jobId;
+    console.log("This is the jobId:", jobId);
+    console.log("This is the NODE NEV:", process.env.NODE_ENV);
     const url = process.env.NODE_ENV === 'production' ? 'https://arxena.com/create-interview-videos' : 'http://localhost:5050/create-interview-videos';
-
+    console.log("This is the url:", url);
     try {
       const response = await axios.post(url, { jobId }, {
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', }, 
