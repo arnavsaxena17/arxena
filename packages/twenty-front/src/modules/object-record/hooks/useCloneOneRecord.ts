@@ -22,8 +22,8 @@ export const useCloneOneRecord = <
   recordGqlFields,
   skipPostOptmisticEffect = false,
 }: UseCloneOneRecordProps) => {
-  console.log("going to try toi clone record recordIdToClone:", recordIdToClone )
-  console.log("going to try toi clone record: objectNameSingular", objectNameSingular )
+  // console.log("going to try toi clone record recordIdToClone:", recordIdToClone )
+  // console.log("going to try toi clone record: objectNameSingular", objectNameSingular )
   const [cloning, setCloning] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [isReady, setIsReady] = useState(false);

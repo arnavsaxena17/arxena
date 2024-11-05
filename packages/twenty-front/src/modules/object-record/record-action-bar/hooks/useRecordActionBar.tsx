@@ -16,6 +16,7 @@ import { ObjectMetadataItem } from '@/object-metadata/types/ObjectMetadataItem';
 import { useDeleteManyRecords } from '@/object-record/hooks/useDeleteManyRecords';
 import { useExecuteQuickActionOnOneRecord } from '@/object-record/hooks/useExecuteQuickActionOnOneRecord';
 import { useCloneOneRecord } from '@/object-record/hooks/useCloneOneRecord'; // Import the new hook
+import { useCreateInterviewVideos } from '@/object-record/hooks/useCreateInterviewVideos'; // Import the new hook
 import {
   displayedExportProgress,
   useExportTableData,
@@ -27,12 +28,15 @@ import { contextMenuEntriesState } from '@/ui/navigation/context-menu/states/con
 import { ContextMenuEntry } from '@/ui/navigation/context-menu/types/ContextMenuEntry';
 import { useIsFeatureEnabled } from '@/workspace/hooks/useIsFeatureEnabled';
 import { isDefined } from '~/utils/isDefined';
+import { IconBriefcase2, IconCopy, IconUserPlus, IconUsersPlus, IconVideo } from '@tabler/icons-react';
 
 type useRecordActionBarProps = {
   objectMetadataItem: ObjectMetadataItem;
   selectedRecordIds: string[];
   callback?: () => void;
 };
+
+
 
 export const useRecordActionBar = ({
   objectMetadataItem,
@@ -60,35 +64,50 @@ export const useRecordActionBar = ({
     recordIdToClone: selectedRecordIds[0], // We'll handle multiple records in handleClone
   });
 
-  const handleCloneRecord = useCallback(async (recordId: string) => {
-    try {
-      setCurrentRecordId(recordId);
+
+
+  const { createVideosForJobs, loading: creatingVideos } = useCreateInterviewVideos({
+    onSuccess: () => {
+      // Show success notification or handle success
+      console.log('Successfully created videos for all jobs');
+    },
+    onError: (error) => {
+      // Show error notification or handle error
+      console.error('Failed to create videos:', error);
+    },
+  });
+
+
+
+  // const handleCloneRecord = useCallback(async (recordId: string) => {
+  //   try {
+  //     setCurrentRecordId(recordId);
       
-      const { cloneRecord, isReady, loading } = useCloneOneRecord({
-        objectNameSingular: objectMetadataItem.nameSingular,
-        recordIdToClone: recordId,
-      });
+  //     const { cloneRecord, isReady, loading } = useCloneOneRecord({
+  //       objectNameSingular: objectMetadataItem.nameSingular,
+  //       recordIdToClone: recordId,
+  //     });
   
-      // Wait for the hook to be ready
-      let attempts = 0;
-      while (!isReady && attempts < 5) {
-        await new Promise(resolve => setTimeout(resolve, 500));
-        attempts++;
-      }
+  //     // Wait for the hook to be ready
+  //     let attempts = 0;
+  //     while (!isReady && attempts < 5) {
+  //       await new Promise(resolve => setTimeout(resolve, 500));
+  //       attempts++;
+  //     }
   
-      const clonedRecord = await cloneRecord();
+  //     const clonedRecord = await cloneRecord();
       
-      if (clonedRecord) {
-        console.log("Successfully cloned record:", clonedRecord);
-      } else {
-        console.log("Could not clone record - check if data is available");
-      }
-    } catch (error) {
-      console.error("Error cloning record:", error);
-    } finally {
-      setCurrentRecordId(undefined);
-    }
-  }, [cloneRecord, objectMetadataItem.nameSingular]);
+  //     if (clonedRecord) {
+  //       console.log("Successfully cloned record:", clonedRecord);
+  //     } else {
+  //       console.log("Could not clone record - check if data is available");
+  //     }
+  //   } catch (error) {
+  //     console.error("Error cloning record:", error);
+  //   } finally {
+  //     setCurrentRecordId(undefined);
+  //   }
+  // }, [cloneRecord, objectMetadataItem.nameSingular]);
   
   
   const handleClone = useCallback(async () => {
@@ -314,18 +333,33 @@ export const useRecordActionBar = ({
                   },
                   {
                     label: 'Clone',
-                    Icon: IconPuzzle,
+                    Icon: IconCopy,
                     onClick: handleClone,
                   },
                   {
                     label: 'Add to People',
-                    Icon: IconPuzzle,
+                    Icon: IconUsersPlus,
                     onClick: handleExecuteAddToPeople,
                   },
                   {
                     label: 'Send to mailjet',
                     Icon: IconMail,
                   },
+                  ...(objectMetadataItem.nameSingular === 'job'
+                    ? [
+                        {
+                          label: 'Create Videos from E2I',
+                          Icon: IconVideo,
+                          onClick: async () => {
+                            try {
+                              await createVideosForJobs(selectedRecordIds);
+                            } catch (error) {
+                              console.error('Error creating videos:', error);
+                            }
+                          },
+                        },
+                      ]
+                    : []),  
                 ],
               },
             ]
