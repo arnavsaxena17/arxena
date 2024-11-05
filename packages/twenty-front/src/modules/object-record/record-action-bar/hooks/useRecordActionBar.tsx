@@ -29,6 +29,7 @@ import { ContextMenuEntry } from '@/ui/navigation/context-menu/types/ContextMenu
 import { useIsFeatureEnabled } from '@/workspace/hooks/useIsFeatureEnabled';
 import { isDefined } from '~/utils/isDefined';
 import { IconBriefcase2, IconCopy, IconUserPlus, IconUsersPlus, IconVideo } from '@tabler/icons-react';
+import { useCreateVideoInterview } from '@/object-record/hooks/useCreateInterview';
 
 type useRecordActionBarProps = {
   objectMetadataItem: ObjectMetadataItem;
@@ -64,8 +65,6 @@ export const useRecordActionBar = ({
     recordIdToClone: selectedRecordIds[0], // We'll handle multiple records in handleClone
   });
 
-
-
   const { createVideosForJobs, loading: creatingVideos } = useCreateInterviewVideos({
     onSuccess: () => {
       // Show success notification or handle success
@@ -77,39 +76,16 @@ export const useRecordActionBar = ({
     },
   });
 
+  const { createVideoInterviewLink, loading: creatingVideoInterview } = useCreateVideoInterview({
+    onSuccess: () => {
+      // Additional success handling if needed
+    },
+    onError: (error: any) => {
+      // Additional error handling if needed
+      console.error('Failed to create video interview:', error);
+    },
+  });
 
-
-  // const handleCloneRecord = useCallback(async (recordId: string) => {
-  //   try {
-  //     setCurrentRecordId(recordId);
-      
-  //     const { cloneRecord, isReady, loading } = useCloneOneRecord({
-  //       objectNameSingular: objectMetadataItem.nameSingular,
-  //       recordIdToClone: recordId,
-  //     });
-  
-  //     // Wait for the hook to be ready
-  //     let attempts = 0;
-  //     while (!isReady && attempts < 5) {
-  //       await new Promise(resolve => setTimeout(resolve, 500));
-  //       attempts++;
-  //     }
-  
-  //     const clonedRecord = await cloneRecord();
-      
-  //     if (clonedRecord) {
-  //       console.log("Successfully cloned record:", clonedRecord);
-  //     } else {
-  //       console.log("Could not clone record - check if data is available");
-  //     }
-  //   } catch (error) {
-  //     console.error("Error cloning record:", error);
-  //   } finally {
-  //     setCurrentRecordId(undefined);
-  //   }
-  // }, [cloneRecord, objectMetadataItem.nameSingular]);
-  
-  
   const handleClone = useCallback(async () => {
     callback?.();
     console.log("Going to try and clone:", selectedRecordIds);
@@ -353,6 +329,21 @@ export const useRecordActionBar = ({
                           onClick: async () => {
                             try {
                               await createVideosForJobs(selectedRecordIds);
+                            } catch (error) {
+                              console.error('Error creating videos:', error);
+                            }
+                          },
+                        },
+                      ]
+                    : []),  
+                  ...(objectMetadataItem.nameSingular === 'candidate'
+                    ? [
+                        {
+                          label: 'Create Video Interview Link',
+                          Icon: IconVideo,
+                          onClick: async () => {
+                            try {
+                              await createVideoInterviewLink(selectedRecordIds);
                             } catch (error) {
                               console.error('Error creating videos:', error);
                             }
