@@ -298,7 +298,6 @@ export const useRecordActionBar = ({
       isRemoteObject,
       setContextMenuEntries,
     ]),
-    
     setActionBarEntries: useCallback(() => {
       setActionBarEntriesState([
         ...(isRemoteObject ? [] : deletionActions),

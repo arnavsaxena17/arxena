@@ -385,6 +385,8 @@ export class FacebookWhatsappChatApi {
         } else {
           messageTempalate = whatappUpdateMessageObj?.whatsappMessageType || 'application03';
         }
+        const videoInterviewLink = "https://arxena.com"+personNode?.candidates?.edges[0]?.node?.aIInterviewStatus?.edges[0]?.node?.interviewLink?.url || ""
+        console.log("videoInterviewLink::", videoInterviewLink)
         const sendTemplateMessageObj:allDataObjects.sendWhatsappUtilityMessageObjectType = {
           recipient: whatappUpdateMessageObj.phoneNumberTo.replace('+', ''),
           template_name: messageTempalate,
@@ -400,7 +402,7 @@ export class FacebookWhatsappChatApi {
           jobCode: whatappUpdateMessageObj?.candidateProfile?.jobs?.jobCode,
           jobLocation: whatappUpdateMessageObj?.candidateProfile?.jobs?.jobLocation,
           // videoInterviewLink: process.env.SERVER_BASE_URL+personNode?.candidates?.edges[0]?.node?.aIInterviewStatus?.edges[0].node.interviewLink?.url || "",
-          videoInterviewLink: "https://arxena.com"+personNode?.candidates?.edges[0]?.node?.aIInterviewStatus?.edges[0]?.node?.interviewLink?.url || "",
+          videoInterviewLink: videoInterviewLink,
           
         };
         response = await this.sendWhatsappUtilityMessage(sendTemplateMessageObj);
