@@ -302,7 +302,7 @@ export class ArxChatEndpoint {
     const url = process.env.NODE_ENV === 'production' ? 'https://arxena.com/create-interview-videos' : 'http://localhost:5050/create-interview-videos';
     console.log("This is the url:", url);
     try {
-      const response = await axios.post(url, { jobId }, {
+      const response = await axios.post(url, { jobId:jobId }, {
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', }, 
         timeout: 10000,
         validateStatus: (status) => status >= 200 && status < 500,
