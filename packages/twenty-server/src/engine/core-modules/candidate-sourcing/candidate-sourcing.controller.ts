@@ -2,58 +2,83 @@ import { Body, Controller, Post } from '@nestjs/common';
 import { chunk } from 'lodash';
 
 import { CreateManyCandidates, CreateManyPeople, graphQltoStartChat, CreateOneJob, graphQltoStopChat, createOneQuestion, graphqlToFindManyJobByArxenaSiteId } from './graphql-queries';
-import {FetchAndUpdateCandidatesChatsWhatsapps} from '../arx-chat/services/candidate-engagement/update-chat';
+import { FetchAndUpdateCandidatesChatsWhatsapps } from '../arx-chat/services/candidate-engagement/update-chat';
 import * as allDataObjects from '../arx-chat/services/data-model-objects';
 import * as allGraphQLQueries from '../arx-chat/services/candidate-engagement/graphql-queries-chatbot';
 
 import { axiosRequest } from './utils/utils';
 import { processArxCandidate } from './utils/data-transformation-utility';
 import { ArxenaCandidateNode, ArxenaPersonNode, Jobs, UserProfile } from './types/candidate-sourcing-types';
+import axios from 'axios';
 @Controller('candidate-sourcing')
 export class CandidateSourcingController {
-  async  getJobDetails(arxenaJobId: string): Promise<Jobs> {
-    const response = await axiosRequest(
-      JSON.stringify({
+  async getJobDetails(arxenaJobId: string): Promise<Jobs> {
+    // hack to check for job name being sent instead of job ID from arxena-site.
+    function isValidMongoDBId(str) {
+      // Check if string exists and is exactly 24 characters
+      if (!str || str.length !== 24) {
+        return false;
+      }
+      // Check if string only contains valid hexadecimal characters
+      const hexRegex = /^[0-9a-fA-F]{24}$/;
+      return hexRegex.test(str);
+    }
+    let graphlQlQuery: string;
+    if (!isValidMongoDBId(arxenaJobId)) {
+      graphlQlQuery = JSON.stringify({
+        query: graphqlToFindManyJobByArxenaSiteId,
+        variables: {
+          filter: { name: { in: [arxenaJobId] } },
+          limit: 30,
+          orderBy: [{ position: 'AscNullsFirst' }],
+        },
+      });
+    } else {
+      graphlQlQuery = JSON.stringify({
         query: graphqlToFindManyJobByArxenaSiteId,
         variables: {
           filter: { arxenaSiteId: { in: [arxenaJobId] } },
           limit: 30,
           orderBy: [{ position: 'AscNullsFirst' }],
         },
-      })
-    );
+      });
+    }
+    const response = await axiosRequest(graphlQlQuery);
     console.log('Response status from get job', response.status);
     return response.data?.data?.jobs?.edges[0]?.node;
   }
-  
-  async  createPeople(manyPersonObjects: ArxenaPersonNode[]): Promise<any> {
-    console.log("Creating people, manyPersonObjects:", manyPersonObjects.length);
+
+  async createPeople(manyPersonObjects: ArxenaPersonNode[]): Promise<any> {
+    console.log('Creating people, manyPersonObjects:', manyPersonObjects.length);
     const graphqlVariablesForPerson = { data: manyPersonObjects };
     const graphqlQueryObjForPerson = JSON.stringify({
       query: CreateManyPeople,
       variables: graphqlVariablesForPerson,
     });
-  
+
     try {
       const responseForPerson = await axiosRequest(graphqlQueryObjForPerson);
-      console.log("Response from graphqlQueryObjForPerson:", responseForPerson.status);
-      console.log("Response from graphqlQueryObjForPerson:", responseForPerson.status);
+      console.log('Response from graphqlQueryObjForPerson:', responseForPerson.status);
+      console.log('Response from graphqlQueryObjForPerson:', responseForPerson.status);
       return responseForPerson;
     } catch (error) {
       console.error('Error in creating people', error);
       throw error;
     }
   }
-  
-  async  createCandidates(manyCandidateObjects: ArxenaCandidateNode[]): Promise<any> {
-    console.log("Creating candidates, manyCandidateObjects:", manyCandidateObjects.length);
-    console.log("Creating candidates, manyCandidateObjects:", manyCandidateObjects.map(x => x.name));
+
+  async createCandidates(manyCandidateObjects: ArxenaCandidateNode[]): Promise<any> {
+    console.log('Creating candidates, manyCandidateObjects:', manyCandidateObjects.length);
+    console.log(
+      'Creating candidates, manyCandidateObjects:',
+      manyCandidateObjects.map(x => x.name),
+    );
     const graphqlVariablesForCandidate = { data: manyCandidateObjects };
     const graphqlQueryObjForCandidate = JSON.stringify({
       query: CreateManyCandidates,
       variables: graphqlVariablesForCandidate,
     });
-  
+
     try {
       const responseForCandidate = await axiosRequest(graphqlQueryObjForCandidate);
       console.log('Response from creating candidates', responseForCandidate.data);
@@ -69,95 +94,115 @@ export class CandidateSourcingController {
       filter: { phone: { in: phoneNumbers } },
       limit: 30, // Adjust based on your API's limits
     };
-  
+
     const graphqlQuery = JSON.stringify({
       query: allGraphQLQueries.graphqlQueryToFindPeopleByPhoneNumber,
       variables: graphqlVariables,
     });
-  
+
     try {
       const response = await axiosRequest(graphqlQuery);
       const people = response.data?.data?.people?.edges || [];
-      const personMap:Map<string, allDataObjects.PersonNode> =  new Map(people.map((edge: any) => [edge.node.phone, edge.node]));
-      return personMap
+      const personMap: Map<string, allDataObjects.PersonNode> = new Map(people.map((edge: any) => [edge.node.phone, edge.node]));
+      return personMap;
     } catch (error) {
       console.error('Error in batchGetPersonDetails:', error);
       throw error;
     }
   }
-  
-  async processProfilesWithRateLimiting(data: UserProfile[], jobObject: Jobs): Promise<{ manyPersonObjects: ArxenaPersonNode[], manyCandidateObjects: ArxenaCandidateNode[] }> {
-    console.log("Total number of profiles received:", data.length);
+
+  async processProfilesWithRateLimiting(data: UserProfile[], jobObject: Jobs): Promise<{ manyPersonObjects: ArxenaPersonNode[]; manyCandidateObjects: ArxenaCandidateNode[] }> {
+    console.log('Total number of profiles received:', data.length);
     const manyPersonObjects: ArxenaPersonNode[] = [];
+    console.log('Job Object:', jobObject);
     const manyCandidateObjects: ArxenaCandidateNode[] = [];
-    const batchSize = 25; 
+    const batchSize = 25;
     const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
     for (let i = 0; i < data.length; i += batchSize) {
       const batch = data.slice(i, i + batchSize);
       const phoneNumbers = batch.map(profile => profile.phone_number).filter(Boolean);
-      console.log("Total number of phone numbers in batch:", phoneNumbers.length);
+      console.log('Total number of phone numbers in batch:', phoneNumbers.length);
       const personDetailsMap = await this.batchGetPersonDetails(phoneNumbers);
-      console.log("personDetailsMap:", personDetailsMap)
+      console.log('personDetailsMap:', personDetailsMap);
       for (const profile of batch) {
-        console.log("this is the prfoile:", profile)
+        console.log('this is the prfoile:', profile);
         const current_phone_number = profile?.phone_number;
-        console.log("current_phone_number:", current_phone_number)
-        console.log("current_phone_number profile:", profile)
+        console.log('current_phone_number:', current_phone_number);
+        console.log('current_phone_number profile:', profile);
         const personObj = personDetailsMap.get(current_phone_number);
-        console.log("personObj:", personObj)
+        console.log('personObj:', personObj);
         if (!personObj || !personObj.name) {
-          console.log("person obj not foiund, will creatre a new person object")
+          console.log('person obj not foiund, will creatre a new person object');
           const { personNode, candidateNode } = processArxCandidate(profile, jobObject);
           manyPersonObjects.push(personNode);
           manyCandidateObjects.push(candidateNode);
-        }
-        else{
-          console.log("Person object already exists for phone number:", current_phone_number);
+        } else {
+          console.log('Person object already exists for phone number:', current_phone_number);
         }
       }
       if (i + batchSize < data.length) {
-        await delay(1000); 
+        await delay(1000);
       }
     }
-    console.log("Received total numbers in manyCandidateObjects:", manyCandidateObjects.length);
-    console.log("Received total numbers in manyPersonObjects:", manyPersonObjects.length);
-    return { manyPersonObjects:manyPersonObjects, manyCandidateObjects:manyCandidateObjects };
+    console.log('Received total numbers in manyCandidateObjects:', manyCandidateObjects.length);
+    console.log('Received total numbers in manyPersonObjects:', manyPersonObjects.length);
+    return { manyPersonObjects: manyPersonObjects, manyCandidateObjects: manyCandidateObjects };
   }
-  
+
+  @Post('create-job-in-arxena')
+  async createJobInArxena(@Body() body: any): Promise<Jobs> {
+    console.log("going to create job in arxena")
+    try {
+      const url = process.env.NODE_ENV === 'production' ? 'https://arxena.com/create_new_job' : 'http://127.0.0.1:5050/create_new_job';
+
+      const response = await axios.post(
+        url,
+        { job_name: body.job_name },
+        {
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.ARXENA_API_KEY}` },
+        },
+      );
+
+      console.log('Response from create job', response.data);
+      return response.data.data.createJob;
+    } catch (error) {
+      console.error('Error in createJobInArxena:', error);
+      throw error;
+    }
+  }
+
   @Post('post-candidates')
   async sourceCandidates(@Body() body: any) {
-    console.log("Called post candidates API")
+    console.log('Called post candidates API');
     const arxenaJobId = body?.job_id;
+    console.log('arxenaJobId:', arxenaJobId);
     const data: UserProfile[] = body?.data;
-    console.log("Going to add and process candidate profiles")
-    console.log("Going to add and arxena job Id", arxenaJobId)
+    console.log('Going to add and process candidate profiles');
+    console.log('Going to add and arxena job Id', arxenaJobId);
     try {
       const jobObject = await this.getJobDetails(arxenaJobId);
+      console.log('jobObject that is sent by arxena-site:', jobObject);
       // const { manyPersonObjects, manyCandidateObjects } = await this.processProfiles(data, jobObject);
       const { manyPersonObjects, manyCandidateObjects } = await this.processProfilesWithRateLimiting(data, jobObject);
-      console.log("Number of person objects created:", manyPersonObjects.length)
-      console.log("Number of person candidates created:", manyPersonObjects.length)
+      console.log('Number of person objects created:', manyPersonObjects.length);
+      console.log('Number of person candidates created:', manyPersonObjects.length);
       if (manyPersonObjects.length === 0) {
-        console.log("All candidates already exist")
+        console.log('All candidates already exist');
         return { message: 'All candidates already exist' };
+      } else {
+        console.log('candidates do not exist, will create new candidates');
       }
-      else{
-        console.log("candidates do not exist, will create new candidates")
-      }
-      console.log("Creating people and candidates")
+      console.log('Creating people and candidates');
       const responseForPerson = await this.createPeople(manyPersonObjects);
-      const arrayOfPersonIds = responseForPerson?.data?.data?.createPeople?.map((person: any) => person.id)
-
-      console.log("Number of person Ids Created:", arrayOfPersonIds.length)
-      
-  
+      const arrayOfPersonIds = responseForPerson?.data?.data?.createPeople?.map((person: any) => person.id);
+      console.log('Number of person Ids Created:', arrayOfPersonIds.length);
       manyCandidateObjects.forEach((candidate, index) => {
         candidate.peopleId = arrayOfPersonIds[index];
       });
-  
+
       const responseForCandidate = await this.createCandidates(manyCandidateObjects);
-      
-      return { "candidates": responseForCandidate.data, "people": responseForPerson.data };
+
+      return { candidates: responseForCandidate.data, people: responseForPerson.data };
     } catch (error) {
       console.error('Error in sourceCandidates:', error);
       return { error: error.message };
@@ -168,7 +213,6 @@ export class CandidateSourcingController {
   async getJobDetailsByArxenaId(arxenaJobId: string): Promise<Jobs> {
     return this.getJobDetails(arxenaJobId);
   }
-  
 
   @Post('get-all-jobs')
   async getJobs(@Body() body: any) {
@@ -179,7 +223,7 @@ export class CandidateSourcingController {
         query: graphqlToFindManyJobByArxenaSiteId,
         variables: {
           limit: 30,
-          orderBy: [ { position: 'AscNullsFirst' } ],
+          orderBy: [{ position: 'AscNullsFirst' }],
         },
       }),
     );
@@ -188,10 +232,8 @@ export class CandidateSourcingController {
     const jobsObject: Jobs = responseFromGetAllJobs.data?.data?.jobs?.edges;
     // const jobIdMetadataInCamelCaseFormat: string = camelCase(jobIdMetadata).charAt(0).toUpperCase() + camelCase(jobIdMetadata).slice(1);
     // const dynamicQueryName = (jobName + jobIdMetadataInCamelCaseFormat).charAt(0).toUpperCase() + camelCase(jobName + jobIdMetadataInCamelCaseFormat).slice(1);
-    return {jobs:jobsObject}
-
+    return { jobs: jobsObject };
   }
-
 
   @Post('post-job')
   async postJob(@Body() body: any) {
@@ -199,8 +241,8 @@ export class CandidateSourcingController {
     try {
       const data = body;
       console.log(body);
-      const graphqlVariables = { input: { name: data?.job_name, arxenaSiteId: data?.job_id, isActive: true, jobLocation: data?.jobLocation, jobCode:data?.jobCode,recruiterId:data?.recruiterId, companiesId: data?.companiesId }, };
-      const graphqlQueryObj = JSON.stringify({ query: CreateOneJob, variables: graphqlVariables, });
+      const graphqlVariables = { input: { name: data?.job_name, arxenaSiteId: data?.job_id, isActive: true, jobLocation: data?.jobLocation, jobCode: data?.jobCode, recruiterId: data?.recruiterId, companiesId: data?.companiesId } };
+      const graphqlQueryObj = JSON.stringify({ query: CreateOneJob, variables: graphqlVariables });
       const responseNew = await axiosRequest(graphqlQueryObj);
       console.log('Response from create job', responseNew.data);
       uuid = responseNew.data.data.createJob.id;
@@ -214,13 +256,13 @@ export class CandidateSourcingController {
   @Post('add-questions')
   async addQuestions(@Body() body: any) {
     try {
-      // console.log(body); 
+      // console.log(body);
       const data = body;
       const arxenaJobId = data?.job_id;
       const jobObject = await this.getJobDetails(arxenaJobId);
       // console.log("getJobDetails:", jobObject);
       const questions = data?.questions || [];
-      console.log("Number Questions:", questions?.length);
+      console.log('Number Questions:', questions?.length);
       for (const question of questions) {
         const graphqlVariables = { input: { name: question, jobsId: jobObject?.id } };
         const graphqlQueryObj = JSON.stringify({ query: createOneQuestion, variables: graphqlVariables });
@@ -235,16 +277,14 @@ export class CandidateSourcingController {
     }
   }
 
-
   @Post('start-chat')
   async startChat(@Body() body: any) {
-
     const graphqlVariables = {
-      "idToUpdate": body.candidateId,
-      "input": {
-        "startChat": true
-      }
-    }
+      idToUpdate: body.candidateId,
+      input: {
+        startChat: true,
+      },
+    };
     const graphqlQueryObj = JSON.stringify({
       query: graphQltoStartChat,
       variables: graphqlVariables,
@@ -254,16 +294,14 @@ export class CandidateSourcingController {
     console.log('Response from create startChat', response.data);
   }
 
-
   @Post('stop-chat')
   async stopChat(@Body() body: any) {
-
     const graphqlVariables = {
-      "idToUpdate": body.candidateId,
-      "input": {
-        "stopChat": true
-      }
-    }
+      idToUpdate: body.candidateId,
+      input: {
+        stopChat: true,
+      },
+    };
     const graphqlQueryObj = JSON.stringify({
       query: graphQltoStopChat,
       variables: graphqlVariables,
@@ -275,17 +313,17 @@ export class CandidateSourcingController {
 
   @Post('fetch-candidate-by-phone-number-start-chat')
   async fetchCandidateByPhoneNumber(@Body() body: any) {
-    console.log("called fetchCandidateByPhoneNumber for phone:", body.phoneNumber)
+    console.log('called fetchCandidateByPhoneNumber for phone:', body.phoneNumber);
 
     const personObj: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(body.phoneNumber);
 
     const candidateId = personObj.candidates?.edges[0]?.node?.id;
     const graphqlVariables = {
-      "idToUpdate": candidateId,
-      "input": {
-        "startChat": true
-      }
-    }
+      idToUpdate: candidateId,
+      input: {
+        startChat: true,
+      },
+    };
     const graphqlQueryObj = JSON.stringify({
       query: graphQltoStartChat,
       variables: graphqlVariables,
@@ -294,6 +332,5 @@ export class CandidateSourcingController {
     const response = await axiosRequest(graphqlQueryObj);
     console.log('Response from create startChat::', response.data);
     return response.data;
-
   }
 }

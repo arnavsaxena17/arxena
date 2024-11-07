@@ -14,6 +14,10 @@ import { ObjectRecord } from '@/object-record/types/ObjectRecord';
 import { getCreateOneRecordMutationResponseField } from '@/object-record/utils/getCreateOneRecordMutationResponseField';
 import { sanitizeRecordInput } from '@/object-record/utils/sanitizeRecordInput';
 import { isDefined } from '~/utils/isDefined';
+import axios from 'axios';
+import { tokenPairState } from '@/auth/states/tokenPairState';
+import { useRecoilValue, useRecoilState } from 'recoil';
+
 
 type useCreateOneRecordProps = {
   objectNameSingular: string;
@@ -30,10 +34,41 @@ export const useCreateOneRecord = <
 }: useCreateOneRecordProps) => {
   const apolloClient = useApolloClient();
   const [loading, setLoading] = useState(false);
+  const [jobApiError, setJobApiError] = useState<string | null>(null);
+  const [tokenPair] = useRecoilState(tokenPairState);
 
   const { objectMetadataItem } = useObjectMetadataItem({
     objectNameSingular,
   });
+  const sendJobToArxena = async (jobName: string) => {
+    console.log("process.env.NODE_ENV", process.env.NODE_ENV);
+    try {
+      console.log("This is the jobName", jobName);
+      const response = await axios.post(
+        process.env.NODE_ENV === 'production'
+          ? 'https://app.arxena.com/app/candidate-sourcing/create-job-in-arxena'
+          : 'http://localhost:3000/candidate-sourcing/create-job-in-arxena',
+        {
+          job_name: jobName,
+        },
+        {
+          headers: {
+          'Authorization': `Bearer ${tokenPair?.accessToken?.token}`,
+          'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (response.status !== 200) {
+        throw new Error(`Failed to create job on Arxena: ${response.statusText}`);
+      }
+      return response.data;
+    } catch (error) {
+      setJobApiError(error instanceof Error ? error.message : 'Failed to create job on Arxena');
+      throw error;
+    }
+  };
+
 
   const computedRecordGqlFields =
     recordGqlFields ?? generateDepthOneRecordGqlFields({ objectMetadataItem });
@@ -53,6 +88,8 @@ export const useCreateOneRecord = <
 
   const createOneRecord = async (input: Partial<CreatedObjectRecord>) => {
     setLoading(true);
+    setJobApiError(null);
+
 
     const idForCreation = input.id ?? v4();
 
@@ -77,6 +114,17 @@ export const useCreateOneRecord = <
         recordsToCreate: [recordCreatedInCache],
         objectMetadataItems,
       });
+    }
+
+    try{
+      console.log("This si th einput", input);
+      if (objectNameSingular === 'job' && input.name) {
+        await sendJobToArxena(input.name as string);
+      }
+    }
+    catch (error) {
+      console.log("Error sending job to Arxena", error);
+      return null;
     }
 
     const mutationResponseField =

@@ -22,7 +22,7 @@ export const getLogoUrlFromDomainName = (
 
   // Ensure we're using an absolute path from the root
   const url = `/api/favicon-proxy?domain=${encodeURIComponent(sanitizedDomain)}`
-  console.log("This si url ", url);
+  // console.log("This si url ", url);
   return url;
 
 };
