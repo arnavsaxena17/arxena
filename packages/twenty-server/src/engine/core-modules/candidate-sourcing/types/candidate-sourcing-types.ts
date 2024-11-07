@@ -220,6 +220,10 @@ export interface ArxenaPersonNode {
     firstName: string;
     lastName: string;
   };
+  linkedinLink:{
+    url: string
+    label: string
+  }
   email: string | null;
   phone: string | null;
   jobTitle: string | null;

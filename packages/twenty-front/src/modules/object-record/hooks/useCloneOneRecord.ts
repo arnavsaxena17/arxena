@@ -30,9 +30,6 @@ export const useCloneOneRecord = <
 
   const [recordData, setRecordData] = useState<ClonedObjectRecord | null>(null);
 
-
-
-
   const { objectMetadataItem } = useObjectMetadataItem({
     objectNameSingular,
   });
@@ -59,10 +56,10 @@ export const useCloneOneRecord = <
     }
   }, [recordToClone, fetchingRecord]);
 
-  console.log("recordToClone in hook:", recordToClone )
+  // console.log("recordToClone in hook:", recordToClone )
 
   const cloneRecord = async () => { // Removed recordId parameter since we use recordIdToClone from props
-    console.log("going to clone record")
+    // console.log("going to clone record")
     if (!isReady || !recordToClone) {
       console.log("Waiting for record data to be ready...");
       // Wait for a short period and check again
@@ -76,10 +73,10 @@ export const useCloneOneRecord = <
 
 
     try {
-      console.log("Going to try and set cloning")
+      // console.log("Going to try and set cloning")
       setCloning(true);
       setError(null);
-      console.log("recordToClone:", recordToClone)
+      // console.log("recordToClone:", recordToClone)
       // Create a new record object without specific fields that shouldn't be cloned
       const {
         id,
@@ -90,14 +87,14 @@ export const useCloneOneRecord = <
         ...cloneableData
       } = recordToClone;
 
-      console.log("cloneableData:", cloneableData)
+      // console.log("cloneableData:", cloneableData)
       // Create the cloned record with a new ID
       const clonedRecord = await createOneRecord({
         ...cloneableData,
         id: v4(), // Generate a new UUID for the cloned record
       } as Partial<ClonedObjectRecord>);
 
-      console.log("cloned record is", clonedRecord)
+      // console.log("cloned record is", clonedRecord)
       return clonedRecord;
     } catch (err) {
       console.log("error in cloning record:", err)
@@ -105,7 +102,7 @@ export const useCloneOneRecord = <
       setError(new Error(errorMessage));
       return null;
     } finally {
-      console.log("finally in cloning record")
+      // console.log("finally in cloning record")
       setCloning(false);
     }
   };

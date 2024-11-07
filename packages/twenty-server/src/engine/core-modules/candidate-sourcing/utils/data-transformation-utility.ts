@@ -4,6 +4,7 @@ export const mapArxCandidateToPersonNode = candidate => {
   const personNode: ArxenaPersonNode = {
     name: { firstName: candidate.first_name, lastName: candidate.last_name, },
     email: Array.isArray(candidate.email_address) ? candidate.email_address[0] : candidate.email_address || "",
+    linkedinLink: candidate?.linkedin_url ? { url: candidate.linkedin_url, label: candidate.linkedin_url } : { url: '', label: '' },
     phone: candidate.phone_numbers && candidate.phone_numbers.length > 0 ? (typeof candidate.phone_numbers[0] === 'string' ? candidate.phone_numbers[0] : candidate.phone_numbers[0]?.number) || "" : "",
     jobTitle: candidate.job_title || '', 
   };
@@ -22,6 +23,7 @@ export const mapArxCandidateToCandidateNode = (candidate, jobNode, jobSpecificNo
     startChat: false,
     stopChat: false,
     peopleId: '',
+
     // phoneNumber: candidate.phone_numbers[0],
     // email: candidate.email_address[0],
     jobSpecificFields: jobSpecificNode,
@@ -47,6 +49,7 @@ export const mapArxCandidateJobSpecificFields = candidate => {
 };
 
 export const processArxCandidate = (candidate, jobNode) => {
+  console.log("This is the job node", jobNode);
   const personNode = mapArxCandidateToPersonNode(candidate);
   const jobSpecificNode = mapArxCandidateJobSpecificFields(candidate);
   const candidateNode = mapArxCandidateToCandidateNode(candidate, jobNode, jobSpecificNode);

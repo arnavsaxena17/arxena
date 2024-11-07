@@ -73,16 +73,16 @@ export const Avatar = ({
     setIsInvalidAvatarUrl(true);
   };
   const sanitizeURL = (link: string) => {
-    console.log("Link:", link)
+    // console.log("Link:", link)
     const updatedLink = link?.replace(/(https?:\/\/)|(www\.)/g, '').replace(/\/$/, '').replace(/(http?:\/\/)|(www\.)/g, '').replace('localhost:3000/files/', '').replace("/api/favicon-proxy?domain=","").replace('app.arxena.com/app/files/', '')
-    console.log("Updated Link:", updatedLink)
+    // console.log("Updated Link:", updatedLink)
     return link ? updatedLink : '';
   };
   
   
   const getFaviconUrl = (domain: string): string => {
     const sanitizedDomain = sanitizeURL(domain);
-    console.log("sanitizedDomain:",sanitizedDomain)
+    // console.log("sanitizedDomain:",sanitizedDomain)
     if (process.env.NODE_ENV === 'development') {
       return `/api/favicon-proxy?domain=${encodeURIComponent(sanitizedDomain)}`;
     }
