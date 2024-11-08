@@ -16,12 +16,12 @@ export class CandidateSourcingController {
     // hack to check for job name being sent instead of job ID from arxena-site.
     function isValidMongoDBId(str) {
       // Check if string exists and is exactly 24 characters
-      if (!str || str.length !== 24) {
+      if (!str || str.length !== 32) {
         console.log("This is not a mongoid")
         return false;
       }
       // Check if string only contains valid hexadecimal characters
-      const hexRegex = /^[0-9a-fA-F]{24}$/;
+      const hexRegex = /^[0-9a-fA-F]{32}$/;
       return hexRegex.test(str);
     }
     let graphlQlQuery: string;
