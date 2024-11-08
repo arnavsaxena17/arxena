@@ -32,30 +32,6 @@ export const RecordTableBodyEffect = ({ objectNameSingular }: RecordTableBodyEff
 
   const { fetchMoreRecords: fetchMoreObjects, records, totalCount, setRecordTableData, queryStateIdentifier, loading, refetchRecords } = useLoadRecordIndexTable(objectNameSingular);
 
-  // const [, setRefetchFunction] = useRecoilState(refetchFunctionAtom);
-
-  // const setRefetchFunctionFamily = useRecoilCallback(
-  //   ({ set }) =>
-  //     () => {
-  //       set(refetchFunctionFamily(objectNameSingular), refetchRecords);
-  //     },
-  //   [objectNameSingular],
-  // );
-
-  // useEffect(() => {
-  //   startTransition(() => {
-  //     setRefetchFunctionFamily();
-  //   });
-  // }, [setRefetchFunctionFamily, startTransition]);
-
-  // const callbackRefetch = useCallback(() => {
-  //   refetchRecords();
-  // }, []);
-
-  // useEffect(() => {
-  //   setRefetchFunction(() => callbackRefetch);
-  // }, [callbackRefetch, setRefetchFunction]);
-
   const { tableLastRowVisibleState } = useRecordTableStates();
 
   const [tableLastRowVisible, setTableLastRowVisible] = useRecoilState(tableLastRowVisibleState);
@@ -74,7 +50,6 @@ export const RecordTableBodyEffect = ({ objectNameSingular }: RecordTableBodyEff
   }, [records, totalCount, setRecordTableData, loading]);
 
   useEffect(() => {
-    console.log('tableLastRowVisible:::', tableLastRowVisible);
     if (tableLastRowVisible && !isFetchingMoreObjects) {
       fetchMoreObjects();
     }

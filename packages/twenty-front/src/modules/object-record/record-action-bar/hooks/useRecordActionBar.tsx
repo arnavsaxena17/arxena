@@ -250,9 +250,7 @@ export const useRecordActionBar = ({
 
   // const dataExecuteQuickActionOnmentEnabled = useIsFeatureEnabled( 'IS_QUICK_ACTIONS_ENABLED');
   const dataExecuteQuickActionOnmentEnabled = true;
-  
 
-  console.log("dataExecuteQuickActionOnmentEnabled:", dataExecuteQuickActionOnmentEnabled)
 
   const hasOnlyOneRecordSelected = selectedRecordIds.length === 1;
 

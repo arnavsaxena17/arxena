@@ -32,8 +32,8 @@ export const useCreateActivityInCache = () => {
 
   const objectMetadataItems = useRecoilValue(objectMetadataItemsState);
   const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
-  console.log("objectMetadataItems", objectMetadataItems)
-  console.log("currentWorkspaceMember", currentWorkspaceMember)
+  // console.log("objectMetadataItems", objectMetadataItems)
+  // console.log("currentWorkspaceMember", currentWorkspaceMember)
   const { record: currentWorkspaceMemberRecord } = useFindOneRecord({
     objectNameSingular: CoreObjectNameSingular.WorkspaceMember,
     objectRecordId: currentWorkspaceMember?.id,
@@ -53,9 +53,8 @@ export const useCreateActivityInCache = () => {
   const createOneActivityInCache = useCreateOneRecordInCache<Activity>({
     objectMetadataItem: objectMetadataItemActivity,
   });
-  console.log("Got here so far to be able to create activity in cache")
 
-
+  // console.log("Got here so far to be able to create activity in cache")
 
   const createActivityInCache = useRecoilCallback(
     ({ snapshot, set }) =>
@@ -69,7 +68,7 @@ export const useCreateActivityInCache = () => {
         customAssignee?: WorkspaceMember;
       }) => {
         const activityId = v4();
-        console.log("Going to create activity ID:", activityId)
+        // console.log("Going to create activity ID:", activityId)
         if (!targetObject?.id) {
           throw new Error('Target object ID is undefined');
         }
@@ -91,18 +90,18 @@ export const useCreateActivityInCache = () => {
 
 
         // console.log("useCreateActivityInCache -> createdActivityInCache", createdActivityInCache)
-        console.log("useCreateActivityInCache -> currentWorkspaceMemberRecord", currentWorkspaceMemberRecord)
-        console.log("useCreateActivityInCache -> currentWorkspaceMemberRecord", currentWorkspaceMemberRecord?.id)
-        console.log("useCreateActivityInCache -> customAssignee", customAssignee)
-        console.log("useCreateActivityInCache -> customAssignee", customAssignee?.id)
-        console.log("useCreateActivityInCache -> createdActivityInCache", createdActivityInCache)
+        // console.log("useCreateActivityInCache -> currentWorkspaceMemberRecord", currentWorkspaceMemberRecord)
+        // console.log("useCreateActivityInCache -> currentWorkspaceMemberRecord", currentWorkspaceMemberRecord?.id)
+        // console.log("useCreateActivityInCache -> customAssignee", customAssignee)
+        // console.log("useCreateActivityInCache -> customAssignee", customAssignee?.id)
+        // console.log("useCreateActivityInCache -> createdActivityInCache", createdActivityInCache)
 
 
         if (isUndefinedOrNull(createdActivityInCache)) {
           throw new Error('Failed to create activity in cache');
         }
 
-        console.log("This is targetobject:", targetObject)
+        // console.log("This is targetobject:", targetObject)
         if (isUndefinedOrNull(targetObject)) {
           set(recordStoreFamilyState(activityId), {
             ...createdActivityInCache,
@@ -117,14 +116,14 @@ export const useCreateActivityInCache = () => {
             },
           };
         }
-        console.log("useCreateActivityInCache -> targetObject", targetObject)
-        console.log("useCreateActivityInCache -> recordStoreFamilyState(targetObject.id).id", recordStoreFamilyState(targetObject.id))
-        console.log("snapshot.loadable:", snapshot.getLoadable(recordStoreFamilyState(targetObject.id)))
+        // console.log("useCreateActivityInCache -> targetObject", targetObject)
+        // console.log("useCreateActivityInCache -> recordStoreFamilyState(targetObject.id).id", recordStoreFamilyState(targetObject.id))
+        // console.log("snapshot.loadable:", snapshot.getLoadable(recordStoreFamilyState(targetObject.id)))
         const targetObjectRecord = snapshot.getLoadable(recordStoreFamilyState(targetObject.id)).getValue() ;
         
 
-        console.log("useCreateActivityInCache -> targetObjectRecord", newRecord)
-        console.log("useCreateActivityInCache -> targetObjectRecord", targetObjectRecord)
+        // console.log("useCreateActivityInCache -> targetObjectRecord", newRecord)
+        // console.log("useCreateActivityInCache -> targetObjectRecord", targetObjectRecord)
 
         if (isUndefinedOrNull(targetObjectRecord)) {
           throw new Error('Failed to find target object record');

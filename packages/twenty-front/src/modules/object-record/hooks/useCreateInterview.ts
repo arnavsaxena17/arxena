@@ -21,13 +21,13 @@ export const useCreateVideoInterview = ({
 //   const showNotification = useShowNotification();
     const { enqueueSnackBar } = useSnackBar();
 
-    console.log("process.env.REACT_APP_SERVER_BASE_URL:",process.env.REACT_APP_SERVER_BASE_URL)
+    // console.log("process.env.REACT_APP_SERVER_BASE_URL:",process.env.REACT_APP_SERVER_BASE_URL)
   const createVideoInterviewLink = async (candidateIds: string[]) => {
     setLoading(true);
     setError(null);
     
     try {
-      console.log("Creating video interviews for candidates:", candidateIds);
+      // console.log("Creating video interviews for candidates:", candidateIds);
       
       const results = await Promise.all(
         candidateIds.map((candidateId) =>

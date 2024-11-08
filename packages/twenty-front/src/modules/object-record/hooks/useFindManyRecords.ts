@@ -185,7 +185,7 @@ export const useFindManyRecords = <T extends ObjectRecord = ObjectRecord>({
   );
 
   const refetchRecords = useCallback(async () => {
-    console.log('objectMetadataItem.namePlural', objectMetadataItem.namePlural);
+    // console.log('objectMetadataItem.namePlural', objectMetadataItem.namePlural);
 
     setIsFetchingMoreObjects(true);
     try {
