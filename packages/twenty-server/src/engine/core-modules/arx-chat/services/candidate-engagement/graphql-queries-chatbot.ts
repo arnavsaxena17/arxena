@@ -129,6 +129,7 @@ export const graphqlQueryToFindPeopleByPhoneNumber = `query FindManyPeople($filt
         }
         city
         salary
+        uniqueStringKey
         candidates{
             edges{
                 node {
@@ -375,6 +376,7 @@ export const graphqlQueryToFindManyPeopleEngagedCandidates = `query FindManyPeop
           city
           jobTitle
           id
+          uniqueStringKey
           position 
         }
       }
@@ -412,6 +414,14 @@ export const graphqlQueryToFindManyPeopleEngagedCandidates = `query FindManyPeop
           startVideoInterviewChat
           startMeetingSchedulingChat
           stopChat
+          hiringNaukriUrl{
+            url
+            label
+          }
+          resdexNaukriUrl{
+            url
+            label
+          }
         }
       }
     }
@@ -461,6 +471,14 @@ export const graphqlQueryToFindManyPeopleEngagedCandidates = `query FindManyPeop
           startVideoInterviewChat
           startMeetingSchedulingChat
           stopChat
+          hiringNaukriUrl{
+            url
+            label
+          }
+          resdexNaukriUrl{
+            url
+            label
+          }
         }
       }
     }

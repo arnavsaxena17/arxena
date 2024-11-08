@@ -209,7 +209,9 @@ export interface ArxenaCandidateNode {
   // phoneNumber: string;
   // email: string;
   startChat: boolean;
+  uniqueStringKey: string;
   stopChat: boolean;
+  hiringNaukriUrl: {label:string, url:string};
   jobsId: string;
   jobSpecificFields: any;
   peopleId: string;
@@ -225,6 +227,7 @@ export interface ArxenaPersonNode {
     label: string
   }
   email: string | null;
+  uniqueStringKey: string | null;
   phone: string | null;
   jobTitle: string | null;
 }

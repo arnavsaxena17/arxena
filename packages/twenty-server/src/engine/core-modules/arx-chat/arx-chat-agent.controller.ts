@@ -264,10 +264,56 @@ export class ArxChatEndpoint {
   @Post('get-candidate-by-phone-number')
   @UseGuards(JwtAuthGuard)
   async getCandidateIdsByPhoneNumbers(@Req() request: any): Promise<object> {
+    console.log("Going to get candidate by phone Number for :", request.body.phoneNumber);
     const personObj: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(request.body.phoneNumber);
     const candidateId = personObj?.candidates?.edges[0]?.node?.id
     console.log('candidateId to fetch all candidateby phonenumber:', candidateId);
     return {"candidateId":candidateId};
+  }
+  
+  @Post('get-candidate-id-by-hiring-naukri-url')
+  @UseGuards(JwtAuthGuard)
+  async getCandidateIdsByHiringNaukriURL(@Req() request: any): Promise<object> {
+    try{
+
+      console.log("Going to get candidate by hiring-naukri-url :", request?.body?.hiringNaukriUrl);
+      const hiringNaukriUrl = request.body.hiringNaukriUrl
+      
+      const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindOneCandidateById, variables: { filter: { hiringNaukriUrl: { url: { eq: hiringNaukriUrl } } } } });
+      const response = await axiosRequest(graphqlQueryObj);
+      console.log("Fetched candidate by candidate ID:", response?.data);
+      const candidateObj = response?.data?.data?.candidates?.edges[0]?.node;
+      console.log("Fetched candidate by candidate Obj :", candidateObj);
+  
+      const candidateId = candidateObj?.id
+      console.log('candidateId to fetch all candidateby hiring-naukri:', candidateId);
+      return {candidateId};
+    }
+    catch(err){
+      console.log("Error in fetching candidate by hiring-naukri-url :", err);
+      return {candidateId:null};
+    }
+  }
+  
+  @Post('get-candidate-id-by-resdex-naukri-url')
+  @UseGuards(JwtAuthGuard)
+  async getCandidateIdsByResdexNaukriURL(@Req() request: any): Promise<object> {
+    try {
+      console.log("Going to get candidate esdex-naukri-ur :", request.body.resdexNaukriUrl);
+      const resdexNaukriUrl = request.body.resdexNaukriUrl;
+      const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindOneCandidateById, variables: { filter: { resdexNaukriUrl: {url: { eq: resdexNaukriUrl } }} } });
+      const response = await axiosRequest(graphqlQueryObj);
+      console.log("Fetched candidate by candidate ID:", response?.data);
+      const candidateObj = response?.data?.data?.candidates?.edges[0]?.node;
+      console.log("Fetched candidate by candidate Obj ID:", candidateObj);
+
+      const candidateId = candidateObj?.id;
+      console.log('candidateId to fetch all candidateby resdex-naukri:', candidateId);
+      return { candidateId };
+    } catch (err) {
+      console.log("Error in fetching candidate by resdex-naukri-url:", err);
+      return { candidateId: null };
+    }
   }
   
   @Get('get-candidates-and-chats')

@@ -268,6 +268,7 @@ export interface PersonNode {
   jobTitle: string;
   id: string;
   position: number;
+  uniqueStringKey: string;
   name: Name;
   candidates: Candidates;
 }
