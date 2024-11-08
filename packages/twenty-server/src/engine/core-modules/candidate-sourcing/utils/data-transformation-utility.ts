@@ -5,7 +5,8 @@ export const mapArxCandidateToPersonNode = candidate => {
     name: { firstName: candidate.first_name, lastName: candidate.last_name, },
     email: Array.isArray(candidate.email_address) ? candidate.email_address[0] : candidate.email_address || "",
     linkedinLink: candidate?.linkedin_url ? { url: candidate.linkedin_url, label: candidate.linkedin_url } : { url: '', label: '' },
-    phone: candidate.phone_numbers && candidate.phone_numbers.length > 0 ? (typeof candidate.phone_numbers[0] === 'string' ? candidate.phone_numbers[0] : candidate.phone_numbers[0]?.number) || "" : "",
+    phone: candidate?.phone_numbers && candidate?.phone_numbers.length > 0 ? (typeof candidate.phone_numbers[0] === 'string' ? candidate.phone_numbers[0] : candidate.phone_numbers[0]?.number) || "" : "",
+    uniqueStringKey:candidate?.unique_key_string,
     jobTitle: candidate.job_title || '', 
   };
   return personNode;
@@ -16,13 +17,17 @@ export const mapArxCandidateToPersonNode = candidate => {
 
 
 export const mapArxCandidateToCandidateNode = (candidate, jobNode, jobSpecificNode) => {
+  console.log("candidate to map::", candidate);
   const candidateNode: ArxenaCandidateNode = {
     name: candidate?.first_name + ' ' + candidate?.last_name,
     jobsId: jobNode?.id,
     engagementStatus: false,
     startChat: false,
+    uniqueStringKey:candidate?.unique_key_string,
+    hiringNaukriUrl: {"label":candidate?.profile_url || '', "url":candidate?.profile_url || ''},
     stopChat: false,
     peopleId: '',
+
     // phoneNumber: candidate.phone_numbers[0],
     // email: candidate.email_address[0],
     jobSpecificFields: jobSpecificNode,
