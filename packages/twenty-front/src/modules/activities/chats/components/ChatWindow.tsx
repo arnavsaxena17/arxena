@@ -35,6 +35,10 @@ const statusLabels: { [key: string]: string } = {
   NEGOTIATION: 'Negotiation',
 };
 
+// const templatesList = [ ];
+const templates = ['recruitment', 'application', 'application02','share_video_interview_link_direct','rejection_template','follow_up'];
+const chatLayers = ['startChat','videoInterview','meetingScheduling']
+
 const statusesArray = Object.keys(statusLabels);
 const PersonIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -788,7 +792,11 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
 
   const handleTemplateSend = async (templateName: string) => {
     try {
-      await axios.post(process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/send-whatsapp-template', { templateName, phoneNumberTo: currentIndividual?.phone }, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } });
+      console.log("templateName:", templateName);
+      console.log("process.env.REACT_APP_SERVER_BASE_URL:", process.env.REACT_APP_SERVER_BASE_URL);
+      console.log("currentIndividual?.phone:",currentIndividual?.phone);
+      const response = await axios.post(process.env.REACT_APP_SERVER_BASE_URL + '/whatsapp-test/send-template-message', { templateName:templateName, phoneNumberTo: currentIndividual?.phone.replace("+","") }, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } });
+      console.log("This is reponse:", response)
       addToast('Template sent successfully', 'success');
       setSelectedTemplate(''); // Reset selection after successful send
     } catch (error) {
@@ -933,24 +941,20 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
                   </SectionHeader>
                     <div>
                     <Select value={selectedTemplate} onChange={e => setSelectedTemplate(e.target.value)}>
-                      <option value="" disabled> Select a template </option>
-                      <option value="Template1">Template1</option>
-                      <option value="Template2">Template2</option>
-                      <option value="Template3">Template3</option>
-                      <option value="Template4">Template4</option>
-                      <option value="Template5">Template5</option>
+                        <option value="" disabled> Select a template </option>
+                        {templates.map(template => (
+                        <option key={template} value={template}>{template}</option>
+                        ))}
                     </Select>
                     <ActionButton onClick={() => handleTemplateSend(selectedTemplate)}>Send Template</ActionButton>
                     </div>
                     <br />
                     <div>
                     <Select value={selectedChatLayer} onChange={e => setSelectedChatLayer(e.target.value)}>
-                      <option value="" disabled> Select a ChatLayer </option>
-                      <option value="ChatLayer1">ChatLayer1</option>
-                      <option value="ChatLayer2">ChatLayer2</option>
-                      <option value="ChatLayer3">ChatLayer3</option>
-                      <option value="ChatLayer4">ChatLayer4</option>
-                      <option value="ChatLayer5">ChatLayer5</option>
+                        <option value="" disabled> Select a ChatLayer </option>
+                        {chatLayers.map(layer => (
+                        <option key={layer} value={layer}>{layer}</option>
+                        ))}
                     </Select>
                     <ActionButton onClick={() => handleStartNewChatLayer(selectedTemplate)}>Start New Chat Layer</ActionButton>
                     </div>

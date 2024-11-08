@@ -37,7 +37,7 @@ export class WhatsappTemplateMessages{
       getUpdatedUtilityMessageObj(sendTemplateMessageObj: allDataObjects.sendWhatsappUtilityMessageObjectType) {
         let templateMessageObj;
         console.log("Going to get utiltiy messages")
-    
+        const templates = ['recruitment', 'application', 'application02','share_video_interview_link_with_start_link','share_video_interview_link_direct','rejection_template','follow_up'];
         switch (sendTemplateMessageObj.template_name) {
           case 'share_video_interview_link_with_start_link':
             templateMessageObj = JSON.stringify({
@@ -307,8 +307,10 @@ export class WhatsappTemplateMessages{
         }
         return templateMessageObj;
         }
+        
     
         generateMessage(templateName: string, data: allDataObjects.sendWhatsappUtilityMessageObjectType): string {
+          
           switch (templateName) {
             case 'recruitment':
               return this.generateRecruitmentMessage(data);
