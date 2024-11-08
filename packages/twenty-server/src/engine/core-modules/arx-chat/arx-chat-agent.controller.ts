@@ -661,7 +661,7 @@ export class WhatsappTestAPI {
 
     const requestBody = request.body as any;
     const personObj: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(requestBody.phoneNumberTo);
-    // console.log("This is the person object:", JSON.stringify(personObj))
+    console.log("This is the process.env.SERVER_BASE_URL:",process.env.SERVER_BASE_URL)
     const sendTemplateMessageObj = {
       recipient: personObj.phone.replace('+', ''),
       template_name: requestBody.template_name,
@@ -677,7 +677,7 @@ export class WhatsappTestAPI {
       jobCode: personObj?.candidates?.edges[0]?.node?.jobs?.jobCode,
       jobLocation: personObj?.candidates?.edges[0]?.node?.jobs?.jobLocation,
       // videoInterviewLink: process.env.SERVER_BASE_URL+personObj?.candidates?.edges[0]?.node?.aIInterviewStatus?.edges[0].node.interviewLink.url,
-      videoInterviewLink: "https://arxena.com"+personObj?.candidates?.edges[0]?.node?.aIInterviewStatus?.edges[0]?.node?.interviewLink?.url || "",
+      videoInterviewLink: process.env.SERVER_BASE_URL+personObj?.candidates?.edges[0]?.node?.aIInterviewStatus?.edges[0]?.node?.interviewLink?.url || "",
     };
     console.log("This is the sendTemplateMessageObj:", sendTemplateMessageObj)
 

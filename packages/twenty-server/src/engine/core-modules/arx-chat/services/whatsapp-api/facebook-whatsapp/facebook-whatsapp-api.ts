@@ -379,17 +379,19 @@ export class FacebookWhatsappChatApi {
       let whatappUpdateMessageObjAfterWAMidUpdate:allDataObjects.candidateChatMessageType;
       if (whatappUpdateMessageObj?.messages[0]?.content?.includes('Based Recruitment Company') || whatappUpdateMessageObj?.messages[0]?.content.includes('assist')) {
         console.log('This is the template api message to send in whatappUpdateMessageObj.phoneNumberFrom, ', whatappUpdateMessageObj?.phoneNumberFrom);
-        let messageTempalate:string
+        let messageTemplate:string
         if (chatControl === 'startChat') {
-          messageTempalate = 'application03'
+          messageTemplate = 'application03'
         } else {
-          messageTempalate = whatappUpdateMessageObj?.whatsappMessageType || 'application03';
+          messageTemplate = whatappUpdateMessageObj?.whatsappMessageType || 'application03';
         }
-        const videoInterviewLink = "https://arxena.com"+personNode?.candidates?.edges[0]?.node?.aIInterviewStatus?.edges[0]?.node?.interviewLink?.url || ""
+        console.log('This is the template message to send:', messageTemplate);
+        console.log('This is the process.env.SERVER_BASE_URL:', process.env.SERVER_BASE_URL);
+        const videoInterviewLink = process.env.SERVER_BASE_URL+personNode?.candidates?.edges[0]?.node?.aIInterviewStatus?.edges[0]?.node?.interviewLink?.url || ""
         console.log("videoInterviewLink::", videoInterviewLink)
         const sendTemplateMessageObj:allDataObjects.sendWhatsappUtilityMessageObjectType = {
           recipient: whatappUpdateMessageObj.phoneNumberTo.replace('+', ''),
-          template_name: messageTempalate,
+          template_name: messageTemplate,
           recruiterFirstName: allDataObjects.recruiterProfile.name,
           candidateFirstName: whatappUpdateMessageObj.candidateFirstName,
           recruiterName: allDataObjects.recruiterProfile.name,
