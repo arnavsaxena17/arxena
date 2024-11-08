@@ -56,7 +56,6 @@ export const ActionBar = ({ selectedIds = [] }: ActionBarProps) => {
   if (contextMenuIsOpen) {
     return null;
   }
-  console.log("actionBarEntries:", actionBarEntries)
 
   return (
     <>

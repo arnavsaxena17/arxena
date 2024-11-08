@@ -17,13 +17,12 @@ export const mapArxCandidateToPersonNode = candidate => {
 
 export const mapArxCandidateToCandidateNode = (candidate, jobNode, jobSpecificNode) => {
   const candidateNode: ArxenaCandidateNode = {
-    name: candidate.first_name + ' ' + candidate.last_name,
-    jobsId: jobNode.id,
+    name: candidate?.first_name + ' ' + candidate?.last_name,
+    jobsId: jobNode?.id,
     engagementStatus: false,
     startChat: false,
     stopChat: false,
     peopleId: '',
-
     // phoneNumber: candidate.phone_numbers[0],
     // email: candidate.email_address[0],
     jobSpecificFields: jobSpecificNode,

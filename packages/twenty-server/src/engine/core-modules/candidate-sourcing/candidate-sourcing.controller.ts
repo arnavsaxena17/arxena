@@ -17,6 +17,7 @@ export class CandidateSourcingController {
     function isValidMongoDBId(str) {
       // Check if string exists and is exactly 24 characters
       if (!str || str.length !== 24) {
+        console.log("This is not a mongoid")
         return false;
       }
       // Check if string only contains valid hexadecimal characters
@@ -25,6 +26,7 @@ export class CandidateSourcingController {
     }
     let graphlQlQuery: string;
     if (!isValidMongoDBId(arxenaJobId)) {
+      console.log("This is not a mongo id so querying name ")
       graphlQlQuery = JSON.stringify({
         query: graphqlToFindManyJobByArxenaSiteId,
         variables: {
@@ -34,6 +36,7 @@ export class CandidateSourcingController {
         },
       });
     } else {
+      console.log("This is a mongo id so querying id")
       graphlQlQuery = JSON.stringify({
         query: graphqlToFindManyJobByArxenaSiteId,
         variables: {
@@ -162,7 +165,6 @@ export class CandidateSourcingController {
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.ARXENA_API_KEY}` },
         },
       );
-
       console.log('Response from create job', response.data);
       return response.data.data.createJob;
     } catch (error) {
@@ -182,7 +184,6 @@ export class CandidateSourcingController {
     try {
       const jobObject = await this.getJobDetails(arxenaJobId);
       console.log('jobObject that is sent by arxena-site:', jobObject);
-      // const { manyPersonObjects, manyCandidateObjects } = await this.processProfiles(data, jobObject);
       const { manyPersonObjects, manyCandidateObjects } = await this.processProfilesWithRateLimiting(data, jobObject);
       console.log('Number of person objects created:', manyPersonObjects.length);
       console.log('Number of person candidates created:', manyPersonObjects.length);
@@ -199,12 +200,10 @@ export class CandidateSourcingController {
       manyCandidateObjects.forEach((candidate, index) => {
         candidate.peopleId = arrayOfPersonIds[index];
       });
-
       const responseForCandidate = await this.createCandidates(manyCandidateObjects);
-
       return { candidates: responseForCandidate.data, people: responseForPerson.data };
     } catch (error) {
-      console.error('Error in sourceCandidates:', error);
+      console.log('Error in sourceCandidates:', error);
       return { error: error.message };
     }
   }

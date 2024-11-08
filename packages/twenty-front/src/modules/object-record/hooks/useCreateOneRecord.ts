@@ -45,18 +45,9 @@ export const useCreateOneRecord = <
     try {
       console.log("This is the jobName", jobName);
       const response = await axios.post(
-        process.env.NODE_ENV === 'production'
-          ? 'https://app.arxena.com/app/candidate-sourcing/create-job-in-arxena'
-          : 'http://localhost:3000/candidate-sourcing/create-job-in-arxena',
-        {
-          job_name: jobName,
-        },
-        {
-          headers: {
-          'Authorization': `Bearer ${tokenPair?.accessToken?.token}`,
-          'Content-Type': 'application/json',
-          },
-        }
+        process.env.NODE_ENV === 'production' ? 'https://app.arxena.com/app/candidate-sourcing/create-job-in-arxena' : 'http://localhost:3000/candidate-sourcing/create-job-in-arxena',
+        { job_name: jobName, },
+        { headers: { 'Authorization': `Bearer ${tokenPair?.accessToken?.token}`, 'Content-Type': 'application/json', }, }
       );
 
       if (response.status !== 200) {
@@ -118,8 +109,8 @@ export const useCreateOneRecord = <
 
     try{
       console.log("This si th einput", input);
-      if (objectNameSingular === 'job' && input.name) {
-        await sendJobToArxena(input.name as string);
+      if (objectNameSingular === 'job' && input?.name) {
+        await sendJobToArxena(input?.name as string);
       }
     }
     catch (error) {
