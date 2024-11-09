@@ -40,6 +40,7 @@ export class SyncWorkspaceMetadataCommand extends CommandRunner {
     const workspaceIds = options.workspaceId
       ? [options.workspaceId]
       : await this.workspaceService.getWorkspaceIds();
+    console.log("All workspace ids: ", workspaceIds);
 
     for (const workspaceId of workspaceIds) {
       try {
