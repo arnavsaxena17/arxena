@@ -68,6 +68,7 @@ export class SyncWorkspaceMetadataCommand extends CommandRunner {
           );
         }
       } catch (error) {
+        console.log("Thrwowing error, lets see how this goes");
         if (!options.force) {
           throw error;
         }
@@ -79,10 +80,18 @@ export class SyncWorkspaceMetadataCommand extends CommandRunner {
       }
 
       const dataSourceMetadata =
-        await this.dataSourceService.getLastDataSourceMetadataFromWorkspaceIdOrFail(
+        await this.dataSourceService.getLastDataSourceMetadataFromWorkspaceId(
           workspaceId,
         );
 
+
+        if (!dataSourceMetadata) {
+          this.logger.error(
+            `No data source metadata found for workspace ${workspaceId}`,
+          );
+          return ;
+        }
+    
       const { storage, workspaceMigrations } =
         await this.workspaceSyncMetadataService.synchronize(
           {
