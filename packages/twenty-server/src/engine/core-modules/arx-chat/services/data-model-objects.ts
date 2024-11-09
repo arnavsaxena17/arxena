@@ -16,7 +16,7 @@ export type chatControls = "startChat" | "allStartedAndStoppedChats" | "startVid
 export interface ChatMessage {
   role: ChatRole;
   content: string | null;
-  name?: string; // Optional, only for tool messages
+  name?: string; 
 }
 
 // Interface for chat message with tool call

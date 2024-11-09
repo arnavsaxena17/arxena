@@ -318,34 +318,41 @@ export class WhatsappTemplateMessages{
               return this.generateApplicationMessage(data);
             case 'application02':
               return this.generateApplication02Message(data);
+            case 'rejection_template':
+              return this.generateRejectionMessage(data);
             default:
               return 'Invalid template name';
           }
         }    
-        private generateRecruitmentMessage(data: allDataObjects.sendWhatsappUtilityMessageObjectType): string {
+        generateRecruitmentMessage(data: allDataObjects.sendWhatsappUtilityMessageObjectType): string {
           return `Dear ${data.candidateFirstName},\n\n` +
             `My name is ${data.recruiterName}, ${data.recruiterJobTitle} at ${data.recruiterCompanyName}, ${data.recruiterCompanyDescription}. ` +
             `I am reaching out to you regarding the ${data.jobPositionName} position for ${data.jobLocation}. ` +
             `Job Code: ${data.jobCode}\n${data.descriptionOneliner}\n`;
         }
       
-        private generateApplicationMessage(data: allDataObjects.sendWhatsappUtilityMessageObjectType): string {
+        generateApplicationMessage(data: allDataObjects.sendWhatsappUtilityMessageObjectType): string {
           return `Dear ${data.candidateFirstName},\n\n` +
             `Thank you for your time earlier on ${data.discussionDate}. ` +
             `Please let me know your availability for the next steps ${data.nextStep}.\n`;
         }
       
-        private generateApplication02Message(data: allDataObjects.sendWhatsappUtilityMessageObjectType): string {
+        generateApplication02Message(data: allDataObjects.sendWhatsappUtilityMessageObjectType): string {
           return `Dear ${data.candidateFirstName},\n\n` +
             `I hope this message finds you well. I am following up to check on your availability for the next steps regarding the ` +
             `${data.jobPositionName} position in ${data.jobLocation}. Kindly update me when you get a chance.\n`;
         }
-        private generateRejectionMessage(data: allDataObjects.sendWhatsappUtilityMessageObjectType): string {
-          return `Hi ${data.candidateFirstName},\n\n` +
-            `Hi {{1}},
-            Further to {{2}}, we discussed {{3}} and {{4}}.
+        generateRejectionMessage(data: allDataObjects.sendWhatsappUtilityMessageObjectType): string {
+          console.log("This is the data for rejection message", data)
+          return `Hi  ${data.candidateFirstName},
+            Further to your profile discussed last week, we discussed internally and believe that your profile won't be a good fit.
             Will reach out to you in the future with relevant roles.`
         }
+
+        // { type: 'text', text: "your profile discussed last week", },
+        // { type: 'text', text: "internally", },
+        // { type: 'text', text: "believe that your profile won't be a good fit", },
+
         getUtilityMessageObj(sendTemplateMessageObj: allDataObjects.sendWhatsappUtilityMessageObjectType) {
         const templateMessageObj = JSON.stringify({
           messaging_product: 'whatsapp',
