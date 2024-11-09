@@ -101,7 +101,7 @@ export default class CandidateEngagementArx {
 
   async updateChatHistoryObjCreateWhatsappMessageObj(wamId: string, personNode: allDataObjects.PersonNode, chatHistory: allDataObjects.ChatHistoryItem[], chatControl:allDataObjects.chatControls): Promise<allDataObjects.candidateChatMessageType> {
     const candidateNode = personNode.candidates.edges[0].node;
-    
+    console.log("This is the candidateNode in updateChatHistoryObjCreateWhatsappMessageObj::", candidateNode);
     const updatedChatHistoryObj: allDataObjects.candidateChatMessageType = {
       messageObj: chatHistory,
       candidateProfile: candidateNode,

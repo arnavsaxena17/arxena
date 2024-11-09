@@ -490,7 +490,7 @@ const AttachmentIcon = () => (
 
 const formatDate = (date: string) => dayjs(date).format('YYYY-MM-DD');
 
-export default function ChatWindow(props: { selectedIndividual: string; individuals: frontChatTypes.PersonNode[] }) {
+export default function ChatWindow(props: { selectedIndividual: string; individuals: frontChatTypes.PersonNode[],onMessageSent: () => void;}) {
   const allIndividuals = props?.individuals;
 
   const currentIndividual = allIndividuals?.find(individual => individual?.id === props?.selectedIndividual);
@@ -504,7 +504,7 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
   const [isAttachmentPanelOpen, setIsAttachmentPanelOpen] = useState(false);
 
   const botResponsePreviewRef = useRef(null);
-  const inputRef = useRef(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const [tokenPair] = useRecoilState(tokenPairState);
   const [qrCode, setQrCode] = useState('');
   const chatViewRef = useRef<HTMLDivElement>(null);
@@ -513,8 +513,20 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
   const [isEditingCity, setIsEditingCity] = useState(false);
   const [salary, setSalary] = useState(currentIndividual?.salary || '');
   const [city, setCity] = useState(currentIndividual?.city || '');
+  const [isMessagePending, setIsMessagePending] = useState(false);
+  const [pendingMessage, setPendingMessage] = useState<frontChatTypes.MessageNode | null>(null);
 
   const [toasts, setToasts] = useState<Toast[]>([]);
+
+
+  useEffect(() => {
+    if (currentCandidateId) {
+      getlistOfMessages(currentCandidateId).then(() => {
+        scrollToBottom();
+      });
+    }
+  }, [props.selectedIndividual, currentCandidateId]);
+
 
   useEffect(() => {
     setSalary(currentIndividual?.salary || '');
@@ -523,13 +535,13 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
 
   const currentCandidateName = currentIndividual?.name.firstName + ' ' + currentIndividual?.name.lastName;
 
-  useEffect(() => {
-    if (currentCandidateId) {
-      getlistOfMessages(currentCandidateId).then(() => {
-        scrollToBottom();
-      });
-    }
-  }, [props.selectedIndividual, currentCandidateId, messageHistory.length]);
+  // useEffect(() => {
+  //   if (currentCandidateId) {
+  //     getlistOfMessages(currentCandidateId).then(() => {
+  //       scrollToBottom();
+  //     });
+  //   }
+  // }, [props.selectedIndividual, currentCandidateId, messageHistory.length]);
 
   const handleNavigateToPersonPage = () => {
     navigate(`/object/person/${currentIndividual?.id}`);
@@ -617,18 +629,36 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
 
   async function getlistOfMessages(currentCandidateId: string) {
     try {
-      const response = await axios.post(process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/get-all-messages-by-candidate-id', { candidateId: currentCandidateId }, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } });
+      const response = await axios.post(
+        process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/get-all-messages-by-candidate-id',
+        { candidateId: currentCandidateId },
+        { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } }
+      );
 
       const sortedMessages = response.data.sort((a: frontChatTypes.MessageNode, b: frontChatTypes.MessageNode) => {
         return dayjs(a.createdAt).valueOf() - dayjs(b.createdAt).valueOf();
       });
 
-      setMessageHistory(sortedMessages);
+      // Merge with pending message if it exists and hasn't appeared in the response
+      if (pendingMessage && !sortedMessages.some((msg: frontChatTypes.MessageNode) => 
+          msg.message === pendingMessage.message && 
+          Math.abs(dayjs(msg.createdAt).diff(dayjs(pendingMessage.createdAt), 'second')) < 30
+      )) {
+        setMessageHistory([...sortedMessages, pendingMessage]);
+      } else {
+        setMessageHistory(sortedMessages);
+        setPendingMessage(null);
+      }
     } catch (error) {
       console.error('Error fetching messages:', error);
-      setMessageHistory([]);
+      // Keep pending message in history if fetch fails
+      setMessageHistory(pendingMessage ? [pendingMessage] : []);
     }
   }
+
+
+
+
   console.log('Current Individual::', currentIndividual);
   let currentMessageObject = currentIndividual?.candidates?.edges[0]?.node?.whatsappMessages?.edges[currentIndividual?.candidates?.edges[0]?.node?.whatsappMessages?.edges?.length - 1]?.node?.messageObj;
 
@@ -666,15 +696,52 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
     const response = await axios.post(process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/send-chat', { messageToSend: messageText, phoneNumberTo: currentIndividual?.phone }, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } });
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     console.log('submit');
     //@ts-ignore
-    console.log(inputRef?.current?.value);
-    //@ts-ignore
-    sendMessage(inputRef?.current?.value);
-    //@ts-ignore
-    inputRef.current.value = ''; // Clear the input field
+    const messageSent = inputRef?.current?.value || ""; 
+    console.log(messageSent);
+
+    if (inputRef.current) {
+      inputRef.current.value = '';
+    }
+
+    const newMessage: frontChatTypes.MessageNode = {
+      recruiterId: currentWorkspaceMember?.id || '',
+      message: messageSent || "",
+      candidateId: currentCandidateId || "",
+      jobsId: currentIndividual?.candidates?.edges[0]?.node?.jobs?.id || "",
+      position: messageHistory.length + 1,
+      messageType: 'template',
+      phoneTo: currentIndividual?.phone || "",
+      updatedAt: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+      id: Date.now().toString(),
+      name: `${currentIndividual?.name.firstName} ${currentIndividual?.name.lastName}`,
+      phoneFrom: 'system',
+      messageObj: { content: messageSent },
+      whatsappDeliveryStatus: 'sent',
+    };
+
+    setMessageHistory(prev => [...prev, newMessage]);
+    await sendMessage(messageSent);
+    
+    props.onMessageSent();
+    scrollToBottom();
+
+
   };
+
+  useEffect(() => {
+    if (currentCandidateId) {
+      getlistOfMessages(currentCandidateId).then(() => {
+        scrollToBottom();
+      });
+      scrollToBottom();
+    }
+  }, [props.individuals, props.selectedIndividual]);
+
+
 
   const handleShareJD = async () => {
     console.log('share JD');
@@ -799,6 +866,29 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
       console.log("This is reponse:", response)
       addToast('Template sent successfully', 'success');
       setSelectedTemplate(''); // Reset selection after successful send
+
+      props.onMessageSent();
+
+    const newMessage: frontChatTypes.MessageNode = {
+      recruiterId: currentWorkspaceMember?.id || '',
+      message: templateName,
+      candidateId: currentCandidateId || "",
+      jobsId: currentIndividual?.candidates?.edges[0]?.node?.jobs?.id || "",
+      position: messageHistory.length + 1,
+      messageType: 'template',
+      phoneTo: currentIndividual?.phone || "",
+      updatedAt: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+      id: Date.now().toString(),
+      name: `${currentIndividual?.name.firstName} ${currentIndividual?.name.lastName}`,
+      phoneFrom: 'system',
+      messageObj: { content: templateName },
+      whatsappDeliveryStatus: 'sent',
+    };
+
+    setMessageHistory(prev => [...prev, newMessage]);
+            scrollToBottom();
+
     } catch (error) {
       addToast('Failed to send template', 'error');
       console.error('Error sending template:', error);
@@ -970,11 +1060,21 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
                 ))}
               </NotificationContainer>
 
-              <div style={{ display: 'flex' }}>
-                <StyledChatInput type="text" ref={inputRef} placeholder="Type your message" />
+                <div style={{ display: 'flex' }}>
+                <StyledChatInput
+                  type="text"
+                  ref={inputRef}
+                  placeholder="Type your message"
+                  onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleSubmit();
+                  }
+                  }}
+                />
                 <StyledButtonBottom onClick={handleSubmit}>Submit</StyledButtonBottom>
                 <StyledButtonBottom onClick={handleShareJD}>Share JD</StyledButtonBottom>
-              </div>
+                </div>
               <div style={{ display: 'flex' }}>
                 Last Status: {lastStatus} | Total: {totalCandidates} | Screening: {screeningState} ({screeningPercent}%) | Unresponsive: {unresponsive} ({unresponsivePercent}%) | Not Interested: {notInterested} ({notInterestedPercent}%) | Not Fit:{' '}
                 {notFit} ({notFitPercent}%) | Recruiter Interviews: {recruiterInterviews} ({recruiterInterviewsPercent}%)

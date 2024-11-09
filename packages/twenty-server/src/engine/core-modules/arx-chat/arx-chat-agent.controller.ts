@@ -19,6 +19,7 @@ import { CalendarEventType } from '../calendar-events/services/calendar-data-obj
 import { CalendarEmailService } from './services/candidate-engagement/calendar-email';
 import moment from 'moment-timezone';
 import axios from 'axios';
+import { WhatsappTemplateMessages } from './services/whatsapp-api/facebook-whatsapp/template-messages';
 
 @Controller('updateChat')
 export class UpdateChatEndpoint {
@@ -682,22 +683,14 @@ export class WhatsappTestAPI {
     console.log("This is the sendTemplateMessageObj:", sendTemplateMessageObj)
 
     const response = await new FacebookWhatsappChatApi().sendWhatsappUtilityMessage(sendTemplateMessageObj);
-
-
-
-
-
-    // const mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.messageObj;
-    // mostRecentMessageArr.push({ role: 'user', content: 'Failed to send JD to the candidate.' });
-    // const whatappUpdateMessageObj:allDataObjects.candidateChatMessageType = await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj( 'failed', personObj, mostRecentMessageArr, chatControl);
-    // await new CandidateEngagementArx().updateCandidateEngagementDataInTable(whatappUpdateMessageObj);
-
-
-
-
-
-
-
+    let utilityMessage = await new WhatsappTemplateMessages().getUpdatedUtilityMessageObj(sendTemplateMessageObj);
+    const whatsappTemplateMessageSent = await new WhatsappTemplateMessages().generateMessage(requestBody.templateName, sendTemplateMessageObj);
+    const mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.messageObj;
+    console.log("This is the mostRecentMessageArr:", mostRecentMessageArr)
+    const chatControl = personObj?.candidates?.edges[0].node.lastEngagementChatControl;
+    mostRecentMessageArr.push({ role: 'user', content: whatsappTemplateMessageSent });
+    const whatappUpdateMessageObj:allDataObjects.candidateChatMessageType = await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj( 'success', personObj, mostRecentMessageArr, chatControl);
+    await new CandidateEngagementArx().updateCandidateEngagementDataInTable(whatappUpdateMessageObj);
     console.log("This is ther esponse:", response.data)
     return { status: 'success' };
   }
