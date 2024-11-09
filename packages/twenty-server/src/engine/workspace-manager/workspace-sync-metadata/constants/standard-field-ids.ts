@@ -319,6 +319,7 @@ export const WORKSPACE_MEMBER_STANDARD_FIELD_IDS = {
   locale: '20202020-402e-4695-b169-794fa015afbe',
   avatarUrl: '20202020-0ced-4c4f-a376-c98a966af3f6',
   userEmail: '20202020-4c5f-4e09-bebc-9e624e21ecf4',
+  phoneNumber: '20202020-4c5f-4e09-bebc-9e624e21ecf5',
   userId: '20202020-75a9-4dfc-bf25-2e4b43e89820',
   authoredActivities: '20202020-f139-4f13-a82f-a65a8d290a74',
   assignedActivities: '20202020-5c97-42b6-8ca9-c07622cbb33f',

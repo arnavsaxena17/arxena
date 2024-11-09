@@ -25,6 +25,11 @@ export class WorkspaceMember {
   colorScheme: string;
 
   @Field({ nullable: true })
+  userEmail: string;
+
+  @Field({ nullable: true })
+  phoneNumber: string;
+  @Field({ nullable: true })
   avatarUrl: string;
 
   @Field({ nullable: false })

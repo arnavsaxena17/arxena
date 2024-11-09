@@ -22,6 +22,7 @@ type WorkspaceMembers = Pick<
   nameFirstName: string;
   nameLastName: string;
   userEmail: string;
+  phoneNumber:string;
   userId: string;
 };
 
@@ -41,6 +42,7 @@ export const seedWorkspaceMember = async (
         locale: 'en',
         colorScheme: 'Light',
         userEmail: 'tim@apple.dev',
+        phoneNumber:'918411937769',
         userId: DEV_SEED_USER_IDS.TIM,
       },
       {
@@ -49,6 +51,7 @@ export const seedWorkspaceMember = async (
         nameLastName: 'Ive',
         locale: 'en',
         colorScheme: 'Light',
+        phoneNumber:'919820297156',
         userEmail: 'jony.ive@apple.dev',
         userId: DEV_SEED_USER_IDS.JONY,
       },
@@ -58,6 +61,7 @@ export const seedWorkspaceMember = async (
         nameLastName: 'Shiler',
         locale: 'en',
         colorScheme: 'Light',
+        phoneNumber:'919969229131',
         userEmail: 'phil.schiler@apple.dev',
         userId: DEV_SEED_USER_IDS.PHIL,
       },
@@ -73,6 +77,7 @@ export const seedWorkspaceMember = async (
         locale: 'en',
         colorScheme: 'Light',
         userEmail: 'tim@apple.dev',
+        phoneNumber:'918411937769',
         userId: DEV_SEED_USER_IDS.TIM,
       },
     ];
@@ -87,6 +92,7 @@ export const seedWorkspaceMember = async (
       'locale',
       'colorScheme',
       'userEmail',
+      'phoneNumber',
       'userId',
     ])
     .orIgnore()
