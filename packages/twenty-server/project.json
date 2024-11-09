@@ -25,7 +25,7 @@
       "dependsOn": ["build"],
       "options": {
         "cwd": "packages/twenty-server",
-        "command": "NODE_ENV=development && nest start --watch"
+        "command": "NODE_ENV=production && nest start --watch"
       }
     },
     "start:debug": {
