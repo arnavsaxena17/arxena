@@ -73,11 +73,7 @@ export class SyncWorkspaceMetadataCommand extends CommandRunner {
         if (!options.force) {
           throw error;
         }
-
-        this.logger.warn(
-          `Workspace health check failed with error, but sync has been forced.`,
-          error,
-        );
+        this.logger.warn( `Workspace health check failed with error, but sync has been forced.`, error, );
       }
 
       const dataSourceMetadata =
@@ -101,7 +97,6 @@ export class SyncWorkspaceMetadataCommand extends CommandRunner {
           },
           { applyChanges: !options.dryRun },
         );
-
       if (options.dryRun) {
         await this.syncWorkspaceLoggerService.saveLogs(
           workspaceId,
