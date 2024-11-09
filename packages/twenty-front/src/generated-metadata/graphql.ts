@@ -1206,6 +1206,7 @@ export type WorkspaceMember = {
   id: Scalars['UUID']['output'];
   locale: Scalars['String']['output'];
   name: FullName;
+  phoneNumber?: Maybe<Scalars['String']['output']>;
 };
 
 export type Field = {

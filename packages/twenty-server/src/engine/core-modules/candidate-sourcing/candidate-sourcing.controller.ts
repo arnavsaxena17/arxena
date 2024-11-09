@@ -1,6 +1,4 @@
 import { Body, Controller, Post } from '@nestjs/common';
-import { chunk } from 'lodash';
-
 import { CreateManyCandidates, CreateManyPeople, graphQltoStartChat, CreateOneJob, graphQltoStopChat, createOneQuestion, graphqlToFindManyJobByArxenaSiteId } from './graphql-queries';
 import { FetchAndUpdateCandidatesChatsWhatsapps } from '../arx-chat/services/candidate-engagement/update-chat';
 import * as allDataObjects from '../arx-chat/services/data-model-objects';
@@ -368,9 +366,7 @@ export class CandidateSourcingController {
   @Post('fetch-candidate-by-phone-number-start-chat')
   async fetchCandidateByPhoneNumber(@Body() body: any) {
     console.log('called fetchCandidateByPhoneNumber for phone:', body.phoneNumber);
-
     const personObj: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(body.phoneNumber);
-
     const candidateId = personObj.candidates?.edges[0]?.node?.id;
     const graphqlVariables = {
       idToUpdate: candidateId,

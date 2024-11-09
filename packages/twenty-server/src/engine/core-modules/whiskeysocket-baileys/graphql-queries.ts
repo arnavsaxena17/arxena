@@ -19,6 +19,7 @@ query FindManyWorkspaceMembers($filter: WorkspaceMemberFilterInput, $orderBy: [W
         userEmail
         colorScheme
         createdAt
+        phoneNumber
         locale
         userId
         updatedAt

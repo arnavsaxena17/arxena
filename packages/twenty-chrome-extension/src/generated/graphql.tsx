@@ -7291,6 +7291,9 @@ export type WorkspaceMember = {
   updatedAt?: Maybe<Scalars['DateTime']>;
   /** Related user email address */
   userEmail?: Maybe<Scalars['String']>;
+  /** Related user phone number */
+  phoneNumber?: InputMaybe<Scalars['String']>;
+
   /** Associated User Id */
   userId?: Maybe<Scalars['UUID']>;
 };
@@ -7465,6 +7468,8 @@ export type WorkspaceMemberCreateInput = {
   updatedAt?: InputMaybe<Scalars['DateTime']>;
   /** Related user email address */
   userEmail?: InputMaybe<Scalars['String']>;
+  /** Related user phone number */
+  phoneNumber?: InputMaybe<Scalars['String']>;
   /** Associated User Id */
   userId: Scalars['UUID'];
 };
@@ -7496,6 +7501,8 @@ export type WorkspaceMemberFilterInput = {
   updatedAt?: InputMaybe<DateFilter>;
   /** Related user email address */
   userEmail?: InputMaybe<StringFilter>;
+/** Related user phone Number */
+  phoneNumber?: InputMaybe<StringFilter>;
   /** Associated User Id */
   userId?: InputMaybe<IdFilter>;
 };
@@ -7518,6 +7525,8 @@ export type WorkspaceMemberOrderByInput = {
   updatedAt?: InputMaybe<OrderByDirection>;
   /** Related user email address */
   userEmail?: InputMaybe<OrderByDirection>;
+  phoneNumber?: InputMaybe<OrderByDirection>;
+
   /** Associated User Id */
   userId?: InputMaybe<OrderByDirection>;
 };
@@ -7538,6 +7547,8 @@ export type WorkspaceMemberUpdateInput = {
   name?: InputMaybe<FullNameUpdateInput>;
   /** Update date */
   updatedAt?: InputMaybe<Scalars['DateTime']>;
+  /** Related user phone Number */
+  phoneNumber?: InputMaybe<Scalars['String']>;
   /** Related user email address */
   userEmail?: InputMaybe<Scalars['String']>;
   /** Associated User Id */
