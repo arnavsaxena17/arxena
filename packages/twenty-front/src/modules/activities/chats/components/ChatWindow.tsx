@@ -169,7 +169,7 @@ const Select = styled.select`
 
 const ChatContainer = styled.div`
   display: flex;
-  // height: 90vh;
+  height: 70vh;
   z-index: 3;
 `;
 
@@ -276,7 +276,7 @@ const ChatView = styled.div`
   border: 1px solid #ccc;
   overflow-y: scroll;
   width: 100%;
-  height: 50vh;
+  height: 60vh;
 `;
 
 const StyledDateComponent = styled.span`
@@ -948,7 +948,7 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
                     </Select>
                     <ActionButton onClick={() => handleTemplateSend(selectedTemplate)}>Send Template</ActionButton>
                     </div>
-                    <br />
+                    {/* <br />
                     <div>
                     <Select value={selectedChatLayer} onChange={e => setSelectedChatLayer(e.target.value)}>
                         <option value="" disabled> Select a ChatLayer </option>
@@ -957,7 +957,7 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
                         ))}
                     </Select>
                     <ActionButton onClick={() => handleStartNewChatLayer(selectedTemplate)}>Start New Chat Layer</ActionButton>
-                    </div>
+                    </div> */}
                 </PreviewSection>
               </Container>
 
