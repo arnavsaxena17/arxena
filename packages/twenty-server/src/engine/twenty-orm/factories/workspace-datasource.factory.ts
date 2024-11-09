@@ -23,9 +23,14 @@ export class WorkspaceDatasourceFactory {
     }
 
     const dataSourceMetadata =
-      await this.dataSourceService.getLastDataSourceMetadataFromWorkspaceIdOrFail(
+      await this.dataSourceService.getLastDataSourceMetadataFromWorkspaceId(
         workspaceId,
       );
+
+    if (!dataSourceMetadata) {
+      console.log("No data source metadata found for workspaceId: ", workspaceId);
+      return null
+    }
 
     const workspaceDataSource = new WorkspaceDataSource({
       url:

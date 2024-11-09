@@ -37,6 +37,9 @@ export class TwentyORMManager {
     );
     const entitySchema = this.entitySchemaFactory.create(entityClass);
 
+    if (!workspaceDataSource) {
+      throw new Error('WorkspaceDataSource is null');
+    }
     return workspaceDataSource.getRepository<T>(entitySchema);
   }
 }
