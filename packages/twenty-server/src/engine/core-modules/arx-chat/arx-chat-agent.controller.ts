@@ -664,7 +664,7 @@ export class WhatsappTestAPI {
     console.log("This is the process.env.SERVER_BASE_URL:",process.env.SERVER_BASE_URL)
     const sendTemplateMessageObj = {
       recipient: personObj.phone.replace('+', ''),
-      template_name: requestBody.template_name,
+      template_name: requestBody.templateName,
       candidateFirstName: personObj.name.firstName,
       recruiterName: allDataObjects.recruiterProfile.name,
       recruiterFirstName: allDataObjects.recruiterProfile.name.split(' ')[0],
@@ -682,6 +682,22 @@ export class WhatsappTestAPI {
     console.log("This is the sendTemplateMessageObj:", sendTemplateMessageObj)
 
     const response = await new FacebookWhatsappChatApi().sendWhatsappUtilityMessage(sendTemplateMessageObj);
+
+
+
+
+
+    // const mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.messageObj;
+    // mostRecentMessageArr.push({ role: 'user', content: 'Failed to send JD to the candidate.' });
+    // const whatappUpdateMessageObj:allDataObjects.candidateChatMessageType = await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj( 'failed', personObj, mostRecentMessageArr, chatControl);
+    // await new CandidateEngagementArx().updateCandidateEngagementDataInTable(whatappUpdateMessageObj);
+
+
+
+
+
+
+
     console.log("This is ther esponse:", response.data)
     return { status: 'success' };
   }
