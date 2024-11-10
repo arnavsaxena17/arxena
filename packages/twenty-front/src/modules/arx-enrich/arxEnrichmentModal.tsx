@@ -2,10 +2,9 @@ import { useQuery } from '@apollo/client';
 import styled from '@emotion/styled';
 import { useRecoilState, useResetRecoilState } from 'recoil';
 
-import { AIInterviewLeftSideContainer } from '@/arx-enrich/left-side/components/AIInterviewLeftSideContainer';
+import { ArxEnrichLeftSideContainer } from '@/arx-enrich/left-side/components/ArxEnrichLeftSideContainer';
+import { ArxEnrichRightSideContainer } from '@/arx-enrich/right-side/components/ArxEnrichRightSideContainer';
 import { FIND_MANY_AI_MODELS } from '@/arx-enrich/queries/findManyAIModels';
-import { AIInterviewRightSideContainer } from '@/arx-enrich/right-side/components/AIInterviewRightSideContainer';
-import { isAIInterviewModalOpenState } from '@/arx-enrich/states/aIInterviewModalState';
 import { isArxEnrichModalOpenState } from '@/arx-enrich/states/arxEnrichModalOpenState';
 import { questionsArrState } from '@/arx-enrich/states/questionsArrState';
 import { questionToDisplayState } from '@/arx-enrich/states/questionToDisplay';
@@ -93,8 +92,8 @@ export const ArxEnrichmentModal = ({
     <StyledModalContainer onClick={closeModal}>
       <StyledAdjuster>
         <StyledModal onClick={(e) => e.stopPropagation()}>
-          <AIInterviewLeftSideContainer />
-          <AIInterviewRightSideContainer
+          <ArxEnrichLeftSideContainer />
+          <ArxEnrichRightSideContainer
             aIModelsArr={aIModelsArr}
             closeModal={closeModal}
             objectNameSingular={objectNameSingular}
