@@ -4,6 +4,7 @@ import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
 import { useRecoilValue } from 'recoil';
 import { IconChevronLeft, IconComponent, IconRefresh, MOBILE_VIEWPORT, OverflowingTextWithTooltip } from 'twenty-ui';
+import { useParams } from 'react-router-dom';
 
 import { IconButton } from '@/ui/input/button/components/IconButton';
 import { UndecoratedLink } from '@/ui/navigation/link/components/UndecoratedLink';
@@ -14,6 +15,9 @@ import { Button } from '@/ui/input/button/components/Button';
 import { useSetRecordValue } from '@/object-record/record-store/contexts/RecordFieldValueSelectorContext';
 import { recordStoreFamilyState } from '@/object-record/record-store/states/recordStoreFamilyState';
 import { useRecordTable } from '@/object-record/record-table/hooks/useRecordTable';
+import { CoreObjectNameSingular } from '@/object-metadata/types/CoreObjectNameSingular';
+import { ShowPageAddButton } from '../show-page/components/ShowPageAddButton';
+import { ShowPageMoreButton } from '../show-page/components/ShowPageMoreButton';
 
 export const PAGE_BAR_MIN_HEIGHT = 40;
 
@@ -102,33 +106,36 @@ export const PageHeader = ({ title, hasBackButton, Icon, children, loading, reco
   // const handleRefresh = () => {
   //   if (!recordId) return;
   // };
+  console.log("this is use params", useParams());
   return (
     <StyledTopBarContainer>
       <StyledLeftContainer>
-        {!isMobile && !isNavigationDrawerOpen && (
-          <StyledTopBarButtonContainer>
-            <NavigationDrawerCollapseButton direction="right" />
-          </StyledTopBarButtonContainer>
-        )}
-        {hasBackButton && (
-          <UndecoratedLink to={-1}>
-            <IconButton Icon={IconChevronLeft} size="small" variant="tertiary" />
-          </UndecoratedLink>
-        )}
-        {loading ? (
-          <StyledSkeletonLoader />
-        ) : (
-          <StyledTopBarIconStyledTitleContainer>
-            {Icon && <Icon size={theme.icon.size.md} />}
-            <StyledTitleContainer data-testid="top-bar-title">
-              <OverflowingTextWithTooltip text={title} />
-            </StyledTitleContainer>
+      {!isMobile && !isNavigationDrawerOpen && (
+        <StyledTopBarButtonContainer>
+        <NavigationDrawerCollapseButton direction="right" />
+        </StyledTopBarButtonContainer>
+      )}
+      {hasBackButton && (
+        <UndecoratedLink to={-1}>
+        <IconButton Icon={IconChevronLeft} size="small" variant="tertiary" />
+        </UndecoratedLink>
+      )}
+      {loading ? (
+        <StyledSkeletonLoader />
+      ) : (
+        <StyledTopBarIconStyledTitleContainer>
+        {Icon && <Icon size={theme.icon.size.md} />}
+        <StyledTitleContainer data-testid="top-bar-title">
+          <OverflowingTextWithTooltip text={title} />
+        </StyledTitleContainer>
 
-            {/* {isRecordTable && <Button Icon={IconRefresh} title="Refetch" variant="secondary" accent="default" onClick={handleRefresh} />} */}
-          </StyledTopBarIconStyledTitleContainer>
-        )}
+        {/* {isRecordTable && <Button Icon={IconRefresh} title="Refetch" variant="secondary" accent="default" onClick={handleRefresh} />} */}
+
+        </StyledTopBarIconStyledTitleContainer>
+      )}
       </StyledLeftContainer>
       <StyledPageActionContainer>{children}</StyledPageActionContainer>
+      {isRecordTable && <ShowPageMoreButton key="more" recordId={recordId ?? '0'} objectNameSingular={useParams().objectNamePlural?.slice(0, -1) ?? 'candidate'} />}
     </StyledTopBarContainer>
   );
 };

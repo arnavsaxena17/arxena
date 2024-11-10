@@ -114,7 +114,7 @@ export const ViewBarDetails = ({
   const availableSortDefinitions = useRecoilValue(
     availableSortDefinitionsState,
   );
-
+  console.log("availableSortDefinitionsState: ", availableSortDefinitionsState);
   const { resetCurrentView } = useResetCurrentView();
   const canResetView = canPersistView && !hasFiltersQueryParams;
 
@@ -131,6 +131,8 @@ export const ViewBarDetails = ({
   if (!shouldExpandViewBar) {
     return null;
   }
+  // console.log("currentViewWithCombinedFiltersAndSorts: ", currentViewWithCombinedFiltersAndSorts);
+  console.log("mapViewSortsToSorts: ", currentViewWithCombinedFiltersAndSorts);
 
   return (
     <StyledBar>

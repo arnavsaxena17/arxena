@@ -84,7 +84,7 @@ export class SyncWorkspaceMetadataCommand extends CommandRunner {
 
         if (!dataSourceMetadata) {
           this.logger.error(
-            `No data source metadata found for workspace ${workspaceId}`,
+          `xception-handler.seworkspace ${workspaceId}`,
           );
           return ;
         }
