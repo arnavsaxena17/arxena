@@ -17,7 +17,7 @@ const StyledContainer = styled.div`
   flex-shrink: 1;
 `;
 
-export const AIInterviewLeftSideContainer = () => {
+export const ArxEnrichLeftSideContainer = () => {
   return (
     <StyledContainer>
       <div>New ARX Enrich</div>

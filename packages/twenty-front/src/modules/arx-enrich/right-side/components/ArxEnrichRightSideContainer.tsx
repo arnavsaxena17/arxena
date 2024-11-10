@@ -50,7 +50,7 @@ const StyledListItem = styled.li`
   }
 `;
 
-export const AIInterviewRightSideContainer = ({ aIModelsArr, closeModal, objectNameSingular, objectRecordId }: { aIModelsArr: any; closeModal: () => void; objectNameSingular: string; objectRecordId: string }) => {
+export const ArxEnrichRightSideContainer = ({ aIModelsArr, closeModal, objectNameSingular, objectRecordId }: { aIModelsArr: any; closeModal: () => void; objectNameSingular: string; objectRecordId: string }) => {
   const { questionsArr } = useAddRemoveAIInterviewQuestion();
 
   const { convertFormData } = useFormDataConversion();
