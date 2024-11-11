@@ -9,7 +9,6 @@ import makeWASocket, {
   fetchLatestBaileysVersion,
   makeCacheableSignalKeyStore,
   makeInMemoryStore,
-  PHONENUMBER_MCC,
   proto,
   useMultiFileAuthState,
   WAMessageContent,

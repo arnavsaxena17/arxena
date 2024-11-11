@@ -100,13 +100,8 @@ export const PageHeader = ({ title, hasBackButton, Icon, children, loading, reco
   const isMobile = useIsMobile();
   const theme = useTheme();
   const isNavigationDrawerOpen = useRecoilValue(isNavigationDrawerOpenState);
-  // const { setPendingRecordId } = useRecordTable({
-  //   recordTableId: recordId,
-  // });
-  // const handleRefresh = () => {
-  //   if (!recordId) return;
-  // };
   console.log("this is use params", useParams());
+  console.log("this is use CoreObjectNameSingular", CoreObjectNameSingular);
   return (
     <StyledTopBarContainer>
       <StyledLeftContainer>
@@ -128,14 +123,25 @@ export const PageHeader = ({ title, hasBackButton, Icon, children, loading, reco
         <StyledTitleContainer data-testid="top-bar-title">
           <OverflowingTextWithTooltip text={title} />
         </StyledTitleContainer>
-
-        {/* {isRecordTable && <Button Icon={IconRefresh} title="Refetch" variant="secondary" accent="default" onClick={handleRefresh} />} */}
-
         </StyledTopBarIconStyledTitleContainer>
       )}
       </StyledLeftContainer>
       <StyledPageActionContainer>{children}</StyledPageActionContainer>
-      {isRecordTable && <ShowPageMoreButton key="more" recordId={recordId ?? '0'} objectNameSingular={useParams().objectNamePlural?.slice(0, -1) ?? 'candidate'} />}
+      {isRecordTable && (
+      <ShowPageMoreButton
+        key="more"
+        recordId={recordId ?? '0'}
+        objectNameSingular={
+        useParams().objectNamePlural === 'companies'
+          ? 'company'
+          : useParams().objectNamePlural === 'people'
+          ? 'person'
+          : useParams().objectNamePlural === 'opportunities'
+          ? 'opportunity'
+          : useParams().objectNamePlural?.slice(0, -1) ?? 'candidate'
+        }
+      />
+      )}
     </StyledTopBarContainer>
   );
 };
