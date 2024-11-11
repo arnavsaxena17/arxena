@@ -67,14 +67,19 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
   async fetchAllPeopleByCandidatePeopleIds(candidatePeopleIds: string[]): Promise<allDataObjects.PersonNode[]> {
     let allPeople: allDataObjects.PersonNode[] = [];
     let lastCursor: string | null = null;
+    console.log("Fetching all people by candidate people ids:", candidatePeopleIds);
     while (true) {
       const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindManyPeopleEngagedCandidates, variables: {filter: {id: {in: candidatePeopleIds}}, lastCursor}});
       const response = await axiosRequest(graphqlQueryObj);
+      const edgee = response?.data;
       const edges = response?.data?.data?.people?.edges;
+      // console.log("Number of people fetched in fetchAllPeopleByCandidatePeopleIds:", edges?.length);
+      // console.log("Number of people fetched in fetchAllPeopleByCandidatePeopleIds edvee:", edgee);
       if (!edges || edges?.length === 0) break;
       allPeople = allPeople.concat(edges.map((edge: any) => edge?.node));
       lastCursor = edges[edges.length - 1].cursor;
     }
+    console.log("Number of people fetched in fetchAllPeopleByCandidatePeopleIds:", allPeople?.length);
     return allPeople;
   }
   

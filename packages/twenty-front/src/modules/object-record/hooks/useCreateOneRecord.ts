@@ -109,9 +109,14 @@ export const useCreateOneRecord = <
 
     try{
       console.log("This si th einput", input);
-      if (objectNameSingular === 'job' && input?.name) {
-        await sendJobToArxena(input?.name as string);
-      }
+      // if (objectNameSingular === 'job' && input?.name) {
+      //   try{
+      //     await sendJobToArxena(input?.name as string);
+      //   }
+      //   catch{
+      //     console.log("Couldnt send job to arxena")
+      //   }
+      // }
     }
     catch (error) {
       console.log("Error sending job to Arxena", error);
