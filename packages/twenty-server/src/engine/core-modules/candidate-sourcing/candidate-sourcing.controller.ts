@@ -188,11 +188,13 @@ export class CandidateSourcingController {
   }
 
   @Post('create-job-in-arxena')
-  async createJobInArxena(@Body() body: any): Promise<Jobs> {
+  async createJobInArxena(@Body() body: any): Promise<any> {
     console.log("going to create job in arxena")
+    console.log("going to createprocess.env.ENV_NODE", process.env.ENV_NODE)
+    
     try {
-      const url = process.env.NODE_ENV === 'production' ? 'https://arxena.com/create_new_job' : 'http://127.0.0.1:5050/create_new_job';
-
+      const url = process.env.ENV_NODE === 'production' ? 'https://arxena.com/create_new_job' : 'http://127.0.0.1:5050/create_new_job';
+      console.log('url:', url);
       const response = await axios.post(
         url,
         { job_name: body.job_name },
@@ -203,8 +205,8 @@ export class CandidateSourcingController {
       console.log('Response from create job', response?.data);
       return response.data.data.createJob;
     } catch (error) {
-      console.error('Error in createJobInArxena:', error);
-      throw error;
+      console.log('Error in createJobInArxena:', error);
+      return { error: error.message };
     }
   }
 
