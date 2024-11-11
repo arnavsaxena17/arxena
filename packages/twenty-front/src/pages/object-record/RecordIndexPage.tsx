@@ -28,6 +28,7 @@ const StyledIndexContainer = styled.div`
   height: 100%;
   width: 100%;
 `;
+console.log("CoreObjectNameSingular::", CoreObjectNameSingular)
 
 export const RecordIndexPage = () => {
   const objectNamePlural = useParams().objectNamePlural ?? '';
@@ -65,7 +66,7 @@ export const RecordIndexPage = () => {
         
         {isArxEnrichModalOpen ? (
           <ArxEnrichmentModal
-            objectNameSingular={objectNamePlural.slice(-1)}
+            objectNameSingular={objectNamePlural === 'companies' ? 'company' : objectNamePlural.slice(0, -1)}
             objectRecordId={'0'}
           />
         ) : (
