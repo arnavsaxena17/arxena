@@ -214,7 +214,7 @@ export class CandidateSourcingController {
     console.log('Going to add and arxena job Id', arxenaJobId);
     try {
       const jobObject = await this.getJobDetails(arxenaJobId);
-      console.log('jobObject that is sent by arxena-site:', jobObject);
+      // console.log('jobObject that is sent by arxena-site:', jobObject);
       let { manyPersonObjects, manyCandidateObjects, allPersonObjects} = await this.processProfilesWithRateLimiting(data, jobObject);
       console.log('Number of person objects created:', manyPersonObjects?.length);
       console.log('Number of allPersonObjects created:', allPersonObjects?.length);
@@ -235,7 +235,9 @@ export class CandidateSourcingController {
         console.log('Number of person Ids Created:', arrayOfPersonIds.length);
       }
       manyCandidateObjects.forEach(candidate => {
+
         const matchingPerson = allPersonObjects.find(person => person?.uniqueStringKey === candidate?.uniqueStringKey && person?.uniqueStringKey !== '');
+
         if (!matchingPerson) {
           const createdPerson = responseForPerson?.data?.data?.createPeople?.find((person: any) => person.uniqueStringKey === candidate.uniqueStringKey);
           if (createdPerson) {
@@ -255,7 +257,6 @@ export class CandidateSourcingController {
       if (manyCandidateObjects.length > 0) {
         console.log("Creating manyCandidateObjects:", manyCandidateObjects.length)
         const responseForCandidate = await this.createCandidates(manyCandidateObjects);
-        console.log('Response from creating candidates:', responseForCandidate?.data);
       }
       return { status: 'success' };
     } catch (error) {
