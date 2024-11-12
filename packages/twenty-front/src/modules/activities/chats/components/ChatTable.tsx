@@ -153,6 +153,7 @@ const ChatTable: React.FC<frontChatTypes.ChatTableProps> = ({
       <StyledTableHeader>
         <tr>
           <StyledTableHeaderCell>Name</StyledTableHeaderCell>
+          <StyledTableHeaderCell>Last Message</StyledTableHeaderCell>
           <StyledTableHeaderCell>Status</StyledTableHeaderCell>
           <StyledTableHeaderCell>Salary</StyledTableHeaderCell>
           <StyledTableHeaderCell>City</StyledTableHeaderCell>
@@ -167,6 +168,7 @@ const ChatTable: React.FC<frontChatTypes.ChatTableProps> = ({
               <StyledTableCell>
                 <NameCell> {`${individual.name.firstName} ${individual.name.lastName}`} {unreadCount > 0 && ( <UnreadIndicator>{unreadCount}</UnreadIndicator> )} </NameCell>
               </StyledTableCell>
+              <StyledTableCell>{individual.candidates.edges[0].node.whatsappMessages.edges[0].node.createdAt || 'N/A'}</StyledTableCell>
               <StyledTableCell>{individual.candidates?.edges[0]?.node?.status || 'N/A'}</StyledTableCell>
               <StyledTableCell>{individual.salary || 'N/A'}</StyledTableCell>
               <StyledTableCell>{individual.city || 'N/A'}</StyledTableCell>

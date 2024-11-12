@@ -11,7 +11,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
       console.log('Fetching candidates to engage');
       const candidates = await this.fetchAllCandidatesWithSpecificChatControl(chatControl);
       console.log("Fetched", candidates?.length, " candidates with chatControl", chatControl);
-      const candidatePeopleIds = candidates ?.filter(c => c?.people?.id) .map(c => c?.people?.id);
+      const candidatePeopleIds = candidates?.filter(c => c?.people?.id).map(c => c?.people?.id);
       console.log("Got a total of ", candidatePeopleIds?.length, "candidate ids", "for chatControl", chatControl);
       const people = await this.fetchAllPeopleByCandidatePeopleIds(candidatePeopleIds);
       console.log("Fetched", people?.length ,"people in fetch all People", "with chatControl", chatControl);
@@ -57,7 +57,6 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
       const response = await axiosRequest(graphqlQueryObj);
       console.log("Fetched candidate by candidate ID:", response?.data);
       const candidateObj = response?.data?.data?.candidates?.edges[0]?.node;
-      // console.log("Fetched candidate by candidate Obj ID:", candidateObj);
       return candidateObj;
     } catch (error) {
       console.log('Error in fetching candidate by candidate ID:', error);
@@ -67,14 +66,10 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
   async fetchAllPeopleByCandidatePeopleIds(candidatePeopleIds: string[]): Promise<allDataObjects.PersonNode[]> {
     let allPeople: allDataObjects.PersonNode[] = [];
     let lastCursor: string | null = null;
-    // console.log("Fetching all people by candidate people ids:", candidatePeopleIds);
     while (true) {
       const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindManyPeopleEngagedCandidates, variables: {filter: {id: {in: candidatePeopleIds}}, lastCursor}});
       const response = await axiosRequest(graphqlQueryObj);
-      const edgee = response?.data;
       const edges = response?.data?.data?.people?.edges;
-      // console.log("Number of people fetched in fetchAllPeopleByCandidatePeopleIds:", edges?.length);
-      // console.log("Number of people fetched in fetchAllPeopleByCandidatePeopleIds edvee:", edgee);
       if (!edges || edges?.length === 0) break;
       allPeople = allPeople.concat(edges.map((edge: any) => edge?.node));
       lastCursor = edges[edges.length - 1].cursor;
@@ -84,7 +79,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
   }
   
   async fetchAllWhatsappMessages(candidateId: string): Promise<allDataObjects.MessageNode[]> {
-    console.log("Fetching all whatsapp messages for candidate ID:", candidateId);
+    // console.log("Fetching all whatsapp messages for candidate ID:", candidateId);
     let allWhatsappMessages: allDataObjects.MessageNode[] = [];
     let lastCursor = null;
     while (true) {
