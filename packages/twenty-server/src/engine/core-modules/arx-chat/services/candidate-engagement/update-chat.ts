@@ -67,7 +67,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
   async fetchAllPeopleByCandidatePeopleIds(candidatePeopleIds: string[]): Promise<allDataObjects.PersonNode[]> {
     let allPeople: allDataObjects.PersonNode[] = [];
     let lastCursor: string | null = null;
-    console.log("Fetching all people by candidate people ids:", candidatePeopleIds);
+    // console.log("Fetching all people by candidate people ids:", candidatePeopleIds);
     while (true) {
       const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindManyPeopleEngagedCandidates, variables: {filter: {id: {in: candidatePeopleIds}}, lastCursor}});
       const response = await axiosRequest(graphqlQueryObj);
@@ -323,7 +323,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
     const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToCreateOneNewWhatsappMessage, variables: createNewWhatsappMessageUpdateVariables });
     try {
       console.log("GRAPHQL WITH WHATSAPP MESSAGE:", createNewWhatsappMessageUpdateVariables?.input?.message);
-      console.log("GRAPHQL WITH createNewWhatsappMessageUpdateVariables:", createNewWhatsappMessageUpdateVariables);
+      // console.log("GRAPHQL WITH createNewWhatsappMessageUpdateVariables:", createNewWhatsappMessageUpdateVariables);
       const response = await axiosRequest(graphqlQueryObj);
       return response.data;
     } catch (error) {
