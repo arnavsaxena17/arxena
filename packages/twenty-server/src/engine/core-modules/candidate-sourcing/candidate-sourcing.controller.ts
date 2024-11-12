@@ -69,18 +69,14 @@ export class CandidateSourcingController {
   }
 
   async createCandidates(manyCandidateObjects: ArxenaCandidateNode[]): Promise<any> {
-    console.log('Creating candidates, manyCandidateObjects:', manyCandidateObjects?.length);
-    console.log('Creating candidates, manyCandidateObjects:', manyCandidateObjects);
-    console.log(
-      'Creating candidates, manyCandidateObjects:',
-      manyCandidateObjects.map(x => x?.name),
-    );
+    console.log('Creating candidates- manyCandidateObjects length:', manyCandidateObjects?.length);
+    console.log('Creating candidates- manyCandidateObjects manycandidateobjects:', manyCandidateObjects);
+    console.log('Creating candidates- manyCandidateObjects name:', manyCandidateObjects.map(x => x?.name));
     const graphqlVariablesForCandidate = { data: manyCandidateObjects };
     const graphqlQueryObjForCandidate = JSON.stringify({
       query: CreateManyCandidates,
       variables: graphqlVariablesForCandidate,
     });
-
     try {
       const responseForCandidate = await axiosRequest(graphqlQueryObjForCandidate);
       console.log('Response from creating candidates', responseForCandidate?.data);
@@ -88,7 +84,6 @@ export class CandidateSourcingController {
     } catch (error) {
       console.error('Error in creating candidates', error?.message);
       console.error('Error in creating candidates', error?.data);
-      // throw error;
     }
   }
 
@@ -97,7 +92,6 @@ export class CandidateSourcingController {
       filter: { phone: { in: phoneNumbers } },
       limit: 30, // Adjust based on your API's limits
     };
-
     const graphqlQuery = JSON.stringify({
       query: allGraphQLQueries.graphqlQueryToFindPeopleByPhoneNumber,
       variables: graphqlVariables,
@@ -221,26 +215,25 @@ export class CandidateSourcingController {
     try {
       const jobObject = await this.getJobDetails(arxenaJobId);
       console.log('jobObject that is sent by arxena-site:', jobObject);
-      const { manyPersonObjects, manyCandidateObjects, allPersonObjects} = await this.processProfilesWithRateLimiting(data, jobObject);
+      let { manyPersonObjects, manyCandidateObjects, allPersonObjects} = await this.processProfilesWithRateLimiting(data, jobObject);
       console.log('Number of person objects created:', manyPersonObjects?.length);
       console.log('Number of allPersonObjects created:', allPersonObjects?.length);
       console.log('Number of person candidates created:', manyPersonObjects?.length);
-      // if (manyPersonObjects.length === 0) {
-      //   console.log('All candidates already exist');
-      //   return { message: 'All candidates already exist' };
-      // } else {
-      //   console.log('candidates do not exist, will create new candidates');
-      // }
+      
       console.log('Creating people and candidates');
       let responseForPerson;
+
+      const uniquePersonMap = new Map();
+      manyPersonObjects.forEach(person => {
+        uniquePersonMap.set(person.uniqueStringKey, person);
+      });
+      manyPersonObjects = Array.from(uniquePersonMap.values());
+
       if (manyPersonObjects.length > 0) {
         responseForPerson = await this.createPeople(manyPersonObjects);
         const arrayOfPersonIds = responseForPerson?.data?.data?.createPeople?.map((person: any) => person.id);
         console.log('Number of person Ids Created:', arrayOfPersonIds.length);
       }
-      // manyCandidateObjects.forEach((candidate, index) => {
-      //   candidate.peopleId = arrayOfPersonIds[index];
-      // });
       manyCandidateObjects.forEach(candidate => {
         const matchingPerson = allPersonObjects.find(person => person?.uniqueStringKey === candidate?.uniqueStringKey && person?.uniqueStringKey !== '');
         if (!matchingPerson) {
@@ -253,9 +246,17 @@ export class CandidateSourcingController {
           candidate.peopleId = matchingPerson?.id;
         }
       });
-      console.log("This is the manyCandidateObjects:", manyCandidateObjects)
-      console.log("This is one of the manyCandidateObjects:", manyCandidateObjects[0])
-      const responseForCandidate = await this.createCandidates(manyCandidateObjects);
+      const uniqueCandidatesMap = new Map();
+      manyCandidateObjects.forEach(candidate => {
+        uniqueCandidatesMap.set(candidate.uniqueStringKey, candidate);
+      });
+      manyCandidateObjects = Array.from(uniqueCandidatesMap.values());
+
+      if (manyCandidateObjects.length > 0) {
+        console.log("Creating manyCandidateObjects:", manyCandidateObjects.length)
+        const responseForCandidate = await this.createCandidates(manyCandidateObjects);
+        console.log('Response from creating candidates:', responseForCandidate?.data);
+      }
       return { status: 'success' };
     } catch (error) {
       console.log('Error in sourceCandidates:', error);
