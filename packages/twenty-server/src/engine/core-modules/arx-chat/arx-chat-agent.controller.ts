@@ -145,7 +145,7 @@ export class ArxChatEndpoint {
     const chatReply = request.body.message;
     console.log('We will first go and get the candiate who sent us the message');
     const candidateProfileData = await new FetchAndUpdateCandidatesChatsWhatsapps().getCandidateInformation(whatsappIncomingMessage);
-    await new IncomingWhatsappMessages().createAndUpdateIncomingCandidateChatMessage( { chatReply: chatReply, whatsappDeliveryStatus: 'delivered', whatsappMessageId: 'receiveIncomingMessagesFromController', }, candidateProfileData );
+    await new IncomingWhatsappMessages().createAndUpdateIncomingCandidateChatMessage( { chatReply: chatReply, whatsappDeliveryStatus: 'delivered', phoneNumberFrom: request.body.phoneNumberFrom, whatsappMessageId: 'receiveIncomingMessagesFromController', }, candidateProfileData );
     return { status: 'Success' };
   }
 

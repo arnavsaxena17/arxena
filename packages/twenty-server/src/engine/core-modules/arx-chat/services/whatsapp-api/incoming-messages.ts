@@ -30,7 +30,7 @@ export class IncomingWhatsappMessages {
     console.log('This is the candiate who has sent us the message fromBaileys., we have to update the database that this message has been recemivged::', chatReply);
     if (candidateProfileData != allDataObjects.emptyCandidateProfileObj) {
       // console.log('This is the candiate who has sent us candidateProfileData::', candidateProfileData);
-      await this.createAndUpdateIncomingCandidateChatMessage({ chatReply: savedMessage, whatsappDeliveryStatus: 'delivered', whatsappMessageId: requestBody.baileysMessageId }, candidateProfileData);
+      await this.createAndUpdateIncomingCandidateChatMessage({ chatReply: savedMessage, whatsappDeliveryStatus: 'delivered',phoneNumberFrom:requestBody.phoneNumberFrom, whatsappMessageId: requestBody.baileysMessageId }, candidateProfileData);
     } else {
       console.log('Message has been received from a candidate however the candidate is not in the database');
     }
@@ -50,7 +50,7 @@ export class IncomingWhatsappMessages {
     console.log('This is the SELF message., we have to update the database that this message has been received::', chatReply);
     if (candidateProfileData != allDataObjects.emptyCandidateProfileObj) {
       // console.log('This is the candiate who has sent us candidateProfileData::', candidateProfileData);
-      await this.createAndUpdateIncomingCandidateChatMessage({ chatReply: chatReply, whatsappDeliveryStatus: 'delivered', whatsappMessageId: requestBody.baileysMessageId, isFromMe: true }, candidateProfileData);
+      await this.createAndUpdateIncomingCandidateChatMessage({ chatReply: chatReply, whatsappDeliveryStatus: 'delivered',phoneNumberFrom:requestBody.phoneNumberFrom, whatsappMessageId: requestBody.baileysMessageId, isFromMe: true }, candidateProfileData);
       // const replyObject = { chatReply: chatReply, whatsappDeliveryStatus: 'receivedFromHumanBot', whatsappMessageId: requestBody?.baileysMessageId };
       // await this.createAndUpdateIncomingCandidateChatMessage(replyObject, candidateProfileData);
       new FetchAndUpdateCandidatesChatsWhatsapps().setCandidateEngagementStatusToFalse(candidateProfileData);
@@ -157,6 +157,7 @@ export class IncomingWhatsappMessages {
           const replyObject = {
             chatReply: chatReply,
             whatsappDeliveryStatus: 'receivedFromCandidate',
+            phoneNumberFrom: userMessageBody.from,
             whatsappMessageId: requestBody?.entry[0]?.changes[0]?.value?.messages[0].id,
           };
 
@@ -184,10 +185,10 @@ export class IncomingWhatsappMessages {
             messageType: 'string',
           };
 
-          const replyObject = { chatReply: userMessageBody?.text?.body || 'Attachment Received', whatsappDeliveryStatus: 'receivedFromCandidate', whatsappMessageId: requestBody?.entry[0]?.changes[0]?.value?.messages[0].id };
+          const replyObject = { chatReply: userMessageBody?.text?.body || 'Attachment Received', whatsappDeliveryStatus: 'receivedFromCandidate',phoneNumberFrom: whatsappIncomingMessage.phoneNumberFrom, whatsappMessageId: requestBody?.entry[0]?.changes[0]?.value?.messages[0].id };
           const candidateProfileData = await new FetchAndUpdateCandidatesChatsWhatsapps().getCandidateInformation(whatsappIncomingMessage);
           await new FacebookWhatsappChatApi().downloadWhatsappAttachmentMessage(sendTemplateMessageObj, candidateProfileData);
-          await this.createAndUpdateIncomingCandidateChatMessage(replyObject, candidateProfileData);
+          await this.createAndUpdateIncomingCandidateChatMessage(replyObject, candidateProfileData, );
         }
         // Audio message
         else if (requestBody?.entry[0]?.changes[0]?.value?.messages[0].type === 'audio') {
@@ -213,6 +214,7 @@ export class IncomingWhatsappMessages {
           const replyObject = {
             chatReply: audioMessageDetails?.audioTranscriptionText || 'Audio Message Received',
             whatsappDeliveryStatus: 'receivedFromCandidate',
+            phoneNumberFrom: userMessageBody.from,
             type: 'audio',
             databaseFilePath: audioMessageDetails?.databaseFilePath,
             whatsappMessageId: requestBody?.entry[0]?.changes[0]?.value?.messages[0].id,
@@ -226,7 +228,7 @@ export class IncomingWhatsappMessages {
     }
   }
   async createAndUpdateIncomingCandidateChatMessage(
-    replyObject: { whatsappDeliveryStatus: string; chatReply: string; whatsappMessageId: string; databaseFilePath?: string | null; type?: string; isFromMe?: boolean },
+    replyObject: { whatsappDeliveryStatus: string; chatReply: string; phoneNumberFrom:string,whatsappMessageId: string; databaseFilePath?: string | null; type?: string; isFromMe?: boolean },
     candidateProfileDataNodeObj: allDataObjects.CandidateNode, 
   ) {
     const recruiterProfile = allDataObjects.recruiterProfile;
@@ -246,6 +248,9 @@ export class IncomingWhatsappMessages {
     console.log('These are message kwargs length:', mostRecentMessageObj?.length);
     // console.log('This is the most recent message object being considered::', mostRecentMessageObj);
     // chatHistory = await this.getChatHistoryFromMongo(mostRecentMessageObj);
+    console.log("replyObject?.phoneNumberFrom::", replyObject?.phoneNumberFrom)
+    // console.log("replyObject?.candidateProfileDataNodeObj?.phoneNumber::", candidateProfileDataNodeObj?.phoneNumber)
+    // const phoneNumberThatMessageCameFrom = replyObject?.phoneNumberFrom || candidateProfileDataNodeObj?.phoneNumber;
     if (mostRecentMessageObj?.length > 0) mostRecentMessageObj.push({ role: replyObject.isFromMe ? 'assistant' : 'user', content: replyObject.chatReply });
     let whatappUpdateMessageObj: allDataObjects.candidateChatMessageType = {
       // executorResultObj: {},

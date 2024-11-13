@@ -24,7 +24,6 @@ export default class CandidateEngagementArx {
       chatHistory = candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.messageObj;
     }
     let whatsappTemplate:string
-    
     if (chatControl === 'startChat') {
       whatsappTemplate = "application03"
     }
@@ -46,13 +45,11 @@ export default class CandidateEngagementArx {
     };
     console.log("Sending a messages")
     await this.updateCandidateEngagementDataInTable(whatappUpdateMessageObj);
-    // Adding this for now to be able to send messages to the candidates
     // await new WhatsappAPISelector().sendWhatsappMessage(whatappUpdateMessageObj, candidateProfileDataNodeObj, chatHistory);
     return whatappUpdateMessageObj;
   }
 
   async processCandidate(personNode: allDataObjects.PersonNode, chatControl: allDataObjects.chatControls) {
-    // console.log('The edge is ::', edge);
     console.log('Engagement Type:', "the candidate ::", personNode.name.firstName + " " + personNode.name.lastName);
     try {
       const candidateNode = personNode.candidates.edges[0].node;
@@ -69,33 +66,25 @@ export default class CandidateEngagementArx {
       console.log('This is the error in processCandidate', error);
     }
   }
-
   getMostRecentMessageFromMessagesList(messagesList: allDataObjects.MessageNode[]) {
     let mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = [];
-    console.log("messages list in getMostRecentMessageFromMessagesList::", messagesList);
     if (messagesList) {
-      // messagesList.sort((a, b) => new Date(b?.node?.createdAt).getTime() - new Date(a?.node?.createdAt).getTime());
       messagesList.sort((a, b) => new Date(b?.createdAt).getTime() - new Date(a?.createdAt).getTime());
-      console.log("messages list after sorting in getMostRecentMessageFromMessagesList::", messagesList);
+      // console.log("messages list after sorting in getMostRecentMessageFromMessagesList::", messagesList);
       mostRecentMessageArr = messagesList[0]?.messageObj;
-
       console.log("This is the most recent messages arr:", mostRecentMessageArr);
     }
     return mostRecentMessageArr;
   }
 
   async updateCandidateEngagementDataInTable(whatappUpdateMessageObj: allDataObjects.candidateChatMessageType, isAfterMessageSent: boolean = false) {
-    // console.log("Candidate information before processing:", whatappUpdateMessageObj);
     let candidateProfileObj = whatappUpdateMessageObj.messageType !== 'botMessage' ? await new FetchAndUpdateCandidatesChatsWhatsapps().getCandidateInformation(whatappUpdateMessageObj) : whatappUpdateMessageObj.candidateProfile;
-    // console.log('Candidate information after processing:', candidateProfileObj);
-    // console.log( 'Whatsapp Objs :::', candidateProfileObj.whatsappMessages.edges.map((edge: any) => edge.node.messageObj), );
     if (candidateProfileObj.name === '') return;
     console.log('Candidate information retrieved successfully');
     const whatsappMessage = await new FetchAndUpdateCandidatesChatsWhatsapps().createAndUpdateWhatsappMessage(candidateProfileObj, whatappUpdateMessageObj);
     if (!whatsappMessage || isAfterMessageSent) return;
     const updateCandidateStatusObj = await new FetchAndUpdateCandidatesChatsWhatsapps().updateCandidateEngagementStatus(candidateProfileObj, whatappUpdateMessageObj);
     if (!updateCandidateStatusObj) return;
-    // await new WhatsappAPISelector().sendWhatsappMessage(whatappUpdateMessageObj);
     return { status: 'success', message: 'Candidate engagement status updated successfully' };
   }
 
@@ -117,30 +106,26 @@ export default class CandidateEngagementArx {
     };
     return updatedChatHistoryObj;
   }
-  async filterCandidatesWhereEngagementStatusIsTrueAndByLastMessagedTime(sortedPeopleData: allDataObjects.PersonNode[], chatControl: allDataObjects.chatControls): Promise<allDataObjects.PersonNode[]> {
 
+  async filterCandidatesWhereEngagementStatusIsTrueAndByLastMessagedTime(sortedPeopleData: allDataObjects.PersonNode[], chatControl: allDataObjects.chatControls): Promise<allDataObjects.PersonNode[]> {
     console.log("The number of sorted people::", sortedPeopleData.length)
     const minutesToWait = 2;
     const twoMinutesAgo = new Date(Date.now() - minutesToWait * 60 * 1000);
     const filteredCandidatesToEngage = sortedPeopleData.filter(person => {
       if (person?.candidates?.edges?.length > 0) {
         const candidate = person.candidates.edges[0].node;
-        // Basic engagement status check
         if (!candidate.engagementStatus) {
           return false;
         }
-        // Check if this engagement was initiated by the current chat control
         if (candidate.lastEngagementChatControl !== chatControl) {
           console.log(`Skipping candidate ${candidate.name} because engagement was initiated by ${candidate.lastEngagementChatControl} not ${chatControl}`);
           return false;
         }
-        // Additional checks for video interview chat
         if (chatControl === 'startVideoInterviewChat') {
           if (!candidate.startVideoInterviewChat || !candidate.startChat) {
             return false;
           }
         }
-        // Message timing check
         if (candidate.whatsappMessages?.edges?.length > 0) {
           const latestMessage = candidate.whatsappMessages.edges[0].node;
           const messageDate = new Date(latestMessage.createdAt);
@@ -168,7 +153,6 @@ export default class CandidateEngagementArx {
       console.log('Number of candidates to who have no filteredCandidates StartEngagement ::', filteredCandidatesToStartEngagement?.length, "for chatControl:", chatControl);
     }
     else if (chatControl === 'startVideoInterviewChat') {
-
       filteredCandidatesToStartEngagement = peopleCandidateResponseEngagementArr?.filter(personNode => {
         return personNode?.candidates?.edges?.length > 0 && personNode?.candidates?.edges[0]?.node?.startChat === true && personNode?.candidates?.edges[0]?.node?.whatsappMessages?.edges.length >0 && personNode?.candidates?.edges[0]?.node?.startVideoInterviewChat === true && personNode?.candidates?.edges[0]?.node?.lastEngagementChatControl !== "startVideoInterviewChat";
       });

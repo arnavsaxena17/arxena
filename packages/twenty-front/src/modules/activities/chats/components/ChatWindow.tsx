@@ -171,6 +171,8 @@ const ChatContainer = styled.div`
   display: flex;
   height: 70vh;
   z-index: 3;
+  overflow: hidden; // Add this to prevent body scroll interference
+
 `;
 
 const StyledButton = styled.button<{ bgColor: string }>`
@@ -277,7 +279,23 @@ const ChatView = styled.div`
   overflow-y: scroll;
   width: 100%;
   height: 60vh;
+  scroll-behavior: smooth;
+  
+  /* For webkit browsers */
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: #f1f1f1;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+  }
 `;
+
 
 const StyledDateComponent = styled.span`
   padding: 0.5em;
@@ -515,18 +533,23 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
   const [city, setCity] = useState(currentIndividual?.city || '');
   const [isMessagePending, setIsMessagePending] = useState(false);
   const [pendingMessage, setPendingMessage] = useState<frontChatTypes.MessageNode | null>(null);
-
+  const [shouldScrollToBottom, setShouldScrollToBottom] = useState(true);
+  const [userHasScrolled, setUserHasScrolled] = useState(false);
+  
   const [toasts, setToasts] = useState<Toast[]>([]);
 
 
   useEffect(() => {
     if (currentCandidateId) {
       getlistOfMessages(currentCandidateId).then(() => {
-        scrollToBottom();
+        // Only scroll if user hasn't scrolled up or if they're already at bottom
+        if (shouldScrollToBottom && (!userHasScrolled || (chatViewRef.current && chatViewRef.current.scrollTop === chatViewRef.current.scrollHeight - chatViewRef.current.clientHeight))) {
+          scrollToBottom();
+        }
       });
     }
-  }, [props.selectedIndividual, currentCandidateId]);
-
+  }, [props.individuals, props.selectedIndividual]);
+  
 
   useEffect(() => {
     setSalary(currentIndividual?.salary || '');
@@ -726,20 +749,13 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
     setMessageHistory(prev => [...prev, newMessage]);
     await sendMessage(messageSent);
     
-    props.onMessageSent();
+    setShouldScrollToBottom(true);
+    setUserHasScrolled(false);
     scrollToBottom();
-
+    props.onMessageSent();
 
   };
 
-  useEffect(() => {
-    if (currentCandidateId) {
-      getlistOfMessages(currentCandidateId).then(() => {
-        scrollToBottom();
-      });
-      scrollToBottom();
-    }
-  }, [props.individuals, props.selectedIndividual]);
 
 
 
@@ -835,7 +851,8 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
     </CopyableField>
   );
 
-  const allIndividualsForCurrentJob = allIndividuals?.filter(individual => individual?.candidates?.edges[0]?.node?.jobs.id === currentIndividual?.candidates?.edges[0]?.node?.jobs.id);
+  const allIndividualsForCurrentJob = allIndividuals?.filter(individual => individual?.candidates?.edges[0]?.node?.jobs?.id === currentIndividual?.candidates?.edges[0]?.node?.jobs?.id);
+  console.log("allIndividualsForCurrentJob:",allIndividualsForCurrentJob)
 
   const lastStatus = currentIndividual?.candidates?.edges[0]?.node?.status;
   const totalCandidates = allIndividualsForCurrentJob?.length;
@@ -906,6 +923,18 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
     }
   };
 
+
+  const handleScroll = () => {
+    if (chatViewRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = chatViewRef.current;
+      const isAtBottom = Math.abs(scrollHeight - scrollTop - clientHeight) < 50;
+      
+      setUserHasScrolled(true);
+      setShouldScrollToBottom(isAtBottom);
+    }
+  };
+  
+  
   console.log('Current Individual::', currentIndividual);
   console.log('Current currentWorkspaceMember::', currentWorkspaceMember);
   return (
@@ -914,8 +943,8 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
         {(props.selectedIndividual && (
           <StyledWindow>
             <ChatContainer>
-              <ChatView ref={chatViewRef}>
-                <StyledTopBar>
+            <ChatView ref={chatViewRef} onScroll={handleScroll}>
+            <StyledTopBar>
                   <TopbarContainer>
                     <MainInfo>
                       <FieldsContainer>
