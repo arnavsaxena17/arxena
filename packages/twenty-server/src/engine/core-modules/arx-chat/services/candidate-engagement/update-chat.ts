@@ -193,10 +193,8 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
     }
     const graphVariables = { filter: { phone: { ilike: '%' + phoneNumber + '%' } }, orderBy: { position: 'AscNullsFirst' } };
     try {
-      // console.log('going to get candidate information');
       const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindPeopleByPhoneNumber, variables: graphVariables });
       const response = await axiosRequest(graphqlQueryObj);
-      // console.log('This is the response from getCandidate Information FROM PHONENUMBER in getPersonDetailsByPhoneNumber', response.data.data);
       const personObj = response.data?.data?.people?.edges[0]?.node;
       if (personObj){
         console.log('Personobj:', personObj?.name?.firstName || "" +" " + personObj?.name?.lastName) + "";

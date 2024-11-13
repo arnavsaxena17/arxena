@@ -162,13 +162,17 @@ const ChatTable: React.FC<frontChatTypes.ChatTableProps> = ({
       </StyledTableHeader>
       <StyledTableBody>
         {individuals.map((individual: frontChatTypes.PersonNode) => {
-          const unreadCount = getUnreadCount(individual.id);
+          const unreadCount = getUnreadCount(individual?.id);
           return (
-            <StyledTableRow key={individual.id} $selected={selectedIndividual === individual.id} onClick={() => onIndividualSelect(individual.id)} >
+            <StyledTableRow key={individual.id} $selected={selectedIndividual === individual?.id} onClick={() => onIndividualSelect(individual?.id)} >
               <StyledTableCell>
                 <NameCell> {`${individual.name.firstName} ${individual.name.lastName}`} {unreadCount > 0 && ( <UnreadIndicator>{unreadCount}</UnreadIndicator> )} </NameCell>
-              </StyledTableCell>
-              <StyledTableCell>{individual.candidates.edges[0].node.whatsappMessages.edges[0].node.createdAt || 'N/A'}</StyledTableCell>
+                </StyledTableCell>
+                <StyledTableCell>
+                {individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.createdAt 
+                  ? new Date(individual.candidates.edges[0].node.whatsappMessages.edges[0].node.createdAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) 
+                  : 'N/A'}
+                </StyledTableCell>
               <StyledTableCell>{individual.candidates?.edges[0]?.node?.status || 'N/A'}</StyledTableCell>
               <StyledTableCell>{individual.salary || 'N/A'}</StyledTableCell>
               <StyledTableCell>{individual.city || 'N/A'}</StyledTableCell>
