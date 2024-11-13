@@ -50,7 +50,7 @@ export default class CandidateEngagementArx {
   }
 
   async processCandidate(personNode: allDataObjects.PersonNode, chatControl: allDataObjects.chatControls) {
-    console.log('Engagement Type:', "the candidate ::", personNode.name.firstName + " " + personNode.name.lastName);
+    console.log("Engagement Type the candidate ::", personNode.name.firstName + " " + personNode.name.lastName);
     try {
       const candidateNode = personNode.candidates.edges[0].node;
       const messagesList: allDataObjects.MessageNode[] = await new FetchAndUpdateCandidatesChatsWhatsapps().fetchAllWhatsappMessages(candidateNode.id);

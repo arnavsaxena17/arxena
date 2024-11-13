@@ -163,13 +163,14 @@ export class IncomingWhatsappMessages {
 
           const responseAfterMessageUpdate = await this.createAndUpdateIncomingCandidateChatMessage(replyObject, candidateProfileData);
           if (candidateProfileData?.candidateReminders?.edges.length > 0) {
+            console.log("Candidate reminder found, updating the reminder status to false")
             const listOfReminders = candidateProfileData?.candidateReminders?.edges;
             const updateOneReminderVariables = { idToUpdate: listOfReminders[0]?.node?.id, input: { isReminderActive: false } };
             const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToCreateOneNewWhatsappMessage, variables: updateOneReminderVariables });
             console.log('This is the graphqlQueryObj after updating the reminder status::', graphqlQueryObj);
           }
 
-          console.log(responseAfterMessageUpdate);
+          console.log("Graphqlreqsponse after message update",responseAfterMessageUpdate);
         } else if (requestBody?.entry[0]?.changes[0]?.value?.messages[0].type === 'document') {
           const sendTemplateMessageObj = {
             documentId: requestBody?.entry[0]?.changes[0]?.value?.messages[0].document.id,

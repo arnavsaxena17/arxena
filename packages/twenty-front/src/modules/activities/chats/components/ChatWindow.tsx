@@ -535,21 +535,23 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
   const [pendingMessage, setPendingMessage] = useState<frontChatTypes.MessageNode | null>(null);
   const [shouldScrollToBottom, setShouldScrollToBottom] = useState(true);
   const [userHasScrolled, setUserHasScrolled] = useState(false);
-  
+  const [previousMessageCount, setPreviousMessageCount] = useState(0);
+
   const [toasts, setToasts] = useState<Toast[]>([]);
 
 
   useEffect(() => {
     if (currentCandidateId) {
       getlistOfMessages(currentCandidateId).then(() => {
-        // Only scroll if user hasn't scrolled up or if they're already at bottom
-        if (shouldScrollToBottom && (!userHasScrolled || (chatViewRef.current && chatViewRef.current.scrollTop === chatViewRef.current.scrollHeight - chatViewRef.current.clientHeight))) {
+        // If we have more messages than before, scroll to bottom
+        if (messageHistory.length > previousMessageCount) {
           scrollToBottom();
+          setPreviousMessageCount(messageHistory.length);
         }
       });
     }
-  }, [props.individuals, props.selectedIndividual]);
-  
+  }, [props.individuals, props.selectedIndividual, messageHistory.length]);
+    
 
   useEffect(() => {
     setSalary(currentIndividual?.salary || '');
@@ -557,14 +559,6 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
   }, [currentIndividual]);
 
   const currentCandidateName = currentIndividual?.name.firstName + ' ' + currentIndividual?.name.lastName;
-
-  // useEffect(() => {
-  //   if (currentCandidateId) {
-  //     getlistOfMessages(currentCandidateId).then(() => {
-  //       scrollToBottom();
-  //     });
-  //   }
-  // }, [props.selectedIndividual, currentCandidateId, messageHistory.length]);
 
   const handleNavigateToPersonPage = () => {
     navigate(`/object/person/${currentIndividual?.id}`);
@@ -710,10 +704,13 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
 
   const scrollToBottom = () => {
     if (chatViewRef.current) {
-      chatViewRef.current.scrollTop = chatViewRef.current.scrollHeight;
+      chatViewRef.current.scrollTo({
+        top: chatViewRef.current.scrollHeight,
+        behavior: 'smooth'
+      });
     }
   };
-
+  
   const sendMessage = async (messageText: string) => {
     console.log('send message');
     const response = await axios.post(process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/send-chat', { messageToSend: messageText, phoneNumberTo: currentIndividual?.phone }, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } });
@@ -749,8 +746,6 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
     setMessageHistory(prev => [...prev, newMessage]);
     await sendMessage(messageSent);
     
-    setShouldScrollToBottom(true);
-    setUserHasScrolled(false);
     scrollToBottom();
     props.onMessageSent();
 
