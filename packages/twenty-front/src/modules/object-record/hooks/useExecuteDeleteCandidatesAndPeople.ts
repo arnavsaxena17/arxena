@@ -19,88 +19,70 @@ export const useExecuteDeleteCandidatesAndPeople = ({
   onSuccess,
   onError,
 }: useExecuteDeleteCandidatesAndPeople = {}) => {
-
-
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [tokenPair] = useRecoilState(tokenPairState);
-//   const showNotification = useShowNotification();
-const { enqueueSnackBar } = useSnackBar();
-console.log("objectNameSingular:", objectNameSingular)
-const deleteCandidatesAndPeople = async (Ids: string[]) => {
-  setLoading(true);
-  setError(null);
+  const { enqueueSnackBar } = useSnackBar();
 
-  try {
-    const results = await Promise.all(
-      Ids.map(async (id) => {
-        // Fetch people associated with the candidate
-        const url = objectNameSingular === 'candidate'
-          ? `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/delete-people-and-candidates-from-candidate-id`
-          : `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/delete-people-and-candidates-from-person-id`;
+  const deleteCandidatesAndPeople = async (ids: string[]) => {
+    setLoading(true);
+    setError(null);
 
-        const body = objectNameSingular === 'candidate'
-          ? { candidateId: id }
-          : { personId: id };
+    try {
+      const url = `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/delete-people-and-candidates-bulk`;
+      const body = objectNameSingular === 'candidate'
+        ? { candidateIds: ids }
+        : { personIds: ids };
 
-        const deletionResponse = await axios.post(url, body, {
-          headers: {
-            Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
-            'Content-Type': 'application/json',
-          },
-        });
+      const response = await axios.post(url, body, {
+        headers: {
+          Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
+          'Content-Type': 'application/json',
+        },
+      });
 
-        return deletionResponse;
-      })
-    );
-    console.log("results:", results)
+      const { status, message, results } = response.data;
 
-    const successfulDeletions = results.filter(
-      (result) => result.status === 200 || result.status === 204 || result.status === 201
-    );
-    console.log("successfulDeletions:", successfulDeletions)
-    if (successfulDeletions.length === Ids.length) {
-      enqueueSnackBar(
-        `Successfully deleted ${Ids.length} candidate${Ids.length === 1 ? '' : 's'} and their associated people`,
-        {
+      if (status === 'Success') {
+        enqueueSnackBar(message, {
           variant: SnackBarVariant.Success,
           duration: 3000,
-        }
-      );
-      onSuccess?.();
-    } else {
-      const failedCount = Ids.length - successfulDeletions.length;
-      throw new Error(
-        `Failed to delete ${failedCount} candidate${failedCount === 1 ? '' : 's'} and their associated people`
-      );
+        });
+        onSuccess?.();
+      } else if (status === 'Partial') {
+        enqueueSnackBar(message, {
+          variant: SnackBarVariant.Warning,
+          duration: 5000,
+        });
+        onSuccess?.();
+      } else {
+        throw new Error(message);
+      }
+
+      return results;
+    } catch (err) {
+      const errorMessage = err instanceof Error 
+        ? err.message 
+        : 'Failed to delete items';
+      
+      const error = new Error(errorMessage);
+      setError(error);
+      
+      enqueueSnackBar(errorMessage, {
+        variant: SnackBarVariant.Error,
+        duration: 5000,
+      });
+
+      onError?.(error);
+      throw error;
+    } finally {
+      setLoading(false);
     }
+  };
 
-    return results;
-  } catch (err) {
-    const errorMessage = err instanceof Error 
-      ? err.message 
-      : 'Failed to delete candidates and their associated people';
-    
-    const error = new Error(errorMessage);
-    setError(error);
-    
-    enqueueSnackBar(errorMessage, {
-      variant: SnackBarVariant.Error,
-      duration: 5000,
-    });
-
-    onError?.(error);
-    throw error;
-  } finally {
-    setLoading(false);
-  }
+  return {
+    deleteCandidatesAndPeople,
+    loading,
+    error,
+  };
 };
-
-
-return {
-  deleteCandidatesAndPeople,
-  loading,
-  error,
-};
-
-}
