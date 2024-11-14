@@ -280,7 +280,7 @@ export class ArxChatEndpoint {
       console.log("Going to get candidate by hiring-naukri-url :", request?.body?.hiringNaukriUrl);
       const hiringNaukriUrl = request.body.hiringNaukriUrl
       
-      const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindOneCandidateById, variables: { filter: { hiringNaukriUrl: { url: { eq: hiringNaukriUrl } } } } });
+      const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToManyCandidateById, variables: { filter: { hiringNaukriUrl: { url: { eq: hiringNaukriUrl } } } } });
       const response = await axiosRequest(graphqlQueryObj);
       console.log("Fetched candidate by candidate ID:", response?.data);
       const candidateObj = response?.data?.data?.candidates?.edges[0]?.node;
@@ -302,7 +302,7 @@ export class ArxChatEndpoint {
     try {
       console.log("Going to get candidate esdex-naukri-ur :", request.body.resdexNaukriUrl);
       const resdexNaukriUrl = request.body.resdexNaukriUrl;
-      const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindOneCandidateById, variables: { filter: { resdexNaukriUrl: {url: { eq: resdexNaukriUrl } }} } });
+      const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToManyCandidateById, variables: { filter: { resdexNaukriUrl: {url: { eq: resdexNaukriUrl } }} } });
       const response = await axiosRequest(graphqlQueryObj);
       console.log("Fetched candidate by candidate ID:", response?.data);
       const candidateObj = response?.data?.data?.candidates?.edges[0]?.node;
@@ -342,7 +342,7 @@ export class ArxChatEndpoint {
   async deletePeopleFromCandidateIds(@Req() request: any): Promise<object> {
     const candidateId = request.body.candidateId;
     console.log('candidateId to create video-interview:', candidateId);
-    const graphqlQueryObjToFetchCandidate = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindOneCandidateById, variables: { filter: { id: { eq: candidateId } } } });
+    const graphqlQueryObjToFetchCandidate = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToManyCandidateById, variables: { filter: { id: { eq: candidateId } } } });
     const candidateObjresponse = await axiosRequest(graphqlQueryObjToFetchCandidate);
     const candidateObj = candidateObjresponse?.data?.data;
     console.log("candidate objk1:", candidateObj);
@@ -448,6 +448,104 @@ export class ArxChatEndpoint {
 
   }
 
+  @Post('delete-people-and-candidates-bulk')
+@UseGuards(JwtAuthGuard)
+async deletePeopleAndCandidatesBulk(@Req() request: any): Promise<object> {
+  const { candidateIds, personIds } = request.body;
+  const results: { succeeded: string[], failed: string[] } = {
+    succeeded: [],
+    failed: []
+  };
+
+  if (candidateIds?.length) {
+    // First fetch all candidate information to get associated person IDs
+    const graphqlQueryObjToFetchCandidates = JSON.stringify({
+      query: allGraphQLQueries.graphqlQueryToManyCandidateById,
+      variables: { filter: { id: { in: candidateIds } } }
+    });
+
+    const candidatesResponse = await axiosRequest(graphqlQueryObjToFetchCandidates);
+    const candidateNodes = candidatesResponse?.data?.data?.candidates?.edges || [];
+    
+    // Collect all person IDs associated with these candidates
+    const personIdsFromCandidates = candidateNodes
+      .map(edge => edge.node?.people?.id)
+      .filter(id => id);
+
+    // Delete candidates in bulk
+    try {
+      const graphqlQueryObjDeleteCandidates = JSON.stringify({
+        query: allGraphQLQueries.graphqlMutationToDeleteManyCandidates,
+        variables: { filter: { id: { in: candidateIds } } }
+      });
+      await axiosRequest(graphqlQueryObjDeleteCandidates);
+      
+      // Delete associated people in bulk
+      const graphqlQueryObjDeletePeople = JSON.stringify({
+        query: allGraphQLQueries.graphqlMutationToDeleteManyPeople,
+        variables: { filter: { id: { in: personIdsFromCandidates } } }
+      });
+      await axiosRequest(graphqlQueryObjDeletePeople);
+      
+      results.succeeded.push(...candidateIds);
+    } catch (err) {
+      console.error('Error in bulk deletion:', err);
+      results.failed.push(...candidateIds);
+    }
+  }
+
+  if (personIds?.length) {
+    // First fetch all person information to get associated candidate IDs
+    const graphqlQueryObjToFetchPeople = JSON.stringify({
+      query: allGraphQLQueries.graphqlQueryToFindPeopleByPhoneNumber,
+      variables: { filter: { id: { in: personIds } } }
+    });
+
+    const peopleResponse = await axiosRequest(graphqlQueryObjToFetchPeople);
+    const peopleNodes = peopleResponse?.data?.data?.people?.edges || [];
+    
+    // Collect all candidate IDs associated with these people
+    const candidateIdsFromPeople = peopleNodes
+      .flatMap(edge => edge.node?.candidates?.edges || [])
+      .map(edge => edge?.node?.id)
+      .filter(id => id);
+
+    try {
+      // Delete candidates first
+      const graphqlQueryObjDeleteCandidates = JSON.stringify({
+        query: allGraphQLQueries.graphqlMutationToDeleteManyCandidates,
+        variables: { filter: { id: { in: candidateIdsFromPeople } } }
+      });
+      await axiosRequest(graphqlQueryObjDeleteCandidates);
+      
+      // Then delete people
+      const graphqlQueryObjDeletePeople = JSON.stringify({
+        query: allGraphQLQueries.graphqlMutationToDeleteManyPeople,
+        variables: { filter: { id: { in: personIds } } }
+      });
+      await axiosRequest(graphqlQueryObjDeletePeople);
+      
+      results.succeeded.push(...personIds);
+    } catch (err) {
+      console.error('Error in bulk deletion:', err);
+      results.failed.push(...personIds);
+    }
+  }
+
+  if (results.failed.length > 0) {
+    return {
+      status: 'Partial',
+      message: `Successfully deleted ${results.succeeded.length} items, failed to delete ${results.failed.length} items`,
+      results
+    };
+  }
+
+  return {
+    status: 'Success',
+    message: `Successfully deleted ${results.succeeded.length} items`,
+    results
+  };
+}
 
 
 

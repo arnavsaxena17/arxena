@@ -429,7 +429,7 @@ export const graphqlQueryToFindManyPeopleEngagedCandidates = `query FindManyPeop
     }
   }
 `
-  export const graphqlQueryToFindOneCandidateById = `
+  export const graphqlQueryToManyCandidateById = `
   query FindManyCandidates($lastCursor: String, $limit: Int, $filter: CandidateFilterInput) {
     candidates(after: $lastCursor, first: $limit, filter: $filter) {
       edges {
