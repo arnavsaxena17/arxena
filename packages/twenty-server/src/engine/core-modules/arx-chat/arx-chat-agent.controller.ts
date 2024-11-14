@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Req, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Req, Res, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/engine/guards/jwt.auth.guard';
 import * as allDataObjects from './services/data-model-objects';
 import { FacebookWhatsappChatApi } from './services/whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
@@ -20,6 +20,13 @@ import { CalendarEmailService } from './services/candidate-engagement/calendar-e
 import moment from 'moment-timezone';
 import axios from 'axios';
 import { WhatsappTemplateMessages } from './services/whatsapp-api/facebook-whatsapp/template-messages';
+
+interface CandidateRequest {
+  url: string;
+  type: 'hiring' | 'resdex';
+}
+
+
 
 @Controller('updateChat')
 export class UpdateChatEndpoint {
@@ -317,6 +324,56 @@ export class ArxChatEndpoint {
     }
   }
   
+
+
+  @Post('get-id-by-unique-string-key')
+  async getCandidateByUniqueStringKey(@Body() body: { uniqueStringKey: string }): Promise<{ candidateId: string | null }> {
+    try {
+      const graphqlQuery = JSON.stringify({
+        query: allGraphQLQueries.graphqlQueryToFindPeopleByPhoneNumber,
+        variables: {
+          filter: { uniqueStringKey: { eq: body.uniqueStringKey } },
+          limit: 1
+        }
+      });
+
+      const response = await axiosRequest(graphqlQuery);
+      const candidateId = response?.data?.data?.people?.edges[0]?.node?.candidates?.edges[0]?.node?.id || null;
+      return { candidateId };
+    } catch (err) {
+      console.error('Error in getCandidateByUniqueStringKey:', err);
+      return { candidateId: null };
+    }
+  }
+
+
+
+  @Post('get-id-by-naukri-url')
+  async getCandidateIdByNaukriURL(@Req() request: any): Promise<{ candidateId: string | null }> {
+    try {
+      const url = request.body[request.body.resdexNaukriUrl ? 'resdexNaukriUrl' : 'hiringNaukriUrl'];
+      const type = request.body.resdexNaukriUrl ? 'resdex' : 'hiring';
+      
+      const graphqlQueryObj = JSON.stringify({
+        query: allGraphQLQueries.graphqlQueryToManyCandidateById,
+        variables: {
+          filter: {
+            [`${type}NaukriUrl`]: { url: { eq: url } }
+          }
+        }
+      });
+
+      const response = await axiosRequest(graphqlQueryObj);
+      const candidateId = response?.data?.data?.candidates?.edges[0]?.node?.id || null;
+      
+      console.log(`Fetched candidateId for ${type}: ${candidateId}`);
+      return { candidateId };
+    } catch (err) {
+      console.error(`Error fetching candidate by ${request.body.resdexNaukriUrl ? 'resdex' : 'hiring'}-naukri-url:`, err);
+      return { candidateId: null };
+    }
+  }
+
   @Get('get-candidates-and-chats')
   @UseGuards(JwtAuthGuard)
   async getCandidatesAndChats(@Req() request: any): Promise<object> {
@@ -448,7 +505,7 @@ export class ArxChatEndpoint {
 
   }
 
-  @Post('delete-people-and-candidates-bulk')
+@Post('delete-people-and-candidates-bulk')
 @UseGuards(JwtAuthGuard)
 async deletePeopleAndCandidatesBulk(@Req() request: any): Promise<object> {
   const { candidateIds, personIds } = request.body;
