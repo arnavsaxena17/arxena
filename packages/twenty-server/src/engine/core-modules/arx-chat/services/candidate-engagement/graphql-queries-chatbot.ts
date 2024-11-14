@@ -32,6 +32,8 @@ export const graphqlQueryToCreateVideoInterview = `mutation CreateOneAIInterview
   }
 }`
 
+
+
 export const graphqlQueryToFindInterviewsByJobId = `query FindManyAIInterviews($filter: AIInterviewFilterInput, $orderBy: [AIInterviewOrderByInput], $lastCursor: String, $limit: Int) {
   aIInterviews(
     filter: $filter
@@ -635,6 +637,26 @@ export const graphqlQueryToRemoveMessages = `mutation DeleteManyWhatsappMessages
       __typename
     }
   }`;
+
+
+  export const graphqlMutationToDeleteManyCandidates = `
+  mutation DeleteManyCandidates($filter: CandidateFilterInput!) {
+    deleteCandidates(filter: $filter) {
+      id
+      __typename
+    }
+  }
+`;
+
+export const graphqlMutationToDeleteManyPeople = `
+  mutation DeleteManyPeople($filter: PersonFilterInput!) {
+    deletePeople(filter: $filter) {
+      id
+      __typename
+    }
+  }
+`;
+
 
 export const graphqlQueryToGetTimelineThreadsFromPersonId = `query GetTimelineThreadsFromPersonId($personId: UUID!, $page: Int!, $pageSize: Int!) {
   getTimelineThreadsFromPersonId(
