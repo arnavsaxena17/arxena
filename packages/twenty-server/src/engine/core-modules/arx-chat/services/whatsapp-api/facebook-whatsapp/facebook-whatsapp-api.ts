@@ -381,7 +381,13 @@ export class FacebookWhatsappChatApi {
         console.log('This is the template api message to send in whatappUpdateMessageObj.phoneNumberFrom, ', whatappUpdateMessageObj?.phoneNumberFrom);
         let messageTemplate:string
         if (chatControl === 'startChat') {
-          messageTemplate = 'application03'
+          const currentTimeInIndia = new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
+          const currentHourInIndia = new Date(currentTimeInIndia).getHours();
+          if (currentHourInIndia >= 17) {
+            messageTemplate = 'application03_chat_tomorrow';
+          } else {
+            messageTemplate = 'application03';
+          }
         } else {
           messageTemplate = whatappUpdateMessageObj?.whatsappMessageType || 'application03';
         }
