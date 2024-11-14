@@ -30,6 +30,7 @@ import { useIsFeatureEnabled } from '@/workspace/hooks/useIsFeatureEnabled';
 import { isDefined } from '~/utils/isDefined';
 import { IconBriefcase2, IconCopy, IconUserPlus, IconUsersPlus, IconVideo } from '@tabler/icons-react';
 import { useCreateVideoInterview } from '@/object-record/hooks/useCreateInterview';
+import { useExecuteDeleteCandidatesAndPeople } from '@/object-record/hooks/useExecuteDeleteCandidatesAndPeople';
 
 type useRecordActionBarProps = {
   objectMetadataItem: ObjectMetadataItem;
@@ -77,6 +78,16 @@ export const useRecordActionBar = ({
   });
 
   const { createVideoInterviewLink, loading: creatingVideoInterview } = useCreateVideoInterview({
+    onSuccess: () => {
+      // Additional success handling if needed
+    },
+    onError: (error: any) => {
+      // Additional error handling if needed
+      console.error('Failed to create video interview:', error);
+    },
+  });
+  const { deleteCandidatesAndPeople, loading: executingDeleteCandidatesAndPeople } = useExecuteDeleteCandidatesAndPeople({
+    objectNameSingular: objectMetadataItem.nameSingular,
     onSuccess: () => {
       // Additional success handling if needed
     },
@@ -180,19 +191,18 @@ export const useRecordActionBar = ({
     );
   }, [callback, executeQuickActionOnOneRecord, selectedRecordIds]);
   
-  const executeQuickAddToPeople = async (recordId:string) => console.log("This ishte response:!, ", recordId)
+  // const executeQuickAddToPeople = async (recordId:string) => console.log("This ishte response:!, ", recordId)
   
-  const handleExecuteAddToPeople = useCallback(async () => {
-    callback?.();
-    await Promise.all(
-      selectedRecordIds.map(async (recordId) => {
-        await executeQuickAddToPeople(recordId);
-      }),
-    );
-  }, [callback, executeQuickAddToPeople, selectedRecordIds]);
+  // const handleExecuteAddToPeople = useCallback(async () => {
+  //   callback?.();
+  //   await Promise.all(
+  //     selectedRecordIds.map(async (recordId) => {
+  //       await executeQuickAddToPeople(recordId);
+  //     }),
+  //   );
+  // }, [callback, executeQuickAddToPeople, selectedRecordIds]);
 
-
-
+  
 
   const { progress, download } = useExportTableData({
     delayMs: 100,
@@ -311,11 +321,6 @@ export const useRecordActionBar = ({
                     onClick: handleClone,
                   },
                   {
-                    label: 'Add to People',
-                    Icon: IconUsersPlus,
-                    onClick: handleExecuteAddToPeople,
-                  },
-                  {
                     label: 'Send to mailjet',
                     Icon: IconMail,
                   },
@@ -347,8 +352,35 @@ export const useRecordActionBar = ({
                             }
                           },
                         },
+                        {
+                          label: 'Delete Candidates & People',
+                          Icon: IconUsersPlus,
+                          onClick: async () => {
+                            try {
+                              await deleteCandidatesAndPeople(selectedRecordIds);
+                            } catch (error) {
+                              console.error('Error creating videos:', error);
+                            }
+                          },
+                        },
                       ]
                     : []),  
+
+                    ...(objectMetadataItem.nameSingular === 'person'
+                      ? [
+                          {
+                            label: 'Delete People & Candidates',
+                            Icon: IconUsersPlus,
+                            onClick: async () => {
+                              try {
+                                await deleteCandidatesAndPeople(selectedRecordIds);
+                              } catch (error) {
+                                console.error('Error creating videos:', error);
+                              }
+                            },
+                          },
+                        ]
+                      : []),  
                 ],
               },
             ]

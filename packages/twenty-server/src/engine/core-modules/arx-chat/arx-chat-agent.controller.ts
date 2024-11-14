@@ -335,6 +335,122 @@ export class ArxChatEndpoint {
     return createVideoInterviewResponse;
   }
 
+
+
+  @Post('delete-people-and-candidates-from-candidate-id')
+  @UseGuards(JwtAuthGuard)
+  async deletePeopleFromCandidateIds(@Req() request: any): Promise<object> {
+    const candidateId = request.body.candidateId;
+    console.log('candidateId to create video-interview:', candidateId);
+    const graphqlQueryObjToFetchCandidate = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindOneCandidateById, variables: { filter: { id: { eq: candidateId } } } });
+    const candidateObjresponse = await axiosRequest(graphqlQueryObjToFetchCandidate);
+    const candidateObj = candidateObjresponse?.data?.data;
+    console.log("candidate objk1:", candidateObj);
+    
+    const candidateNode = candidateObjresponse?.data?.data?.candidates?.edges[0]?.node;
+    if (!candidateNode) {
+      console.log('Candidate not found');
+      return { status: 'Failed', message: 'Candidate not found' };
+    }
+
+    const personId = candidateNode?.people?.id;
+    if (!personId) {
+      console.log('Person ID not found');
+      return { status: 'Failed', message: 'Person ID not found' };
+    }
+    console.log("Person ID:", personId);
+
+    const graphqlQueryObj = JSON.stringify({
+      query: allGraphQLQueries.graphqlMutationToDeleteManyCandidates,
+      variables: { filter: { id: { in: [candidateId] } } },
+    });
+
+    console.log("Going to try and delete candidate");
+    try {
+      const response = await axiosRequest(graphqlQueryObj);
+      console.log('Deleted candidate:', response.data);
+    } catch (err) {
+      console.log('Error deleting candidate:', err.response?.data || err.message);
+      return { status: 'Failed', message: 'Error deleting candidate' };
+    }
+
+    const graphqlQueryObjToDeletePerson = JSON.stringify({
+      query: allGraphQLQueries.graphqlMutationToDeleteManyPeople,
+      variables: { filter: { id: { in: [personId] } } },
+    });
+
+    console.log("Going to try and delete person");
+    try {
+      const response = await axiosRequest(graphqlQueryObjToDeletePerson);
+      console.log('Deleted person:', response.data);
+      return { status: 'Success' };
+    } catch (err) {
+      console.log('Error deleting person:', err.response?.data || err.message);
+      return { status: 'Failed', message: 'Error deleting person' };
+    }
+
+  }
+
+
+  @Post('delete-people-and-candidates-from-person-id')
+  @UseGuards(JwtAuthGuard)
+  async deletePeopleFromPersonIds(@Req() request: any): Promise<object> {
+    const personId = request.body.personId;
+    console.log('personId to delete:', personId);
+    const graphqlQueryObjToFetchPerson = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindPeopleByPhoneNumber, variables: { filter: { id: { eq: personId } } } });
+    const personresponse = await axiosRequest(graphqlQueryObjToFetchPerson);
+    const personObj = personresponse?.data?.data;
+    console.log("personresponse objk1:", personObj);
+    
+    const personNode = personresponse?.data?.data?.people?.edges[0]?.node;
+    if (!personNode) {
+      console.log('Person not found');
+      return { status: 'Failed', message: 'Candidate not found' };
+    }
+
+    const candidateId = personNode?.candidates?.edges[0].node.id;
+    console.log("personNode:", personNode);
+    console.log("candidateId:", candidateId);
+    if (!candidateId) {
+      console.log('candidateId ID not found');
+      return { status: 'Failed', message: 'candidateId ID not found' };
+    }
+    console.log("candidateId ID:", candidateId);
+
+    const graphqlQueryObj = JSON.stringify({
+      query: allGraphQLQueries.graphqlMutationToDeleteManyCandidates,
+      variables: { filter: { id: { in: [candidateId] } } },
+    });
+
+    console.log("Going to try and delete candidate");
+    try {
+      const response = await axiosRequest(graphqlQueryObj);
+      console.log('Deleted candidate:', response.data);
+    } catch (err) {
+      console.log('Error deleting candidate:', err.response?.data || err.message);
+      return { status: 'Failed', message: 'Error deleting candidate' };
+    }
+
+    const graphqlQueryObjToDeletePerson = JSON.stringify({
+      query: allGraphQLQueries.graphqlMutationToDeleteManyPeople,
+      variables: { filter: { id: { in: [personId] } } },
+    });
+
+    console.log("Going to try and delete person");
+    try {
+      const response = await axiosRequest(graphqlQueryObjToDeletePerson);
+      console.log('Deleted person:', response.data);
+      return { status: 'Success' };
+    } catch (err) {
+      console.log('Error deleting person:', err.response?.data || err.message);
+      return { status: 'Failed', message: 'Error deleting person' };
+    }
+
+  }
+
+
+
+
   @Post('remove-chats')
   async removeChats(@Req() request: any): Promise<object> {
     return { status: 'Success' };

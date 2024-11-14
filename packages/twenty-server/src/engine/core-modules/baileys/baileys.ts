@@ -214,9 +214,6 @@ export class BaileysBot {
           whatsappDeliveryStatus: 'sent',
           whatsappMessageId: m?.messages[0]?.key?.id || 'not given',
         };
-
-        // ! This will just create a message in the database and not update the engagement status. That's why database entry is done inside sendWhatsappMessageVIABaileysAPI
-        // await new FetchAndUpdateCandidatesChatsWhatsapps().createAndUpdateWhatsappMessage(candidateProfileData, userMessage);
       } else {
         console.log('Message has been sent to new candidate not in database');
       }
