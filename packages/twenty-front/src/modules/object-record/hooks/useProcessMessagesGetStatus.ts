@@ -5,20 +5,20 @@ import { useRecoilState } from 'recoil';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 
-export const useCountChats = (objectNameSingular: string) => {
+export const useProcessMessagesGetStatus = (objectNameSingular: string) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [tokenPair] = useRecoilState(tokenPairState);
   const { enqueueSnackBar } = useSnackBar();
 
-  const countChats = async () => {
+  const processMessagesGetStatus = async () => {
     setLoading(true);
     setError(null);
     
     try {
       const response = await axios({
         method: 'post',
-        url: process.env.REACT_APP_SERVER_BASE_URL+'/arx-chat/count-chats',
+        url: process.env.REACT_APP_SERVER_BASE_URL+'/arx-chat/process-candidate-chats',
         headers: {
           Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
         },
@@ -55,5 +55,5 @@ export const useCountChats = (objectNameSingular: string) => {
   };
 
   return {
-    countChats  };
+    processMessagesGetStatus  };
 };
