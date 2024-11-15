@@ -25,7 +25,8 @@ import { useGetCurrentView } from '@/views/hooks/useGetCurrentView';
 import { ViewType } from '@/views/types/ViewType';
 import { useSpreadsheetRecordImportAll } from '@/object-record/spreadsheet-import/useSpreadsheetRecordImportAll';
 import { useCountChats } from '@/object-record/hooks/useCountChats';
-import { IconCactus } from '@tabler/icons-react';
+import { useProcessMessagesGetStatus } from '@/object-record/hooks/useProcessMessagesGetStatus';
+import { IconAbacus, IconCactus } from '@tabler/icons-react';
 
 type RecordIndexOptionsMenu = 'fields' | 'hiddenFields';
 
@@ -98,6 +99,9 @@ export const RecordIndexOptionsDropdownContent = ({ viewType, recordIndexId, obj
           <MenuItem onClick={() => handleSelectMenu('fields')} LeftIcon={IconTag} text="Fields" />
           {objectNameSingular === 'candidate' && (
             <MenuItem onClick={() => countChats()} LeftIcon={IconCactus} text="Count Chats" />
+          )}
+          {objectNameSingular === 'candidate' && (
+            <MenuItem onClick={() => processMessagesGetStatus()} LeftIcon={IconAbacus} text="Process Chats" />
           )}
           <MenuItem onClick={() => openRecordSpreadsheetImport()} LeftIcon={IconFileImport} text="Import" />
           <MenuItem onClick={() => openRecordSpreadsheetImportAll()} LeftIcon={IconFileImport} text="Import All" />
