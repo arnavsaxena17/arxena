@@ -9,6 +9,7 @@ import {
   IconPaperclip,
   IconTimelineEvent,
 } from 'twenty-ui';
+import { IconAbacus, IconMessage } from "@tabler/icons-react";
 
 import { Calendar } from '@/activities/calendar/components/Calendar';
 import { EmailThreads } from '@/activities/emails/components/EmailThreads';
@@ -78,6 +79,11 @@ export const ShowPageRightContainer = ({
     CoreObjectNameSingular.Company,
     CoreObjectNameSingular.Person,
   ].includes(targetObjectNameSingular);
+  
+  
+  const isCandidate = [
+    CoreObjectNameSingular.Candidate,
+  ].includes(targetObjectNameSingular);
 
   const shouldDisplayCalendarTab = isCompanyOrPerson;
   const shouldDisplayEmailsTab = emails && isCompanyOrPerson;
@@ -85,33 +91,15 @@ export const ShowPageRightContainer = ({
   const isMobile = useIsMobile() || isRightDrawer;
 
   const tabs = [
-    {
-      id: 'summary',
-      title: 'Summary',
-      Icon: IconHome,
-      hide: !isMobile,
-    },
-    {
-      id: 'timeline',
-      title: 'Timeline',
-      Icon: IconTimelineEvent,
-      hide: !timeline || isRightDrawer,
-    },
+    { id: 'summary', title: 'Summary', Icon: IconHome, hide: !isMobile, },
+    { id: 'timeline', title: 'Timeline', Icon: IconTimelineEvent, hide: !timeline || isRightDrawer, },
     { id: 'tasks', title: 'Tasks', Icon: IconCheckbox, hide: !tasks },
     { id: 'notes', title: 'Notes', Icon: IconNotes, hide: !notes },
     { id: 'files', title: 'Files', Icon: IconPaperclip, hide: !notes },
-    {
-      id: 'emails',
-      title: 'Emails',
-      Icon: IconMail,
-      hide: !shouldDisplayEmailsTab,
-    },
-    {
-      id: 'calendar',
-      title: 'Calendar',
-      Icon: IconCalendarEvent,
-      hide: !shouldDisplayCalendarTab,
-    },
+    { id: 'emails', title: 'Emails', Icon: IconMail, hide: !shouldDisplayEmailsTab, },
+    { id: 'calendar', title: 'Calendar', Icon: IconCalendarEvent, hide: !shouldDisplayCalendarTab, },
+    { id: 'chats', title: 'Chats', Icon: IconMessage, hide: !isCandidate},
+    { id: 'resume', title: 'Resume', Icon: IconPaperclip, hide: !isCandidate },
   ];
 
   const renderActiveTabContent = () => {
@@ -137,6 +125,10 @@ export const ShowPageRightContainer = ({
         return <EmailThreads targetableObject={targetableObject} />;
       case 'calendar':
         return <Calendar targetableObject={targetableObject} />;
+      case 'chats':
+        return <Notes targetableObject={targetableObject} />;
+      case 'resume':
+        return <Attachments targetableObject={targetableObject} />;
       default:
         return <></>;
     }

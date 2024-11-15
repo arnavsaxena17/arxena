@@ -47,10 +47,7 @@ export const AppNavigationDrawer = ({
         footer: <GithubVersionLink />,
       }
     : {
-        logo:
-          (currentWorkspace?.logo &&
-            getImageAbsoluteURIOrBase64(currentWorkspace.logo)) ??
-          undefined,
+        logo: (currentWorkspace?.logo && getImageAbsoluteURIOrBase64(currentWorkspace.logo)) ?? undefined,
         title: currentWorkspace?.displayName ?? undefined,
         children: <MainNavigationDrawerItems />,
         footer: <SupportChat />,

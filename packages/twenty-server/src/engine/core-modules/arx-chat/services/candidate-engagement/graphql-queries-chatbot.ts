@@ -139,6 +139,7 @@ export const graphqlQueryToFindPeopleByPhoneNumber = `query FindManyPeople($filt
                     name
                     whatsappProvider
                     lastEngagementChatControl
+                    statusCandidates
                     engagementStatus
                     jobs{
                         id
@@ -312,6 +313,7 @@ export const graphqlQueryToFindManyPeopleEngagedCandidates = `query FindManyPeop
                       name
                       whatsappProvider
                       lastEngagementChatControl
+                      statusCandidates
                       jobs {
                          name
                          id
@@ -408,6 +410,8 @@ export const graphqlQueryToFindManyPeopleEngagedCandidates = `query FindManyPeop
             }
           }
           startChat
+          statusCandidates
+          startVideoInterviewChat
           aIInterviewStatus{
               edges{
                   node{
@@ -452,6 +456,7 @@ export const graphqlQueryToFindManyPeopleEngagedCandidates = `query FindManyPeop
             }
           }
           startChat
+          statusCandidates
           jobs {
             id
             name
@@ -617,6 +622,7 @@ export const graphqlToFindManyAnswers = `query FindManyAnswers($filter: AnswerFi
             updatedAt
             whatsappProvider
             startChat
+            statusCandidates
             startVideoInterviewChat
             startMeetingSchedulingChat
             stopChat
