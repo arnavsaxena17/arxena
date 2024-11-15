@@ -1,8 +1,8 @@
 import { shareJDtoCandidate, updateAnswerInDatabase, updateCandidateStatus } from './tool-calls-processing';
 import * as allDataObjects from '../data-model-objects';
 import { FetchAndUpdateCandidatesChatsWhatsapps } from '../candidate-engagement/update-chat';
-
 import fuzzy from 'fuzzy';
+import CandidateEngagementArx from '../candidate-engagement/check-candidate-engagement';
 import { CalendarEventType } from '../../../calendar-events/services/calendar-data-objects-types';
 import { CalendarEmailService } from '../candidate-engagement/calendar-email';
 import { MailerController } from '../../../gmail-sender/gmail-sender.controller';
@@ -10,7 +10,10 @@ import { SendEmailFunctionality } from '../candidate-engagement/send-gmail';
 import { GmailMessageData } from 'src/engine/core-modules/gmail-sender/services/gmail-sender-objects-types';
 import * as allGraphQLQueries from '../candidate-engagement/graphql-queries-chatbot';
 import { addHoursInDate, axiosRequest, toIsoString } from '../../utils/arx-chat-agent-utils';
-
+import { zodResponseFormat } from "openai/helpers/zod";
+import { z } from "zod";
+import { OpenAI } from "openai";
+import { getStageOfTheConversation } from './get-stage-wise-classification';
 
 const commaSeparatedStatuses = allDataObjects.statusesArray.join(', ');
 
@@ -21,6 +24,21 @@ const recruiterProfile = allDataObjects.recruiterProfile;
 const availableTimeSlots = '12PM-3PM, 4PM -6PM on the 24th and 25th August 2024.';
 
 export class ToolsForAgents {
+
+  currentConversationStage = z.object({
+    stageOfTheConversation: z.enum([
+      "ONLY_ADDED_NO_CONVERSATION",
+      "CONVERSATION_STARTED_HAS_NOT_RESPONDED",
+      "SHARED_JD_HAS_NOT_RESPONDED",
+      "STOPPED_RESPONDED_ON_QUESTIONS",
+      "CONVERSATION_CLOSED_TO_BE_CONTACTED"
+    ])
+  });
+  
+
+
+
+
   async convertToBulletPoints(steps: { [x: string]: any; 1?: string; 2?: string; 3?: string; 4?: string }) {
     let result = '';
     for (let key in steps) {
@@ -181,6 +199,9 @@ export class ToolsForAgents {
     }
     
   }
+
+
+
 
   async getTimeManagementPrompt(personNode: allDataObjects.PersonNode) {
     // const TIME_MANAGEMENT_PROMPT = `
@@ -552,4 +573,7 @@ export class ToolsForAgents {
     ];
     return tools;
   }
+
 }
+
+
