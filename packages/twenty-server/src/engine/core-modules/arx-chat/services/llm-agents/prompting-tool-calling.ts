@@ -95,10 +95,11 @@ export class ToolsForAgents {
     ${await this.convertToBulletPoints(allDataObjects.allStatusesArray)}
     When deciding the stage:
     Your response should be a single status of any of ${allDataObjects.allStatusesArray.join(', ')}, representing the appropriate stage.
-    If there is no conversation history or only a greeting, default to stage "ONLY_ADDED_NO_CONVERSATION".
+    If there is no conversation history or only a greeting, only start chat is the messaged, default to stage "ONLY_ADDED_NO_CONVERSATION".
+    If the initial introduction message has been sent by the recruiter and there has been no response since then, return with the status, "CONVERSATION_STARTED_HAS_NOT_RESPONDED".
     If the candidate has been shared a JD and hasn't responded after that, return with the status, "SHARED_JD_HAS_NOT_RESPONDED".
     If the candidate doesn't want to relocate, return with the status, "CANDIDATE_REFUSES_TO_RELOCATE". 
-    If the candidate has responded to all questions and is keen to chat, return with the status, "CANDIDATE_IS_KEEN_TO_CHAT". 
+    If the candidate has responded to questions and has asked for time to speak or to setup time to speak and has evidenced interest speaking to the recruiter, return with the status, "CANDIDATE_IS_KEEN_TO_CHAT".
     If the questions have been asked by the recruiter and the candidate has not responded return the stage as "STOPPED_RESPONDING_ON_QUESTIONS".
     If the candidate has followed up after the initial setup fo the chat return the stage as "CANDIDATE_HAS_FOLLOWED_UP_TO_SETUP_CHAT".
     If the candidate has shown interest, answered all questions and has been asked to be contacted later, return the stage as "CONVERSATION_CLOSED_TO_BE_CONTACTED".
