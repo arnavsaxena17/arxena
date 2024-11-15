@@ -307,7 +307,7 @@ const StyledDateComponent = styled.span`
 `;
 
 const StyledScrollingView = styled.div`
-  padding-top: 5rem;
+  padding-top: 8rem;
   margin-bottom: 5rem;
   z-index: 1;
 `;
