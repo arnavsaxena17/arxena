@@ -20,7 +20,7 @@ import { LLMProviders } from './llm-agents';
 
 
 export async function getChatStageFromChatHistory(messages: any) {
-    const stagePrompt = await new ToolsForAgents().getStagePrompt();
+    const stagePrompt = await new ToolsForAgents().getConversationStageHistoryClassificationPrompt();
 
     let mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = new CandidateEngagementArx().getMostRecentMessageFromMessagesList(messages);
     mostRecentMessageArr[0] = { role: 'system', content: stagePrompt };
