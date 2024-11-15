@@ -22,6 +22,29 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
       throw error; // Re-throw the error to be handled by the caller
     }
   }
+
+
+  async updateCandidatesWithChatCount(){
+    const allCandidates = await this.fetchAllCandidatesWithSpecificChatControl("startChat");
+    console.log("Fetched", allCandidates?.length, " candidates with chatControl allStartedAndStoppedChats");
+    for (const candidate of allCandidates){
+      const candidateId = candidate?.id;
+      const whatsappMessages = await this.fetchAllWhatsappMessages(candidateId);
+      const chatCount = whatsappMessages?.length;
+      const updateCandidateObjectVariables = { idToUpdate: candidateId, input: { chatCount: chatCount } };
+      const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToUpdateCandidateChatCount, variables: updateCandidateObjectVariables });
+      try {
+        const response = await axiosRequest(graphqlQueryObj);
+        console.log('Candidate chat count updated successfully');
+      } catch (error) {
+        console.log('Error in updating candidate chat count:', error);
+      }
+    }
+  }
+
+
+
+
   async fetchAllCandidatesWithSpecificChatControl(chatControl:allDataObjects.chatControls): Promise<allDataObjects.Candidate[]> {
     let allCandidates: allDataObjects.Candidate[] = [];
     let lastCursor: string | null = null;
@@ -53,7 +76,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
   }
   async fetchCandidateByCandidateId(candidateId: string): Promise<allDataObjects.CandidateNode> {
     try {
-      const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindOneCandidateById, variables: { filter: { id: { eq: candidateId } } } });
+      const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToManyCandidateById, variables: { filter: { id: { eq: candidateId } } } });
       const response = await axiosRequest(graphqlQueryObj);
       console.log("Fetched candidate by candidate ID:", response?.data);
       const candidateObj = response?.data?.data?.candidates?.edges[0]?.node;

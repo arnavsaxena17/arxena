@@ -347,6 +347,19 @@ export class ArxChatEndpoint {
   }
 
 
+  @Post('count-chats')
+  async countChats(): Promise<object> {
+    try {
+      console.log("going to count chats")
+      await new FetchAndUpdateCandidatesChatsWhatsapps().updateCandidatesWithChatCount();
+      return { status: 'Success' };
+    } catch (err) {
+      console.error('Error in countChats:', err);
+      return { status: 'Failed', error: err };
+    }
+  }
+
+
 
   @Post('get-id-by-naukri-url')
   async getCandidateIdByNaukriURL(@Req() request: any): Promise<{ candidateId: string | null }> {
@@ -382,6 +395,7 @@ export class ArxChatEndpoint {
     console.log("All people length:", allPeople?.length)
     return allPeople
   }
+  
   @Post('create-video-interview')
   @UseGuards(JwtAuthGuard)
   async createVideoInterviewForCandidate(@Req() request: any): Promise<object> {
@@ -391,8 +405,6 @@ export class ArxChatEndpoint {
     console.log("createVideoInterviewResponse:", createVideoInterviewResponse)
     return createVideoInterviewResponse;
   }
-
-
 
   @Post('delete-people-and-candidates-from-candidate-id')
   @UseGuards(JwtAuthGuard)
@@ -430,12 +442,10 @@ export class ArxChatEndpoint {
       console.log('Error deleting candidate:', err.response?.data || err.message);
       return { status: 'Failed', message: 'Error deleting candidate' };
     }
-
     const graphqlQueryObjToDeletePerson = JSON.stringify({
       query: allGraphQLQueries.graphqlMutationToDeleteManyPeople,
       variables: { filter: { id: { in: [personId] } } },
     });
-
     console.log("Going to try and delete person");
     try {
       const response = await axiosRequest(graphqlQueryObjToDeletePerson);
@@ -445,7 +455,6 @@ export class ArxChatEndpoint {
       console.log('Error deleting person:', err.response?.data || err.message);
       return { status: 'Failed', message: 'Error deleting person' };
     }
-
   }
 
 
