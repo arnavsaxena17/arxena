@@ -22,17 +22,18 @@ const commaSeparatedStatuses = allDataObjects.statusesArray.join(', ');
 const recruiterProfile = allDataObjects.recruiterProfile;
 // const candidateProfileObjAllData =  candidateProfile
 const availableTimeSlots = '12PM-3PM, 4PM -6PM on the 24th and 25th August 2024.';
+export const allStatuses: [string, ...string[]] = [
+  "ONLY_ADDED_NO_CONVERSATION",
+  "CONVERSATION_STARTED_HAS_NOT_RESPONDED",
+  "SHARED_JD_HAS_NOT_RESPONDED",
+  "CANDIDATE_REFUSES_TO_RELOCATE",
+  "STOPPED_RESPONDING_ON_QUESTIONS",
+  "CONVERSATION_CLOSED_TO_BE_CONTACTED"
+];
 
 export class ToolsForAgents {
-
   currentConversationStage = z.object({
-    stageOfTheConversation: z.enum([
-      "ONLY_ADDED_NO_CONVERSATION",
-      "CONVERSATION_STARTED_HAS_NOT_RESPONDED",
-      "SHARED_JD_HAS_NOT_RESPONDED",
-      "STOPPED_RESPONDING_ON_QUESTIONS",
-      "CONVERSATION_CLOSED_TO_BE_CONTACTED"
-    ])
+    stageOfTheConversation: z.enum(allStatuses)
   });
   
 
@@ -84,6 +85,26 @@ export class ToolsForAgents {
 
     return STAGE_SYSTEM_PROMPT;
   }
+
+
+  async getConversationStageHistoryClassificationPrompt(){
+    const STAGE_SYSTEM_PROMPT = `
+    You are assisting with determining the appropriate stage in a recruiting conversation based on the interaction history with a candidate. Your task is to decide whether to maintain the current stage or progress to the next one based on the dialogue so far.
+    Here are the stages to choose from:
+    ${await this.convertToBulletPoints(allStatuses)}
+    When deciding the stage:
+    Your response should be a single status of any of  ${allStatuses}, representing the appropriate stage.
+    If there is no  conversation history or only a greeting, default to stage "ONLY_ADDED_NO_CONVERSATION".
+    If the candidate has been shared a JD and hasn't responded after that, return with the status, "SHARED_JD_HAS_NOT_RESPONDED".
+    If the candidate doesn't want to relocate, return with the status, "CANDIDATE_REFUSES_TO_RELOCATE". 
+    If the questions have been asked by the recruiter and the candidate has not responded return the stage as "STOPPED_RESPONDING_ON_QUESTIONS".
+    If the candidate has shown interest, answered all questions and has been asked to be contacted later, return the stage as "CONVERSATION_CLOSED_TO_BE_CONTACTED".
+    `;
+
+    return STAGE_SYSTEM_PROMPT;
+  }
+
+
   async getQuestionsToAsk(personNode: allDataObjects.PersonNode) {
     // const questions = ["What is your current & expected CTC?", "Who do you report to and which functions report to you?", "Are you okay to relocate to {location}?"];
     // const location = "Surat";
