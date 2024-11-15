@@ -18,7 +18,7 @@ export const useProcessMessagesGetStatus = (objectNameSingular: string) => {
     try {
       const response = await axios({
         method: 'post',
-        url: process.env.REACT_APP_SERVER_BASE_URL+'/arx-chat/process-candidate-chats',
+        url: process.env.REACT_APP_SERVER_BASE_URL+'/candidate-sourcing/process-candidate-chats',
         headers: {
           Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
         },
