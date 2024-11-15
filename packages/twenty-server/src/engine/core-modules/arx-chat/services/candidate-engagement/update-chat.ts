@@ -35,6 +35,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
       const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToUpdateCandidateChatCount, variables: updateCandidateObjectVariables });
       try {
         const response = await axiosRequest(graphqlQueryObj);
+        console.log("Candidate chat count updated successfully:", response.data);
         console.log('Candidate chat count updated successfully');
       } catch (error) {
         console.log('Error in updating candidate chat count:', error);
