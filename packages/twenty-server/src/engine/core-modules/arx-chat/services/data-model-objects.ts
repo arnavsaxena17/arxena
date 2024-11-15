@@ -4,9 +4,13 @@ import OpenAI from 'openai';
 // Define the possible roles in the chat
 export type ChatRole = 'system' | 'user' | 'tool' | 'assistant';
 
+export type candidateStatuses = "ONLY_ADDED_NO_CONVERSATION" | "CONVERSATION_STARTED_HAS_NOT_RESPONDED" | "SHARED_JD_HAS_NOT_RESPONDED" | "STOPPED_RESPONDED_ON_QUESTIONS" | "CONVERSATION_CLOSED_TO_BE_CONTACTED";
 // export const statusesArray = ['INTERESTED','NOT_INTERESTED','SCREENING','NOT_FIT', 'CV_RECEIVED','RECRUITER_INTERVIEW', 'NEGOTIATION'] as const;
 export const statusesArray = ['SCREENING', "INTERESTED", "NOT_INTERESTED", "NOT_FIT",'CV_SENT',"CV_RECEIVED",'RECRUITER_INTERVIEW','CLIENT_INTERVIEW','NEGOTIATION'] as const;
 // 
+
+
+
 export type statuses = typeof statusesArray[number];
 export type chatControls = "startChat" | "allStartedAndStoppedChats" | "startVideoInterviewChat" | "startMeetingSchedulingChat"
 

@@ -74,7 +74,6 @@ export class CandidateSourcingController {
       query: CreateManyPeople,
       variables: graphqlVariablesForPerson,
     });
-
     try {
       const responseForPerson = await axiosRequest(graphqlQueryObjForPerson);
       console.log('Response from graphqlQueryObjForPerson:', responseForPerson.status);
@@ -153,7 +152,19 @@ export class CandidateSourcingController {
     }
   }
 
-  async processProfilesWithRateLimiting(data: UserProfile[], jobObject: Jobs): Promise<{ manyPersonObjects: ArxenaPersonNode[]; manyCandidateObjects: ArxenaCandidateNode[]; allPersonObjects: allDataObjects.PersonNode[] }> {
+  @Post('process-candidate-chats')
+  async countChats(): Promise<object> {
+    try {
+      console.log("going to count chats")
+      await new FetchAndUpdateCandidatesChatsWhatsapps().processCandidatesChatsGetStatuses();
+      return { status: 'Success' };
+    } catch (err) {
+      console.error('Error in countChats:', err);
+      return { status: 'Failed', error: err };
+    }
+  }
+
+  async processProfilesWithRateLimiting(data: UserProfile[], jobObject: Jobs): Promise<{ manyPersonObjects: ArxenaPersonNode[];  manyCandidateObjects: ArxenaCandidateNode[]; allPersonObjects: allDataObjects.PersonNode[] }> {
     console.log('Total number of profiles received:', data.length);
     const manyPersonObjects: ArxenaPersonNode[] = [];
     const allPersonObjects: allDataObjects.PersonNode[] = [];
@@ -164,7 +175,6 @@ export class CandidateSourcingController {
     for (let i = 0; i < data.length; i += batchSize) {
       const batch = data.slice(i, i + batchSize);
       // const phoneNumbers = batch.map(profile => profile.phone_number).filter(Boolean);
-      // console.log('Total number of phone numbers in batch:', phoneNumbers.length);
       // const personDetailsMap = await this.batchGetPersonDetailsByPhoneNumbers(phoneNumbers);
       const uniqueStringKeys = batch.map(profile => profile?.unique_key_string).filter(Boolean);
       console.log('Total number of unique string keys in batch:%s', uniqueStringKeys.length);

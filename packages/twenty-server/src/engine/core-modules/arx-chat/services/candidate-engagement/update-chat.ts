@@ -3,8 +3,41 @@ import * as allGraphQLQueries from '../../services/candidate-engagement/graphql-
 import { v4 } from 'uuid';
 import { axiosRequest } from '../../utils/arx-chat-agent-utils';
 import axios from 'axios';
-import { last } from 'rxjs';
-import { MicroserviceHealthIndicator } from '@nestjs/terminus';
+import { ToolsForAgents } from '../../services/llm-agents/prompting-tool-calling';
+import  {getChatStageFromChatHistory}  from '../../services/llm-agents/get-current-stage-from-messages';
+// import { last } from 'rxjs';
+// import { MicroserviceHealthIndicator } from '@nestjs/terminus';
+
+class Semaphore {
+  private permits: number;
+  private tasks: (() => void)[] = [];
+  constructor(permits: number) {
+    this.permits = permits;
+  }
+
+  async acquire(): Promise<void> {
+    return new Promise((resolve) => {
+      if (this.permits > 0) {
+        this.permits--;
+        resolve();
+      } else {
+        this.tasks.push(resolve);
+      }
+    });
+  }
+
+  release(): void {
+    this.permits++;
+    if (this.tasks.length > 0 && this.permits > 0) {
+      this.permits--;
+      const nextTask = this.tasks.shift();
+      nextTask?.();
+    }
+  }
+}
+
+
+
 export class FetchAndUpdateCandidatesChatsWhatsapps {
   async fetchSpecificPeopleToEngageBasedOnChatControl(chatControl: allDataObjects.chatControls): Promise<allDataObjects.PersonNode[]> {
     try {
@@ -33,6 +66,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
       const chatCount = whatsappMessages?.length;
       const updateCandidateObjectVariables = { idToUpdate: candidateId, input: { chatCount: chatCount } };
       const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToUpdateCandidateChatCount, variables: updateCandidateObjectVariables });
+
       try {
         const response = await axiosRequest(graphqlQueryObj);
         console.log("Candidate chat count updated successfully:", response.data);
@@ -45,6 +79,44 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
 
 
 
+
+// "ONLY_ADDED_NO_CONVERSATION" | "CONVERSATION_STARTED_HAS_NOT_RESPONDED" | "SHARED_JD_HAS_NOT_RESPONDED" | "STOPPED_RESPONDING_ON_QUESTIONS" | "CONVERSATION_CLOSED_TO_BE_CONTACTED"
+
+  async processCandidatesChatsGetStatuses() {
+    const allCandidates = await this.fetchAllCandidatesWithSpecificChatControl("startChat");
+    console.log("Fetched", allCandidates?.length, " candidates with chatControl allStartedAndStoppedChats");
+    
+    const semaphore = new Semaphore(10); // Allow 10 concurrent requests
+    const processWithSemaphore = async (candidate: any) => {
+      await semaphore.acquire();
+      try {
+        const candidateId = candidate?.id;
+        const whatsappMessages = await this.fetchAllWhatsappMessages(candidateId);
+        const candidateStatus = await getChatStageFromChatHistory(whatsappMessages) as allDataObjects.candidateStatuses;
+        
+        const updateCandidateObjectVariables = { 
+          idToUpdate: candidateId, 
+          input: { candidateStatus: candidateStatus } 
+        };
+        const graphqlQueryObj = JSON.stringify({ 
+          query: allGraphQLQueries.graphqlQueryToUpdateCandidateChatCount, 
+          variables: updateCandidateObjectVariables 
+        });
+        const response = await axiosRequest(graphqlQueryObj);
+        console.log("Candidate chat status updated successfully:", response.data);
+      } catch (error) {
+        console.log('Error in updating candidate chat count:', error);
+      } finally {
+        semaphore.release();
+      }
+    };
+  
+    // Process all candidates with semaphore control
+    await Promise.all(
+      allCandidates.map(candidate => processWithSemaphore(candidate))
+    );
+  }
+  
 
   async fetchAllCandidatesWithSpecificChatControl(chatControl:allDataObjects.chatControls): Promise<allDataObjects.Candidate[]> {
     let allCandidates: allDataObjects.Candidate[] = [];
