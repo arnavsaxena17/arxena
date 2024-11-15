@@ -99,10 +99,10 @@ export class ToolsForAgents {
     If the initial introduction message has been sent by the recruiter and there has been no response since then, return with the status, "CONVERSATION_STARTED_HAS_NOT_RESPONDED".
     If the candidate has been shared a JD and hasn't responded after that, return with the status, "SHARED_JD_HAS_NOT_RESPONDED".
     If the candidate doesn't want to relocate, return with the status, "CANDIDATE_REFUSES_TO_RELOCATE". 
-    If the candidate has responded to questions and has asked for time to speak or to setup time to speak and has evidenced interest speaking to the recruiter, return with the status, "CANDIDATE_IS_KEEN_TO_CHAT".
+    If the candidate has evidenced interest in the job, responded to questions asked by the recruiter and has asked for time to speak or to setup time to speak and has evidenced interest speaking to the recruiter, return with the status, "CANDIDATE_IS_KEEN_TO_CHAT".
     If the questions have been asked by the recruiter and the candidate has not responded return the stage as "STOPPED_RESPONDING_ON_QUESTIONS".
     If the candidate has followed up after the initial setup fo the chat return the stage as "CANDIDATE_HAS_FOLLOWED_UP_TO_SETUP_CHAT".
-    If the candidate has shown interest, answered all questions and has been asked to be contacted later, return the stage as "CONVERSATION_CLOSED_TO_BE_CONTACTED".
+    If the candidate has shown interest, answered all questions and has been asked to be contacted later, return the stage as "CONVERSA TION_CLOSED_TO_BE_CONTACTED".
     If the recruiter has said that they will get back to the candidate, return the stage as "CONVERSATION_CLOSED_TO_BE_CONTACTED".
     `;
     return STAGE_SYSTEM_PROMPT;
