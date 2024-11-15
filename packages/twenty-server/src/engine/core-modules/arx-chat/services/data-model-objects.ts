@@ -206,6 +206,7 @@ export interface CandidateNode {
   phoneNumber: string;
   email: string;
   input: string;
+  statusCandidates?:string;
   startChat: boolean;
   stopChat: boolean;
   status:string;
@@ -447,12 +448,13 @@ export const emptyCandidateProfileObj: CandidateNode = {
       },
     ],
   },
-  status:"",
+  status: '',
   engagementStatus: false,
   phoneNumber: '',
   email: '',
   input: '',
   startChat: false,
+  statusCandidates: '',
   startMeetingSchedulingChat:false,
   lastEngagementChatControl: 'startChat',
   startVideoInterviewChat: false,
