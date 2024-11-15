@@ -35,6 +35,8 @@ export class ToolsForAgents {
     return result;
   }
 
+
+
   async getStagePrompt() {
     const recruitmentSteps = [
       'Initial Outreach: The recruiter introduces themselves and their company, mentions the specific role, and the candidate has responded in some manner.',
@@ -72,6 +74,20 @@ export class ToolsForAgents {
 
     return STAGE_SYSTEM_PROMPT;
   }
+
+
+    // export const allStatusesArray: [string, ...string[]] = [
+  //   "ONLY_ADDED_NO_CONVERSATION",
+  //   "CONVERSATION_STARTED_HAS_NOT_RESPONDED",
+  //   "SHARED_JD_HAS_NOT_RESPONDED",
+  //   "CANDIDATE_REFUSES_TO_RELOCATE",
+  //   "STOPPED_RESPONDING_ON_QUESTIONS",
+  //   "CANDIDATE_IS_KEEN_TO_CHAT",
+  //   "CANDIDATE_HAS_FOLLOWED_UP_TO_SETUP_CHAT",
+  //   "CANDIDATE_IS_RELUCTANT_TO_DISCUSS_COMPENSATION",
+  //   "CONVERSATION_CLOSED_TO_BE_CONTACTED"
+  // ];
+  
   async getConversationStageHistoryClassificationPrompt(){
     const STAGE_SYSTEM_PROMPT = `
     You are assisting with determining the appropriate stage in a recruiting conversation based on the interaction history with a candidate. Your task is to decide whether to maintain the current stage or progress to the next one based on the dialogue so far.
@@ -82,7 +98,9 @@ export class ToolsForAgents {
     If there is no conversation history or only a greeting, default to stage "ONLY_ADDED_NO_CONVERSATION".
     If the candidate has been shared a JD and hasn't responded after that, return with the status, "SHARED_JD_HAS_NOT_RESPONDED".
     If the candidate doesn't want to relocate, return with the status, "CANDIDATE_REFUSES_TO_RELOCATE". 
+    If the candidate has responded to all questions and is keen to chat, return with the status, "CANDIDATE_IS_KEEN_TO_CHAT". 
     If the questions have been asked by the recruiter and the candidate has not responded return the stage as "STOPPED_RESPONDING_ON_QUESTIONS".
+    If the candidate has followed up after the initial setup fo the chat return the stage as "CANDIDATE_HAS_FOLLOWED_UP_TO_SETUP_CHAT".
     If the candidate has shown interest, answered all questions and has been asked to be contacted later, return the stage as "CONVERSATION_CLOSED_TO_BE_CONTACTED".
     `;
     return STAGE_SYSTEM_PROMPT;
