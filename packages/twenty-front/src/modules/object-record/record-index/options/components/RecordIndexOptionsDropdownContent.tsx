@@ -24,6 +24,8 @@ import { ViewFieldsVisibilityDropdownSection } from '@/views/components/ViewFiel
 import { useGetCurrentView } from '@/views/hooks/useGetCurrentView';
 import { ViewType } from '@/views/types/ViewType';
 import { useSpreadsheetRecordImportAll } from '@/object-record/spreadsheet-import/useSpreadsheetRecordImportAll';
+import { useCountChats } from '@/object-record/hooks/useCountChats';
+import { IconCactus } from '@tabler/icons-react';
 
 type RecordIndexOptionsMenu = 'fields' | 'hiddenFields';
 
@@ -79,6 +81,7 @@ export const RecordIndexOptionsDropdownContent = ({ viewType, recordIndexId, obj
   const handleChangeFieldVisibility = viewType === ViewType.Kanban ? handleBoardFieldVisibilityChange : handleColumnVisibilityChange;
 
   const { openRecordSpreadsheetImport } = useSpreadsheetRecordImport(objectNameSingular);
+  const { countChats, loading, error } = useCountChats(objectNameSingular);
   const { openRecordSpreadsheetImportAll } = useSpreadsheetRecordImportAll(objectNameSingular);
 
   const { progress, download } = useExportTableData({
@@ -93,6 +96,9 @@ export const RecordIndexOptionsDropdownContent = ({ viewType, recordIndexId, obj
       {!currentMenu && (
         <DropdownMenuItemsContainer>
           <MenuItem onClick={() => handleSelectMenu('fields')} LeftIcon={IconTag} text="Fields" />
+          {objectNameSingular === 'candidate' && (
+            <MenuItem onClick={() => countChats()} LeftIcon={IconCactus} text="Count Chats" />
+          )}
           <MenuItem onClick={() => openRecordSpreadsheetImport()} LeftIcon={IconFileImport} text="Import" />
           <MenuItem onClick={() => openRecordSpreadsheetImportAll()} LeftIcon={IconFileImport} text="Import All" />
           <MenuItem onClick={download} LeftIcon={IconFileExport} text={displayedExportProgress(progress)} />
