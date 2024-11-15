@@ -82,7 +82,8 @@ export const RecordIndexOptionsDropdownContent = ({ viewType, recordIndexId, obj
   const handleChangeFieldVisibility = viewType === ViewType.Kanban ? handleBoardFieldVisibilityChange : handleColumnVisibilityChange;
 
   const { openRecordSpreadsheetImport } = useSpreadsheetRecordImport(objectNameSingular);
-  const { countChats, loading, error } = useCountChats(objectNameSingular);
+  const { countChats } = useCountChats(objectNameSingular);
+  const { processMessagesGetStatus } = useProcessMessagesGetStatus(objectNameSingular);
   const { openRecordSpreadsheetImportAll } = useSpreadsheetRecordImportAll(objectNameSingular);
 
   const { progress, download } = useExportTableData({
