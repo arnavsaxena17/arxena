@@ -92,11 +92,11 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
       try {
         const candidateId = candidate?.id;
         const whatsappMessages = await this.fetchAllWhatsappMessages(candidateId);
-        const candidateStatus = await getChatStageFromChatHistory(whatsappMessages) as allDataObjects.candidateStatuses;
+        const candidateStatus = await getChatStageFromChatHistory(whatsappMessages) as allDataObjects.allStatuses;
         
         const updateCandidateObjectVariables = { 
           idToUpdate: candidateId, 
-          input: { candidateStatus: candidateStatus } 
+          input: { statusCandidates: candidateStatus } 
         };
         const graphqlQueryObj = JSON.stringify({ 
           query: allGraphQLQueries.graphqlQueryToUpdateCandidateChatCount, 

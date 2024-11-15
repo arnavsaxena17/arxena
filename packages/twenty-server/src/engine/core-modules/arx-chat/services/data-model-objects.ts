@@ -4,13 +4,24 @@ import OpenAI from 'openai';
 // Define the possible roles in the chat
 export type ChatRole = 'system' | 'user' | 'tool' | 'assistant';
 
-export type candidateStatuses = "ONLY_ADDED_NO_CONVERSATION" | "CONVERSATION_STARTED_HAS_NOT_RESPONDED" | "SHARED_JD_HAS_NOT_RESPONDED" | "STOPPED_RESPONDING_ON_QUESTIONS" | "CANDIDATE_REFUSES_TO_RELOCATE" | "CONVERSATION_CLOSED_TO_BE_CONTACTED";
+// export type candidateStatuses = "ONLY_ADDED_NO_CONVERSATION" | "CONVERSATION_STARTED_HAS_NOT_RESPONDED" | "SHARED_JD_HAS_NOT_RESPONDED" | "STOPPED_RESPONDING_ON_QUESTIONS" | "CANDIDATE_REFUSES_TO_RELOCATE" | "CONVERSATION_CLOSED_TO_BE_CONTACTED";
 // export const statusesArray = ['INTERESTED','NOT_INTERESTED','SCREENING','NOT_FIT', 'CV_RECEIVED','RECRUITER_INTERVIEW', 'NEGOTIATION'] as const;
 export const statusesArray = ['SCREENING', "INTERESTED", "NOT_INTERESTED", "NOT_FIT",'CV_SENT',"CV_RECEIVED",'RECRUITER_INTERVIEW','CLIENT_INTERVIEW','NEGOTIATION'] as const;
 // 
 
+export const allStatusesArray: [string, ...string[]] = [
+  "ONLY_ADDED_NO_CONVERSATION",
+  "CONVERSATION_STARTED_HAS_NOT_RESPONDED",
+  "SHARED_JD_HAS_NOT_RESPONDED",
+  "CANDIDATE_REFUSES_TO_RELOCATE",
+  "STOPPED_RESPONDING_ON_QUESTIONS",
+  "CANDIDATE_IS_KEEN_TO_CHAT",
+  "CANDIDATE_HAS_FOLLOWED_UP_TO SETUP_CHAT",
+  "CANDIDATE_IS_RELUCTANT_TO_DISCUSS_COMPENSATION",
+  "CONVERSATION_CLOSED_TO_BE_CONTACTED"
+];
 
-
+export type allStatuses = typeof allStatusesArray[number];
 export type statuses = typeof statusesArray[number];
 export type chatControls = "startChat" | "allStartedAndStoppedChats" | "startVideoInterviewChat" | "startMeetingSchedulingChat"
 
