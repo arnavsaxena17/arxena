@@ -24,6 +24,20 @@ export async function getChatStageFromChatHistory(messages: any) {
 
     let mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = new CandidateEngagementArx().getMostRecentMessageFromMessagesList(messages);
     mostRecentMessageArr[0] = { role: 'system', content: stagePrompt };
+
+    function generateHumanReadableConversation(messages: allDataObjects.ChatHistoryItem[]): string {
+        return messages.map(message => {
+            const role = message.role === 'user' ? 'User' : 'System';
+            return `${role}: ${message.content}`;
+        }).join('\n');
+    }
+
+    const humanReadableConversation = generateHumanReadableConversation(messages);
+    console.log("Human readable conversation:\n", humanReadableConversation);
+    console.log("Finally Sent messages for converation classificaation to OpenAI:::", mostRecentMessageArr);
+
+
+
     // @ts-ignore
     const completion = await new LLMProviders().openAIclient.beta.chat.completions.parse({ model: "gpt-4o-mini", messages: mostRecentMessageArr, response_format: zodResponseFormat(new ToolsForAgents().currentConversationStage, "conversationStage"), });
     const conversationStage = completion.choices[0].message.parsed as { stageOfTheConversation: string } | null;

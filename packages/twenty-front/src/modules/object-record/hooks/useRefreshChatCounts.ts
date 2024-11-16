@@ -5,27 +5,40 @@ import { useRecoilState } from 'recoil';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 
-export const useCountChats = (objectNameSingular: string, candidateIds= null) => {
+
+
+
+
+type UseRefreshChatCountsProps = {
+  onSuccess?: () => void;
+  onError?: (error: Error) => void;
+};
+
+export const useRefreshChatCounts = ({
+  onSuccess,
+  onError,
+}: UseRefreshChatCountsProps = {}) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [tokenPair] = useRecoilState(tokenPairState);
   const { enqueueSnackBar } = useSnackBar();
 
-  const countChats = async () => {
+  const refreshChatCounts = async (candidateIds: string[]) => {
     setLoading(true);
     setError(null);
     
     try {
-      const response = await axios({
-        method: 'post',
-        url: process.env.REACT_APP_SERVER_BASE_URL+'/arx-chat/count-chats',
-        headers: {
-          Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
-        },
-        data: {
-          objectNameSingular,
-        }
-      });
+          const response = await axios.post(
+            `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/refresh-chat-counts-by-candidates`,
+            { candidateIds },
+            {
+              headers: {
+                Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
+                'Content-Type': 'application/json',
+              },
+            }
+          )
+
 
       // Show success message
       enqueueSnackBar('Successfully counted chats', {
@@ -55,5 +68,5 @@ export const useCountChats = (objectNameSingular: string, candidateIds= null) =>
   };
 
   return {
-    countChats  };
+    refreshChatCounts  };
 };

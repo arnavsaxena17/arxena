@@ -57,8 +57,11 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
   }
 
 
-  async updateCandidatesWithChatCount(){
-    const allCandidates = await this.fetchAllCandidatesWithSpecificChatControl("startChat");
+  async updateCandidatesWithChatCount(candidateIds: string[] | null = null){
+    let allCandidates = await this.fetchAllCandidatesWithSpecificChatControl("startChat");
+    if (candidateIds && Array.isArray(candidateIds)) {
+      allCandidates = allCandidates.filter(candidate => candidateIds.includes(candidate.id));
+    }
     console.log("Fetched", allCandidates?.length, " candidates with chatControl allStartedAndStoppedChats");
     for (const candidate of allCandidates){
       const candidateId = candidate?.id;

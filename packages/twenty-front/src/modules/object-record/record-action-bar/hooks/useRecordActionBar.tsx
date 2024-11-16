@@ -29,6 +29,7 @@ import { isDefined } from '~/utils/isDefined';
 import { IconBriefcase2, IconClipboard, IconCopy, IconMessage, IconMessage2, IconPaperclip, IconRefresh, IconUserPlus, IconUsersPlus, IconVideo } from '@tabler/icons-react';
 import { useCreateVideoInterview } from '@/object-record/hooks/useCreateInterview';
 import { useRefreshChatStatus } from '@/object-record/hooks/useRefreshChatStatus';
+import { useRefreshChatCounts } from '@/object-record/hooks/useRefreshChatCounts';
 import { useExecuteDeleteCandidatesAndPeople } from '@/object-record/hooks/useExecuteDeleteCandidatesAndPeople';
 
 type useRecordActionBarProps = {
@@ -84,6 +85,12 @@ export const useRecordActionBar = ({
   });
   
   const { refreshChatStatus } = useRefreshChatStatus({
+    onSuccess: () => { },
+    onError: (error: any) => {
+      console.error('Failed to refresh chat status:', error);
+    },
+  });
+  const { refreshChatCounts } = useRefreshChatCounts({
     onSuccess: () => { },
     onError: (error: any) => {
       console.error('Failed to refresh chat status:', error);
@@ -386,6 +393,17 @@ export const useRecordActionBar = ({
                           onClick: async () => {
                             try {
                               await refreshChatStatus(selectedRecordIds);
+                            } catch (error) {
+                              console.error('Error creating videos:', error);
+                            }
+                          },
+                        },
+                        {
+                          label: 'Refresh Chat Counts',
+                          Icon: IconRefresh,
+                          onClick: async () => {
+                            try {
+                              await refreshChatCounts(selectedRecordIds);
                             } catch (error) {
                               console.error('Error creating videos:', error);
                             }

@@ -155,11 +155,11 @@ export class CandidateSourcingController {
   @Post('process-candidate-chats')
   async processCandidateChats(): Promise<object> {
     try {
-      console.log("going to count chats")
+      console.log("going to process chats")
       await new FetchAndUpdateCandidatesChatsWhatsapps().processCandidatesChatsGetStatuses();
       return { status: 'Success' };
     } catch (err) {
-      console.error('Error in countChats:', err);
+      console.error('Error in process:', err);
       return { status: 'Failed', error: err };
     }
   }
@@ -170,11 +170,11 @@ export class CandidateSourcingController {
 
     try {
       const { candidateIds } = body;
-      console.log("going to count chats")
+      console.log("going to refresh chats")
       await new FetchAndUpdateCandidatesChatsWhatsapps().processCandidatesChatsGetStatuses(candidateIds);
       return { status: 'Success' };
     } catch (err) {
-      console.error('Error in countChats:', err);
+      console.error('Error in refresh chats:', err);
       return { status: 'Failed', error: err };
     }
   }
