@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import { isNonEmptyString } from '@sniptt/guards';
-import { useRecoilCallback, useSetRecoilState } from 'recoil';
+import { useRecoilCallback, useRecoilState, useSetRecoilState } from 'recoil';
 import {
   IconClick,
   IconFileExport,
@@ -31,6 +31,9 @@ import { useCreateVideoInterview } from '@/object-record/hooks/useCreateIntervie
 import { useRefreshChatStatus } from '@/object-record/hooks/useRefreshChatStatus';
 import { useRefreshChatCounts } from '@/object-record/hooks/useRefreshChatCounts';
 import { useExecuteDeleteCandidatesAndPeople } from '@/object-record/hooks/useExecuteDeleteCandidatesAndPeople';
+import { tokenPairState } from '@/auth/states/tokenPairState';
+import SlidingChatPanel from '@/activities/chats/components/SlidingChatPanel';
+
 
 type useRecordActionBarProps = {
   objectMetadataItem: ObjectMetadataItem;
@@ -47,6 +50,9 @@ export const useRecordActionBar = ({
 }: useRecordActionBarProps) => {
   const setContextMenuEntries = useSetRecoilState(contextMenuEntriesState);
   const setActionBarEntriesState = useSetRecoilState(actionBarEntriesState);
+
+  const [isChatPanelOpen, setIsChatPanelOpen] = useState(false);
+
   const [isDeleteRecordsModalOpen, setIsDeleteRecordsModalOpen] =
     useState(false);
   const [currentRecordId, setCurrentRecordId] = useState<string | undefined>();
@@ -213,8 +219,23 @@ export const useRecordActionBar = ({
   //     }),
   //   );
   // }, [callback, executeQuickAddToPeople, selectedRecordIds]);
-
   
+  const handleShowChat = useCallback(async () => {
+    console.log("Show chat clicked", {
+      selectedRecordIds,
+      isSingleRecord: selectedRecordIds.length === 1
+    });
+    if (selectedRecordIds.length === 1) {
+      setIsChatPanelOpen(true);
+    }
+  }, [selectedRecordIds]);
+  
+  
+  const handleCloseChat = useCallback(() => {
+    setIsChatPanelOpen(false);
+  }, []);
+
+
 
   const { progress, download } = useExportTableData({
     delayMs: 100,
@@ -252,7 +273,7 @@ export const useRecordActionBar = ({
               label: 'Show Chats',
               Icon: IconMessage2,
               accent: 'default' as const,
-              onClick: () => showCV(),
+              onClick: handleShowChat,
             },
           ]
         : []),
@@ -453,6 +474,21 @@ export const useRecordActionBar = ({
       isCloning,
       isRemoteObject,
       setActionBarEntriesState,
+      handleShowChat, // Add this to dependencies
+
     ]),
-  };
+    additionalComponents: (() => {
+      console.log("Rendering additional components", {
+        isChatPanelOpen,
+        selectedRecordIds
+      });
+      return (
+        <SlidingChatPanel
+          isOpen={isChatPanelOpen}
+          onClose={handleCloseChat}
+          selectedRecordIds={selectedRecordIds}
+        />
+      );
+    })(),
+    };
 };
