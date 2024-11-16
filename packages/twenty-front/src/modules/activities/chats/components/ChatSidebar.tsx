@@ -7,12 +7,6 @@ import styled from "@emotion/styled";
 import { useNavigate } from 'react-router-dom';
 import ChatTable from "./ChatTable";
 import SearchBox from "./SearchBox";
-// import { viewableRecordIdState } from '@/object-record/record-right-drawer/states/viewableRecordIdState';
-// import { viewableRecordNameSingularState } from '@/object-record/record-right-drawer/states/viewableRecordNameSingularState';
-// import { RecordShowContainer } from '@/object-record/record-show/components/RecordShowContainer';
-// import { useRightDrawer } from '@/ui/layout/right-drawer/hooks/useRightDrawer';
-// import { useOpenCreateActivityDrawer } from '@/activities/hooks/useOpenCreateActivityDrawer';
-
 
 import { Job } from "../types/front-chat-types";
 
