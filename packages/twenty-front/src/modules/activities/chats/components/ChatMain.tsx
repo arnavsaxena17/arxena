@@ -181,11 +181,11 @@ export default function ChatMain({ initialCandidateId }: ChatMainProps) {
     updateUnreadMessagesStatus(selectedIndividual);
   }, [selectedIndividual]);
 
-  if (isLoading && individuals.length === 0) {
+  if (true) {
     return (
-      <SpinnerContainer>
+      // <SpinnerContainer>
         <Spinner />
-      </SpinnerContainer>
+      // </SpinnerContainer>
     );
   }
 

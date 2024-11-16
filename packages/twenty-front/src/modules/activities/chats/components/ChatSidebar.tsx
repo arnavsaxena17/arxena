@@ -41,8 +41,8 @@ const RefreshIndicator = styled.div<{ isRefreshing: boolean }>`
   height: 2px;
   background-color: black;
   position: absolute;
-  top: 0;
-  left: 0;
+  top: 30;
+  left: 30;
   right: 0;
   transform: scaleX(${props => props.isRefreshing ? 1 : 0});
   transform-origin: left;
