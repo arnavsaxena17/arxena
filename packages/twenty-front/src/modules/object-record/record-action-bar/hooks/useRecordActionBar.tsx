@@ -17,10 +17,8 @@ import { useDeleteManyRecords } from '@/object-record/hooks/useDeleteManyRecords
 import { useExecuteQuickActionOnOneRecord } from '@/object-record/hooks/useExecuteQuickActionOnOneRecord';
 import { useCloneOneRecord } from '@/object-record/hooks/useCloneOneRecord'; // Import the new hook
 import { useCreateInterviewVideos } from '@/object-record/hooks/useCreateInterviewVideos'; // Import the new hook
-import {
-  displayedExportProgress,
-  useExportTableData,
-} from '@/object-record/record-index/options/hooks/useExportTableData';
+import { displayedExportProgress, useExportTableData, } from '@/object-record/record-index/options/hooks/useExportTableData';
+import { useShowCV } from '@/object-record/record-index/options/hooks/useShowCV';
 import { recordStoreFamilyState } from '@/object-record/record-store/states/recordStoreFamilyState';
 import { ConfirmationModal } from '@/ui/layout/modal/components/ConfirmationModal';
 import { actionBarEntriesState } from '@/ui/navigation/action-bar/states/actionBarEntriesState';
@@ -28,7 +26,7 @@ import { contextMenuEntriesState } from '@/ui/navigation/context-menu/states/con
 import { ContextMenuEntry } from '@/ui/navigation/context-menu/types/ContextMenuEntry';
 import { useIsFeatureEnabled } from '@/workspace/hooks/useIsFeatureEnabled';
 import { isDefined } from '~/utils/isDefined';
-import { IconBriefcase2, IconCopy, IconUserPlus, IconUsersPlus, IconVideo } from '@tabler/icons-react';
+import { IconBriefcase2, IconClipboard, IconCopy, IconMessage, IconMessage2, IconPaperclip, IconUserPlus, IconUsersPlus, IconVideo } from '@tabler/icons-react';
 import { useCreateVideoInterview } from '@/object-record/hooks/useCreateInterview';
 import { useExecuteDeleteCandidatesAndPeople } from '@/object-record/hooks/useExecuteDeleteCandidatesAndPeople';
 
@@ -211,6 +209,13 @@ export const useRecordActionBar = ({
     recordIndexId: objectMetadataItem.namePlural,
   });
 
+
+  const { progressCV, showCV } = useShowCV({
+    objectNameSingular: objectMetadataItem.nameSingular,
+    recordIndexId: objectMetadataItem.namePlural,
+
+  });
+
   const isRemoteObject = objectMetadataItem.isRemote;
 
   const baseActions: ContextMenuEntry[] = useMemo(
@@ -221,6 +226,18 @@ export const useRecordActionBar = ({
         accent: 'default',
         onClick: () => download(),
       },
+      {
+        label: 'Show CV',
+        Icon: IconPaperclip,
+        accent: 'default',
+        onClick: () => showCV(),
+      },
+      {
+        label: 'Show Chats',
+        Icon: IconMessage2,
+        accent: 'default',
+        onClick: () => showCV(),
+      }
     ],
     [download, progress],
   );

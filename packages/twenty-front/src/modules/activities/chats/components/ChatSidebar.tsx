@@ -26,6 +26,7 @@ const StyledDropdownContainer = styled.div`
   background-color: #ffffff;
   border-bottom: 1px solid #e0e0e0;
   overflow: hidden; // Hide overflow on the container
+  overflow-x: auto;
 
 `;
 
@@ -59,7 +60,6 @@ const DropdownButton = styled.button`
   min-width: 150px;
   text-align: left;
   z-index: 1;
-
   &:hover {
     background-color: #f0f0f0;
   }
@@ -74,6 +74,7 @@ const DropdownContent = styled.div<{ isOpen: boolean }>`
   z-index: 10;
   max-height: 300px;
   overflow-y: auto;
+  left: 0; // Align with the DropdownButton
 `;
 
 const CheckboxLabel = styled.label`
@@ -116,6 +117,19 @@ const statusLabels: { [key: string]: string } = {
   "NEGOTIATION": "Negotiation"
 };
 
+
+const chatStatusLabels: { [key: string]: string } = {
+    "ONLY_ADDED_NO_CONVERSATION": "Only Added, No Conversation",
+    "CONVERSATION_STARTED_HAS_NOT_RESPONDED": "Conversation Started, Has Not Responded",
+    "SHARED_JD_HAS_NOT_RESPONDED": "Shared JD, Has Not Responded",
+    "CANDIDATE_REFUSES_TO_RELOCATE": "Candidate Refuses To Relocate",
+    "STOPPED_RESPONDING_ON_QUESTIONS": "Stopped Responding On Questions",
+    "CANDIDATE_IS_KEEN_TO_CHAT": "Candidate Is Keen To Chat",
+    "CANDIDATE_HAS_FOLLOWED_UP_TO_SETUP_CHAT": "Candidate Has Followed Up To Setup Chat",
+    "CANDIDATE_IS_RELUCTANT_TO_DISCUSS_COMPENSATION": "Candidate Is Reluctant To Discuss Compensation",
+    "CONVERSATION_CLOSED_TO_BE_CONTACTED": "Conversation Closed, To Be Contacted",
+  };
+
 const ChatSidebar: React.FC<ChatSidebarProps> = ({
   individuals,
   selectedIndividual,
@@ -132,9 +146,11 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   const [selectedJob, setSelectedJob] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("");
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
+  const [selectedChatStatuses, setSelectedChatStatuses] = useState<string[]>([]);
   const [selectedJobs, setSelectedJobs] = useState<string[]>([]);
   const [isJobDropdownOpen, setIsJobDropdownOpen] = useState(false);
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
+  const [isChatStatusDropdownOpen, setIsChatStatusDropdownOpen] = useState(false);
   // const setViewableRecordId = useSetRecoilState(viewableRecordIdState);
   // const setViewableRecordNameSingular = useSetRecoilState(
   //   viewableRecordNameSingularState,
@@ -143,6 +159,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   const sidebarRef = useRef<HTMLDivElement>(null);
   const jobDropdownRef = useRef<HTMLDivElement>(null);
   const statusDropdownRef = useRef<HTMLDivElement>(null);
+  const chatStatusDropdownRef = useRef<HTMLDivElement>(null);
 
   
   
@@ -182,6 +199,9 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
       if (statusDropdownRef.current && !statusDropdownRef.current.contains(event.target as Node)) {
         setIsStatusDropdownOpen(false);
       }
+      if (chatStatusDropdownRef.current && !chatStatusDropdownRef.current.contains(event.target as Node)) {
+        setIsChatStatusDropdownOpen(false);
+      }
       
     };
 
@@ -216,7 +236,12 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
       selectedStatuses.includes(individual?.candidates?.edges[0]?.node?.status || "");
 
 
-    return matchesSearch && matchesJob && matchesStatus;
+    const matchesChatStatus =
+      selectedChatStatuses.length === 0 ||
+      selectedChatStatuses.includes(individual?.candidates?.edges[0]?.node?.statusCandidates || "");
+
+
+    return matchesSearch && matchesJob && matchesStatus && matchesChatStatus;
   });
 
   const sortedIndividuals = filteredIndividuals.sort((a, b) => {
@@ -247,8 +272,15 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     );
   };
 
+
   const handleStatusToggle = (status: string) => {
     setSelectedStatuses(prev =>
+      prev.includes(status) ? prev.filter(s => s !== status) : [...prev, status]
+    );
+  };
+  const handleChatStatusToggle = (status: string) => {
+    console.log("Chat Status:", status);
+    setSelectedChatStatuses(prev =>
       prev.includes(status) ? prev.filter(s => s !== status) : [...prev, status]
     );
   };
@@ -269,6 +301,17 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     const counts: { [key: string]: number } = {};
     filteredIndividuals.forEach((individual) => {
       const status = individual?.candidates?.edges[0]?.node?.status;
+      if (status) {
+        counts[status] = (counts[status] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [filteredIndividuals]);
+
+  const chatStatusCounts = useMemo(() => {
+    const counts: { [key: string]: number } = {};
+    filteredIndividuals.forEach((individual) => {
+      const status = individual?.candidates?.edges[0]?.node?.statusCandidates;
       if (status) {
         counts[status] = (counts[status] || 0) + 1;
       }
@@ -309,6 +352,19 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                 <CheckboxLabel key={value}>
                   <Checkbox type="checkbox" checked={selectedStatuses.includes(value)} onChange={() => handleStatusToggle(value)} /> 
                   {label} ({statusCounts[value] || 0})
+                </CheckboxLabel>
+              ))}
+          </DropdownContent>
+        </DropdownContainer>
+        <DropdownContainer ref={chatStatusDropdownRef}>
+          <DropdownButton onClick={() => setIsChatStatusDropdownOpen(!isChatStatusDropdownOpen)}>
+            {selectedChatStatuses.length > 0 ? `${selectedChatStatuses.length} Statuses Selected` : 'Chat Status'}
+          </DropdownButton>
+          <DropdownContent isOpen={isChatStatusDropdownOpen}>
+              {Object.entries(chatStatusLabels).map(([value, label]) => (
+                <CheckboxLabel key={value}>
+                  <Checkbox type="checkbox" checked={selectedChatStatuses.includes(value)} onChange={() => handleChatStatusToggle(value)} /> 
+                  {label} ({chatStatusCounts[value] || 0})
                 </CheckboxLabel>
               ))}
           </DropdownContent>
