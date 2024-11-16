@@ -82,8 +82,11 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
 
 // "ONLY_ADDED_NO_CONVERSATION" | "CONVERSATION_STARTED_HAS_NOT_RESPONDED" | "SHARED_JD_HAS_NOT_RESPONDED" | "STOPPED_RESPONDING_ON_QUESTIONS" | "CONVERSATION_CLOSED_TO_BE_CONTACTED"
 
-  async processCandidatesChatsGetStatuses() {
-    const allCandidates = await this.fetchAllCandidatesWithSpecificChatControl("startChat");
+  async processCandidatesChatsGetStatuses(candidateIds: string[] | null = null) {
+    let allCandidates = await this.fetchAllCandidatesWithSpecificChatControl("startChat");
+    if (candidateIds && Array.isArray(candidateIds)) {
+      allCandidates = allCandidates.filter(candidate => candidateIds.includes(candidate.id));
+    }
     console.log("Fetched", allCandidates?.length, " candidates with chatControl allStartedAndStoppedChats");
     
     const semaphore = new Semaphore(10); // Allow 10 concurrent requests
