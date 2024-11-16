@@ -360,6 +360,22 @@ export class ArxChatEndpoint {
   }
 
 
+  @Post('refresh-chat-counts-by-candidates')
+
+  async refreshChats(@Body() body: any): Promise<object>  {
+
+    try {
+      const { candidateIds } = body;
+      console.log("going to refresh chats")
+      await new FetchAndUpdateCandidatesChatsWhatsapps().updateCandidatesWithChatCount(candidateIds);
+      return { status: 'Success' };
+    } catch (err) {
+      console.error('Error in refresh chats:', err);
+      return { status: 'Failed', error: err };
+    }
+  }
+
+
 
   @Post('get-id-by-naukri-url')
   async getCandidateIdByNaukriURL(@Req() request: any): Promise<{ candidateId: string | null }> {

@@ -127,6 +127,7 @@ export const PageHeader = ({ title, hasBackButton, Icon, children, loading, reco
       )}
       </StyledLeftContainer>
       <StyledPageActionContainer>{children}</StyledPageActionContainer>
+      {/* <ShowPageAddButton /> */}
       {isRecordTable && (
       <ShowPageMoreButton
         key="more"
@@ -138,6 +139,8 @@ export const PageHeader = ({ title, hasBackButton, Icon, children, loading, reco
           ? 'person'
           : useParams().objectNamePlural === 'opportunities'
           ? 'opportunity'
+          : useParams().objectNamePlural?.slice(0, -1) ?? 'candidate'
+          ? 'candidate'
           : useParams().objectNamePlural?.slice(0, -1) ?? 'candidate'
         }
       />
