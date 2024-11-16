@@ -110,7 +110,7 @@ export const RecordIndexBoardDataLoaderEffect = ({
 
   const selectedRecordIds = useRecoilValue(selectedRecordIdsSelector());
 
-  const { setActionBarEntries, setContextMenuEntries } = useRecordActionBar({
+  const { setContextMenuEntries, setActionBarEntries, additionalComponents } = useRecordActionBar({
     objectMetadataItem,
     selectedRecordIds,
     callback: resetRecordSelection,
@@ -121,5 +121,8 @@ export const RecordIndexBoardDataLoaderEffect = ({
     setContextMenuEntries?.();
   }, [setActionBarEntries, setContextMenuEntries]);
 
-  return <></>;
+  return <>
+      {/* {additionalComponents}   */}
+
+  </>;
 };
