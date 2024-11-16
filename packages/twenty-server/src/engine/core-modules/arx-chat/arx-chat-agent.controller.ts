@@ -411,6 +411,16 @@ export class ArxChatEndpoint {
     console.log("All people length:", allPeople?.length)
     return allPeople
   }
+  @Get('get-person-chat')
+  @UseGuards(JwtAuthGuard)
+  async getCandidateAndChat(@Req() request: any): Promise<object> {
+    // const allPeople = await new FetchAndUpdateCandidatesChatsWhatsapps().fetchAllPeopleWithStartChatTrue()
+    const candidateId = request.query.candidateId;
+    const person = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByCandidateId(candidateId)
+    const allPeople = await new FetchAndUpdateCandidatesChatsWhatsapps().fetchSpecificPersonToEngageBasedOnChatControl("allStartedAndStoppedChats", person.id);
+    console.log("All people length:", allPeople?.length)
+    return allPeople
+  }
   
   @Post('create-video-interview')
   @UseGuards(JwtAuthGuard)

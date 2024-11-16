@@ -55,6 +55,22 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
       throw error; // Re-throw the error to be handled by the caller
     }
   }
+  async fetchSpecificPersonToEngageBasedOnChatControl(chatControl: allDataObjects.chatControls, personId:string): Promise<allDataObjects.PersonNode[]> {
+    try {
+      console.log('Fetching candidates to engage');
+      // const candidates = await this.fetchAllCandidatesWithSpecificChatControl(chatControl);
+      // console.log("Fetched", candidates?.length, " candidates with chatControl", chatControl);
+      // const candidatePeopleIds = candidates?.filter(c => c?.people?.id).map(c => c?.people?.id);
+      // console.log("Got a total of ", candidatePeopleIds?.length, "candidate ids", "for chatControl", chatControl);
+      const people = await this.fetchAllPeopleByCandidatePeopleIds([personId]);
+      console.log("Fetched", people?.length ,"people in fetch person", "with chatControl", chatControl);
+      return people;
+    } catch (error) {
+      console.log("This is the error in fetchPeopleToEngageByCheckingOnlyStartChat", error);
+      console.error('An error occurred:', error);
+      throw error; // Re-throw the error to be handled by the caller
+    }
+  }
 
 
   async updateCandidatesWithChatCount(candidateIds: string[] | null = null){
@@ -301,6 +317,47 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
       if (personObj){
         console.log('Personobj:', personObj?.name?.firstName || "" +" " + personObj?.name?.lastName) + "";
         return personObj;
+      }
+      else{
+        console.log("Person not found")
+        return allDataObjects.emptyCandidateProfileObj;
+      }
+    } catch (error) {
+      console.log('Getting an error and returning empty candidate person profile objeect:', error);
+      return allDataObjects.emptyCandidateProfileObj;
+    }
+  }
+  
+  async getPersonDetailsByCandidateId(candidateId: string) {
+    console.log('Trying to get person details by candidateId:', candidateId);
+    if (!candidateId || candidateId === '') {
+      console.log('Phone number is empty and no candidate found');
+      return allDataObjects.emptyCandidateProfileObj;
+    }
+    const graphVariables = { filter: { id: { eq: candidateId } }, orderBy: { position: 'AscNullsFirst' } };
+    try {
+      const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToManyCandidateById, variables: graphVariables });
+      const candidateObjresponse = await axiosRequest(graphqlQueryObj);
+      const candidateObj = candidateObjresponse?.data?.data;
+      console.log("candidate objk1:", candidateObj);
+      
+      const candidateNode = candidateObjresponse?.data?.data?.candidates?.edges[0]?.node;
+      if (!candidateNode) {
+        console.log('Candidate not found');
+        return { status: 'Failed', message: 'Candidate not found' };
+      }
+  
+      const person = candidateNode?.people;
+      if (!person) {
+        console.log('Person ID not found');
+        return { status: 'Failed', message: 'Person ID not found' };
+      }
+      console.log("Person ID:", person);
+  
+
+      if (person){
+        console.log('Personobj:', person?.name?.firstName || "" +" " + person?.name?.lastName) + "";
+        return person;
       }
       else{
         console.log("Person not found")
