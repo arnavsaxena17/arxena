@@ -153,10 +153,25 @@ export class CandidateSourcingController {
   }
 
   @Post('process-candidate-chats')
-  async countChats(): Promise<object> {
+  async processCandidateChats(): Promise<object> {
     try {
       console.log("going to count chats")
       await new FetchAndUpdateCandidatesChatsWhatsapps().processCandidatesChatsGetStatuses();
+      return { status: 'Success' };
+    } catch (err) {
+      console.error('Error in countChats:', err);
+      return { status: 'Failed', error: err };
+    }
+  }
+
+  @Post('refresh-chat-status-by-candidates')
+
+  async refreshChats(@Body() body: any): Promise<object>  {
+
+    try {
+      const { candidateIds } = body;
+      console.log("going to count chats")
+      await new FetchAndUpdateCandidatesChatsWhatsapps().processCandidatesChatsGetStatuses(candidateIds);
       return { status: 'Success' };
     } catch (err) {
       console.error('Error in countChats:', err);

@@ -26,8 +26,9 @@ import { contextMenuEntriesState } from '@/ui/navigation/context-menu/states/con
 import { ContextMenuEntry } from '@/ui/navigation/context-menu/types/ContextMenuEntry';
 import { useIsFeatureEnabled } from '@/workspace/hooks/useIsFeatureEnabled';
 import { isDefined } from '~/utils/isDefined';
-import { IconBriefcase2, IconClipboard, IconCopy, IconMessage, IconMessage2, IconPaperclip, IconUserPlus, IconUsersPlus, IconVideo } from '@tabler/icons-react';
+import { IconBriefcase2, IconClipboard, IconCopy, IconMessage, IconMessage2, IconPaperclip, IconRefresh, IconUserPlus, IconUsersPlus, IconVideo } from '@tabler/icons-react';
 import { useCreateVideoInterview } from '@/object-record/hooks/useCreateInterview';
+import { useRefreshChatStatus } from '@/object-record/hooks/useRefreshChatStatus';
 import { useExecuteDeleteCandidatesAndPeople } from '@/object-record/hooks/useExecuteDeleteCandidatesAndPeople';
 
 type useRecordActionBarProps = {
@@ -76,14 +77,20 @@ export const useRecordActionBar = ({
   });
 
   const { createVideoInterviewLink, loading: creatingVideoInterview } = useCreateVideoInterview({
-    onSuccess: () => {
-      // Additional success handling if needed
-    },
+    onSuccess: () => { },
     onError: (error: any) => {
-      // Additional error handling if needed
       console.error('Failed to create video interview:', error);
     },
   });
+  
+  const { refreshChatStatus } = useRefreshChatStatus({
+    onSuccess: () => { },
+    onError: (error: any) => {
+      console.error('Failed to refresh chat status:', error);
+    },
+  });
+
+
   const { deleteCandidatesAndPeople, loading: executingDeleteCandidatesAndPeople } = useExecuteDeleteCandidatesAndPeople({
     objectNameSingular: objectMetadataItem.nameSingular,
     onSuccess: () => {
@@ -223,23 +230,27 @@ export const useRecordActionBar = ({
       {
         label: displayedExportProgress(progress),
         Icon: IconFileExport,
-        accent: 'default',
+        accent: 'default' as const,
         onClick: () => download(),
       },
-      {
-        label: 'Show CV',
-        Icon: IconPaperclip,
-        accent: 'default',
-        onClick: () => showCV(),
-      },
-      {
-        label: 'Show Chats',
-        Icon: IconMessage2,
-        accent: 'default',
-        onClick: () => showCV(),
-      }
+      ...(objectMetadataItem.nameSingular === 'candidate'
+        ? [
+            {
+              label: 'Show CV',
+              Icon: IconPaperclip,
+              accent: 'default' as const,
+              onClick: () => showCV(),
+            },
+            {
+              label: 'Show Chats',
+              Icon: IconMessage2,
+              accent: 'default' as const,
+              onClick: () => showCV(),
+            },
+          ]
+        : []),
     ],
-    [download, progress],
+    [download, progress, objectMetadataItem.nameSingular, showCV],
   );
 
   const deletionActions: ContextMenuEntry[] = useMemo(
@@ -247,7 +258,7 @@ export const useRecordActionBar = ({
       {
         label: 'Delete',
         Icon: IconTrash,
-        accent: 'danger',
+        accent: 'danger' as const,
         onClick: () => setIsDeleteRecordsModalOpen(true),
         ConfirmationModal: (
           <ConfirmationModal
@@ -364,6 +375,17 @@ export const useRecordActionBar = ({
                           onClick: async () => {
                             try {
                               await createVideoInterviewLink(selectedRecordIds);
+                            } catch (error) {
+                              console.error('Error creating videos:', error);
+                            }
+                          },
+                        },
+                        {
+                          label: 'Refresh Chat Status',
+                          Icon: IconRefresh,
+                          onClick: async () => {
+                            try {
+                              await refreshChatStatus(selectedRecordIds);
                             } catch (error) {
                               console.error('Error creating videos:', error);
                             }
