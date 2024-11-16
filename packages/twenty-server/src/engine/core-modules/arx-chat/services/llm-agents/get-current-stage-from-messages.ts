@@ -23,20 +23,20 @@ export async function getChatStageFromChatHistory(messages: any) {
     const stagePrompt = await new ToolsForAgents().getConversationStageHistoryClassificationPrompt();
 
     let mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = new CandidateEngagementArx().getMostRecentMessageFromMessagesList(messages);
-    mostRecentMessageArr[0] = { role: 'system', content: stagePrompt };
 
     function generateHumanReadableConversation(messages: allDataObjects.ChatHistoryItem[]): string {
-        return messages.map(message => {
+        return messages.slice(1).map(message => {
             const role = message.role === 'user' ? 'User' : 'System';
-            return `${role}: ${message.content}`;
+            return `${role}: ${message?.content}`;
         }).join('\n');
     }
 
-    const humanReadableConversation = generateHumanReadableConversation(messages);
+    const humanReadableConversation = generateHumanReadableConversation(mostRecentMessageArr);
     console.log("Human readable conversation:\n", humanReadableConversation);
+    mostRecentMessageArr[0] = { role: 'system', content: stagePrompt };
+    const messagesToLLM = [{ role: 'system', content: stagePrompt }, { role: 'user', content: humanReadableConversation }];
+    console.log("Messages to LLM:::", messagesToLLM);
     console.log("Finally Sent messages for converation classificaation to OpenAI:::", mostRecentMessageArr);
-
-
 
     // @ts-ignore
     const completion = await new LLMProviders().openAIclient.beta.chat.completions.parse({ model: "gpt-4o-mini", messages: mostRecentMessageArr, response_format: zodResponseFormat(new ToolsForAgents().currentConversationStage, "conversationStage"), });
