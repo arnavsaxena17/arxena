@@ -37,6 +37,18 @@ const ScrollableContent = styled.div`
 
 `;
 
+const RefreshIndicator = styled.div<{ isRefreshing: boolean }>`
+  height: 2px;
+  background-color: black;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  transform: scaleX(${props => props.isRefreshing ? 1 : 0});
+  transform-origin: left;
+  transition: transform 0.3s ease;
+`;
+
 const FixedHeader = styled.div`
   position: sticky;
   top: 0;
@@ -103,6 +115,8 @@ interface ChatSidebarProps {
   setSelectedIndividual: (id: string) => void;
   unreadMessages: frontChatTypes.UnreadMessageListManyCandidates;
   jobs: Job[];
+  isRefreshing?: boolean;
+
 }
 
 const statusLabels: { [key: string]: string } = {
@@ -136,6 +150,8 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   setSelectedIndividual,
   unreadMessages,
   jobs,
+  isRefreshing = false,
+
 }) => {
   const navigate = useNavigate();
   // const openCreateActivity = useOpenCreateActivityDrawer();
@@ -324,6 +340,8 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   
   return (
     <StyledSidebarContainer ref={sidebarRef}>
+    <RefreshIndicator isRefreshing={isRefreshing} />
+
     <FixedHeader>
       <StyledDropdownContainer>
       <DropdownContainer ref={jobDropdownRef}>
