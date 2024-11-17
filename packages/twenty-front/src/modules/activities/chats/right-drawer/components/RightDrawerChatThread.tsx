@@ -94,8 +94,8 @@ export const RightDrawerChatThread = () => {
     };
 
     fetchMessages();
-    const interval = setInterval(fetchMessages, 5000);
-    return () => clearInterval(interval);
+    // const interval = setInterval(fetchMessages, 5000);
+    // return () => clearInterval(interval);
   }, [candidateId, tokenPair]);
 
   const formatDate = (date: string) => dayjs(date).format("ddd DD MMM, 'YY");
@@ -149,7 +149,7 @@ export const RightDrawerChatThread = () => {
                 </DateSeparator>
               )}
               <MessageBubble 
-                isSent={message.whatsappDeliveryStatus === 'sent'}
+                isSent={message.name === 'botMessage'}
               >
                 {message.message}
               </MessageBubble>
