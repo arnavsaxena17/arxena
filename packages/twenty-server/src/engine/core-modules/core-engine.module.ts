@@ -22,7 +22,7 @@ import { ClientConfigModule } from './client-config/client-config.module';
 import { GoogleCalendarModule } from 'src/engine/core-modules/calendar-events/google-calendar.module';
 import { MailerModule } from './gmail-sender/gmail-sender.module';
 // import { BaileysModule } from './baileys/baileys.module';
-import { WhatsappModule } from './whiskeysocket-baileys/whiskeysocket-baileys.module';
+// import { WhatsappModule } from './whiskeysocket-baileys/whiskeysocket-baileys.module';
 import { CandidateSourcingModule } from './candidate-sourcing/candidate-sourcing.module';
 // import { EventsGateway } from './whiskeysocket-baileys/events-gateway-module/events-gateway';
 
@@ -48,7 +48,7 @@ import { CandidateSourcingModule } from './candidate-sourcing/candidate-sourcing
     WorkspaceModule,
     VideoInterviewModule,
     PostgresCredentialsModule,
-    WhatsappModule,
+    // WhatsappModule,
     CandidateSourcingModule,
     // EventsGateway,
   ],
@@ -65,7 +65,7 @@ import { CandidateSourcingModule } from './candidate-sourcing/candidate-sourcing
     UserModule,
     WorkspaceModule,
     VideoInterviewModule,
-    WhatsappModule,
+    // WhatsappModule,
     MailerModule,
     GoogleCalendarModule,
     // EventsGateway,

@@ -38,7 +38,7 @@ async function getChatPromptFromWorksPageMember(currentWorkspaceMemberId: any) {
     } catch (error) {
         console.error('Error fetching prompt:', error);
         throw error;
-    }
+}
 }
 
 export async function getChatStageFromChatHistory(messages: any, currentWorkspaceMemberId:any) {
