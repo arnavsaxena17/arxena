@@ -366,7 +366,7 @@ export class ArxChatEndpoint {
 
     try {
       const { candidateIds } = body;
-      console.log("going to refresh chats")
+      console.log("going to refresh chat counts by candidate Ids")
       await new FetchAndUpdateCandidatesChatsWhatsapps().updateCandidatesWithChatCount(candidateIds);
       return { status: 'Success' };
     } catch (err) {

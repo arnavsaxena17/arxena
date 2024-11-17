@@ -439,6 +439,28 @@ export const graphqlQueryToFindManyPeopleEngagedCandidates = `query FindManyPeop
     }
   }
 `
+
+export const graphqlQueryToFetchWorksPaceMembers = `query FindManyWorkspaceMembers($filter: WorkspaceMemberFilterInput, $orderBy: [WorkspaceMemberOrderByInput], $lastCursor: String, $limit: Int) {
+        workspaceMembers(
+            filter: $filter
+            orderBy: $orderBy
+            first: $limit
+            after: $lastCursor
+        ) {
+            edges {
+                node {
+                    prompts {
+                        edges {
+                            node {
+                                prompt
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }`
+
   export const graphqlQueryToManyCandidateById = `
   query FindManyCandidates($lastCursor: String, $limit: Int, $filter: CandidateFilterInput) {
     candidates(after: $lastCursor, first: $limit, filter: $filter) {

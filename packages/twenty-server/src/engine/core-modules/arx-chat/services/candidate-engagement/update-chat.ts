@@ -101,7 +101,8 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
 
 // "ONLY_ADDED_NO_CONVERSATION" | "CONVERSATION_STARTED_HAS_NOT_RESPONDED" | "SHARED_JD_HAS_NOT_RESPONDED" | "STOPPED_RESPONDING_ON_QUESTIONS" | "CONVERSATION_CLOSED_TO_BE_CONTACTED"
 
-  async processCandidatesChatsGetStatuses(candidateIds: string[] | null = null) {
+  async processCandidatesChatsGetStatuses(candidateIds: string[] | null = null, currentWorkspaceMemberId: string| null = null) {
+    console.log("Processing candidates chats to get statuses with start chat true");
     let allCandidates = await this.fetchAllCandidatesWithSpecificChatControl("startChat");
     if (candidateIds && Array.isArray(candidateIds)) {
       allCandidates = allCandidates.filter(candidate => candidateIds.includes(candidate.id));
@@ -114,7 +115,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
       try {
         const candidateId = candidate?.id;
         const whatsappMessages = await this.fetchAllWhatsappMessages(candidateId);
-        const candidateStatus = await getChatStageFromChatHistory(whatsappMessages) as allDataObjects.allStatuses;
+        const candidateStatus = await getChatStageFromChatHistory(whatsappMessages, currentWorkspaceMemberId) as allDataObjects.allStatuses;
         
         const updateCandidateObjectVariables = { 
           idToUpdate: candidateId, 
@@ -141,6 +142,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
   
 
   async fetchAllCandidatesWithSpecificChatControl(chatControl:allDataObjects.chatControls): Promise<allDataObjects.Candidate[]> {
+    console.log("Fetching all candidates with chatControl", chatControl);
     let allCandidates: allDataObjects.Candidate[] = [];
     let lastCursor: string | null = null;
     let graphqlQueryObj;
@@ -223,6 +225,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
         break;
       }
     }
+    console.log("Number of messages for candidate id:", candidateId, "is", allWhatsappMessages?.length);
     return allWhatsappMessages;
   }
 

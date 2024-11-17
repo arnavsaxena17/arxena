@@ -169,9 +169,12 @@ export class CandidateSourcingController {
   async refreshChats(@Body() body: any): Promise<object>  {
 
     try {
-      const { candidateIds } = body;
+      // const { candidateIds } = body;
+      const candidateIds= body.candidateIds;
+      const currentWorkspaceMemberId = body.currentWorkspaceMemberId;
+
       console.log("going to refresh chats")
-      await new FetchAndUpdateCandidatesChatsWhatsapps().processCandidatesChatsGetStatuses(candidateIds);
+      await new FetchAndUpdateCandidatesChatsWhatsapps().processCandidatesChatsGetStatuses(candidateIds, currentWorkspaceMemberId);
       return { status: 'Success' };
     } catch (err) {
       console.error('Error in refresh chats:', err);

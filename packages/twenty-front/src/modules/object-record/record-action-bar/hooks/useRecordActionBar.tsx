@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import { isNonEmptyString } from '@sniptt/guards';
-import { useRecoilCallback, useRecoilState, useSetRecoilState } from 'recoil';
+import { RecoilState, useRecoilCallback, useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 import {
   IconClick,
   IconFileExport,
@@ -33,6 +33,8 @@ import { useRefreshChatCounts } from '@/object-record/hooks/useRefreshChatCounts
 import { useExecuteDeleteCandidatesAndPeople } from '@/object-record/hooks/useExecuteDeleteCandidatesAndPeople';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import SlidingChatPanel from '@/activities/chats/components/SlidingChatPanel';
+import { CurrentWorkspaceMember, currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
+import { WorkspaceMember } from '@/workspace-member/types/WorkspaceMember';
 
 
 type useRecordActionBarProps = {
@@ -50,6 +52,7 @@ export const useRecordActionBar = ({
 }: useRecordActionBarProps) => {
   const setContextMenuEntries = useSetRecoilState(contextMenuEntriesState);
   const setActionBarEntriesState = useSetRecoilState(actionBarEntriesState);
+  const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState) as WorkspaceMember | null;
 
   const [isChatPanelOpen, setIsChatPanelOpen] = useState(false);
 
@@ -91,7 +94,7 @@ export const useRecordActionBar = ({
   });
   
   const { refreshChatStatus } = useRefreshChatStatus({
-    onSuccess: () => { },
+    onSuccess: () => {},
     onError: (error: any) => {
       console.error('Failed to refresh chat status:', error);
     },
@@ -358,6 +361,7 @@ export const useRecordActionBar = ({
       setContextMenuEntries,
     ]),
     setActionBarEntries: useCallback(() => {
+      if (!currentWorkspaceMember) return; // Add early return if no workspace member
       setActionBarEntriesState([
         ...(isRemoteObject ? [] : deletionActions),
         ...(dataExecuteQuickActionOnmentEnabled
@@ -413,7 +417,11 @@ export const useRecordActionBar = ({
                           Icon: IconRefresh,
                           onClick: async () => {
                             try {
-                              await refreshChatStatus(selectedRecordIds);
+                              if (currentWorkspaceMember) {
+                                await refreshChatStatus(selectedRecordIds, currentWorkspaceMember);
+                              } else {
+                                console.error('Workspace member is null');
+                              }
                             } catch (error) {
                               console.error('Error creating videos:', error);
                             }
@@ -478,10 +486,10 @@ export const useRecordActionBar = ({
 
     ]),
     additionalComponents: (() => {
-      console.log("Rendering additional components", {
-        isChatPanelOpen,
-        selectedRecordIds
-      });
+      // console.log("Rendering additional components", {
+      //   isChatPanelOpen,
+      //   selectedRecordIds
+      // });
       return (
         <SlidingChatPanel
           isOpen={isChatPanelOpen}

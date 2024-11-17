@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import axios from 'axios';
 import { tokenPairState } from '@/auth/states/tokenPairState';
-import { useRecoilState } from 'recoil';
+import { useRecoilState, useRecoilValue } from 'recoil';
 // import { useShowNotification } from '@/notification/hooks/useShowNotification'; 
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
+import { WorkspaceMember } from '@/workspace-member/types/WorkspaceMember';
+
 
 type UseRefreshChatStatusProps = {
   onSuccess?: () => void;
@@ -18,22 +20,16 @@ export const useRefreshChatStatus = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [tokenPair] = useRecoilState(tokenPairState);
-//   const showNotification = useShowNotification();
-    const { enqueueSnackBar } = useSnackBar();
+  const { enqueueSnackBar } = useSnackBar();
 
-    // console.log("process.env.REACT_APP_SERVER_BASE_URL:",process.env.REACT_APP_SERVER_BASE_URL)
-  const refreshChatStatus = async (candidateIds: string[]) => {
+  const refreshChatStatus = async (candidateIds: string[], currentWorkspaceMember:WorkspaceMember) => {
     setLoading(true);
     setError(null);
     
     try {
-      // console.log("Creating video interviews for candidates:", candidateIds);
-      
-      // const results = await Promise.all(
-      //   candidateIds.map((candidateId) =>
           const response = await axios.post(
             `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/refresh-chat-status-by-candidates`,
-            { candidateIds },
+            { candidateIds:candidateIds, currentWorkspaceMemberId: currentWorkspaceMember?.id },
             {
               headers: {
                 Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
@@ -41,8 +37,6 @@ export const useRefreshChatStatus = ({
               },
             }
           )
-      //   )
-      // );
 
       enqueueSnackBar('Successfully counted chats', {
         variant: SnackBarVariant.Success,
