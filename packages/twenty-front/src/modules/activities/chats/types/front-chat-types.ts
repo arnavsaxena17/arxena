@@ -149,7 +149,7 @@ export interface CandidateNode {
   email: string;
   input: string;
   startChat: boolean;
-  statusCandidates?:string
+  candConversationStatus?:string
   status:string;
   stopChat: boolean;
   whatsappMessages: WhatsAppMessages;

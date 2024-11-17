@@ -97,10 +97,6 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
   }
 
 
-
-
-// "ONLY_ADDED_NO_CONVERSATION" | "CONVERSATION_STARTED_HAS_NOT_RESPONDED" | "SHARED_JD_HAS_NOT_RESPONDED" | "STOPPED_RESPONDING_ON_QUESTIONS" | "CONVERSATION_CLOSED_TO_BE_CONTACTED"
-
   async processCandidatesChatsGetStatuses(candidateIds: string[] | null = null, currentWorkspaceMemberId: string| null = null) {
     console.log("Processing candidates chats to get statuses with start chat true");
     let allCandidates = await this.fetchAllCandidatesWithSpecificChatControl("startChat");
@@ -119,7 +115,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
         
         const updateCandidateObjectVariables = { 
           idToUpdate: candidateId, 
-          input: { statusCandidates: candidateStatus } 
+          input: { candConversationStatus: candidateStatus } 
         };
         const graphqlQueryObj = JSON.stringify({ 
           query: allGraphQLQueries.graphqlQueryToUpdateCandidateChatCount, 
