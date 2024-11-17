@@ -133,15 +133,17 @@ const statusLabels: { [key: string]: string } = {
 
 
 const chatStatusLabels: { [key: string]: string } = {
-    "ONLY_ADDED_NO_CONVERSATION": "Only Added, No Conversation",
-    "CONVERSATION_STARTED_HAS_NOT_RESPONDED": "Conversation Started, Has Not Responded",
-    "SHARED_JD_HAS_NOT_RESPONDED": "Shared JD, Has Not Responded",
-    "CANDIDATE_REFUSES_TO_RELOCATE": "Candidate Refuses To Relocate",
-    "STOPPED_RESPONDING_ON_QUESTIONS": "Stopped Responding On Questions",
+    "ONLY_ADDED_NO_CONVERSATION": "Only Added No Conversation",
+    "CONVERSATION_STARTED_HAS_NOT_RESPONDED": "Conversation Started Has Not Responded",
+    "SHARED_JD_HAS_NOT_RESPONDED": "Shared JD Has Not Responded",
+    "CANDIDATE_REFUSES_TO_RELOCATE": "Candidate Does Not Want To Relocate",
+    "CANDIDATE_STOPPED_RESPONDING": "Candidate Stopped Responding",
     "CANDIDATE_IS_KEEN_TO_CHAT": "Candidate Is Keen To Chat",
     "CANDIDATE_HAS_FOLLOWED_UP_TO_SETUP_CHAT": "Candidate Has Followed Up To Setup Chat",
     "CANDIDATE_IS_RELUCTANT_TO_DISCUSS_COMPENSATION": "Candidate Is Reluctant To Discuss Compensation",
-    "CONVERSATION_CLOSED_TO_BE_CONTACTED": "Conversation Closed, To Be Contacted",
+    "CONVERSATION_CLOSED_TO_BE_CONTACTED": "Conversation Closed To Be Contacted",
+    "CANDIDATE_SALARY_OUT_OF_RANGE":"Candidate Salary Out Of Range",
+    "CANDIDATE_DECLINED_OPPORTUNITY":"Candidate Declined Opportunity",
   };
 
 const ChatSidebar: React.FC<ChatSidebarProps> = ({
@@ -254,7 +256,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
 
     const matchesChatStatus =
       selectedChatStatuses.length === 0 ||
-      selectedChatStatuses.includes(individual?.candidates?.edges[0]?.node?.statusCandidates || "");
+      selectedChatStatuses.includes(individual?.candidates?.edges[0]?.node?.candConversationStatus || "");
 
 
     return matchesSearch && matchesJob && matchesStatus && matchesChatStatus;
@@ -327,7 +329,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   const chatStatusCounts = useMemo(() => {
     const counts: { [key: string]: number } = {};
     filteredIndividuals.forEach((individual) => {
-      const status = individual?.candidates?.edges[0]?.node?.statusCandidates;
+      const status = individual?.candidates?.edges[0]?.node?.candConversationStatus;
       if (status) {
         counts[status] = (counts[status] || 0) + 1;
       }

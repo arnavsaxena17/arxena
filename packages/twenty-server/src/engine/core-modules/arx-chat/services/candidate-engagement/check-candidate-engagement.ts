@@ -72,7 +72,7 @@ export default class CandidateEngagementArx {
       messagesList.sort((a, b) => new Date(b?.createdAt).getTime() - new Date(a?.createdAt).getTime());
       // console.log("messages list after sorting in getMostRecentMessageFromMessagesList::", messagesList);
       mostRecentMessageArr = messagesList[0]?.messageObj;
-      console.log("This is the most recent messages arr:", mostRecentMessageArr);
+      // console.log("This is the most recent messages arr:", mostRecentMessageArr);
     }
     return mostRecentMessageArr;
   }

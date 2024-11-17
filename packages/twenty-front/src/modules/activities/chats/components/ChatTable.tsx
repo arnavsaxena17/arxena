@@ -189,8 +189,8 @@ const ChatTable: React.FC<frontChatTypes.ChatTableProps> = ({
           bValue = b.candidates?.edges[0]?.node?.status || '';
           break;
         case 'status':
-          aValue = a.candidates?.edges[0]?.node?.statusCandidates || '';
-          bValue = b.candidates?.edges[0]?.node?.statusCandidates || '';
+          aValue = a.candidates?.edges[0]?.node?.candConversationStatus || '';
+          bValue = b.candidates?.edges[0]?.node?.candConversationStatus || '';
           break;
         default:
           aValue = (a as any)[key] || '';
@@ -285,7 +285,7 @@ const ChatTable: React.FC<frontChatTypes.ChatTableProps> = ({
                     : 'N/A'}
                 </StyledTableCell>
                 <StyledTableCell>{individual.candidates?.edges[0]?.node?.status || 'N/A'}</StyledTableCell>
-                <StyledTableCell>{individual.candidates?.edges[0]?.node?.statusCandidates || 'N/A'}</StyledTableCell>
+                <StyledTableCell>{individual.candidates?.edges[0]?.node?.candConversationStatus || 'N/A'}</StyledTableCell>
                 <StyledTableCell>{individual.salary || 'N/A'}</StyledTableCell>
                 <StyledTableCell>{individual.city || 'N/A'}</StyledTableCell>
                 <StyledTableCell>{individual.jobTitle || 'N/A'}</StyledTableCell>
