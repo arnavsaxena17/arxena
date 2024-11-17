@@ -3,6 +3,7 @@ import { useRecoilState, useRecoilValue } from 'recoil';
 
 import { RightDrawerCalendarEvent } from '@/activities/calendar/right-drawer/components/RightDrawerCalendarEvent';
 import { RightDrawerEmailThread } from '@/activities/emails/right-drawer/components/RightDrawerEmailThread';
+import { RightDrawerChatThread } from '@/activities/chats/right-drawer/components/RightDrawerChatThread';
 import { RightDrawerCreateActivity } from '@/activities/right-drawer/components/create/RightDrawerCreateActivity';
 import { RightDrawerEditActivity } from '@/activities/right-drawer/components/edit/RightDrawerEditActivity';
 import { RightDrawerRecord } from '@/object-record/record-right-drawer/components/RightDrawerRecord';
@@ -11,6 +12,10 @@ import { isRightDrawerMinimizedState } from '@/ui/layout/right-drawer/states/isR
 
 import { rightDrawerPageState } from '../states/rightDrawerPageState';
 import { RightDrawerPages } from '../types/RightDrawerPages';
+
+
+// import SlidingChatPanel from '@/activities/chats/components/SlidingChatPanel'
+
 
 const StyledRightDrawerPage = styled.div`
   display: flex;
@@ -46,6 +51,14 @@ const RIGHT_DRAWER_PAGES_CONFIG = {
     page: <RightDrawerCalendarEvent />,
     topBar: <RightDrawerTopBar page={RightDrawerPages.ViewCalendarEvent} />,
   },
+  [RightDrawerPages.ViewChat]: {
+    page: <RightDrawerChatThread />,
+    topBar: <RightDrawerTopBar page={RightDrawerPages.ViewChat} />,
+  },
+  [RightDrawerPages.ViewCV]: {
+    page: <RightDrawerEmailThread />,
+    topBar: <RightDrawerTopBar page={RightDrawerPages.ViewCV} />,
+  },
   [RightDrawerPages.ViewRecord]: {
     page: <RightDrawerRecord />,
     topBar: <RightDrawerTopBar page={RightDrawerPages.ViewRecord} />,
@@ -60,7 +73,6 @@ export const RightDrawerRouter = () => {
     : {};
 
   const isRightDrawerMinimized = useRecoilValue(isRightDrawerMinimizedState);
-
   return (
     <StyledRightDrawerPage>
       {topBar}

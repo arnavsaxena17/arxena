@@ -1,14 +1,10 @@
 import { atom } from 'recoil';
 
-export interface ChatPanelState {
-  isOpen: boolean;
-  selectedRecordId: string | null;
-}
-
-export const chatPanelState = atom<ChatPanelState>({
+export const chatPanelState = atom<{
+  selectedRecordIds: string[];
+}>({
   key: 'chatPanelState',
   default: {
-    isOpen: false,
-    selectedRecordId: null,
-  },
+    selectedRecordIds: []
+  }
 });
