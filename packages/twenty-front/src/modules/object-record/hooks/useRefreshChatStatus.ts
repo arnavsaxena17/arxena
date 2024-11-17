@@ -38,7 +38,7 @@ export const useRefreshChatStatus = ({
             }
           )
 
-      enqueueSnackBar('Successfully counted chats', {
+      enqueueSnackBar('Successfully updated chat statuses', {
         variant: SnackBarVariant.Success,
         duration: 3000,
       });
@@ -48,7 +48,7 @@ export const useRefreshChatStatus = ({
     } catch (err) {
       const errorMessage = err instanceof Error 
         ? err.message 
-        : 'Failed to count chats';
+        : 'Failed to update chat statuses';
       
       const error = new Error(errorMessage);
       setError(error);
