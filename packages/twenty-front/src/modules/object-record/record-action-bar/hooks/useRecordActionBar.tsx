@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { isNonEmptyString } from '@sniptt/guards';
 import { RecoilState, useRecoilCallback, useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 import {
@@ -10,6 +10,9 @@ import {
   IconPuzzle,
   IconTrash,
 } from 'twenty-ui';
+
+import { useCommandMenu } from "@/command-menu/hooks/useCommandMenu";
+
 
 import { useFavorites } from '@/favorites/hooks/useFavorites';
 import { ObjectMetadataItem } from '@/object-metadata/types/ObjectMetadataItem';
@@ -26,7 +29,7 @@ import { contextMenuEntriesState } from '@/ui/navigation/context-menu/states/con
 import { ContextMenuEntry } from '@/ui/navigation/context-menu/types/ContextMenuEntry';
 import { useIsFeatureEnabled } from '@/workspace/hooks/useIsFeatureEnabled';
 import { isDefined } from '~/utils/isDefined';
-import { IconBriefcase2, IconClipboard, IconCopy, IconMessage, IconMessage2, IconPaperclip, IconRefresh, IconUserPlus, IconUsersPlus, IconVideo } from '@tabler/icons-react';
+import { IconBriefcase2, IconCactus, IconClipboard, IconCopy, IconMessage, IconMessage2, IconPaperclip, IconRefresh, IconRefreshDot, IconUserPlus, IconUsersPlus, IconVideo } from '@tabler/icons-react';
 import { useCreateVideoInterview } from '@/object-record/hooks/useCreateInterview';
 import { useRefreshChatStatus } from '@/object-record/hooks/useRefreshChatStatus';
 import { useRefreshChatCounts } from '@/object-record/hooks/useRefreshChatCounts';
@@ -35,6 +38,8 @@ import { tokenPairState } from '@/auth/states/tokenPairState';
 import SlidingChatPanel from '@/activities/chats/components/SlidingChatPanel';
 import { CurrentWorkspaceMember, currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { WorkspaceMember } from '@/workspace-member/types/WorkspaceMember';
+import { chatPanelState } from '@/activities/chats/states/chatPanelState';
+import { useOpenCreateActivityDrawer } from '@/activities/hooks/useOpenCreateActivityDrawer';
 
 
 type useRecordActionBarProps = {
@@ -42,7 +47,6 @@ type useRecordActionBarProps = {
   selectedRecordIds: string[];
   callback?: () => void;
 };
-
 
 
 export const useRecordActionBar = ({
@@ -53,12 +57,9 @@ export const useRecordActionBar = ({
   const setContextMenuEntries = useSetRecoilState(contextMenuEntriesState);
   const setActionBarEntriesState = useSetRecoilState(actionBarEntriesState);
   const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState) as WorkspaceMember | null;
-
-  const [isChatPanelOpen, setIsChatPanelOpen] = useState(false);
-
-  const [isDeleteRecordsModalOpen, setIsDeleteRecordsModalOpen] =
-    useState(false);
-  const [currentRecordId, setCurrentRecordId] = useState<string | undefined>();
+  const [isDeleteRecordsModalOpen, setIsDeleteRecordsModalOpen] = useState(false);
+  // const { toggleCommandMenu } = useCommandMenu();
+  const openCreateActivity = useOpenCreateActivityDrawer();
 
   const { createFavorite, favorites, deleteFavorite } = useFavorites();
 
@@ -76,34 +77,22 @@ export const useRecordActionBar = ({
   });
 
   const { createVideosForJobs, loading: creatingVideos } = useCreateInterviewVideos({
-    onSuccess: () => {
-      // Show success notification or handle success
-      console.log('Successfully created videos for all jobs');
-    },
-    onError: (error) => {
-      // Show error notification or handle error
-      console.error('Failed to create videos:', error);
-    },
+    onSuccess: () => { console.log('Successfully created videos for all jobs'); },
+    onError: (error) => { console.error('Failed to create videos:', error); },
   });
 
   const { createVideoInterviewLink, loading: creatingVideoInterview } = useCreateVideoInterview({
     onSuccess: () => { },
-    onError: (error: any) => {
-      console.error('Failed to create video interview:', error);
-    },
+    onError: (error: any) => { console.error('Failed to create video interview:', error); },
   });
   
   const { refreshChatStatus } = useRefreshChatStatus({
     onSuccess: () => {},
-    onError: (error: any) => {
-      console.error('Failed to refresh chat status:', error);
-    },
+    onError: (error: any) => { console.error('Failed to refresh chat status:', error); },
   });
   const { refreshChatCounts } = useRefreshChatCounts({
     onSuccess: () => { },
-    onError: (error: any) => {
-      console.error('Failed to refresh chat status:', error);
-    },
+    onError: (error: any) => { console.error('Failed to refresh chat counts:', error); },
   });
 
 
@@ -147,8 +136,6 @@ export const useRecordActionBar = ({
     }
   }, [callback, cloneRecord, isReady, selectedRecordIds]);
 
-
-  
   const handleFavoriteButtonClick = useRecoilCallback(
     ({ snapshot }) =>
       () => {
@@ -212,33 +199,6 @@ export const useRecordActionBar = ({
     );
   }, [callback, executeQuickActionOnOneRecord, selectedRecordIds]);
   
-  // const executeQuickAddToPeople = async (recordId:string) => console.log("This ishte response:!, ", recordId)
-  
-  // const handleExecuteAddToPeople = useCallback(async () => {
-  //   callback?.();
-  //   await Promise.all(
-  //     selectedRecordIds.map(async (recordId) => {
-  //       await executeQuickAddToPeople(recordId);
-  //     }),
-  //   );
-  // }, [callback, executeQuickAddToPeople, selectedRecordIds]);
-  
-  const handleShowChat = useCallback(async () => {
-    console.log("Show chat clicked", {
-      selectedRecordIds,
-      isSingleRecord: selectedRecordIds.length === 1
-    });
-    if (selectedRecordIds.length === 1) {
-      setIsChatPanelOpen(true);
-    }
-  }, [selectedRecordIds]);
-  
-  
-  const handleCloseChat = useCallback(() => {
-    setIsChatPanelOpen(false);
-  }, []);
-
-
 
   const { progress, download } = useExportTableData({
     delayMs: 100,
@@ -247,12 +207,18 @@ export const useRecordActionBar = ({
     recordIndexId: objectMetadataItem.namePlural,
   });
 
+  function callTargetObject() {
+      openCreateActivity({
+        type: 'Note',
+        targetableObjects: [{ id: selectedRecordIds[0], targetObjectNameSingular: objectMetadataItem.nameSingular }],
+    });
+  }
 
-  const { progressCV, showCV } = useShowCV({
-    objectNameSingular: objectMetadataItem.nameSingular,
-    recordIndexId: objectMetadataItem.namePlural,
+  // const { progressCV, showCV } = useShowCV({
+  //   objectNameSingular: objectMetadataItem.nameSingular,
+  //   recordIndexId: objectMetadataItem.namePlural,
 
-  });
+  // });
 
   const isRemoteObject = objectMetadataItem.isRemote;
 
@@ -264,24 +230,8 @@ export const useRecordActionBar = ({
         accent: 'default' as const,
         onClick: () => download(),
       },
-      ...(objectMetadataItem.nameSingular === 'candidate'
-        ? [
-            {
-              label: 'Show CV',
-              Icon: IconPaperclip,
-              accent: 'default' as const,
-              onClick: () => showCV(),
-            },
-            {
-              label: 'Show Chats',
-              Icon: IconMessage2,
-              accent: 'default' as const,
-              onClick: handleShowChat,
-            },
-          ]
-        : []),
     ],
-    [download, progress, objectMetadataItem.nameSingular, showCV],
+    [objectMetadataItem.nameSingular]
   );
 
   const deletionActions: ContextMenuEntry[] = useMemo(
@@ -341,6 +291,25 @@ export const useRecordActionBar = ({
               },
             ]
           : []),
+
+          ...(objectMetadataItem.nameSingular === 'candidate'
+            ? [
+                {
+                  label: 'Show CV',
+                  Icon: IconPaperclip,
+                  accent: 'default' as const,
+                  onClick: callTargetObject
+                    
+                },
+                {
+                  label: 'Show Chats',
+                  Icon: IconMessage,
+                  accent: 'default' as const,
+                  onClick: callTargetObject
+                    
+                },
+              ]
+            : []),
         ...(!isRemoteObject && !isFavorite && hasOnlyOneRecordSelected
           ? [
               {
@@ -361,7 +330,6 @@ export const useRecordActionBar = ({
       setContextMenuEntries,
     ]),
     setActionBarEntries: useCallback(() => {
-      if (!currentWorkspaceMember) return; // Add early return if no workspace member
       setActionBarEntriesState([
         ...(isRemoteObject ? [] : deletionActions),
         ...(dataExecuteQuickActionOnmentEnabled
@@ -370,20 +338,20 @@ export const useRecordActionBar = ({
                 label: 'Actions',
                 Icon: IconClick,
                 subActions: [
+                  // {
+                  //   label: 'Enrich',
+                  //   Icon: IconPuzzle,
+                  //   onClick: handleExecuteQuickActionOnClick,
+                  // },
                   {
-                    label: 'Enrich',
-                    Icon: IconPuzzle,
-                    onClick: handleExecuteQuickActionOnClick,
-                  },
-                  {
-                    label: 'Clone',
+                    label: 'Clone Current Records',
                     Icon: IconCopy,
                     onClick: handleClone,
                   },
-                  {
-                    label: 'Send to mailjet',
-                    Icon: IconMail,
-                  },
+                  // {
+                  //   label: 'Send to mailjet',
+                  //   Icon: IconMail,
+                  // },
                   ...(objectMetadataItem.nameSingular === 'job'
                     ? [
                         {
@@ -414,7 +382,7 @@ export const useRecordActionBar = ({
                         },
                         {
                           label: 'Refresh Chat Status',
-                          Icon: IconRefresh,
+                          Icon: IconRefreshDot,
                           onClick: async () => {
                             try {
                               if (currentWorkspaceMember) {
@@ -482,21 +450,8 @@ export const useRecordActionBar = ({
       isCloning,
       isRemoteObject,
       setActionBarEntriesState,
-      handleShowChat, // Add this to dependencies
 
     ]),
-    additionalComponents: (() => {
-      // console.log("Rendering additional components", {
-      //   isChatPanelOpen,
-      //   selectedRecordIds
-      // });
-      return (
-        <SlidingChatPanel
-          isOpen={isChatPanelOpen}
-          onClose={handleCloseChat}
-          selectedRecordIds={selectedRecordIds}
-        />
-      );
-    })(),
+    
     };
 };
