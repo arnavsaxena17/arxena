@@ -60,7 +60,7 @@ export async function getChatStageFromChatHistory(messages: any, currentWorkspac
     console.log("Finally Sent messages for converation classificaation to OpenAI:::", mostRecentMessageArr);
 
     // @ts-ignore
-    const completion = await new LLMProviders().openAIclient.beta.chat.completions.parse({ model: "gpt-4o-mini", messages: messagesToLLM, response_format: zodResponseFormat(new ToolsForAgents().currentConversationStage, "conversationStage"), });
+    const completion = await new LLMProviders().openAIclient.beta.chat.completions.parse({ model: "gpt-4o", messages: messagesToLLM, response_format: zodResponseFormat(new ToolsForAgents().currentConversationStage, "conversationStage"), });
     const conversationStage = completion.choices[0].message.parsed as { stageOfTheConversation: string } | null;
     if (conversationStage) {
         console.log("This is the stage that is arrived at:::", conversationStage.stageOfTheConversation);
