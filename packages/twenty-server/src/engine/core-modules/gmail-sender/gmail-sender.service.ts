@@ -121,7 +121,9 @@ export class MailerService {
    */
   async sendMails(auth, gmailMessageData: gmailSenderTypes.GmailMessageData) {
     const gmail = google.gmail({ version: "v1", auth });
-
+    console.log("This is the gmail message data:", gmailMessageData);
+    console.log("This is the process.env.EMAIL_SMTP_USER_NAME:", process.env.EMAIL_SMTP_USER_NAME);
+    console.log("This is the process.env.EMAIL_SMTP_USER:", process.env.EMAIL_SMTP_USER);
     const emailLines = [
       `From: "${process.env.EMAIL_SMTP_USER_NAME}" <${process.env.EMAIL_SMTP_USER}>`,
       `To: ${gmailMessageData.sendEmailTo}`,
@@ -143,6 +145,72 @@ export class MailerService {
       },
     });
   }
+
+
+  async createDraftWithAttachments(auth, gmailMessageData: gmailSenderTypes.GmailMessageData) {
+    const gmail = google.gmail({ version: "v1", auth });
+  
+    // Create email boundary for multipart message
+    const boundary = "boundary" + Date.now().toString();
+  
+    // Construct email headers
+    const emailHeaders = [
+      `From: "${process.env.EMAIL_SMTP_USER_NAME}" <${process.env.EMAIL_SMTP_USER}>`,
+      `To: ${gmailMessageData.sendEmailTo}`,
+      "MIME-Version: 1.0",
+      `Subject: ${gmailMessageData.subject}`,
+      `Content-Type: multipart/mixed; boundary="${boundary}"`,
+      "",
+      `--${boundary}`,
+      "Content-Type: text/html; charset=utf-8",
+      "",
+      gmailMessageData.message,
+    ];
+  
+    // Add attachments if they exist
+    if (gmailMessageData.attachments && gmailMessageData.attachments.length > 0) {
+      for (const attachment of gmailMessageData.attachments) {
+        try {
+          const fileContent = await fs.readFile(attachment.path);
+          const mimeType = mime.lookup(attachment.path) || 'application/octet-stream';
+          
+          emailHeaders.push(`--${boundary}`);
+          emailHeaders.push(`Content-Type: ${mimeType}`);
+          emailHeaders.push('Content-Transfer-Encoding: base64');
+          emailHeaders.push(`Content-Disposition: attachment; filename="${attachment.filename}"`);
+          emailHeaders.push('');
+          emailHeaders.push(fileContent.toString('base64').replace(/(.{76})/g, "$1\n"));
+        } catch (error) {
+          console.error(`Error processing attachment ${attachment.filename}:`, error);
+          throw new Error(`Failed to process attachment ${attachment.filename}`);
+        }
+      }
+    }
+  
+    // Add final boundary
+    emailHeaders.push(`--${boundary}--`);
+  
+    // Create the email
+    const email = emailHeaders.join("\r\n").trim();
+    const base64Email = Buffer.from(email).toString("base64")
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/, '');
+  
+    // Create the draft
+    const draft = await gmail.users.drafts.create({
+      userId: "me",
+      requestBody: {
+        message: {
+          raw: base64Email,
+        },
+      },
+    });
+  
+    return draft.data;
+  }
+
+
 
   async sendMailsWithAttachments(auth, gmailMessageData: gmailSenderTypes.GmailMessageData) {
     const gmail = google.gmail({ version: "v1", auth });

@@ -22,14 +22,41 @@ export class MailerController {
   }
 
 
+
+
+
+
+
+
+
   @Post("sendMailWithAttachments")
   async sendEmailWithAttachmentsController(
     @Body() gmailMessageObject: gmailSenderTypes.GmailMessageData
   ): Promise<object> {
+    console.log("HIt there");
     try {
       const auth = await this.mailerService.authorize();
       await this.mailerService.sendMailsWithAttachments(auth, gmailMessageObject);
       return { status: "Email sent successfully" };
+    } catch (error) {
+      console.error("Error sending email with attachments: ", error);
+      return { status: "Error sending email", error: error.message };
+    }
+  }
+
+  @Post("saveDraftEmailWithAttachments")
+  async saveDraftEmailWithAttachmentsController(
+    @Body() gmailMessageObject: gmailSenderTypes.GmailMessageData
+  ): Promise<object> {
+    console.log("HIt there");
+    try {
+      const auth = await this.mailerService.authorize();
+      const draftData = await this.mailerService.createDraftWithAttachments(auth, gmailMessageObject);
+      console.log("draftData:", draftData);
+
+      
+      // await this.mailerService.sendMailsWithAttachments(auth, gmailMessageObject);
+      return { status: "Draft Saved successfully" };
     } catch (error) {
       console.error("Error sending email with attachments: ", error);
       return { status: "Error sending email", error: error.message };

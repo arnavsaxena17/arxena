@@ -375,7 +375,18 @@ export class ArxChatEndpoint {
     }
   }
 
-
+  @Post('send-cvs-to-client')
+  async sendCVsToClient(@Body() body: any): Promise<object>  {
+    try {
+      const { candidateIds } = body;
+      console.log("going to refresh chat counts by candidate Ids")
+      // await new FetchAndUpdateCandidatesChatsWhatsapps().sendCVsToClient(candidateIds);
+      return { status: 'Success' };
+    } catch (err) {
+      console.error('Error in refresh chats:', err);
+      return { status: 'Failed', error: err };
+    }
+  }
 
   @Post('get-id-by-naukri-url')
   async getCandidateIdByNaukriURL(@Req() request: any): Promise<{ candidateId: string | null }> {
@@ -796,6 +807,7 @@ export class GoogleControllers {
   @Post('send-mail')
   async sendEmail(@Req() request: any): Promise<object> {
     const person: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(request.body.phoneNumber);
+    console.log("allDataObjects.recruiterProfile?.email:", allDataObjects.recruiterProfile?.email)
     const emailData: GmailMessageData = {
       sendEmailFrom: allDataObjects.recruiterProfile?.email,
       sendEmailTo: person?.email,
