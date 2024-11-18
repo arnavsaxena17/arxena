@@ -6,7 +6,7 @@ import postgres from 'postgres';
 import 'dotenv/config';
 
 let pgDb: PostgresJsDatabase;
-
+console.log("global.process.env.DATABASE_PG_URL::", global.process.env.DATABASE_PG_URL)
 if (global.process.env.DATABASE_PG_URL) {
   const pgClient = postgres(`${global.process.env.DATABASE_PG_URL}`);
   pgDb = drizzle(pgClient, { logger: false });
