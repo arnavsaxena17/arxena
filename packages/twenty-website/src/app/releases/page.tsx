@@ -30,10 +30,11 @@ const Home = async () => {
 
   const latestGithubRelease = githubReleases[0];
   const releaseNotes = await getReleases();
-
+  console.log("latestGithubRelease", latestGithubRelease);
+  console.log("releaseNotes", releaseNotes);
   const visibleReleasesNotes = getVisibleReleases(
     releaseNotes,
-    latestGithubRelease.tagName,
+    latestGithubRelease?.tagName,
   );
 
   const mdxReleasesContent = await getMdxReleasesContent(releaseNotes);

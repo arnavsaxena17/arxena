@@ -67,6 +67,7 @@ export class MailerService {
       const connectedAccountToUse = connectedAccountsResponse?.data?.data?.connectedAccounts.filter(x => x.handle === process.env.EMAIL_SMTP_USER)[0];
       const refreshToken = connectedAccountToUse ?.refreshToken;
       if (!refreshToken) {
+        console.log("No refresh token found in the connected account");
         return null;
       }
 
@@ -77,6 +78,7 @@ export class MailerService {
           client_secret: process.env.AUTH_GOOGLE_CLIENT_SECRET,
           refresh_token: refreshToken,
         };
+        console.log("This is the credentials:", credentials)
 
         return google.auth.fromJSON(credentials);
       } catch (err) {

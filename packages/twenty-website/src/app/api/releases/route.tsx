@@ -17,10 +17,11 @@ export async function GET() {
 
     const latestGithubRelease = githubReleases[0];
     const releaseNotes = await getReleases();
-
+    console.log("releaseNotes", releaseNotes);
+    console.log("latestGithubRelease", latestGithubRelease);
     const visibleReleasesNotes = getVisibleReleases(
       releaseNotes,
-      latestGithubRelease.tagName,
+      latestGithubRelease?.tagName,
     );
 
     const formattedReleasesNotes = visibleReleasesNotes.map((releaseNote) => {
