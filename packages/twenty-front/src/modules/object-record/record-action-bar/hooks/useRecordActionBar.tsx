@@ -20,6 +20,7 @@ import { IconCopy, IconMessage, IconPaperclip, IconRefresh, IconRefreshDot, Icon
 import { useCreateVideoInterview } from '@/object-record/hooks/useCreateInterview';
 import { useRefreshChatStatus } from '@/object-record/hooks/useRefreshChatStatus';
 import { useRefreshChatCounts } from '@/object-record/hooks/useRefreshChatCounts';
+import { useSendCVsToClient } from '@/object-record/hooks/useSendCVsToClient';
 import { useExecuteDeleteCandidatesAndPeople } from '@/object-record/hooks/useExecuteDeleteCandidatesAndPeople';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { WorkspaceMember } from '@/workspace-member/types/WorkspaceMember';
@@ -86,6 +87,12 @@ export const useRecordActionBar = ({ objectMetadataItem, selectedRecordIds, call
     },
   });
   const { refreshChatCounts } = useRefreshChatCounts({
+    onSuccess: () => {},
+    onError: (error: any) => {
+      console.error('Failed to refresh chat counts:', error);
+    },
+  });
+  const { sendCVsToClient } = useSendCVsToClient({
     onSuccess: () => {},
     onError: (error: any) => {
       console.error('Failed to refresh chat counts:', error);
@@ -350,6 +357,17 @@ export const useRecordActionBar = ({ objectMetadataItem, selectedRecordIds, call
                           onClick: async () => {
                             try {
                               await refreshChatCounts(selectedRecordIds);
+                            } catch (error) {
+                              console.error('Error creating videos:', error);
+                            }
+                          },
+                        },
+                        {
+                          label: 'Send CVs To Client',
+                          Icon: IconRefresh,
+                          onClick: async () => {
+                            try {
+                              await sendCVsToClient(selectedRecordIds);
                             } catch (error) {
                               console.error('Error creating videos:', error);
                             }

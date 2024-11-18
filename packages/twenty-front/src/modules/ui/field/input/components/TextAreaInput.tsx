@@ -31,6 +31,7 @@ const StyledTextArea = styled(TextareaAutosize)`
   justify-content: center;
   resize: none;
   max-height: 400px;
+  // width:auto;
   width: calc(100% - ${({ theme }) => theme.spacing(7)});
 `;
 
