@@ -13,10 +13,11 @@ import * as mime from "mime-types";
 
 // If modifying these scopes, delete token.json.
 const SCOPES = [
-  // "https://www.googleapis.com/auth/gmail.readonly",
+  "https://www.googleapis.com/auth/gmail.readonly",
   "https://www.googleapis.com/auth/gmail.send",
   'https://www.googleapis.com/auth/gmail.modify',
-  'https://www.googleapis.com/auth/gmail.compose'
+  'https://www.googleapis.com/auth/gmail.compose',
+  'https://www.googleapis.com/auth/gmail.drafts'
 ];
 // The file token.json stores the user's access and refresh tokens, and is
 // created automatically when the authorization flow completes for the first
@@ -40,11 +41,7 @@ export class MailerService {
     this.oauth2Client.setCredentials({
       access_token: "YOUR_ACCESS_TOKEN",
       refresh_token: "YOUR_REFRESH_TOKEN",
-      scope:[
-        'https://www.googleapis.com/auth/gmail.send',
-        'https://www.googleapis.com/auth/gmail.compose',
-        'https://www.googleapis.com/auth/gmail.modify'
-      ],
+      scope:SCOPES,
       token_type: "Bearer",
 
       //@ts-ignore
@@ -283,11 +280,7 @@ export class MailerService {
 @Injectable()
 export class GoogleAuthService {
   private oauth2Client;
-  private readonly SCOPES = [
-    'https://www.googleapis.com/auth/gmail.send',
-    'https://www.googleapis.com/auth/gmail.compose',
-    'https://www.googleapis.com/auth/gmail.modify'
-  ];
+  private readonly SCOPES = SCOPES;
 
   constructor() {
     // console.log('GoogleAuthService constructor:', process.env.AUTH_GOOGLE_CLIENT_ID, process.env.AUTH_GOOGLE_CLIENT_SECRET, process.env.AUTH_GOOGLE_CALLBACK_URL);
