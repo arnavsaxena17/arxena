@@ -16,7 +16,7 @@ import { actionBarEntriesState } from '@/ui/navigation/action-bar/states/actionB
 import { contextMenuEntriesState } from '@/ui/navigation/context-menu/states/contextMenuEntriesState';
 import { ContextMenuEntry } from '@/ui/navigation/context-menu/types/ContextMenuEntry';
 import { isDefined } from '~/utils/isDefined';
-import { IconCopy, IconMessage, IconPaperclip, IconRefresh, IconRefreshDot, IconUsersPlus, IconVideo } from '@tabler/icons-react';
+import { IconCopy, IconMessage, IconPaperclip, IconRefresh, IconRefreshDot, IconSend2, IconUsersPlus, IconVideo } from '@tabler/icons-react';
 import { useCreateVideoInterview } from '@/object-record/hooks/useCreateInterview';
 import { useRefreshChatStatus } from '@/object-record/hooks/useRefreshChatStatus';
 import { useRefreshChatCounts } from '@/object-record/hooks/useRefreshChatCounts';
@@ -364,7 +364,18 @@ export const useRecordActionBar = ({ objectMetadataItem, selectedRecordIds, call
                         },
                         {
                           label: 'Send CVs To Client',
-                          Icon: IconRefresh,
+                          Icon: IconSend2,
+                          onClick: async () => {
+                            try {
+                              await sendCVsToClient(selectedRecordIds);
+                            } catch (error) {
+                              console.error('Error creating videos:', error);
+                            }
+                          },
+                        },
+                        {
+                          label: 'Send CVs To Client',
+                          Icon: IconSend2,
                           onClick: async () => {
                             try {
                               await sendCVsToClient(selectedRecordIds);
