@@ -17,5 +17,11 @@ export class SendEmailFunctionality {
     const response = await mailerController.sendEmailWithAttachmentsController(gmailMessageData).catch(console.error);
     return response;
   }
+  async saveDraftEmailWithAttachmentsFunction(gmailMessageData: GmailMessageData) {
+    const mailerService = new MailerService();
+    const mailerController = new MailerController(mailerService);
+    const response = await mailerController.saveDraftEmailWithAttachmentsController(gmailMessageData).catch(console.error);
+    return response;
+  }
 
 }

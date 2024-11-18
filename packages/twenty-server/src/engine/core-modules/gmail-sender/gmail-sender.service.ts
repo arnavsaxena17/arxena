@@ -40,7 +40,11 @@ export class MailerService {
     this.oauth2Client.setCredentials({
       access_token: "YOUR_ACCESS_TOKEN",
       refresh_token: "YOUR_REFRESH_TOKEN",
-      scope: "https://www.googleapis.com/auth/gmail.send",
+      scope:[
+        'https://www.googleapis.com/auth/gmail.send',
+        'https://www.googleapis.com/auth/gmail.compose',
+        'https://www.googleapis.com/auth/gmail.modify'
+      ],
       token_type: "Bearer",
 
       //@ts-ignore
@@ -114,7 +118,6 @@ export class MailerService {
     if (client.credentials) {
       await this.saveCredentials(client);
     }
-
     return client;
   }
 
@@ -151,7 +154,10 @@ export class MailerService {
 
   async createDraftWithAttachments(auth, gmailMessageData: gmailSenderTypes.GmailMessageData) {
     const gmail = google.gmail({ version: "v1", auth });
-  
+    console.log("This is the gmail message data:", gmailMessageData);
+    console.log("This is the process.env.EMAIL_SMTP_USER_NAME:", process.env.EMAIL_SMTP_USER_NAME);
+    console.log("This is the process.env.EMAIL_SMTP_USER:", process.env.EMAIL_SMTP_USER);
+
     // Create email boundary for multipart message
     const boundary = "boundary" + Date.now().toString();
   

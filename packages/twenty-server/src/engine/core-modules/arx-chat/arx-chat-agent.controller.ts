@@ -840,6 +840,26 @@ export class GoogleControllers {
     const response = await new SendEmailFunctionality().sendEmailWithAttachmentFunction(emailData);
     return response || {};
   }
+  @Post('save-draft-mail-with-attachment')
+  async saveDraftEmailWithAttachments (@Req() request: any): Promise<object> {
+    const person: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(request.body.phoneNumber);
+    
+    const emailData: GmailMessageData = {
+      sendEmailFrom: allDataObjects.recruiterProfile?.email,
+      sendEmailTo: person?.email,
+      subject: request.body?.subject || 'Email from the recruiter',
+      message: request.body?.message || 'This is a test email',
+      attachments: [
+        {
+          filename: 'Resume - JC Sharma.pdf',
+          path: '/Users/arnavsaxena/Downloads/Resumes - Executive Director (MIL)/JC Sharma.pdf'
+        }
+      ]
+    };
+
+    const response = await new SendEmailFunctionality().saveDraftEmailWithAttachmentsFunction(emailData);
+    return response || {};
+  }
 
 
   @Post('send-calendar-invite')
