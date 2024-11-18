@@ -23,12 +23,6 @@ export class MailerController {
 
 
 
-
-
-
-
-
-
   @Post("sendMailWithAttachments")
   async sendEmailWithAttachmentsController(
     @Body() gmailMessageObject: gmailSenderTypes.GmailMessageData
