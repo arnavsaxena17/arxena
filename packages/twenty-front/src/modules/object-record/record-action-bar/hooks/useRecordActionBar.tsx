@@ -116,6 +116,7 @@ export const useRecordActionBar = ({ objectMetadataItem, selectedRecordIds, call
       console.error('Failed to create video interview:', error);
     },
   });
+  console.log("These are the selectred IDz:", selectedRecordIds)
 
   const handleClone = useCallback(async () => {
     callback?.();
