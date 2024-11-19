@@ -384,7 +384,8 @@ export class FacebookWhatsappChatApi {
           const currentTimeInIndia = new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
           const currentHourInIndia = new Date(currentTimeInIndia).getHours();
           if (currentHourInIndia >= 17) {
-            messageTemplate = 'application03_chat_tomorrow';
+            // messageTemplate = 'application03_chat_tomorrow';
+            messageTemplate = 'application03';
           } else {
             messageTemplate = 'application03';
           }
