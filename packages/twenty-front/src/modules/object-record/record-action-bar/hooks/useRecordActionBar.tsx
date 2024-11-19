@@ -16,11 +16,12 @@ import { actionBarEntriesState } from '@/ui/navigation/action-bar/states/actionB
 import { contextMenuEntriesState } from '@/ui/navigation/context-menu/states/contextMenuEntriesState';
 import { ContextMenuEntry } from '@/ui/navigation/context-menu/types/ContextMenuEntry';
 import { isDefined } from '~/utils/isDefined';
-import { IconCopy, IconMessage, IconPaperclip, IconRefresh, IconRefreshDot, IconSend2, IconUsersPlus, IconVideo } from '@tabler/icons-react';
+import { IconCopy, IconMessage, IconPaperclip, IconRefresh,IconBrandWhatsapp, IconRefreshDot, IconSend2, IconUsersPlus, IconVideo } from '@tabler/icons-react';
 import { useCreateVideoInterview } from '@/object-record/hooks/useCreateInterview';
 import { useRefreshChatStatus } from '@/object-record/hooks/useRefreshChatStatus';
 import { useRefreshChatCounts } from '@/object-record/hooks/useRefreshChatCounts';
 import { useSendCVsToClient } from '@/object-record/hooks/useSendCVsToClient';
+import { useSendToWhatsapp } from '@/object-record/hooks/useSendToWhatsapp';
 import { useExecuteDeleteCandidatesAndPeople } from '@/object-record/hooks/useExecuteDeleteCandidatesAndPeople';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { WorkspaceMember } from '@/workspace-member/types/WorkspaceMember';
@@ -93,6 +94,12 @@ export const useRecordActionBar = ({ objectMetadataItem, selectedRecordIds, call
     },
   });
   const { sendCVsToClient } = useSendCVsToClient({
+    onSuccess: () => {},
+    onError: (error: any) => {
+      console.error('Failed to refresh chat counts:', error);
+    },
+  });
+  const { sendToWhatsapp } = useSendToWhatsapp({
     onSuccess: () => {},
     onError: (error: any) => {
       console.error('Failed to refresh chat counts:', error);
@@ -374,11 +381,11 @@ export const useRecordActionBar = ({ objectMetadataItem, selectedRecordIds, call
                           },
                         },
                         {
-                          label: 'Send CVs To Client',
-                          Icon: IconSend2,
+                          label: 'Send To Whatsapp',
+                          Icon: IconBrandWhatsapp,
                           onClick: async () => {
                             try {
-                              await sendCVsToClient(selectedRecordIds);
+                              await sendToWhatsapp(selectedRecordIds);
                             } catch (error) {
                               console.error('Error creating videos:', error);
                             }
