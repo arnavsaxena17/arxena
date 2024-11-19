@@ -4,6 +4,7 @@ import { useRecoilState, useRecoilValue } from 'recoil';
 import { RightDrawerCalendarEvent } from '@/activities/calendar/right-drawer/components/RightDrawerCalendarEvent';
 import { RightDrawerEmailThread } from '@/activities/emails/right-drawer/components/RightDrawerEmailThread';
 import { RightDrawerChatThread } from '@/activities/chats/right-drawer/components/RightDrawerChatThread';
+import { RightDrawerCVThread } from '@/activities/chats/right-drawer/components/RightDrawerCVThread';
 import { RightDrawerCreateActivity } from '@/activities/right-drawer/components/create/RightDrawerCreateActivity';
 import { RightDrawerEditActivity } from '@/activities/right-drawer/components/edit/RightDrawerEditActivity';
 import { RightDrawerRecord } from '@/object-record/record-right-drawer/components/RightDrawerRecord';
@@ -56,7 +57,7 @@ const RIGHT_DRAWER_PAGES_CONFIG = {
     topBar: <RightDrawerTopBar page={RightDrawerPages.ViewChat} />,
   },
   [RightDrawerPages.ViewCV]: {
-    page: <RightDrawerEmailThread />,
+    page: <RightDrawerCVThread />,
     topBar: <RightDrawerTopBar page={RightDrawerPages.ViewCV} />,
   },
   [RightDrawerPages.ViewRecord]: {

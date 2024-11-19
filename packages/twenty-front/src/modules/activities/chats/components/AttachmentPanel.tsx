@@ -17,6 +17,7 @@ type DocHandlerResult = {
 
 pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.mjs`;
 
+
 const PanelContainer = styled.div<{ isOpen: boolean }>`
   position: fixed;
   top: 10;
@@ -31,6 +32,23 @@ const PanelContainer = styled.div<{ isOpen: boolean }>`
   display: flex;
   flex-direction: column;
 `;
+
+// const PanelContainer = styled.div<{ isOpen: boolean }>`
+//   position: absolute;
+//   top: 0;
+//   right: ${props => (props.isOpen ? '0' : '-100%')};
+//   width: 100%;
+//   height: 100vh;
+//   background-color: #f5f5f5;
+//   box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
+//   transition: right 0.3s ease-in-out;
+//   overflow-y: hidden; // Changed from auto to hidden
+//   z-index: 1000;
+//   display: flex;
+//   flex-direction: column;
+//   margin: 0;
+//   padding: 0;
+// `;
 
 const Header = styled.div`
   padding: 15px;
@@ -61,6 +79,21 @@ const NavigationContainer = styled.div`
   display: flex;
   align-items: center;
 `;
+
+const ContentContainer = styled.div`
+  flex: 1;
+  overflow-y: auto;
+  padding: 15px;
+  height: calc(100vh - 60px); // Subtract header height
+  width: 100%;
+`;
+
+// const ContentContainer = styled.div`
+//   flex-grow: 1;
+//   overflow-y: auto;
+//   padding: 15px;
+// `;
+
 
 const NavButton = styled.button`
   background: none;
@@ -97,11 +130,6 @@ const AttachmentCounter = styled.span`
   margin: 0 10px;
 `;
 
-const ContentContainer = styled.div`
-  flex-grow: 1;
-  overflow-y: auto;
-  padding: 15px;
-`;
 
 const CloseButton = styled.button`
   position: absolute;
