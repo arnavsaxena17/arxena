@@ -48,18 +48,30 @@ const Spinner = styled.div`
   }
 `;
 
+const LoadingStates = {
+  INITIAL: 'initial',
+  LOADING_CACHE: 'loading_cache',
+  LOADING_API: 'loading_api',
+  READY: 'ready',
+  ERROR: 'error'
+};
+
+
 export default function ChatMain({ initialCandidateId }: ChatMainProps) {
   // States
-  const [individuals, setIndividuals] = useState<frontChatTypes.PersonNode[]>(() => 
-    cacheUtils.getCache(CACHE_KEYS.CHATS_DATA) || []
-  );
+  // const [individuals, setIndividuals] = useState<frontChatTypes.PersonNode[]>(() => 
+  //   cacheUtils.getCache(CACHE_KEYS.CHATS_DATA) || []
+  // );
+  const [individuals, setIndividuals] = useState([]);
+
+  const [loadingState, setLoadingState] = useState(LoadingStates.INITIAL);
+
   const [selectedIndividual, setSelectedIndividual] = useState<string>('');
   const [isLoading, setIsLoading] = useState(individuals.length === 0);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [jobs, setJobs] = useState<Job[]>(() => 
-    cacheUtils.getCache(CACHE_KEYS.JOBS_DATA) || []
-  );
+  const [jobs, setJobs] = useState([]);
+
   const [unreadMessages, setUnreadMessages] = useState<frontChatTypes.UnreadMessageListManyCandidates>({
     listOfUnreadMessages: [],
   });
@@ -67,6 +79,28 @@ export default function ChatMain({ initialCandidateId }: ChatMainProps) {
   // Recoil states
   const [tokenPair] = useRecoilState(tokenPairState);
   const [currentUnreadMessages, setCurrentUnreadMessages] = useRecoilState(currentUnreadChatMessagesState);
+
+
+
+  const loadFromCache = () => {
+    setLoadingState(LoadingStates.LOADING_CACHE);
+    const cachedIndividuals = cacheUtils.getCache(CACHE_KEYS.CHATS_DATA);
+    const cachedJobs = cacheUtils.getCache(CACHE_KEYS.JOBS_DATA);
+    
+    if (cachedIndividuals && cachedJobs) {
+      setIndividuals(cachedIndividuals);
+      setJobs(cachedJobs);
+      // Calculate unread messages from cache
+      const unreadMessagesList = getUnreadMessageListManyCandidates(cachedIndividuals);
+      setUnreadMessages(unreadMessagesList);
+      setCurrentUnreadMessages(unreadMessagesList?.listOfUnreadMessages?.length);
+      setLoadingState(LoadingStates.READY);
+      return true;
+    }
+    return false;
+  };
+
+
 
   // Functions
   const getUnreadMessageListManyCandidates = (personNodes: frontChatTypes.PersonNode[]): frontChatTypes.UnreadMessageListManyCandidates => {
@@ -95,7 +129,7 @@ export default function ChatMain({ initialCandidateId }: ChatMainProps) {
   const fetchData = async (isInitialLoad = false) => {
     try {
       if (isInitialLoad) {
-        setIsLoading(true);
+        setLoadingState(LoadingStates.LOADING_API);
       } else {
         setIsRefreshing(true);
       }
@@ -111,16 +145,15 @@ export default function ChatMain({ initialCandidateId }: ChatMainProps) {
       ]);
 
       const availablePeople = peopleResponse.data.filter(
-        (person: frontChatTypes.PersonNode) => 
-          person?.candidates?.edges?.length > 0 && 
-          person?.candidates?.edges[0].node.startChat
+        (person:frontChatTypes.PersonNode) => person?.candidates?.edges?.length > 0 && person?.candidates?.edges[0].node.startChat
       );
+
+      // Update cache before state to ensure smooth loading
+      cacheUtils.setCache(CACHE_KEYS.CHATS_DATA, availablePeople);
+      cacheUtils.setCache(CACHE_KEYS.JOBS_DATA, jobsResponse.data.jobs);
 
       setIndividuals(availablePeople);
       setJobs(jobsResponse.data.jobs);
-
-      cacheUtils.setCache(CACHE_KEYS.CHATS_DATA, availablePeople);
-      cacheUtils.setCache(CACHE_KEYS.JOBS_DATA, jobsResponse.data.jobs);
 
       const unreadMessagesList = getUnreadMessageListManyCandidates(availablePeople);
       setCurrentUnreadMessages(unreadMessagesList?.listOfUnreadMessages?.length);
@@ -129,24 +162,40 @@ export default function ChatMain({ initialCandidateId }: ChatMainProps) {
       if (selectedIndividual) {
         updateUnreadMessagesStatus(selectedIndividual);
       }
+
+      setLoadingState(LoadingStates.READY);
     } catch (error) {
       console.error('Error fetching data:', error);
       setError('Failed to load chats. Please try again.');
-      if (isInitialLoad && individuals.length > 0) {
-        setError(null);
-      }
+      setLoadingState(LoadingStates.ERROR);
     } finally {
-      setIsLoading(false);
       setIsRefreshing(false);
     }
   };
 
+
+  useEffect(() => {
+    const initializeData = async () => {
+      const hasCachedData = loadFromCache();
+      if (!hasCachedData) {
+        await fetchData(true);
+      } else {
+        // Even if we have cache, fetch fresh data in the background
+        fetchData(false);
+      }
+    };
+
+    initializeData();
+    const interval = setInterval(() => fetchData(false), 10000);
+    return () => clearInterval(interval);
+  }, []);
+
   const updateUnreadMessagesStatus = async (selectedIndividual: string) => {
     const listOfMessagesIds = unreadMessages?.listOfUnreadMessages
       ?.find(unreadMessage => 
-        unreadMessage?.candidateId === individuals
-          ?.find(individual => individual?.id === selectedIndividual)
-          ?.candidates?.edges[0]?.node?.id
+        unreadMessage?.candidateId === (individuals
+          ?.find((individual: frontChatTypes.PersonNode) => individual?.id === selectedIndividual) as unknown as frontChatTypes.PersonNode)
+          ?.candidates?.edges?.[0]?.node?.id
       )
       ?.ManyUnreadMessages?.map(message => message.id);
 
@@ -168,11 +217,11 @@ export default function ChatMain({ initialCandidateId }: ChatMainProps) {
 
   useEffect(() => {
     if (initialCandidateId && individuals.length > 0) {
-      const individual = individuals.find(ind => 
+      const individual = individuals.find((ind: frontChatTypes.PersonNode) => 
         ind.candidates?.edges[0]?.node?.id === initialCandidateId
       );
       if (individual) {
-        setSelectedIndividual(individual.id);
+        setSelectedIndividual((individual as frontChatTypes.PersonNode).id);
       }
     }
   }, [initialCandidateId, individuals]);
@@ -188,6 +237,21 @@ export default function ChatMain({ initialCandidateId }: ChatMainProps) {
       // </SpinnerContainer>
     );
   }
+
+
+    if (loadingState === LoadingStates.INITIAL || loadingState === LoadingStates.LOADING_CACHE) {
+      return <Spinner />;
+    }
+
+    if (loadingState === LoadingStates.LOADING_API && individuals.length === 0) {
+      return <Spinner />;
+    }
+
+    if (loadingState === LoadingStates.ERROR && individuals.length === 0) {
+      return <div>Error loading chats. Please try again.</div>;
+    }
+
+
 
   return (
     <ChatContainer>
