@@ -474,6 +474,10 @@ const ChatTable: React.FC<ChatTableProps> = ({
     ? sortData(individuals, sortConfig.key, sortConfig.direction)
     : individuals;
 
+    console.log("isAttachmentPanelOpen:",isAttachmentPanelOpen)
+    console.log("isChatOpen:",isChatOpen)
+    console.log("value of selectedIds.length > 1 && (isAttachmentPanelOpen || isChatOpen:",selectedIds.length > 1 && (isAttachmentPanelOpen || isChatOpen))
+
   return (
     <>
       <TableContainer>
@@ -598,14 +602,14 @@ const ChatTable: React.FC<ChatTableProps> = ({
             PanelContainer={PanelContainer} // Pass the styled component to override default positioning
           />
 
-          {selectedIds.length > 1 && (
+          {selectedIds.length > 1 && (isAttachmentPanelOpen || isChatOpen) && (
             <CandidateNavigation>
               <NavIconButton onClick={handlePrevCandidate} disabled={currentCandidateIndex === 0} title="Previous Candidate">
-                <IconChevronLeft size={20} />
+          <IconChevronLeft size={20} />
               </NavIconButton>
 
               <NavIconButton onClick={handleNextCandidate} disabled={currentCandidateIndex === selectedIds.length - 1} title="Next Candidate">
-                <IconChevronRight size={20} />
+          <IconChevronRight size={20} />
               </NavIconButton>
             </CandidateNavigation>
           )}
