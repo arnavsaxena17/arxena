@@ -153,7 +153,7 @@ export class MailerService {
 
   async createDraftWithAttachments(auth, gmailMessageData: gmailSenderTypes.GmailMessageData) {
     const gmail = google.gmail({ version: "v1", auth });
-    console.log("This is the gmail message data:", gmailMessageData);
+    console.log("Tis is the gmail message dahta:", gmailMessageData);
     console.log("This is the process.env.EMAIL_SMTP_USER_NAME:", process.env.EMAIL_SMTP_USER_NAME);
     console.log("This is the process.env.EMAIL_SMTP_USER:", process.env.EMAIL_SMTP_USER);
 
@@ -178,7 +178,9 @@ export class MailerService {
     if (gmailMessageData.attachments && gmailMessageData.attachments.length > 0) {
       for (const attachment of gmailMessageData.attachments) {
         try {
-          const urlContent = process.env.SERVER_BASE_URL +'/'+attachment.path
+          console.log("Attachment:", attachment)
+          const urlContent = process.env.SERVER_BASE_URL +'/files/'+attachment.path
+          console.log("urlContent::::", urlContent);
           const fileContent = attachment.path.includes('attachment')
             ? await axios.get(urlContent, { responseType: 'arraybuffer' }).then(res => Buffer.from(res.data))
             : await fs.readFile(attachment.path);
@@ -192,7 +194,6 @@ export class MailerService {
           emailHeaders.push(fileContent.toString('base64').replace(/(.{76})/g, "$1\n"));
         } catch (error) {
           console.error(`Error processing attachment ${attachment.filename}:`, error);
-          throw new Error(`Failed to process attachment ${attachment.filename}`);
         }
       }
     }
@@ -247,7 +248,7 @@ export class MailerService {
       for (const attachment of gmailMessageData.attachments) {
         try {
           const fileContent = attachment.path.includes('attachment')
-            ? await axios.get(process.env.SERVER_BASE_URL +'/'+attachment.path, { responseType: 'arraybuffer' }).then(res => Buffer.from(res.data))
+            ? await axios.get(process.env.SERVER_BASE_URL +'/files/'+attachment.path, { responseType: 'arraybuffer' }).then(res => Buffer.from(res.data))
             : await fs.readFile(attachment.path);
           const mimeType = mime.lookup(attachment.path) || 'application/octet-stream';
           
@@ -267,10 +268,7 @@ export class MailerService {
     emailHeaders.push(`--${boundary}--`);
     // Create the email
     const email = emailHeaders.join("\r\n").trim();
-    const base64Email = Buffer.from(email).toString("base64")
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=+$/, '');
+    const base64Email = Buffer.from(email).toString("base64").replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 
     // Send the email
     await gmail.users.messages.send({
