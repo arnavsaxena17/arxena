@@ -558,15 +558,15 @@ const ChatTable: React.FC<ChatTableProps> = ({
   const [isAttachmentPanelOpen, setIsAttachmentPanelOpen] = useState(false);
   const [currentCandidateIndex, setCurrentCandidateIndex] = useState(0);
 
+  const [searchTerm, setSearchTerm] = useState('');
 
   const [isChatOpen, setIsChatOpen] = useState(false);
 
   const currentCandidate = selectedIds.length > 0 ? 
   individuals.find(individual => individual.id === selectedIds[currentCandidateIndex]) : null;
 
-
   const handleCheckboxChange = (individualId: string, event: React.ChangeEvent<HTMLInputElement>) => {
-    event.stopPropagation(); // Prevent row click when checking box
+    event.stopPropagation();
     const newSelectedIds = event.target.checked
       ? [...selectedIds, individualId]
       : selectedIds.filter(id => id !== individualId);
@@ -578,6 +578,7 @@ const ChatTable: React.FC<ChatTableProps> = ({
   const selectedPeople = individuals.filter(individual => 
     selectedIds.includes(individual.id)
   );
+
   console.log("selectedIds:",selectedIds)
   console.log("selectedPeople:",selectedPeople)
   console.log("individuals:",individuals)
@@ -591,6 +592,13 @@ const ChatTable: React.FC<ChatTableProps> = ({
     onSelectionChange?.(newSelectedIds);
   };
 
+  useEffect(() => {
+    let filteredData = filterData(individuals, searchTerm);
+    if (sortConfig.key && sortConfig.direction) {
+      filteredData = sortData(filteredData, sortConfig.key, sortConfig.direction);
+    }
+    setTableData(filteredData);
+  }, [searchTerm, individuals, sortConfig]);
 
   const handleViewChats = () => {
     console.log("View Chats");
@@ -598,7 +606,6 @@ const ChatTable: React.FC<ChatTableProps> = ({
       setIsChatOpen(true);
     }
   };
-
 
   const clearSelection = () => {
     setSelectedIds([]);
@@ -616,6 +623,24 @@ const ChatTable: React.FC<ChatTableProps> = ({
 
   const handleNextCandidate = () => {
     setCurrentCandidateIndex(prev => Math.min(selectedIds.length - 1, prev + 1));
+  };
+
+  const filterData = (data: frontChatTypes.PersonNode[], term: string) => {
+    if (!term) return data;
+    
+    return data.filter(individual => {
+      const searchString = `
+        ${individual.name.firstName} 
+        ${individual.name.lastName} 
+        ${individual.city || ''} 
+        ${individual.jobTitle || ''} 
+        ${individual.salary || ''} 
+        ${individual.candidates?.edges[0]?.node?.status || ''} 
+        ${individual.candidates?.edges[0]?.node?.candConversationStatus || ''}
+      `.toLowerCase();
+      
+      return searchString.includes(term.toLowerCase());
+    });
   };
 
 
