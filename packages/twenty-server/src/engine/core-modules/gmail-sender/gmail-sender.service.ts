@@ -178,8 +178,9 @@ export class MailerService {
     if (gmailMessageData.attachments && gmailMessageData.attachments.length > 0) {
       for (const attachment of gmailMessageData.attachments) {
         try {
+          const urlContent = process.env.SERVER_BASE_URL +'/'+attachment.path
           const fileContent = attachment.path.includes('attachment')
-            ? await axios.get(process.env.SERVER_BASE_URL +'/'+attachment.path, { responseType: 'arraybuffer' }).then(res => Buffer.from(res.data))
+            ? await axios.get(urlContent, { responseType: 'arraybuffer' }).then(res => Buffer.from(res.data))
             : await fs.readFile(attachment.path);
           const mimeType = mime.lookup(attachment.path) || 'application/octet-stream';
           
