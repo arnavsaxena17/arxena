@@ -361,10 +361,10 @@ export const MultiCandidateChat: React.FC<MultiCandidateChatProps> = ({
                   </DateSeparator>
                   {messages.map((message) => (
                     <MessageGroup key={message.id}>
-                      <MessageBubble isSent={message.name === 'botMessage'}>
+                      <MessageBubble isSent={message.name === 'botMessage' || message.name === 'botMessage'}>
                         {message.message}
                       </MessageBubble>
-                      <MessageTime isSent={message.name === 'botMessage'}>
+                      <MessageTime isSent={message.name === 'botMessage' || message.name === 'botMessage'}>
                         {formatTime(message.createdAt)}
                       </MessageTime>
                     </MessageGroup>
