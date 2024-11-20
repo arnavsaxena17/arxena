@@ -490,9 +490,9 @@ const ChatTable: React.FC<ChatTableProps> = ({
 
               {[
                 { key: 'name', label: 'Name' },
+                { key: 'status', label: 'Status' },
                 { key: 'startDate', label: 'Start Date' },
                 { key: 'candidateStatus', label: 'Candidate Status' },
-                { key: 'status', label: 'Status' },
                 { key: 'salary', label: 'Salary' },
                 { key: 'city', label: 'City' },
                 { key: 'jobTitle', label: 'Job Title' },
@@ -521,13 +521,13 @@ const ChatTable: React.FC<ChatTableProps> = ({
                   <CheckboxCell onClick={e => e.stopPropagation()}>
                     <Checkbox type="checkbox" checked={selectedIds.includes(individual.id)} onChange={e => handleCheckboxChange(individual.id, e)} />
                   </CheckboxCell>
-
                   <StyledTableCell>
                     <NameCell>
                       {`${individual.name.firstName} ${individual.name.lastName}`}
                       {unreadCount > 0 && <UnreadIndicator>{unreadCount}</UnreadIndicator>}
                     </NameCell>
                   </StyledTableCell>
+                  <StyledTableCell>{individual.candidates?.edges[0]?.node?.candConversationStatus || 'N/A'}</StyledTableCell>
                   <StyledTableCell>
                     {individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.createdAt
                       ? new Date(individual.candidates.edges[0].node.whatsappMessages.edges[0].node.createdAt).toLocaleString('en-US', {
@@ -539,7 +539,6 @@ const ChatTable: React.FC<ChatTableProps> = ({
                       : 'N/A'}
                   </StyledTableCell>
                   <StyledTableCell>{individual.candidates?.edges[0]?.node?.status || 'N/A'}</StyledTableCell>
-                  <StyledTableCell>{individual.candidates?.edges[0]?.node?.candConversationStatus || 'N/A'}</StyledTableCell>
                   <StyledTableCell>{individual.salary || 'N/A'}</StyledTableCell>
                   <StyledTableCell>{individual.city || 'N/A'}</StyledTableCell>
                   <StyledTableCell>{individual.jobTitle || 'N/A'}</StyledTableCell>
