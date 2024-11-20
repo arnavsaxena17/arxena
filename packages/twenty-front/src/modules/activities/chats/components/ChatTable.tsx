@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import styled from "@emotion/styled";
 import { IconX, IconUsers,IconFileText,IconChevronLeft, IconGripVertical,IconMessages,IconChevronRight, IconSend, IconTrash, IconChevronUp, IconChevronDown, IconLink, IconCopy } from '@tabler/icons-react';
 import * as frontChatTypes from "../types/front-chat-types";
@@ -459,8 +459,17 @@ const DraggableTableRow = ({
   getUnreadCount: (id: string) => number;
 }) => {
   const unreadCount = getUnreadCount(individual?.id);
-
+  const messageTime = new Date(individual.candidates.edges[0].node.whatsappMessages.edges[0].node.createdAt)
+  .toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+  console.log("messageTime:",messageTime)
+  console.log("individual.candidates.edges[0].node.whatsappMessages.edges[0].node.createdAt:",individual.candidates.edges[0].node.whatsappMessages.edges[0].node.createdAt)
   return (
+    console.log("individual:",individual),
     <Draggable draggableId={individual.id} index={index}>
       {(provided, snapshot) => (
         <StyledTableRow
@@ -487,23 +496,11 @@ const DraggableTableRow = ({
               {unreadCount > 0 && <UnreadIndicator>{unreadCount}</UnreadIndicator>}
             </NameCell>
           </StyledTableCell>
+          <StyledTableCell> {individual.candidates?.edges[0]?.node?.candConversationStatus || 'N/A'} </StyledTableCell>
           <StyledTableCell>
-            {individual.candidates?.edges[0]?.node?.candConversationStatus || 'N/A'}
+            {individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.createdAt ? messageTime : 'N/A'}
           </StyledTableCell>
-          <StyledTableCell>
-            {individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.createdAt
-              ? new Date(individual.candidates.edges[0].node.whatsappMessages.edges[0].node.createdAt)
-                  .toLocaleString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })
-              : 'N/A'}
-          </StyledTableCell>
-          <StyledTableCell>
-            {individual.candidates?.edges[0]?.node?.status || 'N/A'}
-          </StyledTableCell>
+          <StyledTableCell> {individual.candidates?.edges[0]?.node?.status || 'N/A'} </StyledTableCell>
           <StyledTableCell>{individual.salary || 'N/A'}</StyledTableCell>
           <StyledTableCell>{individual.city || 'N/A'}</StyledTableCell>
           <StyledTableCell>{individual.jobTitle || 'N/A'}</StyledTableCell>
@@ -547,7 +544,13 @@ const ChatTable: React.FC<ChatTableProps> = ({
     direction: null
   });
 
+  
+
   const [tableData, setTableData] = useState(individuals);
+  useEffect(() => {
+    setTableData(individuals);
+  }, [individuals]);
+
   const { enqueueSnackBar } = useSnackBar();
   const theme = useTheme();
 
@@ -656,6 +659,8 @@ const ChatTable: React.FC<ChatTableProps> = ({
       direction = 'desc';
     }
     setSortConfig({ key, direction });
+    const sortedData = sortData(tableData, key, direction);
+    setTableData(sortedData);
   };
 
   const getUnreadCount = (individualId: string) => {
@@ -697,9 +702,9 @@ const ChatTable: React.FC<ChatTableProps> = ({
               </StyledTableHeaderCell>
               {[
                 { key: 'name', label: 'Name' },
-                { key: 'status', label: 'Status' },
-                { key: 'startDate', label: 'Start Date' },
                 { key: 'candidateStatus', label: 'Candidate Status' },
+                { key: 'startDate', label: 'Start Date' },
+                { key: 'status', label: 'Status' },
                 { key: 'salary', label: 'Salary' },
                 { key: 'city', label: 'City' },
                 { key: 'jobTitle', label: 'Job Title' },
