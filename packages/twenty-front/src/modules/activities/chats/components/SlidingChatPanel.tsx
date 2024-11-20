@@ -26,6 +26,7 @@ const slideOut = keyframes`
     transform: translateX(800px);
   }
 `;
+
 const StyledPanelContainer = styled.div<{ isOpen: boolean }>`
   position: fixed;
   top: 0;
@@ -96,11 +97,11 @@ const ChatView = styled.div`
 
 const MessageBubble = styled.div<{ isSent: boolean }>`
   max-width: 70%;
-  margin: ${props => props.isSent ? '8px 8px 8px auto' : '8px'};
+  margin: ${props => (props.isSent ? '8px 8px 8px auto' : '8px')};
   padding: 12px;
   border-radius: 12px;
-  background-color: ${props => props.isSent ? '#007AFF' : '#E9E9EB'};
-  color: ${props => props.isSent ? 'white' : 'black'};
+  background-color: ${props => (props.isSent ? '#007AFF' : '#E9E9EB')};
+  color: ${props => (props.isSent ? 'white' : 'black')};
 `;
 
 const DateSeparator = styled.div`
@@ -111,16 +112,7 @@ const DateSeparator = styled.div`
 `;
 
 const CloseIcon = () => (
-  <svg 
-    width="20" 
-    height="20" 
-    viewBox="0 0 24 24" 
-    fill="none" 
-    stroke="currentColor" 
-    strokeWidth="2"
-    strokeLinecap="round" 
-    strokeLinejoin="round"
-  >
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M18 6L6 18M6 6l12 12" />
   </svg>
 );
@@ -131,20 +123,15 @@ interface SlidingChatPanelProps {
   selectedRecordIds: string[];
 }
 // In your SlidingChatPanel component:
-const SlidingChatPanel: React.FC<SlidingChatPanelProps> = ({
-  isOpen,
-  onClose,
-  selectedRecordIds,
-}) => {
-  console.log("SlidingChatPanel props:", { isOpen, selectedRecordIds });
+const SlidingChatPanel: React.FC<SlidingChatPanelProps> = ({ isOpen, onClose, selectedRecordIds }) => {
+  console.log('SlidingChatPanel props:', { isOpen, selectedRecordIds });
   const [chatPanel] = useRecoilState(chatPanelState);
   const [isVisible, setIsVisible] = useState(isOpen);
   const [tokenPair] = useRecoilState(tokenPairState);
   const [messageHistory, setMessageHistory] = useState<frontChatTypes.MessageNode[]>([]);
   const [pendingMessage, setPendingMessage] = useState<frontChatTypes.MessageNode | null>(null);
 
-
-  console.log("🔍 SlidingChatPanel Render", {
+  console.log('🔍 SlidingChatPanel Render', {
     isOpen,
     selectedRecordIds,
     messageCount: messageHistory.length,
@@ -152,28 +139,21 @@ const SlidingChatPanel: React.FC<SlidingChatPanelProps> = ({
 
   // Remove duplicate useEffects and consolidate them
   useEffect(() => {
-    console.log("🔄 Effect triggered", { isOpen, selectedRecordId: selectedRecordIds[0] });
+    console.log('🔄 Effect triggered', { isOpen, selectedRecordId: selectedRecordIds[0] });
 
     const fetchMessages = async () => {
       if (!isOpen || selectedRecordIds.length !== 1 || !tokenPair?.accessToken?.token) {
-        console.log("⛔ Skipping fetch - conditions not met");
+        console.log('⛔ Skipping fetch - conditions not met');
         return;
       }
 
       try {
-        console.log("📡 Fetching messages for:", selectedRecordIds[0]);
-        const response = await axios.post(
-          `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/get-all-messages-by-candidate-id`,
-          { candidateId: selectedRecordIds[0] },
-          { headers: { Authorization: `Bearer ${tokenPair.accessToken.token}` } }
-        );
+        console.log('📡 Fetching messages for:', selectedRecordIds[0]);
+        const response = await axios.post(`${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/get-all-messages-by-candidate-id`, { candidateId: selectedRecordIds[0] }, { headers: { Authorization: `Bearer ${tokenPair.accessToken.token}` } });
 
-        const sortedMessages = response.data.sort(
-          (a: frontChatTypes.MessageNode, b: frontChatTypes.MessageNode) => 
-            dayjs(a.createdAt).valueOf() - dayjs(b.createdAt).valueOf()
-        );
+        const sortedMessages = response.data.sort((a: frontChatTypes.MessageNode, b: frontChatTypes.MessageNode) => dayjs(a.createdAt).valueOf() - dayjs(b.createdAt).valueOf());
 
-        console.log("✅ Messages fetched:", sortedMessages.length);
+        console.log('✅ Messages fetched:', sortedMessages.length);
         setMessageHistory(sortedMessages);
       } catch (error) {
         console.error('❌ Error fetching messages:', error);
@@ -186,65 +166,49 @@ const SlidingChatPanel: React.FC<SlidingChatPanelProps> = ({
     return () => clearInterval(interval);
   }, [isOpen, selectedRecordIds, tokenPair]);
 
-  console.log("🎨 Rendering panel UI");
-
+  console.log('🎨 Rendering panel UI');
 
   // Early return BEFORE any conditional rendering logic
   if (!isOpen || selectedRecordIds.length !== 1) {
-    console.log("Panel not rendering:", { isOpen, recordCount: selectedRecordIds.length });
+    console.log('Panel not rendering:', { isOpen, recordCount: selectedRecordIds.length });
     return null;
   }
 
   const formatDate = (date: string) => dayjs(date).format("ddd DD MMM, 'YY");
 
-  console.log("Rendering panel with messages:", messageHistory.length);
+  console.log('Rendering panel with messages:', messageHistory.length);
 
   return (
     <div style={{ display: 'contents' }}>
-
-    <StyledPanelContainer isOpen={isOpen}
-    style={{
-      transform: isOpen ? 'translateX(0)' : 'translateX(100%)',
-      transition: 'transform 0.3s ease-in-out'
-    }}
-    >
-      <StyledHeader>
-        <StyledTitle>Chat History</StyledTitle>
-        <StyledCloseButton onClick={onClose} aria-label="Close chat panel">
-          <CloseIcon />
-        </StyledCloseButton>
-      </StyledHeader>
-      <StyledContent>
-        <ChatView>
-        <div>Chat panel is {isOpen ? 'open' : 'closed'}</div>
-
-          {messageHistory.map((message, index) => {
-            const showDateSeparator = 
-              index === 0 || 
-              formatDate(messageHistory[index - 1]?.createdAt) !== formatDate(message?.createdAt);
-
-            return (
-              <React.Fragment key={message.id}>
-                {showDateSeparator && (
-                  <DateSeparator>
-                    {formatDate(message.createdAt)}
-                  </DateSeparator>
-                )}
-                <MessageBubble 
-                  isSent={message.whatsappDeliveryStatus === 'sent'}
-                >
-                  {message.message}
-                </MessageBubble>
-              </React.Fragment>
-            );
-          })}
-        </ChatView>
-      </StyledContent>
-    </StyledPanelContainer>
+      <StyledPanelContainer
+        isOpen={isOpen}
+        style={{
+          transform: isOpen ? 'translateX(0)' : 'translateX(100%)',
+          transition: 'transform 0.3s ease-in-out',
+        }}>
+        <StyledHeader>
+          <StyledTitle>Chat History</StyledTitle>
+          <StyledCloseButton onClick={onClose} aria-label="Close chat panel">
+            <CloseIcon />
+          </StyledCloseButton>
+        </StyledHeader>
+        <StyledContent>
+          <ChatView>
+            <div>Chat panel is {isOpen ? 'open' : 'closed'}</div>
+            {messageHistory.map((message, index) => {
+              const showDateSeparator = index === 0 || formatDate(messageHistory[index - 1]?.createdAt) !== formatDate(message?.createdAt);
+              return (
+                <React.Fragment key={message.id}>
+                  {showDateSeparator && <DateSeparator>{formatDate(message.createdAt)}</DateSeparator>}
+                  <MessageBubble isSent={message.whatsappDeliveryStatus === 'sent'}>{message.message}</MessageBubble>
+                </React.Fragment>
+              );
+            })}
+          </ChatView>
+        </StyledContent>
+      </StyledPanelContainer>
     </div>
-
   );
 };
-
 
 export default SlidingChatPanel;
