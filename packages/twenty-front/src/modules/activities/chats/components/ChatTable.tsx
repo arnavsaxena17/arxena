@@ -87,6 +87,7 @@ const NavIconButton = styled.button`
 
 const StyledTableRow = styled.div<{ $selected: boolean; $isDragging?: boolean }>`
   display: table-row;
+  height: 12px;
   background-color: ${(props) => {
     if (props.$isDragging) return "#e5e7eb";
     return props.$selected ? "#f5f9fd" : "white";
@@ -100,7 +101,7 @@ const StyledTableRow = styled.div<{ $selected: boolean; $isDragging?: boolean }>
   @media (max-width: 768px) {
     display: flex;
     flex-direction: column;
-    padding: 1rem;
+    padding: 0.25rem;
     border-bottom: 1px solid #e0e0e0;
     position: relative;
   }
@@ -118,7 +119,7 @@ const DragHandle = styled.div`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 4px;
+  padding: 2px;
   border-radius: 4px;
   color: #9CA3AF;
   transition: all 0.2s ease;
@@ -183,13 +184,19 @@ const StyledCheckbox = styled.input`
 
 const CheckboxCell = styled.div`
   display: table-cell;
-  padding: 1rem;
+  padding: 0.25rem;
   width: 40px;
-  text-align: center;
+  text-align: left;
   
+  > div {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
   @media (max-width: 768px) {
     position: absolute;
-    left: 1rem;
+    left: 0.5rem;
     top: 50%;
     transform: translateY(-50%);
   }
@@ -315,7 +322,7 @@ const StyledTable = styled.div`
 
 const StyledTableCell = styled.div`
   display: table-cell;
-  padding: 1rem;
+  padding: 0.25rem 0.5rem;
   border-bottom: 1px solid #e0e0e0;
   width: 150px;
 
@@ -335,7 +342,7 @@ const StyledTableCell = styled.div`
 
 const StyledTableHeaderCell = styled.div<{ isSorted: boolean }>`
   display: table-cell;
-  padding: 1rem;
+  padding: 0.25rem 0.5rem;
   font-weight: 600;
   text-align: left;
   border-bottom: 2px solid #e0e0e0;
