@@ -18,6 +18,8 @@ export interface ChatTableProps {
   selectedIndividual: string;
   unreadMessages: UnreadMessageListManyCandidates;
   onIndividualSelect: (id: string) => void;
+  onSelectionChange?: (selectedIds: string[]) => void;
+
 }
 export interface JobDropdownProps {
   jobs: Job[];

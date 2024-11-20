@@ -337,6 +337,10 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     return counts;
   }, [filteredIndividuals]);
 
+  const handleSelectionChange = (selectedIds: string[]) => {
+    // Do something with the selected IDs
+    console.log('Selected IDs with Checkboxes:', selectedIds);
+  };
 
 
   
@@ -397,7 +401,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
       individuals={sortedIndividuals} 
       selectedIndividual={selectedIndividual} 
       unreadMessages={unreadMessages}
-
+      onSelectionChange={handleSelectionChange}
       onIndividualSelect={handleIndividualSelect} />
       </ScrollableContent>
     </StyledSidebarContainer>
