@@ -221,7 +221,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
         break;
       }
     }
-    console.log("Number of messages for candidate id:", candidateId, "is", allWhatsappMessages?.length);
+    // console.log("Number of messages for candidate id:", candidateId, "is", allWhatsappMessages?.length);
     return allWhatsappMessages;
   }
 
