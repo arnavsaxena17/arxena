@@ -151,6 +151,26 @@ export class MailerService {
   }
 
 
+  cleanFilename(filename:string) {
+    // Remove Naukri_
+    let name = filename.replace(/Naukri_/, '');
+    
+    // Remove content within []
+    name = name.replace(/\[.*?\]/, '');
+    
+    // Remove content within ()
+    name = name.replace(/\(.*?\)/, '');
+    
+    // Remove spaces
+    name = name.replace(/\s+/, '');
+    
+    // Remove special characters
+    name = name.replace(/[^a-zA-Z0-9.]/g, '');
+    name = name.toLowerCase();
+    
+    return name;
+ }
+ 
   async createDraftWithAttachments(auth, gmailMessageData: gmailSenderTypes.GmailMessageData) {
     const gmail = google.gmail({ version: "v1", auth });
     console.log("Tis is the gmail message dahta:", gmailMessageData);
@@ -185,11 +205,11 @@ export class MailerService {
             ? await axios.get(urlContent, { responseType: 'arraybuffer' }).then(res => Buffer.from(res.data))
             : await fs.readFile(attachment.path);
           const mimeType = mime.lookup(attachment.path) || 'application/octet-stream';
-          
+          const cleanFilenma  = this.cleanFilename(attachment.filename);
           emailHeaders.push(`--${boundary}`);
           emailHeaders.push(`Content-Type: ${mimeType}`);
           emailHeaders.push('Content-Transfer-Encoding: base64');
-          emailHeaders.push(`Content-Disposition: attachment; filename="${attachment.filename}"`);
+          emailHeaders.push(`Content-Disposition: attachment; filename="${cleanFilenma}"`);
           emailHeaders.push('');
           emailHeaders.push(fileContent.toString('base64').replace(/(.{76})/g, "$1\n"));
         } catch (error) {
