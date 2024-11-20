@@ -107,15 +107,91 @@ const StyledTableRow = styled.div<{ $selected: boolean; $isDragging?: boolean }>
 `;
 
 
+const CheckboxWrapper = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem;
+`;
 
 const DragHandle = styled.div`
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 4px;
+  color: #9CA3AF;
+  transition: all 0.2s ease;
   margin-right: 0.5rem;
-  color: #6b7280;
+  cursor: grab;
   
   &:hover {
-    color: #374151;
+    background-color: #F3F4F6;
+    color: #4B5563;
+  }
+  
+  &:active {
+    cursor: grabbing;
+    background-color: #E5E7EB;
+  }
+`;
+
+
+const StyledCheckbox = styled.input`
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border: 2px solid #D1D5DB;
+  border-radius: 4px;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    border-color: #9CA3AF;
+    background-color: #F9FAFB;
+  }
+  
+  &:checked {
+    background-color: #2563EB;
+    border-color: #2563EB;
+    
+    &:after {
+      content: '';
+      position: absolute;
+      left: 5px;
+      top: 2px;
+      width: 6px;
+      height: 10px;
+      border: solid white;
+      border-width: 0 2px 2px 0;
+      transform: rotate(45deg);
+    }
+    
+    &:hover {
+      background-color: #1D4ED8;
+      border-color: #1D4ED8;
+    }
+  }
+  
+  &:focus {
+    outline: 2px solid #2563EB;
+    outline-offset: 2px;
+  }
+`;
+
+
+const CheckboxCell = styled.div`
+  display: table-cell;
+  padding: 1rem;
+  width: 40px;
+  text-align: center;
+  
+  @media (max-width: 768px) {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
   }
 `;
 
@@ -205,19 +281,19 @@ const CloseButton = styled.button`
 `;
 
 
-const CheckboxCell = styled.div`
-  display: table-cell;
-  padding: 1rem;
-  width: 40px;
-  text-align: center;
+// const CheckboxCell = styled.div`
+//   display: table-cell;
+//   padding: 1rem;
+//   width: 40px;
+//   text-align: center;
   
-  @media (max-width: 768px) {
-    position: absolute;
-    left: 1rem;
-    top: 50%;
-    transform: translateY(-50%);
-  }
-`;
+//   @media (max-width: 768px) {
+//     position: absolute;
+//     left: 1rem;
+//     top: 50%;
+//     transform: translateY(-50%);
+//   }
+// `;
 
 const Checkbox = styled.input`
   width: 16px;
