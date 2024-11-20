@@ -376,7 +376,7 @@ export const MultiCandidateChat: React.FC<MultiCandidateChatProps> = ({
         </ChatView>
       </DrawerContainer>
 
-      {selectedPeople.length > 1 && (
+      {selectedPeople.length > 1 && isOpen &&(
         <>
           <NavigationCounter>
             {currentIndex + 1} of {selectedPeople.length}
