@@ -829,13 +829,9 @@ export class GoogleControllers {
       sendEmailTo: person?.email,
       subject: request.body?.subject || 'Email from the recruiter',
       message: request.body?.message || 'This is a test email',
-      attachments: [
-        {
-          filename: 'Resume - JC Sharma.pdf',
-          path: '/Users/arnavsaxena/Downloads/Resumes - Executive Director (MIL)/JC Sharma.pdf'
-        }
-      ]
+      attachments: request.body.attachments || [],
     };
+    console.log("This si the email data to send attachemnts:", emailData)
 
     const response = await new SendEmailFunctionality().sendEmailWithAttachmentFunction(emailData);
     return response || {};
@@ -849,9 +845,9 @@ export class GoogleControllers {
       sendEmailTo: person?.email,
       subject: request.body?.subject || 'Email from the recruiter',
       message: request.body?.message || 'This is a test email',
-      attachments: request.body.attachments
+      attachments: request.body.attachments || [],
     };
-    console.log("This si the email data:", emailData)
+    console.log("This si the email data to save drafts:", emailData)
 
 
     const response = await new SendEmailFunctionality().saveDraftEmailWithAttachmentsFunction(emailData);
