@@ -29,6 +29,17 @@ pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pd
 //   display: flex;
 //   flex-direction: column;
 // `;
+const DocViewer = styled.div`
+  padding: 16px;
+  background: white;
+  border-radius: 4px;
+  
+  p {
+    margin: 8px 0;
+    line-height: 1.6;
+    font-size: 14px;
+  }
+`;
 
 
 const DefaultPanelContainer = styled.div<{ isOpen: boolean }>`
@@ -160,13 +171,13 @@ const ErrorMessage = styled.div`
   margin-top: 15px;
 `;
 
-const DocxViewer = styled.div`
-  padding: 15px;
-  background-color: white;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  overflow-y: auto;
-`;
+// const DocxViewer = styled.div`
+//   padding: 15px;
+//   background-color: white;
+//   border: 1px solid #ccc;
+//   border-radius: 4px;
+//   overflow-y: auto;
+// `;
 
 const ContentViewer = styled.pre`
   white-space: pre-wrap;
@@ -187,7 +198,12 @@ interface AttachmentPanelProps {
   candidateName: string;
   PanelContainer?: React.ComponentType<{ isOpen: boolean }>;
 
+
+  
 }
+
+
+
 
 const AttachmentPanel: React.FC<AttachmentPanelProps> = ({ isOpen, onClose, candidateId, candidateName,     PanelContainer = DefaultPanelContainer // Use default if not provided
 }) => {
@@ -405,6 +421,26 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({ isOpen, onClose, cand
     }
   };
 
+
+
+  const DocxViewer: React.FC<{ content: string }> = ({ content }) => {
+
+    const lines = content.split(/\r?\n/).filter(line => line.trim());
+    return (
+  
+      <DocViewer>
+  
+        {lines.map((line, index) => (
+  
+          <p key={index}>{line}</p>
+  
+        ))}
+  
+      </DocViewer>
+  
+    );
+  }
+
   useEffect(() => {
     if (attachments.length > 0) {
       fetchFileContent(attachments[currentAttachmentIndex]);
@@ -451,7 +487,8 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({ isOpen, onClose, cand
               {/* Add navigation controls for PDF if needed */}
             </PDFContainer>
           ) : typeof fileContent === 'string' && fileContent.startsWith('<') ? (
-            <DocxViewer dangerouslySetInnerHTML={{ __html: fileContent }} />
+            // <DocxViewer dangerouslySetInnerHTML={{ __html: fileContent }} />
+            <DocxViewer content={fileContent} />
           ) : (
             <ContentViewer>{typeof fileContent === 'string' ? fileContent : 'Unsupported file type'}</ContentViewer>
           )
