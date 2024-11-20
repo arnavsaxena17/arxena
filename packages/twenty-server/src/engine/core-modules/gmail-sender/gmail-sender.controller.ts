@@ -42,7 +42,7 @@ export class MailerController {
   async saveDraftEmailWithAttachmentsController(
     @Body() gmailMessageObject: gmailSenderTypes.GmailMessageData
   ): Promise<object> {
-    console.log("HIt there");
+    console.log("Hit there");
     try {
       const auth = await this.mailerService.authorize();
       const draftData = await this.mailerService.createDraftWithAttachments(auth, gmailMessageObject);
