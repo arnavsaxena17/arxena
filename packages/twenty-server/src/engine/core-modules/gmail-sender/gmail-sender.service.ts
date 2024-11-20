@@ -178,7 +178,9 @@ export class MailerService {
     if (gmailMessageData.attachments && gmailMessageData.attachments.length > 0) {
       for (const attachment of gmailMessageData.attachments) {
         try {
-          const fileContent = await fs.readFile(attachment.path);
+          const fileContent = attachment.path.includes('attachment')
+            ? await axios.get(process.env.SERVER_BASE_URL +'/'+attachment.path, { responseType: 'arraybuffer' }).then(res => Buffer.from(res.data))
+            : await fs.readFile(attachment.path);
           const mimeType = mime.lookup(attachment.path) || 'application/octet-stream';
           
           emailHeaders.push(`--${boundary}`);
@@ -243,7 +245,9 @@ export class MailerService {
     if (gmailMessageData.attachments && gmailMessageData.attachments.length > 0) {
       for (const attachment of gmailMessageData.attachments) {
         try {
-          const fileContent = await fs.readFile(attachment.path);
+          const fileContent = attachment.path.includes('attachment')
+            ? await axios.get(process.env.SERVER_BASE_URL +'/'+attachment.path, { responseType: 'arraybuffer' }).then(res => Buffer.from(res.data))
+            : await fs.readFile(attachment.path);
           const mimeType = mime.lookup(attachment.path) || 'application/octet-stream';
           
           emailHeaders.push(`--${boundary}`);
@@ -254,10 +258,10 @@ export class MailerService {
           emailHeaders.push(fileContent.toString('base64').replace(/(.{76})/g, "$1\n"));
         } catch (error) {
           console.error(`Error processing attachment ${attachment.filename}:`, error);
-          throw new Error(`Failed to process attachment ${attachment.filename}`);
         }
       }
     }
+
     // Add final boundary
     emailHeaders.push(`--${boundary}--`);
     // Create the email
@@ -274,6 +278,7 @@ export class MailerService {
         raw: base64Email,
       },
     });
+    console.log("Draft saved successfully");
   }
 }
 
