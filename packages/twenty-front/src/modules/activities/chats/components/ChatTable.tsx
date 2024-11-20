@@ -466,13 +466,19 @@ const DraggableTableRow = ({
   getUnreadCount: (id: string) => number;
 }) => {
   const unreadCount = getUnreadCount(individual?.id);
-  const messageTime = new Date(individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.createdAt)
-  .toLocaleString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  let messageTime = 'N/A';
+  try{
+    messageTime = new Date(individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.createdAt)
+   .toLocaleString('en-US', {
+     month: 'short',
+     day: 'numeric',
+     hour: '2-digit',
+     minute: '2-digit',
+   });
+  }
+  catch(e){
+    messageTime = 'N/A';
+  }
   console.log("messageTime:",messageTime)
   console.log("individual.candidates.edges[0].node.whatsappMessages.edges[0].node.createdAt:",individual.candidates.edges[0].node.whatsappMessages.edges[0].node.createdAt)
   return (
