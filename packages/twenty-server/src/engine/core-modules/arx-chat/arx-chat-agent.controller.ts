@@ -164,10 +164,10 @@ export class ArxChatEndpoint {
       messages: [{ role: 'user', content: 'startChat' }],
       messageType: 'string',
     };
-    console.log('This is the chat reply:', whatsappIncomingMessage);
+    console.log('This is the Chat Reply:', whatsappIncomingMessage);
     const chatReply = 'startChat';
     const personObj: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(request.body.phoneNumberFrom);
-    console.log('This is the chat reply:', chatReply);
+    console.log('This is the Chat Reply:', chatReply);
     const recruiterProfile = allDataObjects.recruiterProfile;
     console.log('Recruiter profile', recruiterProfile);
     const chatMessages = personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges;
@@ -286,13 +286,11 @@ export class ArxChatEndpoint {
 
       console.log("Going to get candidate by hiring-naukri-url :", request?.body?.hiringNaukriUrl);
       const hiringNaukriUrl = request.body.hiringNaukriUrl
-      
       const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToManyCandidateById, variables: { filter: { hiringNaukriUrl: { url: { eq: hiringNaukriUrl } } } } });
       const response = await axiosRequest(graphqlQueryObj);
       console.log("Fetched candidate by candidate ID:", response?.data);
       const candidateObj = response?.data?.data?.candidates?.edges[0]?.node;
-      console.log("Fetched candidate by candidate Obj :", candidateObj);
-  
+      console.log("Fetched candidate by candidate OB:", candidateObj);
       const candidateId = candidateObj?.id
       console.log('candidateId to fetch all candidateby hiring-naukri:', candidateId);
       return {candidateId};
@@ -839,6 +837,8 @@ export class GoogleControllers {
   @Post('save-draft-mail-with-attachment')
   async saveDraftEmailWithAttachments (@Req() request: any): Promise<object> {
     const person: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(request.body.phoneNumber);
+
+    
     
     const emailData: GmailMessageData = {
       sendEmailFrom: allDataObjects.recruiterProfile?.email,
