@@ -261,27 +261,41 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
 
     return matchesSearch && matchesJob && matchesStatus && matchesChatStatus;
   });
-
-  const sortedIndividuals = filteredIndividuals.sort((a, b) => {
-    const getLastMessageTimestamp = (individual: frontChatTypes.PersonNode) => {
-      const messagesEdges = individual.candidates?.edges[0]?.node?.whatsappMessages?.edges || [];
-      
-      const latestMessage = messagesEdges.reduce((latest, edge) => {
-        const messageTimestamp = edge.node?.createdAt || '';
-        const messageDate = new Date(messageTimestamp);
-  
-        return messageDate > latest ? messageDate : latest;
-      }, new Date(0));
-  
-      return latestMessage;
-    };
-  
-    const aDate = getLastMessageTimestamp(a);
-    const bDate = getLastMessageTimestamp(b);
-  
-    return bDate.getTime() - aDate.getTime();
+  const [manualOrder, setManualOrder] = useState<Record<string, number>>(() => {
+    const saved = localStorage.getItem('chatTableOrder');
+    return saved ? JSON.parse(saved) : {};
   });
 
+  // Modified sortedIndividuals to consider manual ordering
+  const sortedIndividuals = useMemo(() => {
+    return filteredIndividuals.sort((a, b) => {
+      // First check manual ordering
+      const orderA = manualOrder[a.id] ?? Number.MAX_SAFE_INTEGER;
+      const orderB = manualOrder[b.id] ?? Number.MAX_SAFE_INTEGER;
+      
+      if (orderA !== orderB) {
+        return orderA - orderB;
+      }
+
+      // If no manual order or same order, fall back to timestamp sorting
+      const getLastMessageTimestamp = (individual: frontChatTypes.PersonNode) => {
+        const messagesEdges = individual.candidates?.edges[0]?.node?.whatsappMessages?.edges || [];
+        
+        const latestMessage = messagesEdges.reduce((latest, edge) => {
+          const messageTimestamp = edge.node?.createdAt || '';
+          const messageDate = new Date(messageTimestamp);
+          return messageDate > latest ? messageDate : latest;
+        }, new Date(0));
+    
+        return latestMessage;
+      };
+    
+      const aDate = getLastMessageTimestamp(a);
+      const bDate = getLastMessageTimestamp(b);
+    
+      return bDate.getTime() - aDate.getTime();
+    });
+  }, [filteredIndividuals, manualOrder]);
 
 
   const handleJobToggle = (jobId: string) => {
@@ -289,6 +303,20 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
       prev.includes(jobId) ? prev.filter(id => id !== jobId) : [...prev, jobId]
     );
   };
+
+  const handleReorder = (reorderedIndividuals: frontChatTypes.PersonNode[]) => {
+    console.log("Reordered Individuals:", reorderedIndividuals);
+    // Create new order map
+    const newOrder = reorderedIndividuals.reduce((acc, individual, index) => {
+      acc[individual.id] = index;
+      return acc;
+    }, {} as Record<string, number>);
+
+    // Save to state and localStorage
+    setManualOrder(newOrder);
+    localStorage.setItem('chatTableOrder', JSON.stringify(newOrder));
+  };
+
 
 
   const handleStatusToggle = (status: string) => {
@@ -402,7 +430,9 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
       selectedIndividual={selectedIndividual} 
       unreadMessages={unreadMessages}
       onSelectionChange={handleSelectionChange}
-      onIndividualSelect={handleIndividualSelect} />
+      onIndividualSelect={handleIndividualSelect} 
+      onReorder={handleReorder}
+      />
       </ScrollableContent>
     </StyledSidebarContainer>
   );

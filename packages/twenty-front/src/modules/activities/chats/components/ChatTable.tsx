@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import styled from "@emotion/styled";
-import { IconX, IconUsers,IconFileText,IconChevronLeft,IconMessages,IconChevronRight, IconSend, IconTrash, IconChevronUp, IconChevronDown } from '@tabler/icons-react';
+import { IconX, IconUsers,IconFileText,IconChevronLeft, IconGripVertical,IconMessages,IconChevronRight, IconSend, IconTrash, IconChevronUp, IconChevronDown } from '@tabler/icons-react';
 import * as frontChatTypes from "../types/front-chat-types";
 import AttachmentPanel from './AttachmentPanel';
 import MultiCandidateChat from './MultiCandidateChat';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
+
 
 const TableContainer = styled.div`
   width: 100%;
@@ -76,6 +78,40 @@ const NavIconButton = styled.button`
   // Add hover state shadow
   &:hover:not(:disabled) {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  }
+`;
+
+const StyledTableRow = styled.div<{ $selected: boolean; $isDragging?: boolean }>`
+  display: table-row;
+  background-color: ${(props) => {
+    if (props.$isDragging) return "#e5e7eb";
+    return props.$selected ? "#f5f9fd" : "white";
+  }};
+  cursor: pointer;
+  
+  &:hover {
+    background-color: ${(props) => (props.$selected ? "#f5f9fd" : "#f0f0f0")};
+  }
+  
+  @media (max-width: 768px) {
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+    border-bottom: 1px solid #e0e0e0;
+    position: relative;
+  }
+`;
+
+
+
+const DragHandle = styled.div`
+  display: inline-flex;
+  align-items: center;
+  margin-right: 0.5rem;
+  color: #6b7280;
+  
+  &:hover {
+    color: #374151;
   }
 `;
 
@@ -275,23 +311,23 @@ const StyledTableHeader = styled.div`
   }
 `;
 
-const StyledTableRow = styled.div<{ $selected: boolean }>`
-  display: table-row;
-  background-color: ${(props) => (props.$selected ? "#f5f9fd" : "white")};
-  cursor: pointer;
+// const StyledTableRow = styled.div<{ $selected: boolean }>`
+//   display: table-row;
+//   background-color: ${(props) => (props.$selected ? "#f5f9fd" : "white")};
+//   cursor: pointer;
   
-  &:hover {
-    background-color: ${(props) => (props.$selected ? "#f5f9fd" : "#f0f0f0")};
-  }
+//   &:hover {
+//     background-color: ${(props) => (props.$selected ? "#f5f9fd" : "#f0f0f0")};
+//   }
   
-  @media (max-width: 768px) {
-    display: flex;
-    flex-direction: column;
-    padding: 1rem;
-    border-bottom: 1px solid #e0e0e0;
-    position: relative;
-  }
-`;
+//   @media (max-width: 768px) {
+//     display: flex;
+//     flex-direction: column;
+//     padding: 1rem;
+//     border-bottom: 1px solid #e0e0e0;
+//     position: relative;
+//   }
+// `;
 
 const UnreadIndicator = styled.span`
   background-color: red;
@@ -325,6 +361,78 @@ const NameCell = styled.div`
   }
 `;
 
+const DraggableTableRow = ({
+  individual,
+  index,
+  selectedIndividual,
+  selectedIds,
+  handleCheckboxChange,
+  onIndividualSelect,
+  getUnreadCount,
+}: {
+  individual: frontChatTypes.PersonNode;
+  index: number;
+  selectedIndividual: string | null;
+  selectedIds: string[];
+  handleCheckboxChange: (id: string, e: React.ChangeEvent<HTMLInputElement>) => void;
+  onIndividualSelect: (id: string) => void;
+  getUnreadCount: (id: string) => number;
+}) => {
+  const unreadCount = getUnreadCount(individual?.id);
+
+  return (
+    <Draggable draggableId={individual.id} index={index}>
+      {(provided, snapshot) => (
+        <StyledTableRow
+          ref={provided.innerRef}
+          {...provided.draggableProps}
+          $selected={selectedIndividual === individual?.id}
+          $isDragging={snapshot.isDragging}
+          onClick={() => onIndividualSelect(individual?.id)}
+          data-selectable-id={individual.id}
+        >
+          <CheckboxCell onClick={e => e.stopPropagation()}>
+            <div {...provided.dragHandleProps}>
+              <IconGripVertical size={20} />
+            </div>
+            <Checkbox
+              type="checkbox"
+              checked={selectedIds.includes(individual.id)}
+              onChange={e => handleCheckboxChange(individual.id, e)}
+            />
+          </CheckboxCell>
+          <StyledTableCell>
+            <NameCell>
+              {`${individual.name.firstName} ${individual.name.lastName}`}
+              {unreadCount > 0 && <UnreadIndicator>{unreadCount}</UnreadIndicator>}
+            </NameCell>
+          </StyledTableCell>
+          <StyledTableCell>
+            {individual.candidates?.edges[0]?.node?.candConversationStatus || 'N/A'}
+          </StyledTableCell>
+          <StyledTableCell>
+            {individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.createdAt
+              ? new Date(individual.candidates.edges[0].node.whatsappMessages.edges[0].node.createdAt)
+                  .toLocaleString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })
+              : 'N/A'}
+          </StyledTableCell>
+          <StyledTableCell>
+            {individual.candidates?.edges[0]?.node?.status || 'N/A'}
+          </StyledTableCell>
+          <StyledTableCell>{individual.salary || 'N/A'}</StyledTableCell>
+          <StyledTableCell>{individual.city || 'N/A'}</StyledTableCell>
+          <StyledTableCell>{individual.jobTitle || 'N/A'}</StyledTableCell>
+        </StyledTableRow>
+      )}
+    </Draggable>
+  );
+};
+
 
 
 interface ChatTableProps extends frontChatTypes.ChatTableProps {
@@ -332,6 +440,7 @@ interface ChatTableProps extends frontChatTypes.ChatTableProps {
   onBulkMessage?: (selectedIds: string[]) => void;
   onBulkDelete?: (selectedIds: string[]) => void;
   onBulkAssign?: (selectedIds: string[]) => void;
+  onReorder?: (selectedIds: frontChatTypes.PersonNode[]) => void;
 }
 
 
@@ -349,12 +458,16 @@ const ChatTable: React.FC<ChatTableProps> = ({
   onBulkMessage,
   onBulkDelete,
   onBulkAssign,
+  onReorder,
+
 
 }) => {
   const [sortConfig, setSortConfig] = useState<SortConfig>({
     key: null,
     direction: null
   });
+
+  const [tableData, setTableData] = useState(individuals);
 
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isAttachmentPanelOpen, setIsAttachmentPanelOpen] = useState(false);
@@ -469,6 +582,17 @@ const ChatTable: React.FC<ChatTableProps> = ({
     );
     return unreadInfo ? unreadInfo.ManyUnreadMessages.length : 0;
   };
+  const handleDragEnd = (result: any) => {
+    console.log("fradg gend result:",result)
+    if (!result.destination) return;
+    const items = Array.from(tableData);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+    console.log("items:",items)
+    setTableData(items);
+    onReorder?.(items);
+  };
+
 
   const sortedIndividuals = sortConfig.key && sortConfig.direction
     ? sortData(individuals, sortConfig.key, sortConfig.direction)
@@ -481,13 +605,14 @@ const ChatTable: React.FC<ChatTableProps> = ({
   return (
     <>
       <TableContainer>
+      <DragDropContext onDragEnd={handleDragEnd}>
+
         <StyledTable>
           <StyledTableHeader>
             <tr>
               <StyledTableHeaderCell as="th" isSorted={false}>
                 <Checkbox type="checkbox" checked={selectedIds.length === individuals.length} onChange={handleSelectAll} />
               </StyledTableHeaderCell>
-
               {[
                 { key: 'name', label: 'Name' },
                 { key: 'status', label: 'Status' },
@@ -513,7 +638,7 @@ const ChatTable: React.FC<ChatTableProps> = ({
               ))}
             </tr>
           </StyledTableHeader>
-          <StyledTableBody>
+          {/* <StyledTableBody>
             {sortedIndividuals.map((individual: frontChatTypes.PersonNode) => {
               const unreadCount = getUnreadCount(individual?.id);
               return (
@@ -529,14 +654,10 @@ const ChatTable: React.FC<ChatTableProps> = ({
                   </StyledTableCell>
                   <StyledTableCell>{individual.candidates?.edges[0]?.node?.candConversationStatus || 'N/A'}</StyledTableCell>
                   <StyledTableCell>
-                    {individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.createdAt
-                      ? new Date(individual.candidates.edges[0].node.whatsappMessages.edges[0].node.createdAt).toLocaleString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })
-                      : 'N/A'}
+                    { individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.createdAt
+                      ? new Date(individual.candidates.edges[0].node.whatsappMessages.edges[0].node.createdAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', })
+                      : 'N/A'
+                    }
                   </StyledTableCell>
                   <StyledTableCell>{individual.candidates?.edges[0]?.node?.status || 'N/A'}</StyledTableCell>
                   <StyledTableCell>{individual.salary || 'N/A'}</StyledTableCell>
@@ -545,8 +666,32 @@ const ChatTable: React.FC<ChatTableProps> = ({
                 </StyledTableRow>
               );
             })}
-          </StyledTableBody>
+          </StyledTableBody> */}
+            <Droppable droppableId="chat-table-rows">
+              {(provided) => (
+                <StyledTableBody
+                  {...provided.droppableProps}
+                  ref={provided.innerRef}
+                >
+                  {tableData.map((individual, index) => (
+                    <DraggableTableRow
+                      key={individual.id}
+                      individual={individual}
+                      index={index}
+                      selectedIndividual={selectedIndividual}
+                      selectedIds={selectedIds}
+                      handleCheckboxChange={handleCheckboxChange}
+                      onIndividualSelect={onIndividualSelect}
+                      getUnreadCount={getUnreadCount}
+                    />
+                  ))}
+                  {provided.placeholder}
+                </StyledTableBody>
+              )}
+            </Droppable>
         </StyledTable>
+        </DragDropContext>
+
       </TableContainer>
       <ActionsBar data-visible={selectedIds.length > 0}>
         <SelectedCount>
