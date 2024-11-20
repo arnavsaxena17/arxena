@@ -149,7 +149,7 @@ export const RightDrawerChatThread = () => {
                 </DateSeparator>
               )}
               <MessageBubble 
-                isSent={message.name === 'botMessage'}
+                isSent={message.name === 'botMessage' || message.name === 'botMessage'}
               >
                 {message.message}
               </MessageBubble>
