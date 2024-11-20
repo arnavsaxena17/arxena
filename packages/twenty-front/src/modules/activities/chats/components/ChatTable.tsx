@@ -1,11 +1,15 @@
 import React, { useState } from 'react';
 import styled from "@emotion/styled";
-import { IconX, IconUsers,IconFileText,IconChevronLeft, IconGripVertical,IconMessages,IconChevronRight, IconSend, IconTrash, IconChevronUp, IconChevronDown } from '@tabler/icons-react';
+import { IconX, IconUsers,IconFileText,IconChevronLeft, IconGripVertical,IconMessages,IconChevronRight, IconSend, IconTrash, IconChevronUp, IconChevronDown, IconLink, IconCopy } from '@tabler/icons-react';
 import * as frontChatTypes from "../types/front-chat-types";
 import AttachmentPanel from './AttachmentPanel';
 import MultiCandidateChat from './MultiCandidateChat';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
+import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 
+import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
+import { Button } from '@/ui/input/button/components/Button';
+import { useTheme } from '@emotion/react';
 
 const TableContainer = styled.div`
   width: 100%;
@@ -468,6 +472,8 @@ const ChatTable: React.FC<ChatTableProps> = ({
   });
 
   const [tableData, setTableData] = useState(individuals);
+  const { enqueueSnackBar } = useSnackBar();
+  const theme = useTheme();
 
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isAttachmentPanelOpen, setIsAttachmentPanelOpen] = useState(false);
@@ -703,15 +709,44 @@ const ChatTable: React.FC<ChatTableProps> = ({
         </SelectedCount>
 
         <ActionButtons>
-          <ActionButton className="primary" onClick={handleViewChats} disabled={selectedIds.length === 0}>
+          {/* <ActionButton className="primary" onClick={handleViewChats} disabled={selectedIds.length === 0}>
             <IconMessages size={20} />
             View Chats
-          </ActionButton>
+          </ActionButton> */}
+          <Button
+            Icon={IconMessages}
+            variant="primary"
+            accent="blue"
+            title="View Chats"
+            onClick={() => {
+              handleViewChats();
+              enqueueSnackBar('Opened Chats', {
+                variant: SnackBarVariant.Success,
+                icon: <IconCopy size={theme.icon.size.md} />,
+                duration: 2000,
+              });
+            }}
+          />
+          <Button
+            Icon={IconFileText}
+            variant="primary"
+            accent="blue"
+            title="View Chats"
+            onClick={() => {
+              handleViewCVs();
+              enqueueSnackBar('Opened CVs', {
+                variant: SnackBarVariant.Success,
+                icon: <IconCopy size={theme.icon.size.md} />,
+                duration: 2000,
+              });
+            }}
+          />
 
-          <ActionButton className="primary" onClick={handleViewCVs}>
+
+          {/* <ActionButton className="primary" onClick={handleViewCVs}>
             <IconFileText size={20} />
             View CVs
-          </ActionButton>
+          </ActionButton> */}
 
           {/* <ActionButton 
               className="secondary"
@@ -729,10 +764,10 @@ const ChatTable: React.FC<ChatTableProps> = ({
               Message
             </ActionButton> */}
 
-          <ActionButton className="danger" onClick={() => onBulkDelete?.(selectedIds)}>
+          {/* <ActionButton className="danger" onClick={() => onBulkDelete?.(selectedIds)}>
             <IconTrash size={20} />
             Delete
-          </ActionButton>
+          </ActionButton> */}
         </ActionButtons>
       </ActionsBar>
       <MultiCandidateChat isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} selectedPeople={selectedPeople} />
