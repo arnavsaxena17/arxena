@@ -242,7 +242,10 @@ const StyledWindow = styled.div`
   display: block;
   flex-direction: column;
   height: 90vh;
+  // padding-left:40rem;
+  // margin-left:500px;
   margin: 0 auto;
+  margin-left:40px
   z-index: 2;
 `;
 
