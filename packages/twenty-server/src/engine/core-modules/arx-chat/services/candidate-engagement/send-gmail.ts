@@ -52,7 +52,7 @@ export class EmailTemplates{
               <li>A quiet environment</li>
               <li>Good lighting</li>
               <li>Stable internet connection</li>
-              <li>Laptop/desktop computer (preferred)</li>
+              <li>Desktop computer/Laptop (preferred)</li>
             </ul>
           </li>
         </ol>
