@@ -182,13 +182,13 @@ export class VideoInterviewController {
         }
       `;
 
-      console.log("This is the responseData:", responseData.aIInterviewStatusId)
-      console.log("This is the responseData:", responseData.aIInterviewQuestionId)
-      console.log("This is the timeLimitAdherence:", responseData.timeLimitAdherence)
+      console.log("This is the responseData:", interviewData?.name)
+      console.log("This is the responseData:", responseData?.aIInterviewQuestionId)
+      console.log("This is the timeLimitAdherence:", responseData?.timeLimitAdherence)
 
       const createResponseVariables = {
         input: {
-          name: `Response for ${responseData.aIInterviewQuestionId}`,
+          name: `Response for ${interviewData?.name}`,
           aIInterviewStatusId: interviewData.id.replace("/video-interview/", ""),
           aIInterviewQuestionId: questionId,
           transcript: transcript,
