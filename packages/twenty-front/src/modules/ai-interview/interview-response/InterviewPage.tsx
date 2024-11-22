@@ -137,14 +137,24 @@ export const InterviewPage: React.FC<InterviewPageProps> = ({ InterviewData, que
       return () => clearTimeout(countdownId);
     } else if (countdown === 0) {
       setCountdown(null);
-      startRecording();
     }
   }, [countdown]);
 
+  const resetAndStopVideo = () => {
+    if (videoRef.current) {
+      videoRef.current.pause();
+      videoRef.current.currentTime = 0;
+      setIsPlaying(false);
+    }
+  };
+
+
+
   const handleStartRecording = () => {
+    setRecording(true);
     resetAndStopVideo(); 
     setCountdown(5);
-    setRecording(true);
+    startRecording();
   };
 
   const startRecording = () => {
@@ -171,13 +181,6 @@ export const InterviewPage: React.FC<InterviewPageProps> = ({ InterviewData, que
     }
   }, [isPlaying]);
 
-  const resetAndStopVideo = () => {
-    if (videoRef.current) {
-      videoRef.current.pause();
-      videoRef.current.currentTime = 0;
-      setIsPlaying(false);
-    }
-  };
 
 
   const moveToNextQuestion = () => {
@@ -213,6 +216,7 @@ export const InterviewPage: React.FC<InterviewPageProps> = ({ InterviewData, que
       setError('Camera not available. Please check your device settings.');
     }
   };
+
 
   const handleStopRecording = () => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {

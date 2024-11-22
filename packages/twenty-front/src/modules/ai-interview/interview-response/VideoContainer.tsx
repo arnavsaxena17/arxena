@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import styled from '@emotion/styled';
 import Webcam from 'react-webcam';
 
@@ -84,6 +84,9 @@ const VideoContainer: React.FC<VideoContainerProps> = ({
   interviewTime
 
 }) => {
+  const [isStreamInitialized, setIsStreamInitialized] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+
   console.log("Anshwer TIme:", answerTimer, "isRecording:", isRecording)
   const totalTime = interviewTime; // 4 minutes in seconds
   const timeRemaining = isRecording ? (answerTimer ?? totalTime) : totalTime;
@@ -94,6 +97,31 @@ const VideoContainer: React.FC<VideoContainerProps> = ({
     height: 720,
     facingMode: "user",
   };
+
+
+  useEffect(() => {
+    const initializeMediaRecorder = async () => {
+      if (webcamRef.current?.stream && !isStreamInitialized) {
+        try {
+          // Create and initialize MediaRecorder instance but don't start recording
+          mediaRecorderRef.current = new MediaRecorder(webcamRef.current.stream, {
+            mimeType: 'video/webm'
+          });
+          
+          // Add basic event handlers
+          mediaRecorderRef.current.addEventListener('error', (error) => {
+            console.error('MediaRecorder error:', error);
+          });
+          
+          setIsStreamInitialized(true);
+        } catch (error) {
+          console.error('Failed to initialize MediaRecorder:', error);
+        }
+      }
+    };
+
+    initializeMediaRecorder();
+  }, [webcamRef.current?.stream, isStreamInitialized]);
 
 
   const audioConstraints = {
