@@ -182,7 +182,7 @@ const VideoContainer: React.FC<VideoContainerProps> = ({
             {isRecording ? <StopIcon /> : <RecordIcon />}
           </StyledRecordButton>
           <ButtonText>
-            {isRecording ? 'Stop recording' : 'Click to record your response'}
+            {isRecording ? 'Stop Recording and Submit' : 'Click to record your response'}
           </ButtonText>
         </StyledControlsOverlay>
         {countdown !== null && <StyledCountdownOverlay>{countdown}</StyledCountdownOverlay>}

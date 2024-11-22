@@ -103,7 +103,7 @@ export class VideoInterviewController {
       const currentQuestionIndex = JSON.parse(req?.body?.currentQuestionIndex);
       console.log("REceived interviewData:", interviewData)
       console.log("REceived currentQuestionIndex:", currentQuestionIndex)
-      
+      const questionId = interviewData.aIInterview.aIInterviewQuestions.edges[currentQuestionIndex].node.id;
       if (!files.audio || !files.video) {
         throw new BadRequestException('Both video and audio files are required');
 
@@ -188,8 +188,9 @@ export class VideoInterviewController {
 
       const createResponseVariables = {
         input: {
-          aIInterviewStatusId: responseData?.aIInterviewStatusId,
-          aIInterviewQuestionId: responseData?.aIInterviewQuestionId,
+          name: `Response for ${responseData.aIInterviewQuestionId}`,
+          aIInterviewStatusId: interviewData.id.replace("/video-interview/", ""),
+          aIInterviewQuestionId: questionId,
           transcript: transcript,
           completedResponse: true,
           timeLimitAdherence: responseData?.timeLimitAdherence,
@@ -202,7 +203,41 @@ export class VideoInterviewController {
 
       console.log('Sending GraphQL mutation for response creation::', graphqlQueryObjForCreationOfResponse);
       const responseResult = (await axiosRequest(graphqlQueryObjForCreationOfResponse)).data;
-      // console.log('Response creation result:', JSON.stringify(responseResult, null, 2));
+      console.log('Response creation result:', JSON.stringify(responseResult, null, 2));
+      console.log("ResponseResult data:", responseResult.data)
+      console.log("ResponseResult ID:", responseResult.data.createResponse.id)
+
+      const responseId = responseResult.data.createResponse.id;
+
+
+      const videoDataToUploadInAttachmentResponseTable = {
+        input: {
+          authorId: interviewData.candidate.jobs.recruiterId,
+          name: videoFilePath.replace(`${process.cwd()}/`, ''),
+          fullPath: videoAttachmentObj?.data?.uploadFile,
+          type: 'Video',
+          responseId: responseId,
+        },
+      };
+      console.log('This is the video. Data to Uplaod in Attachment Table::', videoDataToUploadInAttachmentResponseTable);
+      const videoAttachmentResponseUpload = await new AttachmentProcessingService().createOneAttachmentFromFilePath(videoDataToUploadInAttachmentResponseTable);
+      console.log("videoAttachmentResponseUpload:"  , videoAttachmentResponseUpload)
+
+      const audioDataToUploadInAttachmentResponseTable = {
+        input: {
+          authorId: interviewData.candidate.jobs.recruiterId,
+          name: audioFilePath.replace(`${process.cwd()}/`, ''),
+          fullPath: audioAttachmentObj?.data?.uploadFile,
+          type: 'Audio',
+          responseId: responseId,
+        },
+      };
+      console.log('This is the audio. Data to Uplaod in Attachment Table::', audioDataToUploadInAttachmentTable);
+      const audioAttachmentResponseUpload = await new AttachmentProcessingService().createOneAttachmentFromFilePath(audioDataToUploadInAttachmentResponseTable);
+      console.log("audioAttachmentResponseUpload:"  , audioAttachmentResponseUpload)
+
+
+
 
       // Update AI Interview Status mutation
       console.log('Preparing GraphQL mutation for status update');

@@ -44,9 +44,9 @@ export class EmailTemplates{
         
         <p><strong>Instructions:</strong></p>
         <ol>
+          <li>Complete the interview within 48 hours of receiving this email</li>
           <li>You will be presented with 3 timed questions</li>
           <li>Record your response to each question (4-minute limit per response)</li>
-          <li>Complete the interview within 48 hours of receiving this email</li>
           <li>Ensure you have:
             <ul>
               <li>A quiet environment</li>
