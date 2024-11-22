@@ -38,7 +38,7 @@ export class AttachmentProcessingService {
     }
   }
 
-  async createOneAttachmentFromFilePath(documentObj: { input: { authorId: string; name: string; fullPath: string; type: string; candidateId: string; };
+  async createOneAttachmentFromFilePath(documentObj: { input: { authorId: string; name: string; fullPath: string; type: string; candidateId?: string; responseId?: string; };
   }) {
     const graphqlQueryObj = JSON.stringify({
       query: allGraphQLQueries.graphQLtoCreateOneAttachmentFromFilePath,
