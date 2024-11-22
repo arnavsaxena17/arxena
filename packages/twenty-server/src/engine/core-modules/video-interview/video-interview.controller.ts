@@ -354,6 +354,7 @@ export class VideoInterviewController {
   
   @Post('get-interview-details')
   async getInterViewDetails(@Req() req: any): Promise<GetInterviewDetailsResponse> {
+    console.log("Got video interview hit")
     if (req.method === 'POST') {
       const { interviewId } = req.body;
       console.log("Received interviewId:", interviewId);
@@ -511,6 +512,7 @@ export class VideoInterviewController {
       console.log("Received allQuestionIds:", allQuestionIds);
   
       if (!allQuestionIds || allQuestionIds.length === 0) {
+        console.log("No question IDs found, cannot proceed");
         throw new Error("No question IDs found");
       }
   
@@ -541,6 +543,7 @@ export class VideoInterviewController {
         variables: { filter: { aIInterviewQuestionId: { eq: id } }, orderBy: { createdAt: 'DescNullsFirst' } }
       }));
   
+      console.log("Going to get video interview introduction attachment data");
       const [responseForVideoInterviewIntroductionAttachment, ...responseForVideoInterviewQuestionAttachments] = await Promise.all([
         axiosRequest(videoInterviewIntroductionAttachmentDataQuery),
         ...questionsAttachmentDataQueries.map(query => axiosRequest(query))

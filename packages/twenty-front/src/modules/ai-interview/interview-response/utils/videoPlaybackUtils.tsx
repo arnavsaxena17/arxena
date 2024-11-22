@@ -1,5 +1,5 @@
 import React, { RefObject, useState, useEffect } from 'react';
-import { StyledVideoPane, StyledVideo, StyledVideoControls, StyledVideoButton, StyledLoadingMessage } from './StyledComponents';
+import { StyledVideoPane, StyledVideo, StyledLoadingMessage } from './StyledComponents';
 
 interface VideoPlayerProps {
   src: string;
@@ -7,12 +7,9 @@ interface VideoPlayerProps {
   isPlaying: boolean;
   isMuted: boolean;
   setIsPlaying: (isPlaying: boolean) => void;
-
   onLoadStart?: () => void;
   onCanPlay?: () => void;
-
 }
-
 
 const StyledProgressContainer = {
   position: 'absolute' as const,
@@ -22,66 +19,114 @@ const StyledProgressContainer = {
   height: '4px',
   backgroundColor: 'rgba(255, 255, 255, 0.3)',
   cursor: 'pointer',
-  zIndex: 20, // Increased z-index
-  opacity: 1, // Ensure visibility
+  zIndex: 20,
+  opacity: 1,
 };
 
 const StyledProgress = {
-  position: 'absolute' as const, // Added position absolute
+  position: 'absolute' as const,
   top: 0,
   left: 0,
   height: '100%',
   backgroundColor: '#3b82f6',
   transition: 'width 0.1s linear',
-  opacity: 1, // Ensure visibility
+  opacity: 1,
 };
 
-// New wrapper style to ensure proper positioning context
 const StyledVideoWrapper = {
   position: 'relative' as const,
   width: '100%',
   height: '100%',
+  cursor: 'pointer',
 };
 
+// Updated control button styles for center positioning
+const StyledControlsWrapper = {
+  position: 'absolute' as const,
+  top: '50%',
+  left: '50%',
+  transform: 'translate(-50%, -50%)',
+  zIndex: 30,
+  width: '120px', // Larger size
+  height: '120px', // Larger size
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  cursor: 'pointer',
+  transition: 'opacity 0.3s ease',
+};
 
-export const VideoPlayer: React.FC<VideoPlayerProps> = ({   src,
+// Overlay for showing controls on hover
+const StyledOverlay = {
+  position: 'absolute' as const,
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  backgroundColor: 'rgba(0, 0, 0, 0.2)',
+  opacity: 0,
+  transition: 'opacity 0.3s ease',
+  zIndex: 25,
+};
+
+export const VideoPlayer: React.FC<VideoPlayerProps> = ({
+  src,
   videoRef,
   isPlaying,
   isMuted,
   setIsPlaying,
   onLoadStart,
   onCanPlay
- }) => {
+}) => {
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [downloadProgress, setDownloadProgress] = useState<number>(0);
   const [progress, setProgress] = useState<number>(0);
-  // Reset video and progress when playback stops
-  
-  
+  const [showControls, setShowControls] = useState(true);
+  const [isHovering, setIsHovering] = useState(false);
+
+  // Start playing the video when it's loaded
+  useEffect(() => {
+    if (videoRef.current && videoUrl) {
+      const playVideo = async () => {
+        try {
+          videoRef.current!.muted = true;
+          await videoRef.current!.play();
+          setIsPlaying(true);
+          setShowControls(false);
+        } catch (error) {
+          console.error('Error autoplaying video:', error);
+        }
+      };
+      playVideo();
+    }
+  }, [videoUrl, videoRef]);
+
+  // Handle video state changes
   useEffect(() => {
     if (videoRef.current) {
       if (isPlaying) {
-        videoRef.current.play();
+        videoRef.current.play().catch(e => console.error('Error playing video:', e));
+        setShowControls(false);
       } else {
         videoRef.current.pause();
+        setShowControls(true);
       }
       videoRef.current.muted = isMuted;
     }
   }, [isPlaying, isMuted]);
-
-
 
   const resetVideo = () => {
     if (videoRef.current) {
       videoRef.current.currentTime = 0;
       setProgress(0);
       setIsPlaying(false);
+      setShowControls(true);
     }
   };
 
-
+  // Download and set up video
   useEffect(() => {
     const abortController = new AbortController();
     const signal = abortController.signal;
@@ -129,30 +174,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({   src,
     };
   }, [src]);
 
-  // useEffect(() => {
-  //   const video = videoRef.current;
-  //   if (!video) return;
-
-  //   const updateProgress = () => {
-  //     if (video.duration) {
-  //       const percent = (video.currentTime / video.duration) * 100;
-  //       setProgress(percent);
-  //     }
-  //   };
-
-  //   if (isPlaying) {
-  //     // Update progress immediately when starting playback
-  //     updateProgress();
-  //     const interval = setInterval(updateProgress, 100); // Update every 100ms
-  //     video.addEventListener('timeupdate', updateProgress);
-      
-  //     return () => {
-  //       clearInterval(interval);
-  //       video.removeEventListener('timeupdate', updateProgress);
-  //     };
-  //   }
-  // }, [isPlaying, videoRef]);
-
+  // Handle progress updates and video end
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
@@ -164,55 +186,18 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({   src,
       }
     };
 
-    // Handle progress updates
     video.addEventListener('timeupdate', updateProgress);
     
-    // Handle video end
     const handleVideoEnd = () => {
       resetVideo();
     };
     video.addEventListener('ended', handleVideoEnd);
 
-    if (isPlaying) {
-      // Update progress immediately when starting playback
-      updateProgress();
-      const interval = setInterval(updateProgress, 100); // Update every 100ms
-      video.addEventListener('timeupdate', updateProgress);
-      
-      return () => {
-        clearInterval(interval);
-        video.removeEventListener('timeupdate', updateProgress);
-      };
-    }
-
     return () => {
       video.removeEventListener('timeupdate', updateProgress);
       video.removeEventListener('ended', handleVideoEnd);
     };
-  }, [isPlaying, videoRef]);
-
-
-
-
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    if (!isPlaying) {
-      resetVideo();
-    }
-
-  }, [isPlaying]);
-
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    if (!isPlaying && video.currentTime === 0) {
-      setProgress(0);
-    }
-  }, [isPlaying]);
-
+  }, [videoRef]);
 
   const handlePlayPause = () => {
     const video = videoRef.current;
@@ -221,21 +206,16 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({   src,
     if (isPlaying) {
       video.pause();
       setIsPlaying(false);
+      setShowControls(true);
     } else {
-      if (video.muted) {
-        video.muted = false;
-      }
       video.play().catch(e => {
         console.error('Error playing video:', e);
         setError('Unable to play video. Please try again.');
       });
       setIsPlaying(true);
+      setShowControls(false);
     }
   };
-
-
-
-
 
   const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const video = videoRef.current;
@@ -247,6 +227,20 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({   src,
     
     video.currentTime = clickPosition * video.duration;
     setProgress(clickPosition * 100);
+  };
+
+  const handleMouseEnter = () => {
+    setIsHovering(true);
+    if (isPlaying) {
+      setShowControls(true);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    setIsHovering(false);
+    if (isPlaying) {
+      setShowControls(false);
+    }
   };
 
   if (isLoading) {
@@ -268,7 +262,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({   src,
   }
 
   const playButton = (
-    <svg xmlns="http://www.w3.org/2000/svg" width="97" height="97" viewBox="0 0 97 97" fill="none">
+    <svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 97 97" fill="none">
       <g opacity="0.8">
         <path fillRule="evenodd" clipRule="evenodd" d="M48.5 96.33C75.01 96.33 96.5 74.84 96.5 48.33C96.5 21.82 75.01 0.329956 48.5 0.329956C21.99 0.329956 0.5 21.82 0.5 48.33C0.5 74.84 21.99 96.33 48.5 96.33Z" fill="white"/>
         <path fillRule="evenodd" clipRule="evenodd" d="M37.826 34.152C37.826 31.744 40.521 30.317 42.5131 31.671L63.375 45.849C65.1271 47.039 65.1271 49.621 63.375 50.812L42.5131 64.99C40.521 66.344 37.826 64.918 37.826 62.51V34.152Z" fill="black"/>
@@ -276,9 +270,24 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({   src,
     </svg>
   );
 
+  const pauseButton = (
+    <svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 97 97" fill="none">
+      <g opacity="0.8">
+        <circle cx="48.5" cy="48.33" r="48" fill="white"/>
+        <rect x="34" y="30" width="10" height="36" rx="2" fill="black"/>
+        <rect x="53" y="30" width="10" height="36" rx="2" fill="black"/>
+      </g>
+    </svg>
+  );
+
   return (
     <StyledVideoPane>
-      <div style={StyledVideoWrapper}>
+      <div 
+        style={StyledVideoWrapper} 
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        onClick={handlePlayPause}
+      >
         <div style={StyledProgressContainer} onClick={handleProgressClick}>
           <div style={{ ...StyledProgress, width: `${progress}%` }} />
         </div>
@@ -296,11 +305,21 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({   src,
           loop
           preload="auto"
         />
-        <StyledVideoControls>
-          <StyledVideoButton onClick={handlePlayPause}>
-            {isPlaying ? '⏹' : playButton}
-          </StyledVideoButton>
-        </StyledVideoControls>
+        <div 
+          style={{ 
+            ...StyledOverlay, 
+            opacity: (showControls || !isPlaying) ? 1 : 0 
+          }} 
+        />
+        <div 
+          style={{ 
+            ...StyledControlsWrapper,
+            opacity: (showControls || !isPlaying) ? 1 : 0,
+            pointerEvents: showControls ? 'auto' : 'none'
+          }}
+        >
+          {isPlaying ? pauseButton : playButton}
+        </div>
       </div>
     </StyledVideoPane>
   );
