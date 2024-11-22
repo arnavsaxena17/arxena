@@ -14,7 +14,7 @@ import { shareJDtoCandidate } from './services/llm-agents/tool-calls-processing'
 import { checkIfResponseMessageSoundsHumanLike } from './services/llm-agents/human-or-bot-type-response-classification';
 import twilio from 'twilio';
 import { GmailMessageData } from '../gmail-sender/services/gmail-sender-objects-types';
-import { SendEmailFunctionality } from './services/candidate-engagement/send-gmail';
+import { SendEmailFunctionality, EmailTemplates } from './services/candidate-engagement/send-gmail';
 import { CalendarEventType } from '../calendar-events/services/calendar-data-objects-types';
 import { CalendarEmailService } from './services/candidate-engagement/calendar-email';
 import moment from 'moment-timezone';
@@ -439,6 +439,43 @@ export class ArxChatEndpoint {
     const createVideoInterviewResponse = await new FetchAndUpdateCandidatesChatsWhatsapps().createVideoInterviewForCandidate(candidateId);
     console.log("createVideoInterviewResponse:", createVideoInterviewResponse)
     return createVideoInterviewResponse;
+  }
+  
+  
+  @Post('create-video-interview-send-to-candidate')
+  @UseGuards(JwtAuthGuard)
+  async createVideoInterviewSendToCandidate(@Req() request: any): Promise<object> {
+    try {
+      const candidateId = request.body.candidateId;
+      console.log('candidateId to create video-interview:', candidateId);
+      const createVideoInterviewResponse = await new FetchAndUpdateCandidatesChatsWhatsapps().createVideoInterviewForCandidate(candidateId);
+      const personObj = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByCandidateId(candidateId);
+      const person = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPersonId(personObj.id);
+      console.log("Got person:", person);
+      const videoInterviewUrl = createVideoInterviewResponse?.data?.createAIInterviewStatus?.interviewLink?.url;
+      console.log("This is the video interview link:", videoInterviewUrl);
+
+      if (videoInterviewUrl) {
+      console.log("Going to send email to person:", person);
+      const videoInterviewInviteTemplate = await new EmailTemplates().getInterviewInvitationTemplate(person, videoInterviewUrl);
+      console.log("allDataObjects.recruiterProfile?.email:", allDataObjects.recruiterProfile?.email);
+      const emailData: GmailMessageData = {
+        sendEmailFrom: allDataObjects.recruiterProfile?.email,
+        sendEmailTo: person?.email,
+        subject: 'Video Interview - ' + person?.name?.firstName + '<>' + person?.candidates.edges[0].node.jobs.companies.name,
+        message: videoInterviewInviteTemplate,
+      };
+      console.log("This is the email Data:", emailData);
+      const sendVideoInterviewLinkResponse = await new SendEmailFunctionality().sendEmailFunction(emailData);
+      console.log("sendVideoInterviewLinkResponse::", sendVideoInterviewLinkResponse);
+      return sendVideoInterviewLinkResponse || {};
+      } else {
+      return createVideoInterviewResponse;
+      }
+    } catch (error) {
+      console.error('Error in createVideoInterviewSendToCandidate:', error);
+      throw new Error('Failed to create and send video interview');
+    }
   }
 
   @Post('delete-people-and-candidates-from-candidate-id')

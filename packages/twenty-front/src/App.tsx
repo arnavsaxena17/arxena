@@ -75,9 +75,9 @@ import { SettingsWorkspaceMembers } from '~/pages/settings/SettingsWorkspaceMemb
 import { Tasks } from '~/pages/tasks/Tasks';
 import { Chats } from '~/pages/chats/Chats';
 import { getPageTitleFromPath } from '~/utils/title-utils';
-// import { VideoInterviewResponsePage } from '@/ai-interview/interview-response/VideoInterviewResponsePage';
+import VideoInterviewResponseViewer  from '@/ai-interview/interview-response/VideoInterviewResponseViewer';
 const AIInterviewFlow = lazy(() => import('@/ai-interview/interview-response/AIInterviewFlow'));
-const VideoInterviewResponseViewer = lazy(() => import('@/ai-interview/interview-response/VideoInterviewResponseViewer'));
+// const VideoInterviewResponseViewer = lazy(() => import('@/ai-interview/interview-response/VideoInterviewResponseViewer'));
 
 
 
@@ -166,6 +166,7 @@ const createRouter = (isBillingEnabled?: boolean) =>
              <Route path={AppPath.ChatsPage} element={<Chats />} />
              <Route path={`${AppPath.ChatsPage}/:candidateId`} element={<Chats />} />
              <Route path={`${AppPath.VideoInterviewReview}/:candidateId`} element={<VideoInterviewResponseViewer interviewId={window.location.pathname} />} />
+             {/* <Route path={`${AppPath.VideoInterviewReview}/:candidateId`} element={<Chats />} /> */}
              <Route path={AppPath.Impersonate} element={<ImpersonateEffect />} />
              <Route path={AppPath.RecordIndexPage} element={<RecordIndexPage />} />
              <Route path={AppPath.RecordShowPage} element={<RecordShowPage />} />

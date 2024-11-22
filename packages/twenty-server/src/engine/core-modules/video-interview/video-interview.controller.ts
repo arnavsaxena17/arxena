@@ -100,7 +100,10 @@ export class VideoInterviewController {
       // console.log('Received files:', JSON.stringify(files, null, 2));
       // console.log('Received response data:', JSON.stringify(responseData, null, 2));
       const interviewData = JSON.parse(req?.body?.interviewData);
-
+      const currentQuestionIndex = JSON.parse(req?.body?.currentQuestionIndex);
+      console.log("REceived interviewData:", interviewData)
+      console.log("REceived currentQuestionIndex:", currentQuestionIndex)
+      
       if (!files.audio || !files.video) {
         throw new BadRequestException('Both video and audio files are required');
 
@@ -139,7 +142,8 @@ export class VideoInterviewController {
         },
       };
       console.log('This is the video. Data to Uplaod in Attachment Table::', videoDataToUploadInAttachmentTable);
-      await new AttachmentProcessingService().createOneAttachmentFromFilePath(videoDataToUploadInAttachmentTable);
+      const videoAttachment = await new AttachmentProcessingService().createOneAttachmentFromFilePath(videoDataToUploadInAttachmentTable);
+      console.log("videoAttachment:"  , videoAttachment)
 
       const audioDataToUploadInAttachmentTable = {
         input: {
@@ -151,8 +155,8 @@ export class VideoInterviewController {
         },
       };
       console.log('This is the audio. Data to Uplaod in Attachment Table::', audioDataToUploadInAttachmentTable);
-      await new AttachmentProcessingService().createOneAttachmentFromFilePath(audioDataToUploadInAttachmentTable);
-
+      const audioAttachment = await new AttachmentProcessingService().createOneAttachmentFromFilePath(audioDataToUploadInAttachmentTable);
+      console.log("audioAttachment:"  , audioAttachment)
       // console.log('Audio file:', JSON.stringify(audioFile, null, 2));
       // console.log('Video file:', JSON.stringify(videoFile, null, 2));
 
@@ -177,6 +181,10 @@ export class VideoInterviewController {
           }
         }
       `;
+
+      console.log("This is the responseData:", responseData.aIInterviewStatusId)
+      console.log("This is the responseData:", responseData.aIInterviewQuestionId)
+      console.log("This is the timeLimitAdherence:", responseData.timeLimitAdherence)
 
       const createResponseVariables = {
         input: {

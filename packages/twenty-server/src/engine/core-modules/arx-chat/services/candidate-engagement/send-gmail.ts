@@ -2,6 +2,7 @@ import axios from "axios";
 import { GmailMessageData } from "../../../gmail-sender/services/gmail-sender-objects-types";
 import { MailerController } from "../../../gmail-sender/gmail-sender.controller";
 import { MailerService } from "../../../gmail-sender/gmail-sender.service";
+import * as allDataObjects from '../data-model-objects';
 
 export class SendEmailFunctionality {
   async sendEmailFunction(gmailMessageData: GmailMessageData) {
@@ -24,4 +25,43 @@ export class SendEmailFunctionality {
     return response;
   }
 
+}
+
+
+export class EmailTemplates{
+
+  async getInterviewInvitationTemplate(person: allDataObjects.PersonNode,interviewLink: string) {
+    console.log("Goign to try and create template")
+    const template = `
+      <div>
+        <p>Dear ${person?.name?.firstName},</p>
+        
+        <p>We have reviewed your profile and would like to invite you for a video interview for the position of <b>${person?.candidates?.edges[0].node.jobs.name}</b> at <b>${person.candidates.edges[0].node.jobs?.companies?.name}</b>.</p>
+
+        <p><strong>Interview Details:</strong></p>
+        <p>Interview Link: ${interviewLink}</p>
+        <p>Note: Link expires in 48 hours</p>
+        
+        <p><strong>Instructions:</strong></p>
+        <ol>
+          <li>You will be presented with 3 timed questions</li>
+          <li>Record your response to each question (4-minute limit per response)</li>
+          <li>Complete the interview within 48 hours of receiving this email</li>
+          <li>Ensure you have:
+            <ul>
+              <li>A quiet environment</li>
+              <li>Good lighting</li>
+              <li>Stable internet connection</li>
+              <li>Laptop/desktop computer (preferred)</li>
+            </ul>
+          </li>
+        </ol>
+  
+        <p>Best regards,<br>
+        Arnav Saxena<br>
+        Director, Arxena</p>
+      </div>
+    `;
+    return template;
+  }
 }

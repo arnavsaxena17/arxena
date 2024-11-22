@@ -27,6 +27,8 @@ const DebugInfo = styled.div`
 `;
 
 const VideoInterviewResponseViewer: React.FC<{ interviewId: string }> = ({ interviewId }) => {
+  console.log("Want to view VIdoe INterview Response Here::", interviewId)
+  console.log("interviewId::", interviewId)
   const [playing, setPlaying] = useState(false);
   const [volume, setVolume] = useState(0.8);
   const [played, setPlayed] = useState(0);

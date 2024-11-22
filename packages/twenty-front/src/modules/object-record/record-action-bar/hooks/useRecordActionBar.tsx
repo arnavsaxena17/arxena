@@ -18,6 +18,7 @@ import { ContextMenuEntry } from '@/ui/navigation/context-menu/types/ContextMenu
 import { isDefined } from '~/utils/isDefined';
 import { IconCopy, IconMessage, IconPaperclip, IconRefresh,IconBrandWhatsapp, IconRefreshDot, IconSend2, IconUsersPlus, IconVideo } from '@tabler/icons-react';
 import { useCreateVideoInterview } from '@/object-record/hooks/useCreateInterview';
+import { useSendVideoInterview } from '@/object-record/hooks/useSendInterview';
 import { useRefreshChatStatus } from '@/object-record/hooks/useRefreshChatStatus';
 import { useRefreshChatCounts } from '@/object-record/hooks/useRefreshChatCounts';
 import { useSendCVsToClient } from '@/object-record/hooks/useSendCVsToClient';
@@ -75,6 +76,12 @@ export const useRecordActionBar = ({ objectMetadataItem, selectedRecordIds, call
   });
 
   const { createVideoInterviewLink, loading: creatingVideoInterview } = useCreateVideoInterview({
+    onSuccess: () => {},
+    onError: (error: any) => {
+      console.error('Failed to create video interview:', error);
+    },
+  });
+  const { sendVideoInterviewLink, loading: sendingVideoInterview } = useSendVideoInterview({
     onSuccess: () => {},
     onError: (error: any) => {
       console.error('Failed to create video interview:', error);
@@ -339,6 +346,17 @@ export const useRecordActionBar = ({ objectMetadataItem, selectedRecordIds, call
                           onClick: async () => {
                             try {
                               await createVideoInterviewLink(selectedRecordIds);
+                            } catch (error) {
+                              console.error('Error creating videos:', error);
+                            }
+                          },
+                        },
+                        {
+                          label: 'Send Video Interview Link',
+                          Icon: IconVideo,
+                          onClick: async () => {
+                            try {
+                              await sendVideoInterviewLink(selectedRecordIds);
                             } catch (error) {
                               console.error('Error creating videos:', error);
                             }
