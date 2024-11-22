@@ -45,6 +45,7 @@ export class AttachmentProcessingService {
       variables: documentObj,
     });
     const response = await axiosRequest(graphqlQueryObj);
+    return response.data;
   }
 
   async fetchAllAttachmentsByJobId(jobId: string) {

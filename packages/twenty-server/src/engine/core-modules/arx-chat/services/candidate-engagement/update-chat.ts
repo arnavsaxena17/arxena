@@ -514,6 +514,14 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
       console.log(error);
     }
   }
+
+
+  async sendCandidateVideoInterviewLinkToCandidate(){
+    
+  }
+
+
+
   async updateCandidateAnswer(candidateProfileObj: allDataObjects.CandidateNode, AnswerMessageObj: allDataObjects.AnswerMessageObj) {
     const updateCandidateObjectVariables = { input: { ...AnswerMessageObj } };
     const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToCreateOneAnswer, variables: updateCandidateObjectVariables });
@@ -559,13 +567,22 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
     try {
       const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindPeopleByPhoneNumber, variables: graphVariables });
       const response = await axiosRequest(graphqlQueryObj);
-      console.log('This is the response from getCandidate Information FROM PHONENUMBER in getCandidateDetailsByPhoneNumber', response.data.data);
+      console.log('This is the response from getCandidate Information FROM PHONENUMBER in getPersonDetailsByPhoneNumber', response.data.data);
       const candidateDataObjs = response.data?.data?.people?.edges[0]?.node?.candidates?.edges;
       return candidateDataObjs;
     } catch (error) {
       console.log('Getting an error and returning empty candidate profile objeect:', error);
       return allDataObjects.emptyCandidateProfileObj;
     }
+  }
+  async getPersonDetailsByPersonId(personID: string): Promise<allDataObjects.PersonNode> {
+    const graphVariables = { filter: { id: { eq: personID } }, orderBy: { position: 'AscNullsFirst' } };
+      const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindPeopleByPhoneNumber, variables: graphVariables });
+      const response = await axiosRequest(graphqlQueryObj);
+      console.log('This is the response from getCandidate Information FROM personID in getPersoneDetailsByPhoneNumber', response.data.data);
+      const personDataObjs = response.data?.data.people.edges[0]?.node;
+      console.log("personDataobjs:", personDataObjs);
+      return personDataObjs;
   }
 
   async updateCandidateProfileStatus(candidateProfileObj: allDataObjects.CandidateNode, updateCandidateMessageObj: allDataObjects.candidateChatMessageType) {

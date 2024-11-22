@@ -212,6 +212,7 @@ const AIInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) => 
       // console.log('This is process.env.REACT_APP_SERVER_BASE_URL:', process.env.REACT_APP_SERVER_BASE_URL);
       // console.log('This is the appending of the rinterview dat:', interviewData);
       responseData.append('interviewData', JSON.stringify(interviewData));
+      responseData.append('currentQuestionIndex', currentQuestionIndex.toString());
       responseData.forEach((value, key) => {
         console.log('key for response data:', key, '::', value);
       });

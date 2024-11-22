@@ -408,6 +408,7 @@ export const graphqlQueryToFindManyPeopleEngagedCandidates = `query FindManyPeop
               firstName
               lastName
             }
+              
           }
           startChat
           candConversationStatus
