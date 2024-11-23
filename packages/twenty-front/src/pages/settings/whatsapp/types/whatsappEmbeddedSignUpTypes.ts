@@ -1,22 +1,22 @@
 // types.ts
 
-declare global {
-    interface Window {
-      FB: {
-        init: (config: {
-          appId: string;
-          autoLogAppEvents: boolean;
-          xfbml: boolean;
-          version: string;
-        }) => void;
-        login: (
-          callback: (response: FacebookLoginResponse) => void,
-          options: FacebookLoginOptions
-        ) => void;
-      };
-      fbAsyncInit: () => void;
-    }
-  }
+// declare global {
+//     interface Window {
+//       FB: {
+//         init: (config: {
+//           appId: string;
+//           autoLogAppEvents: boolean;
+//           xfbml: boolean;
+//           version: string;
+//         }) => void;
+//         login: (
+//           callback: (response: FacebookLoginResponse) => void,
+//           options: FacebookLoginOptions
+//         ) => void;
+//       };
+//       fbAsyncInit: () => void;
+//     }
+//   }
   
   export interface WhatsAppEmbeddedSignupProps {
     /** Your Facebook App ID */
@@ -45,8 +45,7 @@ declare global {
     };
     status?: string;
   }
-  
-  export interface FacebookLoginOptions {
+  interface FacebookLoginOptions {
     config_id: string;
     response_type: string;
     override_default_response_type: boolean;
@@ -55,6 +54,28 @@ declare global {
       featureType: string;
       sessionInfoVersion: string;
     };
+  }
+  
+  interface FacebookSDK {
+    init(config: {
+      appId: string;
+      autoLogAppEvents: boolean;
+      xfbml: boolean;
+      version: string;
+    }): void;
+    login(
+      callback: (response: FacebookLoginResponse) => void,
+      options: FacebookLoginOptions
+    ): void;
+    getLoginStatus(
+      callback: (response: FacebookLoginResponse) => void
+    ): void;
+  }
+  
+  declare global {
+    interface Window {
+      FB?: FacebookSDK;
+    }
   }
   
   export interface WhatsAppEmbeddedSignupMessage {

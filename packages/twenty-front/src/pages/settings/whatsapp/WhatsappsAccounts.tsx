@@ -55,19 +55,30 @@ export const WhatsappAccounts = () => {
     console.error('Signup error:', error);
   };
 
+  console.log("This is the process.env.FACEBOOK_WHATSAPP_APP_ID:", process.env.FACEBOOK_WHATSAPP_APP_ID)
+  console.log("This is the process.env.FACEBOOK_WHATSAPP_CONFIGURATION_ID:", process.env.FACEBOOK_WHATSAPP_CONFIGURATION_ID)
 
   return (
     <SubMenuTopBarContainer Icon={IconSettings} title="Settings">
       <SettingsPageContainer>
         <Breadcrumb links={[{ children: 'Accounts' }]} />
-
+{/* 
     <WhatsAppEmbeddedSignup
       appId={process.env.FACEBOOK_WHATSAPP_APP_ID || ''}
       configId={process.env.FACEBOOK_WHATSAPP_CONFIGURATION_ID || ''}
       onSignupComplete={handleSignupComplete}
       onSignupCancel={handleSignupCancel}
       onSignupError={handleSignupError}
-    />
+    /> */}
+
+
+<WhatsAppEmbeddedSignup
+      appId={process.env.FACEBOOK_WHATSAPP_APP_ID || ''}
+      configId={process.env.FACEBOOK_WHATSAPP_CONFIGURATION_ID || ''}
+  onSignupComplete={(result) => console.log('Signup complete:', result)}
+  onSignupError={(error) => console.error('Signup error:', error)}
+  onSignupCancel={(step) => console.log('Signup cancelled at step:', step)}
+/>
       </SettingsPageContainer>
     </SubMenuTopBarContainer>
   );

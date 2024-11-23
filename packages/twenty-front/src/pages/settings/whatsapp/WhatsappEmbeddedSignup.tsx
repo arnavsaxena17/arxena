@@ -81,6 +81,73 @@ export const WhatsAppEmbeddedSignup: React.FC<WhatsAppEmbeddedSignupProps> = ({
   const [sdkLoaded, setSdkLoaded] = useState(false);
   const [sdkInitialized, setSdkInitialized] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [initError, setInitError] = useState<Error | null>(null);
+
+  // Load the Facebook SDK
+  useEffect(() => {
+    const loadSDK = () => {
+      if (document.getElementById('facebook-jssdk')) {
+        setSdkLoaded(true);
+        return;
+      }
+
+      const script = document.createElement('script');
+      script.id = 'facebook-jssdk';
+      script.src = `https://connect.facebook.net/en_US/sdk.js`;
+      script.async = true;
+      script.defer = true;
+      script.crossOrigin = "anonymous";
+      
+      script.onload = () => {
+        setSdkLoaded(true);
+      };
+      
+      script.onerror = (error) => {
+        setInitError(new Error('Failed to load Facebook SDK'));
+        onSignupError?.(new Error('Failed to load Facebook SDK'));
+      };
+      
+      document.body.appendChild(script);
+    };
+
+    loadSDK();
+
+    return () => {
+      const existingScript = document.getElementById('facebook-jssdk');
+      if (existingScript) {
+        existingScript.remove();
+      }
+    };
+  }, []);
+
+  // Initialize the SDK once it's loaded
+  useEffect(() => {
+    if (!sdkLoaded || !window.FB || sdkInitialized) return;
+
+    try {
+      window.FB.init({
+        appId: appId,
+        autoLogAppEvents: true,
+        xfbml: true,
+        version: graphApiVersion
+      });
+
+      // Verify initialization
+      window.FB.getLoginStatus((response) => {
+        if (response.status !== undefined) {
+          setSdkInitialized(true);
+          setIsLoading(false);
+        } else {
+          throw new Error('FB SDK initialization failed');
+        }
+      });
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error('Failed to initialize Facebook SDK');
+      setInitError(err);
+      onSignupError?.(err);
+      setIsLoading(false);
+    }
+  }, [sdkLoaded, appId, graphApiVersion, sdkInitialized, onSignupError]);
 
   const handleMessage = useCallback((event: MessageEvent) => {
     if (event.origin !== "https://www.facebook.com" && event.origin !== "https://web.facebook.com") return;
@@ -103,54 +170,6 @@ export const WhatsAppEmbeddedSignup: React.FC<WhatsAppEmbeddedSignupProps> = ({
     }
   }, [onSignupComplete, onSignupCancel, onSignupError]);
 
-  // Load the Facebook SDK
-  useEffect(() => {
-    if (document.getElementById('facebook-jssdk')) {
-      setSdkLoaded(true);
-      return;
-    }
-
-    const script = document.createElement('script');
-    script.id = 'facebook-jssdk';
-    script.src = "https://connect.facebook.net/en_US/sdk.js";
-    script.async = true;
-    script.defer = true;
-    script.crossOrigin = "anonymous";
-    script.onload = () => {
-      setSdkLoaded(true);
-      setIsLoading(false);
-    };
-    document.body.appendChild(script);
-
-    return () => {
-      // Cleanup if component unmounts during loading
-      const existingScript = document.getElementById('facebook-jssdk');
-      if (existingScript) {
-        existingScript.remove();
-      }
-    };
-  }, []);
-
-  // Initialize the SDK once it's loaded
-  useEffect(() => {
-    if (!sdkLoaded || !window.FB || sdkInitialized) return;
-
-    try {
-      window.FB.init({
-        appId,
-        autoLogAppEvents: true,
-        xfbml: true,
-        version: graphApiVersion
-      });
-      setSdkInitialized(true);
-      setIsLoading(false);
-    } catch (error) {
-      console.error('Failed to initialize Facebook SDK:', error);
-      onSignupError?.(error instanceof Error ? error : new Error('Failed to initialize Facebook SDK'));
-    }
-  }, [sdkLoaded, appId, graphApiVersion, sdkInitialized, onSignupError]);
-
-  // Add message event listener
   useEffect(() => {
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
@@ -162,25 +181,29 @@ export const WhatsAppEmbeddedSignup: React.FC<WhatsAppEmbeddedSignupProps> = ({
       return;
     }
 
-    window.FB.login(
-      (response: FacebookLoginResponse) => {
-        if (response.authResponse?.code) {
-          onSignupComplete?.({ code: response.authResponse.code });
-        } else {
-          onSignupError?.(new Error('Authentication failed'));
+    try {
+      window.FB.login(
+        (response: FacebookLoginResponse) => {
+          if (response.authResponse?.code) {
+            onSignupComplete?.({ code: response.authResponse.code });
+          } else {
+            onSignupError?.(new Error('Authentication failed'));
+          }
+        },
+        {
+          config_id: configId,
+          response_type: 'code',
+          override_default_response_type: true,
+          extras: {
+            setup: {},
+            featureType: '',
+            sessionInfoVersion: '3',
+          }
         }
-      },
-      {
-        config_id: configId,
-        response_type: 'code',
-        override_default_response_type: true,
-        extras: {
-          setup: {},
-          featureType: '',
-          sessionInfoVersion: '3',
-        }
-      }
-    );
+      );
+    } catch (error) {
+      onSignupError?.(error instanceof Error ? error : new Error('Failed to initiate login'));
+    }
   }, [configId, onSignupComplete, onSignupError, sdkInitialized]);
 
   return (
@@ -188,17 +211,28 @@ export const WhatsAppEmbeddedSignup: React.FC<WhatsAppEmbeddedSignupProps> = ({
       <CardHeader>
         <CardTitle>WhatsApp Business Platform Signup</CardTitle>
       </CardHeader>
-      <Alert>
-        <AlertDescription>
-          Connect your business to the WhatsApp Business Platform to start messaging with your customers.
-        </AlertDescription>
-      </Alert>
-      <Button 
-        onClick={handleLogin} 
-        disabled={!sdkInitialized || isLoading}
-      >
-        {isLoading ? 'Loading...' : 'Login with Facebook'}
-      </Button>
+      {initError && (
+        <Alert>
+          <AlertDescription>
+            Failed to initialize Facebook SDK. Please try refreshing the page.
+          </AlertDescription>
+        </Alert>
+      )}
+      {!initError && (
+        <>
+          <Alert>
+            <AlertDescription>
+              Connect your business to the WhatsApp Business Platform to start messaging with your customers.
+            </AlertDescription>
+          </Alert>
+          <Button 
+            onClick={handleLogin} 
+            disabled={!sdkInitialized || isLoading}
+          >
+            {isLoading ? 'Loading...' : 'Login with Facebook'}
+          </Button>
+        </>
+      )}
     </Card>
   );
 };
