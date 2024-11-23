@@ -19,10 +19,6 @@ import { useIsFeatureEnabled } from '@/workspace/hooks/useIsFeatureEnabled';
 import WhatsAppEmbeddedSignup from './WhatsappEmbeddedSignup';
 import type { SignupCompleteData } from './types/whatsappEmbeddedSignUpTypes';
 
-
-
-
-
 export const WhatsappAccounts = () => {
   const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
 
@@ -42,7 +38,6 @@ export const WhatsappAccounts = () => {
 
   const isBlocklistEnabled = useIsFeatureEnabled('IS_BLOCKLIST_ENABLED');
 
-
   const handleSignupComplete = (data: SignupCompleteData) => {
     console.log('Signup completed:', data);
   };
@@ -55,14 +50,16 @@ export const WhatsappAccounts = () => {
     console.error('Signup error:', error);
   };
 
-  console.log("This is the process.env.FACEBOOK_WHATSAPP_APP_ID:", process.env.FACEBOOK_WHATSAPP_APP_ID)
-  console.log("This is the process.env.FACEBOOK_WHATSAPP_CONFIGURATION_ID:", process.env.FACEBOOK_WHATSAPP_CONFIGURATION_ID)
+  const FACEBOOK_WHATSAPP_APP_ID = '702966768619548';
+  const FACEBOOK_WHATSAPP_CONFIGURATION_ID = '1115729326784816';
+  console.log('This is the process.env.FACEBOOK_WHATSAPP_APP_ID:', process.env.FACEBOOK_WHATSAPP_APP_ID);
+  console.log('This is the process.env.FACEBOOK_WHATSAPP_CONFIGURATION_ID:', process.env.FACEBOOK_WHATSAPP_CONFIGURATION_ID);
 
   return (
     <SubMenuTopBarContainer Icon={IconSettings} title="Settings">
       <SettingsPageContainer>
         <Breadcrumb links={[{ children: 'Accounts' }]} />
-{/* 
+        {/* 
     <WhatsAppEmbeddedSignup
       appId={process.env.FACEBOOK_WHATSAPP_APP_ID || ''}
       configId={process.env.FACEBOOK_WHATSAPP_CONFIGURATION_ID || ''}
@@ -71,14 +68,13 @@ export const WhatsappAccounts = () => {
       onSignupError={handleSignupError}
     /> */}
 
-
-<WhatsAppEmbeddedSignup
-      appId={process.env.FACEBOOK_WHATSAPP_APP_ID || ''}
-      configId={process.env.FACEBOOK_WHATSAPP_CONFIGURATION_ID || ''}
-  onSignupComplete={(result) => console.log('Signup complete:', result)}
-  onSignupError={(error) => console.error('Signup error:', error)}
-  onSignupCancel={(step) => console.log('Signup cancelled at step:', step)}
-/>
+        <WhatsAppEmbeddedSignup
+          appId={FACEBOOK_WHATSAPP_APP_ID || ''}
+          configId={FACEBOOK_WHATSAPP_CONFIGURATION_ID || ''}
+          onSignupComplete={result => console.log('Signup complete:', result)}
+          onSignupError={error => console.error('Signup error:', error)}
+          onSignupCancel={step => console.log('Signup cancelled at step:', step)}
+        />
       </SettingsPageContainer>
     </SubMenuTopBarContainer>
   );
