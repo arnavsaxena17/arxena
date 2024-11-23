@@ -78,7 +78,7 @@ export const CreateProfile = () => {
     },
     resolver: zodResolver(validationSchema),
   });
-
+  console.log("currentWorkspaceMember:", currentWorkspaceMember);
   const onSubmit: SubmitHandler<Form> = useCallback(
     async (data) => {
       try {
