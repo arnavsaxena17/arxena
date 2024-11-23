@@ -134,7 +134,9 @@ export const WhatsAppEmbeddedSignup: React.FC<WhatsAppEmbeddedSignupProps> = ({
 
       // Verify initialization
       window.FB.getLoginStatus((response) => {
+        console.log("resceived response", response)
         if (response.status !== undefined) {
+          console.log("This is the login status response", response);
           setSdkInitialized(true);
           setIsLoading(false);
         } else {
@@ -176,6 +178,7 @@ export const WhatsAppEmbeddedSignup: React.FC<WhatsAppEmbeddedSignupProps> = ({
   }, [handleMessage]);
 
   const handleLogin = useCallback(() => {
+    console.log("Handled login")
     if (!sdkInitialized || !window.FB) {
       onSignupError?.(new Error('Facebook SDK not ready'));
       return;
@@ -184,6 +187,7 @@ export const WhatsAppEmbeddedSignup: React.FC<WhatsAppEmbeddedSignupProps> = ({
     try {
       window.FB.login(
         (response: FacebookLoginResponse) => {
+          console.log("trying login:", response)
           if (response.authResponse?.code) {
             onSignupComplete?.({ code: response.authResponse.code });
           } else {
@@ -202,6 +206,7 @@ export const WhatsAppEmbeddedSignup: React.FC<WhatsAppEmbeddedSignupProps> = ({
         }
       );
     } catch (error) {
+      console.log("Error:", error)
       onSignupError?.(error instanceof Error ? error : new Error('Failed to initiate login'));
     }
   }, [configId, onSignupComplete, onSignupError, sdkInitialized]);
