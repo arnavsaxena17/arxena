@@ -52,8 +52,8 @@ export const WhatsappAccounts = () => {
 
   const FACEBOOK_WHATSAPP_APP_ID = '702966768619548';
   const FACEBOOK_WHATSAPP_CONFIGURATION_ID = '1115729326784816';
-  console.log('This is the process.env.FACEBOOK_WHATSAPP_APP_ID:', process.env.FACEBOOK_WHATSAPP_APP_ID);
-  console.log('This is the process.env.FACEBOOK_WHATSAPP_CONFIGURATION_ID:', process.env.FACEBOOK_WHATSAPP_CONFIGURATION_ID);
+  // console.log('This is the process.env.FACEBOOK_WHATSAPP_APP_ID:', process.env.FACEBOOK_WHATSAPP_APP_ID);
+  // console.log('This is the process.env.FACEBOOK_WHATSAPP_CONFIGURATION_ID:', process.env.FACEBOOK_WHATSAPP_CONFIGURATION_ID);
 
   return (
     <SubMenuTopBarContainer Icon={IconSettings} title="Settings">
