@@ -43,6 +43,7 @@ import { InviteTeam } from '~/pages/onboarding/InviteTeam';
 import { PaymentSuccess } from '~/pages/onboarding/PaymentSuccess';
 import { SyncEmails } from '~/pages/onboarding/SyncEmails';
 import { SettingsAccounts } from '~/pages/settings/accounts/SettingsAccounts';
+import { WhatsappAccounts } from '~/pages/settings/whatsapp/WhatsappsAccounts';
 import { SettingsAccountsCalendars } from '~/pages/settings/accounts/SettingsAccountsCalendars';
 import { SettingsAccountsCalendarsSettings } from '~/pages/settings/accounts/SettingsAccountsCalendarsSettings';
 import { SettingsAccountsEmails } from '~/pages/settings/accounts/SettingsAccountsEmails';
@@ -181,15 +182,23 @@ const createRouter = (isBillingEnabled?: boolean) =>
                   path={SettingsPath.Appearance}
                   element={<SettingsAppearance />}
                 />
+
                 <Route
                   path={SettingsPath.Accounts}
                   element={<SettingsAccounts />}
                 />
+
                 <Route
                   path={SettingsPath.NewAccount}
                   element={<SettingsNewAccount />}
                 />
                 <Route path={SettingsPath.AccountsCalendars} element={<SettingsAccountsCalendars />} />
+
+
+                <Route
+                  path={SettingsPath.AccountsWhatsapp}
+                  element={<WhatsappAccounts />}
+                />
                 <Route
                   path={SettingsPath.AccountsCalendarsSettings}
                   element={<SettingsAccountsCalendarsSettings />}

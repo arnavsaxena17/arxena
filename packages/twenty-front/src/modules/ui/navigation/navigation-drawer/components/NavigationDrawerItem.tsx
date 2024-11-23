@@ -13,7 +13,7 @@ import { isDefined } from '~/utils/isDefined';
 export type NavigationDrawerItemProps = {
   className?: string;
   label: string;
-  level?: 1 | 2;
+  level?: 1 | 2 | 3;
   to?: string;
   onClick?: () => void;
   Icon: IconComponent;
@@ -27,7 +27,7 @@ export type NavigationDrawerItemProps = {
 type StyledItemProps = {
   active?: boolean;
   danger?: boolean;
-  level: 1 | 2;
+  level: 1 | 2 |3;
   soon?: boolean;
   to?: string;
 };
