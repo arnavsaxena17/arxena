@@ -48,6 +48,8 @@
   interface FacebookLoginOptions {
     config_id: string;
     response_type: string;
+    scope: string;
+    auth_type: string;
     override_default_response_type: boolean;
     extras: {
       setup: Record<string, unknown>;

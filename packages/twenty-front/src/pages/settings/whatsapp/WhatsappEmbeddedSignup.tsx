@@ -178,39 +178,67 @@ export const WhatsAppEmbeddedSignup: React.FC<WhatsAppEmbeddedSignupProps> = ({
   }, [handleMessage]);
 
   const handleLogin = useCallback(() => {
-    console.log("Handled login")
+    console.log("Initiating login process");
+    
     if (!sdkInitialized || !window.FB) {
+      console.error("SDK not initialized");
       onSignupError?.(new Error('Facebook SDK not ready'));
       return;
     }
-
+  
     try {
-      window.FB.login(
-        (response: FacebookLoginResponse) => {
-          console.log("trying login:", response)
-          if (response.authResponse?.code) {
-            onSignupComplete?.({ code: response.authResponse.code });
-          } else {
-            onSignupError?.(new Error('Authentication failed'));
-          }
-        },
-        {
-          config_id: configId,
-          response_type: 'code',
-          override_default_response_type: true,
-          extras: {
-            setup: {},
-            featureType: '',
-            sessionInfoVersion: '3',
-          }
+      // First check login status
+      window.FB.getLoginStatus((statusResponse) => {
+        console.log("Current login status:", statusResponse);
+  
+        if (!window.FB) {
+          console.log("Facebook SDK not loaded");
+          onSignupError?.(new Error('Facebook SDK not loaded'));
+          return;
         }
-      );
+        window.FB.login(
+          (response) => {
+            console.log("Login response:", response);
+            
+            if (response.status === 'connected') {
+              if (response.authResponse?.code) {
+                console.log("Successfully authenticated with code");
+                onSignupComplete?.({ code: response.authResponse.code });
+              } else {
+                console.log("Connected but no auth code received");
+                onSignupError?.(new Error('Authentication successful but no code received'));
+              }
+            } else if (response.status === 'not_authorized') {
+              console.log("User did not authorize the app");
+              onSignupError?.(new Error('App authorization denied'));
+            } else {
+              console.log("Login failed:", response);
+              onSignupError?.(new Error('Authentication failed'));
+            }
+          },
+          {
+            config_id: configId,
+            response_type: 'code',
+            override_default_response_type: true,
+            scope: 'public_profile,email', // Add basic permissions
+            extras: {
+              setup: {
+                // Add any specific setup parameters your app needs
+                logging_enabled: true
+              },
+              featureType: 'whatsapp_embedded_signup',
+              sessionInfoVersion: '3',
+            },
+            auth_type: 'rerequest' // Force re-authentication
+          }
+        );
+      });
     } catch (error) {
-      console.log("Error:", error)
+      console.error("Login error:", error);
       onSignupError?.(error instanceof Error ? error : new Error('Failed to initiate login'));
     }
   }, [configId, onSignupComplete, onSignupError, sdkInitialized]);
-
+  
   return (
     <Card>
       <CardHeader>
