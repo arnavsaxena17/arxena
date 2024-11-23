@@ -78,7 +78,8 @@ export const WhatsAppEmbeddedSignup: React.FC<WhatsAppEmbeddedSignupProps> = ({
   onSignupError,
   onSignupCancel
 }) => {
-  const [isFBInitialized, setIsFBInitialized] = useState(false);
+  const [sdkLoaded, setSdkLoaded] = useState(false);
+  const [sdkInitialized, setSdkInitialized] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   const handleMessage = useCallback((event: MessageEvent) => {
@@ -102,58 +103,62 @@ export const WhatsAppEmbeddedSignup: React.FC<WhatsAppEmbeddedSignupProps> = ({
     }
   }, [onSignupComplete, onSignupCancel, onSignupError]);
 
+  // Load the Facebook SDK
   useEffect(() => {
-    // Define initialization function
-    const initializeFB = () => {
-      if (window.FB) {
-        window.FB.init({
-          appId,
-          autoLogAppEvents: true,
-          xfbml: true,
-          version: graphApiVersion
-        });
-        setIsFBInitialized(true);
-      }
-    };
-
-    // Check if FB SDK is already loaded
-    if (window.FB) {
-      initializeFB();
-    } else {
-      // Set up async init
-      window.fbAsyncInit = initializeFB;
-
-      // Load Facebook SDK if not already present
-      if (!document.getElementById('facebook-jssdk')) {
-        const script = document.createElement('script');
-        script.src = "https://connect.facebook.net/en_US/sdk.js";
-        script.async = true;
-        script.defer = true;
-        script.crossOrigin = "anonymous";
-        script.onload = () => {
-          setIsLoading(false);
-        };
-        document.body.appendChild(script);
-      }
-    }
-
-    // Add message event listener
-    window.addEventListener('message', handleMessage);
-
-    // Cleanup
-    return () => {
-      window.removeEventListener('message', handleMessage);
-    };
-  }, [appId, graphApiVersion, handleMessage]);
-
-  const handleLogin = useCallback(() => {
-    if (!window.FB) {
-      onSignupError?.(new Error('Facebook SDK not loaded'));
+    if (document.getElementById('facebook-jssdk')) {
+      setSdkLoaded(true);
       return;
     }
 
-    if (!isFBInitialized) {
-      onSignupError?.(new Error('Facebook SDK not initialized'));
+    const script = document.createElement('script');
+    script.id = 'facebook-jssdk';
+    script.src = "https://connect.facebook.net/en_US/sdk.js";
+    script.async = true;
+    script.defer = true;
+    script.crossOrigin = "anonymous";
+    script.onload = () => {
+      setSdkLoaded(true);
+      setIsLoading(false);
+    };
+    document.body.appendChild(script);
+
+    return () => {
+      // Cleanup if component unmounts during loading
+      const existingScript = document.getElementById('facebook-jssdk');
+      if (existingScript) {
+        existingScript.remove();
+      }
+    };
+  }, []);
+
+  // Initialize the SDK once it's loaded
+  useEffect(() => {
+    if (!sdkLoaded || !window.FB || sdkInitialized) return;
+
+    try {
+      window.FB.init({
+        appId,
+        autoLogAppEvents: true,
+        xfbml: true,
+        version: graphApiVersion
+      });
+      setSdkInitialized(true);
+      setIsLoading(false);
+    } catch (error) {
+      console.error('Failed to initialize Facebook SDK:', error);
+      onSignupError?.(error instanceof Error ? error : new Error('Failed to initialize Facebook SDK'));
+    }
+  }, [sdkLoaded, appId, graphApiVersion, sdkInitialized, onSignupError]);
+
+  // Add message event listener
+  useEffect(() => {
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [handleMessage]);
+
+  const handleLogin = useCallback(() => {
+    if (!sdkInitialized || !window.FB) {
+      onSignupError?.(new Error('Facebook SDK not ready'));
       return;
     }
 
@@ -176,7 +181,7 @@ export const WhatsAppEmbeddedSignup: React.FC<WhatsAppEmbeddedSignupProps> = ({
         }
       }
     );
-  }, [configId, onSignupComplete, onSignupError, isFBInitialized]);
+  }, [configId, onSignupComplete, onSignupError, sdkInitialized]);
 
   return (
     <Card>
@@ -190,7 +195,7 @@ export const WhatsAppEmbeddedSignup: React.FC<WhatsAppEmbeddedSignupProps> = ({
       </Alert>
       <Button 
         onClick={handleLogin} 
-        disabled={!isFBInitialized || isLoading}
+        disabled={!sdkInitialized || isLoading}
       >
         {isLoading ? 'Loading...' : 'Login with Facebook'}
       </Button>
