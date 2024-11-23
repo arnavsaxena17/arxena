@@ -46,7 +46,7 @@ export class SyncWorkspaceMetadataCommand extends CommandRunner {
       try {
         const issues =
           await this.workspaceHealthService.healthCheck(workspaceId);
-
+        console.log("Issues::: ", issues);
         // Security: abort if there are issues.
         if (issues.length > 0) {
           if (!options.force) {
@@ -63,6 +63,7 @@ export class SyncWorkspaceMetadataCommand extends CommandRunner {
 
             return;
           }
+          console.log("Issues are greater than 0, so we are forcing the migration", issues);
 
           this.logger.warn(
             `Workspace contains ${issues.length} issues, sync has been forced.`,

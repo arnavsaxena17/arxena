@@ -159,6 +159,7 @@ export class FieldMetadataHealthService {
           message: `Column ${columnName} type is not the same as the field metadata type "${columnStructure.dataType}" !== "${dataTypes[index]}"`,
         });
       }
+      // console.log("columnStructure:",columnStructure)
 
       if (columnStructure.isNullable !== fieldMetadata.isNullable) {
         issues.push({
