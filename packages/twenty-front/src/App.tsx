@@ -44,6 +44,7 @@ import { PaymentSuccess } from '~/pages/onboarding/PaymentSuccess';
 import { SyncEmails } from '~/pages/onboarding/SyncEmails';
 import { SettingsAccounts } from '~/pages/settings/accounts/SettingsAccounts';
 import { WhatsappAccounts } from '~/pages/settings/whatsapp/WhatsappsAccounts';
+import  WhatsAppTemplateManager from '~/pages/settings/whatsapp/WhatsappAccountsTemplates';
 import { SettingsAccountsCalendars } from '~/pages/settings/accounts/SettingsAccountsCalendars';
 import { SettingsAccountsCalendarsSettings } from '~/pages/settings/accounts/SettingsAccountsCalendarsSettings';
 import { SettingsAccountsEmails } from '~/pages/settings/accounts/SettingsAccountsEmails';
@@ -198,6 +199,10 @@ const createRouter = (isBillingEnabled?: boolean) =>
                 <Route
                   path={SettingsPath.AccountsWhatsapp}
                   element={<WhatsappAccounts />}
+                />
+                <Route
+                  path={SettingsPath.AccountsWhatsappTemplates}
+                  element={<WhatsAppTemplateManager />}
                 />
                 <Route
                   path={SettingsPath.AccountsCalendarsSettings}

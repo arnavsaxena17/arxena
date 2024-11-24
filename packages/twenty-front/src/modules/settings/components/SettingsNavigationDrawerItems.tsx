@@ -23,7 +23,7 @@ import { NavigationDrawerItem } from '@/ui/navigation/navigation-drawer/componen
 import { NavigationDrawerItemGroup } from '@/ui/navigation/navigation-drawer/components/NavigationDrawerItemGroup';
 import { NavigationDrawerSection } from '@/ui/navigation/navigation-drawer/components/NavigationDrawerSection';
 import { NavigationDrawerSectionTitle } from '@/ui/navigation/navigation-drawer/components/NavigationDrawerSectionTitle';
-import { IconBrandWhatsapp } from '@tabler/icons-react';
+import { IconBrandWhatsapp, IconTemplate } from '@tabler/icons-react';
 
 export const SettingsNavigationDrawerItems = () => {
   const { signOut } = useAuth();
@@ -70,6 +70,13 @@ export const SettingsNavigationDrawerItems = () => {
             label="Whatsapp"
             path={SettingsPath.AccountsWhatsapp}
             Icon={IconBrandWhatsapp}
+            matchSubPages
+          />
+          <SettingsNavigationDrawerItem
+            level={3}
+            label="Templates"
+            path={SettingsPath.AccountsWhatsappTemplates}
+            Icon={IconTemplate}
             matchSubPages
           />
         </NavigationDrawerItemGroup>

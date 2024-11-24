@@ -1053,6 +1053,7 @@ export class WhatsappTestAPI {
     const response = await new FacebookWhatsappChatApi().sendWhatsappUtilityMessage(sendTemplateMessageObj);
     let utilityMessage = await new WhatsappTemplateMessages().getUpdatedUtilityMessageObj(sendTemplateMessageObj);
     const whatsappTemplateMessageSent = await new WhatsappTemplateMessages().generateMessage(requestBody.templateName, sendTemplateMessageObj);
+    console.log("This is the mesasge obj:", personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges)
     const mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.messageObj;
     console.log("This is the mostRecentMessageArr:", mostRecentMessageArr)
     const chatControl = personObj?.candidates?.edges[0].node.lastEngagementChatControl;
