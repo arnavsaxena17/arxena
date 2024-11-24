@@ -9,7 +9,7 @@ export type WorkspaceMember = {
     lastName: string;
   };
   avatarUrl?: string | null;
-  phoneNumber?: string;
+  // phoneNumber?: string | null;
   locale: string;
   colorScheme?: ColorScheme;
   createdAt: string;

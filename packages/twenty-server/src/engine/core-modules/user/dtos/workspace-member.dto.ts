@@ -27,8 +27,8 @@ export class WorkspaceMember {
   @Field({ nullable: true })
   userEmail: string;
 
-  @Field({ nullable: true })
-  phoneNumber: string;
+  // @Field({ nullable: true })
+  // phoneNumber: string;
   @Field({ nullable: true })
   avatarUrl: string;
 

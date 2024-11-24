@@ -5,6 +5,7 @@ export enum SettingsPath {
   NewAccount = 'accounts/new',
   AccountsCalendars = 'accounts/calendars',
   AccountsWhatsapp = 'accounts/whatsapp',
+  AccountsWhatsappTemplates = 'accounts/whatsapp/templates',
   AccountsCalendarsSettings = 'accounts/calendars/:accountUuid',
   AccountsEmails = 'accounts/emails',
   AccountsEmailsInboxSettings = 'accounts/emails/:accountUuid',
