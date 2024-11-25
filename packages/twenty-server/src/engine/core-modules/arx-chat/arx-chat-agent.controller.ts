@@ -20,6 +20,7 @@ import { CalendarEmailService } from './services/candidate-engagement/calendar-e
 import moment from 'moment-timezone';
 import axios from 'axios';
 import { WhatsappTemplateMessages } from './services/whatsapp-api/facebook-whatsapp/template-messages';
+import { TokenService } from '../auth/services/token.service';
 
 interface CandidateRequest {
   url: string;
@@ -62,6 +63,11 @@ export class UpdateChatEndpoint {
 
 @Controller('arx-chat')
 export class ArxChatEndpoint {
+
+constructor(private tokenService: TokenService) {}
+
+
+
   @Post('invoke-chat')
   async evaluate(@Req() request: any) {
     const personObj: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(request.body.phoneNumberFrom);
@@ -445,6 +451,11 @@ export class ArxChatEndpoint {
   @Post('create-video-interview-send-to-candidate')
   @UseGuards(JwtAuthGuard)
   async createVideoInterviewSendToCandidate(@Req() request: any): Promise<object> {
+
+
+
+    const { workspace } = await this.tokenService.validateToken(request);
+    console.log("workspace:", workspace);
     try {
       const candidateId = request.body.candidateId;
       console.log('candidateId to create video-interview:', candidateId);

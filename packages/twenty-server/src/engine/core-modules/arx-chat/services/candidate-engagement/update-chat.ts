@@ -239,7 +239,9 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
     try {
       const candidateObj:allDataObjects.CandidateNode = await this.fetchCandidateByCandidateId(candidateId);
       const jobId = candidateObj?.jobs?.id;
+      console.log("jobId:",jobId)
       const interviewObj = await this.getInterviewByJobId(jobId);
+      console.log("interviewObj:::",interviewObj)
       const interviewStatusId = v4();
       const graphqlQueryObj = JSON.stringify({
         query: allGraphQLQueries.graphqlQueryToCreateVideoInterview,

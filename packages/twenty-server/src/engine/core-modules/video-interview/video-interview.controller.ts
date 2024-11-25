@@ -12,6 +12,8 @@ import * as path from 'path';
 import * as fs from 'fs';
 import ffmpeg from 'fluent-ffmpeg';
 
+import { TokenService } from 'src/engine/core-modules/auth/services/token.service';
+
 interface GetInterviewDetailsResponse {
   responseFromInterviewRequests: any;
   videoInterviewAttachmentResponse: any;
@@ -34,9 +36,14 @@ export async function axiosRequest(data: string) {
 
 @Controller('video-interview')
 export class VideoInterviewController {
-  constructor(private readonly transcriptionService: TranscriptionService) {
+  constructor(
+    private readonly transcriptionService: TranscriptionService,
+    private readonly tokenService: TokenService
+
+  ) {
     console.log('GraphQL URL configured as:', process.env.GRAPHQL_URL);
     console.log('JWT Secret present:', !!process.env.TWENTY_JWT_SECRET);
+
   }
   
   @Post('submit-response')
@@ -95,7 +102,8 @@ export class VideoInterviewController {
     try {
       console.log("Step 1: Starting submission process");
       console.log("Response data:", responseData);
-  
+      const { workspace } = await this.tokenService.validateToken(req);
+      console.log("REceived response data::", workspace)
       console.log("REceived response data::", responseData)
       // console.log('Received files:', JSON.stringify(files, null, 2));
       // console.log('Received response data:', JSON.stringify(responseData, null, 2));
@@ -510,24 +518,18 @@ export class VideoInterviewController {
       });
       try {
         const response = await axiosRequest(graphqlQueryObjForaIInterviewQuestions);
-        console.log("REhis response:", response.data.data)
-        responseFromInterviewRequests =  response.data;
+        console.log("REhis response:", response?.data?.data)
+        responseFromInterviewRequests =  response?.data;
       } catch (error) {
         console.log("There an error:", error)
         console.error('Error fetching interview data:', error);
         responseFromInterviewRequests = null
       }
-
       const videoInterviewId = responseFromInterviewRequests?.data?.aIInterviewStatuses?.edges[0]?.node?.aIInterview?.id;
       console.log("Received videoInterviewId:", videoInterviewId);
       const videoInterviewIntroductionAttachmentDataQuery = JSON.stringify({
         query: `query FindManyAttachments($filter: AttachmentFilterInput, $orderBy: [AttachmentOrderByInput], $lastCursor: String, $limit: Int) {
-          attachments(
-        filter: $filter
-        orderBy: $orderBy
-        first: $limit
-        after: $lastCursor
-          ) {
+          attachments( filter: $filter orderBy: $orderBy first: $limit after: $lastCursor ) {
         edges {
           node {
             fullPath
@@ -546,8 +548,6 @@ export class VideoInterviewController {
         }`,
         variables: { filter: { aIInterviewId: { eq: videoInterviewId } }, orderBy: { createdAt: 'DescNullsFirst' } }
       });
-
-
       const allQuestionIds = responseFromInterviewRequests?.data?.aIInterviewStatuses?.edges[0]?.node?.aIInterview?.aIInterviewQuestions?.edges
         .map((edge: { node: { id: string; createdAt: string } }) => edge.node)
         .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
