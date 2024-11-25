@@ -48,6 +48,7 @@ export const ImpersonateEffect = () => {
   }, [userId, impersonate, setCurrentUser, setTokenPair]);
 
   useEffect(() => {
+    console.log('ImpersonateEffect', userId, currentUser, isLogged);
     if (
       isLogged &&
       currentUser?.canImpersonate === true &&
