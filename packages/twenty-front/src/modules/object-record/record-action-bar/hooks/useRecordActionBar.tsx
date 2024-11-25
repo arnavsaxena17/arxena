@@ -81,12 +81,21 @@ export const useRecordActionBar = ({ objectMetadataItem, selectedRecordIds, call
       console.error('Failed to create video interview:', error);
     },
   });
-  const { sendVideoInterviewLink, loading: sendingVideoInterview } = useSendVideoInterview({
+  const { sendCreateVideoInterviewLink } = useSendVideoInterview({
+    createVideoInterviewLink: true,
     onSuccess: () => {},
     onError: (error: any) => {
       console.error('Failed to create video interview:', error);
     },
   });
+  
+  const { sendVideoInterviewLink } = useSendVideoInterview({
+    createVideoInterviewLink: false,
+    onSuccess: () => {},
+    onError: (error: any) => {
+      console.error('Failed to send video interview:', error);
+    },
+  });  
 
   const { refreshChatStatus } = useRefreshChatStatus({
     onSuccess: () => {},
@@ -338,6 +347,28 @@ export const useRecordActionBar = ({ objectMetadataItem, selectedRecordIds, call
                         },
                       ]
                     : []),
+
+
+                  ...(objectMetadataItem.nameSingular === 'aIInterviewStatus'
+                    ? [
+                      {
+                        label: 'Send Video Interview ',
+                        Icon: IconVideo,
+                        onClick: async () => {
+                          try {
+                            await sendVideoInterviewLink(selectedRecordIds);
+                          } catch (error) {
+                            console.error('Error creating videos:', error);
+                          }
+                        },
+                      },
+                      ]
+                    : []),
+
+
+
+
+
                   ...(objectMetadataItem.nameSingular === 'candidate'
                     ? [
                         {
@@ -352,11 +383,11 @@ export const useRecordActionBar = ({ objectMetadataItem, selectedRecordIds, call
                           },
                         },
                         {
-                          label: 'Send Video Interview Link',
+                          label: 'Create & Send Video Interview',
                           Icon: IconVideo,
                           onClick: async () => {
                             try {
-                              await sendVideoInterviewLink(selectedRecordIds);
+                              await sendCreateVideoInterviewLink(selectedRecordIds);
                             } catch (error) {
                               console.error('Error creating videos:', error);
                             }
