@@ -237,7 +237,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
       const interviewObj = response?.data?.data?.aIInterviews.edges[0].node;
       return interviewObj;
     } catch (error) {
-      console.log('Error in fetching interviews:', error);
+      console.log('Error in fetching interviews:: ', error);
     }
   }
   async createVideoInterviewForCandidate(candidateId : string){
@@ -254,7 +254,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
         input: {
           id: interviewStatusId,
           candidateId: candidateObj?.id,
-          name: "Interview - "+ candidateObj.name + " for "+ candidateObj?.jobs?.name,
+          name: "Interview - "+ candidateObj?.name + " for "+ candidateObj?.jobs?.name,
           aIInterviewId: interviewObj?.id,
           interviewStarted:false,
           interviewCompleted:false,
@@ -271,7 +271,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
     
       const response = await axiosRequest(graphqlQueryObj);
       if (response.data.errors) {
-        console.log("Errors in response:", response.data.errors);
+        console.log("Errors in response:", response?.data?.errors);
       }else{
         console.log('Video Interview created successfully');
       }
