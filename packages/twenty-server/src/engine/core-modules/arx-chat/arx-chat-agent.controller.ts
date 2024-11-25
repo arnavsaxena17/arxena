@@ -506,7 +506,7 @@ constructor(private tokenService: TokenService) {}
       console.log("interview link",person?.candidates.edges);
       console.log("interview link",person?.candidates?.edges[0]?.node.aIInterviewStatus);
       const videoInterviewUrl = person?.candidates?.edges[0]?.node?.aIInterviewStatus?.edges[0]?.node?.interviewLink?.url;
-      console.log("This is the video interview link:", videoInterviewUrl);
+      console.log("This is the video interview in send-video-interview-to-candidate link:", videoInterviewUrl);
 
       if (videoInterviewUrl) {
       // console.log("Going to send email to person:", person);

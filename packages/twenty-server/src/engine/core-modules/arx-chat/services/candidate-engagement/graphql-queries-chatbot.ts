@@ -34,6 +34,90 @@ export const graphqlQueryToCreateVideoInterview = `mutation CreateOneAIInterview
 
 
 
+export const graphQueryToFindManyAIInterviewStatuses = `
+query FindManyAIInterviewStatuses($filter: AIInterviewStatusFilterInput, $orderBy: [AIInterviewStatusOrderByInput], $lastCursor: String, $limit: Int) {
+  aIInterviewStatuses(
+    filter: $filter
+    orderBy: $orderBy
+    first: $limit
+    after: $lastCursor
+  ) {
+    edges {
+      node {
+        __typename
+        aIInterview {
+          __typename
+          introduction
+          createdAt
+          id
+          jobId
+          instructions
+          aIModelId
+          name
+          position
+          updatedAt
+        }
+        position
+        interviewLink {
+          label
+          url
+          __typename
+        }
+        cameraOn
+        id
+        interviewStarted
+        interviewCompleted
+        micOn
+        name
+        createdAt
+        candidate {
+          __typename
+          stopChat
+          hiringNaukriUrl {
+            label
+            url
+            __typename
+          }
+          startMeetingSchedulingChat
+          uniqueStringKey
+          whatsappProvider
+          chatCount
+          peopleId
+          startChat
+          status
+          jobSpecificFields
+          jobsId
+          createdAt
+          updatedAt
+          lastEngagementChatControl
+          startVideoInterviewChat
+          resdexNaukriUrl {
+            label
+            url
+            __typename
+          }
+          engagementStatus
+          id
+          position
+          name
+          candConversationStatus
+        }
+      }
+      cursor
+      __typename
+    }
+    pageInfo {
+      hasNextPage
+      startCursor
+      endCursor
+      __typename
+    }
+    totalCount
+    __typename
+  }
+}`
+
+
 export const graphqlQueryToFindInterviewsByJobId = `query FindManyAIInterviews($filter: AIInterviewFilterInput, $orderBy: [AIInterviewOrderByInput], $lastCursor: String, $limit: Int) {
   aIInterviews(
     filter: $filter
