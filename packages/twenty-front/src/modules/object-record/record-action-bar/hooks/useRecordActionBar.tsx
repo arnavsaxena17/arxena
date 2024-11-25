@@ -159,6 +159,19 @@ export const useRecordActionBar = ({ objectMetadataItem, selectedRecordIds, call
     }
   }, [callback, cloneRecord, isReady, selectedRecordIds]);
 
+
+const sendVideoInterviewLinkSelectRecord = useRecoilCallback(
+  ({ snapshot }) =>
+    async (selectedRecordIds: string[]) => {
+      const selectedRecordId = selectedRecordIds[0];
+      const selectedRecord = snapshot.getLoadable(recordStoreFamilyState(selectedRecordId)).getValue();
+      console.log("selected record", selectedRecord);
+      const candidateId = selectedRecord?.candidate?.id;
+      sendVideoInterviewLink([candidateId]);
+    },
+  [sendVideoInterviewLink]
+);
+
   const handleFavoriteButtonClick = useRecoilCallback(
     ({ snapshot }) =>
       () => {
@@ -267,6 +280,9 @@ export const useRecordActionBar = ({ objectMetadataItem, selectedRecordIds, call
 
   const isFavorite = isNonEmptyString(selectedRecordIds[0]) && !!favorites?.find(favorite => favorite.recordId === selectedRecordIds[0]);
 
+
+  
+
   return {
     setContextMenuEntries: useCallback(() => {
       setContextMenuEntries([
@@ -356,7 +372,7 @@ export const useRecordActionBar = ({ objectMetadataItem, selectedRecordIds, call
                         Icon: IconVideo,
                         onClick: async () => {
                           try {
-                            await sendVideoInterviewLink(selectedRecordIds);
+                            await sendVideoInterviewLinkSelectRecord(selectedRecordIds);
                           } catch (error) {
                             console.error('Error creating videos:', error);
                           }
@@ -364,11 +380,6 @@ export const useRecordActionBar = ({ objectMetadataItem, selectedRecordIds, call
                       },
                       ]
                     : []),
-
-
-
-
-
                   ...(objectMetadataItem.nameSingular === 'candidate'
                     ? [
                         {
