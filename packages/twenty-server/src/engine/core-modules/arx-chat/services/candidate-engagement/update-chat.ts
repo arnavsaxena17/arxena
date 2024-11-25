@@ -172,6 +172,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
       const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToManyCandidateById, variables: { filter: { id: { eq: candidateId } } } });
       const response = await axiosRequest(graphqlQueryObj);
       console.log("Fetched candidate by candidate ID:", response?.data);
+      console.log("Number of candidates with candidate ID:", response?.data?.data?.candidates?.edges?.length);
       const candidateObj = response?.data?.data?.candidates?.edges[0]?.node;
       return candidateObj;
     } catch (error) {
@@ -227,8 +228,12 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
 
   async getInterviewByJobId(jobId: string){
     try {
+      console.log("jobId::", jobId)
       const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindInterviewsByJobId, variables: { "filter": { "jobId": { "in": [ jobId ] } }, "orderBy": [ { "position": "AscNullsFirst" } ] } });
       const response = await axiosRequest(graphqlQueryObj);
+      console.log("This is the response data:", response.data)
+      console.log("This is the responsedata.data:", response.data.data)
+      console.log("This is the responseaIInterviews:", response.data.data.aIInterviews)
       const interviewObj = response?.data?.data?.aIInterviews.edges[0].node;
       return interviewObj;
     } catch (error) {
