@@ -9,8 +9,11 @@ import { AppPath } from '@/types/AppPath';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { useIsMatchingLocation } from '~/hooks/useIsMatchingLocation';
+import { currentWorkspaceState } from '@/auth/states/currentWorkspaceState';
 
 import { useAuth } from '../../hooks/useAuth';
+import { http } from 'msw';
+import { useRecoilValue } from 'recoil';
 
 export enum SignInUpMode {
   SignIn = 'sign-in',
@@ -32,14 +35,10 @@ export const useSignInUp = (form: UseFormReturn<Form>) => {
 
   const [isInviteMode] = useState(() => isMatchingLocation(AppPath.Invite));
 
-  const [signInUpStep, setSignInUpStep] = useState<SignInUpStep>(
-    SignInUpStep.Init,
-  );
+  const [signInUpStep, setSignInUpStep] = useState<SignInUpStep>(SignInUpStep.Init);
 
   const [signInUpMode, setSignInUpMode] = useState<SignInUpMode>(() => {
-    return isMatchingLocation(AppPath.SignInUp)
-      ? SignInUpMode.SignIn
-      : SignInUpMode.SignUp;
+    return isMatchingLocation(AppPath.SignInUp) ? SignInUpMode.SignIn : SignInUpMode.SignUp;
   });
 
   const {
@@ -54,11 +53,7 @@ export const useSignInUp = (form: UseFormReturn<Form>) => {
   const continueWithEmail = useCallback(() => {
     requestFreshCaptchaToken();
     setSignInUpStep(SignInUpStep.Email);
-    setSignInUpMode(
-      isMatchingLocation(AppPath.SignInUp)
-        ? SignInUpMode.SignIn
-        : SignInUpMode.SignUp,
-    );
+    setSignInUpMode(isMatchingLocation(AppPath.SignInUp) ? SignInUpMode.SignIn : SignInUpMode.SignUp);
   }, [isMatchingLocation, requestFreshCaptchaToken]);
 
   const continueWithCredentials = useCallback(async () => {
@@ -71,12 +66,12 @@ export const useSignInUp = (form: UseFormReturn<Form>) => {
         email: form.getValues('email').toLowerCase().trim(),
         captchaToken: token,
       },
-      onError: (error) => {
+      onError: error => {
         enqueueSnackBar(`${error.message}`, {
           variant: SnackBarVariant.Error,
         });
       },
-      onCompleted: (data) => {
+      onCompleted: data => {
         requestFreshCaptchaToken();
         if (data?.checkUserExists.exists) {
           setSignInUpMode(SignInUpMode.SignIn);
@@ -86,51 +81,32 @@ export const useSignInUp = (form: UseFormReturn<Form>) => {
         setSignInUpStep(SignInUpStep.Password);
       },
     });
-  }, [
-    readCaptchaToken,
-    form,
-    checkUserExistsQuery,
-    enqueueSnackBar,
-    requestFreshCaptchaToken,
-  ]);
+  }, [readCaptchaToken, form, checkUserExistsQuery, enqueueSnackBar, requestFreshCaptchaToken]);
+
+  
 
   const submitCredentials: SubmitHandler<Form> = useCallback(
-    async (data) => {
+    async data => {
       const token = await readCaptchaToken();
       try {
+        // const currentWorkspace = useRecoilValue(currentWorkspaceState);
+        // console.log("currentWorkspace::::", currentWorkspace)
+    
         if (!data.email || !data.password) {
           throw new Error('Email and password are required');
         }
-
-        signInUpMode === SignInUpMode.SignIn && !isInviteMode
-          ? await signInWithCredentials(
-              data.email.toLowerCase().trim(),
-              data.password,
-              token,
-            )
-          : await signUpWithCredentials(
-              data.email.toLowerCase().trim(),
-              data.password,
-              workspaceInviteHash,
-              token,
-            );
+        signInUpMode === SignInUpMode.SignIn && !isInviteMode ? await signInWithCredentials(data.email.toLowerCase().trim(), data.password, token) : await signUpWithCredentials(data.email.toLowerCase().trim(), data.password, workspaceInviteHash, token);
       } catch (err: any) {
         enqueueSnackBar(err?.message, {
           variant: SnackBarVariant.Error,
         });
         requestFreshCaptchaToken();
       }
+      
     },
-    [
-      readCaptchaToken,
-      signInUpMode,
-      isInviteMode,
-      signInWithCredentials,
-      signUpWithCredentials,
-      workspaceInviteHash,
-      enqueueSnackBar,
-      requestFreshCaptchaToken,
-    ],
+    
+    [readCaptchaToken, signInUpMode, isInviteMode, signInWithCredentials, signUpWithCredentials, workspaceInviteHash, enqueueSnackBar, requestFreshCaptchaToken],
+    
   );
 
   return {

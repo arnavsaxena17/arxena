@@ -2,6 +2,7 @@
 import mixpanel from 'mixpanel-browser';
 
 // Initialize with your project token
+console.log("process.env.REACT_APP_MIXPANEL_TOKEN:", process.env.REACT_APP_MIXPANEL_TOKEN)
 const MIXPANEL_TOKEN = process.env.REACT_APP_MIXPANEL_TOKEN || '68bdb1eed9eee266fc652c9d5ecef47e';
 
 // Enable debug logging in development

@@ -31,17 +31,12 @@ import {
   useVerifyMutation,
 } from '~/generated/graphql';
 import { isDefined } from '~/utils/isDefined';
-
 import { currentUserState } from '../states/currentUserState';
 import { tokenPairState } from '../states/tokenPairState';
-
 export const useAuth = () => {
   const [, setTokenPair] = useRecoilState(tokenPairState);
   const setCurrentUser = useSetRecoilState(currentUserState);
-  const setCurrentWorkspaceMember = useSetRecoilState(
-    currentWorkspaceMemberState,
-  );
-
+  const setCurrentWorkspaceMember = useSetRecoilState( currentWorkspaceMemberState );
   const setCurrentWorkspace = useSetRecoilState(currentWorkspaceState);
   const setIsVerifyPendingState = useSetRecoilState(isVerifyPendingState);
   const setWorkspaces = useSetRecoilState(workspacesState);
@@ -237,10 +232,17 @@ export const useAuth = () => {
 
       setIsVerifyPendingState(false);
 
+
+      console.log("The sign up has happened here ::", signUpResult.data)
+      console.log("The sign up has happened here and the user created is ::", user, workspace, workspaceMember, signUpResult.data?.signUp.loginToken.token,email, password, workspaceInviteHash, captchaToken )
+
+    
+        
       return { user, workspaceMember, workspace };
     },
     [setIsVerifyPendingState, signUp, handleVerify],
   );
+
 
   const handleGoogleLogin = useCallback((workspaceInviteHash?: string) => {
     const authServerUrl = REACT_APP_SERVER_BASE_URL;

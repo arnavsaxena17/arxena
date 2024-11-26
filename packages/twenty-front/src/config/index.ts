@@ -24,6 +24,10 @@ const getDefaultUrl = () => {
   }
 };
 
+
+console.log("REACT_APP_SERVER_BASE_URL:", window._env_?.REACT_APP_SERVER_BASE_URL);
+console.log("REACT_APP_ARXENA_SITE_BASE_URL in index:", window._env_?.REACT_APP_ARXENA_SITE_BASE_URL);
+console.log("process.env in index:", process.env?.REACT_APP_SERVER_BASE_URL);
 export const REACT_APP_SERVER_BASE_URL =
   window._env_?.REACT_APP_SERVER_BASE_URL ||
   process.env.REACT_APP_SERVER_BASE_URL ||
