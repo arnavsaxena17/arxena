@@ -271,7 +271,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
     
       const response = await axiosRequest(graphqlQueryObj);
       if (response.data.errors) {
-        console.log("Errors in response:", response?.data?.errors);
+        console.log("Error in response for create interview for candidate:", response?.data?.errors);
       }else{
         console.log('Video Interview created successfully');
       }
