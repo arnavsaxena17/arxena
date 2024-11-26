@@ -174,8 +174,7 @@ export const CreateProfile = () => {
               colorScheme: 'System',
             }) as any,
         );
-
-
+        
         // const currentUser = useRecoilValue(currentUserState);
         // console.log("Creating current user:", currentUser);
         console.log("Creating current workspace member:", currentWorkspaceMember);
@@ -184,9 +183,6 @@ export const CreateProfile = () => {
         console.log("Creating current user Id:", currentUser?.id);
         // console.log("Creating current workspace member userEmail:", currentWorkspaceMember.userEmail);
         // console.log("Creating WorkspaceMember:", ÷);
-
-
-
         const userData = {
             fullName: currentWorkspaceMember?.name?.firstName + ' ' + currentWorkspaceMember?.name?.lastName,
             email: currentUser?.email.toLowerCase().trim(), // Note: gmail/hotmail/yahoo emails are rejected by the backend
