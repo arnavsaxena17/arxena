@@ -27,6 +27,7 @@ export class MessagingTelemetryService {
     messageChannelId,
     message,
   }: MessagingTelemetryTrackInput): Promise<void> {
+    console.log("      this.environmentService.get('SERVER_URL'),:",       this.environmentService.get('SERVER_URL'),)
     await this.analyticsService.create(
       {
         type: 'track',
