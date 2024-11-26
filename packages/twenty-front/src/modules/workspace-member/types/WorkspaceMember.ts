@@ -14,6 +14,6 @@ export type WorkspaceMember = {
   colorScheme?: ColorScheme;
   createdAt: string;
   updatedAt: string;
-  userEmail: string;
+  userEmail?: string;
   userId: string;
 };

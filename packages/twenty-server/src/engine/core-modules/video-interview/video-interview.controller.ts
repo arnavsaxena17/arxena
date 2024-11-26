@@ -102,8 +102,8 @@ export class VideoInterviewController {
     try {
       console.log("Step 1: Starting submission process");
       console.log("Response data:", responseData);
-      const { workspace } = await this.tokenService.validateToken(req);
-      console.log("REceived response data::", workspace)
+      // const { workspace } = await this.tokenService.validateToken(req);
+      // console.log("REceived response data::", workspace)
       console.log("REceived response data::", responseData)
       // console.log('Received files:', JSON.stringify(files, null, 2));
       // console.log('Received response data:', JSON.stringify(responseData, null, 2));
