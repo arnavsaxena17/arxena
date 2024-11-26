@@ -32,13 +32,13 @@ export const EndInterviewPage: React.FC<{ interviewData:InterviewData, onSubmit:
             <FeedbackContainer>
             <h2>Thank You for Your Feedback</h2>
             <StyledMessage>
-              Your feedback has been submitted successfully. You may now close this window.
+              Your feedback has been submitted successfully. .
             </StyledMessage>
             </FeedbackContainer>
         ) : (
           <FeedbackContainer>
             <h2>Thank You for Completing the Interview</h2>
-            <FeedbackPrompt> You can now close this window. </FeedbackPrompt>
+            <FeedbackPrompt> We are uploading your responses. Please do not close this tab. </FeedbackPrompt>
             {/* <StyledTextArea
               value={feedback}
               onChange={(e) => setFeedback(e.target.value)}

@@ -65,6 +65,7 @@ export const CreateProfile = () => {
   const currentUser = useRecoilValue(currentUserState);
   const currentWorkspace = useRecoilValue(currentWorkspaceState);
   console.log("currentUser:", currentUser);
+  console.log("currentWorkspace:", currentWorkspace);
   console.log("currentWorkspaceState:", currentWorkspaceState);
 
 
@@ -192,6 +193,7 @@ export const CreateProfile = () => {
             phone: '+1234567890',
             password: 'password',
             visitorFp: 'some-fingerprint-value',
+            token: 'some' ,
             currentWorkspaceMemberId:currentWorkspaceMember.id,
             currentWorkspaceId: currentWorkspace?.id,
             twentyId:currentUser?.id,
