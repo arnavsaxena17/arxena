@@ -83,6 +83,7 @@ export async function getMostRecentChatsByPerson(mostRecentMessageArr:allDataObj
 }
 export async function axiosRequest(data: string) {
   // console.log("Sending a post request to the graphql server:: with data", data);
+  console.log("Will be using this process.env.TWENTY_JWT_SECRET:", process.env.TWENTY_JWT_SECRET)
   const response = await axios.request({
     method: "post",
     url: process.env.GRAPHQL_URL,

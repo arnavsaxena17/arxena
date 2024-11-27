@@ -157,7 +157,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
       }
       const response = await axiosRequest(graphqlQueryObj);
       if (response.data.errors) {
-        console.log("Errors in response:", response.data.errors);
+        console.log("Errors in axiosRequest response when trying to fetch candidates with specific chat control:", response.data.errors);
       }
       const edges = response?.data?.data?.candidates?.edges || [];
       if (!edges || edges?.length === 0) break;
