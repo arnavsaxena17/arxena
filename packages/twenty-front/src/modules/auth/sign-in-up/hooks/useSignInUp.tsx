@@ -89,9 +89,7 @@ export const useSignInUp = (form: UseFormReturn<Form>) => {
     async data => {
       const token = await readCaptchaToken();
       try {
-        // const currentWorkspace = useRecoilValue(currentWorkspaceState);
-        // console.log("currentWorkspace::::", currentWorkspace)
-    
+            
         if (!data.email || !data.password) {
           throw new Error('Email and password are required');
         }
