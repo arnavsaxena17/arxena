@@ -21,12 +21,22 @@ import moment from 'moment-timezone';
 import axios from 'axios';
 import { WhatsappTemplateMessages } from './services/whatsapp-api/facebook-whatsapp/template-messages';
 import { TokenService } from '../auth/services/token.service';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Workspace } from '../workspace/workspace.entity';
+import { In, Repository } from 'typeorm';
+import { DataSourceEntity } from 'src/engine/metadata-modules/data-source/data-source.entity';
+import { EnvironmentService } from 'src/engine/integrations/environment/environment.service';
+import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
+import {WorkspaceQueryService} from '../workspace-modifications/workspace-modifications.service';
+
 
 interface CandidateRequest {
   url: string;
   type: 'hiring' | 'resdex';
 }
 
+
+// const apiToken = process.env.TWENTY_JWT_SECRET || '';
 
 
 @Controller('updateChat')
@@ -64,16 +74,19 @@ export class UpdateChatEndpoint {
 @Controller('arx-chat')
 export class ArxChatEndpoint {
 
-constructor(private tokenService: TokenService) {}
-
+  constructor(
+    private readonly workspaceQueryService: WorkspaceQueryService,
+  ) {}
 
 
   @Post('invoke-chat')
   async evaluate(@Req() request: any) {
-    const personObj: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(request.body.phoneNumberFrom);
+    const apiToken = request.headers.authorization.split(' ')[1];
+
+    const personObj: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(request.body.phoneNumberFrom,apiToken);
     const personCandidateNode = personObj?.candidates?.edges[0]?.node;
     // const messagesList = personCandidateNode?.whatsappMessages?.edges;
-    const messagesList: allDataObjects.MessageNode[] = await new FetchAndUpdateCandidatesChatsWhatsapps().fetchAllWhatsappMessages(personCandidateNode.id);
+    const messagesList: allDataObjects.MessageNode[] = await new FetchAndUpdateCandidatesChatsWhatsapps().fetchAllWhatsappMessages(personCandidateNode.id,apiToken);
     // const messagesList: allDataObjects.MessageNode[] = whatsappMessagesEdges.map(edge => edge?.node);
 
     console.log('Current Messages list:', messagesList);
@@ -83,27 +96,29 @@ constructor(private tokenService: TokenService) {}
       let chatAgent: OpenAIArxMultiStepClient;
       chatAgent = new OpenAIArxMultiStepClient(personObj);
       const chatControl = "startChat";
-      await chatAgent.createCompletion(mostRecentMessageArr,chatControl);
-      const whatappUpdateMessageObj:allDataObjects.candidateChatMessageType = await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj('ArxChatEndpoint', personObj, mostRecentMessageArr, chatControl);
+      await chatAgent.createCompletion(mostRecentMessageArr,chatControl,apiToken);
+      const whatappUpdateMessageObj:allDataObjects.candidateChatMessageType = await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj('ArxChatEndpoint', personObj, mostRecentMessageArr, chatControl,apiToken);
       return whatappUpdateMessageObj;
     }
   }
 
   @Post('retrieve-chat-response')
   async retrieve(@Req() request: any): Promise<object> {
-    const personObj: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(request.body.phoneNumberFrom);
+    const apiToken = request.headers.authorization.split(' ')[1];
+
+    const personObj: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(request.body.phoneNumberFrom,apiToken);
     // debugger;
     try {
       const personCandidateNode = personObj?.candidates?.edges[0]?.node;
       // const messagesList = personCandidateNode?.whatsappMessages?.edges;
-      const messagesList: allDataObjects.MessageNode[] = await new FetchAndUpdateCandidatesChatsWhatsapps().fetchAllWhatsappMessages(personCandidateNode.id);
+      const messagesList: allDataObjects.MessageNode[] = await new FetchAndUpdateCandidatesChatsWhatsapps().fetchAllWhatsappMessages(personCandidateNode.id,apiToken);
       let mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = new CandidateEngagementArx().getMostRecentMessageFromMessagesList(messagesList);
       const isChatEnabled: boolean = false;
       if (mostRecentMessageArr?.length > 0) {
         let chatAgent: OpenAIArxMultiStepClient;
         chatAgent = new OpenAIArxMultiStepClient(personObj);
         const chatControl = 'startChat';
-        mostRecentMessageArr = await chatAgent.createCompletion(mostRecentMessageArr, chatControl, isChatEnabled);
+        mostRecentMessageArr = await chatAgent.createCompletion(mostRecentMessageArr, chatControl, apiToken, isChatEnabled);
         return mostRecentMessageArr;
       }
     } catch (err) {
@@ -114,31 +129,37 @@ constructor(private tokenService: TokenService) {}
 
   @Post('run-chat-completion')
   async runChatCompletion(@Req() request: any): Promise<object> {
+    const apiToken = request.headers.authorization.split(' ')[1];
+
     console.log('JSON.string', JSON.stringify(request.body));
-    const personObj: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber('918411937768');
+    const personObj: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber('918411937768',apiToken);
     const messagesList = request.body;
     let chatAgent: OpenAIArxMultiStepClient;
     chatAgent = new OpenAIArxMultiStepClient(personObj);
     const chatControl = 'startChat';
-    const mostRecentMessageArr = await chatAgent.createCompletion(messagesList, chatControl);
+    const mostRecentMessageArr = await chatAgent.createCompletion(messagesList,  chatControl,apiToken);
     return mostRecentMessageArr;
   }
 
 
   @Post('get-system-prompt')
   async getSystemPrompt(@Req() request: any): Promise<object> {
+    const apiToken = request.headers.authorization.split(' ')[1];
+
     console.log('JSON.string', JSON.stringify(request.body));
-    const personObj: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(request.body.phoneNumber);
+    const personObj: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(request.body.phoneNumber,apiToken);
     const chatControl = 'startChat';
-    const systemPrompt = await new ToolsForAgents().getSystemPrompt(personObj, chatControl)
+    const systemPrompt = await new ToolsForAgents().getSystemPrompt(personObj, chatControl, apiToken);
     console.log("This is the system prompt::", systemPrompt)
-    return {"system_prompt":systemPrompt};
+    return {"system_prompt" : systemPrompt};
   }
 
   @Post('run-stage-prompt')
   async runStagePrompt(@Req() request: any): Promise<object> {
+    const apiToken = request.headers.authorization.split(' ')[1];
+
     console.log('JSON.string', JSON.stringify(request.body));
-    const personObj: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber('918411937768');
+    const personObj: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber('918411937768',apiToken);
     const messagesList = request.body;
     let chatAgent = new OpenAIArxMultiStepClient(personObj);
     const engagementType = 'engage';
@@ -149,6 +170,8 @@ constructor(private tokenService: TokenService) {}
 
   @Post('add-chat')
   async addChat(@Req() request: any): Promise<object> {
+    const apiToken = request.headers.authorization.split(' ')[1];
+
     const whatsappIncomingMessage: allDataObjects.chatMessageType = {
       phoneNumberFrom: request.body.phoneNumberFrom,
       phoneNumberTo: '918591724917',
@@ -157,13 +180,15 @@ constructor(private tokenService: TokenService) {}
     };
     const chatReply = request.body.message;
     console.log('We will first go and get the candiate who sent us the message');
-    const candidateProfileData = await new FetchAndUpdateCandidatesChatsWhatsapps().getCandidateInformation(whatsappIncomingMessage);
-    await new IncomingWhatsappMessages().createAndUpdateIncomingCandidateChatMessage( { chatReply: chatReply, whatsappDeliveryStatus: 'delivered', phoneNumberFrom: request.body.phoneNumberFrom, whatsappMessageId: 'receiveIncomingMessagesFromController', }, candidateProfileData );
+    const candidateProfileData = await new FetchAndUpdateCandidatesChatsWhatsapps().getCandidateInformation(whatsappIncomingMessage,apiToken);
+    await new IncomingWhatsappMessages(this.workspaceQueryService).createAndUpdateIncomingCandidateChatMessage( { chatReply: chatReply, whatsappDeliveryStatus: 'delivered', phoneNumberFrom: request.body.phoneNumberFrom, whatsappMessageId: 'receiveIncomingMessagesFromController', }, candidateProfileData,apiToken );
     return { status: 'Success' };
   }
 
   @Post('start-chat')
   async startChat(@Req() request: any): Promise<object> {
+    const apiToken = request.headers.authorization.split(' ')[1];
+
     const whatsappIncomingMessage: allDataObjects.chatMessageType = {
       phoneNumberFrom: request.body.phoneNumberFrom,
       phoneNumberTo: '918591724917',
@@ -172,7 +197,7 @@ constructor(private tokenService: TokenService) {}
     };
     console.log('This is the Chat Reply:', whatsappIncomingMessage);
     const chatReply = 'startChat';
-    const personObj: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(request.body.phoneNumberFrom);
+    const personObj: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(request.body.phoneNumberFrom,apiToken);
     console.log('This is the Chat Reply:', chatReply);
     const recruiterProfile = allDataObjects.recruiterProfile;
     console.log('Recruiter profile', recruiterProfile);
@@ -180,7 +205,7 @@ constructor(private tokenService: TokenService) {}
     let chatHistory = chatMessages[0]?.node?.messageObj || [];
     const chatControl = 'startChat';
     if (chatReply === 'startChat' && chatMessages.length === 0) {
-      const SYSTEM_PROMPT = await new ToolsForAgents().getSystemPrompt(personObj, chatControl);
+      const SYSTEM_PROMPT = await new ToolsForAgents().getSystemPrompt(personObj, chatControl,apiToken);
       chatHistory.push({ role: 'system', content: SYSTEM_PROMPT });
       chatHistory.push({ role: 'user', content: 'startChat' });
     } else {
@@ -199,7 +224,7 @@ constructor(private tokenService: TokenService) {}
       whatsappDeliveryStatus: 'startChatTriggered',
       whatsappMessageId: 'startChat',
     };
-    const engagementStatus = await new CandidateEngagementArx().updateCandidateEngagementDataInTable(whatappUpdateMessageObj);
+    const engagementStatus = await new CandidateEngagementArx().updateCandidateEngagementDataInTable(whatappUpdateMessageObj,apiToken);
     if (engagementStatus?.status === 'success') {
       return { status: engagementStatus?.status };
     } else {
@@ -210,8 +235,10 @@ constructor(private tokenService: TokenService) {}
   @Post('send-chat')
   @UseGuards(JwtAuthGuard)
   async SendChat(@Req() request: any): Promise<object> {
+    const apiToken = request.headers.authorization.split(' ')[1];
+
     const messageToSend = request?.body?.messageToSend;
-    const personObj: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(request.body.phoneNumberTo);
+    const personObj: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(request.body.phoneNumberTo,apiToken);
     console.log('This is the chat reply:', messageToSend);
     const recruiterProfile = allDataObjects.recruiterProfile;
     console.log('Recruiter profile', recruiterProfile);
@@ -240,26 +267,29 @@ constructor(private tokenService: TokenService) {}
     const sendMessageResponse = await new FacebookWhatsappChatApi().sendWhatsappTextMessage(messageObj);
     whatappUpdateMessageObj.whatsappMessageId = sendMessageResponse?.data?.messages[0]?.id;
     whatappUpdateMessageObj.whatsappDeliveryStatus = 'sent';
-    await new FetchAndUpdateCandidatesChatsWhatsapps().createAndUpdateWhatsappMessage(personObj.candidates.edges[0].node, whatappUpdateMessageObj);
+    await new FetchAndUpdateCandidatesChatsWhatsapps().createAndUpdateWhatsappMessage(personObj.candidates.edges[0].node, whatappUpdateMessageObj,apiToken);
     return { status: 'success' };
   }
 
   @Post('get-all-messages-by-candidate-id')
   @UseGuards(JwtAuthGuard)
   async getWhatsappMessagessByCandidateId(@Req() request: any): Promise<object[]> {
+    const apiToken = request.headers.authorization.split(' ')[1];
+
     const candidateId = request.body.candidateId;
     console.log('candidateId to fetch all messages:', candidateId);
-    const allWhatsappMessages = await new FetchAndUpdateCandidatesChatsWhatsapps().fetchAllWhatsappMessages(candidateId);
+    const allWhatsappMessages = await new FetchAndUpdateCandidatesChatsWhatsapps().fetchAllWhatsappMessages(candidateId,apiToken);
     return allWhatsappMessages;
   }
   
   @Post('get-all-messages-by-phone-number')
   @UseGuards(JwtAuthGuard)
   async getAllMessagesByPhoneNumber(@Req() request: any): Promise<object> {
+    const apiToken = request.headers.authorization.split(' ')[1];
     console.log("Going to get all messages by phone Number for :", request.body.phoneNumber);
-    const personObj: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(request.body.phoneNumber);
+    const personObj: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(request.body.phoneNumber,apiToken);
     const candidateId = personObj?.candidates?.edges[0]?.node?.id;
-    const allWhatsappMessages = await new FetchAndUpdateCandidatesChatsWhatsapps().fetchAllWhatsappMessages(candidateId);
+    const allWhatsappMessages = await new FetchAndUpdateCandidatesChatsWhatsapps().fetchAllWhatsappMessages(candidateId,apiToken);
     const formattedMessages = await new FetchAndUpdateCandidatesChatsWhatsapps().formatChat(allWhatsappMessages);
     console.log("All messages length:", allWhatsappMessages?.length, "for phone number:", request.body.phoneNumber);
     return {"formattedMessages":formattedMessages};
@@ -268,8 +298,10 @@ constructor(private tokenService: TokenService) {}
   @Post('get-candidate-status-by-phone-number')
   @UseGuards(JwtAuthGuard)
   async getCandidateStatusByPhoneNumber(@Req() request: any): Promise<object> {
+    const apiToken = request.headers.authorization.split(' ')[1];
+
     console.log("Going to get candidate status by phone Number for :", request.body.phoneNumber);
-    const personObj: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(request.body.phoneNumber);
+    const personObj: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(request.body.phoneNumber,apiToken);
     const candidateStatus = personObj?.candidates?.edges[0]?.node?.status || "Unknown";
     console.log("Candidate satus:", candidateStatus, "for phone number:", request.body.phoneNumber);
     return {"status":candidateStatus};
@@ -278,8 +310,9 @@ constructor(private tokenService: TokenService) {}
   @Post('get-candidate-by-phone-number')
   @UseGuards(JwtAuthGuard)
   async getCandidateIdsByPhoneNumbers(@Req() request: any): Promise<object> {
+    const apiToken = request.headers.authorization.split(' ')[1];
     console.log("Going to get candidate by phone Number for :", request.body.phoneNumber);
-    const personObj: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(request.body.phoneNumber);
+    const personObj: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(request.body.phoneNumber,apiToken);
     const candidateId = personObj?.candidates?.edges[0]?.node?.id
     console.log('candidateId to fetch all candidateby phonenumber:', candidateId);
     return {"candidateId":candidateId};
@@ -289,11 +322,11 @@ constructor(private tokenService: TokenService) {}
   @UseGuards(JwtAuthGuard)
   async getCandidateIdsByHiringNaukriURL(@Req() request: any): Promise<object> {
     try{
-
+      const apiToken = request.headers.authorization.split(' ')[1];
       console.log("Going to get candidate by hiring-naukri-url :", request?.body?.hiringNaukriUrl);
       const hiringNaukriUrl = request.body.hiringNaukriUrl
       const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToManyCandidateById, variables: { filter: { hiringNaukriUrl: { url: { eq: hiringNaukriUrl } } } } });
-      const response = await axiosRequest(graphqlQueryObj);
+      const response = await axiosRequest(graphqlQueryObj,apiToken);
       console.log("Fetched candidate by candidate ID:", response?.data);
       const candidateObj = response?.data?.data?.candidates?.edges[0]?.node;
       console.log("Fetched candidate by candidate OB:", candidateObj);
@@ -311,14 +344,14 @@ constructor(private tokenService: TokenService) {}
   @UseGuards(JwtAuthGuard)
   async getCandidateIdsByResdexNaukriURL(@Req() request: any): Promise<object> {
     try {
+      const apiToken = request.headers.authorization.split(' ')[1];
       console.log("Going to get candidate esdex-naukri-ur :", request.body.resdexNaukriUrl);
       const resdexNaukriUrl = request.body.resdexNaukriUrl;
       const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToManyCandidateById, variables: { filter: { resdexNaukriUrl: {url: { eq: resdexNaukriUrl } }} } });
-      const response = await axiosRequest(graphqlQueryObj);
+      const response = await axiosRequest(graphqlQueryObj,apiToken);
       console.log("Fetched candidate by candidate ID:", response?.data);
       const candidateObj = response?.data?.data?.candidates?.edges[0]?.node;
       console.log("Fetched candidate by candidate Obj ID:", candidateObj);
-
       const candidateId = candidateObj?.id;
       console.log('candidateId to fetch all candidateby resdex-naukri:', candidateId);
       return { candidateId };
@@ -331,17 +364,20 @@ constructor(private tokenService: TokenService) {}
 
 
   @Post('get-id-by-unique-string-key')
-  async getCandidateByUniqueStringKey(@Body() body: { uniqueStringKey: string }): Promise<{ candidateId: string | null }> {
+  @UseGuards(JwtAuthGuard)
+  async getCandidateByUniqueStringKey(@Req() request: any): Promise<{ candidateId: string | null }> {
     try {
+      const apiToken = request.headers.authorization.split(' ')[1];
+
       const graphqlQuery = JSON.stringify({
         query: allGraphQLQueries.graphqlQueryToFindPeopleByPhoneNumber,
         variables: {
-          filter: { uniqueStringKey: { eq: body.uniqueStringKey } },
+          filter: { uniqueStringKey: { eq: request.body.uniqueStringKey } },
           limit: 1
         }
       });
 
-      const response = await axiosRequest(graphqlQuery);
+      const response = await axiosRequest(graphqlQuery,apiToken);
       const candidateId = response?.data?.data?.people?.edges[0]?.node?.candidates?.edges[0]?.node?.id || null;
       return { candidateId };
     } catch (err) {
@@ -352,10 +388,15 @@ constructor(private tokenService: TokenService) {}
 
 
   @Post('count-chats')
-  async countChats(): Promise<object> {
+  @UseGuards(JwtAuthGuard)
+
+  async countChats(@Req() request: any): Promise<object> {
     try {
+      const apiToken = request.headers.authorization.split(' ')[1];
+      const { candidateIds } = request.body;
       console.log("going to count chats")
-      await new FetchAndUpdateCandidatesChatsWhatsapps().updateCandidatesWithChatCount();
+      // const candidateIds = ['5f9b3b3b-0b3b-4b3b-8b3b-3b0b3b0b3b0b'];
+      await new FetchAndUpdateCandidatesChatsWhatsapps().updateCandidatesWithChatCount(candidateIds, apiToken);
       return { status: 'Success' };
     } catch (err) {
       console.error('Error in countChats:', err);
@@ -365,13 +406,13 @@ constructor(private tokenService: TokenService) {}
 
 
   @Post('refresh-chat-counts-by-candidates')
-
-  async refreshChats(@Body() body: any): Promise<object>  {
-
+  @UseGuards(JwtAuthGuard)
+  async refreshChats(@Req() request: any): Promise<object>  {
+    const apiToken = request.headers.authorization.split(' ')[1];
     try {
-      const { candidateIds } = body;
+      const { candidateIds } = request.body;
       console.log("going to refresh chat counts by candidate Ids")
-      await new FetchAndUpdateCandidatesChatsWhatsapps().updateCandidatesWithChatCount(candidateIds);
+      await new FetchAndUpdateCandidatesChatsWhatsapps().updateCandidatesWithChatCount(candidateIds ,apiToken);
       return { status: 'Success' };
     } catch (err) {
       console.error('Error in refresh chats:', err);
@@ -380,10 +421,14 @@ constructor(private tokenService: TokenService) {}
   }
 
   @Post('send-cvs-to-client')
-  async sendCVsToClient(@Body() body: any): Promise<object>  {
+  @UseGuards(JwtAuthGuard)
+
+  async sendCVsToClient(@Req() request: any): Promise<object>  {
     try {
-      const { candidateIds } = body;
-      console.log("going to refresh chat counts by candidate Ids")
+      const { candidateIds } = request.body;
+      const apiToken = request.headers.authorization.split(' ')[1];
+
+      console.log("going to refresh chat counts by candidate Ids",candidateIds)
       // await new FetchAndUpdateCandidatesChatsWhatsapps().sendCVsToClient(candidateIds);
       return { status: 'Success' };
     } catch (err) {
@@ -393,7 +438,11 @@ constructor(private tokenService: TokenService) {}
   }
 
   @Post('get-id-by-naukri-url')
+  @UseGuards(JwtAuthGuard)
+
   async getCandidateIdByNaukriURL(@Req() request: any): Promise<{ candidateId: string | null }> {
+    const apiToken = request.headers.authorization.split(' ')[1];
+
     try {
       const url = request.body[request.body.resdexNaukriUrl ? 'resdexNaukriUrl' : 'hiringNaukriUrl'];
       const type = request.body.resdexNaukriUrl ? 'resdex' : 'hiring';
@@ -407,7 +456,7 @@ constructor(private tokenService: TokenService) {}
         }
       });
 
-      const response = await axiosRequest(graphqlQueryObj);
+      const response = await axiosRequest(graphqlQueryObj, apiToken);
       const candidateId = response?.data?.data?.candidates?.edges[0]?.node?.id || null;
       
       console.log(`Fetched candidateId for ${type}: ${candidateId}`);
@@ -420,19 +469,24 @@ constructor(private tokenService: TokenService) {}
 
   @Get('get-candidates-and-chats')
   @UseGuards(JwtAuthGuard)
+
+  @UseGuards(JwtAuthGuard)
   async getCandidatesAndChats(@Req() request: any): Promise<object> {
-    // const allPeople = await new FetchAndUpdateCandidatesChatsWhatsapps().fetchAllPeopleWithStartChatTrue()
-    const allPeople = await new FetchAndUpdateCandidatesChatsWhatsapps().fetchSpecificPeopleToEngageBasedOnChatControl("allStartedAndStoppedChats");
+    console.log("Going to get all candidates and chats")
+    const apiToken = request?.headers?.authorization?.split(' ')[1];
+    console.log("apiToken received:", apiToken);
+    const allPeople = await new FetchAndUpdateCandidatesChatsWhatsapps().fetchSpecificPeopleToEngageBasedOnChatControl("allStartedAndStoppedChats",apiToken);
     console.log("All people length:", allPeople?.length)
     return allPeople
   }
+
   @Get('get-person-chat')
   @UseGuards(JwtAuthGuard)
   async getCandidateAndChat(@Req() request: any): Promise<object> {
-    // const allPeople = await new FetchAndUpdateCandidatesChatsWhatsapps().fetchAllPeopleWithStartChatTrue()
+    const apiToken = request.headers.authorization.split(' ')[1];
     const candidateId = request.query.candidateId;
-    const person = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByCandidateId(candidateId)
-    const allPeople = await new FetchAndUpdateCandidatesChatsWhatsapps().fetchSpecificPersonToEngageBasedOnChatControl("allStartedAndStoppedChats", person.id);
+    const person = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByCandidateId(candidateId,apiToken);
+    const allPeople = await new FetchAndUpdateCandidatesChatsWhatsapps().fetchSpecificPersonToEngageBasedOnChatControl("allStartedAndStoppedChats", person.id,apiToken);
     console.log("All people length:", allPeople?.length)
     return allPeople
   }
@@ -441,8 +495,9 @@ constructor(private tokenService: TokenService) {}
   @UseGuards(JwtAuthGuard)
   async createVideoInterviewForCandidate(@Req() request: any): Promise<object> {
     const candidateId = request.body.candidateId;
+    const apiToken = request.headers.authorization.split(' ')[1];
     console.log('candidateId to create video-interview:', candidateId);
-    const createVideoInterviewResponse = await new FetchAndUpdateCandidatesChatsWhatsapps().createVideoInterviewForCandidate(candidateId);
+    const createVideoInterviewResponse = await new FetchAndUpdateCandidatesChatsWhatsapps().createVideoInterviewForCandidate(candidateId,apiToken);
     console.log("createVideoInterviewResponse:", createVideoInterviewResponse)
     return createVideoInterviewResponse;
   }
@@ -451,15 +506,15 @@ constructor(private tokenService: TokenService) {}
   @Post('create-video-interview-send-to-candidate')
   @UseGuards(JwtAuthGuard)
   async createVideoInterviewSendToCandidate(@Req() request: any): Promise<object> {
-    
-    const { workspace } = await this.tokenService.validateToken(request);
+    const { workspace } = await this.workspaceQueryService.tokenService.validateToken(request);
     console.log("workspace:", workspace);
+    const apiToken = request.headers.authorization.split(' ')[1];
     try {
       const candidateId = request.body.candidateId;
       console.log('candidateId to create video-interview:', candidateId);
-      const createVideoInterviewResponse = await new FetchAndUpdateCandidatesChatsWhatsapps().createVideoInterviewForCandidate(candidateId);
-      const personObj = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByCandidateId(candidateId);
-      const person = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPersonId(personObj.id);
+      const createVideoInterviewResponse = await new FetchAndUpdateCandidatesChatsWhatsapps().createVideoInterviewForCandidate(candidateId,apiToken);
+      const personObj = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByCandidateId(candidateId,apiToken);
+      const person = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPersonId(personObj.id,apiToken);
       console.log("Got person:", person);
       const videoInterviewUrl = createVideoInterviewResponse?.data?.createAIInterviewStatus?.interviewLink?.url;
       console.log("This is the video interview link:", videoInterviewUrl);
@@ -490,7 +545,9 @@ constructor(private tokenService: TokenService) {}
   @Post('send-video-interview-to-candidate')
   @UseGuards(JwtAuthGuard)
   async sendVideoInterviewSendToCandidate(@Req() request: any): Promise<object> {
-    const { workspace } = await this.tokenService.validateToken(request);
+    const apiToken = request.headers.authorization.split(' ')[1];
+
+    const { workspace } = await this.workspaceQueryService.tokenService.validateToken(request);
     console.log("workspace:", workspace);
     try {
       let sendVideoInterviewLinkResponse
@@ -498,8 +555,8 @@ constructor(private tokenService: TokenService) {}
       const candidateId = request?.body?.candidateId;
       // console.log('candidateId to create video-interview:', candidateId);
       // const createVideoInterviewResponse = await new FetchAndUpdateCandidatesChatsWhatsapps().createVideoInterviewForCandidate(candidateId);
-      const personObj = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByCandidateId(candidateId);
-      const person = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPersonId(personObj.id);
+      const personObj = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByCandidateId(candidateId,apiToken);
+      const person = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPersonId(personObj.id,apiToken);
       console.log("Got person:", person);
       console.log("interview link",person?.candidates?.edges[0]?.node?.aIInterviewStatus?.edges[0]?.node?.interviewLink?.url);
       console.log("interview link",person?.candidates);
@@ -535,9 +592,11 @@ constructor(private tokenService: TokenService) {}
   @UseGuards(JwtAuthGuard)
   async deletePeopleFromCandidateIds(@Req() request: any): Promise<object> {
     const candidateId = request.body.candidateId;
+    const apiToken = request.headers.authorization.split(' ')[1];
+
     console.log('candidateId to create video-interview:', candidateId);
     const graphqlQueryObjToFetchCandidate = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToManyCandidateById, variables: { filter: { id: { eq: candidateId } } } });
-    const candidateObjresponse = await axiosRequest(graphqlQueryObjToFetchCandidate);
+    const candidateObjresponse = await axiosRequest(graphqlQueryObjToFetchCandidate,apiToken);
     const candidateObj = candidateObjresponse?.data?.data;
     console.log("candidate objk1:", candidateObj);
     
@@ -546,7 +605,6 @@ constructor(private tokenService: TokenService) {}
       console.log('Candidate not found');
       return { status: 'Failed', message: 'Candidate not found' };
     }
-
     const personId = candidateNode?.people?.id;
     if (!personId) {
       console.log('Person ID not found');
@@ -561,7 +619,7 @@ constructor(private tokenService: TokenService) {}
 
     console.log("Going to try and delete candidate");
     try {
-      const response = await axiosRequest(graphqlQueryObj);
+      const response = await axiosRequest(graphqlQueryObj,apiToken);
       console.log('Deleted candidate:', response.data);
     } catch (err) {
       console.log('Error deleting candidate:', err.response?.data || err.message);
@@ -573,7 +631,7 @@ constructor(private tokenService: TokenService) {}
     });
     console.log("Going to try and delete person");
     try {
-      const response = await axiosRequest(graphqlQueryObjToDeletePerson);
+      const response = await axiosRequest(graphqlQueryObjToDeletePerson,apiToken);
       console.log('Deleted person:', response.data);
       return { status: 'Success' };
     } catch (err) {
@@ -587,18 +645,17 @@ constructor(private tokenService: TokenService) {}
   @UseGuards(JwtAuthGuard)
   async deletePeopleFromPersonIds(@Req() request: any): Promise<object> {
     const personId = request.body.personId;
+    const apiToken = request.headers.authorization.split(' ')[1];
     console.log('personId to delete:', personId);
     const graphqlQueryObjToFetchPerson = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindPeopleByPhoneNumber, variables: { filter: { id: { eq: personId } } } });
-    const personresponse = await axiosRequest(graphqlQueryObjToFetchPerson);
+    const personresponse = await axiosRequest(graphqlQueryObjToFetchPerson,apiToken);
     const personObj = personresponse?.data?.data;
     console.log("personresponse objk1:", personObj);
-    
     const personNode = personresponse?.data?.data?.people?.edges[0]?.node;
     if (!personNode) {
       console.log('Person not found');
       return { status: 'Failed', message: 'Candidate not found' };
     }
-
     const candidateId = personNode?.candidates?.edges[0].node.id;
     console.log("personNode:", personNode);
     console.log("candidateId:", candidateId);
@@ -607,41 +664,38 @@ constructor(private tokenService: TokenService) {}
       return { status: 'Failed', message: 'candidateId ID not found' };
     }
     console.log("candidateId ID:", candidateId);
-
     const graphqlQueryObj = JSON.stringify({
       query: allGraphQLQueries.graphqlMutationToDeleteManyCandidates,
       variables: { filter: { id: { in: [candidateId] } } },
     });
-
     console.log("Going to try and delete candidate");
     try {
-      const response = await axiosRequest(graphqlQueryObj);
+      const response = await axiosRequest(graphqlQueryObj,apiToken);
       console.log('Deleted candidate:', response.data);
     } catch (err) {
       console.log('Error deleting candidate:', err.response?.data || err.message);
       return { status: 'Failed', message: 'Error deleting candidate' };
     }
-
     const graphqlQueryObjToDeletePerson = JSON.stringify({
       query: allGraphQLQueries.graphqlMutationToDeleteManyPeople,
       variables: { filter: { id: { in: [personId] } } },
     });
-
     console.log("Going to try and delete person");
     try {
-      const response = await axiosRequest(graphqlQueryObjToDeletePerson);
+      const response = await axiosRequest(graphqlQueryObjToDeletePerson,apiToken);
       console.log('Deleted person:', response.data);
       return { status: 'Success' };
     } catch (err) {
       console.log('Error deleting person:', err.response?.data || err.message);
       return { status: 'Failed', message: 'Error deleting person' };
     }
-
   }
 
 @Post('delete-people-and-candidates-bulk')
 @UseGuards(JwtAuthGuard)
 async deletePeopleAndCandidatesBulk(@Req() request: any): Promise<object> {
+  const apiToken = request.headers.authorization.split(' ')[1];
+
   const { candidateIds, personIds } = request.body;
   const results: { succeeded: string[], failed: string[] } = {
     succeeded: [],
@@ -655,7 +709,7 @@ async deletePeopleAndCandidatesBulk(@Req() request: any): Promise<object> {
       variables: { filter: { id: { in: candidateIds } } }
     });
 
-    const candidatesResponse = await axiosRequest(graphqlQueryObjToFetchCandidates);
+    const candidatesResponse = await axiosRequest(graphqlQueryObjToFetchCandidates,apiToken);
     const candidateNodes = candidatesResponse?.data?.data?.candidates?.edges || [];
     
     // Collect all person IDs associated with these candidates
@@ -669,14 +723,14 @@ async deletePeopleAndCandidatesBulk(@Req() request: any): Promise<object> {
         query: allGraphQLQueries.graphqlMutationToDeleteManyCandidates,
         variables: { filter: { id: { in: candidateIds } } }
       });
-      await axiosRequest(graphqlQueryObjDeleteCandidates);
+      await axiosRequest(graphqlQueryObjDeleteCandidates,apiToken);
       
       // Delete associated people in bulk
       const graphqlQueryObjDeletePeople = JSON.stringify({
         query: allGraphQLQueries.graphqlMutationToDeleteManyPeople,
         variables: { filter: { id: { in: personIdsFromCandidates } } }
       });
-      await axiosRequest(graphqlQueryObjDeletePeople);
+      await axiosRequest(graphqlQueryObjDeletePeople,apiToken);
       
       results.succeeded.push(...candidateIds);
     } catch (err) {
@@ -692,7 +746,7 @@ async deletePeopleAndCandidatesBulk(@Req() request: any): Promise<object> {
       variables: { filter: { id: { in: personIds } } }
     });
 
-    const peopleResponse = await axiosRequest(graphqlQueryObjToFetchPeople);
+    const peopleResponse = await axiosRequest(graphqlQueryObjToFetchPeople,apiToken);
     const peopleNodes = peopleResponse?.data?.data?.people?.edges || [];
     
     // Collect all candidate IDs associated with these people
@@ -707,14 +761,14 @@ async deletePeopleAndCandidatesBulk(@Req() request: any): Promise<object> {
         query: allGraphQLQueries.graphqlMutationToDeleteManyCandidates,
         variables: { filter: { id: { in: candidateIdsFromPeople } } }
       });
-      await axiosRequest(graphqlQueryObjDeleteCandidates);
+      await axiosRequest(graphqlQueryObjDeleteCandidates,apiToken);
       
       // Then delete people
       const graphqlQueryObjDeletePeople = JSON.stringify({
         query: allGraphQLQueries.graphqlMutationToDeleteManyPeople,
         variables: { filter: { id: { in: personIds } } }
       });
-      await axiosRequest(graphqlQueryObjDeletePeople);
+      await axiosRequest(graphqlQueryObjDeletePeople,apiToken);
       
       results.succeeded.push(...personIds);
     } catch (err) {
@@ -773,9 +827,11 @@ async deletePeopleAndCandidatesBulk(@Req() request: any): Promise<object> {
   @UseGuards(JwtAuthGuard)
   async uploadAttachment(@Req() request: any): Promise<object> {
     console.log('This is the request body', request.body);
-    const personObj: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(request.body.phoneNumberTo);
+    const apiToken = request.headers.authorization.split(' ')[1];
+
+    const personObj: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(request.body.phoneNumberTo,apiToken);
     try {
-      await shareJDtoCandidate(personObj, 'startChat');
+      await shareJDtoCandidate(personObj, 'startChat',  apiToken);
       return { status: 'Success' };
     } catch (err) {
       return { status: err };
@@ -787,7 +843,9 @@ async deletePeopleAndCandidatesBulk(@Req() request: any): Promise<object> {
   async checkHumanLike(@Req() request: any): Promise<object> {
     console.log('This is the request body', request.body);
     try {
-      const personObj: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(request.body.phoneNumberFrom);
+      const apiToken = request.headers.authorization.split(' ')[1];
+
+      const personObj: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(request.body.phoneNumberFrom,apiToken);
       console.log("Person object receiveed::", personObj)
       const checkHumanLike = await checkIfResponseMessageSoundsHumanLike(request.body.contentObj);
       console.log("checkHumanLike:", checkHumanLike)
@@ -800,6 +858,7 @@ async deletePeopleAndCandidatesBulk(@Req() request: any): Promise<object> {
   @Post('update-whatsapp-delivery-status')
   @UseGuards(JwtAuthGuard)
   async updateDeliveryStatus(@Req() request: any): Promise<object> {
+    const apiToken = request.headers.authorization.split(' ')[1];
     const listOfMessagesIds: string[] = request.body.listOfMessagesIds;
     try {
       for (let id of listOfMessagesIds) {
@@ -814,7 +873,8 @@ async deletePeopleAndCandidatesBulk(@Req() request: any): Promise<object> {
           query: allGraphQLQueries.graphqlQueryToUpdateMessageDeliveryStatus,
           variables: variablesToUpdateDeliveryStatus,
         });
-        const responseOfDeliveryStatus = await axiosRequest(graphqlQueryObjForUpdationForDeliveryStatus);
+
+        const responseOfDeliveryStatus = await axiosRequest(graphqlQueryObjForUpdationForDeliveryStatus,apiToken);
         console.log("responseOfDeliveryStatus::", responseOfDeliveryStatus?.data)
         // console.log('Res:::', responseOfDeliveryStatus?.data, "for wamid::", responseOfDeliveryStatus?.data);
         console.log('---------------DELIVERY STATUS UPDATE DONE-----------------------');
@@ -826,9 +886,21 @@ async deletePeopleAndCandidatesBulk(@Req() request: any): Promise<object> {
   }
 }
 
+
+
+
 // @UseGuards(JwtAuthGuard)
 @Controller('webhook')
 export class WhatsappWebhook {
+  
+  constructor(
+    private readonly workspaceQueryService: WorkspaceQueryService,  
+    private readonly environmentService: EnvironmentService,
+
+  ) {}
+
+
+
   @Get()
   findAll(@Req() request: any, @Res() response: any) {
     console.log('-------------- New Request GET --------------');
@@ -865,9 +937,11 @@ export class WhatsappWebhook {
     console.log('-------------- New Request POST --------------');
     // console.log('Headers:' + JSON.stringify(request.headers, null, 3));
     // console.log('Body:' + JSON.stringify(request.body, null, 3));
+    // const apiToken = request.headers.authorization.split(' ')[1];
+
     const requestBody = request.body;
     try {
-      await new IncomingWhatsappMessages().receiveIncomingMessagesFromFacebook(requestBody);
+      await new IncomingWhatsappMessages(this.workspaceQueryService).receiveIncomingMessagesFromFacebook(requestBody);
     } catch (error) {
       // Handle error
     }
@@ -894,7 +968,9 @@ export class WhatsappControllers {
 export class GoogleControllers {
   @Post('send-mail')
   async sendEmail(@Req() request: any): Promise<object> {
-    const person: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(request.body.phoneNumber);
+    const apiToken = request.headers.authorization.split(' ')[1];
+
+    const person: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(request.body.phoneNumber,apiToken);
     console.log("allDataObjects.recruiterProfile?.email:", allDataObjects.recruiterProfile?.email)
     const emailData: GmailMessageData = {
       sendEmailFrom: allDataObjects.recruiterProfile?.email,
@@ -910,7 +986,9 @@ export class GoogleControllers {
 
   @Post('send-mail-with-attachment')
   async sendEmailWithAttachment(@Req() request: any): Promise<object> {
-    const person: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(request.body.phoneNumber);
+    const apiToken = request.headers.authorization.split(' ')[1];
+
+    const person: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(request.body.phoneNumber,apiToken);
     
     const emailData: GmailMessageData = {
       sendEmailFrom: allDataObjects.recruiterProfile?.email,
@@ -926,7 +1004,9 @@ export class GoogleControllers {
   }
   @Post('save-draft-mail-with-attachment')
   async saveDraftEmailWithAttachments (@Req() request: any): Promise<object> {
-    const person: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(request.body.phoneNumber);
+    const apiToken = request.headers.authorization.split(' ')[1];
+
+    const person: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(request.body.phoneNumber,apiToken);
 
     
     
@@ -947,7 +1027,9 @@ export class GoogleControllers {
 
   @Post('send-calendar-invite')
   async sendCalendarInvite(@Req() request: any): Promise<object> {
-    const person: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(request.body.phoneNumber);
+    const apiToken = request.headers.authorization.split(' ')[1];
+
+    const person: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(request.body.phoneNumber,apiToken);
     const gptInputs = request.body;
 
     const convertToUTC = (dateTime: string, timeZone: string): string => {
@@ -1066,7 +1148,11 @@ export class TwilioControllers {
         to: 'whatsapp:+918411937769',
       }).then(message => console.log(message.sid)).done();
   }
+  
 }
+
+
+
 
 
 
@@ -1079,10 +1165,12 @@ export class TwilioControllers {
 export class WhatsappTestAPI {
 
   @Post('send-template-message')
-  async sendTemplateMessage(@Req() request: Request): Promise<object> {
+  async sendTemplateMessage(@Req() request: any): Promise<object> {
 
     const requestBody = request.body as any;
-    const personObj: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(requestBody.phoneNumberTo);
+    const apiToken = request.headers.authorization.split(' ')[1];
+
+    const personObj: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(requestBody.phoneNumberTo,apiToken);
     console.log("This is the process.env.SERVER_BASE_URL:",process.env.SERVER_BASE_URL)
     const sendTemplateMessageObj = {
       recipient: personObj.phone.replace('+', ''),
@@ -1103,7 +1191,7 @@ export class WhatsappTestAPI {
     };
     console.log("This is the sendTemplateMessageObj:", sendTemplateMessageObj)
 
-    const response = await new FacebookWhatsappChatApi().sendWhatsappUtilityMessage(sendTemplateMessageObj);
+    const response = await new FacebookWhatsappChatApi().sendWhatsappUtilityMessage(sendTemplateMessageObj,apiToken);
     let utilityMessage = await new WhatsappTemplateMessages().getUpdatedUtilityMessageObj(sendTemplateMessageObj);
     const whatsappTemplateMessageSent = await new WhatsappTemplateMessages().generateMessage(requestBody.templateName, sendTemplateMessageObj);
     console.log("This is the mesasge obj:", personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges)
@@ -1111,23 +1199,27 @@ export class WhatsappTestAPI {
     console.log("This is the mostRecentMessageArr:", mostRecentMessageArr)
     const chatControl = personObj?.candidates?.edges[0].node.lastEngagementChatControl;
     mostRecentMessageArr.push({ role: 'user', content: whatsappTemplateMessageSent });
-    const whatappUpdateMessageObj:allDataObjects.candidateChatMessageType = await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj( 'success', personObj, mostRecentMessageArr, chatControl);
-    await new CandidateEngagementArx().updateCandidateEngagementDataInTable(whatappUpdateMessageObj);
+    const whatappUpdateMessageObj:allDataObjects.candidateChatMessageType = await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj( 'success', personObj, mostRecentMessageArr, chatControl,apiToken);
+    await new CandidateEngagementArx().updateCandidateEngagementDataInTable(whatappUpdateMessageObj,apiToken);
     console.log("This is ther esponse:", response.data)
     return { status: 'success' };
   }
 
 
   @Post('template')
-  async create(@Req() request: Request): Promise<object> {
+  async create(@Req() request: any): Promise<object> {
+    const apiToken = request.headers.authorization.split(' ')[1];
+
     const sendMessageObj: allDataObjects.sendWhatsappTemplateMessageObjectType = request.body as unknown as allDataObjects.sendWhatsappTemplateMessageObjectType;
-    new FacebookWhatsappChatApi().sendWhatsappTemplateMessage(sendMessageObj);
+    new FacebookWhatsappChatApi().sendWhatsappTemplateMessage(sendMessageObj,apiToken);
     return { status: 'success' };
   }
   @Post('utility')
-  async createUtilityMessage(@Req() request: Request): Promise<object> {
+  async createUtilityMessage(@Req() request: any): Promise<object> {
+    const apiToken = request.headers.authorization.split(' ')[1];
+
     const sendMessageObj: allDataObjects.sendWhatsappUtilityMessageObjectType = request.body as unknown as allDataObjects.sendWhatsappUtilityMessageObjectType;
-    new FacebookWhatsappChatApi().sendWhatsappUtilityMessage(sendMessageObj);
+    new FacebookWhatsappChatApi().sendWhatsappUtilityMessage(sendMessageObj,  apiToken);
     return { status: 'success' };
   }
 
@@ -1143,11 +1235,13 @@ export class WhatsappTestAPI {
   }
   @Post('uploadFile')
   async uploadFileToFBWAAPI(@Req() request: any): Promise<object> {
+    const apiToken = request.headers.authorization.split(' ')[1];
+
     console.log('upload file to whatsapp api');
     const requestBody = request?.body;
     const filePath = requestBody?.filePath;
     const chatControl = 'startChat';
-    const response = await new FacebookWhatsappChatApi().uploadFileToWhatsApp(filePath, chatControl);
+    const response = await new FacebookWhatsappChatApi().uploadFileToWhatsApp(filePath, chatControl,apiToken);
     return response || {}; 
   }
 
@@ -1167,9 +1261,10 @@ export class WhatsappTestAPI {
 
   @Post('sendFile')
   async uploadAndSendFileToFBWAAPIUser(@Req() request: any): Promise<object> {
+    const apiToken = request.headers.authorization.split(' ')[1];
     const sendFileObj = request.body;
     const chatControl = 'startChat';
-    new FacebookWhatsappChatApi().uploadAndSendFileToWhatsApp(sendFileObj, chatControl);
+    new FacebookWhatsappChatApi().uploadAndSendFileToWhatsApp(sendFileObj, chatControl,  apiToken);
     return { status: 'success' };
   }
 

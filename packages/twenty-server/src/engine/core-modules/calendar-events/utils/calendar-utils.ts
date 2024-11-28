@@ -1,11 +1,11 @@
 import axios from "axios";
 
-export async function axiosRequest(data: string) {
+export async function axiosRequest(data: string, apiToken: string) {
   const response = await axios.request({
     method: "post",
     url: process.env.GRAPHQL_URL,
     headers: {
-      authorization: "Bearer " + process.env.TWENTY_JWT_SECRET,
+      authorization: "Bearer " + apiToken,
       "content-type": "application/json",
     },
     data: data,

@@ -8,6 +8,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { DataSourceEntity } from 'src/engine/metadata-modules/data-source/data-source.entity';
 import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
+import { TokenService } from 'src/engine/core-modules/auth/services/token.service';
 
 let timeScheduleCron:string
 console.log("Current Environment Is:", process.env.NODE_ENV)
@@ -25,6 +26,8 @@ else{
 @Injectable()
 export class TasksService {
   constructor(
+    private readonly tokenService: TokenService,
+
 
   @InjectRepository(Workspace, 'core')
   private readonly workspaceRepository: Repository<Workspace>,
@@ -41,95 +44,67 @@ export class TasksService {
     await this.runWorkspaceServiceCandidateEngagement()
     if (process.env.RUN_SCHEDULER === 'true') {
       console.log("Checking Engagement")
-      await new CandidateEngagementArx().checkCandidateEngagement();
+      // await new CandidateEngagementArx().checkCandidateEngagement();
     } else {
       console.log('Scheduler is turned off');
     }
     console.log("ENDING CRON CYCLE")
   }
 
-  async runWorkspaceServiceCandidateEngagement(    transactionManager?: EntityManager  ){
-    console.log("workspaceRepository:", this.workspaceRepository)
-    console.log("this.environmentService:", this.environmentService)
+  
+  private async getWorkspaces(): Promise<string[]> {
     const workspaceIds = (
       await this.workspaceRepository.find({
         where: this.environmentService.get('IS_BILLING_ENABLED')
-          ? {
-              subscriptionStatus: In(['active', 'trialing', 'past_due']),
-            }
+          ? { subscriptionStatus: In(['active', 'trialing', 'past_due']) }
           : {},
         select: ['id'],
       })
     ).map((workspace) => workspace.id);
-    console.log("workspaceIds::", workspaceIds)
-  
-  
+    return workspaceIds;
+  }
+
+  private async getApiKeys(workspaceId: string, dataSourceSchema: string, transactionManager?: EntityManager) {
+    try {
+      const apiKeys = await this.workspaceDataSourceService.executeRawQuery(
+        `SELECT * FROM ${dataSourceSchema}."apiKey" where "apiKey"."revokedAt" IS NULL ORDER BY "apiKey"."createdAt" ASC`,
+        [],
+        workspaceId,
+        transactionManager,
+      );
+      return apiKeys;
+    } catch (e) {
+      console.log("Error in  ID", workspaceId, "for dataSourceSchema", dataSourceSchema);
+      return [];
+    }
+  }
+
+  async runWorkspaceServiceCandidateEngagement(transactionManager?: EntityManager) {
+    const workspaceIds = await this.getWorkspaces();
+    console.log("workspaceIds::", workspaceIds);
     const dataSources = await this.dataSourceRepository.find({
       where: {
         workspaceId: In(workspaceIds),
       },
     });
-
     const workspaceIdsWithDataSources = new Set(
       dataSources.map((dataSource) => dataSource.workspaceId),
     );
-
-    console.log("workspaceIdsWithDataSources::", workspaceIdsWithDataSources)
-    console.log("dataSources::", dataSources)
-  
     for (const workspaceId of workspaceIdsWithDataSources) {
-      
-      const dataSourceSchema =
-        this.workspaceDataSourceService.getSchemaName(workspaceId);
-        console.log("dataSourceSchema::", dataSourceSchema)
-
-        const lastPosition = await this.workspaceDataSourceService.executeRawQuery(
-          `SELECT MAX(position) FROM ${dataSourceSchema}.person`,
-          [],
+      const dataSourceSchema = this.workspaceDataSourceService.getSchemaName(workspaceId);
+      console.log("dataSourceSchema::", dataSourceSchema);
+      const apiKeys = await this.getApiKeys(workspaceId, dataSourceSchema, transactionManager);
+      if (apiKeys.length > 0) {
+        const apiKeyToken = await this.tokenService.generateApiKeyToken(
           workspaceId,
-          transactionManager,
+          apiKeys[0].id,
+          apiKeys[0].expiresAt,
         );
-        console.log("lastPosition::", lastPosition, "for workspace ID:", workspaceId, "for dataSourceSchema:", dataSourceSchema)
+        if (apiKeyToken) {
+          const candidateEngagementArx = new CandidateEngagementArx();
+          await candidateEngagementArx.checkCandidateEngagement(apiKeyToken?.token);
+        }
+      }
     }
-
-
-
-
   }
-
-  
-
 }
-
-
-// import { Command, CommandRunner } from 'nest-commander';
-
-// import { InjectMessageQueue } from 'src/engine/integrations/message-queue/decorators/message-queue.decorator';
-// import { MessageQueue } from 'src/engine/integrations/message-queue/message-queue.constants';
-// import { MessageQueueService } from 'src/engine/integrations/message-queue/services/message-queue.service';
-// import { GoogleCalendarSyncCronJob } from 'src/modules/calendar/crons/jobs/google-calendar-sync.cron.job';
-
-// const GOOGLE_CALENDAR_SYNC_CRON_PATTERN = '*/5 * * * *';
-
-// @Command({
-//   name: 'cron:calendar:google-calendar-sync',
-//   description: 'Starts a cron job to sync google calendar for all workspaces.',
-// })
-// export class TasksService extends CommandRunner {
-//   constructor(
-//     @InjectMessageQueue(MessageQueue.cronQueue)
-//     private readonly messageQueueService: MessageQueueService,
-//   ) {
-//     super();
-//   }
-
-//   async run(): Promise<void> {
-//     await this.messageQueueService.addCron<undefined>(
-//       GoogleCalendarSyncCronJob.name,
-//       undefined,
-//       {
-//         repeat: { pattern: GOOGLE_CALENDAR_SYNC_CRON_PATTERN },
-//       },
-//     );
-//   }
-// }

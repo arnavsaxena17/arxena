@@ -7,7 +7,7 @@ const FormData = require('form-data');
 const fs = require('fs');
 const baseUrl = process.env.SERVER_BASE_URL+'/whatsapp'; // Adjust the base URL as needed
 
-export async function sendWhatsappMessageVIABaileysAPI(whatappUpdateMessageObj: allDataObjects.candidateChatMessageType, personNode: allDataObjects.PersonNode, mostRecentMessageArr: allDataObjects.ChatHistoryItem[], chatControl: allDataObjects.chatControls) {
+export async function sendWhatsappMessageVIABaileysAPI(whatappUpdateMessageObj: allDataObjects.candidateChatMessageType, personNode: allDataObjects.PersonNode, mostRecentMessageArr: allDataObjects.ChatHistoryItem[], chatControl: allDataObjects.chatControls,  apiToken:string) {
   console.log('Sending message to whatsapp via baileys api');
   console.log('whatappUpdateMessageObj.messageType', whatappUpdateMessageObj.messageType);
   if (whatappUpdateMessageObj.messageType === 'botMessage') {
@@ -18,14 +18,14 @@ export async function sendWhatsappMessageVIABaileysAPI(whatappUpdateMessageObj: 
       phoneNumberTo: whatappUpdateMessageObj.phoneNumberTo,
       messages: whatappUpdateMessageObj.messages[0].content,
     };
-    const response = await sendWhatsappTextMessageViaBaileys(sendTextMessageObj, personNode);
+    const response = await sendWhatsappTextMessageViaBaileys(sendTextMessageObj, personNode,apiToken);
     console.log(response);
     // console.log('99493:: response is here', response);
-    const whatappUpdateMessageObjAfterWAMidUpdate = await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj( response?.messageId || 'placeholdermessageid', personNode, mostRecentMessageArr,chatControl );
-    let candidateProfileObj = whatappUpdateMessageObj.messageType !== 'botMessage' ? await new FetchAndUpdateCandidatesChatsWhatsapps().getCandidateInformation(whatappUpdateMessageObj) : whatappUpdateMessageObj.candidateProfile;
+    const whatappUpdateMessageObjAfterWAMidUpdate = await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj( response?.messageId || 'placeholdermessageid', personNode, mostRecentMessageArr,chatControl, apiToken);
+    let candidateProfileObj = whatappUpdateMessageObj.messageType !== 'botMessage' ? await new FetchAndUpdateCandidatesChatsWhatsapps().getCandidateInformation(whatappUpdateMessageObj,  apiToken) : whatappUpdateMessageObj.candidateProfile;
 
-    await new CandidateEngagementArx().updateCandidateEngagementDataInTable(whatappUpdateMessageObjAfterWAMidUpdate, true);
-    const updateCandidateStatusObj = await new FetchAndUpdateCandidatesChatsWhatsapps().updateCandidateEngagementStatus(candidateProfileObj, whatappUpdateMessageObj);
+    await new CandidateEngagementArx().updateCandidateEngagementDataInTable(whatappUpdateMessageObjAfterWAMidUpdate,   apiToken, true);
+    const updateCandidateStatusObj = await new FetchAndUpdateCandidatesChatsWhatsapps().updateCandidateEngagementStatus(candidateProfileObj, whatappUpdateMessageObj,  apiToken);
 
     // await updateCandidateEngagementStatus
   } else {
@@ -33,7 +33,7 @@ export async function sendWhatsappMessageVIABaileysAPI(whatappUpdateMessageObj: 
   }
 }
 
-export async function sendWhatsappTextMessageViaBaileys(sendTextMessageObj: allDataObjects.ChatRequestBody, personNode: allDataObjects.PersonNode) {
+export async function sendWhatsappTextMessageViaBaileys(sendTextMessageObj: allDataObjects.ChatRequestBody, personNode: allDataObjects.PersonNode,  apiToken:string) {
   // console.log('This is the ssendTextMessageObj for baileys to be sent ::', sendTextMessageObj);
   const sendMessageUrl = `${baseUrl}/send`;
   const data = {
@@ -66,13 +66,23 @@ export async function sendWhatsappTextMessageViaBaileys(sendTextMessageObj: allD
       console.log("THERE IS RECRUITER ID, SO IT WILL SHOW THE ID");
     }
     console.log('Trying to send message via send API');
-    response = await axios.post(sendMessageUrl, data);
+    response = await axios.post(sendMessageUrl, data, {
+      headers: {
+      'Authorization': `Bearer ${apiToken}`,
+      'Content-Type': 'application/json'
+      }
+    });
     console.log('Send Message Response status:', response.status);
     console.log('Send Message Response:', response.data);
     if (response.data.status == "failed" ) {
       console.log("Retryngt o send the message because sending failed and possibly disconnected, so trying to wait for a few mins and retrying");
       await new Promise(resolve => setTimeout(resolve, 20000));
-      const response = await axios.post(sendMessageUrl, data);
+      const response = await axios.post(sendMessageUrl, data, {
+      headers: {
+        'Authorization': `Bearer ${apiToken}`,
+        'Content-Type': 'application/json'
+      }
+      });
       console.log("The response after the second attempt is :::", response.data);
     }
     else{
@@ -98,11 +108,11 @@ export async function sendWhatsappTextMessageViaBaileys(sendTextMessageObj: allD
   } catch (error: any) {
     console.error('Send Message Error in the first time. Will try to send a test message and then send again:', error.response?.data || error.message);
     await new Promise(resolve => setTimeout(resolve, 10000));
-    await tryAgaintoSendWhatsappMessage(sendTextMessageObj);
+    await tryAgaintoSendWhatsappMessage(sendTextMessageObj,  apiToken);
   }
 }
 
-async function tryAgaintoSendWhatsappMessage(sendTextMessageObj: allDataObjects.ChatRequestBody) {
+async function tryAgaintoSendWhatsappMessage(sendTextMessageObj: allDataObjects.ChatRequestBody, apiToken:string) {
   try {
     const sendMessageUrl = `${baseUrl}/send`;
     const data = {
@@ -116,12 +126,22 @@ async function tryAgaintoSendWhatsappMessage(sendTextMessageObj: allDataObjects.
       jid: (sendTextMessageObj.phoneNumberTo.startsWith('+') ? sendTextMessageObj.phoneNumberTo.replace('+', '') : sendTextMessageObj.phoneNumberTo) + '@s.whatsapp.net',
     };
     console.log('Trying to send again message via send API');
-    const response = await axios.post(sendMessageUrl, data);
+    const response = await axios.post(sendMessageUrl, data, {
+      headers: {
+      'Authorization': `Bearer ${apiToken}`,
+      'Content-Type': 'application/json'
+      }
+    });
     console.log("This is response data when trying again::", response.data)
     if (response.data.status == "failed" ) {
-      console.log("Retryngt o send the message because sending failed and possibly disconnected, so trying to wait for a few mins and retrying");
+      console.log("Retrying to send the message because sending failed and possibly disconnected, so trying to wait for a few mins and retrying");
       await new Promise(resolve => setTimeout(resolve, 20000));
-      const response = await axios.post(sendMessageUrl, data);
+      const response = await axios.post(sendMessageUrl, data, {
+      headers: {
+        'Authorization': `Bearer ${apiToken}`,
+        'Content-Type': 'application/json'
+      }
+      });
       console.log("The response after the second attempt is :::", response.data);
     }
     else{
@@ -135,7 +155,7 @@ async function tryAgaintoSendWhatsappMessage(sendTextMessageObj: allDataObjects.
   }
 }
 
-export async function sendAttachmentMessageViaBaileys(sendTextMessageObj: allDataObjects.AttachmentMessageObject, personNode: allDataObjects.PersonNode) {
+export async function sendAttachmentMessageViaBaileys(sendTextMessageObj: allDataObjects.AttachmentMessageObject, personNode: allDataObjects.PersonNode,  apiToken:string) {
   const jobProfile = personNode?.candidates?.edges[0]?.node?.jobs;
   const uploadFileUrl = `${baseUrl}/send-wa-message-file`;
   const data = {
@@ -150,7 +170,12 @@ export async function sendAttachmentMessageViaBaileys(sendTextMessageObj: allDat
     if (response.data.status == "failed" ) {
       console.log("Retryngt o send the at/tachment message again because sending failed and possibly disconnected, so trying to wait for a few mins and retrying");
       await new Promise(resolve => setTimeout(resolve, 20000));
-      const response = await axios.post(uploadFileUrl, payloadToSendToWhiskey);
+      const response = await axios.post(uploadFileUrl, payloadToSendToWhiskey, {
+        headers: {
+          'Authorization': `Bearer ${apiToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
       console.log("The response after the second attachment attempt is :::", response.data);
     }
     else{ console.log("Response sent successfully after the second attempt"); } console.log('Send attachment Message Response in Try sendAgain status:', response.status);

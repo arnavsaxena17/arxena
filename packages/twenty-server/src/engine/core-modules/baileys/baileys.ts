@@ -21,16 +21,19 @@ import { IncomingWhatsappMessages } from 'src/engine/core-modules/arx-chat/servi
 import { FetchAndUpdateCandidatesChatsWhatsapps } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/update-chat';
 import * as allDataObjects from 'src/engine/core-modules/arx-chat/services/data-model-objects';
 console.log('Baileys being called!!!');
+import {WorkspaceQueryService} from '../workspace-modifications/workspace-modifications.service';
+
 
 const agent = new SocksProxyAgent(process.env.SMART_PROXY_URL || '');
 
 export class BaileysBot {
-  source: string;
-  constructor(source: string) {
+  private source: string;
+  private workspaceQueryService: WorkspaceQueryService;
+  constructor(source: string, workspaceQueryService: WorkspaceQueryService) {
     this.source = source;
-    console.log('BaileysBot being called from the source of !!!', this.source);
+    this.workspaceQueryService = workspaceQueryService;
   }
-  async initApp(arxSocket: SocketGateway, source: string, chatControl:allDataObjects.chatControls) {
+  async initApp(arxSocket: SocketGateway, source: string, chatControl:allDataObjects.chatControls,apiToken:string) {
     console.log('InitApp being calledW by thius source!!!-->', source);
     return new Promise(async (resolve, reject) => {
       console.log('Going to try and save creds for source:', this.source);
@@ -40,10 +43,10 @@ export class BaileysBot {
       const socket: any = await this.getBaileysSocket(state, version);
       // this will be called as soon as the connection are updated
       socket.ev.on('connection.update', async (updatedConnection: any) => {
-        await this.handleBaileysConnection(updatedConnection, arxSocket, 'socketConnectionUpdate');
+        await this.handleBaileysConnection(updatedConnection, arxSocket, 'socketConnectionUpdate',apiToken);
       });
       // this will be called as soon as the message send or received
-      socket.ev.on('messages.upsert', async (message: any) => await this.handleMessage(message, arxSocket, socket, chatControl));
+      socket.ev.on('messages.upsert', async (message: any) => await this.handleMessage(message, arxSocket, socket, chatControl,apiToken));
       // this will be called as soon as the credentials are updated
       socket.ev.on('creds.update', saveCreds);
 
@@ -115,7 +118,7 @@ export class BaileysBot {
     };
   };
 
-  async handleMessage(m: any, arxSocket: SocketGateway, socket: any, chatControl:allDataObjects.chatControls) {
+  async handleMessage(m: any, arxSocket: SocketGateway, socket: any, chatControl:allDataObjects.chatControls,apiToken:string) {
     // console.log("This is the m object", m)
     // console.log("This is the socket object", socket)
     // console.log("This is the arxSocket socket object", arxSocket)
@@ -142,7 +145,7 @@ export class BaileysBot {
     // console.log("Incoming phone NUmber", arxSocket.baileys.user.id.replace(":40@s.whatsapp.net",""))
     // console.log("This is the calue of arxSocket User server", Object.keys(arxSocket.server))
     try {
-      await this.processBaileysMessages(m, arxSocket, socket, chatControl);
+      await this.processBaileysMessages(m, arxSocket, socket, chatControl, apiToken);
       arxSocket?.server?.emit(event, data);
       await this.downloadAllMediaFiles(m, socket, data.fromRemoteJid);
     } catch (error) {
@@ -152,7 +155,7 @@ export class BaileysBot {
     }
   }
 
-  async processBaileysMessages(m: any, arxSocket: SocketGateway, socket: any, chatControl:allDataObjects.chatControls) {
+  async processBaileysMessages(m: any, arxSocket: SocketGateway, socket: any, chatControl:allDataObjects.chatControls, apiToken:string) {
     console.log('processBaileysMessages::', m);
 
     if (m.messages[0].key.fromMe === false) {
@@ -179,7 +182,7 @@ export class BaileysBot {
         baileysMessageId: m?.messages[0]?.key?.id,
       };
       console.log('FInal baileysWhatsappIncomingObj:', baileysWhatsappIncomingObj);
-      new IncomingWhatsappMessages().receiveIncomingMessagesFromBaileys(baileysWhatsappIncomingObj);
+      new IncomingWhatsappMessages(this.workspaceQueryService).receiveIncomingMessagesFromBaileys(baileysWhatsappIncomingObj, apiToken);
     } else {
       let phoneNumberFrom = '';
       try {
@@ -197,7 +200,7 @@ export class BaileysBot {
       };
 
       console.log('baileysWhatsappOutgoingObj:', baileysWhatsappOutgoingObj);
-      const candidateProfileData = await new FetchAndUpdateCandidatesChatsWhatsapps().getCandidateDetailsByPhoneNumber(baileysWhatsappOutgoingObj.phoneNumberTo);
+      const candidateProfileData = await new FetchAndUpdateCandidatesChatsWhatsapps().getCandidateDetailsByPhoneNumber(baileysWhatsappOutgoingObj.phoneNumberTo,apiToken);
       console.log('This is the candidateProfileData', candidateProfileData);
       if (candidateProfileData && candidateProfileData != allDataObjects.emptyCandidateProfileObj) {
         const messageBeingSent = m?.messages[0]?.message?.extendedTextMessage?.text || m?.messages[0]?.message?.conversation || '';
@@ -298,7 +301,7 @@ export class BaileysBot {
     // downloadMediaFiles(m, socket, messageType);
   }
 
-  async handleBaileysConnection(updatedConnection: any, arxSocket: SocketGateway, handleConnectionsource: string) {
+  async handleBaileysConnection(updatedConnection: any, arxSocket: SocketGateway, handleConnectionsource: string,apiToken:string) {
     // console.log("Value of arxSocker!!!", arxSocket);
     console.log('handleBaileysConnection being calledW!!!', updatedConnection, 'by the source of', this.source, 'handleConnectionsource::', handleConnectionsource);
     // {connection,receivedPendingNotifications,qr,isNewLogin,lastDisconnect} = connectionState | updatedConnection
@@ -329,14 +332,14 @@ export class BaileysBot {
       if (shouldReconnect) {
         if (!isConnectionRefreshed) {
           console.log('its saying to init app again because it says should reconnec tand that connections is not refreshed');
-          this.initApp(arxSocket, 'because should reconnect and connection is not refreshed', chatControl);
+          this.initApp(arxSocket, 'because should reconnect and connection is not refreshed', chatControl,apiToken);
         } else {
           console.log('Tried to do an init app and not sure if it has workedd ');
         }
       }
       if (isLoggedOut) {
         this.deleteFile('./auth_info_baileys/creds.json');
-        this.initApp(arxSocket, 'is loggedout and hence deleting creds and init app again',chatControl);
+        this.initApp(arxSocket, 'is loggedout and hence deleting creds and init app again',chatControl,apiToken);
       }
     } else if (connection === 'open') {
       console.log('opened connection');

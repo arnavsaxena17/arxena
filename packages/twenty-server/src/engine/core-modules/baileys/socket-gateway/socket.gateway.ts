@@ -8,8 +8,11 @@ import { FileDataDto, MessageDto } from '../types/baileys-types';
 console.log('SocketGateway being called!!!');
 import { MimeType } from 'file-type';
 import { delay } from '@whiskeysockets/baileys';
+import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 // import { sendWhatsappTextMessageViaBaileys } from 'src/engine/core-modules/recruitment-agent/services/whatsapp-api/baileys/callBaileys';
 
+
+const apiToken = process.env.TWENTY_JWT_SECRET || '';
 @WebSocketGateway({
   cors: {
     origin: '*',
@@ -17,6 +20,12 @@ import { delay } from '@whiskeysockets/baileys';
   },
 })
 export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
+  private workspaceQueryService: WorkspaceQueryService;
+
+  constructor(workspaceQueryService: WorkspaceQueryService) {
+    this.workspaceQueryService = workspaceQueryService;
+  }
+
   setBaileys(b: unknown) {
     console.log('Method not implemented.');
   }
@@ -31,7 +40,7 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
       let userDirectory: string = message.WANumber;
       let fileData: FileDataDto | undefined = message.fileData;
       if (fileData) {
-        new BaileysBot('sendWhatsappMessageHandleFileUpload').handleFileUpload(fileData, userDirectory);
+        new BaileysBot('sendWhatsappMessageHandleFileUpload', this.workspaceQueryService).handleFileUpload(fileData, userDirectory);
       }
     } catch (error) {
       this.handleError(error);
@@ -46,7 +55,7 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
       if (Boolean(body.fileData?.fileName)) {
         let userDirectory: string = body.WANumber;
         if (body.fileData) {
-          body.fileData = await new BaileysBot('sendWhatsappMessagesendWhatsappMessagehandleFileUpload').handleFileUpload(body.fileData, userDirectory);
+          body.fileData = await new BaileysBot('sendWhatsappMessagesendWhatsappMessagehandleFileUpload',this.workspaceQueryService).handleFileUpload(body.fileData, userDirectory);
         }
         this.sendMessageFileToBaileys(body);
       } else {
@@ -73,7 +82,7 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     console.log(`client:(${client.id}) connected...`, authToken);
     (async () => {
       try {
-        this.baileys = await new BaileysBot('sendWhatsappMessagehandleConnection').initApp(this, 'started from handleConnection',"startChat");
+        this.baileys = await new BaileysBot('sendWhatsappMessagehandleConnection', this.workspaceQueryService).initApp(this, 'started from handleConnection',"startChat",apiToken);
         console.log('Baileys service initialized from SocketGateway.handleConnection.');
       } catch (error) {
         this.handleError(error);
@@ -97,7 +106,7 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
         // throw new Error("Baileys service is not initialized.");
         (async () => {
           try {
-            this.baileys = await new BaileysBot('sendMessageServiceNotInitilaised').initApp(this, 'because service is not initilised',"startChat");
+            this.baileys = await new BaileysBot('sendMessageServiceNotInitilaised',this.workspaceQueryService).initApp(this, 'because service is not initilised',"startChat",apiToken);
             // await delay(2000);
             return await this.sendMessageToBaileys(body); // ! Recursion
             // let { jid, message } = body;

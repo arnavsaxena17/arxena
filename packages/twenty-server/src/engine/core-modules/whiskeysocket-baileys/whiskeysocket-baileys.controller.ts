@@ -2,14 +2,17 @@ import { Controller, Post, Body } from '@nestjs/common';
 import { WhatsappService } from './whiskeysocket-baileys.service';
 import { EventsGateway } from './events-gateway-module/events-gateway';
 import { MessageDto } from './types/baileys-types';
+import { WorkspaceQueryService } from '../workspace-modifications/workspace-modifications.service';
 
 @Controller('whatsapp')
 export class WhatsappController {
-  constructor(private eventsGateway: EventsGateway) {}
+  constructor(private eventsGateway: EventsGateway, 
+    private workspaceQueryService: WorkspaceQueryService
+  ) {}
 
   @Post('token')
   async token(@Body() body: { sessionId: string }) {
-    await new WhatsappService(this.eventsGateway, body.sessionId, '');
+    await new WhatsappService(this.workspaceQueryService, this.eventsGateway, body.sessionId, '');
     return { status: 'ok' };
   }
   @Post('fetch-chats')
