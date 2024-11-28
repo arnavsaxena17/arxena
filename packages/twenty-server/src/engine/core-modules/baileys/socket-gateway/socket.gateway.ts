@@ -261,7 +261,7 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   handleAuth(authToken: any, clientId: string) {
     try {
       // decoded.uid //(uid is mongo db id)
-      let decoded = jwt.verify(authToken, process.env.JWT_SECRET_KEY || 'secret');
+      let decoded = jwt.verify(authToken, process.env.TWENTY_JWT_SECRET || 'secret');
       console.log(decoded);
     } catch (error) {
       console.log(JSON.stringify(error, null, 2));
