@@ -184,6 +184,18 @@ export class TokenService {
     return !!token;
   }
 
+
+  async validateTokenString(token: string): Promise<JwtData> {
+    if (!token) {
+      throw new UnauthorizedException('missing authentication token');
+    }
+
+    const decoded = await this.verifyJwt(token, this.environmentService.get('ACCESS_TOKEN_SECRET'));
+    const { user, workspace } = await this.jwtStrategy.validate(decoded as JwtPayload);
+
+    return { user, workspace };
+  }
+
   async validateToken(request: Request): Promise<JwtData> {
     // console.log('request ::', request?.headers?.authorization);
     const token = ExtractJwt.fromAuthHeaderAsBearerToken()(request);

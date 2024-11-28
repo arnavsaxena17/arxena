@@ -7,12 +7,22 @@ import { WhatsappAPISelector } from '../../services/whatsapp-api/whatsapp-contro
 import { checkIfResponseMessageSoundsHumanLike } from './human-or-bot-type-response-classification'
 import {LLMProviders} from './llm-agents'
 import {getMostRecentChatsByPerson, updateMostRecentMessagesBasedOnNewSystemPrompt} from '../../utils/arx-chat-agent-utils'
+import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
+
 export class OpenAIArxMultiStepClient {
-  personNode: allDataObjects.PersonNode;
-  LLMProviders: LLMProviders;
-  constructor(personNode: allDataObjects.PersonNode) {
+  private readonly personNode: allDataObjects.PersonNode;
+  private readonly llmProviders: LLMProviders;
+  private readonly workspaceQueryService: WorkspaceQueryService;
+
+  constructor(personNode: allDataObjects.PersonNode, llmProviders: LLMProviders, workspaceQueryService: WorkspaceQueryService) {
     this.personNode = personNode;
-    this.LLMProviders = new LLMProviders();
+    this.llmProviders = llmProviders;
+    this.workspaceQueryService = workspaceQueryService;
+  }
+
+  private async getWorkspaceIdFromToken(apiToken: string) {
+    const validatedToken = await this.workspaceQueryService.tokenService.validateTokenString(apiToken);
+    return validatedToken.workspace.id;
   }
   async createCompletion(mostRecentMessageArr: allDataObjects.ChatHistoryItem[],  chatControl:allDataObjects.chatControls,apiToken:string,  isChatEnabled: boolean = true ) {
     try{
@@ -22,7 +32,7 @@ export class OpenAIArxMultiStepClient {
       const newSystemPrompt = await new ToolsForAgents().getSystemPrompt(this.personNode, chatControl,apiToken);
       const updatedMostRecentMessagesBasedOnNewSystemPrompt = await updateMostRecentMessagesBasedOnNewSystemPrompt(mostRecentMessageArr, newSystemPrompt);
       const tools = await new ToolsForAgents().getTools(chatControl);
-      const responseMessage = await this.getHumanLikeResponseMessageFromLLM(updatedMostRecentMessagesBasedOnNewSystemPrompt, tools)
+      const responseMessage = await this.getHumanLikeResponseMessageFromLLM(updatedMostRecentMessagesBasedOnNewSystemPrompt, tools, apiToken)
       console.log('BOT_MESSAGE in  :', "at::", new Date().toString(), ' ::: ' ,JSON.stringify(responseMessage));
       if (responseMessage){
         mostRecentMessageArr.push(responseMessage);
@@ -45,13 +55,17 @@ export class OpenAIArxMultiStepClient {
     }
   }
 
-  async getHumanLikeResponseMessageFromLLM( mostRecentMessageArr: allDataObjects.ChatHistoryItem[], tools: any ): Promise<ChatCompletionMessage | null> {
+  async getHumanLikeResponseMessageFromLLM( mostRecentMessageArr: allDataObjects.ChatHistoryItem[], tools: any, apiToken:string ): Promise<ChatCompletionMessage | null> {
     try {
       console.log("Going to get human like response from llm");
       const MAX_ATTEMPTS = 3;
+
+      const workspaceId = await this.getWorkspaceIdFromToken(apiToken);
+      const { openAIclient } = await this.llmProviders.initializeLLMClients(workspaceId);
+
       for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
         // @ts-ignore
-        const response = await this.LLMProviders.openAIclient.chat.completions.create({ model: modelName, messages: mostRecentMessageArr, tools: tools, tool_choice: 'auto' }); 
+        const response = await openAIclient.chat.completions.create({ model: modelName, messages: mostRecentMessageArr, tools: tools, tool_choice: 'auto' }); 
         const responseMessage = response.choices[0].message;
         console.log(`Response from attempt ${attempt}:`, response.choices[0]);
         if (!responseMessage.content) {
@@ -80,6 +94,9 @@ export class OpenAIArxMultiStepClient {
   async addResponseAndToolCallsToMessageHistory(responseMessage: ChatCompletionMessage, mostRecentMessageArr: allDataObjects.ChatHistoryItem[],  chatControl:allDataObjects.chatControls, apiToken:string,isChatEnabled,) {
     const toolCalls = responseMessage?.tool_calls;
     console.log("We have made a total of ", toolCalls?.length, " tool calls in current chatResponseMessage")
+    const workspaceId = await this.getWorkspaceIdFromToken(apiToken);
+    const { openAIclient } = await this.llmProviders.initializeLLMClients(workspaceId);
+
     if (toolCalls) {
       for (const toolCall of toolCalls) {
         const functionName = toolCall.function.name;
@@ -92,7 +109,7 @@ export class OpenAIArxMultiStepClient {
       }
       const tools = await new ToolsForAgents().getTools(chatControl);
       // @ts-ignore
-      const response = await this.LLMProviders.openAIclient.chat.completions.create({ model: modelName, messages: mostRecentMessageArr, tools: tools, tool_choice: 'auto' });
+      const response = await openAIclient.chat.completions.create({ model: modelName, messages: mostRecentMessageArr, tools: tools, tool_choice: 'auto' });
       console.log('BOT_MESSAGE in runCandidateFacingAgentsAlongWithToolCalls_stage2 :', "at::", new Date().toString(), ' ::: ' ,JSON.stringify(responseMessage));
       mostRecentMessageArr.push(response.choices[0].message);
       let firstStageMessageArr = mostRecentMessageArr.slice(-1)

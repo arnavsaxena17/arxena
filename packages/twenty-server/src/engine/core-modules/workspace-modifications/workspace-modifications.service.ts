@@ -17,7 +17,7 @@ export class WorkspaceQueryService {
     public readonly tokenService: TokenService,
 
     private readonly environmentService: EnvironmentService,
-    private readonly workspaceDataSourceService: WorkspaceDataSourceService,
+    public readonly workspaceDataSourceService: WorkspaceDataSourceService,
   ) {}
 
   async executeQueryAcrossWorkspaces<T>(
