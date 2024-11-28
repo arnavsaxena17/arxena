@@ -20,10 +20,7 @@ export class OpenAIArxMultiStepClient {
     this.workspaceQueryService = workspaceQueryService;
   }
 
-  private async getWorkspaceIdFromToken(apiToken: string) {
-    const validatedToken = await this.workspaceQueryService.tokenService.validateTokenString(apiToken);
-    return validatedToken.workspace.id;
-  }
+
   async createCompletion(mostRecentMessageArr: allDataObjects.ChatHistoryItem[],  chatControl:allDataObjects.chatControls,apiToken:string,  isChatEnabled: boolean = true ) {
     try{
       const lastFewChats = await getMostRecentChatsByPerson(mostRecentMessageArr)
@@ -60,7 +57,7 @@ export class OpenAIArxMultiStepClient {
       console.log("Going to get human like response from llm");
       const MAX_ATTEMPTS = 3;
 
-      const workspaceId = await this.getWorkspaceIdFromToken(apiToken);
+      const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
       const { openAIclient } = await this.llmProviders.initializeLLMClients(workspaceId);
 
       for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
@@ -94,7 +91,7 @@ export class OpenAIArxMultiStepClient {
   async addResponseAndToolCallsToMessageHistory(responseMessage: ChatCompletionMessage, mostRecentMessageArr: allDataObjects.ChatHistoryItem[],  chatControl:allDataObjects.chatControls, apiToken:string,isChatEnabled,) {
     const toolCalls = responseMessage?.tool_calls;
     console.log("We have made a total of ", toolCalls?.length, " tool calls in current chatResponseMessage")
-    const workspaceId = await this.getWorkspaceIdFromToken(apiToken);
+    const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
     const { openAIclient } = await this.llmProviders.initializeLLMClients(workspaceId);
 
     if (toolCalls) {

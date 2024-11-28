@@ -20,6 +20,26 @@ export class WorkspaceQueryService {
     public readonly workspaceDataSourceService: WorkspaceDataSourceService,
   ) {}
 
+  async getWorkspaceIdFromToken(apiToken: string) {
+    const validatedToken = await this.tokenService.validateTokenString(apiToken);
+    return validatedToken.workspace.id;
+  }
+  async getWorkspaceApiKey(workspaceId: string, keyName: string): Promise<string | null> {
+    try {
+      const dataSourceSchema = this.workspaceDataSourceService.getSchemaName(workspaceId);
+      
+      const workspaceSettings = await this.executeRawQuery(
+        `SELECT * FROM ${dataSourceSchema}."workspaceSettings" WHERE "settingKey" = $1 LIMIT 1`,
+        [keyName],
+        workspaceId
+      );
+
+      return workspaceSettings[0]?.settingValue || null;
+    } catch (error) {
+      console.error(`Error fetching ${keyName} for workspace ${workspaceId}:`, error);
+      return null;
+    }
+  }
   async executeQueryAcrossWorkspaces<T>(
     queryCallback: (workspaceId: string, dataSourceSchema: string, transactionManager?: EntityManager) => Promise<T>,
     transactionManager?: EntityManager
