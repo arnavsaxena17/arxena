@@ -14,12 +14,12 @@ export class OpenAIArxMultiStepClient {
     this.personNode = personNode;
     this.LLMProviders = new LLMProviders();
   }
-  async createCompletion(mostRecentMessageArr: allDataObjects.ChatHistoryItem[],  chatControl:allDataObjects.chatControls,  isChatEnabled: boolean = true ) {
+  async createCompletion(mostRecentMessageArr: allDataObjects.ChatHistoryItem[],  chatControl:allDataObjects.chatControls,apiToken:string,  isChatEnabled: boolean = true ) {
     try{
       const lastFewChats = await getMostRecentChatsByPerson(mostRecentMessageArr)
       console.log("Going to run candidate facing agents with tool calls in and most recent message is :",lastFewChats )
 
-      const newSystemPrompt = await new ToolsForAgents().getSystemPrompt(this.personNode, chatControl);
+      const newSystemPrompt = await new ToolsForAgents().getSystemPrompt(this.personNode, chatControl,apiToken);
       const updatedMostRecentMessagesBasedOnNewSystemPrompt = await updateMostRecentMessagesBasedOnNewSystemPrompt(mostRecentMessageArr, newSystemPrompt);
       const tools = await new ToolsForAgents().getTools(chatControl);
       const responseMessage = await this.getHumanLikeResponseMessageFromLLM(updatedMostRecentMessagesBasedOnNewSystemPrompt, tools)
@@ -32,11 +32,11 @@ export class OpenAIArxMultiStepClient {
         return mostRecentMessageArr
       }
       if (responseMessage?.tool_calls && isChatEnabled) {
-        mostRecentMessageArr = await this.addResponseAndToolCallsToMessageHistory(responseMessage, mostRecentMessageArr,chatControl, isChatEnabled);
+        mostRecentMessageArr = await this.addResponseAndToolCallsToMessageHistory(responseMessage, mostRecentMessageArr,chatControl, apiToken,isChatEnabled);
       }
       console.log("Sending message to candidate from addResponseAndToolCallsToMessageHistory_stage1", mostRecentMessageArr.slice(-1)[0].content);
       console.log("Message text in stage 1 received based on which we will decide whether to send message or not::",  mostRecentMessageArr.slice(-1)[0].content)
-      await new WhatsappAPISelector().sendWhatsappMessageToCandidate( mostRecentMessageArr.slice(-1)[0].content || '', this.personNode,mostRecentMessageArr, 'runCandidateFacingAgentsAlongWithToolCalls_stage1', chatControl, isChatEnabled);
+      await new WhatsappAPISelector().sendWhatsappMessageToCandidate( mostRecentMessageArr.slice(-1)[0].content || '', this.personNode,mostRecentMessageArr, 'runCandidateFacingAgentsAlongWithToolCalls_stage1', chatControl,apiToken, isChatEnabled);
       return mostRecentMessageArr;
     }
     catch (error){
@@ -77,7 +77,7 @@ export class OpenAIArxMultiStepClient {
   }
 
  
-  async addResponseAndToolCallsToMessageHistory(responseMessage: ChatCompletionMessage, mostRecentMessageArr: allDataObjects.ChatHistoryItem[],  chatControl:allDataObjects.chatControls, isChatEnabled) {
+  async addResponseAndToolCallsToMessageHistory(responseMessage: ChatCompletionMessage, mostRecentMessageArr: allDataObjects.ChatHistoryItem[],  chatControl:allDataObjects.chatControls, apiToken:string,isChatEnabled,) {
     const toolCalls = responseMessage?.tool_calls;
     console.log("We have made a total of ", toolCalls?.length, " tool calls in current chatResponseMessage")
     if (toolCalls) {
@@ -98,14 +98,14 @@ export class OpenAIArxMultiStepClient {
       let firstStageMessageArr = mostRecentMessageArr.slice(-1)
       if (response?.choices[0]?.message?.tool_calls) {
         console.log('More Tool Calls inside of the addResponseAndToolCallsToMessageHistory. RECURSION Initiated:::: processorType::');
-        mostRecentMessageArr = await this.addResponseAndToolCallsToMessageHistory(response.choices[0].message, mostRecentMessageArr, chatControl, isChatEnabled);
+        mostRecentMessageArr = await this.addResponseAndToolCallsToMessageHistory(response.choices[0].message, mostRecentMessageArr, chatControl,apiToken, isChatEnabled);
       } else {
         console.log('No Tool Calls received this in sub-response of the big response::');  
       }
       let messageArr_stage2 = mostRecentMessageArr.slice(-1)
       if ( messageArr_stage2[0].content != firstStageMessageArr[0].content) {
         console.log("Sending message to candidate from addResponseAndToolCallsToMessageHistory_stage2", messageArr_stage2);
-        await new WhatsappAPISelector().sendWhatsappMessageToCandidate(response?.choices[0]?.message?.content || '', this.personNode,messageArr_stage2,'addResponseAndToolCallsToMessageHistory_stage2', chatControl, isChatEnabled);
+        await new WhatsappAPISelector().sendWhatsappMessageToCandidate(response?.choices[0]?.message?.content || '', this.personNode,messageArr_stage2,'addResponseAndToolCallsToMessageHistory_stage2', chatControl,apiToken, isChatEnabled);
       }
       else{
         console.log("The message we tried to send but sending is is ::", messageArr_stage2[0].content, "processorType")

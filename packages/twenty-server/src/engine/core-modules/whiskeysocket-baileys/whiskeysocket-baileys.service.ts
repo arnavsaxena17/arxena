@@ -30,11 +30,13 @@ import * as allDataObjects from '../arx-chat/services/data-model-objects';
 import { FetchAndUpdateCandidatesChatsWhatsapps } from '../arx-chat/services/candidate-engagement/update-chat';
 import { axiosRequest } from '../arx-chat/utils/arx-chat-agent-utils';
 import { graphqlToFetchWhatsappMessageByCandidateId, graphqlToFetchWhatsappMessageByWhatsappId, graphqlToUpdateWhatsappMessageId } from './graphql-queries';
+import {WorkspaceQueryService} from '../workspace-modifications/workspace-modifications.service';
 
 const nodeCache = new NodeCache();
 
 const agent = new SocksProxyAgent(process.env.SMART_PROXY_URL || '');
 
+const apiToken = process.env.TWENTY_JWT_SECRET || '';
 // WhatsappService(USER).eventsGateway.emitEvent();
 
 @Injectable()
@@ -45,6 +47,7 @@ export class WhatsappService {
   public whatsappLoginQrString: string = '';
 
   constructor(
+    private readonly workspaceQueryService:WorkspaceQueryService,
     private eventsGateway: EventsGateway,
     private sessionId: string,
     private socketClientId: string,
@@ -170,7 +173,7 @@ export class WhatsappService {
                 messageType: 'string',
               };
 
-              const candidateProfileData = await new FetchAndUpdateCandidatesChatsWhatsapps().getCandidateInformation(whatsappIncomingMessage);
+              const candidateProfileData = await new FetchAndUpdateCandidatesChatsWhatsapps().getCandidateInformation(whatsappIncomingMessage, apiToken);
 
               if (msg?.message?.protocolMessage?.type === 0) {
                 await this.handleDeleteForEveryoneMessage(msg, candidateProfileData);
@@ -220,7 +223,7 @@ export class WhatsappService {
               console.log("baileysWhatsappIncomingObj", baileysWhatsappIncomingObj)
               console.log("msg", msg)
               await this.downloadAllMediaFiles(msg, this.sock, msg.key.remoteJid, candidateProfileData);
-              await new IncomingWhatsappMessages().receiveIncomingMessagesFromBaileys(baileysWhatsappIncomingObj);
+              await new IncomingWhatsappMessages(this.workspaceQueryService).receiveIncomingMessagesFromBaileys(baileysWhatsappIncomingObj,apiToken);
               // console.log('baileysWhatsappIncomingObj', baileysWhatsappIncomingObj);
               this.sock?.server?.emit(event, data);
             } else {
@@ -234,7 +237,7 @@ export class WhatsappService {
                 fromName: msg?.pushName,
                 baileysMessageId: msg?.key?.id,
               };
-              await new IncomingWhatsappMessages().receiveIncomingMessagesFromSelfFromBaileys(baileysWhatsappIncomingObj);
+              await new IncomingWhatsappMessages(this.workspaceQueryService).receiveIncomingMessagesFromSelfFromBaileys(baileysWhatsappIncomingObj,apiToken);
             }
           }
         }
@@ -275,7 +278,7 @@ export class WhatsappService {
         JSON.stringify({
           query: graphqlToFetchWhatsappMessageByWhatsappId,
           variables: whatsappMessageVariable,
-        }),
+        }),apiToken
       );
       console.log('Response from fetchWhatsappMessageById:', response?.data);
       return response?.data;
@@ -313,7 +316,7 @@ export class WhatsappService {
         JSON.stringify({
           query: graphqlToFetchWhatsappMessageByCandidateId,
           variables: variables,
-        }),
+        }),apiToken
       );
       const latestMessageObject: any[] = responseAfterFetchingAllMessagesByCandidateId?.data?.data?.whatsappMessages?.edges[0]?.node?.messageObj;
       console.log('latestMessageObject:', latestMessageObject);
@@ -334,7 +337,7 @@ export class WhatsappService {
         JSON.stringify({
           query: graphqlToUpdateWhatsappMessageId,
           variables: dataToUpdate,
-        }),
+        }),apiToken
       );
 
       console.log('Response from updating the message:', response?.data);
@@ -410,7 +413,7 @@ export class WhatsappService {
       file.filePath = path.join(userDirectory, file.fileName);
       console.log(file.filePath);
       await fs.promises.writeFile(file.filePath, file.fileBuffer);
-      const attachmentObj = await new AttachmentProcessingService().uploadAttachmentToTwenty(file.filePath);
+      const attachmentObj = await new AttachmentProcessingService().uploadAttachmentToTwenty(file.filePath,apiToken);
 
       const dataToUploadInAttachmentTable = {
         input: {
@@ -421,7 +424,7 @@ export class WhatsappService {
           candidateId: candidateProfileData.id,
         },
       };
-      await new AttachmentProcessingService().createOneAttachmentFromFilePath(dataToUploadInAttachmentTable);
+      await new AttachmentProcessingService().createOneAttachmentFromFilePath(dataToUploadInAttachmentTable,apiToken);
       return file;
     } catch (error) {
       throw new Error(`Error handling file upload: ${error}`);

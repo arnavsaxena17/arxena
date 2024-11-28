@@ -152,17 +152,28 @@ export class TokenService {
     };
     const secret = this.environmentService.get('ACCESS_TOKEN_SECRET');
     let expiresIn: string | number;
-
+    console.log("expiresAt when called:", expiresAt)
     if (expiresAt) {
-      expiresIn = Math.floor((new Date(expiresAt).getTime() - new Date().getTime()) / 1000);
+      // expiresIn = Math.floor((new Date(expiresAt).getTime() - new Date().getTime()) / 1000);
+      expiresIn = Math.floor((new Date(expiresAt).getTime()) / 1000);
     } else {
       expiresIn = this.environmentService.get('API_TOKEN_EXPIRES_IN');
     }
+    // const token = this.jwtService.sign(jwtPayload, {
+    //   secret,
+    //   expiresIn,
+    //   jwtid: apiKeyId,
+    // });
+    console.log("jwtPayload::", jwtPayload)
+    console.log("secret::", secret)
+    console.log("expiresIn::", expiresIn)
+    console.log("apiKeyId::", apiKeyId)
     const token = this.jwtService.sign(jwtPayload, {
       secret,
       expiresIn,
       jwtid: apiKeyId,
     });
+    console.log("token generated::", token)
 
     return { token };
   }

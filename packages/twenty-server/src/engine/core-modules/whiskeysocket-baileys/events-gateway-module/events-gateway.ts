@@ -6,6 +6,11 @@ import { WhatsappService } from '../whiskeysocket-baileys.service';
 import { axiosRequest } from '../../arx-chat/utils/arx-chat-agent-utils';
 import { FindManyWorkspaceMembers } from '../graphql-queries';
 import { MessageDto } from '../types/baileys-types';
+import { Workspace } from '../../workspace/workspace.entity';
+import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
+
+const apiToken = process.env.TWENTY_JWT_SECRET || '';
+
 
 @WebSocketGateway({
   cors: {
@@ -13,14 +18,16 @@ import { MessageDto } from '../types/baileys-types';
   },
   path: process.env.SOCKET_PATH,
 })
-export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisconnect<Socket> {
   @WebSocketServer() server: Server;
 
   private _isWhatsappLoggedIn: boolean;
   private _workspaceMemberId: string;
   private whatsappServices: Map<string, WhatsappService> = new Map();
+  private workspaceQueryService: WorkspaceQueryService;
 
-  constructor() {
+  constructor(workspaceQueryService: WorkspaceQueryService) {
+    this.workspaceQueryService = workspaceQueryService;
     this.loadSessionIds();
   }
 
@@ -56,7 +63,8 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
           JSON.stringify({
             query: FindManyWorkspaceMembers,
             variables: graphqlVariableToFilterWorkspaceMember,
-          }),
+          }),apiToken
+
         );
 
         console.log('response:', response?.data);
@@ -68,7 +76,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       const sessionId = workspaceMemberId;
 
       if (!this.whatsappServices.has(sessionId)) {
-        const whatsappService = new WhatsappService(this, sessionId, socketClientId);
+        const whatsappService = new WhatsappService(this.workspaceQueryService, this, sessionId, socketClientId);
         this.whatsappServices.set(sessionId, whatsappService);
         this.saveSessionId(sessionId);
       } else {
@@ -116,7 +124,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       const sessionIds = JSON.parse(fs.readFileSync(filePath, 'utf8'));
       console.log("Loaded sessionIds:", sessionIds);
       sessionIds.forEach((sessionId: string) => {
-        const whatsappService = new WhatsappService(this, sessionId, '');
+        const whatsappService = new WhatsappService(this.workspaceQueryService, this, sessionId, '');
         this.whatsappServices.set(sessionId, whatsappService);
       });
     }

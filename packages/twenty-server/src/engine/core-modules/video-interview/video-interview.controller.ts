@@ -20,13 +20,13 @@ interface GetInterviewDetailsResponse {
   questionsAttachments: { id: string; fullPath: string; name: string }[];
 }
 
-export async function axiosRequest(data: string) {
+export async function axiosRequest(data: string, apiToken: string) {
   // console.log("Sending a post request to the graphql server:: with data", data);
   const response = await axios.request({
     method: 'post',
     url: process.env.GRAPHQL_URL,
     headers: {
-      authorization: 'Bearer ' + process.env.TWENTY_JWT_SECRET,
+      authorization: 'Bearer ' + apiToken,
       'content-type': 'application/json',
     },
     data: data,
@@ -97,14 +97,16 @@ export class VideoInterviewController {
     ),
   )
 
-  async submitResponse(@Req() req, @UploadedFiles() files: { video?: Express.Multer.File[]; audio?: Express.Multer.File[] }, @Body() responseData: any) {
+  async submitResponse(@Req() req, @UploadedFiles() files: { video?: Express.Multer.File[]; audio?: Express.Multer.File[] }) {
+    const apiToken = req.headers.authorization.split(' ')[1]; // Assuming Bearer token
+
     console.log("Received request data:: will start download")
     try {
       console.log("Step 1: Starting submission process");
-      console.log("Response data:", responseData);
+      console.log("Response data:", req.body.responseData);
       // const { workspace } = await this.tokenService.validateToken(req);
       // console.log("REceived response data::", workspace)
-      console.log("REceived response data::", responseData)
+      console.log("REceived response data::", req.body.responseData)
       // console.log('Received files:', JSON.stringify(files, null, 2));
       // console.log('Received response data:', JSON.stringify(responseData, null, 2));
       const interviewData = JSON.parse(req?.body?.interviewData);
@@ -132,11 +134,11 @@ export class VideoInterviewController {
         videoFilePath = await this.convertToWebM(videoFilePath);
       }
 
-      const videoAttachmentObj = await new AttachmentProcessingService().uploadAttachmentToTwenty(videoFilePath);
+      const videoAttachmentObj = await new AttachmentProcessingService().uploadAttachmentToTwenty(videoFilePath,apiToken);
       // Upload audio file to Twenty
       const audioFilePath = `uploads/${audioFile.originalname}`;
 
-      const audioAttachmentObj = await new AttachmentProcessingService().uploadAttachmentToTwenty(audioFilePath);
+      const audioAttachmentObj = await new AttachmentProcessingService().uploadAttachmentToTwenty(audioFilePath,apiToken);
       console.log('Audio attachment upload response:', audioAttachmentObj);
       console.log('interviewData::', interviewData);
       // Prepare data for attachment table
@@ -150,7 +152,7 @@ export class VideoInterviewController {
         },
       };
       console.log('This is the video. Data to Uplaod in Attachment Table::', videoDataToUploadInAttachmentTable);
-      const videoAttachment = await new AttachmentProcessingService().createOneAttachmentFromFilePath(videoDataToUploadInAttachmentTable);
+      const videoAttachment = await new AttachmentProcessingService().createOneAttachmentFromFilePath(videoDataToUploadInAttachmentTable,apiToken);
       console.log("videoAttachment:"  , videoAttachment)
 
       const audioDataToUploadInAttachmentTable = {
@@ -163,7 +165,7 @@ export class VideoInterviewController {
         },
       };
       console.log('This is the audio. Data to Uplaod in Attachment Table::', audioDataToUploadInAttachmentTable);
-      const audioAttachment = await new AttachmentProcessingService().createOneAttachmentFromFilePath(audioDataToUploadInAttachmentTable);
+      const audioAttachment = await new AttachmentProcessingService().createOneAttachmentFromFilePath(audioDataToUploadInAttachmentTable,apiToken);
       console.log("audioAttachment:"  , audioAttachment)
       // console.log('Audio file:', JSON.stringify(audioFile, null, 2));
       // console.log('Video file:', JSON.stringify(videoFile, null, 2));
@@ -191,8 +193,8 @@ export class VideoInterviewController {
       `;
 
       console.log("This is the responseData:", interviewData?.name)
-      console.log("This is the responseData:", responseData?.aIInterviewQuestionId)
-      console.log("This is the timeLimitAdherence:", responseData?.timeLimitAdherence)
+      console.log("This is the responseData:", req.body.responseData?.aIInterviewQuestionId)
+      console.log("This is the timeLimitAdherence:", req.body.responseData?.timeLimitAdherence)
 
       const createResponseVariables = {
         input: {
@@ -201,7 +203,7 @@ export class VideoInterviewController {
           aIInterviewQuestionId: questionId,
           transcript: transcript,
           completedResponse: true,
-          timeLimitAdherence: responseData?.timeLimitAdherence,
+          timeLimitAdherence: req.body.responseData?.timeLimitAdherence,
         },
       };
       const graphqlQueryObjForCreationOfResponse = JSON.stringify({
@@ -210,7 +212,7 @@ export class VideoInterviewController {
       });
 
       console.log('Sending GraphQL mutation for response creation::', graphqlQueryObjForCreationOfResponse);
-      const responseResult = (await axiosRequest(graphqlQueryObjForCreationOfResponse)).data;
+      const responseResult = (await axiosRequest(graphqlQueryObjForCreationOfResponse,apiToken)).data;
       console.log('Response creation result:', JSON.stringify(responseResult, null, 2));
       console.log("ResponseResult data:", responseResult.data)
       console.log("ResponseResult ID:", responseResult.data.createResponse.id)
@@ -228,7 +230,7 @@ export class VideoInterviewController {
         },
       };
       console.log('This is the video. Data to Uplaod in Attachment Table::', videoDataToUploadInAttachmentResponseTable);
-      const videoAttachmentResponseUpload = await new AttachmentProcessingService().createOneAttachmentFromFilePath(videoDataToUploadInAttachmentResponseTable);
+      const videoAttachmentResponseUpload = await new AttachmentProcessingService().createOneAttachmentFromFilePath(videoDataToUploadInAttachmentResponseTable,apiToken);
       console.log("videoAttachmentResponseUpload:"  , videoAttachmentResponseUpload)
 
       const audioDataToUploadInAttachmentResponseTable = {
@@ -241,7 +243,7 @@ export class VideoInterviewController {
         },
       };
       console.log('This is the audio. Data to Uplaod in Attachment Table::', audioDataToUploadInAttachmentTable);
-      const audioAttachmentResponseUpload = await new AttachmentProcessingService().createOneAttachmentFromFilePath(audioDataToUploadInAttachmentResponseTable);
+      const audioAttachmentResponseUpload = await new AttachmentProcessingService().createOneAttachmentFromFilePath(audioDataToUploadInAttachmentResponseTable,apiToken);
       console.log("audioAttachmentResponseUpload:"  , audioAttachmentResponseUpload)
 
 
@@ -264,7 +266,7 @@ export class VideoInterviewController {
         idToUpdate: interviewData.id.replace("/video-interview/", ""),
         input: {
           interviewStarted: true,
-          interviewCompleted: responseData.isLastQuestion,
+          interviewCompleted: req.body.responseData.isLastQuestion,
         },
       };
       const graphqlQueryObjForUpdationForStatus = JSON.stringify({
@@ -274,7 +276,7 @@ export class VideoInterviewController {
       console.log('graphqlQueryObjForUpdationForStatus::', graphqlQueryObjForUpdationForStatus);
 
       // console.log('Sending GraphQL mutation for status update');
-      const statusResult = (await axiosRequest(graphqlQueryObjForUpdationForStatus)).data;
+      const statusResult = (await axiosRequest(graphqlQueryObjForUpdationForStatus,apiToken)).data;
       // console.log('Status update result:', JSON.stringify(statusResult, null, 2));
 
       console.log('Preparing response');
@@ -320,6 +322,8 @@ export class VideoInterviewController {
 
   @Post('get-questions')
   async getQuestions(@Req() req, @Body() interviewData: { aIInterviewId: string }) {
+    const apiToken = req.headers.authorization.split(' ')[1]; // Assuming Bearer token
+
     const token = req.interviewId;
     // this.graphqlClient.setHeader('Authorization', `Bearer ${token}`);
 
@@ -355,12 +359,14 @@ export class VideoInterviewController {
       variables: questionsVariables,
     });
 
-    const result = (await axiosRequest(graphqlQueryObjForaIInterviewQuestions)).data as { aIInterviewQuestions: { edges: { node: { id: string; name: string; questionValue: string; timeLimit: number; position: number; aIInterviewId: string } }[] } };
+    const result = (await axiosRequest(graphqlQueryObjForaIInterviewQuestions,apiToken)).data as { aIInterviewQuestions: { edges: { node: { id: string; name: string; questionValue: string; timeLimit: number; position: number; aIInterviewId: string } }[] } };
     return result.aIInterviewQuestions.edges.map(edge => edge.node);
   }
 
   @Post('update-feedback')
   async updateFeedback(@Req() req, @Body() feedbackData) {
+    const apiToken = req.headers.authorization.split(' ')[1]; // Assuming Bearer token
+
     const updateStatusMutation = `mutation UpdateOneAIInterviewStatus($idToUpdate: ID!, $input: AIInterviewStatusUpdateInput!) {
       updateAIInterviewStatus(id: $idToUpdate, data: $input) {
         id
@@ -386,7 +392,7 @@ export class VideoInterviewController {
     console.log("This is the graphqlQueryObjForUpdationForStatus::", graphqlQueryObjForUpdationForStatus);
   
     try {
-      const response = await axiosRequest(graphqlQueryObjForUpdationForStatus);
+      const response = await axiosRequest(graphqlQueryObjForUpdationForStatus,apiToken);
       console.log('Feedback updated successfully:', response.data);
       // Just send a simple response object instead of the full response
       return {
@@ -405,6 +411,8 @@ export class VideoInterviewController {
   
   @Post('get-interview-details')
   async getInterViewDetails(@Req() req: any): Promise<GetInterviewDetailsResponse> {
+    const apiToken = req.headers.authorization.split(' ')[1]; // Assuming Bearer token
+
     console.log("Got video interview hit")
     if (req.method === 'POST') {
       const { interviewId } = req.body;
@@ -517,7 +525,7 @@ export class VideoInterviewController {
         variables: InterviewStatusesVariables,
       });
       try {
-        const response = await axiosRequest(graphqlQueryObjForaIInterviewQuestions);
+        const response = await axiosRequest(graphqlQueryObjForaIInterviewQuestions,apiToken);
         console.log("REhis response:", response?.data?.data)
         responseFromInterviewRequests =  response?.data;
       } catch (error) {
@@ -588,8 +596,8 @@ export class VideoInterviewController {
   
       console.log("Going to get video interview introduction attachment data");
       const [responseForVideoInterviewIntroductionAttachment, ...responseForVideoInterviewQuestionAttachments] = await Promise.all([
-        axiosRequest(videoInterviewIntroductionAttachmentDataQuery),
-        ...questionsAttachmentDataQueries.map(query => axiosRequest(query))
+        axiosRequest(videoInterviewIntroductionAttachmentDataQuery,apiToken),
+        ...questionsAttachmentDataQueries.map(query => axiosRequest(query,apiToken))
       ]);
 
       // console.log("This i shte responseForVideoInterviewQuestionAttachments ", responseForVideoInterviewQuestionAttachments[0].data.data.attachments.edges);

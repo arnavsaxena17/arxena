@@ -24,6 +24,7 @@ import { MailerModule } from './gmail-sender/gmail-sender.module';
 // import { BaileysModule } from './baileys/baileys.module';
 // import { WhatsappModule } from './whiskeysocket-baileys/whiskeysocket-baileys.module';
 import { CandidateSourcingModule } from './candidate-sourcing/candidate-sourcing.module';
+import { WorkspaceModificationsModule } from './workspace-modifications/workspace-modifications.module';
 // import { EventsGateway } from './whiskeysocket-baileys/events-gateway-module/events-gateway';
 
 @Module({
@@ -47,6 +48,7 @@ import { CandidateSourcingModule } from './candidate-sourcing/candidate-sourcing
     UserModule,
     WorkspaceModule,
     VideoInterviewModule,
+    WorkspaceModificationsModule,
     PostgresCredentialsModule,
     // WhatsappModule,
     CandidateSourcingModule,
@@ -63,6 +65,7 @@ import { CandidateSourcingModule } from './candidate-sourcing/candidate-sourcing
     TimelineMessagingModule,
     TimelineCalendarEventModule,
     UserModule,
+    WorkspaceModificationsModule,
     WorkspaceModule,
     VideoInterviewModule,
     // WhatsappModule,

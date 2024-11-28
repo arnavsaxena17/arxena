@@ -1,4 +1,4 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
 import { CreateManyCandidates, CreateManyPeople, graphQltoStartChat, CreateOneJob, graphQltoStopChat, createOneQuestion, graphqlToFindManyJobByArxenaSiteId } from './graphql-queries';
 import { FetchAndUpdateCandidatesChatsWhatsapps } from '../arx-chat/services/candidate-engagement/update-chat';
 import * as allDataObjects from '../arx-chat/services/data-model-objects';
@@ -8,9 +8,11 @@ import { axiosRequest } from './utils/utils';
 import { processArxCandidate } from './utils/data-transformation-utility';
 import { ArxenaCandidateNode, ArxenaPersonNode, Jobs, UserProfile } from './types/candidate-sourcing-types';
 import axios from 'axios';
+import { ApiKeyToken } from '../auth/dto/token.entity';
+import { JwtAuthGuard } from 'src/engine/guards/jwt.auth.guard';
 @Controller('candidate-sourcing')
 export class CandidateSourcingController {
-  async getJobDetails(jobId: string): Promise<Jobs> {
+  async getJobDetails(jobId: string,apiToken:string): Promise<Jobs> {
     // hack to check for job name being sent instead of job ID from arxena-site.
     function isValidMongoDBId(str: string) {
       // Check if string exists and is exactly 24 characters
@@ -37,7 +39,7 @@ export class CandidateSourcingController {
           orderBy: [{ position: 'AscNullsFirst' }],
         },
       });
-      const response = await axiosRequest(graphlQlQuery);
+      const response = await axiosRequest(graphlQlQuery,apiToken);
       console.log('Response status from get job', response.status);
       return response.data?.data?.jobs?.edges[0]?.node;
     } else if (isValidMongoDBId(jobId)) {
@@ -62,12 +64,12 @@ export class CandidateSourcingController {
       });
     }
 
-    const response = await axiosRequest(graphlQlQuery);
+    const response = await axiosRequest(graphlQlQuery,apiToken);
     console.log('Response status from get job', response.status);
     return response.data?.data?.jobs?.edges[0]?.node;
   }
 
-  async createPeople(manyPersonObjects: ArxenaPersonNode[]): Promise<any> {
+  async createPeople(manyPersonObjects: ArxenaPersonNode[],apiToken:string): Promise<any> {
     console.log('Creating people, manyPersonObjects:', manyPersonObjects.length);
     const graphqlVariablesForPerson = { data: manyPersonObjects };
     const graphqlQueryObjForPerson = JSON.stringify({
@@ -75,7 +77,7 @@ export class CandidateSourcingController {
       variables: graphqlVariablesForPerson,
     });
     try {
-      const responseForPerson = await axiosRequest(graphqlQueryObjForPerson);
+      const responseForPerson = await axiosRequest(graphqlQueryObjForPerson,apiToken);
       console.log('Response from graphqlQueryObjForPerson:', responseForPerson.status);
       console.log('Response from graphqlQueryObjForPerson:', responseForPerson.status);
       return responseForPerson;
@@ -85,7 +87,7 @@ export class CandidateSourcingController {
     }
   }
 
-  async createCandidates(manyCandidateObjects: ArxenaCandidateNode[]): Promise<any> {
+  async createCandidates(manyCandidateObjects: ArxenaCandidateNode[],apiToken:string): Promise<any> {
     console.log('Creating candidates- manyCandidateObjects length:', manyCandidateObjects?.length);
     console.log('Creating candidates- manyCandidateObjects manycandidateobjects:', manyCandidateObjects);
     console.log(
@@ -98,7 +100,7 @@ export class CandidateSourcingController {
       variables: graphqlVariablesForCandidate,
     });
     try {
-      const responseForCandidate = await axiosRequest(graphqlQueryObjForCandidate);
+      const responseForCandidate = await axiosRequest(graphqlQueryObjForCandidate,apiToken);
       console.log('Response from creating candidates', responseForCandidate?.data);
       return responseForCandidate;
     } catch (error) {
@@ -107,7 +109,7 @@ export class CandidateSourcingController {
     }
   }
 
-  async batchGetPersonDetailsByPhoneNumbers(phoneNumbers: string[]): Promise<Map<string, allDataObjects.PersonNode>> {
+  async batchGetPersonDetailsByPhoneNumbers(phoneNumbers: string[],apiToken:string): Promise<Map<string, allDataObjects.PersonNode>> {
     const graphqlVariables = {
       filter: { phone: { in: phoneNumbers } },
       limit: 30, // Adjust based on your API's limits
@@ -118,7 +120,7 @@ export class CandidateSourcingController {
     });
 
     try {
-      const response = await axiosRequest(graphqlQuery);
+      const response = await axiosRequest(graphqlQuery,apiToken);
       const people = response.data?.data?.people?.edges || [];
       const personMap: Map<string, allDataObjects.PersonNode> = new Map(people.map((edge: any) => [edge.node.phone, edge.node]));
       return personMap;
@@ -127,7 +129,7 @@ export class CandidateSourcingController {
       throw error;
     }
   }
-  async batchGetPersonDetailsByStringKeys(uniqueStringKeys: string[]): Promise<Map<string, allDataObjects.PersonNode>> {
+  async batchGetPersonDetailsByStringKeys(uniqueStringKeys: string[],apiToken:string): Promise<Map<string, allDataObjects.PersonNode>> {
     const graphqlVariables = {
       filter: { uniqueStringKey: { in: uniqueStringKeys } },
       limit: 30, // Adjust based on your API's limits
@@ -139,7 +141,7 @@ export class CandidateSourcingController {
     });
 
     try {
-      const response = await axiosRequest(graphqlQuery);
+      const response = await axiosRequest(graphqlQuery,apiToken);
       const people = response.data?.data?.people?.edges || [];
       console.log('number of people:', response.data?.data?.people?.edges.length);
       console.log('Sampel person:', people[0]);
@@ -153,10 +155,11 @@ export class CandidateSourcingController {
   }
 
   @Post('process-candidate-chats')
-  async processCandidateChats(): Promise<object> {
+  async processCandidateChats(@Req() request: any): Promise<object> {
     try {
+      const apiToken = request.headers.authorization.split(' ')[1]; // Assuming Bearer token
       console.log("going to process chats")
-      await new FetchAndUpdateCandidatesChatsWhatsapps().processCandidatesChatsGetStatuses();
+      await new FetchAndUpdateCandidatesChatsWhatsapps().processCandidatesChatsGetStatuses( apiToken);
       return { status: 'Success' };
     } catch (err) {
       console.error('Error in process:', err);
@@ -166,15 +169,16 @@ export class CandidateSourcingController {
 
   @Post('refresh-chat-status-by-candidates')
 
-  async refreshChats(@Body() body: any): Promise<object>  {
+  async refreshChats(@Req() request: any): Promise<object>  {
+    const apiToken = request.headers.authorization.split(' ')[1]; // Assuming Bearer token
 
     try {
       // const { candidateIds } = body;
-      const candidateIds= body.candidateIds;
-      const currentWorkspaceMemberId = body.currentWorkspaceMemberId;
+      const candidateIds= request.body.candidateIds;
+      const currentWorkspaceMemberId = request.body.currentWorkspaceMemberId;
 
       console.log("going to refresh chats")
-      await new FetchAndUpdateCandidatesChatsWhatsapps().processCandidatesChatsGetStatuses(candidateIds, currentWorkspaceMemberId);
+      await new FetchAndUpdateCandidatesChatsWhatsapps().processCandidatesChatsGetStatuses(candidateIds, currentWorkspaceMemberId,apiToken);
       return { status: 'Success' };
     } catch (err) {
       console.error('Error in refresh chats:', err);
@@ -182,7 +186,8 @@ export class CandidateSourcingController {
     }
   }
 
-  async processProfilesWithRateLimiting(data: UserProfile[], jobObject: Jobs): Promise<{ manyPersonObjects: ArxenaPersonNode[];  manyCandidateObjects: ArxenaCandidateNode[]; allPersonObjects: allDataObjects.PersonNode[] }> {
+  async processProfilesWithRateLimiting(data: UserProfile[], jobObject: Jobs, apiToken:string): Promise<{ manyPersonObjects: ArxenaPersonNode[];  manyCandidateObjects: ArxenaCandidateNode[]; allPersonObjects: allDataObjects.PersonNode[] }> {
+
     console.log('Total number of profiles received:', data.length);
     const manyPersonObjects: ArxenaPersonNode[] = [];
     const allPersonObjects: allDataObjects.PersonNode[] = [];
@@ -196,7 +201,7 @@ export class CandidateSourcingController {
       // const personDetailsMap = await this.batchGetPersonDetailsByPhoneNumbers(phoneNumbers);
       const uniqueStringKeys = batch.map(profile => profile?.unique_key_string).filter(Boolean);
       console.log('Total number of unique string keys in batch:%s', uniqueStringKeys.length);
-      const personDetailsMap = await this.batchGetPersonDetailsByStringKeys(uniqueStringKeys);
+      const personDetailsMap = await this.batchGetPersonDetailsByStringKeys(uniqueStringKeys,apiToken);
       console.log('personDetailsMap:', personDetailsMap);
 
       for (const profile of batch) {
@@ -231,16 +236,17 @@ export class CandidateSourcingController {
   }
 
   @Post('create-job-in-arxena')
-  async createJobInArxena(@Body() body: any): Promise<any> {
+  async createJobInArxena(@Req() req): Promise<any> {
     console.log('going to create job in arxena');
     console.log('going to createprocess.env.ENV_NODE', process.env.ENV_NODE);
+    const apiToken = req.headers.authorization.split(' ')[1]; // Assuming Bearer token
 
     try {
       const url = process.env.ENV_NODE === 'production' ? 'https://arxena.com/create_new_job' : 'http://127.0.0.1:5050/create_new_job';
       console.log('url:', url);
       const response = await axios.post(
         url,
-        { job_name: body.job_name },
+        { job_name: req.body.job_name },
         {
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.ARXENA_API_KEY}` },
         },
@@ -254,17 +260,19 @@ export class CandidateSourcingController {
   }
 
   @Post('post-candidates')
-  async sourceCandidates(@Body() body: any) {
+  async sourceCandidates(@Req() req) {
     console.log('Called post candidates API');
-    const jobId = body?.job_id;
+    const apiToken = req.headers.authorization.split(' ')[1]; // Assuming Bearer token
+
+    const jobId = req.body?.job_id;
     console.log('arxenaJobId:', jobId);
-    const data: UserProfile[] = body?.data;
+    const data: UserProfile[] = req.body?.data;
     console.log('Going to add and process candidate profiles');
     console.log('Going to add and arxena job Id', jobId);
     try {
-      const jobObject = await this.getJobDetails(jobId);
+      const jobObject = await this.getJobDetails(jobId, apiToken);
       // console.log('jobObject that is sent by arxena-site:', jobObject);
-      let { manyPersonObjects, manyCandidateObjects, allPersonObjects } = await this.processProfilesWithRateLimiting(data, jobObject);
+      let { manyPersonObjects, manyCandidateObjects, allPersonObjects } = await this.processProfilesWithRateLimiting(data, jobObject,apiToken);
       console.log('Number of person objects created:', manyPersonObjects?.length);
       console.log('Number of allPersonObjects created:', allPersonObjects?.length);
       console.log('Number of person candidates created:', manyPersonObjects?.length);
@@ -279,7 +287,7 @@ export class CandidateSourcingController {
       manyPersonObjects = Array.from(uniquePersonMap.values());
 
       if (manyPersonObjects.length > 0) {
-        responseForPerson = await this.createPeople(manyPersonObjects);
+        responseForPerson = await this.createPeople(manyPersonObjects, apiToken);
         const arrayOfPersonIds = responseForPerson?.data?.data?.createPeople?.map((person: any) => person.id);
         console.log('Number of person Ids Created:', arrayOfPersonIds.length);
       }
@@ -304,7 +312,7 @@ export class CandidateSourcingController {
 
       if (manyCandidateObjects.length > 0) {
         console.log('Creating manyCandidateObjects:', manyCandidateObjects.length);
-        const responseForCandidate = await this.createCandidates(manyCandidateObjects);
+        const responseForCandidate = await this.createCandidates(manyCandidateObjects, apiToken);
       }
       return { status: 'success' };
     } catch (error) {
@@ -313,13 +321,21 @@ export class CandidateSourcingController {
     }
   }
 
-  @Post('get-job-details')
-  async getJobDetailsByArxenaId(arxenaJobId: string): Promise<Jobs> {
-    return this.getJobDetails(arxenaJobId);
+  // @Post('get-job-details')
+  async getJobDetailsByArxenaId(arxenaJobId: string, apiToken:string): Promise<Jobs> {
+    
+    return this.getJobDetails(arxenaJobId,apiToken);
   }
 
   @Post('get-all-jobs')
-  async getJobs(@Body() body: any) {
+  @UseGuards(JwtAuthGuard)
+
+  async getJobs(@Req() request: any) {
+    console.log("Going to get all jobs")
+
+    const apiToken = request?.headers?.authorization?.split(' ')[1]; // Assuming Bearer token
+    console.log("apitoken:",apiToken)
+    console.log('Getting all jobs');
     // first create companies
     console.log('Getting all jobs');
     const responseFromGetAllJobs = await axiosRequest(
@@ -328,8 +344,8 @@ export class CandidateSourcingController {
         variables: {
           limit: 30,
           orderBy: [{ position: 'AscNullsFirst' }],
-        },
-      }),
+        }
+      }),apiToken
     );
     // console.log('Response status from get job', responseFromGetAllJobs.status);
     // console.log('Response data from get job', responseFromGetAllJobs.data);
@@ -340,14 +356,18 @@ export class CandidateSourcingController {
   }
 
   @Post('post-job')
-  async postJob(@Body() body: any) {
+  @UseGuards(JwtAuthGuard)
+
+  async postJob(@Req() request: any) {
     let uuid;
     try {
-      const data = body;
-      console.log(body);
+      const apiToken = request.headers.authorization.split(' ')[1]; // Assuming Bearer token
+      console.log("apiToken:")
+      const data = request.body;
+      console.log(request.body);
       const graphqlVariables = { input: { name: data?.job_name, arxenaSiteId: data?.job_id, isActive: true, jobLocation: data?.jobLocation, jobCode: data?.jobCode, recruiterId: data?.recruiterId, companiesId: data?.companiesId } };
       const graphqlQueryObj = JSON.stringify({ query: CreateOneJob, variables: graphqlVariables });
-      const responseNew = await axiosRequest(graphqlQueryObj);
+      const responseNew = await axiosRequest(graphqlQueryObj, apiToken);
       console.log('Response from create job', responseNew.data);
       uuid = responseNew.data.data.createJob.id;
       return { status: 'success', job_uuid: uuid };
@@ -358,12 +378,13 @@ export class CandidateSourcingController {
   }
 
   @Post('add-questions')
-  async addQuestions(@Body() body: any) {
+  async addQuestions(@Req() request: any) {
     try {
       // console.log(body);
-      const data = body;
+      const apiToken = request.headers.authorization.split(' ')[1]; // Assuming Bearer token
+      const data = request.body;
       const arxenaJobId = data?.job_id;
-      const jobObject = await this.getJobDetails(arxenaJobId);
+      const jobObject = await this.getJobDetails(arxenaJobId,apiToken);
       // console.log("getJobDetails:", jobObject);
       const questions = data?.questions || [];
       console.log('Number Questions:', questions?.length);
@@ -371,7 +392,7 @@ export class CandidateSourcingController {
         const graphqlVariables = { input: { name: question, jobsId: jobObject?.id } };
         const graphqlQueryObj = JSON.stringify({ query: createOneQuestion, variables: graphqlVariables });
         // console.log("graphqlQueryObj:", graphqlQueryObj);
-        const response = await axiosRequest(graphqlQueryObj);
+        const response = await axiosRequest(graphqlQueryObj,apiToken);
         // console.log('Response from adding question:', response.data);
       }
       return { status: 'success' };
@@ -382,9 +403,10 @@ export class CandidateSourcingController {
   }
 
   @Post('start-chat')
-  async startChat(@Body() body: any) {
+  async startChat(@Req() request: any) {
+    const apiToken = request.headers.authorization.split(' ')[1]; // Assuming Bearer token
     const graphqlVariables = {
-      idToUpdate: body.candidateId,
+      idToUpdate: request.body.candidateId,
       input: {
         startChat: true,
       },
@@ -394,14 +416,16 @@ export class CandidateSourcingController {
       variables: graphqlVariables,
     });
 
-    const response = await axiosRequest(graphqlQueryObj);
+    const response = await axiosRequest(graphqlQueryObj,apiToken);
     console.log('Response from create startChat', response.data);
   }
 
   @Post('stop-chat')
-  async stopChat(@Body() body: any) {
+  async stopChat(@Req() request: any) {
+    const apiToken = request.headers.authorization.split(' ')[1]; // Assuming Bearer token
+
     const graphqlVariables = {
-      idToUpdate: body.candidateId,
+      idToUpdate: request.body.candidateId,
       input: {
         stopChat: true,
       },
@@ -411,14 +435,16 @@ export class CandidateSourcingController {
       variables: graphqlVariables,
     });
 
-    const response = await axiosRequest(graphqlQueryObj);
+    const response = await axiosRequest(graphqlQueryObj, apiToken);
     console.log('Response from create startChat', response.data);
   }
 
   @Post('fetch-candidate-by-phone-number-start-chat')
-  async fetchCandidateByPhoneNumber(@Body() body: any) {
-    console.log('called fetchCandidateByPhoneNumber for phone:', body.phoneNumber);
-    const personObj: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(body.phoneNumber);
+  async fetchCandidateByPhoneNumber(@Req() request: any) {
+    const apiToken = request.headers.authorization.split(' ')[1]; // Assuming Bearer token
+
+    console.log('called fetchCandidateByPhoneNumber for phone:', request.body.phoneNumber);
+    const personObj: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(request.body.phoneNumber,apiToken);
     const candidateId = personObj.candidates?.edges[0]?.node?.id;
     const graphqlVariables = {
       idToUpdate: candidateId,
@@ -431,7 +457,7 @@ export class CandidateSourcingController {
       variables: graphqlVariables,
     });
 
-    const response = await axiosRequest(graphqlQueryObj);
+    const response = await axiosRequest(graphqlQueryObj, apiToken);
     console.log('Response from create startChat::', response.data);
     return response.data;
   }

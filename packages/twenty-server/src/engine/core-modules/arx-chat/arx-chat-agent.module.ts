@@ -12,11 +12,11 @@ import { DataSourceEntity } from 'src/engine/metadata-modules/data-source/data-s
 import { FeatureFlagEntity } from '../feature-flag/feature-flag.entity';
 import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
 import { DataSourceModule } from 'src/engine/metadata-modules/data-source/data-source.module'; // Add this import
-
+import {WorkspaceModificationsModule} from 'src/engine/core-modules/workspace-modifications/workspace-modifications.module'; // Add this import
 
 @Module({
   
-  imports: [AuthModule,  GoogleCalendarModule,     DataSourceModule, TypeORMModule, TypeOrmModule.forFeature([Workspace, FeatureFlagEntity], 'core'), TypeOrmModule.forFeature([DataSourceEntity], 'metadata') ],
+  imports: [AuthModule,WorkspaceModificationsModule,  GoogleCalendarModule,     DataSourceModule, TypeORMModule, TypeOrmModule.forFeature([Workspace, FeatureFlagEntity], 'core'), TypeOrmModule.forFeature([DataSourceEntity], 'metadata') ],
   controllers: [ArxChatEndpoint, UpdateChatEndpoint, WhatsappWebhook, WhatsappControllers,WhatsappTestAPI,TwilioControllers, GoogleControllers],
   providers: [TasksService, WorkspaceDataSourceService],
   exports: [],

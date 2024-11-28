@@ -98,7 +98,7 @@ export class ToolsForAgents {
   //   return STAGE_SYSTEM_PROMPT;
   // }
 
-  async getQuestionsToAsk(personNode: allDataObjects.PersonNode) {
+  async getQuestionsToAsk(personNode: allDataObjects.PersonNode,  apiToken:string) {
     // const questions = ["What is your current & expected CTC?", "Who do you report to and which functions report to you?", "Are you okay to relocate to {location}?"];
     // const location = "Surat";
     // const formattedQuestions = questions.map((question, index) =>  `${index + 1}. ${question.replace("{location}", location)}`).join("\n");
@@ -106,7 +106,7 @@ export class ToolsForAgents {
     const jobId = personNode?.candidates?.edges[0]?.node?.jobs?.id;
     console.log("Job Name:", personNode?.candidates?.edges[0]?.node?.jobs?.name)
     // console.log('This is the job Id:', jobId);
-    const { questionArray, questionIdArray } = await new FetchAndUpdateCandidatesChatsWhatsapps().fetchQuestionsByJobId(jobId);
+    const { questionArray, questionIdArray } = await new FetchAndUpdateCandidatesChatsWhatsapps().fetchQuestionsByJobId(jobId,apiToken);
     // Hardcoded questions to ask if no questions are found in the database
     if (questionArray.length == 0) {
       return ['Are you okay to relocate to {location}?','What is your current & expected CTC?', 'What is your notice period?'];
@@ -149,13 +149,13 @@ export class ToolsForAgents {
     `
   }
 
-  async getStartChatPrompt(personNode: allDataObjects.PersonNode) {
+  async getStartChatPrompt(personNode: allDataObjects.PersonNode,  apiToken:string) {
     let receiveCV
     receiveCV = `If they have shared their interest after going through the JD, ask the candidate to share a copy of their updated CV prior to the meeting.
     If they say that you can take the CV from naukri, tell them that you would require a copy for records directly from them for candidate confirmation purposes.`
     receiveCV = ``
     const jobProfile = personNode?.candidates?.edges[0]?.node?.jobs;
-    const questionArray = await this.getQuestionsToAsk(personNode);
+    const questionArray = await this.getQuestionsToAsk(personNode,  apiToken);
     const formattedQuestions = '\t'+questionArray.map((question, index) => `${index + 1}. ${question}`).join('\n\t');
     const SYSTEM_PROMPT = `
     You will drive the conversation with candidates like the recruiter. Your goal is to assess the candidates for interest and fitment.
@@ -200,16 +200,16 @@ export class ToolsForAgents {
     return SYSTEM_PROMPT;
   }
 
-  async getSystemPrompt(personNode: allDataObjects.PersonNode,chatControl:allDataObjects.chatControls) {
+  async getSystemPrompt(personNode: allDataObjects.PersonNode,chatControl:allDataObjects.chatControls,  apiToken:string) {
     console.log("This is the chatControl:", chatControl)
     if (chatControl == 'startVideoInterviewChat') {
       return this.getVideoInterviewPrompt(personNode);
     }
     else if (chatControl === "startChat"){
-      return this.getStartChatPrompt(personNode);
+      return this.getStartChatPrompt(personNode,  apiToken);
     }
     else{
-      return this.getStartChatPrompt(personNode);
+      return this.getStartChatPrompt(personNode,  apiToken);
     }
     
   }
@@ -290,7 +290,7 @@ export class ToolsForAgents {
     return 'Interview link shared successfully.';
   }
 
-  async createReminder(inputs: { reminderDuration: string }, candidateProfileDataNodeObj: allDataObjects.PersonNode) {
+  async createReminder(inputs: { reminderDuration: string }, candidateProfileDataNodeObj: allDataObjects.PersonNode,  apiToken:string) {
     console.log('Function Called:  candidateProfileDataNodeObj:any', candidateProfileDataNodeObj);
     debugger;
     const reminderTimestamp = addHoursInDate(new Date(), Number(inputs?.reminderDuration));
@@ -311,7 +311,7 @@ export class ToolsForAgents {
       variables: createOneReminderVariables,
     });
 
-    const response = await axiosRequest(graphqlQueryObj);
+    const response = await axiosRequest(graphqlQueryObj,  apiToken);
     console.log('Response from createReminder:', response.data);
     return 'Reminder created successfully.';
   }
@@ -327,10 +327,10 @@ export class ToolsForAgents {
     return 'Email sent successfully.';
   }
 
-  async shareJD(inputs: any, personNode: allDataObjects.PersonNode, chatControl: allDataObjects.chatControls) {
+  async shareJD(inputs: any, personNode: allDataObjects.PersonNode, chatControl: allDataObjects.chatControls,  apiToken:string) {
     try {
       console.log('Function Called: shareJD');
-      await shareJDtoCandidate(personNode,  chatControl);
+      await shareJDtoCandidate(personNode,  chatControl,  apiToken);
       console.log('Function Called:  candidateProfileDataNodeObj:any', personNode);
     } catch {
       debugger;
@@ -339,23 +339,23 @@ export class ToolsForAgents {
   }
   
 
-  async updateCandidateProfile(inputs: any, personNode: allDataObjects.PersonNode) {
+  async updateCandidateProfile(inputs: any, personNode: allDataObjects.PersonNode,  apiToken:string) {
     try {
       console.log('UPDATE CANDIDATE PROFILE CALLED AND UPDATING TO ::', inputs);
       console.log('Function Called:  candidateProfileDataNodeObj:any', personNode);
       // const status: allDataObjects.statuses = 'RECRUITER_INTERVIEW';
-      await updateCandidateStatus(personNode, inputs.candidateStatus);
+      await updateCandidateStatus(personNode, inputs.candidateStatus,  apiToken);
       return 'Updated the candidate profile.';
     } catch (error) {
       console.log('Error in updateCandidateProfile:', error);
     }
   }
 
-  async updateAnswer(inputs: { question: string; answer: string }, candidateProfileDataNodeObj: allDataObjects.PersonNode) {
+  async updateAnswer(inputs: { question: string; answer: string }, candidateProfileDataNodeObj: allDataObjects.PersonNode,  apiToken:string) {
     // const newQuestionArray = this.questionArray
     const jobId = candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.jobs?.id;
 
-    const { questionIdArray, questionArray } = await new FetchAndUpdateCandidatesChatsWhatsapps().fetchQuestionsByJobId(jobId);
+    const { questionIdArray, questionArray } = await new FetchAndUpdateCandidatesChatsWhatsapps().fetchQuestionsByJobId(jobId,  apiToken);
     const results = fuzzy.filter(inputs.question, questionArray);
     const matches = results.map(function (el) {
       return el.string;
@@ -364,7 +364,7 @@ export class ToolsForAgents {
     const mostSimilarQuestion = questionIdArray.filter(questionObj => questionObj.question == matches[0]);
     const AnswerMessageObj = { questionsId: mostSimilarQuestion[0]?.questionId, name: inputs.answer, candidateId: candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.id };
 
-    await updateAnswerInDatabase(candidateProfileDataNodeObj, AnswerMessageObj);
+    await updateAnswerInDatabase(candidateProfileDataNodeObj, AnswerMessageObj,  apiToken);
     try {
       console.log('Function Called:  candidateProfileDataNodeObj:any', candidateProfileDataNodeObj);
       console.log('Function Called: updateAnswer');
@@ -374,7 +374,7 @@ export class ToolsForAgents {
     return 'Updated the candidate updateAnswer.';
   }
 
-  async scheduleMeeting(inputs: any, candidateProfileDataNodeObj: allDataObjects.PersonNode) {
+  async scheduleMeeting(inputs: any, candidateProfileDataNodeObj: allDataObjects.PersonNode,  apiToken:string) {
     console.log('Function Called:  candidateProfileDataNodeObj:any', candidateProfileDataNodeObj);
     const gptInputs = inputs?.inputs;
 

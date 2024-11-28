@@ -10,7 +10,7 @@ import CandidateEngagementArx from '../candidate-engagement/check-candidate-enga
 const baseUrl = 'http://localhost:' + process.env.PORT; // Base URL of your GraphQL server
 export class WhatsappAPISelector {
 
-  async sendWhatsappMessageToCandidate(messageText: string,personNode:allDataObjects.PersonNode,  mostRecentMessageArr: allDataObjects.ChatHistoryItem[], functionSource: string,chatControl:allDataObjects.chatControls, isChatEnabled?: boolean, ) {
+  async sendWhatsappMessageToCandidate(messageText: string,personNode:allDataObjects.PersonNode,  mostRecentMessageArr: allDataObjects.ChatHistoryItem[], functionSource: string,chatControl:allDataObjects.chatControls,apiToken:string, isChatEnabled?: boolean, ) {
     console.log('Called sendWhatsappMessage ToCandidate to send message via any whatsapp api::', functionSource, "message text::", messageText);
     if (mostRecentMessageArr[0].role != 'system' && mostRecentMessageArr.length==1) {
       console.log('Found a single sneaky message which is coming out:: ', messageText);
@@ -21,7 +21,7 @@ export class WhatsappAPISelector {
       return;
     }
     console.log("Going to create whatsaappupdatemessage obj for message text::", messageText)
-    const whatappUpdateMessageObj:allDataObjects.candidateChatMessageType = await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj('sendWhatsappMessageToCandidateMulti', personNode, mostRecentMessageArr, chatControl);
+    const whatappUpdateMessageObj:allDataObjects.candidateChatMessageType = await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj('sendWhatsappMessageToCandidateMulti', personNode, mostRecentMessageArr, chatControl,apiToken);
     if (whatappUpdateMessageObj.messages[0].content?.includes('#DONTRESPOND#') || whatappUpdateMessageObj.messages[0].content?.includes('DONTRESPOND') && whatappUpdateMessageObj.messages[0].content) {
       console.log('Found a #DONTRESPOND# message, so not sending any message');
       return;
@@ -34,32 +34,32 @@ export class WhatsappAPISelector {
     }
     if (whatappUpdateMessageObj.messages[0].content ||  messageText) {
       if (process.env.WHATSAPP_ENABLED === 'true' && (isChatEnabled === undefined || isChatEnabled)) {
-        await new WhatsappAPISelector().sendWhatsappMessage(whatappUpdateMessageObj, personNode, mostRecentMessageArr, chatControl);
+        await new WhatsappAPISelector().sendWhatsappMessage(whatappUpdateMessageObj, personNode, mostRecentMessageArr, chatControl,apiToken);
       } else {
         console.log('Whatsapp is not enabled, so not sending message:', whatappUpdateMessageObj.messages[0].content);
       }
     }
   }
 
-  async sendWhatsappMessage(whatappUpdateMessageObj: allDataObjects.candidateChatMessageType, personNode: allDataObjects.PersonNode, mostRecentMessageArr: allDataObjects.ChatHistoryItem[], chatControl: allDataObjects.chatControls) {
+  async sendWhatsappMessage(whatappUpdateMessageObj: allDataObjects.candidateChatMessageType, personNode: allDataObjects.PersonNode, mostRecentMessageArr: allDataObjects.ChatHistoryItem[], chatControl: allDataObjects.chatControls,apiToken:string) {
     if (process.env.WHATSAPP_API === 'facebook') {
-      const response = await new FacebookWhatsappChatApi().sendWhatsappMessageVIAFacebookAPI(whatappUpdateMessageObj, personNode, mostRecentMessageArr, chatControl);
+      const response = await new FacebookWhatsappChatApi().sendWhatsappMessageVIAFacebookAPI(whatappUpdateMessageObj, personNode, mostRecentMessageArr, chatControl,apiToken);
     } else if (process.env.WHATSAPP_API === 'baileys') {
-      await sendWhatsappMessageVIABaileysAPI(whatappUpdateMessageObj, personNode, mostRecentMessageArr, chatControl);
+      await sendWhatsappMessageVIABaileysAPI(whatappUpdateMessageObj, personNode, mostRecentMessageArr, chatControl,apiToken);
     } else {
       console.log('No valid whatsapp API selected');
     }
   }
-  async sendAttachmentMessageOnWhatsapp(attachmentMessage: allDataObjects.AttachmentMessageObject, personNode: allDataObjects.PersonNode, chatControl: allDataObjects.chatControls) {
+  async sendAttachmentMessageOnWhatsapp(attachmentMessage: allDataObjects.AttachmentMessageObject, personNode: allDataObjects.PersonNode, chatControl: allDataObjects.chatControls,apiToken:string) {
     console.log('attachmentMessage received to send attachment:', attachmentMessage);
     if (process.env.WHATSAPP_API === 'facebook') {
-      await new FacebookWhatsappChatApi().uploadAndSendFileToWhatsApp(attachmentMessage, chatControl);
+      await new FacebookWhatsappChatApi().uploadAndSendFileToWhatsApp(attachmentMessage, chatControl,apiToken);
     } else if (process.env.WHATSAPP_API === 'baileys') {
-      await sendAttachmentMessageViaBaileys(attachmentMessage, personNode);
+      await sendAttachmentMessageViaBaileys(attachmentMessage, personNode,apiToken);
     }
   }
 
-  async sendJDViaWhatsapp( person: allDataObjects.PersonNode, attachment: allDataObjects.Attachment, chatControl: allDataObjects.chatControls) {
+async sendJDViaWhatsapp( person: allDataObjects.PersonNode, attachment: allDataObjects.Attachment, chatControl: allDataObjects.chatControls,apiToken:string) {
     const fullPath = attachment?.fullPath;
     const name = attachment?.name || 'attachment.pdf';
     console.log('This is attachment name:', name);
@@ -99,6 +99,6 @@ export class WhatsappAPISelector {
         mimetype: mime.lookup(name) || 'application/octet-stream',
       },
     };
-    await new WhatsappAPISelector().sendAttachmentMessageOnWhatsapp(attachmentMessageObj, person, chatControl);
+    await new WhatsappAPISelector().sendAttachmentMessageOnWhatsapp(attachmentMessageObj, person, chatControl,apiToken);
   }
 }

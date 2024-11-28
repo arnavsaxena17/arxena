@@ -4,9 +4,21 @@ import { FetchAndUpdateCandidatesChatsWhatsapps } from '../../services/candidate
 import * as allDataObjects from '../../services/data-model-objects';
 import * as allGraphQLQueries from '../../services/candidate-engagement/graphql-queries-chatbot';
 import { axiosRequest } from 'src/engine/core-modules/arx-chat/utils/arx-chat-agent-utils';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
+import { DataSourceEntity } from 'src/engine/metadata-modules/data-source/data-source.entity';
+import { EntityManager, In, Repository } from 'typeorm';
+import { EnvironmentService } from 'src/engine/integrations/environment/environment.service';
+import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
+import { TokenService } from 'src/engine/core-modules/auth/services/token.service';
+import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 export class IncomingWhatsappMessages {
-  async receiveIncomingMessagesFromBaileys(requestBody: allDataObjects.BaileysIncomingMessage) {
+  constructor(
+    private readonly workspaceQueryService: WorkspaceQueryService,
+
+) {}
+  async receiveIncomingMessagesFromBaileys(requestBody: allDataObjects.BaileysIncomingMessage,apiToken: string) {
     // console.log('This is requestBody::', requestBody);
     let savedMessage
     if (requestBody.message == ""){
@@ -26,16 +38,16 @@ export class IncomingWhatsappMessages {
     const chatReply = savedMessage;
     const status = '';
     console.log('We will first go and get the candiate who sent us the message');
-    const candidateProfileData = await new FetchAndUpdateCandidatesChatsWhatsapps().getCandidateInformation(whatsappIncomingMessage);
+    const candidateProfileData = await new FetchAndUpdateCandidatesChatsWhatsapps().getCandidateInformation(whatsappIncomingMessage, apiToken);
     console.log('This is the candiate who has sent us the message fromBaileys., we have to update the database that this message has been recemivged::', chatReply);
     if (candidateProfileData != allDataObjects.emptyCandidateProfileObj) {
       // console.log('This is the candiate who has sent us candidateProfileData::', candidateProfileData);
-      await this.createAndUpdateIncomingCandidateChatMessage({ chatReply: savedMessage, whatsappDeliveryStatus: 'delivered',phoneNumberFrom:requestBody.phoneNumberFrom, whatsappMessageId: requestBody.baileysMessageId }, candidateProfileData);
+      await this.createAndUpdateIncomingCandidateChatMessage({ chatReply: savedMessage, whatsappDeliveryStatus: 'delivered',phoneNumberFrom:requestBody.phoneNumberFrom, whatsappMessageId: requestBody.baileysMessageId }, candidateProfileData,apiToken);
     } else {
       console.log('Message has been received from a candidate however the candidate is not in the database');
     }
   }
-  async receiveIncomingMessagesFromSelfFromBaileys(requestBody: allDataObjects.BaileysIncomingMessage) {
+  async receiveIncomingMessagesFromSelfFromBaileys(requestBody: allDataObjects.BaileysIncomingMessage,apiToken: string) {
     // console.log('This is requestBody::', requestBody);
     console.log('-------This is the self message-------------');
     const whatsappIncomingMessage: allDataObjects.chatMessageType = {
@@ -46,14 +58,14 @@ export class IncomingWhatsappMessages {
     };
     const chatReply = requestBody.message;
     console.log('We will first go and get the candiate who sent us the message');
-    const candidateProfileData = await new FetchAndUpdateCandidatesChatsWhatsapps().getCandidateInformation(whatsappIncomingMessage);
+    const candidateProfileData = await new FetchAndUpdateCandidatesChatsWhatsapps().getCandidateInformation(whatsappIncomingMessage,apiToken);
     console.log('This is the SELF message., we have to update the database that this message has been received::', chatReply);
     if (candidateProfileData != allDataObjects.emptyCandidateProfileObj) {
       // console.log('This is the candiate who has sent us candidateProfileData::', candidateProfileData);
-      await this.createAndUpdateIncomingCandidateChatMessage({ chatReply: chatReply, whatsappDeliveryStatus: 'delivered',phoneNumberFrom:requestBody.phoneNumberFrom, whatsappMessageId: requestBody.baileysMessageId, isFromMe: true }, candidateProfileData);
+      await this.createAndUpdateIncomingCandidateChatMessage({ chatReply: chatReply, whatsappDeliveryStatus: 'delivered',phoneNumberFrom:requestBody.phoneNumberFrom, whatsappMessageId: requestBody.baileysMessageId, isFromMe: true }, candidateProfileData,apiToken);
       // const replyObject = { chatReply: chatReply, whatsappDeliveryStatus: 'receivedFromHumanBot', whatsappMessageId: requestBody?.baileysMessageId };
       // await this.createAndUpdateIncomingCandidateChatMessage(replyObject, candidateProfileData);
-      new FetchAndUpdateCandidatesChatsWhatsapps().setCandidateEngagementStatusToFalse(candidateProfileData);
+      new FetchAndUpdateCandidatesChatsWhatsapps().setCandidateEngagementStatusToFalse(candidateProfileData,apiToken);
     } else {
       console.log('Message has been received from a candidate however the candidate is not in the database');
     }
@@ -66,7 +78,7 @@ export class IncomingWhatsappMessages {
     return differenceInSeconds < 300;
   }
 
-  async fetchWhatsappMessageById(messageId: string) {
+  async fetchWhatsappMessageById(messageId: string,apiToken: string) {
     console.log('This is the message id:', messageId);
     try {
       const whatsappMessageVariable = {
@@ -76,7 +88,7 @@ export class IncomingWhatsappMessages {
         JSON.stringify({
           query: allGraphQLQueries.graphqlToFetchOneWhatsappMessageByWhatsappId,
           variables: whatsappMessageVariable,
-        }),
+        }),apiToken
       );
       console.log('Response from fetchWhatsappMessageById:', response?.data);
       return response?.data;
@@ -85,17 +97,67 @@ export class IncomingWhatsappMessages {
       return { error: error };
     }
   }
+
+  // private async getApiKeys(workspaceId: string, dataSourceSchema: string, transactionManager?: EntityManager) {
+  //   try {
+  //     const apiKeys = await this.workspaceDataSourceService.executeRawQuery(
+  //       `SELECT * FROM ${dataSourceSchema}."apiKey" where "apiKey"."revokedAt" IS NULL ORDER BY "apiKey"."createdAt" ASC`,
+  //       [],
+  //       workspaceId,
+  //       transactionManager,
+  //     );
+  //     return apiKeys;
+  //   } catch (e) {
+  //     console.log("Error in  ID", workspaceId, "for dataSourceSchema", dataSourceSchema);
+  //     return [];
+  //   }
+  // }
+
+
+  async getApiKeyToUseFromPhoneNumberMessageReceived(requestBody:any, transactionManager?: EntityManager){
+    const phoneNumber = requestBody?.entry[0]?.changes[0]?.value?.messages[0].from;
+    const results = await this.workspaceQueryService.executeQueryAcrossWorkspaces(
+      async (workspaceId, dataSourceSchema, transactionManager) => {
+        const person = await this.workspaceQueryService.executeRawQuery(
+          `SELECT * FROM ${dataSourceSchema}.person where "person"."phone" ILIKE '%${phoneNumber}%'`,
+          [],
+          workspaceId,
+          transactionManager
+        );
+
+        if (person.length > 0) {
+          const apiKeys = await this.workspaceQueryService.getApiKeys(workspaceId, dataSourceSchema, transactionManager);
+          if (apiKeys.length > 0) {
+            const apiKeyToken = await this.workspaceQueryService.tokenService.generateApiKeyToken(
+              workspaceId,
+              apiKeys[0].id,
+              apiKeys[0].expiresAt
+            );
+            if (apiKeyToken) {
+              return apiKeyToken?.token;
+            }
+          }
+        }
+        return null;
+      }
+    );
+
+    return results.find(result => result !== null);
+  }
+
   async receiveIncomingMessagesFromFacebook(requestBody: allDataObjects.WhatsAppBusinessAccount) {
     console.log('This is requestBody from Facebook::', JSON.stringify(requestBody));
     // to check if the incoming message is the status of the message
-
+    // have to use system API Key and get the status updates of all the workspaces where the phone number resides. Then get the api keys of the workspaces and then update the messages
+    const apiToken = await this.getApiKeyToUseFromPhoneNumberMessageReceived(requestBody) || '';
+    console.log('This is the apiToken to use in receiving facebook messages:', apiToken);
     if (requestBody?.entry[0]?.changes[0]?.value?.statuses && requestBody?.entry[0]?.changes[0]?.value?.statuses[0]?.status && !requestBody?.entry[0]?.changes[0]?.value?.messages) {
       const messageId = requestBody?.entry[0]?.changes[0]?.value?.statuses[0]?.id;
       const messageStatus = requestBody?.entry[0]?.changes[0]?.value?.statuses[0]?.status;
 
       const variables = { filter: { whatsappMessageId: { ilike: `%${messageId}%` } }, orderBy: { position: 'AscNullsFirst' } };
       const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindMessageByWAMId, variables: variables });
-      const response = await axiosRequest(graphqlQueryObj);
+      const response = await axiosRequest(graphqlQueryObj,apiToken);
       console.log('-----------------This is the response from the query to find the message by WAMID::-------------------');
       // debugger
       // console.log("Response to query on who sent the messages::", response?.data?.data);
@@ -112,7 +174,7 @@ export class IncomingWhatsappMessages {
       const variablesToUpdateDeliveryStatus = { idToUpdate: response?.data?.data?.whatsappMessages?.edges[0]?.node?.id, input: { whatsappDeliveryStatus: messageStatus } };
       // debugger
       const graphqlQueryObjForUpdationForDeliveryStatus = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToUpdateMessageDeliveryStatus, variables: variablesToUpdateDeliveryStatus });
-      const responseOfDeliveryStatus = await axiosRequest(graphqlQueryObjForUpdationForDeliveryStatus);
+      const responseOfDeliveryStatus = await axiosRequest(graphqlQueryObjForUpdationForDeliveryStatus,apiToken);
 
       console.log('---------------DELIVERY STATUS UPDATE DONE-----------------------');
       // console.log(responseOfDeliveryStatus);
@@ -135,7 +197,7 @@ export class IncomingWhatsappMessages {
           console.log('We have a whatsapp incoming message which is a text one we have to do set of things with which is not a utility message');
           let chatReply = userMessageBody?.text?.body;
           if (!chatReply && userMessageBody.reaction.id){
-          const whatsappMessageCommentedOn = await this.fetchWhatsappMessageById(userMessageBody?.reaction?.id);
+          const whatsappMessageCommentedOn = await this.fetchWhatsappMessageById(userMessageBody?.reaction?.id,apiToken);
 
             console.log("its likely an emoji message or emoji reaction to precededing message")
             console.log("Emoji message:", userMessageBody.reaction.emoji, "to message id:", userMessageBody.reaction.id, "from ::", userMessageBody.reaction.from)
@@ -151,7 +213,7 @@ export class IncomingWhatsappMessages {
             messageType: 'string',
           };
           console.log('We will first go and get the candiate who sent us the message');
-          const candidateProfileData = await new FetchAndUpdateCandidatesChatsWhatsapps().getCandidateInformation(whatsappIncomingMessage);
+          const candidateProfileData = await new FetchAndUpdateCandidatesChatsWhatsapps().getCandidateInformation(whatsappIncomingMessage,apiToken);
           console.log('This is the candiate who has sent us the message., we have to update the database that this message has been recemivged::', chatReply);
           // console.log('This is the candiate who has sent us candidateProfileData::', candidateProfileData);
           const replyObject = {
@@ -161,7 +223,7 @@ export class IncomingWhatsappMessages {
             whatsappMessageId: requestBody?.entry[0]?.changes[0]?.value?.messages[0].id,
           };
 
-          const responseAfterMessageUpdate = await this.createAndUpdateIncomingCandidateChatMessage(replyObject, candidateProfileData);
+          const responseAfterMessageUpdate = await this.createAndUpdateIncomingCandidateChatMessage(replyObject, candidateProfileData,apiToken);
           if (candidateProfileData?.candidateReminders?.edges.length > 0) {
             console.log("Candidate reminder found, updating the reminder status to false")
             const listOfReminders = candidateProfileData?.candidateReminders?.edges;
@@ -187,9 +249,9 @@ export class IncomingWhatsappMessages {
           };
 
           const replyObject = { chatReply: userMessageBody?.text?.body || 'Attachment Received', whatsappDeliveryStatus: 'receivedFromCandidate',phoneNumberFrom: whatsappIncomingMessage.phoneNumberFrom, whatsappMessageId: requestBody?.entry[0]?.changes[0]?.value?.messages[0].id };
-          const candidateProfileData = await new FetchAndUpdateCandidatesChatsWhatsapps().getCandidateInformation(whatsappIncomingMessage);
-          await new FacebookWhatsappChatApi().downloadWhatsappAttachmentMessage(sendTemplateMessageObj, candidateProfileData);
-          await this.createAndUpdateIncomingCandidateChatMessage(replyObject, candidateProfileData, );
+          const candidateProfileData = await new FetchAndUpdateCandidatesChatsWhatsapps().getCandidateInformation(whatsappIncomingMessage,apiToken);
+          await new FacebookWhatsappChatApi().downloadWhatsappAttachmentMessage(sendTemplateMessageObj, candidateProfileData,apiToken);
+          await this.createAndUpdateIncomingCandidateChatMessage(replyObject, candidateProfileData,apiToken );
         }
         // Audio message
         else if (requestBody?.entry[0]?.changes[0]?.value?.messages[0].type === 'audio') {
@@ -207,8 +269,8 @@ export class IncomingWhatsappMessages {
             messageType: 'string',
           };
 
-          const candidateProfileData = await new FetchAndUpdateCandidatesChatsWhatsapps().getCandidateInformation(whatsappIncomingMessage);
-          const audioMessageDetails = await new FacebookWhatsappChatApi().handleAudioMessage(audioMessageObject, candidateProfileData);
+          const candidateProfileData = await new FetchAndUpdateCandidatesChatsWhatsapps().getCandidateInformation(whatsappIncomingMessage,apiToken);
+          const audioMessageDetails = await new FacebookWhatsappChatApi().handleAudioMessage(audioMessageObject, candidateProfileData,apiToken);
 
           console.log('This is the audioMessageDetails::', audioMessageDetails);
           // debugger;
@@ -221,7 +283,7 @@ export class IncomingWhatsappMessages {
             whatsappMessageId: requestBody?.entry[0]?.changes[0]?.value?.messages[0].id,
           };
 
-          await this.createAndUpdateIncomingCandidateChatMessage(replyObject, candidateProfileData);
+          await this.createAndUpdateIncomingCandidateChatMessage(replyObject, candidateProfileData,apiToken);
         }
       }
     } else {
@@ -230,7 +292,7 @@ export class IncomingWhatsappMessages {
   }
   async createAndUpdateIncomingCandidateChatMessage(
     replyObject: { whatsappDeliveryStatus: string; chatReply: string; phoneNumberFrom:string,whatsappMessageId: string; databaseFilePath?: string | null; type?: string; isFromMe?: boolean },
-    candidateProfileDataNodeObj: allDataObjects.CandidateNode, 
+    candidateProfileDataNodeObj: allDataObjects.CandidateNode,apiToken: string
   ) {
     const recruiterProfile = allDataObjects.recruiterProfile;
     const messagesList = candidateProfileDataNodeObj?.whatsappMessages?.edges;
@@ -269,7 +331,7 @@ export class IncomingWhatsappMessages {
       type: replyObject.type || 'text',
       databaseFilePath: replyObject?.databaseFilePath || '',
     };
-    await new CandidateEngagementArx().updateCandidateEngagementDataInTable(whatappUpdateMessageObj);
+    await new CandidateEngagementArx().updateCandidateEngagementDataInTable(whatappUpdateMessageObj,apiToken);
     // return whatappUpdateMessageObj;
   }
 }

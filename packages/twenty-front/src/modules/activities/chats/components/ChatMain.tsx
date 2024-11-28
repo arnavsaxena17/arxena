@@ -139,7 +139,7 @@ export default function ChatMain({ initialCandidateId }: ChatMainProps) {
         axios.get(`${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/get-candidates-and-chats`, {
           headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` },
         }),
-        axios.post(`${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/get-all-jobs`, {
+        axios.post(`${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/get-all-jobs`, {}, {
           headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` },
         }),
       ]);

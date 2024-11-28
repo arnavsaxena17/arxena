@@ -81,14 +81,13 @@ export async function getMostRecentChatsByPerson(mostRecentMessageArr:allDataObj
     content: chat.content
   }));
 }
-export async function axiosRequest(data: string) {
+export async function axiosRequest(data: string, apiToken: string) {
   // console.log("Sending a post request to the graphql server:: with data", data);
-  console.log("Will be using this process.env.TWENTY_JWT_SECRET:", process.env.TWENTY_JWT_SECRET)
   const response = await axios.request({
     method: "post",
     url: process.env.GRAPHQL_URL,
     headers: {
-      authorization: "Bearer " + process.env.TWENTY_JWT_SECRET,
+      authorization: "Bearer " + apiToken,
       "content-type": "application/json",
     },
     data: data,

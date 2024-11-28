@@ -22,13 +22,13 @@ import { axiosRequest } from '../../utils/arx-chat-agent-utils';
 const axios = require('axios');
 
 
-async function getChatPromptFromWorksPageMember(currentWorkspaceMemberId: any) {
+async function getChatPromptFromWorksPageMember(currentWorkspaceMemberId: any, apiToken:string) {
     let data = JSON.stringify({
         query: allGraphQLQueries.graphqlQueryToFetchWorksPaceMembers,
         variables: { filter: { id: { eq: currentWorkspaceMemberId } } }
     });
     try {
-        const response = await axiosRequest(data);
+        const response = await axiosRequest(data, apiToken);
         const prompts = response.data.data.workspaceMembers.edges[0].node.prompts.edges;
         if (prompts.length > 0) {
             return prompts[0].node.prompt;
@@ -41,9 +41,9 @@ async function getChatPromptFromWorksPageMember(currentWorkspaceMemberId: any) {
 }
 }
 
-export async function getChatStageFromChatHistory(messages: any, currentWorkspaceMemberId:any) {
+export async function getChatStageFromChatHistory(messages: any, currentWorkspaceMemberId:any, apiToken:string) {
     // console.log("Stage Prompt is:::", stagePrompt);
-    const localStagePrompt = await getChatPromptFromWorksPageMember(currentWorkspaceMemberId);
+    const localStagePrompt = await getChatPromptFromWorksPageMember(currentWorkspaceMemberId,apiToken);
     console.log("Local Stage Prompt is:::", localStagePrompt)
     let mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = new CandidateEngagementArx().getMostRecentMessageFromMessagesList(messages);
     function generateHumanReadableConversation(messages: allDataObjects.ChatHistoryItem[]): string {
