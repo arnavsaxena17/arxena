@@ -38,7 +38,7 @@ export class IncomingWhatsappMessages {
     const chatReply = savedMessage;
     const status = '';
     console.log('We will first go and get the candiate who sent us the message');
-    const candidateProfileData = await new FetchAndUpdateCandidatesChatsWhatsapps().getCandidateInformation(whatsappIncomingMessage, apiToken);
+    const candidateProfileData = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).getCandidateInformation(whatsappIncomingMessage, apiToken);
     console.log('This is the candiate who has sent us the message fromBaileys., we have to update the database that this message has been recemivged::', chatReply);
     if (candidateProfileData != allDataObjects.emptyCandidateProfileObj) {
       // console.log('This is the candiate who has sent us candidateProfileData::', candidateProfileData);
@@ -58,14 +58,14 @@ export class IncomingWhatsappMessages {
     };
     const chatReply = requestBody.message;
     console.log('We will first go and get the candiate who sent us the message');
-    const candidateProfileData = await new FetchAndUpdateCandidatesChatsWhatsapps().getCandidateInformation(whatsappIncomingMessage,apiToken);
+    const candidateProfileData = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).getCandidateInformation(whatsappIncomingMessage,apiToken);
     console.log('This is the SELF message., we have to update the database that this message has been received::', chatReply);
     if (candidateProfileData != allDataObjects.emptyCandidateProfileObj) {
       // console.log('This is the candiate who has sent us candidateProfileData::', candidateProfileData);
       await this.createAndUpdateIncomingCandidateChatMessage({ chatReply: chatReply, whatsappDeliveryStatus: 'delivered',phoneNumberFrom:requestBody.phoneNumberFrom, whatsappMessageId: requestBody.baileysMessageId, isFromMe: true }, candidateProfileData,apiToken);
       // const replyObject = { chatReply: chatReply, whatsappDeliveryStatus: 'receivedFromHumanBot', whatsappMessageId: requestBody?.baileysMessageId };
       // await this.createAndUpdateIncomingCandidateChatMessage(replyObject, candidateProfileData);
-      new FetchAndUpdateCandidatesChatsWhatsapps().setCandidateEngagementStatusToFalse(candidateProfileData,apiToken);
+      new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).setCandidateEngagementStatusToFalse(candidateProfileData,apiToken);
     } else {
       console.log('Message has been received from a candidate however the candidate is not in the database');
     }
@@ -213,7 +213,7 @@ export class IncomingWhatsappMessages {
             messageType: 'string',
           };
           console.log('We will first go and get the candiate who sent us the message');
-          const candidateProfileData = await new FetchAndUpdateCandidatesChatsWhatsapps().getCandidateInformation(whatsappIncomingMessage,apiToken);
+          const candidateProfileData = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).getCandidateInformation(whatsappIncomingMessage,apiToken);
           console.log('This is the candiate who has sent us the message., we have to update the database that this message has been recemivged::', chatReply);
           // console.log('This is the candiate who has sent us candidateProfileData::', candidateProfileData);
           const replyObject = {
@@ -249,8 +249,8 @@ export class IncomingWhatsappMessages {
           };
 
           const replyObject = { chatReply: userMessageBody?.text?.body || 'Attachment Received', whatsappDeliveryStatus: 'receivedFromCandidate',phoneNumberFrom: whatsappIncomingMessage.phoneNumberFrom, whatsappMessageId: requestBody?.entry[0]?.changes[0]?.value?.messages[0].id };
-          const candidateProfileData = await new FetchAndUpdateCandidatesChatsWhatsapps().getCandidateInformation(whatsappIncomingMessage,apiToken);
-          await new FacebookWhatsappChatApi().downloadWhatsappAttachmentMessage(sendTemplateMessageObj, candidateProfileData,apiToken);
+          const candidateProfileData = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).getCandidateInformation(whatsappIncomingMessage,apiToken);
+          await new FacebookWhatsappChatApi(this.workspaceQueryService).downloadWhatsappAttachmentMessage(sendTemplateMessageObj, candidateProfileData,apiToken);
           await this.createAndUpdateIncomingCandidateChatMessage(replyObject, candidateProfileData,apiToken );
         }
         // Audio message
@@ -269,8 +269,8 @@ export class IncomingWhatsappMessages {
             messageType: 'string',
           };
 
-          const candidateProfileData = await new FetchAndUpdateCandidatesChatsWhatsapps().getCandidateInformation(whatsappIncomingMessage,apiToken);
-          const audioMessageDetails = await new FacebookWhatsappChatApi().handleAudioMessage(audioMessageObject, candidateProfileData,apiToken);
+          const candidateProfileData = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).getCandidateInformation(whatsappIncomingMessage,apiToken);
+          const audioMessageDetails = await new FacebookWhatsappChatApi(this.workspaceQueryService).handleAudioMessage(audioMessageObject, candidateProfileData,apiToken);
 
           console.log('This is the audioMessageDetails::', audioMessageDetails);
           // debugger;
@@ -294,6 +294,8 @@ export class IncomingWhatsappMessages {
     replyObject: { whatsappDeliveryStatus: string; chatReply: string; phoneNumberFrom:string,whatsappMessageId: string; databaseFilePath?: string | null; type?: string; isFromMe?: boolean },
     candidateProfileDataNodeObj: allDataObjects.CandidateNode,apiToken: string
   ) {
+
+
     const recruiterProfile = allDataObjects.recruiterProfile;
     const messagesList = candidateProfileDataNodeObj?.whatsappMessages?.edges;
     // Ensure messagesList is not undefined before sorting
@@ -331,7 +333,8 @@ export class IncomingWhatsappMessages {
       type: replyObject.type || 'text',
       databaseFilePath: replyObject?.databaseFilePath || '',
     };
-    await new CandidateEngagementArx().updateCandidateEngagementDataInTable(whatappUpdateMessageObj,apiToken);
+
+    await new CandidateEngagementArx(this.workspaceQueryService).updateCandidateEngagementDataInTable(whatappUpdateMessageObj,apiToken);
     // return whatappUpdateMessageObj;
   }
 }

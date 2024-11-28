@@ -18,7 +18,7 @@ export async function shareJDtoCandidate(person: allDataObjects.PersonNode, chat
     console.log('No attachments found for this job');
   }
   const attachment = jobAttachments?.node ?? '';
-  await new WhatsappAPISelector().sendJDViaWhatsapp( person, attachment, chatControl, apiToken);
+  await new WhatsappAPISelector(this.workspaceQueryService).sendJDViaWhatsapp( person, attachment, chatControl, apiToken);
 }
 
 export async function updateCandidateStatus(person: allDataObjects.PersonNode, status: string, apiToken: string) {
@@ -40,7 +40,7 @@ export async function updateCandidateStatus(person: allDataObjects.PersonNode, s
     whatsappDeliveryStatus: 'updateCandidateStatus',
     whatsappMessageId: 'updateCandidateStatus',
   };
-  const updateCandidateStatusObj = await new FetchAndUpdateCandidatesChatsWhatsapps().updateCandidateProfileStatus(candidateProfileObj, UpdateCandidateMessageObj, apiToken);
+  const updateCandidateStatusObj = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).updateCandidateProfileStatus(candidateProfileObj, UpdateCandidateMessageObj, apiToken);
   console.log("This is the updateCandidateStatusObj:", updateCandidateStatusObj)
   return 'Updated the candidate profile with the status.';
 }
@@ -64,7 +64,7 @@ export async function scheduleCandidateInterview(person: allDataObjects.PersonNo
     whatsappDeliveryStatus: 'scheduleCandidateInterview',
     whatsappMessageId: 'scheduleCandidateInterview',
   };
-  const updateCandidateStatusObj = await new FetchAndUpdateCandidatesChatsWhatsapps().updateCandidateProfileStatus(candidateProfileObj, whatappUpdateMessageObj,  apiToken);
+  const updateCandidateStatusObj = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).updateCandidateProfileStatus(candidateProfileObj, whatappUpdateMessageObj,  apiToken);
   return 'Updated the candidate interview schedule.';
 }
 
@@ -73,6 +73,6 @@ export async function updateAnswerInDatabase(person: allDataObjects.PersonNode, 
   const candidateId = person?.candidates?.edges[0]?.node?.id;
   console.log('This is the candidateID for which we are trying to update the status:', candidateId);
   const candidateProfileObj = person?.candidates?.edges[0]?.node;
-  const updateCandidateStatusObj = await new FetchAndUpdateCandidatesChatsWhatsapps().updateCandidateAnswer(candidateProfileObj, AnswerMessageObj,  apiToken);
+  const updateCandidateStatusObj = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).updateCandidateAnswer(candidateProfileObj, AnswerMessageObj,  apiToken);
   return 'Updated the candidate answer in the database.';
 }

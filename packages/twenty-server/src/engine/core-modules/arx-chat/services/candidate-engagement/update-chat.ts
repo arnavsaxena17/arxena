@@ -4,8 +4,9 @@ import { v4 } from 'uuid';
 import { axiosRequest } from '../../utils/arx-chat-agent-utils';
 import axios from 'axios';
 import { ToolsForAgents } from '../../services/llm-agents/prompting-tool-calling';
-import  {getChatStageFromChatHistory}  from '../../services/llm-agents/get-current-stage-from-messages';
+import  {GetCurrentStageByMessages}  from '../../services/llm-agents/get-current-stage-from-messages';
 import { ApiKeyToken } from 'src/engine/core-modules/auth/dto/token.entity';
+import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 // import { last } from 'rxjs';
 // import { MicroserviceHealthIndicator } from '@nestjs/terminus';
 
@@ -40,6 +41,10 @@ class Semaphore {
 
 
 export class FetchAndUpdateCandidatesChatsWhatsapps {
+  constructor(
+    private readonly workspaceQueryService: WorkspaceQueryService
+  ) {}
+
   async fetchSpecificPeopleToEngageBasedOnChatControl(chatControl: allDataObjects.chatControls, apiToken:string): Promise<allDataObjects.PersonNode[]> {
     try {
       console.log('Fetching candidates to engage');
@@ -112,7 +117,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
       try {
         const candidateId = candidate?.id;
         const whatsappMessages = await this.fetchAllWhatsappMessages(candidateId,apiToken);
-        const candidateStatus = await getChatStageFromChatHistory(whatsappMessages, currentWorkspaceMemberId, apiToken) as allDataObjects.allStatuses;
+        const candidateStatus = await new GetCurrentStageByMessages(this.workspaceQueryService).getChatStageFromChatHistory(whatsappMessages, currentWorkspaceMemberId, apiToken) as allDataObjects.allStatuses;
         
         const updateCandidateObjectVariables = { 
           idToUpdate: candidateId, 

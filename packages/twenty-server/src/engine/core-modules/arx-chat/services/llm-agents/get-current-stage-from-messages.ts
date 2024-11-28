@@ -15,14 +15,22 @@ import CandidateEngagementArx from '../candidate-engagement/check-candidate-enga
 import { zodResponseFormat } from "openai/helpers/zod";
 // import { z } from "zod";
 // import { OpenAI } from "openai";
-// import { getStageOfTheConversation } from './get-stage-wise-classification';
 import { ToolsForAgents } from './prompting-tool-calling';
-import { LLMProviders } from './llm-agents';
 import { axiosRequest } from '../../utils/arx-chat-agent-utils';
+import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 const axios = require('axios');
 
 
-async function getChatPromptFromWorksPageMember(currentWorkspaceMemberId: any, apiToken:string) {
+
+
+
+export class GetCurrentStageByMessages{
+    
+  constructor(
+    private readonly workspaceQueryService: WorkspaceQueryService
+  ) {}
+
+  async getChatPromptFromWorksPageMember(currentWorkspaceMemberId: any, apiToken:string) {
     let data = JSON.stringify({
         query: allGraphQLQueries.graphqlQueryToFetchWorksPaceMembers,
         variables: { filter: { id: { eq: currentWorkspaceMemberId } } }
@@ -41,11 +49,15 @@ async function getChatPromptFromWorksPageMember(currentWorkspaceMemberId: any, a
 }
 }
 
-export async function getChatStageFromChatHistory(messages: any, currentWorkspaceMemberId:any, apiToken:string) {
+async getChatStageFromChatHistory(messages: any, currentWorkspaceMemberId:any, apiToken:string) {
     // console.log("Stage Prompt is:::", stagePrompt);
-    const localStagePrompt = await getChatPromptFromWorksPageMember(currentWorkspaceMemberId,apiToken);
+
+
+
+
+    const localStagePrompt = await this.getChatPromptFromWorksPageMember(currentWorkspaceMemberId,apiToken);
     console.log("Local Stage Prompt is:::", localStagePrompt)
-    let mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = new CandidateEngagementArx().getMostRecentMessageFromMessagesList(messages);
+    let mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = new CandidateEngagementArx(this.workspaceQueryService).getMostRecentMessageFromMessagesList(messages);
     function generateHumanReadableConversation(messages: allDataObjects.ChatHistoryItem[]): string {
         return messages.slice(2).map(message => {
             const role = message.role === 'user' ? 'Candidate' : 'Recruiter';
@@ -60,7 +72,7 @@ export async function getChatStageFromChatHistory(messages: any, currentWorkspac
     console.log("Finally Sent messages for converation classificaation to OpenAI:::", mostRecentMessageArr);
 
     // @ts-ignore
-    const completion = await new LLMProviders().openAIclient.beta.chat.completions.parse({ model: "gpt-4o", messages: messagesToLLM, response_format: zodResponseFormat(new ToolsForAgents().currentConversationStage, "conversationStage")});
+    const completion = await this.workspaceQueryService.llmProviders.openAIclient.beta.chat.completions.parse({ model: "gpt-4o", messages: messagesToLLM, response_format: zodResponseFormat(new ToolsForAgents().currentConversationStage, "conversationStage")});
     const conversationStage = completion.choices[0].message.parsed as { stageOfTheConversation: string } | null;
     if (conversationStage) {
         console.log("This is the stage that is arrived at:::", conversationStage.stageOfTheConversation);
@@ -69,4 +81,6 @@ export async function getChatStageFromChatHistory(messages: any, currentWorkspac
         console.log("Conversation stage is null");
         return "ONLY_ADDED_NO_CONVERSATION";
     }
+}
+
 }
