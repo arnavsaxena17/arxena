@@ -28,6 +28,7 @@ import { DataSourceEntity } from 'src/engine/metadata-modules/data-source/data-s
 import { EnvironmentService } from 'src/engine/integrations/environment/environment.service';
 import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
 import {WorkspaceQueryService} from '../workspace-modifications/workspace-modifications.service';
+import { LLMProviders } from './services/llm-agents/llm-agents';
 
 
 interface CandidateRequest {
@@ -94,7 +95,8 @@ export class ArxChatEndpoint {
     let mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = new CandidateEngagementArx().getMostRecentMessageFromMessagesList(messagesList);
     if (mostRecentMessageArr?.length > 0) {
       let chatAgent: OpenAIArxMultiStepClient;
-      chatAgent = new OpenAIArxMultiStepClient(personObj);
+      const llmProviders = new LLMProviders(this.workspaceQueryService); // Create an instance of LLMProviders
+      chatAgent = new OpenAIArxMultiStepClient(personObj, llmProviders, this.workspaceQueryService);
       const chatControl = "startChat";
       await chatAgent.createCompletion(mostRecentMessageArr,chatControl,apiToken);
       const whatappUpdateMessageObj:allDataObjects.candidateChatMessageType = await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj('ArxChatEndpoint', personObj, mostRecentMessageArr, chatControl,apiToken);
@@ -116,7 +118,8 @@ export class ArxChatEndpoint {
       const isChatEnabled: boolean = false;
       if (mostRecentMessageArr?.length > 0) {
         let chatAgent: OpenAIArxMultiStepClient;
-        chatAgent = new OpenAIArxMultiStepClient(personObj);
+        const llmProviders = new LLMProviders(this.workspaceQueryService);
+        chatAgent = new OpenAIArxMultiStepClient(personObj, llmProviders, this.workspaceQueryService);
         const chatControl = 'startChat';
         mostRecentMessageArr = await chatAgent.createCompletion(mostRecentMessageArr, chatControl, apiToken, isChatEnabled);
         return mostRecentMessageArr;
@@ -135,7 +138,8 @@ export class ArxChatEndpoint {
     const personObj: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber('918411937768',apiToken);
     const messagesList = request.body;
     let chatAgent: OpenAIArxMultiStepClient;
-    chatAgent = new OpenAIArxMultiStepClient(personObj);
+    const llmProviders = new LLMProviders(this.workspaceQueryService);
+    chatAgent = new OpenAIArxMultiStepClient(personObj, llmProviders, this.workspaceQueryService);
     const chatControl = 'startChat';
     const mostRecentMessageArr = await chatAgent.createCompletion(messagesList,  chatControl,apiToken);
     return mostRecentMessageArr;
@@ -161,7 +165,7 @@ export class ArxChatEndpoint {
     console.log('JSON.string', JSON.stringify(request.body));
     const personObj: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber('918411937768',apiToken);
     const messagesList = request.body;
-    let chatAgent = new OpenAIArxMultiStepClient(personObj);
+    let chatAgent = new OpenAIArxMultiStepClient(personObj, new LLMProviders(this.workspaceQueryService), this.workspaceQueryService);
     const engagementType = 'engage';
     const processorType = 'stage';
     const stage = getStageOfTheConversation(personObj, messagesList);
