@@ -8,6 +8,7 @@ import { ToggleImpersonate } from '@/settings/workspace/components/ToggleImperso
 import { WorkspaceLogoUploader } from '@/settings/workspace/components/WorkspaceLogoUploader';
 import { SubMenuTopBarContainer } from '@/ui/layout/page/SubMenuTopBarContainer';
 import { Section } from '@/ui/layout/section/components/Section';
+import { ApiKeysForm } from './ApiKeysForm';
 
 const StyledH1Title = styled(H1Title)`
   margin-bottom: 0;
@@ -32,6 +33,11 @@ export const SettingsWorkspace = () => (
           description="Grant Twenty support temporary access to your workspace so we can troubleshoot problems or recover content on your behalf. You can revoke access at any time."
         />
       </Section>
+      <Section>
+        <H2Title title="API Keys" description="Configure your integration keys" />
+        <ApiKeysForm />
+      </Section>
+
       <Section>
         <DeleteWorkspace />
       </Section>

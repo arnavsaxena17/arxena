@@ -8,6 +8,7 @@ import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/work
 import { AuthModule } from 'src/engine/core-modules/auth/auth.module';
 import { DataSourceModule } from 'src/engine/metadata-modules/data-source/data-source.module';
 import { TypeORMModule } from 'src/database/typeorm/typeorm.module';
+import { WorkspaceModificationsController } from './workspace-modifications.controller';
 
 @Module({
   imports: [
@@ -22,6 +23,8 @@ import { TypeORMModule } from 'src/database/typeorm/typeorm.module';
     EnvironmentService,
     WorkspaceDataSourceService,
   ],
+  controllers: [WorkspaceModificationsController],
+
   exports: [WorkspaceQueryService]
 })
 export class WorkspaceModificationsModule {}
