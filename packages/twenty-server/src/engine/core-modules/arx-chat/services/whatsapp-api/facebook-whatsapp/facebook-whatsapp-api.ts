@@ -11,24 +11,28 @@ import { getTranscriptionFromWhisper } from '../../../utils/arx-chat-agent-utils
 import {WhatsappTemplateMessages} from './template-messages';
 import { FetchAndUpdateCandidatesChatsWhatsapps } from '../../candidate-engagement/update-chat';
 const { exec } = require('child_process');
+import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
-let whatsappAPIToken = process.env.FACEBOOK_WHATSAPP_PERMANENT_API;
+// let whatsappAPIToken = process.env.FACEBOOK_WHATSAPP_PERMANENT_API;
 
-if (process.env.FACEBOOK_WHATSAPP_PERMANENT_API) {
-  whatsappAPIToken = process.env.FACEBOOK_WHATSAPP_PERMANENT_API;
-} else {
-  whatsappAPIToken = process.env.FACEBOOK_WHATSAPP_API_TOKEN;
-}
+// if (process.env.FACEBOOK_WHATSAPP_PERMANENT_API) {
+//   whatsappAPIToken = process.env.FACEBOOK_WHATSAPP_PERMANENT_API;
+// } else {
+//   whatsappAPIToken = process.env.FACEBOOK_WHATSAPP_API_TOKEN;
+// }
 
 const templates = ['hello_world', 'recruitment','application','application02', 'application03'];
 export class FacebookWhatsappChatApi {
+  constructor(
+    private readonly workspaceQueryService: WorkspaceQueryService
+  ) {}
   async uploadAndSendFileToWhatsApp(attachmentMessage: allDataObjects.AttachmentMessageObject, chatControl:allDataObjects.chatControls,  apiToken:string) {
     console.log('Send file');
     console.log('sendFileObj::y::', attachmentMessage);
     const filePath = attachmentMessage?.fileData?.filePath;
     const phoneNumberTo = attachmentMessage?.phoneNumberTo;
     const attachmentText = 'Sharing the JD';
-    const response = await new FacebookWhatsappChatApi().uploadFileToWhatsApp(attachmentMessage, chatControl,  apiToken);
+    const response = await this.uploadFileToWhatsApp(attachmentMessage, chatControl,  apiToken);
     const mediaID = response?.mediaID;
     const fileName = attachmentMessage?.fileData?.fileName;
     const sendTextMessageObj = {
@@ -41,11 +45,16 @@ export class FacebookWhatsappChatApi {
     const personObj = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(phoneNumberTo,  apiToken);
     const mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.messageObj;
     mostRecentMessageArr.push({ role: 'user', content: 'Sharing the JD' });
-    new FacebookWhatsappChatApi().sendWhatsappAttachmentMessage(sendTextMessageObj, personObj, mostRecentMessageArr, chatControl,  apiToken);
+    this.sendWhatsappAttachmentMessage(sendTextMessageObj, personObj, mostRecentMessageArr, chatControl,  apiToken);
   }
   
 
-  async sendWhatsappTextMessage(sendTextMessageObj: allDataObjects.ChatRequestBody) {
+  async sendWhatsappTextMessage(sendTextMessageObj: allDataObjects.ChatRequestBody, apiToken:string) {
+    const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+    console.log("workspaceId:",workspaceId)
+    const whatsappAPIToken = await this.workspaceQueryService.getWorkspaceApiKey(workspaceId, 'facebook_whatsapp_api_token');
+    const FACEBOOK_WHATSAPP_PHONE_NUMBER_ID = await this.workspaceQueryService.getWorkspaceApiKey(workspaceId, 'facebook_whatsapp_phone_number_id');
+    console.log("whatsappAPIToken:",whatsappAPIToken)
     console.log('Sending a message to ::', sendTextMessageObj.phoneNumberTo.replace("+",""));
     console.log('Sending message text ::', sendTextMessageObj.messages);
     const text_message = {
@@ -58,7 +67,7 @@ export class FacebookWhatsappChatApi {
     let config = {
       method: 'post',
       maxBodyLength: Infinity,
-      url: 'https://graph.facebook.com/v18.0/' + process.env.FACEBOOK_WHATSAPP_PHONE_NUMBER_ID + '/messages',
+      url: 'https://graph.facebook.com/v18.0/' + FACEBOOK_WHATSAPP_PHONE_NUMBER_ID + '/messages',
       headers: {
         Authorization: 'Bearer ' + whatsappAPIToken,
         'Content-Type': 'application/json',
@@ -168,7 +177,13 @@ export class FacebookWhatsappChatApi {
     // Get the file name and content type from the response headers
   }
 
-  async uploadFileToWhatsAppUsingControllerApi(filePathArg: string) {
+  async uploadFileToWhatsAppUsingControllerApi(filePathArg: string, apiToken:string) {
+
+    const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+    console.log("workspaceId:",workspaceId)
+    const whatsappAPIToken = await this.workspaceQueryService.getWorkspaceApiKey(workspaceId, 'facebook_whatsapp_api_token');
+    const FACEBOOK_WHATSAPP_PHONE_NUMBER_ID = await this.workspaceQueryService.getWorkspaceApiKey(workspaceId, 'facebook_whatsapp_phone_number_id');
+
     console.log('This is the upload file to whatsapp in recruitment agent');
     // debugger;
     try {
@@ -188,7 +203,7 @@ export class FacebookWhatsappChatApi {
       try {
         const {
           data: { id: mediaId },
-        } = await axios.post(`https://graph.facebook.com/v18.0/${process.env.FACEBOOK_WHATSAPP_PHONE_NUMBER_ID}/media`, formData, {
+        } = await axios.post(`https://graph.facebook.com/v18.0/${FACEBOOK_WHATSAPP_PHONE_NUMBER_ID}/media`, formData, {
           headers: {
             Authorization: `Bearer ${whatsappAPIToken}`,
             ...formData.getHeaders(),
@@ -215,6 +230,11 @@ export class FacebookWhatsappChatApi {
   }
 
   async sendWhatsappAttachmentMessage(sendWhatsappAttachmentTextMessageObj: allDataObjects.FacebookWhatsappAttachmentChatRequestBody, personObj: allDataObjects.PersonNode, mostRecentMessageArr: allDataObjects.ChatHistoryItem[],chatControl:allDataObjects.chatControls,  apiToken:string) {
+    const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+    console.log("workspaceId:",workspaceId)
+    const whatsappAPIToken = await this.workspaceQueryService.getWorkspaceApiKey(workspaceId, 'facebook_whatsapp_api_token');
+    const FACEBOOK_WHATSAPP_PHONE_NUMBER_ID = await this.workspaceQueryService.getWorkspaceApiKey(workspaceId, 'facebook_whatsapp_phone_number_id');
+
     console.log('sending whatsapp attachment message');
     const text_message = {
       messaging_product: 'whatsapp',
@@ -231,7 +251,7 @@ export class FacebookWhatsappChatApi {
     let config = {
       method: 'post',
       maxBodyLength: Infinity,
-      url: 'https://graph.facebook.com/v18.0/' + process.env.FACEBOOK_WHATSAPP_PHONE_NUMBER_ID + '/messages',
+      url: 'https://graph.facebook.com/v18.0/' + FACEBOOK_WHATSAPP_PHONE_NUMBER_ID + '/messages',
       headers: {
         Authorization: 'Bearer ' + whatsappAPIToken,
         'Content-Type': 'application/json',
@@ -257,13 +277,18 @@ export class FacebookWhatsappChatApi {
   }
 
   async sendWhatsappTemplateMessage(sendTemplateMessageObj: allDataObjects.sendWhatsappTemplateMessageObjectType,  apiToken:string) {
+    const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+    console.log("workspaceId:",workspaceId)
+    const whatsappAPIToken = await this.workspaceQueryService.getWorkspaceApiKey(workspaceId, 'facebook_whatsapp_api_token');
+    const FACEBOOK_WHATSAPP_PHONE_NUMBER_ID = await this.workspaceQueryService.getWorkspaceApiKey(workspaceId, 'facebook_whatsapp_phone_number_id');
+
     console.log('Received this template message object:', sendTemplateMessageObj);
     let templateMessage = new WhatsappTemplateMessages().getTemplateMessageObj(sendTemplateMessageObj);
     console.log('This is the template message object:', templateMessage);
     let config = {
       method: 'post',
       maxBodyLength: Infinity,
-      url: 'https://graph.facebook.com/v18.0/' + process.env.FACEBOOK_WHATSAPP_PHONE_NUMBER_ID + '/messages',
+      url: 'https://graph.facebook.com/v18.0/' + FACEBOOK_WHATSAPP_PHONE_NUMBER_ID + '/messages',
       headers: {
         Authorization: 'Bearer ' + whatsappAPIToken,
         'Content-Type': 'application/json',
@@ -287,12 +312,17 @@ export class FacebookWhatsappChatApi {
   }
   async sendWhatsappUtilityMessage(sendUtilityMessageObj: allDataObjects.sendWhatsappUtilityMessageObjectType,  apiToken:string) {
     console.log('Received this utiltuy message object:', sendUtilityMessageObj);
+    const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+    console.log("workspaceId:",workspaceId)
+    const whatsappAPIToken = await this.workspaceQueryService.getWorkspaceApiKey(workspaceId, 'facebook_whatsapp_api_token');
+    const FACEBOOK_WHATSAPP_PHONE_NUMBER_ID = await this.workspaceQueryService.getWorkspaceApiKey(workspaceId, 'facebook_whatsapp_phone_number_id');
+
     let utilityMessage = new WhatsappTemplateMessages().getUpdatedUtilityMessageObj(sendUtilityMessageObj);
     console.log('This is the utlity message object:', utilityMessage);
     let config = {
       method: 'post',
       maxBodyLength: Infinity,
-      url: 'https://graph.facebook.com/v18.0/' + process.env.FACEBOOK_WHATSAPP_PHONE_NUMBER_ID + '/messages',
+      url: 'https://graph.facebook.com/v18.0/' + FACEBOOK_WHATSAPP_PHONE_NUMBER_ID + '/messages',
       headers: {
         Authorization: 'Bearer ' + whatsappAPIToken,
         'Content-Type': 'application/json',
@@ -326,6 +356,12 @@ export class FacebookWhatsappChatApi {
     candidateProfileData: allDataObjects.CandidateNode,  
     apiToken:string
   ) {
+
+    const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+    console.log("workspaceId:",workspaceId)
+    const whatsappAPIToken = await this.workspaceQueryService.getWorkspaceApiKey(workspaceId, 'facebook_whatsapp_api_token');
+    const FACEBOOK_WHATSAPP_PHONE_NUMBER_ID = await this.workspaceQueryService.getWorkspaceApiKey(workspaceId, 'facebook_whatsapp_phone_number_id');
+
     const constCandidateProfileData = candidateProfileData;
     let config = {
       method: 'get',
@@ -425,7 +461,7 @@ export class FacebookWhatsappChatApi {
           phoneNumberTo: whatappUpdateMessageObj.phoneNumberTo,
           messages: whatappUpdateMessageObj.messages[0].content,
         };
-        response = await this.sendWhatsappTextMessage(sendTextMessageObj);
+        response = await this.sendWhatsappTextMessage(sendTextMessageObj, apiToken);
         // whatappUpdateMessageObjAfterWAMidUpdate = await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj( response?.data?.messages[0]?.id || response.messages[0].id, personNode, mostRecentMessageArr, );
       }
       whatappUpdateMessageObjAfterWAMidUpdate = await new CandidateEngagementArx().updateChatHistoryObjCreateWhatsappMessageObj(response?.data?.messages[0]?.id || response.messages[0].id, personNode, mostRecentMessageArr, chatControl,  apiToken);
@@ -438,6 +474,11 @@ export class FacebookWhatsappChatApi {
   async handleAudioMessage(audioMessageObject: { filename: string; mime_type: string; audioId: string }, candidateProfileData: allDataObjects.CandidateNode,  apiToken:string) {
     let audioTranscriptionText;
     const constCandidateProfileData = candidateProfileData;
+    const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+    console.log("workspaceId:",workspaceId)
+    const whatsappAPIToken = await this.workspaceQueryService.getWorkspaceApiKey(workspaceId, 'facebook_whatsapp_api_token');
+    const FACEBOOK_WHATSAPP_PHONE_NUMBER_ID = await this.workspaceQueryService.getWorkspaceApiKey(workspaceId, 'facebook_whatsapp_phone_number_id');
+
     let config = {
       method: 'get',
       maxBodyLength: Infinity,

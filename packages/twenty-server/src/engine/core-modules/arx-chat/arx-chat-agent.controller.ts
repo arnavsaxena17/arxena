@@ -20,16 +20,10 @@ import { CalendarEmailService } from './services/candidate-engagement/calendar-e
 import moment from 'moment-timezone';
 import axios from 'axios';
 import { WhatsappTemplateMessages } from './services/whatsapp-api/facebook-whatsapp/template-messages';
-import { TokenService } from '../auth/services/token.service';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Workspace } from '../workspace/workspace.entity';
-import { In, Repository } from 'typeorm';
-import { DataSourceEntity } from 'src/engine/metadata-modules/data-source/data-source.entity';
 import { EnvironmentService } from 'src/engine/integrations/environment/environment.service';
-import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
-import {WorkspaceQueryService} from '../workspace-modifications/workspace-modifications.service';
 import { LLMProviders } from './services/llm-agents/llm-agents';
 
+import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 interface CandidateRequest {
   url: string;
@@ -42,6 +36,13 @@ interface CandidateRequest {
 
 @Controller('updateChat')
 export class UpdateChatEndpoint {
+
+
+  constructor(
+    private readonly workspaceQueryService: WorkspaceQueryService
+  ) {}
+
+
   @Post()
   async create(@Req() request: Request): Promise<object> {
     console.log('These are the request body', request.body);
@@ -268,7 +269,7 @@ export class ArxChatEndpoint {
       phoneNumberTo: personObj.phone,
       messages: messageToSend,
     };
-    const sendMessageResponse = await new FacebookWhatsappChatApi().sendWhatsappTextMessage(messageObj);
+    const sendMessageResponse = await new FacebookWhatsappChatApi(this.workspaceQueryService).sendWhatsappTextMessage(messageObj, apiToken);
     whatappUpdateMessageObj.whatsappMessageId = sendMessageResponse?.data?.messages[0]?.id;
     whatappUpdateMessageObj.whatsappDeliveryStatus = 'sent';
     await new FetchAndUpdateCandidatesChatsWhatsapps().createAndUpdateWhatsappMessage(personObj.candidates.edges[0].node, whatappUpdateMessageObj,apiToken);
@@ -956,12 +957,18 @@ export class WhatsappWebhook {
 
 @Controller('whatsapp-controller')
 export class WhatsappControllers {
+
+  constructor(
+    private readonly workspaceQueryService: WorkspaceQueryService
+  ) {}
   @Post('uploadFile')
   async uploadFileToFBWAAPI(@Req() request: any): Promise<object> {
+    const apiToken = request.headers.authorization.split(' ')[1];
+
     console.log('upload file to whatsapp api');
     const requestBody = request?.body;
     const filePath = requestBody?.filePath;
-    const response = await new FacebookWhatsappChatApi().uploadFileToWhatsAppUsingControllerApi(filePath);
+    const response = await new FacebookWhatsappChatApi(this.workspaceQueryService).uploadFileToWhatsAppUsingControllerApi(filePath, apiToken);
     return response || {}; // Return an empty object if the response is undefined
   }
 }
@@ -1168,6 +1175,12 @@ export class TwilioControllers {
 @Controller('whatsapp-test')
 export class WhatsappTestAPI {
 
+  constructor(
+    private readonly workspaceQueryService: WorkspaceQueryService
+  ) {}
+
+
+
   @Post('send-template-message')
   async sendTemplateMessage(@Req() request: any): Promise<object> {
 
@@ -1195,7 +1208,7 @@ export class WhatsappTestAPI {
     };
     console.log("This is the sendTemplateMessageObj:", sendTemplateMessageObj)
 
-    const response = await new FacebookWhatsappChatApi().sendWhatsappUtilityMessage(sendTemplateMessageObj,apiToken);
+    const response = await new FacebookWhatsappChatApi(this.workspaceQueryService).sendWhatsappUtilityMessage(sendTemplateMessageObj,apiToken);
     let utilityMessage = await new WhatsappTemplateMessages().getUpdatedUtilityMessageObj(sendTemplateMessageObj);
     const whatsappTemplateMessageSent = await new WhatsappTemplateMessages().generateMessage(requestBody.templateName, sendTemplateMessageObj);
     console.log("This is the mesasge obj:", personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges)
@@ -1215,7 +1228,7 @@ export class WhatsappTestAPI {
     const apiToken = request.headers.authorization.split(' ')[1];
 
     const sendMessageObj: allDataObjects.sendWhatsappTemplateMessageObjectType = request.body as unknown as allDataObjects.sendWhatsappTemplateMessageObjectType;
-    new FacebookWhatsappChatApi().sendWhatsappTemplateMessage(sendMessageObj,apiToken);
+    new FacebookWhatsappChatApi(this.workspaceQueryService).sendWhatsappTemplateMessage(sendMessageObj,apiToken);
     return { status: 'success' };
   }
   @Post('utility')
@@ -1223,18 +1236,20 @@ export class WhatsappTestAPI {
     const apiToken = request.headers.authorization.split(' ')[1];
 
     const sendMessageObj: allDataObjects.sendWhatsappUtilityMessageObjectType = request.body as unknown as allDataObjects.sendWhatsappUtilityMessageObjectType;
-    new FacebookWhatsappChatApi().sendWhatsappUtilityMessage(sendMessageObj,  apiToken);
+    new FacebookWhatsappChatApi(this.workspaceQueryService).sendWhatsappUtilityMessage(sendMessageObj,  apiToken);
     return { status: 'success' };
   }
 
   @Post('message')
-  async createTextMessage(@Req() request: Request): Promise<object> {
+  async createTextMessage(@Req() request: any): Promise<object> {
+    const apiToken = request.headers.authorization.split(' ')[1];
+
     const sendTextMessageObj: allDataObjects.ChatRequestBody = {
       phoneNumberTo: '918411937769',
       phoneNumberFrom: '918411937769',
       messages: 'This is the panda talking',
     };
-    new FacebookWhatsappChatApi().sendWhatsappTextMessage(sendTextMessageObj);
+    new FacebookWhatsappChatApi(this.workspaceQueryService).sendWhatsappTextMessage(sendTextMessageObj, apiToken);
     return { status: 'success' };
   }
   @Post('uploadFile')
@@ -1245,7 +1260,7 @@ export class WhatsappTestAPI {
     const requestBody = request?.body;
     const filePath = requestBody?.filePath;
     const chatControl = 'startChat';
-    const response = await new FacebookWhatsappChatApi().uploadFileToWhatsApp(filePath, chatControl,apiToken);
+    const response = await new FacebookWhatsappChatApi(this.workspaceQueryService).uploadFileToWhatsApp(filePath, chatControl,apiToken);
     return response || {}; 
   }
 
@@ -1268,7 +1283,7 @@ export class WhatsappTestAPI {
     const apiToken = request.headers.authorization.split(' ')[1];
     const sendFileObj = request.body;
     const chatControl = 'startChat';
-    new FacebookWhatsappChatApi().uploadAndSendFileToWhatsApp(sendFileObj, chatControl,  apiToken);
+    new FacebookWhatsappChatApi(this.workspaceQueryService).uploadAndSendFileToWhatsApp(sendFileObj, chatControl,  apiToken);
     return { status: 'success' };
   }
 

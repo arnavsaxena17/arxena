@@ -11,8 +11,10 @@ export class LLMProviders {
   ) {}
 
   async initializeLLMClients(workspaceId: string) {
-    const openAIKey = await this.getWorkspaceApiKey(workspaceId, 'OPENAI_API_KEY') || process.env.OPENAI_API_KEY;
-    const anthropicKey = await this.getWorkspaceApiKey(workspaceId, 'ANTHROPIC_API_KEY') || process.env.ANTHROPIC_API_KEY;
+    console.log("Workspace API key:", await this.workspaceQueryService.getWorkspaceApiKey(workspaceId, 'openaikey'))
+    console.log("Workspace API key:", await this.workspaceQueryService.getWorkspaceApiKey(workspaceId, 'anthropicKey'))
+    const openAIKey = await this.workspaceQueryService.getWorkspaceApiKey(workspaceId, 'openaikey') || process.env.OPENAI_API_KEY;
+    const anthropicKey = await this.workspaceQueryService.getWorkspaceApiKey(workspaceId, 'anthropicKey') || process.env.ANTHROPIC_API_KEY;
 
     return {
       openAIclient: new OpenAI({ apiKey: openAIKey }),
@@ -20,20 +22,5 @@ export class LLMProviders {
     };
   }
 
-  private async getWorkspaceApiKey(workspaceId: string, keyName: string): Promise<string | null> {
-    try {
-      const dataSourceSchema = this.workspaceQueryService.workspaceDataSourceService.getSchemaName(workspaceId);
-      
-      const workspaceSettings = await this.workspaceQueryService.executeRawQuery(
-        `SELECT * FROM ${dataSourceSchema}."workspaceSettings" WHERE "settingKey" = $1 LIMIT 1`,
-        [keyName],
-        workspaceId
-      );
 
-      return workspaceSettings[0]?.settingValue || null;
-    } catch (error) {
-      console.error(`Error fetching ${keyName} for workspace ${workspaceId}:`, error);
-      return null;
-    }
-  }
 }
