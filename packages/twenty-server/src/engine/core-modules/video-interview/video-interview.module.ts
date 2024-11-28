@@ -5,6 +5,7 @@ import { VideoInterviewController } from 'src/engine/core-modules/video-intervie
 import { AuthModule } from 'src/engine/core-modules/auth/auth.module';
 import { TranscriptionService } from 'src/engine/core-modules/video-interview/transcription.service';
 import { MulterModule } from '@nestjs/platform-express';
+import { WorkspaceModificationsModule } from '../workspace-modifications/workspace-modifications.module';
 
 @Module({
   imports: [
@@ -12,6 +13,8 @@ import { MulterModule } from '@nestjs/platform-express';
     MulterModule.register({
       dest: './uploads',
     }),
+    WorkspaceModificationsModule,
+
   ],
   controllers: [VideoInterviewController],
   providers: [TranscriptionService],

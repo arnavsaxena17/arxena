@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UploadedFiles, Req, UseInterceptors, BadRequestException, UseGuards, InternalServerErrorException, HttpException } from '@nestjs/common';
+import { Controller, Post, Body, UploadedFiles, Req, UseInterceptors, BadRequestException, UseGuards, InternalServerErrorException, HttpException, UnauthorizedException } from '@nestjs/common';
 
 
 import { AuthGuard } from '@nestjs/passport';
@@ -13,6 +13,7 @@ import * as fs from 'fs';
 import ffmpeg from 'fluent-ffmpeg';
 
 import { TokenService } from 'src/engine/core-modules/auth/services/token.service';
+import { WorkspaceQueryService } from '../workspace-modifications/workspace-modifications.service';
 
 interface GetInterviewDetailsResponse {
   responseFromInterviewRequests: any;
@@ -37,8 +38,9 @@ export async function axiosRequest(data: string, apiToken: string) {
 @Controller('video-interview')
 export class VideoInterviewController {
   constructor(
+    private readonly workspaceQueryService: WorkspaceQueryService,
+
     private readonly transcriptionService: TranscriptionService,
-    private readonly tokenService: TokenService
 
   ) {
     console.log('GraphQL URL configured as:', process.env.GRAPHQL_URL);
@@ -408,14 +410,61 @@ export class VideoInterviewController {
       }, 500);
     }
   }
+  private async getWorkspaceTokenForInterview(interviewId: string) {
+    const results = await this.workspaceQueryService.executeQueryAcrossWorkspaces(
+      async (workspaceId, dataSourceSchema, transactionManager) => {
+        // Query to find the interview status
+        const interviewStatus = await this.workspaceQueryService.executeRawQuery(
+          `SELECT * FROM ${dataSourceSchema}._aiInterviewStatus 
+           WHERE "_aiInterviewStatus"."id" ILIKE '%${interviewId}%'`,
+          [],
+          workspaceId,
+          transactionManager
+        );
+  
+        if (interviewStatus.length > 0) {
+          // Get API keys for the workspace
+          const apiKeys = await this.workspaceQueryService.getApiKeys(
+            workspaceId, 
+            dataSourceSchema, 
+            transactionManager
+          );
+  
+          if (apiKeys.length > 0) {
+            // Generate token using the first available API key
+            const apiKeyToken = await this.workspaceQueryService.tokenService.generateApiKeyToken(
+              workspaceId,
+              apiKeys[0].id,
+              apiKeys[0].expiresAt
+            );
+  
+            if (apiKeyToken) {
+              return apiKeyToken.token;
+            }
+          }
+        }
+        return null;
+      }
+    );
+  
+    // Return first non-null result
+    return results.find(result => result !== null);
+  }
   
   @Post('get-interview-details')
   async getInterViewDetails(@Req() req: any): Promise<GetInterviewDetailsResponse> {
-    const apiToken = req.headers.authorization.split(' ')[1]; // Assuming Bearer token
+    // const apiToken = req.headers.authorization.split(' ')[1]; // Assuming Bearer token
+    // const apiToken = process.env.TWENTY_JWT_SECRET;
+    const { interviewId } = req.body;
+    const workspaceToken = await this.getWorkspaceTokenForInterview(interviewId);
+    if (!workspaceToken) {
+      throw new UnauthorizedException('Could not find valid workspace token');
+    }
+    const apiToken = workspaceToken;
 
+    console.log("Api Token:", apiToken)
     console.log("Got video interview hit")
     if (req.method === 'POST') {
-      const { interviewId } = req.body;
       console.log("Received interviewId:", interviewId);
       let responseFromInterviewRequests
       const InterviewStatusesQuery = `

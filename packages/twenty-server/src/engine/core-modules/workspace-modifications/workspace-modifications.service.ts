@@ -6,14 +6,19 @@ import { EntityManager, In, Repository } from 'typeorm';
 import { EnvironmentService } from 'src/engine/integrations/environment/environment.service';
 import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
 import { TokenService } from 'src/engine/core-modules/auth/services/token.service';
+import OpenAI from 'openai';
+import Anthropic from '@anthropic-ai/sdk';
+// import { WorkspaceQueryService } from '../workspace-query.service';
 
 @Injectable()
 export class WorkspaceQueryService {
   constructor(
+
+
     @InjectRepository(Workspace, 'core')
     private readonly workspaceRepository: Repository<Workspace>,
     @InjectRepository(DataSourceEntity, 'metadata')
-    private readonly dataSourceRepository: Repository<DataSourceEntity>,
+    public readonly dataSourceRepository: Repository<DataSourceEntity>,
     public readonly tokenService: TokenService,
 
     private readonly environmentService: EnvironmentService,
@@ -40,6 +45,20 @@ export class WorkspaceQueryService {
       return null;
     }
   }
+
+  async initializeLLMClients(workspaceId: string) {
+    console.log("Workspace API key:", await this.getWorkspaceApiKey(workspaceId, 'openaikey'));
+    console.log("Workspace API key:", await this.getWorkspaceApiKey(workspaceId, 'anthropicKey'));
+    
+    const openAIKey = await this.getWorkspaceApiKey(workspaceId, 'openaikey') || process.env.OPENAI_API_KEY;
+    const anthropicKey = await this.getWorkspaceApiKey(workspaceId, 'anthropicKey') || process.env.ANTHROPIC_API_KEY;
+  
+    return {
+      openAIclient: new OpenAI({ apiKey: openAIKey }),
+      anthropic: new Anthropic({ apiKey: anthropicKey })
+    };
+  }
+  
   async executeQueryAcrossWorkspaces<T>(
     queryCallback: (workspaceId: string, dataSourceSchema: string, transactionManager?: EntityManager) => Promise<T>,
     transactionManager?: EntityManager
@@ -71,7 +90,7 @@ export class WorkspaceQueryService {
     return this.workspaceDataSourceService.executeRawQuery(query, params, workspaceId, transactionManager);
   }
 
-  private async getWorkspaces(): Promise<string[]> {
+ async getWorkspaces(): Promise<string[]> {
     const workspaceIds = (
       await this.workspaceRepository.find({
         where: this.environmentService.get('IS_BILLING_ENABLED')

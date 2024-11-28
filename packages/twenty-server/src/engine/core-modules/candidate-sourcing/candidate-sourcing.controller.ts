@@ -10,8 +10,13 @@ import { ArxenaCandidateNode, ArxenaPersonNode, Jobs, UserProfile } from './type
 import axios from 'axios';
 import { ApiKeyToken } from '../auth/dto/token.entity';
 import { JwtAuthGuard } from 'src/engine/guards/jwt.auth.guard';
+import { WorkspaceQueryService } from '../workspace-modifications/workspace-modifications.service';
 @Controller('candidate-sourcing')
 export class CandidateSourcingController {
+
+  constructor(
+    private readonly workspaceQueryService: WorkspaceQueryService
+  ) {}
   async getJobDetails(jobId: string,apiToken:string): Promise<Jobs> {
     // hack to check for job name being sent instead of job ID from arxena-site.
     function isValidMongoDBId(str: string) {
@@ -159,7 +164,7 @@ export class CandidateSourcingController {
     try {
       const apiToken = request.headers.authorization.split(' ')[1]; // Assuming Bearer token
       console.log("going to process chats")
-      await new FetchAndUpdateCandidatesChatsWhatsapps().processCandidatesChatsGetStatuses( apiToken);
+      await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).processCandidatesChatsGetStatuses( apiToken);
       return { status: 'Success' };
     } catch (err) {
       console.error('Error in process:', err);
@@ -178,7 +183,7 @@ export class CandidateSourcingController {
       const currentWorkspaceMemberId = request.body.currentWorkspaceMemberId;
 
       console.log("going to refresh chats")
-      await new FetchAndUpdateCandidatesChatsWhatsapps().processCandidatesChatsGetStatuses(candidateIds, currentWorkspaceMemberId,apiToken);
+      await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).processCandidatesChatsGetStatuses(candidateIds, currentWorkspaceMemberId,apiToken);
       return { status: 'Success' };
     } catch (err) {
       console.error('Error in refresh chats:', err);
@@ -444,7 +449,7 @@ export class CandidateSourcingController {
     const apiToken = request.headers.authorization.split(' ')[1]; // Assuming Bearer token
 
     console.log('called fetchCandidateByPhoneNumber for phone:', request.body.phoneNumber);
-    const personObj: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps().getPersonDetailsByPhoneNumber(request.body.phoneNumber,apiToken);
+    const personObj: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).getPersonDetailsByPhoneNumber(request.body.phoneNumber,apiToken);
     const candidateId = personObj.candidates?.edges[0]?.node?.id;
     const graphqlVariables = {
       idToUpdate: candidateId,

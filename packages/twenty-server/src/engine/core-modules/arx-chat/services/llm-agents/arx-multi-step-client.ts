@@ -5,18 +5,15 @@ import { ChatCompletionMessage } from 'openai/resources';
 import CandidateEngagementArx from '../../services/candidate-engagement/check-candidate-engagement';
 import { WhatsappAPISelector } from '../../services/whatsapp-api/whatsapp-controls';
 import { checkIfResponseMessageSoundsHumanLike } from './human-or-bot-type-response-classification'
-import {LLMProviders} from './llm-agents'
 import {getMostRecentChatsByPerson, updateMostRecentMessagesBasedOnNewSystemPrompt} from '../../utils/arx-chat-agent-utils'
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 export class OpenAIArxMultiStepClient {
   private readonly personNode: allDataObjects.PersonNode;
-  private readonly llmProviders: LLMProviders;
   private readonly workspaceQueryService: WorkspaceQueryService;
 
-  constructor(personNode: allDataObjects.PersonNode, llmProviders: LLMProviders, workspaceQueryService: WorkspaceQueryService) {
+  constructor(personNode: allDataObjects.PersonNode,  workspaceQueryService: WorkspaceQueryService) {
     this.personNode = personNode;
-    this.llmProviders = llmProviders;
     this.workspaceQueryService = workspaceQueryService;
   }
 
@@ -26,9 +23,9 @@ export class OpenAIArxMultiStepClient {
       const lastFewChats = await getMostRecentChatsByPerson(mostRecentMessageArr)
       console.log("Going to run candidate facing agents with tool calls in and most recent message is :",lastFewChats )
 
-      const newSystemPrompt = await new ToolsForAgents().getSystemPrompt(this.personNode, chatControl,apiToken);
+      const newSystemPrompt = await new ToolsForAgents(this.workspaceQueryService).getSystemPrompt(this.personNode, chatControl,apiToken);
       const updatedMostRecentMessagesBasedOnNewSystemPrompt = await updateMostRecentMessagesBasedOnNewSystemPrompt(mostRecentMessageArr, newSystemPrompt);
-      const tools = await new ToolsForAgents().getTools(chatControl);
+      const tools = await new ToolsForAgents(this.workspaceQueryService).getTools(chatControl);
       const responseMessage = await this.getHumanLikeResponseMessageFromLLM(updatedMostRecentMessagesBasedOnNewSystemPrompt, tools, apiToken)
       console.log('BOT_MESSAGE in  :', "at::", new Date().toString(), ' ::: ' ,JSON.stringify(responseMessage));
       if (responseMessage){
@@ -43,7 +40,7 @@ export class OpenAIArxMultiStepClient {
       }
       console.log("Sending message to candidate from addResponseAndToolCallsToMessageHistory_stage1", mostRecentMessageArr.slice(-1)[0].content);
       console.log("Message text in stage 1 received based on which we will decide whether to send message or not::",  mostRecentMessageArr.slice(-1)[0].content)
-      await new WhatsappAPISelector().sendWhatsappMessageToCandidate( mostRecentMessageArr.slice(-1)[0].content || '', this.personNode,mostRecentMessageArr, 'runCandidateFacingAgentsAlongWithToolCalls_stage1', chatControl,apiToken, isChatEnabled);
+      await new WhatsappAPISelector(this.workspaceQueryService).sendWhatsappMessageToCandidate( mostRecentMessageArr.slice(-1)[0].content || '', this.personNode,mostRecentMessageArr, 'runCandidateFacingAgentsAlongWithToolCalls_stage1', chatControl,apiToken, isChatEnabled);
       return mostRecentMessageArr;
     }
     catch (error){
@@ -58,7 +55,7 @@ export class OpenAIArxMultiStepClient {
       const MAX_ATTEMPTS = 3;
 
       const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-      const { openAIclient } = await this.llmProviders.initializeLLMClients(workspaceId);
+      const { openAIclient } = await this.workspaceQueryService.initializeLLMClients(workspaceId);
 
       for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
         // @ts-ignore
@@ -92,19 +89,19 @@ export class OpenAIArxMultiStepClient {
     const toolCalls = responseMessage?.tool_calls;
     console.log("We have made a total of ", toolCalls?.length, " tool calls in current chatResponseMessage")
     const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-    const { openAIclient } = await this.llmProviders.initializeLLMClients(workspaceId);
+    const { openAIclient } = await this.workspaceQueryService.initializeLLMClients(workspaceId);
 
     if (toolCalls) {
       for (const toolCall of toolCalls) {
         const functionName = toolCall.function.name;
         console.log('Function name is:', functionName);
-        const availableFunctions = new ToolsForAgents().getAvailableFunctions();
+        const availableFunctions = new ToolsForAgents(this.workspaceQueryService).getAvailableFunctions();
         const functionToCall = availableFunctions[functionName];
         const functionArgs = JSON.parse(toolCall.function.arguments);
         const responseFromFunction = await functionToCall(functionArgs, this.personNode);
         mostRecentMessageArr.push({ tool_call_id: toolCall.id, role: 'tool', name: functionName, content: responseFromFunction });
       }
-      const tools = await new ToolsForAgents().getTools(chatControl);
+      const tools = await new ToolsForAgents(this.workspaceQueryService).getTools(chatControl);
       // @ts-ignore
       const response = await openAIclient.chat.completions.create({ model: modelName, messages: mostRecentMessageArr, tools: tools, tool_choice: 'auto' });
       console.log('BOT_MESSAGE in runCandidateFacingAgentsAlongWithToolCalls_stage2 :', "at::", new Date().toString(), ' ::: ' ,JSON.stringify(responseMessage));
@@ -119,7 +116,7 @@ export class OpenAIArxMultiStepClient {
       let messageArr_stage2 = mostRecentMessageArr.slice(-1)
       if ( messageArr_stage2[0].content != firstStageMessageArr[0].content) {
         console.log("Sending message to candidate from addResponseAndToolCallsToMessageHistory_stage2", messageArr_stage2);
-        await new WhatsappAPISelector().sendWhatsappMessageToCandidate(response?.choices[0]?.message?.content || '', this.personNode,messageArr_stage2,'addResponseAndToolCallsToMessageHistory_stage2', chatControl,apiToken, isChatEnabled);
+        await new WhatsappAPISelector(this.workspaceQueryService).sendWhatsappMessageToCandidate(response?.choices[0]?.message?.content || '', this.personNode,messageArr_stage2,'addResponseAndToolCallsToMessageHistory_stage2', chatControl,apiToken, isChatEnabled);
       }
       else{
         console.log("The message we tried to send but sending is is ::", messageArr_stage2[0].content, "processorType")

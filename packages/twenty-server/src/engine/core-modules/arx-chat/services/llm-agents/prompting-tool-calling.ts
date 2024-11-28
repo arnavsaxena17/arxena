@@ -13,7 +13,8 @@ import { addHoursInDate, axiosRequest, toIsoString } from '../../utils/arx-chat-
 import { zodResponseFormat } from "openai/helpers/zod";
 import { z } from "zod";
 import { OpenAI } from "openai";
-import { getStageOfTheConversation } from './get-stage-wise-classification';
+import { StageWiseClassification } from './get-stage-wise-classification';
+import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 const commaSeparatedStatuses = allDataObjects.statusesArray.join(', ');
 
@@ -23,6 +24,10 @@ const availableTimeSlots = '12PM-3PM, 4PM -6PM on the 24th and 25th August 2024.
 
 
 export class ToolsForAgents {
+
+  constructor(
+    private readonly workspaceQueryService: WorkspaceQueryService
+  ) {}
   currentConversationStage = z.object({
     stageOfTheConversation: z.enum(allDataObjects.allStatusesArray)
   });
@@ -106,7 +111,7 @@ export class ToolsForAgents {
     const jobId = personNode?.candidates?.edges[0]?.node?.jobs?.id;
     console.log("Job Name:", personNode?.candidates?.edges[0]?.node?.jobs?.name)
     // console.log('This is the job Id:', jobId);
-    const { questionArray, questionIdArray } = await new FetchAndUpdateCandidatesChatsWhatsapps().fetchQuestionsByJobId(jobId,apiToken);
+    const { questionArray, questionIdArray } = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).fetchQuestionsByJobId(jobId,apiToken);
     // Hardcoded questions to ask if no questions are found in the database
     if (questionArray.length == 0) {
       return ['Are you okay to relocate to {location}?','What is your current & expected CTC?', 'What is your notice period?'];
@@ -355,7 +360,7 @@ export class ToolsForAgents {
     // const newQuestionArray = this.questionArray
     const jobId = candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.jobs?.id;
 
-    const { questionIdArray, questionArray } = await new FetchAndUpdateCandidatesChatsWhatsapps().fetchQuestionsByJobId(jobId,  apiToken);
+    const { questionIdArray, questionArray } = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).fetchQuestionsByJobId(jobId,  apiToken);
     const results = fuzzy.filter(inputs.question, questionArray);
     const matches = results.map(function (el) {
       return el.string;

@@ -173,7 +173,7 @@ export class WhatsappService {
                 messageType: 'string',
               };
 
-              const candidateProfileData = await new FetchAndUpdateCandidatesChatsWhatsapps().getCandidateInformation(whatsappIncomingMessage, apiToken);
+              const candidateProfileData = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).getCandidateInformation(whatsappIncomingMessage, apiToken);
 
               if (msg?.message?.protocolMessage?.type === 0) {
                 await this.handleDeleteForEveryoneMessage(msg, candidateProfileData);
