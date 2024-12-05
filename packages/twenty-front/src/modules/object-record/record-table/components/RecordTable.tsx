@@ -169,6 +169,8 @@ export const RecordTable = ({
     objectNameSingular,
   });
 
+  console.log("objectMetadataItem", objectMetadataItem);
+  console.log("objectNameSingular", objectNameSingular);
   const { upsertRecord } = useUpsertRecordV2({
     objectNameSingular,
   });

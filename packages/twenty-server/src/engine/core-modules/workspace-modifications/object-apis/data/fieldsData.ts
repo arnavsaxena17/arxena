@@ -1,0 +1,1036 @@
+
+import { FieldInput } from '../types/types.js';
+export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldInput[] {
+    return [
+    {
+        "field": {
+            "description": "",
+            "icon": "IconUsers",
+            "label": "Status",
+            "name": "status",
+            "options": [{
+                    "color": "red",
+                    "label": "Not Interested",
+                    "position": 0,
+                    "value": "NOT_INTERESTED"
+                },
+                {
+                    "color": "green",
+                    "label": "Interested",
+                    "position": 0,
+                    "value": "INTERESTED"
+                },
+                {
+                    "color": "orange",
+                    "label": "CV Received",
+                    "position": 0,
+                    "value": "CV_RECEIVED"
+                },
+                {
+                    "color": "turquoise",
+                    "label": "Not Fit",
+                    "position": 0,
+                    "value": "NOT_FIT"
+                },
+                {
+                    "color": "turquoise",
+                    "label": "Sourced",
+                    "position": 0,
+                    "value": "SOURCED"
+                },
+                {
+                    "color": "green",
+                    "label": "Screening",
+                    "position": 0,
+                    "value": "SCREENING"
+                },
+                {
+                    "color": "turquoise",
+                    "label": "Recruiter Interview",
+                    "position": 1,
+                    "value": "RECRUITER_INTERVIEW"
+                },
+                {
+                    "color": "sky",
+                    "label": "CV Sent",
+                    "position": 2,
+                    "value": "CV_SENT"
+                },
+                {
+                    "color": "blue",
+                    "label": "Client Interview",
+                    "position": 3,
+                    "value": "CLIENT_INTERVIEW"
+                },
+                {
+                    "color": "purple",
+                    "label": "Negotiation",
+                    "position": 4,
+                    "value": "NEGOTIATION"
+                }
+            ],
+            "objectMetadataId": objectsNameIdMap.candidate,
+            "type": "SELECT"
+        }
+    },
+    {
+        "field": {
+            "description": "Status of Candidates",
+            "icon": "IconUsers",
+            "label": "candConversationStatus",
+            "name": "candConversationStatus",
+            "options": [{
+                    "color": "red",
+                    "label": "Only Added No Conversation",
+                    "position": 0,
+                    "value": "ONLY_ADDED_NO_CONVERSATION"
+                },
+                {
+                    "color": "green",
+                    "label": "Conversation Started Has Not Responded",
+                    "position": 0,
+                    "value": "CONVERSATION_STARTED_HAS_NOT_RESPONDED"
+                },
+                {
+                    "color": "orange",
+                    "label": "Shared JD Has Not Responded",
+                    "position": 0,
+                    "value": "SHARED_JD_HAS_NOT_RESPONDED"
+                },
+                {
+                    "color": "turquoise",
+                    "label": "Candidate Refuses To Relocate",
+                    "position": 0,
+                    "value": "CANDIDATE_REFUSES_TO_RELOCATE"
+                },
+                {
+                    "color": "turquoise",
+                    "label": "Stopped Responding On Questions",
+                    "position": 0,
+                    "value": "STOPPED_RESPONDING_ON_QUESTIONS"
+                },
+                {
+                    "color": "green",
+                    "label": "Candidate Is Keen To Chat",
+                    "position": 0,
+                    "value": "CANDIDATE_IS_KEEN_TO_CHAT"
+                },
+                {
+                    "color": "turquoise",
+                    "label": "Candidate Has Followed Up To Setup Chat",
+                    "position": 1,
+                    "value": "CANDIDATE_HAS_FOLLOWED_UP_TO_SETUP_CHAT"
+                },
+                {
+                    "color": "sky",
+                    "label": "Candidate Is Reluctatnt To Discuss Compensation",
+                    "position": 2,
+                    "value": "CANDIDATE_IS_RELUCTANT_TO_DISCUSS_COMPENSATION"
+                },
+                {
+                    "color": "blue",
+                    "label": "Conversation Closed To Be Contacted",
+                    "position": 3,
+                    "value": "CONVERSATION_CLOSED_TO_BE_CONTACTED"
+                }
+            ],
+            "objectMetadataId": objectsNameIdMap.candidate,
+            "type": "SELECT"
+        }
+    },
+    {
+        "field": {
+            "description": "",
+            "label": "Schedule",
+            "name": "schedule",
+            "objectMetadataId": objectsNameIdMap.recruiterInterview,
+            "type": "DATE_TIME"
+        }
+    },
+    {
+        "field": {
+            "description": "",
+            "label": "Date of Interview",
+            "name": "dateofInterview",
+            "objectMetadataId": objectsNameIdMap.clientInterview,
+            "type": "DATE_TIME"
+        }
+    },
+    {
+        "field": {
+            "description": "",
+            "label": "Transcription",
+            "name": "transcription",
+            "objectMetadataId": objectsNameIdMap.recruiterInterview,
+            "type": "TEXT"
+        }
+    },
+    {
+        "field": {
+            "description": "",
+            "label": "Analysis",
+            "name": "analysis",
+            "objectMetadataId": objectsNameIdMap.recruiterInterview,
+            "type": "TEXT"
+        }
+    },
+    {
+        "field": {
+            "description": "",
+            "label": "Date of Joining",
+            "name": "dateofJoining",
+            "objectMetadataId": objectsNameIdMap.offer,
+            "type": "DATE_TIME"
+        }
+    },
+    {
+        "field": {
+            "description": "",
+            "label": "Number of Days",
+            "name": "numberofDays",
+            "objectMetadataId": objectsNameIdMap.offer,
+            "type": "NUMBER"
+        }
+    },
+    {
+        "field": {
+            "description": "",
+            "label": "From Phone",
+            "name": "phoneFrom",
+            "objectMetadataId": objectsNameIdMap.whatsappMessage,
+            "type": "TEXT"
+        }
+    },
+    {
+        "field": {
+            "description": "",
+            "label": "Salary",
+            "name": "salary",
+            "objectMetadataId": objectsNameIdMap.person,
+            "type": "TEXT"
+        }
+    },
+    {
+        "field": {
+            "description": "",
+            "label": "To Phone",
+            "name": "phoneTo",
+            "objectMetadataId": objectsNameIdMap.whatsappMessage,
+            "type": "TEXT"
+        }
+    },
+
+    {
+        "field": {
+            "description": "",
+            "label": "Message",
+            "name": "message",
+            "objectMetadataId": objectsNameIdMap.whatsappMessage,
+            "type": "TEXT"
+        }
+    },
+    {
+        "field": {
+            "description": "",
+            "label": "messageObj",
+            "name": "messageObj",
+            "objectMetadataId": objectsNameIdMap.whatsappMessage,
+            "type": "RAW_JSON"
+        }
+    },
+    //   {
+    //     "field": {
+    //       "description": "",
+    //       "label": "messageObjWithTimeStamp",
+    //       "name": "messageObjWithTimeStamp",
+    //       "objectMetadataId": objectsNameIdMap.whatsappMessage,
+    //       "type": "RAW_JSON"
+    //     }
+    //   },
+    {
+        "field": {
+            "description": "",
+            "label": "whatsappProvider",
+            "name": "whatsappProvider",
+            "objectMetadataId": objectsNameIdMap.whatsappMessage,
+            "type": "TEXT"
+        }
+    },
+    {
+        "field": {
+            "description": "",
+            "label": "whatsappMessageId",
+            "name": "whatsappMessageId",
+            "objectMetadataId": objectsNameIdMap.whatsappMessage,
+            "type": "TEXT"
+        }
+    },
+    {
+        "field": {
+            "description": "",
+            "label": "whatsappDeliveryStatus",
+            "name": "whatsappDeliveryStatus",
+            "objectMetadataId": objectsNameIdMap.whatsappMessage,
+            "type": "TEXT"
+        }
+    },
+    {
+        "field": {
+            "description": "",
+            "label": "typeOfMessage",
+            "name": "typeOfMessage",
+            "objectMetadataId": objectsNameIdMap.whatsappMessage,
+            "type": "TEXT"
+        }
+    },
+    {
+        "field": {
+            "description": "lastEngagementChatControl",
+            "label": "lastEngagementChatControl",
+            "name": "lastEngagementChatControl",
+            "objectMetadataId": objectsNameIdMap.whatsappMessage,
+            "type": "TEXT"
+        }
+    },
+    {
+        "field": {
+            "description": "",
+            "label": "audioFilePath",
+            "name": "audioFilePath",
+            "objectMetadataId": objectsNameIdMap.whatsappMessage,
+            "type": "TEXT"
+        }
+    },
+    {
+        "field": {
+            "description": "",
+            "label": "isActive",
+            "name": "isActive",
+            "objectMetadataId": objectsNameIdMap.job,
+            "type": "BOOLEAN"
+        }
+    },
+    {
+        "field": {
+            "description": "",
+            "label": "jobLocation",
+            "name": "jobLocation",
+            "objectMetadataId": objectsNameIdMap.job,
+            "type": "TEXT"
+        }
+    },
+    {
+        "field": {
+            "description": "",
+            "label": "jobCode",
+            "name": "jobCode",
+            "objectMetadataId": objectsNameIdMap.job,
+            "type": "TEXT"
+        }
+    },
+    {
+        "field": {
+            "description": "",
+            "label": "Search Name",
+            "name": "searchName",
+            "objectMetadataId": objectsNameIdMap.job,
+            "type": "TEXT"
+        }
+    },
+    {
+        "field": {
+            "description": "",
+            "label": "Reports To",
+            "name": "reportsTo",
+            "objectMetadataId": objectsNameIdMap.job,
+            "type": "TEXT"
+        }
+    },
+    {
+        "field": {
+            "description": "",
+            "label": "Reportees",
+            "name": "reportees",
+            "objectMetadataId": objectsNameIdMap.job,
+            "type": "TEXT"
+        }
+    },
+    {
+        "field": {
+            "description": "",
+            "label": "Years of Experience",
+            "name": "yearsOfExperience",
+            "objectMetadataId": objectsNameIdMap.job,
+            "type": "TEXT"
+        }
+    },
+    {
+        "field": {
+            "description": "",
+            "label": "Salary Bracket",
+            "name": "salaryBracket",
+            "objectMetadataId": objectsNameIdMap.job,
+            "type": "TEXT"
+        }
+    },
+    {
+        "field": {
+            "description": "",
+            "label": "Company Details",
+            "name": "companyDetails",
+            "objectMetadataId": objectsNameIdMap.job,
+            "type": "TEXT"
+        }
+    },
+    {
+        "field": {
+            "description": "",
+            "label": "Talent Considerations",
+            "name": "talentConsiderations",
+            "objectMetadataId": objectsNameIdMap.job,
+            "type": "TEXT"
+        }
+    },
+    {
+        "field": {
+            "description": "",
+            "label": "Specific Criteria",
+            "name": "specificCriteria",
+            "objectMetadataId": objectsNameIdMap.job,
+            "type": "TEXT"
+        }
+    },
+    {
+        "field": {
+            "description": "",
+            "label": "Description",
+            "name": "description",
+            "objectMetadataId": objectsNameIdMap.job,
+            "type": "TEXT"
+        }
+    },
+    {
+        "field": {
+            "description": "",
+            "label": "engagementStatus",
+            "name": "engagementStatus",
+            "objectMetadataId": objectsNameIdMap.candidate,
+            "type": "BOOLEAN"
+        }
+    },
+    {
+        "field": {
+            "description": "",
+            "label": "startChat",
+            "name": "startChat",
+            "objectMetadataId": objectsNameIdMap.candidate,
+            "type": "BOOLEAN",
+            "defaultValue": false
+
+        }
+    },
+    {
+        "field": {
+            "description": "",
+            "label": "startVideoInterviewChat",
+            "name": "startVideoInterviewChat",
+            "objectMetadataId": objectsNameIdMap.candidate,
+            "type": "BOOLEAN",
+            "defaultValue": false
+
+
+        }
+    },
+    {
+        "field": {
+            "description": "",
+            "label": "chatCount",
+            "name": "chatCount",
+            "objectMetadataId": objectsNameIdMap.candidate,
+            "type": "NUMBER"
+        }
+    },
+    {
+        "field": {
+            "description": "",
+            "label": "startMeetingSchedulingChat",
+            "name": "startMeetingSchedulingChat",
+            "objectMetadataId": objectsNameIdMap.candidate,
+            "type": "BOOLEAN",
+            "defaultValue": false
+
+        }
+    },
+    {
+        "field": {
+            "description": "This will stop the chatbot from chatting with the candidates",
+            "defaultValue": false,
+            "label": "stopChat",
+            "icon": "IconHandStop",
+            "name": "stopChat",
+            "objectMetadataId": objectsNameIdMap.candidate,
+            "type": "BOOLEAN"
+        }
+    },
+    {
+        "field": {
+            "description": "",
+            "label": "whatsappProvider",
+            "name": "whatsappProvider",
+            "objectMetadataId": objectsNameIdMap.candidate,
+            "type": "TEXT"
+        }
+    },
+    {
+        "field": {
+            "description": "",
+            "label": "lastEngagementChatControl",
+            "name": "lastEngagementChatControl",
+            "objectMetadataId": objectsNameIdMap.candidate,
+            "type": "TEXT"
+        }
+    },
+    {
+        "field": {
+            "description": "",
+            "label": "Job specific fields",
+            "name": "jobSpecificFields",
+            "objectMetadataId": objectsNameIdMap.candidate,
+            "type": "RAW_JSON"
+        }
+    },
+    {
+        "field": {
+            "description": "",
+            "label": "descriptionOneliner",
+            "name": "descriptionOneliner",
+            "objectMetadataId": objectsNameIdMap.company,
+            "type": "TEXT"
+        }
+    },
+    {
+        "field": {
+            "description": "",
+            "label": "remindCandidateAtTimestamp",
+            "name": "remindCandidateAtTimestamp",
+            "objectMetadataId": objectsNameIdMap.candidateReminder,
+            "type": "DATE_TIME"
+        }
+    },
+    {
+        "field": {
+            "description": "",
+            "label": "remindCandidateDuration",
+            "name": "remindCandidateDuration",
+            "objectMetadataId": objectsNameIdMap.candidateReminder,
+            "type": "TEXT"
+        }
+    },
+    {
+        "field": {
+            "description": "",
+            "label": "isReminderActive",
+            "name": "isReminderActive",
+            "objectMetadataId": objectsNameIdMap.candidateReminder,
+            "type": "BOOLEAN"
+        }
+    },
+    {
+        "field": {
+            "description": "",
+            "label": "isReminderActive",
+            "name": "isReminderActive",
+            "objectMetadataId": objectsNameIdMap.candidateReminder,
+            "type": "BOOLEAN"
+        }
+    },
+    {
+        "field": {
+            "description": "",
+            "label": "columnsToProcess",
+            "name": "columnsToProcess",
+            "objectMetadataId": objectsNameIdMap.candidateEnrichment,
+            "type": "TEXT"
+        }
+    },
+    {
+        "field": {
+            "description": "",
+            "label": "sampleJson",
+            "name": "sampleJson",
+            "objectMetadataId": objectsNameIdMap.candidateEnrichment,
+            "type": "TEXT"
+        }
+    },
+    {
+        "field": {
+            "description": "",
+            "label": "prompt",
+            "name": "prompt",
+            "objectMetadataId": objectsNameIdMap.candidateEnrichment,
+            "type": "TEXT"
+        }
+    },
+
+    {
+        "field": {
+            "description": "",
+            "label": "languageModel",
+            "name": "languageModel",
+            "objectMetadataId": objectsNameIdMap.candidateEnrichment,
+            "options": [{
+                    "color": "green",
+                    "label": "GPT 3.5 Turbo",
+                    "position": 0,
+                    "value": "gpt35turbo"
+                },
+                {
+                    "color": "turquoise",
+                    "label": "GPT-4o",
+                    "position": 1,
+                    "value": "GPT4o"
+                },
+            ],
+            "type": "SELECT"
+        }
+    },
+    {
+        "field": {
+            "description": "",
+            "label": "Arxena Job Id",
+            "name": "arxenaSiteId",
+            "objectMetadataId": objectsNameIdMap.job,
+            "type": "TEXT"
+        }
+    },
+
+    {
+        "field": {
+            "description": "",
+            "icon": "IconFlag",
+            "label": "Country",
+            "name": "country",
+            "options": [{
+                    "color": "green",
+                    "label": "India",
+                    "position": 0,
+                    "value": "IN"
+                },
+                {
+                    "color": "turquoise",
+                    "label": "United States",
+                    "position": 1,
+                    "value": "US"
+                },
+                {
+                    "color": "sky",
+                    "label": "United Kingdom",
+                    "position": 2,
+                    "value": "GB"
+                },
+                {
+                    "color": "blue",
+                    "label": "Japan",
+                    "position": 3,
+                    "value": "JP"
+                },
+                {
+                    "color": "purple",
+                    "label": "France",
+                    "position": 4,
+                    "value": "FR"
+                }
+            ],
+            "objectMetadataId": objectsNameIdMap.aIModel,
+            "type": "SELECT"
+        }
+
+    },
+
+    {
+        "field": {
+            "description": "",
+            "icon": "IconLanguage",
+            "label": "Language",
+            "name": "language",
+            "options": [{
+                    "color": "green",
+                    "label": "English (United States)",
+                    "position": 0,
+                    "value": "ENGLISH_UNITED_STATES"
+                },
+                {
+                    "color": "turquoise",
+                    "label": "English (United Kingdom)",
+                    "position": 1,
+                    "value": "ENGLISH_UNITED_KINGDOM"
+                },
+                {
+                    "color": "sky",
+                    "label": "Hindi",
+                    "position": 2,
+                    "value": "HINDI"
+                },
+                {
+                    "color": "blue",
+                    "label": "Japanese",
+                    "position": 3,
+                    "value": "JAPANESE"
+                },
+                {
+                    "color": "purple",
+                    "label": "French",
+                    "position": 4,
+                    "value": "FRENCH"
+                }
+            ],
+            "objectMetadataId": objectsNameIdMap.aIModel,
+            "type": "SELECT"
+        }
+    },
+    {
+        "field": {
+            "description": "Additional Points to be added in introduction",
+            "icon": "IconAbc",
+            "label": "Introduction",
+            "name": "introduction",
+            "objectMetadataId": objectsNameIdMap.aIInterview,
+            "type": "TEXT"
+        }
+
+    },
+    {
+        "field": {
+            "description": "Additional Instructions",
+            "icon": "IconAbc",
+            "label": "Instructions",
+            "name": "instructions",
+            "objectMetadataId": objectsNameIdMap.aIInterview,
+            "type": "TEXT"
+        }
+
+    },
+    {
+        "field": {
+            "description": "Video or Text based Interview",
+            "icon": "IconAdjustmentsQuestion",
+            "label": "Question Type",
+            "name": "questionType",
+            "options": [{
+                    "color": "green",
+                    "label": "Video (Uses AI Model)",
+                    "position": 0,
+                    "value": "VIDEO"
+                },
+                {
+                    "color": "turquoise",
+                    "label": "Test (No Model)",
+                    "position": 1,
+                    "value": "TEXT"
+                },
+            ],
+            "objectMetadataId": objectsNameIdMap.aIInterviewQuestion,
+            "type": "SELECT"
+        }
+
+    },
+
+    {
+        "field": {
+            "description": "",
+            "icon": "IconCameraQuestion",
+            "label": "Answer Type",
+            "name": "answerType",
+            "options": [{
+                    "color": "green",
+                    "label": "Video (Real Time Recording)",
+                    "position": 0,
+                    "value": "VIDEO"
+                },
+                {
+                    "color": "turquoise",
+                    "label": "Test (No Recording)",
+                    "position": 1,
+                    "value": "TEXT"
+                },
+            ],
+            "objectMetadataId": objectsNameIdMap.aIInterviewQuestion,
+            "type": "SELECT"
+        }
+
+    },
+
+    {
+        "field": {
+            "description": "Time Limit of Recording",
+            "icon": "IconTimeDuration30",
+            "label": "Time Limit",
+            "name": "timeLimit",
+            "objectMetadataId": objectsNameIdMap.aIInterviewQuestion,
+            "type": "NUMBER"
+        }
+
+    },
+
+    {
+        "field": {
+            "description": "The Question",
+            "icon": "IconQuestion",
+            "label": "Question Value",
+            "name": "questionValue",
+            "objectMetadataId": objectsNameIdMap.aIInterviewQuestion,
+            "type": "TEXT"
+        }
+
+    },
+    {
+        "field": {
+            "description": "No. of Retakes allowed in case of answer type video",
+            "icon": "IconReload",
+            "label": "Retakes",
+            "name": "retakes",
+            "options": [{
+                    "color": "green",
+                    "label": "0",
+                    "position": 0,
+                    "value": "ZERO"
+                },
+                {
+                    "color": "turquoise",
+                    "label": "1",
+                    "position": 1,
+                    "value": "ONE"
+                },
+                {
+                    "color": "sky",
+                    "label": "2",
+                    "position": 2,
+                    "value": "TWO"
+                },
+            ],
+            "objectMetadataId": objectsNameIdMap.aIInterviewQuestion,
+            "type": "SELECT"
+        }
+
+    },
+
+    {
+        "field": {
+            "description": "Whether the candidate has started responding or not",
+            "icon": "IconLocationQuestion",
+            "label": "Started Responding",
+            "name": "startedResponding",
+            "objectMetadataId": objectsNameIdMap.response,
+            "type": "BOOLEAN"
+        }
+
+    },
+    {
+        "field": {
+            "description": "Whether the canadidate has completed responding or not",
+            "icon": "IconLocationCheck",
+            "label": "Completed Response",
+            "name": "completedResponse",
+            "objectMetadataId": objectsNameIdMap.response,
+            "type": "BOOLEAN"
+        }
+
+    },
+
+    {
+        "field": {
+            "description": "Time Adherence",
+            "icon": "IconTimeDuration30",
+            "label": "Time Limit Adherence",
+            "name": "timeLimitAdherence",
+            "objectMetadataId": objectsNameIdMap.response,
+            "type": "BOOLEAN"
+        }
+
+    },
+
+    {
+        "field": {
+            "description": "Timer started",
+            "icon": "IconDeviceWatchQuestion",
+            "label": "Timer Started",
+            "name": "timerStarted",
+            "objectMetadataId": objectsNameIdMap.response,
+            "type": "BOOLEAN"
+        }
+
+    },
+    {
+        "field": {
+            "description": "Timer stopped",
+            "icon": "IconDeviceWatchPause",
+            "label": "Timer Stopped",
+            "name": "timerStopped",
+            "objectMetadataId": objectsNameIdMap.response,
+            "type": "BOOLEAN"
+        }
+
+    },
+    {
+        "field": {
+            "description": "Number of Retakes remaining",
+            "icon": "IconRefreshDot",
+            "label": "Retakes Remaining",
+            "name": "retakesRemaining",
+            "objectMetadataId": objectsNameIdMap.response,
+            "type": "NUMBER"
+        }
+
+    },
+    {
+        "field": {
+            "description": "Time Adherence",
+            "icon": "IconTimeDuration30",
+            "label": "Time Limit Adherence",
+            "name": "timeLimitAdherence",
+            "objectMetadataId": objectsNameIdMap.response,
+            "type": "BOOLEAN"
+        }
+
+    },
+
+    {
+        "field": {
+            "description": "Transcript of the Response",
+            "icon": "IconFileTextAI",
+            "label": "Transcript",
+            "name": "transcript",
+            "objectMetadataId": objectsNameIdMap.response,
+            "type": "TEXT"
+        }
+
+    },
+
+    {
+        "field": {
+            "description": "Feedback for the Response",
+            "icon": "IconPencilStar",
+            "label": "Feedback",
+            "name": "feedback",
+            "objectMetadataId": objectsNameIdMap.response,
+            "type": "TEXT"
+        }
+
+    },
+    {
+        "field": {
+            "description": "uniqueStringKey for the person",
+            "icon": "IconPencilStar",
+            "label": "uniqueStringKey",
+            "name": "uniqueStringKey",
+            "objectMetadataId": objectsNameIdMap.person,
+            "type": "TEXT"
+        }
+
+    },
+    {
+        "field": {
+            "description": "uniqueStringKey for the candidate",
+            "icon": "IconPencilStar",
+            "label": "uniqueStringKey",
+            "name": "uniqueStringKey",
+            "objectMetadataId": objectsNameIdMap.candidate,
+            "type": "TEXT"
+        }
+
+    },
+
+    {
+        "field": {
+            "description": "Link Shared with the candidate",
+            "icon": "IconLink",
+            "label": "Interview Link",
+            "name": "interviewLink",
+            "objectMetadataId": objectsNameIdMap.aIInterviewStatus,
+            "type": "LINK"
+        }
+
+    },
+    {
+        "field": {
+            "description": "Hiring Naukri URL",
+            "icon": "IconLink",
+            "label": "hiringNaukriUrl",
+            "name": "hiringNaukriUrl",
+            "objectMetadataId": objectsNameIdMap.candidate,
+            "type": "LINK"
+        }
+
+    },
+    {
+        "field": {
+            "description": "Resdex Naukri URL",
+            "icon": "IconLink",
+            "label": "resdexNaukriUrl",
+            "name": "resdexNaukriUrl",
+            "objectMetadataId": objectsNameIdMap.candidate,
+            "type": "LINK"
+        }
+
+    },
+
+    {
+        "field": {
+            "description": "Interview Started or Not",
+            "icon": "IconAdjustmentsQuestion",
+            "label": "Interview Started",
+            "name": "interviewStarted",
+            "objectMetadataId": objectsNameIdMap.aIInterviewStatus,
+            "type": "BOOLEAN"
+        }
+
+    },
+
+    {
+        "field": {
+            "description": "Interview Started or Not",
+            "icon": "IconAdjustmentsCheck",
+            "label": "Interview Completed",
+            "name": "interviewCompleted",
+            "objectMetadataId": objectsNameIdMap.aIInterviewStatus,
+            "type": "BOOLEAN"
+        }
+
+    },
+
+    {
+        "field": {
+            "description": "Camera on or not",
+            "icon": "IconCameraQuestion",
+            "label": "Camera On",
+            "name": "cameraOn",
+            "objectMetadataId": objectsNameIdMap.aIInterviewStatus,
+            "type": "BOOLEAN"
+        }
+
+    },
+
+    {
+        "field": {
+            "description": "Camera on or not",
+            "icon": "IconMicrophone",
+            "label": "Mic On",
+            "name": "micOn",
+            "objectMetadataId": objectsNameIdMap.aIInterviewStatus,
+            "type": "BOOLEAN"
+        }
+
+    },
+    //   {
+    //     "field": {
+    //       "description": "",
+    //       "label": "Object Metadata Id",
+    //       "name": "objectMetadataId",
+    //       "objectMetadataId": objectsNameIdMap.job,
+    //       "type": "TEXT"
+    //     }
+    //   },
+
+]
+
+}

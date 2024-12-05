@@ -11,7 +11,26 @@ query FindOneWhatsappMessage($whatsappMessageId: String!) {
 `;
 
 
-
+export const graphqlToCreateOneMetatDataObjectItems = `
+        mutation CreateOneObjectMetadataItem($input: CreateOneObjectInput!) {
+          createOneObject(input: $input) {
+            id
+            dataSourceId
+            nameSingular
+            namePlural
+            labelSingular
+            labelPlural
+            description
+            icon
+            isCustom
+            isActive
+            createdAt
+            updatedAt
+            labelIdentifierFieldMetadataId
+            imageIdentifierFieldMetadataId
+          }
+        }
+      `
 export const graphqlQueryToCreateVideoInterview = `mutation CreateOneAIInterviewStatus($input: AIInterviewStatusCreateInput!) {
   createAIInterviewStatus(data: $input) {
     micOn
@@ -203,6 +222,20 @@ export const graphqlQueryToFindMessageByWAMId = `query FindManyWhatsappMessages(
   }
 }}
   `;
+
+  export const graphqlQueryToFindCandidateByUniqueKey = `
+query FindManyCandidate($filter: CandidateFilterInput) {
+  candidates(filter: $filter) {
+    edges {
+      node {
+        id
+        uniqueStringKey
+        peopleId
+        jobsId
+      }
+    }
+  }
+}`;
 
 
 export const graphqlQueryToFindPeopleByPhoneNumber = `query FindManyPeople($filter: PersonFilterInput, $orderBy: [PersonOrderByInput], $lastCursor: String, $limit: Int) {

@@ -103,7 +103,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
   }
 
 
-  async processCandidatesChatsGetStatuses(apiToken:string, candidateIds: string[] | null = null, currentWorkspaceMemberId: string| null = null) {
+  async processCandidatesChatsGetStatuses(candidateIds: string[] | null = null, currentWorkspaceMemberId: string| null = null,apiToken:string, ) {
     console.log("Processing candidates chats to get statuses with start chat true");
     let allCandidates = await this.fetchAllCandidatesWithSpecificChatControl("allStartedAndStoppedChats",apiToken);
     if (candidateIds && Array.isArray(candidateIds)) {

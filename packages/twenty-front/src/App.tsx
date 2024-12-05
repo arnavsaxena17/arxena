@@ -78,7 +78,8 @@ import { Tasks } from '~/pages/tasks/Tasks';
 import { Chats } from '~/pages/chats/Chats';
 import { getPageTitleFromPath } from '~/utils/title-utils';
 import VideoInterviewResponseViewer  from '@/ai-interview/interview-response/VideoInterviewResponseViewer';
-const AIInterviewFlow = lazy(() => import('@/ai-interview/interview-response/AIInterviewFlow'));
+import AIInterviewFlow from '@/ai-interview/interview-response/AIInterviewFlow'
+// const AIInterviewFlow = lazy(() => import('@/ai-interview/interview-response/AIInterviewFlow'));
 // const VideoInterviewResponseViewer = lazy(() => import('@/ai-interview/interview-response/VideoInterviewResponseViewer'));
 
 
