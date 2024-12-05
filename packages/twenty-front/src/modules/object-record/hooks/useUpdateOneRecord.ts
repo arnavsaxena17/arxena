@@ -24,6 +24,9 @@ export const useUpdateOneRecord = <
   objectNameSingular,
   recordGqlFields,
 }: useUpdateOneRecordProps) => {
+  // console.log("This is how it updates: objectNameSingular", objectNameSingular)
+  // console.log("This is how it updates: recordGqlFields", recordGqlFields)
+  // console.log("This is how it updates: objectNameSingular", recordGqlFields)
   const apolloClient = useApolloClient();
 
   const { objectMetadataItem } = useObjectMetadataItem({
@@ -51,6 +54,7 @@ export const useUpdateOneRecord = <
     idToUpdate: string;
     updateOneRecordInput: Partial<Omit<UpdatedObjectRecord, 'id'>>;
   }) => {
+    console.log("updateOneRecordInput::", updateOneRecordInput)
     const sanitizedInput = {
       ...sanitizeRecordInput({
         objectMetadataItem,

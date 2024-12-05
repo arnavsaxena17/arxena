@@ -105,17 +105,6 @@ export const CreateProfile = () => {
           currentWorkspaceId: userData.currentWorkspaceId || '',
           twentyId: userData.twentyId || '',
         }),
-
-        // const userData = {
-        //   fullName: currentWorkspaceMember?.name?.firstName + ' ' + currentWorkspaceMember?.name?.lastName,
-        //   email: currentUser?.email.toLowerCase().trim(), // Note: gmail/hotmail/yahoo emails are rejected by the backend
-        //   phone: '+1234567890',
-        //   password: 'password',
-        //   visitorFp: 'some-fingerprint-value',
-        //   currentWorkspaceMemberId:currentWorkspaceMember.id,
-        //   currentWorkspaceId: currentWorkspace?.id,
-        //   twentyId:currentUser?.id,
-        // };
       });
       console.log('signupUserOnArxena response:', response);
 
@@ -184,7 +173,9 @@ export const CreateProfile = () => {
         // console.log("Creating current workspace member userEmail:", currentWorkspaceMember.userEmail);
         // console.log("Creating WorkspaceMember:", ÷);
         const userData = {
-            fullName: currentWorkspaceMember?.name?.firstName + ' ' + currentWorkspaceMember?.name?.lastName,
+          fullName: (data?.firstName !== '' && data?.lastName !== '') 
+            ? data?.firstName + ' ' + data?.lastName 
+            : currentUser?.email.toLowerCase().trim(),
             email: currentUser?.email.toLowerCase().trim(), // Note: gmail/hotmail/yahoo emails are rejected by the backend
             phone: '+1234567890',
             password: 'password',

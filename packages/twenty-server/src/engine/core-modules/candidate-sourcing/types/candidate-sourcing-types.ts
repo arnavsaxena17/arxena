@@ -167,9 +167,6 @@ export interface UserProfile {
   std_function_root: string;
 }
 
-interface UserProfiles {
-  userProfiles: UserProfile[];
-}
 
 interface Profile {
   names: {
@@ -217,24 +214,118 @@ export interface ArxenaCandidateNode {
   peopleId: string;
 }
 
+export interface ArxenaJobCandidateNode {
+  id?: string;
+  profileUrl:{label:string, url:string};
+  educationUgYear?: string;
+  educationUgSpecialization?: string;
+  educationUgCourse?: string;
+  educationUgInstitute?: string;
+  employmentPreviousDesignation?: string;
+  employmentCurrentOrganization?: string;
+  employmentCurrentDesignation?: string;
+  name?: string;
+  linkedinLink?: string;
+  email?: string;
+  uniqueStringKey?: string;
+  phone?: string;
+  jobTitle?: string;
+  jsUserName?: string;
+  keySkills?: string;
+  focusedSkills?: string;
+  currentLocation?: string;
+  preferredLocations?: string;
+  noticePeriod?: string;
+  modifyDateLabel?: string;
+  experienceYears?: string;
+  experienceMonths?: string;
+  currentDesignation?: string;
+  currentOrganization?: string;
+  previousDesignation?: string;
+  previousOrganization?: string;
+  ugInstitute?: string;
+  ugCourse?: string;
+  ugSpecialization?: string;
+  ugYear?: string;
+  pgInstitute?: string;
+  pgCourse?: string;
+  pgSpecialization?: string;
+  pgYear?: number;
+  ctcLacs?: number;
+  ctcThousands?: number;
+  ctcCurrency?: string;
+  phoneNumberPresent?: string;
+  mobileNumberPresent?: string;
+  emailVerified?: string;
+  cvAttached?: string;
+  salaryDisclosed?: string;
+  jsUserId?: string;
+  jsResId?: string;
+  personId?: string;
+  jobId?: string;
+  candidateId?: string;
+}
 export interface ArxenaPersonNode {
-  name: {
+  id?: any;
+  educationUgYear?: number;
+  educationUgSpecialization?: string;
+  educationUgCourse?: string;
+  educationUgInstitute?: string;
+  employmentPreviousDesignation?: string;
+  employmentCurrentOrganization?: string;
+  employmentCurrentDesignation?: string;
+  name?: {
     firstName: string;
     lastName: string;
   };
-  linkedinLink:{
-    url: string
-    label: string
-  }
-  email: string | null;
-  uniqueStringKey: string | null;
-  phone: string | null;
-  jobTitle: string | null;
+  linkedinLink?: {
+    url: string;
+    label: string;
+  };
+  email?: string | null;
+  uniqueStringKey?: string | null;
+  phone?: string | null;
+  jobTitle?: string | null;
+  jsUserName?: string;
+  keySkills?: string;
+  focusedSkills?: string;
+  currentLocation?: string;
+  preferredLocations?: string;
+  noticePeriod?: string;
+  modifyDateLabel?: string;
+  experienceYears?: number;
+  experienceMonths?: number;
+  currentDesignation?: string;
+  currentOrganization?: string;
+  previousDesignation?: string;
+  previousOrganization?: string;
+  ugInstitute?: string;
+  ugCourse?: string;
+  ugSpecialization?: string;
+  ugYear?: number;
+  pgInstitute?: string;
+  pgCourse?: string;
+  pgSpecialization?: string;
+  pgYear?: number;
+  ctcLacs?: number;
+  ctcThousands?: number;
+  ctcCurrency?: string;
+  phoneNumberPresent?: boolean;
+  mobileNumberPresent?: boolean;
+  emailVerified?: boolean;
+  cvAttached?: boolean;
+  salaryDisclosed?: boolean;
+  jsUserId?: string;
+  jsResId?: string;
+  personId?: string;
+  jobId?: string;
+  candidateId?: string;
 }
 
 export interface Jobs {
   name: string;
   id: string;
   recruiterId: string;
-  jobLocation: string;
+  jobLocation?: string;
+  arxenaSiteId?: string;
 }

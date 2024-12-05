@@ -18,10 +18,15 @@ import { Section } from '@/ui/layout/section/components/Section';
 import { Breadcrumb } from '@/ui/navigation/bread-crumb/components/Breadcrumb';
 import { useGenerateApiKeyTokenMutation } from '~/generated/graphql';
 import { isDefined } from '~/utils/isDefined';
+import axios from 'axios';
+import { useRecoilState } from 'recoil';
+import { tokenPairState } from '@/auth/states/tokenPairState';
 
 export const SettingsDevelopersApiKeysNew = () => {
   const [generateOneApiKeyToken] = useGenerateApiKeyTokenMutation();
   const navigate = useNavigate();
+  const [tokenPair] = useRecoilState(tokenPairState);
+
   const setGeneratedApi = useGeneratedApiKeys();
   const [formValues, setFormValues] = useState<{
     name: string;
@@ -59,6 +64,31 @@ export const SettingsDevelopersApiKeysNew = () => {
       setGeneratedApi(newApiKey.id, tokenData.data.generateApiKeyToken.token);
       navigate(`/settings/developers/api-keys/${newApiKey.id}`);
     }
+
+
+
+  if (tokenData.data && tokenPair) {
+    let arxenaSiteBaseUrl: string = '';
+    if (process.env.NODE_ENV === 'development') {
+      arxenaSiteBaseUrl = process.env.REACT_APP_ARXENA_SITE_BASE_URL || 'http://localhost:5050';
+    } else {
+      arxenaSiteBaseUrl = process.env.REACT_APP_ARXENA_SITE_BASE_URL || 'https://arxena.com';
+    }
+    // update twenty api keys
+    await axios.post(arxenaSiteBaseUrl+'/update-twenty-api-keys', {
+      twenty_api_key: tokenData.data.generateApiKeyToken.token,
+    },
+    { 
+      headers: { 
+        Authorization: `Bearer ${tokenPair.accessToken.token}` 
+      }
+    }
+  );
+  }
+
+
+
+
   };
   const canSave = !!formValues.name && createOneApiKey;
   return (

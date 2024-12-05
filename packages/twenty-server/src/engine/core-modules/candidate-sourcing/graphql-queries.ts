@@ -24,6 +24,84 @@ mutation CreatePeople($data: [PersonCreateInput!]!) {
   }
 }`;
 
+export const graphqlQueryToFindPeopleByPhoneNumber = `query FindManyPeople($filter: PersonFilterInput, $orderBy: [PersonOrderByInput], $lastCursor: String, $limit: Int) {
+  people(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
+    edges {
+      node {
+        name {
+          firstName
+          lastName
+        }
+        city
+        salary
+        uniqueStringKey
+        candidates{
+            edges{
+                node {
+                    id
+                    name
+                    whatsappProvider
+                    lastEngagementChatControl
+                    candConversationStatus
+                    engagementStatus
+                    jobs{
+                        id
+                        name
+                        isActive
+                        recruiterId
+                        jobLocation
+                        jobCode
+                        createdAt
+                        companies {
+                            name
+                            id
+                            domainName
+                            descriptionOneliner
+                        }
+
+                    }
+                    aIInterviewStatus{
+                        edges{
+                            node{
+                                id
+                                interviewLink{
+                                  url
+                                }
+                            }
+                        }
+                    }
+                    whatsappMessages{
+                        edges{
+                            node{
+                                recruiterId
+                                message
+                                candidateId
+                                jobsId
+                                messageObj
+                                position
+                                lastEngagementChatControl
+                                phoneTo
+                                updatedAt
+                                createdAt
+                                id
+                                name
+                                phoneFrom
+                                
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        id
+        phone
+        email
+      }
+    }
+  }
+}`;
+
+
 export const CreateManyCandidates = `
 mutation CreateCandidates($data: [CandidateCreateInput!]!) {
   createCandidates(data: $data) {
@@ -100,8 +178,27 @@ export const CreateManyCustomMetadataObject = (objName: string) => {
 export const FindOneJob = `
   query FindOneJob($objectRecordId: ID!) {
     job(filter: {id: {eq: $objectRecordId}}) {
-      id
-      name
+        updatedAt
+        isActive
+        recruiterId
+        arxenaSiteId
+        createdAt
+        jobCode
+        searchName
+        reportsTo
+        reportees
+        yearsOfExperience
+        salaryBracket
+        companyDetails
+        talentConsiderations
+        specificCriteria
+        description
+        name
+        jobLocation
+        companiesId
+        position
+        id
+
     }
   }
   `;

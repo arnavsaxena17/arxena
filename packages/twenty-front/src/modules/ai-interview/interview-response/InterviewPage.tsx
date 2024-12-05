@@ -29,6 +29,12 @@ const ffmpeg = createFFmpeg({
   log: true,
 });
 
+const PreviewControls = styled.div`
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+`;
+
 
 const PreloadVideo: React.FC<{ src: string }> = ({ src }) => (
   <link rel="preload" as="video" href={src} />
@@ -62,6 +68,10 @@ export const InterviewPage: React.FC<InterviewPageProps> = ({ InterviewData, que
   const [nextQuestionVideoUrl, setNextQuestionVideoUrl] = useState<string | null>(null);
   const [videoLoadError, setVideoLoadError] = useState<string | null>(null);
   const [preloadedVideos, setPreloadedVideos] = useState<Record<string, boolean>>({});
+  const [recordedVideoUrl, setRecordedVideoUrl] = useState<string | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
+
+
 
   const handlePlaybackChange = (isPlaying: boolean) => {
     onVideoStateChange({
@@ -148,6 +158,19 @@ export const InterviewPage: React.FC<InterviewPageProps> = ({ InterviewData, que
     }
   };
 
+  const handleReRecord = () => {
+    setShowPreview(false);
+    setRecordedChunks([]);
+    setRecordedVideoUrl(null);
+    setActiveCameraFeed(true);
+    setRecorded(false);
+  };
+  
+  const handleSubmitRecording = () => {
+    setShowPreview(false);
+    handleSubmit();
+  };
+
 
 
   const handleStartRecording = () => {
@@ -181,13 +204,10 @@ export const InterviewPage: React.FC<InterviewPageProps> = ({ InterviewData, que
     }
   }, [isPlaying]);
 
-
-
   const moveToNextQuestion = () => {
     console.log('Currnet question index:', currentQuestionIndex);
     if (currentQuestionIndex < questions.length) {
       setIsVideoLoading(true);
-
       setRecordedChunks([]);
       setError(null);
       setTimer(null);
@@ -200,7 +220,6 @@ export const InterviewPage: React.FC<InterviewPageProps> = ({ InterviewData, que
       if (videoRef.current) {
         videoRef.current.load();
       }
-
     } else {
       onFinish();
     }
@@ -217,24 +236,25 @@ export const InterviewPage: React.FC<InterviewPageProps> = ({ InterviewData, que
     }
   };
 
-
   const handleStopRecording = () => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+    if (mediaRecorderRef.current?.state === 'recording') {
       mediaRecorderRef.current.stop();
-      resetAndStopVideo();
-      setActiveCameraFeed(false);
       setRecording(false);
       setRecorded(true);
       setAnswerTimer(null);
     }
-  };
+  };  
 
   const handleDataAvailable = (event: BlobEvent) => {
     if (event.data && event.data.size > 0) {
       setRecordedChunks(prev => [...prev, event.data]);
+      const videoUrl = URL.createObjectURL(new Blob([event.data], { type: 'video/webm' }));
+      setRecordedVideoUrl(videoUrl);
+      setShowPreview(true);
     }
   };
-
+  
+  
   useEffect(() => {
     if (recorded && recordedChunks.length > 0) {
       handleSubmit();
@@ -332,6 +352,18 @@ export const InterviewPage: React.FC<InterviewPageProps> = ({ InterviewData, que
         {activeCameraFeed && (
           <VideoContainer answerTimer={answerTimer} isRecording={recording} onRecordingClick={recording ? handleStopRecording : handleStartRecording} setIsPlaying={setIsPlaying} countdown={countdown} webcamRef={webcamRef} interviewTime={interviewTime}></VideoContainer>
         )}
+
+          {showPreview && (
+            <div>
+              <video src={recordedVideoUrl || undefined} controls width="100%" />
+              <PreviewControls>
+                <button onClick={handleReRecord}>Re-record</button>
+                <button onClick={handleSubmitRecording}>Submit</button>
+              </PreviewControls>
+            </div>
+          )}
+
+
         {submitting && <StyledMessage>Submitting your response...</StyledMessage>}
         {timer !== null && (
           <>
