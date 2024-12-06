@@ -6,6 +6,17 @@ mutation CreateOneJob($input: JobCreateInput!) {
   }
 }`;
 
+export const UpdateOneJob = `mutation UpdateOneJob($idToUpdate: ID!, $input: JobUpdateInput!) {
+ updateJob(id: $idToUpdate, data: $input) {
+   __typename
+   recruiterId
+   id
+   specificCriteria
+   createdAt
+   pathPosition
+ }}
+`;
+
 
 export const createOneQuestion = `
 mutation CreateOneQuestion($input: QuestionCreateInput!) {

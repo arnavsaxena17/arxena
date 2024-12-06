@@ -23,7 +23,7 @@ export const usePrefetchedData = <T extends ObjectRecord>(
     objectNameSingular: prefetchQueryKey.objectNameSingular,
   });
 
-  const { records } = useFindManyRecords<T>({
+  const { records = [] } = useFindManyRecords<T>({
     skip: !isDataPrefetched,
     objectNameSingular: prefetchQueryKey.objectNameSingular,
     recordGqlFields:
@@ -36,6 +36,6 @@ export const usePrefetchedData = <T extends ObjectRecord>(
 
   return {
     isDataPrefetched,
-    records,
+    records: records ?? [],
   };
 };

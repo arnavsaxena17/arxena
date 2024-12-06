@@ -15,8 +15,7 @@ export class ChatService {
     try {
         // TBD
       console.log("Processing candidate chats");
-      await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService)
-        // .processCandidatesChatsGetStatuses(candidateIds, currentWorkspaceMemberId,apiToken);
+      await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).processCandidatesChatsGetStatuses(apiToken);
       return { status: 'Success' };
     } catch (err) {
       console.error('Error in process:', err);
@@ -32,7 +31,7 @@ export class ChatService {
     try {
       console.log("Refreshing chats");
       await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService)
-        .processCandidatesChatsGetStatuses(candidateIds, currentWorkspaceMemberId, apiToken);
+        .processCandidatesChatsGetStatuses(apiToken,candidateIds, currentWorkspaceMemberId);
       return { status: 'Success' };
     } catch (err) {
       console.error('Error in refresh chats:', err);

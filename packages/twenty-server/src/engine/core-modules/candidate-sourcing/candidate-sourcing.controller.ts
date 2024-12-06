@@ -1,5 +1,5 @@
 import { Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
-import { CreateManyCandidates, CreateManyPeople, graphQltoStartChat, CreateOneJob, graphQltoStopChat, createOneQuestion, graphqlToFindManyJobByArxenaSiteId } from './graphql-queries';
+import { CreateManyCandidates, CreateManyPeople, graphQltoStartChat,UpdateOneJob , CreateOneJob, graphQltoStopChat, createOneQuestion, graphqlToFindManyJobByArxenaSiteId } from './graphql-queries';
 import { FetchAndUpdateCandidatesChatsWhatsapps } from '../arx-chat/services/candidate-engagement/update-chat';
 import * as allDataObjects from '../arx-chat/services/data-model-objects';
 import * as allGraphQLQueries from '../arx-chat/services/candidate-engagement/graphql-queries-chatbot';
@@ -18,6 +18,7 @@ import { JobService } from './services/job.service';
 import { PersonService } from './services/person.service';
 import { CandidateService } from './services/candidate.service';
 import { ChatService } from './services/chat.service';
+import { query } from 'express';
 
 @Controller('candidate-sourcing')
 export class CandidateSourcingController {
@@ -34,8 +35,13 @@ export class CandidateSourcingController {
   async processCandidateChats(@Req() request: any): Promise<object> {
     try {
       const apiToken = request.headers.authorization.split(' ')[1]; // Assuming Bearer token
+      const candidateIds= request.body.candidateIds;
+      const currentWorkspaceMemberId = request.body.currentWorkspaceMemberId;
+
       console.log("going to process chats")
       // await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).processCandidatesChatsGetStatuses( apiToken);
+      await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).processCandidatesChatsGetStatuses(apiToken);
+
       return { status: 'Success' };
     } catch (err) {
       console.error('Error in process:', err);
@@ -43,18 +49,25 @@ export class CandidateSourcingController {
     }
   }
 
-  @Post('refresh-chat-status-by-candidates')
+  @Post('process-job-candidate-refresh-data')
 
   async refreshChats(@Req() request: any): Promise<object>  {
     const apiToken = request.headers.authorization.split(' ')[1]; // Assuming Bearer token
 
     try {
       // const { candidateIds } = body;
-      const candidateIds= request.body.candidateIds;
-      const currentWorkspaceMemberId = request.body.currentWorkspaceMemberId;
+      const objectNameSingular= request.body.objectNameSingular;
+      console.log("thisi s objectNameSingular:",objectNameSingular)
+      const url = process.env.ENV_NODE === 'production' ? 'https://arxena.com/sync_job_candidate' : 'http://127.0.0.1:5050/sync_job_candidate';
 
-      console.log("going to refresh chats")
-      await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).processCandidatesChatsGetStatuses(candidateIds, currentWorkspaceMemberId,apiToken);
+      console.log('url:', url);
+      const response = await axios.post(
+        url,
+        { objectNameSingular: objectNameSingular},
+        { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiToken}` } },
+      );
+
+      // await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).processCandidatesChatsGetStatuses(apiToken);
       return { status: 'Success' };
     } catch (err) {
       console.error('Error in refresh chats:', err);
@@ -64,6 +77,26 @@ export class CandidateSourcingController {
   
   
 
+   getJobCandidatePathPosition(jobName: string): string {
+    return this.toCamelCase(jobName)
+      .replace("-","")
+      .replace(" ","")
+      .replace("#","")
+      .replace("/","")
+      .replace("+","")
+      .replace("(","")
+      .replace(")","")
+      .replace(",","")
+      .replace(".","");
+  }
+  
+   toCamelCase(str: string): string {
+    return str
+      .toLowerCase()
+      .replace(/[-_\s]+(.)?/g, (_, c) => (c ? c.toUpperCase() : ''));
+  }
+  
+  
 
 
   @Post('create-job-in-arxena')
@@ -78,6 +111,29 @@ export class CandidateSourcingController {
       if (!req?.body?.job_name || !req?.body?.new_job_id) {
         throw new Error('Missing required fields: job_name or new_job_id');
       }
+      console.log('job_name:', req.body.job_name);
+      console.log('new_job_id:', req.body.new_job_id);
+      console.log('id_to_update:', req.body.id_to_update);
+
+
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      const graphqlToUpdateJob = JSON.stringify({
+        query: UpdateOneJob,
+        variables: {
+          idToUpdate: req.body.id_to_update,
+          input: {
+            pathPosition: this.getJobCandidatePathPosition(req?.body?.job_name),
+            arxenaSiteId: req.body.new_job_id,
+            isActive: true,
+          },
+        },
+      });
+
+      console.log('GraphQL request:', graphqlToUpdateJob);
+
+      const responseToUpdateJob = await axiosRequest(graphqlToUpdateJob, apiToken);
+      console.log('Response from update job:', responseToUpdateJob.data);
 
       const response = await axios.post(
         url,
