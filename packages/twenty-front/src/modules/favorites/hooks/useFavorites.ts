@@ -35,14 +35,17 @@ export const useFavorites = () => {
     objectNameSingular: CoreObjectNameSingular.Favorite,
   });
 
-  const { records: favorites } = usePrefetchedData<Favorite>(
+  const favorites = usePrefetchedData<Favorite>(
     PrefetchKey.AllFavorites,
     {
       workspaceMemberId: {
         eq: currentWorkspaceMember?.id ?? '',
       },
     },
-  );
+  ).records ?? [];
+
+
+  
 
   const favoriteRelationFieldMetadataItems = useMemo(
     () =>
@@ -58,6 +61,8 @@ export const useFavorites = () => {
     useGetObjectRecordIdentifierByNameSingular();
 
   const favoritesSorted = useMemo(() => {
+    if (!Array.isArray(favorites)) return [];
+
     return favorites
       .map((favorite) => {
         for (const relationField of favoriteRelationFieldMetadataItems) {
@@ -88,10 +93,11 @@ export const useFavorites = () => {
 
         return favorite;
       })
+      .filter(isDefined)
       .sort((a, b) => a.position - b.position);
   }, [
-    favoriteRelationFieldMetadataItems,
     favorites,
+    favoriteRelationFieldMetadataItems,
     getObjectRecordIdentifierByNameSingular,
   ]);
 

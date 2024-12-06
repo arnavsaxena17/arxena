@@ -17,10 +17,7 @@ import { isDefined } from '~/utils/isDefined';
 import axios from 'axios';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useRecoilValue, useRecoilState } from 'recoil';
-import { useUpdateOneRecord } from './useUpdateOneRecord';
 import mongoose from 'mongoose';
-
-
 
 
 type useCreateOneRecordProps = {
@@ -40,38 +37,24 @@ export const useCreateOneRecord = <
   const [loading, setLoading] = useState(false);
   const [jobApiError, setJobApiError] = useState<string | null>(null);
   const [tokenPair] = useRecoilState(tokenPairState);
-  
-  const { objectMetadataItems } = useObjectMetadataItems();
-
-  const jobMetadataItem = objectMetadataItems.find(item => item.nameSingular === 'job');
-
-  const updateOneRecordHook = jobMetadataItem ? useUpdateOneRecord({
-    objectNameSingular: 'job',
-  }) : null;
-
-  const updateOneRecord = updateOneRecordHook ? updateOneRecordHook.updateOneRecord : null;
 
   const { objectMetadataItem } = useObjectMetadataItem({
     objectNameSingular,
   });
-  const sendJobToArxena = async (jobName: string, arxenaJobId:string) => {
+  const sendJobToArxena = async (jobName: string, jobId:string) => {
     console.log("process.env.NODE_ENV", process.env.NODE_ENV);
     try {
+      const arxenaJobId = new mongoose.Types.ObjectId().toString();
+
       console.log("This is the jobName", jobName);
-      // const arxenaJobId = v4();
       const response = await axios.post(
         process.env.NODE_ENV === 'production' ? 'https://app.arxena.com/app/candidate-sourcing/create-job-in-arxena' : 'http://localhost:3000/candidate-sourcing/create-job-in-arxena',
-        { job_name: jobName,new_job_id:arxenaJobId },
+        { job_name: jobName,new_job_id:arxenaJobId, id_to_update:jobId },
         { headers: { 'Authorization': `Bearer ${tokenPair?.accessToken?.token}`, 'Content-Type': 'application/json', }, }
       );
-      console.log("Received this response:", response.data);
 
-
-      if (response.status !== 200 && response.status !== 201) {
+      if (response.status !== 200) {
         throw new Error(`Failed to create job on Arxena: ${response.statusText}`);
-      }
-      else{
-        console.log("Job sent to Arxena successfully")
       }
       return response.data;
     } catch (error) {
@@ -95,6 +78,7 @@ export const useCreateOneRecord = <
     },
   );
 
+  const { objectMetadataItems } = useObjectMetadataItems();
 
   const createOneRecord = async (input: Partial<CreatedObjectRecord>) => {
     setLoading(true);
@@ -127,7 +111,6 @@ export const useCreateOneRecord = <
     }
 
 
-
     const mutationResponseField =
       getCreateOneRecordMutationResponseField(objectNameSingular);
 
@@ -150,35 +133,27 @@ export const useCreateOneRecord = <
         setLoading(false);
       },
     });
-
     try{
       console.log("This si th einput", input);
       if (objectNameSingular === 'job' && input?.name) {
-        try {
-          const idToUpdate = input.id || ''; 
-          const arxenaJobId = new mongoose.Types.ObjectId().toString(); 
-          
-          if (updateOneRecord) { // Add this null check
-            await updateOneRecord({
-              idToUpdate: idToUpdate,
-              updateOneRecordInput: { "arxenaSiteId": arxenaJobId },
-            });
-            await sendJobToArxena(input?.name, arxenaJobId);
-          } else {
-            console.log("updateOneRecord is not available");
-            // Handle the case where updateOneRecord is null
-          }
-        } catch (error) {
-          console.log("Couldn't send job to arxena with error", error);
-        }      }
+        try{
+          await sendJobToArxena(input?.name as string, input.id as string);
+        }
+        catch{
+          console.log("Couldnt send job to arxena")
+        }
+      }
     }
     catch (error) {
       console.log("Error sending job to Arxena", error);
-      
       return null;
     }
 
+
     return createdObject.data?.[mutationResponseField] ?? null;
+
+
+    
   };
 
   return {

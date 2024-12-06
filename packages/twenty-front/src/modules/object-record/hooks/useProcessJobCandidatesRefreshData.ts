@@ -28,7 +28,7 @@ export const useProcessJobCandidatesRefreshData = (objectNameSingular: string) =
       });
 
       // Show success message
-      enqueueSnackBar('Successfully counted chats', {
+      enqueueSnackBar('Successfully refreshed data', {
         variant: SnackBarVariant.Success,
         duration: 3000,
       });

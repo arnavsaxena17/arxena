@@ -34,9 +34,6 @@ export const useObjectMetadataItem = ({
       ) ?? null;
     objectMetadataItems = mockObjectMetadataItems;
   }
-  console.log("objectMetadataItem", objectMetadataItem);
-  console.log("mockObjectMetadataItems", mockObjectMetadataItems);
-  console.log("objectMetadataItems", objectMetadataItems.map((item) => item.nameSingular));
 
   if (!isDefined(objectMetadataItem)) {
     throw new ObjectMetadataItemNotFoundError(

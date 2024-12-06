@@ -39,7 +39,6 @@ export class JobCandidateUtils {
       const pluralObjectName = `${positionName}JobCandidates`;
       const mutationName = `Create${objectName.charAt(0).toUpperCase() + objectName.slice(1)}s`;
 
-
       
       return `
         mutation ${mutationName}($data: [${objectName.charAt(0).toUpperCase() + objectName.slice(1)}CreateInput!]!) {

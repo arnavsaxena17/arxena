@@ -95,7 +95,6 @@ export const RecordIndexOptionsDropdownContent = ({ viewType, recordIndexId, obj
     recordIndexId,
   });
 
-  console.log("currentMenu")
 
   return (
     <>

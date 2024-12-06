@@ -32,6 +32,11 @@ export const useGetRecordFromCache = ({
       recordId: string,
       cache = apolloClient.cache,
     ) => {
+
+      if (!objectMetadataItems || !objectMetadataItem || !appliedRecordGqlFields) {
+        return null;
+      }
+
       return getRecordFromCache<T>({
         cache,
         recordId,
@@ -45,6 +50,6 @@ export const useGetRecordFromCache = ({
       objectMetadataItems,
       objectMetadataItem,
       appliedRecordGqlFields,
-    ],
+    ].filter(Boolean), // Filter out undefined values from dependency array
   );
 };

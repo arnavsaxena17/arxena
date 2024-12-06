@@ -412,6 +412,15 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
     {
         "field": {
             "description": "",
+            "label": "pathPosition",
+            "name": "pathPosition",
+            "objectMetadataId": objectsNameIdMap.job,
+            "type": "TEXT"
+        }
+    },
+    {
+        "field": {
+            "description": "",
             "label": "engagementStatus",
             "name": "engagementStatus",
             "objectMetadataId": objectsNameIdMap.candidate,

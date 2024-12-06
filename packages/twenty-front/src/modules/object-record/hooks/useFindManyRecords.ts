@@ -80,16 +80,29 @@ export const useFindManyRecords = <T extends ObjectRecord = ObjectRecord>({
     },
     fetchPolicy: fetchPolicy,
     onCompleted: data => {
+      const connection = data?.[objectMetadataItem.namePlural];
+      if (!connection) {
+        onCompleted?.([]);
+        return;
+      }
+    
       if (!isDefined(data)) {
         onCompleted?.([]);
       }
 
       const pageInfo = data?.[objectMetadataItem.namePlural]?.pageInfo;
 
-      const records = getRecordsFromRecordConnection({
-        recordConnection: data?.[objectMetadataItem.namePlural],
-      }) as T[];
-
+      const records = useMemo(
+        () => {
+          if (!data?.[objectMetadataItem.namePlural]) return [];
+          
+          return getRecordsFromRecordConnection<T>({
+            recordConnection: data[objectMetadataItem.namePlural],
+          }) ?? [];
+        },
+        [data, objectMetadataItem.namePlural],
+      );
+      
       onCompleted?.(records, {
         pageInfo,
         totalCount: data?.[objectMetadataItem.namePlural]?.totalCount,
@@ -100,6 +113,8 @@ export const useFindManyRecords = <T extends ObjectRecord = ObjectRecord>({
         setHasNextPage(pageInfo.hasNextPage ?? false);
       }
     },
+
+
     onError: error => {
       logError(`useFindManyRecords for "${objectMetadataItem.namePlural}" error : ` + error);
       enqueueSnackBar(`Error during useFindManyRecords for "${objectMetadataItem.namePlural}", ${error.message}`, {
