@@ -28,30 +28,6 @@ export class CreateMetaDataStructure{
         return response;
       }
     
-
-
-
-    // fetchAllCurrentObjects = async (apiToken: string) => {
-    //     const objectsResponse = await executeQuery<QueryResponse<ObjectMetadata>>(`
-    //         query ObjectMetadataItems($objectFilter: objectFilter) {
-    //         objects(paging: {first: 1000}, filter: $objectFilter) {
-    //             edges {
-    //             node {
-    //                 id
-    //                 nameSingular
-    //                 namePlural
-    //                 labelSingular
-    //                 labelPlural
-    //                 __typename
-    //             }
-    //             __typename
-    //             }
-    //         }
-    //         }            
-    //     `, { objectFilter: { isActive: { is: true } } }, apiToken);
-    //     return objectsResponse;
-
-    // }
     fetchAllCurrentObjects = async (apiToken: string) => {
         const objectsResponse = await executeQuery<QueryResponse<ObjectMetadata>>(`
         query ObjectMetadataItems($objectFilter: objectFilter, $fieldFilter: fieldFilter) {

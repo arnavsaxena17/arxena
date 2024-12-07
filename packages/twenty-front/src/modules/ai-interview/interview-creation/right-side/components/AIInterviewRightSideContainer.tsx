@@ -19,6 +19,7 @@ const StyledAllContainer = styled.div`
   flex-shrink: 1;
 `;
 
+
 const StyledFormElement = styled.form`
   display: flex;
   gap: 44px;

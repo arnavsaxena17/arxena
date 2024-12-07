@@ -1,13 +1,11 @@
 import { useQuery } from '@apollo/client';
 import styled from '@emotion/styled';
 import { useRecoilState, useResetRecoilState } from 'recoil';
+import { FIND_MANY_AI_MODELS } from '@/ai-interview/interview-creation/queries/findManyAIModels';
 
-import { ArxEnrichLeftSideContainer } from '@/arx-enrich/left-side/components/ArxEnrichLeftSideContainer';
-import { ArxEnrichRightSideContainer } from '@/arx-enrich/right-side/components/ArxEnrichRightSideContainer';
-import { FIND_MANY_AI_MODELS } from '@/arx-enrich/queries/findManyAIModels';
+import { ArxEnrichLeftSideContainer } from '@/arx-enrich/left-side/ArxEnrichLeftSideContainer';
+import { ArxEnrichRightSideContainer } from '@/arx-enrich/right-side/ArxEnrichRightSideContainer';
 import { isArxEnrichModalOpenState } from '@/arx-enrich/states/arxEnrichModalOpenState';
-import { questionsArrState } from '@/arx-enrich/states/questionsArrState';
-import { questionToDisplayState } from '@/arx-enrich/states/questionToDisplay';
 const StyledModalContainer = styled.div`
   background-color: transparent;
   top: 0px;
@@ -31,6 +29,20 @@ const StyledAdjuster = styled.div`
   align-items: center;
 `;
 
+
+export interface Enrichment {
+  modelName: string;
+  fields: Array<{
+    id: number;
+    name: string;
+    type: string;
+    description: string;
+    required: boolean;
+  }>;
+  selectedMetadataFields: string[];
+}
+
+
 const StyledModal = styled.div`
   background-color: ${({ theme }) => theme.background.tertiary};
   box-shadow: ${({ theme }) => theme.boxShadow.superHeavy};
@@ -52,15 +64,9 @@ export const ArxEnrichmentModal = ({
   objectNameSingular: string;
   objectRecordId: string;
 }) => {
-  const [isArxEnrichModalOpen, setIsArxEnrichModalOpen] = useRecoilState(
-    isArxEnrichModalOpenState,
-  );
-
-  const resetQuestionsArr = useResetRecoilState(questionsArrState);
-  const resetQuestionToDisplay = useResetRecoilState(questionToDisplayState);
+  const [isArxEnrichModalOpen, setIsArxEnrichModalOpen] = useRecoilState(isArxEnrichModalOpenState);
+  
   const closeModal = () => {
-    resetQuestionsArr();
-    resetQuestionToDisplay();
     setIsArxEnrichModalOpen(false);
   };
 
@@ -82,8 +88,6 @@ export const ArxEnrichmentModal = ({
     return <div>Error: {error.message}</div>;
   }
 
-  const aIModelsArr: any = data.aIModels.edges;
-
   if (!isArxEnrichModalOpen) {
     return null;
   }
@@ -94,7 +98,6 @@ export const ArxEnrichmentModal = ({
         <StyledModal onClick={(e) => e.stopPropagation()}>
           <ArxEnrichLeftSideContainer />
           <ArxEnrichRightSideContainer
-            aIModelsArr={aIModelsArr}
             closeModal={closeModal}
             objectNameSingular={objectNameSingular}
             objectRecordId={objectRecordId}
