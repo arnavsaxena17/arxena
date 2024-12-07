@@ -2,7 +2,6 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import styled from '@emotion/styled';
 import { useRecoilValue } from 'recoil';
 import { IconDotsVertical, IconTrash } from 'twenty-ui';
-// import { useInterviewCreationModal } from '@/ai-interview/interview-creation/hooks/useInterviewCreationModal';
 import { useArxEnrichCreationModal } from '@/arx-enrich/hooks/useArxEnrichCreationModal';
 
 import { useDeleteOneRecord } from '@/object-record/hooks/useDeleteOneRecord';
@@ -66,7 +65,7 @@ export const ShowPageMoreButton = ({ recordId, objectNameSingular }: { recordId:
           <DropdownMenu>
             <DropdownMenuItemsContainer>
               <MenuItem onClick={handleDelete} accent="danger" LeftIcon={IconTrash} text="Delete" />
-              { objectNameSingular.startsWith('job') && locationName.includes("objects") ? <MenuItem onClick={handleModal} accent="default" LeftIcon={Icon24Hours} text="Enrich" /> : null }
+              { objectNameSingular.toLowerCase().includes('candidate') && locationName.includes("objects") ? <MenuItem onClick={handleModal} accent="default" LeftIcon={Icon24Hours} text="Enrich" /> : null }
             </DropdownMenuItemsContainer>
           </DropdownMenu>
         }

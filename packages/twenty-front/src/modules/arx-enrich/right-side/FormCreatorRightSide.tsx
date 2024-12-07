@@ -1,0 +1,632 @@
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import styled from '@emotion/styled';
+import { IconPlus, IconX, IconAlertCircle } from 'twenty-ui';
+import { Button } from '@/ui/input/button/components/Button';
+import { IconEdit } from '@tabler/icons-react';
+import { useObjectMetadataItem } from '@/object-metadata/hooks/useObjectMetadataItem';
+import { useRecoilState } from 'recoil';
+import { activeEnrichmentState, enrichmentsState } from '@/arx-enrich/states/arxEnrichModalOpenState';
+import { tokenPairState } from '@/auth/states/tokenPairState';
+
+const Container = styled.div`
+//   max-width: 56rem;
+width:100%
+  margin: 0 auto;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+`;
+
+const sharedInputStyles = `
+  width: 100%;
+  padding: 0.5rem 1rem;
+  font-size: 1.125rem;
+  font-weight: 500;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  outline: none;
+  transition: all 0.2s;
+
+  &:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+  }
+`;
+
+const Input = styled.input`
+  ${sharedInputStyles}
+  width: 90%;
+`;
+
+const TextArea = styled.textarea`
+  ${sharedInputStyles}
+  resize: vertical;
+  width: 90%;
+`;
+
+const Select = styled.select`
+  ${sharedInputStyles}
+  width: 96%;
+`;
+
+const FieldsList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+`;
+
+const FieldContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+`;
+
+
+const FieldCard = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  transition: all 0.2s;
+
+  &:hover {
+    border-color: #d1d5db;
+  }
+`;
+
+const FieldContent = styled.div`
+  flex: 1;
+`;
+
+const FieldHeader = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+`;
+
+const FieldName = styled.span`
+  font-weight: 500;
+`;
+
+const FieldType = styled.span`
+  color: #6b7280;
+  font-size: 0.875rem;
+`;
+
+const RequiredBadge = styled.span`
+  color: #ef4444;
+  font-size: 0.75rem;
+`;
+
+const FieldDescription = styled.p`
+  color: #4b5563;
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+`;
+
+const AddFieldForm = styled.div`
+  padding: 1rem;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+    form {
+    margin: 0;
+  }
+
+`;
+
+const CheckboxContainer = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+`;
+
+const CodeBlock = styled.div`
+  background: #1f2937;
+  color: white;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  margin-top: 1.5rem;
+
+  pre {
+    white-space: pre-wrap;
+    overflow-x: auto;
+  }
+`;
+
+const ErrorAlert = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: #fee2e2;
+  border: 1px solid #fecaca;
+  border-radius: 0.5rem;
+  color: #dc2626;
+`;
+
+const ButtonGroup = styled.div`
+  display: flex;
+  gap: 0.5rem;
+`;
+
+const SelectedFieldsContainer = styled.div`
+  margin-top: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+`;
+
+const SelectedFieldTag = styled.div`
+  background: #f3f4f6;
+  padding: 0.5rem;
+  border-radius: 0.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+`;
+
+const MultiSelect = styled.select`
+  ${sharedInputStyles}
+  width: 96%;
+  height: auto;
+  min-height: 100px;
+  multiple: true;
+`;
+
+const SelectLabel = styled.label`
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  display: block;
+`;
+
+const ModelCodeDisplay = styled.div<{ show: boolean }>`
+  margin-top: 1.5rem;
+  opacity: ${props => props.show ? 1 : 0};
+  transition: opacity 0.3s ease-in-out;
+`;
+
+interface DynamicModelCreatorProps {
+  objectNameSingular: string;
+  index: number;
+}
+// Component Implementation
+const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({ 
+  objectNameSingular, 
+  index, 
+}) => {
+  const [showAddField, setShowAddField] = useState(false);
+  const [error, setError] = useState('');
+  const [editingFieldId, setEditingFieldId] = useState<number | null>(null);
+  const [enrichments, setEnrichments] = useRecoilState(enrichmentsState);
+
+  // Initialize local state with deep copy of current enrichment
+  const currentEnrichment = useMemo(() => ({
+    ...enrichments[index],
+    fields: [...(enrichments[index]?.fields || [])],
+    selectedMetadataFields: [...(enrichments[index]?.selectedMetadataFields || [])]
+  }), [enrichments, index]);
+
+  const [fields, setFields] = useState(currentEnrichment.fields);
+  const [selectedMetadataFields, setSelectedMetadataFields] = useState(currentEnrichment.selectedMetadataFields);
+  const [newField, setNewField] = useState({
+    name: '',
+    type: 'text',
+    description: '',
+    required: true,
+  });
+
+  // Reset local state when switching enrichments
+  useEffect(() => {
+    const currentEnrichment = enrichments[index];
+    if (currentEnrichment) {
+      setFields([...currentEnrichment.fields]);
+      setSelectedMetadataFields([...currentEnrichment.selectedMetadataFields]);
+      
+      // Reset form state
+      setNewField({
+        name: '',
+        type: 'text',
+        description: '',
+        required: true,
+      });
+      setShowAddField(false);
+      setEditingFieldId(null);
+      setError('');
+    }
+  }, [index, enrichments]);
+
+  // Update enrichment state only when local state changes
+  const { objectMetadataItem } = useObjectMetadataItem({
+    objectNameSingular: objectNameSingular,
+  });
+
+
+
+  const handleModelNameChange = (value: string) => {
+    const validationError = validateModelName(value);
+    if (validationError) {
+      setError(validationError);
+    } else {
+      setError('');
+      // Update model name directly in enrichments
+      setEnrichments(prev => {
+        const newEnrichments = [...prev];
+        if (newEnrichments[index]) {
+          newEnrichments[index] = {
+            ...newEnrichments[index],
+            modelName: value
+          };
+        }
+        return newEnrichments;
+      });
+    }
+  };
+  
+
+  
+  const currentFieldNames = objectMetadataItem?.fields.map(field => field.name);
+
+
+  console.log("This is the current state of the enrichments::", enrichments );
+  const fieldTypes = useMemo(() => [
+    { value: 'text', label: 'Text' },
+    { value: 'number', label: 'Number' },
+    { value: 'boolean', label: 'Boolean' },
+    { value: 'float', label: 'Float' },
+    { value: 'enum', label: 'Enum' },
+  ], []);
+  
+  
+  const validateFieldName = (name: string) => {
+    if (!name) {
+      return 'Field name is required';
+    }
+    
+    if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name)) {
+      return 'Field name must start with a letter or underscore and contain only letters, numbers, and underscores';
+    }
+    
+    const isDuplicate = fields.some(
+      (field: { name: string; id: number }) => field.name.toLowerCase() === name.toLowerCase() && field.id !== editingFieldId
+    );
+    
+    if (isDuplicate) {
+      return 'Field name must be unique';
+    }
+    
+    return '';
+  };
+  
+  const validateModelName = (name: string) => {
+    if (!name) return 'Model name is required';
+    if (!/^[A-Z][A-Za-z0-9]*$/.test(name)) {
+      return 'Model name must start with a capital letter and contain only letters and numbers';
+    }
+    return '';
+  };
+
+  const addField = useCallback((e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    setEnrichments(prev => {
+      const newEnrichments = prev.map((enrichment, idx) => {
+        if (idx === index) {
+          const currentFields = enrichment.fields || [];
+          const updatedFields = editingFieldId 
+            ? currentFields.map((field: { id: number; }) => field.id === editingFieldId ? { ...newField, id: editingFieldId } : field)
+            : [...currentFields, { ...newField, id: Date.now() }];
+          return {
+            ...enrichment,
+            fields: updatedFields
+          };
+        }
+        return enrichment;
+      });
+      return newEnrichments;
+    });
+
+    if (!editingFieldId) {
+      setNewField({
+        name: '',
+        type: 'text',
+        description: '',
+        required: true,
+      });
+      setShowAddField(false);
+    }
+    setEditingFieldId(null);
+    setError('');
+  }, [newField, editingFieldId, index, setEnrichments]);
+
+
+    const handleMetadataFieldsChange = (selectedOptions: string[]) => {
+      setEnrichments(prev => {
+        const newEnrichments = prev.map((enrichment, idx) => 
+          idx === index ? {
+            ...enrichment,
+            selectedMetadataFields: selectedOptions
+          } : enrichment
+        );
+        return newEnrichments;
+      });
+    };
+  
+  
+  
+    const removeField = useCallback((fieldId: number) => {
+      setEnrichments(prev => {
+        const newEnrichments = prev.map((enrichment, idx) => {
+          if (idx === index) {
+            return {
+              ...enrichment,
+              fields: enrichment.fields.filter((field: { id: number; }) => field.id !== fieldId)
+            };
+          }
+          return enrichment;
+        });
+        return newEnrichments;
+      });
+    }, [index, setEnrichments]);
+  
+
+  
+  const generateModelCode = useCallback(() => {
+  
+    let code = `from pydantic import BaseModel, Field\n\n`;
+    code += `class ${enrichments[index]?.modelName}(BaseModel):\n`;
+    
+    // Add custom fields
+    fields.forEach((field: { name: any; type: string | number; required: any; description: any; }) => {
+      const typeMap: { [key: string]: string } = {
+        text: 'str',
+        number: 'int',
+        boolean: 'bool',
+        float: 'float',
+        enum: 'str',
+      };
+  
+      code += `    ${field.name}: ${typeMap[field.type]} = Field(`;
+      code += field.required ? '...' : 'None';
+      code += `, description="${field.description}")\n`;
+    });
+    
+    return code;
+  }, [enrichments, index, fields, selectedMetadataFields]);  // Update dependencies
+
+  
+  
+  return (
+    <Container>
+
+      {error && (
+        <ErrorAlert>
+          <IconAlertCircle size={16} stroke={1.5} />
+          {error}
+        </ErrorAlert>
+      )}
+
+      <SelectLabel>Model Name</SelectLabel>
+      <Input
+        type="text"
+        placeholder="Model Name"
+        value={enrichments[index]?.modelName || ''}
+        onChange={e => handleModelNameChange(e.target.value)}
+        />
+
+      <SelectLabel>Select Metadata Fields</SelectLabel>
+      <MultiSelect
+        multiple
+        value={selectedMetadataFields}  // Use the state variable instead
+        onChange={e => {
+          const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
+          setSelectedMetadataFields(selectedOptions);
+        }}>
+              {objectMetadataItem?.fields.map(field => (
+          <option key={field.name} value={field.name}>
+            {field.name}
+          </option>
+        ))}
+      </MultiSelect>
+
+      {selectedMetadataFields.length > 0 && (
+        <SelectedFieldsContainer>
+          {selectedMetadataFields.map((fieldName: string) => (
+            <SelectedFieldTag key={fieldName}>
+              {fieldName}
+              <IconX
+                size={14}
+                stroke={1.5}
+                style={{ cursor: 'pointer' }}
+                onClick={() => {
+                  setSelectedMetadataFields((prev: any[]) => prev.filter(name => name !== fieldName));
+                }}
+              />
+            </SelectedFieldTag>
+          ))}
+        </SelectedFieldsContainer>
+      )}
+
+
+  <SelectLabel>Create New Fields</SelectLabel>
+
+    <FieldsList>
+    {currentEnrichment.fields.map((field: { id: number; name: string; type: string; description: string; required: boolean }) => (
+      <FieldContainer key={field.id}>
+      <FieldCard>
+        <FieldContent>
+        <FieldHeader>
+          <FieldName>{field.name}</FieldName>
+          <FieldType>({field.type})</FieldType>
+          {field.required && <RequiredBadge>required</RequiredBadge>}
+        </FieldHeader>
+        <FieldDescription>{field.description}</FieldDescription>
+        </FieldContent>
+        <Button
+        Icon={IconEdit}
+        onClick={(e: React.MouseEvent) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setEditingFieldId(field.id);
+          setNewField(field);
+        }}
+        variant="secondary"
+        title="Edit"
+        />
+        <Button Icon={IconX} onClick={() => removeField(field.id)} variant="secondary" title="Remove" />
+      </FieldCard>
+      
+      {/* Add edit form directly below the field being edited */}
+      {editingFieldId === field.id && (
+        <AddFieldForm onSubmit={(e: React.FormEvent) => e.preventDefault()}>
+        <Input
+          type="text"
+          placeholder="Field Name"
+          value={newField.name}
+          onChange={e => {
+          e.stopPropagation();
+          setNewField({ ...newField, name: e.target.value });
+          setError('');
+          }}
+        />
+        <Select 
+          value={newField.type} 
+          onChange={e => setNewField({ ...newField, type: e.target.value })}
+        >
+          {fieldTypes.map(type => (
+          <option key={type.value} value={type.value}>
+            {type.label}
+          </option>
+          ))}
+        </Select>
+        <TextArea 
+          placeholder="Field Description" 
+          value={newField.description} 
+          onChange={e => setNewField({ ...newField, description: e.target.value })} 
+          rows={3} 
+        />
+        <CheckboxContainer>
+          <input 
+          type="checkbox" 
+          checked={newField.required} 
+          onChange={e => setNewField({ ...newField, required: e.target.checked })} 
+          id={`required-checkbox-${field.id}`} 
+          />
+          <label htmlFor={`required-checkbox-${field.id}`}>Required</label>
+        </CheckboxContainer>
+        <ButtonGroup>
+          <Button Icon={IconPlus}   onClick={(e: React.MouseEvent) => { e.preventDefault(); addField(e);}}  variant="primary" title="Save" />
+          <Button
+          variant="secondary"
+          accent="danger"
+          onClick={() => {
+            setEditingFieldId(null);
+            setError('');
+            setNewField({
+            name: '',
+            type: 'text',
+            description: '',
+            required: true,
+            });
+          }}
+          title="Cancel"
+          />
+        </ButtonGroup>
+        </AddFieldForm>
+      )}
+      </FieldContainer>
+    ))}
+
+
+{!showAddField ? (
+  <Button 
+    Icon={IconPlus} 
+    onClick={() => setShowAddField(true)} 
+    variant="primary" 
+    title="Add New Field" 
+  />
+) : (
+  <AddFieldForm>
+    <Input
+      type="text"
+      placeholder="Field Name"
+      value={newField.name}
+      onChange={e => {
+        setNewField({ ...newField, name: e.target.value });
+        setError('');
+      }}
+    />
+    <Select 
+      value={newField.type} 
+      onChange={e => setNewField({ ...newField, type: e.target.value })}
+    >
+      {fieldTypes.map(type => (
+        <option key={type.value} value={type.value}>
+          {type.label}
+        </option>
+      ))}
+    </Select>
+    <TextArea 
+      placeholder="Field Description" 
+      value={newField.description} 
+      onChange={e => setNewField({ ...newField, description: e.target.value })} 
+      rows={3} 
+    />
+    <CheckboxContainer>
+      <input 
+        type="checkbox" 
+        checked={newField.required} 
+        onChange={e => setNewField({ ...newField, required: e.target.checked })} 
+        id="required-checkbox" 
+      />
+      <label htmlFor="required-checkbox">Required</label>
+    </CheckboxContainer>
+    <ButtonGroup>
+      <Button Icon={IconPlus} onClick={addField} variant="primary" title="Add" />
+      <Button
+        variant="secondary"
+        accent="danger"
+        onClick={() => {
+          setShowAddField(false);
+          setError('');
+          setNewField({
+            name: '',
+            type: 'text',
+            description: '',
+            required: true,
+          });
+        }}
+        title="Cancel"
+      />
+    </ButtonGroup>
+  </AddFieldForm>
+)}
+
+
+  </FieldsList>
+
+    {(fields.length > 0 || selectedMetadataFields.length > 0) && (
+      <ModelCodeDisplay show={true}>
+      <SelectLabel>Generated Model Code</SelectLabel>
+        <CodeBlock>
+          <pre>{generateModelCode()}</pre>
+        </CodeBlock>
+      </ModelCodeDisplay>
+    )}
+    </Container>
+  );
+};
+
+export default DynamicModelCreator;

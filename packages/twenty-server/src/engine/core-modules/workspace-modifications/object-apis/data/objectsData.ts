@@ -62,7 +62,7 @@ export const objectCreationArr = [
     {
         "object": {
             "description": "",
-            "icon": "IconMessageChatbot",
+            "icon": "IconUsers",
             "labelPlural": "Candidates",
             "labelSingular": "Candidate",
             "nameSingular": "candidate",
