@@ -217,7 +217,6 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
   }), [enrichments, index]);
 
   const [fields, setFields] = useState(currentEnrichment.fields);
-  const [selectedMetadataFields, setSelectedMetadataFields] = useState(currentEnrichment.selectedMetadataFields);
   const [newField, setNewField] = useState({
     name: '',
     type: 'text',
@@ -230,7 +229,6 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
     const currentEnrichment = enrichments[index];
     if (currentEnrichment) {
       setFields([...currentEnrichment.fields]);
-      setSelectedMetadataFields([...currentEnrichment.selectedMetadataFields]);
       
       // Reset form state
       setNewField({
@@ -404,7 +402,7 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
     });
     
     return code;
-  }, [enrichments, index, fields, selectedMetadataFields]);  // Update dependencies
+  }, [enrichments, index, fields]);  // Update dependencies
 
   
   
@@ -429,10 +427,19 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
       <SelectLabel>Select Metadata Fields</SelectLabel>
       <MultiSelect
         multiple
-        value={selectedMetadataFields}  // Use the state variable instead
+        value={enrichments[index]?.selectedMetadataFields || []}
         onChange={e => {
           const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
-          setSelectedMetadataFields(selectedOptions);
+          setEnrichments(prev => {
+            const newEnrichments = [...prev];
+            if (newEnrichments[index]) {
+              newEnrichments[index] = {
+                ...newEnrichments[index],
+                selectedMetadataFields: selectedOptions
+              };
+            }
+            return newEnrichments;
+          });
         }}>
               {objectMetadataItem?.fields.map(field => (
           <option key={field.name} value={field.name}>
@@ -441,9 +448,9 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
         ))}
       </MultiSelect>
 
-      {selectedMetadataFields.length > 0 && (
+      {enrichments[index]?.selectedMetadataFields?.length > 0 && (
         <SelectedFieldsContainer>
-          {selectedMetadataFields.map((fieldName: string) => (
+          {enrichments[index].selectedMetadataFields.map((fieldName: string) => (
             <SelectedFieldTag key={fieldName}>
               {fieldName}
               <IconX
@@ -451,7 +458,18 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
                 stroke={1.5}
                 style={{ cursor: 'pointer' }}
                 onClick={() => {
-                  setSelectedMetadataFields((prev: any[]) => prev.filter(name => name !== fieldName));
+                  setEnrichments(prev => {
+                    const newEnrichments = [...prev];
+                    if (newEnrichments[index]) {
+                      newEnrichments[index] = {
+                        ...newEnrichments[index],
+                        selectedMetadataFields: newEnrichments[index].selectedMetadataFields.filter(
+                          (                          name: string) => name !== fieldName
+                        )
+                      };
+                    }
+                    return newEnrichments;
+                  });
                 }}
               />
             </SelectedFieldTag>
@@ -617,7 +635,7 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
 
   </FieldsList>
 
-    {(fields.length > 0 || selectedMetadataFields.length > 0) && (
+    {(fields.length > 0) && (
       <ModelCodeDisplay show={true}>
       <SelectLabel>Generated Model Code</SelectLabel>
         <CodeBlock>
