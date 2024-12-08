@@ -431,6 +431,25 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
         onChange={e => handleModelNameChange(e.target.value)}
         />
 
+      <SelectLabel>Prompt</SelectLabel>
+      <TextArea
+        placeholder="Enter your prompt here..."
+        value={enrichments[index]?.prompt || ''}
+        onChange={e => {
+          setEnrichments(prev => {
+            const newEnrichments = [...prev];
+            if (newEnrichments[index]) {
+              newEnrichments[index] = {
+                ...newEnrichments[index],
+                prompt: e.target.value
+              };
+            }
+            return newEnrichments;
+          });
+        }}
+        rows={4}
+      />
+
       <SelectLabel>Select Model</SelectLabel>
       <Select
         value={enrichments[index]?.selectedModel || ''}

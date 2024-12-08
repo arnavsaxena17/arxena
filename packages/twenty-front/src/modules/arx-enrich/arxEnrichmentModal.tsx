@@ -32,6 +32,7 @@ const StyledAdjuster = styled.div`
 
 export interface Enrichment {
   modelName: string;
+  prompt: string; // Add this field
   fields: Array<{
     id: number;
     name: string;
