@@ -92,7 +92,8 @@ export const ModalNavElementContainer = () => {
       const initialEnrichment: Enrichment = {
         modelName: '',
         fields: [],
-        selectedMetadataFields: []
+        selectedMetadataFields: [],
+        selectedModel: '',  // Add this field
       };
       setEnrichments([initialEnrichment]);
       setActiveEnrichment(0);
@@ -103,7 +104,8 @@ export const ModalNavElementContainer = () => {
     const newEnrichment: Enrichment = {
       modelName: '',
       fields: [],
-      selectedMetadataFields: []
+      selectedMetadataFields: [],
+      selectedModel: '',  // Add this field
     };
     setEnrichments(prev => [...prev.map(e => ({...e})), newEnrichment]);
     setActiveEnrichment(prev => (prev !== null ? prev + 1 : 0));

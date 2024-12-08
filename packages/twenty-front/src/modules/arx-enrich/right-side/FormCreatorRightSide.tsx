@@ -8,6 +8,13 @@ import { useRecoilState } from 'recoil';
 import { activeEnrichmentState, enrichmentsState } from '@/arx-enrich/states/arxEnrichModalOpenState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 
+const AVAILABLE_MODELS = [
+  'gpt-4o',
+  'gpt-4o-mini',
+  'gpt-3.5-pro',
+  'claude-pro',
+];
+
 const Container = styled.div`
 //   max-width: 56rem;
 width:100%
@@ -424,6 +431,30 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
         onChange={e => handleModelNameChange(e.target.value)}
         />
 
+      <SelectLabel>Select Model</SelectLabel>
+      <Select
+        value={enrichments[index]?.selectedModel || ''}
+        onChange={e => {
+          setEnrichments(prev => {
+            const newEnrichments = [...prev];
+            if (newEnrichments[index]) {
+              newEnrichments[index] = {
+                ...newEnrichments[index],
+                selectedModel: e.target.value
+              };
+            }
+            return newEnrichments;
+          });
+        }}
+      >
+        <option value="">Select a model...</option>
+        {AVAILABLE_MODELS.map(model => (
+          <option key={model} value={model}>
+            {model}
+          </option>
+        ))}
+      </Select>
+
       <SelectLabel>Select Metadata Fields</SelectLabel>
       <MultiSelect
         multiple
@@ -630,8 +661,7 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
       />
     </ButtonGroup>
   </AddFieldForm>
-)}
-
+  )}
 
   </FieldsList>
 
@@ -646,5 +676,4 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
     </Container>
   );
 };
-
 export default DynamicModelCreator;
