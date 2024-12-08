@@ -9,9 +9,10 @@ export const enrichmentsState = createState<any[]>({
   key: 'enrichmentsState',
   defaultValue: [{
     modelName: '',
+    prompt: '', // Add this field
     fields: [],
     selectedMetadataFields: [],
-    selectedModel: '',  // Add this default value
+    selectedModel: '',
   }],
 });
 
