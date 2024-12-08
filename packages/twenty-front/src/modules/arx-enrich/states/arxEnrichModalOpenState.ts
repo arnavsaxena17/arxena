@@ -7,7 +7,12 @@ export const isArxEnrichModalOpenState = createState<boolean>({
 
 export const enrichmentsState = createState<any[]>({
   key: 'enrichmentsState',
-  defaultValue: [],
+  defaultValue: [{
+    modelName: '',
+    fields: [],
+    selectedMetadataFields: [],
+    selectedModel: '',  // Add this default value
+  }],
 });
 
 export const activeEnrichmentState = createState<number | null>({
