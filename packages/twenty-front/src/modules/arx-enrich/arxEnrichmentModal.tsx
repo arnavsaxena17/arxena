@@ -39,6 +39,7 @@ export interface Enrichment {
     description: string;
     required: boolean;
   }>;
+  selectedModel: string;
   selectedMetadataFields: string[];
 }
 
