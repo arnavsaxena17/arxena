@@ -92,16 +92,16 @@ export const useFindManyRecords = <T extends ObjectRecord = ObjectRecord>({
 
       const pageInfo = data?.[objectMetadataItem.namePlural]?.pageInfo;
 
-      const records = useMemo(
-        () => {
-          if (!data?.[objectMetadataItem.namePlural]) return [];
+      // const records = useMemo(
+      //   () => {
+      //     if (!data?.[objectMetadataItem.namePlural]) return [];
           
-          return getRecordsFromRecordConnection<T>({
-            recordConnection: data[objectMetadataItem.namePlural],
-          }) ?? [];
-        },
-        [data, objectMetadataItem.namePlural],
-      );
+      //     return getRecordsFromRecordConnection<T>({
+      //       recordConnection: data[objectMetadataItem.namePlural],
+      //     }) ?? [];
+      //   },
+      //   [data, objectMetadataItem.namePlural],
+      // );
       
       onCompleted?.(records, {
         pageInfo,

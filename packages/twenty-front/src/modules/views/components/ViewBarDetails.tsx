@@ -1,6 +1,6 @@
-import { ReactNode } from 'react';
+import { ReactNode, useEffect } from 'react';
 import styled from '@emotion/styled';
-import { useRecoilValue } from 'recoil';
+import { useRecoilValue, useSetRecoilState } from 'recoil';
 
 import { AddObjectFilterFromDetailsButton } from '@/object-record/object-filter-dropdown/components/AddObjectFilterFromDetailsButton';
 import { ObjectFilterDropdownScope } from '@/object-record/object-filter-dropdown/scopes/ObjectFilterDropdownScope';
@@ -14,6 +14,8 @@ import { useGetCurrentView } from '@/views/hooks/useGetCurrentView';
 import { useResetCurrentView } from '@/views/hooks/useResetCurrentView';
 import { mapViewFiltersToFilters } from '@/views/utils/mapViewFiltersToFilters';
 import { mapViewSortsToSorts } from '@/views/utils/mapViewSortsToSorts';
+import { selector } from 'recoil';
+import { currentViewWithFiltersState } from '../states/currentViewState';
 
 export type ViewBarDetailsProps = {
   hasFilterButton?: boolean;
@@ -91,11 +93,23 @@ const StyledAddFilterContainer = styled.div`
   z-index: 5;
 `;
 
+
+export const currentViewWithFiltersAndSortsSelector = selector({
+  key: 'currentViewWithFiltersAndSortsSelector',
+  get: ({ get }) => {
+    // Add your logic to access the current view data
+    const { currentViewWithCombinedFiltersAndSorts } = useGetCurrentView();
+    return currentViewWithCombinedFiltersAndSorts;
+  },
+});
+
 export const ViewBarDetails = ({
   hasFilterButton = false,
   rightComponent,
   filterDropdownId,
 }: ViewBarDetailsProps) => {
+  const setCurrentViewWithFilters = useSetRecoilState(currentViewWithFiltersState);
+
   const {
     canPersistViewSelector,
     isViewBarExpandedState,
@@ -114,6 +128,16 @@ export const ViewBarDetails = ({
   const availableSortDefinitions = useRecoilValue(
     availableSortDefinitionsState,
   );
+
+
+  useEffect(() => {
+    if (currentViewWithCombinedFiltersAndSorts) {
+      setCurrentViewWithFilters(currentViewWithCombinedFiltersAndSorts);
+    }
+  }, [currentViewWithCombinedFiltersAndSorts, setCurrentViewWithFilters]);
+
+
+
   console.log("availableSortDefinitionsState: ", availableSortDefinitionsState);
   const { resetCurrentView } = useResetCurrentView();
   const canResetView = canPersistView && !hasFiltersQueryParams;
@@ -131,8 +155,11 @@ export const ViewBarDetails = ({
   if (!shouldExpandViewBar) {
     return null;
   }
+
+
+  
   // console.log("currentViewWithCombinedFiltersAndSorts: ", currentViewWithCombinedFiltersAndSorts);
-  console.log("mapViewSortsToSorts: ", currentViewWithCombinedFiltersAndSorts);
+  console.log("currentViewWithCombinedFiltersAndSorts: ", currentViewWithCombinedFiltersAndSorts);
 
   return (
     <StyledBar>

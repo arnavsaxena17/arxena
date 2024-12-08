@@ -2,12 +2,11 @@ import styled from '@emotion/styled';
 import { v4 as uid } from 'uuid';
 import { useRecoilState } from 'recoil';
 import { activeEnrichmentState, enrichmentsState } from '@/arx-enrich/states/arxEnrichModalOpenState';
+import axios from 'axios';
 
 import { Button } from '@/ui/input/button/components/Button';
 
 import DynamicModelCreator from './FormCreatorRightSide';
-import { useObjectMetadataItem } from '@/object-metadata/hooks/useObjectMetadataItem';
-import { useState } from 'react';
 
 const StyledAllContainer = styled.div`
   background-color: ${({ theme }) => theme.background.primary};
@@ -77,7 +76,14 @@ export const ArxEnrichModalCloseButton = ({ closeModal }: { closeModal: () => vo
 };
 
 export const ArxEnrichCreateButton = ({ onClick }: { onClick?: (event: React.FormEvent<HTMLFormElement>) => void }) => {
-  return <Button variant="primary" accent="blue" size="small" justify="center" title={'Create Enrichment'} onClick={(e: any) => onClick?.(e)} type="submit" />;
+  return <Button 
+    variant="primary" 
+    accent="blue" 
+    size="small" 
+    justify="center" 
+    title={'Create Enrichment'} 
+    type="submit"  // Changed to type="submit" to trigger form submission
+  />;
 };
 
 interface ArxEnrichNameProps {
@@ -128,18 +134,33 @@ interface ArxEnrichRightSideContainerProps {
   objectRecordId: string;
 }
 
-export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerProps> = ({ closeModal, objectNameSingular, objectRecordId }) => {
+export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerProps> = ({ 
+  closeModal, 
+  objectNameSingular, 
+  objectRecordId 
+}) => {
   const [activeEnrichment, setActiveEnrichment] = useRecoilState(activeEnrichmentState);
   const [enrichments, setEnrichments] = useRecoilState(enrichmentsState);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const formData = new FormData(event.currentTarget);
-    const modelName = formData.get('modelName');
-    const fields = formData.getAll('fields');
-    const enrichments = { modelName, fields };
-    console.log('Enrichments:', enrichments);
-    closeModal();
+    try {
+      console.log("Enrichments:", enrichments);
+      const response = await axios.post('/api/create-enrichments', {
+        enrichments,
+        objectNameSingular,
+        objectRecordId,
+      });
+
+      if (response.status === 200) {
+        console.log('Enrichments created successfully:', response.data);
+        closeModal();
+      } else {
+        console.error('Failed to create enrichments:', response.status);
+      }
+    } catch (error) {
+      console.error('Error creating enrichments:', error);
+    }
   };
 
   return (
