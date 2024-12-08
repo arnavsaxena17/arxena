@@ -20,10 +20,12 @@ import { viewObjectMetadataIdComponentState } from '@/views/states/viewObjectMet
 import { ViewScopeInternalContext } from '../../scopes/scope-internal-context/ViewScopeInternalContext';
 
 export const useViewStates = (viewComponentId?: string) => {
+  // console.log('viewComponentId', viewComponentId);  // Add this
   const componentId = useAvailableScopeIdOrThrow(
     ViewScopeInternalContext,
     viewComponentId,
   );
+  // console.log('componentId', componentId);  // Add this 
 
   return {
     componentId,

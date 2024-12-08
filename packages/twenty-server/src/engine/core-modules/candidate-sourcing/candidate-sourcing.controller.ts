@@ -32,6 +32,8 @@ export class CandidateSourcingController {
 
 
   @Post('process-candidate-chats')
+  @UseGuards(JwtAuthGuard)
+
   async processCandidateChats(@Req() request: any): Promise<object> {
     try {
       const apiToken = request.headers.authorization.split(' ')[1]; // Assuming Bearer token
@@ -48,8 +50,56 @@ export class CandidateSourcingController {
       return { status: 'Failed', error: err };
     }
   }
+  @Post('create-enrichments')
+  @UseGuards(JwtAuthGuard)
+
+  async createEnrichments(@Req() request: any): Promise<object> {
+    try {
+      const apiToken = request?.headers?.authorization?.split(' ')[1]; // Assuming Bearer token
+
+
+      const enrichments = request?.body?.enrichments
+      const objectNameSingular = request?.body?.objectNameSingular
+      const availableSortDefinitions = request?.body?.availableSortDefinitions
+      const availableFilterDefinitions = request?.body?.availableFilterDefinitions
+      const objectRecordId = request?.body?.objectRecordId
+
+
+      console.log("objectNameSingular:", objectNameSingular)
+      console.log("availableSortDefinitions:", availableSortDefinitions)
+      console.log("enrichments:", enrichments)
+      console.log("availableFilterDefinitions:", availableFilterDefinitions)
+      console.log("objectRecordId:", objectRecordId)
+
+
+      const url = process.env.ENV_NODE === 'production' ? 'https://arxena.com/process_enrichments' : 'http://127.0.0.1:5050/process_enrichments';
+      const response = await axios.post(
+        url,
+        {
+          enrichments,
+          objectNameSingular,
+          availableSortDefinitions,
+          availableFilterDefinitions,
+          objectRecordId
+        },
+        { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiToken}` } }
+      );
+      console.log('Response from process enrichments:', response.data);
+
+      console.log("going to process chats")
+      // await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).processCandidatesChatsGetStatuses( apiToken);
+      // await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).processCandidatesChatsGetStatuses(apiToken);
+
+      return { status: 'Success' };
+    } catch (err) {
+      console.error('Error in process:', err);
+      return { status: 'Failed', error: err };
+    }
+  }
 
   @Post('process-job-candidate-refresh-data')
+  @UseGuards(JwtAuthGuard)
+
 
   async refreshChats(@Req() request: any): Promise<object>  {
     const apiToken = request.headers.authorization.split(' ')[1]; // Assuming Bearer token
@@ -100,6 +150,7 @@ export class CandidateSourcingController {
 
 
   @Post('create-job-in-arxena')
+  @UseGuards(JwtAuthGuard)
   async createJobInArxena(@Req() req): Promise<any> {
     console.log('going to create job in arxena');
     console.log('going to createprocess.env.ENV_NODE', process.env.ENV_NODE);

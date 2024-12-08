@@ -1,13 +1,16 @@
 import styled from '@emotion/styled';
-import { v4 as uid } from 'uuid';
-import { useRecoilState } from 'recoil';
+import { useRecoilState, useRecoilValue } from 'recoil';
 import { activeEnrichmentState, enrichmentsState } from '@/arx-enrich/states/arxEnrichModalOpenState';
+import axios from 'axios';
 
-import { Button } from '@/ui/input/button/components/Button';
 import DynamicModelCreator from './FormCreatorRightSide';
-import { useObjectMetadataItem } from '@/object-metadata/hooks/useObjectMetadataItem';
 import { ArxEnrichName } from './ArxEnrichName'; // Ensure this import is correct
-import { useEffect, useState } from 'react';
+import { useGetCurrentView } from '@/views/hooks/useGetCurrentView';
+import { useViewStates } from '@/views/hooks/internal/useViewStates';
+import { tokenPairState } from '@/auth/states/tokenPairState';
+import { ViewScope } from '@/views/scopes/ViewScope'; // Add this import
+import { currentViewWithFiltersState } from '@/views/states/currentViewState';
+
 
 const StyledAllContainer = styled.div`
   background-color: ${({ theme }) => theme.background.primary};
@@ -40,69 +43,11 @@ const StyledQuestionsContainer = styled.ol`
   scroll-behavior: smooth;
 `;
 
-
-export const ArxEnrichModalCloseButton = ({
-  closeModal,
-}: {
-  closeModal: () => void;
-}) => {
-  return (
-    <Button
-      variant="secondary"
-      accent="danger"
-      size="small"
-      onClick={closeModal}
-      justify="center"
-      title="Close"
-      type="submit"
-    />
-  );
-};
-
-
-
-  export const ArxEnrichCreateButton = ({ onClick }: { onClick?: () => void }) => {
-    return (
-      <Button
-        variant="primary"
-        accent="blue"
-        size="small"
-        justify="center"
-        title={'Create Enrichment'}
-        onClick={onClick}
-        type="submit"
-      />
-    );
-  };
-  
-  
-  const StyledInput = styled.input`
-  align-items: flex-start;
-  &::placeholder {
-    color: ${({ theme }) => theme.font.color.tertiary};
-    font-size: ${({ theme }) => theme.font.size.lg};
-    font-weight: ${({ theme }) => theme.font.weight.medium};
-    font-family: ${({ theme }) => theme.font.family};
-  }
-  &:focus {
-    outline: none;
-  }
-  display: flex;
-  flex-grow: 1;
-  border: none;
-  height: auto;
-  color: ${({ theme }) => theme.font.color.secondary};
-  font-family: ${({ theme }) => theme.font.family};
-  font-size: ${({ theme }) => theme.font.size.lg};
-  font-weight: ${({ theme }) => theme.font.weight.semiBold};
-`;
-
 interface ArxEnrichRightSideContainerProps {
   closeModal: () => void;
   objectNameSingular: string;
   objectRecordId: string;
 }
-
 
 export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerProps> = ({ 
   closeModal, 
@@ -111,19 +56,70 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
 }) => {
   const [activeEnrichment, setActiveEnrichment] = useRecoilState(activeEnrichmentState);
   const [enrichments, setEnrichments] = useRecoilState(enrichmentsState);
+  const [tokenPair] = useRecoilState(tokenPairState);
 
+  const currentViewId = location.href.split("view=")[1];
+  const {
+    canPersistViewSelector,
+    isViewBarExpandedState,
+    availableFilterDefinitionsState,
+    availableSortDefinitionsState,
+  } = useViewStates(currentViewId);
+
+  
+  const availableSortDefinitions = useRecoilValue(
+    availableSortDefinitionsState,
+  );
+  
+  const availableFilterDefinitions = useRecoilValue(
+    availableFilterDefinitionsState,
+  );
+
+  console.log("Current Filters and Sorts:", availableSortDefinitions);
+  console.log("Current Filters and availableFilterDefinitionsState:", availableFilterDefinitionsState);
+  console.log("Current Filters and availableFilterDefinitions:", availableFilterDefinitions);
+  
+  // const { currentViewWithCombinedFiltersAndSorts } = useGetCurrentView('6ccdeef7-be59-404f-a70a-593c7ee04def');
+  const currentViewWithCombinedFiltersAndSorts = useRecoilValue(currentViewWithFiltersState);
+
+
+  console.log("Current Filters and Sorts:", currentViewWithCombinedFiltersAndSorts);
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    // const { currentViewWithCombinedFiltersAndSorts } = useGetCurrentView();
     event.preventDefault();
-    // Get the current enrichment data
-    const currentEnrichment = enrichments[activeEnrichment || 0];
-    if (currentEnrichment) {
-      console.log('Submitting enrichment:', currentEnrichment);
-      // Here you can add API calls or other submission logic
-      closeModal();
+    try {
+      console.log("Current Filters and Sorts:", currentViewWithCombinedFiltersAndSorts);
+      // Send all enrichments to the backend
+      console.log("Enrichments:", enrichments);
+      console.log("objectNameSingular:", objectNameSingular);
+      console.log("availableSortDefinitions:", availableSortDefinitions);
+      console.log("availableFilterDefinitions:", availableFilterDefinitions);
+      console.log("availableFilterDefinitionsState:", availableFilterDefinitionsState);
+      console.log("availableFilterDefinitionsState:", availableFilterDefinitionsState);
+      console.log("viewId:",currentViewId);
+      const response = await axios.post(process.env.REACT_APP_SERVER_BASE_URL+'/candidate-sourcing/create-enrichments', {
+        enrichments,
+        objectNameSingular,
+        availableSortDefinitions,
+        availableFilterDefinitions,
+        objectRecordId,
+      }, {
+        headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` }
+      });
+
+      if (response.status === 200) {
+        console.log('Enrichments created successfully:', response.data);
+        closeModal();
+      } else {
+        console.error('Failed to create enrichments:', response.status);
+      }
+    } catch (error) {
+      console.error('Error creating enrichments:', error);
     }
   };
 
   return (
+
     <StyledAllContainer id={`${objectNameSingular}: ${objectRecordId}`}>
       <StyledFormElement onSubmit={handleSubmit} id="NewArxEnrichForm">
       <ArxEnrichName 
@@ -141,5 +137,6 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
         </StyledQuestionsContainer>
       </StyledFormElement>
     </StyledAllContainer>
+
   );
 };
