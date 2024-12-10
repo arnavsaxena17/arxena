@@ -6,6 +6,7 @@ import AttachmentPanel from './AttachmentPanel';
 import MultiCandidateChat from './MultiCandidateChat';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
+import axios from 'axios';
 
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { Button } from '@/ui/input/button/components/Button';
@@ -534,6 +535,33 @@ const ChatTable: React.FC<ChatTableProps> = ({
     setIsAttachmentPanelOpen(true);
   };
 
+  function createCandidateShortlists(){
+    console.log("createCandidateShortlists");
+    console.log("selectedIds:",selectedIds)
+
+    async function createCandidateShortlists() {
+      try {
+        const response = await axios.post('/candidate-sourcing/create-shortlist', {
+          candidateIds: selectedIds,
+        });
+        console.log('Shortlist created successfully:', response.data);
+        enqueueSnackBar('Shortlist created successfully', {
+          variant: SnackBarVariant.Success,
+          icon: <IconCopy size={theme.icon.size.md} />,
+          duration: 2000,
+        });
+      } catch (error) {
+        console.error('Error creating shortlist:', error);
+        enqueueSnackBar('Error creating shortlist', {
+          variant: SnackBarVariant.Error,
+          icon: <IconCopy size={theme.icon.size.md} />,
+          duration: 2000,
+        });
+      }
+    }
+
+  }
+
   const handlePrevCandidate = () => {
     setCurrentCandidateIndex(prev => Math.max(0, prev - 1));
   };
@@ -725,6 +753,20 @@ const ChatTable: React.FC<ChatTableProps> = ({
             onClick={() => {
               // createDraftEmail();
               enqueueSnackBar('Create Drafts', {
+                variant: SnackBarVariant.Success,
+                icon: <IconCopy size={theme.icon.size.md} />,
+                duration: 2000,
+              });
+            }}
+          />
+          <Button
+            Icon={IconMessages}
+            variant="primary"
+            accent="blue"
+            title="Create Candidate Shortlist"
+            onClick={() => {
+              createCandidateShortlists();
+              enqueueSnackBar('Create Candidate Shortlists', {
                 variant: SnackBarVariant.Success,
                 icon: <IconCopy size={theme.icon.size.md} />,
                 duration: 2000,
