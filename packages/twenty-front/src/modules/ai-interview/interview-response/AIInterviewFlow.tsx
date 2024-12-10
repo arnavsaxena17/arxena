@@ -96,7 +96,7 @@ const AIInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) => 
   useEffect(() => {
     fetchInterviewData();
   }, [interviewId]);
-
+  console.log("To do the interview vidoes the process.env.REACT_APP_SERVER_BASE_URL is ", process.env.REACT_APP_SERVER_BASE_URL);
 
 
   // Function to preload a video
