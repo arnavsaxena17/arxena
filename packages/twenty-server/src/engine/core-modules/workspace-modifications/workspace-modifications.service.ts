@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
+import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { DataSourceEntity } from 'src/engine/metadata-modules/data-source/data-source.entity';
-import { EntityManager, In, Repository } from 'typeorm';
+import { DataSource, EntityManager, In, Repository } from 'typeorm';
 import { EnvironmentService } from 'src/engine/integrations/environment/environment.service';
 import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
 import { TokenService } from 'src/engine/core-modules/auth/services/token.service';
@@ -14,11 +14,13 @@ import Anthropic from '@anthropic-ai/sdk';
 export class WorkspaceQueryService {
   constructor(
 
-
     @InjectRepository(Workspace, 'core')
     private readonly workspaceRepository: Repository<Workspace>,
     @InjectRepository(DataSourceEntity, 'metadata')
     public readonly dataSourceRepository: Repository<DataSourceEntity>,
+    @InjectDataSource('metadata')
+    private readonly metadataDataSource: DataSource,
+
     public readonly tokenService: TokenService,
 
     private readonly environmentService: EnvironmentService,
@@ -32,12 +34,14 @@ export class WorkspaceQueryService {
   async getWorkspaceApiKey(workspaceId: string, keyName: string): Promise<string | null> {
     try {
       const dataSourceSchema = this.workspaceDataSourceService.getSchemaName(workspaceId);
-      
+      console.log("dataSourceSchema is this::", dataSourceSchema)
       const workspaceSettings = await this.executeRawQuery(
         `SELECT * FROM ${dataSourceSchema}."workspaceSettings" WHERE "settingKey" = $1 LIMIT 1`,
         [keyName],
         workspaceId
       );
+      console.log("Key name is this::", keyName)
+      console.log("workspaceSettings is this::", workspaceSettings)
 
       return workspaceSettings[0]?.settingValue || null;
     } catch (error) {
@@ -58,32 +62,75 @@ export class WorkspaceQueryService {
       anthropic: new Anthropic({ apiKey: anthropicKey })
     };
   }
-  
+
   async executeQueryAcrossWorkspaces<T>(
-    queryCallback: (workspaceId: string, dataSourceSchema: string, transactionManager?: EntityManager) => Promise<T>,
-    transactionManager?: EntityManager
+    queryCallback: (workspaceId: string, dataSourceSchema: string, transactionManager?: EntityManager) => Promise<T>
   ): Promise<T[]> {
-    const workspaceIds = await this.getWorkspaces();
-    const dataSources = await this.dataSourceRepository.find({
-      where: {
-        workspaceId: In(workspaceIds),
-      },
-    });
+    const queryRunner = this.metadataDataSource.createQueryRunner();
+    await queryRunner.connect();
     
     const results: T[] = [];
-    const workspaceIdsWithDataSources = new Set(
-      dataSources.map((dataSource) => dataSource.workspaceId),
-    );
-
-    for (const workspaceId of workspaceIdsWithDataSources) {
-      const dataSourceSchema = this.workspaceDataSourceService.getSchemaName(workspaceId);
-      const result = await queryCallback(workspaceId, dataSourceSchema, transactionManager);
-      if (result) {
-        results.push(result);
+    
+    try {
+      await queryRunner.startTransaction();
+      const transactionManager = queryRunner.manager;
+  
+      const workspaceIds = await this.getWorkspaces();
+      const dataSources = await this.dataSourceRepository.find({
+        where: {
+          workspaceId: In(workspaceIds),
+        },
+      });
+      
+      const workspaceIdsWithDataSources = new Set(
+        dataSources.map((dataSource) => dataSource.workspaceId),
+      );
+  
+      for (const workspaceId of workspaceIdsWithDataSources) {
+        const dataSourceSchema = this.workspaceDataSourceService.getSchemaName(workspaceId);
+        
+        // Check if table exists before querying
+        const tableExists = await this.checkIfTableExists(dataSourceSchema, "_aIInterviewStatus");
+        
+        if (!tableExists) {
+          console.log(`Table _aIInterviewStatus doesn't exist in schema ${dataSourceSchema}`);
+          continue;
+        }
+        
+        try {
+          const result = await queryCallback(workspaceId, dataSourceSchema, transactionManager);
+          if (result) {
+            results.push(result);
+          }
+        } catch (error) {
+          console.error(`Error processing workspace ${workspaceId}:`, error);
+          throw error;
+        }
       }
+  
+      await queryRunner.commitTransaction();
+      return results;
+    } catch (error) {
+      console.error("Error executing query across workspaces:", error);
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
     }
+  }
+  
+  // Helper function to check if table exists
+  private async checkIfTableExists(schema: string, tableName: string): Promise<boolean> {
+    const query = `
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = $1
+        AND table_name = $2
+      );
+    `;
 
-    return results;
+    const result = await this.metadataDataSource.query(query, [schema, tableName]);
+    return result[0].exists;
   }
 
   async executeRawQuery(query: string, params: any[], workspaceId: string, transactionManager?: EntityManager) {
@@ -105,6 +152,7 @@ export class WorkspaceQueryService {
 
   // Add this method to the service
   async getApiKeys(workspaceId: string, dataSourceSchema: string, transactionManager?: EntityManager) {
+    console.log("This is the workspace Id:", workspaceId)
     try {
       const apiKeys = await this.workspaceDataSourceService.executeRawQuery(
         `SELECT * FROM ${dataSourceSchema}."apiKey" where "apiKey"."revokedAt" IS NULL ORDER BY "apiKey"."createdAt" ASC`,

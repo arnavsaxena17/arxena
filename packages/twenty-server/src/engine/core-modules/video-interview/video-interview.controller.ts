@@ -411,17 +411,49 @@ export class VideoInterviewController {
     }
   }
   private async getWorkspaceTokenForInterview(interviewId: string) {
+    console.log("This is the interviewId:", interviewId)
     const results = await this.workspaceQueryService.executeQueryAcrossWorkspaces(
+      
       async (workspaceId, dataSourceSchema, transactionManager) => {
+        // console.log("Going to executive query", workspaceId)
+        // console.log("Going to executive query", transactionManager)
+        // console.log("Going to executive query", dataSourceSchema)
+        // console.log("Going to this.workspaceQueryService", this.workspaceQueryService)
         // Query to find the interview status
+        // const interviewStatus = await this.workspaceQueryService.executeRawQuery(
+        //   `SELECT * FROM ${dataSourceSchema}._aIInterviewStatus 
+        //    WHERE "_aIInterviewStatus"."id" ILIKE '%${interviewId}%'`,
+        //   [],
+        //   workspaceId,
+        //   transactionManager
+        // );
+        // const interviewStatus = await this.workspaceQueryService.executeRawQuery(
+        //   `SELECT * FROM ${dataSourceSchema}."_aIInterviewStatus" 
+        //    WHERE "_aIInterviewStatus"."id" ILIKE '%${interviewId}%'`,
+        //   [],
+        //   workspaceId,
+        //   transactionManager
+        // );
+
+        // const interviewStatus = await this.workspaceQueryService.executeRawQuery(
+        //   `SELECT * FROM ${dataSourceSchema}."_aIInterviewStatus" 
+        //    WHERE "_aIInterviewStatus"."id" ILIKE $1`,
+        //   [`%${interviewId.replace("/video-interview/","")}%`],
+        //   workspaceId,
+        //   transactionManager
+        // );
+        
+
         const interviewStatus = await this.workspaceQueryService.executeRawQuery(
-          `SELECT * FROM ${dataSourceSchema}._aiInterviewStatus 
-           WHERE "_aiInterviewStatus"."id" ILIKE '%${interviewId}%'`,
-          [],
+          `SELECT * FROM ${dataSourceSchema}."_aIInterviewStatus" 
+           WHERE "_aIInterviewStatus"."id"::text ILIKE $1`,
+          [`%${interviewId.replace("/video-interview/","")}%`],
           workspaceId,
           transactionManager
         );
-  
+        
+        
+        console.log("This is the interviewStatus:", interviewStatus)
         if (interviewStatus.length > 0) {
           // Get API keys for the workspace
           const apiKeys = await this.workspaceQueryService.getApiKeys(
@@ -438,6 +470,7 @@ export class VideoInterviewController {
               apiKeys[0].expiresAt
             );
   
+            console.log("AIPIU KEY OBTAINED::", apiKeyToken)
             if (apiKeyToken) {
               return apiKeyToken.token;
             }
@@ -453,14 +486,18 @@ export class VideoInterviewController {
   
   @Post('get-interview-details')
   async getInterViewDetails(@Req() req: any): Promise<GetInterviewDetailsResponse> {
+    console.log("Got a request in get interview details")
+    console.log("This is the request body in get interview details:", req?.body)
     // const apiToken = req.headers.authorization.split(' ')[1]; // Assuming Bearer token
     // const apiToken = process.env.TWENTY_JWT_SECRET;
     const { interviewId } = req.body;
+    console.log("Get interview details hit", interviewId)
     const workspaceToken = await this.getWorkspaceTokenForInterview(interviewId);
     if (!workspaceToken) {
-      throw new UnauthorizedException('Could not find valid workspace token');
+      console.log("NO WORKSPACE TOKEN FOUND")
+      // throw new UnauthorizedException('Could not find valid workspace token');
     }
-    const apiToken = workspaceToken;
+    const apiToken = workspaceToken || "";
 
     console.log("Api Token:", apiToken)
     console.log("Got video interview hit")
@@ -575,6 +612,7 @@ export class VideoInterviewController {
       });
       try {
         const response = await axiosRequest(graphqlQueryObjForaIInterviewQuestions,apiToken);
+        console.log("REhis response:", response?.data)
         console.log("REhis response:", response?.data?.data)
         responseFromInterviewRequests =  response?.data;
       } catch (error) {

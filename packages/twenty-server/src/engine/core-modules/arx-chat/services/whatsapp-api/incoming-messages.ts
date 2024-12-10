@@ -117,12 +117,11 @@ export class IncomingWhatsappMessages {
   async getApiKeyToUseFromPhoneNumberMessageReceived(requestBody:any, transactionManager?: EntityManager){
     const phoneNumber = requestBody?.entry[0]?.changes[0]?.value?.messages[0].from;
     const results = await this.workspaceQueryService.executeQueryAcrossWorkspaces(
-      async (workspaceId, dataSourceSchema, transactionManager) => {
+      async (workspaceId, dataSourceSchema) => {
         const person = await this.workspaceQueryService.executeRawQuery(
           `SELECT * FROM ${dataSourceSchema}.person where "person"."phone" ILIKE '%${phoneNumber}%'`,
           [],
-          workspaceId,
-          transactionManager
+          workspaceId
         );
 
         if (person.length > 0) {

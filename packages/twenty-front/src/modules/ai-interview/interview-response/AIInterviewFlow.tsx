@@ -97,6 +97,7 @@ const AIInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) => 
     fetchInterviewData();
   }, [interviewId]);
   console.log("To do the interview vidoes the process.env.REACT_APP_SERVER_BASE_URL is ", process.env.REACT_APP_SERVER_BASE_URL);
+  console.log("To do the interview vidoes the process.env.REACT_APP_SERVER_BASE_URL is ", process.env.REACT_APP_SERVER_BASE_URL);
 
 
   // Function to preload a video
@@ -145,10 +146,9 @@ const AIInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) => 
     }
   }, [interviewData, introductionVideoData, questionsVideoData]);
 
-
   const fetchInterviewData = async () => {
     setLoading(true);
-
+    console.log("Going to fetch interview id:", interviewId);
     try {
       const response = await axios.post(`${process.env.REACT_APP_SERVER_BASE_URL}/video-interview/get-interview-details`, { interviewId });
       console.log('This is the response to fetch interview data:', response);
