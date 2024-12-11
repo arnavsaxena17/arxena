@@ -73,18 +73,10 @@ export class JobCandidateUtils {
           after: $lastCursor
         ) {
           edges {
-
             node {
             id
-            person {
-              id
-            }
-            job {
-              id
-            }
-            candidate {
-              id
-            }
+            name
+            createdAt
           }
           cursor
         }

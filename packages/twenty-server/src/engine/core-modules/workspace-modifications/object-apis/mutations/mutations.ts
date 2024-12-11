@@ -1,5 +1,5 @@
 export const mutations = {
-    createObject: `
+  createObject: `
         mutation CreateOneObjectMetadataItem($input: CreateOneObjectInput!) {
             createOneObject(input: $input) {
                 id
@@ -19,7 +19,7 @@ export const mutations = {
             }
         }
     `,
-    createRelation: `
+  createRelation: `
         mutation CreateOneRelationMetadata($input: CreateOneRelationInput!) {
             createOneRelation(input: $input) {
                 id
@@ -34,7 +34,7 @@ export const mutations = {
         }
     `,
 
-    createField: `
+  createField: `
         mutation CreateOneFieldMetadataItem($input: CreateOneFieldMetadataInput!) {
             createOneField(input: $input) {
                 id
@@ -52,5 +52,32 @@ export const mutations = {
                 options
             }
         }
-    `
+    `,
+  createAIModel: `
+    mutation CreateOneAIModel($input: AIModelCreateInput!) {
+        createAIModel(data: $input) {
+            id
+            name
+            country
+            language
+            createdAt
+            updatedAt
+        }
+    }
+`,
+
+  createAIInterview: `
+    mutation CreateOneAIInterview($input: AIInterviewCreateInput!) {
+        createAIInterview(data: $input) {
+            id
+            name
+            aIModelId
+            jobId
+            introduction
+            instructions
+            createdAt
+            updatedAt
+        }
+    }
+`,
 };

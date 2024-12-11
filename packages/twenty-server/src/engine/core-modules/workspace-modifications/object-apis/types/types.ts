@@ -227,3 +227,27 @@ export interface FieldInput {
 }
 
 
+
+// AI Model Types
+export interface AIModel {
+    name: string;
+    country: string;
+    language: string;
+}
+
+export interface AIInterview {
+    name: string;
+    aIModelId: string;
+    jobId: string;
+    introduction?: string;
+    instructions?: string;
+}
+
+// Add country and language mapping types
+export interface CountryNames {
+    [key: string]: string[];
+}
+
+export interface CountryLanguages {
+    [key: string]: string[];
+}
