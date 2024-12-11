@@ -45,8 +45,6 @@ import { AppToken } from 'src/engine/core-modules/app-token/app-token.entity';
     JwtService,
     JwtAuthStrategy,
     EmailService
-
-
   ],
 
 })

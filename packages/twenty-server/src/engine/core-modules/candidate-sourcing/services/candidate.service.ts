@@ -84,12 +84,13 @@ export class CandidateService {
     let jobCandidateObjectId;
     const objectsNameIdMap = await new CreateMetaDataStructure(this.workspaceQueryService).fetchObjectsNameIdMap(apiToken);
     try {
-      // console.log('ObjectsNameIdMap:', objectsNameIdMap);
+      console.log('ObjectsNameIdMap:', objectsNameIdMap);
+      console.log('Lets see if jobCandidateObjectName eixsts in :', jobCandidateObjectName);
       if (objectsNameIdMap[jobCandidateObjectName]) {
         console.log('Using existing job candidate object:', jobCandidateObjectName);
         jobCandidateObjectId = objectsNameIdMap[jobCandidateObjectName];
       } else {
-        console.log('Creating new job candidate object structure');
+        console.log('Creating new job candidate object structure::', jobCandidateObjectName);
         jobCandidateObjectId = await this.createNewJobCandidateObject(jobObject, apiToken);
       }
 
@@ -108,10 +109,10 @@ export class CandidateService {
         const batch = data.slice(i, i + batchSize);
         const uniqueStringKeys = batch.map(profile => profile?.unique_key_string).filter(Boolean);
         try {
-        personDetailsMap = await this.personService.batchGetPersonDetailsByStringKeys(uniqueStringKeys, apiToken);
+          personDetailsMap = await this.personService.batchGetPersonDetailsByStringKeys(uniqueStringKeys, apiToken);
         } catch (error) {
-        console.error('Error in fetching person details:', error);
-        throw error;
+          console.error('Error in fetching person details:', error);
+          throw error;
         }
       
         for (const profile of batch) {
