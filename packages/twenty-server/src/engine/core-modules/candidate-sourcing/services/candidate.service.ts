@@ -3,6 +3,8 @@ import { JobService } from './job.service';
 import { PersonService } from './person.service';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { axiosRequest, axiosRequestForMetadata } from '../utils/utils';
+import { newFieldsToCreate } from '../utils/data-transformation-utility';
+
 import { CreateManyCandidates } from '../graphql-queries';
 import { processArxCandidate } from '../utils/data-transformation-utility';
 import * as CandidateSourcingTypes from '../types/candidate-sourcing-types';
@@ -14,43 +16,7 @@ import { createRelations } from '../../workspace-modifications/object-apis/servi
 import * as allGraphQLQueries from '../../arx-chat/services/candidate-engagement/graphql-queries-chatbot';
 import {CreateFieldsOnObject} from 'src/engine/core-modules/workspace-modifications/object-apis/data/createFields';
 import * as allDataObjects from '../../arx-chat/services/data-model-objects';
-const newFieldsToCreate = [
-  // "jsUserName",
-  "jobTitle",
-  // "keySkills", 
-  // "focusedSkills",
-  "currentLocation",
-  // "preferredLocations",
-  // "noticePeriod",
-  // "modifyDateLabel",
-  // "experienceYears",
-  // "experienceMonths",
-  // "currentDesignation",
-  "currentOrganization",
-  // "previousDesignation",
-  // "previousOrganization",
-  // "ugInstitute",
-  // "ugCourse",
-  // "ugSpecialization",
-  // "ugYear",
-  // "pgInstitute",
-  // "pgCourse",
-  // "pgSpecialization",
-  // "phone",
-  // "pgYear",
-  // "ctcLacs",
-  // "ctcThousands",
-  // "ctcCurrency",
-  // "uniqueStringKey",
-  // "phoneNumberPresent",
-  // "mobileNumberPresent",
-  // "emailVerified",
-  // "cvAttached",
-  // "salaryDisclosed",
-  // "jsUserId",
-  // "jsResId",
-  "profileUrl"
-]
+
 
 @Injectable()
 export class CandidateService {
@@ -176,6 +142,7 @@ export class CandidateService {
     console.log('Many manyPersonObjects:', manyPersonObjects.length);
     console.log('Many candidateIdMap:', candidateIdMap);
     console.log('Many personIdMap:', personIdMap);
+    // console.log('only the first candidate', manyCandidateObjects[0]);
     const { personNode, candidateNode, jobCandidateNode } = processArxCandidate(data[0], jobObject);
 
     await this.createObjectFieldsAndRelations(jobCandidateObjectId, jobCandidateObjectName, jobCandidateNode, apiToken);
@@ -335,48 +302,41 @@ async createNewJobCandidateObject(newPositionObj: CandidateSourcingTypes.Jobs, a
     apiToken: string, 
   ): Promise<void> {
     console.log('Creating fields and relations for Job Candidate object',apiToken);
-
     const existingFieldsResponse = await new CreateMetaDataStructure(this.workspaceQueryService).fetchAllCurrentObjects(apiToken);
     console.log("This is the existingFieldsResponse:", existingFieldsResponse)
     // const existingFieldsFilteredMappedFields = existingFieldsResponse.data?.data?.objects?.edges
     //   ?.filter(x => x?.node?.id == jobCandidateObjectId)[0]?.node?.fields.edges
     //   .map(x => x.node.name);
     console.log("jobCandidateObjectId:", jobCandidateObjectId);
-
-
     const keysFromPersonObjects = this.extractKeysFromObjects(jobCandidateNode);
     console.log("keysFromPersonObjects:", keysFromPersonObjects);
-
-    
     const existingFieldsFilteredMappedFields = existingFieldsResponse?.data?.objects?.edges?.filter(x => x?.node?.id == jobCandidateObjectId)[0]?.node?.fields?.edges?.map(edge => edge?.node?.name) || []; 
     // const existingFieldsFilteredMappedFields = existingFieldsResponse.data?.data?.objects?.edges?.filter(x => x?.node?.id == jobCandidateObjectId)[0]?.node?.fields.edges.map(x=> x.node.name);
     // console.log("existingFieldsFilteredMappedFields response:", existingFieldsResponse?.data?.objects?.edges?[0].node.fields.edges.map(x=> x.node.name));
-
       console.log("existingFieldsFilteredMappedFields:", existingFieldsFilteredMappedFields);
-
       const allFields = [...existingFieldsFilteredMappedFields, ...newFieldsToCreate, ...keysFromPersonObjects];
+      console.log("All fields are :", allFields);
       const newFieldsToCreateFiltered = allFields.filter(key => !existingFieldsFilteredMappedFields.includes(key));
-
       // const fieldsToCreate = newFieldsToCreateFiltered.filter(key => key !== undefined).map(key => {
+      console.log("Ultimately fields created are :", newFieldsToCreateFiltered.filter((key): key is string => key !== undefined));
       const fieldsToCreate = newFieldsToCreateFiltered.filter((key): key is string => key !== undefined).map(key => {
-        // const fieldsToCreate = newFieldsToCreate.map(key => {
         const fieldType = key.includes('year') || key.includes('months') || key.includes('lacs') || key.includes('thousands') ? 'NumberField' : 
-           key.includes('link') || key.includes('profileUrl') ? 'LinkField' : 
-           key.includes('multi') ? 'MultiField' : 'TextField';
-      return {
-        field: new CreateFieldsOnObject()[`create${fieldType}`]({
-          label: key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-          name: key,
-          objectMetadataId: jobCandidateObjectId,
-          description: key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
-        })
-      };
+          key.includes('link') || key.includes('profileUrl') ? 'LinkField' : 
+          key.includes('multi') ? 'MultiField' : 'TextField';
+
+        return {
+          field: new CreateFieldsOnObject()[`create${fieldType}`]({
+            label: key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+            name: key,
+            objectMetadataId: jobCandidateObjectId,
+            description: key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+          })
+        };
     });
 
     await createFields(fieldsToCreate, apiToken);
 
     const objectsNameIdMap = await new CreateMetaDataStructure(this.workspaceQueryService).fetchObjectsNameIdMap(apiToken);
-
     const relationsToCreate = [
       {
         relation: {

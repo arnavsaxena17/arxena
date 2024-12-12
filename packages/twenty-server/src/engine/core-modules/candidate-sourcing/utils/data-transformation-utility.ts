@@ -1,5 +1,38 @@
 import { ArxenaCandidateNode, ArxenaPersonNode, ArxenaJobCandidateNode } from '../types/candidate-sourcing-types';
 
+
+export const newFieldsToCreate = [
+  "name",
+  "currentDesignation",
+  "age",
+  "currentOrganization",
+  "currentLocation",
+  "inferredSalary",
+  "email",
+  "profileUrl",
+  "phone",
+  "uniqueStringKey",
+  "jobTitle",
+  "profileTitle",
+  "preferredLocations",
+  "birthDate",
+  "inferredYearsExperience",
+  "noticePeriod",
+  "homeTown",
+  "maritalStatus",
+  "ugInstituteName",
+  "ugGraduationYear",
+  "pgGradudationDegree",
+  "ugGraduationDegree",
+  "pgGraduationYear",
+  "resumeHeadline",
+  "keySkills",
+  "industry",
+  "modifyDateLabel",
+  "experienceYears",
+  "experienceMonths",
+]
+
 export const mapArxCandidateToPersonNode = candidate => {
   const personNode: ArxenaPersonNode = {
     name: { firstName: candidate?.first_name || "", lastName: candidate?.last_name || ""},
@@ -22,7 +55,7 @@ export const mapArxCandidateToJobCandidateNode = candidate => {
     // linkedinLink: candidate?.linkedin_url ? candidate?.linkedin_url : candidate?.linkedin_url || "",
     phone: candidate?.phone_numbers && candidate?.phone_numbers?.length > 0 ? (typeof candidate?.phone_numbers[0] === 'string' ? candidate?.phone_numbers[0] : candidate?.phone_numbers[0]?.number) || "" : "",
     uniqueStringKey:candidate?.unique_key_string,
-    jsUserName: candidate?.jsUserName || '',
+    // jsUserName: candidate?.jsUserName || '',
     jobTitle: candidate?.profile_title || '',
     profileTitle: candidate?.profile_title || '',
     // keySkills: candidate?.keySkills || "",
