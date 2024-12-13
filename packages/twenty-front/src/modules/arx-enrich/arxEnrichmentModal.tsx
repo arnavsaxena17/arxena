@@ -7,17 +7,19 @@ import { ArxEnrichLeftSideContainer } from '@/arx-enrich/left-side/ArxEnrichLeft
 import { ArxEnrichRightSideContainer } from '@/arx-enrich/right-side/ArxEnrichRightSideContainer';
 import { isArxEnrichModalOpenState } from '@/arx-enrich/states/arxEnrichModalOpenState';
 const StyledModalContainer = styled.div`
-  background-color: transparent;
-  top: 0px;
-  left: 0px;
+  background-color: solid;
+  top: 20vh;
+  left: 10vw;
   display: flex;
   flex-direction: row;
   justify-content: center;
   align-items: center;
   position: fixed;
-  height: 100vh;
-  width: 100vw;
+  height: 60vh;
+  width: 80vw;
   z-index: 1000;
+  
+
 `;
 
 const StyledAdjuster = styled.div`
@@ -27,6 +29,7 @@ const StyledAdjuster = styled.div`
   padding: 0 120px;
   justify-content: center;
   align-items: center;
+
 `;
 
 
@@ -57,6 +60,48 @@ const StyledModal = styled.div`
   overflow: hidden;
   max-height: 680px;
   box-sizing: border-box;
+  position: relative;  // Ensure this is present
+  pointer-events: auto;
+  user-select: none;  // Prevent text selection
+
+    & * {
+    pointer-events: auto;
+  }
+
+
+  /* Add custom scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: ${({ theme }) => theme.background.tertiary};
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: ${({ theme }) => theme.background.quaternary || '#888'};
+    border-radius: 4px;
+    
+    &:hover {
+      background: ${({ theme }) => theme.background.noisy || '#666'};
+    }
+  }
+
+  /* For Firefox */
+  scrollbar-width: thin;
+  scrollbar-color: ${({ theme }) => `${theme.background.quaternary || '#888'} ${theme.background.tertiary}`};
+`;
+
+
+const ScrollableContent = styled.div`
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  padding-right: 8px; /* Compensate for scrollbar width */
 `;
 
 export const ArxEnrichmentModal = ({

@@ -1,8 +1,9 @@
 import styled from '@emotion/styled';
 import { v4 as uid } from 'uuid';
-import { useRecoilState } from 'recoil';
+import { useRecoilState, useRecoilValue } from 'recoil';
 import { activeEnrichmentState, enrichmentsState } from '@/arx-enrich/states/arxEnrichModalOpenState';
 import axios from 'axios';
+import { useRecordTableStates } from '@/object-record/record-table/hooks/internal/useRecordTableStates';
 
 import { Button } from '@/ui/input/button/components/Button';
 
@@ -142,6 +143,15 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
   const [activeEnrichment, setActiveEnrichment] = useRecoilState(activeEnrichmentState);
   const [enrichments, setEnrichments] = useRecoilState(enrichmentsState);
 
+
+  const { selectedRowIdsSelector } = useRecordTableStates();
+  
+  // Get the selected row IDs
+  const selectedRowIds = useRecoilValue(selectedRowIdsSelector());
+  console.log("These are the selected row IDs:", selectedRowIds);
+
+
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     try {
@@ -150,6 +160,7 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
         enrichments,
         objectNameSingular,
         objectRecordId,
+        selectedRowIds
       });
 
       if (response.status === 200) {

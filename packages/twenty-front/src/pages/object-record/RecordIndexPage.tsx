@@ -21,6 +21,7 @@ import { isAIInterviewModalOpenState } from '@/ai-interview/interview-creation/s
 import { isArxEnrichModalOpenState } from '@/arx-enrich/states/arxEnrichModalOpenState';
 // import { InterviewCreationModal } from '@/ai-interview/interview-creation/InterviewCreationModal';
 import { ArxEnrichmentModal } from '@/arx-enrich/arxEnrichmentModal';
+import { useState } from 'react';
 
 
 const StyledIndexContainer = styled.div`
@@ -34,6 +35,7 @@ export const RecordIndexPage = () => {
   const objectNamePlural = useParams().objectNamePlural ?? '';
   // const isAIInterviewModalOpen = useRecoilValue(isAIInterviewModalOpenState);
   const isArxEnrichModalOpen = useRecoilValue(isArxEnrichModalOpenState);
+  
 
   const recordIndexId = objectNamePlural ?? '';
   const setHotkeyScope = useSetHotkeyScope();
@@ -51,6 +53,8 @@ export const RecordIndexPage = () => {
     setSelectedTableCellEditMode(-1, 0);
     setHotkeyScope(DEFAULT_CELL_SCOPE.scope, DEFAULT_CELL_SCOPE.customScopes);
   };
+
+
   console.log("isArxEnrichModalOpen", isArxEnrichModalOpen)
   return (
     <PageContainer>
@@ -62,12 +66,14 @@ export const RecordIndexPage = () => {
             recordIndexId={recordIndexId}
             objectNamePlural={objectNamePlural}
             createRecord={handleAddButtonClick}
+
           />
         
         {isArxEnrichModalOpen ? (
           <ArxEnrichmentModal
             objectNameSingular={objectNamePlural === 'companies' ? 'company' : objectNamePlural.slice(0, -1)}
             objectRecordId={'0'}
+
           />
         ) : (
           <></>)}

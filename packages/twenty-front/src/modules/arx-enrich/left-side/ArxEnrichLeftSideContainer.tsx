@@ -15,7 +15,7 @@ const StyledContainer = styled.div`
   font-weight: ${({ theme }) => theme.font.weight.semiBold};
   gap: 32px;
   padding: 44px 32px 44px 32px;
-  width: calc(100% * (1 / 3));
+  width: calc(100% * (1 / 6));
   max-width: 300px;
   min-width: 224px;
   flex-shrink: 1;

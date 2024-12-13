@@ -10,6 +10,8 @@ import { useViewStates } from '@/views/hooks/internal/useViewStates';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { ViewScope } from '@/views/scopes/ViewScope'; // Add this import
 import { currentViewWithFiltersState } from '@/views/states/currentViewState';
+import { useRecordTableStates } from '@/object-record/record-table/hooks/internal/useRecordTableStates';
+import { selectedRecordsForModalState } from '@/object-record/states/selectedRecordsState';
 
 
 const StyledAllContainer = styled.div`
@@ -18,7 +20,7 @@ const StyledAllContainer = styled.div`
   flex-direction: column;
   gap: 44px;
   padding: 44px 32px 44px 32px;
-  width: calc(100% * (2 / 3));
+  width: calc(100% * (5 / 6));
   min-width: 264px;
   flex-shrink: 1;
 `;
@@ -77,12 +79,17 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
 
   console.log("Current Filters and Sorts:", availableSortDefinitions);
   console.log("Current Filters and availableFilterDefinitionsState:", availableFilterDefinitionsState);
-  console.log("Current Filters and availableFilterDefinitions:", availableFilterDefinitions);
-  
+  console.log("Current Filters and availableFilterDefinitions:", availableFilterDefinitions);  
   // const { currentViewWithCombinedFiltersAndSorts } = useGetCurrentView('6ccdeef7-be59-404f-a70a-593c7ee04def');
+  const recordTableId = currentViewId; // or whatever ID you use for your table
+
   const currentViewWithCombinedFiltersAndSorts = useRecoilValue(currentViewWithFiltersState);
-
-
+  const selectedRecordIds = useRecoilValue(selectedRecordsForModalState);
+  console.log("selectedRecordIds:", selectedRecordIds);
+  // const { selectedRowIdsSelector } = useRecordTableStates(recordTableId);
+  
+  // Get the selected row IDs
+  // const selectedRowIds = useRecoilValue(selectedRowIdsSelector());
   console.log("Current Filters and Sorts:", currentViewWithCombinedFiltersAndSorts);
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     // const { currentViewWithCombinedFiltersAndSorts } = useGetCurrentView();
@@ -95,14 +102,17 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
       console.log("availableSortDefinitions:", availableSortDefinitions);
       console.log("availableFilterDefinitions:", availableFilterDefinitions);
       console.log("availableFilterDefinitionsState:", availableFilterDefinitionsState);
-      console.log("availableFilterDefinitionsState:", availableFilterDefinitionsState);
       console.log("viewId:",currentViewId);
+      console.log("last ly before axios selectedRecordIds:", selectedRecordIds);
+      
+
       const response = await axios.post(process.env.REACT_APP_SERVER_BASE_URL+'/candidate-sourcing/create-enrichments', {
         enrichments,
         objectNameSingular,
         availableSortDefinitions,
         availableFilterDefinitions,
         objectRecordId,
+        selectedRecordIds
       }, {
         headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` }
       });

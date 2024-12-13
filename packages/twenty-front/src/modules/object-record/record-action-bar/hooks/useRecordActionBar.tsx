@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { isNonEmptyString } from '@sniptt/guards';
 import { RecoilState, useRecoilCallback, useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 import { IconClick, IconFileExport, IconHeart, IconHeartOff, IconTrash } from 'twenty-ui';
+import { selectedRecordsForModalState } from '../../states/selectedRecordsState';
 
 import { useFavorites } from '@/favorites/hooks/useFavorites';
 import { ObjectMetadataItem } from '@/object-metadata/types/ObjectMetadataItem';
@@ -45,6 +46,12 @@ export const useRecordActionBar = ({ objectMetadataItem, selectedRecordIds, call
   // const openActivity = useOpenActivityRightDrawer();
   const { openRightDrawer } = useRightDrawer();
   const [_, setChatPanel] = useRecoilState(chatPanelState);
+
+
+
+
+  const setSelectedRecordsForModal = useSetRecoilState(selectedRecordsForModalState);
+  setSelectedRecordsForModal(selectedRecordIds);
 
 
   const { createFavorite, favorites, deleteFavorite } = useFavorites();

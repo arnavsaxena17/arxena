@@ -63,6 +63,7 @@ export class CandidateSourcingController {
       const availableSortDefinitions = request?.body?.availableSortDefinitions
       const availableFilterDefinitions = request?.body?.availableFilterDefinitions
       const objectRecordId = request?.body?.objectRecordId
+      const selectedRecordIds = request?.body?.selectedRecordIds
 
 
       console.log("objectNameSingular:", objectNameSingular)
@@ -70,8 +71,9 @@ export class CandidateSourcingController {
       console.log("enrichments:", enrichments)
       console.log("availableFilterDefinitions:", availableFilterDefinitions)
       console.log("objectRecordId:", objectRecordId)
+      console.log("selectedRecordIds:", selectedRecordIds)
 
-
+      console.log("process.env.ENV_NODE::", process.env.ENV_NODE)
       const url = process.env.ENV_NODE === 'production' ? 'https://arxena.com/process_enrichments' : 'http://127.0.0.1:5050/process_enrichments';
       const response = await axios.post(
         url,
@@ -80,7 +82,8 @@ export class CandidateSourcingController {
           objectNameSingular,
           availableSortDefinitions,
           availableFilterDefinitions,
-          objectRecordId
+          objectRecordId,
+          selectedRecordIds
         },
         { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiToken}` } }
       );

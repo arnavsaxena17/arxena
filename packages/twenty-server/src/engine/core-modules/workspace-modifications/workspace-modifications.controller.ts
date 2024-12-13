@@ -35,6 +35,17 @@ export class WorkspaceModificationsController {
     console.log("workspace:", workspace)
     return this.workspaceQueryService.getWorkspaceApiKeys(workspace.id);
   }
+  @Get('fetch-all-current-objects')
+  @UseGuards(JwtAuthGuard)
+  async fetchAllCurrentObjects(@Req() req) {
+    console.log("getWorkspaceApiKeys")
+    const apiToken = req.headers.authorization.split(' ')[1];
+    // const existingObjectsResponse = await new CreateMetaDataStructure(this.workspaceQueryService).fetchAllCurrentObjects(apiToken);
+    const existingObjectsResponse = await new CreateMetaDataStructure(this.workspaceQueryService).fetchObjectsNameIdMap(apiToken);
+
+    console.log("existingObjectsResponse:", existingObjectsResponse)
+    return existingObjectsResponse;
+  }
 
   @Get('api-keys/:keyName')
   @UseGuards(JwtAuthGuard)

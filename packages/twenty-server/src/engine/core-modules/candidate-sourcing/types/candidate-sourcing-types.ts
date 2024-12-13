@@ -221,7 +221,10 @@ export interface ArxenaJobCandidateNode {
   educationUgSpecialization?: string;
   educationUgCourse?: string;
   birthDate?: string;
+  age?: string;
+
   inferredSalary?: string;
+  gender?: string;
   inferredYearsExperience?: string;
   homeTown?: string;
 

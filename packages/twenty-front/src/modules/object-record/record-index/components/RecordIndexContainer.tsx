@@ -48,13 +48,21 @@ type RecordIndexContainerProps = {
   recordIndexId: string;
   objectNamePlural: string;
   createRecord: () => Promise<void>;
+
 };
 
-export const RecordIndexContainer = ({ createRecord, recordIndexId, objectNamePlural }: RecordIndexContainerProps) => {
+export const RecordIndexContainer = ({ createRecord, recordIndexId, objectNamePlural}: RecordIndexContainerProps) => {
   const [recordIndexViewType, setRecordIndexViewType] = useRecoilState(recordIndexViewTypeState);
   const { objectNameSingular } = useObjectNameSingularFromPlural({
     objectNamePlural,
   });
+
+  const { selectedRowIdsSelector } = useRecordTable({
+    recordTableId: recordIndexId,
+  });
+
+  const selectedRowIds = useRecoilValue(selectedRowIdsSelector());
+
 
   const { objectMetadataItem } = useObjectMetadataItem({
     objectNameSingular,

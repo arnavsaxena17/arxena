@@ -55,7 +55,6 @@ export class TasksService {
     const workspaceIdsWithDataSources = new Set(
       dataSources.map((dataSource) => dataSource.workspaceId),
     );
-    console.log("workspaceIdsWithDataSources::", workspaceIdsWithDataSources);
     for (const workspaceId of workspaceIdsWithDataSources) {
       const dataSourceSchema = this.workspaceQueryService.workspaceDataSourceService.getSchemaName(workspaceId);
       console.log("dataSourceSchema::", dataSourceSchema);

@@ -62,8 +62,7 @@ export class CandidateService {
 
       console.log('Job candidate object ID:', jobCandidateObjectId);
     } catch (error) {
-      console.error('Error in fetching or creating job candidate object:', error);
-      throw error;
+      console.log('Error in fetching or creating job candidate object:', error);
     }
 
     const personIdMap = new Map<string, string>();
@@ -77,8 +76,7 @@ export class CandidateService {
         try {
           personDetailsMap = await this.personService.batchGetPersonDetailsByStringKeys(uniqueStringKeys, apiToken);
         } catch (error) {
-          console.error('Error in fetching person details:', error);
-          throw error;
+          console.log('Error in fetching person details:', error);
         }
       
         for (const profile of batch) {
@@ -104,8 +102,7 @@ export class CandidateService {
             personIdMap.set(unique_key_string, personId);
           }
         } catch (error) {
-          console.error('Error in creating or fetching person:', error);
-          throw error;
+          console.log('Error in creating or fetching person:', error);
         }
       
         try {
@@ -123,8 +120,7 @@ export class CandidateService {
 
           }
         } catch (error) {
-          console.error('Error in creating or fetching candidate:', error);
-          throw error;
+          console.log('Error in creating or fetching candidate:', error);
         }
         }
       
@@ -191,8 +187,7 @@ export class CandidateService {
       console.log('No new job candidate relationships to create');
       }
     } catch (error) {
-      console.error('Error in creating job candidate relationships:', error);
-      throw error;
+      console.log('Error in creating job candidate relationships:', error);
     }
 
     console.log('Many manyPersonObjects objects 2:', manyPersonObjects.length);
@@ -316,7 +311,8 @@ async createNewJobCandidateObject(newPositionObj: CandidateSourcingTypes.Jobs, a
       console.log("existingFieldsFilteredMappedFields:", existingFieldsFilteredMappedFields);
       const allFields = [...existingFieldsFilteredMappedFields, ...newFieldsToCreate, ...keysFromPersonObjects];
       console.log("All fields are :", allFields);
-      const newFieldsToCreateFiltered = allFields.filter(key => !existingFieldsFilteredMappedFields.includes(key));
+      const newFieldsToCreateFiltered = Array.from(new Set(allFields)).filter(key => !existingFieldsFilteredMappedFields.includes(key));
+
       // const fieldsToCreate = newFieldsToCreateFiltered.filter(key => key !== undefined).map(key => {
       console.log("Ultimately fields created are :", newFieldsToCreateFiltered.filter((key): key is string => key !== undefined));
       const fieldsToCreate = newFieldsToCreateFiltered.filter((key): key is string => key !== undefined).map(key => {
