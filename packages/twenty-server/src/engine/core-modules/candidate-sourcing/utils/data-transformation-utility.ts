@@ -1,40 +1,11 @@
 import { ArxenaCandidateNode, ArxenaPersonNode, ArxenaJobCandidateNode } from '../types/candidate-sourcing-types';
 
 
-export const newFieldsToCreate = [
-  "name",
-  "jobTitle",
-  "currentOrganization",
-  "age",
-  "currentLocation",
-  "inferredSalary",
-  "email",
-  "profileUrl",
-  "phone",
-  "uniqueStringKey",
-  "profileTitle",
-  "preferredLocations",
-  "birthDate",
-  "inferredYearsExperience",
-  "noticePeriod",
-  "homeTown",
-  "maritalStatus",
-  "ugInstituteName",
-  "ugGraduationYear",
-  "pgGradudationDegree",
-  "ugGraduationDegree",
-  "pgGraduationYear",
-  "resumeHeadline",
-  "keySkills",
-  "industry",
-  "modifyDateLabel",
-  "experienceYears",
-  "experienceMonths",
-]
 
 export const mapArxCandidateToPersonNode = candidate => {
   const personNode: ArxenaPersonNode = {
     name: { firstName: candidate?.first_name || "", lastName: candidate?.last_name || ""},
+    displayPicture: {"label":"Display Picture", "url":candidate?.display_picture || ''},
     email: Array.isArray(candidate?.email_address) ? candidate?.email_address[0] : candidate?.email_address || "",
     linkedinLink: candidate?.linkedin_url ? { url: candidate?.linkedin_url, label: candidate?.linkedin_url } : { url: '', label: '' },
     phone: candidate?.phone_numbers && candidate?.phone_numbers?.length > 0 ? (typeof candidate?.phone_numbers[0] === 'string' ? candidate?.phone_numbers[0] : candidate?.phone_numbers[0]?.number) || "" : "",
@@ -57,16 +28,17 @@ export const mapArxCandidateToJobCandidateNode = candidate => {
     profileTitle: candidate?.profile_title || '',
     currentLocation: candidate?.location_name || '',
     preferredLocations: candidate?.preferred_locations || "",
+    displayPicture: {"label":"Display Picture", "url":candidate?.display_picture || ''},
     birthDate: candidate?.birth_date?.toString() || "",
-    age: candidate?.age?.toString() || "",
-    inferredSalary: candidate?.inferred_salary?.toString() || "",
-    inferredYearsExperience :candidate?.inferred_years_experience?.toString() || "",
+    age: candidate?.age || 0,
+    inferredSalary: candidate?.inferred_salary || 0,
+    inferredYearsExperience :candidate?.inferred_years_experience || 0,
     noticePeriod: candidate?.notice_period?.toString() || "",
     homeTown: candidate?.home_town,
     gender: candidate.gender,
     maritalStatus: candidate?.marital_status,
     ugInstituteName: candidate?.ug_institute_name,
-    ugGraduationYear: candidate?.ug_graduation_year,
+    ugGraduationYear: candidate?.ug_graduation_year || 0,
     pgGradudationDegree: candidate?.pg_graduation_degree,
     ugGraduationDegree: candidate?.ug_graduation_degree,
     pgGraduationYear: candidate?.pg_graduation_year,
@@ -74,7 +46,7 @@ export const mapArxCandidateToJobCandidateNode = candidate => {
     keySkills: candidate?.key_skills,
     industry: candidate?.industry,
     modifyDateLabel: candidate?.modifyDateLabel || '',
-    experienceYears: candidate?.experienceYears || "",
+    experienceYears: candidate?.experienceYears || 0,
     experienceMonths: candidate?.experienceMonths || "",
     currentOrganization: candidate?.job_company_name || '',
   };
@@ -93,6 +65,7 @@ export const mapArxCandidateToCandidateNode = (candidate, jobNode, jobSpecificNo
     startChat: false,
     uniqueStringKey:candidate?.unique_key_string,
     hiringNaukriUrl: {"label":candidate?.profile_url || '', "url":candidate?.profile_url || ''},
+    displayPicture: {"label":"Display Picture", "url":candidate?.display_picture || ''},
     stopChat: false,
     peopleId: '',
     jobSpecificFields: jobSpecificNode,
@@ -116,7 +89,7 @@ export const mapArxCandidateJobSpecificFields = candidate => {
   return jobSpecificFields;
 };
 
-export const processArxCandidate = (candidate, jobNode) => {
+export const processArxCandidate = async (candidate, jobNode) => {
   // console.log("This is the job node", jobNode);
   const personNode = mapArxCandidateToPersonNode(candidate);
   const jobSpecificNode = mapArxCandidateJobSpecificFields(candidate);

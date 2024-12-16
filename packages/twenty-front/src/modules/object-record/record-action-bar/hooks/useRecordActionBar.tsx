@@ -48,8 +48,6 @@ export const useRecordActionBar = ({ objectMetadataItem, selectedRecordIds, call
   const [_, setChatPanel] = useRecoilState(chatPanelState);
 
 
-
-
   const setSelectedRecordsForModal = useSetRecoilState(selectedRecordsForModalState);
   setSelectedRecordsForModal(selectedRecordIds);
 

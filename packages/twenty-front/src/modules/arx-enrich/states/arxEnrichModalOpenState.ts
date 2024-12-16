@@ -12,7 +12,7 @@ export const enrichmentsState = createState<any[]>({
     prompt: '', // Add this field
     fields: [],
     selectedMetadataFields: [],
-    selectedModel: '',
+    selectedModel: 'gpt-4o-mini',
   }],
 });
 

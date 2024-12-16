@@ -47,12 +47,11 @@ export const RecordIndexTableContainerEffect = ({
 
   const selectedRowIds = useRecoilValue(selectedRowIdsSelector());
 
-  const { setContextMenuEntries, setActionBarEntries, additionalComponents } = useRecordActionBar({
+  const { setContextMenuEntries, setActionBarEntries } = useRecordActionBar({
     objectMetadataItem,
     selectedRecordIds: selectedRowIds,
     callback: resetTableRowSelection,
   });
-
   const handleToggleColumnFilter = useHandleToggleColumnFilter({
     objectNameSingular,
     viewBarId,

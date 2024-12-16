@@ -427,6 +427,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
             "type": "BOOLEAN"
         }
     },
+    
     {
         "field": {
             "description": "",
@@ -969,18 +970,26 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
             "objectMetadataId": objectsNameIdMap.candidate,
             "type": "LINK"
         }
-
     },
     {
         "field": {
-            "description": "Resdex Naukri URL",
+            "description": "Display Picture URL",
             "icon": "IconLink",
-            "label": "resdexNaukriUrl",
-            "name": "resdexNaukriUrl",
+            "label": "displayPicture",
+            "name": "displayPicture",
             "objectMetadataId": objectsNameIdMap.candidate,
             "type": "LINK"
         }
-
+    },
+    {
+        "field": {
+            "description": "Display Picture URL",
+            "icon": "IconLink",
+            "label": "displayPicture",
+            "name": "displayPicture",
+            "objectMetadataId": objectsNameIdMap.person,
+            "type": "LINK"
+        }
     },
 
     {

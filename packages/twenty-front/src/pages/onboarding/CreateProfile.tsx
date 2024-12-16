@@ -88,23 +88,25 @@ export const CreateProfile = () => {
         arxenaSiteBaseUrl = process.env.REACT_APP_ARXENA_SITE_BASE_URL || 'https://arxena.com';
       }
       console.log('Final Arxena Site Base URL', arxenaSiteBaseUrl);
+      const requestParams = new URLSearchParams({
+        full_name: userData?.fullName,
+        email: userData?.email,
+        phone: userData?.phone,
+        token: userData?.token,
+        password: userData?.password,
+        visitor_fp: userData?.visitorFp || '',
+        currentWorkspaceMemberId: userData?.currentWorkspaceMemberId || '',
+        twentyId: userData?.twentyId || '',
+        currentWorkspaceId: userData?.currentWorkspaceId || '',
+      })
+      console.log("This is ther requst params:", requestParams);
       const response = await fetch(arxenaSiteBaseUrl + '/auth/signup', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
           // 'Authorization': `Bearer ${userData.token}`, // Ensure the token is sent in the headers
         },
-        body: new URLSearchParams({
-          full_name: userData.fullName,
-          email: userData.email,
-          phone: userData.phone,
-          token: userData.token,
-          password: userData.password,
-          visitor_fp: userData.visitorFp || '',
-          currentWorkspaceMemberId: userData.currentWorkspaceMemberId || '',
-          currentWorkspaceId: userData.currentWorkspaceId || '',
-          twentyId: userData.twentyId || '',
-        }),
+        body: requestParams,
       });
       console.log('signupUserOnArxena response:', response);
 

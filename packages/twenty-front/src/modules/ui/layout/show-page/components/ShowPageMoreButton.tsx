@@ -38,9 +38,9 @@ export const ShowPageMoreButton = ({ recordId, objectNameSingular }: { recordId:
   };
 
 
-  console.log('navigationMemorizedUrl', navigationMemorizedUrl);
-  console.log('navigationMemorizedUrlState', navigationMemorizedUrlState);
-  console.log('useLocation', useLocation());
+  // console.log('navigationMemorizedUrl', navigationMemorizedUrl);
+  // console.log('navigationMemorizedUrlState', navigationMemorizedUrlState);
+  // console.log('useLocation', useLocation());
 
   const locationName = useLocation().pathname
 
@@ -48,7 +48,6 @@ export const ShowPageMoreButton = ({ recordId, objectNameSingular }: { recordId:
   const { openModal } = useArxEnrichCreationModal();
 
   const handleModal = () => {
-    console.log("Truing top open modeal")
     openModal();
     // closeDropdown();
   };

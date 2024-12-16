@@ -17,7 +17,7 @@ const AVAILABLE_MODELS = [
 
 const Container = styled.div`
 //   max-width: 56rem;
-width:100%
+  width:80%
   margin: 0 auto;
   padding: 1.5rem;
   display: flex;
@@ -28,12 +28,13 @@ width:100%
 const sharedInputStyles = `
   width: 100%;
   padding: 0.5rem 1rem;
-  font-size: 1.125rem;
+  font-size: 1rem;
   font-weight: 500;
   background: white;
   border: 1px solid #e5e7eb;
   border-radius: 0.5rem;
   outline: none;
+  font-family: inherit;
   transition: all 0.2s;
 
   &:focus {
@@ -78,6 +79,8 @@ const FieldCard = styled.div`
   padding: 1rem;
   background: white;
   border: 1px solid #e5e7eb;
+  font-family: inherit;
+
   border-radius: 0.5rem;
   transition: all 0.2s;
 
@@ -186,7 +189,9 @@ const MultiSelect = styled.select`
   ${sharedInputStyles}
   width: 96%;
   height: auto;
-  min-height: 100px;
+  font-family: inherit;
+
+  min-height: 80px;
   multiple: true;
 `;
 
@@ -256,7 +261,6 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
   });
 
 
-
   const handleModelNameChange = (value: string) => {
     const validationError = validateModelName(value);
     if (validationError) {
@@ -282,7 +286,6 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
   const currentFieldNames = objectMetadataItem?.fields.map(field => field.name);
 
 
-  console.log("This is the current state of the enrichments::", enrichments );
   const fieldTypes = useMemo(() => [
     { value: 'text', label: 'Text' },
     { value: 'number', label: 'Number' },
@@ -450,26 +453,29 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
         rows={4}
       />
 
+
       <SelectLabel>Select Model</SelectLabel>
       <Select
-        value={enrichments[index]?.selectedModel || ''}
-        onChange={e => {
-          setEnrichments(prev => {
-            const newEnrichments = [...prev];
-            if (newEnrichments[index]) {
-              newEnrichments[index] = {
-                ...newEnrichments[index],
-                selectedModel: e.target.value
-              };
-            }
-            return newEnrichments;
-          });
-        }}
-      >
-        <option value="">Select a model...</option>
+          value={enrichments[index]?.selectedModel || 'gpt-4o-mini'}
+          onChange={e => {
+        const selectedModel = e.target.value;
+        console.log("selectedModel::", selectedModel);
+        setEnrichments(prev => {
+          const newEnrichments = [...prev];
+          if (newEnrichments[index]) {
+            newEnrichments[index] = {
+          ...newEnrichments[index],
+          selectedModel: selectedModel
+            };
+          }
+          return newEnrichments;
+        });
+          }}
+        >
+        <option>Select a model...</option>
         {AVAILABLE_MODELS.map(model => (
           <option key={model} value={model}>
-            {model}
+        {model}
           </option>
         ))}
       </Select>
@@ -481,22 +487,23 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
         onChange={e => {
           const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
           setEnrichments(prev => {
-            const newEnrichments = [...prev];
-            if (newEnrichments[index]) {
-              newEnrichments[index] = {
-                ...newEnrichments[index],
-                selectedMetadataFields: selectedOptions
-              };
-            }
-            return newEnrichments;
+        const newEnrichments = [...prev];
+        if (newEnrichments[index]) {
+          newEnrichments[index] = {
+            ...newEnrichments[index],
+            selectedMetadataFields: selectedOptions
+          };
+        }
+        return newEnrichments;
           });
         }}>
-              {objectMetadataItem?.fields.map(field => (
+        {objectMetadataItem?.fields.map(field => (
           <option key={field.name} value={field.name}>
-            {field.name}
+        {field.label}
           </option>
         ))}
       </MultiSelect>
+
 
       {enrichments[index]?.selectedMetadataFields?.length > 0 && (
         <SelectedFieldsContainer>

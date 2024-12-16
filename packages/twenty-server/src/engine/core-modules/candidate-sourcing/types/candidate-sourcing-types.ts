@@ -203,12 +203,11 @@ interface Person {
 export interface ArxenaCandidateNode {
   name: string;
   engagementStatus: boolean;
-  // phoneNumber: string;
-  // email: string;
   startChat: boolean;
   uniqueStringKey: string;
   stopChat: boolean;
   hiringNaukriUrl: {label:string, url:string};
+  displayPicture: {label:string, url:string};
   jobsId: string;
   jobSpecificFields: any;
   peopleId: string;
@@ -217,22 +216,23 @@ export interface ArxenaCandidateNode {
 export interface ArxenaJobCandidateNode {
   id?: string;
   profileUrl:{label:string, url:string};
-  educationUgYear?: string;
+  displayPicture:{label:string, url:string};
+  educationUgYear?: number;
   educationUgSpecialization?: string;
   educationUgCourse?: string;
   birthDate?: string;
-  age?: string;
+  age?: number;
 
-  inferredSalary?: string;
+  inferredSalary?: number;
   gender?: string;
-  inferredYearsExperience?: string;
+  inferredYearsExperience?: number;
   homeTown?: string;
 
   ugInstituteName: string;
-  ugGraduationYear: string;
+  ugGraduationYear: number;
   pgGradudationDegree: string;
   ugGraduationDegree: string;
-  pgGraduationYear: string;
+  pgGraduationYear: number;
   resumeHeadline: string;
   industry: string;
   maritalStatus?: string;
@@ -278,6 +278,7 @@ export interface ArxenaPersonNode {
     url: string;
     label: string;
   };
+  displayPicture?: { url: string; label: string; };
   email?: string | null;
   uniqueStringKey?: string | null;
   phone?: string | null;

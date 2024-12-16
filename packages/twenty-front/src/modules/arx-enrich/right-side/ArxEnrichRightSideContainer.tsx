@@ -39,6 +39,7 @@ const StyledQuestionsContainer = styled.ol`
   flex-direction: column;
   flex-grow: 1;
   padding: 0;
+  font-family: ${({ theme }) => theme.font.family};
   margin: 0px;
   list-style-type: none;
   overflow-y: scroll;
@@ -77,20 +78,17 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
     availableFilterDefinitionsState,
   );
 
-  console.log("Current Filters and Sorts:", availableSortDefinitions);
-  console.log("Current Filters and availableFilterDefinitionsState:", availableFilterDefinitionsState);
-  console.log("Current Filters and availableFilterDefinitions:", availableFilterDefinitions);  
+  // console.log("Current Filters and Sorts:", availableSortDefinitions);
+  // console.log("Current Filters and availableFilterDefinitionsState:", availableFilterDefinitionsState);
+  // console.log("Current Filters and availableFilterDefinitions:", availableFilterDefinitions);  
   // const { currentViewWithCombinedFiltersAndSorts } = useGetCurrentView('6ccdeef7-be59-404f-a70a-593c7ee04def');
-  const recordTableId = currentViewId; // or whatever ID you use for your table
 
   const currentViewWithCombinedFiltersAndSorts = useRecoilValue(currentViewWithFiltersState);
   const selectedRecordIds = useRecoilValue(selectedRecordsForModalState);
-  console.log("selectedRecordIds:", selectedRecordIds);
   // const { selectedRowIdsSelector } = useRecordTableStates(recordTableId);
   
   // Get the selected row IDs
   // const selectedRowIds = useRecoilValue(selectedRowIdsSelector());
-  console.log("Current Filters and Sorts:", currentViewWithCombinedFiltersAndSorts);
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     // const { currentViewWithCombinedFiltersAndSorts } = useGetCurrentView();
     event.preventDefault();
@@ -117,7 +115,7 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
         headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` }
       });
 
-      if (response.status === 200) {
+      if (response.status === 200 || response.status === 201) {
         console.log('Enrichments created successfully:', response.data);
         closeModal();
       } else {
