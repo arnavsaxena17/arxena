@@ -32,19 +32,19 @@ export const mapArxCandidateToJobCandidateNode = candidate => {
     birthDate: candidate?.birth_date?.toString() || "",
     age: candidate?.age || 0,
     inferredSalary: candidate?.inferred_salary || 0,
-    inferredYearsExperience :candidate?.inferred_years_experience || 0,
+    inferredYearsExperience :candidate?.inferred_years_experience.toString() || "",
     noticePeriod: candidate?.notice_period?.toString() || "",
-    homeTown: candidate?.home_town,
-    gender: candidate.gender,
-    maritalStatus: candidate?.marital_status,
-    ugInstituteName: candidate?.ug_institute_name,
+    homeTown: candidate?.home_town  || '',
+    gender: candidate.gender  || '',
+    maritalStatus: candidate?.marital_status || '',
+    ugInstituteName: candidate?.ug_institute_name || '',
     ugGraduationYear: candidate?.ug_graduation_year || 0,
-    pgGradudationDegree: candidate?.pg_graduation_degree,
-    ugGraduationDegree: candidate?.ug_graduation_degree,
+    pgGradudationDegree: candidate?.pg_graduation_degree || '',
+    ugGraduationDegree: candidate?.ug_graduation_degree || '',
     pgGraduationYear: candidate?.pg_graduation_year,
-    resumeHeadline: candidate?.resume_headline,
-    keySkills: candidate?.key_skills,
-    industry: candidate?.industry,
+    resumeHeadline: candidate?.resume_headline || '',
+    keySkills: candidate?.key_skills || '',
+    industry: candidate?.industry || '',
     modifyDateLabel: candidate?.modifyDateLabel || '',
     experienceYears: candidate?.experienceYears || 0,
     experienceMonths: candidate?.experienceMonths || "",
@@ -52,10 +52,6 @@ export const mapArxCandidateToJobCandidateNode = candidate => {
   };
   return jobCandidateNode;
 };
-
-
-
-
 
 export const mapArxCandidateToCandidateNode = (candidate, jobNode, jobSpecificNode) => {
   const candidateNode: ArxenaCandidateNode = {
@@ -77,14 +73,14 @@ export const mapArxCandidateToCandidateNode = (candidate, jobNode, jobSpecificNo
 
 export const mapArxCandidateJobSpecificFields = candidate => {
   const jobSpecificFields = {
-    profileTitle: candidate.profile_title,
-    inferredSalary: candidate.inferred_salary,
-    inferredYearsExperience: candidate.inferred_years_experience,
-    inferredLocation: candidate.inferred_location,
-    skills: candidate.skills,
-    stdFunction: candidate.std_function,
-    stdGrade: candidate.std_grade,
-    stdFunctionRoot: candidate.std_function_root,
+    profileTitle: candidate?.profile_title || '',
+    inferredSalary: candidate?.inferred_salary || 0,
+    inferredYearsExperience: candidate?.inferred_years_experience.toString() || '',
+    inferredLocation: candidate?.inferred_location || '',
+    skills: candidate?.skills || '',
+    stdFunction: candidate?.std_function || '',
+    stdGrade: candidate?.std_grade || '',
+    stdFunctionRoot: candidate?.std_function_root || '',
   };
   return jobSpecificFields;
 };
@@ -92,8 +88,12 @@ export const mapArxCandidateJobSpecificFields = candidate => {
 export const processArxCandidate = async (candidate, jobNode) => {
   // console.log("This is the job node", jobNode);
   const personNode = mapArxCandidateToPersonNode(candidate);
+  console.log("This is the person node", personNode);
   const jobSpecificNode = mapArxCandidateJobSpecificFields(candidate);
+  console.log("This is the job specific node", jobSpecificNode);
   const candidateNode = mapArxCandidateToCandidateNode(candidate, jobNode, jobSpecificNode);
+  console.log("This is the candidate node", candidateNode);
   const jobCandidateNode = mapArxCandidateToJobCandidateNode(candidate);
+  console.log("This is the job candidate node", jobCandidateNode);
   return { personNode, candidateNode, jobCandidateNode };
 };

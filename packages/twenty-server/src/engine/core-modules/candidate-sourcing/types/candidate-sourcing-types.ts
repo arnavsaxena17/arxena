@@ -225,7 +225,7 @@ export interface ArxenaJobCandidateNode {
 
   inferredSalary?: number;
   gender?: string;
-  inferredYearsExperience?: number;
+  inferredYearsExperience?: string;
   homeTown?: string;
 
   ugInstituteName: string;

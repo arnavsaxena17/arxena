@@ -94,14 +94,14 @@ const StyledAddFilterContainer = styled.div`
 `;
 
 
-export const currentViewWithFiltersAndSortsSelector = selector({
-  key: 'currentViewWithFiltersAndSortsSelector',
-  get: ({ get }) => {
-    // Add your logic to access the current view data
-    const { currentViewWithCombinedFiltersAndSorts } = useGetCurrentView();
-    return currentViewWithCombinedFiltersAndSorts;
-  },
-});
+// export const currentViewWithFiltersAndSortsSelector = selector({
+//   key: 'currentViewWithFiltersAndSortsSelector',
+//   get: ({ get }) => {
+//     // Add your logic to access the current view data
+//     const { currentViewWithCombinedFiltersAndSorts } = useGetCurrentView();
+//     return currentViewWithCombinedFiltersAndSorts;
+//   },
+// });
 
 export const ViewBarDetails = ({
   hasFilterButton = false,

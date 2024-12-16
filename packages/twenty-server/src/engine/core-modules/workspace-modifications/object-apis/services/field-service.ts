@@ -3,6 +3,13 @@ import { mutations } from '../mutations/mutations';
 import { FieldCreationInput, FieldInput } from '../types/types';
 export async function createFields(fieldsData:FieldInput[], apiToken: string) {
     for (const item of fieldsData ) {
+
+        if (!item?.field?.objectMetadataId) {
+            console.log('Field objectMetadataId is not defined for item:', item);
+        }
+        else{
+            console.log('Field objectMetadataId is defined for item:', item, "will go and setup the field");
+        }
         const input = {
             field: {
                 type: item?.field?.type,
