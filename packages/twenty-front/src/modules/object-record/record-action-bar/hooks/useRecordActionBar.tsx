@@ -17,7 +17,7 @@ import { actionBarEntriesState } from '@/ui/navigation/action-bar/states/actionB
 import { contextMenuEntriesState } from '@/ui/navigation/context-menu/states/contextMenuEntriesState';
 import { ContextMenuEntry } from '@/ui/navigation/context-menu/types/ContextMenuEntry';
 import { isDefined } from '~/utils/isDefined';
-import { IconCopy, IconMessage, IconPaperclip, IconRefresh,IconBrandWhatsapp, IconRefreshDot, IconSend2, IconUsersPlus, IconVideo } from '@tabler/icons-react';
+import { IconCopy, IconMessage, IconPaperclip, IconRefresh, IconBrandWhatsapp, IconRefreshDot, IconSend2, IconUsersPlus, IconVideo } from '@tabler/icons-react';
 import { useCreateVideoInterview } from '@/object-record/hooks/useCreateInterview';
 import { useSendVideoInterview } from '@/object-record/hooks/useSendInterview';
 import { useRefreshChatStatus } from '@/object-record/hooks/useRefreshChatStatus';
@@ -30,6 +30,13 @@ import { WorkspaceMember } from '@/workspace-member/types/WorkspaceMember';
 import { useRightDrawer } from '@/ui/layout/right-drawer/hooks/useRightDrawer';
 import { RightDrawerPages } from '@/ui/layout/right-drawer/types/RightDrawerPages';
 import { chatPanelState } from '@/activities/chats/states/chatPanelState';
+import { useStartChats } from '@/object-record/hooks/useStartChats';
+import { useGetCurrentView } from '@/views/hooks/useGetCurrentView';
+import { useHandleViews } from '@/views/hooks/useHandleViews';
+import { ViewScope } from '@/views/scopes/ViewScope';
+import { useAvailableScopeIdOrThrow } from '@/ui/utilities/recoil-scope/scopes-internal/hooks/useAvailableScopeId';
+import { ViewScopeInternalContext } from '@/views/scopes/scope-internal-context/ViewScopeInternalContext';
+
 
 type useRecordActionBarProps = {
   objectMetadataItem: ObjectMetadataItem;
@@ -37,20 +44,21 @@ type useRecordActionBarProps = {
   callback?: () => void;
 };
 
+
+
 export const useRecordActionBar = ({ objectMetadataItem, selectedRecordIds, callback }: useRecordActionBarProps) => {
+
+
   const setContextMenuEntries = useSetRecoilState(contextMenuEntriesState);
   const setActionBarEntriesState = useSetRecoilState(actionBarEntriesState);
   const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState) as WorkspaceMember | null;
   const [isDeleteRecordsModalOpen, setIsDeleteRecordsModalOpen] = useState(false);
-  // const { toggleCommandMenu } = useCommandMenu();
-  // const openActivity = useOpenActivityRightDrawer();
+
   const { openRightDrawer } = useRightDrawer();
   const [_, setChatPanel] = useRecoilState(chatPanelState);
 
-
   const setSelectedRecordsForModal = useSetRecoilState(selectedRecordsForModalState);
   setSelectedRecordsForModal(selectedRecordIds);
-
 
   const { createFavorite, favorites, deleteFavorite } = useFavorites();
 
@@ -96,6 +104,12 @@ export const useRecordActionBar = ({ objectMetadataItem, selectedRecordIds, call
   
   const { sendVideoInterviewLink } = useSendVideoInterview({
     createVideoInterviewLink: false,
+    onSuccess: () => {},
+    onError: (error: any) => {
+      console.error('Failed to send video interview:', error);
+    },
+  });  
+  const { sendStartChatRequest } = useStartChats({
     onSuccess: () => {},
     onError: (error: any) => {
       console.error('Failed to send video interview:', error);
@@ -236,9 +250,10 @@ const sendVideoInterviewLinkSelectRecord = useRecoilCallback(
     
       openRightDrawer(RightDrawerPages.ViewChat);
     }
+
+    
   function callViewCVRightDrawer() {
     console.log('View Right CV Drawer');
-
     openRightDrawer(RightDrawerPages.ViewCV);
   }
 
@@ -319,6 +334,7 @@ const sendVideoInterviewLinkSelectRecord = useRecoilCallback(
               },
             ]
           : []),
+
         ...(!isRemoteObject && !isFavorite && hasOnlyOneRecordSelected
           ? [
               {
@@ -369,7 +385,21 @@ const sendVideoInterviewLinkSelectRecord = useRecoilCallback(
                       ]
                     : []),
 
-
+                    ...(objectMetadataItem.nameSingular.toLowerCase().includes( 'jobcandidate')
+                      ? [
+                        {
+                          label: 'Start Chat with Candidates',
+                          Icon: IconBrandWhatsapp,
+                          onClick: async () => {
+                            try {
+                              await sendStartChatRequest(selectedRecordIds);
+                            } catch (error) {
+                              console.error('Error creating start chat:', error);
+                            }
+                          },
+                        },
+                        ]
+                      : []),
                   ...(objectMetadataItem.nameSingular === 'aIInterviewStatus'
                     ? [
                       {
