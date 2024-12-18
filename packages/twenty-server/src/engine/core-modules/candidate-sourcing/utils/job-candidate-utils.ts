@@ -77,6 +77,13 @@ export class JobCandidateUtils {
             id
             name
             createdAt
+            person{
+            id
+            }
+            candidate {
+            id
+            }
+
           }
           cursor
         }

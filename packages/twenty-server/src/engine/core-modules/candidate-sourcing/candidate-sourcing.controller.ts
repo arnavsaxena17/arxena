@@ -360,12 +360,44 @@ export class CandidateSourcingController {
     }
   }
 
+
+    @Post('start-chats')
+  async startChats(@Req() request: any): Promise<object> {
+    const apiToken = request.headers.authorization.split(' ')[1];
+    const jobCandidateIds = request.body.candidateIds;
+    const currentViewWithCombinedFiltersAndSorts = request.body.currentViewWithCombinedFiltersAndSorts;
+    const objectNameSingular = request.body.objectNameSingular;
+    console.log("jobCandidateIds::", jobCandidateIds);
+    console.log("objectNameSingular::", objectNameSingular);
+    console.log("currentViewWithCombinedFiltersAndSorts::", currentViewWithCombinedFiltersAndSorts);
+    const path_position = request?.body?.objectNameSingular.replace("JobCandidate", "")
+    const allDataObjects = await new CreateMetaDataStructure(this.workspaceQueryService).fetchAllObjects(apiToken);
+    
+    const allJobCandidates = await this.candidateService.findManyJobCandidatesWithCursor(path_position, apiToken);
+    
+    const filteredCandidateIds = await this.candidateService.filterCandidatesBasedOnView(allJobCandidates, currentViewWithCombinedFiltersAndSorts,allDataObjects);
+    console.log("This is the filteredCandidates, ", filteredCandidateIds)
+    console.log("Got a total of filteredCandidates length, ", filteredCandidateIds.length)
+    for (const candidateId of filteredCandidateIds) {
+      await this.startChatByCandidateId(candidateId, apiToken);
+    }
+    return { status: 'Success' };
+  }
+
+
   @Post('start-chat')
   @UseGuards(JwtAuthGuard)
   async startChat(@Req() request: any) {
     const apiToken = request.headers.authorization.split(' ')[1]; // Assuming Bearer token
+    const response = await this.startChatByCandidateId(request.body.candidateId, apiToken);
+    console.log('Response from create startChat', response);
+  }
+  
+
+
+  async startChatByCandidateId(candidateId: string, apiToken: string) {
     const graphqlVariables = {
-      idToUpdate: request.body.candidateId,
+      idToUpdate: candidateId,
       input: {
         startChat: true,
       },
@@ -375,9 +407,11 @@ export class CandidateSourcingController {
       variables: graphqlVariables,
     });
 
-    const response = await axiosRequest(graphqlQueryObj,apiToken);
-    console.log('Response from create startChat', response.data);
+    const response = await axiosRequest(graphqlQueryObj, apiToken);
+    return response.data;
   }
+
+
 
   @Post('stop-chat')
   @UseGuards(JwtAuthGuard)

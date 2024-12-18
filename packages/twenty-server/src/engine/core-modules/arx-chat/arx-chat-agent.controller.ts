@@ -129,23 +129,6 @@ export class ArxChatEndpoint {
     return { status: 'Failed' };
   }
 
-  @Post('start-chats')
-  async startChats(@Req() request: any): Promise<object> {
-    const apiToken = request.headers.authorization.split(' ')[1];
-    const jobCandidateIds = request.body.candidateIds;
-    const currentViewWithCombinedFiltersAndSorts = request.body.currentViewWithCombinedFiltersAndSorts;
-    console.log("jobCandidateIds::", jobCandidateIds);
-    console.log("currentViewWithCombinedFiltersAndSorts::", currentViewWithCombinedFiltersAndSorts);
-
-    // debugger;
-
-    try {
-      
-    } catch (err) {
-      return { status: err };
-    }
-    return { status: 'Failed' };
-  }
 
   @Post('run-chat-completion')
   async runChatCompletion(@Req() request: any): Promise<object> {

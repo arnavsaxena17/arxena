@@ -36,6 +36,7 @@ import { useHandleViews } from '@/views/hooks/useHandleViews';
 import { ViewScope } from '@/views/scopes/ViewScope';
 import { useAvailableScopeIdOrThrow } from '@/ui/utilities/recoil-scope/scopes-internal/hooks/useAvailableScopeId';
 import { ViewScopeInternalContext } from '@/views/scopes/scope-internal-context/ViewScopeInternalContext';
+import { currentViewWithFiltersState } from '@/views/states/currentViewState';
 
 
 type useRecordActionBarProps = {
@@ -56,6 +57,10 @@ export const useRecordActionBar = ({ objectMetadataItem, selectedRecordIds, call
 
   const { openRightDrawer } = useRightDrawer();
   const [_, setChatPanel] = useRecoilState(chatPanelState);
+
+                              
+  const currentViewWithCombinedFiltersAndSorts = useRecoilValue(currentViewWithFiltersState);
+  
 
   const setSelectedRecordsForModal = useSetRecoilState(selectedRecordsForModalState);
   setSelectedRecordsForModal(selectedRecordIds);
@@ -112,7 +117,7 @@ export const useRecordActionBar = ({ objectMetadataItem, selectedRecordIds, call
   const { sendStartChatRequest } = useStartChats({
     onSuccess: () => {},
     onError: (error: any) => {
-      console.error('Failed to send video interview:', error);
+      console.error('Failed to send starrt chat:', error);
     },
   });  
 
@@ -392,7 +397,12 @@ const sendVideoInterviewLinkSelectRecord = useRecoilCallback(
                           Icon: IconBrandWhatsapp,
                           onClick: async () => {
                             try {
-                              await sendStartChatRequest(selectedRecordIds);
+    
+                            console.log("Current FcurrentViewWithCombinedFiltersAndSorts:", currentViewWithCombinedFiltersAndSorts);  
+                            console.log("Current selectedRecordIds:", selectedRecordIds);  
+
+
+                              await sendStartChatRequest(selectedRecordIds, currentViewWithCombinedFiltersAndSorts, objectMetadataItem.nameSingular);
                             } catch (error) {
                               console.error('Error creating start chat:', error);
                             }

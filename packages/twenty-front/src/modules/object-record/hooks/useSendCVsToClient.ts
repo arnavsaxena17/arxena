@@ -5,10 +5,6 @@ import { useRecoilState } from 'recoil';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 
-
-
-
-
 type UseSendCVsToClientProps = {
   onSuccess?: () => void;
   onError?: (error: Error) => void;
