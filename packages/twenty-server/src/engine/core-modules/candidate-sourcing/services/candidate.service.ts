@@ -185,16 +185,16 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
             try {
 
               if (!personObj || !personObj?.name) {
-                manyPersonObjects.push(personNode);
-                const responseForPerson = await this.personService.createPeople([personNode], apiToken);
-                personId = responseForPerson?.data?.data?.createPeople[0]?.id;
-                console.log("PersonId when not found:", personId);
-                personIdMap.set(unique_key_string, personId);
+          manyPersonObjects.push(personNode);
+          const responseForPerson = await this.personService.createPeople([personNode], apiToken);
+          personId = responseForPerson?.data?.data?.createPeople[0]?.id;
+          console.log("PersonId when not found:", personId);
+          personIdMap.set(unique_key_string, personId);
               } else {
-                personId = personObj?.id;
-                allPersonObjects.push(personObj);
-                console.log("PersonId when found:", personId);
-                personIdMap.set(unique_key_string, personId);
+          personId = personObj?.id;
+          allPersonObjects.push(personObj);
+          console.log("PersonId when found:", personId);
+          personIdMap.set(unique_key_string, personId);
               }
             } catch (error) {
               console.log('Error in creating or fetching person:', error);
@@ -203,15 +203,15 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
             try {
               const existingCandidate = await this.checkExistingCandidate(unique_key_string, jobObject.id, apiToken);
               if (!existingCandidate) {
-                candidateNode.peopleId = personId;
-                manyCandidateObjects.push(candidateNode);
-                const responseForCandidate = await this.createCandidates([candidateNode], apiToken);
-                candidateId = responseForCandidate?.data?.data?.createCandidates[0]?.id;
-                candidateIdMap.set(unique_key_string, candidateId);
+          candidateNode.peopleId = personId;
+          manyCandidateObjects.push(candidateNode);
+          const responseForCandidate = await this.createCandidates([candidateNode], apiToken);
+          candidateId = responseForCandidate?.data?.data?.createCandidates[0]?.id;
+          candidateIdMap.set(unique_key_string, candidateId);
               } else {
-                console.log("Candidate already exists:", existingCandidate);
-                candidateId = existingCandidate.id;
-                candidateIdMap.set(unique_key_string, candidateId);
+          console.log("Candidate already exists:", existingCandidate);
+          candidateId = existingCandidate.id;
+          candidateIdMap.set(unique_key_string, candidateId);
 
               }
             } catch (error) {
@@ -221,8 +221,9 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
           console.log("Unique key string not found:", unique_key_string);
         }
         }
+
         if (i + batchSize < data.length) {
-          await delay(1000);
+          await delay(1000); // Rate limiting
         }
       }
     }
@@ -572,6 +573,7 @@ async createNewJobCandidateObject(newPositionObj: CandidateSourcingTypes.Jobs, a
           key.includes('pgGraduationYear') || key.includes('pgGraduationYear') ? 'NumberField' :
           key.includes('age') || key.includes('age') ? 'NumberField' :
           key.includes('inferredSalary') || key.includes('inferredSalary') ? 'NumberField' :
+          key.includes('experienceYears') || key.includes('experienceYears') ? 'NumberField' :
           // key.includes('inferredYearsExperience') || key.includes('inferredYearsExperience') ? 'NumberField' :
           key.includes('displayPicture') || key.includes('displayPicture') ? 'LinkField' :
           key.includes('multi') ? 'MultiField' : 'TextField';
@@ -588,8 +590,12 @@ async createNewJobCandidateObject(newPositionObj: CandidateSourcingTypes.Jobs, a
 
     try{
       const existingFieldsResponse = await new CreateMetaDataStructure(this.workspaceQueryService).fetchAllCurrentObjects(apiToken);
+      console.log("This is the existing Fields Response:%s", existingFieldsResponse);
       const existingFieldsKeys = existingFieldsResponse?.data?.objects?.edges?.filter(x => x?.node?.id == jobCandidateObjectId)[0]?.node?.fields?.edges?.map(edge => edge?.node?.name) || []; 
-      const fieldsToSendToCreate  = fieldsToCreate.filter(field => !existingFieldsKeys.includes(field.field.name));
+      console.log("existingFieldsKeys:", existingFieldsKeys);
+      console.log("jobCandidateObjectId:", jobCandidateObjectId);
+      const fieldsToSendToCreate  = fieldsToCreate.filter(field => !existingFieldsKeys.includes(field?.field?.name));
+      console.log("Fields to send to create:", fieldsToSendToCreate);
       await createFields(fieldsToSendToCreate, apiToken);
     }
     catch(error){
