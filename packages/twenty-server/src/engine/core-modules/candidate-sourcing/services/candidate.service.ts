@@ -125,7 +125,6 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
     const manyCandidateObjects: CandidateSourcingTypes.ArxenaCandidateNode[] = [];
     const manyJobCandidateObjects: CandidateSourcingTypes.ArxenaJobCandidateNode[] = [];
 
-    const batchSize = 15;
     const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
     console.log("Received this jobObj:", jobObject);
     const path_position = JobCandidateUtils.getJobCandidatePathPosition(jobObject.name, jobObject?.arxenaSiteId);
@@ -166,6 +165,7 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
     const candidateIdMap = new Map<string, string>();
     let personDetailsMap;
     try{
+      const batchSize = 15;
 
       for (let i = 0; i < data.length; i += batchSize) {
         const batch = data.slice(i, i + batchSize);
@@ -175,6 +175,15 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
         } catch (error) {
           console.log('Error in fetching person details:', error);
         }
+
+        let personNodesToCreate:CandidateSourcingTypes.ArxenaPersonNode[] = []
+        let candidateNodesToCreate:CandidateSourcingTypes.ArxenaCandidateNode[] = [];
+        
+        let personNodeUniqueKeys:string[] = []; // Track unique keys for person nodes
+        let candidateNodeUniqueKeys:string[] = []; // Track unique keys for candidate nodes
+
+
+
         for (const profile of batch) {
           const unique_key_string = profile?.unique_key_string;
           if (unique_key_string) {
@@ -182,14 +191,12 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
             const personObj = personDetailsMap?.get(unique_key_string);
             let personId, candidateId;
             const { personNode, candidateNode, jobCandidateNode } = await processArxCandidate(profile, jobObject);
+            
             try {
-
               if (!personObj || !personObj?.name) {
+                personNodesToCreate.push(personNode);
+                personNodeUniqueKeys.push(unique_key_string);
                 manyPersonObjects.push(personNode);
-                const responseForPerson = await this.personService.createPeople([personNode], apiToken);
-                personId = responseForPerson?.data?.data?.createPeople[0]?.id;
-                console.log("PersonId when not found:", personId);
-                personIdMap.set(unique_key_string, personId);
               } else {
                 personId = personObj?.id;
                 allPersonObjects.push(personObj);
@@ -197,30 +204,69 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
                 personIdMap.set(unique_key_string, personId);
               }
             } catch (error) {
-              console.log('Error in creating or fetching person:', error);
+              console.log('Error in processing person:', error);
             }
-          
+        
+            // When we have 15 persons or it's the last batch, create them
+            if (personNodesToCreate.length === 15 || profile === batch[batch.length - 1]) {
+              if (personNodesToCreate.length > 0) {
+                try {
+                  const responseForPeople = await this.personService.createPeople(personNodesToCreate, apiToken);
+                  // Map the returned IDs to the tracked unique keys
+                  responseForPeople?.data?.data?.createPeople.forEach((person, index) => {
+                    const uniqueKey = personNodeUniqueKeys[index];
+                    if (person?.id && uniqueKey) {
+                      personIdMap.set(uniqueKey, person.id);
+                    }
+                  });
+                } catch (error) {
+                  console.log('Error in batch creating people:', error);
+                }
+                personNodesToCreate = []; // Clear the arrays
+                personNodeUniqueKeys = [];
+              }
+            }
+        
             try {
               const existingCandidate = await this.checkExistingCandidate(unique_key_string, jobObject.id, apiToken);
               if (!existingCandidate) {
-                candidateNode.peopleId = personId;
+                candidateNode.peopleId = personIdMap?.get(unique_key_string) || '';
+                candidateNodesToCreate.push(candidateNode);
+                candidateNodeUniqueKeys.push(unique_key_string);
                 manyCandidateObjects.push(candidateNode);
-                const responseForCandidate = await this.createCandidates([candidateNode], apiToken);
-                candidateId = responseForCandidate?.data?.data?.createCandidates[0]?.id;
-                candidateIdMap.set(unique_key_string, candidateId);
               } else {
                 console.log("Candidate already exists:", existingCandidate);
                 candidateId = existingCandidate.id;
                 candidateIdMap.set(unique_key_string, candidateId);
-
               }
             } catch (error) {
-              console.log('Error in creating or fetching candidate:', error);
+              console.log('Error in processing candidate:', error);
             }
-        } else{
-          console.log("Unique key string not found:", unique_key_string);
+        
+            // When we have 15 candidates or it's the last batch, create them
+            if (candidateNodesToCreate.length === 15 || profile === batch[batch.length - 1]) {
+              if (candidateNodesToCreate.length > 0) {
+                try {
+                  const responseForCandidates = await this.createCandidates(candidateNodesToCreate, apiToken);
+                  // Map the returned IDs to the tracked unique keys
+                  responseForCandidates?.data?.data?.createCandidates.forEach((candidate, index) => {
+                    const uniqueKey = candidateNodeUniqueKeys[index];
+                    if (candidate?.id && uniqueKey) {
+                      candidateIdMap.set(uniqueKey, candidate.id);
+                    }
+                  });
+                } catch (error) {
+                  console.log('Error in batch creating candidates:', error);
+                }
+                candidateNodesToCreate = []; // Clear the arrays
+                candidateNodeUniqueKeys = [];
+              }
+            }
+          } else {
+            console.log("Unique key string not found:", unique_key_string);
+          }
         }
-        }
+        
 
         if (i + batchSize < data.length) {
           await delay(1000); // Rate limiting
