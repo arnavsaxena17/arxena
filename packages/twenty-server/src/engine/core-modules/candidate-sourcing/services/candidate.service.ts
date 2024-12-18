@@ -125,7 +125,7 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
     const manyCandidateObjects: CandidateSourcingTypes.ArxenaCandidateNode[] = [];
     const manyJobCandidateObjects: CandidateSourcingTypes.ArxenaJobCandidateNode[] = [];
 
-    const batchSize = 25;
+    const batchSize = 15;
     const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
     console.log("Received this jobObj:", jobObject);
     const path_position = JobCandidateUtils.getJobCandidatePathPosition(jobObject.name, jobObject?.arxenaSiteId);
@@ -185,16 +185,16 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
             try {
 
               if (!personObj || !personObj?.name) {
-          manyPersonObjects.push(personNode);
-          const responseForPerson = await this.personService.createPeople([personNode], apiToken);
-          personId = responseForPerson?.data?.data?.createPeople[0]?.id;
-          console.log("PersonId when not found:", personId);
-          personIdMap.set(unique_key_string, personId);
+                manyPersonObjects.push(personNode);
+                const responseForPerson = await this.personService.createPeople([personNode], apiToken);
+                personId = responseForPerson?.data?.data?.createPeople[0]?.id;
+                console.log("PersonId when not found:", personId);
+                personIdMap.set(unique_key_string, personId);
               } else {
-          personId = personObj?.id;
-          allPersonObjects.push(personObj);
-          console.log("PersonId when found:", personId);
-          personIdMap.set(unique_key_string, personId);
+                personId = personObj?.id;
+                allPersonObjects.push(personObj);
+                console.log("PersonId when found:", personId);
+                personIdMap.set(unique_key_string, personId);
               }
             } catch (error) {
               console.log('Error in creating or fetching person:', error);
@@ -203,15 +203,15 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
             try {
               const existingCandidate = await this.checkExistingCandidate(unique_key_string, jobObject.id, apiToken);
               if (!existingCandidate) {
-          candidateNode.peopleId = personId;
-          manyCandidateObjects.push(candidateNode);
-          const responseForCandidate = await this.createCandidates([candidateNode], apiToken);
-          candidateId = responseForCandidate?.data?.data?.createCandidates[0]?.id;
-          candidateIdMap.set(unique_key_string, candidateId);
+                candidateNode.peopleId = personId;
+                manyCandidateObjects.push(candidateNode);
+                const responseForCandidate = await this.createCandidates([candidateNode], apiToken);
+                candidateId = responseForCandidate?.data?.data?.createCandidates[0]?.id;
+                candidateIdMap.set(unique_key_string, candidateId);
               } else {
-          console.log("Candidate already exists:", existingCandidate);
-          candidateId = existingCandidate.id;
-          candidateIdMap.set(unique_key_string, candidateId);
+                console.log("Candidate already exists:", existingCandidate);
+                candidateId = existingCandidate.id;
+                candidateIdMap.set(unique_key_string, candidateId);
 
               }
             } catch (error) {
