@@ -112,6 +112,30 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
   await createRelations(relationsToCreate, apiToken);
   }
 
+
+  async batchCheckExistingCandidates(uniqueStringKeys: string[], jobId: string, apiToken: string): Promise<Map<string, any>> {
+    const graphqlQuery = JSON.stringify({
+      query: allGraphQLQueries.graphqlQueryToFindCandidateByUniqueKey,
+      variables: {
+        filter: { 
+          uniqueStringKey: { in: uniqueStringKeys },
+          jobsId: { eq: jobId }
+        }
+      }
+    });
+    const response = await axiosRequest(graphqlQuery, apiToken);
+    const candidatesMap = new Map<string, any>();
+    
+    response.data?.data?.candidates?.edges?.forEach((edge: any) => {
+      if (edge?.node?.uniqueStringKey) {
+        candidatesMap.set(edge.node.uniqueStringKey, edge.node);
+      }
+    });
+    
+    return candidatesMap;
+  
+  }
+  
   async processProfilesWithRateLimiting(data: CandidateSourcingTypes.UserProfile[], jobObject: CandidateSourcingTypes.Jobs, apiToken: string): Promise<{ 
     manyPersonObjects: CandidateSourcingTypes.ArxenaPersonNode[];  
     manyCandidateObjects: CandidateSourcingTypes.ArxenaCandidateNode[]; 
@@ -163,18 +187,16 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
 
     const personIdMap = new Map<string, string>();
     const candidateIdMap = new Map<string, string>();
-    let personDetailsMap;
     try{
       const batchSize = 15;
 
       for (let i = 0; i < data.length; i += batchSize) {
         const batch = data.slice(i, i + batchSize);
         const uniqueStringKeys = batch.map(profile => profile?.unique_key_string).filter(Boolean);
-        try {
-          personDetailsMap = await this.personService.batchGetPersonDetailsByStringKeys(uniqueStringKeys, apiToken);
-        } catch (error) {
-          console.log('Error in fetching person details:', error);
-        }
+
+          const personDetailsMap = await this.personService.batchGetPersonDetailsByStringKeys(uniqueStringKeys, apiToken);
+          const candidatesMap = await this.batchCheckExistingCandidates(uniqueStringKeys, jobObject.id, apiToken);
+
 
         let personNodesToCreate:CandidateSourcingTypes.ArxenaPersonNode[] = []
         let candidateNodesToCreate:CandidateSourcingTypes.ArxenaCandidateNode[] = [];
@@ -205,15 +227,17 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
               }
             } catch (error) {
               console.log('Error in processing person:', error);
+              continue; // Skip this profile if person processing fails
+
             }
+
         
             // When we have 15 persons or it's the last batch, create them
             if (personNodesToCreate.length === 15 || profile === batch[batch.length - 1]) {
               if (personNodesToCreate.length > 0) {
                 try {
                   const responseForPeople = await this.personService.createPeople(personNodesToCreate, apiToken);
-                  // Map the returned IDs to the tracked unique keys
-                  responseForPeople?.data?.data?.createPeople.forEach((person, index) => {
+                  responseForPeople?.data?.data?.createPeople?.forEach((person, index) => {
                     const uniqueKey = personNodeUniqueKeys[index];
                     if (person?.id && uniqueKey) {
                       personIdMap.set(uniqueKey, person.id);
@@ -222,46 +246,53 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
                 } catch (error) {
                   console.log('Error in batch creating people:', error);
                 }
-                personNodesToCreate = []; // Clear the arrays
+                personNodesToCreate = [];
                 personNodeUniqueKeys = [];
               }
             }
         
-            try {
-              const existingCandidate = await this.checkExistingCandidate(unique_key_string, jobObject.id, apiToken);
-              if (!existingCandidate) {
-                candidateNode.peopleId = personIdMap?.get(unique_key_string) || '';
+        
+
+            const existingCandidate = candidatesMap.get(unique_key_string);
+            const personIdForCandidate = personIdMap.get(unique_key_string);
+        
+            if (personIdForCandidate && !existingCandidate) { // Only proceed if we have a valid personId
+              candidateNode.peopleId = personIdForCandidate;
+              if (candidateNode.peopleId) { // Double check we have a valid peopleId
                 candidateNodesToCreate.push(candidateNode);
                 candidateNodeUniqueKeys.push(unique_key_string);
                 manyCandidateObjects.push(candidateNode);
-              } else {
-                console.log("Candidate already exists:", existingCandidate);
-                candidateId = existingCandidate.id;
-                candidateIdMap.set(unique_key_string, candidateId);
               }
-            } catch (error) {
-              console.log('Error in processing candidate:', error);
+            } else if (existingCandidate) {
+              candidateId = existingCandidate.id;
+              candidateIdMap.set(unique_key_string, candidateId);
             }
+        
+
         
             // When we have 15 candidates or it's the last batch, create them
             if (candidateNodesToCreate.length === 15 || profile === batch[batch.length - 1]) {
               if (candidateNodesToCreate.length > 0) {
-                try {
-                  const responseForCandidates = await this.createCandidates(candidateNodesToCreate, apiToken);
-                  // Map the returned IDs to the tracked unique keys
-                  responseForCandidates?.data?.data?.createCandidates.forEach((candidate, index) => {
-                    const uniqueKey = candidateNodeUniqueKeys[index];
-                    if (candidate?.id && uniqueKey) {
-                      candidateIdMap.set(uniqueKey, candidate.id);
-                    }
-                  });
-                } catch (error) {
-                  console.log('Error in batch creating candidates:', error);
+                // Filter out any candidates without valid peopleIds as a safety check
+                const validCandidates = candidateNodesToCreate.filter(c => c.peopleId && c.peopleId !== '');
+                if (validCandidates.length > 0) {
+                  try {
+                    const responseForCandidates = await this.createCandidates(validCandidates, apiToken);
+                    responseForCandidates?.data?.data?.createCandidates?.forEach((candidate, index) => {
+                      const uniqueKey = candidateNodeUniqueKeys[index];
+                      if (candidate?.id && uniqueKey) {
+                        candidateIdMap.set(uniqueKey, candidate.id);
+                      }
+                    });
+                  } catch (error) {
+                    console.log('Error in batch creating candidates:', error);
+                  }
                 }
-                candidateNodesToCreate = []; // Clear the arrays
+                candidateNodesToCreate = [];
                 candidateNodeUniqueKeys = [];
               }
             }
+        
           } else {
             console.log("Unique key string not found:", unique_key_string);
           }
