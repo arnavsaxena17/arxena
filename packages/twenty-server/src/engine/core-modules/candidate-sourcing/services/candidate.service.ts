@@ -175,6 +175,261 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
   
   
   
+  // async processProfilesWithRateLimiting(
+  //   data: CandidateSourcingTypes.UserProfile[], 
+  //   jobObject: CandidateSourcingTypes.Jobs, 
+  //   apiToken: string
+  // ): Promise<{ 
+  //   manyPersonObjects: CandidateSourcingTypes.ArxenaPersonNode[];  
+  //   manyCandidateObjects: CandidateSourcingTypes.ArxenaCandidateNode[]; 
+  //   allPersonObjects: allDataObjects.PersonNode[];
+  //   manyJobCandidateObjects: CandidateSourcingTypes.ArxenaJobCandidateNode[] 
+  // }> {
+  //   console.log("Single Profile:", data[0]);
+  //   console.log('Total number of profiles received:', data.length);
+    
+  //   const manyPersonObjects: CandidateSourcingTypes.ArxenaPersonNode[] = [];
+  //   const allPersonObjects: allDataObjects.PersonNode[] = [];
+  //   const manyCandidateObjects: CandidateSourcingTypes.ArxenaCandidateNode[] = [];
+  //   const manyJobCandidateObjects: CandidateSourcingTypes.ArxenaJobCandidateNode[] = [];
+  
+  //   const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+    
+  //   // Create or get job candidate object structure
+  //   console.log("Received this jobObj:", jobObject);
+  //   const path_position = JobCandidateUtils.getJobCandidatePathPosition(jobObject.name, jobObject?.arxenaSiteId);
+  //   const jobCandidateObjectName = `${path_position}JobCandidate`;
+  //   console.log('Job candidate object name:', jobCandidateObjectName);
+    
+  //   let jobCandidateObjectId;
+  //   const objectsNameIdMap = await new CreateMetaDataStructure(this.workspaceQueryService).fetchObjectsNameIdMap(apiToken);
+    
+  //   try {
+  //     console.log('ObjectsNameIdMap:', objectsNameIdMap);
+  //     if (objectsNameIdMap[jobCandidateObjectName]) {
+  //       console.log('Using existing job candidate object:', jobCandidateObjectName);
+  //       jobCandidateObjectId = objectsNameIdMap[jobCandidateObjectName];
+  //     } else {
+  //       console.log('Creating new job candidate object structure:', jobCandidateObjectName);
+  //       try {
+  //         jobCandidateObjectId = await this.createNewJobCandidateObject(jobObject, apiToken);
+  //         if (jobCandidateObjectId) {
+  //           console.log("Job candidate object created successfully:", jobCandidateObjectId);
+  //           console.log("Creating relations for job candidate object");
+  //           this.createRelationsBasedonObjectMap(jobCandidateObjectId, jobCandidateObjectName, apiToken);
+  //         }
+  //       } catch(error) {
+  //         console.log("Error in creating new job candidate object:", error);
+  //         const objectsNameIdMap = await new CreateMetaDataStructure(this.workspaceQueryService).fetchObjectsNameIdMap(apiToken);
+  //         jobCandidateObjectId = objectsNameIdMap[jobCandidateObjectName];
+  //       }
+  //     }
+  //     console.log('Job candidate object ID:', jobCandidateObjectId);
+  //   } catch (error) {
+  //     console.log('Error in fetching or creating job candidate object:', error);
+  //   }
+  
+  //   const personIdMap = new Map<string, string>();
+  //   const candidateIdMap = new Map<string, string>();
+    
+  //   try {
+  //     const batchSize = 15;
+  
+  //     // Process profiles in batches
+  //     for (let i = 0; i < data.length; i += batchSize) {
+  //       const batch = data.slice(i, i + batchSize);
+  //       const uniqueStringKeys = batch.map(profile => profile?.unique_key_string).filter(Boolean);
+  
+  //       // Batch get person and candidate details
+  //       const personDetailsMap = await this.personService.batchGetPersonDetailsByStringKeys(uniqueStringKeys, apiToken);
+  //       const candidatesMap = await this.batchCheckExistingCandidates(uniqueStringKeys, jobObject.id, apiToken);
+  
+  //       let personNodesToCreate: CandidateSourcingTypes.ArxenaPersonNode[] = [];
+  //       let candidateNodesToCreate: CandidateSourcingTypes.ArxenaCandidateNode[] = [];
+        
+  //       let personNodeUniqueKeys: string[] = [];
+  //       let candidateNodeUniqueKeys: string[] = [];
+  
+  //       // Process each profile in the batch
+  //       for (const profile of batch) {
+  //         const unique_key_string = profile?.unique_key_string;
+  //         if (!unique_key_string) {
+  //           console.log("Unique key string not found:", unique_key_string, "for profile", profile);
+  //           continue;
+  //         }
+  
+  //         console.log("Processing unique key string:", unique_key_string);
+  //         const personObj = personDetailsMap?.get(unique_key_string);
+  //         const { personNode, candidateNode, jobCandidateNode } = await processArxCandidate(profile, jobObject);
+          
+  //         // Handle person creation
+  //         try {
+  //           if (!personObj || !personObj?.name) {
+  //             personNodesToCreate.push(personNode);
+  //             personNodeUniqueKeys.push(unique_key_string);
+  //             manyPersonObjects.push(personNode);
+  //           } else {
+  //             const personId = personObj?.id;
+  //             allPersonObjects.push(personObj);
+  //             console.log("PersonId when found:", personId);
+  //             personIdMap.set(unique_key_string, personId);
+  //           }
+  //         } catch (error) {
+  //           console.log('Error in processing person:', error);
+  //           continue;
+  //         }
+  
+  //         // Create people in batches
+  //         if (personNodesToCreate.length === 15 || profile === batch[batch.length - 1]) {
+  //           if (personNodesToCreate.length > 0) {
+  //             try {
+  //               const responseForPeople = await this.personService.createPeople(personNodesToCreate, apiToken);
+  //               responseForPeople?.data?.data?.createPeople?.forEach((person, index) => {
+  //                 const uniqueKey = personNodeUniqueKeys[index];
+  //                 if (person?.id && uniqueKey) {
+  //                   personIdMap.set(uniqueKey, person.id);
+  //                 }
+  //               });
+  //             } catch (error) {
+  //               console.log('Error in batch creating people:', error);
+  //             }
+  //             personNodesToCreate = [];
+  //             personNodeUniqueKeys = [];
+  //           }
+  //         }
+  
+  //         // Handle candidate creation
+  //         const existingCandidate = candidatesMap.get(unique_key_string);
+  //         const personIdForCandidate = personIdMap.get(unique_key_string);
+  
+  //         if (personIdForCandidate && !existingCandidate) {
+  //           candidateNode.peopleId = personIdForCandidate;
+  //           if (candidateNode.peopleId) {
+  //             candidateNodesToCreate.push(candidateNode);
+  //             candidateNodeUniqueKeys.push(unique_key_string);
+  //             manyCandidateObjects.push(candidateNode);
+  //           }
+  //         } else if (existingCandidate) {
+  //           candidateIdMap.set(unique_key_string, existingCandidate.id);
+  //         }
+  
+  //         // Create candidates in batches
+  //         if (candidateNodesToCreate.length === 15 || profile === batch[batch.length - 1]) {
+  //           if (candidateNodesToCreate.length > 0) {
+  //             const validCandidates = candidateNodesToCreate.filter(c => c.peopleId && c.peopleId !== '');
+  //             if (validCandidates.length > 0) {
+  //               try {
+  //                 const responseForCandidates = await this.createCandidates(validCandidates, apiToken);
+  //                 responseForCandidates?.data?.data?.createCandidates?.forEach((candidate, index) => {
+  //                   const uniqueKey = candidateNodeUniqueKeys[index];
+  //                   if (candidate?.id && uniqueKey) {
+  //                     candidateIdMap.set(uniqueKey, candidate.id);
+  //                   }
+  //                 });
+  //               } catch (error) {
+  //                 console.log('Error in batch creating candidates:', error);
+  //               }
+  //             }
+  //             candidateNodesToCreate = [];
+  //             candidateNodeUniqueKeys = [];
+  //           }
+  //         }
+  //       }
+  
+  //       // Batch check existing job candidates
+  //       const batchPersonIds = batch
+  //         .map(profile => personIdMap.get(profile?.unique_key_string))
+  //         .filter((id): id is string => !!id);
+        
+  //       const batchCandidateIds = batch
+  //         .map(profile => candidateIdMap.get(profile?.unique_key_string))
+  //         .filter((id): id is string => !!id);
+  
+  //       const existingJobCandidatesMap = await this.batchCheckExistingJobCandidates(
+  //         batchPersonIds,
+  //         batchCandidateIds,
+  //         jobObject.id,
+  //         jobObject,
+  //         apiToken
+  //       );
+  
+  //       // Process job candidates
+  //       for (const profile of batch) {
+  //         const personId = personIdMap.get(profile?.unique_key_string);
+  //         const candidateId = candidateIdMap.get(profile?.unique_key_string);
+          
+  //         if (personId && candidateId) {
+  //           const compositeKey = `${personId}_${candidateId}`;
+  //           const existingJobCandidate = existingJobCandidatesMap.get(compositeKey);
+            
+  //           if (!existingJobCandidate) {
+  //             const { personNode, candidateNode, jobCandidateNode } = await processArxCandidate(profile, jobObject);
+  //             jobCandidateNode.personId = personId;
+  //             jobCandidateNode.candidateId = candidateId;
+  //             jobCandidateNode.jobId = jobObject.id;
+              
+  //             if (!manyJobCandidateObjects.some(jc => 
+  //               jc.personId === jobCandidateNode.personId && 
+  //               jc.candidateId === jobCandidateNode.candidateId && 
+  //               jc.jobId === jobCandidateNode.jobId
+  //             )) {
+  //               manyJobCandidateObjects.push(jobCandidateNode);
+  //             }
+  //           }
+  //         }
+  //       }
+  
+  //       // Rate limiting delay
+  //       if (i + batchSize < data.length) {
+  //         await delay(1000);
+  //       }
+  //     }
+  
+  //     // Create job candidate object fields and relations
+  //     try {
+  //       if (jobCandidateObjectId) {
+  //         const { personNode, candidateNode, jobCandidateNode } = await processArxCandidate(data[0], jobObject);
+  //         await this.createObjectFieldsAndRelations(jobCandidateObjectId, jobCandidateObjectName, jobCandidateNode, apiToken);
+  //       }
+  //     } catch (error) {
+  //       console.log("Error in creating object fields and relations:", error);
+  //     }
+  
+  //     // Create final job candidates batch
+  //     if (manyJobCandidateObjects.length > 0) {
+  //       console.log("Creating job candidates batch, count:", manyJobCandidateObjects.length);
+  //       console.log("Sample candidate:", manyJobCandidateObjects[0]);
+        
+  //       const graphqlQueryObjForJobCandidates = JSON.stringify({
+  //         query: await new JobCandidateUtils().generateJobCandidatesMutation(path_position),
+  //         variables: { data: manyJobCandidateObjects },
+  //       });
+  
+  //       const jobCandidatesResponse = await axiosRequest(graphqlQueryObjForJobCandidates, apiToken);
+  //       console.log('Successfully created job candidates:', jobCandidatesResponse?.data);
+  //     } else {
+  //       console.log('No new job candidate relationships to create');
+  //     }
+  
+  //   } catch (error) {
+  //     console.log('Error in processing profiles:', error);
+  //   }
+  
+  //   console.log('Final counts:');
+  //   console.log('Person objects:', manyPersonObjects.length);
+  //   console.log('Candidate objects:', manyCandidateObjects.length);
+  //   console.log('All person objects:', allPersonObjects.length);
+  //   console.log('Job candidate objects:', manyJobCandidateObjects.length);
+    
+  //   return { 
+  //     manyPersonObjects, 
+  //     manyCandidateObjects, 
+  //     allPersonObjects,
+  //     manyJobCandidateObjects 
+  //   };
+  // }
+
+
   async processProfilesWithRateLimiting(
     data: CandidateSourcingTypes.UserProfile[], 
     jobObject: CandidateSourcingTypes.Jobs, 
@@ -185,251 +440,246 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
     allPersonObjects: allDataObjects.PersonNode[];
     manyJobCandidateObjects: CandidateSourcingTypes.ArxenaJobCandidateNode[] 
   }> {
-    console.log("Single Profile:", data[0]);
-    console.log('Total number of profiles received:', data.length);
+    console.log("Starting profile processing. Total profiles:", data.length);
     
-    const manyPersonObjects: CandidateSourcingTypes.ArxenaPersonNode[] = [];
-    const allPersonObjects: allDataObjects.PersonNode[] = [];
-    const manyCandidateObjects: CandidateSourcingTypes.ArxenaCandidateNode[] = [];
-    const manyJobCandidateObjects: CandidateSourcingTypes.ArxenaJobCandidateNode[] = [];
-  
     const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+    const batchSize = 15;
     
-    // Create or get job candidate object structure
-    console.log("Received this jobObj:", jobObject);
-    const path_position = JobCandidateUtils.getJobCandidatePathPosition(jobObject.name, jobObject?.arxenaSiteId);
-    const jobCandidateObjectName = `${path_position}JobCandidate`;
-    console.log('Job candidate object name:', jobCandidateObjectName);
-    
-    let jobCandidateObjectId;
-    const objectsNameIdMap = await new CreateMetaDataStructure(this.workspaceQueryService).fetchObjectsNameIdMap(apiToken);
-    
+    const results = {
+      manyPersonObjects: [] as CandidateSourcingTypes.ArxenaPersonNode[],
+      allPersonObjects: [] as allDataObjects.PersonNode[],
+      manyCandidateObjects: [] as CandidateSourcingTypes.ArxenaCandidateNode[],
+      manyJobCandidateObjects: [] as CandidateSourcingTypes.ArxenaJobCandidateNode[]
+    };
+  
+    const tracking = {
+      personIdMap: new Map<string, string>(),
+      candidateIdMap: new Map<string, string>()
+    };
+  
     try {
-      console.log('ObjectsNameIdMap:', objectsNameIdMap);
-      if (objectsNameIdMap[jobCandidateObjectName]) {
-        console.log('Using existing job candidate object:', jobCandidateObjectName);
-        jobCandidateObjectId = objectsNameIdMap[jobCandidateObjectName];
-      } else {
-        console.log('Creating new job candidate object structure:', jobCandidateObjectName);
-        try {
-          jobCandidateObjectId = await this.createNewJobCandidateObject(jobObject, apiToken);
-          if (jobCandidateObjectId) {
-            console.log("Job candidate object created successfully:", jobCandidateObjectId);
-            console.log("Creating relations for job candidate object");
-            this.createRelationsBasedonObjectMap(jobCandidateObjectId, jobCandidateObjectName, apiToken);
-          }
-        } catch(error) {
-          console.log("Error in creating new job candidate object:", error);
-          const objectsNameIdMap = await new CreateMetaDataStructure(this.workspaceQueryService).fetchObjectsNameIdMap(apiToken);
-          jobCandidateObjectId = objectsNameIdMap[jobCandidateObjectName];
-        }
+      // 1. Set up job candidate object structure
+      const jobCandidateInfo = await this.setupJobCandidateStructure(jobObject, apiToken);
+      if (!jobCandidateInfo.jobCandidateObjectId) {
+        throw new Error('Failed to create/get job candidate object structure');
       }
-      console.log('Job candidate object ID:', jobCandidateObjectId);
-    } catch (error) {
-      console.log('Error in fetching or creating job candidate object:', error);
-    }
+
+      // 6. Set up metadata fields
+      if (jobCandidateInfo.jobCandidateObjectId && data.length > 0) {
+        const { jobCandidateNode } = await processArxCandidate(data[0], jobObject);
+        await this.createObjectFieldsAndRelations(
+          jobCandidateInfo.jobCandidateObjectId,
+          jobCandidateInfo.jobCandidateObjectName,
+          jobCandidateNode,
+          apiToken
+        );
+      }
   
-    const personIdMap = new Map<string, string>();
-    const candidateIdMap = new Map<string, string>();
-    
-    try {
-      const batchSize = 15;
-  
-      // Process profiles in batches
+      // 2. Process data in batches
       for (let i = 0; i < data.length; i += batchSize) {
-        const batch = data.slice(i, i + batchSize);
-        const uniqueStringKeys = batch.map(profile => profile?.unique_key_string).filter(Boolean);
-  
-        // Batch get person and candidate details
-        const personDetailsMap = await this.personService.batchGetPersonDetailsByStringKeys(uniqueStringKeys, apiToken);
-        const candidatesMap = await this.batchCheckExistingCandidates(uniqueStringKeys, jobObject.id, apiToken);
-  
-        let personNodesToCreate: CandidateSourcingTypes.ArxenaPersonNode[] = [];
-        let candidateNodesToCreate: CandidateSourcingTypes.ArxenaCandidateNode[] = [];
+        console.log(`Processing batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(data.length/batchSize)}`);
         
-        let personNodeUniqueKeys: string[] = [];
-        let candidateNodeUniqueKeys: string[] = [];
+        const batch = data.slice(i, i + batchSize);
+        const uniqueStringKeys = batch.map(p => p?.unique_key_string).filter(Boolean);
   
-        // Process each profile in the batch
-        for (const profile of batch) {
-          const unique_key_string = profile?.unique_key_string;
-          if (!unique_key_string) {
-            console.log("Unique key string not found:", unique_key_string);
-            continue;
-          }
-  
-          console.log("Processing unique key string:", unique_key_string);
-          const personObj = personDetailsMap?.get(unique_key_string);
-          const { personNode, candidateNode, jobCandidateNode } = await processArxCandidate(profile, jobObject);
-          
-          // Handle person creation
-          try {
-            if (!personObj || !personObj?.name) {
-              personNodesToCreate.push(personNode);
-              personNodeUniqueKeys.push(unique_key_string);
-              manyPersonObjects.push(personNode);
-            } else {
-              const personId = personObj?.id;
-              allPersonObjects.push(personObj);
-              console.log("PersonId when found:", personId);
-              personIdMap.set(unique_key_string, personId);
-            }
-          } catch (error) {
-            console.log('Error in processing person:', error);
-            continue;
-          }
-  
-          // Create people in batches
-          if (personNodesToCreate.length === 15 || profile === batch[batch.length - 1]) {
-            if (personNodesToCreate.length > 0) {
-              try {
-                const responseForPeople = await this.personService.createPeople(personNodesToCreate, apiToken);
-                responseForPeople?.data?.data?.createPeople?.forEach((person, index) => {
-                  const uniqueKey = personNodeUniqueKeys[index];
-                  if (person?.id && uniqueKey) {
-                    personIdMap.set(uniqueKey, person.id);
-                  }
-                });
-              } catch (error) {
-                console.log('Error in batch creating people:', error);
-              }
-              personNodesToCreate = [];
-              personNodeUniqueKeys = [];
-            }
-          }
-  
-          // Handle candidate creation
-          const existingCandidate = candidatesMap.get(unique_key_string);
-          const personIdForCandidate = personIdMap.get(unique_key_string);
-  
-          if (personIdForCandidate && !existingCandidate) {
-            candidateNode.peopleId = personIdForCandidate;
-            if (candidateNode.peopleId) {
-              candidateNodesToCreate.push(candidateNode);
-              candidateNodeUniqueKeys.push(unique_key_string);
-              manyCandidateObjects.push(candidateNode);
-            }
-          } else if (existingCandidate) {
-            candidateIdMap.set(unique_key_string, existingCandidate.id);
-          }
-  
-          // Create candidates in batches
-          if (candidateNodesToCreate.length === 15 || profile === batch[batch.length - 1]) {
-            if (candidateNodesToCreate.length > 0) {
-              const validCandidates = candidateNodesToCreate.filter(c => c.peopleId && c.peopleId !== '');
-              if (validCandidates.length > 0) {
-                try {
-                  const responseForCandidates = await this.createCandidates(validCandidates, apiToken);
-                  responseForCandidates?.data?.data?.createCandidates?.forEach((candidate, index) => {
-                    const uniqueKey = candidateNodeUniqueKeys[index];
-                    if (candidate?.id && uniqueKey) {
-                      candidateIdMap.set(uniqueKey, candidate.id);
-                    }
-                  });
-                } catch (error) {
-                  console.log('Error in batch creating candidates:', error);
-                }
-              }
-              candidateNodesToCreate = [];
-              candidateNodeUniqueKeys = [];
-            }
-          }
+        if (uniqueStringKeys.length === 0) {
+          console.log('No valid unique keys in batch, skipping');
+          continue;
         }
   
-        // Batch check existing job candidates
-        const batchPersonIds = batch
-          .map(profile => personIdMap.get(profile?.unique_key_string))
-          .filter((id): id is string => !!id);
-        
-        const batchCandidateIds = batch
-          .map(profile => candidateIdMap.get(profile?.unique_key_string))
-          .filter((id): id is string => !!id);
-  
-        const existingJobCandidatesMap = await this.batchCheckExistingJobCandidates(
-          batchPersonIds,
-          batchCandidateIds,
-          jobObject.id,
-          jobObject,
+        // 3. Process people
+        await this.processPeopleBatch(
+          batch,
+          uniqueStringKeys,
+          results,
+          tracking,
           apiToken
         );
   
-        // Process job candidates
-        for (const profile of batch) {
-          const personId = personIdMap.get(profile?.unique_key_string);
-          const candidateId = candidateIdMap.get(profile?.unique_key_string);
-          
-          if (personId && candidateId) {
-            const compositeKey = `${personId}_${candidateId}`;
-            const existingJobCandidate = existingJobCandidatesMap.get(compositeKey);
-            
-            if (!existingJobCandidate) {
-              const { personNode, candidateNode, jobCandidateNode } = await processArxCandidate(profile, jobObject);
-              jobCandidateNode.personId = personId;
-              jobCandidateNode.candidateId = candidateId;
-              jobCandidateNode.jobId = jobObject.id;
-              
-              if (!manyJobCandidateObjects.some(jc => 
-                jc.personId === jobCandidateNode.personId && 
-                jc.candidateId === jobCandidateNode.candidateId && 
-                jc.jobId === jobCandidateNode.jobId
-              )) {
-                manyJobCandidateObjects.push(jobCandidateNode);
-              }
-            }
-          }
-        }
+        // 4. Process candidates
+        await this.processCandidatesBatch(
+          batch,
+          jobObject,
+          results,
+          tracking,
+          apiToken
+        );
   
-        // Rate limiting delay
+        // 5. Process job candidates
+        await this.processJobCandidatesBatch(
+          batch,
+          jobObject,
+          jobCandidateInfo.path_position,
+          results,
+          tracking,
+          apiToken
+        );
+  
         if (i + batchSize < data.length) {
-          await delay(1000);
+          await delay(1000); // Rate limiting between batches
         }
       }
   
-      // Create job candidate object fields and relations
-      try {
-        if (jobCandidateObjectId) {
-          const { personNode, candidateNode, jobCandidateNode } = await processArxCandidate(data[0], jobObject);
-          await this.createObjectFieldsAndRelations(jobCandidateObjectId, jobCandidateObjectName, jobCandidateNode, apiToken);
-        }
-      } catch (error) {
-        console.log("Error in creating object fields and relations:", error);
-      }
-  
-      // Create final job candidates batch
-      if (manyJobCandidateObjects.length > 0) {
-        console.log("Creating job candidates batch, count:", manyJobCandidateObjects.length);
-        console.log("Sample candidate:", manyJobCandidateObjects[0]);
-        
-        const graphqlQueryObjForJobCandidates = JSON.stringify({
-          query: await new JobCandidateUtils().generateJobCandidatesMutation(path_position),
-          variables: { data: manyJobCandidateObjects },
-        });
-  
-        const jobCandidatesResponse = await axiosRequest(graphqlQueryObjForJobCandidates, apiToken);
-        console.log('Successfully created job candidates:', jobCandidatesResponse?.data);
-      } else {
-        console.log('No new job candidate relationships to create');
-      }
-  
-    } catch (error) {
-      console.log('Error in processing profiles:', error);
-    }
-  
-    console.log('Final counts:');
-    console.log('Person objects:', manyPersonObjects.length);
-    console.log('Candidate objects:', manyCandidateObjects.length);
-    console.log('All person objects:', allPersonObjects.length);
-    console.log('Job candidate objects:', manyJobCandidateObjects.length);
-    
-    return { 
-      manyPersonObjects, 
-      manyCandidateObjects, 
-      allPersonObjects,
-      manyJobCandidateObjects 
-    };
-  }
 
   
+    } catch (error) {
+      console.error('Error in profile processing:', error);
+    }
+  
+    console.log('Processing complete. Results:', {
+      people: results.manyPersonObjects.length,
+      candidates: results.manyCandidateObjects.length,
+      existingPeople: results.allPersonObjects.length,
+      jobCandidates: results.manyJobCandidateObjects.length
+    });
+  
+    return results;
+  }
+  
+  // Helper methods to break down the logic:
+  
+  private async setupJobCandidateStructure(jobObject: CandidateSourcingTypes.Jobs, apiToken: string) {
+    const path_position = JobCandidateUtils.getJobCandidatePathPosition(jobObject.name, jobObject?.arxenaSiteId);
+    const jobCandidateObjectName = `${path_position}JobCandidate`;
+    
+    const objectsNameIdMap = await new CreateMetaDataStructure(this.workspaceQueryService).fetchObjectsNameIdMap(apiToken);
+    
+    let jobCandidateObjectId = objectsNameIdMap[jobCandidateObjectName];
+    
+    if (!jobCandidateObjectId) {
+      jobCandidateObjectId = await this.createNewJobCandidateObject(jobObject, apiToken);
+      if (jobCandidateObjectId) {
+        await this.createRelationsBasedonObjectMap(jobCandidateObjectId, jobCandidateObjectName, apiToken);
+      }
+    }
+  
+    return { jobCandidateObjectId, jobCandidateObjectName, path_position };
+  }
+  
+  private async processPeopleBatch(
+    batch: CandidateSourcingTypes.UserProfile[],
+    uniqueStringKeys: string[],
+    results: any,
+    tracking: any,
+    apiToken: string
+  ) {
+    const personDetailsMap = await this.personService.batchGetPersonDetailsByStringKeys(uniqueStringKeys, apiToken);
+    const peopleToCreate:CandidateSourcingTypes.ArxenaPersonNode[] = [];
+    const peopleKeys:string[] = [];
+  
+    for (const profile of batch) {
+      const key = profile?.unique_key_string;
+      if (!key) continue;
+  
+      const personObj = personDetailsMap?.get(key);
+      const { personNode } = await processArxCandidate(profile, null);
+  
+      if (!personObj || !personObj?.name) {
+        peopleToCreate.push(personNode);
+        peopleKeys.push(key);
+        results.manyPersonObjects.push(personNode);
+      } else {
+        results.allPersonObjects.push(personObj);
+        tracking.personIdMap.set(key, personObj.id);
+      }
+    }
+  
+    if (peopleToCreate.length > 0) {
+      const response = await this.personService.createPeople(peopleToCreate, apiToken);
+      response?.data?.data?.createPeople?.forEach((person, idx) => {
+        if (person?.id) {
+          tracking.personIdMap.set(peopleKeys[idx], person.id);
+        }
+      });
+    }
+  }
+  
+  private async processCandidatesBatch(
+    batch: CandidateSourcingTypes.UserProfile[],
+    jobObject: CandidateSourcingTypes.Jobs,
+    results: any,
+    tracking: any,
+    apiToken: string
+  ) {
+    const uniqueStringKeys = batch.map(p => p?.unique_key_string).filter(Boolean);
+    const candidatesMap = await this.batchCheckExistingCandidates(uniqueStringKeys, jobObject.id, apiToken);
+    
+    const candidatesToCreate:CandidateSourcingTypes.ArxenaCandidateNode[] = [];
+    const candidateKeys:string[] = [];
+  
+    for (const profile of batch) {
+      const key = profile?.unique_key_string;
+      if (!key) continue;
+  
+      const existingCandidate = candidatesMap.get(key);
+      const personId = tracking.personIdMap.get(key);
+  
+      if (personId && !existingCandidate) {
+        const { candidateNode } = await processArxCandidate(profile, jobObject);
+        candidateNode.peopleId = personId;
+        candidatesToCreate.push(candidateNode);
+        candidateKeys.push(key);
+        results.manyCandidateObjects.push(candidateNode);
+      } else if (existingCandidate) {
+        tracking.candidateIdMap.set(key, existingCandidate.id);
+      }
+    }
+  
+    if (candidatesToCreate.length > 0) {
+      const response = await this.createCandidates(candidatesToCreate, apiToken);
+      response?.data?.data?.createCandidates?.forEach((candidate, idx) => {
+        if (candidate?.id) {
+          tracking.candidateIdMap.set(candidateKeys[idx], candidate.id);
+        }
+      });
+    }
+  }
+  
+  private async processJobCandidatesBatch(
+    batch: CandidateSourcingTypes.UserProfile[],
+    jobObject: CandidateSourcingTypes.Jobs,
+    path_position: string,
+    results: any,
+    tracking: any,
+    apiToken: string
+  ) {
+    const jobCandidatesToCreate:CandidateSourcingTypes.ArxenaJobCandidateNode[] = []
+  
+    for (const profile of batch) {
+      const key = profile?.unique_key_string;
+      if (!key) continue;
+  
+      const personId = tracking.personIdMap.get(key);
+      const candidateId = tracking.candidateIdMap.get(key);
+  
+      if (personId && candidateId) {
+        const { jobCandidateNode } = await processArxCandidate(profile, jobObject);
+        jobCandidateNode.personId = personId;
+        jobCandidateNode.candidateId = candidateId;
+        jobCandidateNode.jobId = jobObject.id;
+  
+        const isDuplicate = results.manyJobCandidateObjects.some(jc => 
+          jc.personId === jobCandidateNode.personId && 
+          jc.candidateId === jobCandidateNode.candidateId && 
+          jc.jobId === jobCandidateNode.jobId
+        );
+  
+        if (!isDuplicate) {
+          jobCandidatesToCreate.push(jobCandidateNode);
+          results.manyJobCandidateObjects.push(jobCandidateNode);
+        }
+      }
+    }
+  
+    if (jobCandidatesToCreate.length > 0) {
+      const query = await new JobCandidateUtils().generateJobCandidatesMutation(path_position);
+      await axiosRequest(JSON.stringify({
+        query,
+        variables: { data: jobCandidatesToCreate }
+      }), apiToken);
+    }
+  }
+
   async createCandidates(manyCandidateObjects: CandidateSourcingTypes.ArxenaCandidateNode[], apiToken: string): Promise<any> {
     console.log('Creating candidates, count:', manyCandidateObjects?.length);
     
