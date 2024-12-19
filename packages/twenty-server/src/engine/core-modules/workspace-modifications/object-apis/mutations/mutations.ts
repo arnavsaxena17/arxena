@@ -1,3 +1,5 @@
+import { createArxEnrichments } from "../services/arxEnrichmentsService";
+
 export const mutations = {
   createObject: `
         mutation CreateOneObjectMetadataItem($input: CreateOneObjectInput!) {
@@ -80,4 +82,14 @@ export const mutations = {
         }
     }
 `,
+  createArxEnrichments: `
+        mutation CreateOneCandidateEnrichment($input: CandidateEnrichmentCreateInput!) {
+            createCandidateEnrichment(data: $input) {
+          id
+          name
+          position
+          createdAt
+          updatedAt
+        }
+      }`,
 };

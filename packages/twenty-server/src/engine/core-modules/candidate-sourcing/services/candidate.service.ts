@@ -759,10 +759,7 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
       
       const stringValue = String(value).toLowerCase();
       const filterStringValue = String(filterValue).toLowerCase();
-      // console.log("Field value to be filtered:", filterValue);
-      // console.log("Field filterStringValue to be filtered:", filterStringValue);
-      // console.log("Field operand to be filtered:", operand);
-      // console.log("Field stringValue to be filtered:", stringValue);
+      
     
       switch (operand) {
         case 'contains':

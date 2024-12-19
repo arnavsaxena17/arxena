@@ -19,6 +19,7 @@ import { PersonService } from './services/person.service';
 import { CandidateService } from './services/candidate.service';
 import { ChatService } from './services/chat.service';
 import { query } from 'express';
+import { Enrichment } from '../workspace-modifications/object-apis/types/types';
 
 @Controller('candidate-sourcing')
 export class CandidateSourcingController {
@@ -50,30 +51,119 @@ export class CandidateSourcingController {
       return { status: 'Failed', error: err };
     }
   }
+
+
+  @Post('find-many-enrichments')
+  @UseGuards(JwtAuthGuard)
+  async findManyEnrichments(@Req() request: any): Promise<object> {
+    const apiToken = request.headers.authorization.split(' ')[1]; // Assuming Bearer token
+    const { filter, limit, orderBy } = request.body;
+
+    try {
+      const graphqlQueryObj = JSON.stringify({
+        query: `query FindManyCandidateEnrichments($filter: CandidateEnrichmentFilterInput, $orderBy: [CandidateEnrichmentOrderByInput], $lastCursor: String, $limit: Int) {
+          candidateEnrichments(
+            filter: $filter
+            orderBy: $orderBy
+            first: $limit
+            after: $lastCursor
+          ) {
+            edges {
+              node {
+                prompt
+                modelName
+                createdAt
+                fields
+                id
+                name
+                selectedModel
+                selectedMetadataFields
+              }
+              cursor
+              __typename
+            }
+            pageInfo {
+              hasNextPage
+              startCursor
+              endCursor
+              __typename
+            }
+            totalCount
+            __typename
+          }
+        }`,
+        variables: { },
+      });
+      
+      const response = await axiosRequest(graphqlQueryObj, apiToken);
+      console.log("response.data.data:",response.data)
+      return { status: 'Success', data: response.data.data.candidateEnrichments.edges.map((edge: any) => edge.node) };
+    } catch (err) {
+      console.error('Error in findManyEnrichments:', err);
+      return { status: 'Failed', error: err };
+    }
+  }
+
+
+  async createOneEnrichment(enrichment: Enrichment, jobObject: any, apiToken: string): Promise<any> {
+    const graphqlVariables = {
+      input: {
+        name: enrichment.modelName,
+        modelName: enrichment.modelName,
+        prompt: enrichment.prompt,
+        selectedModel: enrichment.selectedModel,
+        fields: enrichment.fields,
+        selectedMetadataFields: enrichment.selectedMetadataFields,
+        jobId: jobObject?.id,
+      },
+    };
+    const graphqlQueryObj = JSON.stringify({
+      query: `mutation CreateOneCandidateEnrichment($input: CandidateEnrichmentCreateInput!) {
+        createCandidateEnrichment(data: $input) {
+          id
+          name
+          position
+          createdAt
+          updatedAt
+        }
+      }`,
+      variables: graphqlVariables,
+    });
+
+    const response = await axiosRequest(graphqlQueryObj, apiToken);
+    return response.data;
+  }
+
   @Post('create-enrichments')
   @UseGuards(JwtAuthGuard)
-
   async createEnrichments(@Req() request: any): Promise<object> {
     try {
       const apiToken = request?.headers?.authorization?.split(' ')[1]; // Assuming Bearer token
 
+      const enrichments = request?.body?.enrichments;
+      const objectNameSingular = request?.body?.objectNameSingular;
+      const availableSortDefinitions = request?.body?.availableSortDefinitions;
+      const availableFilterDefinitions = request?.body?.availableFilterDefinitions;
+      const objectRecordId = request?.body?.objectRecordId;
+      const selectedRecordIds = request?.body?.selectedRecordIds;
 
-      const enrichments = request?.body?.enrichments
-      const objectNameSingular = request?.body?.objectNameSingular
-      const availableSortDefinitions = request?.body?.availableSortDefinitions
-      const availableFilterDefinitions = request?.body?.availableFilterDefinitions
-      const objectRecordId = request?.body?.objectRecordId
-      const selectedRecordIds = request?.body?.selectedRecordIds
+      console.log("objectNameSingular:", objectNameSingular);
+      console.log("availableSortDefinitions:", availableSortDefinitions);
+      console.log("enrichments:", enrichments);
+      console.log("availableFilterDefinitions:", availableFilterDefinitions);
+      console.log("objectRecordId:", objectRecordId);
+      console.log("selectedRecordIds:", selectedRecordIds);
+      
+      const path_position = objectNameSingular.replace("JobCandidate", "");
+      const jobObject = await this.findJob(path_position, apiToken);
+      console.log("Found job:", jobObject);
 
+      for (const enrichment of enrichments) {
+        const response = await this.createOneEnrichment(enrichment, jobObject, apiToken);
+        console.log('Response from create enrichment:', response);
+      }
 
-      console.log("objectNameSingular:", objectNameSingular)
-      console.log("availableSortDefinitions:", availableSortDefinitions)
-      console.log("enrichments:", enrichments)
-      console.log("availableFilterDefinitions:", availableFilterDefinitions)
-      console.log("objectRecordId:", objectRecordId)
-      console.log("selectedRecordIds:", selectedRecordIds)
-
-      console.log("process.env.ENV_NODE::", process.env.ENV_NODE)
+      console.log("process.env.ENV_NODE::", process.env.ENV_NODE);
       const url = process.env.ENV_NODE === 'production' ? 'https://arxena.com/process_enrichments' : 'http://127.0.0.1:5050/process_enrichments';
       const response = await axios.post(
         url,
@@ -89,15 +179,115 @@ export class CandidateSourcingController {
       );
       console.log('Response from process enrichments:', response.data);
 
-      console.log("going to process chats")
-      // await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).processCandidatesChatsGetStatuses( apiToken);
-      // await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).processCandidatesChatsGetStatuses(apiToken);
-
       return { status: 'Success' };
     } catch (err) {
       console.error('Error in process:', err);
       return { status: 'Failed', error: err };
     }
+  }
+
+
+
+  // @Post('create-enrichments')
+  // @UseGuards(JwtAuthGuard)
+
+  // async createEnrichments(@Req() request: any): Promise<object> {
+  //   try {
+  //     const apiToken = request?.headers?.authorization?.split(' ')[1]; // Assuming Bearer token
+
+  //     const enrichments = request?.body?.enrichments
+  //     const objectNameSingular = request?.body?.objectNameSingular
+  //     const availableSortDefinitions = request?.body?.availableSortDefinitions
+  //     const availableFilterDefinitions = request?.body?.availableFilterDefinitions
+  //     const objectRecordId = request?.body?.objectRecordId
+  //     const selectedRecordIds = request?.body?.selectedRecordIds
+
+  //     console.log("objectNameSingular:", objectNameSingular)
+  //     console.log("availableSortDefinitions:", availableSortDefinitions)
+  //     console.log("enrichments:", enrichments)
+  //     console.log("availableFilterDefinitions:", availableFilterDefinitions)
+  //     console.log("objectRecordId:", objectRecordId)
+  //     console.log("selectedRecordIds:", selectedRecordIds)
+      
+  //     const path_position = objectNameSingular.replace("JobCandidate", "");
+  //     const jobObject = await this.findJob(path_position, apiToken);
+  //     console.log("Found job:", jobObject);
+
+
+  //     for (const enrichment of enrichments) {
+  //       const graphqlVariables = {
+  //         input: {
+  //           id: enrichment.id,
+  //           name: enrichment.name,
+  //           position: enrichment.position,
+  //           prompt: enrichment.prompt,
+  //           languageModel: enrichment.languageModel.replaceAll("-","").replaceAll(".",""),
+  //           sampleJson: enrichment.columnsToProcess,
+  //           fields: enrichment.fields,
+  //           jobId: jobObject?.id,
+  //         },
+  //       };
+  //       const graphqlQueryObj = JSON.stringify({
+  //         query: `mutation CreateOneCandidateEnrichment($input: CandidateEnrichmentCreateInput!) {
+  //           createCandidateEnrichment(data: $input) {
+  //             id
+  //             name
+  //             position
+  //             createdAt
+  //             updatedAt
+  //           }
+  //         }`,
+  //         variables: graphqlVariables,
+  //       });
+
+  //       const response = await axiosRequest(graphqlQueryObj, apiToken);
+  //       console.log('Response from create enrichment:', response.data);
+  //     }
+
+
+
+
+
+  //     console.log("process.env.ENV_NODE::", process.env.ENV_NODE)
+  //     const url = process.env.ENV_NODE === 'production' ? 'https://arxena.com/process_enrichments' : 'http://127.0.0.1:5050/process_enrichments';
+  //     const response = await axios.post(
+  //       url,
+  //       {
+  //         enrichments,
+  //         objectNameSingular,
+  //         availableSortDefinitions,
+  //         availableFilterDefinitions,
+  //         objectRecordId,
+  //         selectedRecordIds
+  //       },
+  //       { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiToken}` } }
+  //     );
+  //     console.log('Response from process enrichments:', response.data);
+
+  //     console.log("going to process chats")
+  //     // await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).processCandidatesChatsGetStatuses( apiToken);
+  //     // await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).processCandidatesChatsGetStatuses(apiToken);
+
+  //     return { status: 'Success' };
+  //   } catch (err) {
+  //     console.error('Error in process:', err);
+  //     return { status: 'Failed', error: err };
+  //   }
+  // }
+
+  async findJob(path_position: string, apiToken: string): Promise<any> {
+    console.log("Going to find job by path_position id:", path_position);
+    const variables = {
+      filter: { pathPosition: { in: [path_position] } },
+      limit: 30,
+      orderBy: [{ position: "AscNullsFirst" }],
+    };
+    const query = graphqlToFindManyJobByArxenaSiteId;
+    const data = { query, variables };
+    console.log("Data to find job:", data);
+    const response = await axiosRequest(JSON.stringify(data), apiToken);
+    const job = response.data?.data?.jobs?.edges[0]?.node;
+    return job;
   }
 
   @Post('process-job-candidate-refresh-data')

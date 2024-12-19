@@ -251,3 +251,22 @@ export interface CountryNames {
 export interface CountryLanguages {
     [key: string]: string[];
 }
+
+
+export interface EnrichmentField {
+    name: string;
+    type: string;
+    description: string;
+    required: boolean;
+    id: number;
+    enumValues?: string[];
+}
+
+export interface Enrichment {
+    modelName: string;
+    prompt: string;
+    fields: EnrichmentField[];
+    selectedMetadataFields: string[];
+    selectedModel: string;
+    bestOf?: number;
+}

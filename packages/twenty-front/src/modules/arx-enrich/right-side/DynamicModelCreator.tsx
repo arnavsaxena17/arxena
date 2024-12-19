@@ -8,11 +8,26 @@ import { useRecoilState } from 'recoil';
 import { activeEnrichmentState, enrichmentsState } from '@/arx-enrich/states/arxEnrichModalOpenState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 
+
 const AVAILABLE_MODELS = [
-  'gpt-4o',
-  'gpt-4o-mini',
-  'gpt-3.5-pro',
-  'claude-pro',
+  {
+    color: "green",
+    label: "GPT 3.5 Turbo",
+    position: 0,
+    value: "gpt35turbo"
+  },
+  {
+    color: "turquoise",
+    label: "GPT-4o",
+    position: 1,
+    value: "gpt4o"
+  },
+  {
+    color: "turquoise",
+    label: "gpt-4o-mini",
+    position: 1,
+    value: "gpt4omini"
+  },
 ];
 
 const Container = styled.div`
@@ -70,6 +85,18 @@ const FieldContainer = styled.div`
   flex-direction: column;
   gap: 1rem;
 `;
+const EnumValuesInput = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+`;
+
+const EnumValueRow = styled.div`
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+`;
+
 
 
 const FieldCard = styled.div`
@@ -210,16 +237,45 @@ const ModelCodeDisplay = styled.div<{ show: boolean }>`
 interface DynamicModelCreatorProps {
   objectNameSingular: string;
   index: number;
+  onError: (error: string) => void;
 }
+
+
+// const validateFieldName = (name: string) => {
+//   if (!name) {
+//     return 'Field name is required';
+//   }
+  
+//   // Add camelCase validation
+//   if (!/^[a-z][a-zA-Z0-9]*$/.test(name)) {
+//     return 'Field name must be in camelCase (start with lowercase letter, followed by letters/numbers)';
+//   }
+  
+//   const isDuplicate = fields.some(
+//     (field: { name: string; id: number }) => 
+//       field.name.toLowerCase() === name.toLowerCase() && 
+//       field.id !== editingFieldId
+//   );
+  
+//   if (isDuplicate) {
+//     return 'Field name must be unique';
+//   }
+  
+//   return '';
+// };
+
+
 // Component Implementation
 const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({ 
   objectNameSingular, 
   index, 
+  onError, // Add this prop
+
 }) => {
   const [showAddField, setShowAddField] = useState(false);
-  const [error, setError] = useState('');
   const [editingFieldId, setEditingFieldId] = useState<number | null>(null);
   const [enrichments, setEnrichments] = useRecoilState(enrichmentsState);
+  const [error, setError] = useState<string>('');
 
   // Initialize local state with deep copy of current enrichment
   const currentEnrichment = useMemo(() => ({
@@ -233,8 +289,29 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
     name: '',
     type: 'text',
     description: '',
-    required: true,
+    enumValues: [] as string[], // Add this line
+
   });
+
+  const handleFieldNameValidation = (name: string) => {
+    const validationError = validateFieldName(name);
+    if (validationError) {
+      onError(validationError);
+      return false;
+    }
+    onError('');
+    return true;
+  };
+
+
+  const handleFieldNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newName = e.target.value;
+    handleFieldNameValidation(newName);
+    setNewField({ ...newField, name: newName });
+  };
+
+
+
 
   // Reset local state when switching enrichments
   useEffect(() => {
@@ -247,8 +324,24 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
         name: '',
         type: 'text',
         description: '',
-        required: true,
+        enumValues:[]
       });
+
+
+      if (typeof currentEnrichment.bestOf === 'undefined') {
+        setEnrichments(prev => {
+          const newEnrichments = [...prev];
+          if (newEnrichments[index]) {
+            newEnrichments[index] = {
+              ...newEnrichments[index],
+              bestOf: 1
+            };
+          }
+          return newEnrichments;
+        });
+      }
+
+      
       setShowAddField(false);
       setEditingFieldId(null);
       setError('');
@@ -290,7 +383,6 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
     { value: 'text', label: 'Text' },
     { value: 'number', label: 'Number' },
     { value: 'boolean', label: 'Boolean' },
-    { value: 'float', label: 'Float' },
     { value: 'enum', label: 'Enum' },
   ], []);
   
@@ -300,12 +392,15 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
       return 'Field name is required';
     }
     
-    if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name)) {
-      return 'Field name must start with a letter or underscore and contain only letters, numbers, and underscores';
+    // Strict camelCase validation
+    if (!/^[a-z][a-zA-Z0-9]*$/.test(name)) {
+      return 'Field name must be in camelCase (start with lowercase letter, followed by letters/numbers)';
     }
-    
+  
     const isDuplicate = fields.some(
-      (field: { name: string; id: number }) => field.name.toLowerCase() === name.toLowerCase() && field.id !== editingFieldId
+      (field: { name: string; id: number }) => 
+        field.name.toLowerCase() === name.toLowerCase() && 
+        field.id !== editingFieldId
     );
     
     if (isDuplicate) {
@@ -314,6 +409,8 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
     
     return '';
   };
+  
+  
   
   const validateModelName = (name: string) => {
     if (!name) return 'Model name is required';
@@ -328,13 +425,21 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
       e.preventDefault();
       e.stopPropagation();
     }
-
+  
+    // Validate field name
+    const nameValidationError = validateFieldName(newField.name);
+    if (nameValidationError) {
+      setError(nameValidationError);
+      return;
+    }
+  
     setEnrichments(prev => {
       const newEnrichments = prev.map((enrichment, idx) => {
         if (idx === index) {
           const currentFields = enrichment.fields || [];
           const updatedFields = editingFieldId 
-            ? currentFields.map((field: { id: number; }) => field.id === editingFieldId ? { ...newField, id: editingFieldId } : field)
+            ? currentFields.map((field: { id: number; }) => 
+                field.id === editingFieldId ? { ...newField, id: editingFieldId } : field)
             : [...currentFields, { ...newField, id: Date.now() }];
           return {
             ...enrichment,
@@ -345,32 +450,35 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
       });
       return newEnrichments;
     });
-
+  
     if (!editingFieldId) {
       setNewField({
         name: '',
         type: 'text',
         description: '',
-        required: true,
+        enumValues: []
       });
       setShowAddField(false);
     }
     setEditingFieldId(null);
-    setError('');
-  }, [newField, editingFieldId, index, setEnrichments]);
+    setError(''); // Clear any existing errors
+  }, [newField, editingFieldId, index, setEnrichments, validateFieldName]);
+  
+  
 
 
-    const handleMetadataFieldsChange = (selectedOptions: string[]) => {
-      setEnrichments(prev => {
-        const newEnrichments = prev.map((enrichment, idx) => 
-          idx === index ? {
-            ...enrichment,
-            selectedMetadataFields: selectedOptions
-          } : enrichment
-        );
-        return newEnrichments;
-      });
-    };
+  console.log("Enrichmetnsa re these:", enrichments);
+    // const handleMetadataFieldsChange = (selectedOptions: string[]) => {
+    //   setEnrichments(prev => {
+    //     const newEnrichments = prev.map((enrichment, idx) => 
+    //       idx === index ? {
+    //         ...enrichment,
+    //         selectedMetadataFields: selectedOptions
+    //       } : enrichment
+    //     );
+    //     return newEnrichments;
+    //   });
+    // };
   
   
   
@@ -431,7 +539,9 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
         type="text"
         placeholder="Model Name"
         value={enrichments[index]?.modelName || ''}
-        onChange={e => handleModelNameChange(e.target.value)}
+        onChange={e => 
+          handleModelNameChange(e.target.value)
+        }
         />
 
       <SelectLabel>Prompt</SelectLabel>
@@ -456,7 +566,7 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
 
       <SelectLabel>Select Model</SelectLabel>
       <Select
-          value={enrichments[index]?.selectedModel || 'gpt-4o-mini'}
+          value={enrichments[index]?.selectedModel || 'gpt4omini'}
           onChange={e => {
         const selectedModel = e.target.value;
         console.log("selectedModel::", selectedModel);
@@ -474,11 +584,13 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
         >
         <option>Select a model...</option>
         {AVAILABLE_MODELS.map(model => (
-          <option key={model} value={model}>
-        {model}
+          <option key={model.value} value={model.value}>
+        {model.label}
           </option>
         ))}
       </Select>
+
+
 
       <SelectLabel>Select Metadata Fields</SelectLabel>
       <MultiSelect
@@ -538,7 +650,7 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
   <SelectLabel>Create New Fields</SelectLabel>
 
     <FieldsList>
-    {currentEnrichment.fields.map((field: { id: number; name: string; type: string; description: string; required: boolean }) => (
+    {currentEnrichment.fields.map((field: { id: number; name: string; type: string; description: string; required: boolean, enumValues:string[] }) => (
       <FieldContainer key={field.id}>
       <FieldCard>
         <FieldContent>
@@ -571,6 +683,14 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
           placeholder="Field Name"
           value={newField.name}
           onChange={e => {
+            const newName = e.target.value;
+            const validationError = validateFieldName(newName);
+            if (validationError) {
+              setError(validationError);
+            } else {
+              setError('');
+            }
+        
           e.stopPropagation();
           setNewField({ ...newField, name: e.target.value });
           setError('');
@@ -586,21 +706,53 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
           </option>
           ))}
         </Select>
+        {newField.type === 'enum' && (
+          <EnumValuesInput>
+            <SelectLabel>Enum Values</SelectLabel>
+            {(newField.enumValues || []).map((value, index) => (
+              <EnumValueRow key={index}>
+                <Input
+                  type="text"
+                  value={value}
+                  onChange={e => {
+                    const newEnumValues = [...newField.enumValues];
+                    newEnumValues[index] = e.target.value;
+                    setNewField({ ...newField, enumValues: newEnumValues });
+                  }}
+                />
+                <Button
+                  Icon={IconX}
+                  variant="secondary"
+                  onClick={() => {
+                    const newEnumValues = newField.enumValues.filter((_, i) => i !== index);
+                    setNewField({ ...newField, enumValues: newEnumValues });
+                  }}
+                  title="Remove enum value"
+                />
+              </EnumValueRow>
+            ))}
+            <Button
+              Icon={IconPlus}
+              variant="secondary"
+              onClick={() => {
+                setNewField({
+                  ...newField,
+                  enumValues: [...(newField.enumValues || []), '']
+                });
+              }}
+              title="Add enum value"
+            />
+          </EnumValuesInput>
+        )}
+
+
         <TextArea 
           placeholder="Field Description" 
           value={newField.description} 
           onChange={e => setNewField({ ...newField, description: e.target.value })} 
           rows={3} 
         />
-        <CheckboxContainer>
-          <input 
-          type="checkbox" 
-          checked={newField.required} 
-          onChange={e => setNewField({ ...newField, required: e.target.checked })} 
-          id={`required-checkbox-${field.id}`} 
-          />
-          <label htmlFor={`required-checkbox-${field.id}`}>Required</label>
-        </CheckboxContainer>
+
         <ButtonGroup>
           <Button Icon={IconPlus}   onClick={(e: React.MouseEvent) => { e.preventDefault(); addField(e);}}  variant="primary" title="Save" />
           <Button
@@ -613,7 +765,7 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
             name: '',
             type: 'text',
             description: '',
-            required: true,
+            enumValues:[]
             });
           }}
           title="Cancel"
@@ -638,7 +790,16 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
       type="text"
       placeholder="Field Name"
       value={newField.name}
+      
       onChange={e => {
+        const newName = e.target.value;
+        const validationError = validateFieldName(newName);
+        if (validationError) {
+          setError(validationError);
+        } else {
+          setError('');
+        }
+    
         setNewField({ ...newField, name: e.target.value });
         setError('');
       }}
@@ -653,21 +814,61 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
         </option>
       ))}
     </Select>
+
+    {newField.type === 'enum' && (
+      <EnumValuesInput>
+        <SelectLabel>Enum Values</SelectLabel>
+        {(newField.enumValues || []).map((value, index) => (
+          <EnumValueRow key={index}>
+            <Input
+              type="text"
+              value={value}
+              onChange={e => {
+                const newName = e.target.value;
+                const validationError = validateFieldName(newName);
+                if (validationError) {
+                  setError(validationError);
+                } else {
+                  setError('');
+                }
+            
+                const newEnumValues = [...newField.enumValues];
+                newEnumValues[index] = e.target.value;
+                setNewField({ ...newField, enumValues: newEnumValues });
+              }}
+            />
+            <Button
+              Icon={IconX}
+              variant="secondary"
+              onClick={() => {
+                const newEnumValues = newField.enumValues.filter((_, i) => i !== index);
+                setNewField({ ...newField, enumValues: newEnumValues });
+              }}
+              title="Remove enum value"
+            />
+          </EnumValueRow>
+        ))}
+        <Button
+          Icon={IconPlus}
+          variant="secondary"
+          onClick={() => {
+            setNewField({
+              ...newField,
+              enumValues: [...(newField.enumValues || []), '']
+            });
+          }}
+          title="Add enum value"
+        />
+      </EnumValuesInput>
+    )}
+
+
     <TextArea 
       placeholder="Field Description" 
       value={newField.description} 
       onChange={e => setNewField({ ...newField, description: e.target.value })} 
       rows={3} 
     />
-    <CheckboxContainer>
-      <input 
-        type="checkbox" 
-        checked={newField.required} 
-        onChange={e => setNewField({ ...newField, required: e.target.checked })} 
-        id="required-checkbox" 
-      />
-      <label htmlFor="required-checkbox">Required</label>
-    </CheckboxContainer>
     <ButtonGroup>
       <Button Icon={IconPlus} onClick={addField} variant="primary" title="Add" />
       <Button
@@ -680,7 +881,7 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
             name: '',
             type: 'text',
             description: '',
-            required: true,
+            enumValues:[]
           });
         }}
         title="Cancel"
@@ -690,6 +891,38 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
   )}
 
   </FieldsList>
+
+
+  <SelectLabel>Best Of</SelectLabel>
+<div style={{
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.5rem',
+  width: '90%'
+}}>
+  <Input
+    type="number"
+    min="1"
+    value={enrichments[index]?.bestOf || 1}
+    onChange={e => {
+  
+      const value = parseInt(e.target.value) || 1;
+      setEnrichments(prev => {
+        const newEnrichments = [...prev];
+        if (newEnrichments[index]) {
+          newEnrichments[index] = {
+            ...newEnrichments[index],
+            bestOf: value
+          };
+        }
+        return newEnrichments;
+      });
+    }}
+    style={{ width: '80px' }}
+  />
+</div>
+
+
 
     {(fields.length > 0) && (
       <ModelCodeDisplay show={true}>

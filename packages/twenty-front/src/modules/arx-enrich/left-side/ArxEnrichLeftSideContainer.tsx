@@ -4,6 +4,8 @@ import { enrichmentsState, activeEnrichmentState } from '@/arx-enrich/states/arx
 import { useEffect, useState } from 'react';
 import {  IconTrash } from 'twenty-ui';
 import { Enrichment } from '@/arx-enrich/arxEnrichmentModal';
+import { SampleEnrichments } from './SampleEnrichments';
+
 
 
 const StyledContainer = styled.div`
@@ -19,14 +21,55 @@ const StyledContainer = styled.div`
   max-width: 300px;
   min-width: 224px;
   flex-shrink: 1;
+  position: relative;
+  pointer-events: auto;
 `;
+
+
+const ScrollableContent = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0; // Important for flex containers
+  
+  /* Add custom scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: ${({ theme }) => theme.background.tertiary};
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: ${({ theme }) => theme.background.quaternary || '#888'};
+    border-radius: 4px;
+    
+    &:hover {
+      background: ${({ theme }) => theme.background.noisy || '#666'};
+    }
+  }
+
+  scrollbar-width: thin;
+  scrollbar-color: ${({ theme }) => `${theme.background.quaternary || '#888'} ${theme.background.tertiary}`};
+`;
+
 
 const StyledModalNavElementContainer = styled.nav`
   display: flex;
   gap: 4px;
   padding: 6px 0 6px 0;
   flex-direction: column;
+  overflow: visible;
 `;
+
+
+
+
 
 const StyledIntroductionNavElement = styled.div`
   font-family: ${({ theme }) => theme.font.family};
@@ -61,14 +104,14 @@ const StyledButton = styled.div`
 const StyledQuestionsContainer = styled.ol`
   display: flex;
   flex-direction: column;
-  flex-grow: 1;
   gap: 8px;
   padding: 0;
   margin: 0px;
   list-style-type: none;
-  overflow-y: scroll;
   scroll-behavior: smooth;
 `;
+
+
 
 const StyledListItem = styled.li`
   display: flex;
@@ -155,7 +198,11 @@ export const ArxEnrichLeftSideContainer = () => {
   return (
     <StyledContainer>
       <div>New ARX Enrich</div>
-      <ModalNavElementContainer />
+      <ScrollableContent>
+        <ModalNavElementContainer />
+        <SampleEnrichments />
+      </ScrollableContent>
     </StyledContainer>
   );
 };
+

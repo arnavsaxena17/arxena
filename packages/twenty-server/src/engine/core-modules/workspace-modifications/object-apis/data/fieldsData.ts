@@ -557,10 +557,28 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
     {
         "field": {
             "description": "",
-            "label": "columnsToProcess",
-            "name": "columnsToProcess",
+            "label": "selectedMetadataFields",
+            "name": "selectedMetadataFields",
+            "objectMetadataId": objectsNameIdMap.candidateEnrichment,
+            "type": "RAW_JSON"
+        }
+    },
+    {
+        "field": {
+            "description": "",
+            "label": "modelName",
+            "name": "modelName",
             "objectMetadataId": objectsNameIdMap.candidateEnrichment,
             "type": "TEXT"
+        }
+    },
+    {
+        "field": {
+            "description": "",
+            "label": "fields",
+            "name": "fields",
+            "objectMetadataId": objectsNameIdMap.candidateEnrichment,
+            "type": "RAW_JSON"
         }
     },
     {
@@ -569,7 +587,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
             "label": "sampleJson",
             "name": "sampleJson",
             "objectMetadataId": objectsNameIdMap.candidateEnrichment,
-            "type": "TEXT"
+            "type": "RAW_JSON"
         }
     },
     {
@@ -581,24 +599,29 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
             "type": "TEXT"
         }
     },
-
     {
         "field": {
             "description": "",
-            "label": "languageModel",
-            "name": "languageModel",
+            "label": "selectedModel",
+            "name": "selectedModel",
             "objectMetadataId": objectsNameIdMap.candidateEnrichment,
             "options": [{
                     "color": "green",
-                    "label": "GPT 3.5 Turbo",
+                    "label": "gpt-3.5-turbo",
                     "position": 0,
                     "value": "gpt35turbo"
                 },
                 {
                     "color": "turquoise",
-                    "label": "GPT-4o",
+                    "label": "gpt-4o",
                     "position": 1,
-                    "value": "GPT4o"
+                    "value": "gpt4o"
+                },
+                {
+                    "color": "turquoise",
+                    "label": "gpt-4o-mini",
+                    "position": 1,
+                    "value": "gpt4omini"
                 },
             ],
             "type": "SELECT"

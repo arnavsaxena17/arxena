@@ -1,44 +1,12 @@
 import styled from '@emotion/styled';
-import { v4 as uid } from 'uuid';
-import { useRecoilState, useRecoilValue } from 'recoil';
-import { activeEnrichmentState, enrichmentsState } from '@/arx-enrich/states/arxEnrichModalOpenState';
-import axios from 'axios';
-import { useRecordTableStates } from '@/object-record/record-table/hooks/internal/useRecordTableStates';
+import { useRecoilState } from 'recoil';
+import { enrichmentsState } from '@/arx-enrich/states/arxEnrichModalOpenState';
 
 import { Button } from '@/ui/input/button/components/Button';
 
-import DynamicModelCreator from './FormCreatorRightSide';
+import { useMemo } from 'react';
+import { Enrichment } from '../arxEnrichmentModal';
 
-const StyledAllContainer = styled.div`
-  background-color: ${({ theme }) => theme.background.primary};
-  display: flex;
-  flex-direction: column;
-  gap: 44px;
-  padding: 44px 32px 44px 32px;
-  width: calc(100% * (2 / 3));
-  min-width: 264px;
-  flex-shrink: 1;
-`;
-
-const StyledFormElement = styled.form`
-  display: flex;
-  gap: 44px;
-  flex-grow: 1;
-  flex-direction: column;
-  overflow-y: scroll;
-  scroll-behavior: smooth;
-`;
-
-const StyledQuestionsContainer = styled.ol`
-  display: flex;
-  flex-direction: column;
-  flex-grow: 1;
-  padding: 0;
-  margin: 0px;
-  list-style-type: none;
-  overflow-y: scroll;
-  scroll-behavior: smooth;
-`;
 
 const StyledArxEnrichNameContainer = styled.div`
   display: flex;
@@ -72,26 +40,82 @@ const StyledInput = styled.input`
   font-weight: ${({ theme }) => theme.font.weight.semiBold};
 `;
 
+
+const StyledValidationMessage = styled.div`
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
+  font-size: ${({ theme }) => theme.font.size.sm};
+  color: ${({ theme }) => theme.color.red};
+  white-space: nowrap;
+`;
+
+const StyledTopValidationMessage = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: ${({ theme }) => theme.background.tertiary};
+  border-radius: 0.5rem;
+  color: ${({ theme }) => theme.color.red};
+  font-size: ${({ theme }) => theme.font.size.sm};
+  margin-bottom: 1rem;
+`;
+
+
+
 export const ArxEnrichModalCloseButton = ({ closeModal }: { closeModal: () => void }) => {
   return <Button variant="secondary" accent="danger" size="small" onClick={closeModal} justify="center" title="Close" type="submit" />;
 };
 
-export const ArxEnrichCreateButton = ({ onClick }: { onClick?: (event: React.FormEvent<HTMLFormElement>) => void }) => {
-  return <Button 
-    variant="primary" 
-    accent="blue" 
-    size="small" 
-    justify="center" 
-    title={'Create Enrichment'} 
-    type="submit"  // Changed to type="submit" to trigger form submission
-  />;
+
+
+export const ArxEnrichCreateButton = ({ 
+  onClick,
+  enrichment,
+  disabled 
+}: { 
+  onClick?: (event: React.FormEvent<HTMLFormElement>) => void;
+  enrichment: Enrichment;
+  disabled: boolean;
+}) => {
+  return (
+    <div style={{ position: 'relative' }}>
+      <Button 
+        variant="primary" 
+        accent="blue" 
+        size="small" 
+        justify="center" 
+        title={'Create Enrichment'} 
+        type="submit"
+        disabled={disabled}
+      />
+      {disabled && (
+        <StyledValidationMessage>
+          Please fill all required fields
+        </StyledValidationMessage>
+      )}
+    </div>
+  );
 };
+
 
 interface ArxEnrichNameProps {
   closeModal: () => void;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
   index: number; // Add this
+  onError: (error: string) => void;
 }
+
+export const validateModelName = (name: string) => {
+  if (!name) return 'Model name is required';
+  if (!/^[A-Z][A-Za-z0-9]*$/.test(name)) {
+    return 'Model name must start with a capital letter and contain only letters and numbers';
+  }
+  return '';
+};
 
 export const ArxEnrichName: React.FC<ArxEnrichNameProps> = ({
   closeModal,
@@ -99,12 +123,39 @@ export const ArxEnrichName: React.FC<ArxEnrichNameProps> = ({
   // setModelName,
   onSubmit,
   index,
+  onError, // Add this prop
+
 }) => {
   const [enrichments, setEnrichments] = useRecoilState(enrichmentsState);
 
+  const currentEnrichment = enrichments[index];
+
+  const isFormValid = useMemo(() => {
+    if (!currentEnrichment) return false;
+    console.log("This is current currentEnrichment", currentEnrichment)
+    const isFormValidValue = Boolean(
+      currentEnrichment.modelName &&
+      currentEnrichment.prompt &&
+      (currentEnrichment.selectedModel || currentEnrichment.selectedModel=="") &&
+      currentEnrichment.selectedMetadataFields.length > 0 &&
+      currentEnrichment.fields.length > 0
+    );
+    console.log("isFormValidValueisFiformValidValue:", isFormValidValue)
+    if (isFormValidValue) {
+      onError(''); // Clear previous errors
+    }
+    return isFormValidValue
+  }, [currentEnrichment]);
+
+
   const handleModelNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newModelName = e.target.value;
-    setEnrichments(prev => {
+    const validationError = validateModelName(newModelName);
+    if (validationError) {
+      onError(validationError);
+    } else {
+      onError('');
+      setEnrichments(prev => {
       const newEnrichments = prev.map((enrichment, idx) => {
         if (idx === index) {
           return {
@@ -117,73 +168,28 @@ export const ArxEnrichName: React.FC<ArxEnrichNameProps> = ({
       return newEnrichments;
     });
   };
-
-  return (
-    <StyledArxEnrichNameContainer>
-      <StyledInput type="text" placeholder="Model Name..." name="ModelName[]" value={enrichments[index]?.modelName || ''} onChange={handleModelNameChange} required />
-      <StyledButtonsContainer>
-        <ArxEnrichModalCloseButton closeModal={closeModal} />
-        <ArxEnrichCreateButton onClick={onSubmit} />
-      </StyledButtonsContainer>
-    </StyledArxEnrichNameContainer>
-  );
-};
-
-interface ArxEnrichRightSideContainerProps {
-  closeModal: () => void;
-  objectNameSingular: string;
-  objectRecordId: string;
 }
 
-export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerProps> = ({ 
-  closeModal, 
-  objectNameSingular, 
-  objectRecordId 
-}) => {
-  const [activeEnrichment, setActiveEnrichment] = useRecoilState(activeEnrichmentState);
-  const [enrichments, setEnrichments] = useRecoilState(enrichmentsState);
-
-
-  const { selectedRowIdsSelector } = useRecordTableStates();
-  
-  // Get the selected row IDs
-  const selectedRowIds = useRecoilValue(selectedRowIdsSelector());
-  console.log("These are the selected row IDs:", selectedRowIds);
-
-
-
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    try {
-      console.log("Enrichments:", enrichments);
-      const response = await axios.post('/api/create-enrichments', {
-        enrichments,
-        objectNameSingular,
-        objectRecordId,
-        selectedRowIds
-      });
-
-      if (response.status === 200) {
-        console.log('Enrichments created successfully:', response.data);
-        closeModal();
-      } else {
-        console.error('Failed to create enrichments:', response.status);
-      }
-    } catch (error) {
-      console.error('Error creating enrichments:', error);
-    }
-  };
-
   return (
-    <StyledAllContainer id={`${objectNameSingular}: ${objectRecordId}`}>
-      <StyledFormElement onSubmit={handleSubmit} id="NewArxEnrichForm">
-        <ArxEnrichName
-          closeModal={closeModal}
-          onSubmit={handleSubmit}
-          index={activeEnrichment || 0} // Use activeEnrichment and provide a fallback of 0
+    <>
+      <StyledArxEnrichNameContainer>
+        <StyledInput 
+          type="text" 
+          placeholder="Model Name..." 
+          name="ModelName[]" 
+          value={currentEnrichment?.modelName || ''} 
+          onChange={handleModelNameChange} 
+          required 
         />
-        <StyledQuestionsContainer type="1">{activeEnrichment !== null && activeEnrichment < enrichments.length && <DynamicModelCreator objectNameSingular={objectNameSingular} index={activeEnrichment} />}</StyledQuestionsContainer>
-      </StyledFormElement>
-    </StyledAllContainer>
+        <StyledButtonsContainer>
+          <ArxEnrichModalCloseButton closeModal={closeModal} />
+          <ArxEnrichCreateButton 
+            onClick={onSubmit} 
+            enrichment={currentEnrichment}
+            disabled={!isFormValid}
+          />
+        </StyledButtonsContainer>
+      </StyledArxEnrichNameContainer>
+    </>
   );
 };

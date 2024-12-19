@@ -26,8 +26,50 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
                 "relationType": "ONE_TO_MANY",
                 "toObjectMetadataId": objectsNameIdMap.prompt,
                 "toDescription": "",
-                "toLabel": "Prompts",
-                "toName": "prompt"
+                "toLabel": "Recruiter",
+                "toName": "recruiter"
+            }
+        },
+        {
+            "relation": {
+                "fromDescription": null,
+                "fromIcon": "IconBuilding",
+                "fromLabel": "Jobs",
+                "fromName": "jobs",
+                "fromObjectMetadataId": objectsNameIdMap.job,
+                "relationType": "ONE_TO_MANY",
+                "toObjectMetadataId": objectsNameIdMap.prompt,
+                "toDescription": "",
+                "toLabel": "Job",
+                "toName": "job"
+            }
+        },
+        {
+            "relation": {
+                "fromDescription": null,
+                "fromIcon": "IconBuilding",
+                "fromLabel": "candidateEnrichments",
+                "fromName": "candidateEnrichments",
+                "fromObjectMetadataId": objectsNameIdMap.job,
+                "relationType": "ONE_TO_MANY",
+                "toObjectMetadataId": objectsNameIdMap.candidateEnrichment,
+                "toDescription": "",
+                "toLabel": "Job",
+                "toName": "job"
+            }
+        },
+        {
+            "relation": {
+                "fromDescription": null,
+                "fromIcon": "IconBuilding",
+                "fromLabel": "candidateEnrichments",
+                "fromName": "candidateEnrichment",
+                "fromObjectMetadataId": objectsNameIdMap.workspaceMember,
+                "relationType": "ONE_TO_MANY",
+                "toObjectMetadataId": objectsNameIdMap.candidateEnrichment,
+                "toDescription": "",
+                "toLabel": "Recruiter",
+                "toName": "recruiter"
             }
         },
             {
