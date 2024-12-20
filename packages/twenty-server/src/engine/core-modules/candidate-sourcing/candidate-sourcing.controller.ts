@@ -156,6 +156,10 @@ export class CandidateSourcingController {
       console.log("Found job:", jobObject);
 
       for (const enrichment of enrichments) {
+        if (enrichment.modelName !== '') {
+          const response = await this.createOneEnrichment(enrichment, jobObject, apiToken);
+          console.log('Response from create enrichment:', response);
+        }
         const response = await this.createOneEnrichment(enrichment, jobObject, apiToken);
         console.log('Response from create enrichment:', response);
       }
@@ -192,7 +196,7 @@ export class CandidateSourcingController {
     };
     const query = graphqlToFindManyJobByArxenaSiteId;
     const data = { query, variables };
-    console.log("Data to find job:", data);
+    // console.log("Data to find job:", data);
     const response = await axiosRequest(JSON.stringify(data), apiToken);
     const job = response.data?.data?.jobs?.edges[0]?.node;
     return job;

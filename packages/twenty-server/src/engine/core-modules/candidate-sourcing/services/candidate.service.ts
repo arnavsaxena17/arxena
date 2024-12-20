@@ -151,6 +151,7 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
       existing.toObjectMetadataId === relation.relation.toObjectMetadataId
     );
   });
+  console.log("Relations to create:", relationsToCreate);
   if (relationsToCreate.length > 0) {
     try {
       await createRelations(relationsToCreate, apiToken);

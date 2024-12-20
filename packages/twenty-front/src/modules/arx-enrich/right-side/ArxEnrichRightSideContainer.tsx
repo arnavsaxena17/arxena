@@ -225,14 +225,7 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
         onError={handleError}
 
       />
-      <ErrorContainer>
-        {(error || fieldErrors.length > 0) && (
-          <ErrorAlert>
-            <IconAlertCircle size={16} stroke={1.5} />
-            {error || fieldErrors.join(', ')}
-          </ErrorAlert>
-        )}
-      </ErrorContainer>
+
       <StyledQuestionsContainer type="1">
         {activeEnrichment !== null && activeEnrichment < enrichments.length && (
           <DynamicModelCreator 
@@ -243,6 +236,14 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
           />
         )}
       </StyledQuestionsContainer>
+      <ErrorContainer>
+        {(error || fieldErrors.length > 0) && (
+          <ErrorAlert>
+            <IconAlertCircle size={16} stroke={1.5} />
+            {error || fieldErrors.join(', ')}
+          </ErrorAlert>
+        )}
+      </ErrorContainer>
     </StyledFormElement>
   </StyledAllContainer>
 );

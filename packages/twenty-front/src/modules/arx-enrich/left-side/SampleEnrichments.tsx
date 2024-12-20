@@ -50,7 +50,7 @@ const SAMPLE_ENRICHMENTS = [
     fields: [
       {
         name: "distanceFromJob",
-        type: "text",
+        type: "number",
         description: "This is the distance of the location from Surat, Gujarat, India in kilometers",
         id: 1733655403505
       }
@@ -75,7 +75,7 @@ const SAMPLE_ENRICHMENTS = [
         id: 1733655310939
       }
     ],
-    selectedMetadataFields: ["resumeheadline", "jobTitle"],
+    selectedMetadataFields: ["resumeHeadline", "jobTitle"],
     selectedModel: "gpt4omini"
   }
 ];
