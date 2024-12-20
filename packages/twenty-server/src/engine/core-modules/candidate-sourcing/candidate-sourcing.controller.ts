@@ -311,6 +311,7 @@ export class CandidateSourcingController {
     console.log('arxenaJobId:', jobId);
     const data: CandidateSourcingTypes.UserProfile[] = req.body?.data;
     console.log("Data len:",data.length)
+    console.log("Data:",data.length)
     
     try {
       // Get job details

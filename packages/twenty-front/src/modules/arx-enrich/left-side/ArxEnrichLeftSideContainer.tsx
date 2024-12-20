@@ -127,7 +127,7 @@ const StyledListItem = styled.li`
 `;
 
 export const ModalNavElementContainer = () => {
-  const [enrichments, setEnrichments] = useRecoilState(enrichmentsState);
+  const [enrichments, setEnrichments] = useRecoilState<Enrichment[]>(enrichmentsState);
   const [activeEnrichment, setActiveEnrichment] = useRecoilState(activeEnrichmentState);
 
   useEffect(() => {
@@ -172,14 +172,14 @@ export const ModalNavElementContainer = () => {
   return (
     <StyledModalNavElementContainer>
       <StyledQuestionsContainer type="1">
-        {enrichments.map((_, index) => (
+      {enrichments.map((enrichment: Enrichment, index: number) => (
           <StyledListItem key={index}>
             <StyledIntroductionNavElement
               className={activeEnrichment === index ? 'active' : ''}
               onClick={() => handleEnrichmentClick(index)}
             >
-              Enrichment - {index + 1}
-            </StyledIntroductionNavElement>
+          {enrichment.modelName || `Enrichment - ${index + 1}`}
+        </StyledIntroductionNavElement>
             <IconTrash
               size={16}
               stroke={1.5}
