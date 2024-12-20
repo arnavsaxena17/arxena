@@ -11,6 +11,9 @@ import { currentViewWithFiltersState } from '@/views/states/currentViewState';
 import { selectedRecordsForModalState } from '@/object-record/states/selectedRecordsState';
 import { useState } from 'react';
 import { IconAlertCircle } from 'twenty-ui';
+import {IconLoader2} from '@tabler/icons-react';
+import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
+import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 
 // In ArxEnrichRightSideContainer
 const StyledFormElement = styled.form`
@@ -75,6 +78,18 @@ interface ArxEnrichRightSideContainerProps {
   objectNameSingular: string;
   objectRecordId: string;
 }
+const LoadingOverlay = styled.div`
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+`;
 
 export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerProps> = ({ 
   closeModal, 
@@ -86,7 +101,10 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
   const [tokenPair] = useRecoilState(tokenPairState);
   const [error, setError] = useState<string>(''); // Add this line
   const [fieldErrors, setFieldErrors] = useState<string[]>([]);
-  
+    // Add loading state and style
+  const [isLoading, setIsLoading] = useState(false);
+  const { enqueueSnackBar } = useSnackBar();
+
   
   const handleError = (newError: string) => {
     setError(newError);
@@ -120,9 +138,11 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setError(''); // Clear previous errors
-    setFieldErrors([]); // Clear previous field errors
-    
+    setError('');
+    setFieldErrors([]);
+    setIsLoading(true);
+
+
     // Validate current enrichment
     const currentEnrichment = enrichments[activeEnrichment || 0];
     
@@ -169,20 +189,35 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
       });
   
       if (response.status === 200 || response.status === 201) {
-        console.log('Enrichments created successfully:', response.data);
+        enqueueSnackBar('Enrichment created successfully', {
+          variant: SnackBarVariant.Success,
+          duration: 3000,
+        });
         closeModal();
       }
     } catch (error) {
       console.error('Error creating enrichments:', error);
       setError('Failed to create enrichment');
+      enqueueSnackBar('Failed to create enrichment', {
+        variant: SnackBarVariant.Error,
+        duration: 5000,
+      });
+    } finally {
+      setIsLoading(false);
     }
-  };
+    };
   
 
   return (
 
  <StyledAllContainer id={`${objectNameSingular}: ${objectRecordId}`}>
     <StyledFormElement onSubmit={handleSubmit} id="NewArxEnrichForm">
+    {isLoading && (
+        <LoadingOverlay>
+          <IconLoader2 size={32} className="animate-spin" />
+        </LoadingOverlay>
+      )}
+
       <ArxEnrichName 
         closeModal={closeModal}
         onSubmit={handleSubmit}

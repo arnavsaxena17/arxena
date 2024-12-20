@@ -29,8 +29,8 @@ export async function createFields(fieldsData:FieldInput[], apiToken: string) {
             console.log('Creating field with input:', JSON.stringify(input, null, 2));
             await executeQuery(mutation.query, mutation.variables, apiToken);
         } catch (error) {
-            console.error('Error creating field with input:', JSON.stringify(input, null, 2));
-            console.error('Error:', error);
+            console.log('Error creating field with input:', JSON.stringify(input, null, 2));
+            console.log('Error:', error);
         }
     }
 }

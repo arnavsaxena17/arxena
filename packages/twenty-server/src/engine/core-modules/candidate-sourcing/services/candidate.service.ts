@@ -60,8 +60,44 @@ export class CandidateService {
 
 ) {}
 
+
+private async checkExistingRelations(objectMetadataId: string, apiToken: string): Promise<any[]> {
+  try {
+    const query = `
+      query GetExistingRelations($objectMetadataId: ID!) {
+        relations(filter: { 
+          or: [
+            { fromObjectMetadataId: { eq: $objectMetadataId } },
+            { toObjectMetadataId: { eq: $objectMetadataId } }
+          ]
+        }) {
+          edges {
+            node {
+              fromObjectMetadataId
+              toObjectMetadataId
+            }
+          }
+        }
+      }
+    `;
+
+    const response = await axiosRequest(JSON.stringify({
+      query,
+      variables: { objectMetadataId }
+    }), apiToken);
+
+    return response.data?.data?.relations?.edges?.map((edge: any) => edge.node) || [];
+  } catch (error) {
+    console.error('Error checking existing relations:', error);
+    return [];
+  }
+}
+
 async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidateObjectName: string, apiToken: string): Promise<void> {
   const objectsNameIdMap = await new CreateMetaDataStructure(this.workspaceQueryService).fetchObjectsNameIdMap(apiToken);
+
+  const existingRelations = await this.checkExistingRelations(jobCandidateObjectId, apiToken);
+
   const relationsToCreate = [
     {
       relation: {
@@ -108,8 +144,25 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
         toIcon: "IconUser"
       }
     }
-  ];
-  await createRelations(relationsToCreate, apiToken);
+  ].filter(relation => {
+    // Filter out relations that already exist
+    return !existingRelations.some(existing => 
+      existing.fromObjectMetadataId === relation.relation.fromObjectMetadataId &&
+      existing.toObjectMetadataId === relation.relation.toObjectMetadataId
+    );
+  });
+  if (relationsToCreate.length > 0) {
+    try {
+      await createRelations(relationsToCreate, apiToken);
+    } catch (error) {
+      // If error indicates relation exists, ignore it
+      if (!error.message?.includes('already exists')) {
+        throw error;
+      }
+    }
+  }
+
+
   }
 
 
@@ -466,15 +519,15 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
 
       // 6. Set up metadata fields
       if (jobCandidateInfo.jobCandidateObjectId && data.length > 0) {
-        const { jobCandidateNode } = await processArxCandidate(data[0], jobObject);
         await this.createObjectFieldsAndRelations(
           jobCandidateInfo.jobCandidateObjectId,
           jobCandidateInfo.jobCandidateObjectName,
-          jobCandidateNode,
+          data,  // Pass the full data array
+          jobObject,
           apiToken
         );
       }
-  
+        
       // 2. Process data in batches
       for (let i = 0; i < data.length; i += batchSize) {
         console.log(`Processing batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(data.length/batchSize)}`);
@@ -875,28 +928,140 @@ async findManyJobCandidatesWithCursor(path_position: string, apiToken: string): 
 // }
 
 async createNewJobCandidateObject(newPositionObj: CandidateSourcingTypes.Jobs, apiToken: string): Promise<string> {
-    console.log("Creating new job candidate object structure::", newPositionObj);
-    const path_position = JobCandidateUtils.getJobCandidatePathPosition(newPositionObj.name, newPositionObj?.arxenaSiteId);
-    const jobCandidateObject = JobCandidateUtils.createJobCandidateObject(newPositionObj.name, path_position);
-    console.log("Jpath_position:", path_position);
-    console.log("Job candidate object:", jobCandidateObject);
-    const input = {
-      object: jobCandidateObject.object
-    };
-
-    const mutation = {
-      query: allGraphQLQueries.graphqlToCreateOneMetatDataObjectItems,
-      variables: { input }
-    };
-
-    try {
-      const responseFromMetadata = await axiosRequestForMetadata(JSON.stringify(mutation), apiToken);
-      return responseFromMetadata.data.data.createOneObject.id;
-    } catch (error) {
-      console.error('Error creating object:', error);
-      throw error;
-    }
+  console.log("Creating new job candidate object structure::", newPositionObj);
+  const path_position = JobCandidateUtils.getJobCandidatePathPosition(newPositionObj.name, newPositionObj?.arxenaSiteId);
+  
+  // First, check if the object already exists
+  const objectsNameIdMap = await new CreateMetaDataStructure(this.workspaceQueryService).fetchObjectsNameIdMap(apiToken);
+  const jobCandidateObjectName = `${path_position}JobCandidate`;
+  
+  if (objectsNameIdMap[jobCandidateObjectName]) {
+    console.log("Job candidate object already exists, returning existing ID");
+    return objectsNameIdMap[jobCandidateObjectName];
   }
+  
+  // If it doesn't exist, create new object
+  const jobCandidateObject = JobCandidateUtils.createJobCandidateObject(newPositionObj.name, path_position);
+  console.log("Jpath_position:", path_position);
+  console.log("Job candidate object:", jobCandidateObject);
+  
+  const input = {
+    object: jobCandidateObject.object
+  };
+
+  const mutation = {
+    query: allGraphQLQueries.graphqlToCreateOneMetatDataObjectItems,
+    variables: { input }
+  };
+
+  try {
+    const responseFromMetadata = await axiosRequestForMetadata(JSON.stringify(mutation), apiToken);
+    const newObjectId = responseFromMetadata.data?.data?.createOneObject?.id;
+    
+    if (!newObjectId) {
+      // If creation failed but no error was thrown, check if it exists again
+      const updatedObjectsMap = await new CreateMetaDataStructure(this.workspaceQueryService).fetchObjectsNameIdMap(apiToken);
+      if (updatedObjectsMap[jobCandidateObjectName]) {
+        return updatedObjectsMap[jobCandidateObjectName];
+      }
+      throw new Error('Failed to create or find job candidate object');
+    }
+    
+    return newObjectId;
+  } catch (error) {
+    if (error.message?.includes('duplicate key value')) {
+      // If we get here due to a race condition, fetch and return the existing ID
+      const finalObjectsMap = await new CreateMetaDataStructure(this.workspaceQueryService).fetchObjectsNameIdMap(apiToken);
+      if (finalObjectsMap[jobCandidateObjectName]) {
+        return finalObjectsMap[jobCandidateObjectName];
+      }
+    }
+    console.error('Error creating object:', error);
+    throw error;
+  }
+}
+
+
+private generateFieldsToCreate(
+  data: CandidateSourcingTypes.UserProfile[],
+  existingFields: string[],
+  jobCandidateObjectId: string
+): any[] {
+  // Combine all sources of fields
+  const allFields = new Set([
+    ...newFieldsToCreate,
+    ...this.extractCustomFields(data)
+  ]);
+
+  // Filter out existing fields and create field definitions
+  return Array.from(allFields)
+    .filter(fieldName => !existingFields.includes(fieldName))
+    .map(fieldName => ({
+      field: this.createFieldDefinition(fieldName, jobCandidateObjectId)
+    }))
+    .filter(field => field.field !== null);
+}
+
+private extractCustomFields(data: CandidateSourcingTypes.UserProfile[]): string[] {
+  const customFields = new Set<string>();
+  
+  // Extract fields from all profiles
+  data.forEach(profile => {
+    if (profile) {
+      Object.keys(profile).forEach(key => customFields.add(key));
+    }
+  });
+
+  return Array.from(customFields);
+}
+
+private createFieldDefinition(fieldName: string, objectMetadataId: string): any {
+  // Determine field type based on field name
+  const fieldType = this.determineFieldType(fieldName);
+  
+  return new CreateFieldsOnObject()[`create${fieldType}`]({
+    label: this.formatFieldLabel(fieldName),
+    name: fieldName,
+    objectMetadataId: objectMetadataId,
+    description: this.formatFieldLabel(fieldName)
+  });
+}
+
+private determineFieldType(fieldName: string): string {
+  if (fieldName.includes('year') || 
+      fieldName.includes('months') || 
+      fieldName.includes('lacs') || 
+      fieldName.includes('thousands') || 
+      fieldName.includes('experienceYears') ||
+      fieldName.includes('ugGraduationYear') ||
+      fieldName.includes('pgGraduationYear') ||
+      fieldName.includes('age') ||
+      fieldName.includes('inferredSalary')) {
+    return 'NumberField';
+  }
+  
+  if (fieldName.includes('link') || 
+      fieldName.includes('profileUrl') || 
+      fieldName.includes('displayPicture')) {
+    return 'LinkField';
+  }
+  
+  if (fieldName.includes('multi') || 
+      fieldName.includes('skills') ||
+      fieldName.includes('locations')) {
+    return 'MultiField';
+  }
+  
+  return 'TextField';
+}
+
+private formatFieldLabel(fieldName: string): string {
+  return fieldName
+    .replace(/_/g, ' ')
+    .replace(/([A-Z])/g, ' $1')
+    .replace(/\b\w/g, l => l.toUpperCase())
+    .trim();
+}
 
   private extractKeysFromObjects(objects: CandidateSourcingTypes.ArxenaJobCandidateNode): string[] {
     const keys = new Set<string>();
@@ -909,38 +1074,53 @@ async createNewJobCandidateObject(newPositionObj: CandidateSourcingTypes.Jobs, a
   async createObjectFieldsAndRelations(
     jobCandidateObjectId: string, 
     jobCandidateObjectName: string, 
-    jobCandidateNode: CandidateSourcingTypes.ArxenaJobCandidateNode,
+    data: CandidateSourcingTypes.UserProfile[],  // Changed to accept full data array
+    jobObject: CandidateSourcingTypes.Jobs,      // Added jobObject parameter
     apiToken: string, 
   ): Promise<void> {
-    console.log('Creating fields and relations for Job Candidate object', apiToken);
-    const existingFieldsResponse = await new CreateMetaDataStructure(this.workspaceQueryService).fetchAllCurrentObjects(apiToken);
-    console.log("This is the existingFieldsResponse:", existingFieldsResponse)
-    // const existingFieldsFilteredMappedFields = existingFieldsResponse.data?.data?.objects?.edges
-    //   ?.filter(x => x?.node?.id == jobCandidateObjectId)[0]?.node?.fields.edges
-    //   .map(x => x.node.name);
-    console.log("jobCandidateObjectId:", jobCandidateObjectId);
-    const keysFromPersonObjects = this.extractKeysFromObjects(jobCandidateNode);
-    console.log("keysFromPersonObjects:", keysFromPersonObjects);
-    const existingFieldsFilteredMappedFields = existingFieldsResponse?.data?.objects?.edges?.filter(x => x?.node?.id == jobCandidateObjectId)[0]?.node?.fields?.edges?.map(edge => edge?.node?.name) || []; 
-    // const existingFieldsFilteredMappedFields = existingFieldsResponse.data?.data?.objects?.edges?.filter(x => x?.node?.id == jobCandidateObjectId)[0]?.node?.fields.edges.map(x=> x.node.name);
-    // console.log("existingFieldsFilteredMappedFields response:", existingFieldsResponse?.data?.objects?.edges?[0].node.fields.edges.map(x=> x.node.name));
-      console.log("existingFieldsFilteredMappedFields:", existingFieldsFilteredMappedFields);
-      const allFields = [...existingFieldsFilteredMappedFields, ...newFieldsToCreate, ...keysFromPersonObjects];
-      console.log("All fields are :", allFields);
-      const newFieldsToCreateFiltered = Array.from(new Set(allFields)).filter(key => !existingFieldsFilteredMappedFields.includes(key));
-      // const fieldsToCreate = newFieldsToCreateFiltered.filter(key => key !== undefined).map(key => {
-      console.log("Ultimately fields to create are :", newFieldsToCreateFiltered.filter((key): key is string => key !== undefined));
-      const fieldsToCreate = newFieldsToCreateFiltered.filter((key): key is string => key !== undefined).map(key => {
+    console.log('Creating fields and relations for Job Candidate object');
+    
+    // Process all profiles to collect all possible keys
+    const allKeysSet = new Set<string>();
+    
+    // Process each profile in the data array
+    for (const profile of data) {
+      const { jobCandidateNode } = await processArxCandidate(profile, jobObject);
+      const profileKeys = this.extractKeysFromObjects(jobCandidateNode);
+      profileKeys.forEach(key => allKeysSet.add(key));
+    }
+    
+    const existingFieldsResponse = await new CreateMetaDataStructure(this.workspaceQueryService)
+      .fetchAllCurrentObjects(apiToken);
+      
+    const existingFieldsFilteredMappedFields = existingFieldsResponse?.data?.objects?.edges
+      ?.filter(x => x?.node?.id == jobCandidateObjectId)[0]?.node?.fields?.edges
+      ?.map(edge => edge?.node?.name) || [];
+  
+    // Combine all sources of fields
+    const allFields = [
+      ...existingFieldsFilteredMappedFields,
+      ...newFieldsToCreate,
+      ...Array.from(allKeysSet)
+    ];
+    // Remove duplicates and filter out existing fields
+    const newFieldsToCreateFiltered = Array.from(new Set(allFields))
+    .filter(key => !existingFieldsFilteredMappedFields.includes(key));
+    
+
+
+    // Rest of your existing field creation logic...
+    const fieldsToCreate = newFieldsToCreateFiltered
+      .filter((key): key is string => key !== undefined)
+      .map(key => {
         const fieldType = key.includes('year') || key.includes('months') || key.includes('lacs') || key.includes('thousands') ? 'NumberField' :
           key.includes('link') || key.includes('profileUrl') ? 'LinkField' :
-          key.includes('experienceYears') || key.includes('experienceYears') ? 'NumberField' :
-          key.includes('ugGraduationYear') || key.includes('ugGraduationYear') ? 'NumberField' :
-          key.includes('pgGraduationYear') || key.includes('pgGraduationYear') ? 'NumberField' :
-          key.includes('age') || key.includes('age') ? 'NumberField' :
-          key.includes('inferredSalary') || key.includes('inferredSalary') ? 'NumberField' :
-          key.includes('experienceYears') || key.includes('experienceYears') ? 'NumberField' :
-          // key.includes('inferredYearsExperience') || key.includes('inferredYearsExperience') ? 'NumberField' :
-          key.includes('displayPicture') || key.includes('displayPicture') ? 'LinkField' :
+          key.includes('experienceYears') ? 'NumberField' :
+          key.includes('ugGraduationYear') ? 'NumberField' :
+          key.includes('pgGraduationYear') ? 'NumberField' :
+          key.includes('age') ? 'NumberField' :
+          key.includes('inferredSalary') ? 'NumberField' :
+          key.includes('displayPicture') ? 'LinkField' :
           key.includes('multi') ? 'MultiField' : 'TextField';
 
         return {
@@ -951,23 +1131,31 @@ async createNewJobCandidateObject(newPositionObj: CandidateSourcingTypes.Jobs, a
             description: key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
           })
         };
-    });
+      });
 
-    try{
-      const existingFieldsResponse = await new CreateMetaDataStructure(this.workspaceQueryService).fetchAllCurrentObjects(apiToken);
-      console.log("This is the existing Fields Response:%s", existingFieldsResponse);
-      const existingFieldsKeys = existingFieldsResponse?.data?.objects?.edges?.filter(x => x?.node?.id == jobCandidateObjectId)[0]?.node?.fields?.edges?.map(edge => edge?.node?.name) || []; 
-      console.log("existingFieldsKeys:", existingFieldsKeys);
-      console.log("jobCandidateObjectId:", jobCandidateObjectId);
-      const fieldsToSendToCreate  = fieldsToCreate.filter(field => !existingFieldsKeys.includes(field?.field?.name));
-      console.log("Fields to send to create:", fieldsToSendToCreate);
+      console.log("Thesee are the fields to be created:", fieldsToCreate);
+
+  
+    try {
+      const existingFieldsResponse = await new CreateMetaDataStructure(this.workspaceQueryService)
+        .fetchAllCurrentObjects(apiToken);
+      
+      
+      const existingFieldsKeys = existingFieldsResponse?.data?.objects?.edges
+        ?.filter(x => x?.node?.id == jobCandidateObjectId)[0]?.node?.fields?.edges
+        ?.map(edge => edge?.node?.name) || [];
+
+      console.log("Existing fields keys:", existingFieldsKeys);
+        
+      const fieldsToSendToCreate = fieldsToCreate
+        .filter(field => !existingFieldsKeys.includes(field?.field?.name));
+        
+      console.log("Fields to create:", fieldsToSendToCreate);
       await createFields(fieldsToSendToCreate, apiToken);
+    } catch(error) {
+      console.log("Errors have happened in creating the fields: ", error);
     }
-    catch(error){
-      console.log("Errors have happned in createing the fields: ", error);
-    }
-
   }
-
+  
 
 }

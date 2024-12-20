@@ -137,7 +137,7 @@ export const ModalNavElementContainer = () => {
         fields: [],
         selectedMetadataFields: [],
         prompt: '', // Add this field
-        selectedModel: '',  // Add this field
+        selectedModel: 'gpt4omini',  // Add this field
       };
       setEnrichments([initialEnrichment]);
       setActiveEnrichment(0);
@@ -150,7 +150,7 @@ export const ModalNavElementContainer = () => {
       prompt: '', // Add this field
       fields: [],
       selectedMetadataFields: [],
-      selectedModel: '',
+      selectedModel: 'gpt4omini',
     };
     setEnrichments(prev => [...prev.map(e => ({...e})), newEnrichment]);
     setActiveEnrichment(prev => (prev !== null ? prev + 1 : 0));

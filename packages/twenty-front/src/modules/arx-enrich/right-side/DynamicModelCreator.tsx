@@ -650,14 +650,13 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
   <SelectLabel>Create New Fields</SelectLabel>
 
     <FieldsList>
-    {currentEnrichment.fields.map((field: { id: number; name: string; type: string; description: string; required: boolean, enumValues:string[] }) => (
+    {currentEnrichment.fields.map((field: { id: number; name: string; type: string; description: string; enumValues:string[] }) => (
       <FieldContainer key={field.id}>
       <FieldCard>
         <FieldContent>
         <FieldHeader>
           <FieldName>{field.name}</FieldName>
           <FieldType>({field.type})</FieldType>
-          {field.required && <RequiredBadge>required</RequiredBadge>}
         </FieldHeader>
         <FieldDescription>{field.description}</FieldDescription>
         </FieldContent>

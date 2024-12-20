@@ -257,7 +257,6 @@ export interface EnrichmentField {
     name: string;
     type: string;
     description: string;
-    required: boolean;
     id: number;
     enumValues?: string[];
 }

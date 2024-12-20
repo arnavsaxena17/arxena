@@ -81,9 +81,6 @@ export class WorkspaceModificationsController {
     return
   }
 
-
-
-
   @Get('user')
   @UseGuards(JwtAuthGuard)
   async getUser(@Req() req) {

@@ -57,7 +57,6 @@ export class CandidateSourcingController {
   @UseGuards(JwtAuthGuard)
   async findManyEnrichments(@Req() request: any): Promise<object> {
     const apiToken = request.headers.authorization.split(' ')[1]; // Assuming Bearer token
-    const { filter, limit, orderBy } = request.body;
 
     try {
       const graphqlQueryObj = JSON.stringify({
@@ -92,7 +91,7 @@ export class CandidateSourcingController {
             __typename
           }
         }`,
-        variables: { },
+        variables: {},
       });
       
       const response = await axiosRequest(graphqlQueryObj, apiToken);
@@ -103,8 +102,6 @@ export class CandidateSourcingController {
       return { status: 'Failed', error: err };
     }
   }
-
-
   async createOneEnrichment(enrichment: Enrichment, jobObject: any, apiToken: string): Promise<any> {
     const graphqlVariables = {
       input: {
@@ -185,95 +182,6 @@ export class CandidateSourcingController {
       return { status: 'Failed', error: err };
     }
   }
-
-
-
-  // @Post('create-enrichments')
-  // @UseGuards(JwtAuthGuard)
-
-  // async createEnrichments(@Req() request: any): Promise<object> {
-  //   try {
-  //     const apiToken = request?.headers?.authorization?.split(' ')[1]; // Assuming Bearer token
-
-  //     const enrichments = request?.body?.enrichments
-  //     const objectNameSingular = request?.body?.objectNameSingular
-  //     const availableSortDefinitions = request?.body?.availableSortDefinitions
-  //     const availableFilterDefinitions = request?.body?.availableFilterDefinitions
-  //     const objectRecordId = request?.body?.objectRecordId
-  //     const selectedRecordIds = request?.body?.selectedRecordIds
-
-  //     console.log("objectNameSingular:", objectNameSingular)
-  //     console.log("availableSortDefinitions:", availableSortDefinitions)
-  //     console.log("enrichments:", enrichments)
-  //     console.log("availableFilterDefinitions:", availableFilterDefinitions)
-  //     console.log("objectRecordId:", objectRecordId)
-  //     console.log("selectedRecordIds:", selectedRecordIds)
-      
-  //     const path_position = objectNameSingular.replace("JobCandidate", "");
-  //     const jobObject = await this.findJob(path_position, apiToken);
-  //     console.log("Found job:", jobObject);
-
-
-  //     for (const enrichment of enrichments) {
-  //       const graphqlVariables = {
-  //         input: {
-  //           id: enrichment.id,
-  //           name: enrichment.name,
-  //           position: enrichment.position,
-  //           prompt: enrichment.prompt,
-  //           languageModel: enrichment.languageModel.replaceAll("-","").replaceAll(".",""),
-  //           sampleJson: enrichment.columnsToProcess,
-  //           fields: enrichment.fields,
-  //           jobId: jobObject?.id,
-  //         },
-  //       };
-  //       const graphqlQueryObj = JSON.stringify({
-  //         query: `mutation CreateOneCandidateEnrichment($input: CandidateEnrichmentCreateInput!) {
-  //           createCandidateEnrichment(data: $input) {
-  //             id
-  //             name
-  //             position
-  //             createdAt
-  //             updatedAt
-  //           }
-  //         }`,
-  //         variables: graphqlVariables,
-  //       });
-
-  //       const response = await axiosRequest(graphqlQueryObj, apiToken);
-  //       console.log('Response from create enrichment:', response.data);
-  //     }
-
-
-
-
-
-  //     console.log("process.env.ENV_NODE::", process.env.ENV_NODE)
-  //     const url = process.env.ENV_NODE === 'production' ? 'https://arxena.com/process_enrichments' : 'http://127.0.0.1:5050/process_enrichments';
-  //     const response = await axios.post(
-  //       url,
-  //       {
-  //         enrichments,
-  //         objectNameSingular,
-  //         availableSortDefinitions,
-  //         availableFilterDefinitions,
-  //         objectRecordId,
-  //         selectedRecordIds
-  //       },
-  //       { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiToken}` } }
-  //     );
-  //     console.log('Response from process enrichments:', response.data);
-
-  //     console.log("going to process chats")
-  //     // await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).processCandidatesChatsGetStatuses( apiToken);
-  //     // await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).processCandidatesChatsGetStatuses(apiToken);
-
-  //     return { status: 'Success' };
-  //   } catch (err) {
-  //     console.error('Error in process:', err);
-  //     return { status: 'Failed', error: err };
-  //   }
-  // }
 
   async findJob(path_position: string, apiToken: string): Promise<any> {
     console.log("Going to find job by path_position id:", path_position);
@@ -397,11 +305,12 @@ export class CandidateSourcingController {
   async sourceCandidates(@Req() req) {
     console.log('Called post candidates API');
     const apiToken = req.headers.authorization.split(' ')[1];
-  
+    console.log("This is rehq request body:",req.body)
     const jobId = req.body?.job_id;
     const jobName = req.body?.job_name;
     console.log('arxenaJobId:', jobId);
     const data: CandidateSourcingTypes.UserProfile[] = req.body?.data;
+    console.log("Data len:",data.length)
     
     try {
       // Get job details
