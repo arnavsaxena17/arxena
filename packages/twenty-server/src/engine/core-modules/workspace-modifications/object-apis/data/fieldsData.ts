@@ -996,6 +996,16 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
     },
     {
         "field": {
+            "description": "Resdex Naukri URL",
+            "icon": "IconLink",
+            "label": "resdedNaukriUrl",
+            "name": "resdexNaukriUrl",
+            "objectMetadataId": objectsNameIdMap.candidate,
+            "type": "LINK"
+        }
+    },
+    {
+        "field": {
             "description": "Display Picture URL",
             "icon": "IconLink",
             "label": "displayPicture",

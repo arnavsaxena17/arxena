@@ -18,8 +18,11 @@ const StyledSidebarContainer = styled.div`
   height: 100%;
   background-color: #f5f5f5;
   border-right: 1px solid #e0e0e0;
-`;
 
+  @media (max-width: 768px) {
+    width: 30vw;
+  }
+`;
 const StyledDropdownContainer = styled.div`
   display: flex;
   padding: 10px;

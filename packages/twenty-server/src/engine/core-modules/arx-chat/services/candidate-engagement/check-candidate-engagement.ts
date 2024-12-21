@@ -10,14 +10,15 @@ const rl = readline.createInterface({
   output: process.stdout,
 });
 
+
+
 export default class CandidateEngagementArx {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService
   ) {
   }
-  async createAndUpdateCandidateStartChatChatMessage(chatReply: string, candidateProfileDataNodeObj: allDataObjects.PersonNode, chatControl: allDataObjects.chatControls, apiToken:string) {
-    // console.log("This is the candidate profile data node obj:", candidateProfileDataNodeObj);
-    console.log('This is the chat reply in create And Update Candidate Start Chat Chat Message :', chatReply);
+
+  async createAndUpdateCandidateStartChatChatMessage(chatReply: string, candidateProfileDataNodeObj: allDataObjects.PersonNode, chatControl: allDataObjects.chatControls, apiToken: string) {
     const recruiterProfile = allDataObjects.recruiterProfile;
     let chatHistory = candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.messageObj || [];
     if (chatReply === 'startChat' && candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges.length === 0) {
@@ -194,6 +195,9 @@ export default class CandidateEngagementArx {
     }
   }
 
+
+
+  
   async setupVideoInterviewLinks(peopleEngagementStartVideoInterviewChatArr:allDataObjects.PersonNode[], chatControl: allDataObjects.chatControls,  apiToken:string) {
     if (chatControl === 'startVideoInterviewChat') {
       for (const personNode of peopleEngagementStartVideoInterviewChatArr) {

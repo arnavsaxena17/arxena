@@ -84,6 +84,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
     if (candidateIds && Array.isArray(candidateIds)) {
       allCandidates = allCandidates.filter(candidate => candidateIds.includes(candidate.id));
     }
+
     console.log("Fetched", allCandidates?.length, " candidates with chatControl allStartedAndStoppedChats");
     for (const candidate of allCandidates){
       const candidateId = candidate?.id;
@@ -100,6 +101,18 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
         console.log('Error in updating candidate chat count:', error);
       }
     }
+  }
+
+
+  async updateRecentCandidatesChatCount(apiToken:string) {
+    const candidateIds = await this.getRecentCandidateIds(apiToken);
+    await this.updateCandidatesWithChatCount(candidateIds, apiToken);
+  }
+
+
+  async updateRecentCandidatesProcessCandidateChatsGetStatuses(apiToken:string) {
+    const candidateIds = await this.getRecentCandidateIds(apiToken);
+    await this.processCandidatesChatsGetStatuses(apiToken,candidateIds);
   }
 
 
@@ -200,6 +213,42 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
     console.log("Number of people fetched in fetchAllPeopleByCandidatePeopleIds:", allPeople?.length);
     return allPeople;
   }
+
+
+  async getRecentCandidateIds(apiToken:string): Promise<string[]> {
+    try {
+      // Calculate timestamp from 5 minutes ago
+      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+      const graphqlQueryObj = JSON.stringify({
+        query: allGraphQLQueries.graphQlToFetchWhatsappMessages,
+        variables: {
+          filter: {
+        createdAt: {
+          gte: fiveMinutesAgo
+        }
+          },
+          orderBy: [{
+        position: 'AscNullsFirst'
+          }]
+        }
+      });
+
+      const data = await axiosRequest(graphqlQueryObj, apiToken);
+      // Extract unique candidate IDs
+      const candidateIds: string[] = Array.from(new Set(
+        data.data.whatsappMessages.edges
+          .map(edge => edge.node.candidate.id)
+          .filter(id => id) // Remove any null/undefined values
+      )) as unknown as string[];
+  
+      return candidateIds;
+  
+    } catch (error) {
+      console.log('Error fetching recent WhatsApp messages:', error);
+      return [];
+    }
+  }
+  
   
   async fetchAllWhatsappMessages(candidateId: string, apiToken:string): Promise<allDataObjects.MessageNode[]> {
     // console.log("Fetching all whatsapp messages for candidate ID:", candidateId);

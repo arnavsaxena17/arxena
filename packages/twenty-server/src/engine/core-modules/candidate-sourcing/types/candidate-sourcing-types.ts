@@ -206,7 +206,8 @@ export interface ArxenaCandidateNode {
   startChat: boolean;
   uniqueStringKey: string;
   stopChat: boolean;
-  hiringNaukriUrl: {label:string, url:string};
+  hiringNaukriUrl?: {label:string, url:string};
+  resdexNaukriUrl?: {label:string, url:string};
   displayPicture: {label:string, url:string};
   jobsId: string;
   jobSpecificFields: any;
