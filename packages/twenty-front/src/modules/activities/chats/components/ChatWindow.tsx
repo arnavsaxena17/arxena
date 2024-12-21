@@ -70,19 +70,37 @@ const StopIcon = () => (
 // `;
 
 const Container = styled.div`
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
   gap: 2rem;
   padding: 1.5rem;
   background-color: #f9fafb;
   border-radius: 0.5rem;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  display: flex; // Add this
+  justify-content: space-between; // Add this
 `;
 
 const PreviewSection = styled.div`
-  // display: flex;
-  flex-direction: column;
+  display: flex;
   gap: 1rem;
+  width: 100%; // Change this
+  justify-content: space-between; // Add this
+`;
+
+const ControlsContainer = styled.div`
+  width: 48%; // Change this from flex-basis to width
+  padding-right: 1rem; // Add some spacing
+`;
+
+const TemplatePreview = styled.div`
+  width: 48%; // Set to 48% instead of flex: 1
+  padding: 0.75rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem;
+  background-color: #f9fafb;
+  min-height: 80px;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
 `;
 
 const SectionHeader = styled.div`
@@ -128,14 +146,15 @@ const ButtonContainer = styled.div`
 `;
 
 const ActionButton = styled.button`
-  padding: 0.5rem 1rem;
+  width: 100%;
+  padding: 0.4rem;
   background-color: black;
   color: white;
   border: none;
   border-radius: 0.375rem;
   font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.2s;
+  font-size: 0.875rem;
 
   &:hover {
     background-color: grey;
@@ -154,11 +173,12 @@ const ToolCallsText = styled.span`
 
 const Select = styled.select`
   width: 100%;
-  padding: 0.5rem;
+  padding: 0.4rem;
   border: 1px solid #e5e7eb;
   border-radius: 0.375rem;
   background-color: white;
   margin-bottom: 0.5rem;
+  font-size: 0.875rem;
 
   &:focus {
     outline: none;
@@ -166,6 +186,7 @@ const Select = styled.select`
     box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
   }
 `;
+
 
 const ChatContainer = styled.div`
   display: flex;
@@ -427,6 +448,8 @@ const ButtonsRow = styled.div`
   align-items: center;
 `;
 
+
+
 const iconStyles = css`
   width: 16px;
   height: 16px;
@@ -510,6 +533,49 @@ const AttachmentIcon = () => (
 );
 
 const formatDate = (date: string) => dayjs(date).format('YYYY-MM-DD');
+
+
+const getTemplatePreview = (templateName: string) => {
+  switch (templateName) {
+    case 'recruitment':
+      return `Dear [Candidate Name],
+
+My name is [Recruiter Name], [Job Title] at [Company Name], [Company Description]. I am reaching out to you regarding the [Position Name] position for [Location].`;
+      
+    case 'application':
+      return `Dear [Candidate Name],
+
+Thank you for your time earlier. Please let me know your availability for the next steps.`;
+
+    case 'application02':
+      return `Dear [Candidate Name],
+
+I hope this message finds you well. I am following up to check on your availability for the next steps regarding the [Position Name] position in [Location]. Kindly update me when you get a chance.`;
+
+    case 'share_video_interview_link_direct':
+      return `Dear [Candidate Name],
+
+Please complete your video interview within the next 10 mins. Here's your link: [Interview Link]
+The interview will take approximately 15 mins and include 3-4 questions.`;
+
+    case 'rejection_template':
+      return `Hi [Candidate Name],
+
+Further to your profile discussed last week, we discussed internally and believe that your profile won't be a good fit.
+Will reach out to you in the future with relevant roles.`;
+
+    case 'follow_up':
+      return `Hi [Candidate Name],
+
+Following up on our discussion from [Date]. Would you be available [Proposed Date] for a quick chat?
+
+Best regards,
+[Recruiter Name]`;
+
+    default:
+      return 'Select a template to see preview';
+  }
+};
 
 export default function ChatWindow(props: { selectedIndividual: string; individuals: frontChatTypes.PersonNode[],onMessageSent: () => void;}) {
   const allIndividuals = props?.individuals;
@@ -1050,6 +1116,8 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
                 </PreviewSection> */}
 
                 <PreviewSection>
+                <ControlsContainer>
+
                   <SectionHeader>
                     <HeaderIcon viewBox="0 0 24 24" fill="none" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 5h16a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V7a2 2 0 012-2z" />
@@ -1075,6 +1143,12 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
                     </Select>
                     <ActionButton onClick={() => handleStartNewChatLayer(selectedTemplate)}>Start New Chat Layer</ActionButton>
                     </div> */}
+                      </ControlsContainer>
+
+                      <TemplatePreview>
+                      {getTemplatePreview(selectedTemplate)}
+                    </TemplatePreview>
+
                 </PreviewSection>
               </Container>
 
