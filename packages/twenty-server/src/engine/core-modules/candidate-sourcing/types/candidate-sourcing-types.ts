@@ -204,6 +204,8 @@ export interface ArxenaCandidateNode {
   name: string;
   engagementStatus: boolean;
   startChat: boolean;
+  startVideoInterviewChat: boolean;
+  startMeetingSchedulingChat: boolean;
   uniqueStringKey: string;
   stopChat: boolean;
   hiringNaukriUrl?: {label:string, url:string};

@@ -468,7 +468,7 @@ export class CandidateSourcingController {
     @Post('start-chats')
   async startChats(@Req() request: any): Promise<object> {
     const apiToken = request.headers.authorization.split(' ')[1];
-    const jobCandidateIds = request.body.candidateIds;
+    const jobCandidateIds = request.body.jobCandidateIds;
     const currentViewWithCombinedFiltersAndSorts = request.body.currentViewWithCombinedFiltersAndSorts;
     const objectNameSingular = request.body.objectNameSingular;
     console.log("jobCandidateIds::", jobCandidateIds);
@@ -478,10 +478,11 @@ export class CandidateSourcingController {
     const allDataObjects = await new CreateMetaDataStructure(this.workspaceQueryService).fetchAllObjects(apiToken);
     
     const allJobCandidates = await this.candidateService.findManyJobCandidatesWithCursor(path_position, apiToken);
-    
+    console.log("All Job Candidates:", allJobCandidates?.length)
     const filteredCandidateIds = await this.candidateService.filterCandidatesBasedOnView(allJobCandidates, currentViewWithCombinedFiltersAndSorts,allDataObjects);
     console.log("This is the filteredCandidates, ", filteredCandidateIds)
     console.log("Got a total of filteredCandidates length, ", filteredCandidateIds.length)
+    console.log("Starting chat for , ", filteredCandidateIds.length," candidates")
     for (const candidateId of filteredCandidateIds) {
       await this.startChatByCandidateId(candidateId, apiToken);
     }
@@ -512,6 +513,10 @@ export class CandidateSourcingController {
     });
 
     const response = await axiosRequest(graphqlQueryObj, apiToken);
+    if (response.data.errors) {
+      console.log('Error in startChat:', response.data.errors);
+    }
+    console.log("Response from create startChat", response.data.data);
     return response.data;
   }
 

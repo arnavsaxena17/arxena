@@ -525,6 +525,12 @@ export const graphqlQueryToFindManyPeopleEngagedCandidates = `query FindManyPeop
               firstName
               lastName
             }
+            phone
+            email
+            jobTitle
+            uniqueStringKey
+
+            
               
           }
           startChat
@@ -544,6 +550,7 @@ export const graphqlQueryToFindManyPeopleEngagedCandidates = `query FindManyPeop
           startVideoInterviewChat
           startMeetingSchedulingChat
           stopChat
+          uniqueStringKey
           hiringNaukriUrl{
             url
             label

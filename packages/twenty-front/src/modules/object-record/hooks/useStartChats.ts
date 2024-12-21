@@ -23,8 +23,8 @@ export const useStartChats = ({
   const { enqueueSnackBar } = useSnackBar();
   //   let scopeId: string | undefined;
   // let currentViewWithCombinedFiltersAndSorts: any;
-  const sendStartChatRequest = async ( candidateIds: string[], currentViewWithCombinedFiltersAndSorts:any, objectNameSingular:string) => {
-    console.log("candidateIds::", candidateIds);
+  const sendStartChatRequest = async ( jobCandidateIds: string[], currentViewWithCombinedFiltersAndSorts:any, objectNameSingular:string) => {
+    console.log("jobCandidateIds::", jobCandidateIds);
     console.log("currentViewWithCombinedFiltersAndSorts::", currentViewWithCombinedFiltersAndSorts);
     console.log("objectNameSingular::", objectNameSingular);
     
@@ -33,7 +33,7 @@ export const useStartChats = ({
 
     try {
       const url = `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/start-chats`
-      const results = await  axios.post( url, { candidateIds, currentViewWithCombinedFiltersAndSorts, objectNameSingular }, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}`, 'Content-Type': 'application/json', }, } );
+      const results = await  axios.post( url, { jobCandidateIds, currentViewWithCombinedFiltersAndSorts, objectNameSingular }, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}`, 'Content-Type': 'application/json', }, } );
       console.log("results::", results);
       return results;
     } catch (err) {

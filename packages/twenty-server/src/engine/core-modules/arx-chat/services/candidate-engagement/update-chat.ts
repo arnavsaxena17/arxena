@@ -234,14 +234,19 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
       });
 
       const data = await axiosRequest(graphqlQueryObj, apiToken);
+      console.log("This is the data fetched in getRecentCandidateIds", data.data);
       // Extract unique candidate IDs
-      const candidateIds: string[] = Array.from(new Set(
-        data.data.whatsappMessages.edges
-          .map(edge => edge.node.candidate.id)
-          .filter(id => id) // Remove any null/undefined values
-      )) as unknown as string[];
-  
-      return candidateIds;
+      if (data?.data?.whatsappMessages?.edges?.length > 0) {
+        const candidateIds: string[] = Array.from(new Set(
+          data?.data?.whatsappMessages?.edges
+        .map(edge => edge?.node?.candidate?.id)
+        .filter(id => id) // Remove any null/undefined values
+        )) as unknown as string[];
+        
+        return candidateIds;
+      } else {
+        return [];
+      }
   
     } catch (error) {
       console.log('Error fetching recent WhatsApp messages:', error);

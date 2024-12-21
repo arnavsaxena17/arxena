@@ -869,12 +869,12 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
     async filterCandidatesBasedOnView(allJobCandidates: any[], currentViewWithCombinedFiltersAndSorts: any, allDataObjects: any): Promise<string[]> {
       // If no filters, return all candidates
       if (!currentViewWithCombinedFiltersAndSorts?.viewFilters?.length) {
-        return allJobCandidates.map((candidate: any) => candidate.id);
+        return allJobCandidates.map((candidate: any) => candidate.candidate.id);
       }
     
       // Get the filters
       const filters = currentViewWithCombinedFiltersAndSorts.viewFilters;
-    
+      console.log("allJobCandidates length:", allJobCandidates.length);
       // Filter candidates based on each filter
       const filteredCandidates: any[] = [];
       
@@ -897,37 +897,72 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
         }
       }
     
-      return filteredCandidates.map((candidate: any) => candidate.id);
+      return Array.from(new Set(filteredCandidates.map((candidate: any) => candidate.candidate.id)));
     }
         
-async findManyJobCandidatesWithCursor(path_position: string, apiToken: string): Promise<CandidateSourcingTypes.ArxenaJobCandidateNode[]> {
-  const graphqlQueryStr = JobCandidateUtils.generateFindManyJobCandidatesQuery(path_position);
-  let cursor = null;
-  let hasNextPage = true;
-  const allJobCandidates: CandidateSourcingTypes.ArxenaJobCandidateNode[] = [];
-
-
-  while (hasNextPage) {
-    const graphqlQuery = JSON.stringify({
-      variables: {
-        filter: {},
-        orderBy: [{ position: "AscNullsFirst" }],
-        after: cursor
-      },
-      query: graphqlQueryStr
-    });
-
-    const response = await axiosRequest(graphqlQuery, apiToken);
-    const jobCandidates = response.data?.data?.[`${path_position}JobCandidates`]?.edges || [];
-    allJobCandidates.push(...jobCandidates.map(edge => edge.node));
-    hasNextPage = response.data?.data?.[`${path_position}JobCandidates`]?.pageInfo?.hasNextPage;
-    cursor = response.data?.data?.[`${path_position}JobCandidates`]?.pageInfo?.endCursor;
-  }
-
-  return allJobCandidates;
-}
-// }
-
+    async findManyJobCandidatesWithCursor(path_position: string, apiToken: string): Promise<CandidateSourcingTypes.ArxenaJobCandidateNode[]> {
+      const graphqlQueryStr = JobCandidateUtils.generateFindManyJobCandidatesQuery(path_position);
+      let cursor = null;
+      let hasNextPage = true;
+      const allJobCandidates: CandidateSourcingTypes.ArxenaJobCandidateNode[] = [];
+      const MAX_ITERATIONS = 100;
+      let iterations = 0;
+    
+      // Get the exact query key that will be in the response
+      const queryKey = `${path_position}JobCandidates`;
+    
+      while (hasNextPage && iterations < MAX_ITERATIONS) {
+        try {
+          const graphqlQuery = JSON.stringify({
+            variables: {
+              filter: {},
+              orderBy: [{ position: "AscNullsFirst" }],
+              lastCursor: cursor,
+              limit: 60
+            },
+            query: graphqlQueryStr
+          });
+    
+          const response = await axiosRequest(graphqlQuery, apiToken);
+          const jobCandidatesData = response.data?.data?.[queryKey];
+    
+          if (!jobCandidatesData) {
+            console.error(`No data found for key: ${queryKey}`);
+            break;
+          }
+    
+          const jobCandidates = jobCandidatesData.edges || [];
+          
+          if (jobCandidates.length === 0) {
+            break;
+          }
+    
+          allJobCandidates.push(...jobCandidates.map(edge => edge.node));
+          
+          hasNextPage = jobCandidatesData.pageInfo?.hasNextPage || false;
+          cursor = jobCandidatesData.pageInfo?.endCursor;
+    
+          if (!cursor && hasNextPage) {
+            console.warn('No cursor received but hasNextPage is true');
+            break;
+          }
+    
+          iterations++;
+          console.log(`Fetched ${allJobCandidates.length} of ${jobCandidatesData.totalCount} total records`);
+    
+        } catch (error) {
+          console.error('Error fetching job candidates:', error);
+          break;
+        }
+      }
+    
+      if (iterations >= MAX_ITERATIONS) {
+        console.warn(`Reached maximum number of iterations (${MAX_ITERATIONS})`);
+      }
+    
+      return allJobCandidates;
+    }
+    
 async createNewJobCandidateObject(newPositionObj: CandidateSourcingTypes.Jobs, apiToken: string): Promise<string> {
   console.log("Creating new job candidate object structure::", newPositionObj);
   const path_position = JobCandidateUtils.getJobCandidatePathPosition(newPositionObj.name, newPositionObj?.arxenaSiteId);
