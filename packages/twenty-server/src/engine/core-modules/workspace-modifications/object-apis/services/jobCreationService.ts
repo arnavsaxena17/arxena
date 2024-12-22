@@ -33,6 +33,7 @@ export class JobCreationService {
         operationName: "CreateOneJob",
         variables: {
           input: {
+            id: '7bf69cfb-19ad-42d8-935d-b552341cfb6a',
             name: jobName,
             position: "first"
           }
@@ -47,8 +48,9 @@ export class JobCreationService {
       }
     });
 
+    console.log("This is the response from createNewJob::", response.data); // This is the response from createNewJob:: { data: { createJob: { id: '7bf69cfb-19ad-42d8-935d-b552341cfb6a', name: 'Test Job', position: 'first' } } }
     if (!response.data?.data.createJob?.id) {
-      throw new Error('Failed to create job: No job ID received');
+      console.log('Failed to create job: No job ID received');
     }
 
     return response.data.data.createJob.id;
@@ -97,7 +99,7 @@ export class JobCreationService {
       console.log("This is the jobId::", jobId);
 
       // Generate new Arxena job ID
-      const arxenaJobId = new mongoose.Types.ObjectId().toString();
+      const arxenaJobId = '64b29dbdf9822851831e4de9'
 
 
       // Create job in Arxena

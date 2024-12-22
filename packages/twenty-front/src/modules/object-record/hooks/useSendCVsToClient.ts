@@ -19,13 +19,19 @@ export const useSendCVsToClient = ({
   const [tokenPair] = useRecoilState(tokenPairState);
   const { enqueueSnackBar } = useSnackBar();
 
-  const sendCVsToClient = async (candidateIds: string[]) => {
+  const sendCVsToClient = async (candidateIds: string[], actionToTake:string) => {
     setLoading(true);
     setError(null);
     
+
+    const url = `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/${actionToTake}`;
+
+
+
+
     try {
           const response = await axios.post(
-            `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/send-cvs-to-client`,
+            url,
             { candidateIds },
             {
               headers: {
@@ -37,7 +43,7 @@ export const useSendCVsToClient = ({
 
 
       // Show success message
-      enqueueSnackBar('Successfully counted chats', {
+      enqueueSnackBar('Successfully sent shortlist to clietn', {
         variant: SnackBarVariant.Success,
         duration: 3000,
       });

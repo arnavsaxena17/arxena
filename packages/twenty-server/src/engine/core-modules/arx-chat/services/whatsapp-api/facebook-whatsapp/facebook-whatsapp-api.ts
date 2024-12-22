@@ -282,15 +282,18 @@ export class FacebookWhatsappChatApi {
     const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
     console.log("workspaceId:",workspaceId)
     const whatsappAPIToken = await this.workspaceQueryService.getWorkspaceApiKey(workspaceId, 'facebook_whatsapp_api_token');
+    console.log("whatsappAPIToken:",whatsappAPIToken)
     const FACEBOOK_WHATSAPP_PHONE_NUMBER_ID = await this.workspaceQueryService.getWorkspaceApiKey(workspaceId, 'facebook_whatsapp_phone_number_id');
-
+    console.log("FACEBOOK_WHATSAPP_PHONE_NUMBER_ID:",FACEBOOK_WHATSAPP_PHONE_NUMBER_ID)
+    const FB_WA_MESSAGES_URL = 'https://graph.facebook.com/v18.0/' + FACEBOOK_WHATSAPP_PHONE_NUMBER_ID + '/messages';
+    console.log("FB_WA_MESSAGES_URL:",FB_WA_MESSAGES_URL)
     console.log('Received this template message object:', sendTemplateMessageObj);
     let templateMessage = new WhatsappTemplateMessages().getTemplateMessageObj(sendTemplateMessageObj);
     console.log('This is the template message object:', templateMessage);
     let config = {
       method: 'post',
       maxBodyLength: Infinity,
-      url: 'https://graph.facebook.com/v18.0/' + FACEBOOK_WHATSAPP_PHONE_NUMBER_ID + '/messages',
+      url: FB_WA_MESSAGES_URL,
       headers: {
         Authorization: 'Bearer ' + whatsappAPIToken,
         'Content-Type': 'application/json',
@@ -309,17 +312,39 @@ export class FacebookWhatsappChatApi {
       }
       console.log('This is the message sent successfully');
     } catch (error) {
-      console.log('This is error in facebook graph api when sending messaging template::', error);
-    }
+      console.log('\nWhatsApp API Error Summary:');
+      console.log('------------------------');
+      
+      // Print the error message
+      console.log('Error Message:', error.message);
+      
+      // Print the request data that was sent
+      console.log('\nRequest Data Sent:');
+      console.log(JSON.stringify(error.config.data, null, 2));
+      
+      // Print relevant request parameters
+      console.log('\nRequest Parameters:');
+      console.log('URL:', error.config.url);
+      console.log('Method:', error.config.method);
+      console.log('Authorization:', error.config.headers.Authorization.substring(0, 20) + '...');
+      
+      // Print response status if available
+      if (error.response) {
+        console.log('\nResponse Status:', error.response.status);
+        console.log('Response Data:', error.response.data);
+      }
+  }
   }
   async sendWhatsappUtilityMessage(sendUtilityMessageObj: allDataObjects.sendWhatsappUtilityMessageObjectType,  apiToken:string) {
     console.log('Received this utiltuy message object:', sendUtilityMessageObj);
     const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
     console.log("workspaceId:",workspaceId)
     const whatsappAPIToken = await this.workspaceQueryService.getWorkspaceApiKey(workspaceId, 'facebook_whatsapp_api_token');
+    console.log("whatsappAPIToken:",whatsappAPIToken)
     const FACEBOOK_WHATSAPP_PHONE_NUMBER_ID = await this.workspaceQueryService.getWorkspaceApiKey(workspaceId, 'facebook_whatsapp_phone_number_id');
-
+    console.log("FACEBOOK_WHATSAPP_PHONE_NUMBER_ID:",FACEBOOK_WHATSAPP_PHONE_NUMBER_ID)
     let utilityMessage = new WhatsappTemplateMessages().getUpdatedUtilityMessageObj(sendUtilityMessageObj);
+    
     console.log('This is the utlity message object:', utilityMessage);
     let config = {
       method: 'post',
@@ -343,8 +368,27 @@ export class FacebookWhatsappChatApi {
       }
       console.log('This is the message sent successfully');
     } catch (error) {
-      console.log('This is error in facebook graph api when sending messaging template::', error);
-      console.log('This is error in facebook graph api when sending messaging template::', JSON.stringify(error));
+      console.log('\nWhatsApp API Error Summary:');
+      console.log('------------------------');
+      
+      // Print the error message
+      console.log('Error Message:', error.message);
+      
+      // Print the request data that was sent
+      console.log('\nRequest Data Sent:');
+      console.log(JSON.stringify(error.config.data, null, 2));
+      
+      // Print relevant request parameters
+      console.log('\nRequest Parameters:');
+      console.log('URL:', error.config.url);
+      console.log('Method:', error.config.method);
+      console.log('Authorization:', error.config.headers.Authorization.substring(0, 20) + '...');
+      
+      // Print response status if available
+      if (error.response) {
+        console.log('\nResponse Status:', error.response.status);
+        console.log('Response Data:', error.response.data);
+      }        
     }
   }
 

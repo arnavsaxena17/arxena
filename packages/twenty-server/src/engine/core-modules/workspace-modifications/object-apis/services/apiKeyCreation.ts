@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { v4 as uuidV4 } from 'uuid';
 
 interface ApiKeyResponse {
   data: {
@@ -49,7 +50,7 @@ export class ApiKeyService {
       const expiresAt = new Date();
       expiresAt.setFullYear(expiresAt.getFullYear() + 100);
       
-    const apiKeyId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const apiKeyId = uuidV4();
 
       // Create API Key
       const createKeyMutation = `
@@ -99,7 +100,10 @@ export class ApiKeyService {
         authToken
       );
 
+      console.log('API Key created:', createKeyResponse.data);
+
       const apiToken = tokenResponse.data.data.generateApiKeyToken.token;
+      console.log('API Key token:', apiToken);
 
       // Update Twenty API Keys
       await this.updateTwentyApiKeys(apiToken, authToken);
@@ -114,8 +118,19 @@ export class ApiKeyService {
 
   private async updateTwentyApiKeys(twentyApiKey: string, authToken: string): Promise<void> {
     try {
-      await axios.post(
-        process.env.ARXENA_SITE_BASE_URL+'/update-twenty-api-keys',
+
+      let arxenaSiteBaseUrl: string = '';
+      console.log("process.env.ENV_NODE", process.env.ENV_NODE);
+      if (process.env.ENV_NODE === 'development') {
+
+        arxenaSiteBaseUrl = process.env.REACT_APP_ARXENA_SITE_BASE_URL || 'http://127.0.0.1:5050';
+      } else {
+        arxenaSiteBaseUrl = process.env.REACT_APP_ARXENA_SITE_BASE_URL || 'https://arxena.com';
+      }
+
+      console.log("Updating Twenty API keys", arxenaSiteBaseUrl);
+      const response = await axios.post(
+        arxenaSiteBaseUrl+'/update-twenty-api-keys',
         { twenty_api_key: twentyApiKey },
         {
           headers: {
@@ -124,6 +139,8 @@ export class ApiKeyService {
           },
         }
       );
+      console.log("Response from update twenty api keys", response.data);
+
     } catch (error) {
       console.error('Error updating Twenty API keys:', error);
       throw new Error('Failed to update Twenty API keys');

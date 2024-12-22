@@ -952,6 +952,186 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
     },
     {
         "field": {
+            "description": "Shortlists for Client",
+            "icon": "IconInputSearch",
+            "label": "Name",
+            "name": "name",
+            "objectMetadataId": objectsNameIdMap.shortlist,
+            "type": "TEXT"
+        }
+    },
+    {
+        "field": {
+            "description": "Shortlists for Client",
+            "icon": "IconInputSearch",
+            "label": "Name",
+            "name": "name",
+            "objectMetadataId": objectsNameIdMap.shortlist,
+            "type": "TEXT"
+        }
+    },
+    {
+        "field": {
+            "description": "Shortlists for Client",
+            "icon": "IconInputSearch",
+            "label": "Age",
+            "name": "age",
+            "objectMetadataId": objectsNameIdMap.shortlist,
+            "type": "TEXT"
+        }
+    },
+    {
+        "field": {
+            "description": "Shortlists for Client",
+            "icon": "IconInputSearch",
+            "label": "Name",
+            "name": "name",
+            "objectMetadataId": objectsNameIdMap.shortlist,
+            "type": "TEXT"
+        }
+    },
+    {
+        "field": {
+            "description": "Shortlists for Client",
+            "icon": "IconInputSearch",
+            "label": "Years of Experience",
+            "name": "yearsOfExperience",
+            "objectMetadataId": objectsNameIdMap.shortlist,
+            "type": "TEXT"
+        }
+    },
+    {
+        "field": {
+            "description": "Shortlists for Client",
+            "icon": "IconInputSearch",
+            "label": "Educational Qualifications",
+            "name": "educationalQualifications",
+            "objectMetadataId": objectsNameIdMap.shortlist,
+            "type": "TEXT"
+        }
+    },
+    {
+        "field": {
+            "description": "Shortlists for Client",
+            "icon": "IconInputSearch",
+            "label": "University College",
+            "name": "universityCollege",
+            "objectMetadataId": objectsNameIdMap.shortlist,
+            "type": "TEXT"
+        }
+    },
+    {
+        "field": {
+            "description": "Shortlists for Client",
+            "icon": "IconInputSearch",
+            "label": "Current Job Title",
+            "name": "currentJobTitle",
+            "objectMetadataId": objectsNameIdMap.shortlist,
+            "type": "TEXT"
+        }
+    },
+    {
+        "field": {
+            "description": "Shortlists for Client",
+            "icon": "IconInputSearch",
+            "label": "Current Company",
+            "name": "currentCompany",
+            "objectMetadataId": objectsNameIdMap.shortlist,
+            "type": "TEXT"
+        }
+    },
+    {
+        "field": {
+            "description": "Shortlists for Client",
+            "icon": "IconInputSearch",
+            "label": "Full Name",
+            "name": "name",
+            "objectMetadataId": objectsNameIdMap.shortlist,
+            "type": "TEXT"
+        }
+    },
+    {
+        "field": {
+            "description": "Shortlists for Client",
+            "icon": "IconInputSearch",
+            "label": "Current Location",
+            "name": "currentLocation",
+            "objectMetadataId": objectsNameIdMap.shortlist,
+            "type": "TEXT"
+        }
+    },
+    {
+        "field": {
+            "description": "Shortlists for Client",
+            "icon": "IconInputSearch",
+            "label": "Current Role Description",
+            "name": "Current Role Description",
+            "objectMetadataId": objectsNameIdMap.shortlist,
+            "type": "TEXT"
+        }
+    },
+    {
+        "field": {
+            "description": "Shortlists for Client",
+            "icon": "IconInputSearch",
+            "label": "Reports To",
+            "name": "reportsTo",
+            "objectMetadataId": objectsNameIdMap.shortlist,
+            "type": "TEXT"
+        }
+    },
+    {
+        "field": {
+            "description": "Shortlists for Client",
+            "icon": "IconInputSearch",
+            "label": "Functions Reporting To",
+            "name": "functionsReportingTo",
+            "objectMetadataId": objectsNameIdMap.shortlist,
+            "type": "TEXT"
+        }
+    },
+    {
+        "field": {
+            "description": "Shortlists for Client",
+            "icon": "IconInputSearch",
+            "label": "reason For Leaving",
+            "name": "reasonForLeaving",
+            "objectMetadataId": objectsNameIdMap.shortlist,
+            "type": "TEXT"
+        }
+    },
+    {
+        "field": {
+            "description": "Shortlists for Client",
+            "icon": "IconInputSearch",
+            "label": "Current Salary",
+            "name": "currentSalary",
+            "objectMetadataId": objectsNameIdMap.shortlist,
+            "type": "TEXT"
+        }
+    },
+    {
+        "field": {
+            "description": "Shortlists for Client",
+            "icon": "IconInputSearch",
+            "label": "Expected Salary",
+            "name": "expectedSalary",
+            "objectMetadataId": objectsNameIdMap.shortlist,
+            "type": "TEXT"
+        }
+    },
+    {
+        "field": {
+            "description": "Shortlists for Client",
+            "icon": "IconInputSearch",
+            "label": "Notice Period",
+            "name": "noticePeriod",
+            "objectMetadataId": objectsNameIdMap.shortlist,
+            "type": "TEXT"
+        }
+    },
+    {
+        "field": {
             "description": "uniqueStringKey for the person",
             "icon": "IconPencilStar",
             "label": "uniqueStringKey",

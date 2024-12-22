@@ -102,7 +102,7 @@ export class JobService {
   async testArxenaConnection(apiToken: string) {
     try {
       let arxenaSiteBaseUrl = process.env.NODE_ENV === 'development'
-        ? (process.env.ARXENA_SITE_BASE_URL || 'http://localhost:5050')
+        ? (process.env.ARXENA_SITE_BASE_URL || 'http://127.0.0.1:5050')
         : (process.env.ARXENA_SITE_BASE_URL || 'https://arxena.com');
 
       arxenaSiteBaseUrl = 'http://127.0.0.1:5050';

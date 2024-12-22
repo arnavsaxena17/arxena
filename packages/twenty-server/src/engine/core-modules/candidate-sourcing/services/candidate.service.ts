@@ -162,8 +162,6 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
       }
     }
   }
-
-
   }
 
 
@@ -185,6 +183,8 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
         candidatesMap.set(edge.node.uniqueStringKey, edge.node);
       }
     });
+
+    console.log("CandidatesMap is a response Data:", candidatesMap);
     
     return candidatesMap;
   
@@ -657,6 +657,7 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
   ) {
     const uniqueStringKeys = batch.map(p => p?.unique_key_string).filter(Boolean);
     const candidatesMap = await this.batchCheckExistingCandidates(uniqueStringKeys, jobObject.id, apiToken);
+    console.log('Candidates map:', candidatesMap);
     
     const candidatesToCreate:CandidateSourcingTypes.ArxenaCandidateNode[] = [];
     const candidateKeys:string[] = [];
@@ -702,6 +703,7 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
     for (const profile of batch) {
       const key = profile?.unique_key_string;
       if (!key) continue;
+
   
       const personId = tracking.personIdMap.get(key);
       const candidateId = tracking.candidateIdMap.get(key);

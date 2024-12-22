@@ -397,11 +397,8 @@ const sendVideoInterviewLinkSelectRecord = useRecoilCallback(
                           Icon: IconBrandWhatsapp,
                           onClick: async () => {
                             try {
-    
-                            console.log("Current FcurrentViewWithCombinedFiltersAndSorts:", currentViewWithCombinedFiltersAndSorts);  
-                            console.log("Current selectedRecordIds:", selectedRecordIds);  
-
-
+                              console.log("Current FcurrentViewWithCombinedFiltersAndSorts:", currentViewWithCombinedFiltersAndSorts);  
+                              console.log("Current selectedRecordIds:", selectedRecordIds);  
                               await sendStartChatRequest(selectedRecordIds, currentViewWithCombinedFiltersAndSorts, objectMetadataItem.nameSingular);
                             } catch (error) {
                               console.error('Error creating start chat:', error);
@@ -476,11 +473,33 @@ const sendVideoInterviewLinkSelectRecord = useRecoilCallback(
                           },
                         },
                         {
-                          label: 'Send CVs To Client',
+                          label: 'Create Shortlist',
                           Icon: IconSend2,
                           onClick: async () => {
                             try {
-                              await sendCVsToClient(selectedRecordIds);
+                              await sendCVsToClient(selectedRecordIds, 'create-shortlist');
+                            } catch (error) {
+                              console.error('Error creating videos:', error);
+                            }
+                          },
+                        },
+                        {
+                          label: 'Create Shortlist Document',
+                          Icon: IconSend2,
+                          onClick: async () => {
+                            try {
+                              await sendCVsToClient(selectedRecordIds, 'create-shortlist-document');
+                            } catch (error) {
+                              console.error('Error creating videos:', error);
+                            }
+                          },
+                        },
+                        {
+                          label: 'Send Shortlist To Client',
+                          Icon: IconSend2,
+                          onClick: async () => {
+                            try {
+                              await sendCVsToClient(selectedRecordIds, 'create-gmail-draft-shortlist');
                             } catch (error) {
                               console.error('Error creating videos:', error);
                             }

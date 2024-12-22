@@ -423,22 +423,73 @@ export class ArxChatEndpoint {
     }
   }
 
-  @Post('send-cvs-to-client')
+  @Post('create-gmail-draft-shortlist')
   @UseGuards(JwtAuthGuard)
-
   async sendCVsToClient(@Req() request: any): Promise<object>  {
     try {
       const { candidateIds } = request.body;
       const apiToken = request.headers.authorization.split(' ')[1];
-
       console.log("going to refresh chat counts by candidate Ids",candidateIds)
-      // await new FetchAndUpdateCandidatesChatsWhatsapps().sendCVsToClient(candidateIds);
+      const url = process.env.ENV_NODE === 'production' ? 'https://arxena.com/create-gmail-draft-shortlist' : 'http://localhost:5050/create-gmail-draft-shortlist';
+      console.log("This is the url:", url);
+      console.log("going to create shortlist by candidate Ids",candidateIds)
+      const response = await axios.post(url, { candidateIds: candidateIds }, {
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer ' + apiToken }
+      });
+      console.log("This is the response:", response);
       return { status: 'Success' };
     } catch (err) {
       console.error('Error in refresh chats:', err);
       return { status: 'Failed', error: err };
     }
   }
+
+  @Post('create-shortlist')
+  @UseGuards(JwtAuthGuard)
+  async createShortlist(@Req() request: any): Promise<object>  {
+    try {
+      const { candidateIds } = request.body;
+      const apiToken = request.headers.authorization.split(' ')[1];
+      console.log("going to create shortlist by candidate Ids",candidateIds)
+      const url = process.env.ENV_NODE === 'production' ? 'https://arxena.com/create-shortlist' : 'http://localhost:5050/create-shortlist';
+      console.log("This is the url:", url);
+      console.log("going to create shortlist by candidate Ids",candidateIds)
+      const response = await axios.post(url, { candidateIds: candidateIds }, {
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer ' + apiToken }
+      });
+      console.log("This is the response:", response);
+
+      return { status: 'Success' };
+    } catch (err) {
+      console.error('Error in refresh chats:', err);
+      return { status: 'Failed', error: err };
+    }
+  }
+
+  @Post('create-shortlist-document')
+  @UseGuards(JwtAuthGuard)
+  async createShortlistDocument(@Req() request: any): Promise<object>  {
+    try {
+      const { candidateIds } = request.body;
+      const apiToken = request.headers.authorization.split(' ')[1];
+      console.log("This is the NODE NEV:", process.env.ENV_NODE);
+      const url = process.env.ENV_NODE === 'production' ? 'https://arxena.com/create-shortlist-document' : 'http://localhost:5050/create-shortlist-document';
+      console.log("This is the url:", url);
+      console.log("going to create shortlist by candidate Ids",candidateIds)
+      const response = await axios.post(url, { candidateIds: candidateIds }, {
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer ' + apiToken }
+      });
+      console.log("This is the response:", response);
+      return { status: 'Success' };
+    } catch (err) {
+      console.error('Error in refresh chats:', err);
+      return { status: 'Failed', error: err };
+    }
+  }
+
+
+
+
 
   @Post('get-id-by-naukri-url')
   @UseGuards(JwtAuthGuard)
@@ -803,16 +854,22 @@ async deletePeopleAndCandidatesBulk(@Req() request: any): Promise<object> {
   }
 
   @Post('create-interview-videos')
+  @UseGuards(JwtAuthGuard)
+
   async createInterviewVideos(@Req() request: any): Promise<object> {
     console.log("This is the request body:", request.body);
     const jobId = request.body.jobId;
+    const apiToken = request.headers.authorization.split(' ')[1];
+
     console.log("This is the jobId:", jobId);
-    console.log("This is the NODE NEV:", process.env.NODE_ENV);
-    const url = process.env.NODE_ENV === 'production' ? 'https://arxena.com/create-interview-videos' : 'http://localhost:5050/create-interview-videos';
+
+
+    console.log("This is the NODE NEV:", process.env.ENV_NODE);
+    const url = process.env.ENV_NODE === 'production' ? 'https://arxena.com/create-interview-videos' : 'http://localhost:5050/create-interview-videos';
     console.log("This is the url:", url);
     try {
       const response = await axios.post(url, { jobId:jobId }, {
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', }, 
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer ' + apiToken }, 
         timeout: 10000,
         validateStatus: (status) => status >= 200 && status < 500,
         proxy: false,

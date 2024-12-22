@@ -33,17 +33,9 @@ export class WorkspaceQueryService {
   }
   async getWorkspaceApiKey(workspaceId: string, keyName: string): Promise<string | null> {
     try {
-      const dataSourceSchema = this.workspaceDataSourceService.getSchemaName(workspaceId);
-      console.log("dataSourceSchema is this::", dataSourceSchema)
-      const workspaceSettings = await this.executeRawQuery(
-        `SELECT * FROM ${dataSourceSchema}."workspaceSettings" WHERE "settingKey" = $1 LIMIT 1`,
-        [keyName],
-        workspaceId
-      );
-      console.log("Key name is this::", keyName)
-      console.log("workspaceSettings is this::", workspaceSettings)
 
-      return workspaceSettings[0]?.settingValue || null;
+      return this.getSpecificWorkspaceKey(workspaceId, keyName);
+  
     } catch (error) {
       console.error(`Error fetching ${keyName} for workspace ${workspaceId}:`, error);
       return null;
@@ -51,8 +43,8 @@ export class WorkspaceQueryService {
   }
 
   async initializeLLMClients(workspaceId: string) {
-    console.log("Workspace API key:", await this.getWorkspaceApiKey(workspaceId, 'openaikey'));
-    console.log("Workspace API key:", await this.getWorkspaceApiKey(workspaceId, 'anthropicKey'));
+    console.log("Workspace openaikey API key:", await this.getWorkspaceApiKey(workspaceId, 'openaikey'));
+    console.log("Workspace anthropicKey API key:", await this.getWorkspaceApiKey(workspaceId, 'anthropicKey'));
     
     const openAIKey = await this.getWorkspaceApiKey(workspaceId, 'openaikey') || process.env.OPENAI_API_KEY;
     const anthropicKey = await this.getWorkspaceApiKey(workspaceId, 'anthropicKey') || process.env.ANTHROPIC_API_KEY;

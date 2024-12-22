@@ -12,7 +12,7 @@ export const objectCreationArr = [
         {
         "object": {
             "description": "",
-            "icon": "IconBrandWhatsapp",
+            "icon": "IconReplace",
             "labelPlural": "WhatsappTemplates",
             "labelSingular": "WhatsappTemplates",
             "nameSingular": "whatsappTemplate",
@@ -187,6 +187,19 @@ export const objectCreationArr = [
         }
 
     },
+
+        {
+        "object": {
+            "description": "",
+            "icon": "IconChecklist",
+            "labelPlural": "Shortlists",
+            "labelSingular": "Shortlist",
+            "nameSingular": "shortlist",
+            "namePlural": "shortlists"
+
+        }
+
+    },
     {
         "object": {
             "description": "",
@@ -201,7 +214,7 @@ export const objectCreationArr = [
     {
         "object": {
             "description": "",
-            "icon": "IconMessageChatbot",
+            "icon": "IconCode",
             "labelPlural": "AI Models",
             "labelSingular": "AI Model",
             "nameSingular": "aIModel",

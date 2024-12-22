@@ -242,6 +242,48 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
             "relation": {
                 "fromDescription": null,
                 // "fromIcon": "IconBuilding",
+                "fromLabel": "Shortlists",
+                "fromName": "shortlists",
+                "fromObjectMetadataId": objectsNameIdMap.candidate,
+                "relationType": "ONE_TO_MANY",
+                "toObjectMetadataId": objectsNameIdMap.shortlist,
+                "toDescription": "",
+                "toLabel": "Candidate",
+                "toName": "candidate"
+            }
+        },
+        {
+            "relation": {
+                "fromDescription": null,
+                // "fromIcon": "IconBuilding",
+                "fromLabel": "Shortlists",
+                "fromName": "shortlists",
+                "fromObjectMetadataId": objectsNameIdMap.job,
+                "relationType": "ONE_TO_MANY",
+                "toObjectMetadataId": objectsNameIdMap.shortlist,
+                "toDescription": "",
+                "toLabel": "Job",
+                "toName": "job"
+            }
+        },
+        {
+            "relation": {
+                "fromDescription": null,
+                // "fromIcon": "IconBuilding",
+                "fromLabel": "Shortlists",
+                "fromName": "shortlists",
+                "fromObjectMetadataId": objectsNameIdMap.cvsent,
+                "relationType": "ONE_TO_MANY",
+                "toObjectMetadataId": objectsNameIdMap.shortlist,
+                "toDescription": "",
+                "toLabel": "CVSents",
+                "toName": "cvSents"
+            }
+        },
+        {
+            "relation": {
+                "fromDescription": null,
+                // "fromIcon": "IconBuilding",
                 "fromLabel": "WhatsappMessages",
                 "fromName": "whatsappMessages",
                 "fromObjectMetadataId": objectsNameIdMap.workspaceMember,

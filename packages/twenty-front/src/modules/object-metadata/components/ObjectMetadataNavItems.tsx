@@ -41,7 +41,7 @@ export const ObjectMetadataNavItems = ({ isRemote }: { isRemote: boolean }) => {
 
 
   const excludedItems = [
-    'cvsent',
+    // 'cvsent',
     'clientInterview',
     'recruiterInterview',
     // 'candidateEnrichment',

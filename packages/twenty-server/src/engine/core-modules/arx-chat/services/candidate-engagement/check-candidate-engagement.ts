@@ -150,17 +150,31 @@ export default class CandidateEngagementArx {
   }
   
   async startChatEngagement(peopleCandidateResponseEngagementArr: allDataObjects.PersonNode[],  chatControl: allDataObjects.chatControls,  apiToken:string) {
-
     console.log('Total number of candidates fetched to filter for start chat::', peopleCandidateResponseEngagementArr?.length, "for chatControl:", chatControl);
     let filteredCandidatesToStartEngagement: allDataObjects.PersonNode[];
     if (chatControl === 'startChat') {
+      // first create video interview links for all candidates with whom start chat will be done.
+      for (const personNode of peopleCandidateResponseEngagementArr) {
+        const candidateNode = personNode?.candidates?.edges[0]?.node;
+        const candidateId = candidateNode.id;
+        console.log("This is the candidateNode in candidateId::", candidateId);
+        const videoInterviewLink = process.env.SERVER_BASE_URL + candidateNode?.aIInterviewStatus?.edges[0]?.node?.interviewLink?.url || "";
+        console.log("This is the videoInterviewLink::", videoInterviewLink);
+        console.log("candidateNode?.aIInterviewStatus?.edges.node?.interviewLink?.url::", candidateNode?.aIInterviewStatus?.edges[0]?.node?.interviewLink?.url)
+        if (!candidateNode?.aIInterviewStatus?.edges[0]?.node?.interviewLink?.url) {
+          console.log(`Creating video interview link for candidate: ${candidateNode.name}`);
+          const createVideoInterviewResponse = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).createVideoInterviewForCandidate(candidateId, apiToken);
+          console.log(`Video interview link created: ${createVideoInterviewResponse}`);
+        } else {
+          console.log(`Skipping candidate ${candidateNode.name} in start chat as they already have a video interview link.`);
+        }
+      }
 
       filteredCandidatesToStartEngagement = peopleCandidateResponseEngagementArr?.filter(personNode => {
         console.log("This is the valeu of personNode?.candidates?.edges[0]?.node?.startChat::", personNode?.candidates?.edges[0]?.node?.startChat, "for person:", personNode?.name?.firstName);
         console.log("This is the valeu of personNode?.candidates?.edges[0]?.node?.whatsappMessages?.edges.length::", personNode?.candidates?.edges[0]?.node?.whatsappMessages?.edges.length, "for person:", personNode?.name?.firstName);
         console.log("This is the valeu of personNode?.candidates?.edges[0]?.node?.startVideoInterviewChat::", personNode?.candidates?.edges[0]?.node?.startVideoInterviewChat, "for person:", personNode?.candidates?.edges[0]?.node?.startVideoInterviewChat);
         console.log("This is the valeu of personNode?.candidates?.edges?.length::", personNode?.candidates?.edges?.length, "for person:", personNode?.candidates?.edges[0]?.node?.startVideoInterviewChat);
-        
         return personNode?.candidates?.edges?.length > 0 && personNode?.candidates?.edges[0]?.node?.startChat === true && personNode?.candidates?.edges[0]?.node?.whatsappMessages?.edges.length === 0 && personNode?.candidates?.edges[0]?.node?.startVideoInterviewChat === false;
       });
       console.log('Number of candidates to who have no filtseredCandidates StartEngagement ::', filteredCandidatesToStartEngagement?.length, "for chatControl:", chatControl);
@@ -228,6 +242,8 @@ export default class CandidateEngagementArx {
       let chatControl:allDataObjects.chatControls 
       chatControl = "startChat";
       const peopleEngagementStartChatArr = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).fetchSpecificPeopleToEngageBasedOnChatControl(chatControl, apiToken);
+
+
       console.log("Number of peopleEngagementStartChatArr for chat to start engagement or engage::", peopleEngagementStartChatArr.length, "for chatControl:", chatControl);
       if (peopleEngagementStartChatArr) {
         await this.engageCandidates(peopleEngagementStartChatArr, chatControl, apiToken);

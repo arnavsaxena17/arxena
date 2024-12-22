@@ -10,7 +10,7 @@ import { isDefined } from '~/utils/isDefined';
 
 export const useDefaultHomePagePath = () => {
   // console.log("process.env.REACT_APP_ARXENA_SITE_BASE_URL:", process.env.REACT_APP_ARXENA_SITE_BASE_URL)
-  // console.log("process.env.NODE_ENV:", process.env.NODE_ENV)
+  console.log("process.env.NODE_ENV:", process.env.NODE_ENV)
   // console.log("process.env.ARXENA_SITE_BASE_URL:", process.env.ARXENA_SITE_BASE_URL)
 
   const currentUser = useRecoilValue(currentUserState);
