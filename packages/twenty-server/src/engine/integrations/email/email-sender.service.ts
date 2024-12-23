@@ -11,6 +11,7 @@ export class EmailSenderService implements EmailDriver {
   constructor(@Inject(EMAIL_DRIVER) private driver: EmailDriver) {}
 
   async send(sendMailOptions: SendMailOptions): Promise<void> {
+    console.log("Going to driver to send::", sendMailOptions)
     await this.driver.send(sendMailOptions);
   }
 }

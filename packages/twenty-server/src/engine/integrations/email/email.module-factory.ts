@@ -20,19 +20,41 @@ export const emailModuleFactory = (
       const user = environmentService.get('EMAIL_SMTP_USER');
       const pass = environmentService.get('EMAIL_SMTP_PASSWORD');
 
+
+      console.log("host:", host);
+      console.log("port:", port);
+      console.log("user:", user);
+      console.log("pass:", pass);
+
+
       if (!(host && port)) {
         throw new Error(
           `${driver} email driver requires host: ${host} and port: ${port} to be defined, check your .env file`,
         );
       }
-
+      console.log("Email SMTP user:", user);
       const auth = user && pass ? { user, pass } : undefined;
 
+      console.log("This is the auth:", auth);
       if (auth) {
         return { host, port, auth };
       }
-
-      return { host, port };
+      console.log("Got here to resutn a few things")
+      return { 
+        host: 'smtp-relay.gmail.com',
+        port: 587,  // Make sure this is a number, not a string
+        auth: {
+          user: user,
+          pass: pass
+        },
+        secure: false,  // Must be false for port 587
+        requireTLS: true,
+        tls: {
+          rejectUnauthorized: false  // For testing
+        }
+      };
+      
+               
     }
     default:
       throw new Error(`Invalid email driver (${driver}), check your .env file`);

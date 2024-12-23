@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 
 import { SendMailOptions } from 'nodemailer';
 
@@ -9,16 +9,27 @@ import { InjectMessageQueue } from 'src/engine/integrations/message-queue/decora
 
 @Injectable()
 export class EmailService {
+  private readonly logger = new Logger(EmailService.name);
+
   constructor(
     @InjectMessageQueue(MessageQueue.emailQueue)
     private readonly messageQueueService: MessageQueueService,
   ) {}
 
   async send(sendMailOptions: SendMailOptions): Promise<void> {
-    await this.messageQueueService.add<SendMailOptions>(
-      EmailSenderJob.name,
-      sendMailOptions,
-      { retryLimit: 3 },
-    );
+    
+    try {
+      console.log('Queueing email:', sendMailOptions);
+      await this.messageQueueService.add<SendMailOptions>(
+        EmailSenderJob.name,
+        sendMailOptions,
+        { 
+          retryLimit: 3,
+        },
+      );
+    } catch (error) {
+      console.log('Failed to queue email:', error);
+      throw error;
+    }
   }
 }

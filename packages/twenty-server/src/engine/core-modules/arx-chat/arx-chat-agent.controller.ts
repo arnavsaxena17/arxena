@@ -1000,15 +1000,36 @@ export class GoogleControllers {
 
   @Post('send-test-email-using-local-email-service')
   async testEmail() {
-    await this.emailService.send({
-      from: '"Arnav Saxena" <arnav@arxena.com>',
-      to: 'test@example.com',
-      subject: 'Test Email',
-      text: 'This is a test email',
-      html: '<h1>Test Email</h1><p>This is a test email</p>',
-    });
-    return { message: 'Email sent' };
+    try {
+      console.log("Have hit test email");
+
+      console.log("SMTP Settings:", {
+        host: process.env.EMAIL_SMTP_HOST,
+        port: process.env.EMAIL_SMTP_PORT,
+        auth: {
+          user: process.env.EMAIL_SMTP_USER,
+          pass: process.env.EMAIL_SMTP_PASSWORD
+        }
+      });
+      
+
+      
+      const result = await this.emailService.send({
+        from: '"Arnav Saxena" <arnav@arxena.com>',
+        to: 'arnavsaxena17@gmail.com',
+        subject: 'Test Email',
+        text: 'This is a test email',
+        html: '<h1>Test Email</h1><p>This is a test email</p>',
+      });
+      
+      console.log("Email send completed:", result);
+      return { message: 'Email sent', result };
+    } catch (error) {
+      console.error("Error sending email:", error);
+      throw error;
+    }
   }
+
 
 
 
