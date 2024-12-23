@@ -234,7 +234,8 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
       });
 
       const data = await axiosRequest(graphqlQueryObj, apiToken);
-      console.log("This is the number of perople who messaged recently in getRecentCandidateIds", data?.data?.whatsappMessages?.edges.length);
+      console.log("This is the number of perople who edges messaged recently in getRecentCandidateIds", data?.data?.whatsappMessages?.edges);
+      console.log("This is the number of perople who messaged recently in getRecentCandidateIds", data?.data?.whatsappMessages?.edges?.length);
       // Extract unique candidate IDs
       if (data?.data?.whatsappMessages?.edges?.length > 0) {
         const candidateIds: string[] = Array.from(new Set(

@@ -119,12 +119,12 @@ export default class CandidateEngagementArx {
     const filteredCandidatesToEngage = sortedPeopleData.filter(person => {
       if (person?.candidates?.edges?.length > 0) {
         const candidate = person.candidates.edges[0].node;
-        console.log("This is the engagement status for candidate in ::", candidate.engagementStatus, "for candidates", candidate.name);
+        // console.log("This is the engagement status for candidate in ::", candidate.engagementStatus, "for candidates", candidate.name);
         if (!candidate.engagementStatus) {
           return false;
         }
         if (candidate.lastEngagementChatControl !== chatControl) {
-          console.log(`Skipping candidate ${candidate.name} because engagement was initiated by ${candidate.lastEngagementChatControl} not ${chatControl}`);
+          // console.log(`Skipping candidate ${candidate.name} because engagement was initiated by ${candidate.lastEngagementChatControl} not ${chatControl}`);
           return false;
         }
         if (chatControl === 'startVideoInterviewChat') {
@@ -171,10 +171,10 @@ export default class CandidateEngagementArx {
       }
 
       filteredCandidatesToStartEngagement = peopleCandidateResponseEngagementArr?.filter(personNode => {
-        console.log("This is the valeu of personNode?.candidates?.edges[0]?.node?.startChat::", personNode?.candidates?.edges[0]?.node?.startChat, "for person:", personNode?.name?.firstName);
-        console.log("This is the valeu of personNode?.candidates?.edges[0]?.node?.whatsappMessages?.edges.length::", personNode?.candidates?.edges[0]?.node?.whatsappMessages?.edges.length, "for person:", personNode?.name?.firstName);
-        console.log("This is the valeu of personNode?.candidates?.edges[0]?.node?.startVideoInterviewChat::", personNode?.candidates?.edges[0]?.node?.startVideoInterviewChat, "for person:", personNode?.candidates?.edges[0]?.node?.startVideoInterviewChat);
-        console.log("This is the valeu of personNode?.candidates?.edges?.length::", personNode?.candidates?.edges?.length, "for person:", personNode?.candidates?.edges[0]?.node?.startVideoInterviewChat);
+        // console.log("This is the valeu of personNode?.candidates?.edges[0]?.node?.startChat::", personNode?.candidates?.edges[0]?.node?.startChat, "for person:", personNode?.name?.firstName);
+        // console.log("This is the valeu of personNode?.candidates?.edges[0]?.node?.whatsappMessages?.edges.length::", personNode?.candidates?.edges[0]?.node?.whatsappMessages?.edges.length, "for person:", personNode?.name?.firstName);
+        // console.log("This is the valeu of personNode?.candidates?.edges[0]?.node?.startVideoInterviewChat::", personNode?.candidates?.edges[0]?.node?.startVideoInterviewChat, "for person:", personNode?.candidates?.edges[0]?.node?.startVideoInterviewChat);
+        // console.log("This is the valeu of personNode?.candidates?.edges?.length::", personNode?.candidates?.edges?.length, "for person:", personNode?.candidates?.edges[0]?.node?.startVideoInterviewChat);
         return personNode?.candidates?.edges?.length > 0 && personNode?.candidates?.edges[0]?.node?.startChat === true && personNode?.candidates?.edges[0]?.node?.whatsappMessages?.edges.length === 0 && personNode?.candidates?.edges[0]?.node?.startVideoInterviewChat === false;
       });
       console.log('Number of candidates to who have no filtseredCandidates StartEngagement ::', filteredCandidatesToStartEngagement?.length, "for chatControl:", chatControl);

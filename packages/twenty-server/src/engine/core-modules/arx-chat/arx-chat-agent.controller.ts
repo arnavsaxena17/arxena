@@ -583,7 +583,7 @@ export class ArxChatEndpoint {
         subject: 'Video Interview - ' + person?.name?.firstName + '<>' + person?.candidates.edges[0].node.jobs.companies.name,
         message: videoInterviewInviteTemplate,
       };
-      console.log("This is the email Data:", emailData);
+      console.log("This is the email Data from createVideo Interview Send To Candidate:", emailData);
       const sendVideoInterviewLinkResponse = await new SendEmailFunctionality().sendEmailFunction(emailData);
       console.log("sendVideoInterviewLinkResponse::", sendVideoInterviewLinkResponse);
       return sendVideoInterviewLinkResponse || {};
@@ -629,7 +629,7 @@ export class ArxChatEndpoint {
         subject: 'Video Interview - ' + person?.name?.firstName + '<>' + person?.candidates.edges[0].node.jobs.companies.name,
         message: videoInterviewInviteTemplate,
       };
-      console.log("This is the email Data:", emailData);
+      console.log("This is the email Data sendVideoInterviewSendToCandidate:", emailData);
       sendVideoInterviewLinkResponse = await new SendEmailFunctionality().sendEmailFunction(emailData);
       console.log("sendVideoInterviewLinkResponse::", sendVideoInterviewLinkResponse);
       return sendVideoInterviewLinkResponse || {};
@@ -637,7 +637,7 @@ export class ArxChatEndpoint {
       return sendVideoInterviewLinkResponse;
       }
     } catch (error) {
-      console.error('Error in createVideoInterviewSendToCandidate:', error);
+      console.error('Error in sendVideoInterviewSendToCandidate:', error);
       throw new Error('Failed to create and send video interview');
     }
   }
@@ -1049,7 +1049,7 @@ export class GoogleControllers {
       subject: request.body?.subject || 'Email from the recruiter',
       message: request.body?.message || 'This is a test email',
     };
-    console.log("This is the email Data:", emailData)
+    console.log("This is the email Data in plain send meial:", emailData)
     const response = await new SendEmailFunctionality().sendEmailFunction(emailData);
     console.log("This is the response:", response)
     return response || {}; // Return an empty object if the response is undefined

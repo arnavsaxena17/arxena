@@ -17,6 +17,7 @@ const SCOPES = [
   "https://www.googleapis.com/auth/gmail.send",
   'https://www.googleapis.com/auth/gmail.modify',
   'https://www.googleapis.com/auth/gmail.compose',
+  'https://www.googleapis.com/auth/contacts'
 ];
 // The file token.json stores the user's access and refresh tokens, and is
 // created automatically when the authorization flow completes for the first
@@ -63,6 +64,11 @@ export class MailerService {
         "content-type": "application/json",
       },
     });
+
+
+    console.log("connectedAccountsResponse::::", connectedAccountsResponse.data);
+
+    
     if (connectedAccountsResponse?.data?.data?.connectedAccounts?.length > 0) {
       const connectedAccountToUse = connectedAccountsResponse?.data?.data?.connectedAccounts.filter(x => x.handle === process.env.EMAIL_SMTP_USER)[0];
       const refreshToken = connectedAccountToUse ?.refreshToken;

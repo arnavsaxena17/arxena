@@ -10,6 +10,7 @@ export class SendEmailFunctionality {
     const mailerService = new MailerService();
     const mailerController = new MailerController(mailerService);
     const response = await mailerController.sendEmailOfController(gmailMessageData).catch(console.error);
+    console.log("Response from sendEmailFunction", response); 
     return response;
   }
   async sendEmailWithAttachmentFunction(gmailMessageData: GmailMessageData) {

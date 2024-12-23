@@ -16,7 +16,7 @@ import { axiosRequest } from "./utils/calendar-utils";
 import { response } from "express";
 
 // If modifying these scopes, delete token.json.
-const SCOPES = ["https://www.googleapis.com/auth/calendar"];
+const SCOPES = ["https://www.googleapis.com/auth/calendar","https://www.googleapis.com/auth/contacts"];
 // The file token.json stores the user's access and refresh tokens, and is
 // created automatically when the authorization flow completes for the first
 // time.
@@ -50,6 +50,7 @@ export class GoogleCalendarService {
         "content-type": "application/json",
       },
     });
+    console.log("connectedAccountsResponse::::", connectedAccountsResponse.data);
 
     if (connectedAccountsResponse?.data?.data?.connectedAccounts?.length > 0) {
       const connectedAccountToUse = connectedAccountsResponse?.data?.data?.connectedAccounts.filter(x => x.handle === process.env.EMAIL_SMTP_USER)[0];

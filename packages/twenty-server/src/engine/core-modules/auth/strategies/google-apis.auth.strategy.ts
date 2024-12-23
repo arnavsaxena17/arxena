@@ -49,6 +49,7 @@ export class GoogleAPIsStrategy extends PassportStrategy(
       scope.push("https://www.googleapis.com/auth/gmail.send");
       scope.push("https://www.googleapis.com/auth/gmail.modify");
       scope.push("https://www.googleapis.com/auth/gmail.compose");
+      scope.push("https://www.googleapis.com/auth/contacts");
 
     }
     console.log("scopeConfig", scopeConfig);
