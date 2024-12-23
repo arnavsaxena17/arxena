@@ -64,7 +64,8 @@ export const Notes = ({
         onClick={() =>
           openCreateActivity({
             type: 'Note',
-            targetableObjects: [targetableObject || {"id":"79c22a03-8c19-4fd2-a24b-d63dd8ef3d53", "targetObjectNameSingular":"candidate",  "assigneeId":currentWorkspaceMember}],
+            targetableObjects: [targetableObject],
+
           })
         }
           />

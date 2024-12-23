@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as frontChatTypes from '../types/front-chat-types';
 import axios from 'axios';
-import { useRecoilState, useRecoilValue } from 'recoil';
+import { useRecoilCallback, useRecoilState, useRecoilValue } from 'recoil';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import FileUpload from './FileUpload';
 import SingleChatContainer from './SingleChatContainer';
@@ -22,6 +22,7 @@ import { mutationToUpdateOneCandidate, mutationToUpdateOnePerson } from '../grap
 import { useNavigate } from 'react-router-dom';
 // import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TopbarContainer, FieldsContainer, AdditionalInfo, CopyableField, StyledTopBar, EditableField, ButtonGroup, MainInfo, StyledSelect, AdditionalInfoAndButtons, AdditionalInfoContent } from './TopbarComponents';
+import { recordStoreFamilyState } from '@/object-record/record-store/states/recordStoreFamilyState';
 
 const statusLabels: { [key: string]: string } = {
   NOT_INTERESTED: 'Not Interested',
@@ -998,6 +999,32 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
     }
   };
   
+
+
+  console.log('Current Candidate ID:', currentCandidateId);
+  console.log('Targetable Object:', {
+    targetObjectNameSingular: 'candidate',
+    id: currentCandidateId,
+  });
+
+
+  const initializeRecord = useRecoilCallback(({ set }) => () => {
+    if (currentCandidateId) {
+      set(recordStoreFamilyState(currentCandidateId), {
+        id: currentCandidateId,
+        __typename: 'Candidate', // Add the required __typename
+
+        // Add other required initial data
+      });
+    }
+  });
+  
+  useEffect(() => {
+    if (currentCandidateId) {
+      initializeRecord();
+    }
+  }, [currentCandidateId]);
+  
   
   console.log('Current Individual::', currentIndividual);
   console.log('Current currentWorkspaceMember::', currentWorkspaceMember);
@@ -1086,15 +1113,17 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
                 </StyledScrollingView>
               </ChatView>
               <NotesPanel>
-                {currentCandidateId && (
+                {currentCandidateId && currentWorkspaceMember && (
                   <Notes
                     targetableObject={{
-                      targetObjectNameSingular: 'candidate',
                       id: currentCandidateId,
+                      targetObjectNameSingular: 'candidate',
                     }}
+                    key={currentCandidateId}
                   />
                 )}
               </NotesPanel>
+
             </ChatContainer>
             <StyledChatInputBox>
               <Container>
