@@ -15,7 +15,7 @@ import { PostgresCredentialsModule } from 'src/engine/core-modules/postgres-cred
 import { ArxChatAgentModule } from './arx-chat/arx-chat-agent.module';
 // import { RecruitmentAgentModule } from "src/engine/core-modules/recruitment-agent/recruitment-agent.module";
 import { VideoInterviewModule } from 'src/engine/core-modules/video-interview/video-interview.module';
-
+import {GoogleContactsModule} from 'src/engine/core-modules/google-contacts/google-contacts.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { FileModule } from './file/file.module';
 import { ClientConfigModule } from './client-config/client-config.module';
@@ -43,6 +43,7 @@ import { WorkspaceModificationsModule } from './workspace-modifications/workspac
     FileModule,
     OpenApiModule,
     AppTokenModule,
+    GoogleContactsModule,
     TimelineMessagingModule,
     TimelineCalendarEventModule,
     UserModule,
@@ -65,6 +66,7 @@ import { WorkspaceModificationsModule } from './workspace-modifications/workspac
     TimelineMessagingModule,
     TimelineCalendarEventModule,
     UserModule,
+    GoogleContactsModule,
     WorkspaceModificationsModule,
     WorkspaceModule,
     VideoInterviewModule,

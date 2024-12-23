@@ -322,9 +322,8 @@ export class VideoInterviewController {
     });
   }
 
-
+// leaqve unauthenticated due to public candidate access to this endpoint
   @Post('get-questions')
-  @UseGuards(JwtAuthGuard)
   async getQuestions(@Req() req, @Body() interviewData: { aIInterviewId: string }) {
     const apiToken = req.headers.authorization.split(' ')[1]; // Assuming Bearer token
 
@@ -368,7 +367,6 @@ export class VideoInterviewController {
   }
 
   @Post('update-feedback')
-  @UseGuards(JwtAuthGuard)
   async updateFeedback(@Req() req, @Body() feedbackData) {
     const apiToken = req.headers.authorization.split(' ')[1]; // Assuming Bearer token
 
@@ -487,8 +485,8 @@ export class VideoInterviewController {
     return results.find(result => result !== null);
   }
   
+// leaqve unauthenticated due to public candidate access to this endpoint
   @Post('get-interview-details')
-  @UseGuards(JwtAuthGuard)
   async getInterViewDetails(@Req() req: any): Promise<GetInterviewDetailsResponse> {
     console.log("Got a request in get interview details")
     console.log("This is the request body in get interview details:", req?.body)
