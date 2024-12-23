@@ -290,7 +290,7 @@ export class ToolsForAgents {
         this.shareInterviewLink(inputs, personNode, apiToken)
     };
   }
-  
+
   async shareInterviewLink(inputs: any, personNode: allDataObjects.PersonNode, twenty_token: string) {
     const jobProfile = personNode?.candidates?.edges[0]?.node?.jobs;
     const interviewLink = 'https://meet.google.com/abc-def-ghi';
@@ -409,7 +409,7 @@ export class ToolsForAgents {
         ],
       },
     };
-    await new CalendarEmailService().createNewCalendarEvent(calendarEventObj);
+    await new CalendarEmailService().createNewCalendarEvent(calendarEventObj, apiToken);
     return 'scheduleMeeting the candidate meeting.';
   }
 

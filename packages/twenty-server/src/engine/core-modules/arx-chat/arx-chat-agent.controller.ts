@@ -1104,7 +1104,7 @@ export class GoogleControllers {
         ],
       },
     };
-    const response = await new CalendarEmailService().createNewCalendarEvent(calendarEventObj);
+    const response = await new CalendarEmailService().createNewCalendarEvent(calendarEventObj, apiToken);
     console.log("Response data:", (response as any)?.data)
     return { status: 'scheduleMeeting the candidate meeting.' };
   }

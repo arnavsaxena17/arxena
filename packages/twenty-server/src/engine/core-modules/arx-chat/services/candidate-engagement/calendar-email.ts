@@ -5,11 +5,17 @@ import { GoogleCalendarService } from '../../../calendar-events/google-calendar.
 
 export class CalendarEmailService {
 
-async createNewCalendarEvent(calendarEventData: CalendarEventType) {
+async createNewCalendarEvent(calendarEventData: CalendarEventType, apiToken: string) {
     // Create a new calendar event
     const googleCalendarService = new GoogleCalendarService();
     const googleCalendarController =  new GoogleCalendarController(googleCalendarService);
-    const response = await googleCalendarController.createEventOfController(calendarEventData).catch(console.error);
+    const request = {
+        headers: {
+            authorization: `Bearer ${apiToken}`
+        },
+        body: calendarEventData
+    };
+    const response = await googleCalendarController.createEventOfController(request as any).catch(console.error);
     // console.log("This is the response from the calendar event creation", calendarEventResponse.data);
     return response;
 }

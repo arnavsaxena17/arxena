@@ -1,4 +1,5 @@
 import { Controller, Post, Body, UseGuards, Req } from "@nestjs/common";
+import { Request } from "express";
 import { GoogleCalendarService } from "./google-calendar.service";
 import { CalendarEventType } from "../../../engine/core-modules/calendar-events/services/calendar-data-objects-types";
 import { JwtAuthGuard } from "src/engine/guards/jwt.auth.guard";
@@ -10,12 +11,10 @@ export class GoogleCalendarController {
   @Post("create-event")
   @UseGuards(JwtAuthGuard)
   async createEventOfController(
-    @Req() request: any,
-    @Body() calendarEventDataObj: CalendarEventType
+    @Req() request: Request
   ): Promise<object> {
-    console.log("Calendar create event request body::", calendarEventDataObj);
-    const apiToken = request.headers.authorization.split(' ')[1];
-
+    const apiToken = request?.headers?.authorization?.split(' ')[1] || "";
+    const calendarEventDataObj: CalendarEventType = request.body;
     try {
       const auth = await this.googleCalendarService.authorize(apiToken);
       const eventCreationResponse = await this.googleCalendarService.createEvent(auth, calendarEventDataObj);
