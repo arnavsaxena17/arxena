@@ -24,53 +24,6 @@ import { EnvironmentService } from 'src/engine/integrations/environment/environm
 
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
-interface CandidateRequest {
-  url: string;
-  type: 'hiring' | 'resdex';
-}
-
-
-// const apiToken = process.env.TWENTY_JWT_SECRET || '';
-
-
-@Controller('updateChat')
-export class UpdateChatEndpoint {
-
-
-  constructor(
-    private readonly workspaceQueryService: WorkspaceQueryService
-  ) {}
-
-
-  @Post()
-  async create(@Req() request: Request): Promise<object> {
-    console.log('These are the request body', request.body);
-    const userMessageBody: allDataObjects.ChatRequestBody | null = request?.body as allDataObjects.ChatRequestBody | null; // Type assertion
-    console.log('This is the user message', userMessageBody);
-    const chatControl = 'startChat';
-
-    if (userMessageBody !== null) {
-      const { phoneNumberFrom, phoneNumberTo, messages } = userMessageBody;
-      const userMessage: allDataObjects.candidateChatMessageType = {
-        phoneNumberFrom,
-        phoneNumberTo,
-        whatsappMessageType: 'application03',
-        lastEngagementChatControl: chatControl,
-        messages: [{ text: userMessageBody.messages }],
-        candidateFirstName: '',
-        messageObj: [],
-        messageType: 'candidateMessage',
-        candidateProfile: allDataObjects.emptyCandidateProfileObj,
-        whatsappDeliveryStatus: 'candidateMessageReceived',
-        whatsappMessageId: 'UpdateChatEndpoint',
-      };
-      const statusMessage = { status: 'updateStatus' };
-      return statusMessage;
-    } else {
-      return { status: 'Failed' };
-    }
-  }
-}
 
 @Controller('arx-chat')
 export class ArxChatEndpoint {
@@ -81,6 +34,7 @@ export class ArxChatEndpoint {
 
 
   @Post('invoke-chat')
+  @UseGuards(JwtAuthGuard)
   async evaluate(@Req() request: any) {
     const apiToken = request.headers.authorization.split(' ')[1];
 
@@ -104,6 +58,7 @@ export class ArxChatEndpoint {
   }
 
   @Post('retrieve-chat-response')
+  @UseGuards(JwtAuthGuard)
   async retrieve(@Req() request: any): Promise<object> {
     const apiToken = request.headers.authorization.split(' ')[1];
 
@@ -131,6 +86,7 @@ export class ArxChatEndpoint {
 
 
   @Post('run-chat-completion')
+  @UseGuards(JwtAuthGuard)
   async runChatCompletion(@Req() request: any): Promise<object> {
     const apiToken = request.headers.authorization.split(' ')[1];
 
@@ -146,6 +102,7 @@ export class ArxChatEndpoint {
 
 
   @Post('get-system-prompt')
+  @UseGuards(JwtAuthGuard)
   async getSystemPrompt(@Req() request: any): Promise<object> {
     const apiToken = request.headers.authorization.split(' ')[1];
 
@@ -158,6 +115,8 @@ export class ArxChatEndpoint {
   }
 
   @Post('run-stage-prompt')
+  @UseGuards(JwtAuthGuard)
+
   async runStagePrompt(@Req() request: any): Promise<object> {
     const apiToken = request.headers.authorization.split(' ')[1];
 
@@ -172,6 +131,7 @@ export class ArxChatEndpoint {
   }
 
   @Post('add-chat')
+  @UseGuards(JwtAuthGuard)
   async addChat(@Req() request: any): Promise<object> {
     const apiToken = request.headers.authorization.split(' ')[1];
 
@@ -189,6 +149,7 @@ export class ArxChatEndpoint {
   }
 
   @Post('start-chat')
+  @UseGuards(JwtAuthGuard)
   async startChat(@Req() request: any): Promise<object> {
     const apiToken = request.headers.authorization.split(' ')[1];
 
@@ -493,7 +454,6 @@ export class ArxChatEndpoint {
 
   @Post('get-id-by-naukri-url')
   @UseGuards(JwtAuthGuard)
-
   async getCandidateIdByNaukriURL(@Req() request: any): Promise<{ candidateId: string | null }> {
     const apiToken = request.headers.authorization.split(' ')[1];
 
@@ -522,8 +482,6 @@ export class ArxChatEndpoint {
   }
 
   @Get('get-candidates-and-chats')
-  @UseGuards(JwtAuthGuard)
-
   @UseGuards(JwtAuthGuard)
   async getCandidatesAndChats(@Req() request: any): Promise<object> {
     console.log("Going to get all candidates and chats")
@@ -949,7 +907,6 @@ async deletePeopleAndCandidatesBulk(@Req() request: any): Promise<object> {
 
 
 
-// @UseGuards(JwtAuthGuard)
 @Controller('webhook')
 export class WhatsappWebhook {
   
@@ -1038,6 +995,7 @@ export class GoogleControllers {
   ) {}
 
   @Post('send-mail')
+  @UseGuards(JwtAuthGuard)
   async sendEmail(@Req() request: any): Promise<object> {
     const apiToken = request.headers.authorization.split(' ')[1];
 
@@ -1056,6 +1014,7 @@ export class GoogleControllers {
   }
 
   @Post('send-mail-with-attachment')
+  @UseGuards(JwtAuthGuard)
   async sendEmailWithAttachment(@Req() request: any): Promise<object> {
     const apiToken = request.headers.authorization.split(' ')[1];
 
@@ -1074,6 +1033,7 @@ export class GoogleControllers {
     return response || {};
   }
   @Post('save-draft-mail-with-attachment')
+  @UseGuards(JwtAuthGuard)
   async saveDraftEmailWithAttachments (@Req() request: any): Promise<object> {
     const apiToken = request.headers.authorization.split(' ')[1];
     const person: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).getPersonDetailsByPhoneNumber(request.body.phoneNumber,apiToken);
@@ -1091,6 +1051,7 @@ export class GoogleControllers {
 
 
   @Post('send-calendar-invite')
+  @UseGuards(JwtAuthGuard)
   async sendCalendarInvite(@Req() request: any): Promise<object> {
     const apiToken = request.headers.authorization.split(' ')[1];
 
@@ -1153,7 +1114,9 @@ export class GoogleControllers {
 
 @Controller('twilio')
 export class TwilioControllers {
+
   @Post('sendMessage')
+  @UseGuards(JwtAuthGuard)
   async sendMessage(@Req() request: any): Promise<object> {
     console.log('going to send twilio message');
     // Find your Account SID and Auth Token at twilio.com/console
@@ -1202,6 +1165,7 @@ export class TwilioControllers {
   }
 
   @Post('testMessage')
+  @UseGuards(JwtAuthGuard)
   async testMessage(@Req() request: any): Promise<any> {
     const accountSid = process.env.TWILIO_ACCOUNT_SID;
     const authToken = process.env.TWILIO_AUTH_TOKEN;
@@ -1236,6 +1200,7 @@ export class WhatsappTestAPI {
 
 
   @Post('send-template-message')
+  @UseGuards(JwtAuthGuard)
   async sendTemplateMessage(@Req() request: any): Promise<object> {
 
     const requestBody = request.body as any;
@@ -1278,6 +1243,7 @@ export class WhatsappTestAPI {
 
 
   @Post('template')
+  @UseGuards(JwtAuthGuard)
   async create(@Req() request: any): Promise<object> {
     const apiToken = request.headers.authorization.split(' ')[1];
 
@@ -1286,6 +1252,7 @@ export class WhatsappTestAPI {
     return { status: 'success' };
   }
   @Post('utility')
+  @UseGuards(JwtAuthGuard)
   async createUtilityMessage(@Req() request: any): Promise<object> {
     const apiToken = request.headers.authorization.split(' ')[1];
 
@@ -1295,6 +1262,7 @@ export class WhatsappTestAPI {
   }
 
   @Post('message')
+  @UseGuards(JwtAuthGuard)
   async createTextMessage(@Req() request: any): Promise<object> {
     const apiToken = request.headers.authorization.split(' ')[1];
 
@@ -1307,6 +1275,7 @@ export class WhatsappTestAPI {
     return { status: 'success' };
   }
   @Post('uploadFile')
+  @UseGuards(JwtAuthGuard)
   async uploadFileToFBWAAPI(@Req() request: any): Promise<object> {
     const apiToken = request.headers.authorization.split(' ')[1];
 
@@ -1319,6 +1288,7 @@ export class WhatsappTestAPI {
   }
 
   @Post('sendAttachment')
+  @UseGuards(JwtAuthGuard)
   async sendFileToFBWAAPIUser(@Req() request: Request): Promise<object> {
     console.log('Send file');
     console.log('Request bod::y::', request.body);
@@ -1333,6 +1303,7 @@ export class WhatsappTestAPI {
   }
 
   @Post('sendFile')
+  @UseGuards(JwtAuthGuard)
   async uploadAndSendFileToFBWAAPIUser(@Req() request: any): Promise<object> {
     const apiToken = request.headers.authorization.split(' ')[1];
     const sendFileObj = request.body;
@@ -1342,6 +1313,7 @@ export class WhatsappTestAPI {
   }
 
   @Post('downloadAttachment')
+  @UseGuards(JwtAuthGuard)
   async downloadFileToFBWAAPIUser(@Req() request: Request): Promise<object> {
     const downloadAttachmentMessageObj = request.body;
     return { status: 'success' };

@@ -7,7 +7,6 @@ import * as allGraphQLQueries from '../candidate-engagement/graphql-queries-chat
 import CandidateEngagementArx from '../candidate-engagement/check-candidate-engagement';
 // import { CalendarEventType } from '../../../calendar-events/services/calendar-data-objects-types';
 // import { CalendarEmailService } from '../candidate-engagement/calendar-email';
-// import { MailerController } from '../../../gmail-sender/gmail-sender.controller';
 // import { SendEmailFunctionality } from '../candidate-engagement/send-gmail';
 // import { GmailMessageData } from 'src/engine/core-modules/gmail-sender/services/gmail-sender-objects-types';
 // import * as allGraphQLQueries from '../candidate-engagement/graphql-queries-chatbot';

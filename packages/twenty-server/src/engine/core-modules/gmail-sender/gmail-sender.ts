@@ -19,8 +19,6 @@ export class GmailSender {
     }
   }
 
-
-
   async sendEmailWithAttachmentsController(
     gmailMessageObject: gmailSenderTypes.GmailMessageData, twenty_token: string
   ): Promise<object> {

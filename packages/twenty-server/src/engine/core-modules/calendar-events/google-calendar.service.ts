@@ -40,13 +40,13 @@ export class GoogleCalendarService {
    *
    * @return {Promise<OAuth2Client|null>}
    */
-  async loadSavedCredentialsIfExist() {
+  async loadSavedCredentialsIfExist(twenty_token: string) {
 
     const connectedAccountsResponse = await axios.request({
       method: "get",
       url: "http://localhost:3000/rest/connectedAccounts",
       headers: {
-        authorization: "Bearer " + process.env.TWENTY_JWT_SECRET,
+        authorization: "Bearer " + twenty_token,
         "content-type": "application/json",
       },
     });
@@ -92,8 +92,8 @@ export class GoogleCalendarService {
     });
     await fs.writeFile(TOKEN_PATH, payload);
   }
-  async authorize() {
-    let client = await this.loadSavedCredentialsIfExist();
+  async authorize(twenty_token: string) {
+    let client = await this.loadSavedCredentialsIfExist(twenty_token);
     if (client) {
       return client;
     }

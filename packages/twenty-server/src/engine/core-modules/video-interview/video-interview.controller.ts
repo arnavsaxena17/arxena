@@ -14,6 +14,7 @@ import ffmpeg from 'fluent-ffmpeg';
 
 import { TokenService } from 'src/engine/core-modules/auth/services/token.service';
 import { WorkspaceQueryService } from '../workspace-modifications/workspace-modifications.service';
+import { JwtAuthGuard } from 'src/engine/guards/jwt.auth.guard';
 
 interface GetInterviewDetailsResponse {
   responseFromInterviewRequests: any;
@@ -323,6 +324,7 @@ export class VideoInterviewController {
 
 
   @Post('get-questions')
+  @UseGuards(JwtAuthGuard)
   async getQuestions(@Req() req, @Body() interviewData: { aIInterviewId: string }) {
     const apiToken = req.headers.authorization.split(' ')[1]; // Assuming Bearer token
 
@@ -366,6 +368,7 @@ export class VideoInterviewController {
   }
 
   @Post('update-feedback')
+  @UseGuards(JwtAuthGuard)
   async updateFeedback(@Req() req, @Body() feedbackData) {
     const apiToken = req.headers.authorization.split(' ')[1]; // Assuming Bearer token
 
@@ -485,11 +488,11 @@ export class VideoInterviewController {
   }
   
   @Post('get-interview-details')
+  @UseGuards(JwtAuthGuard)
   async getInterViewDetails(@Req() req: any): Promise<GetInterviewDetailsResponse> {
     console.log("Got a request in get interview details")
     console.log("This is the request body in get interview details:", req?.body)
     // const apiToken = req.headers.authorization.split(' ')[1]; // Assuming Bearer token
-    // const apiToken = process.env.TWENTY_JWT_SECRET;
     const { interviewId } = req.body;
     console.log("Get interview details hit", interviewId)
     const workspaceToken = await this.getWorkspaceTokenForInterview(interviewId);

@@ -24,7 +24,6 @@ export class WorkspaceModificationsController {
     private readonly workspaceQueryService: WorkspaceQueryService,
   ) {
     console.log('GraphQL URL configured as:', process.env.GRAPHQL_URL);
-    console.log('JWT Secret present:', !!process.env.TWENTY_JWT_SECRET);
   }
 
   @Get('api-keys')

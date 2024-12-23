@@ -95,10 +95,10 @@ export class OpenAIArxMultiStepClient {
       for (const toolCall of toolCalls) {
         const functionName = toolCall.function.name;
         console.log('Function name is:', functionName);
-        const availableFunctions = new ToolsForAgents(this.workspaceQueryService).getAvailableFunctions();
+        const availableFunctions = new ToolsForAgents(this.workspaceQueryService).getAvailableFunctions(apiToken);
         const functionToCall = availableFunctions[functionName];
         const functionArgs = JSON.parse(toolCall.function.arguments);
-        const responseFromFunction = await functionToCall(functionArgs, this.personNode);
+        const responseFromFunction = await functionToCall(functionArgs, this.personNode, chatControl,apiToken);
         mostRecentMessageArr.push({ tool_call_id: toolCall.id, role: 'tool', name: functionName, content: responseFromFunction });
       }
       const tools = await new ToolsForAgents(this.workspaceQueryService).getTools(chatControl);
