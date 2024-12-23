@@ -157,7 +157,6 @@ export default class CandidateEngagementArx {
       for (const personNode of peopleCandidateResponseEngagementArr) {
         const candidateNode = personNode?.candidates?.edges[0]?.node;
         const candidateId = candidateNode.id;
-        const videoInterviewLink = process.env.SERVER_BASE_URL + candidateNode?.aIInterviewStatus?.edges[0]?.node?.interviewLink?.url || "";
         if (!candidateNode?.aIInterviewStatus?.edges[0]?.node?.interviewLink?.url) {
           console.log(`Creating video interview link for candidate: ${candidateNode.name}`);
           const createVideoInterviewResponse = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).createVideoInterviewForCandidate(candidateId, apiToken);

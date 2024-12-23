@@ -1,8 +1,6 @@
 import { GoogleAuthService, MailerService } from "./gmail-sender.service";
 import * as gmailSenderTypes from "./services/gmail-sender-objects-types";
 import { Controller, Get, Query,Post, Body, Res, Injectable } from '@nestjs/common';
-import { google } from 'googleapis';
-import * as fs from 'fs/promises';
 import { Response } from 'express';
 
 export class GmailSender {

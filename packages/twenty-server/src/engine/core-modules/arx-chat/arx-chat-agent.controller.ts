@@ -999,7 +999,10 @@ export class GoogleControllers {
 
 
   @Post('send-test-email-using-local-email-service')
-  async testEmail() {
+  @UseGuards(JwtAuthGuard)
+  async sendTestEmail(@Req() request: any): Promise<object> {
+    const apiToken = request.headers.authorization.split(' ')[1];
+    console.log("API TOKEN BUT WILL NOT USE IT:", apiToken);
     try {
       console.log("Have hit test email");
 
