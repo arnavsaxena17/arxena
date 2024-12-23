@@ -11,13 +11,10 @@ import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modific
 export class OpenAIArxMultiStepClient {
   private readonly personNode: allDataObjects.PersonNode;
   private readonly workspaceQueryService: WorkspaceQueryService;
-
   constructor(personNode: allDataObjects.PersonNode,  workspaceQueryService: WorkspaceQueryService) {
     this.personNode = personNode;
     this.workspaceQueryService = workspaceQueryService;
   }
-
-
   async createCompletion(mostRecentMessageArr: allDataObjects.ChatHistoryItem[],  chatControl:allDataObjects.chatControls,apiToken:string,  isChatEnabled: boolean = true ) {
     try{
       const lastFewChats = await getMostRecentChatsByPerson(mostRecentMessageArr)

@@ -23,6 +23,7 @@ import { WhatsappTemplateMessages } from './services/whatsapp-api/facebook-whats
 import { EnvironmentService } from 'src/engine/integrations/environment/environment.service';
 
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
+import { EmailService } from 'src/engine/integrations/email/email.service';
 
 
 @Controller('arx-chat')
@@ -991,8 +992,26 @@ export class WhatsappControllers {
 export class GoogleControllers {
 
   constructor(
-    private readonly workspaceQueryService: WorkspaceQueryService
+    private readonly workspaceQueryService: WorkspaceQueryService,
+    private readonly emailService: EmailService
   ) {}
+
+
+
+  @Post('send-test-email-using-local-email-service')
+  async testEmail() {
+    await this.emailService.send({
+      from: '"Arnav Saxena" <arnav@arxena.com>',
+      to: 'test@example.com',
+      subject: 'Test Email',
+      text: 'This is a test email',
+      html: '<h1>Test Email</h1><p>This is a test email</p>',
+    });
+    return { message: 'Email sent' };
+  }
+
+
+
 
   @Post('send-mail')
   @UseGuards(JwtAuthGuard)

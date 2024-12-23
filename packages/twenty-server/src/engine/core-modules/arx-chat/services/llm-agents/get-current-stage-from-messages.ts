@@ -24,11 +24,9 @@ const axios = require('axios');
 
 
 export class GetCurrentStageByMessages{
-    
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService
   ) {}
-
   async getChatPromptFromWorksPageMember(currentWorkspaceMemberId: any, apiToken:string) {
     let data = JSON.stringify({
         query: allGraphQLQueries.graphqlQueryToFetchWorksPaceMembers,
