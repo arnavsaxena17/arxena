@@ -584,7 +584,7 @@ export class ArxChatEndpoint {
         message: videoInterviewInviteTemplate,
       };
       console.log("This is the email Data from createVideo Interview Send To Candidate:", emailData);
-      const sendVideoInterviewLinkResponse = await new SendEmailFunctionality().sendEmailFunction(emailData);
+      const sendVideoInterviewLinkResponse = await new SendEmailFunctionality().sendEmailFunction(emailData, apiToken);
       console.log("sendVideoInterviewLinkResponse::", sendVideoInterviewLinkResponse);
       return sendVideoInterviewLinkResponse || {};
       } else {
@@ -630,7 +630,7 @@ export class ArxChatEndpoint {
         message: videoInterviewInviteTemplate,
       };
       console.log("This is the email Data sendVideoInterviewSendToCandidate:", emailData);
-      sendVideoInterviewLinkResponse = await new SendEmailFunctionality().sendEmailFunction(emailData);
+      sendVideoInterviewLinkResponse = await new SendEmailFunctionality().sendEmailFunction(emailData, apiToken);
       console.log("sendVideoInterviewLinkResponse::", sendVideoInterviewLinkResponse);
       return sendVideoInterviewLinkResponse || {};
       } else {
@@ -1050,7 +1050,7 @@ export class GoogleControllers {
       message: request.body?.message || 'This is a test email',
     };
     console.log("This is the email Data in plain send meial:", emailData)
-    const response = await new SendEmailFunctionality().sendEmailFunction(emailData);
+    const response = await new SendEmailFunctionality().sendEmailFunction(emailData, apiToken);
     console.log("This is the response:", response)
     return response || {}; // Return an empty object if the response is undefined
   }
@@ -1070,17 +1070,13 @@ export class GoogleControllers {
     };
     console.log("This si the email data to send attachemnts:", emailData)
 
-    const response = await new SendEmailFunctionality().sendEmailWithAttachmentFunction(emailData);
+    const response = await new SendEmailFunctionality().sendEmailWithAttachmentFunction(emailData, apiToken);
     return response || {};
   }
   @Post('save-draft-mail-with-attachment')
   async saveDraftEmailWithAttachments (@Req() request: any): Promise<object> {
     const apiToken = request.headers.authorization.split(' ')[1];
-
     const person: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).getPersonDetailsByPhoneNumber(request.body.phoneNumber,apiToken);
-
-    
-    
     const emailData: GmailMessageData = {
       sendEmailFrom: allDataObjects.recruiterProfile?.email,
       sendEmailTo: person?.email,
@@ -1089,9 +1085,7 @@ export class GoogleControllers {
       attachments: request.body.attachments || [],
     };
     console.log("This si the email data to save drafts:", emailData)
-
-
-    const response = await new SendEmailFunctionality().saveDraftEmailWithAttachmentsFunction(emailData);
+    const response = await new SendEmailFunctionality().saveDraftEmailWithAttachmentsFunction(emailData, apiToken);
     return response || {};
   }
 

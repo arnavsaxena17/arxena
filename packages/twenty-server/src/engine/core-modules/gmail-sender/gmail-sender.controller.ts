@@ -5,14 +5,12 @@ import { google } from 'googleapis';
 import * as fs from 'fs/promises';
 import { Response } from 'express';
 
-@Controller("gmail-sender")
-export class MailerController {
+export class GmailSender {
   constructor(private readonly mailerService: MailerService) {}
 
-  @Post("sendMail")
-  async sendEmailOfController( @Body() gmailMessageObject: gmailSenderTypes.GmailMessageData ): Promise<object> {
+  async sendEmailOfController( gmailMessageObject: gmailSenderTypes.GmailMessageData, twenty_token: string ): Promise<object> {
     try {
-      const auth = await this.mailerService.authorize();
+      const auth = await this.mailerService.authorize(twenty_token);
       await this.mailerService.sendMails(auth, gmailMessageObject);
       return { status: "Event created successfully" };
     } catch (error) {
@@ -23,13 +21,12 @@ export class MailerController {
 
 
 
-  @Post("sendMailWithAttachments")
   async sendEmailWithAttachmentsController(
-    @Body() gmailMessageObject: gmailSenderTypes.GmailMessageData
+    gmailMessageObject: gmailSenderTypes.GmailMessageData, twenty_token: string
   ): Promise<object> {
     console.log("HIt there");
     try {
-      const auth = await this.mailerService.authorize();
+      const auth = await this.mailerService.authorize(twenty_token);
       await this.mailerService.sendMailsWithAttachments(auth, gmailMessageObject);
       return { status: "Email sent successfully" };
     } catch (error) {
@@ -38,13 +35,12 @@ export class MailerController {
     }
   }
 
-  @Post("saveDraftEmailWithAttachments")
   async saveDraftEmailWithAttachmentsController(
-    @Body() gmailMessageObject: gmailSenderTypes.GmailMessageData
+    gmailMessageObject: gmailSenderTypes.GmailMessageData, twenty_token: string
   ): Promise<object> {
     console.log("Hit there");
     try {
-      const auth = await this.mailerService.authorize();
+      const auth = await this.mailerService.authorize(twenty_token);
       const draftData = await this.mailerService.createDraftWithAttachments(auth, gmailMessageObject);
       console.log("draftData:", draftData);
 

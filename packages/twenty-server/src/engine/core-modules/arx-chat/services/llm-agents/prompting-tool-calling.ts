@@ -5,7 +5,6 @@ import fuzzy from 'fuzzy';
 import CandidateEngagementArx from '../candidate-engagement/check-candidate-engagement';
 import { CalendarEventType } from '../../../calendar-events/services/calendar-data-objects-types';
 import { CalendarEmailService } from '../candidate-engagement/calendar-email';
-import { MailerController } from '../../../gmail-sender/gmail-sender.controller';
 import { SendEmailFunctionality } from '../candidate-engagement/send-gmail';
 import { GmailMessageData } from 'src/engine/core-modules/gmail-sender/services/gmail-sender-objects-types';
 import * as allGraphQLQueries from '../candidate-engagement/graphql-queries-chatbot';
@@ -267,19 +266,32 @@ export class ToolsForAgents {
     return stageWiseActions;
   }
 
-  getAvailableFunctions() {
+  getAvailableFunctions(apiToken: string) {
     return {
-      share_jd: this.shareJD,
-      update_candidate_profile: this.updateCandidateProfile,
-      update_answer: this.updateAnswer,
-      schedule_meeting: this.scheduleMeeting,
-      send_email: this.sendEmail,
-      create_reminder: this.createReminder,
-      share_interview_link: this.shareInterviewLink,
-
+      share_jd: (inputs: any, personNode: allDataObjects.PersonNode, chatControl: allDataObjects.chatControls, apiToken: string) => 
+        this.shareJD(inputs, personNode, chatControl, apiToken),
+      
+      update_candidate_profile: (inputs: any, personNode: allDataObjects.PersonNode, chatControl: allDataObjects.chatControls, apiToken: string) => 
+        this.updateCandidateProfile(inputs, personNode, apiToken),
+      
+      update_answer: (inputs: { question: string; answer: string }, personNode: allDataObjects.PersonNode, chatControl: allDataObjects.chatControls, apiToken: string) => 
+        this.updateAnswer(inputs, personNode, apiToken),
+      
+      schedule_meeting: (inputs: any, personNode: allDataObjects.PersonNode, chatControl: allDataObjects.chatControls, apiToken: string) => 
+        this.scheduleMeeting(inputs, personNode, apiToken),
+      
+      send_email: (inputs: any, personNode: allDataObjects.PersonNode, chatControl: allDataObjects.chatControls, apiToken: string) => 
+        this.sendEmail(inputs, personNode, apiToken),
+      
+      create_reminder: (inputs: { reminderDuration: string }, personNode: allDataObjects.PersonNode, chatControl: allDataObjects.chatControls, apiToken: string) => 
+        this.createReminder(inputs, personNode, apiToken),
+      
+      share_interview_link: (inputs: any, personNode: allDataObjects.PersonNode, chatControl: allDataObjects.chatControls, apiToken: string) => 
+        this.shareInterviewLink(inputs, personNode, apiToken)
     };
   }
-  async shareInterviewLink(inputs: any, personNode: allDataObjects.PersonNode) {
+  
+  async shareInterviewLink(inputs: any, personNode: allDataObjects.PersonNode, twenty_token: string) {
     const jobProfile = personNode?.candidates?.edges[0]?.node?.jobs;
     const interviewLink = 'https://meet.google.com/abc-def-ghi';
     const interviewLinkMessage = `Here is the link to the interview: ${interviewLink}`;
@@ -288,7 +300,7 @@ export class ToolsForAgents {
       sendEmailTo: personNode?.email,
       subject: 'Interview Link',
       message: interviewLinkMessage,
-    });
+    }, twenty_token);
     return 'Interview link shared successfully.';
   }
 
@@ -318,14 +330,14 @@ export class ToolsForAgents {
     return 'Reminder created successfully.';
   }
 
-  async sendEmail(inputs: any, person: allDataObjects.PersonNode) {
+  async sendEmail(inputs: any, person: allDataObjects.PersonNode, apiToken:string) {
     const emailData: GmailMessageData = {
       sendEmailFrom: recruiterProfile?.email,
       sendEmailTo: person?.email,
       subject: inputs?.subject || 'Email from the recruiter',
       message: inputs?.message || '',
     };
-    await new SendEmailFunctionality().sendEmailFunction(emailData);
+    await new SendEmailFunctionality().sendEmailFunction(emailData, apiToken);
     return 'Email sent successfully.';
   }
 

@@ -1,28 +1,28 @@
 import axios from "axios";
 import { GmailMessageData } from "../../../gmail-sender/services/gmail-sender-objects-types";
-import { MailerController } from "../../../gmail-sender/gmail-sender.controller";
+import { GmailSender } from "../../../gmail-sender/gmail-sender.controller";
 import { MailerService } from "../../../gmail-sender/gmail-sender.service";
 import * as allDataObjects from '../data-model-objects';
 
 export class SendEmailFunctionality {
-  async sendEmailFunction(gmailMessageData: GmailMessageData) {
+  async sendEmailFunction(gmailMessageData: GmailMessageData, twenty_token: string) {
     // Create a new calendar event
     const mailerService = new MailerService();
-    const mailerController = new MailerController(mailerService);
-    const response = await mailerController.sendEmailOfController(gmailMessageData).catch(console.error);
+    const gmailSender = new GmailSender(mailerService);
+    const response = await gmailSender.sendEmailOfController(gmailMessageData, twenty_token).catch(console.error);
     console.log("Response from sendEmailFunction", response); 
     return response;
   }
-  async sendEmailWithAttachmentFunction(gmailMessageData: GmailMessageData) {
+  async sendEmailWithAttachmentFunction(gmailMessageData: GmailMessageData, twenty_token: string) {
     const mailerService = new MailerService();
-    const mailerController = new MailerController(mailerService);
-    const response = await mailerController.sendEmailWithAttachmentsController(gmailMessageData).catch(console.error);
+    const gmailSender = new GmailSender(mailerService);
+    const response = await gmailSender.sendEmailWithAttachmentsController(gmailMessageData, twenty_token).catch(console.error);
     return response;
   }
-  async saveDraftEmailWithAttachmentsFunction(gmailMessageData: GmailMessageData) {
+  async saveDraftEmailWithAttachmentsFunction(gmailMessageData: GmailMessageData, twenty_token: string) {
     const mailerService = new MailerService();
-    const mailerController = new MailerController(mailerService);
-    const response = await mailerController.saveDraftEmailWithAttachmentsController(gmailMessageData).catch(console.error);
+    const gmailSender = new GmailSender(mailerService);
+    const response = await gmailSender.saveDraftEmailWithAttachmentsController(gmailMessageData, twenty_token).catch(console.error);
     return response;
   }
 
