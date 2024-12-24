@@ -2,16 +2,18 @@ import React, { useState, useEffect } from 'react';
 import styled from '@emotion/styled';
 import VideoDownloaderPlayer from './VideoDownloaderPlayer';
 import { useTheme } from '@emotion/react';
+import { tokenPairState } from '@/auth/states/tokenPairState';
+import { useRecoilState } from 'recoil';
 
 
 const StyledContainer = styled.div<{ theme: any }>`
-background-color: white;
-width: 100vw;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
+  background-color: white;
+  width: 100%;
+  padding: 20px;
+  height: 100vh; // Set a specific height
+  overflow-y: auto; // Enable vertical scrolling
 `;
+
 
 const StyledVideoContainer = styled.div`
   background-color: black;
@@ -28,53 +30,317 @@ const DebugInfo = styled.div`
   font-family: monospace;
 `;
 
-const VideoInterviewResponseViewer: React.FC<{ interviewId: string }> = ({ interviewId }) => {
-  console.log("Want to view VIdoe INterview Response Here::", interviewId)
-  console.log("interviewId::", interviewId)
-  const [playing, setPlaying] = useState(false);
-  const [volume, setVolume] = useState(0.8);
-  const [played, setPlayed] = useState(0);
-  const [error, setError] = useState<string | null>(null);
-  const [status, setStatus] = useState('Loading');
-  const [debugInfo, setDebugInfo] = useState<Record<string, any>>({});
 
-  const videoUrl = `http://localhost:3000/files/attachment/be359b56-4af0-422a-897f-ddb91426ceda.webm?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHBpcmF0aW9uX2RhdGUiOiIyMDI0LTEwLTE1VDE0OjU1OjEwLjA2N1oiLCJhdHRhY2htZW50X2lkIjoiM2JlYjYwZTgtNDkwNS00MWI1LTg0NmItY2I4MTYyZjQyY2FkIiwiaWF0IjoxNzI4OTE3NzEwLCJleHAiOjE3MjkwOTc3MTB9.cOwb3mpzRHvXb1HsZsP1jSJIuGFxDEfsEinxX3CIR9k`;
+const TranscriptContainer = styled.div`
+  background-color: #f5f5f5;
+  padding: 15px;
+  border-radius: 4px;
+  margin-top: 10px;
+  margin-bottom: 20px;
+`;
+
+const TranscriptHeading = styled.h4`
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #333;
+`;
+
+const TranscriptText = styled.p`
+  font-size: 14px;
+  line-height: 1.5;
+  color: #444;
+  white-space: pre-wrap;
+`;
+
+// Types
+interface Response {
+  id: string;
+  transcript: string;
+  aIInterviewQuestionId: string;
+  attachments: {
+    edges: {
+      node: {
+        type: string;
+        fullPath: string;
+        name: string;
+      };
+    }[];
+  };
+}
+
+interface CandidateData {
+  edges: {
+    node: {
+      id: string;
+      people: {
+        name: {
+          firstName: string;
+          lastName: string;
+        };
+      };
+      jobs: {
+        id: string;
+        name: string;
+        companies: {
+          name: string;
+        };
+        questions: {
+          edges: {
+            node: {
+              id: string;
+              questionValue: string;
+              timeLimit: number;
+            };
+          }[];
+        };
+      };
+      responses: {
+        edges: {
+          node: Response;
+        }[];
+      };
+    };
+  }[];
+}
+
+const query = `query FindManyCandidates($filter: CandidateFilterInput) {
+    candidates(filter: $filter) {
+      edges {
+        node {
+          id
+          people {
+            name {
+              firstName
+              lastName
+            }
+          }
+          jobs {
+            id
+            name
+            companies {
+              name
+            }
+            aIInterviews {
+              edges {
+                node {
+                  id
+                  name
+                  aIInterviewQuestions {
+                    edges {
+                      node {
+                        id
+                        questionValue
+                        timeLimit
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+          responses {
+            edges {
+              node {
+                id
+                transcript
+                aIInterviewQuestionId
+                attachments {
+                  edges {
+                    node {
+                      id
+                      type
+                      fullPath
+                      name
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
+interface Question {
+  id: string;
+  questionValue: string;
+  responses: {
+    edges: {
+      node: Response;
+    }[];
+  };
+}
+
+
+
+interface InterviewData {
+  job: {
+    companies: {
+      name: string;
+    };
+    name: string;
+  };
+  aIInterview: {
+    aIInterviewQuestions: {
+      edges: {
+        node: Question;
+      }[];
+    };
+  };
+}
+
+
+const CompanyInfo = styled.div`
+  margin-bottom: 20px;
+`;
+
+const QuestionContainer = styled.div`
+  margin-bottom: 30px;
+`;
+
+const QuestionText = styled.h3`
+  margin-bottom: 15px;
+`;
+
+const VideoContainer = styled.div`
+  background-color: black;
+  width: 100%;
+  max-width: 800px;
+  margin: 10px 0;
+`;
+
+
+const VideoInterviewResponseViewer: React.FC<{ candidateId: string }> = ({ candidateId }) => {
+  const [interviewData, setInterviewData] = useState<InterviewData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const theme = useTheme();
+  const [tokenPair] = useRecoilState(tokenPairState);
+
+  const cleanCandidateId = candidateId.includes('/') 
+  ? candidateId.split('/').pop() 
+  : candidateId;
+
 
   useEffect(() => {
-    const checkVideoAvailability = async () => {
+    const fetchInterviewData = async () => {
       try {
-        const response = await fetch(videoUrl, { method: 'HEAD' });
-        if (!response.ok) {
-          setError(`Video not accessible. Status: ${response.status}`);
-        } else {
-          setStatus('Video accessible');
-          setDebugInfo(prev => ({ ...prev, headers: Object.fromEntries(response.headers) }));
+        const response = await fetch('http://localhost:3000/graphql', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${tokenPair?.accessToken?.token}`,
+          },
+          body: JSON.stringify({
+            query,
+            variables: { 
+              filter: {
+                id: { eq: candidateId.replace("/video-interview-review/","") }
+              }
+            },
+          }),
+        });
+        
+        const responseData = await response.json();
+        console.log('GraphQL Response:', responseData); // Debug log
+
+        // Check if the response has the expected structure
+        if (!responseData?.data?.candidates) {
+          throw new Error('Invalid response structure');
         }
+
+        const candidates = responseData.data.candidates;
+        
+        // Check if we have any candidates
+        if (!candidates.edges || candidates.edges.length === 0) {
+          throw new Error('No candidate found');
+        }
+
+        const candidate = candidates.edges[0].node;
+        
+        // Check if candidate has all required data
+        if (!candidate.jobs?.aIInterviews?.edges?.[0]?.node?.aIInterviewQuestions?.edges) {
+          throw new Error('Incomplete candidate data');
+        }
+
+        const transformedData: InterviewData = {
+          job: {
+            companies: candidate.jobs.companies,
+            name: candidate.jobs.name
+          },
+          aIInterview: {
+            aIInterviewQuestions: {
+              edges: candidate.jobs.aIInterviews.edges[0].node.aIInterviewQuestions.edges.map(
+                (question: any) => ({
+                  node: {
+                    ...question.node,
+                    responses: {
+                      edges: (candidate.responses?.edges || []).filter(
+                        (response: any) => response.node.aIInterviewQuestionId === question.node.id
+                      )
+                    }
+                  }
+                })
+              )
+            }
+          }
+        };
+
+        console.log('Transformed Data:', transformedData); // Debug log
+        setInterviewData(transformedData);
       } catch (err) {
-        setError(`Error checking video: ${(err as Error).message}`);
+        console.error('Full error:', err); // Debug log
+        setError(`Error fetching interview data: ${(err as Error).message}`);
+      } finally {
+        setLoading(false);
       }
     };
 
-    checkVideoAvailability();
-  }, [videoUrl]);
+    fetchInterviewData();
+  }, [candidateId, tokenPair?.accessToken?.token]);
 
-  const handlePlayPause = () => setPlaying(!playing);
-  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => setVolume(parseFloat(e.target.value));
-  const handleProgress = (state: { played: number }) => setPlayed(state.played);
-console.log("videoUrl::", videoUrl)
-  const theme = useTheme();
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error}</div>;
+  if (!interviewData) return <div>No interview data found</div>;
 
   return (
     <StyledContainer theme={theme}>
-      <StyledVideoContainer>
-        <VideoDownloaderPlayer videoUrl={videoUrl} />
-      </StyledVideoContainer>
-      <DebugInfo>
-        <div>Status: {status}</div>
-        {error && <div style={{color: 'red'}}>Error: {JSON.stringify(error)}</div>}
-        <div>Interview ID: {interviewId}</div>
-        <div>Debug Info: {JSON.stringify(debugInfo, null, 2)}</div>
-      </DebugInfo>
+      <CompanyInfo>
+        <h2>Interview for {interviewData.job.companies.name}</h2>
+        <h3>Position: {interviewData.job.name}</h3>
+      </CompanyInfo>
+
+      {interviewData.aIInterview.aIInterviewQuestions.edges.map(({ node: question }, index) => (
+        <QuestionContainer key={question.id}>
+          <QuestionText>
+            Question {index + 1}: {question.questionValue}
+          </QuestionText>
+          
+          {question.responses.edges.map(({ node: response }) => {
+            const videoAttachment = response.attachments.edges.find(
+              edge => edge.node.type === 'Video'
+            );
+
+            return videoAttachment ? (
+              <VideoContainer key={response.id}>
+                <VideoDownloaderPlayer 
+                  videoUrl={`http://localhost:3000/files/${videoAttachment.node.fullPath}`} 
+                />
+                {response.transcript && (
+                  <TranscriptContainer>
+                    <TranscriptHeading>Transcript</TranscriptHeading>
+                    <TranscriptText>{response.transcript}</TranscriptText>
+                  </TranscriptContainer>
+                )}
+              </VideoContainer>
+            ) : null;
+          })}
+
+        </QuestionContainer>
+      ))}
     </StyledContainer>
   );
 };

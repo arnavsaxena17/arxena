@@ -101,7 +101,6 @@ export class VideoInterviewController {
   )
 
   async submitResponse(@Req() req, @UploadedFiles() files: { video?: Express.Multer.File[]; audio?: Express.Multer.File[] }) {
-    const apiToken = req.headers.authorization.split(' ')[1]; // Assuming Bearer token
 
     console.log("Received request data:: will start download")
     try {
@@ -113,6 +112,12 @@ export class VideoInterviewController {
       // console.log('Received files:', JSON.stringify(files, null, 2));
       // console.log('Received response data:', JSON.stringify(responseData, null, 2));
       const interviewData = JSON.parse(req?.body?.interviewData);
+      const workspaceToken = await this.getWorkspaceTokenForInterview(interviewData.id);
+      if (!workspaceToken) {
+        throw new UnauthorizedException('Could not find valid workspace token');
+      }
+      const apiToken = workspaceToken;
+  
       const currentQuestionIndex = JSON.parse(req?.body?.currentQuestionIndex);
       console.log("REceived interviewData:", interviewData)
       console.log("REceived currentQuestionIndex:", currentQuestionIndex)
@@ -305,6 +310,47 @@ export class VideoInterviewController {
   }
 
 
+  private async getWorkspaceTokenForInterview(interviewId: string) {
+    const results = await this.workspaceQueryService.executeQueryAcrossWorkspaces(
+      async (workspaceId, dataSourceSchema, transactionManager) => {
+        // Query to find the interview status
+        const interviewStatus = await this.workspaceQueryService.executeRawQuery(
+          `SELECT * FROM ${dataSourceSchema}."_aIInterviewStatus" 
+           WHERE "_aIInterviewStatus"."id"::text ILIKE $1`,
+          [`%${interviewId.replace("/video-interview/","")}%`],
+          workspaceId,
+          transactionManager
+        );
+        
+        if (interviewStatus.length > 0) {
+          // Get API keys for the workspace
+          const apiKeys = await this.workspaceQueryService.getApiKeys(
+            workspaceId, 
+            dataSourceSchema, 
+            transactionManager
+          );
+  
+          if (apiKeys.length > 0) {
+            // Generate token using the first available API key
+            const apiKeyToken = await this.workspaceQueryService.tokenService.generateApiKeyToken(
+              workspaceId,
+              apiKeys[0].id,
+              apiKeys[0].expiresAt
+            );
+  
+            if (apiKeyToken) {
+              return apiKeyToken.token;
+            }
+          }
+        }
+        return null;
+      }
+    );
+  
+    // Return first non-null result
+    return results.find(result => result !== null);
+  }
+
   private async convertToWebM(inputPath: string): Promise<string> {
     return new Promise((resolve, reject) => {
       const outputPath = inputPath.replace(path.extname(inputPath), '.webm');
@@ -414,80 +460,8 @@ export class VideoInterviewController {
       }, 500);
     }
   }
-  private async getWorkspaceTokenForInterview(interviewId: string) {
-    console.log("This is the interviewId:", interviewId)
-    const results = await this.workspaceQueryService.executeQueryAcrossWorkspaces(
-      
-      async (workspaceId, dataSourceSchema, transactionManager) => {
-        // console.log("Going to executive query", workspaceId)
-        // console.log("Going to executive query", transactionManager)
-        // console.log("Going to executive query", dataSourceSchema)
-        // console.log("Going to this.workspaceQueryService", this.workspaceQueryService)
-        // Query to find the interview status
-        // const interviewStatus = await this.workspaceQueryService.executeRawQuery(
-        //   `SELECT * FROM ${dataSourceSchema}._aIInterviewStatus 
-        //    WHERE "_aIInterviewStatus"."id" ILIKE '%${interviewId}%'`,
-        //   [],
-        //   workspaceId,
-        //   transactionManager
-        // );
-        // const interviewStatus = await this.workspaceQueryService.executeRawQuery(
-        //   `SELECT * FROM ${dataSourceSchema}."_aIInterviewStatus" 
-        //    WHERE "_aIInterviewStatus"."id" ILIKE '%${interviewId}%'`,
-        //   [],
-        //   workspaceId,
-        //   transactionManager
-        // );
+  
 
-        // const interviewStatus = await this.workspaceQueryService.executeRawQuery(
-        //   `SELECT * FROM ${dataSourceSchema}."_aIInterviewStatus" 
-        //    WHERE "_aIInterviewStatus"."id" ILIKE $1`,
-        //   [`%${interviewId.replace("/video-interview/","")}%`],
-        //   workspaceId,
-        //   transactionManager
-        // );
-        
-
-        const interviewStatus = await this.workspaceQueryService.executeRawQuery(
-          `SELECT * FROM ${dataSourceSchema}."_aIInterviewStatus" 
-           WHERE "_aIInterviewStatus"."id"::text ILIKE $1`,
-          [`%${interviewId.replace("/video-interview/","")}%`],
-          workspaceId,
-          transactionManager
-        );
-        
-        
-        console.log("This is the interviewStatus:", interviewStatus)
-        if (interviewStatus.length > 0) {
-          // Get API keys for the workspace
-          const apiKeys = await this.workspaceQueryService.getApiKeys(
-            workspaceId, 
-            dataSourceSchema, 
-            transactionManager
-          );
-  
-          if (apiKeys.length > 0) {
-            // Generate token using the first available API key
-            const apiKeyToken = await this.workspaceQueryService.tokenService.generateApiKeyToken(
-              workspaceId,
-              apiKeys[0].id,
-              apiKeys[0].expiresAt
-            );
-  
-            console.log("AIPIU KEY OBTAINED::", apiKeyToken)
-            if (apiKeyToken) {
-              return apiKeyToken.token;
-            }
-          }
-        }
-        return null;
-      }
-    );
-  
-    // Return first non-null result
-    return results.find(result => result !== null);
-  }
-  
 // leaqve unauthenticated due to public candidate access to this endpoint
   @Post('get-interview-details')
   async getInterViewDetails(@Req() req: any): Promise<GetInterviewDetailsResponse> {

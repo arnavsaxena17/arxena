@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import styled from '@emotion/styled';
 import {
   EndInterviewStyledContainer,
@@ -12,11 +12,36 @@ import {
 } from './styled-components/StyledComponentsInterviewResponse';
 import { InterviewData } from './types/interviewResponseTypes';
 
+interface EndInterviewPageProps {
+  interviewData: InterviewData;
+  onSubmit: (feedback: string) => void;
+  submissionComplete: boolean;
+}
 
 
-export const EndInterviewPage: React.FC<{ interviewData:InterviewData, onSubmit: (feedback: string) => void }> = ({ interviewData, onSubmit }) => {
+
+export const EndInterviewPage: React.FC<EndInterviewPageProps> = ({ 
+  interviewData, 
+  onSubmit, 
+  submissionComplete 
+}) => {
   const [feedback, setFeedback] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [showCloseMessage, setShowCloseMessage] = useState(false);
+
+
+  useEffect(() => {
+    if (submissionComplete) {
+      const timer = setTimeout(() => {
+        setShowCloseMessage(true);
+      }, 5000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [submissionComplete]);
+  
+
+  
   const handleSubmit = () => {
     onSubmit(feedback);
     setSubmitted(true);
@@ -29,22 +54,24 @@ export const EndInterviewPage: React.FC<{ interviewData:InterviewData, onSubmit:
       </EndInterviewStyledLeftPanel>
       <EndInterviewStyledRightPanel>
         {submitted ? (
-            <FeedbackContainer>
+          <FeedbackContainer>
             <h2>Thank You for Your Feedback</h2>
             <StyledMessage>
-              Your feedback has been submitted successfully. .
+              Your feedback has been submitted successfully.
             </StyledMessage>
-            </FeedbackContainer>
+          </FeedbackContainer>
         ) : (
           <FeedbackContainer>
             <h2>Thank You for Completing the Interview</h2>
-            <FeedbackPrompt> We are uploading your responses. Please do not close this tab. </FeedbackPrompt>
-            {/* <StyledTextArea
-              value={feedback}
-              onChange={(e) => setFeedback(e.target.value)}
-              placeholder="Enter your feedback here..."
-            /> */}
-            {/* <SubmitButton onClick={handleSubmit}>Share Feedback</SubmitButton> */}
+            {!showCloseMessage ? (
+              <FeedbackPrompt>
+                We are uploading your responses. Please do not close this tab.
+              </FeedbackPrompt>
+            ) : (
+              <FeedbackPrompt>
+                Your responses have been successfully uploaded. You may now close this window.
+              </FeedbackPrompt>
+            )}
           </FeedbackContainer>
         )}
       </EndInterviewStyledRightPanel>

@@ -45,8 +45,15 @@ const PreviewContainer = styled.div`
 
 const PreviewVideo = styled.video`
   width: 100%;
-  transform: scaleX(1); // Ensure playback is not mirrored
+  transform: scaleX(1);
   -webkit-transform: scaleX(1);
+  
+  // &::-webkit-media-controls-play-button {
+  //   background-color: rgba(255, 255, 255, 0.8);
+  //   border-radius: 50%;
+  //   margin-left: 8px;
+  //   padding: 10px;
+  // }
 `;
 
 
@@ -71,6 +78,8 @@ export const InterviewPage: React.FC<InterviewPageProps> = ({ InterviewData, que
   const [timer, setTimer] = useState<number | null>(null);
   const [recordedChunks, setRecordedChunks] = useState<Blob[]>([]);
   const webcamRef = useRef<Webcam>(null);
+  const [finalSubmissionComplete, setFinalSubmissionComplete] = useState(false);
+
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const isLastQuestion = currentQuestionIndex === questions.length - 1;
@@ -365,9 +374,10 @@ export const InterviewPage: React.FC<InterviewPageProps> = ({ InterviewData, que
         setResponseSubmitted(true);
 
         if (isLastQuestion) {
+          setFinalSubmissionComplete(true);
           onFinish();
         }
-      } catch (error) {
+        } catch (error) {
         console.error('Error submitting response:', error);
         setSubmitting(false);
         setError('Failed to submit response. Please try again.');
@@ -434,6 +444,10 @@ export const InterviewPage: React.FC<InterviewPageProps> = ({ InterviewData, que
 
             {showPreview && (
               <PreviewContainer>
+                <h3 style={{ marginBottom: '16px', textAlign: 'center' }}>
+                  Review your recording before submitting
+                </h3>
+
                 <PreviewVideo src={recordedVideoUrl || undefined} controls width="100%" />
                 <PreviewControls>
                   <ButtonGroup variant="primary" size="medium" accent="blue">

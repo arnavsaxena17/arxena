@@ -81,6 +81,7 @@ const AIInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) => 
   const [questionsVideoData, setquestionsVideoData] = useState<InterviewResponseTypes.VideoInterviewAttachment[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [videoLoadingStatus, setVideoLoadingStatus] = useState<Record<string, boolean>>({});
+  const [finalSubmissionComplete, setFinalSubmissionComplete] = useState(false);
 
   const [globalVideoPlaybackState, setGlobalVideoPlaybackState] = useState({
     isPlaying: false,
@@ -170,6 +171,7 @@ const AIInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) => 
               companyName: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.candidate?.jobs?.companies?.name || '',
             },
             people: {
+              id: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.candidate?.people?.id || '',
               name: {
                 firstName: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.candidate?.people?.name?.firstName || '',
                 lastName: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.candidate?.people?.name?.lastName || '',
@@ -179,6 +181,7 @@ const AIInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) => 
             },
           },
           aIInterview: {
+            id: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.aIInterview?.id || '',
             name: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.aIInterview?.name || '',
             introduction: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.aIInterview?.introduction || '',
             instructions: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.aIInterview?.instructions || '',
@@ -202,6 +205,7 @@ const AIInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) => 
     console.log('Currnet question  index in handle Next Question:', currentQuestionIndex);
     try {
       console.log('Going to handle next question, let sed if this submists');
+      
       setCurrentQuestionIndex(prevIndex => {
         const nextIndex = prevIndex + 1;
         if (nextIndex === (interviewData?.aIInterview?.aIInterviewQuestions?.edges?.length ?? 0)) {
@@ -209,7 +213,15 @@ const AIInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) => 
         }
         return nextIndex;
       });
-      // console.log('This is process.env.REACT_APP_SERVER_BASE_URL:', process.env.REACT_APP_SERVER_BASE_URL);
+      console.log('This is process.env.REACT_APP_SERVER_BASE_URL:', process.env.REACT_APP_SERVER_BASE_URL);
+      const isLastQuestion = currentQuestionIndex === (interviewData?.aIInterview?.aIInterviewQuestions?.edges?.length ?? 0) - 1;
+
+      responseData.append('responseData', JSON.stringify({
+        isLastQuestion,
+        timeLimitAdherence: responseData.get('timeLimitAdherence') // preserve any existing data
+      }));
+
+
       // console.log('This is the appending of the rinterview dat:', interviewData);
       responseData.append('interviewData', JSON.stringify(interviewData));
       responseData.append('currentQuestionIndex', currentQuestionIndex.toString());
@@ -222,6 +234,8 @@ const AIInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) => 
       });
       console.log('This isreht ersponse:', response);
       console.log('The calue of interviewData!.aIInterview.aIInterviewQuestions.edges.length is ::', interviewData!.aIInterview?.aIInterviewQuestions?.edges?.length);
+      return true; // Return success status
+
     } catch (error) {
       console.error('Error submitting response:', error);
     }
@@ -279,9 +293,13 @@ const AIInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) => 
             />
           </ErrorBoundary>
         );
-      case 'end':
-        return <EndInterviewPage interviewData={interviewData} onSubmit={handleSubmitFeedback} />;
-      default:
+        case 'end':
+          return <EndInterviewPage 
+            interviewData={interviewData} 
+            onSubmit={handleSubmitFeedback} 
+            submissionComplete={finalSubmissionComplete}
+          />;
+            default:
         return null;
     }
   };

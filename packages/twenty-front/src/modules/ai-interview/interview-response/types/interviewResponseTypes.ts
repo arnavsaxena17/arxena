@@ -20,6 +20,7 @@ export const emptyInterviewData: InterviewData = {
     companyName: '',
     },
     people: {
+      id: '',
     name: {
       firstName: '',
       lastName: '',
@@ -29,6 +30,7 @@ export const emptyInterviewData: InterviewData = {
     },
   },
   aIInterview: {
+    id: '',
     name: '',
     introduction: '',
     instructions: '',
@@ -50,6 +52,7 @@ export interface InterviewData {
       companyName: string;
     };
     people: {
+      id: string;
       name: {
         firstName: string;
         lastName: string;
@@ -59,6 +62,7 @@ export interface InterviewData {
     };
   };
   aIInterview: {
+    id: string;
     name: string;
     introduction: string;
     instructions: string;

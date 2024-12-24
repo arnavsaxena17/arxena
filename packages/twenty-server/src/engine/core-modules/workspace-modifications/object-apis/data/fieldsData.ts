@@ -869,49 +869,14 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
         }
 
     },
-
     {
         "field": {
-            "description": "Time Adherence",
-            "icon": "IconTimeDuration30",
-            "label": "Time Limit Adherence",
-            "name": "timeLimitAdherence",
-            "objectMetadataId": objectsNameIdMap.response,
-            "type": "BOOLEAN"
-        }
-
-    },
-
-    {
-        "field": {
-            "description": "Timer started",
-            "icon": "IconDeviceWatchQuestion",
-            "label": "Timer Started",
-            "name": "timerStarted",
-            "objectMetadataId": objectsNameIdMap.response,
-            "type": "BOOLEAN"
-        }
-
-    },
-    {
-        "field": {
-            "description": "Timer stopped",
+            "description": "Total Time",
             "icon": "IconDeviceWatchPause",
-            "label": "Timer Stopped",
-            "name": "timerStopped",
+            "label": "Timer",
+            "name": "timer",
             "objectMetadataId": objectsNameIdMap.response,
-            "type": "BOOLEAN"
-        }
-
-    },
-    {
-        "field": {
-            "description": "Number of Retakes remaining",
-            "icon": "IconRefreshDot",
-            "label": "Retakes Remaining",
-            "name": "retakesRemaining",
-            "objectMetadataId": objectsNameIdMap.response,
-            "type": "NUMBER"
+            "type": "TEXT"
         }
 
     },

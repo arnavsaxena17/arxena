@@ -37,5 +37,5 @@ export enum AppPath {
 
   // Video Interviews
   VideoInterview = '/video-interview/:videoInterviewId',
-  VideoInterviewReview = '/interview-review',
+  VideoInterviewReview = '/video-interview-review',
 }
