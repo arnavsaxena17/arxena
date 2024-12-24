@@ -5,7 +5,6 @@ import { useTheme } from '@emotion/react';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useRecoilState } from 'recoil';
 
-
 const StyledContainer = styled.div<{ theme: any }>`
   background-color: white;
   width: 100%;
@@ -13,7 +12,6 @@ const StyledContainer = styled.div<{ theme: any }>`
   height: 100vh; // Set a specific height
   overflow-y: auto; // Enable vertical scrolling
 `;
-
 
 const StyledVideoContainer = styled.div`
   background-color: black;
@@ -29,7 +27,6 @@ const DebugInfo = styled.div`
   border-radius: 5px;
   font-family: monospace;
 `;
-
 
 const TranscriptContainer = styled.div`
   background-color: #f5f5f5;
@@ -54,54 +51,63 @@ const TranscriptText = styled.p`
 `;
 
 // Types
+interface Name {
+  firstName: string;
+  lastName: string;
+}
+
+interface Person {
+  name: Name;
+}
+
+interface Company {
+  name: string;
+}
+
+interface Attachment {
+  id: string;
+  type: string;
+  fullPath: string;
+  name: string;
+}
+
 interface Response {
   id: string;
-  transcript: string;
+  transcript: string | null;
   aIInterviewQuestionId: string;
   attachments: {
-    edges: {
-      node: {
-        type: string;
-        fullPath: string;
-        name: string;
-      };
-    }[];
+    edges: Array<{
+      node: Attachment;
+    }>;
   };
 }
 
-interface CandidateData {
-  edges: {
-    node: {
-      id: string;
-      people: {
-        name: {
-          firstName: string;
-          lastName: string;
-        };
-      };
-      jobs: {
-        id: string;
-        name: string;
-        companies: {
-          name: string;
-        };
-        questions: {
-          edges: {
-            node: {
-              id: string;
-              questionValue: string;
-              timeLimit: number;
-            };
-          }[];
-        };
-      };
-      responses: {
-        edges: {
-          node: Response;
-        }[];
-      };
+interface AIInterviewQuestion {
+  id: string;
+  questionValue: string;
+  timeLimit: number | null;
+  responses: {
+    edges: Array<{
+      node: Response;
+    }>;
+  };
+}
+
+interface Job {
+  id: string;
+  name: string;
+  companies: Company;
+}
+
+interface InterviewData {
+  job: Job;
+  aIInterview: {
+    aIInterviewQuestions: {
+      edges: Array<{
+        node: AIInterviewQuestion;
+      }>;
     };
-  }[];
+  };
 }
 
 const query = `query FindManyCandidates($filter: CandidateFilterInput) {
@@ -164,34 +170,10 @@ const query = `query FindManyCandidates($filter: CandidateFilterInput) {
   }
 `;
 
-interface Question {
-  id: string;
-  questionValue: string;
-  responses: {
-    edges: {
-      node: Response;
-    }[];
-  };
+interface VideoInterviewResponseViewerProps {
+  candidateId?: string;
+  aIInterviewStatusId?: string;
 }
-
-
-
-interface InterviewData {
-  job: {
-    companies: {
-      name: string;
-    };
-    name: string;
-  };
-  aIInterview: {
-    aIInterviewQuestions: {
-      edges: {
-        node: Question;
-      }[];
-    };
-  };
-}
-
 
 const CompanyInfo = styled.div`
   margin-bottom: 20px;
@@ -212,95 +194,394 @@ const VideoContainer = styled.div`
   margin: 10px 0;
 `;
 
+const queryByAIInterviewStatus = `query FindOneAIInterviewStatus($objectRecordId: ID!) {
+  aIInterviewStatus(filter: {id: {eq: $objectRecordId}}) {
+    timelineActivities {
+      edges {
+        node {
+          offerId
+          screeningId
+          aIInterviewStatusId
+          linkedRecordCachedName
+          jobId
+          properties
+          clientInterviewId
+          aIInterviewQuestionId
+          questionId
+          candidateReminderId
+          answerId
+          whatsappMessageId
+          name
+          id
+          promptId
+          personId
+          opportunityId
+          updatedAt
+          aIModelId
+          workspaceMemberId
+          linkedRecordId
+          responseId
+          candidateId
+          createdAt
+          cvsentId
+          candidateEnrichmentId
+          aIInterviewId
+          clientContactId
+          shortlistId
+          recruiterInterviewId
+          linkedObjectMetadataId
+          companyId
+          happensAt
+          whatsappTemplateId
+        }
+      }
+    }
+    candidateId
+    aIInterview {
+      introduction
+      createdAt
+      id
+      jobId
+      instructions
+      aIModelId
+      name
 
-const VideoInterviewResponseViewer: React.FC<{ candidateId: string }> = ({ candidateId }) => {
+      aIInterviewQuestions {
+        edges {
+          node {
+            id
+            questionValue
+            timeLimit
+          }
+        }
+      }
+
+
+
+      position
+      updatedAt
+    }
+    aIInterviewId
+    position
+    interviewLink {
+      label
+      url
+    }
+    cameraOn
+    interviewReviewLink {
+      label
+      url
+    }
+    id
+    responses {
+      edges {
+        node {
+          timeLimitAdherence
+          name
+          timerStopped
+          startedResponding
+          updatedAt
+          position
+          personId
+          timer
+          id
+          attachments {
+            edges {
+              node {
+                id
+                type
+                fullPath
+                name
+              }
+            }
+          }
+          createdAt
+          feedback
+          timerStarted
+          completedResponse
+          transcript
+          candidateId
+          jobId
+          retakesRemaining
+          aIInterviewStatusId
+          aIInterviewQuestionId
+        }
+      }
+    }
+    interviewStarted
+    interviewCompleted
+    micOn
+    name
+    createdAt
+    updatedAt
+    candidate {
+      stopChat
+      isVideoInterviewCompleted
+      hiringNaukriUrl {
+        label
+        url
+      }
+      displayPicture {
+        label
+        url
+      }
+      startMeetingSchedulingChat
+      uniqueStringKey
+      whatsappProvider
+      chatCount
+      peopleId
+      startChat
+      status
+      jobs {
+            id
+            name
+            companies {
+              name
+        }
+      }
+      jobSpecificFields
+      jobsId
+      createdAt
+      updatedAt
+      lastEngagementChatControl
+      startVideoInterviewChat
+      resdexNaukriUrl {
+        label
+        url
+      }
+      engagementStatus
+      id
+      position
+      name
+      candConversationStatus
+    }
+  }
+  }
+`;
+
+interface CandidateAPIResponse {
+  id: string;
+  people: {
+    name: {
+      firstName: string;
+      lastName: string;
+    };
+  };
+  jobs: {
+    id: string;
+    name: string;
+    companies: {
+      name: string;
+    };
+    aIInterviews: {
+      edges: Array<{
+        node: {
+          id: string;
+          name: string;
+          aIInterviewQuestions: {
+            edges: Array<{
+              node: {
+                id: string;
+                questionValue: string;
+                timeLimit: number | null;
+              };
+            }>;
+          };
+        };
+      }>;
+    };
+  };
+  responses: {
+    edges: Array<{
+      node: {
+        id: string;
+        transcript: string | null;
+        aIInterviewQuestionId: string;
+        attachments: {
+          edges: Array<{
+            node: {
+              id: string;
+              type: string;
+              fullPath: string;
+              name: string;
+            };
+          }>;
+        };
+      };
+    }>;
+  };
+}
+
+const VideoInterviewResponseViewer: React.FC<VideoInterviewResponseViewerProps> = ({ candidateId, aIInterviewStatusId }) => {
   const [interviewData, setInterviewData] = useState<InterviewData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const theme = useTheme();
   const [tokenPair] = useRecoilState(tokenPairState);
+  // Clean up IDs from paths
+  const cleanId = (id: string) => (id.includes('/') ? id.split('/').pop() : id);
 
-  const cleanCandidateId = candidateId.includes('/') 
-  ? candidateId.split('/').pop() 
-  : candidateId;
-
-
-  useEffect(() => {
-    const fetchInterviewData = async () => {
-      try {
+  const fetchInterviewData = async () => {
+    try {
+      // Try aIInterviewStatusId first
+      if (aIInterviewStatusId) {
         const response = await fetch(`${process.env.REACT_APP_SERVER_BASE_URL}/graphql`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${tokenPair?.accessToken?.token}`,
+            Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
           },
           body: JSON.stringify({
-            query,
-            variables: { 
-              filter: {
-                id: { eq: candidateId.replace("/video-interview-review/","") }
-              }
+            query: queryByAIInterviewStatus,
+            variables: {
+              objectRecordId: cleanId(aIInterviewStatusId),
             },
           }),
         });
-        
+
         const responseData = await response.json();
-        console.log('GraphQL Response:', responseData); // Debug log
+        console.log('REsoinse::', responseData);
 
-        // Check if the response has the expected structure
-        if (!responseData?.data?.candidates) {
-          throw new Error('Invalid response structure');
+        // If we got valid data, transform and use it
+        if (responseData?.data?.aIInterviewStatus?.candidate) {
+          console.log('WE got valid data in aIInterviewStatus');
+          const transformedData = transformAIInterviewStatusData(responseData);
+          console.log('transformedData::', transformedData);
+          setInterviewData(transformedData);
+          setLoading(false);
+          return;
         }
-
-        const candidates = responseData.data.candidates;
-        
-        // Check if we have any candidates
-        if (!candidates.edges || candidates.edges.length === 0) {
-          throw new Error('No candidate found');
-        }
-
-        const candidate = candidates.edges[0].node;
-        
-        // Check if candidate has all required data
-        if (!candidate.jobs?.aIInterviews?.edges?.[0]?.node?.aIInterviewQuestions?.edges) {
-          throw new Error('Incomplete candidate data');
-        }
-
-        const transformedData: InterviewData = {
-          job: {
-            companies: candidate.jobs.companies,
-            name: candidate.jobs.name
-          },
-          aIInterview: {
-            aIInterviewQuestions: {
-              edges: candidate.jobs.aIInterviews.edges[0].node.aIInterviewQuestions.edges.map(
-                (question: any) => ({
-                  node: {
-                    ...question.node,
-                    responses: {
-                      edges: (candidate.responses?.edges || []).filter(
-                        (response: any) => response.node.aIInterviewQuestionId === question.node.id
-                      )
-                    }
-                  }
-                })
-              )
-            }
-          }
-        };
-
-        console.log('Transformed Data:', transformedData); // Debug log
-        setInterviewData(transformedData);
-      } catch (err) {
-        console.error('Full error:', err); // Debug log
-        setError(`Error fetching interview data: ${(err as Error).message}`);
-      } finally {
-        setLoading(false);
       }
-    };
 
+      if (candidateId) {
+        const response = await fetch(`${process.env.REACT_APP_SERVER_BASE_URL}/graphql`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
+          },
+          body: JSON.stringify({
+            query,
+            variables: {
+              filter: {
+                id: { eq: cleanId(candidateId) },
+              },
+            },
+          }),
+        });
+
+        const responseData = await response.json();
+        console.log('REsponse ddta:', responseData);
+        if (responseData?.data?.candidates?.edges?.[0]?.node) {
+          console.log('WE got valid data in candiate data');
+          const candidate = responseData.data.candidates.edges[0].node;
+          const transformedData = transformCandidateData(candidate);
+          setInterviewData(transformedData);
+          setLoading(false);
+          return;
+        }
+      }
+
+      throw new Error('No valid data found with provided IDs');
+    } catch (err) {
+      console.error('Full error:', err);
+      setError(`Error fetching interview data: ${(err as Error).message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Separate transformation functions for cleaner code
+  const transformAIInterviewStatusData = (responseData: any): InterviewData => {
+    const aiInterviewStatus = responseData.data.aIInterviewStatus;
+    const candidate = aiInterviewStatus.candidate;
+    const responses = aiInterviewStatus.responses.edges || [];
+    const aiInterview = aiInterviewStatus.aIInterview;
+
+    return {
+      job: {
+        id: candidate.jobs.id,
+        companies: {
+          name: candidate.jobs.companies.name,
+        },
+        name: candidate.jobs.name,
+      },
+      aIInterview: {
+        aIInterviewQuestions: {
+          edges: aiInterview.aIInterviewQuestions.edges.map((questionEdge: { node: { id: any; questionValue: any; timeLimit: any } }) => ({
+            node: {
+              id: questionEdge.node.id,
+              questionValue: questionEdge.node.questionValue,
+              timeLimit: questionEdge.node.timeLimit,
+              responses: {
+                edges: responses
+                  .filter((responseEdge: { node: { aIInterviewQuestionId: any } }) => responseEdge.node.aIInterviewQuestionId === questionEdge.node.id)
+                  .map(
+                    (responseEdge: {
+                      node: {
+                        attachments: any;
+                        id: any;
+                        transcript: any;
+                        aIInterviewQuestionId: any;
+                      };
+                    }) => ({
+                      node: {
+                        id: responseEdge.node.id,
+                        transcript: responseEdge.node.transcript,
+                        aIInterviewQuestionId: responseEdge.node.aIInterviewQuestionId,
+                        attachments: responseEdge.node.attachments,
+                      },
+                    }),
+                  ),
+              },
+            },
+          })),
+        },
+      },
+    };
+  };
+
+  const transformCandidateData = (candidate: CandidateAPIResponse): InterviewData => {
+    return {
+      job: {
+        id: candidate.jobs.id,
+        companies: candidate.jobs.companies,
+        name: candidate.jobs.name,
+      },
+      aIInterview: {
+        aIInterviewQuestions: {
+          edges: candidate.jobs.aIInterviews.edges[0].node.aIInterviewQuestions.edges.map(({ node: question }) => ({
+            node: {
+              id: question.id,
+              questionValue: question.questionValue,
+              timeLimit: question.timeLimit,
+              responses: {
+                edges: candidate.responses.edges
+                  .filter(response => response.node.aIInterviewQuestionId === question.id)
+                  .map(response => ({
+                    node: {
+                      id: response.node.id,
+                      transcript: response.node.transcript,
+                      aIInterviewQuestionId: response.node.aIInterviewQuestionId,
+                      attachments: response.node.attachments,
+                    },
+                  })),
+              },
+            },
+          })),
+        },
+      },
+    };
+  };
+
+  useEffect(() => {
+    if (!candidateId && !aIInterviewStatusId) {
+      setError('Either candidateId or aIInterviewStatusId must be provided');
+      setLoading(false);
+      return;
+    }
     fetchInterviewData();
-  }, [candidateId, tokenPair?.accessToken?.token]);
+  }, [candidateId, aIInterviewStatusId, tokenPair?.accessToken?.token]);
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
@@ -318,20 +599,13 @@ const VideoInterviewResponseViewer: React.FC<{ candidateId: string }> = ({ candi
           <QuestionText>
             Question {index + 1}: {question.questionValue}
           </QuestionText>
-          
+
           {question.responses.edges.map(({ node: response }) => {
-            const videoAttachment = response.attachments.edges.find(
-              edge => edge.node.type === 'Video'
-            );
-
-            
-
+            const videoAttachment = response.attachments.edges.find(edge => edge.node.type === 'Video');
 
             return videoAttachment ? (
               <VideoContainer key={response.id}>
-                <VideoDownloaderPlayer 
-                  videoUrl={`${process.env.REACT_APP_SERVER_BASE_URL}/files/${videoAttachment.node.fullPath}`} 
-                />
+                <VideoDownloaderPlayer videoUrl={`${process.env.REACT_APP_SERVER_BASE_URL}/files/${videoAttachment.node.fullPath}`} />
                 {response.transcript && (
                   <TranscriptContainer>
                     <TranscriptHeading>Transcript</TranscriptHeading>
@@ -341,7 +615,6 @@ const VideoInterviewResponseViewer: React.FC<{ candidateId: string }> = ({ candi
               </VideoContainer>
             ) : null;
           })}
-
         </QuestionContainer>
       ))}
     </StyledContainer>
