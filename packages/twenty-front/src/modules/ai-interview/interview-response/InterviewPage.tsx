@@ -6,7 +6,8 @@ import { v4 as uuid } from 'uuid';
 import * as InterviewResponseTypes from './types/interviewResponseTypes';
 import { VideoPlayer } from './utils/videoPlaybackUtils';
 import VideoContainer from './VideoContainer';
-
+import { Button } from '@/ui/input/button/components/Button';
+import { ButtonGroup } from '@/ui/input/button/components/ButtonGroup';
 import {
   StyledLeftPanelContentBox,
   StyledTextLeftPanelTextHeadline,
@@ -20,7 +21,8 @@ import {
   StyledRightPanel,
 } from './styled-components/StyledComponentsInterviewResponse';
 
-import { Mixpanel } from '~/mixpanel'
+import { Mixpanel } from '~/mixpanel';
+import { IconClockRecord, IconCommand, IconRewindBackward10, IconRewindBackward5 } from '@tabler/icons-react';
 
 const ffmpeg = createFFmpeg({
   // corePath: `/ffmpeg/ffmpeg-core.js`,
@@ -31,15 +33,21 @@ const ffmpeg = createFFmpeg({
 
 const PreviewControls = styled.div`
   display: flex;
-  gap: 10px;
-  margin-top: 10px;
+  justify-content: center; // Align to the right
+  margin-top: 24px; // Add more space from the video
+  padding-right: 16px; // Add some right padding
 `;
 
+const PreviewContainer = styled.div`
+  position: relative;
+  width: 100%;
+`;
 
-const PreloadVideo: React.FC<{ src: string }> = ({ src }) => (
-  <link rel="preload" as="video" href={src} />
-);
+const PreviewVideo = styled.video`
+  width: 100%;
+`;
 
+const PreloadVideo: React.FC<{ src: string }> = ({ src }) => <link rel="preload" as="video" href={src} />;
 
 interface InterviewPageProps extends InterviewResponseTypes.InterviewPageProps {
   videoPlaybackState: { isPlaying: boolean; isMuted: boolean };
@@ -73,22 +81,16 @@ export const InterviewPage: React.FC<InterviewPageProps> = ({ InterviewData, que
   const [responseSubmitted, setResponseSubmitted] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
 
-
-
-
-
   const handlePlaybackChange = (isPlaying: boolean) => {
     onVideoStateChange({
       ...videoPlaybackState,
-      isPlaying
+      isPlaying,
     });
   };
 
   // Function to get video URL for a specific question index
   const getQuestionVideoURL = (index: number) => {
-    const attachment = questionsVideoAttachment.find(
-      attachment => attachment?.id === questions[index]?.attachments?.edges[0]?.node?.id
-    )?.fullPath;
+    const attachment = questionsVideoAttachment.find(attachment => attachment?.id === questions[index]?.attachments?.edges[0]?.node?.id)?.fullPath;
     return attachment ? `${process.env.REACT_APP_SERVER_BASE_URL}/files/${attachment}` : null;
   };
 
@@ -100,7 +102,6 @@ export const InterviewPage: React.FC<InterviewPageProps> = ({ InterviewData, que
     }
   }, [currentQuestionIndex, questions, questionsVideoAttachment]);
 
-  
   // Handle video loading state
   const handleVideoLoadStart = () => {
     setIsVideoLoading(true);
@@ -121,11 +122,10 @@ export const InterviewPage: React.FC<InterviewPageProps> = ({ InterviewData, que
       Mixpanel.track('Interview Page View', {
         jobTitle: InterviewData?.candidate?.jobs?.name,
         company: InterviewData?.candidate?.jobs?.companyName,
-        questionCount: questions.length
+        questionCount: questions.length,
       });
     }
   }, [InterviewData]);
-  
 
   useEffect(() => {
     if (timer !== null && timer > 0) {
@@ -170,13 +170,12 @@ export const InterviewPage: React.FC<InterviewPageProps> = ({ InterviewData, que
     setRecorded(false);
     setResponseSubmitted(false);
   };
-  
-  
+
   const handleSubmitRecording = async () => {
     setShowPreview(false);
     setIsTransitioning(true);
     await handleSubmit();
-    
+
     if (!error) {
       if (!isLastQuestion) {
         setTimer(5);
@@ -188,17 +187,10 @@ export const InterviewPage: React.FC<InterviewPageProps> = ({ InterviewData, que
       setIsTransitioning(false);
     }
   };
-  
-  
-  const PreviewContainer = styled.div`
-    position: relative;
-    width: 100%;
-  `;
-
 
   const handleStartRecording = () => {
     setRecording(true);
-    resetAndStopVideo(); 
+    resetAndStopVideo();
     setCountdown(5);
     startRecording();
   };
@@ -228,31 +220,29 @@ export const InterviewPage: React.FC<InterviewPageProps> = ({ InterviewData, que
   }, [isPlaying]);
 
   const moveToNextQuestion = () => {
-  if (currentQuestionIndex < questions.length) {
-    setIsVideoLoading(true);
-    setRecordedChunks([]);
-    setError(null);
-    setTimer(null);
-    setActiveCameraFeed(true);
-    setRecording(false);
-    setRecorded(false);
-    setSubmitting(false);
-    setCountdown(null);
-    setAnswerTimer(null);
-    setShowPreview(false);
-    setRecordedVideoUrl(null);
-    setResponseSubmitted(false);
-    setIsTransitioning(false);
-    
-    if (videoRef.current) {
-      videoRef.current.load();
-    }
-  } else {
-    onFinish();
-  }
-};
+    if (currentQuestionIndex < questions.length) {
+      setIsVideoLoading(true);
+      setRecordedChunks([]);
+      setError(null);
+      setTimer(null);
+      setActiveCameraFeed(true);
+      setRecording(false);
+      setRecorded(false);
+      setSubmitting(false);
+      setCountdown(null);
+      setAnswerTimer(null);
+      setShowPreview(false);
+      setRecordedVideoUrl(null);
+      setResponseSubmitted(false);
+      setIsTransitioning(false);
 
-  
+      if (videoRef.current) {
+        videoRef.current.load();
+      }
+    } else {
+      onFinish();
+    }
+  };
 
   const checkCamera = async () => {
     try {
@@ -272,21 +262,7 @@ export const InterviewPage: React.FC<InterviewPageProps> = ({ InterviewData, que
       setRecorded(true);
       setAnswerTimer(null);
     }
-  };  
-
-
-  const PreviewVideo = styled.video`
-  width: 100%;
-  transform: scaleX(-1);
-  
-  /* Override the transform for the video controls */
-  &::-webkit-media-controls,
-  &::-webkit-media-controls-enclosure {
-    transform: scaleX(1);
-  }
-`;
-
-
+  };
 
   const handleDataAvailable = (event: BlobEvent) => {
     if (event.data && event.data.size > 0) {
@@ -296,8 +272,7 @@ export const InterviewPage: React.FC<InterviewPageProps> = ({ InterviewData, que
       setShowPreview(true);
     }
   };
-  
-  
+
   // useEffect(() => {
   //   if (recorded && recordedChunks.length > 0) {
   //     handleSubmit();
@@ -345,12 +320,10 @@ export const InterviewPage: React.FC<InterviewPageProps> = ({ InterviewData, que
         onNextQuestion(formData);
         setSubmitting(false);
         setResponseSubmitted(true);
-        
+
         if (isLastQuestion) {
           onFinish();
-        } 
-        
-
+        }
       } catch (error) {
         console.error('Error submitting response:', error);
         setSubmitting(false);
@@ -372,75 +345,100 @@ export const InterviewPage: React.FC<InterviewPageProps> = ({ InterviewData, que
   console.log('This is the currentQuestionVideoURL::', currentQuestionVideoURL);
 
   return (
-<SnapScrollContainer>
-  <StyledLeftPanel>
-    <h2>{InterviewData?.candidate?.jobs?.name} at {InterviewData?.candidate?.jobs?.companyName}</h2>
-    <StyledLeftPanelContentBox>
-      <StyledTextLeftPanelTextHeadline>
-        Question {currentQuestionIndex + 1} of {questions.length}
-      </StyledTextLeftPanelTextHeadline>
-      <VideoPlayer 
-        src={currentQuestionVideoURL || ''} 
-        videoRef={videoRef} 
-        isPlaying={videoPlaybackState.isPlaying} 
-        setIsPlaying={handlePlaybackChange}
-        isMuted={videoPlaybackState.isMuted}
-        onLoadStart={handleVideoLoadStart} 
-        onCanPlay={handleVideoCanPlay} 
-      />
-      <h3>Question</h3>
-      <StyledTextLeftPaneldisplay>
-        {questions[currentQuestionIndex].questionValue}
-      </StyledTextLeftPaneldisplay>
-    </StyledLeftPanelContentBox>
-  </StyledLeftPanel>
-  <StyledRightPanel>
-    <div>
-      <h2>Question {currentQuestionIndex + 1} of {questions.length}</h2>
-      <p>{questions[currentQuestionIndex].questionValue}</p>
-    </div>
-
-    {!isTransitioning && (
-      <>
-        {!showPreview && activeCameraFeed && (
-          <VideoContainer 
-            answerTimer={answerTimer} 
-            isRecording={recording} 
-            onRecordingClick={recording ? handleStopRecording : handleStartRecording} 
-            setIsPlaying={setIsPlaying} 
-            countdown={countdown} 
-            webcamRef={webcamRef} 
-            interviewTime={interviewTime}
+    <SnapScrollContainer>
+      <StyledLeftPanel>
+        <h2>
+          {InterviewData?.candidate?.jobs?.name} at {InterviewData?.candidate?.jobs?.companyName}
+        </h2>
+        <StyledLeftPanelContentBox>
+          <StyledTextLeftPanelTextHeadline>
+            Question {currentQuestionIndex + 1} of {questions.length}
+          </StyledTextLeftPanelTextHeadline>
+          <VideoPlayer
+            src={currentQuestionVideoURL || ''}
+            videoRef={videoRef}
+            isPlaying={videoPlaybackState.isPlaying}
+            setIsPlaying={handlePlaybackChange}
+            isMuted={videoPlaybackState.isMuted}
+            onLoadStart={handleVideoLoadStart}
+            onCanPlay={handleVideoCanPlay}
           />
+          <h3>Question</h3>
+          <StyledTextLeftPaneldisplay>{questions[currentQuestionIndex].questionValue}</StyledTextLeftPaneldisplay>
+        </StyledLeftPanelContentBox>
+      </StyledLeftPanel>
+      <StyledRightPanel>
+        <div>
+          <h2>
+            Question {currentQuestionIndex + 1} of {questions.length}
+          </h2>
+          <p>{questions[currentQuestionIndex].questionValue}</p>
+        </div>
+
+        {!isTransitioning && (
+          <>
+            {!showPreview && activeCameraFeed && (
+              <VideoContainer
+                answerTimer={answerTimer}
+                isRecording={recording}
+                onRecordingClick={recording ? handleStopRecording : handleStartRecording}
+                setIsPlaying={setIsPlaying}
+                countdown={countdown}
+                webcamRef={webcamRef}
+                interviewTime={interviewTime}
+              />
+            )}
+
+            {showPreview && (
+              <PreviewContainer>
+                <PreviewVideo src={recordedVideoUrl || undefined} controls width="100%" />
+                <PreviewControls>
+                  <ButtonGroup variant="primary" size="medium" accent="blue">
+                    <Button
+                      Icon={IconRewindBackward5}
+                      title="Re-record"
+                      fullWidth={false}
+                      variant="secondary"
+                      size="medium"
+                      position="left" // Changed from 'left' to 'standalone'
+                      accent="blue"
+                      soon={false}
+                      disabled={false}
+                      focus={true}
+                      onClick={handleReRecord}
+                      style={{ marginRight: '16px' }} // Add direct margin if needed
+
+                      // className="mr-3"  // Add margin-right utility class if available in your system
+                    />
+                    <Button
+                      Icon={IconCommand}
+                      title="Submit"
+                      fullWidth={false}
+                      variant="primary"
+                      size="medium"
+                      position="right" // Changed from 'right' to 'standalone'
+                      accent="blue"
+                      soon={false}
+                      disabled={false}
+                      focus={true}
+                      onClick={handleSubmitRecording}
+                    />
+                  </ButtonGroup>
+                </PreviewControls>
+              </PreviewContainer>
+            )}
+          </>
         )}
 
-      {showPreview && (
-        <PreviewContainer>
-          <PreviewVideo 
-            src={recordedVideoUrl || undefined} 
-            controls 
-            width="100%" 
-          />
-          <PreviewControls>
-            <button onClick={handleReRecord}>Re-record</button>
-            <button onClick={handleSubmitRecording}>Submit</button>
-          </PreviewControls>
-        </PreviewContainer>
-      )}
+        {isTransitioning && timer !== null && (
+          <>
+            <StyledMessage>Response submitted successfully! Moving to next question in:</StyledMessage>
+            <StyledTimer>{timer}</StyledTimer>
+          </>
+        )}
 
-
-      </>
-    )}
-
-    {isTransitioning && timer !== null && (
-      <>
-        <StyledMessage>Response submitted successfully! Moving to next question in:</StyledMessage>
-        <StyledTimer>{timer}</StyledTimer>
-      </>
-    )}
-
-    {error && <StyledError>{error}</StyledError>}
-  </StyledRightPanel>
-</SnapScrollContainer>
+        {error && <StyledError>{error}</StyledError>}
+      </StyledRightPanel>
+    </SnapScrollContainer>
   );
 };

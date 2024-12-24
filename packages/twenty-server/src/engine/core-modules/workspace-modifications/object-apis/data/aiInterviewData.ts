@@ -1,8 +1,8 @@
 import { AIInterview } from '../types/types.js';
 
 export function generateAIInterviewData(aiModelIds: string[], jobIds: string[]): AIInterview[] {
-    return Array.from({ length: 10 }, (_, i) => ({
-        name: `interview ${i + 1}`,
+    return Array.from({ length: 1 }, (_, i) => ({
+        name: `Sample Interview ${i + 1}`,
         aIModelId: getRandomId(aiModelIds),
         jobId: getRandomId(jobIds)
     }));

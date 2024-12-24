@@ -5,7 +5,7 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
         {
             "relation": {
                 "fromDescription": null,
-                "fromIcon": "IconBuilding",
+                "fromIcon": "IconTie",
                 "fromLabel": "Jobs",
                 "fromName": "jobs",
                 "fromObjectMetadataId": objectsNameIdMap.company,
@@ -75,7 +75,7 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
             {
             "relation": {
                 "fromDescription": null,
-                "fromIcon": "IconBuilding",
+                "fromIcon": "IconTie",
                 "fromLabel": "Jobs",
                 "fromName": "jobs",
                 "fromObjectMetadataId": objectsNameIdMap.workspaceMember,
@@ -449,6 +449,62 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
                 "toDescription": "",
                 "toLabel": "AI Interview Question",
                 "toName": "aIInterviewQuestion",
+    
+            }
+    
+        },
+    
+        {
+    
+            "relation": {
+                "fromDescription": null,
+                "fromIcon": "IconTie",
+                "fromLabel": "Responses",
+                "fromName": "responses",
+                "fromObjectMetadataId": objectsNameIdMap.job,
+                "relationType": "ONE_TO_MANY",
+                "toObjectMetadataId": objectsNameIdMap.response,
+                "toIcon": "IconQuestionMark",
+                "toDescription": "",
+                "toLabel": "Job",
+                "toName": "job",
+    
+            }
+    
+        },
+    
+        {
+    
+            "relation": {
+                "fromDescription": null,
+                "fromIcon": "IconUser",
+                "fromLabel": "Responses",
+                "fromName": "responses",
+                "fromObjectMetadataId": objectsNameIdMap.candidate,
+                "relationType": "ONE_TO_MANY",
+                "toObjectMetadataId": objectsNameIdMap.response,
+                "toIcon": "IconQuestionMark",
+                "toDescription": "",
+                "toLabel": "Candidate",
+                "toName": "candidate",
+    
+            }
+    
+        },
+        {
+    
+            "relation": {
+                "fromDescription": null,
+                "fromIcon": "IconUser",
+                "fromLabel": "Responses",
+                "fromName": "responses",
+                "fromObjectMetadataId": objectsNameIdMap.person,
+                "relationType": "ONE_TO_MANY",
+                "toObjectMetadataId": objectsNameIdMap.response,
+                "toIcon": "IconQuestionMark",
+                "toDescription": "",
+                "toLabel": "Person",
+                "toName": "person",
     
             }
     

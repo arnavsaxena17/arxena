@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import styled from '@emotion/styled';
 import VideoDownloaderPlayer from './VideoDownloaderPlayer';
+import { useTheme } from '@emotion/react';
 
-const StyledContainer = styled.div`
-  background-color: red;
-  width: 100vw;
+
+const StyledContainer = styled.div<{ theme: any }>`
+background-color: white;
+width: 100vw;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -60,8 +62,10 @@ const VideoInterviewResponseViewer: React.FC<{ interviewId: string }> = ({ inter
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => setVolume(parseFloat(e.target.value));
   const handleProgress = (state: { played: number }) => setPlayed(state.played);
 console.log("videoUrl::", videoUrl)
+  const theme = useTheme();
+
   return (
-    <StyledContainer>
+    <StyledContainer theme={theme}>
       <StyledVideoContainer>
         <VideoDownloaderPlayer videoUrl={videoUrl} />
       </StyledVideoContainer>

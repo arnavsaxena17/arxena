@@ -206,6 +206,9 @@ export class VideoInterviewController {
           aIInterviewQuestionId: questionId,
           transcript: transcript,
           completedResponse: true,
+          candidateId:interviewData.candidate.id,
+          jobId: interviewData.candidate.jobs.id,
+          personId: interviewData.candidate.people.id,
           timeLimitAdherence: req.body.responseData?.timeLimitAdherence,
         },
       };
