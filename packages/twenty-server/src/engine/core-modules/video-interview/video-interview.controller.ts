@@ -272,7 +272,28 @@ export class VideoInterviewController {
           }
         }
       `;
+      const mutationToUpdateOneCandidate = `
+        mutation UpdateOneCandidate($idToUpdate: ID!, $input: CandidateUpdateInput!) {
+          updateCandidate(id: $idToUpdate, data: $input) {
+        id
+        updatedAt
+          }
+        }
+      `;
 
+      const updateCandidateVariables = {
+        idToUpdate: interviewData.candidate.id,
+        input: {
+          isVideoInterviewCompleted: true,
+        },
+      };
+
+      const graphqlQueryObjForUpdationForCandidateStatus = JSON.stringify({
+        query: mutationToUpdateOneCandidate,
+        variables: updateCandidateVariables,
+      });
+
+      console.log('graphqlQueryObjForUpdationForCandidateStatus::', graphqlQueryObjForUpdationForCandidateStatus);
       const updateStatusVariables = {
         idToUpdate: interviewData.id.replace("/video-interview/", ""),
         input: {
@@ -285,17 +306,30 @@ export class VideoInterviewController {
         variables: updateStatusVariables,
       });
       console.log('graphqlQueryObjForUpdationForStatus::', graphqlQueryObjForUpdationForStatus);
-
       // console.log('Sending GraphQL mutation for status update');
-      const statusResult = (await axiosRequest(graphqlQueryObjForUpdationForStatus,apiToken)).data;
+      let statusResult;
+      try{
+
+        statusResult = (await axiosRequest(graphqlQueryObjForUpdationForStatus,apiToken)).data;
+      }
+      catch(e){
+        console.log("Error in UpdateOneAIInterviewStatus status update::", e)
+      }
+      try{
+
+        const statusCandidateUpdateResult = (await axiosRequest(graphqlQueryObjForUpdationForCandidateStatus,apiToken)).data;
+      }
+      catch(e){
+        console.log("Error in candidate status update::", e)
+      }
       // console.log('Status update result:', JSON.stringify(statusResult, null, 2));
 
       console.log('Preparing response');
       const response = {
-        response: responseResult.createResponse,
-        status: statusResult.updateAIInterviewStatus,
-        videoFile: videoFile.filename,
-        audioFile: audioFile.filename,
+        response: responseResult?.createResponse,
+        status: statusResult?.updateAIInterviewStatus,
+        videoFile: videoFile?.filename,
+        audioFile: audioFile?.filename,
       };
       console.log('Final response:', JSON.stringify(response, null, 2));
 

@@ -324,6 +324,10 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
             url:"/video-interview/"+interviewStatusId,
             label: "/video-interview/"+interviewStatusId,
           },
+          interviewReviewLink:{
+            url:"/video-interview-review/"+candidateObj?.id,
+            label: "/video-interview-review/"+candidateObj?.id,
+          },
           cameraOn:false,
           micOn:false,
           position: "first"

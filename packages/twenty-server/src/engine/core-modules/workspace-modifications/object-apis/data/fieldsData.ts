@@ -494,6 +494,16 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
     {
         "field": {
             "description": "",
+            "label": "isVideoInterviewCompleted",
+            "name": "isVideoInterviewCompleted",
+            "objectMetadataId": objectsNameIdMap.candidate,
+            "type": "BOOLEAN",
+            "defaultValue": false,
+        }
+    },
+    {
+        "field": {
+            "description": "",
             "label": "lastEngagementChatControl",
             "name": "lastEngagementChatControl",
             "objectMetadataId": objectsNameIdMap.candidate,
@@ -1124,6 +1134,17 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
             "icon": "IconLink",
             "label": "Interview Link",
             "name": "interviewLink",
+            "objectMetadataId": objectsNameIdMap.aIInterviewStatus,
+            "type": "LINK"
+        }
+
+    },
+    {
+        "field": {
+            "description": "Link with Interview Review",
+            "icon": "IconLink",
+            "label": "Interview Review Link",
+            "name": "interviewReviewLink",
             "objectMetadataId": objectsNameIdMap.aIInterviewStatus,
             "type": "LINK"
         }
