@@ -45,7 +45,10 @@ const PreviewContainer = styled.div`
 
 const PreviewVideo = styled.video`
   width: 100%;
+  transform: scaleX(1); // Ensure playback is not mirrored
+  -webkit-transform: scaleX(1);
 `;
+
 
 const PreloadVideo: React.FC<{ src: string }> = ({ src }) => <link rel="preload" as="video" href={src} />;
 
@@ -203,12 +206,52 @@ export const InterviewPage: React.FC<InterviewPageProps> = ({ InterviewData, que
     setAnswerTimer(interviewTime);
     const stream = webcamRef.current?.stream;
     if (stream) {
-      mediaRecorderRef.current = new MediaRecorder(stream, { mimeType: 'video/webm' });
-      mediaRecorderRef.current.ondataavailable = handleDataAvailable;
-      mediaRecorderRef.current.start();
+      // Create a canvas to flip the video
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const video = webcamRef.current?.video;
+      
+      if (video && ctx) {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        
+        // Flip context horizontally
+        ctx.translate(canvas.width, 0);
+        ctx.scale(-1, 1);
+        
+        // Create a new stream from the canvas
+        const canvasStream = canvas.captureStream();
+        const audioTrack = stream.getAudioTracks()[0];
+        canvasStream.addTrack(audioTrack);
+        
+        // Start recording from the canvas stream
+        mediaRecorderRef.current = new MediaRecorder(canvasStream, {
+          mimeType: 'video/webm'
+        });
+        
+        mediaRecorderRef.current.ondataavailable = handleDataAvailable;
+        mediaRecorderRef.current.start();
+        
+        // Update canvas frame continuously
+        const drawFrame = () => {
+          if (video && ctx && mediaRecorderRef.current?.state === 'recording') {
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            requestAnimationFrame(drawFrame);
+          }
+        };
+        drawFrame();
+      } else {
+        // Fallback to direct stream if canvas setup fails
+        mediaRecorderRef.current = new MediaRecorder(stream, {
+          mimeType: 'video/webm'
+        });
+        mediaRecorderRef.current.ondataavailable = handleDataAvailable;
+        mediaRecorderRef.current.start();
+      }
     }
   };
-
+  
+  
   useEffect(() => {
     if (videoRef.current) {
       if (isPlaying) {

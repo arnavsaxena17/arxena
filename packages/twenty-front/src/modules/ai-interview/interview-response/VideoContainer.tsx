@@ -17,19 +17,17 @@ interface VideoContainerProps {
 }
 
 
-const UnmirroredWebcam =styled(Webcam as any)`
+// In VideoContainer.tsx
+const UnmirroredWebcam = styled(Webcam as any)`
   width: 100%;
   height: 100%;
-  transform: scaleX(1);
-  -webkit-transform: scaleX(1);
+  transform: scaleX(-1); // Mirror the preview
+  -webkit-transform: scaleX(-1);
   
-  /* Target the internal video element */
   & video {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transform: scaleX(1) !important;
-    -webkit-transform: scaleX(1) !important;
   }
 `;
 
@@ -167,7 +165,7 @@ const VideoContainer: React.FC<VideoContainerProps> = ({
           ref={webcamRef}
           videoConstraints={videoConstraints}
           audioConstraints={audioConstraints}
-          mirrored={true}
+          mirrored={true} // Show mirrored preview
           screenshotFormat="image/jpeg"
           onUserMedia={(stream:any) => {
             // Mute the audio output when the stream starts
