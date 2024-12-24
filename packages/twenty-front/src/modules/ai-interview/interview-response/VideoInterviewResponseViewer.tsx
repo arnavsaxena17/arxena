@@ -228,7 +228,7 @@ const VideoInterviewResponseViewer: React.FC<{ candidateId: string }> = ({ candi
   useEffect(() => {
     const fetchInterviewData = async () => {
       try {
-        const response = await fetch('http://localhost:3000/graphql', {
+        const response = await fetch(`${process.env.REACT_APP_SERVER_BASE_URL}/graphql`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -324,10 +324,13 @@ const VideoInterviewResponseViewer: React.FC<{ candidateId: string }> = ({ candi
               edge => edge.node.type === 'Video'
             );
 
+            
+
+
             return videoAttachment ? (
               <VideoContainer key={response.id}>
                 <VideoDownloaderPlayer 
-                  videoUrl={`http://localhost:3000/files/${videoAttachment.node.fullPath}`} 
+                  videoUrl={`${process.env.REACT_APP_SERVER_BASE_URL}/files/${videoAttachment.node.fullPath}`} 
                 />
                 {response.transcript && (
                   <TranscriptContainer>
