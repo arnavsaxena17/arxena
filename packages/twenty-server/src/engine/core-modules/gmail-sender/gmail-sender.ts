@@ -53,60 +53,60 @@ export class GmailSender {
 
 
 
-@Controller('auth/google')
-export class GoogleAuthController {
-  constructor(private readonly googleAuthService: GoogleAuthService) {}
+// @Controller('auth/google')
+// export class GoogleAuthController {
+//   constructor(private readonly googleAuthService: GoogleAuthService) {}
 
-  @Get('start-auth')
-  async startAuth(@Res() res: Response) {
-    try {
-      const authUrl = await this.googleAuthService.getAuthUrl();
-      console.log('Redirecting to auth URL:', authUrl);
-      res.redirect(authUrl);
-    } catch (error) {
-      console.error('Error starting auth:', error);
-      res.status(500).send(`Error: ${error.message}`);
-    }
-  }
+  // @Get('start-auth')
+  // async startAuth(@Res() res: Response) {
+  //   try {
+  //     const authUrl = await this.googleAuthService.getAuthUrl();
+  //     console.log('Redirecting to auth URL:', authUrl);
+  //     res.redirect(authUrl);
+  //   } catch (error) {
+  //     console.error('Error starting auth:', error);
+  //     res.status(500).send(`Error: ${error.message}`);
+  //   }
+  // }
 
-  @Get('redirect')
-  async handleRedirect(@Query('code') code: string, @Res() res: Response) {
-    try {
-      if (!code) {
-        throw new Error('No authorization code received');
-      }
+  // @Get('redirect')
+  // async handleRedirect(@Query('code') code: string, @Res() res: Response) {
+  //   try {
+  //     if (!code) {
+  //       throw new Error('No authorization code received');
+  //     }
 
-      await this.googleAuthService.handleAuthCallback(code);
+  //     await this.googleAuthService.handleAuthCallback(code);
       
-      res.send(`
-        <html>
-          <body>
-            <h1>Authentication Successful!</h1>
-            <p>token.json has been created. You can now close this window.</p>
-            <p>If you're still seeing auth errors, please:</p>
-            <ol>
-              <li>Go to your project directory and verify token.json was created</li>
-              <li>Restart your NestJS server</li>
-              <li>Try your email operation again</li>
-            </ol>
-          </body>
-        </html>
-      `);
-    } catch (error) {
-      res.status(500).send(`
-        <html>
-          <body>
-            <h1>Authentication Failed</h1>
-            <p>Error: ${error.message}</p>
-            <p>Please try again after:</p>
-            <ol>
-              <li>Going to <a href="https://myaccount.google.com/permissions" target="_blank">Google Account Permissions</a></li>
-              <li>Removing access for your app</li>
-              <li>Closing this window and starting over</li>
-            </ol>
-          </body>
-        </html>
-      `);
-    }
-  }
-}
+  //     res.send(`
+  //       <html>
+  //         <body>
+  //           <h1>Authentication Successful!</h1>
+  //           <p>token.json has been created. You can now close this window.</p>
+  //           <p>If you're still seeing auth errors, please:</p>
+  //           <ol>
+  //             <li>Go to your project directory and verify token.json was created</li>
+  //             <li>Restart your NestJS server</li>
+  //             <li>Try your email operation again</li>
+  //           </ol>
+  //         </body>
+  //       </html>
+  //     `);
+  //   } catch (error) {
+  //     res.status(500).send(`
+  //       <html>
+  //         <body>
+  //           <h1>Authentication Failed</h1>
+  //           <p>Error: ${error.message}</p>
+  //           <p>Please try again after:</p>
+  //           <ol>
+  //             <li>Going to <a href="https://myaccount.google.com/permissions" target="_blank">Google Account Permissions</a></li>
+  //             <li>Removing access for your app</li>
+  //             <li>Closing this window and starting over</li>
+  //           </ol>
+  //         </body>
+  //       </html>
+  //     `);
+  //   }
+  // }
+// }
