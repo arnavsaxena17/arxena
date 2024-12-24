@@ -190,7 +190,10 @@ export const InterviewPage: React.FC<InterviewPageProps> = ({ InterviewData, que
   };
   
   
-  
+  const PreviewContainer = styled.div`
+    position: relative;
+    width: 100%;
+  `;
 
 
   const handleStartRecording = () => {
@@ -270,6 +273,20 @@ export const InterviewPage: React.FC<InterviewPageProps> = ({ InterviewData, que
       setAnswerTimer(null);
     }
   };  
+
+
+  const PreviewVideo = styled.video`
+  width: 100%;
+  transform: scaleX(-1);
+  
+  /* Override the transform for the video controls */
+  &::-webkit-media-controls,
+  &::-webkit-media-controls-enclosure {
+    transform: scaleX(1);
+  }
+`;
+
+
 
   const handleDataAvailable = (event: BlobEvent) => {
     if (event.data && event.data.size > 0) {
@@ -397,15 +414,21 @@ export const InterviewPage: React.FC<InterviewPageProps> = ({ InterviewData, que
           />
         )}
 
-        {showPreview && (
-          <div>
-            <video src={recordedVideoUrl || undefined} controls width="100%" />
-            <PreviewControls>
-              <button onClick={handleReRecord}>Re-record</button>
-              <button onClick={handleSubmitRecording}>Submit</button>
-            </PreviewControls>
-          </div>
-        )}
+      {showPreview && (
+        <PreviewContainer>
+          <PreviewVideo 
+            src={recordedVideoUrl || undefined} 
+            controls 
+            width="100%" 
+          />
+          <PreviewControls>
+            <button onClick={handleReRecord}>Re-record</button>
+            <button onClick={handleSubmitRecording}>Submit</button>
+          </PreviewControls>
+        </PreviewContainer>
+      )}
+
+
       </>
     )}
 
