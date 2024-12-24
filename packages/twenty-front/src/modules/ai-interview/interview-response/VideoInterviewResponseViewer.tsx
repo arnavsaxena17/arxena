@@ -497,8 +497,7 @@ const VideoInterviewResponseViewer: React.FC<VideoInterviewResponseViewerProps> 
     const candidate = aiInterviewStatus.candidate;
     const responses = aiInterviewStatus.responses.edges || [];
     const aiInterview = aiInterviewStatus.aIInterview;
-
-    return {
+    const transformedData: InterviewData =  {
       job: {
         id: candidate.jobs.id,
         companies: {
@@ -508,71 +507,84 @@ const VideoInterviewResponseViewer: React.FC<VideoInterviewResponseViewerProps> 
       },
       aIInterview: {
         aIInterviewQuestions: {
-          edges: aiInterview.aIInterviewQuestions.edges.map((questionEdge: { node: { id: any; questionValue: any; timeLimit: any } }) => ({
-            node: {
-              id: questionEdge.node.id,
-              questionValue: questionEdge.node.questionValue,
-              timeLimit: questionEdge.node.timeLimit,
-              responses: {
-                edges: responses
-                  .filter((responseEdge: { node: { aIInterviewQuestionId: any } }) => responseEdge.node.aIInterviewQuestionId === questionEdge.node.id)
-                  .map(
-                    (responseEdge: {
-                      node: {
-                        attachments: any;
-                        id: any;
-                        transcript: any;
-                        aIInterviewQuestionId: any;
-                      };
-                    }) => ({
-                      node: {
-                        id: responseEdge.node.id,
-                        transcript: responseEdge.node.transcript,
-                        aIInterviewQuestionId: responseEdge.node.aIInterviewQuestionId,
-                        attachments: responseEdge.node.attachments,
-                      },
-                    }),
-                  ),
-              },
-            },
-          })),
-        },
-      },
-    };
-  };
-
-  const transformCandidateData = (candidate: CandidateAPIResponse): InterviewData => {
-    return {
-      job: {
-        id: candidate.jobs.id,
-        companies: candidate.jobs.companies,
-        name: candidate.jobs.name,
-      },
-      aIInterview: {
-        aIInterviewQuestions: {
-          edges: candidate.jobs.aIInterviews.edges[0].node.aIInterviewQuestions.edges.map(({ node: question }) => ({
-            node: {
-              id: question.id,
-              questionValue: question.questionValue,
-              timeLimit: question.timeLimit,
-              responses: {
-                edges: candidate.responses.edges
-                  .filter(response => response.node.aIInterviewQuestionId === question.id)
-                  .map(response => ({
+          edges: aiInterview.aIInterviewQuestions.edges.map((questionEdge: { node: any }) => {
+            // Filter responses for this specific question
+            const questionResponses = responses.filter(
+              (responseEdge: { node: any }) => 
+                responseEdge.node.aIInterviewQuestionId === questionEdge.node.id
+            );
+  
+            return {
+              node: {
+                id: questionEdge.node.id,
+                questionValue: questionEdge.node.questionValue,
+                timeLimit: questionEdge.node.timeLimit,
+                responses: {
+                  edges: questionResponses.map((responseEdge: { node: any }) => ({
                     node: {
-                      id: response.node.id,
-                      transcript: response.node.transcript,
-                      aIInterviewQuestionId: response.node.aIInterviewQuestionId,
-                      attachments: response.node.attachments,
+                      id: responseEdge.node.id,
+                      transcript: responseEdge.node.transcript,
+                      aIInterviewQuestionId: responseEdge.node.aIInterviewQuestionId,
+                      attachments: responseEdge.node.attachments,
                     },
                   })),
+                },
               },
-            },
-          })),
+            };
+          }),
         },
       },
     };
+    console.log("transformedData::", transformedData);
+
+    return transformedData;
+  }
+  
+
+  const transformCandidateData = (candidate: CandidateAPIResponse): InterviewData => {
+    const transformedData: InterviewData =   {
+        job: {
+          id: candidate.jobs.id,
+          companies: candidate.jobs.companies,
+          name: candidate.jobs.name,
+        },
+        aIInterview: {
+          aIInterviewQuestions: {
+            edges: candidate.jobs.aIInterviews.edges[0].node.aIInterviewQuestions.edges.map(
+              ({ node: question }) => {
+                // Filter responses for this specific question
+                const questionResponses = candidate.responses.edges.filter(
+                  response => response.node.aIInterviewQuestionId === question.id
+                );
+    
+                return {
+                  node: {
+                    id: question.id,
+                    questionValue: question.questionValue,
+                    timeLimit: question.timeLimit,
+                    responses: {
+                      edges: questionResponses.map(response => ({
+                        node: {
+                          id: response.node.id,
+                          transcript: response.node.transcript,
+                          aIInterviewQuestionId: response.node.aIInterviewQuestionId,
+                          attachments: response.node.attachments,
+                        },
+                      })),
+                    },
+                  },
+                };
+              }
+            ),
+          },
+        },
+      };
+      console.log("transformedData::", transformedData);
+    return transformedData
   };
+
+
+
 
   useEffect(() => {
     if (!candidateId && !aIInterviewStatusId) {
@@ -587,38 +599,53 @@ const VideoInterviewResponseViewer: React.FC<VideoInterviewResponseViewerProps> 
   if (error) return <div>Error: {error}</div>;
   if (!interviewData) return <div>No interview data found</div>;
 
+
+
   return (
     <StyledContainer theme={theme}>
       <CompanyInfo>
-        <h2>Interview for {interviewData.job.companies.name}</h2>
-        <h3>Position: {interviewData.job.name}</h3>
+        <h2>{interviewData.job.companies.name}</h2>
+        <h3>{interviewData.job.name}</h3>
       </CompanyInfo>
 
-      {interviewData.aIInterview.aIInterviewQuestions.edges.map(({ node: question }, index) => (
-        <QuestionContainer key={question.id}>
-          <QuestionText>
-            Question {index + 1}: {question.questionValue}
-          </QuestionText>
-
-          {question.responses.edges.map(({ node: response }) => {
-            const videoAttachment = response.attachments.edges.find(edge => edge.node.type === 'Video');
-
-            return videoAttachment ? (
-              <VideoContainer key={response.id}>
-                <VideoDownloaderPlayer videoUrl={`${process.env.REACT_APP_SERVER_BASE_URL}/files/${videoAttachment.node.fullPath}`} />
-                {response.transcript && (
-                  <TranscriptContainer>
-                    <TranscriptHeading>Transcript</TranscriptHeading>
-                    <TranscriptText>{response.transcript}</TranscriptText>
-                  </TranscriptContainer>
-                )}
-              </VideoContainer>
-            ) : null;
-          })}
-        </QuestionContainer>
-      ))}
+      {interviewData.aIInterview.aIInterviewQuestions.edges.map(({ node: question }, index) => {
+        // Find responses that match this specific question ID
+        const matchingResponses = question.responses.edges.filter(
+          ({ node: response }) => response.aIInterviewQuestionId === question.id
+        );
+      
+        return (
+          <QuestionContainer key={question.id}>
+            <QuestionText>
+              Question {index + 1}: {question.questionValue}
+            </QuestionText>
+      
+            {matchingResponses.map(({ node: response }) => {
+              const videoAttachment = response.attachments.edges.find(
+                edge => edge.node.type === 'Video'
+              );
+      
+              return videoAttachment ? (
+                <VideoContainer key={response.id}>
+                  <VideoDownloaderPlayer 
+                    videoUrl={`${process.env.REACT_APP_SERVER_BASE_URL}/files/${videoAttachment.node.fullPath}`} 
+                  />
+                  {response.transcript && (
+                    <TranscriptContainer>
+                      <TranscriptHeading>Transcript</TranscriptHeading>
+                      <TranscriptText>{response.transcript}</TranscriptText>
+                    </TranscriptContainer>
+                  )}
+                </VideoContainer>
+              ) : null;
+            })}
+          </QuestionContainer>
+        );
+      })}
     </StyledContainer>
   );
-};
 
-export default VideoInterviewResponseViewer;
+}
+  
+  
+  export default VideoInterviewResponseViewer
