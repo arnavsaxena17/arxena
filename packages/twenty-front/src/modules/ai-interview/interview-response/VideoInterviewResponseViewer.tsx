@@ -444,9 +444,7 @@ const VideoInterviewResponseViewer: React.FC<VideoInterviewResponseViewerProps> 
 
         // If we got valid data, transform and use it
         if (responseData?.data?.aIInterviewStatus?.candidate) {
-          console.log('WE got valid data in aIInterviewStatus');
           const transformedData = transformAIInterviewStatusData(responseData);
-          console.log('transformedData::', transformedData);
           setInterviewData(transformedData);
           setLoading(false);
           return;
@@ -471,7 +469,6 @@ const VideoInterviewResponseViewer: React.FC<VideoInterviewResponseViewerProps> 
         });
 
         const responseData = await response.json();
-        console.log('REsponse ddta:', responseData);
         if (responseData?.data?.candidates?.edges?.[0]?.node) {
           console.log('WE got valid data in candiate data');
           const candidate = responseData.data.candidates.edges[0].node;
@@ -535,8 +532,6 @@ const VideoInterviewResponseViewer: React.FC<VideoInterviewResponseViewerProps> 
         },
       },
     };
-    console.log("transformedData::", transformedData);
-
     return transformedData;
   }
   
@@ -556,7 +551,6 @@ const VideoInterviewResponseViewer: React.FC<VideoInterviewResponseViewerProps> 
                 const questionResponses = candidate.responses.edges.filter(
                   response => response.node.aIInterviewQuestionId === question.id
                 );
-    
                 return {
                   node: {
                     id: question.id,
@@ -579,7 +573,6 @@ const VideoInterviewResponseViewer: React.FC<VideoInterviewResponseViewerProps> 
           },
         },
       };
-      console.log("transformedData::", transformedData);
     return transformedData
   };
 
@@ -613,7 +606,6 @@ const VideoInterviewResponseViewer: React.FC<VideoInterviewResponseViewerProps> 
         const matchingResponses = question.responses.edges.filter(
           ({ node: response }) => response.aIInterviewQuestionId === question.id
         );
-      
         return (
           <QuestionContainer key={question.id}>
             <QuestionText>
@@ -624,7 +616,6 @@ const VideoInterviewResponseViewer: React.FC<VideoInterviewResponseViewerProps> 
               const videoAttachment = response.attachments.edges.find(
                 edge => edge.node.type === 'Video'
               );
-      
               return videoAttachment ? (
                 <VideoContainer key={response.id}>
                   <VideoDownloaderPlayer 
