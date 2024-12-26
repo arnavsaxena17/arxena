@@ -159,6 +159,58 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
     {
         "field": {
             "description": "",
+            "label": "Time Slots Available",
+            "name": "timeSlotsAvailable",
+            "objectMetadataId": objectsNameIdMap.interviewSchedule,
+            "type": "RAW_JSON"
+        }
+    },
+    {
+        "field": {
+            "description": "Duration of meeting scheduled",
+            "icon": "IconReload",
+            "label": "Duration of Meeting",
+            "name": "durationMeeting",
+            "options": [{
+                    "color": "green",
+                    "label": "30 mins",
+                    "position": 0,
+                    "value": "30 mins"
+                },
+                {
+                    "color": "turquoise",
+                    "label": "45 mins",
+                    "position": 1,
+                    "value": "45 mins"
+                },
+                {
+                    "color": "sky",
+                    "label": "1 hour",
+                    "position": 2,
+                    "value": "1 hour"
+                },
+                {
+                    "color": "sky",
+                    "label": "1.5 hours",
+                    "position": 3,
+                    "value": "1.5 hours"
+                },
+                {
+                    "color": "sky",
+                    "label": "2 hours",
+                    "position": 3,
+                    "value": "2 hours"
+                },
+            ],
+            "objectMetadataId": objectsNameIdMap.interviewSchedule,
+            "type": "SELECT"
+        }
+
+    },
+
+    {
+        "field": {
+            "description": "",
             "label": "Transcription",
             "name": "transcription",
             "objectMetadataId": objectsNameIdMap.recruiterInterview,

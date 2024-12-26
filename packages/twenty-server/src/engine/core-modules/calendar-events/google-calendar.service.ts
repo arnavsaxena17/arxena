@@ -159,4 +159,33 @@ export class GoogleCalendarService {
       throw new Error(`Error creating event: ${error.message}`);
     }
   }
+
+
+  async listEvents(auth: any, timeMin?: string, timeMax?: string) {
+    if (!auth?.credentials?.refresh_token) {
+      throw new Error("No access token found");
+    }
+  
+    try {
+      const calendar = google.calendar({ version: "v3", auth: auth });
+      
+      const response = await calendar.events.list({
+        calendarId: 'primary',
+        timeMin: timeMin || new Date().toISOString(),
+        timeMax: timeMax || moment().add(7, 'days').toISOString(),
+        singleEvents: true,
+        orderBy: 'startTime',
+        maxResults: 100,
+      });
+  
+      if (response.status !== 200) {
+        throw new Error(`Failed to fetch events. Status: ${response.status}`);
+      }
+  
+      return response.data.items;
+    } catch (error) {
+      console.error('Error listing calendar events:', error);
+      throw new Error(`Error fetching calendar events: ${error.message}`);
+    }
+  }
 }

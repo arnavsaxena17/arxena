@@ -112,6 +112,16 @@ export const objectCreationArr = [
     {
         "object": {
             "description": "",
+            "icon": "IconMoodCheck",
+            "labelPlural": "Interview Schedules",
+            "labelSingular": "Interview Schedule",
+            "nameSingular": "InterviewSchedule",
+            "namePlural": "interviewSchedules"
+        }
+    },
+    {
+        "object": {
+            "description": "",
             "icon": "IconFocus2",
             "labelPlural": "Offers",
             "labelSingular": "Offer",

@@ -228,6 +228,34 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
             "relation": {
                 "fromDescription": null,
                 // "fromIcon": "IconBuilding",
+                "fromLabel": "Interview Schedule",
+                "fromName": "interviewSchedule",
+                "fromObjectMetadataId": objectsNameIdMap.job,
+                "relationType": "ONE_TO_MANY",
+                "toObjectMetadataId": objectsNameIdMap.InterviewSchedule,
+                "toDescription": "",
+                "toLabel": "Job",
+                "toName": "job"
+            }
+        },
+        {
+            "relation": {
+                "fromDescription": null,
+                // "fromIcon": "IconBuilding",
+                "fromLabel": "Client Interview",
+                "fromName": "clientInterview",
+                "fromObjectMetadataId": objectsNameIdMap.InterviewSchedule,
+                "relationType": "ONE_TO_MANY",
+                "toObjectMetadataId": objectsNameIdMap.clientInterview,
+                "toDescription": "",
+                "toLabel": "Interview Schedule",
+                "toName": "interviewSchedule"
+            }
+        },
+        {
+            "relation": {
+                "fromDescription": null,
+                // "fromIcon": "IconBuilding",
                 "fromLabel": "WhatsappMessages",
                 "fromName": "whatsappMessages",
                 "fromObjectMetadataId": objectsNameIdMap.candidate,

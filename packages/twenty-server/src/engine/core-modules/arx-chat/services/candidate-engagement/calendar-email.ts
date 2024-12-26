@@ -20,4 +20,19 @@ async createNewCalendarEvent(calendarEventData: CalendarEventType, apiToken: str
     return response;
 }
 
+
+async getCalendarEvents(params: any, apiToken: string) {
+    const googleCalendarService = new GoogleCalendarService();
+    const googleCalendarController = new GoogleCalendarController(googleCalendarService);
+    const request = {
+        headers: {
+            authorization: `Bearer ${apiToken}`
+        },
+        query: params
+    };
+    
+    const response = await googleCalendarController.getEventsOfController(request as any).catch(console.error);
+    return response;
+}
+
 }

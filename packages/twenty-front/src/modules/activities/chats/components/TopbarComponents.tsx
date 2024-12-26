@@ -120,7 +120,7 @@ const StyledTopBar = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  width: 62vw;
+  width: 60%;
   background-color: rgba(255, 255, 255, 0.8);
   filter: drop-shadow(0px 2px 4px rgba(0, 0, 0, 0.1));
   z-index: 1;
