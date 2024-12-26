@@ -32,7 +32,6 @@ export class MessageQueueService {
     data: T,
     options?: QueueJobOptions,
   ): Promise<void> {
-    console.log("Adding to queue::", jobName, data, options)
     return this.driver.add(this.queueName, jobName, data, options);
   }
 

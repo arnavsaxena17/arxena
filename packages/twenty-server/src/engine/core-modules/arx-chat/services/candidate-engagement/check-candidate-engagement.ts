@@ -19,8 +19,10 @@ export default class CandidateEngagementArx {
   }
 
   async createAndUpdateCandidateStartChatChatMessage(chatReply: string, candidateProfileDataNodeObj: allDataObjects.PersonNode, chatControl: allDataObjects.chatControls, apiToken: string) {
+
     const recruiterProfile = allDataObjects.recruiterProfile;
     let chatHistory = candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.messageObj || [];
+    
     if (chatReply === 'startChat' && candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges.length === 0) {
       const SYSTEM_PROMPT = await new ToolsForAgents(this.workspaceQueryService).getSystemPrompt(candidateProfileDataNodeObj, chatControl,  apiToken);
       chatHistory.push({ role: 'system', content: SYSTEM_PROMPT });
@@ -28,13 +30,16 @@ export default class CandidateEngagementArx {
     } else {
       chatHistory = candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.messageObj;
     }
+    
     let whatsappTemplate:string
+
     if (chatControl === 'startChat') {
       whatsappTemplate = "application03"
     }
     else{ 
       whatsappTemplate = candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.whatsappProvider || 'application03' 
     }
+    
     let whatappUpdateMessageObj: allDataObjects.candidateChatMessageType = {
       candidateProfile: candidateProfileDataNodeObj?.candidates?.edges[0]?.node,
       candidateFirstName: candidateProfileDataNodeObj?.name?.firstName,
@@ -48,8 +53,11 @@ export default class CandidateEngagementArx {
       whatsappDeliveryStatus: 'startChatTriggered',
       whatsappMessageId: 'NA',
     };
+    
     console.log("Sending a messages")
+    
     await this.updateCandidateEngagementDataInTable(whatappUpdateMessageObj, apiToken);
+    
     return whatappUpdateMessageObj;
   }
 
@@ -205,9 +213,7 @@ export default class CandidateEngagementArx {
     const filteredCandidates: allDataObjects.PersonNode[] = await this.filterCandidatesWhereEngagementStatusIsTrueAndByLastMessagedTime(sortedPeopleData, chatControl,  apiToken);
     console.log('Number processCandidateof filtered candidates to engage after time scheduling: ', filteredCandidates?.length, "for chatcontrol", chatControl);
     for (const personNode of filteredCandidates) {
-      console.log("This is the personNode?.candidates?.edges[0]?.node:: for which we will start engagement", personNode?.candidates?.edges[0]?.node?.name, "for chatControl:", chatControl);
       await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).updateEngagementStatusBeforeRunningEngageCandidates(personNode?.candidates?.edges[0]?.node?.id,apiToken);
-      console.log('Updated engagement status to false for candidate and going to process their candidature:', personNode?.name?.firstName, "for chat Control", chatControl);
       await this.processCandidate(personNode, chatControl,  apiToken);
     }
   }
@@ -217,18 +223,23 @@ export default class CandidateEngagementArx {
   
   async setupVideoInterviewLinks(peopleEngagementStartVideoInterviewChatArr:allDataObjects.PersonNode[], chatControl: allDataObjects.chatControls,  apiToken:string) {
     if (chatControl === 'startVideoInterviewChat') {
+      let skippedCount = 0;
+      let createdCount = 0;
+
       for (const personNode of peopleEngagementStartVideoInterviewChatArr) {
         const candidateNode = personNode?.candidates?.edges[0]?.node;
         const aiInterviewStatus = candidateNode?.aIInterviewStatus?.edges[0]?.node;
         
         if (!aiInterviewStatus || !aiInterviewStatus.interviewLink?.url) {
-          console.log(`Creating video interview link for candidate: ${candidateNode.name}`);
-          await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).createVideoInterviewForCandidate(candidateNode.id,  apiToken );
+          await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).createVideoInterviewForCandidate(candidateNode.id, apiToken);
+          createdCount++;
         } else {
-          console.log(`Skipping candidate ${candidateNode.name} as they already have a video interview link.`);
+          skippedCount++;
         }
       }
 
+      console.log(`Total candidates skipped for video interview creation: ${skippedCount}`);
+      console.log(`Total video interviews created: ${createdCount}`);
     }
   }
 

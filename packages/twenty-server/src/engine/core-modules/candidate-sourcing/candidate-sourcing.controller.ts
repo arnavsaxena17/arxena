@@ -360,8 +360,6 @@ export class CandidateSourcingController {
     console.log("Going to get all jobs")
 
     const apiToken = request?.headers?.authorization?.split(' ')[1]; // Assuming Bearer token
-    console.log("apitoken:",apiToken)
-    console.log('Getting all jobs');
     // first create companies
     console.log('Getting all jobs');
     const responseFromGetAllJobs = await axiosRequest(
@@ -386,7 +384,6 @@ export class CandidateSourcingController {
     console.log("Going to test arxena connections")
 
     const apiToken = request?.headers?.authorization?.split(' ')[1]; // Assuming Bearer token
-    console.log("apitoken:",apiToken)
     // first create companies
     try{
       let arxenaSiteBaseUrl: string = '';
@@ -422,7 +419,6 @@ export class CandidateSourcingController {
     let uuid;
     try {
       const apiToken = request.headers.authorization.split(' ')[1]; // Assuming Bearer token
-      console.log("apiToken:")
       const data = request.body;
       console.log(request.body);
       const graphqlVariables = { input: { name: data?.job_name, arxenaSiteId: data?.job_id, isActive: true, jobLocation: data?.jobLocation, jobCode: data?.jobCode, recruiterId: data?.recruiterId, companiesId: data?.companiesId } };
