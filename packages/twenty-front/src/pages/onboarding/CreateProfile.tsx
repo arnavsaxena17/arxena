@@ -50,6 +50,7 @@ const validationSchema = z
   .object({
     firstName: z.string().min(1, { message: 'First name can not be empty' }),
     lastName: z.string().min(1, { message: 'Last name can not be empty' }),
+    phone: z.string().min(10, { message: 'Phone number must be at least 10 digits' }),
   })
   .required();
 
@@ -129,6 +130,7 @@ export const CreateProfile = () => {
     defaultValues: {
       firstName: currentWorkspaceMember?.name?.firstName ?? '',
       lastName: currentWorkspaceMember?.name?.lastName ?? '',
+      phone: '',
     },
     resolver: zodResolver(validationSchema),
   });
@@ -179,7 +181,7 @@ export const CreateProfile = () => {
             ? data?.firstName + ' ' + data?.lastName 
             : currentUser?.email.toLowerCase().trim(),
             email: currentUser?.email.toLowerCase().trim(), // Note: gmail/hotmail/yahoo emails are rejected by the backend
-            phone: '+1234567890',
+            phone: data.phone,
             password: 'password',
             visitorFp: 'some-fingerprint-value',
             token: 'some' ,
@@ -288,6 +290,28 @@ export const CreateProfile = () => {
               )}
             />
           </StyledComboInputContainer>
+          <Controller
+            name="phone"
+            control={control}
+            render={({
+              field: { onChange, onBlur, value },
+              fieldState: { error },
+            }) => (
+              <TextInputV2
+                label="Phone Number"
+                value={value}
+                onFocus={() => setIsEditingMode(true)}
+                onBlur={() => {
+                  onBlur();
+                  setIsEditingMode(false);
+                }}
+                onChange={onChange}
+                placeholder="+1234567890"
+                error={error?.message}
+                fullWidth
+              />
+            )}
+          />
         </StyledSectionContainer>
       </StyledContentContainer>
       <StyledButtonContainer>
