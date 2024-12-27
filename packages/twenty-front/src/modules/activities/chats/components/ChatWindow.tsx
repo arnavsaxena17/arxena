@@ -591,10 +591,14 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
   const [listOfToolCalls, setListOfToolCalls] = useState<string[]>([]);
   const [isAttachmentPanelOpen, setIsAttachmentPanelOpen] = useState(false);
 
+  const [qrCode, setQrCode] = useState('');
+  const [isWhatsappLoggedIn, setIsWhatsappLoggedIn] = useState(false);
+  
+
+
   const botResponsePreviewRef = useRef(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [tokenPair] = useRecoilState(tokenPairState);
-  const [qrCode, setQrCode] = useState('');
   const chatViewRef = useRef<HTMLDivElement>(null);
   const [copiedField, setCopiedField] = useState(null);
   const [isEditingSalary, setIsEditingSalary] = useState(false);
@@ -609,6 +613,33 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
 
   const [toasts, setToasts] = useState<Toast[]>([]);
 
+  useEffect(() => {
+    const URL = process.env.REACT_APP_SERVER_SOCKET_URL || 'http://localhost:3000';
+    const socket = io(URL, {
+      path: process.env.REACT_APP_SOCKET_PATH_FRONT,
+      query: {
+        token: tokenPair?.accessToken?.token,
+      },
+    });
+  
+    console.log('Listening for QR code updates');
+    socket.on('qr', (qr: any) => {
+      console.log('Received QR code:', qr);
+      setQrCode(qr);
+    });
+  
+    socket.on('isWhatsappLoggedIn', (isWhatsappLoggedIn: boolean) => {
+      console.log('Received isWhatsappLoggedIn:', isWhatsappLoggedIn);
+      setIsWhatsappLoggedIn(isWhatsappLoggedIn);
+    });
+  
+    return () => {
+      socket.off('qr');
+      socket.off('isWhatsappLoggedIn');
+    };
+  }, []);
+  
+  
 
   useEffect(() => {
     if (currentCandidateId) {
@@ -1031,7 +1062,7 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
   return (
     <>
       <div style={{ display: 'flex', flexDirection: 'column' }}>
-        {(props.selectedIndividual && (
+      {props.selectedIndividual ? (
           <StyledWindow>
             <ChatContainer>
             <ChatView ref={chatViewRef} onScroll={handleScroll}>
@@ -1211,13 +1242,25 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
               </div>
             </StyledChatInputBox>
           </StyledWindow>
-        )) || (
-          <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
-            <img src="/images/placeholders/moving-image/empty_inbox.png" alt="" />
-            <p>Select a chat to start talking</p>
+      ) : (
+        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center' }}>
+          <div style={{ marginBottom: '2rem' }}>
+            <h1>WhatsApp QR Code</h1>
+            {!isWhatsappLoggedIn ? (
+              qrCode ? (
+                <QRCode value={qrCode} />
+              ) : (
+                <p>Loading QR Code...</p>
+              )
+            ) : (
+              <p>Your WhatsApp is logged in! Enjoy!</p>
+            )}
           </div>
-        )}
-      </div>
+          <img src="/images/placeholders/moving-image/empty_inbox.png" alt="" />
+          <p>Select a chat to start talking</p>
+        </div>
+      )}
+    </div>
       <AttachmentPanel isOpen={isAttachmentPanelOpen} onClose={() => setIsAttachmentPanelOpen(false)} candidateId={currentCandidateId || ''} candidateName={currentCandidateName} />
     </>
   );

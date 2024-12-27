@@ -241,9 +241,7 @@ export class ArxChatEndpoint {
   @UseGuards(JwtAuthGuard)
   async getWhatsappMessagessByCandidateId(@Req() request: any): Promise<object[]> {
     const apiToken = request.headers.authorization.split(' ')[1];
-
     const candidateId = request.body.candidateId;
-    console.log('candidateId to fetch all messages:', candidateId);
     const allWhatsappMessages = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).fetchAllWhatsappMessages(candidateId,apiToken);
     return allWhatsappMessages;
   }
@@ -487,7 +485,6 @@ export class ArxChatEndpoint {
   async getCandidatesAndChats(@Req() request: any): Promise<object> {
     console.log("Going to get all candidates and chats")
     const apiToken = request?.headers?.authorization?.split(' ')[1];
-    console.log("apiToken received:", apiToken);
     const allPeople = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).fetchSpecificPeopleToEngageBasedOnChatControl("allStartedAndStoppedChats",apiToken);
     console.log("All people length:", allPeople?.length)
     return allPeople
