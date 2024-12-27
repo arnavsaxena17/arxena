@@ -167,42 +167,72 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
     },
     {
         "field": {
-            "description": "Duration of meeting scheduled",
+            "description": "",
             "icon": "IconReload",
-            "label": "Duration of Meeting",
+            "label": "Meeting Duration",
             "name": "durationMeeting",
             "options": [{
                     "color": "green",
                     "label": "30 mins",
                     "position": 0,
-                    "value": "30 mins"
+                    "value": "mins30"
                 },
                 {
                     "color": "turquoise",
                     "label": "45 mins",
                     "position": 1,
-                    "value": "45 mins"
+                    "value": "mins45"
                 },
                 {
                     "color": "sky",
                     "label": "1 hour",
                     "position": 2,
-                    "value": "1 hour"
+                    "value": "hour1"
                 },
                 {
                     "color": "sky",
                     "label": "1.5 hours",
                     "position": 3,
-                    "value": "1.5 hours"
+                    "value": "hours15"
                 },
                 {
                     "color": "sky",
                     "label": "2 hours",
                     "position": 3,
-                    "value": "2 hours"
+                    "value": "hours2"
                 },
             ],
             "objectMetadataId": objectsNameIdMap.interviewSchedule,
+            "type": "SELECT"
+        }
+
+    },
+    {
+        "field": {
+            "description": "",
+            "icon": "IconReload",
+            "label": "Workspace Member Type",
+            "name": "typeWorkspaceMember",
+            "options": [{
+                    "color": "green",
+                    "label": "Candidate Type",
+                    "position": 0,
+                    "value": "candidateType"
+                },
+                {
+                    "color": "turquoise",
+                    "label": "Client Type",
+                    "position": 1,
+                    "value": "clientType"
+                },
+                {
+                    "color": "sky",
+                    "label": "Recruiter Type",
+                    "position": 2,
+                    "value": "recruiterType"
+                },
+            ],
+            "objectMetadataId": objectsNameIdMap.workspaceMemberType,
             "type": "SELECT"
         }
 

@@ -79,6 +79,7 @@ import { Chats } from '~/pages/chats/Chats';
 import { getPageTitleFromPath } from '~/utils/title-utils';
 import VideoInterviewResponseViewer  from '@/ai-interview/interview-response/VideoInterviewResponseViewer';
 import AIInterviewFlow from '@/ai-interview/interview-response/AIInterviewFlow'
+import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 // const AIInterviewFlow = lazy(() => import('@/ai-interview/interview-response/AIInterviewFlow'));
 // const VideoInterviewResponseViewer = lazy(() => import('@/ai-interview/interview-response/VideoInterviewResponseViewer'));
 
@@ -97,6 +98,9 @@ const MinimalProviders: React.FC = () => (
 const FullProviders: React.FC = () => {
   const { pathname } = useLocation();
   const pageTitle = getPageTitleFromPath(pathname);
+  const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
+
+  console.log("THIS IS THE DAMN WORKSPACE MEMBER", currentWorkspaceMember);
 
   return (
     <ApolloProvider>

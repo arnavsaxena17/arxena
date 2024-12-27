@@ -115,8 +115,18 @@ export const objectCreationArr = [
             "icon": "IconMoodCheck",
             "labelPlural": "Interview Schedules",
             "labelSingular": "Interview Schedule",
-            "nameSingular": "InterviewSchedule",
+            "nameSingular": "interviewSchedule",
             "namePlural": "interviewSchedules"
+        }
+    },
+    {
+        "object": {
+            "description": "",
+            "icon": "IconMoodCheck",
+            "labelPlural": "Workspace Member Types",
+            "labelSingular": "Workspace Member Type",
+            "nameSingular": "workspaceMemberType",
+            "namePlural": "workspaceMemberTypes"
         }
     },
     {

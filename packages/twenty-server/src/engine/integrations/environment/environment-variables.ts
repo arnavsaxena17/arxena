@@ -340,11 +340,11 @@ export class EnvironmentVariables {
 
   MESSAGE_QUEUE_TYPE: string = MessageQueueDriverType.Sync;
 
-  EMAIL_FROM_ADDRESS = 'noreply@yourdomain.com';
+  EMAIL_FROM_ADDRESS = 'arnav@arxena.com';
 
-  EMAIL_SYSTEM_ADDRESS = 'system@yourdomain.com';
+  EMAIL_SYSTEM_ADDRESS = 'arnav@arxena.com';
 
-  EMAIL_FROM_NAME = 'Felix from Twenty';
+  EMAIL_FROM_NAME = 'Arnav Saxena';
 
   EMAIL_DRIVER: EmailDriver = EmailDriver.Logger;
 

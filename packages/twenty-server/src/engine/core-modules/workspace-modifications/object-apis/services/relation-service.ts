@@ -30,6 +30,7 @@ export async function createRelations(fieldRelations:RelationInput[] , apiToken:
         try {
             const responseObj = await executeQuery(mutation.query, mutation.variables, apiToken);
             console.log("Relations responseObj in obj:::", responseObj);
+            console.log("Relations variables in obj:::", mutation.variables);
         } catch (error) {
             console.error('Error creating relation:', error);
         }
