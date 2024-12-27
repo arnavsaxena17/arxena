@@ -153,6 +153,7 @@ export class OfferManager {
         // Placeholder implementation to get reference feedback
         return {
             referenceId: reference.id,
+            candidateId: reference.candidateId,
             feedback: 'Positive feedback',
             rating: 5
         };

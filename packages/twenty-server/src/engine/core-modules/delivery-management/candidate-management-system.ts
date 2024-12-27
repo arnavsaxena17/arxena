@@ -10,7 +10,6 @@ import { OnboardingManager } from './onboarding-manager';
 import { NotificationService } from './notification-service';
 import { EventTrackingSystem } from './event-tracking-system';
 
-// ...existing code...
 
 export class CandidateManagementSystem {
     private candidates: Map<string, deliveryManagementTypes.Candidate>;
@@ -256,21 +255,21 @@ export class CandidateManagementSystem {
     }
 
     // Follow-ups
-    async handleCandidateFollowUp(candidateId: string, stage: deliveryManagementTypes.FollowUpStage): Promise<void> {
+    async handleCandidateFollowUp(candidateId: string, stage: deliveryManagementTypes.CandidateFollowUpStage): Promise<void> {
         const candidate = this.candidates.get(candidateId);
         if (!candidate) throw new Error('Candidate not found');
 
         switch (stage) {
-            case deliveryManagementTypes.FollowUpStage.BEFORE_CV_SHARE:
+            case deliveryManagementTypes.CandidateFollowUpStage.BEFORE_CV_SHARE:
                 await this.handleBeforeCVShareFollowUp(candidateId);
                 break;
-            case deliveryManagementTypes.FollowUpStage.AFTER_CV_SHARE:
+            case deliveryManagementTypes.CandidateFollowUpStage.AFTER_CV_SHARE:
                 await this.handleAfterCVShareFollowUp(candidateId);
                 break;
-            case deliveryManagementTypes.FollowUpStage.BEFORE_INTERVIEW:
+            case deliveryManagementTypes.CandidateFollowUpStage.BEFORE_INTERVIEW:
                 await this.handleBeforeInterviewFollowUp(candidateId);
                 break;
-            case deliveryManagementTypes.FollowUpStage.AFTER_INTERVIEW:
+            case deliveryManagementTypes.CandidateFollowUpStage.AFTER_INTERVIEW:
                 await this.handleAfterInterviewFollowUp(candidateId);
                 break;
         }
@@ -338,6 +337,210 @@ export class CandidateManagementSystem {
                 recruiterId: ''
             }
         );
+    }
+
+    // Candidate Decisions
+    async handleCandidateDecision(candidateId: string, decision: deliveryManagementTypes.CandidateDecision): Promise<void> {
+        const candidate = this.candidates.get(candidateId);
+        if (!candidate) throw new Error('Candidate not found');
+
+        switch (decision) {
+            case deliveryManagementTypes.CandidateDecision.ACCEPT_OFFER:
+                await this.handleOfferAcceptance(candidateId);
+                break;
+            case deliveryManagementTypes.CandidateDecision.REJECT_OFFER:
+                await this.handleOfferRejection(candidateId);
+                break;
+            case deliveryManagementTypes.CandidateDecision.REQUEST_MORE_TIME:
+                await this.handleRequestMoreTime(candidateId);
+                break;
+        }
+    }
+
+    private async handleOfferAcceptance(candidateId: string): Promise<void> {
+        // Handle offer acceptance
+        await this.updateCandidateStatus(candidateId, deliveryManagementTypes.CandidateStatus.ONBOARDING);
+        await this.notificationService.sendNotification(
+            candidateId,
+            deliveryManagementTypes.NotificationType.OFFER_ACCEPTANCE,
+            {
+                subject: 'Offer Accepted',
+                message: 'Congratulations! You have accepted the offer. We will now proceed with the onboarding process.',
+                candidateId: candidateId,
+                shareId: '',
+                clientId: '',
+                recruiterId: ''
+            }
+        );
+    }
+
+    private async handleOfferRejection(candidateId: string): Promise<void> {
+        // Handle offer rejection
+        await this.updateCandidateStatus(candidateId, deliveryManagementTypes.CandidateStatus.REJECTED);
+        await this.notificationService.sendNotification(
+            candidateId,
+            deliveryManagementTypes.NotificationType.OFFER_REJECTED,
+            {
+                subject: 'Offer Rejected',
+                message: 'You have rejected the offer. We will keep you in our database for future opportunities.',
+                candidateId: candidateId,
+                shareId: '',
+                clientId: '',
+                recruiterId: ''
+            }
+        );
+    }
+
+    private async handleRequestMoreTime(candidateId: string): Promise<void> {
+        // Handle request for more time
+        await this.notificationService.sendNotification(
+            candidateId,
+            deliveryManagementTypes.NotificationType.REQUEST_MORE_TIME,
+            {
+                subject: 'Request for More Time',
+                message: 'You have requested more time to make a decision. We will follow up with you soon.',
+                candidateId: candidateId,
+                shareId: '',
+                clientId: '',
+                recruiterId: ''
+            }
+        );
+    }
+
+    // Generate Next Task
+    generateNextTask(candidateId: string, clientId: string, recruiterId: string): void {
+        const candidate = this.candidates.get(candidateId);
+        if (!candidate) throw new Error('Candidate not found');
+
+        const currentStage = candidate.currentStage;
+        const nextTask: deliveryManagementTypes.Task = {
+            id: generateUniqueId(),
+            description: 'Next task description',
+            status: deliveryManagementTypes.TaskStatus.PENDING,
+            dueDate: new Date(),
+            title: 'Next Task',
+            deadline: new Date(),
+            assignedTo: [candidateId, clientId, recruiterId],
+            priority: 'medium',
+            notifications: []
+        };
+
+        // Determine the next tasks based on the current stage
+        switch (currentStage.status) {
+            case deliveryManagementTypes.CandidateStatus.SHORTLISTED:
+                nextTask.description = 'Share CV with client';
+                nextTask.title = 'Share CV';
+                break;
+            case deliveryManagementTypes.CandidateStatus.INTERVIEW_PROCESS:
+                nextTask.description = 'Schedule interview';
+                nextTask.title = 'Schedule Interview';
+                break;
+            case deliveryManagementTypes.CandidateStatus.ASSESSMENT:
+                nextTask.description = 'Conduct assessment';
+                nextTask.title = 'Conduct Assessment';
+                break;
+            case deliveryManagementTypes.CandidateStatus.OFFER:
+                nextTask.description = 'Negotiate offer';
+                nextTask.title = 'Negotiate Offer';
+                break;
+            case deliveryManagementTypes.CandidateStatus.ONBOARDING:
+                nextTask.description = 'Complete onboarding';
+                nextTask.title = 'Complete Onboarding';
+                break;
+            default:
+                nextTask.description = 'Follow up with candidate';
+                nextTask.title = 'Follow Up';
+                break;
+        }
+
+        // Assign the next task to the candidate, client, and recruiter
+        this.taskManagementSystem.addTask(candidateId, nextTask);
+        this.taskManagementSystem.addTask(clientId, nextTask);
+        this.taskManagementSystem.addTask(recruiterId, nextTask);
+
+        // Generate next tasks for the recruiter based on the current stage
+        const recruiterTask: deliveryManagementTypes.Task = {
+            id: generateUniqueId(),
+            description: 'Recruiter task description',
+            status: deliveryManagementTypes.TaskStatus.PENDING,
+            dueDate: new Date(),
+            title: 'Recruiter Task',
+            deadline: new Date(),
+            assignedTo: [recruiterId],
+            priority: 'high',
+            notifications: []
+        };
+
+        switch (currentStage.status) {
+            case deliveryManagementTypes.CandidateStatus.SHORTLISTED:
+                recruiterTask.description = 'Review shortlisted candidate';
+                recruiterTask.title = 'Review Candidate';
+                break;
+            case deliveryManagementTypes.CandidateStatus.INTERVIEW_PROCESS:
+                recruiterTask.description = 'Prepare candidate for interview';
+                recruiterTask.title = 'Prepare for Interview';
+                break;
+            case deliveryManagementTypes.CandidateStatus.ASSESSMENT:
+                recruiterTask.description = 'Coordinate assessment';
+                recruiterTask.title = 'Coordinate Assessment';
+                break;
+            case deliveryManagementTypes.CandidateStatus.OFFER:
+                recruiterTask.description = 'Discuss offer details with candidate';
+                recruiterTask.title = 'Discuss Offer';
+                break;
+            case deliveryManagementTypes.CandidateStatus.ONBOARDING:
+                recruiterTask.description = 'Ensure onboarding process is smooth';
+                recruiterTask.title = 'Ensure Onboarding';
+                break;
+            default:
+                recruiterTask.description = 'Follow up with candidate';
+                recruiterTask.title = 'Follow Up';
+                break;
+        }
+
+        this.taskManagementSystem.addTask(recruiterId, recruiterTask);
+
+        // Generate next tasks for the client based on the current stage
+        const clientTask: deliveryManagementTypes.Task = {
+            id: generateUniqueId(),
+            description: 'Client task description',
+            status: deliveryManagementTypes.TaskStatus.PENDING,
+            dueDate: new Date(),
+            title: 'Client Task',
+            deadline: new Date(),
+            assignedTo: [clientId],
+            priority: 'high',
+            notifications: []
+        };
+
+        switch (currentStage.status) {
+            case deliveryManagementTypes.CandidateStatus.SHORTLISTED:
+                clientTask.description = 'Review shared CV';
+                clientTask.title = 'Review CV';
+                break;
+            case deliveryManagementTypes.CandidateStatus.INTERVIEW_PROCESS:
+                clientTask.description = 'Provide interview availability';
+                clientTask.title = 'Provide Availability';
+                break;
+            case deliveryManagementTypes.CandidateStatus.ASSESSMENT:
+                clientTask.description = 'Review assessment results';
+                clientTask.title = 'Review Assessment';
+                break;
+            case deliveryManagementTypes.CandidateStatus.OFFER:
+                clientTask.description = 'Finalize offer details';
+                clientTask.title = 'Finalize Offer';
+                break;
+            case deliveryManagementTypes.CandidateStatus.ONBOARDING:
+                clientTask.description = 'Prepare for candidate onboarding';
+                clientTask.title = 'Prepare Onboarding';
+                break;
+            default:
+                clientTask.description = 'Follow up with recruiter';
+                clientTask.title = 'Follow Up';
+                break;
+        }
+
+        this.taskManagementSystem.addTask(clientId, clientTask);
     }
 }
 

@@ -11,7 +11,7 @@ export enum ClientDecision {
 export interface Reference {
 
   id: string;
-
+  candidateId: string;
   name: string;
 
   contactInfo: string;
@@ -22,18 +22,23 @@ export interface Reference {
 export interface ReferenceFeedback {
 
   referenceId: string;
-
+  candidateId: string;
   feedback: string;
-
-  rating: number;
+  rating?: number;
 
 }
 
 export enum CandidateDecision {
+  DECLINE_INTERVIEW,
+  ACCEPT_INTERVIEW,
+  DECLINE_JOINING,
+  ACCEPT_JOINING,
+  REQUEST_EXTENSION_ON_JOINING,
   ACCEPT_OFFER,
   REJECT_OFFER,
   COUNTER_OFFER,
-  REQUEST_EXTENSION
+  REQUEST_EXTENSION,
+  REQUEST_MORE_TIME
 }
 
 
@@ -44,11 +49,12 @@ export interface SalaryDocument {
   documentType: string;
 
   documentUrl: string;
+  parsedDocument: string;
 
 }
 
 
-export enum FollowUpStage {
+export enum CandidateFollowUpStage {
 
   BEFORE_CV_SHARE,
 
@@ -83,12 +89,6 @@ export interface ClientFeedback {
   nextSteps?: string;
  }
  
-
-
-
-
-
-
 
 export enum ActionType {
   UPLOAD_DOCUMENT,
@@ -238,7 +238,11 @@ export  enum NotificationType {
     SALARY_DOCUMENT_REQUEST,
     REFERENCE_FEEDBACK,
     CURRENT_SALARY,
-    REFERENCE_REQUEST
+    REFERENCE_REQUEST,
+    JOINING_DATE_SET,
+    CONGRATULATIONS,
+    OFFER_REJECTED,
+    REQUEST_MORE_TIME
   }
   
 export interface RecruitmentEvent {
@@ -309,6 +313,7 @@ export interface OfferDetails {
 }
   
 export interface Candidate {
+      joiningDate: Date;
       clientId: string;
       noticePeriod: number;
       currentCtc: number;
@@ -339,7 +344,9 @@ export enum CandidateStatus {
     NOTICE_PERIOD,
     JOINED,
     REJECTED,
-    UNAVAILABLE
+    UNAVAILABLE,
+    ONBOARDING,
+    OFFER
 }
 
 
