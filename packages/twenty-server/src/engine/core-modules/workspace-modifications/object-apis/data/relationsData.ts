@@ -256,6 +256,20 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
       relation: {
         fromDescription: null,
         // "fromIcon": "IconBuilding",
+        fromLabel: 'Member Type',
+        fromName: 'workspaceMemberType',
+        fromObjectMetadataId: objectsNameIdMap.person,
+        relationType: 'ONE_TO_MANY',
+        toObjectMetadataId: objectsNameIdMap.workspaceMemberType,
+        toDescription: '',
+        toLabel: 'Person',
+        toName: 'person',
+      },
+    },
+    {
+      relation: {
+        fromDescription: null,
+        // "fromIcon": "IconBuilding",
         fromLabel: 'WhatsappMessages',
         fromName: 'whatsappMessages',
         fromObjectMetadataId: objectsNameIdMap.candidate,
