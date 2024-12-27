@@ -426,6 +426,7 @@ export class CVSharingManager {
             progress: 0,
             pendingActions: this.getActionsForStage(status),
             completedMilestones: [],
+            stageName: '',
             nextSteps: this.getNextStepsForStage(status),
             timeline: {
                 startDate: new Date(),
@@ -433,7 +434,9 @@ export class CVSharingManager {
                 events: [],
                 currentDuration: 0
             },
-            stakeholders: this.getStakeholdersForStage(status)
+            stakeholders: this.getStakeholdersForStage(status),
+            stageDescription: '', // Add appropriate value
+            stageDate: new Date() // Add appropriate value
         };
     }
 

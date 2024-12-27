@@ -105,9 +105,12 @@ export class CandidateManagementSystem {
     // Stage Management
     private initializeStage(): deliveryManagementTypes.StageDetails {
         return {
+            stageDescription: 'Description for ' + status,
+            stageDate: new Date(),
             status: deliveryManagementTypes.CandidateStatus.SHORTLISTED,
             currentSubStage: 'Initial Review',
             progress: 0,
+            stageName: 'Shortlisting',
             pendingActions: [],
             completedMilestones: [],
             nextSteps: this.getDefaultNextSteps(),
@@ -128,9 +131,12 @@ export class CandidateManagementSystem {
     private createStageDetails(status: deliveryManagementTypes.CandidateStatus): deliveryManagementTypes.StageDetails {
         // Create stage specific details
         return {
-            status,
+            stageDescription: 'Description for ' + status,
+            stageDate: new Date(),
+            status: deliveryManagementTypes.CandidateStatus.SHORTLISTED,
             currentSubStage: this.getSubStageForStatus(status),
             progress: 0,
+            stageName: '',
             pendingActions: this.getActionsForStage(status),
             completedMilestones: [],
             nextSteps: this.getNextStepsForStage(status),

@@ -100,12 +100,6 @@ export enum ActionType {
  }
  
 // Types and Interfaces
-export interface OnboardingStatus {
-    status: string;
-    startDate: Date;
-    endDate: Date;
-  }
-
 
 export interface Task {
   id: string;
@@ -309,8 +303,66 @@ export interface OfferDetails {
   benefits: string[];
   equity: number;
   totalCompensation: number;
+  offerDate: Date;
+  offeredCtc: number;
   joiningDate: Date;
 }
+
+
+
+
+export enum CandidateStatus {
+  New,
+  REJECTED_BY_RECRUITER,
+
+  CANDIDATE_REFUSED,
+
+  SHORTLISTED,
+
+  REJECTED_BY_CLIENT,
+
+  CLIENT_REVIEW,
+  INTERVIEW_PROCESS,
+  ASSESSMENT,
+  SELECTED,
+  REFERENCE_CHECK,
+  SALARY_NEGOTIATION,
+  OFFERED,
+  OFFER_ACCEPTED,
+  NOTICE_PERIOD,
+  JOINED,
+  UNAVAILABLE,
+  ONBOARDING,
+  OFFER,
+  NEW,
+  REJECTED
+}
+
+
+
+
+export interface OnboardingStatus {
+  status: OnboardingStatusTypes;
+  startDate: Date;
+  endDate: Date;
+  expectedEndDate: Date;
+  documents: Document[];
+  tasks: Task[];
+  currentDuration: number;
+
+}
+
+export enum OnboardingStatusTypes {
+
+  NOT_STARTED = 'NOT_STARTED',
+
+  IN_PROGRESS = 'IN_PROGRESS',
+
+  COMPLETED = 'COMPLETED'
+
+}
+
+
   
 export interface Candidate {
       joiningDate: Date;
@@ -332,23 +384,6 @@ export interface Candidate {
       onboardingStatus: OnboardingStatus;
     }
     
-export enum CandidateStatus {
-    SHORTLISTED,
-    CLIENT_REVIEW,
-    INTERVIEW_PROCESS,
-    ASSESSMENT,
-    SELECTED,
-    REFERENCE_CHECK,
-    SALARY_NEGOTIATION,
-    OFFER_ACCEPTED,
-    NOTICE_PERIOD,
-    JOINED,
-    REJECTED,
-    UNAVAILABLE,
-    ONBOARDING,
-    OFFER
-}
-
 
 
 export interface ClientStakeholder {
@@ -482,6 +517,7 @@ export  interface DailyAvailability {
   startDate: Date;
   expectedEndDate: Date;
   actualEndDate?: Date;
+  
   events: TimelineEvent[];
   delays?: DelayRecord[];
   currentDuration: number;
@@ -508,6 +544,9 @@ export interface StageDetails {
   status: CandidateStatus;
   currentSubStage: string;
   progress: number;
+  stageDescription: string;
+  stageName: string;
+  stageDate: Date;
   pendingActions: Action[];
   completedMilestones: Milestone[];
   nextSteps: Step[];

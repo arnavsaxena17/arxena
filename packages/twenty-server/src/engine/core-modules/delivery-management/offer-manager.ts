@@ -26,7 +26,9 @@ export class OfferManager {
             benefits: [],
             equity: 0,
             totalCompensation: 0,
-            joiningDate: new Date()
+            joiningDate: new Date(),
+            offerDate: new Date(),
+            offeredCtc: 0
         });
 
         await this.notificationService.sendNotification(
@@ -86,7 +88,9 @@ export class OfferManager {
             benefits: ['Health Insurance', '401k'],
             equity: 5000,
             totalCompensation: 115000,
-            joiningDate: new Date()
+            joiningDate: new Date(),
+            offerDate: new Date(),
+            offeredCtc: 0
         };
 
         return finalOfferDetails;
