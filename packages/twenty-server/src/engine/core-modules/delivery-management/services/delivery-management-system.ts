@@ -9,7 +9,7 @@ import { OfferManager } from '../managers/phase-6-offer-manager';
 import { OnboardingManager } from '../managers/phase-7-onboarding-manager';
 import { NotificationService } from './notification-service';
 import { EventTrackingSystem } from './event-tracking-system';
-
+import { PhaseTransitionManager } from '../managers/phase-change-transition-manager';
 
 export class DeliveryManagementSystem {
     private candidates: Map<string, deliveryManagementTypes.Candidate>;
@@ -19,6 +19,7 @@ export class DeliveryManagementSystem {
     private taskManagementSystem: TaskManagementSystem;
     private cvSharingManager: CVSharingManager;
     private jobProcesses: Map<string, deliveryManagementTypes.JobProcess> = new Map();
+    private phaseTransitionManager: PhaseTransitionManager;
 
     constructor() {
         this.candidates = new Map();
@@ -33,6 +34,7 @@ export class DeliveryManagementSystem {
           );
        
       this.eventTracker = new EventTrackingSystem();
+      this.phaseTransitionManager = new PhaseTransitionManager();
     }
 
     private sourcingManager: SourcingManager;
@@ -566,6 +568,27 @@ export class DeliveryManagementSystem {
     getJobProcess(jobId: string): deliveryManagementTypes.JobProcess | undefined {
         return this.jobProcesses.get(jobId);
     }
+
+    async handlePhaseTransition(candidateId: string, nextPhase: deliveryManagementTypes.RecruitmentPhases): Promise<void> {
+        const candidate = this.candidates.get(candidateId);
+        if (!candidate) throw new Error('Candidate not found');
+
+        const currentPhase = candidate.currentStage.stageName as unknown as deliveryManagementTypes.RecruitmentPhases;
+        const validationResult = await this.phaseTransitionManager.validatePhaseTransition(currentPhase, nextPhase, candidate, deliveryManagementTypes.UserRole.RECRUITER);
+
+        if (validationResult.isOk()) {
+            candidate.currentStage.stageName = nextPhase.toString();
+            this.eventTracker.logEvent({
+                type: deliveryManagementTypes.EventType.STATUS_CHANGE,
+                candidateId: candidateId,
+                details: `Transitioned from ${currentPhase} to ${nextPhase}`,
+                eventType: '',
+                timestamp: new Date()
+            });
+        } else {
+            throw new Error(validationResult.getError().message);
+        }
+    }
 }
 
 function generateUniqueId(): string {
@@ -617,5 +640,4 @@ class StateTransitionRuleEngine {
         throw new Error('Method not implemented.');
     }
   }
-  
-  
+

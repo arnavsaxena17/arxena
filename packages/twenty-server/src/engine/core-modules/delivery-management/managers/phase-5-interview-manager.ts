@@ -1,10 +1,12 @@
 import * as deliveryManagementTypes from '../types/delivery-management.types';
 import { NotificationService } from '../services/notification-service';
+import { DeliveryManagementSystem } from '../services/delivery-management-system';
 
 export class InterviewManager {
     private candidates: Map<string, deliveryManagementTypes.Candidate>;
     private clients: Map<string, deliveryManagementTypes.Client>;
     private notificationService: NotificationService;
+    deliveryManagementSystem: DeliveryManagementSystem;
 
     constructor(candidates: Map<string, deliveryManagementTypes.Candidate>, clients: Map<string, deliveryManagementTypes.Client>) {
         this.candidates = candidates;
@@ -43,6 +45,7 @@ export class InterviewManager {
             },
             date: new Date(), 
         };
+        await this.deliveryManagementSystem.handlePhaseTransition(candidateId, deliveryManagementTypes.RecruitmentPhases.OFFER);
         return newInterview;
     }
 

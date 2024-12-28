@@ -1,11 +1,13 @@
 import * as deliveryManagementTypes from '../types/delivery-management.types';
 import { NotificationService } from '../services/notification-service';
+import { DeliveryManagementSystem } from '../services/delivery-management-system';
 
 
 export class OfferManager {
     private candidates: Map<string, deliveryManagementTypes.Candidate>;
     private clients: Map<string, deliveryManagementTypes.Client>;
     private notificationService: NotificationService;
+    deliveryManagementSystem: DeliveryManagementSystem;
 
     constructor(candidates: Map<string, deliveryManagementTypes.Candidate>, clients: Map<string, deliveryManagementTypes.Client>) {
         this.candidates = candidates;
@@ -43,6 +45,8 @@ export class OfferManager {
                 recruiterId: ''
             }
         );
+
+        await this.deliveryManagementSystem.handlePhaseTransition(candidateId, deliveryManagementTypes.RecruitmentPhases.ONBOARDING);
     }
 
     private async informOtherCandidatesOnHold(candidateIds: string[]): Promise<void> {

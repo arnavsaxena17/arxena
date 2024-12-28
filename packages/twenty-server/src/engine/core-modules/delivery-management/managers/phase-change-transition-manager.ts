@@ -1,7 +1,7 @@
 import * as deliveryManagementTypes from '../types/delivery-management.types';
 import {Result} from '../types/delivery-management.types'
 
-class PhaseTransitionManager {
+export class PhaseTransitionManager {
   validateClientApproval(data: any): boolean | PromiseLike<boolean> {
     throw new Error('Method not implemented.');
   }
