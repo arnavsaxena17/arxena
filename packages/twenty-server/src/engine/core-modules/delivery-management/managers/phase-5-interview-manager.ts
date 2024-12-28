@@ -1,5 +1,5 @@
-import * as deliveryManagementTypes from './types/delivery-management.types';
-import { NotificationService } from './notification-service';
+import * as deliveryManagementTypes from '../types/delivery-management.types';
+import { NotificationService } from '../services/notification-service';
 
 export class InterviewManager {
     private candidates: Map<string, deliveryManagementTypes.Candidate>;
@@ -26,10 +26,10 @@ export class InterviewManager {
             feedback: { rating: 0, comments: '' },
             scheduledTime: new Date(),
             status: deliveryManagementTypes.InterviewStatus.SCHEDULED,
-            candidateId: '',
-            clientId: '',
-            round: 0,
-            duration: 0,
+            candidateId: candidateId,
+            clientId: clientId,
+            round: round,
+            duration: 60,
             mode: deliveryManagementTypes.InterviewMode.ONLINE,
             interviewRequest: {
                 interviewers: [],
@@ -37,8 +37,8 @@ export class InterviewManager {
                 dateTimeStart: new Date(),
                 mode: deliveryManagementTypes.InterviewMode.ONLINE,
                 duration: 60,
-                candidateId: '',
-                round: 0,
+                candidateId: candidateId,
+                round: round,
                 preferredSlots: []
             },
             date: new Date(), 
@@ -128,9 +128,76 @@ export class InterviewManager {
         );
     }
 
+    async notifyInterviewInitiated(interview: deliveryManagementTypes.Interview, response: deliveryManagementTypes.ClientResponse, share: deliveryManagementTypes.CVShare): Promise<void> {
+        // Notify candidate
+        await this.notificationService.sendNotification(
+            response.candidateId,
+            deliveryManagementTypes.NotificationType.INTERVIEW_SCHEDULED,
+            {
+                interview,
+                subject: 'Next Round Interview Scheduled',
+                candidateId: response.candidateId,
+                shareId: '',
+                clientId: interview.clientId,
+                recruiterId: '',
+                message: `Your next round of interview has been scheduled on ${interview.scheduledTime}`
+            }
+        );
+
+        // Notify recruiter
+        await this.notificationService.sendNotification(
+            share.recruiterId,
+            deliveryManagementTypes.NotificationType.INTERVIEW_SCHEDULED,
+            {
+                interview,
+                subject: 'Next Round Interview Scheduled',
+                candidateId: response.candidateId,
+                shareId: '',
+                clientId: interview.clientId,
+                recruiterId: '',
+                message: `The next round of interview for candidate ${response.candidateId} has been scheduled on ${interview.scheduledTime}`
+            }
+        );
+
+        // Notify client stakeholders
+        await this.notifyStakeholders(
+            share.clientId,
+            'interview_scheduled',
+            { interview },
+            share
+        );
+    }
+
+    private async notifyStakeholders(clientId: string, eventType: string, data: { interview: deliveryManagementTypes.Interview }, share: deliveryManagementTypes.CVShare): Promise<void> {
+        const client = this.clients.get(clientId);
+        if (!client) throw new Error('Client not found');
+        const relevantStakeholders = client.stakeholders.filter(
+            s => s.permissions.canViewDocuments
+        );
+
+        for (const stakeholder of relevantStakeholders) {
+            await this.notificationService.sendNotification(
+                stakeholder.id,
+                deliveryManagementTypes.NotificationType.NEW_CV_SHARED,
+                {
+                    candidateId: share.candidateId,
+                    shareId: share.id,
+                    recruiterId: share.recruiterId,
+                    subject: '',
+                    message: '',
+                    clientId: share.clientId
+                }
+            );
+        }
+    }
+
     recordInterviewFeedback(interviewId: string, feedback: deliveryManagementTypes.Feedback): void {
         // Store feedback
         // Update candidate status
         // Notify relevant parties
     }
 }
+
+
+
+

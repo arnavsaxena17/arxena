@@ -1,23 +1,24 @@
-import * as deliveryManagementTypes from './types/delivery-management.types';
+import * as deliveryManagementTypes from '../types/delivery-management.types';
 import { TaskManagementSystem } from './task-management-system';
-import { CVSharingManager } from './cv-sharing-manager';
-import { ShortlistingManager } from './shortlisting-manager';
-import { ClientReviewManager } from './client-review-manager';
-import { InterviewManager } from './interview-manager';
-import { AssessmentManager } from './assessment-manager';
-import { OfferManager } from './offer-manager';
-import { OnboardingManager } from './onboarding-manager';
+import { CVSharingManager } from '../managers/phase-2-cv-sharing-manager';
+import { SourcingManager } from '../managers/phase-1-sourcing-manager';
+import { ClientReviewManager } from '../managers/phase-4-client-review-manager';
+import { InterviewManager } from '../managers/phase-5-interview-manager';
+import { AssessmentManager } from '../managers/phase-3-assessment-manager';
+import { OfferManager } from '../managers/phase-6-offer-manager';
+import { OnboardingManager } from '../managers/phase-7-onboarding-manager';
 import { NotificationService } from './notification-service';
 import { EventTrackingSystem } from './event-tracking-system';
 
 
-export class CandidateManagementSystem {
+export class DeliveryManagementSystem {
     private candidates: Map<string, deliveryManagementTypes.Candidate>;
     clientStakeholders: deliveryManagementTypes.ClientStakeholder[];
     private clients: Map<string, deliveryManagementTypes.Client>;
     private recruiters: Map<string, deliveryManagementTypes.Recruiter>;
     private taskManagementSystem: TaskManagementSystem;
     private cvSharingManager: CVSharingManager;
+    private jobProcesses: Map<string, deliveryManagementTypes.JobProcess> = new Map();
 
     constructor() {
         this.candidates = new Map();
@@ -34,7 +35,7 @@ export class CandidateManagementSystem {
       this.eventTracker = new EventTrackingSystem();
     }
 
-    private shortlistingManager: ShortlistingManager;
+    private sourcingManager: SourcingManager;
     private clientReviewManager: ClientReviewManager;
     private interviewManager: InterviewManager;
     private assessmentManager: AssessmentManager;
@@ -44,7 +45,7 @@ export class CandidateManagementSystem {
     private eventTracker: EventTrackingSystem;
 
     private initializeManagers(): void {
-        this.shortlistingManager = new ShortlistingManager(this.candidates, this.clients);
+        this.sourcingManager = new SourcingManager(this.candidates, this.clients);
         this.clientReviewManager = new ClientReviewManager(this.candidates, this.clients);
         this.interviewManager = new InterviewManager(this.candidates, this.clients);
         this.assessmentManager = new AssessmentManager(this.candidates);
@@ -149,6 +150,7 @@ export class CandidateManagementSystem {
             stakeholders: this.getStakeholdersForStage(status)
         };
     }
+
 
     getStakeholdersForStage(status: deliveryManagementTypes.CandidateStatus): deliveryManagementTypes.StakeholderInfo[] {
         throw new Error('Method not implemented.');
@@ -548,8 +550,72 @@ export class CandidateManagementSystem {
 
         this.taskManagementSystem.addTask(clientId, clientTask);
     }
+
+    createJobProcess(jobId: string, stages: deliveryManagementTypes.JobProcessStage[]): void {
+        const jobProcess: deliveryManagementTypes.JobProcess = { stages };
+        this.jobProcesses.set(jobId, jobProcess);
+    }
+
+    modifyJobProcess(jobId: string, stages: deliveryManagementTypes.JobProcessStage[]): void {
+        if (!this.jobProcesses.has(jobId)) {
+            throw new Error('Job process not found');
+        }
+        this.jobProcesses.set(jobId, { stages });
+    }
+
+    getJobProcess(jobId: string): deliveryManagementTypes.JobProcess | undefined {
+        return this.jobProcesses.get(jobId);
+    }
 }
 
 function generateUniqueId(): string {
     return Math.random().toString(36).substr(2, 9);
 }
+
+
+
+
+
+class StateTransitionRuleEngine {
+    private rules: Map<string, deliveryManagementTypes.StateTransitionRule[]> = new Map();
+  
+    async validateTransition(
+      fromState: deliveryManagementTypes.CandidateState,
+      toState: deliveryManagementTypes.CandidateState,
+      context: deliveryManagementTypes.TransitionContext
+    ): Promise<deliveryManagementTypes.ValidationResult> {
+      const applicableRules = this.rules.get(fromState.toString()) || [];
+      
+      for (const rule of applicableRules) {
+        if (rule.toState === toState) {
+          // Check all conditions
+          const conditionsValid = await this.validateConditions(rule.conditions, context);
+          if (!conditionsValid) return { valid: false, reason: 'Conditions not met' } as unknown as deliveryManagementTypes.ValidationResult;
+  
+          // Check time constraints
+          const timeValid = await this.validateTimeConstraints(rule.timeConstraints, context);
+          if (!timeValid) return { valid: false, reason: 'Time constraints not met' } as unknown as deliveryManagementTypes.ValidationResult;
+  
+          // Check actor permissions
+          const actorValid = await this.validateActorPermissions(rule.allowedActors, context);
+          if (!actorValid) return { valid: false, reason: 'Actor not authorized' }  as unknown as deliveryManagementTypes.ValidationResult;
+  
+          return { valid: true, reason: '' } as unknown as deliveryManagementTypes.ValidationResult;
+        }
+      }
+  
+      return { valid: false, reason: 'No applicable transition rule found' } as unknown as deliveryManagementTypes.ValidationResult;
+    }
+    async validateActorPermissions(allowedActors: deliveryManagementTypes.ActorPermission[], actor: any): Promise<boolean> {
+        // Implement the logic to validate actor permissions
+        return allowedActors.includes(actor.permission);
+    }
+    async validateTimeConstraints(timeConstraints: deliveryManagementTypes.TimeConstraint | undefined, context: deliveryManagementTypes.TransitionContext): Promise<boolean> {
+        throw new Error('Method not implemented.');
+    }
+    async validateConditions(conditions: deliveryManagementTypes.TransitionCondition[], context: deliveryManagementTypes.TransitionContext): Promise<boolean> {
+        throw new Error('Method not implemented.');
+    }
+  }
+  
+  

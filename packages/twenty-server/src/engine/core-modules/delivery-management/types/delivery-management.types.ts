@@ -28,6 +28,35 @@ export interface ReferenceFeedback {
 
 }
 
+
+
+
+export enum CandidateStatus {
+  New,
+  REJECTED_BY_RECRUITER,
+  CANDIDATE_DROPPED_OUT_AT_SOURCING_STAGE,
+  CANDIDATE_DROPPED_OUT_AT_INTERVIEW_STAGE,
+  SHORTLISTED,
+  REJECTED_BY_CLIENT,
+  CLIENT_REVIEW,
+  INTERVIEW_PROCESS,
+  ASSESSMENT,
+  SELECTED,
+  REFERENCE_CHECK,
+  SALARY_NEGOTIATION,
+  OFFERED,
+  OFFER_ACCEPTED,
+  NOTICE_PERIOD,
+  JOINED,
+  UNAVAILABLE,
+  ONBOARDING,
+  OFFER,
+  NEW,
+  REJECTED
+}
+
+
+
 export enum CandidateDecision {
   DECLINE_INTERVIEW,
   ACCEPT_INTERVIEW,
@@ -39,6 +68,18 @@ export enum CandidateDecision {
   COUNTER_OFFER,
   REQUEST_EXTENSION,
   REQUEST_MORE_TIME
+}
+
+export enum CandidateFollowUpStage {
+
+  BEFORE_CV_SHARE,
+
+  AFTER_CV_SHARE,
+
+  BEFORE_INTERVIEW,
+
+  AFTER_INTERVIEW
+
 }
 
 
@@ -53,18 +94,6 @@ export interface SalaryDocument {
 
 }
 
-
-export enum CandidateFollowUpStage {
-
-  BEFORE_CV_SHARE,
-
-  AFTER_CV_SHARE,
-
-  BEFORE_INTERVIEW,
-
-  AFTER_INTERVIEW
-
-}
 
 
 
@@ -117,11 +146,11 @@ export interface Task {
 
 export enum TaskStatus {
 
-  PENDING = 'PENDING',
+  PENDING,
 
-  COMPLETED = 'COMPLETED',
+  COMPLETED,
 
-  IN_PROGRESS = 'IN_PROGRESS'
+  IN_PROGRESS
 
 }
 
@@ -179,32 +208,6 @@ export interface NotificationContent {
 
   }
   
-  export enum InterviewStatus {
-    SCHEDULED = 'scheduled',
-    COMPLETED = 'completed',
-    RESCHEDULED = 'rescheduled',
-    CANCELLED = 'cancelled'
-  }
-
-export interface Interview {
-    id: string;
-    candidateId: string;
-    clientId: string;
-    round: number;
-    scheduledTime: Date;
-    duration: number;
-    mode: InterviewMode;
-
-    status: InterviewStatus;
-
-    feedback: Feedback;
-  }
-
-
-  export enum InterviewMode {
-    ONLINE = 'online',
-    ONSITE = 'onsite'
-  }
 
 export interface ReminderSchedule {
 
@@ -214,6 +217,16 @@ export interface ReminderSchedule {
 
   final: Date;
 
+}
+export enum TransitionContext{
+  CANDIDATE,
+  CLIENT,
+  RECRUITER
+}
+export enum ValidationResult{
+  SUCCESS,
+  FAILURE
+  
 }
 
 export  enum NotificationType {
@@ -269,18 +282,7 @@ export interface Feedback {
   }
   
 
-export interface InterviewRequest {
-  candidateId: string;
-  interviewers: string[];
-  round: number;
-  dateTimeStart: Date;
-  dateTimeEnd: Date;
-  duration: number;
-  mode: 'online' | 'onsite';
-  preferredSlots: TimeSlot[];
-  specialRequirements?: string[];
-  }
-  
+
 export interface Interview {
     id: string;
     date: Date;
@@ -310,37 +312,6 @@ export interface OfferDetails {
 
 
 
-
-export enum CandidateStatus {
-  New,
-  REJECTED_BY_RECRUITER,
-
-  CANDIDATE_REFUSED,
-
-  SHORTLISTED,
-
-  REJECTED_BY_CLIENT,
-
-  CLIENT_REVIEW,
-  INTERVIEW_PROCESS,
-  ASSESSMENT,
-  SELECTED,
-  REFERENCE_CHECK,
-  SALARY_NEGOTIATION,
-  OFFERED,
-  OFFER_ACCEPTED,
-  NOTICE_PERIOD,
-  JOINED,
-  UNAVAILABLE,
-  ONBOARDING,
-  OFFER,
-  NEW,
-  REJECTED
-}
-
-
-
-
 export interface OnboardingStatus {
   status: OnboardingStatusTypes;
   startDate: Date;
@@ -354,11 +325,11 @@ export interface OnboardingStatus {
 
 export enum OnboardingStatusTypes {
 
-  NOT_STARTED = 'NOT_STARTED',
+  NOT_STARTED,
 
-  IN_PROGRESS = 'IN_PROGRESS',
+  IN_PROGRESS,
 
-  COMPLETED = 'COMPLETED'
+  COMPLETED
 
 }
 
@@ -719,7 +690,7 @@ export function NotificationService(NotificationService: any, arg1: string) {
 
 
 
-interface CandidateNotifications {
+export interface CandidateNotifications {
   documentRequests: Document[];
   interviewSchedules: Interview[];
   assessmentDeadlines: Assessment[];
@@ -738,6 +709,233 @@ interface CandidateNotifications {
 
   feedbackSubmission: string[];
 
+}
+export enum CandidateState {
+  // Sourcing States
+  NEW,
+  PROFILE_SUBMITTED,
+  INITIAL_SCREENING,
+  PROFILE_SHORTLISTED,
+  REJECTED_BY_SCREENER,
+  
+  // CV Sharing States
+  PENDING_CLIENT_REVIEW,
+  CV_SHARED_WITH_CLIENT,
+  CLIENT_SHORTLISTED,
+  CLIENT_REJECTED,
+  
+  // Assessment States
+  ASSESSMENT_SCHEDULED,
+  ASSESSMENT_IN_PROGRESS,
+  ASSESSMENT_COMPLETED,
+  ASSESSMENT_PASSED,
+  ASSESSMENT_FAILED,
+  
+  // Interview States
+  INTERVIEW_SCHEDULED,
+  INTERVIEW_IN_PROGRESS,
+  INTERVIEW_COMPLETED,
+  INTERVIEW_FEEDBACK_PENDING,
+  INTERVIEW_PASSED,
+  
+  // Offer States
+  OFFER_PREPARATION,
+  OFFER_APPROVAL_PENDING,
+  OFFER_APPROVED,
+  OFFER_SHARED,
+  OFFER_ACCEPTED,
+  
+  // Onboarding States
+  ONBOARDING_INITIATED,
+  ONBOARDING_IN_PROGRESS,
+  ONBOARDING_COMPLETED
+}
+
+
+
+export interface TransitionCondition {
+  type: string;
+  value: any;
+  validator: (value: any) => boolean;
+}
+
+export interface ValidationRule {
+  field: string;
+  validator: (value: any) => boolean;
+  errorMessage: string;
+}
+
+
+
+// CDC Event Interface
+export interface StateChangeEvent {
+  id: string;
+  entityType: 'CANDIDATE' | 'CLIENT' | 'RECRUITER';
+  entityId: string;
+  timestamp: Date;
+  actor: Actor;
+  previousState: CandidateState;
+  newState: CandidateState;
+  changes: StateChanges;
+  metadata: StateChangeMetadata;
+}
+
+export interface StateChanges {
+  fieldName: string;
+  oldValue: any;
+  newValue: any;
+  changeType: 'UPDATE' | 'CREATE' | 'DELETE';
+}
+
+export interface StateChangeMetadata {
+  reason: string;
+  comments?: string;
+  attachments?: string[];
+  relatedEntities?: RelatedEntity[];
+}
+
+
+export interface RelatedEntity {
+  type: 'CANDIDATE' | 'CLIENT' | 'RECRUITER';
+  id: string;
+  name: string;
+  role: string;
+}
+// CDC Event Publisher
+
+
+export interface StateTransitionRule {
+  id: string;
+  fromState: CandidateState;
+  toState: CandidateState;
+  conditions: TransitionCondition[];
+  validators: TransitionValidator[];
+  notifications: NotificationRule[];
+  allowedActors: ActorPermission[];
+  timeConstraints?: TimeConstraint;
+}
+
+
+export enum UserRole {
+  RECRUITER,
+  HIRING_MANAGER,
+  CLIENT,
+  HR_MANAGER,
+  ADMIN
+}
+
+
+
+export interface Actor {
+  id: string;
+  type: ActorType;
+  name: string;
+  role: UserRole;
+  department?: string;
+}
+
+export enum ActorType {
+  USER,
+  SYSTEM,
+  INTEGRATION
+}
+
+export interface TransitionValidator {
+  rule: ValidationRule;
+  action: (value: any) => void;
+}
+
+export interface NotificationRule {
+  type: NotificationType;
+  recipients: string[];
+  message: string;
+  schedule: Date;
+}
+
+export interface ActorPermission {
+  actor: Actor;
+  permissions: Permission[];
+}
+
+
+
+
+
+
+// Phase Transition Rules and Types
+export interface PhaseTransitionRule {
+  currentPhase: RecruitmentPhases;
+  nextPhase: RecruitmentPhases;
+  requiredStates: CandidateState[];
+  requiredConditions: PhaseCondition[];
+  validations: PhaseValidation[];
+  allowedRoles: UserRole[];
+}
+
+export interface PhaseCondition {
+  type: PhaseConditionType;
+  validator: (data: any) => Promise<boolean>;
+  errorMessage: string;
+}
+
+export interface PhaseValidation {
+  field: string;
+  validator: (value: any) => boolean;
+  errorMessage: string;
+}
+
+export enum PhaseConditionType {
+  DOCUMENT_CHECK,
+  APPROVAL_CHECK,
+  SCHEDULE_CHECK,
+  FEEDBACK_CHECK,
+  BUDGET_CHECK,
+  COMPLIANCE_CHECK
+}
+
+
+
+export enum Permission {
+  VIEW,
+  EDIT,
+  DELETE,
+  APPROVE,
+  REJECT
+}
+
+
+
+export interface TimeConstraint {
+  startDate: Date;
+  endDate: Date;
+  daysOfWeek: number[];
+  timeOfDay: string;
+}
+
+
+
+// Phase-specific interfaces and types
+
+
+export enum RecruitmentPhaseManagers{
+  SOURCING_MANAGER,
+  CV_SHARING_MANAGER,
+  ASSESSMENT_MANAGER,
+  CLIENT_REVIEW_MANAGER,
+  INTERVIEW_MANAGER,
+  OFFER_MANAGER,
+  ONBOARDING_MANAGER
+}
+
+
+export enum RecruitmentPhases{
+  SOURCING,
+  CV_SHARING,
+  ASSESSMENT,
+  CLIENT_REVIEW,
+  INTERVIEW,
+  OFFER,
+  ONBOARDING
 }
 
 
@@ -795,10 +993,10 @@ export interface AssessmentManager {
 }
 
  export enum AssessmentStatusType {
-  PENDING = 'pending',
-  IN_PROGRESS = 'in_progress',
-  COMPLETED = 'completed',
-  OVERDUE = 'overdue'
+  PENDING,
+  IN_PROGRESS,
+  COMPLETED,
+  OVERDUE
 }
 
 
@@ -902,14 +1100,174 @@ export interface CandidateManagementSystem {
   recruiterId: string;
   sharedAt: Date;
   expiresAt: Date;
-  status: 'pending' | 'viewed' | 'feedback_received';
+  status: CVShareStatus;
   viewHistory: ViewRecord[];
   feedback?: ClientFeedback;
  }
+
+ export enum CVShareStatus {
+  PENDING,
+  VIEWED,
+  FEEDBACK_RECEIVED
+}
  
  export interface ViewRecord {
   stakeholderId: string;
   viewedAt: Date;
   duration: number;
  }
- 
+
+
+export enum ScreeningType {
+  SNAPSHOT,
+  CV,
+  CHATBOT,
+  VIDEO,
+  ASSESSMENT
+}
+
+
+export interface JobProcessStage {
+  stageName: string;
+  screenings?: ScreeningType[];
+  interviews?: Interview[];
+  assessments?: boolean;
+  references?: boolean;
+}
+
+export interface JobProcess {
+  stages: JobProcessStage[];
+}
+
+
+
+
+export enum InterviewStatus {
+  SCHEDULED,
+  COMPLETED,
+  RESCHEDULED,
+  CANCELLED
+}
+
+export interface Interview {
+  id: string;
+  candidateId: string;
+  clientId: string;
+  round: number;
+  scheduledTime: Date;
+  duration: number;
+  mode: InterviewMode;
+
+  status: InterviewStatus;
+
+  feedback: Feedback;
+}
+
+
+export enum InterviewMode {
+  ONLINE,
+  IN_PERSON
+}
+
+
+export interface InterviewRequest {
+  candidateId: string;
+  interviewers: string[];
+  round: number;
+  dateTimeStart: Date;
+  dateTimeEnd: Date;
+  duration: number;
+  mode:InterviewMode;
+  preferredSlots: TimeSlot[];
+  specialRequirements?: string[];
+  }
+  
+
+
+  export class Result<T, E = Error> {
+    private constructor(
+      private readonly isSuccess: boolean,
+      private readonly value?: T,
+      private readonly error?: E
+    ) {}
+  
+    // Factory methods for creating success/failure results
+    static success<T, E = Error>(value: T): Result<T, E> {
+      return new Result<T, E>(true, value);
+    }
+  
+    static failure<T, E = Error>(error: E): Result<T, E> {
+      return new Result<T, E>(false, undefined, error);
+    }
+  
+    // Type guards
+    isOk(): this is Result<T, never> {
+      return this.isSuccess;
+    }
+  
+    isErr(): this is Result<never, E> {
+      return !this.isSuccess;
+    }
+  
+    // Value extractors with type safety
+    getValue(): T {
+      if (!this.isSuccess) {
+        throw new Error('Cannot get value from failure result');
+      }
+      return this.value!;
+    }
+  
+    getError(): E {
+      if (this.isSuccess) {
+        throw new Error('Cannot get error from success result');
+      }
+      return this.error!;
+    }
+  
+    // Transformers
+    map<U>(fn: (value: T) => U): Result<U, E> {
+      return this.isSuccess
+        ? Result.success(fn(this.value!))
+        : Result.failure(this.error!);
+    }
+  
+    mapError<F>(fn: (error: E) => F): Result<T, F> {
+      return this.isSuccess
+        ? Result.success(this.value!)
+        : Result.failure(fn(this.error!));
+    }
+  
+    // Chain operations
+    andThen<U>(fn: (value: T) => Result<U, E>): Result<U, E> {
+      return this.isSuccess ? fn(this.value!) : Result.failure(this.error!);
+    }
+  
+    // Default value handlers
+    unwrapOr(defaultValue: T): T {
+      return this.isSuccess ? this.value! : defaultValue;
+    }
+  
+    // Error handlers
+    match<U>(options: {
+      ok: (value: T) => U;
+      err: (error: E) => U;
+    }): U {
+      return this.isSuccess
+        ? options.ok(this.value!)
+        : options.err(this.error!);
+    }
+  
+    // Async operations
+    static async fromPromise<T>(
+      promise: Promise<T>
+    ): Promise<Result<T, Error>> {
+      try {
+        const value = await promise;
+        return Result.success(value);
+      } catch (error) {
+        return Result.failure(error as Error);
+      }
+    }
+  }
+  
+  

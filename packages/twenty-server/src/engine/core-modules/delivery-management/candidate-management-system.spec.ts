@@ -1,11 +1,12 @@
-import { CandidateManagementSystem } from './candidate-management-system';
+import { DeliveryManagementSystem } from './services/delivery-management-system';
 import * as deliveryManagementTypes from './types/delivery-management.types';
 
+
 describe('CandidateManagementSystem', () => {
-    let candidateManagementSystem: CandidateManagementSystem;
+    let candidateManagementSystem: DeliveryManagementSystem;
 
     beforeEach(() => {
-        candidateManagementSystem = new CandidateManagementSystem();
+        candidateManagementSystem = new DeliveryManagementSystem();
     });
 
     it('should add a candidate and update status through various stages', async () => {

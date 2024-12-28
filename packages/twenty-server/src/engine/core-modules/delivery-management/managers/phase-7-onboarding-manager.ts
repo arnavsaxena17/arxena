@@ -1,5 +1,5 @@
-import * as deliveryManagementTypes from './types/delivery-management.types';
-import { NotificationService } from './notification-service';
+import * as deliveryManagementTypes from '../types/delivery-management.types';
+import { NotificationService } from '../services/notification-service';
 
 export class OnboardingManager {
     private candidates: Map<string, deliveryManagementTypes.Candidate>;

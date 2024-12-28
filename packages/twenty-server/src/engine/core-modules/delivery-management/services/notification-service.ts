@@ -1,4 +1,4 @@
-import * as deliveryManagementTypes from './types/delivery-management.types';
+import * as deliveryManagementTypes from '../types/delivery-management.types';
 
 export class NotificationService {
     async sendNotification(

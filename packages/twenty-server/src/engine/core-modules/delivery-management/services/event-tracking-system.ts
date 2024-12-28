@@ -1,4 +1,4 @@
-import * as deliveryManagementTypes from './types/delivery-management.types';
+import * as deliveryManagementTypes from 'src/engine/core-modules/delivery-management/types/delivery-management.types';
 
 export class EventTrackingSystem {
     logEvent(event: deliveryManagementTypes.RecruitmentEvent): void {
