@@ -1,5 +1,5 @@
 // google-drive.controller.ts
-import { Controller, Get, Post, Delete, Body, Param, Query, UseGuards, Req, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { Controller, Get, Post,Headers, Delete, Body, Param, Query, UseGuards, Req, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { GoogleDriveService } from './google-drive.service';
 // import { GoogleAPIsRequest } from '../auth/google-apis.strategy';
@@ -7,28 +7,33 @@ import { GoogleAPIsRequest } from 'src/engine/core-modules/auth/strategies/googl
 import { AuthGuard } from '@nestjs/passport';
 
 @Controller('drive')
-@UseGuards(AuthGuard('google-apis'))
 export class GoogleDriveController {
  constructor(private readonly driveService: GoogleDriveService) {}
 
  @Get('files')
+
  async listFiles(
-   @Req() req: GoogleAPIsRequest,
+@Headers('authorization') authHeader: string,
    @Query('folderId') folderId?: string,
    @Query('pageSize') pageSize?: number,
  ) {
-   const auth = await this.driveService.loadSavedCredentialsIfExist(req.user.transientToken);
+    console.log("Got here")
+    const twentyToken = authHeader.replace('Bearer ', '');
+
+   const auth = await this.driveService.loadSavedCredentialsIfExist(twentyToken);
    return this.driveService.listFiles(auth, folderId, pageSize);
  }
 
  @Post('upload')
  @UseInterceptors(FileInterceptor('file'))
  async uploadFile(
-   @Req() req: GoogleAPIsRequest,
-   @UploadedFile() file: Express.Multer.File,
+    @Headers('authorization') authHeader: string,
+    @UploadedFile() file: Express.Multer.File,
    @Body('folderId') folderId?: string,
  ) {
-   const auth = await this.driveService.loadSavedCredentialsIfExist(req.user.transientToken);
+    const twentyToken = authHeader.replace('Bearer ', '');
+
+   const auth = await this.driveService.loadSavedCredentialsIfExist(twentyToken);
    return this.driveService.uploadFile(auth, {
      name: file.originalname,
      mimeType: file.mimetype,
@@ -39,30 +44,36 @@ export class GoogleDriveController {
 
  @Post('folders')
  async createFolder(
-   @Req() req: GoogleAPIsRequest,
-   @Body('name') name: string,
+    @Headers('authorization') authHeader: string,
+    @Body('name') name: string,
    @Body('parentFolderId') parentFolderId?: string,
  ) {
-   const auth = await this.driveService.loadSavedCredentialsIfExist(req.user.transientToken);
+    const twentyToken = authHeader.replace('Bearer ', '');
+
+   const auth = await this.driveService.loadSavedCredentialsIfExist(twentyToken);
    return this.driveService.createFolder(auth, { name, parentFolderId });
  }
 
  @Post('copy/:fileId')
  async copyFile(
-   @Req() req: GoogleAPIsRequest,
-   @Param('fileId') fileId: string,
+    @Headers('authorization') authHeader: string,
+    @Param('fileId') fileId: string,
    @Body('destinationFolderId') destinationFolderId?: string,
  ) {
-   const auth = await this.driveService.loadSavedCredentialsIfExist(req.user.transientToken);
+    const twentyToken = authHeader.replace('Bearer ', '');
+
+   const auth = await this.driveService.loadSavedCredentialsIfExist(twentyToken);
    return this.driveService.copyFile(auth, fileId, destinationFolderId);
  }
 
  @Delete(':fileId')
  async deleteFile(
-   @Req() req: GoogleAPIsRequest,
-   @Param('fileId') fileId: string,
+    @Headers('authorization') authHeader: string,
+    @Param('fileId') fileId: string,
  ) {
-   const auth = await this.driveService.loadSavedCredentialsIfExist(req.user.transientToken);
+    const twentyToken = authHeader.replace('Bearer ', '');
+
+   const auth = await this.driveService.loadSavedCredentialsIfExist(twentyToken);
    return this.driveService.deleteFile(auth, fileId);
  }
 }

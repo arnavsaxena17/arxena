@@ -17,6 +17,7 @@ export class GoogleDriveService {
   }
 
   async loadSavedCredentialsIfExist(twenty_token: string) {
+    console.log("loadSavedCredentialsIfExist");
     const connectedAccountsResponse = await axios.request({
       method: "get",
       url: "http://localhost:3000/rest/connectedAccounts",
@@ -25,7 +26,7 @@ export class GoogleDriveService {
         "content-type": "application/json",
       },
     });
-
+    console.log("connectedAccountsResponse", connectedAccountsResponse.data);
     if (connectedAccountsResponse?.data?.data?.connectedAccounts?.length > 0) {
       const connectedAccountToUse = connectedAccountsResponse.data.data.connectedAccounts
         .filter(x => x.handle === process.env.EMAIL_SMTP_USER)[0];
@@ -42,8 +43,12 @@ export class GoogleDriveService {
         };
         return google.auth.fromJSON(credentials);
       } catch (err) {
+        console.error("Error loading credentials:", err);
         return null;
       }
+    }
+    else{
+        console.log("No connected accounts found");
     }
   }
 
