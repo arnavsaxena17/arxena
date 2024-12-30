@@ -17,6 +17,7 @@ import { FeatureFlagEntity } from '../feature-flag/feature-flag.entity';
 import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
 import { DataSourceModule } from 'src/engine/metadata-modules/data-source/data-source.module'; // Add this import
 import {WorkspaceModificationsModule} from 'src/engine/core-modules/workspace-modifications/workspace-modifications.module'; // Add this import
+import { AttachmentProcessingService } from './services/candidate-engagement/attachment-processing';
 
 @Module({
   

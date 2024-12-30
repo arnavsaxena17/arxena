@@ -15,14 +15,27 @@ export class GoogleDriveController {
  async listFiles(
 @Headers('authorization') authHeader: string,
    @Query('folderId') folderId?: string,
-   @Query('pageSize') pageSize?: number,
+   @Query('pageSize') pageSize?: string,
  ) {
     console.log("Got here")
     const twentyToken = authHeader.replace('Bearer ', '');
 
    const auth = await this.driveService.loadSavedCredentialsIfExist(twentyToken);
-   return this.driveService.listFiles(auth, folderId, pageSize);
+       // Convert pageSize to number only if it exists and is valid
+       const parsedPageSize = pageSize ? parseInt(pageSize) : 1000;
+
+    
+       return this.driveService.listFiles(
+           auth, 
+           folderId,
+           !isNaN(parsedPageSize) ? parsedPageSize : undefined
+       );
+   
  }
+
+
+//  sms-calls:folderId=1b3tLqHSJvTRN-Szb-4pvrMo83FFcCm4d
+// call-recording:folderId=1CubFDsG9cyULQDYhpduxWUKTEkAeX-2i
 
  @Post('upload')
  @UseInterceptors(FileInterceptor('file'))

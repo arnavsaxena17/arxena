@@ -26,7 +26,7 @@ export class GoogleDriveService {
         "content-type": "application/json",
       },
     });
-    console.log("connectedAccountsResponse", connectedAccountsResponse.data);
+
     if (connectedAccountsResponse?.data?.data?.connectedAccounts?.length > 0) {
       const connectedAccountToUse = connectedAccountsResponse.data.data.connectedAccounts
         .filter(x => x.handle === process.env.EMAIL_SMTP_USER)[0];
@@ -52,21 +52,32 @@ export class GoogleDriveService {
     }
   }
 
-  async listFiles(auth, folderId?: string, pageSize = 100) {
+  async listFiles(auth, folderId?: string, pageSize?: number) {
     const drive = google.drive({ version: 'v3', auth });
     
+    // Only include pageSize in params if it's a valid number
     const params: any = {
-      pageSize,
-      fields: 'nextPageToken, files(id, name, mimeType, createdTime, modifiedTime, size, parents)',
+        fields: 'nextPageToken, files(id, name, mimeType, createdTime, modifiedTime, size, parents)',
     };
 
-    if (folderId) {
-      params.q = `'${folderId}' in parents`;
+    // Only add pageSize if it's a valid number
+    if (typeof pageSize === 'number' && !isNaN(pageSize)) {
+        params.pageSize = pageSize;
     }
 
-    const response = await drive.files.list(params);
-    return response.data.files;
-  }
+    if (folderId) {
+        params.q = `'${folderId}' in parents`;
+    }
+
+    try {
+        const response = await drive.files.list(params);
+        return response.data.files;
+    } catch (error) {
+        console.error('Drive API Error:', error.response?.data || error);
+        throw error;
+    }
+}
+
 
   async uploadFile(auth, fileData: {
     name: string,
