@@ -376,6 +376,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
   
   async getPersonDetailsByPhoneNumber(phoneNumber: string, apiToken:string) {
     console.log('Trying to get person details by phone number:', phoneNumber);
+    
     if (!phoneNumber || phoneNumber === '') {
       console.log('Phone number is empty and no candidate found');
       return allDataObjects.emptyCandidateProfileObj;

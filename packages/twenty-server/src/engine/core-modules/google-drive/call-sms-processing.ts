@@ -3,6 +3,7 @@ import * as fs from 'fs';
 import { AttachmentProcessingService } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/attachment-processing';
 import { FetchAndUpdateCandidatesChatsWhatsapps } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/update-chat';
 import { axiosRequest } from '../workspace-modifications/workspace-modifications.controller';
+import { CleanPhoneNumbers } from 'src/engine/core-modules/candidate-sourcing/utils/clean-phone-numbers';
 // types.ts
 export interface PhoneCall {
     id: string;
@@ -153,9 +154,13 @@ export class CallAndSMSProcessingService {
     recordingsFolder: string,
     apiToken: string
   ) {
+
+
+    const cleanPhoneNumbersObj = new CleanPhoneNumbers();
+    const cleanedPhoneNumber = cleanPhoneNumbersObj.cleanPhoneNumber(phoneNumber);
     const person = await new FetchAndUpdateCandidatesChatsWhatsapps(
       this.workspaceQueryService
-    ).getPersonDetailsByPhoneNumber(phoneNumber, apiToken);
+    ).getPersonDetailsByPhoneNumber(cleanedPhoneNumber, apiToken);
   
     if (!person) return;
   
