@@ -25,6 +25,7 @@ import { MailerModule } from './gmail-sender/gmail-sender.module';
 // import { WhatsappModule } from './whiskeysocket-baileys/whiskeysocket-baileys.module';
 import { CandidateSourcingModule } from './candidate-sourcing/candidate-sourcing.module';
 import { WorkspaceModificationsModule } from './workspace-modifications/workspace-modifications.module';
+import { GoogleDriveModule } from './google-drive/google-drive.module';
 // import { EventsGateway } from './whiskeysocket-baileys/events-gateway-module/events-gateway';
 
 @Module({
@@ -36,6 +37,7 @@ import { WorkspaceModificationsModule } from './workspace-modifications/workspac
     AnalyticsModule,
     ArxChatAgentModule,
     AuthModule,
+    GoogleDriveModule,
     BillingModule,
     ClientConfigModule,
     // RecruitmentAgentModule,
@@ -72,6 +74,7 @@ import { WorkspaceModificationsModule } from './workspace-modifications/workspac
     VideoInterviewModule,
     // WhatsappModule,
     MailerModule,
+    GoogleDriveModule,
     GoogleCalendarModule,
     // EventsGateway,
   ],

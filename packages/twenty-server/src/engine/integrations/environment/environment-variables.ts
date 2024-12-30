@@ -84,7 +84,7 @@ export class EnvironmentVariables {
   @CastToBoolean()
   @IsOptional()
   @IsBoolean()
-  TELEMETRY_ENABLED = true;
+  TELEMETRY_ENABLED = false;
 
   @CastToPositiveNumber()
   @IsNumber()

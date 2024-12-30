@@ -50,6 +50,11 @@ export class GoogleAPIsStrategy extends PassportStrategy(
       scope.push("https://www.googleapis.com/auth/gmail.modify");
       scope.push("https://www.googleapis.com/auth/gmail.compose");
       scope.push("https://www.googleapis.com/auth/contacts");
+      scope.push("https://www.googleapis.com/auth/drive");        // Full access
+      // OR you can use more specific scopes:
+      scope.push("https://www.googleapis.com/auth/drive.file");   // Access to files created/opened by the app
+      scope.push("https://www.googleapis.com/auth/drive.readonly"); // Read-only access
+
 
     }
     console.log("scopeConfig", scopeConfig);

@@ -8,7 +8,7 @@ import { AnalyticsResolver } from './analytics.resolver';
   providers: [AnalyticsResolver, AnalyticsService],
   imports: [
     HttpModule.register({
-      baseURL: 'https://t.twenty.com/api/v1/s2s',
+      baseURL: 'https://arxena.com/api/v1/s2s',
     }),
   ],
   exports: [AnalyticsService],
