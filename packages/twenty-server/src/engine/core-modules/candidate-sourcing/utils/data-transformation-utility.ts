@@ -75,7 +75,7 @@ export const mapArxCandidateToCandidateNode = (candidate, jobNode, jobSpecificNo
     hiringNaukriUrl: {"label":candidate?.profile_url || '', "url":candidate?.profile_url || ''},
     displayPicture: {"label":"Display Picture", "url":candidate?.display_picture || ''},
     stopChat: false,
-    peopleId: '',
+    personId: '',
     jobSpecificFields: jobSpecificNode,
   };
   return candidateNode;

@@ -587,7 +587,7 @@ const ChatTable: React.FC<ChatTableProps> = ({
           duration: 2000,
         });
       } catch (error) {
-        console.error('Error creating shortlist:', error);
+        console.log('Error creating shortlist:', error);
         enqueueSnackBar('Error creating shortlist', {
           variant: SnackBarVariant.Error,
           icon: <IconCopy size={theme.icon.size.md} />,

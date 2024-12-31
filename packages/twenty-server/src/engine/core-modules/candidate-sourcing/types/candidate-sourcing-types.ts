@@ -180,7 +180,7 @@ interface Profile {
 // Define the oneCandidateObject interface
 interface Candidate {
   name: string;
-  peopleId: string;
+  personId: string;
   status: string;
   engagementStatus: boolean;
   startChat: boolean;
@@ -213,7 +213,7 @@ export interface ArxenaCandidateNode {
   displayPicture: {label:string, url:string};
   jobsId: string;
   jobSpecificFields: any;
-  peopleId: string;
+  personId: string;
 }
 
 export interface ArxenaJobCandidateNode {

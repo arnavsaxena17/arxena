@@ -101,7 +101,7 @@ query FindManyAIInterviewStatuses($filter: AIInterviewStatusFilterInput, $orderB
           uniqueStringKey
           whatsappProvider
           chatCount
-          peopleId
+          personId
           startChat
           status
           jobSpecificFields
@@ -230,7 +230,7 @@ query FindManyCandidate($filter: CandidateFilterInput) {
       node {
         id
         uniqueStringKey
-        peopleId
+        personId
         jobsId
       }
     }
@@ -761,7 +761,7 @@ export const graphqlToFindManyAnswers = `query FindManyAnswers($filter: AnswerFi
             id
             position
             engagementStatus
-            peopleId
+            personId
             jobsId
             name
             status

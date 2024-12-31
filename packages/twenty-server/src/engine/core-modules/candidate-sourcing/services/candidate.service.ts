@@ -420,7 +420,7 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
     
         if (personId && !existingCandidate) {
           const { candidateNode } = await processArxCandidate(profile, jobObject);
-          candidateNode.peopleId = personId;
+          candidateNode.personId = personId;
           candidatesToCreate.push(candidateNode);
           candidateKeys.push(key);
           results.manyCandidateObjects.push(candidateNode);
@@ -513,7 +513,6 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
       console.log('Error in creating candidates1', error?.data);
       console.log('Error in creating candidates2', error?.message);
       console.log('Error in creating candidates3', error);
-      console.log('Error in creating candidates4', error?.response?.data);
     }
   }
 

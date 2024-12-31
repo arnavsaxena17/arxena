@@ -690,7 +690,7 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
       console.log('Salary updated:', response.data);
       setIsEditingSalary(false);
     } catch (error) {
-      console.error('Error updating salary:', error);
+      console.log('Error updating salary:', error);
     }
   };
 
@@ -716,7 +716,7 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
       console.log('City updated:', response.data);
       setIsEditingCity(false);
     } catch (error) {
-      console.error('Error updating city:', error);
+      console.log('Error updating city:', error);
     }
   };
 
@@ -725,7 +725,7 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
       const response = await axios.post(process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/stop-chat', { candidateId: currentCandidateId }, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } });
       console.log('Response:', response);
     } catch (error) {
-      console.error('Error stopping candidate:', error);
+      console.log('Error stopping candidate:', error);
     }
   };
 
