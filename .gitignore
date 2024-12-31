@@ -4,6 +4,7 @@ packages/twenty-server/.attachments/token-full.json
 **/**/sessionIds.json
 **/**/.env
 .DS_Store
+packages/twenty-server/google-drive-data/*
 /.idea
 **/**/node_modules/
 .cache
