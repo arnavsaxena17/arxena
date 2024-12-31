@@ -1,4 +1,4 @@
-import { MutableRefObject, ReactNode, useEffect, useRef } from 'react';
+import { MutableRefObject, ReactNode, useCallback, useEffect, useMemo, useRef } from 'react';
 import styled from '@emotion/styled';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 import isEqual from 'lodash/isEqual';
@@ -17,6 +17,9 @@ import { mapViewFiltersToFilters } from '@/views/utils/mapViewFiltersToFilters';
 import { mapViewSortsToSorts } from '@/views/utils/mapViewSortsToSorts';
 import { selector } from 'recoil';
 import { currentViewWithFiltersState } from '../states/currentViewState';
+import { unstable_batchedUpdates as ReactDOM_batchedUpdates } from 'react-dom';
+import React from 'react';
+
 
 export type ViewBarDetailsProps = {
   hasFilterButton?: boolean;
@@ -108,91 +111,110 @@ const StyledAddFilterContainer = styled.div`
 //   },
 // });
 
-export const ViewBarDetails = ({
+export const ViewBarDetails = React.memo(({
   hasFilterButton = false,
   rightComponent,
   filterDropdownId,
 }: ViewBarDetailsProps) => {
   const setCurrentViewWithFilters = useSetRecoilState(currentViewWithFiltersState);
-
+  
   const {
     canPersistViewSelector,
     isViewBarExpandedState,
     availableFilterDefinitionsState,
     availableSortDefinitionsState,
   } = useViewStates();
-  
-  const previousViewRef = useRef<typeof currentViewWithCombinedFiltersAndSorts | null>(null) as MutableRefObject<typeof currentViewWithCombinedFiltersAndSorts | null>;
-
 
   const { currentViewWithCombinedFiltersAndSorts } = useGetCurrentView();
-
+  
   const isViewBarExpanded = useRecoilValue(isViewBarExpandedState);
   const { hasFiltersQueryParams } = useViewFromQueryParams();
   const canPersistView = useRecoilValue(canPersistViewSelector());
-  const availableFilterDefinitions = useRecoilValue(
-    availableFilterDefinitionsState,
-  );
-
-  const availableSortDefinitions = useRecoilValue(
-    availableSortDefinitionsState,
-  );
-
+  const availableFilterDefinitions = useRecoilValue(availableFilterDefinitionsState);
+  const availableSortDefinitions = useRecoilValue(availableSortDefinitionsState);
+  const previousViewRef = useRef<typeof currentViewWithCombinedFiltersAndSorts | null>(null) as MutableRefObject<typeof currentViewWithCombinedFiltersAndSorts | null>;
+  const { resetCurrentView } = useResetCurrentView();
 
   useEffect(() => {
-    if (currentViewWithCombinedFiltersAndSorts && 
-        !isEqual(currentViewWithCombinedFiltersAndSorts, previousViewRef.current)) {
-      setCurrentViewWithFilters(currentViewWithCombinedFiltersAndSorts);
+    if (!currentViewWithCombinedFiltersAndSorts) return;
+
+    const hasChanged = !isEqual(
+      currentViewWithCombinedFiltersAndSorts, 
+      previousViewRef.current
+    );
+
+    if (hasChanged) {
       previousViewRef.current = currentViewWithCombinedFiltersAndSorts;
+      ReactDOM_batchedUpdates(() => {
+        setCurrentViewWithFilters(currentViewWithCombinedFiltersAndSorts);
+      });
     }
   }, [currentViewWithCombinedFiltersAndSorts, setCurrentViewWithFilters]);
 
-
-
-
-  console.log("availableSortDefinitionsState: ", availableSortDefinitionsState);
-  const { resetCurrentView } = useResetCurrentView();
-  const canResetView = canPersistView && !hasFiltersQueryParams;
-
-  const handleCancelClick = () => {
+  const handleCancelClick = useCallback(() => {
     resetCurrentView();
-  };
+  }, [resetCurrentView]);
 
-  const shouldExpandViewBar =
+  const canResetView = useMemo(() => 
+    canPersistView && !hasFiltersQueryParams
+  , [canPersistView, hasFiltersQueryParams]);
+
+  const shouldExpandViewBar = useMemo(() =>
     canPersistView ||
     ((currentViewWithCombinedFiltersAndSorts?.viewSorts?.length ||
       currentViewWithCombinedFiltersAndSorts?.viewFilters?.length) &&
-      isViewBarExpanded);
+      isViewBarExpanded)
+  , [
+    canPersistView,
+    currentViewWithCombinedFiltersAndSorts?.viewSorts?.length,
+    currentViewWithCombinedFiltersAndSorts?.viewFilters?.length,
+    isViewBarExpanded
+  ]);
+
+  const mappedSorts = useMemo(() => 
+    mapViewSortsToSorts(
+      currentViewWithCombinedFiltersAndSorts?.viewSorts ?? [],
+      availableSortDefinitions,
+    )
+  , [currentViewWithCombinedFiltersAndSorts?.viewSorts, availableSortDefinitions]);
+
+  const mappedFilters = useMemo(() =>
+    mapViewFiltersToFilters(
+      currentViewWithCombinedFiltersAndSorts?.viewFilters ?? [],
+      availableFilterDefinitions,
+    )
+  , [currentViewWithCombinedFiltersAndSorts?.viewFilters, availableFilterDefinitions]);
+
+  const hasSortsAndFilters = useMemo(() => 
+    !!currentViewWithCombinedFiltersAndSorts?.viewSorts?.length &&
+    !!currentViewWithCombinedFiltersAndSorts?.viewFilters?.length
+  , [
+    currentViewWithCombinedFiltersAndSorts?.viewSorts?.length,
+    currentViewWithCombinedFiltersAndSorts?.viewFilters?.length
+  ]);
 
   if (!shouldExpandViewBar) {
     return null;
   }
 
-
-  
-  // console.log("currentViewWithCombinedFiltersAndSorts: ", currentViewWithCombinedFiltersAndSorts);
-  console.log("currentViewWithCombinedFiltersAndSorts: ", currentViewWithCombinedFiltersAndSorts);
-
   return (
     <StyledBar>
       <StyledFilterContainer>
         <StyledChipcontainer>
-          {mapViewSortsToSorts(
-            currentViewWithCombinedFiltersAndSorts?.viewSorts ?? [],
-            availableSortDefinitions,
-          ).map((sort) => (
-            <EditableSortChip key={sort.fieldMetadataId} viewSort={sort} />
+          {mappedSorts.map((sort) => (
+            <EditableSortChip 
+              key={sort.fieldMetadataId} 
+              viewSort={sort} 
+            />
           ))}
-          {!!currentViewWithCombinedFiltersAndSorts?.viewSorts?.length &&
-            !!currentViewWithCombinedFiltersAndSorts?.viewFilters?.length && (
-              <StyledSeperatorContainer>
-                <StyledSeperator />
-              </StyledSeperatorContainer>
-            )}
-          {mapViewFiltersToFilters(
-            currentViewWithCombinedFiltersAndSorts?.viewFilters ?? [],
-            availableFilterDefinitions,
-          ).map((viewFilter) => (
+          
+          {hasSortsAndFilters && (
+            <StyledSeperatorContainer>
+              <StyledSeperator />
+            </StyledSeperatorContainer>
+          )}
+
+          {mappedFilters.map((viewFilter) => (
             <ObjectFilterDropdownScope
               key={viewFilter.id}
               filterScopeId={viewFilter.id}
@@ -210,6 +232,7 @@ export const ViewBarDetails = ({
             </ObjectFilterDropdownScope>
           ))}
         </StyledChipcontainer>
+
         {hasFilterButton && (
           <StyledAddFilterContainer>
             <AddObjectFilterFromDetailsButton
@@ -218,6 +241,7 @@ export const ViewBarDetails = ({
           </StyledAddFilterContainer>
         )}
       </StyledFilterContainer>
+
       {canResetView && (
         <StyledCancelButton
           data-testid="cancel-button"
@@ -229,4 +253,8 @@ export const ViewBarDetails = ({
       {rightComponent}
     </StyledBar>
   );
-};
+});
+
+
+
+ViewBarDetails.displayName = 'ViewBarDetails';
