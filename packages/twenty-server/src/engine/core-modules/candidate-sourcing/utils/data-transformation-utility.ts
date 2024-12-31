@@ -50,7 +50,7 @@ export const mapArxCandidateToJobCandidateNode = candidate => {
     ugGraduationYear: candidate?.ug_graduation_year || 0,
     pgGradudationDegree: candidate?.pg_graduation_degree || '',
     ugGraduationDegree: candidate?.ug_graduation_degree || '',
-    pgGraduationYear: candidate?.pg_graduation_year,
+    pgGraduationYear: candidate?.pg_graduation_year || 0,
     resumeHeadline: candidate?.resume_headline || '',
     keySkills: candidate?.key_skills || '',
     industry: candidate?.industry || '',

@@ -28,7 +28,7 @@ export class CronDriveService {
 
  }
 
- @Cron(CronExpression.EVERY_10_SECONDS)
+ @Cron(CronExpression.EVERY_10_MINUTES)
  async fetchDriveFiles() {
     console.log("fetchDriveFiles()");
    if (this.isProcessing) {

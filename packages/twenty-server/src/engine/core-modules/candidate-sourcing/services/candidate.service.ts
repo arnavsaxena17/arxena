@@ -321,7 +321,7 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
 
   
     } catch (error) {
-      console.error('Error in profile processing:', error);
+      console.log('Error in profile processing:', error.data);
     }
   
     console.log('Processing complete. Results:', {
@@ -493,8 +493,7 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
       const response = await axiosRequest(graphqlQueryObj, apiToken);
       return response;
     } catch (error) {
-      console.error('Error in creating candidates', error);
-      throw error;
+      console.log('Error in creating candidates', error.data);
     }
   }
 
