@@ -16,6 +16,35 @@ import { createRelations } from '../../workspace-modifications/object-apis/servi
 import * as allGraphQLQueries from '../../arx-chat/services/candidate-engagement/graphql-queries-chatbot';
 import {CreateFieldsOnObject} from 'src/engine/core-modules/workspace-modifications/object-apis/data/createFields';
 import * as allDataObjects from '../../arx-chat/services/data-model-objects';
+class Semaphore {
+  private permits: number;
+  private waiting: Array<() => void> = [];
+
+  constructor(permits: number) {
+    this.permits = permits;
+  }
+
+  async acquire(): Promise<void> {
+    if (this.permits > 0) {
+      this.permits--;
+      return;
+    }
+
+    return new Promise<void>(resolve => {
+      this.waiting.push(resolve);
+    });
+  }
+
+  release(): void {
+    if (this.waiting.length > 0) {
+      const next = this.waiting.shift();
+      next?.();
+    } else {
+      this.permits++;
+    }
+  }
+}
+
 
 
 export const newFieldsToCreate = [
@@ -177,8 +206,7 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
     });
     const response = await axiosRequest(graphqlQuery, apiToken);
     const candidatesMap = new Map<string, any>();
-    console.log("Response from batchCheckExistingCandidates:", response.data.data.candidates.edges);
-    console.log("Response from batchCheckExistingCandidates len:", response.data.data.candidates.edges.length);
+    
     response.data?.data?.candidates?.edges?.forEach((edge: any) => {
       if (edge?.node?.uniqueStringKey) {
         candidatesMap.set(edge.node.uniqueStringKey, edge.node);
@@ -227,116 +255,94 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
   
     return jobCandidatesMap;
   }
-  
-  
-  async processProfilesWithRateLimiting(
-    data: CandidateSourcingTypes.UserProfile[], 
-    jobObject: CandidateSourcingTypes.Jobs, 
-    apiToken: string
-  ): Promise<{ 
-    manyPersonObjects: CandidateSourcingTypes.ArxenaPersonNode[];  
-    manyCandidateObjects: CandidateSourcingTypes.ArxenaCandidateNode[]; 
-    allPersonObjects: allDataObjects.PersonNode[];
-    manyJobCandidateObjects: CandidateSourcingTypes.ArxenaJobCandidateNode[] 
-  }> {
-    console.log("Starting profile processing. Total profiles:", data.length);
-    
-    const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-    const batchSize = 15;
-    
-    const results = {
-      manyPersonObjects: [] as CandidateSourcingTypes.ArxenaPersonNode[],
-      allPersonObjects: [] as allDataObjects.PersonNode[],
-      manyCandidateObjects: [] as CandidateSourcingTypes.ArxenaCandidateNode[],
-      manyJobCandidateObjects: [] as CandidateSourcingTypes.ArxenaJobCandidateNode[]
-    };
-  
-    const tracking = {
-      personIdMap: new Map<string, string>(),
-      candidateIdMap: new Map<string, string>()
-    };
-  
+  // Add semaphores for concurrency control
+private setupSemaphore = new Semaphore(1); // Only allow one setup at a time
+private dbSemaphore = new Semaphore(3); // Allow 3 concurrent batch operations
+
+  // In CandidateService
+private async processProfilesWithRateLimiting(
+  data: CandidateSourcingTypes.UserProfile[], 
+  jobObject: CandidateSourcingTypes.Jobs, 
+  apiToken: string
+): Promise<{ 
+  manyPersonObjects: CandidateSourcingTypes.ArxenaPersonNode[];  
+  manyCandidateObjects: CandidateSourcingTypes.ArxenaCandidateNode[]; 
+  allPersonObjects: allDataObjects.PersonNode[];
+  manyJobCandidateObjects: CandidateSourcingTypes.ArxenaJobCandidateNode[] 
+}> {
+  const results = {
+    manyPersonObjects: [] as CandidateSourcingTypes.ArxenaPersonNode[],
+    allPersonObjects: [] as allDataObjects.PersonNode[],
+    manyCandidateObjects: [] as CandidateSourcingTypes.ArxenaCandidateNode[],
+    manyJobCandidateObjects: [] as CandidateSourcingTypes.ArxenaJobCandidateNode[]
+  };
+
+  const tracking = {
+    personIdMap: new Map<string, string>(),
+    candidateIdMap: new Map<string, string>()
+  };
+
+  let jobCandidateInfo;
+
+  try {
+    // Use a semaphore for the initial setup to prevent multiple concurrent setups
+    await this.setupSemaphore.acquire();
     try {
-      // 1. Set up job candidate object structure
-      const jobCandidateInfo = await this.setupJobCandidateStructure(jobObject, apiToken);
+      // 1. Set up job candidate object structure - this only needs to happen once per job
+      jobCandidateInfo = await this.setupJobCandidateStructure(jobObject, apiToken);
       if (!jobCandidateInfo.jobCandidateObjectId) {
         throw new Error('Failed to create/get job candidate object structure');
       }
 
-      // 6. Set up metadata fields
+      // 6. Set up metadata fields if needed
       if (jobCandidateInfo.jobCandidateObjectId && data.length > 0) {
         await this.createObjectFieldsAndRelations(
           jobCandidateInfo.jobCandidateObjectId,
           jobCandidateInfo.jobCandidateObjectName,
-          data,  // Pass the full data array
+          data,
           jobObject,
           apiToken
         );
       }
-        
-      // 2. Process data in batches
-      for (let i = 0; i < data.length; i += batchSize) {
-        console.log(`Processing batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(data.length/batchSize)}`);
-        
-        const batch = data.slice(i, i + batchSize);
-        const uniqueStringKeys = batch.map(p => p?.unique_key_string).filter(Boolean);
-        console.log("Unique string keys:", uniqueStringKeys.length);
-        console.log("batch keys:", batch.length);
-  
-        if (uniqueStringKeys.length === 0) {
-          console.log('No valid unique keys in batch, skipping');
-          continue;
-        }
-  
-        // 3. Process people
-        await this.processPeopleBatch(
-          batch,
-          uniqueStringKeys,
-          results,
-          tracking,
-          apiToken
-        );
-  
-        // 4. Process candidates
-        await this.processCandidatesBatch(
-          batch,
-          jobObject,
-          results,
-          tracking,
-          apiToken
-        );
-  
-        // 5. Process job candidates
-        await this.processJobCandidatesBatch(
-          batch,
-          jobObject,
-          jobCandidateInfo.path_position,
-          results,
-          tracking,
-          apiToken
-        );
-  
-        if (i + batchSize < data.length) {
-          await delay(1000); // Rate limiting between batches
-        }
-      }
-  
-
-  
-    } catch (error) {
-      console.log('Error in profile processing:', error.data);
+    } finally {
+      this.setupSemaphore.release();
     }
-  
-    console.log('Processing complete. Results:', {
-      people: results.manyPersonObjects.length,
-      candidates: results.manyCandidateObjects.length,
-      existingPeople: results.allPersonObjects.length,
-      jobCandidates: results.manyJobCandidateObjects.length
-    });
-  
+
+    // Process candidates in batches with rate limiting
+    const batchSize = 15;
+    const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+    
+    // Define jobCandidateInfo before using it
+
+    for (let i = 0; i < data.length; i += batchSize) {
+      const batch = data.slice(i, i + batchSize);
+      const uniqueStringKeys = batch.map(p => p?.unique_key_string).filter(Boolean);
+
+      if (uniqueStringKeys.length === 0) continue;
+
+      // Use a connection pool or semaphore for database operations
+      await this.dbSemaphore.acquire();
+      try {
+        // Process batch
+        await this.processPeopleBatch(batch, uniqueStringKeys, results, tracking, apiToken);
+        await this.processCandidatesBatch(batch, jobObject, results, tracking, apiToken);
+        await this.processJobCandidatesBatch(batch, jobObject, jobCandidateInfo.path_position, results, tracking, apiToken);
+      } finally {
+        this.dbSemaphore.release();
+      }
+
+      if (i + batchSize < data.length) {
+        await delay(1000); // Rate limiting between batches
+      }
+    }
+
     return results;
+  } catch (error) {
+    console.error('Error in profile processing:', error);
+    throw error;
   }
-  
+}
+
   // Helper methods to break down the logic:
   
   private async setupJobCandidateStructure(jobObject: CandidateSourcingTypes.Jobs, apiToken: string) {
@@ -410,7 +416,6 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
       const uniqueStringKeys = batch.map(p => p?.unique_key_string).filter(Boolean);
       const candidatesMap = await this.batchCheckExistingCandidates(uniqueStringKeys, jobObject.id, apiToken);
       console.log('Candidates map:', candidatesMap);
-      console.log('Person map:', tracking.personIdMap);
       
       const candidatesToCreate:CandidateSourcingTypes.ArxenaCandidateNode[] = [];
       const candidateKeys:string[] = [];
@@ -421,7 +426,7 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
     
         const existingCandidate = candidatesMap.get(key);
         const personId = tracking.personIdMap.get(key);
-        console.log("Person ID:", personId);
+    
         if (personId && !existingCandidate) {
           const { candidateNode } = await processArxCandidate(profile, jobObject);
           candidateNode.personId = personId;
@@ -875,91 +880,76 @@ private formatFieldLabel(fieldName: string): string {
     return Array.from(keys);
   }
 
-  async createObjectFieldsAndRelations(
-    jobCandidateObjectId: string, 
-    jobCandidateObjectName: string, 
-    data: CandidateSourcingTypes.UserProfile[],  // Changed to accept full data array
-    jobObject: CandidateSourcingTypes.Jobs,      // Added jobObject parameter
-    apiToken: string, 
+  private async createObjectFieldsAndRelations(
+    jobCandidateObjectId: string,
+    jobCandidateObjectName: string,
+    data: CandidateSourcingTypes.UserProfile[],
+    jobObject: CandidateSourcingTypes.Jobs,
+    apiToken: string,
   ): Promise<void> {
-    console.log('Creating fields and relations for Job Candidate object');
-    
-    // Process all profiles to collect all possible keys
-    const allKeysSet = new Set<string>();
-    
-    // Process each profile in the data array
-    for (const profile of data) {
-      const { jobCandidateNode } = await processArxCandidate(profile, jobObject);
-      const profileKeys = this.extractKeysFromObjects(jobCandidateNode);
-      profileKeys.forEach(key => allKeysSet.add(key));
-    }
-    
-    const existingFieldsResponse = await new CreateMetaDataStructure(this.workspaceQueryService)
-      .fetchAllCurrentObjects(apiToken);
-      
-    const existingFieldsFilteredMappedFields = existingFieldsResponse?.data?.objects?.edges
-      ?.filter(x => x?.node?.id == jobCandidateObjectId)[0]?.node?.fields?.edges
-      ?.map(edge => edge?.node?.name) || [];
-  
-    // Combine all sources of fields
-    const allFields = [
-      ...existingFieldsFilteredMappedFields,
-      ...newFieldsToCreate,
-      ...Array.from(allKeysSet)
-    ];
-    // Remove duplicates and filter out existing fields
-    const newFieldsToCreateFiltered = Array.from(new Set(allFields))
-    .filter(key => !existingFieldsFilteredMappedFields.includes(key));
-    
-
-
-    // Rest of your existing field creation logic...
-    const fieldsToCreate = newFieldsToCreateFiltered
-      .filter((key): key is string => key !== undefined)
-      .map(key => {
-        const fieldType = key.includes('year') || key.includes('months') || key.includes('lacs') || key.includes('thousands') ? 'NumberField' :
-          key.includes('link') || key.includes('profileUrl') ? 'LinkField' :
-          key.includes('experienceYears') ? 'NumberField' :
-          key.includes('ugGraduationYear') ? 'NumberField' :
-          key.includes('pgGraduationYear') ? 'NumberField' :
-          key.includes('age') ? 'NumberField' :
-          key.includes('inferredSalary') ? 'NumberField' :
-          key.includes('displayPicture') ? 'LinkField' :
-          key.includes('multi') ? 'MultiField' : 'TextField';
-
-        return {
-          field: new CreateFieldsOnObject()[`create${fieldType}`]({
-            label: key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-            name: key,
-            objectMetadataId: jobCandidateObjectId,
-            description: key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
-          })
-        };
-      });
-
-      console.log("Thesee are the fields to be created:", fieldsToCreate);
-
-  
     try {
       const existingFieldsResponse = await new CreateMetaDataStructure(this.workspaceQueryService)
         .fetchAllCurrentObjects(apiToken);
-      
-      
-      const existingFieldsKeys = existingFieldsResponse?.data?.objects?.edges
+        
+      const existingFields = existingFieldsResponse?.data?.objects?.edges
         ?.filter(x => x?.node?.id == jobCandidateObjectId)[0]?.node?.fields?.edges
         ?.map(edge => edge?.node?.name) || [];
-
-      console.log("Existing fields keys:", existingFieldsKeys);
-        
-      const fieldsToSendToCreate = fieldsToCreate
-        .filter(field => !existingFieldsKeys.includes(field?.field?.name));
-        
-      console.log("Fields to create:", fieldsToSendToCreate);
-      await createFields(fieldsToSendToCreate, apiToken);
-    } catch(error) {
-      console.log("Errors have happened in creating the fields: ", error);
+  
+      // Get all required fields
+      const allFields = new Set([
+        ...newFieldsToCreate,
+        ...Array.from(this.collectFieldsFromData(data))
+      ]);
+  
+      // Filter out existing fields
+      const newFields = Array.from(allFields)
+        .filter(field => !existingFields.includes(field))
+        .map(field => ({
+          field: this.createFieldDefinition(field, jobCandidateObjectId)
+        }));
+  
+      // Create fields in smaller batches with retries
+      const batchSize = 5;
+      for (let i = 0; i < newFields.length; i += batchSize) {
+        const batch = newFields.slice(i, i + batchSize);
+        await this.createFieldsWithRetry(batch, apiToken);
+      }
+    } catch (error) {
+      console.error("Error in createObjectFieldsAndRelations:", error);
+      // Don't throw error here - continue processing if some fields fail
     }
   }
+  
+  private async createFieldsWithRetry(fields: any[], apiToken: string, maxRetries = 3): Promise<void> {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        await createFields(fields, apiToken);
+        return;
+      } catch (error) {
+        if (error.message?.includes('duplicate key value')) {
+          // Ignore duplicate key errors
+          return;
+        }
+        if (attempt === maxRetries) {
+          console.error(`Failed to create fields after ${maxRetries} attempts`);
+          // Continue processing even if some fields fail
+          return;
+        }
+        await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+      }
+    }
+  }
+  
+  private collectFieldsFromData(data: CandidateSourcingTypes.UserProfile[]): Set<string> {
+    const fields = new Set<string>();
+    for (const profile of data) {
+      if (profile) {
+        Object.keys(profile).forEach(key => fields.add(key));
+      }
+    }
+    return fields;
+  }
+  
   
 
 }
