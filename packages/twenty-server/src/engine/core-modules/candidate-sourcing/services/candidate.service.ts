@@ -872,18 +872,42 @@ private extractCustomFields(data: CandidateSourcingTypes.UserProfile[]): string[
 }
 
 private createFieldDefinition(fieldName: string, objectMetadataId: string): any {
-  // Determine field type based on field name
   const fieldType = this.determineFieldType(fieldName);
+  const fieldsCreator = new CreateFieldsOnObject();
   
-  return new CreateFieldsOnObject()[`create${fieldType}`]({
-    label: this.formatFieldLabel(fieldName),
-    name: fieldName,
-    objectMetadataId: objectMetadataId,
-    description: this.formatFieldLabel(fieldName)
-  });
+  // Add validation
+  const methodName = `create${fieldType}`;
+  if (!(methodName in fieldsCreator)) {
+    console.warn(`Method ${methodName} not found in CreateFieldsOnObject, defaulting to TextField`);
+    return fieldsCreator.createTextField({
+      label: this.formatFieldLabel(fieldName),
+      name: fieldName,
+      objectMetadataId: objectMetadataId,
+      description: this.formatFieldLabel(fieldName)
+    });
+  }
+
+  try {
+    return fieldsCreator[methodName]({
+      label: this.formatFieldLabel(fieldName),
+      name: fieldName,
+      objectMetadataId: objectMetadataId,
+      description: this.formatFieldLabel(fieldName)
+    });
+  } catch (error) {
+    console.error(`Error creating field ${fieldName} of type ${fieldType}:`, error);
+    // Fallback to TextField if there's an error
+    return fieldsCreator.createTextField({
+      label: this.formatFieldLabel(fieldName),
+      name: fieldName,
+      objectMetadataId: objectMetadataId,
+      description: this.formatFieldLabel(fieldName)
+    });
+  }
 }
 
 private determineFieldType(fieldName: string): string {
+  // Match exact method names in CreateFieldsOnObject
   if (fieldName.includes('year') || 
       fieldName.includes('months') || 
       fieldName.includes('lacs') || 
@@ -893,23 +917,24 @@ private determineFieldType(fieldName: string): string {
       fieldName.includes('pgGraduationYear') ||
       fieldName.includes('age') ||
       fieldName.includes('inferredSalary')) {
-    return 'NumberField';
+    return 'Number'; // Instead of 'NumberField'
   }
   
   if (fieldName.includes('link') || 
       fieldName.includes('profileUrl') || 
       fieldName.includes('displayPicture')) {
-    return 'LinkField';
+    return 'URL';  // Instead of 'LinkField'
   }
   
   if (fieldName.includes('multi') || 
       fieldName.includes('skills') ||
       fieldName.includes('locations')) {
-    return 'MultiField';
+    return 'Select';  // Instead of 'MultiField'
   }
   
-  return 'TextField';
+  return 'Text'; // Instead of 'TextField'
 }
+
 
 private formatFieldLabel(fieldName: string): string {
   return fieldName
@@ -959,14 +984,34 @@ private formatFieldLabel(fieldName: string): string {
       const batchSize = 5;
       for (let i = 0; i < newFields.length; i += batchSize) {
         const batch = newFields.slice(i, i + batchSize);
-        await this.createFieldsWithRetry(batch, apiToken);
+        let retryCount = 0;
+        const maxRetries = 3;
+  
+        while (retryCount < maxRetries) {
+          try {
+            await createFields(batch.filter(field => field.field), apiToken);
+            break;
+          } catch (error) {
+            if (error.message?.includes('duplicate key value')) {
+              console.log('Duplicate field detected, skipping');
+              break;
+            }
+            retryCount++;
+            if (retryCount === maxRetries) {
+              console.error('Failed to create fields after max retries:', error);
+              // Continue with next batch instead of failing completely
+              break;
+            }
+            await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+          }
+        }
       }
     } catch (error) {
       console.error("Error in createObjectFieldsAndRelations:", error);
-      // Don't throw error here - continue processing if some fields fail
+      // Don't throw error to allow processing to continue
     }
   }
-  
+    
   private async createFieldsWithRetry(fields: any[], apiToken: string, maxRetries = 3): Promise<void> {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
