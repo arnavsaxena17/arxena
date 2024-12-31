@@ -73,8 +73,7 @@ export class GoogleDriveService {
         const response = await drive.files.list(params);
         return response.data.files;
     } catch (error) {
-        console.error('Drive API Error:', error.response?.data || error);
-        throw error;
+        console.log('Drive API Error:', error.response?.data || error);
     }
 }
 
