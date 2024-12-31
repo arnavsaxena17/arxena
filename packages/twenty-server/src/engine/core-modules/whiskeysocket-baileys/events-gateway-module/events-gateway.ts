@@ -72,7 +72,7 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
         console.error('Error querying workspace member:', error);
       }
       const workspaceMemberId = responseAfterQueryingWorkspaceMember?.data?.data?.workspaceMembers?.edges[0]?.node?.id;
-      console.log('responseAfterQueryingWorkspaceMember:', responseAfterQueryingWorkspaceMember?.data?.data?.workspaceMembers?.edges[0]?.node?.id);
+      console.log('responseAfterQueryingWorkspaceMember:', workspaceMemberId);
       const sessionId = workspaceMemberId;
 
       if (!this.whatsappServices.has(sessionId)) {

@@ -237,6 +237,66 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
         }
 
     },
+    {
+        "field": {
+            "description": "",
+            "icon": "IconReload",
+            "label": "Call Type",
+            "name": "callType",
+            "options": [{
+                    "color": "green",
+                    "label": "Incoming",
+                    "position": 0,
+                    "value": "INCOMING"
+                },
+                {
+                    "color": "turquoise",
+                    "label": "Outgoing",
+                    "position": 1,
+                    "value": "OUTGOING"
+                },
+                {
+                    "color": "sky",
+                    "label": "Missed",
+                    "position": 2,
+                    "value": "MISSED"
+                },
+                {
+                    "color": "sky",
+                    "label": "Rejected",
+                    "position": 3,
+                    "value": "REJECTED"
+                },
+            ],
+            "objectMetadataId": objectsNameIdMap.phoneCall,
+            "type": "SELECT"
+        }
+
+    },
+    {
+        "field": {
+            "description": "",
+            "icon": "IconReload",
+            "label": "SMS Type",
+            "name": "smsType",
+            "options": [{
+                    "color": "green",
+                    "label": "Incoming",
+                    "position": 0,
+                    "value": "INCOMING"
+                },
+                {
+                    "color": "turquoise",
+                    "label": "Outgoing",
+                    "position": 1,
+                    "value": "OUTGOING"
+                }
+            ],
+            "objectMetadataId": objectsNameIdMap.sms,
+            "type": "SELECT"
+        }
+
+    },
 
     {
         "field": {
@@ -309,6 +369,61 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
             "name": "message",
             "objectMetadataId": objectsNameIdMap.whatsappMessage,
             "type": "TEXT"
+        }
+    },
+
+    {
+        "field": {
+            "description": "",
+            "label": "Message",
+            "name": "message",
+            "objectMetadataId": objectsNameIdMap.sms,
+            "type": "TEXT"
+        }
+    },
+    {
+        "field": {
+            "description": "",
+            "label": "Duration",
+            "name": "duration",
+            "objectMetadataId": objectsNameIdMap.phoneCall,
+            "type": "NUMBER"
+        }
+    },
+    {
+        "field": {
+            "description": "",
+            "label": "phoneNumber",
+            "name": "phoneNumber",
+            "objectMetadataId": objectsNameIdMap.phoneCall,
+            "type": "TEXT"
+        }
+    },
+    {
+        "field": {
+            "description": "",
+            "label": "phoneNumber",
+            "name": "phoneNumber",
+            "objectMetadataId": objectsNameIdMap.sms,
+            "type": "TEXT"
+        }
+    },
+    {
+        "field": {
+            "description": "",
+            "label": "DateTime",
+            "name": "dateTime",
+            "objectMetadataId": objectsNameIdMap.phoneCall,
+            "type": "DATE_TIME"
+        }
+    },
+    {
+        "field": {
+            "description": "",
+            "label": "DateTime",
+            "name": "dateTime",
+            "objectMetadataId": objectsNameIdMap.sms,
+            "type": "DATE_TIME"
         }
     },
     {

@@ -72,7 +72,7 @@ export class CronDriveService {
        }
      }
    } catch (error) {
-     console.error('Drive sync error:', error);
+     console.log('Drive sync error:', error.message);
    } finally {
      this.isProcessing = false;
    }

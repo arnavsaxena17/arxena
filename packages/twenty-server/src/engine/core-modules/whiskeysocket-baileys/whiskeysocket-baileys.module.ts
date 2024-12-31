@@ -11,4 +11,4 @@ import {WorkspaceModificationsModule} from 'src/engine/core-modules/workspace-mo
   providers: [EventsGateway],
   controllers: [WhatsappController],
 })
-export class WhatsappModule {}
+export class WhiskeySocketsBaileysWhatsappModule {}

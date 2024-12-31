@@ -4,123 +4,16 @@ import { AttachmentProcessingService } from 'src/engine/core-modules/arx-chat/se
 import { FetchAndUpdateCandidatesChatsWhatsapps } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/update-chat';
 import { axiosRequest } from '../workspace-modifications/workspace-modifications.controller';
 import { CleanPhoneNumbers } from 'src/engine/core-modules/candidate-sourcing/utils/clean-phone-numbers';
-// types.ts
-export interface PhoneCall {
-    id: string;
-    personId: string;
-    phoneNumber: string; 
-    callType: 'INCOMING' | 'OUTGOING' | 'MISSED' | 'REJECTED';
-    duration: number;
-    timestamp: Date;
-    recordingAttachmentId?: string;
-   }
-   
-   export interface SMS {
-    id: string;
-    personId: string;
-    phoneNumber: string;
-    messageType: 'INCOMING' | 'OUTGOING';
-    message: string;
-    timestamp: Date;
-   }
-   
-   // graphql-queries.ts
-   export const graphqlQueryToFindPhoneCalls = `
-   query FindManyPhoneCalls($filter: PhoneCallFilterInput, $orderBy: [PhoneCallOrderByInput], $lastCursor: String, $limit: Int) {
-    phoneCalls(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
-      edges {
-        node {
-          id
-          personId
-          phoneNumber
-          callType
-          duration
-          timestamp
-          recordingAttachmentId
-        }
-        cursor
-      }
-      pageInfo {
-        hasNextPage
-        startCursor 
-        endCursor
-      }
-      totalCount
-    }
-   }`;
-   
-   export const graphqlQueryToFindSMS = `
-   query FindManySMS($filter: SMSFilterInput, $orderBy: [SMSOrderByInput], $lastCursor: String, $limit: Int) {
-    smsMessages(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
-      edges {
-        node {
-          id
-          personId
-          phoneNumber
-          messageType
-          message
-          timestamp
-        }
-        cursor
-      }
-      pageInfo {
-        hasNextPage
-        startCursor
-        endCursor
-      }
-      totalCount
-    }
-   }`;
-   
-   export const graphqlMutationToCreatePhoneCall = `
-   mutation CreatePhoneCall($input: CreatePhoneCallInput!) {
-    createPhoneCall(data: $input) {
-      id
-      personId
-      phoneNumber
-      callType
-      duration
-      timestamp
-      recordingAttachmentId
-    }
-   }`;
-   
-   export const graphqlMutationToCreateSMS = `
-   mutation CreateSMS($input: CreateSMSInput!) {
-    createSMS(data: $input) {
-      id
-      personId 
-      phoneNumber
-      messageType
-      message
-      timestamp
-    }
-   }`;
-   
-   export const graphqlMutationToUpdatePhoneCall = `
-   mutation UpdatePhoneCall($id: ID!, $input: UpdatePhoneCallInput!) {
-    updatePhoneCall(id: $id, data: $input) {
-      id
-      personId
-      phoneNumber
-      callType
-      duration
-      timestamp
-      recordingAttachmentId
-    }
-   }`;
-   
-   export const graphqlMutationToUpdateSMS = `
-   mutation UpdateSMS($id: ID!, $input: UpdateSMSInput!) {
-    updateSMS(id: $id, data: $input) {
-      id
-      personId
-      phoneNumber
-      messageType
-      message
-      timestamp
-    }
-   }`;
+import {
+    graphqlQueryToFindPhoneCalls,
+    graphqlQueryToFindSMS,
+    graphqlMutationToCreatePhoneCall,
+    graphqlMutationToCreateSMS,
+    graphqlMutationToUpdatePhoneCall,
+    graphqlMutationToUpdateSMS
+} from './graphql-queries';
+
+
 export class CallAndSMSProcessingService {
 
   constructor(
@@ -132,16 +25,38 @@ export class CallAndSMSProcessingService {
     const callsData = await this.parseXMLFile(callsXmlPath);
     const smsData = await this.parseXMLFile(smsXmlPath);
 
+    // Get current timestamp and threshold (30 minutes ago)
+    const currentTime = Date.now();
+    const thirtyMinutesAgo = currentTime - (30 * 60 * 1000);
+
+    // Filter calls and SMS from last 30 minutes
+    const recentCalls = callsData.calls.call.filter(call => 
+      parseInt(call.$.date) >= thirtyMinutesAgo
+    );
+    console.log("Recent calls numbers are:", recentCalls.length)
+
+    const recentSMS = smsData.smses.sms.filter(sms => 
+      parseInt(sms.$.date) >= thirtyMinutesAgo
+    );
+
+    console.log("Recent SMS numbers are:", recentSMS.length)
+
+    // Get unique phone numbers only from recent communications
     const phoneNumbers = new Set([
-      ...callsData.calls.call.map(call => call.$.number),
-      ...smsData.smses.sms.map(sms => sms.$.address)
+      ...recentCalls.map(call => call.$.number),
+      ...recentSMS.map(sms => sms.$.address)
     ]);
 
     for (const phoneNumber of phoneNumbers) {
-      await this.processPersonCommunications(phoneNumber, callsData, smsData, recordingsPath, apiToken);
+      await this.processPersonCommunications(
+        phoneNumber, 
+        { calls: { call: recentCalls } }, // Pass only recent calls
+        { smses: { sms: recentSMS } },    // Pass only recent SMS
+        recordingsPath, 
+        apiToken
+      );
     }
-  }
-
+}
   private async parseXMLFile(filePath: string) {
     const xmlContent = await fs.promises.readFile(filePath, 'utf-8');
     return parseStringPromise(xmlContent);
@@ -167,41 +82,46 @@ export class CallAndSMSProcessingService {
     const personCalls = callsData.calls.call.filter(call => call.$.number === phoneNumber);
     for (const call of personCalls) {
       const callData = call.$;
-      // Find recording file by matching phone number in recordings folder
-      const recordings = await fs.promises.readdir(recordingsFolder);
-      const recordingFile = recordings.find(file => file.startsWith(phoneNumber));
-      
-      let attachmentId;
-      if (recordingFile) {
-        const recordingPath = `${recordingsFolder}/${recordingFile}`;
-        console.log(`Uploading recording file: ${recordingPath}`);
-        const uploadResponse = await this.attachmentService.uploadAttachmentToTwenty(recordingPath, apiToken);
+      try {
+        // Find recording file by matching phone number in recordings folder
+        const recordings = await fs.promises.readdir(recordingsFolder);
+        const recordingFile = recordings.find(file => file.startsWith(phoneNumber));
         
-        const dataToUploadInAttachmentTable = {
-          input: {
-            authorId: "SYSTEM",
-            name: recordingFile,
-            fullPath: uploadResponse.data.uploadFile,
-            type: "CALL_RECORDING", 
-            personId: person.id
-          }
-        };
-   
-        const attachment = await this.attachmentService.createOneAttachmentFromFilePath(
-          dataToUploadInAttachmentTable,
-          apiToken
-        );
-   
-         await this.createOrUpdatePhoneCall({
-        personId: person.id,
-        phoneNumber,
-        callType: this.mapCallType(callData.type),
-        duration: parseInt(callData.duration),
-        timestamp: new Date(parseInt(callData.date)),
-        recordingAttachmentId: attachmentId,
+        let attachmentId;
+        if (recordingFile) {
+          const recordingPath = `${recordingsFolder}/${recordingFile}`;
+          console.log(`Uploading recording file: ${recordingPath}`);
+          const uploadResponse = await this.attachmentService.uploadAttachmentToTwenty(recordingPath, apiToken);
+          
+          const dataToUploadInAttachmentTable = {
+        input: {
+          authorId: "SYSTEM",
+          name: recordingFile,
+          fullPath: uploadResponse.data.uploadFile,
+          type: "CALL_RECORDING", 
+          personId: person.id
+        }
+          };
+         
+          const attachment = await this.attachmentService.createOneAttachmentFromFilePath(
+        dataToUploadInAttachmentTable,
         apiToken
-      });
-    }
+          );
+          attachmentId = attachment.id;
+        }
+        
+        await this.createOrUpdatePhoneCall({
+          personId: person.id,
+          phoneNumber,
+          callType: this.mapCallType(callData.type),
+          duration: parseInt(callData.duration),
+          timestamp: new Date(parseInt(callData.date)),
+          recordingAttachmentId: attachmentId,
+          apiToken
+        });
+      } catch (error) {
+        console.error(`Error processing call for phone number ${phoneNumber}:`, error);
+      }
     }
 
     // Process SMS

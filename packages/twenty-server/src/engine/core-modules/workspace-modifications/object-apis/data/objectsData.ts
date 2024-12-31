@@ -29,6 +29,26 @@ export const objectCreationArr = [
             "namePlural": "prompts"
         }
     },    
+        {
+        "object": {
+            "description": "",
+            "icon": "IconPrompt",
+            "labelPlural": "Phone Calls",
+            "labelSingular": "Phone Call",
+            "nameSingular": "phoneCall",
+            "namePlural": "phoneCalls"
+        }
+    },    
+        {
+        "object": {
+            "description": "",
+            "icon": "IconPrompt",
+            "labelPlural": "SMSes",
+            "labelSingular": "SMS",
+            "nameSingular": "sms",
+            "namePlural": "smses"
+        }
+    },    
     {
         "object": {
             "description": "",

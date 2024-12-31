@@ -464,7 +464,6 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
     }
   
 
-
   async getCandidateInformation(userMessage: allDataObjects.chatMessageType, apiToken:string) {
     console.log('This is the phoneNumberFrom', userMessage.phoneNumberFrom);
     let phoneNumberToSearch: string;
@@ -473,6 +472,13 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
     } else {
       phoneNumberToSearch = userMessage.phoneNumberFrom.replace("+","");
     }
+
+    // Ignore if phoneNumberToSearch is not a valid number
+    if (isNaN(Number(phoneNumberToSearch))) {
+      console.log('Phone number is not valid, ignoring:', phoneNumberToSearch);
+      return allDataObjects.emptyCandidateProfileObj;
+    }
+
     console.log("Phone number to search is :", phoneNumberToSearch)
     const graphVariables = { filter: { phone: { ilike: '%' + phoneNumberToSearch + '%' } }, orderBy: { position: 'AscNullsFirst' } };
     try {

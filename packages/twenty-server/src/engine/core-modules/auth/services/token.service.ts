@@ -159,22 +159,11 @@ export class TokenService {
     } else {
       expiresIn = this.environmentService.get('API_TOKEN_EXPIRES_IN');
     }
-    // const token = this.jwtService.sign(jwtPayload, {
-    //   secret,
-    //   expiresIn,
-    //   jwtid: apiKeyId,
-    // });
-    console.log("jwtPayload::", jwtPayload)
-    console.log("secret::", secret)
-    console.log("expiresIn::", expiresIn)
-    console.log("apiKeyId::", apiKeyId)
     const token = this.jwtService.sign(jwtPayload, {
       secret,
       expiresIn,
       jwtid: apiKeyId,
     });
-    console.log("token generated::", token)
-
     return { token };
   }
 
