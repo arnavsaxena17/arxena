@@ -1,3 +1,5 @@
+// sendRequestsSequentially();
+
 import axios from "axios";
 import { axiosRequest } from "../../utils/arx-chat-agent-utils";
 import * as allGraphQLQueries from "../../services/candidate-engagement/graphql-queries-chatbot";
