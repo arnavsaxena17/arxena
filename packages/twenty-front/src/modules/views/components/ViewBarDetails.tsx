@@ -1,6 +1,7 @@
-import { ReactNode, useEffect } from 'react';
+import { MutableRefObject, ReactNode, useEffect, useRef } from 'react';
 import styled from '@emotion/styled';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
+import isEqual from 'lodash/isEqual';
 
 import { AddObjectFilterFromDetailsButton } from '@/object-record/object-filter-dropdown/components/AddObjectFilterFromDetailsButton';
 import { ObjectFilterDropdownScope } from '@/object-record/object-filter-dropdown/scopes/ObjectFilterDropdownScope';
@@ -23,6 +24,10 @@ export type ViewBarDetailsProps = {
   filterDropdownId?: string;
   viewBarId: string;
 };
+
+
+
+
 
 const StyledBar = styled.div`
   align-items: center;
@@ -116,6 +121,9 @@ export const ViewBarDetails = ({
     availableFilterDefinitionsState,
     availableSortDefinitionsState,
   } = useViewStates();
+  
+  const previousViewRef = useRef<typeof currentViewWithCombinedFiltersAndSorts | null>(null) as MutableRefObject<typeof currentViewWithCombinedFiltersAndSorts | null>;
+
 
   const { currentViewWithCombinedFiltersAndSorts } = useGetCurrentView();
 
@@ -125,16 +133,20 @@ export const ViewBarDetails = ({
   const availableFilterDefinitions = useRecoilValue(
     availableFilterDefinitionsState,
   );
+
   const availableSortDefinitions = useRecoilValue(
     availableSortDefinitionsState,
   );
 
 
   useEffect(() => {
-    if (currentViewWithCombinedFiltersAndSorts) {
+    if (currentViewWithCombinedFiltersAndSorts && 
+        !isEqual(currentViewWithCombinedFiltersAndSorts, previousViewRef.current)) {
       setCurrentViewWithFilters(currentViewWithCombinedFiltersAndSorts);
+      previousViewRef.current = currentViewWithCombinedFiltersAndSorts;
     }
   }, [currentViewWithCombinedFiltersAndSorts, setCurrentViewWithFilters]);
+
 
 
 
