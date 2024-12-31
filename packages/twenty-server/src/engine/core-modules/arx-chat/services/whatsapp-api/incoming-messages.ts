@@ -219,7 +219,7 @@ export class IncomingWhatsappMessages {
             chatReply: chatReply,
             whatsappDeliveryStatus: 'receivedFromCandidate',
             phoneNumberFrom: userMessageBody.from,
-            whatsappMessageId: requestBody?.entry[0]?.changes[0]?.value?.messages[0].id,
+            whatsappMessageId: requestBody?.entry[0]?.changes[0]?.value?.messages[0]?.id,
           };
 
           const responseAfterMessageUpdate = await this.createAndUpdateIncomingCandidateChatMessage(replyObject, candidateProfileData,apiToken);

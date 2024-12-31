@@ -411,8 +411,8 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
     {
         "field": {
             "description": "",
-            "label": "DateTime",
-            "name": "dateTime",
+            "label": "TimeStamp",
+            "name": "timestamp",
             "objectMetadataId": objectsNameIdMap.phoneCall,
             "type": "DATE_TIME"
         }
@@ -420,8 +420,8 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
     {
         "field": {
             "description": "",
-            "label": "DateTime",
-            "name": "dateTime",
+            "label": "TimeStamp",
+            "name": "timestamp",
             "objectMetadataId": objectsNameIdMap.sms,
             "type": "DATE_TIME"
         }

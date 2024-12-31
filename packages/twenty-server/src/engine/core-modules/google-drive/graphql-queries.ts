@@ -9,7 +9,6 @@ query FindManyPhoneCalls($filter: PhoneCallFilterInput, $orderBy: [PhoneCallOrde
                 callType
                 duration
                 timestamp
-                recordingAttachmentId
             }
             cursor
         }
@@ -53,8 +52,7 @@ mutation CreatePhoneCall($input: CreatePhoneCallInput!) {
         phoneNumber
         callType
         duration
-        timestamp
-        recordingAttachmentId
+        datetime
     }
 }`;
 

@@ -1,6 +1,6 @@
 import CandidateEngagementArx from '../candidate-engagement/check-candidate-engagement';
 import { Injectable, Logger } from '@nestjs/common';
-import { Cron } from '@nestjs/schedule';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { Repository, In, EntityManager } from 'typeorm';
 import { EnvironmentService } from 'src/engine/integrations/environment/environment.service';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -17,12 +17,12 @@ let fiveMinutesCron: string;
 console.log('Current Environment Is:', process.env.NODE_ENV);
 if (process.env.NODE_ENV === 'development') {
   // cron to run every 30 seconds in development
-  timeScheduleCron = '*/30 * * * * *';
-  fiveMinutesCron = '*/30 * * * * *'; // for testing purposes
+  timeScheduleCron = CronExpression.EVERY_30_SECONDS;
+  fiveMinutesCron = CronExpression.EVERY_30_SECONDS; // for testing purposes
 } else {
   // cron to run every 5 minutes
-  timeScheduleCron = '*/30 * * * * *';
-  fiveMinutesCron = '*/5 * * * *';
+  timeScheduleCron = CronExpression.EVERY_30_SECONDS;
+  fiveMinutesCron = CronExpression.EVERY_5_MINUTES;
 }
 
 @Injectable()

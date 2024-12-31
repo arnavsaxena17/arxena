@@ -560,6 +560,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
         position: 'first',
         id: v4(),
         candidateId: candidateProfileObj?.id,
+        personId: candidateProfileObj?.person?.id,
         message: userMessage?.messages[0]?.content || userMessage?.messages[0]?.text,
         phoneFrom: userMessage?.phoneNumberFrom,
         phoneTo: userMessage?.phoneNumberTo,
