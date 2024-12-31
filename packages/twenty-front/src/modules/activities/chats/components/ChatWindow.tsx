@@ -722,7 +722,7 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
 
   const handleStopCandidate = async () => {
     try {
-      const response = await axios.post(process.env.REACT_APP_SERVER_BASE_URL + '/candidate-sourcing/stop-chat', { candidateId: currentCandidateId }, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } });
+      const response = await axios.post(process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/stop-chat', { candidateId: currentCandidateId }, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } });
       console.log('Response:', response);
     } catch (error) {
       console.error('Error stopping candidate:', error);

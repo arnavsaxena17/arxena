@@ -18,12 +18,15 @@ import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/work
 import { DataSourceModule } from 'src/engine/metadata-modules/data-source/data-source.module'; // Add this import
 import {WorkspaceModificationsModule} from 'src/engine/core-modules/workspace-modifications/workspace-modifications.module'; // Add this import
 import { AttachmentProcessingService } from './services/candidate-engagement/attachment-processing';
+import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/services/candidate.service';
+import { JobService } from '../candidate-sourcing/services/job.service';
+import { PersonService } from '../candidate-sourcing/services/person.service';
 
 @Module({
   
   imports: [AuthModule,WorkspaceModificationsModule,  GoogleCalendarModule,     DataSourceModule, TypeORMModule, TypeOrmModule.forFeature([Workspace, FeatureFlagEntity], 'core'), TypeOrmModule.forFeature([DataSourceEntity], 'metadata') ],
   controllers: [ArxChatEndpoint,  WhatsappWebhook, WhatsappControllers,WhatsappTestAPI,TwilioControllers, GoogleControllers],
-  providers: [TasksService, WorkspaceDataSourceService],
+  providers: [TasksService, JobService,PersonService, CandidateService, WorkspaceDataSourceService],
   exports: [],
 })
 export class ArxChatAgentModule {}

@@ -5,8 +5,6 @@ import { useRecoilState, useRecoilValue } from 'recoil';
 // import { useShowNotification } from '@/notification/hooks/useShowNotification'; 
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
-import { currentViewWithFiltersState } from '@/views/states/currentViewState';
-import { selectedRecordsForModalState } from '../states/selectedRecordsState';
 
 type UseStartChatProps = {
   onSuccess?: () => void;
@@ -32,7 +30,7 @@ export const useStartChats = ({
     setError(null);
 
     try {
-      const url = `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/start-chats`
+      const url = `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/start-chats`
       const results = await  axios.post( url, { jobCandidateIds, currentViewWithCombinedFiltersAndSorts, objectNameSingular }, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}`, 'Content-Type': 'application/json', }, } );
       console.log("results::", results);
       return results;

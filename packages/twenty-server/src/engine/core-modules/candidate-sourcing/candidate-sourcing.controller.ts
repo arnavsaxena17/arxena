@@ -1,24 +1,15 @@
 import { Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
-import { CreateManyCandidates, CreateManyPeople, graphQltoStartChat,UpdateOneJob , CreateOneJob, graphQltoStopChat, createOneQuestion, graphqlToFindManyJobByArxenaSiteId } from './graphql-queries';
+import {UpdateOneJob , CreateOneJob, createOneQuestion, graphqlToFindManyJobByArxenaSiteId } from './graphql-queries';
 import { FetchAndUpdateCandidatesChatsWhatsapps } from '../arx-chat/services/candidate-engagement/update-chat';
-import * as allDataObjects from '../arx-chat/services/data-model-objects';
-import * as allGraphQLQueries from '../arx-chat/services/candidate-engagement/graphql-queries-chatbot';
 import { axiosRequest , axiosRequestForMetadata} from './utils/utils';
-import { processArxCandidate } from './utils/data-transformation-utility';
 import * as CandidateSourcingTypes from './types/candidate-sourcing-types';
 import axios from 'axios';
 import { WorkspaceQueryService } from '../workspace-modifications/workspace-modifications.service';
-import {createFields} from 'src/engine/core-modules/workspace-modifications/object-apis/services/field-service'
-import {CreateFieldsOnObject} from 'src/engine/core-modules/workspace-modifications/object-apis/data/createFields'
-import { createRelations } from '../workspace-modifications/object-apis/services/relation-service';
-import { CreateMetaDataStructure } from '../workspace-modifications/object-apis/object-apis-creation';
-import {JobCandidateUtils} from './utils/job-candidate-utils';
 import { JwtAuthGuard } from 'src/engine/guards/jwt.auth.guard';
 import { JobService } from './services/job.service';
 import { PersonService } from './services/person.service';
 import { CandidateService } from './services/candidate.service';
 import { ChatService } from './services/chat.service';
-import { query } from 'express';
 import { Enrichment } from '../workspace-modifications/object-apis/types/types';
 
 @Controller('candidate-sourcing')
@@ -460,105 +451,4 @@ export class CandidateSourcingController {
     }
   }
 
-
-    @Post('start-chats')
-  async startChats(@Req() request: any): Promise<object> {
-    const apiToken = request.headers.authorization.split(' ')[1];
-    const jobCandidateIds = request.body.jobCandidateIds;
-    const currentViewWithCombinedFiltersAndSorts = request.body.currentViewWithCombinedFiltersAndSorts;
-    const objectNameSingular = request.body.objectNameSingular;
-    console.log("jobCandidateIds::", jobCandidateIds);
-    console.log("objectNameSingular::", objectNameSingular);
-    console.log("currentViewWithCombinedFiltersAndSorts::", currentViewWithCombinedFiltersAndSorts);
-    const path_position = request?.body?.objectNameSingular.replace("JobCandidate", "")
-    const allDataObjects = await new CreateMetaDataStructure(this.workspaceQueryService).fetchAllObjects(apiToken);
-    
-    const allJobCandidates = await this.candidateService.findManyJobCandidatesWithCursor(path_position, apiToken);
-    console.log("All Job Candidates:", allJobCandidates?.length)
-    const filteredCandidateIds = await this.candidateService.filterCandidatesBasedOnView(allJobCandidates, currentViewWithCombinedFiltersAndSorts,allDataObjects);
-    console.log("This is the filteredCandidates, ", filteredCandidateIds)
-    console.log("Got a total of filteredCandidates length, ", filteredCandidateIds.length)
-    console.log("Starting chat for , ", filteredCandidateIds.length," candidates")
-    for (const candidateId of filteredCandidateIds) {
-      await this.startChatByCandidateId(candidateId, apiToken);
-    }
-    return { status: 'Success' };
-  }
-
-
-  @Post('start-chat')
-  @UseGuards(JwtAuthGuard)
-  async startChat(@Req() request: any) {
-    const apiToken = request.headers.authorization.split(' ')[1]; // Assuming Bearer token
-    const response = await this.startChatByCandidateId(request.body.candidateId, apiToken);
-    console.log('Response from create startChat', response);
-  }
-  
-
-
-  async startChatByCandidateId(candidateId: string, apiToken: string) {
-    const graphqlVariables = {
-      idToUpdate: candidateId,
-      input: {
-        startChat: true,
-      },
-    };
-    const graphqlQueryObj = JSON.stringify({
-      query: graphQltoStartChat,
-      variables: graphqlVariables,
-    });
-
-    const response = await axiosRequest(graphqlQueryObj, apiToken);
-    if (response.data.errors) {
-      console.log('Error in startChat:', response.data.errors);
-    }
-    console.log("Response from create startChat", response.data.data);
-    return response.data;
-  }
-
-
-
-  @Post('stop-chat')
-  @UseGuards(JwtAuthGuard)
-  async stopChat(@Req() request: any) {
-    const apiToken = request.headers.authorization.split(' ')[1]; // Assuming Bearer token
-
-    const graphqlVariables = {
-      idToUpdate: request.body.candidateId,
-      input: {
-        stopChat: true,
-      },
-    };
-    const graphqlQueryObj = JSON.stringify({
-      query: graphQltoStopChat,
-      variables: graphqlVariables,
-    });
-
-    const response = await axiosRequest(graphqlQueryObj, apiToken);
-    console.log('Response from create startChat', response.data);
-  }
-
-  @Post('fetch-candidate-by-phone-number-start-chat')
-  @UseGuards(JwtAuthGuard)
-  async fetchCandidateByPhoneNumber(@Req() request: any) {
-    const apiToken = request.headers.authorization.split(' ')[1]; // Assuming Bearer token
-
-    console.log('called fetchCandidateByPhoneNumber for phone:', request.body.phoneNumber);
-    const personObj: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).getPersonDetailsByPhoneNumber(request.body.phoneNumber,apiToken);
-    const candidateId = personObj.candidates?.edges[0]?.node?.id;
-    const graphqlVariables = {
-      idToUpdate: candidateId,
-      input: {
-        startChat: true,
-      },
-    };
-    const graphqlQueryObj = JSON.stringify({
-      query: graphQltoStartChat,
-      variables: graphqlVariables,
-    });
-
-    const response = await axiosRequest(graphqlQueryObj, apiToken);
-    console.log('Response from create startChat::', response.data);
-    return response.data;
-  }
 }

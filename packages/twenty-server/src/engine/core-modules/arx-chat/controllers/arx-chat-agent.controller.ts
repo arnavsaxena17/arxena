@@ -12,24 +12,22 @@ import { axiosRequest } from '../utils/arx-chat-agent-utils';
 import * as allGraphQLQueries from '../services/candidate-engagement/graphql-queries-chatbot';
 import { shareJDtoCandidate } from '../services/llm-agents/tool-calls-processing';
 import { checkIfResponseMessageSoundsHumanLike } from '../services/llm-agents/human-or-bot-type-response-classification';
-import twilio from 'twilio';
 import { GmailMessageData } from '../../gmail-sender/services/gmail-sender-objects-types';
 import { SendEmailFunctionality, EmailTemplates } from '../services/candidate-engagement/send-gmail';
-import { CalendarEventType } from '../../calendar-events/services/calendar-data-objects-types';
-import { CalendarEmailService } from '../services/candidate-engagement/calendar-email';
-import moment from 'moment-timezone';
 import axios from 'axios';
-import { WhatsappTemplateMessages } from '../services/whatsapp-api/facebook-whatsapp/template-messages';
-import { EnvironmentService } from 'src/engine/integrations/environment/environment.service';
+import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/services/candidate.service';
 
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
-import { EmailService } from 'src/engine/integrations/email/email.service';
+import { graphQltoStartChat,graphQltoStopChat } from 'src/engine/core-modules/candidate-sourcing/graphql-queries';
+import { CreateMetaDataStructure } from 'src/engine/core-modules/workspace-modifications/object-apis/object-apis-creation';
+
 
 
 @Controller('arx-chat')
 export class ArxChatEndpoint {
 
   constructor(
+    private readonly candidateService: CandidateService,
     private readonly workspaceQueryService: WorkspaceQueryService,
   ) {}
 
@@ -149,9 +147,94 @@ export class ArxChatEndpoint {
     return { status: 'Success' };
   }
 
-  @Post('start-chat')
+
+
+    @Post('start-chat')
+    @UseGuards(JwtAuthGuard)
+    async startChat(@Req() request: any) {
+      const apiToken = request.headers.authorization.split(' ')[1]; // Assuming Bearer token
+      const response = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).startChatByCandidateId(request.body.candidateId, apiToken);
+      console.log('Response from create startChat', response);
+    }
+    
+  
+  
+    @Post('start-chats')
+  async startChats(@Req() request: any): Promise<object> {
+    const apiToken = request.headers.authorization.split(' ')[1];
+    const jobCandidateIds = request.body.jobCandidateIds;
+    const currentViewWithCombinedFiltersAndSorts = request.body.currentViewWithCombinedFiltersAndSorts;
+    const objectNameSingular = request.body.objectNameSingular;
+    console.log("jobCandidateIds::", jobCandidateIds);
+    console.log("objectNameSingular::", objectNameSingular);
+    console.log("currentViewWithCombinedFiltersAndSorts::", currentViewWithCombinedFiltersAndSorts);
+    const path_position = request?.body?.objectNameSingular.replace("JobCandidate", "")
+    const allDataObjects = await new CreateMetaDataStructure(this.workspaceQueryService).fetchAllObjects(apiToken);
+    
+    const allJobCandidates = await this.candidateService.findManyJobCandidatesWithCursor(path_position, apiToken);
+    console.log("All Job Candidates:", allJobCandidates?.length)
+    const filteredCandidateIds = await this.candidateService.filterCandidatesBasedOnView(allJobCandidates, currentViewWithCombinedFiltersAndSorts,allDataObjects);
+    console.log("This is the filteredCandidates, ", filteredCandidateIds)
+    console.log("Got a total of filteredCandidates length, ", filteredCandidateIds.length)
+    console.log("Starting chat for , ", filteredCandidateIds.length," candidates")
+    for (const candidateId of filteredCandidateIds) {
+      await await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).startChatByCandidateId(candidateId, apiToken);
+    }
+    return { status: 'Success' };
+  }
+
+
+
+  @Post('stop-chat')
   @UseGuards(JwtAuthGuard)
-  async startChat(@Req() request: any): Promise<object> {
+  async stopChat(@Req() request: any) {
+    const apiToken = request.headers.authorization.split(' ')[1]; // Assuming Bearer token
+
+    const graphqlVariables = {
+      idToUpdate: request.body.candidateId,
+      input: {
+        stopChat: true,
+      },
+    };
+    const graphqlQueryObj = JSON.stringify({
+      query: graphQltoStopChat,
+      variables: graphqlVariables,
+    });
+
+    const response = await axiosRequest(graphqlQueryObj, apiToken);
+    console.log('Response from create startChat', response.data);
+  }
+
+  @Post('fetch-candidate-by-phone-number-start-chat')
+  @UseGuards(JwtAuthGuard)
+  async fetchCandidateByPhoneNumber(@Req() request: any) {
+    const apiToken = request.headers.authorization.split(' ')[1]; // Assuming Bearer token
+
+    console.log('called fetchCandidateByPhoneNumber for phone:', request.body.phoneNumber);
+    const personObj: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).getPersonDetailsByPhoneNumber(request.body.phoneNumber,apiToken);
+    const candidateId = personObj.candidates?.edges[0]?.node?.id;
+    const graphqlVariables = {
+      idToUpdate: candidateId,
+      input: {
+        startChat: true,
+      },
+    };
+    const graphqlQueryObj = JSON.stringify({
+      query: graphQltoStartChat,
+      variables: graphqlVariables,
+    });
+
+    const response = await axiosRequest(graphqlQueryObj, apiToken);
+    console.log('Response from create startChat::', response.data);
+    return response.data;
+  }
+
+
+  
+
+  @Post('start-chat-by-phone-number')
+  @UseGuards(JwtAuthGuard)
+  async startChatByPhoneNumber(@Req() request: any): Promise<object> {
     const apiToken = request.headers.authorization.split(' ')[1];
 
     const whatsappIncomingMessage: allDataObjects.chatMessageType = {

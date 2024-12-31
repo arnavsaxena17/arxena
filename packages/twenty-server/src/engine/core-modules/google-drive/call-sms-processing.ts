@@ -175,7 +175,6 @@ export class CallAndSMSProcessingService {
       if (recordingFile) {
         const recordingPath = `${recordingsFolder}/${recordingFile}`;
         console.log(`Uploading recording file: ${recordingPath}`);
-        console.log(`this.attachmentService: ${this.attachmentService}`);
         const uploadResponse = await this.attachmentService.uploadAttachmentToTwenty(recordingPath, apiToken);
         
         const dataToUploadInAttachmentTable = {

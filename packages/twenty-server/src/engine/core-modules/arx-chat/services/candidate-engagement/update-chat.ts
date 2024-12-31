@@ -9,6 +9,7 @@ import { ApiKeyToken } from 'src/engine/core-modules/auth/dto/token.entity';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 // import { last } from 'rxjs';
 // import { MicroserviceHealthIndicator } from '@nestjs/terminus';
+import { CreateManyCandidates, CreateManyPeople, graphQltoStartChat,UpdateOneJob , CreateOneJob, graphQltoStopChat, createOneQuestion, graphqlToFindManyJobByArxenaSiteId } from 'src/engine/core-modules/candidate-sourcing/graphql-queries';
 
 class Semaphore {
   private permits: number;
@@ -440,6 +441,29 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
       return allDataObjects.emptyCandidateProfileObj;
     }
   }
+  
+
+    async startChatByCandidateId(candidateId: string, apiToken: string) {
+      const graphqlVariables = {
+        idToUpdate: candidateId,
+        input: {
+          startChat: true,
+        },
+      };
+      const graphqlQueryObj = JSON.stringify({
+        query: graphQltoStartChat,
+        variables: graphqlVariables,
+      });
+  
+      const response = await axiosRequest(graphqlQueryObj, apiToken);
+      if (response.data.errors) {
+        console.log('Error in startChat:', response.data.errors);
+      }
+      console.log("Response from create startChat", response.data.data);
+      return response.data;
+    }
+  
+
 
   async getCandidateInformation(userMessage: allDataObjects.chatMessageType, apiToken:string) {
     console.log('This is the phoneNumberFrom', userMessage.phoneNumberFrom);
