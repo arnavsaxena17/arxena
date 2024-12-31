@@ -225,6 +225,7 @@ export const RecordTable = ({
   });
 
   const visibleTableColumns = useRecoilValue(visibleTableColumnsSelector());
+  console.log("visibleTableColumns::", visibleTableColumns)
 
   return (
     <RecordTableScope

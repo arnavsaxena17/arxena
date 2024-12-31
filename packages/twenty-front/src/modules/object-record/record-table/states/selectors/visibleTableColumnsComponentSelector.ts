@@ -8,6 +8,7 @@ export const visibleTableColumnsComponentSelector =
       ({ scopeId }) =>
       ({ get }) => {
         const columns = get(tableColumnsComponentState({ scopeId }));
+        console.log("columns for tableColumnsComponentState", columns);
         return columns
           .filter((column) => column.isVisible)
           .sort((columnA, columnB) => columnA.position - columnB.position);
