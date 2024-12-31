@@ -521,17 +521,36 @@ private dbSemaphore = new Semaphore(3); // Allow 3 concurrent batch operations
 
       if (jobCandidatesToCreate.length > 0) {
         const query = await new JobCandidateUtils().generateJobCandidatesMutation(path_position);
-        await axiosRequest(JSON.stringify({
+        const graphqlInput = JSON.stringify({
           query,
           variables: { data: jobCandidatesToCreate }
-        }), apiToken);
+        });
+  
+        console.log('Attempting to create job candidates with query:', graphqlInput);
+        try {
+          const response = await axiosRequest(graphqlInput, apiToken);
+          console.log('Job candidate creation response:', response?.data);
+          
+          if (response?.data?.errors) {
+            console.log('GraphQL errors:', JSON.stringify(response.data.errors, null, 2));
+          }
+        } catch (error) {
+          console.log('Full error object:', JSON.stringify(error, null, 2));
+          console.log('Error response data:', error.response?.data);
+          console.log('Error request:', {
+            query: error.config?.data,
+            variables: error.config?.variables 
+          });
+        }
       }
     } catch (error) {
-      console.log('Error processing job candidates batch:1', error);
-      console.log('Error processing job candidates batch:2', error.data);
-      console.log('Error processing job candidates batch:3', error.message);
-      console.log('Error processing job candidates batch:4', error.response);
-    }
+      console.log('Full error object:', JSON.stringify(error, null, 2));
+      console.log('Error response data:', error.response?.data);
+      console.log('Error request:', {
+        query: error.config?.data,
+        variables: error.config?.variables 
+      });
+  }
   }
 
   async createCandidates(manyCandidateObjects: CandidateSourcingTypes.ArxenaCandidateNode[], apiToken: string): Promise<any> {
