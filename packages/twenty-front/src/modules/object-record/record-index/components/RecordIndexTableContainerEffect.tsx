@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useRecoilValue } from 'recoil';
 
 import { useColumnDefinitionsFromFieldMetadata } from '@/object-metadata/hooks/useColumnDefinitionsFromFieldMetadata';
@@ -62,30 +62,51 @@ export const RecordIndexTableContainerEffect = ({
     viewBarId,
   });
 
-  useEffect(() => {
-    setOnToggleColumnFilter(
-      () => (fieldMetadataId: string) =>
-        handleToggleColumnFilter(fieldMetadataId),
-    );
-  }, [setOnToggleColumnFilter, handleToggleColumnFilter]);
+
+
+  const onToggleColumnFilter = useCallback(
+    (fieldMetadataId: string) => handleToggleColumnFilter(fieldMetadataId),
+    [handleToggleColumnFilter]
+  );
+
+  const onToggleColumnSort = useCallback(
+    (fieldMetadataId: string) => handleToggleColumnSort(fieldMetadataId),
+    [handleToggleColumnSort]
+  );
+
+  const onEntityCountChange = useCallback(
+    (entityCount: number) => setRecordCountInCurrentView(entityCount),
+    [setRecordCountInCurrentView]
+  );
+
+
 
   useEffect(() => {
-    setOnToggleColumnSort(
-      () => (fieldMetadataId: string) =>
-        handleToggleColumnSort(fieldMetadataId),
-    );
-  }, [setOnToggleColumnSort, handleToggleColumnSort]);
+    setAvailableTableColumns(columnDefinitions);
+  }, [columnDefinitions, setAvailableTableColumns]);
 
+  // Set toggle filter handler
   useEffect(() => {
-    setActionBarEntries?.();
-    setContextMenuEntries?.();
-  }, [setActionBarEntries, setContextMenuEntries]);
+    setOnToggleColumnFilter(() => onToggleColumnFilter);
+  }, [setOnToggleColumnFilter, onToggleColumnFilter]);
 
+  // Set toggle sort handler 
   useEffect(() => {
-    setOnEntityCountChange(
-      () => (entityCount: number) => setRecordCountInCurrentView(entityCount),
-    );
-  }, [setRecordCountInCurrentView, setOnEntityCountChange]);
+    setOnToggleColumnSort(() => onToggleColumnSort);
+  }, [setOnToggleColumnSort, onToggleColumnSort]);
+
+  // Set entries
+  useEffect(() => {
+    if (setActionBarEntries && setContextMenuEntries) {
+      setActionBarEntries();
+      setContextMenuEntries();
+    }
+  }, [setActionBarEntries, setContextMenuEntries, selectedRowIds]);
+
+  // Set entity count change handler
+  useEffect(() => {
+    setOnEntityCountChange(() => onEntityCountChange);
+  }, [setOnEntityCountChange, onEntityCountChange]);
 
   return <></>;
 };

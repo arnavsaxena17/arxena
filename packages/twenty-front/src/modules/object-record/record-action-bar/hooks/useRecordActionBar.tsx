@@ -1,4 +1,4 @@
-import { useCallback,  useMemo, useState } from 'react';
+import { useCallback,  useEffect,  useMemo, useState } from 'react';
 import { isNonEmptyString } from '@sniptt/guards';
 import { RecoilState, useRecoilCallback, useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 import { IconClick, IconFileExport, IconHeart, IconHeartOff, IconTrash } from 'twenty-ui';
@@ -63,7 +63,14 @@ export const useRecordActionBar = ({ objectMetadataItem, selectedRecordIds, call
   
 
   const setSelectedRecordsForModal = useSetRecoilState(selectedRecordsForModalState);
-  setSelectedRecordsForModal(selectedRecordIds);
+  useEffect(() => {
+    setSelectedRecordsForModal(selectedRecordIds);
+  }, [selectedRecordIds, setSelectedRecordsForModal]);
+  
+  
+
+
+
 
   const { createFavorite, favorites, deleteFavorite } = useFavorites();
 
