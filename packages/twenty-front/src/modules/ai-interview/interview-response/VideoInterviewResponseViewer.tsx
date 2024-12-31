@@ -329,7 +329,7 @@ const queryByAIInterviewStatus = `query FindOneAIInterviewStatus($objectRecordId
       uniqueStringKey
       whatsappProvider
       chatCount
-      peopleId
+      personId
       startChat
       status
       jobs {
