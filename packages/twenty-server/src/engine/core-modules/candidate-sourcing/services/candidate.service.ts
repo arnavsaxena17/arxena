@@ -177,7 +177,8 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
     });
     const response = await axiosRequest(graphqlQuery, apiToken);
     const candidatesMap = new Map<string, any>();
-    
+    console.log("Response from batchCheckExistingCandidates:", response.data.data.candidates.edges);
+    console.log("Response from batchCheckExistingCandidates len:", response.data.data.candidates.edges.length);
     response.data?.data?.candidates?.edges?.forEach((edge: any) => {
       if (edge?.node?.uniqueStringKey) {
         candidatesMap.set(edge.node.uniqueStringKey, edge.node);
@@ -279,6 +280,8 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
         
         const batch = data.slice(i, i + batchSize);
         const uniqueStringKeys = batch.map(p => p?.unique_key_string).filter(Boolean);
+        console.log("Unique string keys:", uniqueStringKeys.length);
+        console.log("batch keys:", batch.length);
   
         if (uniqueStringKeys.length === 0) {
           console.log('No valid unique keys in batch, skipping');
@@ -407,6 +410,7 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
       const uniqueStringKeys = batch.map(p => p?.unique_key_string).filter(Boolean);
       const candidatesMap = await this.batchCheckExistingCandidates(uniqueStringKeys, jobObject.id, apiToken);
       console.log('Candidates map:', candidatesMap);
+      console.log('Person map:', tracking.personIdMap);
       
       const candidatesToCreate:CandidateSourcingTypes.ArxenaCandidateNode[] = [];
       const candidateKeys:string[] = [];
@@ -417,7 +421,7 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
     
         const existingCandidate = candidatesMap.get(key);
         const personId = tracking.personIdMap.get(key);
-    
+        console.log("Person ID:", personId);
         if (personId && !existingCandidate) {
           const { candidateNode } = await processArxCandidate(profile, jobObject);
           candidateNode.personId = personId;
