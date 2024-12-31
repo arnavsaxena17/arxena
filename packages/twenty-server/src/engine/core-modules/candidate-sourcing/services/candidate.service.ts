@@ -78,6 +78,15 @@ export const newFieldsToCreate = [
   "experienceYears",
   "experienceMonths",
 ]
+interface ProcessingContext {
+  jobCandidateInfo: {
+    jobCandidateObjectId: string;
+    jobCandidateObjectName: string;
+    path_position: string;
+  };
+  timestamp: string;
+}
+
 
 
 @Injectable()
@@ -89,6 +98,7 @@ export class CandidateService {
 
 ) {}
 
+private processingContexts = new Map<string, ProcessingContext>();
 
 private async checkExistingRelations(objectMetadataId: string, apiToken: string): Promise<any[]> {
   try {
@@ -260,88 +270,106 @@ private setupSemaphore = new Semaphore(1); // Only allow one setup at a time
 private dbSemaphore = new Semaphore(3); // Allow 3 concurrent batch operations
 
   // In CandidateService
-private async processProfilesWithRateLimiting(
-  data: CandidateSourcingTypes.UserProfile[], 
-  jobObject: CandidateSourcingTypes.Jobs, 
-  apiToken: string
-): Promise<{ 
-  manyPersonObjects: CandidateSourcingTypes.ArxenaPersonNode[];  
-  manyCandidateObjects: CandidateSourcingTypes.ArxenaCandidateNode[]; 
-  allPersonObjects: allDataObjects.PersonNode[];
-  manyJobCandidateObjects: CandidateSourcingTypes.ArxenaJobCandidateNode[] 
-}> {
-  const results = {
-    manyPersonObjects: [] as CandidateSourcingTypes.ArxenaPersonNode[],
-    allPersonObjects: [] as allDataObjects.PersonNode[],
-    manyCandidateObjects: [] as CandidateSourcingTypes.ArxenaCandidateNode[],
-    manyJobCandidateObjects: [] as CandidateSourcingTypes.ArxenaJobCandidateNode[]
-  };
 
-  const tracking = {
-    personIdMap: new Map<string, string>(),
-    candidateIdMap: new Map<string, string>()
-  };
-
-  let jobCandidateInfo;
-
-  try {
-    // Use a semaphore for the initial setup to prevent multiple concurrent setups
-    await this.setupSemaphore.acquire();
+ async processProfilesWithRateLimiting(
+    data: CandidateSourcingTypes.UserProfile[], 
+    jobObject: CandidateSourcingTypes.Jobs,
+    timestamp: string, // Add timestamp parameter
+    apiToken: string
+  ): Promise<{ 
+    manyPersonObjects: CandidateSourcingTypes.ArxenaPersonNode[];  
+    manyCandidateObjects: CandidateSourcingTypes.ArxenaCandidateNode[]; 
+    allPersonObjects: allDataObjects.PersonNode[];
+    manyJobCandidateObjects: CandidateSourcingTypes.ArxenaJobCandidateNode[];
+    timestamp: string; // Include timestamp in response
+  }> {
+    const results = {
+      manyPersonObjects: [] as CandidateSourcingTypes.ArxenaPersonNode[],
+      allPersonObjects: [] as allDataObjects.PersonNode[],
+      manyCandidateObjects: [] as CandidateSourcingTypes.ArxenaCandidateNode[],
+      manyJobCandidateObjects: [] as CandidateSourcingTypes.ArxenaJobCandidateNode[],
+      timestamp: timestamp // Add timestamp to results
+    };
+  
+    const tracking = {
+      personIdMap: new Map<string, string>(),
+      candidateIdMap: new Map<string, string>()
+    };
+  
     try {
-      // 1. Set up job candidate object structure - this only needs to happen once per job
-      jobCandidateInfo = await this.setupJobCandidateStructure(jobObject, apiToken);
-      if (!jobCandidateInfo.jobCandidateObjectId) {
-        throw new Error('Failed to create/get job candidate object structure');
+      // Use timestamp as unique identifier for this processing batch
+      const batchKey = `${jobObject.id}-${timestamp}`;
+      let context = this.processingContexts.get(batchKey);
+  
+      if (!context) {
+        await this.setupSemaphore.acquire();
+        try {
+          const jobCandidateInfo = await this.setupJobCandidateStructure(jobObject, apiToken);
+          if (!jobCandidateInfo.jobCandidateObjectId) {
+            throw new Error('Failed to create/get job candidate object structure');
+          }
+  
+          context = {
+            jobCandidateInfo,
+            timestamp
+          };
+          this.processingContexts.set(batchKey, context);
+  
+          // Set up metadata fields if needed
+          if (jobCandidateInfo.jobCandidateObjectId && data.length > 0) {
+            await this.createObjectFieldsAndRelations(
+              jobCandidateInfo.jobCandidateObjectId,
+              jobCandidateInfo.jobCandidateObjectName,
+              data,
+              jobObject,
+              apiToken
+            );
+          }
+        } finally {
+          this.setupSemaphore.release();
+        }
       }
-
-      // 6. Set up metadata fields if needed
-      if (jobCandidateInfo.jobCandidateObjectId && data.length > 0) {
-        await this.createObjectFieldsAndRelations(
-          jobCandidateInfo.jobCandidateObjectId,
-          jobCandidateInfo.jobCandidateObjectName,
-          data,
-          jobObject,
-          apiToken
-        );
+  
+      // Rest of the processing with batches...
+      const batchSize = 15;
+      const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+      
+      for (let i = 0; i < data.length; i += batchSize) {
+        const batch = data.slice(i, i + batchSize);
+        const uniqueStringKeys = batch.map(p => p?.unique_key_string).filter(Boolean);
+  
+        if (uniqueStringKeys.length === 0) continue;
+  
+        await this.dbSemaphore.acquire();
+        try {
+          await this.processPeopleBatch(batch, uniqueStringKeys, results, tracking, apiToken);
+          await this.processCandidatesBatch(batch, jobObject, results, tracking, apiToken);
+          await this.processJobCandidatesBatch(
+            batch, 
+            jobObject, 
+            context.jobCandidateInfo.path_position,
+            results,
+            tracking,
+            apiToken
+          );
+        } finally {
+          this.dbSemaphore.release();
+        }
+  
+        if (i + batchSize < data.length) {
+          await delay(1000);
+        }
       }
-    } finally {
-      this.setupSemaphore.release();
+  
+      // Cleanup context after processing is complete
+      this.processingContexts.delete(batchKey);
+  
+      return results;
+    } catch (error) {
+      console.error('Error in profile processing:', error);
+      throw error;
     }
-
-    // Process candidates in batches with rate limiting
-    const batchSize = 15;
-    const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-    
-    // Define jobCandidateInfo before using it
-
-    for (let i = 0; i < data.length; i += batchSize) {
-      const batch = data.slice(i, i + batchSize);
-      const uniqueStringKeys = batch.map(p => p?.unique_key_string).filter(Boolean);
-
-      if (uniqueStringKeys.length === 0) continue;
-
-      // Use a connection pool or semaphore for database operations
-      await this.dbSemaphore.acquire();
-      try {
-        // Process batch
-        await this.processPeopleBatch(batch, uniqueStringKeys, results, tracking, apiToken);
-        await this.processCandidatesBatch(batch, jobObject, results, tracking, apiToken);
-        await this.processJobCandidatesBatch(batch, jobObject, jobCandidateInfo.path_position, results, tracking, apiToken);
-      } finally {
-        this.dbSemaphore.release();
-      }
-
-      if (i + batchSize < data.length) {
-        await delay(1000); // Rate limiting between batches
-      }
-    }
-
-    return results;
-  } catch (error) {
-    console.error('Error in profile processing:', error);
-    throw error;
   }
-}
 
   // Helper methods to break down the logic:
   

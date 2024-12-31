@@ -314,10 +314,12 @@ export class CandidateSourcingController {
       if (!jobObject) {
         console.log('Job not found');
       }
+      const timestamp = req.body?.timestamp || new Date().toISOString();
+
       console.log("Job Object Found:", jobObject)
       // Process profiles and get all the necessary data
       const { manyPersonObjects, manyCandidateObjects, allPersonObjects, manyJobCandidateObjects } = 
-      await this.candidateService.processProfilesWithRateLimiting(data, jobObject, apiToken);
+      await this.candidateService.processProfilesWithRateLimiting(data, jobObject,timestamp, apiToken);
       console.log('Number of new person objects:', manyPersonObjects?.length);
       console.log('Number of existing person objects:', allPersonObjects?.length);
       console.log('Number of new candidate objects:', manyCandidateObjects?.length);
