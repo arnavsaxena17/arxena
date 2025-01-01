@@ -335,7 +335,7 @@ private dbSemaphore = new Semaphore(3); // Allow 3 concurrent batch operations
         try {
           const jobCandidateInfo = await this.setupJobCandidateStructure(jobObject, apiToken);
           if (!jobCandidateInfo.jobCandidateObjectId) {
-            throw new Error('Failed to create/get job candidate object structure');
+            console.log('Failed to create/get job candidate object structure');
           }
   
           context = {
@@ -1036,17 +1036,7 @@ private formatFieldLabel(fieldName: string): string {
     }
   }
     
-  private collectFieldsFromData(data: CandidateSourcingTypes.UserProfile[]): Set<string> {
-    const fields = new Set<string>();
-    for (const profile of data) {
-      if (profile) {
-        Object.keys(profile).forEach(key => fields.add(key));
-      }
-    }
-    console.log("Fields collected from data:", fields);
-    return fields;
-  }
-  
+
   
 
 }
