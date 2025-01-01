@@ -978,11 +978,13 @@ private formatFieldLabel(fieldName: string): string {
       const batchSize = 5;
       for (let i = 0; i < newFields.length; i += batchSize) {
         const batch = newFields.slice(i, i + batchSize);
+        
         let retryCount = 0;
         const maxRetries = 3;
         const filteredFields = batch.filter(field => field.field);
         console.log("Filtered fields:", filteredFields, "for i =", i);
         console.log("Filtered fields names:", filteredFields.map(x => x.field.name));
+        console.log("Filtered fields names length:", filteredFields.length);
         while (retryCount < maxRetries) {
           try {
             await createFields(filteredFields, apiToken);
