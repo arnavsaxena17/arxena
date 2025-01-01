@@ -847,12 +847,26 @@ async createNewJobCandidateObject(newPositionObj: CandidateSourcingTypes.Jobs, a
   return ''; // Add a default return statement
 }
 
+getIconForFieldType = (fieldType: string): string => {
+  const iconMap: Record<string, string> = {
+    'Number': 'IconNumbers',
+    'Text': 'IconAbc',
+    'Boolean': 'IconToggleRight',
+    'DateTime': 'IconCalendar',
+    'Select': 'IconSelect',
+    'Link': 'IconLink',
+    'RawJson': 'IconJson'
+  };
+  
+  return iconMap[fieldType] || 'IconAbc'; // Default to text icon if type not found
+};
 
 
 private createFieldDefinition(fieldName: string, objectMetadataId: string): any {
   const fieldType = this.determineFieldType(fieldName);
   const fieldsCreator = new CreateFieldsOnObject();
-  
+  const icon = fieldType === 'Number' ? 'IconNumbers' : 'IconAbc';
+
   // Add validation
   const methodName = `create${fieldType}`;
   if (!(methodName in fieldsCreator)) {
@@ -861,10 +875,11 @@ private createFieldDefinition(fieldName: string, objectMetadataId: string): any 
       label: this.formatFieldLabel(fieldName),
       name: fieldName,
       objectMetadataId: objectMetadataId,
-      description: this.formatFieldLabel(fieldName)
+      description: this.formatFieldLabel(fieldName),
+      icon: this.getIconForFieldType(fieldType)
     });
   }
-
+  
   try {
     return fieldsCreator[methodName]({
       label: this.formatFieldLabel(fieldName),
