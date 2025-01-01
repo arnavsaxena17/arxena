@@ -274,6 +274,32 @@ private dbSemaphore = new Semaphore(3); // Allow 3 concurrent batch operations
 
   // In CandidateService
 
+
+
+  private async collectJobCandidateFields(data: CandidateSourcingTypes.UserProfile[], jobObject: CandidateSourcingTypes.Jobs): Promise<Set<string>> {
+    const fields = new Set<string>();
+    
+    // Add predefined fields
+    newFieldsToCreate.forEach(field => fields.add(field));
+    
+    // Process each profile to get actual jobCandidateNode fields
+    for (const profile of data) {
+      if (profile) {
+        try {
+          const { jobCandidateNode } = await processArxCandidate(profile, jobObject);
+          // Add all keys from the jobCandidateNode
+          Object.keys(jobCandidateNode).forEach(key => fields.add(key));
+        } catch (error) {
+          console.log(`Error processing profile for fields collection: ${error}`);
+          continue;
+        }
+      }
+    }
+    
+    return fields;
+  }
+  
+
  async processProfilesWithRateLimiting(
     data: CandidateSourcingTypes.UserProfile[], 
     jobObject: CandidateSourcingTypes.Jobs,
@@ -953,24 +979,25 @@ private formatFieldLabel(fieldName: string): string {
     try {
       const existingFieldsResponse = await new CreateMetaDataStructure(this.workspaceQueryService)
         .fetchAllCurrentObjects(apiToken);
-        
+
       const existingFields = existingFieldsResponse?.data?.objects?.edges
         ?.filter(x => x?.node?.id == jobCandidateObjectId)[0]?.node?.fields?.edges
         ?.map(edge => edge?.node?.name) || [];
+
       console.log("existingFields::", existingFields)
       console.log("existingFields len::", existingFields.length)
+
       // Get all required fields
-      const allFields = new Set([
-        ...newFieldsToCreate,
-        ...Array.from(this.collectFieldsFromData(data))
-      ]);
+      const allFields = await this.collectJobCandidateFields(data, jobObject);
+
       console.log("All fields:", allFields);
+      console.log("All fields all fields:", allFields.size);
       // Filter out existing fields
       const newFields = Array.from(allFields)
-        .filter(field => !existingFields.includes(field))
-        .map(field => ({ field: this.createFieldDefinition(field, jobCandidateObjectId) }));
+      .filter(field => !existingFields.includes(field))
+      .map(field => ({ field: this.createFieldDefinition(field, jobCandidateObjectId) }));
 
-        console.log("New field names to create:", newFields.map(field => field?.field?.name));
+      console.log("New field names to create:", newFields.map(field => field?.field?.name));
       console.log("New fields to create length:", newFields.length);
   
       // Create fields in smaller batches with retries
