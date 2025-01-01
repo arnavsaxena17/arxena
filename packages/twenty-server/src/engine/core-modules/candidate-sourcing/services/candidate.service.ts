@@ -957,7 +957,8 @@ private formatFieldLabel(fieldName: string): string {
       const existingFields = existingFieldsResponse?.data?.objects?.edges
         ?.filter(x => x?.node?.id == jobCandidateObjectId)[0]?.node?.fields?.edges
         ?.map(edge => edge?.node?.name) || [];
-  
+      console.log("existingFields::", existingFields)
+      console.log("existingFields::", existingFields.length)
       // Get all required fields
       const allFields = new Set([
         ...newFieldsToCreate,
@@ -967,9 +968,7 @@ private formatFieldLabel(fieldName: string): string {
       // Filter out existing fields
       const newFields = Array.from(allFields)
         .filter(field => !existingFields.includes(field))
-        .map(field => ({
-          field: this.createFieldDefinition(field, jobCandidateObjectId)
-        }));
+        .map(field => ({ field: this.createFieldDefinition(field, jobCandidateObjectId) }));
 
       console.log("New fields to create:", newFields);
       console.log("New field names to create:", newFields.map(field => field?.field?.name));
