@@ -981,24 +981,36 @@ private formatFieldLabel(fieldName: string): string {
         }
         await new Promise(r => setTimeout(r, Math.pow(2, i) * 1000));
       }
-  
+      console.log("Existing fields response:", existingFieldsResponse?.data?.objects?.edges);
       const existingObjectFields = existingFieldsResponse?.data?.objects?.edges?.filter(x => x?.node?.id == jobCandidateObjectId);
-      
+      console.log("Existing object fields:", existingObjectFields.map(x => x.node.name));
+      console.log("Existing object fields:", existingObjectFields.length);
       const existingFields = existingFieldsResponse?.data?.objects?.edges
         ?.filter(x => x?.node?.id == jobCandidateObjectId)[0]?.node?.fields?.edges
         ?.map(edge => edge?.node?.name) || [];
+
+        console.log("Existing node object fields:", existingObjectFields.map(x => x.node.name));
+        console.log("Existing node object fields:", existingObjectFields.length);
   
       // Get all required fields
       const allFields = await this.collectJobCandidateFields(data, jobObject);
-  
+      console.log("Existing allFields object fields:", allFields);
+
       // Filter out existing fields
       const newFields = Array.from(allFields)
         .filter(field => !existingFields.includes(field))
         .map(field => ({ field: this.createFieldDefinition(field, jobCandidateObjectId)}));
   
+
+      console.log("New fields to create:", newFields);
+      console.log("New leng fields to create:", newFields.length);
+      console.log("New names fields to create:", newFields.map(x => x.field.name));
       // Create fields in one batch with retries
       const filteredFields = newFields.filter(field => field.field && !['name','createdAt', 'updatedAt'].includes(field.field.name));
-      
+      console.log("New filteredFieldsfields to create:", filteredFields);
+      console.log("New filteredFieldsleng fields to create:", filteredFields.length);
+      console.log("New vfilteredFieldsnames fields to create:", filteredFields.map(x => x.field.name));
+
       if (filteredFields.length > 0) {
         let retryCount = 0;
         while (retryCount < 3) {
