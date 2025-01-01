@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { ConsoleLogger, Injectable } from '@nestjs/common';
 import { JobService } from './job.service';
 import { PersonService } from './person.service';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
@@ -313,7 +313,10 @@ private dbSemaphore = new Semaphore(3); // Allow 3 concurrent batch operations
             jobCandidateInfo,
             timestamp
           };
+
           this.processingContexts.set(batchKey, context);
+          console.log("Job Candidate Info:", jobCandidateInfo);
+          console.log("Job this.processingContexts Info:", this.processingContexts);
   
           // Set up metadata fields if needed
           if (jobCandidateInfo.jobCandidateObjectId && data.length > 0) {
@@ -344,14 +347,7 @@ private dbSemaphore = new Semaphore(3); // Allow 3 concurrent batch operations
         try {
           await this.processPeopleBatch(batch, uniqueStringKeys, results, tracking, apiToken);
           await this.processCandidatesBatch(batch, jobObject, results, tracking, apiToken);
-          await this.processJobCandidatesBatch(
-            batch, 
-            jobObject, 
-            context.jobCandidateInfo.path_position,
-            results,
-            tracking,
-            apiToken
-          );
+          await this.processJobCandidatesBatch( batch, jobObject, context.jobCandidateInfo.path_position, results, tracking, apiToken );
         } finally {
           this.dbSemaphore.release();
         }
@@ -383,6 +379,7 @@ private dbSemaphore = new Semaphore(3); // Allow 3 concurrent batch operations
     
     if (!jobCandidateObjectId) {
       jobCandidateObjectId = await this.createNewJobCandidateObject(jobObject, apiToken);
+      console.log('Created new job candidate object:', jobCandidateObjectId);
       if (jobCandidateObjectId) {
         await this.createRelationsBasedonObjectMap(jobCandidateObjectId, jobCandidateObjectName, apiToken);
       }
@@ -444,7 +441,7 @@ private dbSemaphore = new Semaphore(3); // Allow 3 concurrent batch operations
       const uniqueStringKeys = batch.map(p => p?.unique_key_string).filter(Boolean);
       const candidatesMap = await this.batchCheckExistingCandidates(uniqueStringKeys, jobObject.id, apiToken);
       console.log('Candidates map:', candidatesMap);
-      
+      console.log("Whole batch :", batch);
       const candidatesToCreate:CandidateSourcingTypes.ArxenaCandidateNode[] = [];
       const candidateKeys:string[] = [];
     
@@ -453,10 +450,12 @@ private dbSemaphore = new Semaphore(3); // Allow 3 concurrent batch operations
         if (!key) continue;
     
         const existingCandidate = candidatesMap.get(key);
+        console.log('Existing candidate:', existingCandidate);
         const personId = tracking.personIdMap.get(key);
-    
+        console.log('Person ID:', personId);
         if (personId && !existingCandidate) {
           const { candidateNode } = await processArxCandidate(profile, jobObject);
+          console.log("Candidate Node:", candidateNode, "for pro  file:", profile);
           candidateNode.personId = personId;
           candidatesToCreate.push(candidateNode);
           candidateKeys.push(key);
@@ -465,10 +464,15 @@ private dbSemaphore = new Semaphore(3); // Allow 3 concurrent batch operations
           tracking.candidateIdMap.set(key, existingCandidate.id);
         }
       }
+
+      console.log('Candidates to create:', candidatesToCreate);
+      console.log('Candidates candidateKeys:', candidateKeys);
+      console.log('tracking.candidateIdMap:', tracking.candidateIdMap);
     
       if (candidatesToCreate.length > 0) {
         const response = await this.createCandidates(candidatesToCreate, apiToken);
-        response?.data?.data?.createCandidates?.forEach((candidate, idx) => {
+        console.log('Create candidates response:', response?.data);
+        response?.data?.data?.createCandidates?.forEach((candidate: { id: any; }, idx: string | number) => {
           if (candidate?.id) {
             tracking.candidateIdMap.set(candidateKeys[idx], candidate.id);
           }
@@ -500,17 +504,22 @@ private dbSemaphore = new Semaphore(3); // Allow 3 concurrent batch operations
         const personId = tracking.personIdMap.get(key);
         const candidateId = tracking.candidateIdMap.get(key);
 
+        console.log("tracking personIdMap:", tracking.personIdMap);
+        console.log("tracking candidateIdIdMap:", tracking.candidateIdMap);
+
         if (personId && candidateId) {
           const { jobCandidateNode } = await processArxCandidate(profile, jobObject);
+          console.log("Job Candidate Node:", jobCandidateNode, "for profile:", profile);
           jobCandidateNode.personId = personId;
           jobCandidateNode.candidateId = candidateId;
           jobCandidateNode.jobId = jobObject.id;
 
-          const isDuplicate = results.manyJobCandidateObjects.some(jc =>
+          const isDuplicate = results.manyJobCandidateObjects.some((jc: { personId: string | undefined; candidateId: string | undefined; jobId: string | undefined; }) =>
             jc.personId === jobCandidateNode.personId &&
             jc.candidateId === jobCandidateNode.candidateId &&
             jc.jobId === jobCandidateNode.jobId
           );
+
 
           if (!isDuplicate) {
             jobCandidatesToCreate.push(jobCandidateNode);
@@ -520,6 +529,7 @@ private dbSemaphore = new Semaphore(3); // Allow 3 concurrent batch operations
       }
 
       if (jobCandidatesToCreate.length > 0) {
+        console.log("Job Candidates to create:", jobCandidatesToCreate);
         const query = await new JobCandidateUtils().generateJobCandidatesMutation(path_position);
         const graphqlInput = JSON.stringify({
           query,
@@ -813,14 +823,14 @@ async createNewJobCandidateObject(newPositionObj: CandidateSourcingTypes.Jobs, a
   try {
     const responseFromMetadata = await axiosRequestForMetadata(JSON.stringify(mutation), apiToken);
     const newObjectId = responseFromMetadata.data?.data?.createOneObject?.id;
-    
+    console.log("New object id created :::", newObjectId);
     if (!newObjectId) {
       // If creation failed but no error was thrown, check if it exists again
       const updatedObjectsMap = await new CreateMetaDataStructure(this.workspaceQueryService).fetchObjectsNameIdMap(apiToken);
       if (updatedObjectsMap[jobCandidateObjectName]) {
         return updatedObjectsMap[jobCandidateObjectName];
       }
-      throw new Error('Failed to create or find job candidate object');
+      console.log('Error creating or finding object:');
     }
     
     return newObjectId;
@@ -832,9 +842,9 @@ async createNewJobCandidateObject(newPositionObj: CandidateSourcingTypes.Jobs, a
         return finalObjectsMap[jobCandidateObjectName];
       }
     }
-    console.error('Error creating object:', error);
-    throw error;
+    console.log('Error creating object:', error);
   }
+  return ''; // Add a default return statement
 }
 
 
@@ -972,13 +982,15 @@ private formatFieldLabel(fieldName: string): string {
         ...newFieldsToCreate,
         ...Array.from(this.collectFieldsFromData(data))
       ]);
-  
+      console.log("All fields:", allFields);
       // Filter out existing fields
       const newFields = Array.from(allFields)
         .filter(field => !existingFields.includes(field))
         .map(field => ({
           field: this.createFieldDefinition(field, jobCandidateObjectId)
         }));
+
+      console.log("New fields to create:", newFields);
   
       // Create fields in smaller batches with retries
       const batchSize = 5;
@@ -986,10 +998,11 @@ private formatFieldLabel(fieldName: string): string {
         const batch = newFields.slice(i, i + batchSize);
         let retryCount = 0;
         const maxRetries = 3;
-  
+        const filteredFields = batch.filter(field => field.field);
+        console.log("Filtered fields:", filteredFields, "for i =", i);
         while (retryCount < maxRetries) {
           try {
-            await createFields(batch.filter(field => field.field), apiToken);
+            await createFields(filteredFields, apiToken);
             break;
           } catch (error) {
             if (error.message?.includes('duplicate key value')) {
@@ -998,7 +1011,7 @@ private formatFieldLabel(fieldName: string): string {
             }
             retryCount++;
             if (retryCount === maxRetries) {
-              console.error('Failed to create fields after max retries:', error);
+              console.log('Failed to create fields after max retries:', error.message);
               // Continue with next batch instead of failing completely
               break;
             }
@@ -1007,7 +1020,7 @@ private formatFieldLabel(fieldName: string): string {
         }
       }
     } catch (error) {
-      console.error("Error in createObjectFieldsAndRelations:", error);
+      console.log("Error in createObjectFieldsAndRelations:", error);
       // Don't throw error to allow processing to continue
     }
   }
