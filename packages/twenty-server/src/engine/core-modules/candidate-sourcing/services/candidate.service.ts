@@ -958,7 +958,7 @@ private formatFieldLabel(fieldName: string): string {
         ?.filter(x => x?.node?.id == jobCandidateObjectId)[0]?.node?.fields?.edges
         ?.map(edge => edge?.node?.name) || [];
       console.log("existingFields::", existingFields)
-      console.log("existingFields::", existingFields.length)
+      console.log("existingFields len::", existingFields.length)
       // Get all required fields
       const allFields = new Set([
         ...newFieldsToCreate,
@@ -970,15 +970,14 @@ private formatFieldLabel(fieldName: string): string {
         .filter(field => !existingFields.includes(field))
         .map(field => ({ field: this.createFieldDefinition(field, jobCandidateObjectId) }));
 
-      console.log("New fields to create:", newFields);
-      console.log("New field names to create:", newFields.map(field => field?.field?.name));
+        console.log("New field names to create:", newFields.map(field => field?.field?.name));
       console.log("New fields to create length:", newFields.length);
   
       // Create fields in smaller batches with retries
       const batchSize = 5;
       for (let i = 0; i < newFields.length; i += batchSize) {
         const batch = newFields.slice(i, i + batchSize);
-        
+
         let retryCount = 0;
         const maxRetries = 3;
         const filteredFields = batch.filter(field => field.field);
@@ -1017,6 +1016,7 @@ private formatFieldLabel(fieldName: string): string {
         Object.keys(profile).forEach(key => fields.add(key));
       }
     }
+    console.log("Fields collected from data:", fields);
     return fields;
   }
   

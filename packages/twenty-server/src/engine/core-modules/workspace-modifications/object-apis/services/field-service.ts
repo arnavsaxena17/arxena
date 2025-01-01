@@ -2,6 +2,7 @@ import { executeQuery } from '../utils/graphqlClient';
 import { mutations } from '../mutations/mutations';
 import { FieldCreationInput, FieldInput } from '../types/types';
 export async function createFields(fieldsData:FieldInput[], apiToken: string) {
+    console.log("Number of fields to be crated", fieldsData.length);
     for (const item of fieldsData ) {
 
         if (!item?.field?.objectMetadataId) {
