@@ -217,27 +217,19 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
     console.log("Graphql Query:", graphqlQuery);
     const response = await axiosRequest(graphqlQuery, apiToken);
     console.log("Raw axios response:", response.data);
-
     console.log("Response candidate edges:", response.data?.data?.candidates?.edges);
-
     const candidatesMap = new Map<string, any>();
-
     if (!response?.data?.data?.candidates?.edges) {
       console.log("No candidates found in response");  // Add this
       return candidatesMap;
     }
-
-    
     response.data?.data?.candidates?.edges?.forEach((edge: any) => {
       if (edge?.node?.uniqueStringKey) {
         candidatesMap.set(edge.node.uniqueStringKey, edge.node);
       }
     });
-
     console.log("CandidatesMap is a response Data:", candidatesMap);
-    
     return candidatesMap;
-  
   }
 
 
@@ -980,6 +972,7 @@ private formatFieldLabel(fieldName: string): string {
         }));
 
       console.log("New fields to create:", newFields);
+      console.log("New field names to create:", newFields.map(field => field?.field?.name));
       console.log("New fields to create length:", newFields.length);
   
       // Create fields in smaller batches with retries
