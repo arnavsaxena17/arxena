@@ -338,24 +338,13 @@ private dbSemaphore = new Semaphore(3); // Allow 3 concurrent batch operations
             console.log('Failed to create/get job candidate object structure');
           }
   
-          context = {
-            jobCandidateInfo,
-            timestamp
-          };
-
+          context = { jobCandidateInfo, timestamp };
           this.processingContexts.set(batchKey, context);
           console.log("Job Candidate Info:", jobCandidateInfo);
           console.log("Job this.processingContexts Info:", this.processingContexts);
-  
           // Set up metadata fields if needed
           if (jobCandidateInfo.jobCandidateObjectId && data.length > 0) {
-            await this.createObjectFieldsAndRelations(
-              jobCandidateInfo.jobCandidateObjectId,
-              jobCandidateInfo.jobCandidateObjectName,
-              data,
-              jobObject,
-              apiToken
-            );
+            await this.createObjectFieldsAndRelations( jobCandidateInfo.jobCandidateObjectId, jobCandidateInfo.jobCandidateObjectName, data, jobObject, apiToken );
           }
         } finally {
           this.setupSemaphore.release();
@@ -484,12 +473,12 @@ private dbSemaphore = new Semaphore(3); // Allow 3 concurrent batch operations
         if (!key) continue;
     
         const existingCandidate = candidatesMap.get(key);
-        console.log('Existing candidate:', existingCandidate);
+        // console.log('Existing candidate:', existingCandidate);
         const personId = tracking.personIdMap.get(key);
         console.log('Person ID:', personId);
         if (personId && !existingCandidate) {
           const { candidateNode } = await processArxCandidate(profile, jobObject);
-          console.log("Candidate Node:", candidateNode, "for pro  file:", profile);
+          // console.log("Candidate Node:", candidateNode, "for pro  file:", profile);
           candidateNode.personId = personId;
           candidatesToCreate.push(candidateNode);
           candidateKeys.push(key);
@@ -529,6 +518,8 @@ private dbSemaphore = new Semaphore(3); // Allow 3 concurrent batch operations
     apiToken: string
   ) {
     const jobCandidatesToCreate: CandidateSourcingTypes.ArxenaJobCandidateNode[] = [];
+    console.log("tracking personIdMap:", tracking.personIdMap);
+    console.log("tracking candidateIdIdMap:", tracking.candidateIdMap);
 
     try {
       for (const profile of batch) {
@@ -538,12 +529,10 @@ private dbSemaphore = new Semaphore(3); // Allow 3 concurrent batch operations
         const personId = tracking.personIdMap.get(key);
         const candidateId = tracking.candidateIdMap.get(key);
 
-        console.log("tracking personIdMap:", tracking.personIdMap);
-        console.log("tracking candidateIdIdMap:", tracking.candidateIdMap);
 
         if (personId && candidateId) {
           const { jobCandidateNode } = await processArxCandidate(profile, jobObject);
-          console.log("Job Candidate Node:", jobCandidateNode, "for profile:", profile);
+          // console.log("Job Candidate Node:", jobCandidateNode, "for profile:", profile);
           jobCandidateNode.personId = personId;
           jobCandidateNode.candidateId = candidateId;
           jobCandidateNode.jobId = jobObject.id;
@@ -617,31 +606,31 @@ private dbSemaphore = new Semaphore(3); // Allow 3 concurrent batch operations
   }
 
 
-  async checkExistingJobCandidate(personId: string, candidateId: string, jobId: string, jobObject:any, apiToken: string): Promise<any> {
-    const path_position = JobCandidateUtils.getJobCandidatePathPosition(jobObject.name, jobObject?.arxenaSiteId);
-    const graphqlQueryStr = JobCandidateUtils.generateFindManyJobCandidatesQuery(path_position);
+//   async checkExistingJobCandidate(personId: string, candidateId: string, jobId: string, jobObject:any, apiToken: string): Promise<any> {
+//     const path_position = JobCandidateUtils.getJobCandidatePathPosition(jobObject.name, jobObject?.arxenaSiteId);
+//     const graphqlQueryStr = JobCandidateUtils.generateFindManyJobCandidatesQuery(path_position);
 
-    console.log("For jobId:", jobId);
-    const graphqlQuery = JSON.stringify({
-      variables: {
-        filter: {
-          and: [
-            { candidateId: { in: [candidateId] } },
-            { personId: { in: [personId] } },
-            { jobId: { in: [jobId] } }
-          ]
-        },
-        orderBy: [{ position: "AscNullsFirst" }]
-      },
-      query: graphqlQueryStr
-    });
+//     console.log("For jobId:", jobId);
+//     const graphqlQuery = JSON.stringify({
+//       variables: {
+//         filter: {
+//           and: [
+//             { candidateId: { in: [candidateId] } },
+//             { personId: { in: [personId] } },
+//             { jobId: { in: [jobId] } }
+//           ]
+//         },
+//         orderBy: [{ position: "AscNullsFirst" }]
+//       },
+//       query: graphqlQueryStr
+//     });
 
-    const response = await axiosRequest(graphqlQuery, apiToken);
-    const jobCandidate = response.data?.data?.[`${path_position}JobCandidates`]?.edges[0];
-    // console.log("Response from checkExistingJobCandidate:", jobCandidate);
-    // console.log("Response from checkExistingJobCandidate:", response.data);
-    return jobCandidate;
-}
+//     const response = await axiosRequest(graphqlQuery, apiToken);
+//     const jobCandidate = response.data?.data?.[`${path_position}JobCandidates`]?.edges[0];
+//     // console.log("Response from checkExistingJobCandidate:", jobCandidate);
+//     // console.log("Response from checkExistingJobCandidate:", response.data);
+//     return jobCandidate;
+// }
 
 
     async getFieldMetadataFromId(fieldMetadataId: string, allDataObjects: any): Promise<{ objectType: string; fieldName: string } | null> {
@@ -978,7 +967,7 @@ private formatFieldLabel(fieldName: string): string {
   ): Promise<void> {
     try {
       const existingFieldsResponse = await new CreateMetaDataStructure(this.workspaceQueryService)
-        .fetchAllCurrentObjects(apiToken);
+        .fetchAllObjects(apiToken);
 
       const existingFields = existingFieldsResponse?.data?.objects?.edges
         ?.filter(x => x?.node?.id == jobCandidateObjectId)[0]?.node?.fields?.edges

@@ -300,13 +300,11 @@ export class CandidateSourcingController {
   async sourceCandidates(@Req() req) {
     console.log('Called post candidates API');
     const apiToken = req.headers.authorization.split(' ')[1];
-    console.log("This is rehq request body:",req.body)
     const jobId = req.body?.job_id;
     const jobName = req.body?.job_name;
     console.log('arxenaJobId:', jobId);
     const data: CandidateSourcingTypes.UserProfile[] = req.body?.data;
     console.log("Data len:",data.length)
-    console.log("Data:",data.length)
     
     try {
       // Get job details

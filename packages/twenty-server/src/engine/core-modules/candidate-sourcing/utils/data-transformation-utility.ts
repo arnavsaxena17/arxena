@@ -100,12 +100,12 @@ export const mapArxCandidateJobSpecificFields = candidate => {
 export const processArxCandidate = async (candidate, jobNode) => {
   // console.log("This is the job node", jobNode);
   const personNode = mapArxCandidateToPersonNode(candidate);
-  console.log("This is the person node", personNode);
+  // console.log("This is the person node", personNode);
   const jobSpecificNode = mapArxCandidateJobSpecificFields(candidate);
-  console.log("This is the job specific node", jobSpecificNode);
+  // console.log("This is the job specific node", jobSpecificNode);
   const candidateNode = mapArxCandidateToCandidateNode(candidate, jobNode, jobSpecificNode);
-  console.log("This is the candidate node", candidateNode);
+  // console.log("This is the candidate node", candidateNode);
   const jobCandidateNode = mapArxCandidateToJobCandidateNode(candidate);
-  console.log("This is the job candidate node", jobCandidateNode);
+  // console.log("This is the job candidate node", jobCandidateNode);
   return { personNode, candidateNode, jobCandidateNode };
 };

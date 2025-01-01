@@ -153,19 +153,7 @@ export const CreateOneRelationMetadata = ` mutation CreateOneRelationMetadata($i
 }
   `;
 
-export const ObjectMetadataItems = `
-  query ObjectMetadataItems($objectFilter: objectFilter) {
-  objects(paging: {first: 1000},filter: $objectFilter) {
-    edges {
-      node {
-        id
-        nameSingular
-        labelPlural
-      }
-    }
-  }
-}
-  `;
+
 
 export const CreateOneFieldMetadataItem = `
   mutation CreateOneFieldMetadataItem($input: CreateOneFieldMetadataInput!) {
