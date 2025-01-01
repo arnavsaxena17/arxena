@@ -272,6 +272,10 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
 private setupSemaphore = new Semaphore(1); // Only allow one setup at a time
 private dbSemaphore = new Semaphore(3); // Allow 3 concurrent batch operations
 
+
+private fieldCreationSemaphore = new Semaphore(1);
+
+
   // In CandidateService
 
 
@@ -463,7 +467,6 @@ private dbSemaphore = new Semaphore(3); // Allow 3 concurrent batch operations
       console.log("Checking candidates with keys:", uniqueStringKeys);
       const candidatesMap = await this.batchCheckExistingCandidates(uniqueStringKeys, jobObject.id, apiToken);
       console.log('Candidates map:', candidatesMap);
-      // console.log("Whole batch :", batch);
       const candidatesToCreate:CandidateSourcingTypes.ArxenaCandidateNode[] = [];
       const candidateKeys:string[] = [];
       
@@ -965,84 +968,65 @@ private formatFieldLabel(fieldName: string): string {
     jobObject: CandidateSourcingTypes.Jobs,
     apiToken: string,
   ): Promise<void> {
+    // Acquire semaphore for entire field creation process
+    await this.fieldCreationSemaphore.acquire();
+    
     try {
-      const existingFieldsResponse = await new CreateMetaDataStructure(this.workspaceQueryService).fetchAllObjects(apiToken);
-      const existingObjectFields = existingFieldsResponse?.data?.objects?.edges?.filter(x => x?.node?.id == jobCandidateObjectId)
-      console.log("Existing object fields:", existingObjectFields);
-      console.log("Existing object fields:", existingObjectFields?.length);
-      if (existingObjectFields && existingObjectFields[0]) {
-        console.log("Existing object fields:", existingObjectFields[0]?.node?.fields?.edges);
-        console.log("Existing object fields length:", existingObjectFields[0]?.node?.fields?.edges?.length);
-        console.log("Existing object fields nodes:", existingObjectFields[0]?.node?.fields?.edges?.map(edge => edge?.node?.name));
-      } else {
-        console.log("Existing object fields are undefined or empty.");
+      // Add retry logic for fetching existing fields
+      let existingFieldsResponse;
+      for (let i = 0; i < 3; i++) {
+        existingFieldsResponse = await new CreateMetaDataStructure(this.workspaceQueryService).fetchAllObjects(apiToken);
+        if (existingFieldsResponse?.data?.objects?.edges) {
+          break;
+        }
+        await new Promise(r => setTimeout(r, Math.pow(2, i) * 1000));
       }
+  
+      const existingObjectFields = existingFieldsResponse?.data?.objects?.edges?.filter(x => x?.node?.id == jobCandidateObjectId);
+      
       const existingFields = existingFieldsResponse?.data?.objects?.edges
         ?.filter(x => x?.node?.id == jobCandidateObjectId)[0]?.node?.fields?.edges
         ?.map(edge => edge?.node?.name) || [];
-
-      console.log("existingFields::", existingFields)
-      console.log("existingFields len::", existingFields.length)
-
+  
       // Get all required fields
       const allFields = await this.collectJobCandidateFields(data, jobObject);
-
-      console.log("All fields:", allFields);
-      console.log("All fields all fields:", allFields.size);
+  
       // Filter out existing fields
       const newFields = Array.from(allFields)
-      .filter(field => !existingFields.includes(field))
-      .map(field => ({ field: this.createFieldDefinition(field, jobCandidateObjectId)}));
-
-      console.log("New field names to create:", newFields.map(field => field?.field?.name));
-      console.log("New fields to create length:", newFields.length);
-      
-      // Create fields in smaller batches with retries
+        .filter(field => !existingFields.includes(field))
+        .map(field => ({ field: this.createFieldDefinition(field, jobCandidateObjectId)}));
+  
+      // Create fields in one batch with retries
       const filteredFields = newFields.filter(field => field.field && !['name','createdAt', 'updatedAt'].includes(field.field.name));
       
-      console.log("New filtered field names to create:", filteredFields.map(field => field?.field?.name));
-      console.log("New filtered fields to create length:", filteredFields.length);
-      await createFields(filteredFields, apiToken);
-
-      // for (let i = 0; i < newFields.length; i += batchSize) {
-        // const batch = newFields.slice(i, i + batchSize);
-
-
-        
-        
-        // let retryCount = 0;
-        // const maxRetries = 3;
-        // const filteredFields = batch.filter(field => field.field);
-        // const filteredFields = newFields.filter(field => field.field);
-        // console.log("Filtered fields:", filteredFields, "for i =", i);
-        // console.log("Filtered fields names:", filteredFields.map(x => x.field.name));
-        // console.log("Filtered fields names length:", filteredFields.length);
-        // while (retryCount < maxRetries) {
-        //   try {
-        //     await createFields(filteredFields, apiToken);
-        //     break;
-        //   } catch (error) {
-        //     if (error.message?.includes('duplicate key value')) {
-        //       console.log('Duplicate field detected, skipping');
-        //       break;
-        //     }
-        //     retryCount++;
-        //     if (retryCount === maxRetries) {
-        //       console.log('Failed to create fields after max retries:', error.message);
-        //       // Continue with next batch instead of failing completely
-        //       break;
-        //     }
-        //     await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
-        //   }
-        // }
-      // }
+      if (filteredFields.length > 0) {
+        let retryCount = 0;
+        while (retryCount < 3) {
+          try {
+            await createFields(filteredFields, apiToken);
+            break;
+          } catch (error) {
+            if (error.message?.includes('duplicate key value')) {
+              break;
+            }
+            retryCount++;
+            if (retryCount === 3) {
+              console.log('Failed to create fields after max retries:', error.message);
+              break;
+            }
+            await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * 1000));
+          }
+        }
+      }
     } catch (error) {
       console.log("Error in createObjectFieldsAndRelations:", error.message);
-      // Don't throw error to allow processing to continue
+    } finally {
+      // Always release the semaphore
+      this.fieldCreationSemaphore.release();
     }
   }
-    
-
+  
+  
   
 
 }

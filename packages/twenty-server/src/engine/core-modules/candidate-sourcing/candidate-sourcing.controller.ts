@@ -305,7 +305,8 @@ export class CandidateSourcingController {
     console.log('arxenaJobId:', jobId);
     const data: CandidateSourcingTypes.UserProfile[] = req.body?.data;
     console.log("Data len:",data.length)
-    
+    await new Promise(resolve => setTimeout(resolve, Math.random() * 1000));
+
     try {
       // Get job details
       const jobObject = await this.jobService.getJobDetails(jobId, jobName, apiToken);
