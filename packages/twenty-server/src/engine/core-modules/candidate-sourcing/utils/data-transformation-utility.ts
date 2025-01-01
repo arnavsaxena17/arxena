@@ -20,7 +20,6 @@ export const mapArxCandidateToPersonNode = candidate => {
 export const mapArxCandidateToJobCandidateNode = candidate => {
 
   const ansKeys = Object.keys(candidate).filter(key => key.startsWith('Ans'));
-  console.log("Ans keys:", ansKeys)
   const ansFields = ansKeys.reduce((acc, key) => {
     const camelCaseKey = key.replace(/[^a-zA-Z0-9\s]/g, '').replace(/(?:^\w|[A-Z]|\b\w|\s+)/g, (match, index) => index === 0 ? match.toLowerCase() : match.toUpperCase()).replace(/\s+/g, '').slice(0, 50);
     acc[camelCaseKey] = candidate[key];

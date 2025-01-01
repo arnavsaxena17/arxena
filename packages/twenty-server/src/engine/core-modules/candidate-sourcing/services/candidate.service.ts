@@ -463,7 +463,7 @@ private dbSemaphore = new Semaphore(3); // Allow 3 concurrent batch operations
       console.log("Checking candidates with keys:", uniqueStringKeys);
       const candidatesMap = await this.batchCheckExistingCandidates(uniqueStringKeys, jobObject.id, apiToken);
       console.log('Candidates map:', candidatesMap);
-      console.log("Whole batch :", batch);
+      // console.log("Whole batch :", batch);
       const candidatesToCreate:CandidateSourcingTypes.ArxenaCandidateNode[] = [];
       const candidateKeys:string[] = [];
       
@@ -988,23 +988,27 @@ private formatFieldLabel(fieldName: string): string {
 
       console.log("New field names to create:", newFields.map(field => field?.field?.name));
       console.log("New fields to create length:", newFields.length);
-  
+      
       // Create fields in smaller batches with retries
-      const batchSize = 5;
-      for (let i = 0; i < newFields.length; i += batchSize) {
-        const batch = newFields.slice(i, i + batchSize);
+      const filteredFields = newFields.filter(field => field.field);
+      
+      console.log("New field names to create:", filteredFields.map(field => field?.field?.name));
+      console.log("New fields to create length:", filteredFields.length);
+      await createFields(filteredFields, apiToken);
+
+      // for (let i = 0; i < newFields.length; i += batchSize) {
+        // const batch = newFields.slice(i, i + batchSize);
 
 
         
         
-        let retryCount = 0;
-        const maxRetries = 3;
+        // let retryCount = 0;
+        // const maxRetries = 3;
         // const filteredFields = batch.filter(field => field.field);
-        const filteredFields = newFields.filter(field => field.field);
-        console.log("Filtered fields:", filteredFields, "for i =", i);
-        console.log("Filtered fields names:", filteredFields.map(x => x.field.name));
-        console.log("Filtered fields names length:", filteredFields.length);
-        await createFields(newFields, apiToken);
+        // const filteredFields = newFields.filter(field => field.field);
+        // console.log("Filtered fields:", filteredFields, "for i =", i);
+        // console.log("Filtered fields names:", filteredFields.map(x => x.field.name));
+        // console.log("Filtered fields names length:", filteredFields.length);
         // while (retryCount < maxRetries) {
         //   try {
         //     await createFields(filteredFields, apiToken);
@@ -1023,7 +1027,7 @@ private formatFieldLabel(fieldName: string): string {
         //     await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
         //   }
         // }
-      }
+      // }
     } catch (error) {
       console.log("Error in createObjectFieldsAndRelations:", error.message);
       // Don't throw error to allow processing to continue

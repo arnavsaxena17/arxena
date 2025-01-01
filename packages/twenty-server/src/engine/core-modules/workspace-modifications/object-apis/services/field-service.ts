@@ -6,10 +6,10 @@ export async function createFields(fieldsData:FieldInput[], apiToken: string) {
     for (const item of fieldsData ) {
 
         if (!item?.field?.objectMetadataId) {
-            console.log('Field objectMetadataId is not defined for item:', item);
+            console.log('Field objectMetadataId is not defined for item:', item?.field?.name);
         }
         else{
-            console.log('Field objectMetadataId is defined for item:', item, "will go and setup the field");
+            console.log('Field objectMetadataId is defined for item:', item?.field?.name, "will go and setup the field");
         }
         const input = {
             field: {
