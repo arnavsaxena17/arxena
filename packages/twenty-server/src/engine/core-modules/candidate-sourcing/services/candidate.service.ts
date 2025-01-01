@@ -214,7 +214,12 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
         }
       }
     });
+    console.log("Graphql Query:", graphqlQuery);
     const response = await axiosRequest(graphqlQuery, apiToken);
+    console.log("Raw axios response:", response.data);
+
+    console.log("Response candidate edges:", response.data?.data?.candidates?.edges);
+
     const candidatesMap = new Map<string, any>();
     
     response.data?.data?.candidates?.edges?.forEach((edge: any) => {
@@ -438,13 +443,18 @@ private dbSemaphore = new Semaphore(3); // Allow 3 concurrent batch operations
     apiToken: string
   ) {
     try {
+
+      
       const uniqueStringKeys = batch.map(p => p?.unique_key_string).filter(Boolean);
+      
+      console.log("Checking candidates with keys:", uniqueStringKeys);
       const candidatesMap = await this.batchCheckExistingCandidates(uniqueStringKeys, jobObject.id, apiToken);
       console.log('Candidates map:', candidatesMap);
       console.log("Whole batch :", batch);
       const candidatesToCreate:CandidateSourcingTypes.ArxenaCandidateNode[] = [];
       const candidateKeys:string[] = [];
-    
+      
+      
       for (const profile of batch) {
         const key = profile?.unique_key_string;
         if (!key) continue;
@@ -465,7 +475,7 @@ private dbSemaphore = new Semaphore(3); // Allow 3 concurrent batch operations
         }
       }
 
-      console.log('Candidates to create:', candidatesToCreate);
+      console.log('Candidates to create:', candidatesToCreate.length);
       console.log('Candidates candidateKeys:', candidateKeys);
       console.log('tracking.candidateIdMap:', tracking.candidateIdMap);
     
@@ -529,7 +539,7 @@ private dbSemaphore = new Semaphore(3); // Allow 3 concurrent batch operations
       }
 
       if (jobCandidatesToCreate.length > 0) {
-        console.log("Job Candidates to create:", jobCandidatesToCreate);
+        console.log("Job Candidates to create:", jobCandidatesToCreate.length);
         const query = await new JobCandidateUtils().generateJobCandidatesMutation(path_position);
         const graphqlInput = JSON.stringify({
           query,
@@ -582,23 +592,12 @@ private dbSemaphore = new Semaphore(3); // Allow 3 concurrent batch operations
     }
   }
 
-  async checkExistingCandidate(uniqueStringKey: string, jobId: string, apiToken: string): Promise<any> {
-    const graphqlQuery = JSON.stringify({
-      query: allGraphQLQueries.graphqlQueryToFindCandidateByUniqueKey,
-      variables: {
-        filter: { 
-          uniqueStringKey: { eq: uniqueStringKey },
-          jobsId: { eq: jobId }
-        }
-      }
-    });
-    const response = await axiosRequest(graphqlQuery, apiToken);
-    return response.data?.data?.candidates?.edges[0]?.node;
-  }
 
   async checkExistingJobCandidate(personId: string, candidateId: string, jobId: string, jobObject:any, apiToken: string): Promise<any> {
     const path_position = JobCandidateUtils.getJobCandidatePathPosition(jobObject.name, jobObject?.arxenaSiteId);
     const graphqlQueryStr = JobCandidateUtils.generateFindManyJobCandidatesQuery(path_position);
+
+    console.log("For jobId:", jobId);
     const graphqlQuery = JSON.stringify({
       variables: {
         filter: {
@@ -974,6 +973,7 @@ private formatFieldLabel(fieldName: string): string {
         }));
 
       console.log("New fields to create:", newFields);
+      console.log("New fields to create length:", newFields.length);
   
       // Create fields in smaller batches with retries
       const batchSize = 5;
@@ -1008,26 +1008,6 @@ private formatFieldLabel(fieldName: string): string {
     }
   }
     
-  private async createFieldsWithRetry(fields: any[], apiToken: string, maxRetries = 3): Promise<void> {
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      try {
-        await createFields(fields, apiToken);
-        return;
-      } catch (error) {
-        if (error.message?.includes('duplicate key value')) {
-          // Ignore duplicate key errors
-          return;
-        }
-        if (attempt === maxRetries) {
-          console.error(`Failed to create fields after ${maxRetries} attempts`);
-          // Continue processing even if some fields fail
-          return;
-        }
-        await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
-      }
-    }
-  }
-  
   private collectFieldsFromData(data: CandidateSourcingTypes.UserProfile[]): Set<string> {
     const fields = new Set<string>();
     for (const profile of data) {
