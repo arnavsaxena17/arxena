@@ -983,6 +983,7 @@ private formatFieldLabel(fieldName: string): string {
         const maxRetries = 3;
         const filteredFields = batch.filter(field => field.field);
         console.log("Filtered fields:", filteredFields, "for i =", i);
+        console.log("Filtered fields names:", filteredFields.map(x => x.field.name));
         while (retryCount < maxRetries) {
           try {
             await createFields(filteredFields, apiToken);
