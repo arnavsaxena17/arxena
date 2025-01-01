@@ -966,9 +966,17 @@ private formatFieldLabel(fieldName: string): string {
     apiToken: string,
   ): Promise<void> {
     try {
-      const existingFieldsResponse = await new CreateMetaDataStructure(this.workspaceQueryService)
-        .fetchAllObjects(apiToken);
-
+      const existingFieldsResponse = await new CreateMetaDataStructure(this.workspaceQueryService).fetchAllObjects(apiToken);
+      const existingObjectFields = existingFieldsResponse?.data?.objects?.edges?.filter(x => x?.node?.id == jobCandidateObjectId)
+      console.log("Existing object fields:", existingObjectFields);
+      console.log("Existing object fields:", existingObjectFields?.length);
+      if (existingObjectFields && existingObjectFields[0]) {
+        console.log("Existing object fields:", existingObjectFields[0]?.node?.fields?.edges);
+        console.log("Existing object fields length:", existingObjectFields[0]?.node?.fields?.edges?.length);
+        console.log("Existing object fields nodes:", existingObjectFields[0]?.node?.fields?.edges?.map(edge => edge?.node?.name));
+      } else {
+        console.log("Existing object fields are undefined or empty.");
+      }
       const existingFields = existingFieldsResponse?.data?.objects?.edges
         ?.filter(x => x?.node?.id == jobCandidateObjectId)[0]?.node?.fields?.edges
         ?.map(edge => edge?.node?.name) || [];
@@ -990,7 +998,7 @@ private formatFieldLabel(fieldName: string): string {
       console.log("New fields to create length:", newFields.length);
       
       // Create fields in smaller batches with retries
-      const filteredFields = newFields.filter(field => field.field && !['name'].includes(field.field.name));
+      const filteredFields = newFields.filter(field => field.field && !['name','createdAt', 'updatedAt'].includes(field.field.name));
       
       console.log("New filtered field names to create:", filteredFields.map(field => field?.field?.name));
       console.log("New filtered fields to create length:", filteredFields.length);
