@@ -20,10 +20,7 @@ export class JobCandidateUtils {
         .toLowerCase()
         .replace(/[-_\s]+(.)?/g, (_, c) => (c ? c.toUpperCase() : ''));
     }
-  
-
-
-
+    
     static extractKeysFromObjects = (objects: CandidateSourcingTypes.ArxenaPersonNode[]): string[] => {
         console.log("number of onjects:", objects?.length);
         const keys = new Set<string>();

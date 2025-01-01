@@ -848,38 +848,6 @@ async createNewJobCandidateObject(newPositionObj: CandidateSourcingTypes.Jobs, a
 }
 
 
-private generateFieldsToCreate(
-  data: CandidateSourcingTypes.UserProfile[],
-  existingFields: string[],
-  jobCandidateObjectId: string
-): any[] {
-  // Combine all sources of fields
-  const allFields = new Set([
-    ...newFieldsToCreate,
-    ...this.extractCustomFields(data)
-  ]);
-
-  // Filter out existing fields and create field definitions
-  return Array.from(allFields)
-    .filter(fieldName => !existingFields.includes(fieldName))
-    .map(fieldName => ({
-      field: this.createFieldDefinition(fieldName, jobCandidateObjectId)
-    }))
-    .filter(field => field.field !== null);
-}
-
-private extractCustomFields(data: CandidateSourcingTypes.UserProfile[]): string[] {
-  const customFields = new Set<string>();
-  
-  // Extract fields from all profiles
-  data.forEach(profile => {
-    if (profile) {
-      Object.keys(profile).forEach(key => customFields.add(key));
-    }
-  });
-
-  return Array.from(customFields);
-}
 
 private createFieldDefinition(fieldName: string, objectMetadataId: string): any {
   const fieldType = this.determineFieldType(fieldName);
@@ -927,22 +895,22 @@ private determineFieldType(fieldName: string): string {
       fieldName.includes('pgGraduationYear') ||
       fieldName.includes('age') ||
       fieldName.includes('inferredSalary')) {
-    return 'Number'; // Instead of 'NumberField'
+    return 'NumberField'; // Instead of 'NumberField'
   }
   
   if (fieldName.includes('link') || 
       fieldName.includes('profileUrl') || 
       fieldName.includes('displayPicture')) {
-    return 'URL';  // Instead of 'LinkField'
+    return 'LinkField';  // Instead of 'LinkField'
   }
   
   if (fieldName.includes('multi') || 
       fieldName.includes('skills') ||
       fieldName.includes('locations')) {
-    return 'Select';  // Instead of 'MultiField'
+    return 'SelectField';  // Instead of 'MultiField'
   }
   
-  return 'Text'; // Instead of 'TextField'
+  return 'TextField'; // Instead of 'TextField'
 }
 
 

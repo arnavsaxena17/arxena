@@ -73,7 +73,7 @@ export class TasksService {
       const workspaceIdsWithDataSources = new Set(dataSources.map(dataSource => dataSource.workspaceId));
       for (const workspaceId of workspaceIdsWithDataSources) {
         const dataSourceSchema = this.workspaceQueryService.workspaceDataSourceService.getSchemaName(workspaceId);
-        console.log('dataSourceSchema::', dataSourceSchema);
+        // console.log('dataSourceSchema::', dataSourceSchema);
         const apiKeys = await this.workspaceQueryService.getApiKeys(workspaceId, dataSourceSchema);
         // console.log('these are the keys:', apiKeys);
         if (apiKeys.length > 0) {
@@ -105,7 +105,7 @@ export class TasksService {
     const workspaceIdsWithDataSources = new Set(dataSources.map(dataSource => dataSource.workspaceId));
     for (const workspaceId of workspaceIdsWithDataSources) {
       const dataSourceSchema = this.workspaceQueryService.workspaceDataSourceService.getSchemaName(workspaceId);
-      console.log('dataSourceSchema::', dataSourceSchema);
+      // console.log('dataSourceSchema::', dataSourceSchema);
       const apiKeys = await this.workspaceQueryService.getApiKeys(workspaceId, dataSourceSchema, transactionManager);
       // console.log('these are the keys:', apiKeys);
       if (apiKeys.length > 0) {

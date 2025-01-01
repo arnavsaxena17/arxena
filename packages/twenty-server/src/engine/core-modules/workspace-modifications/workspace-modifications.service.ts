@@ -144,7 +144,7 @@ export class WorkspaceQueryService {
 
   // Add this method to the service
   async getApiKeys(workspaceId: string, dataSourceSchema: string, transactionManager?: EntityManager) {
-    console.log("This is the workspace Id:", workspaceId)
+    // console.log("This is the workspace Id:", workspaceId)
     try {
       const apiKeys = await this.workspaceDataSourceService.executeRawQuery(
         `SELECT * FROM ${dataSourceSchema}."apiKey" where "apiKey"."revokedAt" IS NULL ORDER BY "apiKey"."createdAt" ASC`,
