@@ -221,6 +221,12 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
     console.log("Response candidate edges:", response.data?.data?.candidates?.edges);
 
     const candidatesMap = new Map<string, any>();
+
+    if (!response?.data?.data?.candidates?.edges) {
+      console.log("No candidates found in response");  // Add this
+      return candidatesMap;
+    }
+
     
     response.data?.data?.candidates?.edges?.forEach((edge: any) => {
       if (edge?.node?.uniqueStringKey) {
