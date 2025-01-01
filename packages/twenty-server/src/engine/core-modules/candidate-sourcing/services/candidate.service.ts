@@ -995,7 +995,7 @@ private formatFieldLabel(fieldName: string): string {
       // Filter out existing fields
       const newFields = Array.from(allFields)
       .filter(field => !existingFields.includes(field))
-      .map(field => ({ field: this.createFieldDefinition(field, jobCandidateObjectId) }));
+      .map(field => ({ field: this.createFieldDefinition(field, jobCandidateObjectId)}));
 
       console.log("New field names to create:", newFields.map(field => field?.field?.name));
       console.log("New fields to create length:", newFields.length);
@@ -1005,33 +1005,38 @@ private formatFieldLabel(fieldName: string): string {
       for (let i = 0; i < newFields.length; i += batchSize) {
         const batch = newFields.slice(i, i + batchSize);
 
+
+        
+        
         let retryCount = 0;
         const maxRetries = 3;
-        const filteredFields = batch.filter(field => field.field);
+        // const filteredFields = batch.filter(field => field.field);
+        const filteredFields = newFields.filter(field => field.field);
         console.log("Filtered fields:", filteredFields, "for i =", i);
         console.log("Filtered fields names:", filteredFields.map(x => x.field.name));
         console.log("Filtered fields names length:", filteredFields.length);
-        while (retryCount < maxRetries) {
-          try {
-            await createFields(filteredFields, apiToken);
-            break;
-          } catch (error) {
-            if (error.message?.includes('duplicate key value')) {
-              console.log('Duplicate field detected, skipping');
-              break;
-            }
-            retryCount++;
-            if (retryCount === maxRetries) {
-              console.log('Failed to create fields after max retries:', error.message);
-              // Continue with next batch instead of failing completely
-              break;
-            }
-            await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
-          }
-        }
+        await createFields(newFields, apiToken);
+        // while (retryCount < maxRetries) {
+        //   try {
+        //     await createFields(filteredFields, apiToken);
+        //     break;
+        //   } catch (error) {
+        //     if (error.message?.includes('duplicate key value')) {
+        //       console.log('Duplicate field detected, skipping');
+        //       break;
+        //     }
+        //     retryCount++;
+        //     if (retryCount === maxRetries) {
+        //       console.log('Failed to create fields after max retries:', error.message);
+        //       // Continue with next batch instead of failing completely
+        //       break;
+        //     }
+        //     await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+        //   }
+        // }
       }
     } catch (error) {
-      console.log("Error in createObjectFieldsAndRelations:", error);
+      console.log("Error in createObjectFieldsAndRelations:", error.message);
       // Don't throw error to allow processing to continue
     }
   }
