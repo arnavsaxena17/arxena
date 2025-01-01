@@ -905,6 +905,7 @@ private determineFieldType(fieldName: string): string {
       fieldName.includes('lacs') || 
       fieldName.includes('thousands') || 
       fieldName.includes('experienceYears') ||
+      fieldName.includes('experienceMonths') ||
       fieldName.includes('ugGraduationYear') ||
       fieldName.includes('pgGraduationYear') ||
       fieldName.includes('age') ||

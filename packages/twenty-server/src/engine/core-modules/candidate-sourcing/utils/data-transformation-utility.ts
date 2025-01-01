@@ -56,7 +56,7 @@ export const mapArxCandidateToJobCandidateNode = candidate => {
     industry: candidate?.industry || '',
     modifyDateLabel: candidate?.modifyDateLabel || '',
     experienceYears: candidate?.experience_years || 0,
-    experienceMonths: candidate?.experienceMonths || "",
+    experienceMonths: candidate?.experienceMonths || 0,
     currentOrganization: candidate?.job_company_name || '',
     ...ansFields
   };

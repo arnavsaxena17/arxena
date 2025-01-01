@@ -255,7 +255,7 @@ export interface ArxenaJobCandidateNode {
   noticePeriod?: string;
   modifyDateLabel?: string;
   experienceYears?: string;
-  experienceMonths?: string;
+  experienceMonths?: number;
   currentDesignation?: string;
   currentOrganization?: string;
   previousDesignation?: string;
