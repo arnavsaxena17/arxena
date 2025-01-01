@@ -990,10 +990,10 @@ private formatFieldLabel(fieldName: string): string {
       console.log("New fields to create length:", newFields.length);
       
       // Create fields in smaller batches with retries
-      const filteredFields = newFields.filter(field => field.field);
+      const filteredFields = newFields.filter(field => field.field && !['name'].includes(field.field.name));
       
-      console.log("New field names to create:", filteredFields.map(field => field?.field?.name));
-      console.log("New fields to create length:", filteredFields.length);
+      console.log("New filtered field names to create:", filteredFields.map(field => field?.field?.name));
+      console.log("New filtered fields to create length:", filteredFields.length);
       await createFields(filteredFields, apiToken);
 
       // for (let i = 0; i < newFields.length; i += batchSize) {
