@@ -21,6 +21,8 @@ import { JwtAuthStrategy } from '../auth/strategies/jwt.auth.strategy';
 import { User } from 'src/engine/core-modules/user/user.entity';
 import { EmailService } from 'src/engine/integrations/email/email.service';
 import { AppToken } from 'src/engine/core-modules/app-token/app-token.entity';
+import { CandidateProcessingJob } from './jobs/candidate-processing.job';
+import { CandidateQueueService } from './jobs/candidate-processing.queue';
 
 @Module({
   imports: [ AuthModule, WorkspaceModificationsModule,
@@ -34,6 +36,9 @@ import { AppToken } from 'src/engine/core-modules/app-token/app-token.entity';
   ],
   controllers: [CandidateSourcingController],
   providers: [
+    CandidateQueueService,
+    CandidateProcessingJob,
+
     JobService,
     PersonService,
     CandidateService,

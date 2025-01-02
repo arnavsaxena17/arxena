@@ -11,11 +11,13 @@ import { PersonService } from './services/person.service';
 import { CandidateService } from './services/candidate.service';
 import { ChatService } from './services/chat.service';
 import { Enrichment } from '../workspace-modifications/object-apis/types/types';
+import { CandidateQueueService } from './jobs/candidate-processing.queue';
 
 @Controller('candidate-sourcing')
 export class CandidateSourcingController {
   constructor(
     private readonly jobService: JobService,
+    private readonly candidateQueueService: CandidateQueueService,
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly personService: PersonService,
     private readonly candidateService: CandidateService,
@@ -306,34 +308,24 @@ export class CandidateSourcingController {
     const data: CandidateSourcingTypes.UserProfile[] = req.body?.data;
     console.log("Data len:",data.length)
     await new Promise(resolve => setTimeout(resolve, Math.random() * 1000));
+    const timestamp = req.body?.timestamp || new Date().toISOString();
 
     try {
-      // Get job details
-      const jobObject = await this.jobService.getJobDetails(jobId, jobName, apiToken);
-      if (!jobObject) {
-        console.log('Job not found');
-      }
-      const timestamp = req.body?.timestamp || new Date().toISOString();
-
-      console.log("Job Object Found:", jobObject)
       // Process profiles and get all the necessary data
-      const { manyPersonObjects, manyCandidateObjects, allPersonObjects, manyJobCandidateObjects } = 
-      await this.candidateService.processProfilesWithRateLimiting(data, jobObject,timestamp, apiToken);
-      console.log('Number of new person objects:', manyPersonObjects?.length);
-      console.log('Number of existing person objects:', allPersonObjects?.length);
-      console.log('Number of new candidate objects:', manyCandidateObjects?.length);
-      console.log('Number of new job candidate relationships:', manyJobCandidateObjects?.length);
-      // Batch create job candidates if there are any new ones
-
-      return { 
+      const jobIdProcesed = await this.candidateQueueService.queueCandidateProcessing(
+        data,
+        jobId,
+        jobName,
+        timestamp,
+        apiToken
+      );
+  
+      return {
         status: 'success',
-        summary: {
-          newPeople: manyPersonObjects.length,
-          existingPeople: allPersonObjects.length,
-          newCandidates: manyCandidateObjects.length,
-          newJobCandidates: manyJobCandidateObjects.length
-        }
+        message: 'Candidate processing queued successfully',
+        jobId: jobId
       };
+  
   
     } catch (error) {
       console.error('Error in sourceCandidates:', error);

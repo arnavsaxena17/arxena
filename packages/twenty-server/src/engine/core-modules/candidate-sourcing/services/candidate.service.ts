@@ -306,7 +306,8 @@ private fieldCreationSemaphore = new Semaphore(1);
 
  async processProfilesWithRateLimiting(
     data: CandidateSourcingTypes.UserProfile[], 
-    jobObject: CandidateSourcingTypes.Jobs,
+    jobId:string,
+    jobName:string,
     timestamp: string, // Add timestamp parameter
     apiToken: string
   ): Promise<{ 
@@ -316,6 +317,14 @@ private fieldCreationSemaphore = new Semaphore(1);
     manyJobCandidateObjects: CandidateSourcingTypes.ArxenaJobCandidateNode[];
     timestamp: string; // Include timestamp in response
   }> {
+
+
+    const jobObject = await this.jobService.getJobDetails(jobId, jobName, apiToken);
+      if (!jobObject) {
+        console.log('Job not found');
+      }
+      console.log("Job Object Found:", jobObject)
+
     const results = {
       manyPersonObjects: [] as CandidateSourcingTypes.ArxenaPersonNode[],
       allPersonObjects: [] as allDataObjects.PersonNode[],
@@ -1006,7 +1015,7 @@ private formatFieldLabel(fieldName: string): string {
       console.log("New leng fields to create:", newFields.length);
       console.log("New names fields to create:", newFields.map(x => x.field.name));
       // Create fields in one batch with retries
-      const filteredFields = newFields.filter(field => field.field && !['name','createdAt', 'updatedAt'].includes(field.field.name));
+      const filteredFields = newFields.filter(field => field.field && !['name','createdAt', 'email','updatedAt'].includes(field.field.name));
       console.log("New filteredFieldsfields to create:", filteredFields);
       console.log("New filteredFieldsleng fields to create:", filteredFields.length);
       console.log("New vfilteredFieldsnames fields to create:", filteredFields.map(x => x.field.name));
