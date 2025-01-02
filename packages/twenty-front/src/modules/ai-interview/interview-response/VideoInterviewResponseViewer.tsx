@@ -255,9 +255,6 @@ const queryByAIInterviewStatus = `query FindOneAIInterviewStatus($objectRecordId
           }
         }
       }
-
-
-
       position
       updatedAt
     }
@@ -329,7 +326,7 @@ const queryByAIInterviewStatus = `query FindOneAIInterviewStatus($objectRecordId
       uniqueStringKey
       whatsappProvider
       chatCount
-      personId
+      peopleId
       startChat
       status
       jobs {

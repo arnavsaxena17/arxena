@@ -11,13 +11,11 @@ import { PersonService } from './services/person.service';
 import { CandidateService } from './services/candidate.service';
 import { ChatService } from './services/chat.service';
 import { Enrichment } from '../workspace-modifications/object-apis/types/types';
-import { CandidateQueueService } from './jobs/candidate-processing.queue';
 
 @Controller('candidate-sourcing')
 export class CandidateSourcingController {
   constructor(
     private readonly jobService: JobService,
-    private readonly candidateQueueService: CandidateQueueService,
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly personService: PersonService,
     private readonly candidateService: CandidateService,
