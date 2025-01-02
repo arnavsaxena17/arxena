@@ -12,7 +12,7 @@ export class CandidateQueueProcessor {
     console.log('CandidateQueueProcessor initialized');
   }
 
-  @Process('processCandidate') // Use a specific name for this job type
+  @Process(CandidateQueueProcessor.name) // Use a specific name for this job type
   async handle(data: SendMailOptions): Promise<void> {
     console.log('CandidateQueueProcessor handling job:', data);
     try {

@@ -16,7 +16,7 @@ export class ProcessCandidatesService {
       // console.log("data:", data)
       console.log('Queueing candidate email:', sendMailOptions);
       await this.messageQueueService.add<SendMailOptions>(
-        'processCandidate', // Match the name in the @Process decorator
+        CandidateQueueProcessor.name, // Match the name in the @Process decorator
         sendMailOptions,
         { 
           retryLimit: 3,
