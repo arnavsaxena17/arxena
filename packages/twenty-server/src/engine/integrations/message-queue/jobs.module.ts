@@ -27,6 +27,7 @@ import { AutoCompaniesAndContactsCreationJobModule } from 'src/modules/connected
 import { MessagingModule } from 'src/modules/messaging/messaging.module';
 import { TimelineJobModule } from 'src/modules/timeline/jobs/timeline-job.module';
 import { CalendarModule } from 'src/modules/calendar/calendar.module';
+import { CandidateQueueProcessor } from 'src/engine/core-modules/candidate-sourcing/jobs/process-candidates.job';
 
 @Module({
   imports: [
@@ -55,6 +56,7 @@ import { CalendarModule } from 'src/modules/calendar/calendar.module';
   providers: [
     CleanInactiveWorkspaceJob,
     EmailSenderJob,
+    CandidateQueueProcessor,
     // CandidateEmailSenderJob,
     DataSeedDemoWorkspaceJob,
     UpdateSubscriptionJob,

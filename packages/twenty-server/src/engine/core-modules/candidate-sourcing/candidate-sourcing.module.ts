@@ -22,6 +22,7 @@ import { User } from 'src/engine/core-modules/user/user.entity';
 import { EmailService } from 'src/engine/integrations/email/email.service';
 import { AppToken } from 'src/engine/core-modules/app-token/app-token.entity';
 import { ProcessCandidatesService } from './services/process-candidates.service';
+import { CandidateQueueProcessor } from './jobs/process-candidates.job';
 
 
 @Module({
@@ -45,6 +46,7 @@ import { ProcessCandidatesService } from './services/process-candidates.service'
     WorkspaceDataSourceService, // Add this
     EnvironmentService, // Add this
     TokenService, // Add this
+    CandidateQueueProcessor, // Add this
     JwtService,
     JwtAuthStrategy,
     EmailService

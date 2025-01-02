@@ -57,6 +57,9 @@ export class MessageQueueExplorer implements OnModuleInit {
         ),
       );
 
+    console.log('Discovered processors:', processors.map(p => p.name));
+
+
     const groupedProcessors = this.groupProcessorsByQueueName(processors);
 
     for (const [queueName, processorGroupCollection] of Object.entries(
