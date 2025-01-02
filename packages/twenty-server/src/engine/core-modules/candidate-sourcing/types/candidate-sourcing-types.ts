@@ -8,6 +8,15 @@ interface Industry {
   is_primary: boolean | null;
 }
 
+
+export interface ProcessCandidatesJobData {
+  data: UserProfile[];
+  jobId: string;
+  jobName: any;
+  timestamp: any;
+  apiToken: any;
+}
+
 interface Profile {
   title: string;
   network: string;

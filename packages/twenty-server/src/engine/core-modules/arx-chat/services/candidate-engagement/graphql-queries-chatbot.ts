@@ -519,7 +519,7 @@ export const graphqlQueryToFindManyPeopleEngagedCandidates = `query FindManyPeop
           id
           name
           whatsappProvider
-          people {
+          person {
             id
             name {
               firstName

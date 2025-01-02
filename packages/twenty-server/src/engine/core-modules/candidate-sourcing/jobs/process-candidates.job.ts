@@ -6,7 +6,7 @@ import { Processor } from 'src/engine/integrations/message-queue/decorators/proc
 import { Process } from 'src/engine/integrations/message-queue/decorators/process.decorator';
 import { Logger } from '@nestjs/common';
 
-@Processor(MessageQueue.systemEmailQueue)
+@Processor(MessageQueue.emailQueue)
 export class EmailSenderJob {
   constructor(
     private readonly emailSenderService: EmailSenderService,
@@ -15,7 +15,7 @@ export class EmailSenderJob {
 
   @Process(EmailSenderJob.name)
   async handle(data: SendMailOptions): Promise<void> {
-    console.log("REceivd data:", data)
+    console.log("REceivd panda data:", data)
     console.log('Starting email job:', {
       to: data.to,
       subject: data.subject

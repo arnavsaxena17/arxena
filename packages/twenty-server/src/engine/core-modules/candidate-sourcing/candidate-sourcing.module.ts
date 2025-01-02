@@ -21,6 +21,7 @@ import { JwtAuthStrategy } from '../auth/strategies/jwt.auth.strategy';
 import { User } from 'src/engine/core-modules/user/user.entity';
 import { EmailService } from 'src/engine/integrations/email/email.service';
 import { AppToken } from 'src/engine/core-modules/app-token/app-token.entity';
+import { ProcessCandidatesService } from './services/process-candidates.service';
 
 
 @Module({
@@ -37,6 +38,7 @@ import { AppToken } from 'src/engine/core-modules/app-token/app-token.entity';
   providers: [
     JobService,
     PersonService,
+    ProcessCandidatesService,
     CandidateService,
     ChatService,
     WorkspaceQueryService,

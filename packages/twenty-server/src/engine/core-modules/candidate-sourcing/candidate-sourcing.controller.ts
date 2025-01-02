@@ -11,6 +11,7 @@ import { PersonService } from './services/person.service';
 import { CandidateService } from './services/candidate.service';
 import { ChatService } from './services/chat.service';
 import { Enrichment } from '../workspace-modifications/object-apis/types/types';
+import { ProcessCandidatesService } from './services/process-candidates.service';
 
 @Controller('candidate-sourcing')
 export class CandidateSourcingController {
@@ -19,6 +20,7 @@ export class CandidateSourcingController {
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly personService: PersonService,
     private readonly candidateService: CandidateService,
+    private readonly processCandidatesService : ProcessCandidatesService,
     private readonly chatService: ChatService
   ) {}
 
@@ -310,7 +312,7 @@ export class CandidateSourcingController {
 
     try {
       // Process profiles and get all the necessary data
-      const jobIdProcesed = await this.candidateService.processProfilesWithRateLimiting(
+      const jobIdProcesed = await this.processCandidatesService.send(
         data,
         jobId,
         jobName,

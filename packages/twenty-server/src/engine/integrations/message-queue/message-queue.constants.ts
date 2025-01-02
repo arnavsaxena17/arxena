@@ -9,6 +9,7 @@ export enum MessageQueue {
   webhookQueue = 'webhook-queue',
   cronQueue = 'cron-queue',
   emailQueue = 'email-queue',
+  systemEmailQueue = 'system-email-queue',
   calendarQueue = 'calendar-queue',
   contactCreationQueue = 'contact-creation-queue',
   billingQueue = 'billing-queue',
@@ -16,5 +17,5 @@ export enum MessageQueue {
   recordPositionBackfillQueue = 'record-position-backfill-queue',
   entityEventsToDbQueue = 'entity-events-to-db-queue',
   testQueue = 'test-queue',
-  candidateProcessingQueue= 'candidate-processing-queue',
+  candidateQueue = 'candidate-queue',
 }

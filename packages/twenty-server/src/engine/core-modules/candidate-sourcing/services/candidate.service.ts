@@ -3,8 +3,6 @@ import { JobService } from './job.service';
 import { PersonService } from './person.service';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { axiosRequest, axiosRequestForMetadata } from '../utils/utils';
-// import { newFieldsToCreate } from '../utils/data-transformation-utility';
-
 import { CreateManyCandidates } from '../graphql-queries';
 import { processArxCandidate } from '../utils/data-transformation-utility';
 import * as CandidateSourcingTypes from '../types/candidate-sourcing-types';
@@ -16,6 +14,11 @@ import { createRelations } from '../../workspace-modifications/object-apis/servi
 import * as allGraphQLQueries from '../../arx-chat/services/candidate-engagement/graphql-queries-chatbot';
 import {CreateFieldsOnObject} from 'src/engine/core-modules/workspace-modifications/object-apis/data/createFields';
 import * as allDataObjects from '../../arx-chat/services/data-model-objects';
+import { EmailSenderJob } from 'src/engine/integrations/email/email-sender.job';
+import { MessageQueueService } from 'src/engine/integrations/message-queue/services/message-queue.service';
+import { InjectMessageQueue } from 'src/engine/integrations/message-queue/decorators/message-queue.decorator';
+import { MessageQueue } from 'src/engine/integrations/message-queue/message-queue.constants';
+// import { ProcessCandidatesJob } from '../jobs/process-candidates.job';
 
 
 
@@ -63,6 +66,7 @@ interface ProcessingContext {
 
 @Injectable()
 export class CandidateService {
+
   constructor(
     private readonly jobService: JobService,
     private readonly personService: PersonService,
@@ -237,11 +241,9 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
       const compositeKey = `${edge.node.personId}_${edge.node.candidateId}`;
       jobCandidatesMap.set(compositeKey, edge.node);
     });
-  
+
     return jobCandidatesMap;
   }
-
-
   private async collectJobCandidateFields(data: CandidateSourcingTypes.UserProfile[], jobObject: CandidateSourcingTypes.Jobs): Promise<Set<string>> {
     const fields = new Set<string>();
     
@@ -261,10 +263,8 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
         }
       }
     }
-    
     return fields;
   }
-  
 
  async processProfilesWithRateLimiting(
     data: CandidateSourcingTypes.UserProfile[], 
@@ -990,8 +990,4 @@ private formatFieldLabel(fieldName: string): string {
         }
       }
   }
-  
-  
-  
-
 }

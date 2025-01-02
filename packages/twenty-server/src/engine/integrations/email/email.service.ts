@@ -12,7 +12,7 @@ export class EmailService {
   private readonly logger = new Logger(EmailService.name);
 
   constructor(
-    @InjectMessageQueue(MessageQueue.emailQueue)
+    @InjectMessageQueue(MessageQueue.systemEmailQueue)
     private readonly messageQueueService: MessageQueueService,
   ) {}
 
