@@ -16,34 +16,6 @@ import { createRelations } from '../../workspace-modifications/object-apis/servi
 import * as allGraphQLQueries from '../../arx-chat/services/candidate-engagement/graphql-queries-chatbot';
 import {CreateFieldsOnObject} from 'src/engine/core-modules/workspace-modifications/object-apis/data/createFields';
 import * as allDataObjects from '../../arx-chat/services/data-model-objects';
-class Semaphore {
-  private permits: number;
-  private waiting: Array<() => void> = [];
-
-  constructor(permits: number) {
-    this.permits = permits;
-  }
-
-  async acquire(): Promise<void> {
-    if (this.permits > 0) {
-      this.permits--;
-      return;
-    }
-
-    return new Promise<void>(resolve => {
-      this.waiting.push(resolve);
-    });
-  }
-
-  release(): void {
-    if (this.waiting.length > 0) {
-      const next = this.waiting.shift();
-      next?.();
-    } else {
-      this.permits++;
-    }
-  }
-}
 
 
 
@@ -268,16 +240,6 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
   
     return jobCandidatesMap;
   }
-  // Add semaphores for concurrency control
-private setupSemaphore = new Semaphore(1); // Only allow one setup at a time
-private dbSemaphore = new Semaphore(3); // Allow 3 concurrent batch operations
-
-
-private fieldCreationSemaphore = new Semaphore(1);
-
-
-  // In CandidateService
-
 
 
   private async collectJobCandidateFields(data: CandidateSourcingTypes.UserProfile[], jobObject: CandidateSourcingTypes.Jobs): Promise<Set<string>> {
@@ -344,8 +306,6 @@ private fieldCreationSemaphore = new Semaphore(1);
       let context = this.processingContexts.get(batchKey);
   
       if (!context) {
-        await this.setupSemaphore.acquire();
-        try {
           const jobCandidateInfo = await this.setupJobCandidateStructure(jobObject, apiToken);
           if (!jobCandidateInfo.jobCandidateObjectId) {
             console.log('Failed to create/get job candidate object structure');
@@ -359,9 +319,7 @@ private fieldCreationSemaphore = new Semaphore(1);
           if (jobCandidateInfo.jobCandidateObjectId && data.length > 0) {
             await this.createObjectFieldsAndRelations( jobCandidateInfo.jobCandidateObjectId, jobCandidateInfo.jobCandidateObjectName, data, jobObject, apiToken );
           }
-        } finally {
-          this.setupSemaphore.release();
-        }
+
       }
   
       // Rest of the processing with batches...
@@ -374,15 +332,10 @@ private fieldCreationSemaphore = new Semaphore(1);
   
         if (uniqueStringKeys.length === 0) continue;
   
-        await this.dbSemaphore.acquire();
-        try {
           await this.processPeopleBatch(batch, uniqueStringKeys, results, tracking, apiToken);
           await this.processCandidatesBatch(batch, jobObject, results, tracking, apiToken);
           await this.processJobCandidatesBatch( batch, jobObject, context.jobCandidateInfo.path_position, results, tracking, apiToken );
-        } finally {
-          this.dbSemaphore.release();
-        }
-  
+
         if (i + batchSize < data.length) {
           await delay(1000);
         }
@@ -978,9 +931,6 @@ private formatFieldLabel(fieldName: string): string {
     apiToken: string,
   ): Promise<void> {
     // Acquire semaphore for entire field creation process
-    await this.fieldCreationSemaphore.acquire();
-    
-    try {
       // Add retry logic for fetching existing fields
       let existingFieldsResponse;
       for (let i = 0; i < 3; i++) {
@@ -1039,12 +989,6 @@ private formatFieldLabel(fieldName: string): string {
           }
         }
       }
-    } catch (error) {
-      console.log("Error in createObjectFieldsAndRelations:", error.message);
-    } finally {
-      // Always release the semaphore
-      this.fieldCreationSemaphore.release();
-    }
   }
   
   
