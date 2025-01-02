@@ -43,7 +43,7 @@ export class TasksService {
       await this.runWorkspaceServiceCandidateEngagement();
       if (process.env.RUN_SCHEDULER === 'true') {
         console.log('Checking Engagement');
-        // await new CandidateEngagementArx().checkCandidateEngagement();
+        await new CandidateEngagementArx().checkCandidateEngagement();
       } else {
         console.log('Scheduler is turned off');
       }

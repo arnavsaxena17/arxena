@@ -310,7 +310,7 @@ export class CandidateSourcingController {
 
     try {
       // Process profiles and get all the necessary data
-      const jobIdProcesed = await this.candidateQueueService.queueCandidateProcessing(
+      const jobIdProcesed = await this.candidateService.processProfilesWithRateLimiting(
         data,
         jobId,
         jobName,
