@@ -13,10 +13,9 @@ export class ProcessCandidatesService {
 ) {}
   async send(data: CandidateSourcingTypes.UserProfile[], sendMailOptions: SendMailOptions, jobName: any, timestamp: any, apiToken: any): Promise<void> {
     try {
-      // console.log("data:", data)
       console.log('Queueing candidate email:', sendMailOptions);
       await this.messageQueueService.add<SendMailOptions>(
-        CandidateQueueProcessor.name, // Match the name in the @Process decorator
+        CandidateQueueProcessor.name,
         sendMailOptions,
         { 
           retryLimit: 3,

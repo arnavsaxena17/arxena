@@ -47,31 +47,23 @@ export class BullMQDriver implements MessageQueueDriver, OnModuleDestroy {
     handler: (job: MessageQueueJob<T>) => Promise<void>,
     options?: MessageQueueWorkerOptions,
   ) {
+  
     const workerOptions = {
       ...this.options,
       ...options,
     };
   
-
       // Set concurrency to 1 only for candidateQueue
     if (queueName === MessageQueue.candidateQueue) {
       workerOptions.concurrency = 1;
     }
-    
+
     const worker = new Worker(
       queueName,
       async (job) => {
         // TODO: Correctly support for job.id
         await handler({ data: job.data, id: job.id ?? '', name: job.name });
       },
-      // omitBy(
-      //   {
-      //     ...this.options,
-      //     concurrency: options?.concurrency,
-      //   },
-      //   (value) => value === undefined,
-      // ),
-
       workerOptions,
     );
 

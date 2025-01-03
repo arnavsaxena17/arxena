@@ -32,8 +32,7 @@ import { CandidateQueueProcessor } from './jobs/process-candidates.job';
     TypeOrmModule.forFeature([DataSourceEntity], 'metadata'),
     TypeOrmModule.forFeature([User], 'core'),
     TypeOrmModule.forFeature([AppToken], 'core'),
-
-    DataSourceModule, // Add this
+    DataSourceModule, 
   ],
   controllers: [CandidateSourcingController],
   providers: [
@@ -43,10 +42,10 @@ import { CandidateQueueProcessor } from './jobs/process-candidates.job';
     CandidateService,
     ChatService,
     WorkspaceQueryService,
-    WorkspaceDataSourceService, // Add this
-    EnvironmentService, // Add this
-    TokenService, // Add this
-    CandidateQueueProcessor, // Add this
+    WorkspaceDataSourceService,
+    EnvironmentService,
+    TokenService,
+    CandidateQueueProcessor,
     JwtService,
     JwtAuthStrategy,
     EmailService

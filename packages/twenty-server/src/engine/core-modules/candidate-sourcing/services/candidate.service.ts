@@ -266,91 +266,123 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
     return fields;
   }
 
- async processProfilesWithRateLimiting(
-    data: CandidateSourcingTypes.UserProfile[], 
-    jobId:string,
-    jobName:string,
-    timestamp: string, // Add timestamp parameter
+  private async processBatches(
+    data: CandidateSourcingTypes.UserProfile[],
+    jobObject: CandidateSourcingTypes.Jobs,
+    context: any,
+    tracking: any,
     apiToken: string
-  ): Promise<{ 
-    manyPersonObjects: CandidateSourcingTypes.ArxenaPersonNode[];  
-    manyCandidateObjects: CandidateSourcingTypes.ArxenaCandidateNode[]; 
+  ): Promise<{
+    manyPersonObjects: CandidateSourcingTypes.ArxenaPersonNode[];
+    manyCandidateObjects: CandidateSourcingTypes.ArxenaCandidateNode[];
     allPersonObjects: allDataObjects.PersonNode[];
     manyJobCandidateObjects: CandidateSourcingTypes.ArxenaJobCandidateNode[];
-    timestamp: string; // Include timestamp in response
   }> {
-
-
-    const jobObject = await this.jobService.getJobDetails(jobId, jobName, apiToken);
-      if (!jobObject) {
-        console.log('Job not found');
-      }
-      console.log("Job Object Found:", jobObject)
-
     const results = {
       manyPersonObjects: [] as CandidateSourcingTypes.ArxenaPersonNode[],
       allPersonObjects: [] as allDataObjects.PersonNode[],
       manyCandidateObjects: [] as CandidateSourcingTypes.ArxenaCandidateNode[],
-      manyJobCandidateObjects: [] as CandidateSourcingTypes.ArxenaJobCandidateNode[],
-      timestamp: timestamp // Add timestamp to results
+      manyJobCandidateObjects: [] as CandidateSourcingTypes.ArxenaJobCandidateNode[]
     };
   
-    const tracking = {
-      personIdMap: new Map<string, string>(),
-      candidateIdMap: new Map<string, string>()
-    };
+    const batchSize = 15;
+    const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
   
-    try {
-      // Use timestamp as unique identifier for this processing batch
-      const batchKey = `${jobObject.id}-${timestamp}`;
-      let context = this.processingContexts.get(batchKey);
+    for (let i = 0; i < data.length; i += batchSize) {
+      const batch = data.slice(i, i + batchSize);
+      const uniqueStringKeys = batch.map(p => p?.unique_key_string).filter(Boolean);
   
-      if (!context) {
-          const jobCandidateInfo = await this.setupJobCandidateStructure(jobObject, apiToken);
-          if (!jobCandidateInfo.jobCandidateObjectId) {
-            console.log('Failed to create/get job candidate object structure');
-          }
+      if (uniqueStringKeys.length === 0) continue;
   
-          context = { jobCandidateInfo, timestamp };
-          this.processingContexts.set(batchKey, context);
-          console.log("Job Candidate Info:", jobCandidateInfo);
-          console.log("Job this.processingContexts Info:", this.processingContexts);
-          // Set up metadata fields if needed
-          if (jobCandidateInfo.jobCandidateObjectId && data.length > 0) {
-            await this.createObjectFieldsAndRelations( jobCandidateInfo.jobCandidateObjectId, jobCandidateInfo.jobCandidateObjectName, data, jobObject, apiToken );
-          }
+      await this.processPeopleBatch(batch, uniqueStringKeys, results, tracking, apiToken);
+      await this.processCandidatesBatch(batch, jobObject, results, tracking, apiToken);
+      await this.processJobCandidatesBatch(
+        batch,
+        jobObject,
+        context.jobCandidateInfo.path_position,
+        results,
+        tracking,
+        apiToken
+      );
+  
+      if (i + batchSize < data.length) {
+        await delay(1000);
+      }
+    }
+  
+    return results;
+  }
+  
+  
 
+  private async setupProcessingContext(
+    jobObject: CandidateSourcingTypes.Jobs,
+    timestamp: string,
+    data: CandidateSourcingTypes.UserProfile[],
+    apiToken: string
+  ): Promise<{ context: any; batchKey: string }> {
+    const batchKey = `${jobObject.id}-${timestamp}`;
+    let context = this.processingContexts.get(batchKey);
+  
+    if (!context) {
+      const jobCandidateInfo = await this.setupJobCandidateStructure(jobObject, apiToken);
+      if (!jobCandidateInfo.jobCandidateObjectId) {
+        console.log('Failed to create/get job candidate object structure');
       }
   
-      // Rest of the processing with batches...
-      const batchSize = 15;
-      const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+      context = { jobCandidateInfo, timestamp };
+      this.processingContexts.set(batchKey, context);
       
-      for (let i = 0; i < data.length; i += batchSize) {
-        const batch = data.slice(i, i + batchSize);
-        const uniqueStringKeys = batch.map(p => p?.unique_key_string).filter(Boolean);
-  
-        if (uniqueStringKeys.length === 0) continue;
-  
-          await this.processPeopleBatch(batch, uniqueStringKeys, results, tracking, apiToken);
-          await this.processCandidatesBatch(batch, jobObject, results, tracking, apiToken);
-          await this.processJobCandidatesBatch( batch, jobObject, context.jobCandidateInfo.path_position, results, tracking, apiToken );
-
-        if (i + batchSize < data.length) {
-          await delay(1000);
-        }
+      if (jobCandidateInfo.jobCandidateObjectId && data.length > 0) {
+        await this.createObjectFieldsAndRelations(
+          jobCandidateInfo.jobCandidateObjectId,
+          jobCandidateInfo.jobCandidateObjectName,
+          data,
+          jobObject,
+          apiToken
+        );
       }
+    }
+  
+    return { context, batchKey };
+  }
+  async processProfilesWithRateLimiting(
+    data: CandidateSourcingTypes.UserProfile[],
+    jobId: string,
+    jobName: string,
+    timestamp: string,
+    apiToken: string
+  ): Promise<{
+    manyPersonObjects: CandidateSourcingTypes.ArxenaPersonNode[];
+    manyCandidateObjects: CandidateSourcingTypes.ArxenaCandidateNode[];
+    allPersonObjects: allDataObjects.PersonNode[];
+    manyJobCandidateObjects: CandidateSourcingTypes.ArxenaJobCandidateNode[];
+    timestamp: string;
+  }> {
+    try {
+      const jobObject = await this.jobService.getJobDetails(jobId, jobName, apiToken);
+      if (!jobObject) {
+        console.log('Job not found');
+      }
+  
+      const tracking = {
+        personIdMap: new Map<string, string>(),
+        candidateIdMap: new Map<string, string>()
+      };
+  
+      const { context, batchKey } = await this.setupProcessingContext(jobObject, timestamp, data, apiToken);
+      const results = await this.processBatches(data, jobObject, context, tracking, apiToken);
   
       // Cleanup context after processing is complete
       this.processingContexts.delete(batchKey);
   
-      return results;
+      return { ...results, timestamp };
     } catch (error) {
       console.error('Error in profile processing:', error);
       throw error;
     }
   }
-
+  
   // Helper methods to break down the logic:
   
   private async setupJobCandidateStructure(jobObject: CandidateSourcingTypes.Jobs, apiToken: string) {
@@ -363,12 +395,8 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
     
     if (!jobCandidateObjectId) {
       jobCandidateObjectId = await this.createNewJobCandidateObject(jobObject, apiToken);
-      console.log('Created new job candidate object:', jobCandidateObjectId);
-      if (jobCandidateObjectId) {
-        await this.createRelationsBasedonObjectMap(jobCandidateObjectId, jobCandidateObjectName, apiToken);
-      }
     }
-  
+
     return { jobCandidateObjectId, jobCandidateObjectName, path_position };
   }
   
@@ -805,6 +833,8 @@ async createNewJobCandidateObject(newPositionObj: CandidateSourcingTypes.Jobs, a
       // If creation failed but no error was thrown, check if it exists again
       const updatedObjectsMap = await new CreateMetaDataStructure(this.workspaceQueryService).fetchObjectsNameIdMap(apiToken);
       if (updatedObjectsMap[jobCandidateObjectName]) {
+        const jobCandidateObjectId = updatedObjectsMap[jobCandidateObjectName];
+        await this.createRelationsBasedonObjectMap(jobCandidateObjectId, jobCandidateObjectName, apiToken);
         return updatedObjectsMap[jobCandidateObjectName];
       }
       console.log('Error creating or finding object:');
@@ -812,15 +842,20 @@ async createNewJobCandidateObject(newPositionObj: CandidateSourcingTypes.Jobs, a
     
     return newObjectId;
   } catch (error) {
+    console.log('Error creating object with error message:', error.message);
     if (error.message?.includes('duplicate key value')) {
       // If we get here due to a race condition, fetch and return the existing ID
       const finalObjectsMap = await new CreateMetaDataStructure(this.workspaceQueryService).fetchObjectsNameIdMap(apiToken);
       if (finalObjectsMap[jobCandidateObjectName]) {
+        const jobCandidateObjectId = finalObjectsMap[jobCandidateObjectName];
+        await this.createRelationsBasedonObjectMap(jobCandidateObjectId, jobCandidateObjectName, apiToken);
         return finalObjectsMap[jobCandidateObjectName];
       }
     }
     console.log('Error creating object:', error);
   }
+
+
   return ''; // Add a default return statement
 }
 
