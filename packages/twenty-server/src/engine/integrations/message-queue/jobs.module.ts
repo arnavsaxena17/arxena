@@ -28,6 +28,9 @@ import { MessagingModule } from 'src/modules/messaging/messaging.module';
 import { TimelineJobModule } from 'src/modules/timeline/jobs/timeline-job.module';
 import { CalendarModule } from 'src/modules/calendar/calendar.module';
 import { CandidateQueueProcessor } from 'src/engine/core-modules/candidate-sourcing/jobs/process-candidates.job';
+import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/services/candidate.service';
+import { CandidateSourcingModule } from 'src/engine/core-modules/candidate-sourcing/candidate-sourcing.module';
+import { JobService } from 'src/engine/core-modules/candidate-sourcing/services/job.service';
 
 @Module({
   imports: [
@@ -40,6 +43,7 @@ import { CandidateQueueProcessor } from 'src/engine/core-modules/candidate-sourc
     BillingModule,
     UserWorkspaceModule,
     WorkspaceModule,
+    CandidateSourcingModule,
     MessagingModule,
     CalendarModule,
     CalendarEventParticipantModule,
@@ -55,7 +59,9 @@ import { CandidateQueueProcessor } from 'src/engine/core-modules/candidate-sourc
   providers: [
     CleanInactiveWorkspaceJob,
     EmailSenderJob,
-    CandidateQueueProcessor,
+    // CandidateService,
+    // JobService,
+    // CandidateQueueProcessor,
     DataSeedDemoWorkspaceJob,
     UpdateSubscriptionJob,
     HandleWorkspaceMemberDeletedJob,

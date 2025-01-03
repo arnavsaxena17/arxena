@@ -110,9 +110,7 @@ private async checkExistingRelations(objectMetadataId: string, apiToken: string)
 
 async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidateObjectName: string, apiToken: string): Promise<void> {
   const objectsNameIdMap = await new CreateMetaDataStructure(this.workspaceQueryService).fetchObjectsNameIdMap(apiToken);
-
   const existingRelations = await this.checkExistingRelations(jobCandidateObjectId, apiToken);
-
   const relationsToCreate = [
     {
       relation: {
@@ -309,13 +307,10 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
         await delay(1000);
       }
     }
-  
     return results;
   }
-  
-  
 
-  private async setupProcessingContext(
+  private async setupProcessingContext (
     jobObject: CandidateSourcingTypes.Jobs,
     timestamp: string,
     data: CandidateSourcingTypes.UserProfile[],
@@ -323,7 +318,7 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
   ): Promise<{ context: any; batchKey: string }> {
     const batchKey = `${jobObject.id}-${timestamp}`;
     let context = this.processingContexts.get(batchKey);
-  
+    
     if (!context) {
       const jobCandidateInfo = await this.setupJobCandidateStructure(jobObject, apiToken);
       if (!jobCandidateInfo.jobCandidateObjectId) {
@@ -359,6 +354,7 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
     manyJobCandidateObjects: CandidateSourcingTypes.ArxenaJobCandidateNode[];
     timestamp: string;
   }> {
+    console.log("Queue has begun to be processed. ")
     try {
       const jobObject = await this.jobService.getJobDetails(jobId, jobName, apiToken);
       if (!jobObject) {
@@ -388,15 +384,11 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
   private async setupJobCandidateStructure(jobObject: CandidateSourcingTypes.Jobs, apiToken: string) {
     const path_position = JobCandidateUtils.getJobCandidatePathPosition(jobObject.name, jobObject?.arxenaSiteId);
     const jobCandidateObjectName = `${path_position}JobCandidate`;
-    
     const objectsNameIdMap = await new CreateMetaDataStructure(this.workspaceQueryService).fetchObjectsNameIdMap(apiToken);
-    
     let jobCandidateObjectId = objectsNameIdMap[jobCandidateObjectName];
-    
     if (!jobCandidateObjectId) {
       jobCandidateObjectId = await this.createNewJobCandidateObject(jobObject, apiToken);
     }
-
     return { jobCandidateObjectId, jobCandidateObjectName, path_position };
   }
   
@@ -801,7 +793,6 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
 async createNewJobCandidateObject(newPositionObj: CandidateSourcingTypes.Jobs, apiToken: string): Promise<string> {
   console.log("Creating new job candidate object structure::", newPositionObj);
   const path_position = JobCandidateUtils.getJobCandidatePathPosition(newPositionObj.name, newPositionObj?.arxenaSiteId);
-  
   // First, check if the object already exists
   const objectsNameIdMap = await new CreateMetaDataStructure(this.workspaceQueryService).fetchObjectsNameIdMap(apiToken);
   const jobCandidateObjectName = `${path_position}JobCandidate`;
@@ -824,20 +815,23 @@ async createNewJobCandidateObject(newPositionObj: CandidateSourcingTypes.Jobs, a
     query: allGraphQLQueries.graphqlToCreateOneMetatDataObjectItems,
     variables: { input }
   };
-
+  let jobCandidateObjectId = '';
   try {
     const responseFromMetadata = await axiosRequestForMetadata(JSON.stringify(mutation), apiToken);
     const newObjectId = responseFromMetadata.data?.data?.createOneObject?.id;
     console.log("New object id created :::", newObjectId);
+    jobCandidateObjectId = newObjectId;
     if (!newObjectId) {
+      console.log('Error creating object:', responseFromMetadata.data?.errors);
       // If creation failed but no error was thrown, check if it exists again
       const updatedObjectsMap = await new CreateMetaDataStructure(this.workspaceQueryService).fetchObjectsNameIdMap(apiToken);
       if (updatedObjectsMap[jobCandidateObjectName]) {
-        const jobCandidateObjectId = updatedObjectsMap[jobCandidateObjectName];
-        await this.createRelationsBasedonObjectMap(jobCandidateObjectId, jobCandidateObjectName, apiToken);
+        jobCandidateObjectId = updatedObjectsMap[jobCandidateObjectName];
         return updatedObjectsMap[jobCandidateObjectName];
       }
       console.log('Error creating or finding object:');
+    } else{
+      
     }
     
     return newObjectId;
@@ -847,11 +841,11 @@ async createNewJobCandidateObject(newPositionObj: CandidateSourcingTypes.Jobs, a
       // If we get here due to a race condition, fetch and return the existing ID
       const finalObjectsMap = await new CreateMetaDataStructure(this.workspaceQueryService).fetchObjectsNameIdMap(apiToken);
       if (finalObjectsMap[jobCandidateObjectName]) {
-        const jobCandidateObjectId = finalObjectsMap[jobCandidateObjectName];
-        await this.createRelationsBasedonObjectMap(jobCandidateObjectId, jobCandidateObjectName, apiToken);
+        jobCandidateObjectId = finalObjectsMap[jobCandidateObjectName];
         return finalObjectsMap[jobCandidateObjectName];
       }
     }
+    await this.createRelationsBasedonObjectMap(jobCandidateObjectId, jobCandidateObjectName, apiToken);
     console.log('Error creating object:', error);
   }
 

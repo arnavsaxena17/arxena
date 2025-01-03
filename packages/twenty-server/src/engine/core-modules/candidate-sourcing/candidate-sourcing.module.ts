@@ -21,7 +21,7 @@ import { JwtAuthStrategy } from '../auth/strategies/jwt.auth.strategy';
 import { User } from 'src/engine/core-modules/user/user.entity';
 import { EmailService } from 'src/engine/integrations/email/email.service';
 import { AppToken } from 'src/engine/core-modules/app-token/app-token.entity';
-import { ProcessCandidatesService } from './services/process-candidates.service';
+import { ProcessCandidatesService } from './jobs/process-candidates.service';
 import { CandidateQueueProcessor } from './jobs/process-candidates.job';
 
 
@@ -50,6 +50,7 @@ import { CandidateQueueProcessor } from './jobs/process-candidates.job';
     JwtAuthStrategy,
     EmailService
   ],
+  exports: [JobService, PersonService, CandidateService, ChatService, ProcessCandidatesService],
 
 })
 export class CandidateSourcingModule {}

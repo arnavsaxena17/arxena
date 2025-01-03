@@ -132,7 +132,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
         const candidateId = candidate?.id;
         const whatsappMessages = await this.fetchAllWhatsappMessages(candidateId,apiToken);
         const candidateStatus = await new GetCurrentStageByMessages(this.workspaceQueryService).getChatStageFromChatHistory(whatsappMessages, currentWorkspaceMemberId, apiToken) as allDataObjects.allStatuses;
-        
+
         const updateCandidateObjectVariables = { 
           idToUpdate: candidateId, 
           input: { candConversationStatus: candidateStatus } 
@@ -619,12 +619,6 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
       console.log(error);
     }
   }
-
-
-  async sendCandidateVideoInterviewLinkToCandidate(){
-    
-  }
-
 
 
   async updateCandidateAnswer(candidateProfileObj: allDataObjects.CandidateNode, AnswerMessageObj: allDataObjects.AnswerMessageObj,apiToken:string) {

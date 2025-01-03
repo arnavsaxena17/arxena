@@ -11,7 +11,7 @@ import { PersonService } from './services/person.service';
 import { CandidateService } from './services/candidate.service';
 import { ChatService } from './services/chat.service';
 import { Enrichment } from '../workspace-modifications/object-apis/types/types';
-import { ProcessCandidatesService } from './services/process-candidates.service';
+import { ProcessCandidatesService } from './jobs/process-candidates.service';
 
 @Controller('candidate-sourcing')
 export class CandidateSourcingController {
