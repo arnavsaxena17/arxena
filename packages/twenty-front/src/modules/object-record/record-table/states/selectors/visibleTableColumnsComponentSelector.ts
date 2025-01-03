@@ -7,10 +7,12 @@ export const visibleTableColumnsComponentSelector =
     get:
       ({ scopeId }) =>
       ({ get }) => {
+        console.log("scopeId for visibleTableColumnsComponentSelector", scopeId);
+        console.log("tableColumnsComponentState({ scopeId }) for visibleTableColumnsComponentSelector", tableColumnsComponentState({ scopeId }));
         const columns = get(tableColumnsComponentState({ scopeId }));
         console.log("columns for tableColumnsComponentState", columns);
         return columns
-          .filter((column) => column.isVisible)
+        .filter((column) => column.isVisible ?? true) // Handle undefined case
           .sort((columnA, columnB) => columnA.position - columnB.position);
       },
   });

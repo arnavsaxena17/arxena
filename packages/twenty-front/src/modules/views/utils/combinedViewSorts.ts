@@ -1,21 +1,26 @@
 import { ViewSort } from '@/views/types/ViewSort';
 
 export const combinedViewSorts = (
-  viewSort: ViewSort[],
-  toUpsertViewSorts: ViewSort[],
-  toDeleteViewSortIds: string[],
+  viewSort?: ViewSort[],
+  toUpsertViewSorts?: ViewSort[],
+  toDeleteViewSortIds?: string[],
 ): ViewSort[] => {
-  const toCreateViewSorts = toUpsertViewSorts.filter(
+  // Add default values for parameters
+  const safeViewSort = viewSort || [];
+  const safeToUpsertViewSorts = toUpsertViewSorts || [];
+  const safeToDeleteViewSortIds = toDeleteViewSortIds || [];
+
+  const toCreateViewSorts = safeToUpsertViewSorts.filter(
     (toUpsertViewSort) =>
-      !viewSort.some((viewSort) => viewSort.id === toUpsertViewSort.id),
+      !safeViewSort.some((viewSort) => viewSort.id === toUpsertViewSort.id),
   );
 
-  const toUpdateViewSorts = toUpsertViewSorts.filter((toUpsertViewSort) =>
-    viewSort.some((viewSort) => viewSort.id === toUpsertViewSort.id),
+  const toUpdateViewSorts = safeToUpsertViewSorts.filter((toUpsertViewSort) =>
+    safeViewSort.some((viewSort) => viewSort.id === toUpsertViewSort.id),
   );
 
-  const combinedViewSorts = viewSort
-    .filter((viewSort) => !toDeleteViewSortIds.includes(viewSort.id))
+  const combinedViewSorts = safeViewSort
+    .filter((viewSort) => !safeToDeleteViewSortIds.includes(viewSort.id))
     .map((viewSort) => {
       const toUpdateViewSort = toUpdateViewSorts.find(
         (toUpdateViewSort) => toUpdateViewSort.id === viewSort.id,

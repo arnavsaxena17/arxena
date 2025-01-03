@@ -1,6 +1,7 @@
 import { availableTableColumnsComponentState } from '@/object-record/record-table/states/availableTableColumnsComponentState';
 import { tableColumnsComponentState } from '@/object-record/record-table/states/tableColumnsComponentState';
 import { createComponentReadOnlySelector } from '@/ui/utilities/state/component-state/utils/createComponentReadOnlySelector';
+import { useMemo } from 'react';
 import { mapArrayToObject } from '~/utils/array/mapArrayToObject';
 
 export const hiddenTableColumnsComponentSelector =
@@ -13,12 +14,11 @@ export const hiddenTableColumnsComponentSelector =
         const availableColumns = get(
           availableTableColumnsComponentState({ scopeId }),
         );
-        const tableColumnsByKey = mapArrayToObject(
-          tableColumns,
-          ({ fieldMetadataId }) => fieldMetadataId,
+        const tableColumnsByKey = useMemo(() => 
+          mapArrayToObject(tableColumns, ({ fieldMetadataId }) => fieldMetadataId),
+          [tableColumns]
         );
-
-        const hiddenColumns = availableColumns
+            const hiddenColumns = availableColumns
           .filter(
             ({ fieldMetadataId }) =>
               !tableColumnsByKey[fieldMetadataId]?.isVisible,

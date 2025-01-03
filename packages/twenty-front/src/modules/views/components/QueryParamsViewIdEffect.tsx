@@ -16,13 +16,17 @@ export const QueryParamsViewIdEffect = () => {
   const { viewsOnCurrentObject } = useGetCurrentView();
 
   useEffect(() => {
+    if (!viewsOnCurrentObject?.length) {
+      return;
+    }
+  
     const indexView = viewsOnCurrentObject.find((view) => view.key === 'INDEX');
-
+  
     if (isUndefined(viewIdQueryParam) && isDefined(indexView)) {
       setCurrentViewId(indexView.id);
       return;
     }
-
+  
     if (isDefined(viewIdQueryParam)) {
       setCurrentViewId(viewIdQueryParam);
     }
@@ -33,6 +37,5 @@ export const QueryParamsViewIdEffect = () => {
     viewIdQueryParam,
     viewsOnCurrentObject,
   ]);
-
   return <></>;
 };

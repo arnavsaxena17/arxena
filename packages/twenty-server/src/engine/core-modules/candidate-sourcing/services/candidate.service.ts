@@ -327,7 +327,7 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
   
       context = { jobCandidateInfo, timestamp };
       this.processingContexts.set(batchKey, context);
-      
+
       if (jobCandidateInfo.jobCandidateObjectId && data.length > 0) {
         await this.createObjectFieldsAndRelations(
           jobCandidateInfo.jobCandidateObjectId,
@@ -386,6 +386,7 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
     const jobCandidateObjectName = `${path_position}JobCandidate`;
     const objectsNameIdMap = await new CreateMetaDataStructure(this.workspaceQueryService).fetchObjectsNameIdMap(apiToken);
     let jobCandidateObjectId = objectsNameIdMap[jobCandidateObjectName];
+    console.log("There is an existing jobCandidateObjectId:", jobCandidateObjectId);
     if (!jobCandidateObjectId) {
       jobCandidateObjectId = await this.createNewJobCandidateObject(jobObject, apiToken);
     }
@@ -400,18 +401,23 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
     apiToken: string
   ) {
     try {
+      console.log("This is tracking in processPeopleBatch:", tracking);
+
       const personDetailsMap = await this.personService.batchGetPersonDetailsByStringKeys(uniqueStringKeys, apiToken);
+      console.log("Person Details Map:", personDetailsMap);
       const peopleToCreate:CandidateSourcingTypes.ArxenaPersonNode[] = [];
       const peopleKeys:string[] = [];
     
       for (const profile of batch) {
         const key = profile?.unique_key_string;
         if (!key) continue;
-    
+        
         const personObj = personDetailsMap?.get(key);
+
         const { personNode } = await processArxCandidate(profile, null);
-    
+        
         if (!personObj || !personObj?.name) {
+          console.log('Person object not found:', profile?.unique_key_string);
           peopleToCreate.push(personNode);
           peopleKeys.push(key);
           results.manyPersonObjects.push(personNode);
@@ -442,7 +448,7 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
     apiToken: string
   ) {
     try {
-
+      console.log("This is tracking in processCandidatesBatch:")
       
       const uniqueStringKeys = batch.map(p => p?.unique_key_string).filter(Boolean);
       
@@ -513,26 +519,48 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
 
         const personId = tracking.personIdMap.get(key);
         const candidateId = tracking.candidateIdMap.get(key);
-
-
+        
+        
         if (personId && candidateId) {
           const { jobCandidateNode } = await processArxCandidate(profile, jobObject);
           // console.log("Job Candidate Node:", jobCandidateNode, "for profile:", profile);
+          
           jobCandidateNode.personId = personId;
           jobCandidateNode.candidateId = candidateId;
           jobCandidateNode.jobId = jobObject.id;
-
+          
+          
+          if (!jobCandidateNode.personId || !jobCandidateNode.candidateId || !jobCandidateNode.jobId) {
+            continue;
+          }
+          
           const isDuplicate = results.manyJobCandidateObjects.some((jc: { personId: string | undefined; candidateId: string | undefined; jobId: string | undefined; }) =>
             jc.personId === jobCandidateNode.personId &&
             jc.candidateId === jobCandidateNode.candidateId &&
             jc.jobId === jobCandidateNode.jobId
-          );
-
-
+          );  
+        
+          console.log("Valid job candidate node:", {
+            personId: jobCandidateNode.personId,
+            candidateId: jobCandidateNode.candidateId,
+            jobId: jobCandidateNode.jobId
+          });
+          
+          
           if (!isDuplicate) {
             jobCandidatesToCreate.push(jobCandidateNode);
             results.manyJobCandidateObjects.push(jobCandidateNode);
           }
+          else{
+            console.log("Duplicate job candidate node:", {
+              personId: jobCandidateNode.personId,
+              candidateId: jobCandidateNode.candidateId,
+              jobId: jobCandidateNode.jobId
+            });
+          }
+        }
+        else{
+          console.log("PersonId or candidateId not found for key:", key);
         }
       }
 
@@ -544,18 +572,20 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
           variables: { data: jobCandidatesToCreate }
         });
   
-        console.log('Attempting to create job candidates with query:', graphqlInput);
         try {
           const response = await axiosRequest(graphqlInput, apiToken);
           console.log('Job candidate creation response:', response?.data);
           
           if (response?.data?.errors) {
-            console.log('GraphQL errors:', JSON.stringify(response.data.errors, null, 2));
+            const errorMessages = response.data.errors.map(e => e.message).join(', ');
+            console.log('GraphQL errors:', errorMessages);
+            // console.log('GraphQL when adding job candidates errors:', JSON.stringify(response.data.errors, null, 2));
           }
         } catch (error) {
           console.log('Full error object:', JSON.stringify(error, null, 2));
-          console.log('Error response data:', error.response?.data);
-          console.log('Error request:', {
+          console.log('Error response data here:', error.response?.data);
+          
+          console.log('Error request here:', {
             query: error.config?.data,
             variables: error.config?.variables 
           });
@@ -563,7 +593,8 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
       }
     } catch (error) {
       console.log('Full error object:', JSON.stringify(error, null, 2));
-      console.log('Error response data:', error.response?.data);
+      console.log('Error response data :', error.response?.data);
+      
       console.log('Error request:', {
         query: error.config?.data,
         variables: error.config?.variables 
@@ -823,34 +854,27 @@ async createNewJobCandidateObject(newPositionObj: CandidateSourcingTypes.Jobs, a
     jobCandidateObjectId = newObjectId;
     if (!newObjectId) {
       console.log('Error creating object:', responseFromMetadata.data?.errors);
-      // If creation failed but no error was thrown, check if it exists again
       const updatedObjectsMap = await new CreateMetaDataStructure(this.workspaceQueryService).fetchObjectsNameIdMap(apiToken);
       if (updatedObjectsMap[jobCandidateObjectName]) {
         jobCandidateObjectId = updatedObjectsMap[jobCandidateObjectName];
-        return updatedObjectsMap[jobCandidateObjectName];
       }
       console.log('Error creating or finding object:');
-    } else{
-      
+    } else {
+      console.log('Successfully created object with ID:', newObjectId);
     }
-    
-    return newObjectId;
   } catch (error) {
     console.log('Error creating object with error message:', error.message);
     if (error.message?.includes('duplicate key value')) {
-      // If we get here due to a race condition, fetch and return the existing ID
       const finalObjectsMap = await new CreateMetaDataStructure(this.workspaceQueryService).fetchObjectsNameIdMap(apiToken);
       if (finalObjectsMap[jobCandidateObjectName]) {
         jobCandidateObjectId = finalObjectsMap[jobCandidateObjectName];
-        return finalObjectsMap[jobCandidateObjectName];
       }
     }
-    await this.createRelationsBasedonObjectMap(jobCandidateObjectId, jobCandidateObjectName, apiToken);
     console.log('Error creating object:', error);
   }
-
-
-  return ''; // Add a default return statement
+  
+  await this.createRelationsBasedonObjectMap(jobCandidateObjectId, jobCandidateObjectName, apiToken);
+  return jobCandidateObjectId;
 }
 
 getIconForFieldType = (fieldType: string): string => {
@@ -935,6 +959,84 @@ private determineFieldType(fieldName: string): string {
   return 'TextField'; // Instead of 'TextField'
 }
 
+private async createFieldsWithRetry(fields: { field: any }[], apiToken: string): Promise<void> {
+  const maxRetries = 3;
+  const batchSize = 50; // Adjust based on your API limits
+  
+  // Split fields into batches
+  for (let i = 0; i < fields.length; i += batchSize) {
+    const batch = fields.slice(i, i + batchSize);
+    let retryCount = 0;
+
+    while (retryCount < maxRetries) {
+      try {
+        await createFields(batch, apiToken);
+        console.log(`Successfully created batch of ${batch.length} fields`);
+        break;
+      } catch (error) {
+        if (error.message?.includes('duplicate key value')) {
+          console.log('Duplicate key detected, skipping batch');
+          break;
+        }
+
+        retryCount++;
+        if (retryCount === maxRetries) {
+          console.error('Failed to create fields batch after max retries:', error);
+          throw error;
+        }
+
+        const delay = Math.pow(2, retryCount) * 1000;
+        console.log(`Retry ${retryCount} after ${delay}ms`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+}
+
+
+private async fetchAllFieldsForObject(objectId: string, apiToken: string): Promise<string[]> {
+  const fields: string[] = [];
+  let hasNextPage = true;
+  let cursor: string | null = null;
+
+  while (hasNextPage) {
+    try {
+      const response = await new CreateMetaDataStructure(this.workspaceQueryService).fetchFieldsPage(objectId, cursor, apiToken);
+      console.log("This is the resposne data objects:", response?.data?.objects);
+      
+      const objectFields = response?.data?.objects?.edges
+        ?.find(x => x?.node?.id === objectId)?.node?.fields?.edges;
+      console.log("thsese are obejct fields:", objectFields);
+      if (!objectFields) {
+        console.log('Could not find object fields');
+      }
+
+      const currentFields = objectFields
+        .map(edge => edge?.node?.name)
+        .filter((name): name is string => !!name);
+      
+      console.log("Current fields:", currentFields);
+
+      fields.push(...currentFields);
+
+      console.log(`Fetched ${currentFields.length} fields, total: ${fields.length}`);
+
+      const pageInfo = response?.data?.objects?.pageInfo;
+      hasNextPage = pageInfo?.hasNextPage || false;
+      cursor = pageInfo?.endCursor || null;
+
+      if (!hasNextPage) break;
+    } catch (error) {
+      console.error('Error fetching fields page:', error);
+      throw error;
+    }
+  }
+  console.log("Total fields fetched:", fields.length);
+  console.log("All Fields fetched:", fields);
+
+  return fields;
+}
+
 
 private formatFieldLabel(fieldName: string): string {
   return fieldName
@@ -961,62 +1063,30 @@ private formatFieldLabel(fieldName: string): string {
   ): Promise<void> {
     // Acquire semaphore for entire field creation process
       // Add retry logic for fetching existing fields
-      let existingFieldsResponse;
-      for (let i = 0; i < 3; i++) {
-        existingFieldsResponse = await new CreateMetaDataStructure(this.workspaceQueryService).fetchAllObjects(apiToken);
-        if (existingFieldsResponse?.data?.objects?.edges) {
-          break;
-        }
-        await new Promise(r => setTimeout(r, Math.pow(2, i) * 1000));
-      }
-      console.log("Existing fields response:", existingFieldsResponse?.data?.objects?.edges);
-      const existingObjectFields = existingFieldsResponse?.data?.objects?.edges?.filter(x => x?.node?.id == jobCandidateObjectId);
-      console.log("Existing object fields:", existingObjectFields.map(x => x.node.name));
-      console.log("Existing object fields:", existingObjectFields.length);
-      const existingFields = existingFieldsResponse?.data?.objects?.edges
-        ?.filter(x => x?.node?.id == jobCandidateObjectId)[0]?.node?.fields?.edges
-        ?.map(edge => edge?.node?.name) || [];
-
-        console.log("Existing node object fields:", existingObjectFields.map(x => x.node.name));
-        console.log("Existing node object fields:", existingObjectFields.length);
+      const existingFields = await this.fetchAllFieldsForObject(jobCandidateObjectId, apiToken);
+      console.log("Total existing fields found:", existingFields.length);
+      console.log("Existing field names:", existingFields);
   
       // Get all required fields
       const allFields = await this.collectJobCandidateFields(data, jobObject);
-      console.log("Existing allFields object fields:", allFields);
-
-      // Filter out existing fields
+      console.log("Total required fields:", allFields.size);
+      console.log("Required field names:", Array.from(allFields));
+  
+      // Filter out existing fields and create field definitions
       const newFields = Array.from(allFields)
         .filter(field => !existingFields.includes(field))
-        .map(field => ({ field: this.createFieldDefinition(field, jobCandidateObjectId)}));
+        .filter(field => !['name', 'createdAt', 'updatedAt'].includes(field))
+        .map(field => ({
+          field: this.createFieldDefinition(field, jobCandidateObjectId)
+        }));
   
-
-      console.log("New fields to create:", newFields);
-      console.log("New leng fields to create:", newFields.length);
-      console.log("New names fields to create:", newFields.map(x => x.field.name));
-      // Create fields in one batch with retries
-      const filteredFields = newFields.filter(field => field.field && !['name','createdAt', 'email','updatedAt'].includes(field.field.name));
-      console.log("New filteredFieldsfields to create:", filteredFields);
-      console.log("New filteredFieldsleng fields to create:", filteredFields.length);
-      console.log("New vfilteredFieldsnames fields to create:", filteredFields.map(x => x.field.name));
-
-      if (filteredFields.length > 0) {
-        let retryCount = 0;
-        while (retryCount < 3) {
-          try {
-            await createFields(filteredFields, apiToken);
-            break;
-          } catch (error) {
-            if (error.message?.includes('duplicate key value')) {
-              break;
-            }
-            retryCount++;
-            if (retryCount === 3) {
-              console.log('Failed to create fields after max retries:', error.message);
-              break;
-            }
-            await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * 1000));
-          }
-        }
+      console.log("New fields to create:", newFields.length);
+      console.log("New field names:", newFields.map(x => x.field.name));
+  
+      // Create fields in batches with retries
+      if (newFields.length > 0) {
+        await this.createFieldsWithRetry(newFields, apiToken);
       }
+  
   }
 }

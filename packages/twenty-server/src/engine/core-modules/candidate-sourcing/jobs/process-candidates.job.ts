@@ -25,9 +25,9 @@ export class CandidateQueueProcessor {
       } = jobCandidateData;
       console.log('Processing candidate data. NUumber of profiles are:', data.length);
       const result = await this.candidateService.processProfilesWithRateLimiting(data, jobId, jobName, timestamp, apiToken);
-      console.log('Candidate email sent successfully:', result);
+      console.log('Candidates processing handled successfully:');
     } catch (error) {
-      console.error('Candidate email job failed:', error);
+      console.error('Candidate processing job failed:', error);
       throw error;
     }
   }

@@ -4,6 +4,7 @@ import * as CandidateSourcingTypes from '../types/candidate-sourcing-types';
 export class JobCandidateUtils {
     static getJobCandidatePathPosition(jobName: string, arxenaSiteId: string|undefined): string {
       return this.toCamelCase(jobName)
+        .replace(/[-\s#/+(),\.]/g, "")
         .replace("-","")
         .replace(" ","")
         .replace("#","")
@@ -12,6 +13,7 @@ export class JobCandidateUtils {
         .replace("(","")
         .replace(")","")
         .replace(",","")
+        .replace("-","")
         .replace(".","");
     }
   
@@ -32,13 +34,13 @@ export class JobCandidateUtils {
       };
     
     async generateJobCandidatesMutation(positionName: string): Promise<string> {
+
       const objectName = `${positionName}JobCandidate`;
       const pluralObjectName = `${positionName}JobCandidates`;
       const mutationName = `Create${objectName.charAt(0).toUpperCase() + objectName.slice(1)}s`;
 
-      
-      return `
-        mutation ${mutationName}($data: [${objectName.charAt(0).toUpperCase() + objectName.slice(1)}CreateInput!]!) {
+
+      const mutation =  `mutation ${mutationName}($data: [${objectName.charAt(0).toUpperCase() + objectName.slice(1)}CreateInput!]!) {
           create${pluralObjectName.charAt(0).toUpperCase() + pluralObjectName.slice(1)}(data: $data) {
             id
             person {
@@ -53,7 +55,7 @@ export class JobCandidateUtils {
           }
         }
       `;
-
+      return mutation
       
     }
     static generateFindManyJobCandidatesQuery(positionName: string): string {
