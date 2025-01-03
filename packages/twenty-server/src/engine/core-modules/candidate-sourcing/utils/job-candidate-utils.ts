@@ -76,6 +76,7 @@ export class JobCandidateUtils {
             id
             name
             createdAt
+            jobId
             person{
             id
             }

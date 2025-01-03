@@ -1,4 +1,4 @@
-import { ConsoleLogger, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { JobService } from './job.service';
 import { PersonService } from './person.service';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
@@ -8,17 +8,11 @@ import { processArxCandidate } from '../utils/data-transformation-utility';
 import * as CandidateSourcingTypes from '../types/candidate-sourcing-types';
 import { JobCandidateUtils } from '../utils/job-candidate-utils';
 import { CreateMetaDataStructure } from '../../workspace-modifications/object-apis/object-apis-creation';
-import { createObjectMetadataItems } from '../../workspace-modifications/object-apis/services/object-service';
 import { createFields } from '../../workspace-modifications/object-apis/services/field-service';
 import { createRelations } from '../../workspace-modifications/object-apis/services/relation-service';
 import * as allGraphQLQueries from '../../arx-chat/services/candidate-engagement/graphql-queries-chatbot';
-import {CreateFieldsOnObject} from 'src/engine/core-modules/workspace-modifications/object-apis/data/createFields';
+import { CreateFieldsOnObject } from 'src/engine/core-modules/workspace-modifications/object-apis/data/createFields';
 import * as allDataObjects from '../../arx-chat/services/data-model-objects';
-import { EmailSenderJob } from 'src/engine/integrations/email/email-sender.job';
-import { MessageQueueService } from 'src/engine/integrations/message-queue/services/message-queue.service';
-import { InjectMessageQueue } from 'src/engine/integrations/message-queue/decorators/message-queue.decorator';
-import { MessageQueue } from 'src/engine/integrations/message-queue/message-queue.constants';
-// import { ProcessCandidatesJob } from '../jobs/process-candidates.job';
 
 
 
@@ -206,42 +200,72 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
     return candidatesMap;
   }
 
-
-  async batchCheckExistingJobCandidates(
+  private async batchCheckExistingJobCandidates(
     personIds: string[], 
     candidateIds: string[], 
     jobId: string,
     jobObject: any,
     apiToken: string
-  ): Promise<Map<string, any>> {
+): Promise<Map<string, any>> {
+    if (!personIds.length || !candidateIds.length) {
+        return new Map();
+    }
+
     const path_position = JobCandidateUtils.getJobCandidatePathPosition(jobObject.name, jobObject?.arxenaSiteId);
     const graphqlQueryStr = JobCandidateUtils.generateFindManyJobCandidatesQuery(path_position);
     
+    // Create an array of AND conditions for each person-candidate-job combination
+    const andConditions: { and: { personId?: { eq: string }; candidateId?: { eq: string }; jobId?: { eq: string } }[] }[] = [];
+    for (let i = 0; i < personIds.length; i++) {
+        andConditions.push({
+            and: [
+                { personId: { eq: personIds[i] } },
+                { candidateId: { eq: candidateIds[i] } },
+                { jobId: { eq: jobId } }
+            ]
+        });
+    }
+
     const graphqlQuery = JSON.stringify({
-      variables: {
-        filter: {
-          and: [
-            { candidateId: { in: candidateIds } },
-            { personId: { in: personIds } },
-            { jobId: { in: [jobId] } }
-          ]
+        variables: {
+            filter: {
+                or: andConditions
+            }
         },
-        orderBy: [{ position: "AscNullsFirst" }]
-      },
-      query: graphqlQueryStr
-    });
-  
-    const response = await axiosRequest(graphqlQuery, apiToken);
-    const jobCandidatesMap = new Map<string, any>();
-    
-    // Create a composite key using personId and candidateId
-    response.data?.data?.[`${path_position}JobCandidates`]?.edges?.forEach((edge: any) => {
-      const compositeKey = `${edge.node.personId}_${edge.node.candidateId}`;
-      jobCandidatesMap.set(compositeKey, edge.node);
+        query: graphqlQueryStr
     });
 
-    return jobCandidatesMap;
-  }
+    try {
+        const response = await axiosRequest(graphqlQuery, apiToken);
+        const jobCandidatesMap = new Map<string, any>();
+
+        // Get the correct path to the edges based on the response structure
+        const pluralObjectName = `${path_position}JobCandidates`;
+        const edges = response?.data?.data?.[pluralObjectName]?.edges;
+
+        if (!edges || !Array.isArray(edges)) {
+            console.log('No valid edges found in response:', response?.data);
+            return jobCandidatesMap;
+        }
+
+        edges.forEach((edge: any) => {
+            if (edge?.node) {
+                const node = edge.node;
+                const compositeKey = `${node.person?.id}_${node.candidate?.id}_${node.jobId}`;
+                jobCandidatesMap.set(compositeKey, node);
+            }
+        });
+
+        console.log("JobCandidatesMap created with size:", jobCandidatesMap.size);
+        console.log("JobCandidatesMap contents:", jobCandidatesMap);
+
+        return jobCandidatesMap;
+    } catch (error) {
+        console.error('Error fetching existing job candidates:', error);
+        console.error('Query that failed:', graphqlQuery);
+        return new Map();
+    }
+}
   private async collectJobCandidateFields(data: CandidateSourcingTypes.UserProfile[], jobObject: CandidateSourcingTypes.Jobs): Promise<Set<string>> {
     const fields = new Set<string>();
     
@@ -427,6 +451,7 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
         }
       }
     
+      console.log('People to create:', peopleToCreate.length);
       if (peopleToCreate.length > 0) {
         const response = await this.personService.createPeople(peopleToCreate, apiToken);
         response?.data?.data?.createPeople?.forEach((person, idx) => {
@@ -507,101 +532,90 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
     results: any,
     tracking: any,
     apiToken: string
-  ) {
+) {
     const jobCandidatesToCreate: CandidateSourcingTypes.ArxenaJobCandidateNode[] = [];
-    console.log("tracking personIdMap:", tracking.personIdMap);
-    console.log("tracking candidateIdIdMap:", tracking.candidateIdMap);
+    const processedKeys = new Set<string>();
+    
+    // Get array of personIds and candidateIds
+    const validProfiles = batch.filter(profile => {
+        const personId = tracking.personIdMap.get(profile?.unique_key_string);
+        const candidateId = tracking.candidateIdMap.get(profile?.unique_key_string);
+        return personId && candidateId;
+    });
 
-    try {
-      for (const profile of batch) {
-        const key = profile?.unique_key_string;
-        if (!key) continue;
+    const personIds = validProfiles.map(profile => 
+        tracking.personIdMap.get(profile?.unique_key_string)
+    );
+    const candidateIds = validProfiles.map(profile => 
+        tracking.candidateIdMap.get(profile?.unique_key_string)
+    );
 
-        const personId = tracking.personIdMap.get(key);
-        const candidateId = tracking.candidateIdMap.get(key);
+    console.log("Checking job candidates with the following IDs:");
+  console.log("Person IDs:", personIds);
+  console.log("Candidate IDs:", candidateIds);
+  console.log("Job ID:", jobObject.id);
+
+
+    
+    const existingJobCandidates = await this.batchCheckExistingJobCandidates(
+        personIds,
+        candidateIds,
+        jobObject.id,
+        jobObject,
+        apiToken
+    );
+
+    for (const profile of batch) {
+        const personId = tracking.personIdMap.get(profile?.unique_key_string);
+        const candidateId = tracking.candidateIdMap.get(profile?.unique_key_string);
         
+        if (!personId || !candidateId) continue;
+
+        const compositeKey = `${personId}_${candidateId}_${jobObject.id}`;
         
-        if (personId && candidateId) {
-          const { jobCandidateNode } = await processArxCandidate(profile, jobObject);
-          // console.log("Job Candidate Node:", jobCandidateNode, "for profile:", profile);
-          
-          jobCandidateNode.personId = personId;
-          jobCandidateNode.candidateId = candidateId;
-          jobCandidateNode.jobId = jobObject.id;
-          
-          
-          if (!jobCandidateNode.personId || !jobCandidateNode.candidateId || !jobCandidateNode.jobId) {
+        // Skip if we've already processed this combination or if it already exists
+        if (processedKeys.has(compositeKey) || existingJobCandidates.has(compositeKey)) {
             continue;
-          }
-          
-          const isDuplicate = results.manyJobCandidateObjects.some((jc: { personId: string | undefined; candidateId: string | undefined; jobId: string | undefined; }) =>
-            jc.personId === jobCandidateNode.personId &&
-            jc.candidateId === jobCandidateNode.candidateId &&
-            jc.jobId === jobCandidateNode.jobId
-          );  
+        }
+
+        processedKeys.add(compositeKey);
         
-          console.log("Valid job candidate node:", {
-            personId: jobCandidateNode.personId,
-            candidateId: jobCandidateNode.candidateId,
-            jobId: jobCandidateNode.jobId
-          });
-          
-          
-          if (!isDuplicate) {
+        try {
+            const { jobCandidateNode } = await processArxCandidate(profile, jobObject);
+            jobCandidateNode.personId = personId;
+            jobCandidateNode.candidateId = candidateId;
+            jobCandidateNode.jobId = jobObject.id;
+            
+            // Additional validation
+            if (!jobCandidateNode.personId || !jobCandidateNode.candidateId || !jobCandidateNode.jobId) {
+                continue;
+            }
+
             jobCandidatesToCreate.push(jobCandidateNode);
             results.manyJobCandidateObjects.push(jobCandidateNode);
-          }
-          else{
-            console.log("Duplicate job candidate node:", {
-              personId: jobCandidateNode.personId,
-              candidateId: jobCandidateNode.candidateId,
-              jobId: jobCandidateNode.jobId
-            });
-          }
+        } catch (error) {
+            console.error(`Error processing job candidate for profile ${profile?.unique_key_string}:`, error);
+            continue;
         }
-        else{
-          console.log("PersonId or candidateId not found for key:", key);
-        }
-      }
+    }
+    console.log("Job candidates to create:", jobCandidatesToCreate.length);
 
-      if (jobCandidatesToCreate.length > 0) {
-        console.log("Job Candidates to create:", jobCandidatesToCreate.length);
+    if (jobCandidatesToCreate.length > 0) {
         const query = await new JobCandidateUtils().generateJobCandidatesMutation(path_position);
         const graphqlInput = JSON.stringify({
-          query,
-          variables: { data: jobCandidatesToCreate }
+            query,
+            variables: { data: jobCandidatesToCreate }
         });
-  
-        try {
-          const response = await axiosRequest(graphqlInput, apiToken);
-          console.log('Job candidate creation response:', response?.data);
-          
-          if (response?.data?.errors) {
-            const errorMessages = response.data.errors.map(e => e.message).join(', ');
-            console.log('GraphQL errors:', errorMessages);
-            // console.log('GraphQL when adding job candidates errors:', JSON.stringify(response.data.errors, null, 2));
-          }
-        } catch (error) {
-          console.log('Full error object:', JSON.stringify(error, null, 2));
-          console.log('Error response data here:', error.response?.data);
-          
-          console.log('Error request here:', {
-            query: error.config?.data,
-            variables: error.config?.variables 
-          });
-        }
-      }
-    } catch (error) {
-      console.log('Full error object:', JSON.stringify(error, null, 2));
-      console.log('Error response data :', error.response?.data);
-      
-      console.log('Error request:', {
-        query: error.config?.data,
-        variables: error.config?.variables 
-      });
-  }
-  }
 
+        try {
+            const response = await axiosRequest(graphqlInput, apiToken);
+            console.log('Job candidate creation response:', response?.data);
+        } catch (error) {
+            console.error('Error creating job candidates:', error);
+            // Could add retry logic here if needed
+        }
+    }
+}
   async createCandidates(manyCandidateObjects: CandidateSourcingTypes.ArxenaCandidateNode[], apiToken: string): Promise<any> {
     console.log('Creating candidates, count:', manyCandidateObjects?.length);
     
