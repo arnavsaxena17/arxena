@@ -17,11 +17,9 @@ import { ShowPageAddButton } from '@/ui/layout/show-page/components/ShowPageAddB
 import { CoreObjectNameSingular } from '@/object-metadata/types/CoreObjectNameSingular';
 
 
-import { isAIInterviewModalOpenState } from '@/ai-interview/interview-creation/states/aIInterviewModalState';
 import { isArxEnrichModalOpenState } from '@/arx-enrich/states/arxEnrichModalOpenState';
 // import { InterviewCreationModal } from '@/ai-interview/interview-creation/InterviewCreationModal';
 import { ArxEnrichmentModal } from '@/arx-enrich/arxEnrichmentModal';
-import { useState } from 'react';
 
 
 const StyledIndexContainer = styled.div`

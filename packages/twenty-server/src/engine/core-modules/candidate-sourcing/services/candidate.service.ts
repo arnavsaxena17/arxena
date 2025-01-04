@@ -404,7 +404,7 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
       await this.delay(1000);
       const { context, batchKey } = await this.setupProcessingContext(jobObject, timestamp, data, apiToken);
       await this.delay(1000);
-      // const results = await this.processBatches(data, jobObject, context, tracking, apiToken);
+      const results = await this.processBatches(data, jobObject, context, tracking, apiToken);
       console.log("This is the context:", context);
       console.log("This is the batch key:", batchKey);
       // Cleanup context after processing is complete

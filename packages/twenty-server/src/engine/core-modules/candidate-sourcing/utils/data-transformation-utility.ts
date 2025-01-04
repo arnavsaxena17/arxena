@@ -21,7 +21,7 @@ export const mapArxCandidateToJobCandidateNode = candidate => {
 
   const ansKeys = Object.keys(candidate).filter(key => key.startsWith('Ans'));
   const ansFields = ansKeys.reduce((acc, key) => {
-    const camelCaseKey = key.replace(/[^a-zA-Z0-9\s]/g, '').replace(/(?:^\w|[A-Z]|\b\w|\s+)/g, (match, index) => index === 0 ? match.toLowerCase() : match.toUpperCase()).replace(/\s+/g, '').slice(0, 50);
+    const camelCaseKey = key.replace(/[^a-zA-Z0-9\s]/g, '').replace(/(?:^\w|[A-Z]|\b\w|\s+)/g, (match, index) => index === 0 ? match.toLowerCase() : match.toUpperCase()).replace(/\s+/g, '').slice(0, 25);
     acc[camelCaseKey] = candidate[key];
     return acc;
   }, {});
@@ -57,7 +57,7 @@ export const mapArxCandidateToJobCandidateNode = candidate => {
     // experienceYears: candidate?.experience_years || 0,
     // experienceMonths: candidate?.experienceMonths || 0,
     // currentOrganization: candidate?.job_company_name || '',
-    ...ansFields
+    // ...ansFields
   };
   return jobCandidateNode;
 };

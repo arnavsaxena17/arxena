@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
 import {UpdateOneJob , CreateOneJob, createOneQuestion, graphqlToFindManyJobByArxenaSiteId } from './graphql-queries';
 import { FetchAndUpdateCandidatesChatsWhatsapps } from '../arx-chat/services/candidate-engagement/update-chat';
 import { axiosRequest , axiosRequestForMetadata} from './utils/utils';
@@ -444,4 +444,57 @@ export class CandidateSourcingController {
     }
   }
 
+  
+
+}
+
+
+
+
+import moment from 'moment-timezone';
+
+@Controller('fetch-google-apps-data')
+export class CityDataController {
+  private basePopulations = {
+    london: 9002488,
+    newYork: 8804190,
+    paris: 2148271,
+    mumbai: 20667656,
+    tokyo: 37393129,
+  };
+
+  private startTime = Date.now();
+
+  @Post('get-data')
+  getData() {
+    const minutesPassed = Math.floor((Date.now() - this.startTime));
+    const growthRate = 0.001; // 0.0001%
+
+    return {
+      london: {
+        population: Math.floor(new CityDataController().calculatePopulation(this.basePopulations.london, minutesPassed, growthRate)),
+        timezone: moment().tz('Europe/London').format('YYYY-MM-DD HH:mm:ss z')
+      },
+      newYork: {
+        population: Math.floor(new CityDataController().calculatePopulation(this.basePopulations.newYork, minutesPassed, growthRate)),
+        timezone: moment().tz('America/New_York').format('YYYY-MM-DD HH:mm:ss z')
+      },
+      paris: {
+        population: Math.floor(new CityDataController().calculatePopulation(this.basePopulations.paris, minutesPassed, growthRate)),
+        timezone: moment().tz('Europe/Paris').format('YYYY-MM-DD HH:mm:ss z')
+      },
+      mumbai: {
+        population: Math.floor(new CityDataController().calculatePopulation(this.basePopulations.mumbai, minutesPassed, growthRate)),
+        timezone: moment().tz('Asia/Kolkata').format('YYYY-MM-DD HH:mm:ss z')
+      },
+      tokyo: {
+        population: Math.floor(new CityDataController().calculatePopulation(this.basePopulations.tokyo, minutesPassed, growthRate)),
+        timezone: moment().tz('Asia/Tokyo').format('YYYY-MM-DD HH:mm:ss z')
+      }
+    };
+  }
+
+  private calculatePopulation(basePopulation: number, minutesPassed: number, growthRate: number): number {
+    return basePopulation * Math.pow(1 + growthRate, minutesPassed);
+  }
 }
