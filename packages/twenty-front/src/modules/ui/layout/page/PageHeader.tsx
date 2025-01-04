@@ -102,6 +102,17 @@ export const PageHeader = ({ title, hasBackButton, Icon, children, loading, reco
   const isNavigationDrawerOpen = useRecoilValue(isNavigationDrawerOpenState);
   console.log("this is use params", useParams());
   console.log("this is use CoreObjectNameSingular", CoreObjectNameSingular);
+  const params = useParams();  // Move hook to top level
+
+  const objectNameSingular = params.objectNamePlural === 'companies'
+  ? 'company'
+  : params.objectNamePlural === 'people'
+  ? 'person'
+  : params.objectNamePlural === 'opportunities'
+  ? 'opportunity'
+  : params.objectNamePlural?.slice(0, -1) ?? 'candidate';
+
+
   return (
     <StyledTopBarContainer>
       <StyledLeftContainer>
@@ -129,21 +140,11 @@ export const PageHeader = ({ title, hasBackButton, Icon, children, loading, reco
       <StyledPageActionContainer>{children}</StyledPageActionContainer>
       {/* <ShowPageAddButton /> */}
       {isRecordTable && (
-      <ShowPageMoreButton
-        key="more"
-        recordId={recordId ?? '0'}
-        objectNameSingular={
-        useParams().objectNamePlural === 'companies'
-          ? 'company'
-          : useParams().objectNamePlural === 'people'
-          ? 'person'
-          : useParams().objectNamePlural === 'opportunities'
-          ? 'opportunity'
-          : useParams().objectNamePlural?.slice(0, -1) ?? 'candidate'
-          ? 'candidate'
-          : useParams().objectNamePlural?.slice(0, -1) ?? 'candidate'
-        }
-      />
+        <ShowPageMoreButton
+          key="more"
+          recordId={recordId ?? '0'}
+          objectNameSingular={objectNameSingular}
+        />
       )}
     </StyledTopBarContainer>
   );
