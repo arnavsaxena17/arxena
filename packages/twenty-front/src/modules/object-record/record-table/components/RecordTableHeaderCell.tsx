@@ -16,6 +16,7 @@ import { scrollLeftState } from '@/ui/utilities/scroll/states/scrollLeftState';
 import { mapArrayToObject } from '~/utils/array/mapArrayToObject';
 
 import { ColumnHeadWithDropdown } from './ColumnHeadWithDropdown';
+import React from 'react';
 
 const COLUMN_MIN_WIDTH = 104;
 
@@ -75,7 +76,7 @@ const StyledHeaderIcon = styled.div`
   margin: ${({ theme }) => theme.spacing(1, 1, 1, 1.5)};
 `;
 
-export const RecordTableHeaderCell = ({
+export const RecordTableHeaderCell = React.memo(({
   column,
   createRecord,
 }: {
@@ -210,4 +211,4 @@ export const RecordTableHeaderCell = ({
       )}
     </StyledColumnHeaderCell>
   );
-};
+});

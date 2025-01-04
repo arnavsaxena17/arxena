@@ -113,8 +113,7 @@ export const graphqlQueryToFindPeopleByPhoneNumber = `query FindManyPeople($filt
 }`;
 
 
-export const CreateManyCandidates = `
-mutation CreateCandidates($data: [CandidateCreateInput!]!) {
+export const CreateManyCandidates = `mutation CreateCandidates($data: [CandidateCreateInput!]!) {
   createCandidates(data: $data) {
     __typename
     id

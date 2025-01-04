@@ -19,33 +19,33 @@ import * as allDataObjects from '../../arx-chat/services/data-model-objects';
 export const newFieldsToCreate = [
   "name",
   "jobTitle",
-  "currentOrganization",
+  // "currentOrganization",
   "age",
-  "currentLocation",
-  "inferredSalary",
+  // "currentLocation",
+  // "inferredSalary",
   "email",
   "profileUrl",
   "phone",
   "uniqueStringKey",
   "profileTitle",
   "displayPicture",
-  "preferredLocations",
+  // "preferredLocations",
   "birthDate",
-  "inferredYearsExperience",
-  "noticePeriod",
-  "homeTown",
-  "maritalStatus",
-  "ugInstituteName",
-  "ugGraduationYear",
-  "pgGradudationDegree",
-  "ugGraduationDegree",
-  "pgGraduationYear",
+  // "inferredYearsExperience",
+  // "noticePeriod",
+  // "homeTown",
+  // "maritalStatus",
+  // "ugInstituteName",
+  // "ugGraduationYear",
+  // "pgGradudationDegree",
+  // "ugGraduationDegree",
+  // "pgGraduationYear",
   "resumeHeadline",
   "keySkills",
-  "industry",
-  "modifyDateLabel",
-  "experienceYears",
-  "experienceMonths",
+  // "industry",
+  // "modifyDateLabel",
+  // "experienceYears",
+  // "experienceMonths",
 ]
 interface ProcessingContext {
   jobCandidateInfo: {
@@ -288,6 +288,7 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
     return fields;
   }
 
+  delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
   private async processBatches(
     data: CandidateSourcingTypes.UserProfile[],
     jobObject: CandidateSourcingTypes.Jobs,
@@ -307,8 +308,10 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
       manyJobCandidateObjects: [] as CandidateSourcingTypes.ArxenaJobCandidateNode[]
     };
   
+    
+    await this.delay(1000);
+
     const batchSize = 15;
-    const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
   
     for (let i = 0; i < data.length; i += batchSize) {
       const batch = data.slice(i, i + batchSize);
@@ -328,7 +331,7 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
       );
   
       if (i + batchSize < data.length) {
-        await delay(1000);
+        await this.delay(1000);
       }
     }
     return results;
@@ -348,6 +351,8 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
       if (!jobCandidateInfo.jobCandidateObjectId) {
         console.log('Failed to create/get job candidate object structure');
       }
+
+      await this.delay(1000);
   
       context = { jobCandidateInfo, timestamp };
       this.processingContexts.set(batchKey, context);
@@ -372,12 +377,19 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
     timestamp: string,
     apiToken: string
   ): Promise<{
-    manyPersonObjects: CandidateSourcingTypes.ArxenaPersonNode[];
-    manyCandidateObjects: CandidateSourcingTypes.ArxenaCandidateNode[];
-    allPersonObjects: allDataObjects.PersonNode[];
-    manyJobCandidateObjects: CandidateSourcingTypes.ArxenaJobCandidateNode[];
+    // manyPersonObjects: CandidateSourcingTypes.ArxenaPersonNode[];
+    // manyCandidateObjects: CandidateSourcingTypes.ArxenaCandidateNode[];
+    // allPersonObjects: allDataObjects.PersonNode[];
+    // manyJobCandidateObjects: CandidateSourcingTypes.ArxenaJobCandidateNode[];
     timestamp: string;
   }> {
+  // ): Promise<{
+  //   manyPersonObjects: CandidateSourcingTypes.ArxenaPersonNode[];
+  //   manyCandidateObjects: CandidateSourcingTypes.ArxenaCandidateNode[];
+  //   allPersonObjects: allDataObjects.PersonNode[];
+  //   manyJobCandidateObjects: CandidateSourcingTypes.ArxenaJobCandidateNode[];
+  //   timestamp: string;
+  // }> {
     console.log("Queue has begun to be processed. ")
     try {
       const jobObject = await this.jobService.getJobDetails(jobId, jobName, apiToken);
@@ -389,14 +401,17 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
         personIdMap: new Map<string, string>(),
         candidateIdMap: new Map<string, string>()
       };
-  
+      await this.delay(1000);
       const { context, batchKey } = await this.setupProcessingContext(jobObject, timestamp, data, apiToken);
-      const results = await this.processBatches(data, jobObject, context, tracking, apiToken);
-  
+      await this.delay(1000);
+      // const results = await this.processBatches(data, jobObject, context, tracking, apiToken);
+      console.log("This is the context:", context);
+      console.log("This is the batch key:", batchKey);
       // Cleanup context after processing is complete
       this.processingContexts.delete(batchKey);
   
-      return { ...results, timestamp };
+      // return { ...results, timestamp };
+      return { timestamp };
     } catch (error) {
       console.error('Error in profile processing:', error);
       throw error;
@@ -495,7 +510,7 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
         if (personId && !existingCandidate) {
           const { candidateNode } = await processArxCandidate(profile, jobObject);
           // console.log("Candidate Node:", candidateNode, "for pro  file:", profile);
-          candidateNode.personId = personId;
+          candidateNode.peopleId = personId;
           candidatesToCreate.push(candidateNode);
           candidateKeys.push(key);
           results.manyCandidateObjects.push(candidateNode);
@@ -631,7 +646,6 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
     } catch (error) {
       console.log('Error in creating candidates1', error?.data);
       console.log('Error in creating candidates2', error?.message);
-      console.log('Error in creating candidates3', error);
     }
   }
 
@@ -908,6 +922,7 @@ getIconForFieldType = (fieldType: string): string => {
 
 private createFieldDefinition(fieldName: string, objectMetadataId: string): any {
   const fieldType = this.determineFieldType(fieldName);
+  console.log("Field Type Created:", fieldType, "for field:", fieldName);
   const fieldsCreator = new CreateFieldsOnObject();
   const icon = fieldType === 'Number' ? 'IconNumbers' : 'IconAbc';
 
@@ -975,7 +990,7 @@ private determineFieldType(fieldName: string): string {
 
 private async createFieldsWithRetry(fields: { field: any }[], apiToken: string): Promise<void> {
   const maxRetries = 3;
-  const batchSize = 50; // Adjust based on your API limits
+  const batchSize = 10; // Adjust based on your API limits
   
   // Split fields into batches
   for (let i = 0; i < fields.length; i += batchSize) {
@@ -995,7 +1010,7 @@ private async createFieldsWithRetry(fields: { field: any }[], apiToken: string):
 
         retryCount++;
         if (retryCount === maxRetries) {
-          console.error('Failed to create fields batch after max retries:', error);
+          console.log('Failed to create fields batch after max retries:', error);
           throw error;
         }
 
@@ -1080,12 +1095,12 @@ private formatFieldLabel(fieldName: string): string {
       const existingFields = await this.fetchAllFieldsForObject(jobCandidateObjectId, apiToken);
       console.log("Total existing fields found:", existingFields.length);
       console.log("Existing field names:", existingFields);
-  
+      await this.delay(1000);
       // Get all required fields
       const allFields = await this.collectJobCandidateFields(data, jobObject);
       console.log("Total required fields:", allFields.size);
       console.log("Required field names:", Array.from(allFields));
-  
+      await this.delay(1000);
       // Filter out existing fields and create field definitions
       const newFields = Array.from(allFields)
         .filter(field => !existingFields.includes(field))
@@ -1096,9 +1111,12 @@ private formatFieldLabel(fieldName: string): string {
   
       console.log("New fields to create:", newFields.length);
       console.log("New field names:", newFields.map(x => x.field.name));
-  
+      console.log("New field names:", newFields.map(x => x.field?.type));
+      await this.delay(1000);
       // Create fields in batches with retries
       if (newFields.length > 0) {
+        await this.delay(500);
+
         await this.createFieldsWithRetry(newFields, apiToken);
       }
   

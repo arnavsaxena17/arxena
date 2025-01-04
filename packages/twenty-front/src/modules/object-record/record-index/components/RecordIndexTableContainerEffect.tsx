@@ -38,12 +38,12 @@ export const RecordIndexTableContainerEffect = ({
   const { columnDefinitions } =
     useColumnDefinitionsFromFieldMetadata(objectMetadataItem);
 
+  console.log("These are the column definitions:", columnDefinitions)
+
+
   const { setRecordCountInCurrentView } =
     useSetRecordCountInCurrentView(viewBarId);
 
-  useEffect(() => {
-    setAvailableTableColumns(columnDefinitions);
-  }, [columnDefinitions, setAvailableTableColumns]);
 
   const selectedRowIds = useRecoilValue(selectedRowIdsSelector());
 
@@ -80,33 +80,37 @@ export const RecordIndexTableContainerEffect = ({
   );
 
 
-
   useEffect(() => {
     setAvailableTableColumns(columnDefinitions);
-  }, [columnDefinitions, setAvailableTableColumns]);
-
-  // Set toggle filter handler
-  useEffect(() => {
     setOnToggleColumnFilter(() => onToggleColumnFilter);
-  }, [setOnToggleColumnFilter, onToggleColumnFilter]);
-
-  // Set toggle sort handler 
-  useEffect(() => {
     setOnToggleColumnSort(() => onToggleColumnSort);
-  }, [setOnToggleColumnSort, onToggleColumnSort]);
+    setOnEntityCountChange(() => onEntityCountChange);
+}, [
+    columnDefinitions,
+    setAvailableTableColumns,
+    setOnToggleColumnFilter,
+    onToggleColumnFilter,
+    setOnToggleColumnSort,
+    onToggleColumnSort,
+    setOnEntityCountChange,
+    onEntityCountChange
+]);
 
-  // Set entries
-  useEffect(() => {
-    if (setActionBarEntries && setContextMenuEntries) {
+
+
+
+const handleEntriesUpdate = useCallback(() => {
+  if (setActionBarEntries && setContextMenuEntries) {
       setActionBarEntries();
       setContextMenuEntries();
-    }
-  }, [setActionBarEntries, setContextMenuEntries, selectedRowIds]);
+  }
+}, [setActionBarEntries, setContextMenuEntries]);
 
-  // Set entity count change handler
-  useEffect(() => {
-    setOnEntityCountChange(() => onEntityCountChange);
-  }, [setOnEntityCountChange, onEntityCountChange]);
+useEffect(() => {
+  handleEntriesUpdate();
+}, [handleEntriesUpdate, selectedRowIds]);
 
+
+  
   return <></>;
 };

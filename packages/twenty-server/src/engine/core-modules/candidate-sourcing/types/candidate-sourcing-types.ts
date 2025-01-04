@@ -222,33 +222,33 @@ export interface ArxenaCandidateNode {
   displayPicture: {label:string, url:string};
   jobsId: string;
   jobSpecificFields: any;
-  personId: string;
+  peopleId: string;
 }
 
 export interface ArxenaJobCandidateNode {
   id?: string;
   profileUrl:{label:string, url:string};
   displayPicture:{label:string, url:string};
-  educationUgYear?: number;
-  educationUgSpecialization?: string;
-  educationUgCourse?: string;
+  // educationUgYear?: number;
+  // educationUgSpecialization?: string;
+  // educationUgCourse?: string;
   birthDate?: string;
   age?: number;
 
-  inferredSalary?: number;
+  // inferredSalary?: number;
   gender?: string;
-  inferredYearsExperience?: string;
-  homeTown?: string;
+  // inferredYearsExperience?: string;
+  // homeTown?: string;
 
-  ugInstituteName: string;
-  ugGraduationYear: number;
-  pgGradudationDegree: string;
-  ugGraduationDegree: string;
-  pgGraduationYear: number;
+  // ugInstituteName: string;
+  // ugGraduationYear: number;
+  // pgGradudationDegree: string;
+  // ugGraduationDegree: string;
+  // pgGraduationYear: number;
   resumeHeadline: string;
-  industry: string;
+  // industry: string;
   maritalStatus?: string;
-  educationUgInstitute?: string;
+  // educationUgInstitute?: string;
   profileTitle: string;
   name?: string;
   linkedinLink?: string;
@@ -259,20 +259,21 @@ export interface ArxenaJobCandidateNode {
   jsUserName?: string;
   keySkills?: string;
   focusedSkills?: string;
-  currentLocation?: string;
-  preferredLocations?: string;
-  noticePeriod?: string;
-  modifyDateLabel?: string;
-  experienceYears?: string;
-  experienceMonths?: number;
-  currentDesignation?: string;
-  currentOrganization?: string;
-  previousDesignation?: string;
-  previousOrganization?: string;
+  // currentLocation?: string;
+  // preferredLocations?: string;
+  // noticePeriod?: string;
+  // modifyDateLabel?: string;
+  // experienceYears?: string;
+  // experienceMonths?: number;
+  // currentDesignation?: string;
+  // currentOrganization?: string;
+  // previousDesignation?: string;
+  // previousOrganization?: string;
   personId?: string;
   jobId?: string;
   candidateId?: string;
 }
+
 export interface ArxenaPersonNode {
   id?: any;
   educationUgYear?: number;

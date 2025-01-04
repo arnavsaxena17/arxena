@@ -149,8 +149,6 @@ export const RecordIndexContainer = ({ createRecord, recordIndexId, objectNamePl
               if (columnDefinitions.length > 0) {
                 onViewFieldsChange(view.viewFields);
               }
-
-
                 // onViewFieldsChange(view.viewFields);
                 setTableFilters(mapViewFiltersToFilters(view.viewFilters, filterDefinitions));
                 setRecordIndexFilters(mapViewFiltersToFilters(view.viewFilters, filterDefinitions));
