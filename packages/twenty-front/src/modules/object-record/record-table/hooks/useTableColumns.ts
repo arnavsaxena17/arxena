@@ -24,7 +24,7 @@ export const useTableColumns = (props?: useRecordTableProps) => {
   } = useRecordTableStates(props?.recordTableId);
 
   const availableTableColumns = useRecoilValue(availableTableColumnsState);
-
+  console.log("availableTableColumns", availableTableColumns)
   const tableColumns = useRecoilValue(tableColumnsState);
   const visibleTableColumns = useRecoilValue(visibleTableColumnsSelector());
   console.log("visibleTableColumns", visibleTableColumns)

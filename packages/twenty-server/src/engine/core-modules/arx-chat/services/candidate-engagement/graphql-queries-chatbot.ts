@@ -230,7 +230,7 @@ query FindManyCandidate($filter: CandidateFilterInput) {
       node {
         id
         uniqueStringKey
-        personId
+        peopleId
         jobsId
       }
     }
@@ -519,7 +519,7 @@ export const graphqlQueryToFindManyPeopleEngagedCandidates = `query FindManyPeop
           id
           name
           whatsappProvider
-          person {
+          people {
             id
             name {
               firstName

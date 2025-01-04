@@ -150,8 +150,8 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
         relationType: 'ONE_TO_MANY',
         toObjectMetadataId: objectsNameIdMap.candidate,
         toDescription: '',
-        toLabel: 'Person',
-        toName: 'person',
+        toLabel: 'People',
+        toName: 'people',
       },
     },
     {

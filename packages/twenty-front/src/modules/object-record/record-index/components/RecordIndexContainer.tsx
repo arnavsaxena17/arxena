@@ -84,23 +84,35 @@ export const RecordIndexContainer = ({ createRecord, recordIndexId, objectNamePl
   const onViewFieldsChange = useRecoilCallback(
     ({ set, snapshot }) =>
       (viewFields: ViewField[]) => {
+        // Add defensive checks
+        if (!viewFields?.length || !columnDefinitions?.length) {
+          console.log('Waiting for viewFields or columnDefinitions to be ready');
+          return;
+        }
+        
         const newFieldDefinitions = mapViewFieldsToColumnDefinitions({
           viewFields,
           columnDefinitions,
         });
-
+  
         setTableColumns(newFieldDefinitions);
-
-        const newRecordIndexFieldDefinitions = newFieldDefinitions.filter(boardField => !boardField.isLabelIdentifier);
-
-        const existingRecordIndexFieldDefinitions = snapshot.getLoadable(recordIndexFieldDefinitionsState).getValue();
-
+  
+        const newRecordIndexFieldDefinitions = newFieldDefinitions.filter(
+          boardField => !boardField.isLabelIdentifier
+        );
+  
+        const existingRecordIndexFieldDefinitions = snapshot
+          .getLoadable(recordIndexFieldDefinitionsState)
+          .getValue();
+  
         if (!isDeeplyEqual(existingRecordIndexFieldDefinitions, newRecordIndexFieldDefinitions)) {
           set(recordIndexFieldDefinitionsState, newRecordIndexFieldDefinitions);
         }
       },
     [columnDefinitions, setTableColumns],
   );
+  
+  
 
   // const refetchFunction = useRecoilValue(refetchFunctionAtom);
   const [isPending, startTransition] = useTransition();
@@ -129,8 +141,17 @@ export const RecordIndexContainer = ({ createRecord, recordIndexId, objectNamePl
                 if (!view) {
                   return;
                 }
+                if (!view || !columnDefinitions?.length) {
+                  return;
+                }
 
+                    // Make sure columnDefinitions exist before calling onViewFieldsChange
+              if (columnDefinitions.length > 0) {
                 onViewFieldsChange(view.viewFields);
+              }
+
+
+                // onViewFieldsChange(view.viewFields);
                 setTableFilters(mapViewFiltersToFilters(view.viewFilters, filterDefinitions));
                 setRecordIndexFilters(mapViewFiltersToFilters(view.viewFilters, filterDefinitions));
                 setTableSorts(mapViewSortsToSorts(view.viewSorts, sortDefinitions));

@@ -37,6 +37,7 @@ export const RecordTableHeaderPlusButtonContent = () => {
     text-decoration: none;
     width: 100%;
   `;
+  console.log("RecordTableHeaderPlusButtonContent render:", objectMetadataItem);
 
   return (
     <>
@@ -54,6 +55,7 @@ export const RecordTableHeaderPlusButtonContent = () => {
           </DropdownMenuItemsContainer>
           <DropdownMenuSeparator />
         </>
+
       )}
       <DropdownMenuItemsContainer>
         <StyledMenuItemLink
