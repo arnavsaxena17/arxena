@@ -11,8 +11,8 @@ interface JobCreationResponse {
   arxenaJobId: string;
   arxenaResponse: any;
   candidatesResponse: any;
-  spreadsheetId: string;
-  spreadsheetUrl: string;
+  googleSheetId: string;
+  googleSheetUrl: string;
 }
 
 console.log("This is the process.env.SERVER_BASE_URL::", process.env.SERVER_BASE_URL)
@@ -54,8 +54,8 @@ export class JobCreationService {
     }
 
     return {
-      spreadsheetId: spreadsheet.spreadsheetId,
-      spreadsheetUrl: spreadsheet.spreadsheetUrl
+      googleSheetId: spreadsheet.spreadsheetId,
+      googleSheetUrl: spreadsheet.spreadsheetUrl
     };
   }
 
@@ -144,7 +144,7 @@ export class JobCreationService {
       const jobId = await this.createNewJob(jobName);
       console.log("This is the jobId::", jobId);
 
-      const { spreadsheetId, spreadsheetUrl } = await this.createSpreadsheetForJob(jobName, auth);
+      const { googleSheetId, googleSheetUrl } = await this.createSpreadsheetForJob(jobName, auth);
 
       // Generate new Arxena job ID
       const arxenaJobId = '64b29dbdf9822851831e4de9'
@@ -176,7 +176,7 @@ export class JobCreationService {
 
         await this.sheetsService.updateValues(
           auth,
-          spreadsheetId,
+          googleSheetId,
           'Sheet1!A2',
           candidateRows
         );
@@ -188,8 +188,8 @@ export class JobCreationService {
         arxenaJobId,
         arxenaResponse,
         candidatesResponse,
-        spreadsheetId,
-        spreadsheetUrl
+        googleSheetId,
+        googleSheetUrl
       };
 
     } catch (error) {

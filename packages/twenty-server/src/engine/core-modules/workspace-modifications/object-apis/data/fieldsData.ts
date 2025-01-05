@@ -519,6 +519,24 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
     {
         "field": {
             "description": "",
+            "label": "googleSheetId",
+            "name": "googleSheetId",
+            "objectMetadataId": objectsNameIdMap.job,
+            "type": "TEXT"
+        }
+    },
+    {
+        "field": {
+            "description": "",
+            "label": "googleSheetUrl",
+            "name": "googleSheetUrl",
+            "objectMetadataId": objectsNameIdMap.job,
+            "type": "TEXT"
+        }
+    },
+    {
+        "field": {
+            "description": "",
             "label": "jobCode",
             "name": "jobCode",
             "objectMetadataId": objectsNameIdMap.job,
