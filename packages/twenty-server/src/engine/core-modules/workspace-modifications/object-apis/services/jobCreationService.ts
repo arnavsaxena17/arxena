@@ -3,11 +3,16 @@
 import axios from 'axios';
 import mongoose from 'mongoose';
 
+import { GoogleSheetsService } from 'src/engine/core-modules/google-sheets/google-sheets.service';
+
+
 interface JobCreationResponse {
   jobId: string;
   arxenaJobId: string;
   arxenaResponse: any;
   candidatesResponse: any;
+  spreadsheetId: string;
+  spreadsheetUrl: string;
 }
 
 console.log("This is the process.env.SERVER_BASE_URL::", process.env.SERVER_BASE_URL)
@@ -15,11 +20,46 @@ console.log("This is the process.env.SERVER_BASE_URL::", process.env.SERVER_BASE
 export class JobCreationService {
   private apiToken: string;
   private baseUrl: string;
+  
+  private sheetsService: GoogleSheetsService;
 
-  constructor(apiToken: string, baseUrl: string = process.env.SERVER_BASE_URL || 'http://app.arxena.com') {
+
+  constructor(apiToken: string,    
+    sheetsService: GoogleSheetsService,
+    baseUrl: string = process.env.SERVER_BASE_URL || 'http://app.arxena.com') 
+  {
     this.apiToken = apiToken;
     this.baseUrl = baseUrl;
+    this.sheetsService = sheetsService;
   }
+
+  private async createSpreadsheetForJob(jobName: string, auth: any): Promise<any> {
+    const spreadsheetTitle = `${jobName} - Job Tracking`;
+    const spreadsheet = await this.sheetsService.createSpreadsheet(auth, spreadsheetTitle);
+    
+    // Initialize the spreadsheet with headers
+    const headers = [
+      ['Candidate Name', 'Email', 'Phone', 'Current Company', 'Current Title', 'Status', 'Notes']
+    ];
+    
+    if (spreadsheet.spreadsheetId) {
+      await this.sheetsService.updateValues(
+        auth,
+        spreadsheet.spreadsheetId,
+        'Sheet1!A1:G1',
+        headers
+      );
+    } else {
+      throw new Error('Spreadsheet ID is undefined');
+    }
+
+    return {
+      spreadsheetId: spreadsheet.spreadsheetId,
+      spreadsheetUrl: spreadsheet.spreadsheetUrl
+    };
+  }
+
+
 
   private async createNewJob(jobName: string): Promise<string> {
     const response = await axios.request({
@@ -91,12 +131,20 @@ export class JobCreationService {
 
   public async executeJobCreationFlow(
     jobName: string, 
-    candidatesData: any
+    candidatesData: any,
+    twentyToken: string
   ): Promise<JobCreationResponse | undefined> {
     try {
       // Create new job
+      const auth = await this.sheetsService.loadSavedCredentialsIfExist(twentyToken);
+      if (!auth) {
+        throw new Error('Failed to load Google credentials');
+      }
+
       const jobId = await this.createNewJob(jobName);
       console.log("This is the jobId::", jobId);
+
+      const { spreadsheetId, spreadsheetUrl } = await this.createSpreadsheetForJob(jobName, auth);
 
       // Generate new Arxena job ID
       const arxenaJobId = '64b29dbdf9822851831e4de9'
@@ -115,12 +163,33 @@ export class JobCreationService {
       });
         // Post candidates
       const candidatesResponse = await this.postCandidates(candidateDataObj);
+      if (Array.isArray(candidatesData)) {
+        const candidateRows = candidatesData.map(candidate => [
+          candidate.name || '',
+          candidate.email || '',
+          candidate.phone || '',
+          candidate.currentCompany || '',
+          candidate.currentTitle || '',
+          'New',
+          ''
+        ]);
+
+        await this.sheetsService.updateValues(
+          auth,
+          spreadsheetId,
+          'Sheet1!A2',
+          candidateRows
+        );
+      }
+
 
       return {
         jobId,
         arxenaJobId,
         arxenaResponse,
-        candidatesResponse
+        candidatesResponse,
+        spreadsheetId,
+        spreadsheetUrl
       };
 
     } catch (error) {

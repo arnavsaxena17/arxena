@@ -26,6 +26,7 @@ import { MailerModule } from './gmail-sender/gmail-sender.module';
 import { CandidateSourcingModule } from './candidate-sourcing/candidate-sourcing.module';
 import { WorkspaceModificationsModule } from './workspace-modifications/workspace-modifications.module';
 import { GoogleDriveModule } from './google-drive/google-drive.module';
+import { GoogleSheetsModule } from './google-sheets/google-sheets.module';
 // import { EventsGateway } from './whiskeysocket-baileys/events-gateway-module/events-gateway';
 
 @Module({
@@ -53,6 +54,8 @@ import { GoogleDriveModule } from './google-drive/google-drive.module';
     VideoInterviewModule,
     WorkspaceModificationsModule,
     PostgresCredentialsModule,
+    GoogleSheetsModule,
+
     // WhiskeySocketsBaileysWhatsappModule,
     CandidateSourcingModule,
     // EventsGateway,
@@ -71,6 +74,7 @@ import { GoogleDriveModule } from './google-drive/google-drive.module';
     GoogleContactsModule,
     WorkspaceModificationsModule,
     WorkspaceModule,
+    GoogleSheetsModule,
     VideoInterviewModule,
     // WhiskeySocketsBaileysWhatsappModule,
     MailerModule,

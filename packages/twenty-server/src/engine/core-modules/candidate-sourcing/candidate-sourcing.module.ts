@@ -1,6 +1,6 @@
 // import { CandidateSourcingController } from './controllers/candidate-sourcing.controller';
-// import { CandidateSourcingController, CityDataController } from './candidate-sourcing.controller';
-import { CandidateSourcingController} from './candidate-sourcing.controller';
+import { CandidateSourcingController, CityDataController } from './candidate-sourcing.controller';
+// import { CandidateSourcingController} from './candidate-sourcing.controller';
 import { AuthModule } from '../auth/auth.module';
 import { WorkspaceModificationsModule } from '../workspace-modifications/workspace-modifications.module';
 import { JobService } from './services/job.service';
@@ -35,8 +35,8 @@ import { CandidateQueueProcessor } from './jobs/process-candidates.job';
     TypeOrmModule.forFeature([AppToken], 'core'),
     DataSourceModule, 
   ],
-  // controllers: [CandidateSourcingController, CityDataController],
-  controllers: [CandidateSourcingController],
+  controllers: [CandidateSourcingController, CityDataController],
+  // controllers: [CandidateSourcingController],
   providers: [
     JobService,
     PersonService,
