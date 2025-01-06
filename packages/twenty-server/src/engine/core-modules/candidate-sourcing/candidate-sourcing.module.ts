@@ -3,7 +3,7 @@ import { CandidateSourcingController, CityDataController } from './candidate-sou
 // import { CandidateSourcingController} from './candidate-sourcing.controller';
 import { AuthModule } from '../auth/auth.module';
 import { WorkspaceModificationsModule } from '../workspace-modifications/workspace-modifications.module';
-import { JobService } from './services/job.service';
+// import { JobService } from './services/job.service';
 import { PersonService } from './services/person.service';
 import { CandidateService } from './services/candidate.service';
 import { ChatService } from './services/chat.service';
@@ -39,7 +39,7 @@ import { GoogleSheetsService } from '../google-sheets/google-sheets.service';
   controllers: [CandidateSourcingController, CityDataController],
   // controllers: [CandidateSourcingController],
   providers: [
-    JobService,
+    // JobService,
     PersonService,
     GoogleSheetsService,
     ProcessCandidatesService,
@@ -54,7 +54,7 @@ import { GoogleSheetsService } from '../google-sheets/google-sheets.service';
     JwtAuthStrategy,
     EmailService
   ],
-  exports: [JobService, PersonService, CandidateService, ChatService, ProcessCandidatesService],
+  exports: [PersonService, CandidateService, ChatService, ProcessCandidatesService],
 
 })
 export class CandidateSourcingModule {}
