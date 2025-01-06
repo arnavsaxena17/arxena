@@ -277,8 +277,8 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
         "field": {
             "description": "",
             "icon": "IconReload",
-            "label": "SMS Type",
-            "name": "smsType",
+            "label": "Text Message Type",
+            "name": "textMessageType",
             "options": [{
                     "color": "green",
                     "label": "Incoming",
@@ -292,7 +292,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
                     "value": "OUTGOING"
                 }
             ],
-            "objectMetadataId": objectsNameIdMap.sms,
+            "objectMetadataId": objectsNameIdMap.textMessage,
             "type": "SELECT"
         }
 
@@ -377,7 +377,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
             "description": "",
             "label": "Message",
             "name": "message",
-            "objectMetadataId": objectsNameIdMap.sms,
+            "objectMetadataId": objectsNameIdMap.textMessage,
             "type": "TEXT"
         }
     },
@@ -404,7 +404,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
             "description": "",
             "label": "phoneNumber",
             "name": "phoneNumber",
-            "objectMetadataId": objectsNameIdMap.sms,
+            "objectMetadataId": objectsNameIdMap.textMessage,
             "type": "TEXT"
         }
     },
@@ -422,7 +422,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
             "description": "",
             "label": "TimeStamp",
             "name": "timestamp",
-            "objectMetadataId": objectsNameIdMap.sms,
+            "objectMetadataId": objectsNameIdMap.textMessage,
             "type": "DATE_TIME"
         }
     },
@@ -435,15 +435,15 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
             "type": "RAW_JSON"
         }
     },
-    //   {
-    //     "field": {
-    //       "description": "",
-    //       "label": "messageObjWithTimeStamp",
-    //       "name": "messageObjWithTimeStamp",
-    //       "objectMetadataId": objectsNameIdMap.whatsappMessage,
-    //       "type": "RAW_JSON"
-    //     }
-    //   },
+      {
+        "field": {
+          "description": "",
+          "label": "messageObjWithTimeStamp",
+          "name": "messageObjWithTimeStamp",
+          "objectMetadataId": objectsNameIdMap.whatsappMessage,
+          "type": "RAW_JSON"
+        }
+      },
     {
         "field": {
             "description": "",
@@ -759,15 +759,6 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
             "name": "remindCandidateDuration",
             "objectMetadataId": objectsNameIdMap.candidateReminder,
             "type": "TEXT"
-        }
-    },
-    {
-        "field": {
-            "description": "",
-            "label": "isReminderActive",
-            "name": "isReminderActive",
-            "objectMetadataId": objectsNameIdMap.candidateReminder,
-            "type": "BOOLEAN"
         }
     },
     {
@@ -1144,38 +1135,19 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
         "field": {
             "description": "Shortlists for Client",
             "icon": "IconInputSearch",
-            "label": "Name",
-            "name": "name",
+            "label": "Full Name",
+            "name": "fullName",
             "objectMetadataId": objectsNameIdMap.shortlist,
             "type": "TEXT"
         }
     },
-    {
-        "field": {
-            "description": "Shortlists for Client",
-            "icon": "IconInputSearch",
-            "label": "Name",
-            "name": "name",
-            "objectMetadataId": objectsNameIdMap.shortlist,
-            "type": "TEXT"
-        }
-    },
+
     {
         "field": {
             "description": "Shortlists for Client",
             "icon": "IconInputSearch",
             "label": "Age",
             "name": "age",
-            "objectMetadataId": objectsNameIdMap.shortlist,
-            "type": "TEXT"
-        }
-    },
-    {
-        "field": {
-            "description": "Shortlists for Client",
-            "icon": "IconInputSearch",
-            "label": "Name",
-            "name": "name",
             "objectMetadataId": objectsNameIdMap.shortlist,
             "type": "TEXT"
         }
@@ -1234,16 +1206,6 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
         "field": {
             "description": "Shortlists for Client",
             "icon": "IconInputSearch",
-            "label": "Full Name",
-            "name": "name",
-            "objectMetadataId": objectsNameIdMap.shortlist,
-            "type": "TEXT"
-        }
-    },
-    {
-        "field": {
-            "description": "Shortlists for Client",
-            "icon": "IconInputSearch",
             "label": "Current Location",
             "name": "currentLocation",
             "objectMetadataId": objectsNameIdMap.shortlist,
@@ -1255,7 +1217,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
             "description": "Shortlists for Client",
             "icon": "IconInputSearch",
             "label": "Current Role Description",
-            "name": "Current Role Description",
+            "name": "currentRoleDescription",
             "objectMetadataId": objectsNameIdMap.shortlist,
             "type": "TEXT"
         }
@@ -1349,7 +1311,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
             "icon": "IconLink",
             "label": "Interview Link",
             "name": "interviewLink",
-            "objectMetadataId": objectsNameIdMap.aIInterviewStatus,
+            "objectMetadataId": objectsNameIdMap.videoInterview,
             "type": "LINK"
         }
 
@@ -1360,7 +1322,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
             "icon": "IconLink",
             "label": "Interview Review Link",
             "name": "interviewReviewLink",
-            "objectMetadataId": objectsNameIdMap.aIInterviewStatus,
+            "objectMetadataId": objectsNameIdMap.videoInterview,
             "type": "LINK"
         }
 
@@ -1412,7 +1374,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
             "icon": "IconAdjustmentsQuestion",
             "label": "Interview Started",
             "name": "interviewStarted",
-            "objectMetadataId": objectsNameIdMap.aIInterviewStatus,
+            "objectMetadataId": objectsNameIdMap.videoInterview,
             "type": "BOOLEAN"
         }
 
@@ -1424,7 +1386,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
             "icon": "IconAdjustmentsCheck",
             "label": "Interview Completed",
             "name": "interviewCompleted",
-            "objectMetadataId": objectsNameIdMap.aIInterviewStatus,
+            "objectMetadataId": objectsNameIdMap.videoInterview,
             "type": "BOOLEAN"
         }
 
@@ -1436,7 +1398,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
             "icon": "IconCameraQuestion",
             "label": "Camera On",
             "name": "cameraOn",
-            "objectMetadataId": objectsNameIdMap.aIInterviewStatus,
+            "objectMetadataId": objectsNameIdMap.videoInterview,
             "type": "BOOLEAN"
         }
 
@@ -1448,20 +1410,11 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
             "icon": "IconMicrophone",
             "label": "Mic On",
             "name": "micOn",
-            "objectMetadataId": objectsNameIdMap.aIInterviewStatus,
+            "objectMetadataId": objectsNameIdMap.videoInterview,
             "type": "BOOLEAN"
         }
 
     },
-    //   {
-    //     "field": {
-    //       "description": "",
-    //       "label": "Object Metadata Id",
-    //       "name": "objectMetadataId",
-    //       "objectMetadataId": objectsNameIdMap.job,
-    //       "type": "TEXT"
-    //     }
-    //   },
 
 ]
 

@@ -19,7 +19,7 @@ export const objectCreationArr = [
             "namePlural": "whatsappTemplates"
         }
     },
-        {
+    {
         "object": {
             "description": "",
             "icon": "IconPrompt",
@@ -29,26 +29,7 @@ export const objectCreationArr = [
             "namePlural": "prompts"
         }
     },    
-        {
-        "object": {
-            "description": "",
-            "icon": "IconPrompt",
-            "labelPlural": "Phone Calls",
-            "labelSingular": "Phone Call",
-            "nameSingular": "phoneCall",
-            "namePlural": "phoneCalls"
-        }
-    },    
-        {
-        "object": {
-            "description": "",
-            "icon": "IconPrompt",
-            "labelPlural": "SMSes",
-            "labelSingular": "SMS",
-            "nameSingular": "sms",
-            "namePlural": "smses"
-        }
-    },    
+
     {
         "object": {
             "description": "",
@@ -97,46 +78,6 @@ export const objectCreationArr = [
             "labelSingular": "Screening",
             "nameSingular": "screening",
             "namePlural": "screenings"
-        }
-    },
-    {
-        "object": {
-            "description": "",
-            "icon": "IconUsersGroup",
-            "labelPlural": "RecruiterInterviews",
-            "labelSingular": "RecruiterInterview",
-            "nameSingular": "recruiterInterview",
-            "namePlural": "recruiterInterviews"
-        }
-    },
-    {
-        "object": {
-            "description": "",
-            "icon": "IconSend",
-            "labelPlural": "CVsents",
-            "labelSingular": "CVSent",
-            "nameSingular": "cvsent",
-            "namePlural": "cvSents"
-        }
-    },
-    {
-        "object": {
-            "description": "",
-            "icon": "IconMoodCheck",
-            "labelPlural": "ClientInterviews",
-            "labelSingular": "ClientInterview",
-            "nameSingular": "clientInterview",
-            "namePlural": "clientInterviews"
-        }
-    },
-    {
-        "object": {
-            "description": "",
-            "icon": "IconMoodCheck",
-            "labelPlural": "Interview Schedules",
-            "labelSingular": "Interview Schedule",
-            "nameSingular": "interviewSchedule",
-            "namePlural": "interviewSchedules"
         }
     },
     {
@@ -195,10 +136,10 @@ export const objectCreationArr = [
 
             "description": "",
             "icon": "IconActivity",
-            "labelPlural": "AI Interview Statuses",
-            "labelSingular": "AI Interview Status",
-            "nameSingular": "aIInterviewStatus",
-            "namePlural": "aIInterviewStatuses"
+            "labelPlural": "Video Interviews",
+            "labelSingular": "Video Interview",
+            "nameSingular": "videoInterview",
+            "namePlural": "videoInterviews"
         }
 
     },
@@ -227,19 +168,6 @@ export const objectCreationArr = [
         }
 
     },
-
-        {
-        "object": {
-            "description": "",
-            "icon": "IconChecklist",
-            "labelPlural": "Shortlists",
-            "labelSingular": "Shortlist",
-            "nameSingular": "shortlist",
-            "namePlural": "shortlists"
-
-        }
-
-    },
     {
         "object": {
             "description": "",
@@ -259,6 +187,78 @@ export const objectCreationArr = [
             "labelSingular": "AI Model",
             "nameSingular": "aIModel",
             "namePlural": "aIModels"
+        }
+    },
+        {
+        "object": {
+            "description": "",
+            "icon": "IconPrompt",
+            "labelPlural": "Phone Calls",
+            "labelSingular": "Phone Call",
+            "nameSingular": "phoneCall",
+            "namePlural": "phoneCalls"
+        }
+    },    
+        {
+        "object": {
+            "description": "",
+            "icon": "IconPrompt",
+            "labelPlural": "Text Messages",
+            "labelSingular": "Text Message",
+            "nameSingular": "textMessage",
+            "namePlural": "textMessages"
+        }
+    },    
+        {
+        "object": {
+            "description": "",
+            "icon": "IconChecklist",
+            "labelPlural": "Shortlists",
+            "labelSingular": "Shortlist",
+            "nameSingular": "shortlist",
+            "namePlural": "shortlists"
+
+        }
+
+    },
+        {
+        "object": {
+            "description": "",
+            "icon": "IconUsersGroup",
+            "labelPlural": "RecruiterInterviews",
+            "labelSingular": "RecruiterInterview",
+            "nameSingular": "recruiterInterview",
+            "namePlural": "recruiterInterviews"
+        }
+    },
+    {
+        "object": {
+            "description": "",
+            "icon": "IconSend",
+            "labelPlural": "CVsents",
+            "labelSingular": "CVSent",
+            "nameSingular": "cvSent",
+            "namePlural": "cvSents"
+        }
+    },
+    {
+        "object": {
+            "description": "",
+            "icon": "IconMoodCheck",
+            "labelPlural": "ClientInterviews",
+            "labelSingular": "ClientInterview",
+            "nameSingular": "clientInterview",
+            "namePlural": "clientInterviews"
+        }
+    },
+    {
+        "object": {
+            "description": "",
+            "icon": "IconMoodCheck",
+            "labelPlural": "Interview Schedules",
+            "labelSingular": "Interview Schedule",
+            "nameSingular": "interviewSchedule",
+            "namePlural": "interviewSchedules"
         }
     },
 ];

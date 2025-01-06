@@ -6,14 +6,14 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
       relation: {
         fromDescription: null,
         fromIcon: 'IconTie',
-        fromLabel: 'Jobs',
-        fromName: 'jobs',
+        fromLabel: 'Job',
+        fromName: 'job',
         fromObjectMetadataId: objectsNameIdMap.company,
         relationType: 'ONE_TO_MANY',
         toObjectMetadataId: objectsNameIdMap.job,
         toDescription: '',
-        toLabel: 'Companies',
-        toName: 'companies',
+        toLabel: 'Company',
+        toName: 'company',
       },
     },
     {
@@ -34,8 +34,8 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
       relation: {
         fromDescription: null,
         fromIcon: 'IconBuilding',
-        fromLabel: 'Jobs',
-        fromName: 'jobs',
+        fromLabel: 'Job',
+        fromName: 'job',
         fromObjectMetadataId: objectsNameIdMap.job,
         relationType: 'ONE_TO_MANY',
         toObjectMetadataId: objectsNameIdMap.prompt,
@@ -154,90 +154,7 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
         toName: 'people',
       },
     },
-    {
-      relation: {
-        fromDescription: null,
-        // "fromIcon": "IconBuilding",
-        fromLabel: 'Screenings',
-        fromName: 'screenings',
-        fromObjectMetadataId: objectsNameIdMap.candidate,
-        relationType: 'ONE_TO_MANY',
-        toObjectMetadataId: objectsNameIdMap.screening,
-        toDescription: '',
-        toLabel: 'Candidate',
-        toName: 'candidate',
-      },
-    },
-    {
-      relation: {
-        fromDescription: null,
-        // "fromIcon": "IconBuilding",
-        fromLabel: 'CVSents',
-        fromName: 'cvSents',
-        fromObjectMetadataId: objectsNameIdMap.job,
-        relationType: 'ONE_TO_MANY',
-        toObjectMetadataId: objectsNameIdMap.cvsent,
-        toDescription: '',
-        toLabel: 'Job',
-        toName: 'job',
-      },
-    },
-    {
-      relation: {
-        fromDescription: null,
-        // "fromIcon": "IconBuilding",
-        fromLabel: 'RecruiterInterviews',
-        fromName: 'recruiterInterviews',
-        fromObjectMetadataId: objectsNameIdMap.candidate,
-        relationType: 'ONE_TO_MANY',
-        toObjectMetadataId: objectsNameIdMap.recruiterInterview,
-        toDescription: '',
-        toLabel: 'Candidate',
-        toName: 'candidate',
-      },
-    },
-    {
-      relation: {
-        fromDescription: null,
-        // "fromIcon": "IconBuilding",
-        fromLabel: 'ClientInterviews',
-        fromName: 'clientInterviews',
-        fromObjectMetadataId: objectsNameIdMap.candidate,
-        relationType: 'ONE_TO_MANY',
-        toObjectMetadataId: objectsNameIdMap.clientInterview,
-        toDescription: '',
-        toLabel: 'Candidate',
-        toName: 'candidate',
-      },
-    },
-    {
-      relation: {
-        fromDescription: null,
-        // "fromIcon": "IconBuilding",
-        fromLabel: 'Interview Schedule',
-        fromName: 'interviewSchedule',
-        fromObjectMetadataId: objectsNameIdMap.job,
-        relationType: 'ONE_TO_MANY',
-        toObjectMetadataId: objectsNameIdMap.interviewSchedule,
-        toDescription: '',
-        toLabel: 'Job',
-        toName: 'job',
-      },
-    },
-    {
-      relation: {
-        fromDescription: null,
-        // "fromIcon": "IconBuilding",
-        fromLabel: 'Client Interview',
-        fromName: 'clientInterview',
-        fromObjectMetadataId: objectsNameIdMap.interviewSchedule,
-        relationType: 'ONE_TO_MANY',
-        toObjectMetadataId: objectsNameIdMap.clientInterview,
-        toDescription: '',
-        toLabel: 'Interview Schedule',
-        toName: 'interviewSchedule',
-      },
-    },
+  
     {
       relation: {
         fromDescription: null,
@@ -266,20 +183,7 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
         toName: 'person',
       },
     },
-    {
-      relation: {
-        fromDescription: null,
-        // "fromIcon": "IconBuilding",
-        fromLabel: 'WhatsappMessages',
-        fromName: 'whatsappMessages',
-        fromObjectMetadataId: objectsNameIdMap.candidate,
-        relationType: 'ONE_TO_MANY',
-        toObjectMetadataId: objectsNameIdMap.whatsappMessage,
-        toDescription: '',
-        toLabel: 'Candidate',
-        toName: 'candidate',
-      },
-    },
+
     {
       relation: {
         fromDescription: null,
@@ -294,76 +198,7 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
         toName: 'person',
       },
     },
-    {
-      relation: {
-        fromDescription: null,
-        // "fromIcon": "IconBuilding",
-        fromLabel: 'SMS',
-        fromName: 'sms',
-        fromObjectMetadataId: objectsNameIdMap.person,
-        relationType: 'ONE_TO_MANY',
-        toObjectMetadataId: objectsNameIdMap.sms,
-        toDescription: '',
-        toLabel: 'Person',
-        toName: 'person',
-      },
-    },
-    {
-      relation: {
-        fromDescription: null,
-        // "fromIcon": "IconBuilding",
-        fromLabel: 'PhoneCall',
-        fromName: 'phoneCall',
-        fromObjectMetadataId: objectsNameIdMap.person,
-        relationType: 'ONE_TO_MANY',
-        toObjectMetadataId: objectsNameIdMap.phoneCall,
-        toDescription: '',
-        toLabel: 'Person',
-        toName: 'person',
-      },
-    },
-    {
-      relation: {
-        fromDescription: null,
-        // "fromIcon": "IconBuilding",
-        fromLabel: 'Shortlists',
-        fromName: 'shortlists',
-        fromObjectMetadataId: objectsNameIdMap.candidate,
-        relationType: 'ONE_TO_MANY',
-        toObjectMetadataId: objectsNameIdMap.shortlist,
-        toDescription: '',
-        toLabel: 'Candidate',
-        toName: 'candidate',
-      },
-    },
-    {
-      relation: {
-        fromDescription: null,
-        // "fromIcon": "IconBuilding",
-        fromLabel: 'Shortlists',
-        fromName: 'shortlists',
-        fromObjectMetadataId: objectsNameIdMap.job,
-        relationType: 'ONE_TO_MANY',
-        toObjectMetadataId: objectsNameIdMap.shortlist,
-        toDescription: '',
-        toLabel: 'Job',
-        toName: 'job',
-      },
-    },
-    {
-      relation: {
-        fromDescription: null,
-        // "fromIcon": "IconBuilding",
-        fromLabel: 'Shortlists',
-        fromName: 'shortlists',
-        fromObjectMetadataId: objectsNameIdMap.cvsent,
-        relationType: 'ONE_TO_MANY',
-        toObjectMetadataId: objectsNameIdMap.shortlist,
-        toDescription: '',
-        toLabel: 'CVSents',
-        toName: 'cvSents',
-      },
-    },
+   
     {
       relation: {
         fromDescription: null,
@@ -392,20 +227,7 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
         toName: 'jobs',
       },
     },
-    {
-      relation: {
-        fromDescription: null,
-        // "fromIcon": "IconBuilding",
-        fromLabel: 'CandidateReminders',
-        fromName: 'candidateReminders',
-        fromObjectMetadataId: objectsNameIdMap.candidate,
-        relationType: 'ONE_TO_MANY',
-        toObjectMetadataId: objectsNameIdMap.candidateReminder,
-        toDescription: '',
-        toLabel: 'Candidate',
-        toName: 'candidate',
-      },
-    },
+
     {
       relation: {
         fromDescription: null,
@@ -434,20 +256,7 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
         toName: 'person',
       },
     },
-    {
-      relation: {
-        fromDescription: null,
-        // "fromIcon": "IconBuilding",
-        fromLabel: 'CVsents',
-        fromName: 'cvSents',
-        fromObjectMetadataId: objectsNameIdMap.candidate,
-        relationType: 'ONE_TO_MANY',
-        toObjectMetadataId: objectsNameIdMap.cvsent,
-        toDescription: '',
-        toLabel: 'Candidate',
-        toName: 'candidate',
-      },
-    },
+
     {
       relation: {
         fromDescription: null,
@@ -511,7 +320,22 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
         toName: 'aIInterviewQuestion',
       },
     },
-
+ 
+    {
+      relation: {
+        fromDescription: null,
+        fromIcon: 'IconPencilDown',
+        fromLabel: 'Responses',
+        fromName: 'responses',
+        fromObjectMetadataId: objectsNameIdMap.videoInterview,
+        relationType: 'ONE_TO_MANY',
+        toObjectMetadataId: objectsNameIdMap.response,
+        toIcon: 'IconActivity',
+        toDescription: '',
+        toLabel: 'Video Interview',
+        toName: 'videoInterview',
+      },
+    },
     {
       relation: {
         fromDescription: null,
@@ -527,6 +351,22 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
         toName: 'job',
       },
     },
+    {
+      relation: {
+        fromDescription: null,
+        fromIcon: 'IconActivity',
+        fromLabel: 'Video Interview',
+        fromName: 'videoInterview',
+        fromObjectMetadataId: objectsNameIdMap.aIInterview,
+        relationType: 'ONE_TO_MANY',
+        toObjectMetadataId: objectsNameIdMap.videoInterview,
+        toIcon: 'IconScan',
+        toDescription: '',
+        toLabel: 'AI Interview',
+        toName: 'aIInterview',
+      },
+    },
+
 
     {
       relation: {
@@ -541,6 +381,165 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
         toDescription: '',
         toLabel: 'Candidate',
         toName: 'candidate',
+      },
+    },
+    {
+      relation: {
+        fromDescription: null,
+        // "fromIcon": "IconBuilding",
+        fromLabel: 'WhatsappMessages',
+        fromName: 'whatsappMessages',
+        fromObjectMetadataId: objectsNameIdMap.candidate,
+        relationType: 'ONE_TO_MANY',
+        toObjectMetadataId: objectsNameIdMap.whatsappMessage,
+        toDescription: '',
+        toLabel: 'Candidate',
+        toName: 'candidate',
+      },
+    },
+    {
+      relation: {
+        fromDescription: null,
+        fromIcon: 'IconActivity',
+        fromLabel: 'Video Interview',
+        fromName: 'videoInterview',
+        fromObjectMetadataId: objectsNameIdMap.candidate,
+        relationType: 'ONE_TO_MANY',
+        toObjectMetadataId: objectsNameIdMap.videoInterview,
+        toIcon: 'IconUserStar',
+        toDescription: '',
+        toLabel: 'Candidate',
+        toName: 'candidate',
+      },
+    },
+    {
+      relation: {
+        fromDescription: null,
+        // "fromIcon": "IconBuilding",
+        fromLabel: 'CandidateReminders',
+        fromName: 'candidateReminders',
+        fromObjectMetadataId: objectsNameIdMap.candidate,
+        relationType: 'ONE_TO_MANY',
+        toObjectMetadataId: objectsNameIdMap.candidateReminder,
+        toDescription: '',
+        toLabel: 'Candidate',
+        toName: 'candidate',
+      },
+    },
+
+  {
+    relation: {
+      fromDescription: null,
+      // "fromIcon": "IconBuilding",
+      fromLabel: 'Screenings',
+      fromName: 'screenings',
+      fromObjectMetadataId: objectsNameIdMap.candidate,
+      relationType: 'ONE_TO_MANY',
+      toObjectMetadataId: objectsNameIdMap.screening,
+      toDescription: '',
+      toLabel: 'Candidate',
+      toName: 'candidate',
+    },
+  },
+  {
+    relation: {
+      fromDescription: null,
+      // "fromIcon": "IconBuilding",
+      fromLabel: 'RecruiterInterviews',
+      fromName: 'recruiterInterviews',
+      fromObjectMetadataId: objectsNameIdMap.candidate,
+      relationType: 'ONE_TO_MANY',
+      toObjectMetadataId: objectsNameIdMap.recruiterInterview,
+      toDescription: '',
+      toLabel: 'Candidate',
+      toName: 'candidate',
+    },
+  },
+  {
+    relation: {
+      fromDescription: null,
+      // "fromIcon": "IconBuilding",
+      fromLabel: 'ClientInterviews',
+      fromName: 'clientInterviews',
+      fromObjectMetadataId: objectsNameIdMap.candidate,
+      relationType: 'ONE_TO_MANY',
+      toObjectMetadataId: objectsNameIdMap.clientInterview,
+      toDescription: '',
+      toLabel: 'Candidate',
+      toName: 'candidate',
+    },
+  },
+  {
+    relation: {
+      fromDescription: null,
+      // "fromIcon": "IconBuilding",
+      fromLabel: 'CVsents',
+      fromName: 'cvSents',
+      fromObjectMetadataId: objectsNameIdMap.candidate,
+      relationType: 'ONE_TO_MANY',
+      toObjectMetadataId: objectsNameIdMap.cvSent,
+      toDescription: '',
+      toLabel: 'Candidate',
+      toName: 'candidate',
+    },
+  },
+  {
+    relation: {
+      fromDescription: null,
+      // "fromIcon": "IconBuilding",
+      fromLabel: 'Shortlists',
+      fromName: 'shortlists',
+      fromObjectMetadataId: objectsNameIdMap.candidate,
+      relationType: 'ONE_TO_MANY',
+      toObjectMetadataId: objectsNameIdMap.shortlist,
+      toDescription: '',
+      toLabel: 'Candidate',
+      toName: 'candidate',
+    },
+  },
+
+
+    {
+      relation: {
+        fromDescription: null,
+        // "fromIcon": "IconBuilding",
+        fromLabel: 'CVSents',
+        fromName: 'cvSents',
+        fromObjectMetadataId: objectsNameIdMap.job,
+        relationType: 'ONE_TO_MANY',
+        toObjectMetadataId: objectsNameIdMap.cvSent,
+        toDescription: '',
+        toLabel: 'Job',
+        toName: 'job',
+      },
+    },
+   
+    {
+      relation: {
+        fromDescription: null,
+        // "fromIcon": "IconBuilding",
+        fromLabel: 'Interview Schedule',
+        fromName: 'interviewSchedule',
+        fromObjectMetadataId: objectsNameIdMap.job,
+        relationType: 'ONE_TO_MANY',
+        toObjectMetadataId: objectsNameIdMap.interviewSchedule,
+        toDescription: '',
+        toLabel: 'Job',
+        toName: 'job',
+      },
+    },
+    {
+      relation: {
+        fromDescription: null,
+        // "fromIcon": "IconBuilding",
+        fromLabel: 'Client Interview',
+        fromName: 'clientInterview',
+        fromObjectMetadataId: objectsNameIdMap.interviewSchedule,
+        relationType: 'ONE_TO_MANY',
+        toObjectMetadataId: objectsNameIdMap.clientInterview,
+        toDescription: '',
+        toLabel: 'Interview Schedule',
+        toName: 'interviewSchedule',
       },
     },
     {
@@ -558,94 +557,63 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
         toName: 'person',
       },
     },
-
+   
+     {
+      relation: {
+        fromDescription: null,
+        // "fromIcon": "IconBuilding",
+        fromLabel: 'Text message',
+        fromName: 'textMessage',
+        fromObjectMetadataId: objectsNameIdMap.person,
+        relationType: 'ONE_TO_MANY',
+        toObjectMetadataId: objectsNameIdMap.textMessage,
+        toDescription: '',
+        toLabel: 'Person',
+        toName: 'person',
+      },
+    },
     {
       relation: {
         fromDescription: null,
-        fromIcon: 'IconPencilDown',
-        fromLabel: 'Responses',
-        fromName: 'responses',
-        fromObjectMetadataId: objectsNameIdMap.aIInterviewStatus,
+        // "fromIcon": "IconBuilding",
+        fromLabel: 'PhoneCall',
+        fromName: 'phoneCall',
+        fromObjectMetadataId: objectsNameIdMap.person,
         relationType: 'ONE_TO_MANY',
-        toObjectMetadataId: objectsNameIdMap.response,
-        toIcon: 'IconActivity',
+        toObjectMetadataId: objectsNameIdMap.phoneCall,
         toDescription: '',
-        toLabel: 'AI Interview Status',
-        toName: 'aIInterviewStatus',
+        toLabel: 'Person',
+        toName: 'person',
+      },
+    },
+    {
+      relation: {
+        fromDescription: null,
+        // "fromIcon": "IconBuilding",
+        fromLabel: 'Shortlists',
+        fromName: 'shortlists',
+        fromObjectMetadataId: objectsNameIdMap.job,
+        relationType: 'ONE_TO_MANY',
+        toObjectMetadataId: objectsNameIdMap.shortlist,
+        toDescription: '',
+        toLabel: 'Job',
+        toName: 'job',
+      },
+    },
+    {
+      relation: {
+        fromDescription: null,
+        // "fromIcon": "IconBuilding",
+        fromLabel: 'Shortlists',
+        fromName: 'shortlists',
+        fromObjectMetadataId: objectsNameIdMap.cvSent,
+        relationType: 'ONE_TO_MANY',
+        toObjectMetadataId: objectsNameIdMap.shortlist,
+        toDescription: '',
+        toLabel: 'CVSents',
+        toName: 'cvSents',
       },
     },
 
-    {
-      relation: {
-        fromDescription: null,
-        fromIcon: 'IconActivity',
-        fromLabel: 'AI Interview Status',
-        fromName: 'aIInterviewStatus',
-        fromObjectMetadataId: objectsNameIdMap.candidate,
-        relationType: 'ONE_TO_MANY',
-        toObjectMetadataId: objectsNameIdMap.aIInterviewStatus,
-        toIcon: 'IconUserStar',
-        toDescription: '',
-        toLabel: 'Candidate',
-        toName: 'candidate',
-      },
-    },
-    {
-      relation: {
-        fromDescription: null,
-        fromIcon: 'IconActivity',
-        fromLabel: 'AI Interview Status',
-        fromName: 'aIInterviewStatus',
-        fromObjectMetadataId: objectsNameIdMap.aIInterview,
-        relationType: 'ONE_TO_MANY',
-        toObjectMetadataId: objectsNameIdMap.aIInterviewStatus,
-        toIcon: 'IconScan',
-        toDescription: '',
-        toLabel: 'AI Interview',
-        toName: 'aIInterview',
-      },
-    },
-    //     {
-    //     "relation": {
-    //         "fromDescription": null,
-    //         // "fromIcon": "IconBuilding",
-    //         "fromLabel": "VoiceMessages",
-    //         "fromName": "voiceMessages",
-    //         "fromObjectMetadataId": objectsNameIdMap.job,
-    //         "relationType": "ONE_TO_MANY",
-    //         "toObjectMetadataId": objectsNameIdMap.voiceMessages,
-    //         "toDescription": "",
-    //         "toLabel": "Jobs",
-    //         "toName": "jobs"
-    //     }
-    // },
-    // {
-    //     "relation": {
-    //         "fromDescription": null,
-    //         // "fromIcon": "IconBuilding",
-    //         "fromLabel": "VoiceMessages",
-    //         "fromName": "voiceMessages",
-    //         "fromObjectMetadataId": objectsNameIdMap.workspaceMember,
-    //         "relationType": "ONE_TO_MANY",
-    //         "toObjectMetadataId": objectsNameIdMap.voiceMessages,
-    //         "toDescription": "",
-    //         "toLabel": "Recruiter",
-    //         "toName": "recruiter"
-    //     }
-    // },
-    // {
-    //     "relation": {
-    //         "fromDescription": null,
-    //         // "fromIcon": "IconBuilding",
-    //         "fromLabel": "VoiceMessages",
-    //         "fromName": "voiceMessages",
-    //         "fromObjectMetadataId": objectsNameIdMap.candidate,
-    //         "relationType": "ONE_TO_MANY",
-    //         "toObjectMetadataId": objectsNameIdMap.voiceMessages,
-    //         "toDescription": "",
-    //         "toLabel": "Candidate",
-    //         "toName": "candidate"
-    //     }
-    // },
   ];
 }
