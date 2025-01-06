@@ -1,9 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { JobService } from './job.service';
 import { PersonService } from './person.service';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { axiosRequest, axiosRequestForMetadata } from '../utils/utils';
-import { CreateManyCandidates } from '../graphql-queries';
+import { CreateManyCandidates, graphqlToFindManyJobByArxenaSiteId } from '../graphql-queries';
 import { processArxCandidate } from '../utils/data-transformation-utility';
 import * as CandidateSourcingTypes from '../types/candidate-sourcing-types';
 import { JobCandidateUtils } from '../utils/job-candidate-utils';
@@ -62,7 +61,6 @@ interface ProcessingContext {
 export class CandidateService {
 
   constructor(
-    private readonly jobService: JobService,
     private readonly personService: PersonService,
     private readonly workspaceQueryService: WorkspaceQueryService,
 
@@ -365,6 +363,54 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
   
     return { context, batchKey };
   }
+
+  async getJobDetails(jobId: string, jobName: string, apiToken: string): Promise<CandidateSourcingTypes.Jobs> {
+    function isValidMongoDBId(str: string) {
+      if (!str || str.length !== 32) {
+        return false;
+      }
+      const hexRegex = /^[0-9a-fA-F]{32}$/;
+      return hexRegex.test(str);
+    }
+
+    function isValidUUIDv4(str: string) {
+      const uuidV4Regex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+      return uuidV4Regex.test(str);
+    }
+
+    let graphlQlQuery: string;
+    if (isValidUUIDv4(jobId)) {
+      graphlQlQuery = JSON.stringify({
+        query: graphqlToFindManyJobByArxenaSiteId,
+        variables: {
+          filter: { id: { in: [jobId] } },
+          limit: 30,
+          orderBy: [{ position: 'AscNullsFirst' }],
+        },
+      });
+    } else if (isValidMongoDBId(jobId)) {
+      graphlQlQuery = JSON.stringify({
+        query: graphqlToFindManyJobByArxenaSiteId,
+        variables: {
+          filter: { arxenaSiteId: { in: [jobId] } },
+          limit: 30,
+          orderBy: [{ position: 'AscNullsFirst' }],
+        },
+      });
+    } else {
+      graphlQlQuery = JSON.stringify({
+        query: graphqlToFindManyJobByArxenaSiteId,
+        variables: {
+          filter: { name: { in: [jobName] } },
+          limit: 30,
+          orderBy: [{ position: 'AscNullsFirst' }],
+        },
+      });
+    }
+
+    const response = await axiosRequest(graphlQlQuery, apiToken);
+    return response.data?.data?.jobs?.edges[0]?.node;
+  }
   async processProfilesWithRateLimiting(
     data: CandidateSourcingTypes.UserProfile[],
     jobId: string,
@@ -380,7 +426,7 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
   }> {
     console.log("Queue has begun to be processed. ")
     try {
-      const jobObject = await this.jobService.getJobDetails(jobId, jobName, apiToken);
+      const jobObject = await this.getJobDetails(jobId, jobName, apiToken);
       if (!jobObject) {
         console.log('Job not found');
       }
