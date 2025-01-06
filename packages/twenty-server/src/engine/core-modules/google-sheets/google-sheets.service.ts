@@ -15,6 +15,36 @@ export class GoogleSheetsService {
     );
   }
 
+ async createSpreadsheetForJob(jobName: string, twentyToken:string): Promise<any> {
+    const auth = await this.loadSavedCredentialsIfExist(twentyToken);
+
+    const spreadsheetTitle = `${jobName} - Job Tracking`;
+    const spreadsheet = await this.createSpreadsheet(auth, spreadsheetTitle);
+    
+    // Initialize the spreadsheet with headers
+    const headers = [
+      ['Candidate Name', 'Email', 'Phone', 'Current Company', 'Current Title', 'Status', 'Notes']
+    ];
+    
+    console.log("Gong to create sheeet headers")
+    if (spreadsheet?.spreadsheetId) {
+      await this.updateValues(
+        auth,
+        spreadsheet?.spreadsheetId,
+        'Sheet1!A1:G1',
+        headers,
+        twentyToken
+      );
+    } else {
+      throw new Error('Spreadsheet ID is undefined');
+    }
+    console.log("This is the spreadsheet::", spreadsheet);
+    return {
+      googleSheetId: spreadsheet.spreadsheetId,
+      googleSheetUrl: "https://docs.google.com/spreadsheets/d/"+spreadsheet.spreadsheetId
+    };
+  }
+
   async loadSavedCredentialsIfExist(twenty_token: string) {
     const connectedAccountsResponse = await axios.request({
       method: "get",
@@ -25,6 +55,7 @@ export class GoogleSheetsService {
       },
     });
 
+    console.log("connectedAccountsResponse:", connectedAccountsResponse.data);
     if (connectedAccountsResponse?.data?.data?.connectedAccounts?.length > 0) {
       const connectedAccountToUse = connectedAccountsResponse.data.data.connectedAccounts
         .filter(x => x.handle === process.env.EMAIL_SMTP_USER)[0];
@@ -41,8 +72,7 @@ export class GoogleSheetsService {
         };
         return google.auth.fromJSON(credentials);
       } catch (err) {
-        console.error("Error loading credentials:", err);
-        return null;
+        console.log("Error loading credentials:", err);
       }
     }
   }
@@ -68,7 +98,8 @@ export class GoogleSheetsService {
     }
   }
 
-  async updateValues(auth, spreadsheetId: string, range: string, values: any[][]) {
+  async updateValues(auth, spreadsheetId: string, range: string, values: any[][],twenty_token:string) {
+    
     const sheets = google.sheets({ version: 'v4', auth });
 
     try {

@@ -291,7 +291,7 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
   private async processBatches(
     data: CandidateSourcingTypes.UserProfile[],
     jobObject: CandidateSourcingTypes.Jobs,
-    context: any,
+    // context: any,
     tracking: any,
     apiToken: string
   ): Promise<{
@@ -318,14 +318,14 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
   
       await this.processPeopleBatch(batch, uniqueStringKeys, results, tracking, apiToken);
       await this.processCandidatesBatch(batch, jobObject, results, tracking, apiToken);
-      await this.processJobCandidatesBatch(
-        batch,
-        jobObject,
-        context.jobCandidateInfo.path_position,
-        results,
-        tracking,
-        apiToken
-      );
+      // await this.processJobCandidatesBatch(
+      //   batch,
+      //   jobObject,
+      //   context.jobCandidateInfo.path_position,
+      //   results,
+      //   tracking,
+      //   apiToken
+      // );
   
       if (i + batchSize < data.length) {
         await delay(1000);
@@ -385,13 +385,11 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
         console.log('Job not found');
       }
   
-      const tracking = {
-        personIdMap: new Map<string, string>(),
-        candidateIdMap: new Map<string, string>()
-      };
+      const tracking = { personIdMap: new Map<string, string>(), candidateIdMap: new Map<string, string>() };
   
       const { context, batchKey } = await this.setupProcessingContext(jobObject, timestamp, data, apiToken);
-      const results = await this.processBatches(data, jobObject, context, tracking, apiToken);
+      // const results = await this.processBatches(data, jobObject, context, tracking, apiToken);
+      const results = await this.processBatches(data, jobObject, tracking, apiToken);
   
       // Cleanup context after processing is complete
       this.processingContexts.delete(batchKey);

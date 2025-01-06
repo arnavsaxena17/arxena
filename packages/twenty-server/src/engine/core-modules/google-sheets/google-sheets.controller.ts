@@ -13,6 +13,7 @@ export class GoogleSheetsController {
   ) {
     const twentyToken = authHeader.replace('Bearer ', '');
     const auth = await this.sheetsService.loadSavedCredentialsIfExist(twentyToken);
+    console.log("auth:", auth)
     return this.sheetsService.createSpreadsheet(auth, title);
   }
 
@@ -25,7 +26,7 @@ export class GoogleSheetsController {
   ) {
     const twentyToken = authHeader.replace('Bearer ', '');
     const auth = await this.sheetsService.loadSavedCredentialsIfExist(twentyToken);
-    return this.sheetsService.updateValues(auth, spreadsheetId, range, values);
+    return this.sheetsService.updateValues(auth, spreadsheetId, range, values, twentyToken);
   }
 
   @Get(':spreadsheetId/values/:range')

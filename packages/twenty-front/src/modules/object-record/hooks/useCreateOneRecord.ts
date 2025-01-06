@@ -48,7 +48,7 @@ export const useCreateOneRecord = <
 
       console.log("This is the jobName", jobName);
       const response = await axios.post(
-        process.env.NODE_ENV === 'production' ? 'https://app.arxena.com/app/candidate-sourcing/create-job-in-arxena' : 'http://localhost:3000/candidate-sourcing/create-job-in-arxena',
+        process.env.NODE_ENV === 'production' ? 'https://app.arxena.com/app/candidate-sourcing/create-job-in-arxena-and-sheets' : 'http://localhost:3000/candidate-sourcing/create-job-in-arxena-and-sheets',
         { job_name: jobName,new_job_id:arxenaJobId, id_to_update:jobId },
         { headers: { 'Authorization': `Bearer ${tokenPair?.accessToken?.token}`, 'Content-Type': 'application/json', }, }
       );

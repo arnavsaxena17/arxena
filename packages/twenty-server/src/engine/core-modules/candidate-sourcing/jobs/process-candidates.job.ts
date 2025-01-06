@@ -16,13 +16,7 @@ export class CandidateQueueProcessor {
   async handle(jobCandidateData:CandidateSourcingTypes.ProcessCandidatesJobData): Promise<void> {
     console.log('CandidateQueueProcessor handling job. Processing. Number of candidates to be processed:', jobCandidateData.data.length);
     try {
-      const {
-        data,
-        jobId,
-        jobName,
-        timestamp,
-        apiToken,
-      } = jobCandidateData;
+      const { data, jobId, jobName, timestamp, apiToken, } = jobCandidateData;
       console.log('Processing candidate data. NUumber of profiles are:', data.length);
       const result = await this.candidateService.processProfilesWithRateLimiting(data, jobId, jobName, timestamp, apiToken);
       console.log('Candidates processing handled successfully:');

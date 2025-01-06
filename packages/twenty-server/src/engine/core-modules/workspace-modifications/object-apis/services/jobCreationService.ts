@@ -2,6 +2,7 @@
 
 import axios from 'axios';
 import mongoose from 'mongoose';
+import { takeWhile } from 'rxjs';
 
 import { GoogleSheetsService } from 'src/engine/core-modules/google-sheets/google-sheets.service';
 
@@ -10,7 +11,7 @@ interface JobCreationResponse {
   jobId: string;
   arxenaJobId: string;
   arxenaResponse: any;
-  candidatesResponse: any;
+  // candidatesResponse: any;
   googleSheetId: string;
   googleSheetUrl: string;
 }
@@ -33,31 +34,7 @@ export class JobCreationService {
     this.sheetsService = sheetsService;
   }
 
-  private async createSpreadsheetForJob(jobName: string, auth: any): Promise<any> {
-    const spreadsheetTitle = `${jobName} - Job Tracking`;
-    const spreadsheet = await this.sheetsService.createSpreadsheet(auth, spreadsheetTitle);
-    
-    // Initialize the spreadsheet with headers
-    const headers = [
-      ['Candidate Name', 'Email', 'Phone', 'Current Company', 'Current Title', 'Status', 'Notes']
-    ];
-    
-    if (spreadsheet?.spreadsheetId) {
-      await this.sheetsService.updateValues(
-        auth,
-        spreadsheet?.spreadsheetId,
-        'Sheet1!A1:G1',
-        headers
-      );
-    } else {
-      throw new Error('Spreadsheet ID is undefined');
-    }
 
-    return {
-      googleSheetId: spreadsheet.spreadsheetId,
-      googleSheetUrl: spreadsheet.spreadsheetUrl
-    };
-  }
 
 
 
@@ -73,7 +50,6 @@ export class JobCreationService {
         operationName: "CreateOneJob",
         variables: {
           input: {
-            id: '7bf69cfb-19ad-42d8-935d-b552341cfb6a',
             name: jobName,
             position: "first"
           }
@@ -99,7 +75,7 @@ export class JobCreationService {
   private async createJobInArxena(jobName: string, newJobId: string, jobId: string): Promise<any> {
     const response = await axios.request({
       method: 'post',
-      url: `${this.baseUrl}/candidate-sourcing/create-job-in-arxena`,
+      url: `${this.baseUrl}/candidate-sourcing/create-job-in-arxena-and-sheets`,
       headers: {
         'Authorization': `Bearer ${this.apiToken}`,
         'Content-Type': 'application/json'
@@ -135,19 +111,18 @@ export class JobCreationService {
     twentyToken: string,
     arxenaJobId:string
   ): Promise<JobCreationResponse | undefined> {
+    let googleSheetId: string = '';
+    let googleSheetUrl: string = '';
     try {
       // Create new job
-      let googleSheetId: string = '';
-      let googleSheetUrl: string = '';  
       try {
-        let auth;
-        auth = await this.sheetsService.loadSavedCredentialsIfExist(twentyToken);
-        if (!auth) {
-          console.log('Failed to load Google credentials');
-        }
-        const spreadsheetData = await this.createSpreadsheetForJob(jobName, auth);
+
+        const auth = await this.sheetsService.loadSavedCredentialsIfExist(twentyToken);
+        const spreadsheetData = await this.sheetsService.createSpreadsheetForJob(jobName, twentyToken);
         googleSheetId = spreadsheetData.googleSheetId;
         googleSheetUrl = spreadsheetData.googleSheetUrl;
+
+        console.log("There is a candidate flow::", candidatesData);
         if (Array.isArray(candidatesData)) {
           const candidateRows = candidatesData.map(candidate => [
             candidate.name || '',
@@ -158,11 +133,14 @@ export class JobCreationService {
             'New',
             ''
           ]);
+          console.log("GOign to update some values::::", candidateRows);
           await this.sheetsService.updateValues(
-            auth,
+            auth, // Add the appropriate auth value here
             googleSheetId,
             'Sheet1!A2',
-            candidateRows
+            candidateRows,
+            twentyToken
+
           );
         }
       } catch (error) {
@@ -179,18 +157,18 @@ export class JobCreationService {
         arxenaJobId,
         jobId
       );
-      const candidateDataObj = JSON.stringify({
-        "data": candidatesData,
-        "job_id": arxenaJobId,     // Changed from jobId to job_id
-        "job_name": jobName        // Changed from jobName to job_name
-      });
+      // const candidateDataObj = JSON.stringify({
+      //   "data": candidatesData,
+      //   "job_id": arxenaJobId,     // Changed from jobId to job_id
+      //   "job_name": jobName        // Changed from jobName to job_name
+      // });
         // Post candidates
-      const candidatesResponse = await this.postCandidates(candidateDataObj);
+      // const candidatesResponse = await this.postCandidates(candidateDataObj);
       return {
         jobId,
         arxenaJobId,
         arxenaResponse,
-        candidatesResponse,
+        // candidatesResponse,
         googleSheetId,
         googleSheetUrl
       };

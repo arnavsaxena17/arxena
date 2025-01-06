@@ -250,12 +250,11 @@ export class CandidateSourcingController {
   
 
 
-  @Post('create-job-in-arxena')
+  @Post('create-job-in-arxena-and-sheets')
   @UseGuards(JwtAuthGuard)
   async createJobInArxena(@Req() req): Promise<any> {
     console.log('going to create job in arxena');
     const apiToken = req.headers.authorization.split(' ')[1];
-    const twentyToken = req.headers['twenty-token'];
   
     try {
       const url = process.env.ENV_NODE === 'production' ? 'https://arxena.com/create_new_job' : 'http://127.0.0.1:5050/create_new_job';
@@ -264,12 +263,12 @@ export class CandidateSourcingController {
         throw new Error('Missing required fields: job_name or new_job_id');
       }
   
-      let googlesheetId: string | null = null;
-      let googlesheetUrl: string | null = null;
+      let googleSheetId: string | null = null;
+      let googleSheetUrl: string | null = null;
   
       // Try to create Google Spreadsheet, but continue if it fails
       try {
-        const auth = await this.sheetsService.loadSavedCredentialsIfExist(twentyToken);
+        const auth = await this.sheetsService.loadSavedCredentialsIfExist(apiToken);
         if (auth) {
           const spreadsheetTitle = `${req.body.job_name} - Job Tracking`;
           console.log('Creating spreadsheet with title:', spreadsheetTitle);
@@ -284,14 +283,15 @@ export class CandidateSourcingController {
               auth,
               spreadsheet?.spreadsheetId,
               'Sheet1!A1:G1',
-              headers
+              headers,
+              apiToken // Assuming apiToken is the twenty_token
             );
           } else {
             console.log('Spreadsheet ID is undefined or null');
           }
   
-          googlesheetId = spreadsheet?.spreadsheetId ?? null;
-          googlesheetUrl = spreadsheet?.spreadsheetUrl ?? null;
+          googleSheetId = spreadsheet?.spreadsheetId ?? null;
+          googleSheetUrl = "https://docs.google.com/spreadsheets/d/"+spreadsheet?.spreadsheetId;
         }
       } catch (spreadsheetError) {
         console.log('Warning: Failed to create spreadsheet error:', spreadsheetError);
@@ -310,8 +310,8 @@ export class CandidateSourcingController {
             pathPosition: this.getJobCandidatePathPosition(req?.body?.job_name),
             arxenaSiteId: req.body.new_job_id,
             isActive: true,
-            ...(googlesheetId && { googlesheetId: googlesheetId }),
-            ...(googlesheetUrl && { googlesheetUrl: googlesheetUrl })
+            googleSheetUrl:{"label":googleSheetUrl, "value":googleSheetUrl},
+            ...(googleSheetId && { googleSheetId: googleSheetId }),
           },
         },
       });
@@ -326,16 +326,16 @@ export class CandidateSourcingController {
         { 
           job_name: req.body.job_name, 
           new_job_id: req.body.new_job_id,
-          googlesheetId,
-          googlesheetUrl
+          googleSheetId,
+          googleSheetUrl
         },
         { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiToken}` } },
       );
       
       return {
         ...response.data.data.createJob,
-        googlesheetId,
-        googlesheetUrl
+        googleSheetId,
+        googleSheetUrl
       };
     } catch (error) {
       console.log('Error in createJobInArxena:', error);
@@ -364,9 +364,7 @@ export class CandidateSourcingController {
         status: 'success',
         message: 'Candidate processing queued successfully',
         jobId: jobId
-      };
-  
-  
+      }
     } catch (error) {
       console.error('Error in sourceCandidates:', error);
       return { 

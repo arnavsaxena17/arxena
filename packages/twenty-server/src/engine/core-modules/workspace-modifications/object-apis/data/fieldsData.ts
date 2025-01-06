@@ -525,15 +525,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
             "type": "TEXT"
         }
     },
-    {
-        "field": {
-            "description": "",
-            "label": "googleSheetUrl",
-            "name": "googleSheetUrl",
-            "objectMetadataId": objectsNameIdMap.job,
-            "type": "TEXT"
-        }
-    },
+
     {
         "field": {
             "description": "",
@@ -1305,6 +1297,15 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
 
     },
 
+    {
+        "field": {
+            "description": "Link for Candidate Tracker Google Sheet",
+            "label": "Google Sheet Url",
+            "name": "googleSheetUrl",
+            "objectMetadataId": objectsNameIdMap.job,
+            "type": "LINK"
+        }
+    },
     {
         "field": {
             "description": "Link Shared with the candidate",
