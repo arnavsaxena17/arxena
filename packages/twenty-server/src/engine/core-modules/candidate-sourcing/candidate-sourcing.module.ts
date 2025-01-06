@@ -24,6 +24,7 @@ import { EmailService } from 'src/engine/integrations/email/email.service';
 import { AppToken } from 'src/engine/core-modules/app-token/app-token.entity';
 import { ProcessCandidatesService } from './jobs/process-candidates.service';
 import { CandidateQueueProcessor } from './jobs/process-candidates.job';
+import { GoogleSheetsService } from '../google-sheets/google-sheets.service';
 
 
 @Module({
@@ -40,6 +41,7 @@ import { CandidateQueueProcessor } from './jobs/process-candidates.job';
   providers: [
     JobService,
     PersonService,
+    GoogleSheetsService,
     ProcessCandidatesService,
     CandidateService,
     ChatService,

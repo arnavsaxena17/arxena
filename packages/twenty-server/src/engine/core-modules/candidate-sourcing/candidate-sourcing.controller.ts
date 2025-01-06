@@ -13,10 +13,12 @@ import { CandidateService } from './services/candidate.service';
 import { ChatService } from './services/chat.service';
 import { Enrichment } from '../workspace-modifications/object-apis/types/types';
 import { ProcessCandidatesService } from './jobs/process-candidates.service';
+import { GoogleSheetsService } from '../google-sheets/google-sheets.service';
 
 @Controller('candidate-sourcing')
 export class CandidateSourcingController {
   constructor(
+    private readonly sheetsService: GoogleSheetsService,
     private readonly jobService: JobService,
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly personService: PersonService,
@@ -252,22 +254,54 @@ export class CandidateSourcingController {
   @UseGuards(JwtAuthGuard)
   async createJobInArxena(@Req() req): Promise<any> {
     console.log('going to create job in arxena');
-    console.log('going to createprocess.env.ENV_NODE', process.env.ENV_NODE);
-    const apiToken = req.headers.authorization.split(' ')[1]; // Assuming Bearer token
-
+    const apiToken = req.headers.authorization.split(' ')[1];
+    const twentyToken = req.headers['twenty-token'];
+  
     try {
       const url = process.env.ENV_NODE === 'production' ? 'https://arxena.com/create_new_job' : 'http://127.0.0.1:5050/create_new_job';
-      console.log('url:', url);
+      
       if (!req?.body?.job_name || !req?.body?.new_job_id) {
         throw new Error('Missing required fields: job_name or new_job_id');
       }
-      console.log('job_name:', req.body.job_name);
-      console.log('new_job_id:', req.body.new_job_id);
-      console.log('id_to_update:', req.body.id_to_update);
-
-
+  
+      let googlesheetId: string | null = null;
+      let googlesheetUrl: string | null = null;
+  
+      // Try to create Google Spreadsheet, but continue if it fails
+      try {
+        const auth = await this.sheetsService.loadSavedCredentialsIfExist(twentyToken);
+        if (auth) {
+          const spreadsheetTitle = `${req.body.job_name} - Job Tracking`;
+          console.log('Creating spreadsheet with title:', spreadsheetTitle);
+          const spreadsheet = await this.sheetsService.createSpreadsheet(auth, spreadsheetTitle);
+          console.log("this   is spreadsheet:",spreadsheet) 
+          const headers = [
+            ['Candidate Name', 'Email', 'Phone', 'Current Company', 'Current Title', 'Status', 'Notes']
+          ];
+          
+          if (spreadsheet?.spreadsheetId) {
+            await this.sheetsService.updateValues(
+              auth,
+              spreadsheet?.spreadsheetId,
+              'Sheet1!A1:G1',
+              headers
+            );
+          } else {
+            console.log('Spreadsheet ID is undefined or null');
+          }
+  
+          googlesheetId = spreadsheet?.spreadsheetId ?? null;
+          googlesheetUrl = spreadsheet?.spreadsheetUrl ?? null;
+        }
+      } catch (spreadsheetError) {
+        console.log('Warning: Failed to create spreadsheet error:', spreadsheetError);
+        console.log('Warning: Failed to create spreadsheet:', spreadsheetError.message);
+        // Continue with job creation even if spreadsheet creation fails
+      }
+  
       await new Promise(resolve => setTimeout(resolve, 500));
-
+  
+      // Update job with spreadsheet info if available
       const graphqlToUpdateJob = JSON.stringify({
         query: UpdateOneJob,
         variables: {
@@ -276,22 +310,33 @@ export class CandidateSourcingController {
             pathPosition: this.getJobCandidatePathPosition(req?.body?.job_name),
             arxenaSiteId: req.body.new_job_id,
             isActive: true,
+            ...(googlesheetId && { googlesheetId: googlesheetId }),
+            ...(googlesheetUrl && { googlesheetUrl: googlesheetUrl })
           },
         },
       });
-
+  
       console.log('GraphQL request:', graphqlToUpdateJob);
-
+  
       const responseToUpdateJob = await axiosRequest(graphqlToUpdateJob, apiToken);
       console.log('Response from update job:', responseToUpdateJob.data);
-
+  
       const response = await axios.post(
         url,
-        { job_name: req.body.job_name, new_job_id: req.body.new_job_id },
+        { 
+          job_name: req.body.job_name, 
+          new_job_id: req.body.new_job_id,
+          googlesheetId,
+          googlesheetUrl
+        },
         { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiToken}` } },
       );
-      console.log('Response from create job', response?.data);
-      return response.data.data.createJob;
+      
+      return {
+        ...response.data.data.createJob,
+        googlesheetId,
+        googlesheetUrl
+      };
     } catch (error) {
       console.log('Error in createJobInArxena:', error);
       return { error: error.message };
@@ -444,9 +489,6 @@ export class CandidateSourcingController {
       return { error: error.message };
     }
   }
-
-  
-
 }
 
 

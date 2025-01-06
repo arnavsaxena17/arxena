@@ -42,10 +42,10 @@ export class JobCreationService {
       ['Candidate Name', 'Email', 'Phone', 'Current Company', 'Current Title', 'Status', 'Notes']
     ];
     
-    if (spreadsheet.spreadsheetId) {
+    if (spreadsheet?.spreadsheetId) {
       await this.sheetsService.updateValues(
         auth,
-        spreadsheet.spreadsheetId,
+        spreadsheet?.spreadsheetId,
         'Sheet1!A1:G1',
         headers
       );

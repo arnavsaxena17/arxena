@@ -61,10 +61,10 @@ export class GoogleSheetsService {
         requestBody: resource,
         fields: 'spreadsheetId,properties.title,sheets.properties',
       });
+      console.log('Spreadsheet created:', response.data);
       return response.data;
     } catch (error) {
-      console.error('Sheets API Error:', error.response?.data || error);
-      throw error;
+      console.log('Sheets API Error:', error.response?.data || error);
     }
   }
 
