@@ -82,8 +82,7 @@ export class GoogleSheetsService {
       });
       return response.data;
     } catch (error) {
-      console.error('Sheets API Error:', error.response?.data || error);
-      throw error;
+      console.log('Sheets API Error:', error.response?.data || error);
     }
   }
 

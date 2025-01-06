@@ -193,7 +193,7 @@ export const FindOneJob = `
         description
         name
         jobLocation
-        companiesId
+        companyId
         position
         id
 
@@ -214,7 +214,7 @@ export const graphqlToFindManyJobByArxenaSiteId = `
         createdAt
         name
         jobLocation
-        companiesId
+        companyId
         position
         id
       }

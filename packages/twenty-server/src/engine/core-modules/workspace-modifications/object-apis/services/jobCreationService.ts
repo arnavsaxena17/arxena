@@ -132,22 +132,45 @@ export class JobCreationService {
   public async executeJobCreationFlow(
     jobName: string, 
     candidatesData: any,
-    twentyToken: string
+    twentyToken: string,
+    arxenaJobId:string
   ): Promise<JobCreationResponse | undefined> {
     try {
       // Create new job
-      const auth = await this.sheetsService.loadSavedCredentialsIfExist(twentyToken);
-      if (!auth) {
-        throw new Error('Failed to load Google credentials');
+      let googleSheetId: string = '';
+      let googleSheetUrl: string = '';  
+      try {
+        let auth;
+        auth = await this.sheetsService.loadSavedCredentialsIfExist(twentyToken);
+        if (!auth) {
+          console.log('Failed to load Google credentials');
+        }
+        const spreadsheetData = await this.createSpreadsheetForJob(jobName, auth);
+        googleSheetId = spreadsheetData.googleSheetId;
+        googleSheetUrl = spreadsheetData.googleSheetUrl;
+        if (Array.isArray(candidatesData)) {
+          const candidateRows = candidatesData.map(candidate => [
+            candidate.name || '',
+            candidate.email || '',
+            candidate.phone || '',
+            candidate.currentCompany || '',
+            candidate.currentTitle || '',
+            'New',
+            ''
+          ]);
+          await this.sheetsService.updateValues(
+            auth,
+            googleSheetId,
+            'Sheet1!A2',
+            candidateRows
+          );
+        }
+      } catch (error) {
+        console.log('Error creating Google Spreadsheet:', error);
       }
 
       const jobId = await this.createNewJob(jobName);
       console.log("This is the jobId::", jobId);
-
-      const { googleSheetId, googleSheetUrl } = await this.createSpreadsheetForJob(jobName, auth);
-
-      // Generate new Arxena job ID
-      const arxenaJobId = '64b29dbdf9822851831e4de9'
 
 
       // Create job in Arxena
@@ -163,26 +186,6 @@ export class JobCreationService {
       });
         // Post candidates
       const candidatesResponse = await this.postCandidates(candidateDataObj);
-      if (Array.isArray(candidatesData)) {
-        const candidateRows = candidatesData.map(candidate => [
-          candidate.name || '',
-          candidate.email || '',
-          candidate.phone || '',
-          candidate.currentCompany || '',
-          candidate.currentTitle || '',
-          'New',
-          ''
-        ]);
-
-        await this.sheetsService.updateValues(
-          auth,
-          googleSheetId,
-          'Sheet1!A2',
-          candidateRows
-        );
-      }
-
-
       return {
         jobId,
         arxenaJobId,

@@ -10,5 +10,8 @@ export async function axiosRequest(data: string, apiToken: string) {
     },
     data: data,
   });
+  if (response.data.errors) {
+    console.log('Error axiosRequest', response.data);
+  }
   return response;
 }

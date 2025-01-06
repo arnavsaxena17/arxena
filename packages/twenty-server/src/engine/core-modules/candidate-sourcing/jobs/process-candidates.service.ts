@@ -10,32 +10,17 @@ export class ProcessCandidatesService {
     @InjectMessageQueue(MessageQueue.candidateQueue)
     private readonly messageQueueService: MessageQueueService,
 ) {}
-
-
   async send(data: CandidateSourcingTypes.UserProfile[],jobId:string, jobName: string, timestamp: string, apiToken: string): Promise<void> {
     try {
       console.log('Queueing candidate data:');
       await this.messageQueueService.add<CandidateSourcingTypes.ProcessCandidatesJobData>(
         CandidateQueueProcessor.name,
-        {
-          data,
-          jobId,
-          jobName,
-          timestamp,
-          apiToken,
-        }
-        ,
-        { 
-          retryLimit: 3,
-        },
+        { data, jobId, jobName, timestamp, apiToken, } ,
+        { retryLimit: 3, },
       );
     } catch (error) {
       console.log('Failed to queue candidate email:', error);
       throw error;
     }
   }
-
-  
 }
-
-

@@ -134,7 +134,7 @@ export class JobService {
           jobLocation: jobData?.jobLocation, 
           jobCode: jobData?.jobCode, 
           recruiterId: jobData?.recruiterId, 
-          companiesId: jobData?.companiesId 
+          companyId: jobData?.companyId 
         } 
       };
       

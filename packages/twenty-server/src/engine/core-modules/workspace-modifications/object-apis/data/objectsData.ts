@@ -148,10 +148,10 @@ export const objectCreationArr = [
         "object": {
             "description": "",
             "icon": "IconPencilDown",
-            "labelPlural": "Responses",
-            "labelSingular": "Response",
-            "nameSingular": "response",
-            "namePlural": "responses"
+            "labelPlural": "Video Interview Responses",
+            "labelSingular": "Video Interview Response",
+            "nameSingular": "videoInterviewResponse",
+            "namePlural": "videoInterviewResponses"
         }
 
     },
@@ -235,7 +235,7 @@ export const objectCreationArr = [
         "object": {
             "description": "",
             "icon": "IconSend",
-            "labelPlural": "CVsents",
+            "labelPlural": "CVSents",
             "labelSingular": "CVSent",
             "nameSingular": "cvSent",
             "namePlural": "cvSents"

@@ -358,13 +358,7 @@ export class CandidateSourcingController {
 
     try {
       // Process profiles and get all the necessary data
-      const jobIdProcesed = await this.processCandidatesService.send(
-        data,
-        jobId,
-        jobName,
-        timestamp,
-        apiToken
-      );
+      const jobIdProcesed = await this.processCandidatesService.send( data, jobId, jobName, timestamp, apiToken );
   
       return {
         status: 'success',
@@ -451,7 +445,7 @@ export class CandidateSourcingController {
       const apiToken = request.headers.authorization.split(' ')[1]; // Assuming Bearer token
       const data = request.body;
       console.log(request.body);
-      const graphqlVariables = { input: { name: data?.job_name, arxenaSiteId: data?.job_id, isActive: true, jobLocation: data?.jobLocation, jobCode: data?.jobCode, recruiterId: data?.recruiterId, companiesId: data?.companiesId } };
+      const graphqlVariables = { input: { name: data?.job_name, arxenaSiteId: data?.job_id, isActive: true, jobLocation: data?.jobLocation, jobCode: data?.jobCode, recruiterId: data?.recruiterId, companyId: data?.companyId } };
       const graphqlQueryObj = JSON.stringify({ query: CreateOneJob, variables: graphqlVariables });
       const responseNew = await axiosRequest(graphqlQueryObj, apiToken);
       console.log('Response from create job', responseNew.data);

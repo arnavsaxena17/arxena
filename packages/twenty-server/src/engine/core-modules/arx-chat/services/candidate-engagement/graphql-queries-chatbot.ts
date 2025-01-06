@@ -165,7 +165,7 @@ export const graphqlQueryToFindInterviewsByJobId = `query FindManyAIInterviews($
           recruiterId
           updatedAt
           arxenaSiteId
-          companiesId
+          companyId
           name
           position
           id
@@ -705,7 +705,7 @@ export const graphqlQueryToFindManyQuestionsByJobId = `query FindManyQuestions($
           jobs {
             recruiterId
             id
-            companiesId
+            companyId
             name
             position
             createdAt
