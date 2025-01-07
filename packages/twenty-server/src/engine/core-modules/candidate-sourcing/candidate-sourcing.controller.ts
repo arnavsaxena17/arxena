@@ -287,7 +287,7 @@ export class CandidateSourcingController {
           } else {
             console.log('Spreadsheet ID is undefined or null');
           }
-  
+  ""
           googleSheetId = spreadsheet?.spreadsheetId ?? null;
           googleSheetUrl = "https://docs.google.com/spreadsheets/d/"+spreadsheet?.spreadsheetId;
         }
@@ -308,7 +308,7 @@ export class CandidateSourcingController {
             pathPosition: this.getJobCandidatePathPosition(req?.body?.job_name),
             arxenaSiteId: req.body.new_job_id,
             isActive: true,
-            googleSheetUrl:{"label":googleSheetUrl, "value":googleSheetUrl},
+            googleSheetUrl:{"label":googleSheetUrl, "url":googleSheetUrl},
             ...(googleSheetId && { googleSheetId: googleSheetId }),
           },
         },

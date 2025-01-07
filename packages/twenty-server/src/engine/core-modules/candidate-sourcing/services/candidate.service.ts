@@ -12,6 +12,8 @@ import { createRelations } from '../../workspace-modifications/object-apis/servi
 import * as allGraphQLQueries from '../../arx-chat/services/candidate-engagement/graphql-queries-chatbot';
 import { CreateFieldsOnObject } from 'src/engine/core-modules/workspace-modifications/object-apis/data/createFields';
 import * as allDataObjects from '../../arx-chat/services/data-model-objects';
+import { GoogleSheetsService } from '../../google-sheets/google-sheets.service';
+import { GoogleAPIsProviderEnabledGuard } from '../../auth/guards/google-apis-provider-enabled.guard';
 
 
 
@@ -170,6 +172,9 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
   }
 
 
+  
+
+
   async batchCheckExistingCandidates(uniqueStringKeys: string[], jobId: string, apiToken: string): Promise<Map<string, any>> {
     const graphqlQuery = JSON.stringify({
       query: allGraphQLQueries.graphqlQueryToFindCandidateByUniqueKey,
@@ -286,12 +291,21 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
     return fields;
   }
 
-  private async processBatches(
+
+
+
+
+  // Utility Function
+
+
+
+private async processBatches(
     data: CandidateSourcingTypes.UserProfile[],
     jobObject: CandidateSourcingTypes.Jobs,
     // context: any,
     tracking: any,
-    apiToken: string
+    apiToken: string,
+    googleSheetId: string
   ): Promise<{
     manyPersonObjects: CandidateSourcingTypes.ArxenaPersonNode[];
     manyCandidateObjects: CandidateSourcingTypes.ArxenaCandidateNode[];
@@ -307,6 +321,8 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
   
     const batchSize = 15;
     const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+    const googleSheetsService = new GoogleSheetsService();
+
   
     for (let i = 0; i < data.length; i += batchSize) {
       const batch = data.slice(i, i + batchSize);
@@ -314,6 +330,7 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
   
       if (uniqueStringKeys.length === 0) continue;
   
+      await googleSheetsService.processGoogleSheetBatch(batch, results, tracking, apiToken, googleSheetId);
       await this.processPeopleBatch(batch, uniqueStringKeys, results, tracking, apiToken);
       await this.processCandidatesBatch(batch, jobObject, results, tracking, apiToken);
       // await this.processJobCandidatesBatch(
@@ -427,18 +444,20 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
     console.log("Queue has begun to be processed. ")
     try {
       const jobObject = await this.getJobDetails(jobId, jobName, apiToken);
+      console.log("This is the josb:", jobObject)
       if (!jobObject) {
         console.log('Job not found');
       }
+      const googleSheetId = jobObject?.googleSheetId || '';
   
       const tracking = { personIdMap: new Map<string, string>(), candidateIdMap: new Map<string, string>() };
   
-      const { context, batchKey } = await this.setupProcessingContext(jobObject, timestamp, data, apiToken);
+      // const { context, batchKey } = await this.setupProcessingContext(jobObject, timestamp, data, apiToken);
       // const results = await this.processBatches(data, jobObject, context, tracking, apiToken);
-      const results = await this.processBatches(data, jobObject, tracking, apiToken);
+      const results = await this.processBatches(data, jobObject, tracking, apiToken, googleSheetId);
   
       // Cleanup context after processing is complete
-      this.processingContexts.delete(batchKey);
+      // this.processingContexts.delete(batchKey);
   
       return { ...results, timestamp };
     } catch (error) {

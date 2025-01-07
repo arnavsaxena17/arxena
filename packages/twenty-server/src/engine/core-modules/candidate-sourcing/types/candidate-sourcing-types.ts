@@ -1,14 +1,43 @@
-interface Name {
+export interface Name {
   firstName: string | null;
   lastName: string | null;
 }
 
-interface Industry {
+export interface Industry {
   name: string | null;
   is_primary: boolean | null;
 }
 
+// Type definitions
+export enum Gender {
+  MALE = 'Male',
+  FEMALE = 'Female',
+  OTHER = 'Other',
+  NA = 'NA'
+}
 
+export enum MaritalStatus {
+  MARRIED = 'Married',
+  SINGLE = 'Single',
+  NA = 'NA'
+}
+
+export enum NoticeStatus {
+  IMMEDIATE = '15 Days or less',
+  ONE_MONTH = '1 Months',
+  TWO_MONTHS = '2 Months',
+  THREE_MONTHS = '3 Months',
+  SERVING = 'Serving Notice Period',
+  NA = 'NA'
+}
+
+export interface ColumnDefinition {
+  key: string;
+  header: string;
+  type: 'string' | 'number' | 'date' | 'enum' | 'boolean' | 'array' | 'url';
+  enum?: any;
+  format?: (value: any) => string;
+}
 export interface ProcessCandidatesJobData {
   data: UserProfile[];
   jobId: string;
@@ -16,6 +45,155 @@ export interface ProcessCandidatesJobData {
   timestamp: any;
   apiToken: any;
 }
+
+
+export const columnDefinitions: ColumnDefinition[] = [
+  {
+    key: 'full_name',
+    header: 'Candidate Name',
+    type: 'string',
+    format: (value: string) => value?.trim() || ''
+  },
+  {
+    key: 'email_address',
+    header: 'Email',
+    type: 'array',
+    format: (value: string[]) => Array.isArray(value) ? value[0] || '' : value || ''
+  },
+  {
+    key: 'phone_numbers',
+    header: 'Phone',
+    type: 'array',
+    format: (value: string[]) => Array.isArray(value) ? value[0] || '' : value || ''
+  },
+  {
+    key: 'job_title',
+    header: 'Current Title',
+    type: 'string'
+  },
+  {
+    key: 'job_company_name',
+    header: 'Current Company',
+    type: 'string'
+  },
+  {
+    key: 'location_name',
+    header: 'Location',
+    type: 'string'
+  },
+  {
+    key: 'birth_date',
+    header: 'Date of Birth',
+    type: 'date',
+    format: (value: string) => {
+      try {
+        return value ? new Date(value).toISOString().split('T')[0] : '';
+      } catch {
+        return '';
+      }
+    }
+  },
+  {
+    key: 'age',
+    header: 'Age',
+    type: 'number',
+    format: (value: number) => value?.toString() || '0'
+  },
+  {
+    key: 'gender',
+    header: 'Gender',
+    type: 'enum',
+    enum: Gender,
+    format: (value: string) => Object.values(Gender).includes(value as Gender) ? value : Gender.NA
+  },
+  {
+    key: 'marital_status',
+    header: 'Marital Status',
+    type: 'enum',
+    enum: MaritalStatus,
+    format: (value: string) => Object.values(MaritalStatus).includes(value as MaritalStatus) ? value : MaritalStatus.NA
+  },
+  {
+    key: 'inferred_salary',
+    header: 'Expected Salary (LPA)',
+    type: 'number',
+    format: (value: number) => value ? value.toFixed(2) : '0'
+  },
+  {
+    key: 'inferred_years_experience',
+    header: 'Total Experience',
+    type: 'string'
+  },
+  {
+    key: 'notice_period',
+    header: 'Notice Period',
+    type: 'enum',
+    enum: NoticeStatus,
+    format: (value: string) => Object.values(NoticeStatus).includes(value as NoticeStatus) ? value : NoticeStatus.NA
+  },
+  {
+    key: 'key_skills',
+    header: 'Key Skills',
+    type: 'string',
+    format: (value: string) => value?.replace(/,/g, ';') || '' // Replace commas with semicolons to avoid CSV issues
+  },
+  {
+    key: 'education_course_ug',
+    header: 'UG Degree',
+    type: 'string'
+  },
+  {
+    key: 'education_institute_ug',
+    header: 'UG Institute',
+    type: 'string'
+  },
+  {
+    key: 'ug_graduation_year',
+    header: 'UG Year',
+    type: 'number',
+    format: (value: number) => value > 1950 && value < 2030 ? value.toString() : ''
+  },
+  {
+    key: 'education_course_pg',
+    header: 'PG Degree',
+    type: 'string'
+  },
+  {
+    key: 'education_institute_pg',
+    header: 'PG Institute',
+    type: 'string'
+  },
+  {
+    key: 'pg_graduation_year',
+    header: 'PG Year',
+    type: 'number',
+    format: (value: number) => value > 1950 && value < 2030 ? value.toString() : ''
+  },
+  {
+    key: 'profile_url',
+    header: 'Profile URL',
+    type: 'url',
+    format: (value: string) => value || ''
+  },
+  {
+    key: 'status',
+    header: 'Status',
+    type: 'string',
+    format: () => 'New'
+  },
+  {
+    key: 'notes',
+    header: 'Notes',
+    type: 'string',
+    format: () => ''
+  },
+  {
+    key: 'unique_key_string',
+    header: 'UniqueKey',
+    type: 'string'
+  }
+];
+
 
 interface Profile {
   title: string;
@@ -25,7 +203,7 @@ interface Profile {
   url: string;
 }
 
-interface Application {
+export interface Application {
   job_ids: string;
   job_name: string;
   user_id: string;
@@ -106,6 +284,12 @@ interface SocialProfiles {
 }
 
 export interface UserProfile {
+  [x: string]: any;
+  education_course_pg: any;
+  education_institute_ug: string;
+  education_course_ug: string;
+  key_skills: string;
+  notice_period: string;
   names: Name;
   id: string | null;
   first_name: string;
@@ -229,26 +413,26 @@ export interface ArxenaJobCandidateNode {
   id?: string;
   profileUrl:{label:string, url:string};
   displayPicture:{label:string, url:string};
-  // educationUgYear?: number;
-  // educationUgSpecialization?: string;
-  // educationUgCourse?: string;
+  educationUgYear?: number;
+  educationUgSpecialization?: string;
+  educationUgCourse?: string;
   birthDate?: string;
   age?: number;
 
-  // inferredSalary?: number;
+  inferredSalary?: number;
   gender?: string;
-  // inferredYearsExperience?: string;
-  // homeTown?: string;
+  inferredYearsExperience?: string;
+  homeTown?: string;
 
-  // ugInstituteName: string;
-  // ugGraduationYear: number;
-  // pgGradudationDegree: string;
-  // ugGraduationDegree: string;
-  // pgGraduationYear: number;
+  ugInstituteName: string;
+  ugGraduationYear: number;
+  pgGradudationDegree: string;
+  ugGraduationDegree: string;
+  pgGraduationYear: number;
   resumeHeadline: string;
-  // industry: string;
+  industry: string;
   maritalStatus?: string;
-  // educationUgInstitute?: string;
+  educationUgInstitute?: string;
   profileTitle: string;
   name?: string;
   linkedinLink?: string;
@@ -259,16 +443,16 @@ export interface ArxenaJobCandidateNode {
   jsUserName?: string;
   keySkills?: string;
   focusedSkills?: string;
-  // currentLocation?: string;
-  // preferredLocations?: string;
-  // noticePeriod?: string;
-  // modifyDateLabel?: string;
-  // experienceYears?: string;
-  // experienceMonths?: number;
-  // currentDesignation?: string;
-  // currentOrganization?: string;
-  // previousDesignation?: string;
-  // previousOrganization?: string;
+  currentLocation?: string;
+  preferredLocations?: string;
+  noticePeriod?: string;
+  modifyDateLabel?: string;
+  experienceYears?: string;
+  experienceMonths?: number;
+  currentDesignation?: string;
+  currentOrganization?: string;
+  previousDesignation?: string;
+  previousOrganization?: string;
   personId?: string;
   jobId?: string;
   candidateId?: string;
@@ -333,6 +517,7 @@ export interface ArxenaPersonNode {
 }
 
 export interface Jobs {
+  googleSheetId?: string;
   name: string;
   id: string;
   recruiterId: string;

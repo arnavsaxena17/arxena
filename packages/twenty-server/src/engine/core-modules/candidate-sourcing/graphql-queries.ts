@@ -214,6 +214,7 @@ export const graphqlToFindManyJobByArxenaSiteId = `
         createdAt
         name
         jobLocation
+        googleSheetId
         companyId
         position
         id
