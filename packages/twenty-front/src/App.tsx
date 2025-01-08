@@ -78,7 +78,8 @@ import { Tasks } from '~/pages/tasks/Tasks';
 import { Chats } from '~/pages/chats/Chats';
 import { getPageTitleFromPath } from '~/utils/title-utils';
 import VideoInterviewResponseViewer  from '@/ai-interview/interview-response/VideoInterviewResponseViewer';
-import AIInterviewFlow from '@/ai-interview/interview-response/AIInterviewFlow'
+import GoogleSheet  from '@/google-sheet/GoogleSheet';
+import AIInterviewFlow from '@/ai-interview/interview-response/AIInterviewFlow';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 // const AIInterviewFlow = lazy(() => import('@/ai-interview/interview-response/AIInterviewFlow'));
 // const VideoInterviewResponseViewer = lazy(() => import('@/ai-interview/interview-response/VideoInterviewResponseViewer'));
@@ -146,6 +147,10 @@ const createRouter = (isBillingEnabled?: boolean) =>
             <Route
               path={`${AppPath.VideoInterview}/*`}
               element={<AIInterviewFlow interviewId={window.location.pathname} />}
+            />
+            <Route
+              path={`${AppPath.GoogleSheet}/*`}
+              element={<GoogleSheet />}
             />
             <Route
               path={`${AppPath.VideoInterview}/:candidateId`}

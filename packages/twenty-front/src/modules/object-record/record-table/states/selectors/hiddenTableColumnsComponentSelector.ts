@@ -14,10 +14,13 @@ export const hiddenTableColumnsComponentSelector =
         const availableColumns = get(
           availableTableColumnsComponentState({ scopeId }),
         );
+        console.log("tableColumns::", tableColumns)
+        console.log("availableColumnsavailableColumns::", availableColumns)
         const tableColumnsByKey = useMemo(() => 
           mapArrayToObject(tableColumns, ({ fieldMetadataId }) => fieldMetadataId),
           [tableColumns]
         );
+        console.log("tableColumnsByKey::", tableColumnsByKey)
             const hiddenColumns = availableColumns
           .filter(
             ({ fieldMetadataId }) =>
@@ -32,6 +35,7 @@ export const hiddenTableColumnsComponentSelector =
               isVisible: false,
             };
           });
+          console.log("All hidden columns:", hiddenColumns);
 
         return hiddenColumns;
       },

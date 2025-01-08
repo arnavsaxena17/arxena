@@ -41,6 +41,7 @@ export const useLoadRecordIndexTable = (objectNameSingular: string) => {
   const params = useFindManyParams(objectNameSingular);
 
   const recordGqlFields = useRecordTableRecordGqlFields({ objectMetadataItem });
+  console.log("recordGqlFieldsrecordGqlFields:", recordGqlFields)
 
   const { records, loading, totalCount, fetchMoreRecords, queryStateIdentifier, refetchRecords } = useFindManyRecords({
     ...params,
@@ -53,7 +54,8 @@ export const useLoadRecordIndexTable = (objectNameSingular: string) => {
       setIsRecordTableInitialLoading(false);
     },
   });
-
+  
+  console.log("all records that we find:", records)
   const [, setRefetchFunction] = useRecoilState(refetchFunctionAtom);
 
   useEffect(() => {

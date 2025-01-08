@@ -171,10 +171,6 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
   }
   }
 
-
-  
-
-
   async batchCheckExistingCandidates(uniqueStringKeys: string[], jobId: string, apiToken: string): Promise<Map<string, any>> {
     const graphqlQuery = JSON.stringify({
       query: allGraphQLQueries.graphqlQueryToFindCandidateByUniqueKey,
@@ -306,6 +302,7 @@ private async processBatches(
     tracking: any,
     apiToken: string,
     googleSheetId: string
+
   ): Promise<{
     manyPersonObjects: CandidateSourcingTypes.ArxenaPersonNode[];
     manyCandidateObjects: CandidateSourcingTypes.ArxenaCandidateNode[];
@@ -319,24 +316,25 @@ private async processBatches(
       manyJobCandidateObjects: [] as CandidateSourcingTypes.ArxenaJobCandidateNode[]
     };
   
+    console.log("This is the job object in processBatches:", jobObject);
     const batchSize = 15;
     const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-    const googleSheetsService = new GoogleSheetsService();
-
+    // const googleSheetsService = new GoogleSheetsService();
   
+    console.log("Google SheetID:", googleSheetId);
     for (let i = 0; i < data.length; i += batchSize) {
       const batch = data.slice(i, i + batchSize);
       const uniqueStringKeys = batch.map(p => p?.unique_key_string).filter(Boolean);
   
       if (uniqueStringKeys.length === 0) continue;
   
-      await googleSheetsService.processGoogleSheetBatch(batch, results, tracking, apiToken, googleSheetId);
+      // await googleSheetsService.processGoogleSheetBatch(batch, results, tracking, apiToken, googleSheetId, jobObject);
       await this.processPeopleBatch(batch, uniqueStringKeys, results, tracking, apiToken);
       await this.processCandidatesBatch(batch, jobObject, results, tracking, apiToken);
       // await this.processJobCandidatesBatch(
       //   batch,
       //   jobObject,
-      //   context.jobCandidateInfo.path_position,
+      //   // context.jobCandidateInfo.path_position,
       //   results,
       //   tracking,
       //   apiToken
@@ -382,6 +380,8 @@ private async processBatches(
   }
 
   async getJobDetails(jobId: string, jobName: string, apiToken: string): Promise<CandidateSourcingTypes.Jobs> {
+    console.log("This is the jobID:", jobId);
+    console.log("This is the jobName:", jobName);
     function isValidMongoDBId(str: string) {
       if (!str || str.length !== 32) {
         return false;
@@ -397,6 +397,7 @@ private async processBatches(
 
     let graphlQlQuery: string;
     if (isValidUUIDv4(jobId)) {
+      console.log("Choosing the jobID:", jobId);
       graphlQlQuery = JSON.stringify({
         query: graphqlToFindManyJobByArxenaSiteId,
         variables: {
@@ -406,6 +407,7 @@ private async processBatches(
         },
       });
     } else if (isValidMongoDBId(jobId)) {
+      console.log("Choosing the jobID:", jobId);
       graphlQlQuery = JSON.stringify({
         query: graphqlToFindManyJobByArxenaSiteId,
         variables: {
@@ -415,6 +417,7 @@ private async processBatches(
         },
       });
     } else {
+      console.log("Choosing the jobName:", jobName);
       graphlQlQuery = JSON.stringify({
         query: graphqlToFindManyJobByArxenaSiteId,
         variables: {
@@ -426,6 +429,7 @@ private async processBatches(
     }
 
     const response = await axiosRequest(graphlQlQuery, apiToken);
+    console.log("These are teje jobs:", response.data?.data);
     return response.data?.data?.jobs?.edges[0]?.node;
   }
   async processProfilesWithRateLimiting(
@@ -591,7 +595,7 @@ private async processBatches(
   private async processJobCandidatesBatch(
     batch: CandidateSourcingTypes.UserProfile[],
     jobObject: CandidateSourcingTypes.Jobs,
-    path_position: string,
+    // path_position: string,
     results: any,
     tracking: any,
     apiToken: string
@@ -664,6 +668,7 @@ private async processBatches(
     console.log("Job candidates to create:", jobCandidatesToCreate.length);
 
     if (jobCandidatesToCreate.length > 0) {
+          const path_position = JobCandidateUtils.getJobCandidatePathPosition(jobObject.name, jobObject?.arxenaSiteId);
         const query = await new JobCandidateUtils().generateJobCandidatesMutation(path_position);
         const graphqlInput = JSON.stringify({
             query,

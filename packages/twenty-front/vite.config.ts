@@ -72,15 +72,37 @@ export default defineConfig(({ command, mode }) => {
             });
             }  
         },
+
+        // '/google-sheets': {
+        //   target: 'https://docs.google.com',
+        //   changeOrigin: true,
+        //   secure: false,
+        //   configure: (proxy, options) => {
+        //     proxy.on('error', (err, req, res) => {
+        //       console.error('Google Sheets Proxy error:', err);
+        //     });
+        //     proxy.on('proxyRes', (proxyRes, req, res) => {
+        //       proxyRes.headers['Access-Control-Allow-Origin'] = '*';
+        //       delete proxyRes.headers['Cross-Origin-Embedder-Policy'];
+        //       delete proxyRes.headers['Cross-Origin-Resource-Policy'];
+        //     });
+        //   }
+        // }
+    
+        
       },
-          headers: {
-      // Remove COEP headers for development
-      'Cross-Origin-Embedder-Policy': 'credentialless',
-      'Cross-Origin-Opener-Policy': 'same-origin'
-    }
+      
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Cross-Origin-Embedder-Policy': 'unsafe-none',  // This is key for embedding Google content
+        'Cross-Origin-Resource-Policy': 'cross-origin',
+        'Cross-Origin-Opener-Policy': 'unsafe-none'
+      }
+    
 
   
     },
+    
 
     plugins: [
       react({ jsxImportSource: '@emotion/react' }),

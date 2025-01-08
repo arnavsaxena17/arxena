@@ -9,6 +9,7 @@ export const getObjectMetadataIdentifierFields = ({
   const labelIdentifierFieldMetadataItem =
     getLabelIdentifierFieldMetadataItem(objectMetadataItem);
 
+  console.log("getLabelIdentifierFieldMetadataItem", labelIdentifierFieldMetadataItem);
   const imageIdentifierFieldMetadataItem = objectMetadataItem.fields.find(
     (field) => field.id === objectMetadataItem.imageIdentifierFieldMetadataId,
   );

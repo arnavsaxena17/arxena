@@ -88,12 +88,32 @@ const bootstrap = async () => {
   // Create the env-config.js of the front at runtime
   generateFrontConfig();
 
+  // app.enableCors({
+  //   // origin: ['http://localhost:3001', 'http://127.0.0.1:3001'],
+  //   origin: true, // During development, you can use this to accept all origins
+
+  //   methods: 'GET,POST,PUT,DELETE,OPTIONS,HEAD,PATCH',
+  //   allowedHeaders: 'Content-Type, Authorization, x-schema-version',
+  //   credentials: true,
+  // });
+
   app.enableCors({
-    origin: ['http://localhost:3001', 'http://127.0.0.1:3001'],
-    methods: 'GET,POST,PUT,DELETE,OPTIONS,HEAD,PATCH',
-    allowedHeaders: 'Content-Type, Authorization, x-schema-version',
+    origin: [
+      'http://localhost:3001',
+      'http://127.0.0.1:3001',
+      'https://docs.google.com',
+      'https://drive.google.com'
+    ],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'HEAD', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-schema-version'],
     credentials: true,
   });
+
+  app.use((req, res, next) => {
+    res.header('Cross-Origin-Embedder-Policy', 'unsafe-none');
+    next();
+  });
+  
 
   app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
   app.use(json({ limit: '50mb' }));

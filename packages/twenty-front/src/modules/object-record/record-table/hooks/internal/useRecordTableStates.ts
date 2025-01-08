@@ -37,6 +37,8 @@ export const useRecordTableStates = (recordTableId?: string) => {
     getScopeIdOrUndefinedFromComponentId(recordTableId),
   );
 
+  // console.log("scopeId for useRecordTableStates", scopeId);
+
   return {
     scopeId,
     availableTableColumnsState: extractComponentState(

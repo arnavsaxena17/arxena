@@ -119,6 +119,7 @@ export class JobCreationService {
 
         const auth = await this.sheetsService.loadSavedCredentialsIfExist(twentyToken);
         const spreadsheetData = await this.sheetsService.createSpreadsheetForJob(jobName, twentyToken);
+        console.log("This is the spreadsheetData::", spreadsheetData);
         googleSheetId = spreadsheetData.googleSheetId;
         googleSheetUrl = spreadsheetData.googleSheetUrl;
 

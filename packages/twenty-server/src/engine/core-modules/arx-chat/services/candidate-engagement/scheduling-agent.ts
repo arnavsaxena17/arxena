@@ -40,7 +40,7 @@ export class TasksService {
       this.isProcessing = true;
       // this.logger.log("Evert 5 seconds check Candidate Engagement is called");
       console.log('Starting CRON CYCLE');
-      await this.runWorkspaceServiceCandidateEngagement();
+      // await this.runWorkspaceServiceCandidateEngagement();
       if (process.env.RUN_SCHEDULER === 'true') {
         console.log('Checking Engagement');
         // await new CandidateEngagementArx().checkCandidateEngagement();

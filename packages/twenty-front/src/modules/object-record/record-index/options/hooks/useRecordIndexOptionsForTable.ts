@@ -11,7 +11,10 @@ export const useRecordIndexOptionsForTable = (recordTableId: string) => {
     useRecordTableStates(recordTableId);
 
   const hiddenTableColumns = useRecoilValue(hiddenTableColumnsSelector());
+
+  console.log("hiddenTableColumns", hiddenTableColumns);
   const visibleTableColumns = useRecoilValue(visibleTableColumnsSelector());
+  console.log("visibleTableColumns:::::", visibleTableColumns);
 
   const { handleColumnVisibilityChange, handleColumnReorder } = useTableColumns(
     { recordTableId: recordTableId },
