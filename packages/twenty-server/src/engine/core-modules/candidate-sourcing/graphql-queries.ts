@@ -13,6 +13,7 @@ export const UpdateOneJob = `mutation UpdateOneJob($idToUpdate: ID!, $input: Job
    id
    specificCriteria
    createdAt
+   arxenaSiteId
    pathPosition
    googleSheetUrl{
    url

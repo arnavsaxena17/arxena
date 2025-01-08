@@ -319,7 +319,7 @@ private async processBatches(
     console.log("This is the job object in processBatches:", jobObject);
     const batchSize = 15;
     const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-    // const googleSheetsService = new GoogleSheetsService();
+    const googleSheetsService = new GoogleSheetsService();
   
     console.log("Google SheetID:", googleSheetId);
     for (let i = 0; i < data.length; i += batchSize) {
@@ -328,7 +328,7 @@ private async processBatches(
   
       if (uniqueStringKeys.length === 0) continue;
   
-      // await googleSheetsService.processGoogleSheetBatch(batch, results, tracking, apiToken, googleSheetId, jobObject);
+      await googleSheetsService.processGoogleSheetBatch(batch, results, tracking, apiToken, googleSheetId, jobObject);
       await this.processPeopleBatch(batch, uniqueStringKeys, results, tracking, apiToken);
       await this.processCandidatesBatch(batch, jobObject, results, tracking, apiToken);
       // await this.processJobCandidatesBatch(
@@ -567,7 +567,7 @@ private async processBatches(
           candidateKeys.push(key);
           results.manyCandidateObjects.push(candidateNode);
         } else if (existingCandidate) {
-          tracking.candidateIdMap.set(key, existingCandidate.id);
+          tracking.candidateIdMap.set(key, existingCandidate?.id);
         }
       }
 

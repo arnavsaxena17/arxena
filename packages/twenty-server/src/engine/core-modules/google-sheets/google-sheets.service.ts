@@ -25,6 +25,66 @@ export class GoogleSheetsService {
     return columnLetter;
   }
 
+
+  async setupWatchNotifications(auth: any, spreadsheetId: string, webhookUrl: string) {
+    const drive = google.drive({ version: 'v3', auth });
+    
+    try {
+      // Create notification channel
+      const watchRequest = {
+        fileId: spreadsheetId,  // Add this required parameter
+        requestBody: {
+          id: `channel-${spreadsheetId}-${Date.now()}`, // Unique channel ID
+          type: 'webhook',
+          address: webhookUrl,
+          expiration: (Date.now() + (24 * 60 * 60 * 1000)).toString(), // 24 hours from now
+        },
+      };
+ 
+ 
+      const response = await drive.files.watch(watchRequest);
+      
+      // Store the channelId and resourceId for later cleanup
+      const channelData = {
+        channelId: response.data.id,
+        resourceId: response.data.resourceId,
+        expiration: response.data.expiration
+      };
+  
+    
+      console.log('Watch notification setup successful:', channelData);
+      return channelData;
+  
+    } catch (error) {
+      console.error('Error setting up watch notifications:', error);
+      throw error;
+    }
+  }
+  
+
+  async stopWatchNotifications(auth: any, channelId: string, resourceId: string) {
+    const sheets = google.sheets({ version: 'v4', auth });
+    
+    try {
+      const drive = google.drive({ version: 'v3', auth });
+      await drive.channels.stop({
+        requestBody: {
+          id: channelId,
+          resourceId: resourceId
+        }
+      });
+      
+      console.log('Successfully stopped watching spreadsheet');
+    } catch (error) {
+      console.error('Error stopping watch notifications:', error);
+      throw error;
+    }
+  }
+  
+  
+
+
+
   private async formatHeadersBold(auth: any, spreadsheetId: string, headerLength: number): Promise<void> {
     const sheets = google.sheets({ version: 'v4', auth });
     const lastColumn = this.getColumnLetter(headerLength - 1);
@@ -359,20 +419,20 @@ export class GoogleSheetsService {
   }
 
 
-  private async getTemplateScriptContent(auth) {
-    const script = google.script({ 
-      version: 'v1', 
-      auth: auth as OAuth2Client 
-  });    
-    // Get the script ID from your template spreadsheet
-    const templateScriptId = '1a0Gn43KSKj9pOzJM3j7j1vP01qrldvnQTJFpxHlQUe_4AjPSb-o2mWXg';
+  // private async getTemplateScriptContent(auth) {
+  //   const script = google.script({ 
+  //     version: 'v1', 
+  //     auth: auth as OAuth2Client 
+  // });    
+  //   // Get the script ID from your template spreadsheet
+  //   const templateScriptId = '1a0Gn43KSKj9pOzJM3j7j1vP01qrldvnQTJFpxHlQUe_4AjPSb-o2mWXg';
 
-    const content = await script.projects.getContent({
-      scriptId: templateScriptId,
-    });
+  //   const content = await script.projects.getContent({
+  //     scriptId: templateScriptId,
+  //   });
     
-    return content.data;
-  }
+  //   return content.data;
+  // }
   
 
   // private async createScriptForSpreadsheet(auth, spreadsheetId: string, templateContent: any) {
@@ -524,56 +584,85 @@ export class GoogleSheetsService {
       throw error;
     }
   }
+  private async getTemplateScriptContent(auth, templateSpreadsheetId: string) {
+  
+    const script = google.script({ version: 'v1', auth });
+    const templateScriptId = '1a0Gn43KSKj9pOzJM3j7j1vP01qrldvnQTJFpxHlQUe_4AjPSb-o2mWXg';
+    const content = await script.projects.getContent({
+      scriptId: templateScriptId,
+    });
+    console.log("This is the content data:", content.data);
+    return content.data;
+  }
+  
   async createSpreadsheetForJob(jobName: string, twentyToken: string): Promise<any> {
     const auth = await this.loadSavedCredentialsIfExist(twentyToken);
-
     if (!auth) {
       throw new Error('Failed to load authentication credentials');
     }
-
+  
     try {
-      // First check if spreadsheet already exists
+      // Check for existing spreadsheet
       const existingSheet = await this.findSpreadsheetByJobName(auth, jobName);
       if (existingSheet) {
-        console.log('Found existing spreadsheet for job');
         return {
           googleSheetId: existingSheet.id,
           googleSheetUrl: existingSheet.url,
         };
       }
 
-      console.log('No existing spreadsheet found, creating new one');
-      // If no existing spreadsheet, create a new one from template
-      const drive = google.drive({
-        version: 'v3',
-        auth: auth as OAuth2Client,
-      });
-
-      console.log('Creating new spreadsheet');
+      // Create new spreadsheet from template
+      const drive = google.drive({ version: 'v3', auth: auth as OAuth2Client});
       const spreadsheetTitle = `${jobName} - Job Tracking`;
+  
+      const webhookUrl = process.env.ENV_NODE === 'production' 
+      ? 'https://arxena.com/spreadsheet-webhook'
+      : 'https://arxena.com/spreadsheet-webhook';
 
-      const copyRequest = {
-        name: spreadsheetTitle,
-        parents: [],
-      };
-
-      console.log('Copying template spreadsheet');
+      // Copy the template spreadsheet
       const copiedFile = await drive.files.copy({
         fileId: this.TEMPLATE_SPREADSHEET_ID,
-        requestBody: copyRequest,
+        requestBody: {
+          name: spreadsheetTitle,
+        },
       });
-      console.log('Copied file:', copiedFile);
-
+  
       if (!copiedFile.data.id) {
         throw new Error('Failed to create spreadsheet from template');
       }
+  
+      const spreadsheetId = copiedFile.data.id;
+      if (spreadsheetId) {
+        const webhookUrl = process.env.ENV_NODE === 'production' 
+          ? 'https://arxena.com/spreadsheet-webhook'
+          : 'https://arxena.com/spreadsheet-webhook';
+  
+        // Setup watch notifications but don't fail if it errors
+        try {
+          await this.setupWatchNotifications(auth, spreadsheetId, webhookUrl);
+        } catch (watchError) {
+          console.log('Watch notification setup failed:', watchError);
+          // Continue execution even if watch setup fails
+        }
+      }
+  
 
-      const scriptContent = await this.getTemplateScriptContent(auth);
-      console.log("This is the script Id:", scriptContent)
-      // Create new script for the copied spreadsheet
-      await this.createScriptForSpreadsheet(auth, copiedFile.data.id, scriptContent);
+        //       // Setup watch notifications
+        // const watchData = await this.setupWatchNotifications(
+        //   auth, 
+        //   copiedFile.data.id,
+        //   webhookUrl
+        // );
 
-      console.log('Spreadsheet created:', copiedFile.data);
+
+    // await this.storeWatchData(copiedFile.data.id, watchData, twentyToken);
+
+      // Get the template script content
+      const templateContent = await this.getTemplateScriptContent(auth, this.TEMPLATE_SPREADSHEET_ID);
+  
+      // Create and bind new script with template content
+      await this.createBoundScript(auth, copiedFile.data.id, templateContent);
+  
       return {
         googleSheetId: copiedFile.data.id,
         googleSheetUrl: `https://docs.google.com/spreadsheets/d/${copiedFile.data.id}`,
@@ -583,6 +672,232 @@ export class GoogleSheetsService {
       throw error;
     }
   }
+
+  // Helper method to store watch data
+private async storeWatchData(spreadsheetId: string, watchData: any, apiToken: string) {
+  const graphqlMutation = `
+    mutation UpdateSpreadsheetWatch($input: SpreadsheetWatchInput!) {
+      updateSpreadsheetWatch(data: $input) {
+        id
+        channelId
+        resourceId
+        expiration
+      }
+    }
+  `;
+
+  const variables = {
+    input: {
+      spreadsheetId,
+      channelId: watchData.channelId,
+      resourceId: watchData.resourceId,
+      expiration: watchData.expiration
+    }
+  };
+
+  await axiosRequest(JSON.stringify({ query: graphqlMutation, variables }), apiToken);
+}
+
+
+
+
+  async updateCandidateInSheet(auth: any, spreadsheetId: string, candidate: CandidateSourcingTypes.UserProfile, apiToken: string) {
+    try {
+      // Get existing headers and data
+      const sheets = google.sheets({ version: 'v4', auth });
+      const existingData = await this.getValues(auth, spreadsheetId, 'Sheet1');
+      
+      if (!existingData?.values?.[0]) {
+        console.log('No headers found in sheet');
+        return;
+      }
+  
+      const headers = existingData.values[0];
+      
+      // Find candidate row by unique key
+      const uniqueKeyIndex = headers.findIndex(header => 
+        header.toLowerCase().includes('unique') && header.toLowerCase().includes('key')
+      );
+      
+      if (uniqueKeyIndex === -1) {
+        console.log('No unique key column found');
+        return;
+      }
+  
+      // Find the row index of the candidate
+      const rowIndex = existingData.values.findIndex(row => 
+        row[uniqueKeyIndex] === candidate.unique_key_string
+      );
+  
+      if (rowIndex === -1) {
+        console.log('Candidate not found in sheet');
+        return;
+      }
+  
+      // Format updated row data
+      const updatedRowData = this.formatCandidateRow(candidate, headers);
+  
+      // Update the specific row
+      await this.updateValues(
+        auth,
+        spreadsheetId,
+        `Sheet1!A${rowIndex + 1}`, // +1 because rows are 1-based
+        [updatedRowData],
+        apiToken
+      );
+  
+      console.log('Successfully updated candidate in sheet');
+  
+    } catch (error) {
+      console.error('Error updating candidate in sheet:', error);
+      throw error;
+    }
+  }
+
+  private async createBoundScript(auth, spreadsheetId: string, templateContent: any) {
+    const script = google.script({ version: 'v1', auth });
+  
+    // Define manifest content
+    const manifestContent = {
+      timeZone: 'Etc/UTC',
+      dependencies: {},
+      exceptionLogging: 'STACKDRIVER',
+      runtimeVersion: 'V8',
+      oauthScopes: [
+        'https://www.googleapis.com/auth/spreadsheets',
+        'https://www.googleapis.com/auth/script.container.ui',
+        'https://www.googleapis.com/auth/script.external_request',
+        'https://www.googleapis.com/auth/script.scriptapp',
+        'https://www.googleapis.com/auth/script.storage',
+        'https://www.googleapis.com/auth/spreadsheets.currentonly'
+      ]
+    };
+  
+    try {
+      // Create new bound script project
+      const createResponse = await script.projects.create({
+        requestBody: {
+          title: 'Sheet Script',
+          parentId: spreadsheetId
+        }
+      });
+  
+      const newScriptId = createResponse.data.scriptId;
+      if (!newScriptId) {
+        throw new Error('Failed to create new script project');
+      }
+  
+      // Prepare files array with both manifest and code
+      const files = [
+        {
+          name: 'appsscript',
+          type: 'JSON',
+          source: JSON.stringify(manifestContent, null, 2)
+        },
+        {
+          name: 'Code',
+          type: 'SERVER_JS',
+          source: `function onOpen() {
+            const menu = SpreadsheetApp.getUi()
+              .createMenu('Arxena')
+              .addItem('Refresh Data', 'refreshData')
+              .addToUi();
+          }
+          
+          function refreshData() {
+            // Your refresh logic here
+          }`
+        }
+      ];
+  
+      // Update content in a single operation
+      await script.projects.updateContent({
+        scriptId: newScriptId,
+        requestBody: { files }
+      });
+  
+      // Create a new version
+      const version = await script.projects.versions.create({
+        scriptId: newScriptId,
+        requestBody: {
+          description: 'Initial version'
+        }
+      });
+  
+      // Create a deployment
+      await script.projects.deployments.create({
+        scriptId: newScriptId,
+        requestBody: {
+          versionNumber: version.data.versionNumber,
+          manifestFileName: 'appsscript',
+          description: 'Initial deployment'
+        }
+      });
+  
+      return newScriptId;
+    } catch (error) {
+      console.error('Error creating bound script:', error);
+      throw error;
+    }
+  }
+
+
+  // private async createBoundScript(auth, spreadsheetId: string, templateContent: any) {
+  //   const script = google.script({ version: 'v1', auth });
+  
+  //   try {
+  //     // Create new bound script project
+  //     const createResponse = await script.projects.create({
+  //       requestBody: {
+  //         title: 'Sheet Script',
+  //         parentId: spreadsheetId
+  //       }
+  //     });
+  
+  //     const newScriptId = createResponse.data.scriptId;
+  //     console.log('Created new script with ID:', newScriptId);
+  
+  //     // Update the script content with template files
+  //     if (!newScriptId) {
+  //       throw new Error('Failed to create new script project');
+  //     }
+  //     await script.projects.updateContent({
+  //       scriptId: newScriptId,
+  //       requestBody: {
+  //         files: templateContent.files
+  //       }
+  //     });
+  //     console.log('Updated script content with template files');
+  
+  //     // Create a new version
+  //     await script.projects.versions.create({
+  //       scriptId: newScriptId,
+  //       requestBody: {
+  //         description: 'Initial version'
+  //       }
+  //     });
+
+  //     console.log('Created new version');
+  
+  //     // Create a deployment
+  //     await script.projects.deployments.create({
+  //       scriptId: newScriptId,
+  //       requestBody: {
+  //         versionNumber: 1,
+  //         manifestFileName: 'appsscript',
+  //         description: 'Initial deployment'
+  //       }
+  //     });
+
+  //     console.log('Created new deployment');
+  
+  //     return newScriptId;
+  //   } catch (error) {
+  //     console.error('Error creating bound script:', error);
+  //     throw error;
+  //   }
+  // }
+  
 
   async loadSavedCredentialsIfExist(twenty_token: string) {
     const connectedAccountsResponse = await axios.request({

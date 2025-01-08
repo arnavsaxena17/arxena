@@ -26,6 +26,49 @@ export class CandidateSourcingController {
   ) {}
 
 
+
+  @Post('update-candidate')
+@UseGuards(JwtAuthGuard)
+async updateCandidateSpreadsheet(@Req() request: any): Promise<object> {
+  try {
+    const apiToken = request.headers.authorization.split(' ')[1];
+    const { candidate, jobId, jobName } = request.body;
+
+    // Get job details to find spreadsheet ID
+    const jobObject = await this.findJob(jobName, apiToken);
+    
+    if (!jobObject?.googleSheetId) {
+      throw new Error('No Google Sheet ID found for job');
+    }
+
+    // Load Google auth
+    const auth = await this.sheetsService.loadSavedCredentialsIfExist(apiToken);
+    if (!auth) {
+      throw new Error('Failed to authenticate with Google');
+    }
+
+    // Update the sheet
+    await this.sheetsService.updateCandidateInSheet(
+      auth,
+      jobObject.googleSheetId,
+      candidate,
+      apiToken
+    );
+
+    return { 
+      status: 'Success',
+      message: 'Candidate updated in spreadsheet'
+    };
+  } catch (err) {
+    console.error('Error updating candidate spreadsheet:', err);
+    return { 
+      status: 'Failed', 
+      error: err.message 
+    };
+  }
+}
+
+
   @Post('process-candidate-chats')
   @UseGuards(JwtAuthGuard)
 
@@ -47,21 +90,6 @@ export class CandidateSourcingController {
   }
 
 
-  @Post('update-candidate')
-  @UseGuards(JwtAuthGuard)
-
-  async updateCandidateSpreadsheet(@Req() request: any): Promise<object> {
-    try {
-      console.log("Going to update candidate spreadsheet")
-      console.log("Request body:", request.body)
-
-
-      return { status: 'Success' };
-    } catch (err) {
-      console.error('Error in process:', err);
-      return { status: 'Failed', error: err };
-    }
-  }
 
 
   @Post('find-many-enrichments')
@@ -275,9 +303,9 @@ export class CandidateSourcingController {
       
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      let googleSheetUrl = '';
-      let googleSheetId = '';
-      // let { googleSheetId, googleSheetUrl } = await this.createSpreadsheet(req.body.job_name, apiToken);
+      // let googleSheetUrl = '';
+      // let googleSheetId = '';
+      let { googleSheetId, googleSheetUrl } = await this.createSpreadsheet(req.body.job_name, apiToken);
       // const { googleSheetId: googleSheetIdFromRequest, googleSheetUrl: googleSheetUrlFromRequest } = req.body;
       await this.updateTwentyJob(req.body.job_name, req.body.new_job_id, googleSheetUrl ?? '', googleSheetId ?? '', apiToken, req.body.id_to_update);
       const response = await this.callCreateNewJobInArxena(req.body.job_name, req.body.new_job_id, googleSheetId, googleSheetUrl, apiToken);
@@ -537,5 +565,75 @@ export class CityDataController {
 
   private calculatePopulation(basePopulation: number, minutesPassed: number, growthRate: number): number {
     return basePopulation * Math.pow(1 + growthRate, minutesPassed);
+  }
+}
+
+
+@Controller('spreadsheet-webhook')
+export class SpreadsheetWebhookController {
+  constructor(
+    private readonly sheetsService: GoogleSheetsService,
+    private readonly candidateService: CandidateService
+  ) {}
+
+  @Post()
+  async handleSpreadsheetChange(@Req() request: any) {
+    try {
+      const headers = request.headers;
+      const body = request.body;
+      console.log('Received webhook:', body);
+      // Verify the notification is legitimate
+      if (!this.verifyWebhook(headers)) {
+        throw new Error('Invalid webhook request');
+      }
+
+      // Get spreadsheet ID and changes from the notification
+      const spreadsheetId = body.spreadsheetId;
+      const changes = body.changes;
+
+      // Process the changes
+      await this.processSpreadsheetChanges(spreadsheetId, changes);
+
+      return { status: 'success' };
+
+    } catch (error) {
+      console.error('Error handling spreadsheet webhook:', error);
+      throw error;
+    }
+  }
+
+  private verifyWebhook(headers: any) {
+    // Implement your webhook verification logic here
+    // This could include checking signatures, tokens, etc.
+    return true;
+  }
+
+  private async processSpreadsheetChanges(spreadsheetId: string, changes: any) {
+    // Implement your spreadsheet change processing logic here
+    console.log('Processing changes:', changes);
+    // Get the auth client
+    // const auth = await this.sheetsService.loadSavedCredentialsIfExist(/* token */);
+    // if (!auth) {
+    //   throw new Error('Failed to authenticate');
+    // }
+
+    // Get the latest data for changed rows
+    // const sheets = google.sheets({ version: 'v4', auth });
+    
+    for (const change of changes) {
+      // const range = `Sheet1!${change.range}`;
+      // const response = await sheets.spreadsheets.values.get({
+      //   spreadsheetId,
+      //   range
+      // });
+
+      // Update your database with the new values
+      // await this.updateDatabase(spreadsheetId, response.data.values);
+    }
+  }
+
+  private async updateDatabase(spreadsheetId: string, values: any[][]) {
+    // Implement your database update logic here
+    // This should update your application's data based on spreadsheet changes
   }
 }

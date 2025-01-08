@@ -52,9 +52,9 @@ export class GoogleAPIsStrategy extends PassportStrategy(
       scope.push("https://www.googleapis.com/auth/contacts");
       scope.push("https://www.googleapis.com/auth/drive");       
       scope.push("https://www.googleapis.com/auth/spreadsheets");
-      scope.push("https://www.googleapis.com/auth/spreadsheets");
       scope.push("https://www.googleapis.com/auth/script.projects");
-      scope.push("https://www.googleapis.com/auth/script.projects.readonly");
+      scope.push("https://www.googleapis.com/auth/script.deployments");
+      scope.push("https://www.googleapis.com/auth/script.external_request");
     }
     console.log("scopeConfig", scopeConfig);
 
