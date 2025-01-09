@@ -37,7 +37,7 @@ export class EmailTemplates{
       <div>
         <p>Dear ${person?.name?.firstName},</p>
         
-        <p>We have reviewed your profile and would like to invite you for a video interview for the position of <b>${person?.candidates?.edges[0].node.jobs.name}</b> at <b>${person.candidates.edges[0].node.jobs?.companies?.name}</b>.</p>
+        <p>We have reviewed your profile and would like to invite you for a video interview for the position of <b>${person?.candidates?.edges[0].node.jobs.name}</b> at <b>${person.candidates.edges[0].node.jobs?.company?.name}</b>.</p>
 
         <p><strong>Interview Details:</strong></p>
         <p>Interview Link: ${process.env.FRONT_BASE_URL+ interviewLink}</p>

@@ -69,7 +69,7 @@ export class VideoInterviewController {
                 const emailData: GmailMessageData = {
                     sendEmailFrom: allDataObjects.recruiterProfile?.email,
                     sendEmailTo: person?.email,
-                    subject: 'Video Interview - ' + person?.name?.firstName + '<>' + person?.candidates.edges[0].node.jobs.companies.name,
+                    subject: 'Video Interview - ' + person?.name?.firstName + '<>' + person?.candidates.edges[0].node.jobs.company.name,
                     message: videoInterviewInviteTemplate,
                 };
                 console.log("This is the email Data from createVideo Interview Send To Candidate:", emailData);
@@ -106,7 +106,7 @@ export class VideoInterviewController {
                 const emailData: GmailMessageData = {
                     sendEmailFrom: allDataObjects.recruiterProfile?.email,
                     sendEmailTo: person?.email,
-                    subject: 'Video Interview - ' + person?.name?.firstName + '<>' + person?.candidates.edges[0].node.jobs.companies.name,
+                    subject: 'Video Interview - ' + person?.name?.firstName + '<>' + person?.candidates.edges[0].node.jobs.company.name,
                     message: videoInterviewInviteTemplate,
                 };
                 console.log("This is the email Data sendVideoInterviewSendToCandidate:", emailData);

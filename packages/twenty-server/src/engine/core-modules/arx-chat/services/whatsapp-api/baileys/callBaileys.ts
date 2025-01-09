@@ -52,8 +52,8 @@ export async function sendWhatsappTextMessageViaBaileys(sendTextMessageObj: allD
     console.log("Sending message via send API as recruiter ID is ::", personNode?.candidates?.edges[0]?.node?.jobs?.recruiterId);
     console.log("Sending message via send API as personNode is ::", personNode);
     console.log("Sending message via send API as personNodeCandidate is ::", personNode?.candidates?.edges[0]?.node?.jobs?.recruiterId);
-    console.log("Sending message via send API as nodeCandidate is ::", personNode?.candidates?.edges[0]?.node?.jobs?.companies?.name);
-    if (!personNode?.candidates?.edges[0]?.node?.jobs?.companies.name){
+    console.log("Sending message via send API as nodeCandidate is ::", personNode?.candidates?.edges[0]?.node?.jobs?.company?.name);
+    if (!personNode?.candidates?.edges[0]?.node?.jobs?.company.name){
       console.log("THERE IS NO COMPANIES NAME, SO IT WILL SHOW UNDEFINED");
     }
     else{
@@ -162,7 +162,7 @@ export async function sendAttachmentMessageViaBaileys(sendTextMessageObj: allDat
     WANumber: sendTextMessageObj.phoneNumberTo,
     jid: (sendTextMessageObj.phoneNumberTo.startsWith('+') ? sendTextMessageObj.phoneNumberTo.replace('+', '') : sendTextMessageObj.phoneNumberTo) + '@s.whatsapp.net',
     fileData: sendTextMessageObj.fileData,
-    message: `Hiring for ${jobProfile.companies.name}. Their site is ${jobProfile.companies.domainName}. The role will be based in ${jobProfile.jobLocation}.`,
+    message: `Hiring for ${jobProfile.company.name}. Their site is ${jobProfile.company.domainName}. The role will be based in ${jobProfile.jobLocation}.`,
   };
 
   const payloadToSendToWhiskey = { recruiterId: personNode?.candidates?.edges[0]?.node?.jobs?.recruiterId, fileToSendData: data, }; try {
