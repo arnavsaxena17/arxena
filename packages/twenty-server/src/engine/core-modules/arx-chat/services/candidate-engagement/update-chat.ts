@@ -501,7 +501,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
             id: activeJobCandidateObj?.node?.jobs?.id,
             recruiterId: activeJobCandidateObj?.node?.jobs?.recruiterId,
             jobCode:activeJobCandidateObj?.node?.jobs?.jobCode,
-            companies: {
+            company: {
               name: activeJobCandidateObj?.node?.jobs?.companies?.name || "",
               companyId: activeJobCandidateObj?.node?.jobs?.companies?.id,
               domainName: activeJobCandidateObj?.node?.jobs?.companies?.domainName,

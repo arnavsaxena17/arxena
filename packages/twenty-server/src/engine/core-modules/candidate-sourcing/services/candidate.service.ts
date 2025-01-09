@@ -429,7 +429,6 @@ private async processBatches(
     }
 
     const response = await axiosRequest(graphlQlQuery, apiToken);
-    console.log("These are teje jobs:", response.data?.data);
     return response.data?.data?.jobs?.edges[0]?.node;
   }
   async processProfilesWithRateLimiting(
@@ -456,7 +455,7 @@ private async processBatches(
   
       const tracking = { personIdMap: new Map<string, string>(), candidateIdMap: new Map<string, string>() };
   
-      const { context, batchKey } = await this.setupProcessingContext(jobObject, timestamp, data, apiToken);
+      // const { context, batchKey } = await this.setupProcessingContext(jobObject, timestamp, data, apiToken);
       // const results = await this.processBatches(data, jobObject, context, tracking, apiToken);
       const results = await this.processBatches(data, jobObject, tracking, apiToken, googleSheetId);
   

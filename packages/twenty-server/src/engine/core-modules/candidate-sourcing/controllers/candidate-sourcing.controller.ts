@@ -1,18 +1,22 @@
 import moment from 'moment-timezone';
-import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
-import {UpdateOneJob , CreateOneJob, createOneQuestion, graphqlToFindManyJobByArxenaSiteId } from './graphql-queries';
-import { FetchAndUpdateCandidatesChatsWhatsapps } from '../arx-chat/services/candidate-engagement/update-chat';
-import { axiosRequest , axiosRequestForMetadata} from './utils/utils';
-import * as CandidateSourcingTypes from './types/candidate-sourcing-types';
+import { Body, Controller, Get, InternalServerErrorException, NotFoundException, Post, Req, UseGuards } from '@nestjs/common';
+import {UpdateOneJob , CreateOneJob, createOneQuestion, graphqlToFindManyJobByArxenaSiteId, graphQltoStartChat } from '../graphql-queries';
+import { FetchAndUpdateCandidatesChatsWhatsapps } from '../../arx-chat/services/candidate-engagement/update-chat';
+import { axiosRequest , axiosRequestForMetadata} from '../utils/utils';
+import * as CandidateSourcingTypes from '../types/candidate-sourcing-types';
 import axios from 'axios';
-import { WorkspaceQueryService } from '../workspace-modifications/workspace-modifications.service';
+import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { JwtAuthGuard } from 'src/engine/guards/jwt.auth.guard';
-import { PersonService } from './services/person.service';
-import { CandidateService } from './services/candidate.service';
-import { ChatService } from './services/chat.service';
-import { Enrichment } from '../workspace-modifications/object-apis/types/types';
-import { ProcessCandidatesService } from './jobs/process-candidates.service';
-import { GoogleSheetsService } from '../google-sheets/google-sheets.service';
+import { PersonService } from '../services/person.service';
+import { CandidateService } from '../services/candidate.service';
+import { ChatService } from '../services/chat.service';
+import { Enrichment } from '../../workspace-modifications/object-apis/types/types';
+import { ProcessCandidatesService } from '../jobs/process-candidates.service';
+import { GoogleSheetsService } from '../../google-sheets/google-sheets.service';
+import { Cron, CronExpression } from '@nestjs/schedule';
+import { In } from 'typeorm';
+import { DataSourceService } from 'src/engine/metadata-modules/data-source/data-source.service';
+import { graphqlToFetchActiveJob, graphqlToFetchAllCandidatesByStartChat } from '../../arx-chat/services/candidate-engagement/graphql-queries-chatbot';
 
 @Controller('candidate-sourcing')
 export class CandidateSourcingController {
@@ -516,124 +520,3 @@ async updateCandidateSpreadsheet(@Req() request: any): Promise<object> {
   }
 }
 
-
-
-
-
-@Controller('fetch-google-apps-data')
-export class CityDataController {
-  private basePopulations = {
-    london: 9002488,
-    newYork: 8804190,
-    paris: 2148271,
-    mumbai: 20667656,
-    tokyo: 37393129,
-  };
-
-  private startTime = Date.now();
-
-  @Post('get-data')
-  getData() {
-
-    console.log('Request called at:', moment().format('YYYY-MM-DD HH:mm:ss'));
-    const minutesPassed = Math.floor((Date.now() - this.startTime));
-    const growthRate = 0.0001; // 0.0001%
-
-    return {
-      london: {
-        population: Math.floor(new CityDataController().calculatePopulation(this.basePopulations.london, minutesPassed, growthRate)),
-        timezone: moment().tz('Europe/London').format('YYYY-MM-DD HH:mm:ss z')
-      },
-      newYork: {
-        population: Math.floor(new CityDataController().calculatePopulation(this.basePopulations.newYork, minutesPassed, growthRate)),
-        timezone: moment().tz('America/New_York').format('YYYY-MM-DD HH:mm:ss z')
-      },
-      paris: {
-        population: Math.floor(new CityDataController().calculatePopulation(this.basePopulations.paris, minutesPassed, growthRate)),
-        timezone: moment().tz('Europe/Paris').format('YYYY-MM-DD HH:mm:ss z')
-      },
-      mumbai: {
-        population: Math.floor(new CityDataController().calculatePopulation(this.basePopulations.mumbai, minutesPassed, growthRate)),
-        timezone: moment().tz('Asia/Kolkata').format('YYYY-MM-DD HH:mm:ss z')
-      },
-      tokyo: {
-        population: Math.floor(new CityDataController().calculatePopulation(this.basePopulations.tokyo, minutesPassed, growthRate)),
-        timezone: moment().tz('Asia/Tokyo').format('YYYY-MM-DD HH:mm:ss z')
-      }
-    };
-  }
-
-  private calculatePopulation(basePopulation: number, minutesPassed: number, growthRate: number): number {
-    return basePopulation * Math.pow(1 + growthRate, minutesPassed);
-  }
-}
-
-
-@Controller('spreadsheet-webhook')
-export class SpreadsheetWebhookController {
-  constructor(
-    private readonly sheetsService: GoogleSheetsService,
-    private readonly candidateService: CandidateService
-  ) {}
-
-  @Post()
-  async handleSpreadsheetChange(@Req() request: any) {
-    try {
-      const headers = request.headers;
-      const body = request.body;
-      console.log('Received webhook:', body);
-      // Verify the notification is legitimate
-      if (!this.verifyWebhook(headers)) {
-        throw new Error('Invalid webhook request');
-      }
-
-      // Get spreadsheet ID and changes from the notification
-      const spreadsheetId = body.spreadsheetId;
-      const changes = body.changes;
-
-      // Process the changes
-      await this.processSpreadsheetChanges(spreadsheetId, changes);
-
-      return { status: 'success' };
-
-    } catch (error) {
-      console.error('Error handling spreadsheet webhook:', error);
-      throw error;
-    }
-  }
-
-  private verifyWebhook(headers: any) {
-    // Implement your webhook verification logic here
-    // This could include checking signatures, tokens, etc.
-    return true;
-  }
-
-  private async processSpreadsheetChanges(spreadsheetId: string, changes: any) {
-    // Implement your spreadsheet change processing logic here
-    console.log('Processing changes:', changes);
-    // Get the auth client
-    // const auth = await this.sheetsService.loadSavedCredentialsIfExist(/* token */);
-    // if (!auth) {
-    //   throw new Error('Failed to authenticate');
-    // }
-
-    // Get the latest data for changed rows
-    // const sheets = google.sheets({ version: 'v4', auth });
-    
-    for (const change of changes) {
-      // const range = `Sheet1!${change.range}`;
-      // const response = await sheets.spreadsheets.values.get({
-      //   spreadsheetId,
-      //   range
-      // });
-
-      // Update your database with the new values
-      // await this.updateDatabase(spreadsheetId, response.data.values);
-    }
-  }
-
-  private async updateDatabase(spreadsheetId: string, values: any[][]) {
-    // Implement your database update logic here
-    // This should update your application's data based on spreadsheet changes
-  }
-}

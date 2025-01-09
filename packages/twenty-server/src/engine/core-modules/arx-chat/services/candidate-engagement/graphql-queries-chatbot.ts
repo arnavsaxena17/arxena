@@ -10,7 +10,11 @@ query FindOneWhatsappMessage($whatsappMessageId: String!) {
 }
 `;
 
-
+export const graphQlToUpdateCandidate = `mutation UpdateOneCandidate($idToUpdate: ID!, $input: CandidateUpdateInput!) {
+  updateCandidate(id: $idToUpdate, data: $input) {
+      __typename
+  }
+  }`
 export const graphqlToCreateOneMetatDataObjectItems = `
         mutation CreateOneObjectMetadataItem($input: CreateOneObjectInput!) {
           createOneObject(input: $input) {
@@ -171,6 +175,7 @@ export const graphqlQueryToFindInterviewsByJobId = `query FindManyAIInterviews($
           id
           clientContactsId
           jobLocation
+          googleSheetId
           createdAt
           jobCode
           isActive
@@ -437,7 +442,7 @@ export const graphqlQueryToFindManyPeopleEngagedCandidates = `query FindManyPeop
                          jobLocation
                          jobCode
                          recruiterId
-                         companies{
+                         company{
                           name
                           id
                           domainName
@@ -610,7 +615,7 @@ export const graphqlQueryToFetchWorksPaceMembers = `query FindManyWorkspaceMembe
             jobLocation
             jobCode
             recruiterId
-            companies{
+            company{
               name
               id
               domainName

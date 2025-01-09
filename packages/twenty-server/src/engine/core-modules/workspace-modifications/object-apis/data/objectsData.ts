@@ -130,32 +130,52 @@ export const objectCreationArr = [
             "namePlural": "clientContacts"
         }
     },
-        {
+    //     {
+
+    //     "object": {
+
+    //         "description": "",
+    //         "icon": "IconActivity",
+    //         "labelPlural": "Video Interviews",
+    //         "labelSingular": "Video Interview",
+    //         "nameSingular": "videoInterview",
+    //         "namePlural": "videoInterviews"
+    //     }
+
+    // },
+
+    // {
+    //     "object": {
+    //         "description": "",
+    //         "icon": "IconPencilDown",
+    //         "labelPlural": "Video Interview Responses",
+    //         "labelSingular": "Video Interview Response",
+    //         "nameSingular": "videoInterviewResponse",
+    //         "namePlural": "videoInterviewResponses"
+    //     }
+
+    // },
+    {
 
         "object": {
-
             "description": "",
             "icon": "IconActivity",
-            "labelPlural": "Video Interviews",
-            "labelSingular": "Video Interview",
-            "nameSingular": "videoInterview",
-            "namePlural": "videoInterviews"
+            "labelPlural": "AI Interview Statuses",
+            "labelSingular": "AI Interview Status",
+            "nameSingular": "aIInterviewStatus",
+            "namePlural": "aIInterviewStatuses"
         }
-
     },
-
     {
         "object": {
             "description": "",
             "icon": "IconPencilDown",
-            "labelPlural": "Video Interview Responses",
-            "labelSingular": "Video Interview Response",
-            "nameSingular": "videoInterviewResponse",
-            "namePlural": "videoInterviewResponses"
+            "labelPlural": "Responses",
+            "labelSingular": "Response",
+            "nameSingular": "response",
+            "namePlural": "responses"
         }
-
     },
-
         {
         "object": {
             "description": "",
@@ -164,9 +184,7 @@ export const objectCreationArr = [
             "labelSingular": "AI Interview Question",
             "nameSingular": "aIInterviewQuestion",
             "namePlural": "aIInterviewQuestions"
-
         }
-
     },
     {
         "object": {
@@ -177,7 +195,6 @@ export const objectCreationArr = [
             "nameSingular": "aIInterview",
             "namePlural": "aIInterviews"
         }
-
     },
     {
         "object": {

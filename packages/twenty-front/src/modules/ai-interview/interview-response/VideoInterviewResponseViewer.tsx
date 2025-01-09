@@ -60,7 +60,7 @@ interface Person {
   name: Name;
 }
 
-interface Company {
+interface company {
   name: string;
 }
 
@@ -96,7 +96,7 @@ interface AIInterviewQuestion {
 interface Job {
   id: string;
   name: string;
-  companies: Company;
+  company: company;
 }
 
 interface InterviewData {
@@ -124,7 +124,7 @@ const query = `query FindManyCandidates($filter: CandidateFilterInput) {
           jobs {
             id
             name
-            companies {
+            company {
               name
             }
             aIInterviews {
@@ -332,7 +332,7 @@ const queryByAIInterviewStatus = `query FindOneAIInterviewStatus($objectRecordId
       jobs {
             id
             name
-            companies {
+            company {
               name
         }
       }
@@ -367,7 +367,7 @@ interface CandidateAPIResponse {
   jobs: {
     id: string;
     name: string;
-    companies: {
+    company: {
       name: string;
     };
     aIInterviews: {
@@ -494,8 +494,8 @@ const VideoInterviewResponseViewer: React.FC<VideoInterviewResponseViewerProps> 
     const transformedData: InterviewData =  {
       job: {
         id: candidate.jobs.id,
-        companies: {
-          name: candidate.jobs.companies.name,
+        company: {
+          name: candidate.jobs.company.name,
         },
         name: candidate.jobs.name,
       },
@@ -537,7 +537,7 @@ const VideoInterviewResponseViewer: React.FC<VideoInterviewResponseViewerProps> 
     const transformedData: InterviewData =   {
         job: {
           id: candidate.jobs.id,
-          companies: candidate.jobs.companies,
+          company: candidate.jobs.company,
           name: candidate.jobs.name,
         },
         aIInterview: {
@@ -594,7 +594,7 @@ const VideoInterviewResponseViewer: React.FC<VideoInterviewResponseViewerProps> 
   return (
     <StyledContainer theme={theme}>
       <CompanyInfo>
-        <h2>{interviewData.job.companies.name}</h2>
+        <h2>{interviewData.job.company.name}</h2>
         <h3>{interviewData.job.name}</h3>
       </CompanyInfo>
 

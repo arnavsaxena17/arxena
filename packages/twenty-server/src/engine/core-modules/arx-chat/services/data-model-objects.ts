@@ -313,7 +313,7 @@ export interface companyInfoType {
   descriptionOneliner: string;
 }
 
-export interface Companies {
+export interface company {
   domainName: any;
   name: string;
   companyId: string;
@@ -333,7 +333,7 @@ export interface Jobs {
   recruiterId: string;
   jobLocation: string;
   jobCode:string;
-  companies: Companies;
+  company: company;
   whatsappMessages: WhatsAppMessages;
 }
 
@@ -393,7 +393,7 @@ export const emptyCandidateProfileObj: CandidateNode = {
     name: '',
     id: '',
     recruiterId: '',
-    companies: {
+    company: {
       name: '',
       companyId: '',
       domainName: '',

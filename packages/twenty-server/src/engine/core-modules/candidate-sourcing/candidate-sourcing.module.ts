@@ -1,5 +1,6 @@
 // import { CandidateSourcingController } from './controllers/candidate-sourcing.controller';
-import { CandidateSourcingController, CityDataController } from './candidate-sourcing.controller';
+import { CandidateSourcingController } from './controllers/candidate-sourcing.controller';
+import { GoogleSheetsDataController } from './controllers/google-sheet-data.controller';
 // import { CandidateSourcingController} from './candidate-sourcing.controller';
 import { AuthModule } from '../auth/auth.module';
 import { WorkspaceModificationsModule } from '../workspace-modifications/workspace-modifications.module';
@@ -36,7 +37,7 @@ import { GoogleSheetsService } from '../google-sheets/google-sheets.service';
     TypeOrmModule.forFeature([AppToken], 'core'),
     DataSourceModule, 
   ],
-  controllers: [CandidateSourcingController, CityDataController],
+  controllers: [CandidateSourcingController, GoogleSheetsDataController],
   // controllers: [CandidateSourcingController],
   providers: [
     // JobService,
