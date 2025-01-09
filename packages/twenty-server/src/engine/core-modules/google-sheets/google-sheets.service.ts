@@ -26,40 +26,53 @@ export class GoogleSheetsService {
   }
 
 
-  async setupWatchNotifications(auth: any, spreadsheetId: string, webhookUrl: string) {
+  async setupWatchNotifications(auth: any, spreadsheetId: string) {
     const drive = google.drive({ version: 'v3', auth });
     
+      
+    const webhookUrl = process.env.ENV_NODE === 'production' 
+    ? 'https://arxena.com/spreadsheet-webhook'
+    : 'https://arxena.com/spreadsheet-webhook';
+
     try {
-      // Create notification channel
       const watchRequest = {
-        fileId: spreadsheetId,  // Add this required parameter
+        fileId: spreadsheetId,
         requestBody: {
-          id: `channel-${spreadsheetId}-${Date.now()}`, // Unique channel ID
+          // Use spreadsheetId in channel ID for reference
+          id: `channel-${spreadsheetId}-${Date.now()}`,
           type: 'webhook',
           address: webhookUrl,
-          expiration: (Date.now() + (24 * 60 * 60 * 1000)).toString(), // 24 hours from now
-        },
+          // Don't expect payload in notification
+          payload: false,
+          // Set appropriate expiration
+          expiration: (Date.now() + (24 * 60 * 60 * 1000)).toString() // 24 hours
+        }
       };
- 
- 
+  
       const response = await drive.files.watch(watchRequest);
+      console.log('Watch setup response:', response.data);
       
-      // Store the channelId and resourceId for later cleanup
-      const channelData = {
+      // Store the watch details
+      await this.storeWatchDetails(spreadsheetId, {
         channelId: response.data.id,
         resourceId: response.data.resourceId,
         expiration: response.data.expiration
-      };
+      });
   
-    
-      console.log('Watch notification setup successful:', channelData);
-      return channelData;
+      return response.data;
   
     } catch (error) {
-      console.error('Error setting up watch notifications:', error);
-      throw error;
+      console.error('Watch setup error:', error);
+      return null;
     }
   }
+  
+  private async storeWatchDetails(spreadsheetId: string, watchData: any) {
+    // Store in database for reference
+    // This will be needed to handle notifications and cleanup
+    // Implementation depends on your database setup
+  }
+  
   
 
   async stopWatchNotifications(auth: any, channelId: string, resourceId: string) {
@@ -639,7 +652,7 @@ export class GoogleSheetsService {
   
         // Setup watch notifications but don't fail if it errors
         try {
-          await this.setupWatchNotifications(auth, spreadsheetId, webhookUrl);
+          await this.setupWatchNotifications(auth, spreadsheetId);
         } catch (watchError) {
           console.log('Watch notification setup failed:', watchError);
           // Continue execution even if watch setup fails

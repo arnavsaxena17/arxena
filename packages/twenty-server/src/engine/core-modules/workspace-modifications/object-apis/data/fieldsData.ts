@@ -1061,7 +1061,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
             "icon": "IconLocationQuestion",
             "label": "Started Responding",
             "name": "startedResponding",
-            "objectMetadataId": objectsNameIdMap.response,
+            "objectMetadataId": objectsNameIdMap.videoInterviewResponse,
             "type": "BOOLEAN"
         }
 
@@ -1072,7 +1072,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
             "icon": "IconLocationCheck",
             "label": "Completed Response",
             "name": "completedResponse",
-            "objectMetadataId": objectsNameIdMap.response,
+            "objectMetadataId": objectsNameIdMap.videoInterviewResponse,
             "type": "BOOLEAN"
         }
 
@@ -1083,7 +1083,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
             "icon": "IconDeviceWatchPause",
             "label": "Timer",
             "name": "timer",
-            "objectMetadataId": objectsNameIdMap.response,
+            "objectMetadataId": objectsNameIdMap.videoInterviewResponse,
             "type": "TEXT"
         }
 
@@ -1094,7 +1094,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
             "icon": "IconTimeDuration30",
             "label": "Time Limit Adherence",
             "name": "timeLimitAdherence",
-            "objectMetadataId": objectsNameIdMap.response,
+            "objectMetadataId": objectsNameIdMap.videoInterviewResponse,
             "type": "BOOLEAN"
         }
 
@@ -1106,7 +1106,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
             "icon": "IconFileTextAI",
             "label": "Transcript",
             "name": "transcript",
-            "objectMetadataId": objectsNameIdMap.response,
+            "objectMetadataId": objectsNameIdMap.videoInterviewResponse,
             "type": "TEXT"
         }
 
@@ -1118,7 +1118,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
             "icon": "IconPencilStar",
             "label": "Feedback",
             "name": "feedback",
-            "objectMetadataId": objectsNameIdMap.response,
+            "objectMetadataId": objectsNameIdMap.videoInterviewResponse,
             "type": "TEXT"
         }
 
