@@ -426,7 +426,6 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
         console.log('Person ID not found');
         return { status: 'Failed', message: 'Person ID not found' };
       }
-      console.log("Person ID:", person);
   
 
       if (person){

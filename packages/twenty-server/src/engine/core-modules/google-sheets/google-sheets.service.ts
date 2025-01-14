@@ -24,43 +24,77 @@ export class GoogleSheetsService {
     return columnLetter;
   }
 
+  private rateLimiter = {
+    writeRequests: {
+      tokens: 60, // Google Sheets allows 60 writes per minute
+      lastRefill: Date.now(),
+      refillRate: 60000, // 1 minute in ms
+    }
+  };
+  
+  
+  
+  private async acquireToken() {
+    const now = Date.now();
+    const timeSinceRefill = now - this.rateLimiter.writeRequests.lastRefill;
+    
+    if (timeSinceRefill >= this.rateLimiter.writeRequests.refillRate) {
+      this.rateLimiter.writeRequests.tokens = 60;
+      this.rateLimiter.writeRequests.lastRefill = now;
+    }
+  
+    if (this.rateLimiter.writeRequests.tokens <= 0) {
+      const waitTime = this.rateLimiter.writeRequests.refillRate - timeSinceRefill;
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+      return this.acquireToken();
+    }
+  
+    this.rateLimiter.writeRequests.tokens--;
+    return true;
+  }
   
   
   private async formatHeadersBold(auth: any, spreadsheetId: string, headerLength: number): Promise<void> {
-    const sheets = google.sheets({ version: 'v4', auth });
-    const lastColumn = this.getColumnLetter(headerLength - 1);
-
-    try {
-      await sheets.spreadsheets.batchUpdate({
-        spreadsheetId,
-        requestBody: {
-          requests: [
-            {
-              repeatCell: {
-                range: {
-                  sheetId: 0,
-                  startRowIndex: 0,
-                  endRowIndex: 1,
-                  startColumnIndex: 0,
-                  endColumnIndex: headerLength,
-                },
-                cell: {
-                  userEnteredFormat: {
-                    textFormat: {
-                      bold: true,
+    return this.retryWithBackoff(async () => {
+      // Wait for rate limiter token
+      await this.acquireToken();
+  
+      const sheets = google.sheets({ version: 'v4', auth });
+      
+      try {
+        await sheets.spreadsheets.batchUpdate({
+          spreadsheetId,
+          requestBody: {
+            requests: [
+              {
+                repeatCell: {
+                  range: {
+                    sheetId: 0,
+                    startRowIndex: 0,
+                    endRowIndex: 1,
+                    startColumnIndex: 0,
+                    endColumnIndex: headerLength,
+                  },
+                  cell: {
+                    userEnteredFormat: {
+                      textFormat: {
+                        bold: true,
+                      },
                     },
                   },
+                  fields: 'userEnteredFormat.textFormat.bold',
                 },
-                fields: 'userEnteredFormat.textFormat.bold',
               },
-            },
-          ],
-        },
-      });
-    } catch (error) {
-      console.error('Error formatting headers:', error);
-    }
+            ],
+          },
+        });
+      } catch (error) {
+        // Re-throw the error so retryWithBackoff can handle it
+        throw error;
+      }
+    });
   }
+  
 
   private async addMissingHeaders(auth: any, spreadsheetId: string, existingHeaders: string[], newHeaders: string[], apiToken: string): Promise<void> {
     // Find headers that exist in newHeaders but not in existingHeaders
@@ -77,12 +111,13 @@ export class GoogleSheetsService {
     await this.updateValues(auth, spreadsheetId, 'Sheet1!A1', [updatedHeaders], apiToken);
 
     // Format the new headers bold
-    await this.formatHeadersBold(auth, spreadsheetId, updatedHeaders.length);
+    // await this.formatHeadersBold(auth, spreadsheetId, updatedHeaders.length);
   }
 
   private async initializeSheetIfNeeded(auth: any, googleSheetId: string, newHeaders: string[], existingData: any, apiToken: string): Promise<void> {
     const sheets = google.sheets({ version: 'v4', auth });
 
+    console.log("Going to check for new headers:::",newHeaders);
     // Initialize sheet with headers if completely empty
     if (!existingData || !existingData.values) {
       console.log('Sheet is empty, initializing with headers');
@@ -104,19 +139,35 @@ export class GoogleSheetsService {
     // Get existing headers
     const existingHeaders = existingData.values[0];
 
-
+    console.log("These are the existing headers that are already created:::", existingHeaders);
     // Use addMissingHeaders instead of implementing the logic directly
-    await this.addMissingHeaders(auth, googleSheetId, existingHeaders, newHeaders, apiToken);
+    // await this.addMissingHeaders(auth, googleSheetId, existingHeaders, newHeaders, apiToken);
   
-
+    const headers_to_not_add = [
+      'id', 'first_name', 'last_name', 'middle_name', 'middle_initial', 'full_name', 'job_company_name', 'job_company_id', 
+      'location_name', 'job_company_linkedin_url', 'job_company_website', 'location_region', 'location_locality', 
+      'location_metro', 'linkedin_url', 'facebook_url', 'twitter_url', 'location_country', 'profile_title', 'inferred_salary', 
+      'inferred_years_experience', 'industry', 'country', 'birth_date_fuzzy', 'birth_date', 'gender', 'email_address', 'emails', 
+      'industries', 'profiles', 'phone_numbers', 'job_process', 'locations', 'experience', 'experience_stats', 'last_seen', 
+      'last_updated', 'education', 'interests', 'skills', 'std_last_updated', 'created', 'creation_source', 'data_sources', 
+      'queryId', 'title', 'profile_url', 'resume_download_url', 'all_numbers', 'phone_number', 'mobile_phone', 'data_source', 
+      'job_name', 'upload_count', 'upload_id', 'all_mails', 'education_institute_ug', 'education_type_ug', 'education_year_ug', 
+      'education_course_ug', 'education_institute_pg', 'education_type_pg', 'education_year_pg', 'education_course_pg', 
+      'experience_years', 'job_title', 'current_role_tenure', 'total_job_changes', 'average_tenure', 'count_promotions', 
+      'total_tenure', 'socialprofiles', 'hiring_naukri_cookie', 'uniqueKeyString', 'unique_key_string', 'name', 
+      'pg_graduation_degree', 'ug_graduation_degree', 'pg_graduation_year', 'pg_institute_name', 'resume_headline', 
+      'key_skills', 'preferred_locations', 'std_function', 'std_grade', 'std_function_root', 'name', 'pg_institute_name', 
+      'resume_headline', 'key_skills', 'preferred_locations', 'std_function', 'std_grade', 'std_function_root', 'name', 'PG Year','UG Year', 'Status', 'Notes', 'UniqueKey'
+    ];
     // Find new headers that don't exist in the current sheet
-    const newColumnsToAdd = newHeaders.filter(header => !existingHeaders.includes(header));
-
+    const newColumnsToAdd = newHeaders.filter(header => !existingHeaders.includes(header) && !headers_to_not_add.includes(header));
+    console.log('New columns to add:', newColumnsToAdd);
     if (newColumnsToAdd.length > 0) {
       console.log('Adding new columns:', newColumnsToAdd);
 
       // Add new columns to existing headers
       const updatedHeaders = [...existingHeaders, ...newColumnsToAdd];
+      console.log("Thesea re the udpated headers:", updatedHeaders);
 
       // Update the first row with new headers
       await this.updateValues(auth, googleSheetId, 'Sheet1!A1', [updatedHeaders], apiToken);
@@ -132,18 +183,48 @@ export class GoogleSheetsService {
     }
   }
 
+  private getHeadersFromData(data: CandidateSourcingTypes.UserProfile[]): string[] {
+    if (!data || data.length === 0) {
+      return CandidateSourcingTypes.columnDefinitions.slice(0, 4).map(col => col.header);
+    }
+
+    const headers = new Set<string>();
+
+    // Iterate through each candidate to collect all unique headers
+    data.forEach(candidate => {
+      CandidateSourcingTypes.columnDefinitions.forEach(def => {
+        if (def.key === 'status' || def.key === 'notes' || def.key === 'unique_key_string' || def.key === 'full_name' || def.key === 'email_address' || def.key === 'phone_numbers' || candidate[def.key] !== undefined) {
+          headers.add(def.header);
+        }
+      });
+
+      // Add screening questions that start with 'Ans'
+      const ansKeys = Object.keys(candidate).filter(key => key.startsWith('Ans'));
+      ansKeys.forEach(key => {
+        headers.add(key);
+      });
+    });
+
+    console.log("These are the headers:::", Array.from(headers));
+
+    return Array.from(headers);
+  }
+
+
   private formatCandidateRow(candidate: CandidateSourcingTypes.UserProfile, headers: string[]): string[] {
     return headers.map(header => {
+      // Handle Ans fields directly from candidate object
+      if (header.startsWith('Ans(')) {
+        // Access the Ans field directly since it's stored as a property
+        return candidate[header]?.toString() || '';
+      }
+  
+      // Handle standard columns using columnDefinitions
       const definition = CandidateSourcingTypes.columnDefinitions.find(col => col.header === header);
       if (!definition) {
-        // Handle screening questions
-        if (header.includes('?')) {
-          const ansKey = `Ans(${header})`;
-          return candidate[ansKey] || '';
-        }
         return '';
       }
-
+  
       const value = candidate[definition.key];
       if (definition.format) {
         return definition.format(value);
@@ -151,7 +232,7 @@ export class GoogleSheetsService {
       return value?.toString() || '';
     });
   }
-
+  
   private async appendNewCandidates(auth: any, googleSheetId: string, batch: CandidateSourcingTypes.UserProfile[], headers: string[], existingData: any, apiToken: string): Promise<void> {
     // Find index of unique key column
     const uniqueKeyIndex = headers.findIndex(header => header.toLowerCase().includes('unique') && header.toLowerCase().includes('key'));
@@ -208,65 +289,63 @@ export class GoogleSheetsService {
     }
   }
 
+  
   async processGoogleSheetBatch(batch: CandidateSourcingTypes.UserProfile[], results: any, tracking: any, apiToken: string, googleSheetId: string, jobObject: CandidateSourcingTypes.Jobs): Promise<void> {
-    try {
-      const auth = await this.loadSavedCredentialsIfExist(apiToken);
+    return this.retryWithBackoff(async () => {
+      try {
+        const auth = await this.loadSavedCredentialsIfExist(apiToken);
+        if (!auth) {
+          console.log('Google Sheets authentication failed');
+          return;
+        }
 
-      if (!auth) {
-        console.log('Google Sheets authentication failed');
-        return;
+        const headers = this.getHeadersFromData(batch);
+        const lastColumn = this.getColumnLetter(headers.length - 1);
+        const existingSheet = await this.findSpreadsheetByJobName(auth, jobObject.name);
+
+        if (!existingSheet) {
+          googleSheetId = await this.createAndInitializeSheet(auth, jobObject, apiToken);
+        }
+
+        const existingData = await this.getValues(auth, googleSheetId, `Sheet1!A1:${lastColumn}`);
+        await this.initializeSheetIfNeeded(auth, googleSheetId, headers, existingData, apiToken);
+
+        await this.appendNewCandidatesToSheet(auth, googleSheetId, batch, headers, existingData, apiToken);
+      } catch (error) {
+        console.log('Error in process Google Sheet Batch:', error);
+        if (error.response?.data) {
+          console.error('Detailed error:', error.response.data);
+        }
       }
-      const headers = this.getHeadersFromData(batch);
-      console.log('Headers:', headers);
-      const lastColumn = this.getColumnLetter(headers.length - 1);
-      console.log('This is the last column:', lastColumn);
-      // Get existing data
-      console.log('Looking for jobObject.name::', jobObject.name);
-      const existingSheet = await this.findSpreadsheetByJobName(auth, jobObject.name);
-      console.log('This is the existing sheet:', existingSheet, 'googleSheetId:', googleSheetId);
-      if (!existingSheet) {
-        console.log('Spreadsheet does not exist, creating new one');
-        const newSheet = await this.createSpreadsheetForJob(jobObject.name, apiToken);
-        googleSheetId = newSheet.googleSheetId;
-        const googleSheetUrl = `https://docs.google.com/spreadsheets/d/${googleSheetId}`;
-        this.updateJobWithSheetDetails(jobObject, googleSheetUrl, googleSheetId, apiToken);
-      }
-      const existingData = await this.getValues(auth, googleSheetId, `Sheet1!A1:${lastColumn}`);
-      console.log('This is the existing data:', existingData);
-      await this.initializeSheetIfNeeded(auth, googleSheetId, headers, existingData, apiToken);
-      console.log('Initialised sheet data:');
-      await this.appendNewCandidates(auth, googleSheetId, batch, headers, existingData, apiToken);
-      console.log('Appended new candidates');
-    } catch (error) {
-      console.log('Error in process Google Sheet Batch:', error);
-      if (error.response?.data) {
-        console.error('Detailed error:', error.response.data);
-      }
+    });
+  }
+
+  private async createAndInitializeSheet(auth: any, jobObject: CandidateSourcingTypes.Jobs, apiToken: string): Promise<string> {
+    const newSheet = await this.createSpreadsheetForJob(jobObject.name, apiToken);
+    const googleSheetId = newSheet.googleSheetId;
+    const googleSheetUrl = `https://docs.google.com/spreadsheets/d/${googleSheetId}`;
+    await this.updateJobWithSheetDetails(jobObject, googleSheetUrl, googleSheetId, apiToken);
+    return googleSheetId;
+  }
+
+  private async appendNewCandidatesToSheet(auth: any, googleSheetId: string, batch: CandidateSourcingTypes.UserProfile[], headers: string[], existingData: any, apiToken: string): Promise<void> {
+    const updates: Array<{ range: string, values: any[][] }> = [];
+    const uniqueKeyIndex = headers.findIndex(header => header.toLowerCase().includes('unique') && header.toLowerCase().includes('key'));
+    const existingKeys = new Set(existingData?.values?.slice(1)?.map(row => row[uniqueKeyIndex])?.filter(key => key) || []);
+    const newCandidates = batch.filter(candidate => candidate?.unique_key_string && !existingKeys.has(candidate.unique_key_string));
+
+    if (newCandidates.length > 0) {
+      const currentHeaders = existingData?.values ? existingData.values[0] : [];
+      console.log("This is the current headers:::", currentHeaders);
+      const candidateRows = newCandidates.map(candidate => this.formatCandidateRow(candidate, currentHeaders));
+      console.log("This is the candidateRows:::", candidateRows);
+      const nextRow = (existingData?.values?.length || 0) + 1;
+      updates.push({ range: `Sheet1!A${nextRow}`, values: candidateRows });
+      await this.batchUpdateGoogleSheet(auth, googleSheetId, updates);
+      console.log(`Successfully appended ${candidateRows.length} new candidates to Google Sheet`);
     }
   }
 
-  private getHeadersFromData(data: CandidateSourcingTypes.UserProfile[]): string[] {
-    if (!data || data.length === 0) {
-      return ['status', 'notes', 'unique_key_string', 'full_name', 'email_address', 'phone_numbers'];
-    }
-
-    const sampleCandidate = data[0];
-    const headers = new Set<string>();
-
-    // Add headers based on available data
-    Object.keys(sampleCandidate).forEach(key => {
-      headers.add(key);
-    });
-
-    // Add screening questions that start with 'Ans'
-    const ansKeys = Object.keys(sampleCandidate).filter(key => key.startsWith('Ans'));
-    ansKeys.forEach(key => {
-      const questionText = key.replace('Ans(', '').replace(')', '');
-      headers.add(questionText);
-    });
-
-    return Array.from(headers);
-  }
 
   async findSpreadsheetByJobName(auth: any, jobName: string): Promise<{ id: string; url: string } | null> {
     console.log('looking for existing files');
@@ -295,6 +374,28 @@ export class GoogleSheetsService {
     }
   }
 
+  private async retryWithBackoff<T>(
+    operation: () => Promise<T>,
+    maxRetries = 5,
+    initialDelay = 1000
+  ): Promise<T> {
+    let retries = 0;
+    while (true) {
+      try {
+        return await operation();
+      } catch (error) {
+        if (!error.message?.includes('Quota exceeded') || retries >= maxRetries) {
+          throw error;
+        }
+        
+        const delay = initialDelay * Math.pow(2, retries);
+        console.log(`Rate limit hit, retrying in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        retries++;
+      }
+    }
+  }
+  
 
   async createSpreadsheetForJob(jobName: string, twentyToken: string): Promise<any> {
     const auth = await this.loadSavedCredentialsIfExist(twentyToken);
@@ -371,6 +472,8 @@ export class GoogleSheetsService {
           }]
         }
       });
+
+      
 
       // Freeze the top row
       await sheets.spreadsheets.batchUpdate({
@@ -505,6 +608,42 @@ export class GoogleSheetsService {
     }
   }
 
+
+  private async batchUpdateGoogleSheet(
+    auth: any,
+    spreadsheetId: string,
+    updates: Array<{range: string, values: any[][]}>
+  ): Promise<void> {
+    return this.retryWithBackoff(async () => {
+      const sheets = google.sheets({ version: 'v4', auth });
+      await sheets.spreadsheets.values.batchUpdate({
+        spreadsheetId,
+        requestBody: {
+          valueInputOption: 'RAW',
+          data: updates.map(update => ({
+            range: update.range,
+            values: update.values
+          }))
+        }
+      });
+    });
+  }
+  
+  
+
+  // async batchUpdateValues(auth, spreadsheetId: string, updates: Array<{range: string, values: any[][]}>) {
+  //   const sheets = google.sheets({ version: 'v4', auth });
+  //   await sheets.spreadsheets.values.batchUpdate({
+  //     spreadsheetId,
+  //     requestBody: {
+  //       valueInputOption: 'RAW',
+  //       data: updates.map(update => ({
+  //         range: update.range,
+  //         values: update.values
+  //       }))
+  //     }
+  //   });
+  // }
   async getValues(auth, spreadsheetId: string, range: string) {
     const sheets = google.sheets({ version: 'v4', auth });
     console.log('spreadsheetId::', spreadsheetId);

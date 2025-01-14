@@ -703,7 +703,6 @@ export class ArxChatEndpoint {
       console.log('Person ID not found');
       return { status: 'Failed', message: 'Person ID not found' };
     }
-    console.log("Person ID:", personId);
 
     const graphqlQueryObj = JSON.stringify({
       query: allGraphQLQueries.graphqlMutationToDeleteManyCandidates,

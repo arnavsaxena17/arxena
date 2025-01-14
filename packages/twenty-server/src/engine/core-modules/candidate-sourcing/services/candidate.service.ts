@@ -539,7 +539,6 @@ private async processBatches(
         const existingCandidate = candidatesMap.get(key);
         // console.log('Existing candidate:', existingCandidate);
         const personId = tracking.personIdMap.get(key);
-        console.log('Person ID:', personId);
         if (personId && !existingCandidate) {
           const { candidateNode } = await processArxCandidate(profile, jobObject);
           // console.log("Candidate Node:", candidateNode, "for pro  file:", profile);

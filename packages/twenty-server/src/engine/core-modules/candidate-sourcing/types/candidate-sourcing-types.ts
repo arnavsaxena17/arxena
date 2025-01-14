@@ -13,13 +13,15 @@ export enum Gender {
   MALE = 'Male',
   FEMALE = 'Female',
   OTHER = 'Other',
-  NA = 'NA'
+  NA = 'NA',
 }
 
 export enum MaritalStatus {
   MARRIED = 'Married',
   SINGLE = 'Single',
-  NA = 'NA'
+  SINGLE_UNMARRIED = 'Single/unmarried',
+
+  NA = 'NA',
 }
 
 export enum NoticeStatus {
@@ -28,7 +30,7 @@ export enum NoticeStatus {
   TWO_MONTHS = '2 Months',
   THREE_MONTHS = '3 Months',
   SERVING = 'Serving Notice Period',
-  NA = 'NA'
+  NA = 'NA',
 }
 
 export interface ColumnDefinition {
@@ -46,40 +48,39 @@ export interface ProcessCandidatesJobData {
   apiToken: any;
 }
 
-
 export const columnDefinitions: ColumnDefinition[] = [
   {
     key: 'full_name',
     header: 'Candidate Name',
     type: 'string',
-    format: (value: string) => value?.trim() || ''
+    format: (value: string) => value?.trim() || '',
   },
   {
     key: 'email_address',
     header: 'Email',
     type: 'array',
-    format: (value: string[]) => Array.isArray(value) ? value[0] || '' : value || ''
+    format: (value: string[]) => (Array.isArray(value) ? value[0] || '' : value || ''),
   },
   {
     key: 'phone_numbers',
     header: 'Phone',
     type: 'array',
-    format: (value: string[]) => Array.isArray(value) ? value[0] || '' : value || ''
+    format: (value: string[]) => (Array.isArray(value) ? value[0] || '' : value || ''),
   },
   {
     key: 'job_title',
     header: 'Current Title',
-    type: 'string'
+    type: 'string',
   },
   {
     key: 'job_company_name',
     header: 'Current Company',
-    type: 'string'
+    type: 'string',
   },
   {
     key: 'location_name',
     header: 'Location',
-    type: 'string'
+    type: 'string',
   },
   {
     key: 'birth_date',
@@ -91,109 +92,138 @@ export const columnDefinitions: ColumnDefinition[] = [
       } catch {
         return '';
       }
-    }
+    },
   },
   {
     key: 'age',
     header: 'Age',
     type: 'number',
-    format: (value: number) => value?.toString() || '0'
+    format: (value: number) => value?.toString() || '0',
   },
   {
     key: 'gender',
     header: 'Gender',
     type: 'enum',
     enum: Gender,
-    format: (value: string) => Object.values(Gender).includes(value as Gender) ? value : Gender.NA
+    format: (value: string) => (Object.values(Gender).includes(value as Gender) ? value : Gender.NA),
   },
   {
     key: 'marital_status',
     header: 'Marital Status',
     type: 'enum',
     enum: MaritalStatus,
-    format: (value: string) => Object.values(MaritalStatus).includes(value as MaritalStatus) ? value : MaritalStatus.NA
+    format: (value: string) => (Object.values(MaritalStatus).includes(value as MaritalStatus) ? value : MaritalStatus.NA),
   },
   {
     key: 'inferred_salary',
-    header: 'Expected Salary (LPA)',
+    header: 'Inferred Salary (LPA)',
     type: 'number',
-    format: (value: number) => value ? value.toFixed(2) : '0'
+    format: (value: number) => (value ? value.toFixed(2) : '0'),
+  },
+  {
+    key: 'experience_years',
+    header: 'Years of Experience',
+    type: 'number',
+    format: (value: number) => (value ? value.toFixed(2) : '0'),
+  },
+  {
+    key: 'total_job_changes',
+    header: 'Total Job Changes',
+    type: 'number',
+    format: (value: number) => (value ? value.toFixed(2) : '0'),
+  },
+  {
+    key: 'average_tenure',
+    header: 'Average Tenure',
+    type: 'number',
+    format: (value: number) => (value ? value.toFixed(2) : '0'),
+  },
+  {
+    key: 'total_tenure',
+    header: 'Total Tenure',
+    type: 'number',
+    format: (value: number) => (value ? value.toFixed(2) : '0'),
+  },
+  {
+    key: 'current_role_tenure',
+    header: 'Current Role Tenure',
+    type: 'number',
+    format: (value: number) => (value ? value.toFixed(1) : '0'),
   },
   {
     key: 'inferred_years_experience',
     header: 'Total Experience',
-    type: 'string'
+    type: 'string',
   },
   {
     key: 'notice_period',
     header: 'Notice Period',
     type: 'enum',
     enum: NoticeStatus,
-    format: (value: string) => Object.values(NoticeStatus).includes(value as NoticeStatus) ? value : NoticeStatus.NA
+    format: (value: string) => (Object.values(NoticeStatus).includes(value as NoticeStatus) ? value : NoticeStatus.NA),
   },
   {
     key: 'key_skills',
     header: 'Key Skills',
     type: 'string',
-    format: (value: string) => value?.replace(/,/g, ';') || '' // Replace commas with semicolons to avoid CSV issues
+    format: (value: string) => value?.replace(/,/g, ';') || '', // Replace commas with semicolons to avoid CSV issues
   },
   {
     key: 'education_course_ug',
     header: 'UG Degree',
-    type: 'string'
+    type: 'string',
   },
   {
     key: 'education_institute_ug',
     header: 'UG Institute',
-    type: 'string'
+    type: 'string',
   },
   {
     key: 'ug_graduation_year',
     header: 'UG Year',
     type: 'number',
-    format: (value: number) => value > 1950 && value < 2030 ? value.toString() : ''
+    format: (value: number) => (value > 1950 && value < 2030 ? value.toString() : ''),
   },
   {
     key: 'education_course_pg',
     header: 'PG Degree',
-    type: 'string'
+    type: 'string',
   },
   {
     key: 'education_institute_pg',
     header: 'PG Institute',
-    type: 'string'
+    type: 'string',
   },
   {
     key: 'pg_graduation_year',
     header: 'PG Year',
     type: 'number',
-    format: (value: number) => value > 1950 && value < 2030 ? value.toString() : ''
+    format: (value: number) => (value > 1950 && value < 2030 ? value.toString() : ''),
   },
   {
     key: 'profile_url',
     header: 'Profile URL',
     type: 'url',
-    format: (value: string) => value || ''
+    format: (value: string) => value || '',
   },
   {
     key: 'status',
     header: 'Status',
     type: 'string',
-    format: () => 'New'
+    format: () => 'New',
   },
   {
     key: 'notes',
     header: 'Notes',
     type: 'string',
-    format: () => ''
+    format: () => '',
   },
   {
     key: 'unique_key_string',
     header: 'UniqueKey',
-    type: 'string'
-  }
+    type: 'string',
+  },
 ];
-
 
 interface Profile {
   title: string;
@@ -360,7 +390,6 @@ export interface UserProfile {
   std_function_root: string;
 }
 
-
 interface Profile {
   names: {
     first_name: string;
@@ -401,9 +430,9 @@ export interface ArxenaCandidateNode {
   startMeetingSchedulingChat: boolean;
   uniqueStringKey: string;
   stopChat: boolean;
-  hiringNaukriUrl?: {label:string, url:string};
-  resdexNaukriUrl?: {label:string, url:string};
-  displayPicture: {label:string, url:string};
+  hiringNaukriUrl?: { label: string; url: string };
+  resdexNaukriUrl?: { label: string; url: string };
+  displayPicture: { label: string; url: string };
   jobsId: string;
   jobSpecificFields: any;
   peopleId: string;
@@ -411,8 +440,8 @@ export interface ArxenaCandidateNode {
 
 export interface ArxenaJobCandidateNode {
   id?: string;
-  profileUrl:{label:string, url:string};
-  displayPicture:{label:string, url:string};
+  profileUrl: { label: string; url: string };
+  displayPicture: { label: string; url: string };
   educationUgYear?: number;
   educationUgSpecialization?: string;
   educationUgCourse?: string;
@@ -475,7 +504,7 @@ export interface ArxenaPersonNode {
     url: string;
     label: string;
   };
-  displayPicture?: { url: string; label: string; };
+  displayPicture?: { url: string; label: string };
   email?: string | null;
   uniqueStringKey?: string | null;
   phone?: string | null;
