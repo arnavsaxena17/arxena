@@ -1,7 +1,5 @@
 import { ArxenaCandidateNode, ArxenaPersonNode, ArxenaJobCandidateNode } from '../types/candidate-sourcing-types';
 
-
-
 export const mapArxCandidateToPersonNode = candidate => {
   const personNode: ArxenaPersonNode = {
     name: { firstName: candidate?.first_name || "", lastName: candidate?.last_name || ""},
@@ -14,9 +12,6 @@ export const mapArxCandidateToPersonNode = candidate => {
   };
   return personNode;
 };
-
-
-
 export const mapArxCandidateToJobCandidateNode = candidate => {
 
   const ansKeys = Object.keys(candidate).filter(key => key.startsWith('Ans'));
@@ -62,7 +57,7 @@ export const mapArxCandidateToJobCandidateNode = candidate => {
   return jobCandidateNode;
 };
 
-export const mapArxCandidateToCandidateNode = (candidate, jobNode, jobSpecificNode) => {
+export const mapArxCandidateToCandidateNode = (candidate: { first_name: string; last_name: string; unique_key_string: any; profile_url: any; display_picture: any; }, jobNode: { id: any; }, jobSpecificNode: { profileTitle: any; inferredSalary: any; inferredYearsExperience: any; inferredLocation: any; skills: any; stdFunction: any; stdGrade: any; stdFunctionRoot: any; }) => {
   const candidateNode: ArxenaCandidateNode = {
     name: candidate?.first_name + ' ' + candidate?.last_name || "",
     jobsId: jobNode?.id,

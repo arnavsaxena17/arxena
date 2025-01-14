@@ -310,20 +310,20 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
       console.log("jobId:",jobId)
       const interviewObj = await this.getInterviewByJobId(jobId, apiToken);
       console.log("interviewObj:::",interviewObj)
-      const interviewStatusId = v4();
+      const videoInterviewId = v4();
       const graphqlQueryObj = JSON.stringify({
         query: allGraphQLQueries.graphqlQueryToCreateVideoInterview,
         variables: {
         input: {
-          id: interviewStatusId,
+          id: videoInterviewId,
           candidateId: candidateObj?.id,
           name: "Interview - "+ candidateObj?.name + " for "+ candidateObj?.jobs?.name,
-          aIInterviewId: interviewObj?.id,
+          videoInterviewId: interviewObj?.id,
           interviewStarted:false,
           interviewCompleted:false,
           interviewLink:{
-            url:"/video-interview/"+interviewStatusId,
-            label: "/video-interview/"+interviewStatusId,
+            url:"/video-interview/"+videoInterviewId,
+            label: "/video-interview/"+videoInterviewId,
           },
           interviewReviewLink:{
             url:"/video-interview-review/"+candidateObj?.id,
@@ -510,7 +510,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
             jobLocation: activeJobCandidateObj?.node?.jobs?.jobLocation,
             whatsappMessages: activeJobCandidateObj?.node?.jobs?.whatsappMessages,
           },
-          aIInterviewStatus: activeJobCandidateObj?.node?.aIInterviewStatus,
+          videoInterview: activeJobCandidateObj?.node?.videoInterview,
           engagementStatus: activeJobCandidateObj?.node?.engagementStatus,
           lastEngagementChatControl: activeJobCandidateObj?.node?.lastEngagementChatControl,
           phoneNumber: personWithActiveJob?.node?.phone,

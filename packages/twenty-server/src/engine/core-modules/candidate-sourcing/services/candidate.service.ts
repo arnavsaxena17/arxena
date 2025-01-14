@@ -288,13 +288,6 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
   }
 
 
-
-
-
-  // Utility Function
-
-
-
 private async processBatches(
     data: CandidateSourcingTypes.UserProfile[],
     jobObject: CandidateSourcingTypes.Jobs,
@@ -325,21 +318,10 @@ private async processBatches(
     for (let i = 0; i < data.length; i += batchSize) {
       const batch = data.slice(i, i + batchSize);
       const uniqueStringKeys = batch.map(p => p?.unique_key_string).filter(Boolean);
-  
       if (uniqueStringKeys.length === 0) continue;
-  
       await googleSheetsService.processGoogleSheetBatch(batch, results, tracking, apiToken, googleSheetId, jobObject);
       await this.processPeopleBatch(batch, uniqueStringKeys, results, tracking, apiToken);
-      await this.processCandidatesBatch(batch, jobObject, results, tracking, apiToken);
-      // await this.processJobCandidatesBatch(
-      //   batch,
-      //   jobObject,
-      //   // context.jobCandidateInfo.path_position,
-      //   results,
-      //   tracking,
-      //   apiToken
-      // );
-  
+      await this.processCandidatesBatch(batch, jobObject, results, tracking, apiToken);  
       if (i + batchSize < data.length) {
         await delay(1000);
       }

@@ -124,7 +124,7 @@ export class VideoInterviewController {
       const currentQuestionIndex = JSON.parse(req?.body?.currentQuestionIndex);
       console.log("REceived interviewData:", interviewData)
       console.log("REceived currentQuestionIndex:", currentQuestionIndex)
-      const questionId = interviewData.aIInterview.aIInterviewQuestions.edges[currentQuestionIndex].node.id;
+      const questionId = interviewData.aIInterview.videoInterviewQuestions.edges[currentQuestionIndex].node.id;
       if (!files.audio || !files.video) {
         throw new BadRequestException('Both video and audio files are required');
 
@@ -194,8 +194,8 @@ export class VideoInterviewController {
         mutation CreateOneResponse($input: ResponseCreateInput!) {
           createResponse(data: $input) {
             id
-            aIInterviewStatusId
-            aIInterviewQuestionId
+            videoInterviewId
+            VideoInterviewQuestionId
             transcript
             completedResponse
             createdAt
@@ -204,14 +204,14 @@ export class VideoInterviewController {
       `;
 
       console.log("This is the responseData:", interviewData?.name)
-      console.log("This is the responseData:", req.body.responseData?.aIInterviewQuestionId)
+      console.log("This is the responseData:", req.body.responseData?.VideoInterviewQuestionId)
       console.log("This is the timeLimitAdherence:", req.body.responseData?.timeLimitAdherence)
 
       const createResponseVariables = {
         input: {
           name: `Response for ${interviewData?.name}`,
-          aIInterviewStatusId: interviewData.id.replace("/video-interview/", ""),
-          aIInterviewQuestionId: questionId,
+          videoInterviewId: interviewData.id.replace("/video-interview/", ""),
+          videoInterviewQuestionId: questionId,
           transcript: transcript,
           completedResponse: true,
           candidateId:interviewData.candidate.id,
@@ -266,8 +266,8 @@ export class VideoInterviewController {
       // Update AI Interview Status mutation
       console.log('Preparing GraphQL mutation for status update');
       const updateStatusMutation = `
-        mutation UpdateOneAIInterviewStatus($idToUpdate: ID!, $input: AIInterviewStatusUpdateInput!) {
-          updateAIInterviewStatus(id: $idToUpdate, data: $input) {
+        mutation UpdateOneVideoInterview($idToUpdate: ID!, $input: VideoInterviewUpdateInput!) {
+          updateVideoInterview(id: $idToUpdate, data: $input) {
             id
             interviewStarted
             interviewCompleted
@@ -278,8 +278,8 @@ export class VideoInterviewController {
       const mutationToUpdateOneCandidate = `
         mutation UpdateOneCandidate($idToUpdate: ID!, $input: CandidateUpdateInput!) {
           updateCandidate(id: $idToUpdate, data: $input) {
-        id
-        updatedAt
+            id
+            updatedAt
           }
         }
       `;
@@ -316,7 +316,7 @@ export class VideoInterviewController {
         statusResult = (await axiosRequest(graphqlQueryObjForUpdationForStatus,apiToken)).data;
       }
       catch(e){
-        console.log("Error in UpdateOneAIInterviewStatus status update::", e)
+        console.log("Error in UpdateOneVideoInterview status update::", e)
       }
       try{
 
@@ -330,7 +330,7 @@ export class VideoInterviewController {
       console.log('Preparing response');
       const response = {
         response: responseResult?.createResponse,
-        status: statusResult?.updateAIInterviewStatus,
+        status: statusResult?.updateVideoInterview,
         videoFile: videoFile?.filename,
         audioFile: audioFile?.filename,
       };
@@ -351,15 +351,15 @@ export class VideoInterviewController {
     const results = await this.workspaceQueryService.executeQueryAcrossWorkspaces(
       async (workspaceId, dataSourceSchema, transactionManager) => {
         // Query to find the interview status
-        const interviewStatus = await this.workspaceQueryService.executeRawQuery(
-          `SELECT * FROM ${dataSourceSchema}."_aIInterviewStatus" 
-           WHERE "_aIInterviewStatus"."id"::text ILIKE $1`,
+        const videoInterview = await this.workspaceQueryService.executeRawQuery(
+          `SELECT * FROM ${dataSourceSchema}."_videoInterview" 
+           WHERE "_videoInterview"."id"::text ILIKE $1`,
           [`%${interviewId.replace("/video-interview/","")}%`],
           workspaceId,
           transactionManager
         );
         
-        if (interviewStatus.length > 0) {
+        if (videoInterview.length > 0) {
           // Get API keys for the workspace
           const apiKeys = await this.workspaceQueryService.getApiKeys(
             workspaceId, 
@@ -417,8 +417,8 @@ export class VideoInterviewController {
     // this.graphqlClient.setHeader('Authorization', `Bearer ${token}`);
 
     const questionsQuery = `
-      query FindManyAIInterviewQuestions($filter: AIInterviewQuestionFilterInput, $orderBy: [AIInterviewQuestionOrderByInput], $limit: Int) {
-        aIInterviewQuestions(
+      query FindManyVideoInterviewQuestions($filter: VideoInterviewQuestionFilterInput, $orderBy: [VideoInterviewQuestionsOrderByInput], $limit: Int) {
+        videoInterviewQuestions(
           filter: $filter
           orderBy: $orderBy
           first: $limit
@@ -443,21 +443,21 @@ export class VideoInterviewController {
       orderBy: { position: 'AscNullsFirst' },
     };
 
-    const graphqlQueryObjForaIInterviewQuestions = JSON.stringify({
+    const graphqlQueryObjForVideoInterviewQuestions = JSON.stringify({
       query: questionsQuery,
       variables: questionsVariables,
     });
 
-    const result = (await axiosRequest(graphqlQueryObjForaIInterviewQuestions,apiToken)).data as { aIInterviewQuestions: { edges: { node: { id: string; name: string; questionValue: string; timeLimit: number; position: number; aIInterviewId: string } }[] } };
-    return result.aIInterviewQuestions.edges.map(edge => edge.node);
+    const result = (await axiosRequest(graphqlQueryObjForVideoInterviewQuestions,apiToken)).data as { videoInterviewQuestions: { edges: { node: { id: string; name: string; questionValue: string; timeLimit: number; position: number; aIInterviewId: string } }[] } };
+    return result.videoInterviewQuestions.edges.map(edge => edge.node);
   }
 
   @Post('update-feedback')
   async updateFeedback(@Req() req, @Body() feedbackData) {
     const apiToken = req.headers.authorization.split(' ')[1]; // Assuming Bearer token
 
-    const updateStatusMutation = `mutation UpdateOneAIInterviewStatus($idToUpdate: ID!, $input: AIInterviewStatusUpdateInput!) {
-      updateAIInterviewStatus(id: $idToUpdate, data: $input) {
+    const updateStatusMutation = `mutation UpdateOneVideoInterview($idToUpdate: ID!, $input: VideoInterviewUpdateInput!) {
+      updateVideoInterview(id: $idToUpdate, data: $input) {
         id
         interviewStarted
         interviewCompleted
@@ -519,9 +519,9 @@ export class VideoInterviewController {
     if (req.method === 'POST') {
       console.log("Received interviewId:", interviewId);
       let responseFromInterviewRequests
-      const InterviewStatusesQuery = `
-        query FindManyAIInterviewStatuses($filter: AIInterviewStatusFilterInput, $orderBy: [AIInterviewStatusOrderByInput], $lastCursor: String, $limit: Int) {
-          aIInterviewStatuses(
+      const videoInterviewsQuery = `
+        query FindManyVideoInterviews($filter: VideoInterviewFilterInput, $orderBy: [VideoInterviewOrderByInput], $lastCursor: String, $limit: Int) {
+          VideoInterviews(
             filter: $filter
             orderBy: $orderBy
             first: $limit
@@ -551,7 +551,7 @@ export class VideoInterviewController {
                     name
                     id
                     recruiterId
-                    companies{
+                    company{
                         name
                     }
                   }
@@ -566,7 +566,7 @@ export class VideoInterviewController {
                     phone
                   }
                 }
-                aIInterview {
+                videoInterview {
                   position
                   introduction
                   id
@@ -574,7 +574,7 @@ export class VideoInterviewController {
                   jobId
                   name
                   aIModelId
-                  aIInterviewQuestions {
+                  videoInterviewQuestions {
                     edges{
                         node{
                             name
@@ -621,12 +621,12 @@ export class VideoInterviewController {
           },
         },
       };
-      const graphqlQueryObjForaIInterviewQuestions = JSON.stringify({
-        query: InterviewStatusesQuery,
+      const graphqlQueryObjForvideoInterviewQuestions = JSON.stringify({
+        query: videoInterviewsQuery,
         variables: InterviewStatusesVariables,
       });
       try {
-        const response = await axiosRequest(graphqlQueryObjForaIInterviewQuestions,apiToken);
+        const response = await axiosRequest(graphqlQueryObjForvideoInterviewQuestions,apiToken);
         console.log("REhis response:", response?.data)
         console.log("REhis response:", response?.data?.data)
         responseFromInterviewRequests =  response?.data;
@@ -635,7 +635,7 @@ export class VideoInterviewController {
         console.error('Error fetching interview data:', error);
         responseFromInterviewRequests = null
       }
-      const videoInterviewId = responseFromInterviewRequests?.data?.aIInterviewStatuses?.edges[0]?.node?.aIInterview?.id;
+      const videoInterviewId = responseFromInterviewRequests?.data?.videoInterviews?.edges[0]?.node?.aIInterview?.id;
       console.log("Received videoInterviewId:", videoInterviewId);
       const videoInterviewIntroductionAttachmentDataQuery = JSON.stringify({
         query: `query FindManyAttachments($filter: AttachmentFilterInput, $orderBy: [AttachmentOrderByInput], $lastCursor: String, $limit: Int) {
@@ -658,7 +658,7 @@ export class VideoInterviewController {
         }`,
         variables: { filter: { aIInterviewId: { eq: videoInterviewId } }, orderBy: { createdAt: 'DescNullsFirst' } }
       });
-      const allQuestionIds = responseFromInterviewRequests?.data?.aIInterviewStatuses?.edges[0]?.node?.aIInterview?.aIInterviewQuestions?.edges
+      const allQuestionIds = responseFromInterviewRequests?.data?.videoInterviews?.edges[0]?.node?.aIInterview?.videoInterviewQuestions?.edges
         .map((edge: { node: { id: string; createdAt: string } }) => edge.node)
         .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
         .map(node => node.id);
@@ -693,7 +693,7 @@ export class VideoInterviewController {
             totalCount
           }
         }`,
-        variables: { filter: { aIInterviewQuestionId: { eq: id } }, orderBy: { createdAt: 'DescNullsFirst' } }
+        variables: { filter: { videoInterviewQuestionId: { eq: id } }, orderBy: { createdAt: 'DescNullsFirst' } }
       }));
   
       console.log("Going to get video interview introduction attachment data");

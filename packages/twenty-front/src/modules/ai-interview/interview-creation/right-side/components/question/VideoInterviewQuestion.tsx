@@ -15,7 +15,7 @@ const StyledContainer = styled.div`
   scroll-behavior: smooth;
 `;
 
-export const AIInterviewQuestion = ({ id, questionNumber }: { id: string; questionNumber: number }) => {
+export const VideoInterviewQuestion = ({ id, questionNumber }: { id: string; questionNumber: number }) => {
   const { questionToDisplay } = useQuestionToDisplay();
 
   return (

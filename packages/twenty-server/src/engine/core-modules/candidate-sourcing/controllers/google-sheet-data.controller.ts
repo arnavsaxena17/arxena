@@ -17,6 +17,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { In } from 'typeorm';
 import { DataSourceService } from 'src/engine/metadata-modules/data-source/data-source.service';
 import { graphqlToFetchActiveJob, graphqlToFetchAllCandidatesByStartChat, graphQlToUpdateCandidate } from '../../arx-chat/services/candidate-engagement/graphql-queries-chatbot';
+import { CandidateSourcingController } from './candidate-sourcing.controller';
 
 
 
@@ -29,6 +30,10 @@ export class GoogleSheetsDataController {
   
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
+    private readonly chatService: ChatService,
+    private readonly processCandidatesService: ProcessCandidatesService,
+    private readonly sheetsService: GoogleSheetsService,
+    private readonly personService: PersonService,
     private readonly candidateService: CandidateService,
 
   ) {
@@ -92,24 +97,64 @@ export class GoogleSheetsDataController {
     }
   }
 
-
-
-  @Post('get-data')
+  @Get('get-data')
   getData() {
-
-
-    sheetToJobMap: Object.fromEntries(this.googleSheetToJobMap)
-
-
-    return {
-    
-    };
+    console.log("Get ata has been called lets see what we get");
+    sheetToJobMap: Object.fromEntries(this.googleSheetToJobMap);
+    return { };
   }
+  @Post('enrichment-data')
+  async enrichmentData(@Body() body: any) {
+    console.log('Called Enrichmetn Data with Request Body:', body);
+    console.log('Request Body:', body);
+
+    const enrichmentPayload = {
+      enrichments: body,
+      objectNameSingular: body[0]?.objectNameSingular || '',
+      availableSortDefinitions: body[0]?.availableSortDefinitions || [],
+      availableFilterDefinitions: body[0]?.availableFilterDefinitions || [],
+      objectRecordId: body[0]?.objectRecordId || '',
+      selectedRecordIds: body[0]?.selectedRows?.map(row => row[0]) || [] // Transform selectedRows to selectedRecordIds
+    };
+
+    
+    const spreadsheetId = body[0]?.googleSheetId; // Adjust this based on your actual payload structure
+    console.log("got spreadsheet Id:", spreadsheetId);
+    // Get workspace token
+    const tokenData = await this.getWorkspaceTokenForGoogleSheet(spreadsheetId);
+    if (!tokenData || !tokenData.token) {
+      throw new Error('Unable to get valid workspace token');
+    }
+
+    console.log("got Token Data:", tokenData);
+
+
+    const candidateSourcingController = new CandidateSourcingController(
+      this.sheetsService,
+      this.workspaceQueryService,
+      this.personService, 
+      this.candidateService,
+      this.processCandidatesService,
+      this.chatService
+    );
+    console.log("candidateSourcingController:", candidateSourcingController);
+
+    const result = await candidateSourcingController.createEnrichments({
+      body: enrichmentPayload,
+      headers: {
+        authorization: `Bearer ${tokenData.token}`
+      }
+    });
+    console.log("Respult reaceieved:", result);
+    return result;
+    }
 
   private async getWorkspaceTokenForGoogleSheet(spreadsheetId: string) {
+    console.log("gpong to get workspace token for google sheet with id :", spreadsheetId);
     const results = await this.workspaceQueryService.executeQueryAcrossWorkspaces(
       async (workspaceId, dataSourceSchema, transactionManager) => {
         // Query to find the Google Sheet integration record
+        console.log("workspaceId:", workspaceId);
         const sheetIntegration = await this.workspaceQueryService.executeRawQuery(
           `SELECT * FROM ${dataSourceSchema}."_job" 
            WHERE "googleSheetId" = $1`,
@@ -117,7 +162,7 @@ export class GoogleSheetsDataController {
           workspaceId,
           transactionManager
         );
-        console.log("sheetIntegration", sheetIntegration);
+        console.log("sheetIntegration:::[]", sheetIntegration);
         if (sheetIntegration.length > 0) {
           // Get API keys for the workspace
           const apiKeys = await this.workspaceQueryService.getApiKeys(
@@ -125,7 +170,6 @@ export class GoogleSheetsDataController {
             dataSourceSchema, 
             transactionManager
           );
-  
           if (apiKeys.length > 0) {
             // Generate token using the first available API key
             const apiKeyToken = await this.workspaceQueryService.tokenService.generateApiKeyToken(
@@ -133,7 +177,6 @@ export class GoogleSheetsDataController {
               apiKeys[0].id,
               apiKeys[0].expiresAt
             );
-  
             return apiKeyToken ? {
               token: apiKeyToken.token,
               workspaceId,
@@ -150,29 +193,40 @@ export class GoogleSheetsDataController {
   }
   
 
-  private transformData(data: { [key: string]: any }): { [key: string]: any } {
-    const transformedData: { [key: string]: any } = {};
-  
-    for (const [key, value] of Object.entries(data)) {
-      // Convert snake_case to camelCase
-      const camelCaseKey = key.replace(/_([a-z])/g, (match, letter) => letter.toUpperCase());
-      
-      // Find corresponding column definition
-      const columnDef = CandidateSourcingTypes.columnDefinitions.find(def => def.key === key);
-  
-      if (columnDef?.format) {
-        // Apply format function if it exists
-        transformedData[camelCaseKey] = columnDef.format(value);
-      } else {
-        // If no format function, just convert the key and pass the value
-        transformedData[camelCaseKey] = value;
-      }
+  private transformData(data: { [key: string]: any }): Partial<CandidateSourcingTypes.ArxenaCandidateNode> {
+    const transformedData: Partial<CandidateSourcingTypes.ArxenaCandidateNode> = {};
+    
+    // Only transform fields that exist in the input data
+    if (data.full_name) transformedData.name = data.full_name.trim();
+    if (data.unique_key_string) transformedData.uniqueStringKey = data.unique_key_string;
+    if (data.profile_url) {
+      transformedData.hiringNaukriUrl = {
+        label: data.profile_url,
+        url: data.profile_url
+      };
+    }
+    if (data.startChat) {
+      transformedData.startChat = data.startChat === 'TRUE';
+    }
+    if (data.startVideoInterviewChat) {
+      transformedData.startVideoInterviewChat = data.startVideoInterviewChat === 'TRUE';
+    }
+    if (data.startMeetingSchedulingChat) {
+      transformedData.startMeetingSchedulingChat = data.startMeetingSchedulingChat === 'TRUE';
+    }
+    if (data.stopChat) {
+      transformedData.stopChat = data.stopChat === 'TRUE';
+    }
+    if (data.display_picture) {
+      transformedData.displayPicture = {
+        label: 'Display Picture',
+        url: data.display_picture
+      };
     }
   
     return transformedData;
   }
   
-
   @Post('post-data')
   async postData(@Body() data: { spreadsheetId: string, full_name: string, UniqueKey: string }) {
     console.log("data:::::", data);
@@ -190,7 +244,7 @@ export class GoogleSheetsDataController {
       query: graphqlToFetchAllCandidatesByStartChat,
       variables: {
         filter: {
-          uniqueStringKey: { equals: data.UniqueKey },
+          uniqueStringKey: { eq: data.UniqueKey },
         },
         limit: 1
       }
@@ -208,6 +262,8 @@ export class GoogleSheetsDataController {
   
   
       // Find candidate using GraphQL query
+      // const { UniqueKey, ...dataWithoutUniqueKey } = transformedData;
+      console.log("transformedData:", transformedData)
       const updateMutation = {
         query: graphQlToUpdateCandidate,
         variables: {
@@ -260,19 +316,14 @@ export class GoogleSheetsDataController {
         ...data,
       },
     };
-  
     const graphqlQueryObj = JSON.stringify({
       query: graphQltoStartChat,
       variables: graphqlVariables,
     });
-  
     const response = await axiosRequest(graphqlQueryObj, apiToken);
     if (response.data.errors) {
       throw new Error(`Error updating candidate: ${JSON.stringify(response.data.errors)}`);
-    }
-  
+    }     
     return response.data;
   }
 }
-
-

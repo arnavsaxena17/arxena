@@ -1,9 +1,9 @@
 import styled from '@emotion/styled';
 import { v4 as uid } from 'uuid';
 
-import { useAddRemoveAIInterviewQuestion } from '@/ai-interview/interview-creation/hooks/useAddRemoveAIInterviewQuestionHook';
+import { useAddRemoveVideoInterviewQuestion } from '@/ai-interview/interview-creation/hooks/useAddRemoveVideoInterviewQuestionHook';
 import { useCreateOneAIInterviewQuery } from '@/ai-interview/interview-creation/hooks/useCreateOneAIInterviewQuery';
-import { useCreateOneAIInterviewQuestionQuery } from '@/ai-interview/interview-creation/hooks/useCreateOneAIInterviewQuestionQuery';
+import { useCreateOneVideoInterviewQuestionQuery } from '@/ai-interview/interview-creation/hooks/useCreateOneVideoInterviewQuestionQuery';
 import { useFormDataConversion } from '@/ai-interview/interview-creation/hooks/useFormDataConversion';
 import { AIInterviewName } from '@/ai-interview/interview-creation/right-side/components/ai-interview-name/AIInterviewName';
 import { AIInterviewIntroduction } from '@/ai-interview/interview-creation/right-side/components/introduction/AIInterviewIntroduction';
@@ -51,11 +51,11 @@ const StyledListItem = styled.li`
 `;
 
 export const AIInterviewRightSideContainer = ({ aIModelsArr, closeModal, objectNameSingular, objectRecordId }: { aIModelsArr: any; closeModal: () => void; objectNameSingular: string; objectRecordId: string }) => {
-  const { questionsArr } = useAddRemoveAIInterviewQuestion();
+  const { questionsArr } = useAddRemoveVideoInterviewQuestion();
 
   const { convertFormData } = useFormDataConversion();
   const { createAIInterview } = useCreateOneAIInterviewQuery();
-  const { createAIInterviewQuestions } = useCreateOneAIInterviewQuestionQuery();
+  const { createVideoInterviewQuestions } = useCreateOneVideoInterviewQuestionQuery();
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -72,7 +72,7 @@ export const AIInterviewRightSideContainer = ({ aIModelsArr, closeModal, objectN
     console.log(questions);
 
     await createAIInterview(introduction, objectRecordId, newAIInterviewID);
-    await createAIInterviewQuestions(questions, newAIInterviewID);
+    await createVideoInterviewQuestions(questions, newAIInterviewID);
 
     closeModal();
   };

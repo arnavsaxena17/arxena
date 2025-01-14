@@ -178,6 +178,7 @@ async updateCandidateSpreadsheet(@Req() request: any): Promise<object> {
   @UseGuards(JwtAuthGuard)
   async createEnrichments(@Req() request: any): Promise<object> {
     try {
+      console.log("jhave reached create enrichments,", request)
       const apiToken = request?.headers?.authorization?.split(' ')[1]; // Assuming Bearer token
 
       const enrichments = request?.body?.enrichments;

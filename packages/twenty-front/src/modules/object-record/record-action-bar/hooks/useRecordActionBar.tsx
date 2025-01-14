@@ -414,7 +414,7 @@ const sendVideoInterviewLinkSelectRecord = useRecoilCallback(
                         },
                         ]
                       : []),
-                  ...(objectMetadataItem.nameSingular === 'aIInterviewStatus'
+                  ...(objectMetadataItem.nameSingular === 'videoInterview'
                     ? [
                       {
                         label: 'Send Video Interview ',

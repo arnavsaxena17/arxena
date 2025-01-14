@@ -160,32 +160,32 @@ const AIInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) => 
         const fetchedData: any = response?.data?.responseFromInterviewRequests?.data;
         console.log('fetchedData to fetch interview data:', fetchedData);
         const formattedData: InterviewResponseTypes.InterviewData = {
-          name: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.name || '',
-          id: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.id || '',
+          name: fetchedData?.videoInterviews?.edges[0]?.node?.name || '',
+          id: fetchedData?.videoInterviews?.edges[0]?.node?.id || '',
           candidate: {
-            id: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.candidate?.id || '',
+            id: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.id || '',
             jobs: {
-              jobId: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.candidate?.jobs?.id || '',
-              name: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.candidate?.jobs?.name || '',
-              recruiterId: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.candidate?.jobs?.recruiterId || '',
-              companyName: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.candidate?.jobs?.companies?.name || '',
+              jobId: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.jobs?.id || '',
+              name: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.jobs?.name || '',
+              recruiterId: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.jobs?.recruiterId || '',
+              companyName: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.jobs?.companies?.name || '',
             },
             people: {
-              id: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.candidate?.people?.id || '',
+              id: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.people?.id || '',
               name: {
-                firstName: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.candidate?.people?.name?.firstName || '',
-                lastName: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.candidate?.people?.name?.lastName || '',
+                firstName: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.people?.name?.firstName || '',
+                lastName: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.people?.name?.lastName || '',
               },
-              email: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.candidate?.people?.email || '',
-              phone: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.candidate?.people?.phone || '',
+              email: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.people?.email || '',
+              phone: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.people?.phone || '',
             },
           },
-          aIInterview: {
-            id: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.aIInterview?.id || '',
-            name: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.aIInterview?.name || '',
-            introduction: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.aIInterview?.introduction || '',
-            instructions: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.aIInterview?.instructions || '',
-            aIInterviewQuestions: fetchedData?.aIInterviewStatuses?.edges[0]?.node?.aIInterview?.aIInterviewQuestions || '',
+          videoInterview: {
+            id: fetchedData?.videoInterviews?.edges[0]?.node?.videoInterview?.id || '',
+            name: fetchedData?.videoInterviews?.edges[0]?.node?.videoInterview?.name || '',
+            introduction: fetchedData?.videoInterviews?.edges[0]?.node?.videoInterview?.introduction || '',
+            instructions: fetchedData?.videoInterviews?.edges[0]?.node?.videoInterview?.instructions || '',
+            videoInterviewQuestions: fetchedData?.videoInterviews?.edges[0]?.node?.videoInterview?.videoInterviewQuestions || '',
           },
         };
         console.log('setting formatted interview data:', formattedData);
@@ -208,13 +208,13 @@ const AIInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) => 
       
       setCurrentQuestionIndex(prevIndex => {
         const nextIndex = prevIndex + 1;
-        if (nextIndex === (interviewData?.aIInterview?.aIInterviewQuestions?.edges?.length ?? 0)) {
+        if (nextIndex === (interviewData?.videoInterview?.videoInterviewQuestions?.edges?.length ?? 0)) {
           setStage('end');
         }
         return nextIndex;
       });
       console.log('This is process.env.REACT_APP_SERVER_BASE_URL:', process.env.REACT_APP_SERVER_BASE_URL);
-      const isLastQuestion = currentQuestionIndex === (interviewData?.aIInterview?.aIInterviewQuestions?.edges?.length ?? 0) - 1;
+      const isLastQuestion = currentQuestionIndex === (interviewData?.videoInterview?.videoInterviewQuestions?.edges?.length ?? 0) - 1;
 
       responseData.append('responseData', JSON.stringify({
         isLastQuestion,
@@ -233,7 +233,7 @@ const AIInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) => 
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       console.log('This isreht ersponse:', response);
-      console.log('The calue of interviewData!.aIInterview.aIInterviewQuestions.edges.length is ::', interviewData!.aIInterview?.aIInterviewQuestions?.edges?.length);
+      console.log('The calue of interviewData!.videoInterview.videoInterview.edges.length is ::', interviewData!.videoInterview?.videoInterviewQuestions?.edges?.length);
       return true; // Return success status
 
     } catch (error) {
@@ -254,7 +254,7 @@ const AIInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) => 
     setStage('end');
   };
 
-  console.log('This is the interview questions:', interviewData?.aIInterview?.aIInterviewQuestions?.edges);
+  console.log('This is the interview questions:', interviewData?.videoInterview?.videoInterviewQuestions?.edges);
   const renderCurrentStage = () => {
     if (!interviewData) {
       return (
@@ -281,7 +281,7 @@ const AIInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) => 
           {loading && <InterviewLoader />}
             <InterviewPage
               InterviewData={interviewData}
-              questions={interviewData?.aIInterview?.aIInterviewQuestions?.edges?.map(edge => edge?.node).sort((a, b) => new Date(a?.createdAt).getTime() - new Date(b?.createdAt).getTime())}
+              questions={interviewData?.videoInterview?.videoInterviewQuestions?.edges?.map(edge => edge?.node).sort((a, b) => new Date(a?.createdAt).getTime() - new Date(b?.createdAt).getTime())}
               introductionVideoAttachment={introductionVideoData!}
               questionsVideoAttachment={questionsVideoData || []}
               currentQuestionIndex={currentQuestionIndex}

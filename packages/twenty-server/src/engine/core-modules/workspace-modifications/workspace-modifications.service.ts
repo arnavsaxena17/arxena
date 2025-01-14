@@ -82,11 +82,14 @@ export class WorkspaceQueryService {
         const dataSourceSchema = this.workspaceDataSourceService.getSchemaName(workspaceId);
         
         // Check if table exists before querying
-        const tableExists = await this.checkIfTableExists(dataSourceSchema, "_aIInterviewStatus");
+        const tableExists = await this.checkIfTableExists(dataSourceSchema, "_videoInterview");
         
         if (!tableExists) {
-          console.log(`Table _aIInterviewStatus doesn't exist in schema ${dataSourceSchema}`);
+          console.log(`Table _videoInterview doesn't exist in schema ${dataSourceSchema}`);
           continue;
+        }
+        else{
+          console.log(`Table _videoInterview exists in schema ${dataSourceSchema}`);
         }
         
         try {
@@ -95,8 +98,8 @@ export class WorkspaceQueryService {
             results.push(result);
           }
         } catch (error) {
+          console.log("Going to throw an error");
           console.error(`Error processing workspace ${workspaceId}:`, error);
-          throw error;
         }
       }
   
@@ -105,10 +108,10 @@ export class WorkspaceQueryService {
     } catch (error) {
       console.error("Error executing query across workspaces:", error);
       await queryRunner.rollbackTransaction();
-      throw error;
     } finally {
       await queryRunner.release();
     }
+    return [];
   }
   
   // Helper function to check if table exists

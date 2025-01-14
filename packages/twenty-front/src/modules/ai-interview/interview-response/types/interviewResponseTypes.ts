@@ -29,12 +29,12 @@ export const emptyInterviewData: InterviewData = {
     phone: '',
     },
   },
-  aIInterview: {
+  videoInterview: {
     id: '',
     name: '',
     introduction: '',
     instructions: '',
-    aIInterviewQuestions: {
+    videoInterviewQuestions: {
     edges: [],
     },
   },
@@ -61,12 +61,12 @@ export interface InterviewData {
       phone: string;
     };
   };
-  aIInterview: {
+  videoInterview: {
     id: string;
     name: string;
     introduction: string;
     instructions: string;
-    aIInterviewQuestions: {
+    videoInterviewQuestions: {
       edges: Array<{
         node: Question;
       }>;

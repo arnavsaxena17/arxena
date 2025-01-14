@@ -1,7 +1,8 @@
 import styled from '@emotion/styled';
 
-import { useAddRemoveAIInterviewQuestion } from '@/ai-interview/interview-creation/hooks/useAddRemoveAIInterviewQuestionHook';
+import { useAddRemoveVideoInterviewQuestion } from '@/ai-interview/interview-creation/hooks/useAddRemoveVideoInterviewQuestionHook';
 import { IntroductionNavElement } from '@/ai-interview/interview-creation/left-side/components/ai-interview-modal-nav-container/introduction/IntroductionNavElement';
+import { Key, ReactElement, JSXElementConstructor, ReactNode, ReactPortal } from 'react';
 
 const StyledModalNavElementContainer = styled.nav`
   display: flex;
@@ -44,13 +45,13 @@ const StyledListItem = styled.li`
 `;
 
 export const ModalNavElementContainer = () => {
-  const { questionsArr, addQuestion } = useAddRemoveAIInterviewQuestion();
+  const { questionsArr, addQuestion } = useAddRemoveVideoInterviewQuestion();
 
   return (
     <StyledModalNavElementContainer>
       <StyledQuestionsContainer type="1">
         <IntroductionNavElement id={'introduction'} />
-        {questionsArr.map((question, index) => (
+        {questionsArr.map((question: { id: Key | null | undefined; leftQuestion: (arg0: any) => string | number | boolean | ReactElement<any, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | null | undefined; }, index: number) => (
           <StyledListItem key={question.id}>
             {question.leftQuestion(index + 1)}
           </StyledListItem>

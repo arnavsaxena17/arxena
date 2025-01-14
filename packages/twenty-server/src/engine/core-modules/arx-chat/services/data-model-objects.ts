@@ -177,15 +177,15 @@ export interface Candidate {
 }
 
 
-export interface aIInterviewStatus {
-  edges: AIInterviewStatusEdge[];
+export interface videoInterview {
+  edges: videoInterviewEdge[];
 }
 
-export interface AIInterviewStatusEdge {
-  node: AIInterviewStatusNode;
+export interface videoInterviewEdge {
+  node: videoInterviewNode;
 }
 
-export interface AIInterviewStatusNode {
+export interface videoInterviewNode {
   id: string;
   interviewLink: InterviewLink;
 }
@@ -195,7 +195,7 @@ export interface InterviewLink {
 }
 
 export interface CandidateNode {
-  aIInterviewStatus: aIInterviewStatus;
+  videoInterview: videoInterview;
   whatsappProvider?: string | "application03";
   name: string;
   id: string;
@@ -423,7 +423,7 @@ export const emptyCandidateProfileObj: CandidateNode = {
       ],
     },
   },
-  aIInterviewStatus: {
+  videoInterview: {
     edges: [
       {
         node: {

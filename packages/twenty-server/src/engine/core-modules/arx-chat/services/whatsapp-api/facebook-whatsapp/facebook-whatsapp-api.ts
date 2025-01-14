@@ -478,7 +478,7 @@ export class FacebookWhatsappChatApi {
         }
         console.log('This is the template message to send:', messageTemplate);
         console.log('This is the process.env.SERVER_BASE_URL:', process.env.SERVER_BASE_URL);
-        const videoInterviewLink = process.env.SERVER_BASE_URL+personNode?.candidates?.edges[0]?.node?.aIInterviewStatus?.edges[0]?.node?.interviewLink?.url || ""
+        const videoInterviewLink = process.env.SERVER_BASE_URL+personNode?.candidates?.edges[0]?.node?.videoInterview?.edges[0]?.node?.interviewLink?.url || ""
         console.log("videoInterviewLink::", videoInterviewLink)
         const sendTemplateMessageObj:allDataObjects.sendWhatsappUtilityMessageObjectType = {
           recipient: whatappUpdateMessageObj.phoneNumberTo.replace('+', ''),
@@ -494,7 +494,7 @@ export class FacebookWhatsappChatApi {
           descriptionOneliner:whatappUpdateMessageObj?.candidateProfile?.jobs?.company?.descriptionOneliner,
           jobCode: whatappUpdateMessageObj?.candidateProfile?.jobs?.jobCode,
           jobLocation: whatappUpdateMessageObj?.candidateProfile?.jobs?.jobLocation,
-          // videoInterviewLink: process.env.SERVER_BASE_URL+personNode?.candidates?.edges[0]?.node?.aIInterviewStatus?.edges[0].node.interviewLink?.url || "",
+          // videoInterviewLink: process.env.SERVER_BASE_URL+personNode?.candidates?.edges[0]?.node?.videoInterview?.edges[0].node.interviewLink?.url || "",
           videoInterviewLink: videoInterviewLink,
           
         };

@@ -46,8 +46,7 @@ export class WhatsappTestAPI {
       descriptionOneliner:personObj?.candidates?.edges[0]?.node?.jobs?.company?.descriptionOneliner,
       jobCode: personObj?.candidates?.edges[0]?.node?.jobs?.jobCode,
       jobLocation: personObj?.candidates?.edges[0]?.node?.jobs?.jobLocation,
-      // videoInterviewLink: process.env.SERVER_BASE_URL+personObj?.candidates?.edges[0]?.node?.aIInterviewStatus?.edges[0].node.interviewLink.url,
-      videoInterviewLink: process.env.SERVER_BASE_URL+personObj?.candidates?.edges[0]?.node?.aIInterviewStatus?.edges[0]?.node?.interviewLink?.url || "",
+      videoInterviewLink: process.env.SERVER_BASE_URL+personObj?.candidates?.edges[0]?.node?.videoInterview?.edges[0]?.node?.interviewLink?.url || "",
     };
     console.log("This is the sendTemplateMessageObj:", sendTemplateMessageObj)
 

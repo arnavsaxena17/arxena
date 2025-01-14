@@ -165,7 +165,7 @@ export default class CandidateEngagementArx {
       for (const personNode of peopleCandidateResponseEngagementArr) {
         const candidateNode = personNode?.candidates?.edges[0]?.node;
         const candidateId = candidateNode.id;
-        if (!candidateNode?.aIInterviewStatus?.edges[0]?.node?.interviewLink?.url) {
+        if (!candidateNode?.videoInterview?.edges[0]?.node?.interviewLink?.url) {
           console.log(`Creating video interview link for candidate: ${candidateNode.name}`);
           const createVideoInterviewResponse = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).createVideoInterviewForCandidate(candidateId, apiToken);
           console.log(`Video interview link created: ${createVideoInterviewResponse}`);
@@ -224,9 +224,9 @@ export default class CandidateEngagementArx {
 
       for (const personNode of peopleEngagementStartVideoInterviewChatArr) {
         const candidateNode = personNode?.candidates?.edges[0]?.node;
-        const aiInterviewStatus = candidateNode?.aIInterviewStatus?.edges[0]?.node;
+        const videoInterview = candidateNode?.videoInterview?.edges[0]?.node;
         
-        if (!aiInterviewStatus || !aiInterviewStatus.interviewLink?.url) {
+        if (!videoInterview || !videoInterview.interviewLink?.url) {
           await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).createVideoInterviewForCandidate(candidateNode.id, apiToken);
           createdCount++;
         } else {

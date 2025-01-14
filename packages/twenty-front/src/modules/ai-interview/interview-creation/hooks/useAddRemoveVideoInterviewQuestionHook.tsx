@@ -3,11 +3,11 @@ import { v4 as uid } from 'uuid';
 
 import { useQuestionToDisplay } from '@/ai-interview/interview-creation/hooks/useQuestionToDisplay';
 import { QuestionNavElement } from '@/ai-interview/interview-creation/left-side/components/ai-interview-modal-nav-container/question/QuestionNavElement';
-import { AIInterviewQuestion } from '@/ai-interview/interview-creation/right-side/components/question/AIInterviewQuestion';
+import { VideoInterviewQuestion } from '@/ai-interview/interview-creation/right-side/components/question/VideoInterviewQuestion';
 import { questionsArrState } from '@/ai-interview/interview-creation/states/questionsArrState';
 import { leftAndRightCombined } from '@/ai-interview/interview-creation/types/leftAndRightCombined';
 
-export const useAddRemoveAIInterviewQuestion = () => {
+export const useAddRemoveVideoInterviewQuestion = () => {
   const [questionsArr, setQuestionsArr] =
     useRecoilState<leftAndRightCombined[]>(questionsArrState);
 
@@ -25,7 +25,7 @@ export const useAddRemoveAIInterviewQuestion = () => {
         />
       ),
       rightQuestion: (questionNumber = 1) => (
-        <AIInterviewQuestion id={newId} questionNumber={questionNumber} />
+        <VideoInterviewQuestion id={newId} questionNumber={questionNumber} />
       ),
     };
     setQuestionsArr((previousQuestions) => [...previousQuestions, newQuestion]);

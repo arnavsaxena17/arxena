@@ -159,7 +159,7 @@ const createRouter = (isBillingEnabled?: boolean) =>
             />
             <Route
               path={`${AppPath.VideoInterview}/:candidateId`}
-              element={<VideoInterviewResponseViewer candidateId={window.location.pathname} aIInterviewStatusId = {window.location.pathname} />}
+              element={<VideoInterviewResponseViewer candidateId={window.location.pathname} videoInterviewId = {window.location.pathname} />}
             />
           </Route>
         </Route>
@@ -182,7 +182,7 @@ const createRouter = (isBillingEnabled?: boolean) =>
              <Route path={AppPath.TasksPage} element={<Tasks />} />
              <Route path={AppPath.ChatsPage} element={<Chats />} />
              <Route path={`${AppPath.ChatsPage}/:candidateId`} element={<Chats />} />
-             <Route path={`${AppPath.VideoInterviewReview}/:candidateId`} element={<VideoInterviewResponseViewer candidateId={window.location.pathname}  aIInterviewStatusId = {window.location.pathname} />} />
+             <Route path={`${AppPath.VideoInterviewReview}/:candidateId`} element={<VideoInterviewResponseViewer candidateId={window.location.pathname}  videoInterviewId = {window.location.pathname} />} />
              {/* <Route path={`${AppPath.VideoInterviewReview}/:candidateId`} element={<Chats />} /> */}
              <Route path={AppPath.Impersonate} element={<ImpersonateEffect />} />
              <Route path={AppPath.RecordIndexPage} element={<RecordIndexPage />} />

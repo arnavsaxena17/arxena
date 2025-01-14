@@ -970,7 +970,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
                     "value": "TEXT"
                 },
             ],
-            "objectMetadataId": objectsNameIdMap.aIInterviewQuestion,
+            "objectMetadataId": objectsNameIdMap.videoInterviewQuestion,
             "type": "SELECT"
         }
 
@@ -995,7 +995,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
                     "value": "TEXT"
                 },
             ],
-            "objectMetadataId": objectsNameIdMap.aIInterviewQuestion,
+            "objectMetadataId": objectsNameIdMap.videoInterviewQuestion,
             "type": "SELECT"
         }
 
@@ -1007,7 +1007,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
             "icon": "IconTimeDuration30",
             "label": "Time Limit",
             "name": "timeLimit",
-            "objectMetadataId": objectsNameIdMap.aIInterviewQuestion,
+            "objectMetadataId": objectsNameIdMap.videoInterviewQuestion,
             "type": "NUMBER"
         }
 
@@ -1019,7 +1019,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
             "icon": "IconQuestion",
             "label": "Question Value",
             "name": "questionValue",
-            "objectMetadataId": objectsNameIdMap.aIInterviewQuestion,
+            "objectMetadataId": objectsNameIdMap.videoInterviewQuestion,
             "type": "TEXT"
         }
 
@@ -1049,7 +1049,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
                     "value": "TWO"
                 },
             ],
-            "objectMetadataId": objectsNameIdMap.aIInterviewQuestion,
+            "objectMetadataId": objectsNameIdMap.videoInterviewQuestion,
             "type": "SELECT"
         }
 
@@ -1061,7 +1061,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
             "icon": "IconLocationQuestion",
             "label": "Started Responding",
             "name": "startedResponding",
-            "objectMetadataId": objectsNameIdMap.response,
+            "objectMetadataId": objectsNameIdMap.videoInterviewResponse,
             "type": "BOOLEAN"
         }
 
@@ -1072,7 +1072,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
             "icon": "IconLocationCheck",
             "label": "Completed Response",
             "name": "completedResponse",
-            "objectMetadataId": objectsNameIdMap.response,
+            "objectMetadataId": objectsNameIdMap.videoInterviewResponse,
             "type": "BOOLEAN"
         }
 
@@ -1083,7 +1083,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
             "icon": "IconDeviceWatchPause",
             "label": "Timer",
             "name": "timer",
-            "objectMetadataId": objectsNameIdMap.response,
+            "objectMetadataId": objectsNameIdMap.videoInterviewResponse,
             "type": "TEXT"
         }
 
@@ -1094,7 +1094,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
             "icon": "IconTimeDuration30",
             "label": "Time Limit Adherence",
             "name": "timeLimitAdherence",
-            "objectMetadataId": objectsNameIdMap.response,
+            "objectMetadataId": objectsNameIdMap.videoInterviewResponse,
             "type": "BOOLEAN"
         }
 
@@ -1106,7 +1106,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
             "icon": "IconFileTextAI",
             "label": "Transcript",
             "name": "transcript",
-            "objectMetadataId": objectsNameIdMap.response,
+            "objectMetadataId": objectsNameIdMap.videoInterviewResponse,
             "type": "TEXT"
         }
 
@@ -1118,7 +1118,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
             "icon": "IconPencilStar",
             "label": "Feedback",
             "name": "feedback",
-            "objectMetadataId": objectsNameIdMap.response,
+            "objectMetadataId": objectsNameIdMap.videoInterviewResponse,
             "type": "TEXT"
         }
 
@@ -1312,7 +1312,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
             "icon": "IconLink",
             "label": "Interview Link",
             "name": "interviewLink",
-            "objectMetadataId": objectsNameIdMap.aIInterviewStatus,
+            "objectMetadataId": objectsNameIdMap.videoInterview,
             "type": "LINK"
         }
 
@@ -1323,7 +1323,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
             "icon": "IconLink",
             "label": "Interview Review Link",
             "name": "interviewReviewLink",
-            "objectMetadataId": objectsNameIdMap.aIInterviewStatus,
+            "objectMetadataId": objectsNameIdMap.videoInterview,
             "type": "LINK"
         }
 
@@ -1342,7 +1342,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
         "field": {
             "description": "Resdex Naukri URL",
             "icon": "IconLink",
-            "label": "resdedNaukriUrl",
+            "label": "resdexNaukriUrl",
             "name": "resdexNaukriUrl",
             "objectMetadataId": objectsNameIdMap.candidate,
             "type": "LINK"
@@ -1375,7 +1375,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
             "icon": "IconAdjustmentsQuestion",
             "label": "Interview Started",
             "name": "interviewStarted",
-            "objectMetadataId": objectsNameIdMap.aIInterviewStatus,
+            "objectMetadataId": objectsNameIdMap.videoInterview,
             "type": "BOOLEAN"
         }
 
@@ -1387,7 +1387,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
             "icon": "IconAdjustmentsCheck",
             "label": "Interview Completed",
             "name": "interviewCompleted",
-            "objectMetadataId": objectsNameIdMap.aIInterviewStatus,
+            "objectMetadataId": objectsNameIdMap.videoInterview,
             "type": "BOOLEAN"
         }
 
@@ -1399,7 +1399,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
             "icon": "IconCameraQuestion",
             "label": "Camera On",
             "name": "cameraOn",
-            "objectMetadataId": objectsNameIdMap.aIInterviewStatus,
+            "objectMetadataId": objectsNameIdMap.videoInterview,
             "type": "BOOLEAN"
         }
 
@@ -1411,7 +1411,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
             "icon": "IconMicrophone",
             "label": "Mic On",
             "name": "micOn",
-            "objectMetadataId": objectsNameIdMap.aIInterviewStatus,
+            "objectMetadataId": objectsNameIdMap.videoInterview,
             "type": "BOOLEAN"
         }
 

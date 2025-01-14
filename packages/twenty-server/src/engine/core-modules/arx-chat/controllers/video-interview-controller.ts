@@ -59,7 +59,7 @@ export class VideoInterviewController {
             const personObj = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).getPersonDetailsByCandidateId(candidateId, apiToken);
             const person = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).getPersonDetailsByPersonId(personObj.id, apiToken);
             console.log("Got person:", person);
-            const videoInterviewUrl = createVideoInterviewResponse?.data?.createAIInterviewStatus?.interviewLink?.url;
+            const videoInterviewUrl = createVideoInterviewResponse?.data?.createVideoInterview?.interviewLink?.url;
             console.log("This is the video interview link:", videoInterviewUrl);
 
             if (videoInterviewUrl) {
@@ -97,7 +97,7 @@ export class VideoInterviewController {
             const personObj = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).getPersonDetailsByCandidateId(candidateId, apiToken);
             const person = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).getPersonDetailsByPersonId(personObj.id, apiToken);
             console.log("Got person:", person);
-            const videoInterviewUrl = person?.candidates?.edges[0]?.node?.aIInterviewStatus?.edges[0]?.node?.interviewLink?.url;
+            const videoInterviewUrl = person?.candidates?.edges[0]?.node?.videoInterview?.edges[0]?.node?.interviewLink?.url;
             console.log("This is the video interview in send-video-interview-to-candidate link:", videoInterviewUrl);
 
             if (videoInterviewUrl) {

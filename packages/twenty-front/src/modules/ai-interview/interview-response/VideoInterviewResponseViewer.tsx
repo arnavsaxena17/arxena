@@ -71,10 +71,10 @@ interface Attachment {
   name: string;
 }
 
-interface Response {
+interface videoInterviewResponse {
   id: string;
   transcript: string | null;
-  aIInterviewQuestionId: string;
+  videoInterviewQuestionId: string;
   attachments: {
     edges: Array<{
       node: Attachment;
@@ -82,13 +82,13 @@ interface Response {
   };
 }
 
-interface AIInterviewQuestion {
+interface videoInterviewQuestion {
   id: string;
   questionValue: string;
   timeLimit: number | null;
-  responses: {
+  videoInterviewResponses: {
     edges: Array<{
-      node: Response;
+      node: videoInterviewResponse;
     }>;
   };
 }
@@ -101,10 +101,10 @@ interface Job {
 
 interface InterviewData {
   job: Job;
-  aIInterview: {
-    aIInterviewQuestions: {
+  videoInterview: {
+    videoInterviewQuestions: {
       edges: Array<{
-        node: AIInterviewQuestion;
+        node: videoInterviewQuestion;
       }>;
     };
   };
@@ -127,12 +127,12 @@ const query = `query FindManyCandidates($filter: CandidateFilterInput) {
             company {
               name
             }
-            aIInterviews {
+            videoInterviews {
               edges {
                 node {
                   id
                   name
-                  aIInterviewQuestions {
+                  videoInterviewQuestions {
                     edges {
                       node {
                         id
@@ -145,12 +145,12 @@ const query = `query FindManyCandidates($filter: CandidateFilterInput) {
               }
             }
           }
-          responses {
+          videoInterviewResponses {
             edges {
               node {
                 id
                 transcript
-                aIInterviewQuestionId
+                videoInterviewQuestionId
                 attachments {
                   edges {
                     node {
@@ -172,7 +172,7 @@ const query = `query FindManyCandidates($filter: CandidateFilterInput) {
 
 interface VideoInterviewResponseViewerProps {
   candidateId?: string;
-  aIInterviewStatusId?: string;
+  videoInterviewId?: string;
 }
 
 const CompanyInfo = styled.div`
@@ -194,19 +194,19 @@ const VideoContainer = styled.div`
   margin: 10px 0;
 `;
 
-const queryByAIInterviewStatus = `query FindOneAIInterviewStatus($objectRecordId: ID!) {
-  aIInterviewStatus(filter: {id: {eq: $objectRecordId}}) {
+const queryByvideoInterviewStatus = `query FindOnevideoInterviewStatus($objectRecordId: ID!) {
+  videoInterviewStatus(filter: {id: {eq: $objectRecordId}}) {
     timelineActivities {
       edges {
         node {
           offerId
           screeningId
-          aIInterviewStatusId
+          videoInterviewStatusId
           linkedRecordCachedName
           jobId
           properties
           clientInterviewId
-          aIInterviewQuestionId
+          videoInterviewQuestionId
           questionId
           candidateReminderId
           answerId
@@ -225,7 +225,7 @@ const queryByAIInterviewStatus = `query FindOneAIInterviewStatus($objectRecordId
           createdAt
           cvsentId
           candidateEnrichmentId
-          aIInterviewId
+          videoInterviewId
           clientContactId
           shortlistId
           recruiterInterviewId
@@ -237,7 +237,7 @@ const queryByAIInterviewStatus = `query FindOneAIInterviewStatus($objectRecordId
       }
     }
     candidateId
-    aIInterview {
+    videoInterview {
       introduction
       createdAt
       id
@@ -246,7 +246,7 @@ const queryByAIInterviewStatus = `query FindOneAIInterviewStatus($objectRecordId
       aIModelId
       name
 
-      aIInterviewQuestions {
+      videoInterviewQuestions {
         edges {
           node {
             id
@@ -258,7 +258,7 @@ const queryByAIInterviewStatus = `query FindOneAIInterviewStatus($objectRecordId
       position
       updatedAt
     }
-    aIInterviewId
+    videoInterviewId
     position
     interviewLink {
       label
@@ -270,7 +270,7 @@ const queryByAIInterviewStatus = `query FindOneAIInterviewStatus($objectRecordId
       url
     }
     id
-    responses {
+    videoInterviewResponses {
       edges {
         node {
           timeLimitAdherence
@@ -300,8 +300,8 @@ const queryByAIInterviewStatus = `query FindOneAIInterviewStatus($objectRecordId
           candidateId
           jobId
           retakesRemaining
-          aIInterviewStatusId
-          aIInterviewQuestionId
+          videoInterviewStatusId
+          videoInterviewQuestionId
         }
       }
     }
@@ -370,12 +370,12 @@ interface CandidateAPIResponse {
     company: {
       name: string;
     };
-    aIInterviews: {
+    videoInterviews: {
       edges: Array<{
         node: {
           id: string;
           name: string;
-          aIInterviewQuestions: {
+          videoInterviewQuestions: {
             edges: Array<{
               node: {
                 id: string;
@@ -388,12 +388,12 @@ interface CandidateAPIResponse {
       }>;
     };
   };
-  responses: {
+  videoInterviewResponses: {
     edges: Array<{
       node: {
         id: string;
         transcript: string | null;
-        aIInterviewQuestionId: string;
+        videoInterviewQuestionId: string;
         attachments: {
           edges: Array<{
             node: {
@@ -409,7 +409,7 @@ interface CandidateAPIResponse {
   };
 }
 
-const VideoInterviewResponseViewer: React.FC<VideoInterviewResponseViewerProps> = ({ candidateId, aIInterviewStatusId }) => {
+const VideoInterviewResponseViewer: React.FC<VideoInterviewResponseViewerProps> = ({ candidateId, videoInterviewId }) => {
   const [interviewData, setInterviewData] = useState<InterviewData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -420,8 +420,8 @@ const VideoInterviewResponseViewer: React.FC<VideoInterviewResponseViewerProps> 
 
   const fetchInterviewData = async () => {
     try {
-      // Try aIInterviewStatusId first
-      if (aIInterviewStatusId) {
+      // Try videoInterviewStatusId first
+      if (videoInterviewId) {
         const response = await fetch(`${process.env.REACT_APP_SERVER_BASE_URL}/graphql`, {
           method: 'POST',
           headers: {
@@ -429,9 +429,9 @@ const VideoInterviewResponseViewer: React.FC<VideoInterviewResponseViewerProps> 
             Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
           },
           body: JSON.stringify({
-            query: queryByAIInterviewStatus,
+            query: queryByvideoInterviewStatus,
             variables: {
-              objectRecordId: cleanId(aIInterviewStatusId),
+              objectRecordId: cleanId(videoInterviewId),
             },
           }),
         });
@@ -440,8 +440,8 @@ const VideoInterviewResponseViewer: React.FC<VideoInterviewResponseViewerProps> 
         console.log('REsoinse::', responseData);
 
         // If we got valid data, transform and use it
-        if (responseData?.data?.aIInterviewStatus?.candidate) {
-          const transformedData = transformAIInterviewStatusData(responseData);
+        if (responseData?.data?.videoInterviewStatus?.candidate) {
+          const transformedData = transformvideoInterviewStatusData(responseData);
           setInterviewData(transformedData);
           setLoading(false);
           return;
@@ -486,11 +486,11 @@ const VideoInterviewResponseViewer: React.FC<VideoInterviewResponseViewerProps> 
   };
 
   // Separate transformation functions for cleaner code
-  const transformAIInterviewStatusData = (responseData: any): InterviewData => {
-    const aiInterviewStatus = responseData.data.aIInterviewStatus;
-    const candidate = aiInterviewStatus.candidate;
-    const responses = aiInterviewStatus.responses.edges || [];
-    const aiInterview = aiInterviewStatus.aIInterview;
+  const transformvideoInterviewStatusData = (responseData: any): InterviewData => {
+    const videoInterviewStatus = responseData.data.videoInterviewStatus;
+    const candidate = videoInterviewStatus.candidate;
+    const responses = videoInterviewStatus.videoInterviewResponses.edges || [];
+    const videoInterview = videoInterviewStatus.videoInterview;
     const transformedData: InterviewData =  {
       job: {
         id: candidate.jobs.id,
@@ -499,13 +499,13 @@ const VideoInterviewResponseViewer: React.FC<VideoInterviewResponseViewerProps> 
         },
         name: candidate.jobs.name,
       },
-      aIInterview: {
-        aIInterviewQuestions: {
-          edges: aiInterview.aIInterviewQuestions.edges.map((questionEdge: { node: any }) => {
+      videoInterview: {
+        videoInterviewQuestions: {
+          edges: videoInterview.videoInterviewQuestions.edges.map((questionEdge: { node: any }) => {
             // Filter responses for this specific question
             const questionResponses = responses.filter(
               (responseEdge: { node: any }) => 
-                responseEdge.node.aIInterviewQuestionId === questionEdge.node.id
+                responseEdge.node.videoInterviewQuestionId === questionEdge.node.id
             );
   
             return {
@@ -513,12 +513,12 @@ const VideoInterviewResponseViewer: React.FC<VideoInterviewResponseViewerProps> 
                 id: questionEdge.node.id,
                 questionValue: questionEdge.node.questionValue,
                 timeLimit: questionEdge.node.timeLimit,
-                responses: {
+                videoInterviewResponses: {
                   edges: questionResponses.map((responseEdge: { node: any }) => ({
                     node: {
                       id: responseEdge.node.id,
                       transcript: responseEdge.node.transcript,
-                      aIInterviewQuestionId: responseEdge.node.aIInterviewQuestionId,
+                      videoInterviewQuestionId: responseEdge.node.videoInterviewQuestionId,
                       attachments: responseEdge.node.attachments,
                     },
                   })),
@@ -540,25 +540,25 @@ const VideoInterviewResponseViewer: React.FC<VideoInterviewResponseViewerProps> 
           company: candidate.jobs.company,
           name: candidate.jobs.name,
         },
-        aIInterview: {
-          aIInterviewQuestions: {
-            edges: candidate.jobs.aIInterviews.edges[0].node.aIInterviewQuestions.edges.map(
+        videoInterview: {
+          videoInterviewQuestions: {
+            edges: candidate.jobs.videoInterviews.edges[0].node.videoInterviewQuestions.edges.map(
               ({ node: question }) => {
                 // Filter responses for this specific question
-                const questionResponses = candidate.responses.edges.filter(
-                  response => response.node.aIInterviewQuestionId === question.id
+                const questionResponses = candidate.videoInterviewResponses.edges.filter(
+                  response => response.node.videoInterviewQuestionId === question.id
                 );
                 return {
                   node: {
                     id: question.id,
                     questionValue: question.questionValue,
                     timeLimit: question.timeLimit,
-                    responses: {
+                    videoInterviewResponses: {
                       edges: questionResponses.map(response => ({
                         node: {
                           id: response.node.id,
                           transcript: response.node.transcript,
-                          aIInterviewQuestionId: response.node.aIInterviewQuestionId,
+                          videoInterviewQuestionId: response.node.videoInterviewQuestionId,
                           attachments: response.node.attachments,
                         },
                       })),
@@ -577,13 +577,13 @@ const VideoInterviewResponseViewer: React.FC<VideoInterviewResponseViewerProps> 
 
 
   useEffect(() => {
-    if (!candidateId && !aIInterviewStatusId) {
-      setError('Either candidateId or aIInterviewStatusId must be provided');
+    if (!candidateId && !videoInterviewId) {
+      setError('Either candidateId or videoInterviewStatusId must be provided');
       setLoading(false);
       return;
     }
     fetchInterviewData();
-  }, [candidateId, aIInterviewStatusId, tokenPair?.accessToken?.token]);
+  }, [candidateId, videoInterviewId, tokenPair?.accessToken?.token]);
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
@@ -598,10 +598,10 @@ const VideoInterviewResponseViewer: React.FC<VideoInterviewResponseViewerProps> 
         <h3>{interviewData.job.name}</h3>
       </CompanyInfo>
 
-      {interviewData.aIInterview.aIInterviewQuestions.edges.map(({ node: question }, index) => {
+      {interviewData.videoInterview.videoInterviewQuestions.edges.map(({ node: question }, index) => {
         // Find responses that match this specific question ID
-        const matchingResponses = question.responses.edges.filter(
-          ({ node: response }) => response.aIInterviewQuestionId === question.id
+        const matchingResponses = question.videoInterviewResponses.edges.filter(
+          ({ node: response }) => response.videoInterviewQuestionId === question.id
         );
         return (
           <QuestionContainer key={question.id}>

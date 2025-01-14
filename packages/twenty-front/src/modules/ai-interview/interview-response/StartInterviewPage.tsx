@@ -110,7 +110,7 @@ export const StartInterviewPage: React.FC<StartInterviewPageProps> = ({ onStart,
         />
         <h3>Transcript</h3>
         <StyledTextLeftPaneldisplay>
-        <div dangerouslySetInnerHTML={{ __html: InterviewData?.aIInterview?.introduction.replace(/\n/g, '<br />') }}></div>
+        <div dangerouslySetInnerHTML={{ __html: InterviewData?.videoInterview?.introduction.replace(/\n/g, '<br />') }}></div>
         </StyledTextLeftPaneldisplay>
       </StyledLeftPanelContentBox>
     </StartInterviewStyledLeftPanel>
@@ -121,8 +121,8 @@ export const StartInterviewPage: React.FC<StartInterviewPageProps> = ({ onStart,
         <h3>Instructions: Please read this before continuing</h3>
         <InstructionList>
           <li>Sit in a quiet, noise free place and provide your browser access to camera and microphone on your device</li>
-          <li>You have to answer {InterviewData?.aIInterview?.aIInterviewQuestions?.edges?.length} questions and have 4 minutes per question.</li>
-          <li>Answer all {InterviewData?.aIInterview?.aIInterviewQuestions?.edges?.length} questions in one go. Do not click back, close or refresh the tab to prevent loss of progress.</li>
+          <li>You have to answer {InterviewData?.videoInterview?.videoInterviewQuestions?.edges?.length} questions and have 4 minutes per question.</li>
+          <li>Answer all {InterviewData?.videoInterview?.videoInterviewQuestions?.edges?.length} questions in one go. Do not click back, close or refresh the tab to prevent loss of progress.</li>
           <li>Please make sure you have a stable internet connection and use a fully charged device for giving the interview.</li>
           <li>If you need assistance, write to me <a href={`mailto:${recruiterProfile.email}`}>{recruiterProfile.email}</a> or call/ whatsapp at <a href={`tel:${recruiterProfile.phone}`}>{recruiterProfile.phone}</a></li>
         </InstructionList>

@@ -1,12 +1,12 @@
 import { useMutation } from '@apollo/client';
 import { v4 as uid } from 'uuid';
 
-import { CREATE_ONE_AI_INTERVIEW_QUESTION } from '@/ai-interview/interview-creation/queries/createOneAIInterviewQuestion';
+import { CREATE_ONE_AI_INTERVIEW_QUESTION } from '@/ai-interview/interview-creation/queries/createOneVideoInterviewQuestion';
 import { undefined } from 'zod';
-export const useCreateOneAIInterviewQuestionQuery = () => {
-  const [createOneAIInterviewQuestion, { data, loading, error }] = useMutation(CREATE_ONE_AI_INTERVIEW_QUESTION);
+export const useCreateOneVideoInterviewQuestionQuery = () => {
+  const [createOneVideoInterviewQuestion, { data, loading, error }] = useMutation(CREATE_ONE_AI_INTERVIEW_QUESTION);
 
-  const createAIInterviewQuestions = async (questions: any[], newAIInterviewID: string) => {
+  const createVideoInterviewQuestions = async (questions: any[], newAIInterviewID: string) => {
     const noOfQuestions = questions.length;
 
     const retakesDataTypeConverter = (num: string) => {
@@ -38,7 +38,7 @@ export const useCreateOneAIInterviewQuestionQuery = () => {
       };
       console.log('This is the input object:', input, error);
       try {
-        await createOneAIInterviewQuestion({
+        await createOneVideoInterviewQuestion({
           variables: { input },
         });
       } catch (e) {
@@ -46,5 +46,5 @@ export const useCreateOneAIInterviewQuestionQuery = () => {
       }
     }
   };
-  return { createAIInterviewQuestions };
+  return { createVideoInterviewQuestions };
 };

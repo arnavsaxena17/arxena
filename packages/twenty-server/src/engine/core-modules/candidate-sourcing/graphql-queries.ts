@@ -70,7 +70,7 @@ export const graphqlQueryToFindPeopleByPhoneNumber = `query FindManyPeople($filt
                         jobLocation
                         jobCode
                         createdAt
-                        companies {
+                        company {
                             name
                             id
                             domainName
@@ -78,7 +78,7 @@ export const graphqlQueryToFindPeopleByPhoneNumber = `query FindManyPeople($filt
                         }
 
                     }
-                    aIInterviewStatus{
+                    videoInterview{
                         edges{
                             node{
                                 id

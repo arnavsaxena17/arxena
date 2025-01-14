@@ -35,8 +35,8 @@ export const graphqlToCreateOneMetatDataObjectItems = `
           }
         }
       `
-export const graphqlQueryToCreateVideoInterview = `mutation CreateOneAIInterviewStatus($input: AIInterviewStatusCreateInput!) {
-  createAIInterviewStatus(data: $input) {
+export const graphqlQueryToCreateVideoInterview = `mutation CreateOneVideoInterview($input: VideoInterviewCreateInput!) {
+  createVideoInterview(data: $input) {
     micOn
     interviewStarted
     position
@@ -57,9 +57,9 @@ export const graphqlQueryToCreateVideoInterview = `mutation CreateOneAIInterview
 
 
 
-export const graphQueryToFindManyAIInterviewStatuses = `
-query FindManyAIInterviewStatuses($filter: AIInterviewStatusFilterInput, $orderBy: [AIInterviewStatusOrderByInput], $lastCursor: String, $limit: Int) {
-  aIInterviewStatuses(
+export const graphQueryToFindManyvideoInterviews = `
+query FindManyVideoInterviews($filter: VideoInterviewFilterInput, $orderBy: [VideoInterviewOrderByInput], $lastCursor: String, $limit: Int) {
+  videoInterviews(
     filter: $filter
     orderBy: $orderBy
     first: $limit
@@ -68,7 +68,7 @@ query FindManyAIInterviewStatuses($filter: AIInterviewStatusFilterInput, $orderB
     edges {
       node {
         __typename
-        aIInterview {
+        videoInterview {
           __typename
           introduction
           createdAt
@@ -271,7 +271,7 @@ export const graphqlQueryToFindPeopleByPhoneNumber = `query FindManyPeople($filt
                         jobLocation
                         jobCode
                         createdAt
-                        companies {
+                        company {
                             name
                             id
                             domainName
@@ -279,7 +279,7 @@ export const graphqlQueryToFindPeopleByPhoneNumber = `query FindManyPeople($filt
                         }
 
                     }
-                    aIInterviewStatus{
+                    videoInterview{
                         edges{
                             node{
                                 id
@@ -449,7 +449,7 @@ export const graphqlQueryToFindManyPeopleEngagedCandidates = `query FindManyPeop
                           descriptionOneliner
                         }
                       }
-                      aIInterviewStatus{
+                      videoInterview{
                         edges{
                             node{
                                 id
@@ -541,7 +541,7 @@ export const graphqlQueryToFindManyPeopleEngagedCandidates = `query FindManyPeop
           startChat
           candConversationStatus
           startVideoInterviewChat
-          aIInterviewStatus{
+          videoInterview{
               edges{
                   node{
                       id
@@ -622,7 +622,7 @@ export const graphqlQueryToFetchWorksPaceMembers = `query FindManyWorkspaceMembe
               descriptionOneliner
             }
           }
-          aIInterviewStatus{
+          videoInterview{
               edges{
                   node{
                       id

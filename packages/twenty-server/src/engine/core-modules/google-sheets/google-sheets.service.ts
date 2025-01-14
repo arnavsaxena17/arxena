@@ -10,8 +10,6 @@ import { axiosRequest } from '../workspace-modifications/workspace-modifications
 @Injectable()
 export class GoogleSheetsService {
   private oauth2Client;
-  // private readonly TEMPLATE_SPREADSHEET_ID = '1FAYD2UCSfpJP552NmBpi48FeMrHr05ieR83XdwuRzk0'; // Add your template spreadsheet ID here
-  private readonly TEMPLATE_SPREADSHEET_ID = '1BcakcrTGtRC8p1JfxBbzEhO8PFV28Xx3beZ2xIGA0pE'; // Add your template spreadsheet ID here
 
   constructor() {
     this.oauth2Client = new google.auth.OAuth2(process.env.AUTH_GOOGLE_CLIENT_ID, process.env.AUTH_GOOGLE_CLIENT_SECRET, process.env.AUTH_GOOGLE_CALLBACK_URL);
@@ -162,7 +160,6 @@ export class GoogleSheetsService {
       console.log('No unique key column found in headers');
       return;
     }
-
     // Get existing unique keys
     const existingKeys = new Set(
       existingData.values
@@ -170,10 +167,8 @@ export class GoogleSheetsService {
         .map(row => row[uniqueKeyIndex])
         .filter(key => key),
     );
-
     // Filter and format new candidates
     const newCandidates = batch.filter(candidate => candidate?.unique_key_string && !existingKeys.has(candidate.unique_key_string));
-
     if (newCandidates.length === 0) {
       console.log('No new candidates to add');
       return;
@@ -252,17 +247,15 @@ export class GoogleSheetsService {
 
   private getHeadersFromData(data: CandidateSourcingTypes.UserProfile[]): string[] {
     if (!data || data.length === 0) {
-      return CandidateSourcingTypes.columnDefinitions.slice(0, 4).map(col => col.header);
+      return ['status', 'notes', 'unique_key_string', 'full_name', 'email_address', 'phone_numbers'];
     }
 
     const sampleCandidate = data[0];
     const headers = new Set<string>();
 
-    // Add headers based on available data, but only if they exist in columnDefinitions
-    CandidateSourcingTypes.columnDefinitions.forEach(def => {
-      if (def.key === 'status' || def.key === 'notes' || def.key === 'unique_key_string' || def.key === 'full_name' || def.key === 'email_address' || def.key === 'phone_numbers' || sampleCandidate[def.key] !== undefined) {
-        headers.add(def.header);
-      }
+    // Add headers based on available data
+    Object.keys(sampleCandidate).forEach(key => {
+      headers.add(key);
     });
 
     // Add screening questions that start with 'Ans'
@@ -309,16 +302,7 @@ export class GoogleSheetsService {
       throw new Error('Failed to load authentication credentials');
     }
   
-    try {
-      // Check for existing spreadsheet
-      // const existingSheet = await this.findSpreadsheetByJobName(auth, jobName);
-      // if (existingSheet) {
-      //   return {
-      //     googleSheetId: existingSheet.id,
-      //     googleSheetUrl: existingSheet.url,
-      //   };
-      // }
-  
+    try {  
       const sheets = google.sheets({ version: 'v4', auth: auth as OAuth2Client });
       const spreadsheetTitle = `${jobName} - Job Tracking`;
 
@@ -384,6 +368,24 @@ export class GoogleSheetsService {
                 endIndex: CandidateSourcingTypes.columnDefinitions.length
               }
             }
+          }]
+        }
+      });
+
+      // Freeze the top row
+      await sheets.spreadsheets.batchUpdate({
+        spreadsheetId: newSpreadsheet.data.spreadsheetId,
+        requestBody: {
+          requests: [{
+        updateSheetProperties: {
+          properties: {
+            sheetId: 0,
+            gridProperties: {
+          frozenRowCount: 1
+            }
+          },
+          fields: 'gridProperties.frozenRowCount'
+        }
           }]
         }
       });

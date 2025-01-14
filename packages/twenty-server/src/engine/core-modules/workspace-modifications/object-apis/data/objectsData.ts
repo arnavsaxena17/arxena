@@ -160,30 +160,30 @@ export const objectCreationArr = [
         "object": {
             "description": "",
             "icon": "IconActivity",
-            "labelPlural": "AI Interview Statuses",
-            "labelSingular": "AI Interview Status",
-            "nameSingular": "aIInterviewStatus",
-            "namePlural": "aIInterviewStatuses"
+            "labelPlural": "Video Interviews",
+            "labelSingular": "Video Interview",
+            "nameSingular": "videoInterview",
+            "namePlural": "videoInterviews"
         }
     },
     {
         "object": {
             "description": "",
             "icon": "IconPencilDown",
-            "labelPlural": "Responses",
-            "labelSingular": "Response",
-            "nameSingular": "response",
-            "namePlural": "responses"
+            "labelPlural": "Video Interview Response",
+            "labelSingular": "Video Interview Response",
+            "nameSingular": "videoInterviewResponse",
+            "namePlural": "videoInterviewResponses"
         }
     },
         {
         "object": {
             "description": "",
             "icon": "IconQuestionMark",
-            "labelPlural": "AI Interview Questions",
-            "labelSingular": "AI Interview Question",
-            "nameSingular": "aIInterviewQuestion",
-            "namePlural": "aIInterviewQuestions"
+            "labelPlural": "Video Interview Questions",
+            "labelSingular": "Video Interview Question",
+            "nameSingular": "videoInterviewQuestion",
+            "namePlural": "videoInterviewQuestions"
         }
     },
     {

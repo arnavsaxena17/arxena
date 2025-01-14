@@ -609,7 +609,7 @@ export class ArxChatEndpoint {
       const personObj = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).getPersonDetailsByCandidateId(candidateId,apiToken);
       const person = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).getPersonDetailsByPersonId(personObj.id,apiToken);
       console.log("Got person:", person);
-      const videoInterviewUrl = createVideoInterviewResponse?.data?.createAIInterviewStatus?.interviewLink?.url;
+      const videoInterviewUrl = createVideoInterviewResponse?.data?.createvideoInterview?.interviewLink?.url;
       console.log("This is the video interview link:", videoInterviewUrl);
 
       if (videoInterviewUrl) {
@@ -651,11 +651,11 @@ export class ArxChatEndpoint {
       const personObj = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).getPersonDetailsByCandidateId(candidateId,apiToken);
       const person = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).getPersonDetailsByPersonId(personObj.id,apiToken);
       console.log("Got person:", person);
-      console.log("interview link",person?.candidates?.edges[0]?.node?.aIInterviewStatus?.edges[0]?.node?.interviewLink?.url);
+      console.log("interview link",person?.candidates?.edges[0]?.node?.videoInterview?.edges[0]?.node?.interviewLink?.url);
       console.log("interview link",person?.candidates);
       console.log("interview link",person?.candidates.edges);
-      console.log("interview link",person?.candidates?.edges[0]?.node.aIInterviewStatus);
-      const videoInterviewUrl = person?.candidates?.edges[0]?.node?.aIInterviewStatus?.edges[0]?.node?.interviewLink?.url;
+      console.log("interview link",person?.candidates?.edges[0]?.node.videoInterview);
+      const videoInterviewUrl = person?.candidates?.edges[0]?.node?.videoInterview?.edges[0]?.node?.interviewLink?.url;
       console.log("This is the video interview in send-video-interview-to-candidate link:", videoInterviewUrl);
 
       if (videoInterviewUrl) {
