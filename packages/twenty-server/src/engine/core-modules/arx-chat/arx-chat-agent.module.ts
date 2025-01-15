@@ -8,7 +8,7 @@ import { WhatsappTestAPI } from 'src/engine/core-modules/arx-chat/controllers/wh
 import { TwilioControllers } from 'src/engine/core-modules/arx-chat/controllers/twilio-api.controller';
 import { GoogleControllers } from 'src/engine/core-modules/arx-chat/controllers/google-calendar-mail-api.controller';
 import { ArxChatEndpoint } from 'src/engine/core-modules/arx-chat/controllers/arx-chat-agent.controller';
-import { TasksService } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/scheduling-agent';
+import { CandidateStatusClassificationCronService, CandidateEngagementCronService } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/scheduling-agent';
 import { AuthModule } from 'src/engine/core-modules/auth/auth.module';
 import { GoogleCalendarModule } from 'src/engine/core-modules/calendar-events/google-calendar.module';
 import { Workspace } from '../workspace/workspace.entity';
@@ -23,9 +23,9 @@ import { PersonService } from '../candidate-sourcing/services/person.service';
 
 @Module({
   
-  imports: [AuthModule,WorkspaceModificationsModule,  GoogleCalendarModule,     DataSourceModule, TypeORMModule, TypeOrmModule.forFeature([Workspace, FeatureFlagEntity], 'core'), TypeOrmModule.forFeature([DataSourceEntity], 'metadata') ],
+  imports: [AuthModule,WorkspaceModificationsModule,GoogleCalendarModule,DataSourceModule, TypeORMModule, TypeOrmModule.forFeature([Workspace, FeatureFlagEntity], 'core'), TypeOrmModule.forFeature([DataSourceEntity], 'metadata') ],
   controllers: [ArxChatEndpoint,  WhatsappWebhook, WhatsappControllers,WhatsappTestAPI,TwilioControllers, GoogleControllers],
-  providers: [TasksService,PersonService, CandidateService, WorkspaceDataSourceService],
+  providers: [CandidateStatusClassificationCronService, CandidateEngagementCronService,PersonService, CandidateService, WorkspaceDataSourceService],
   exports: [],
 })
 export class ArxChatAgentModule {}

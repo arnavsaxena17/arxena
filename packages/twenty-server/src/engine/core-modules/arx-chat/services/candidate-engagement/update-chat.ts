@@ -71,8 +71,6 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
       throw error; // Re-throw the error to be handled by the caller
     }
   }
-
-
   async updateCandidatesWithChatCount(candidateIds: string[] | null = null, apiToken:string){
     let allCandidates = await this.fetchAllCandidatesWithSpecificChatControl("startChat",apiToken);
     if (candidateIds && Array.isArray(candidateIds)) {

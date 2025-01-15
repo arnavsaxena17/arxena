@@ -8,7 +8,7 @@ import { FetchAndUpdateCandidatesChatsWhatsapps } from './update-chat';
 
 
 @Injectable()
-export class TasksService {
+export class CandidateEngagementCronService {
   private isProcessing = false;
 
   constructor(private readonly workspaceQueryService: WorkspaceQueryService) {}
@@ -29,7 +29,29 @@ export class TasksService {
       console.log('ENDING CRON CYCLE');
     }
   }
+  async runWorkspaceServiceCandidateEngagement(transactionManager?: EntityManager) {
+    const workspaceIds = await this.workspaceQueryService.getWorkspaces();
+    const dataSources = await this.workspaceQueryService.dataSourceRepository.find({ where: { workspaceId: In(workspaceIds), }, });
+    const workspaceIdsWithDataSources = new Set(dataSources.map(dataSource => dataSource.workspaceId));
+    for (const workspaceId of workspaceIdsWithDataSources) {
+      const dataSourceSchema = this.workspaceQueryService.workspaceDataSourceService.getSchemaName(workspaceId);
+      const apiKeys = await this.workspaceQueryService.getApiKeys(workspaceId, dataSourceSchema, transactionManager);
+      if (apiKeys.length > 0) {
+        const apiKeyToken = await this.workspaceQueryService.tokenService.generateApiKeyToken(workspaceId, apiKeys[0].id, apiKeys[0].expiresAt);
+        if (apiKeyToken) {
+          await new CandidateEngagementArx(this.workspaceQueryService).checkCandidateEngagement(apiKeyToken?.token);
+        }
+      }
+    }
+  }
 
+
+}
+
+@Injectable()
+export class CandidateStatusClassificationCronService {
+  private isProcessing = false;
+  constructor(private readonly workspaceQueryService: WorkspaceQueryService) {}
   @Cron(CronExpression.EVERY_5_MINUTES)
   async handleFiveMinutesCron() {
     if (this.isProcessing) {
@@ -40,17 +62,11 @@ export class TasksService {
       this.isProcessing = true;
       console.log('Starting 5 minutes for Chat Count Chat Processing  CRON CYCLE');
       const workspaceIds = await this.workspaceQueryService.getWorkspaces();
-      const dataSources = await this.workspaceQueryService.dataSourceRepository.find({
-        where: {
-          workspaceId: In(workspaceIds),
-        },
-      });
+      const dataSources = await this.workspaceQueryService.dataSourceRepository.find({ where: { workspaceId: In(workspaceIds), }, });
       const workspaceIdsWithDataSources = new Set(dataSources.map(dataSource => dataSource.workspaceId));
       for (const workspaceId of workspaceIdsWithDataSources) {
         const dataSourceSchema = this.workspaceQueryService.workspaceDataSourceService.getSchemaName(workspaceId);
-        // console.log('dataSourceSchema::', dataSourceSchema);
         const apiKeys = await this.workspaceQueryService.getApiKeys(workspaceId, dataSourceSchema);
-        // console.log('these are the keys:', apiKeys);
         if (apiKeys.length > 0) {
           const apiKeyToken = await this.workspaceQueryService.tokenService.generateApiKeyToken(workspaceId, apiKeys[0].id, apiKeys[0].expiresAt);
           if (apiKeyToken) {
@@ -67,31 +83,6 @@ export class TasksService {
     }
   }
 
-
-
-  async runWorkspaceServiceCandidateEngagement(transactionManager?: EntityManager) {
-    const workspaceIds = await this.workspaceQueryService.getWorkspaces();
-    // console.log("workspaceIds::", workspaceIds);
-    const dataSources = await this.workspaceQueryService.dataSourceRepository.find({
-      where: {
-        workspaceId: In(workspaceIds),
-      },
-    });
-    const workspaceIdsWithDataSources = new Set(dataSources.map(dataSource => dataSource.workspaceId));
-    for (const workspaceId of workspaceIdsWithDataSources) {
-      const dataSourceSchema = this.workspaceQueryService.workspaceDataSourceService.getSchemaName(workspaceId);
-      // console.log('dataSourceSchema::', dataSourceSchema);
-      const apiKeys = await this.workspaceQueryService.getApiKeys(workspaceId, dataSourceSchema, transactionManager);
-      // console.log('these are the keys:', apiKeys);
-      if (apiKeys.length > 0) {
-        const apiKeyToken = await this.workspaceQueryService.tokenService.generateApiKeyToken(workspaceId, apiKeys[0].id, apiKeys[0].expiresAt);
-        if (apiKeyToken) {
-          const candidateEngagementArx = new CandidateEngagementArx(this.workspaceQueryService);
-          await candidateEngagementArx.checkCandidateEngagement(apiKeyToken?.token);
-        }
-      }
-    }
-  }
 }
 
 

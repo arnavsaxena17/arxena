@@ -465,7 +465,6 @@ export class FacebookWhatsappChatApi {
             const currentHourInIndia = new Date(currentTimeInIndia).getHours();
             if (currentHourInIndia >= 17) {
               messageTemplate = 'application03_chat_tomorrow';
-              // messageTemplate = 'application03';
             } else {
               messageTemplate = 'application03';
             }
