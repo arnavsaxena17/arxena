@@ -1,6 +1,7 @@
 export const useFormDataConversion = () => {
   const obj: any = {};
   const convertFormData = (formData: FormData) => {
+    console.log("formData  ", formData);
     for (const [key, value] of formData.entries()) {
       const keys = key.split(/\[|\]/).filter((k) => k); // Split keys by [ and remove empty strings
       keys.reduce((acc, k, i) => {
@@ -15,14 +16,14 @@ export const useFormDataConversion = () => {
 
     console.log(obj);
 
-    const introduction: any = obj.VideoInterviewTemplate[0];
+    const introduction: any = obj.newVideoInterviewTemplate[0];
 
     const questions: any[] = [];
 
-    for (let i = 1; i < obj.VideoInterviewTemplate.length; i++) {
-      questions.push(obj.VideoInterviewTemplate[i]);
+    for (let i = 1; i < obj.newVideoInterviewTemplate.length; i++) {
+      questions.push(obj.newVideoInterviewTemplate[i]);
     }
-
+    console.log("Questions::", questions);
     return { introduction, questions };
   };
 

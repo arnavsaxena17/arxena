@@ -25,6 +25,7 @@ export const useCreateOneVideoInterviewQuestionQuery = () => {
 
     for (let i = 0; i < noOfQuestions; i++) {
       const newQuestionId = uid();
+      console.log('Processing question:', questions[i]); // Add this debug log
 
       const input = {
         questionValue: questions[i].question,
@@ -34,7 +35,7 @@ export const useCreateOneVideoInterviewQuestionQuery = () => {
         retakes: retakesDataTypeConverter(questions[i].retakes) || undefined,
         timeLimit: parseInt(questions[i].timeLimit, 10) || undefined,
         videoInterviewTemplateId: newVideoInterviewTemplateID,
-        questionType: questions[i].questionType,
+        questionType: questions[i].questionType || 'VIDEO', // Fallback to answerType if questionType is undefined
       };
       console.log('This is the input object:', input, error);
       try {

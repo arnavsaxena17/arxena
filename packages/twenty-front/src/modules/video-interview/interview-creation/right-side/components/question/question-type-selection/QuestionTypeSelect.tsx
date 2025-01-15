@@ -29,9 +29,9 @@ export const QuestionTypeSelect = ({ id, questionNumber }: { id: string; questio
       Icon: Icon,
     }));
   }, []);
-
-  const name = `new̌̌VideoInterviewTemplate[${questionNumber}][questionType]`;
-
+  console.log("questionNumber:::", questionNumber)
+  const name = `newVideoInterviewTemplate[${questionNumber}][questionType]`;
+  console.log("This ithe selected name of the question type", name);
   return (
     <StyledContainer>
       <Select fullWidth dropdownId={id} options={options} label="Question Type" withSearchInput onChange={onChange} value={selectedQuestionType} emptyOption={undefined} />

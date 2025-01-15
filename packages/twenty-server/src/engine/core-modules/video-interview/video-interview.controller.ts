@@ -519,9 +519,8 @@ export class VideoInterviewController {
     if (req.method === 'POST') {
       console.log("Received interviewId:", interviewId);
       let responseFromInterviewRequests
-      const videoInterviewsQuery = `
-        query FindManyVideoInterviews($filter: VideoInterviewFilterInput, $orderBy: [VideoInterviewOrderByInput], $lastCursor: String, $limit: Int) {
-          VideoInterviews(
+      const videoInterviewsQuery = `query FindManyVideoInterviews($filter: VideoInterviewFilterInput, $orderBy: [VideoInterviewOrderByInput], $lastCursor: String, $limit: Int) {
+          videoInterviews(
             filter: $filter
             orderBy: $orderBy
             first: $limit
@@ -566,7 +565,7 @@ export class VideoInterviewController {
                     phone
                   }
                 }
-                videoInterview {
+                videoInterviewTemplate {
                   position
                   introduction
                   id
@@ -636,6 +635,7 @@ export class VideoInterviewController {
         responseFromInterviewRequests = null
       }
       const videoInterviewId = responseFromInterviewRequests?.data?.videoInterviews?.edges[0]?.node?.videoInterviewTemplate?.id;
+      console.log("responseFromInterviewRequests?.data?.videoInterviews?.edges[0]?.node", responseFromInterviewRequests?.data?.videoInterviews?.edges[0]?.node);
       console.log("Received videoInterviewId:", videoInterviewId);
       const videoInterviewIntroductionAttachmentDataQuery = JSON.stringify({
         query: `query FindManyAttachments($filter: AttachmentFilterInput, $orderBy: [AttachmentOrderByInput], $lastCursor: String, $limit: Int) {

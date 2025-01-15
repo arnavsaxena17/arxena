@@ -13,8 +13,8 @@ export const objectCreationArr = [
         "object": {
             "description": "",
             "icon": "IconReplace",
-            "labelPlural": "WhatsappTemplates",
-            "labelSingular": "WhatsappTemplates",
+            "labelPlural": "Whatsapp Templates",
+            "labelSingular": "Whatsapp Templates",
             "nameSingular": "whatsappTemplate",
             "namePlural": "whatsappTemplates"
         }

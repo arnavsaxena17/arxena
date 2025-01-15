@@ -65,6 +65,7 @@ export const InterviewCreationModal = ({
   };
 
   const { loading, error, data } = useQuery(FIND_MANY_VIDEO_INTERVIEW_MODELS);
+  console.log("These are the video interview models:", data);
 
   if (loading) {
     return (
@@ -82,7 +83,7 @@ export const InterviewCreationModal = ({
     return <div>Error: {error.message}</div>;
   }
 
-  const videoInterviewModelsArr: any = data.videoInterviewModelModels.edges;
+  const videoInterviewModelsArr: any = data.videoInterviewModels.edges;
 
   if (!isVideoInterviewModalOpen) {
     return null;

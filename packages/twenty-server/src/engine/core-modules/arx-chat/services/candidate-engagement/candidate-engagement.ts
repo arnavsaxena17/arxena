@@ -217,5 +217,8 @@ export default class CandidateEngagementArx {
     // jobLocation
     // Attachment For JD
     // fetchQuestionsByJobId(jobId: string)
+
+    // videoInterviewTemplate
+    // questionsTemplate
   }
 }

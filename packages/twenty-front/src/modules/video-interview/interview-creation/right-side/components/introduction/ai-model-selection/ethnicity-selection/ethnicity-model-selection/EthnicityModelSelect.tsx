@@ -45,7 +45,7 @@ export const EthnicityModelSelect = ({ selectedLanguage, videoInterviewModelsArr
     }));
   }, [availableModels]);
 
-  const name = `newvideoInterviewTemplate[${0}][videoInterviewModelId]`;
+  const name = `newVideoInterviewTemplate[${0}][videoInterviewModelId]`;
 
   return (
     <>

@@ -20,7 +20,7 @@ export const useCreateOneVideoInterviewQuery = () => {
     const input = {
       id: newVideoInterviewTemplateId,
       jobId: objectRecordId,
-      name: introduction.videoInterviewTemplateName,
+      name: introduction.VideoInterviewTemplateName,
       introduction: introduction.introduction,
       instructions: instructionsAll,
       videoInterviewModelId: introduction.videoInterviewModelId,
