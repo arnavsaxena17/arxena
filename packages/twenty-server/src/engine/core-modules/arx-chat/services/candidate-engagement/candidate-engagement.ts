@@ -26,13 +26,11 @@ export default class CandidateEngagementArx {
       chatHistory.push({ role: 'system', content: SYSTEM_PROMPT });
       chatHistory.push({ role: 'user', content: 'startChat' });
       whatsappTemplate = "application03"
-
     }
     else if (chatReply === 'startVideoInterviewChat' && candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges.length > 0) {
       chatHistory = sortedMessagesList[0]?.messageObj;
       chatHistory.push({ role: 'user', content: 'startVideoInterviewChat' });
       whatsappTemplate = "application03"
-
     } else {
       chatHistory = sortedMessagesList[0]?.messageObj;
       whatsappTemplate = candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.whatsappProvider || 'application03' 
@@ -161,41 +159,24 @@ export default class CandidateEngagementArx {
   
   async startChatEngagement(peopleCandidateResponseEngagementArr: allDataObjects.PersonNode[],  chatControl: allDataObjects.chatControls,  apiToken:string) {
     console.log('Total number of candidates fetched to filter for start chat::', peopleCandidateResponseEngagementArr?.length, "for chatControl:", chatControl);
-    let filteredCandidatesToStartEngagement: allDataObjects.PersonNode[];
-    if (chatControl === 'startChat') {
-      // first create video interview links for all candidates with whom start chat will be done. Lets not do this for now
-      // for (const personNode of peopleCandidateResponseEngagementArr) {
-      //   const candidateNode = personNode?.candidates?.edges[0]?.node;
-      //   const candidateId = candidateNode.id;
-      //   if (!candidateNode?.videoInterview?.edges[0]?.node?.interviewLink?.url) {
-      //     console.log(`Creating video interview link for candidate: ${candidateNode.name}`);
-      //     const createVideoInterviewResponse = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).createVideoInterviewForCandidate(candidateId, apiToken);
-      //     console.log(`Video interview link created: ${createVideoInterviewResponse}`);
-      //   }
-      // }
 
-      filteredCandidatesToStartEngagement = peopleCandidateResponseEngagementArr?.filter(personNode => {
-        return personNode?.candidates?.edges?.length > 0 && personNode?.candidates?.edges[0]?.node?.startChat === true && personNode?.candidates?.edges[0]?.node?.whatsappMessages?.edges.length === 0 && personNode?.candidates?.edges[0]?.node?.startVideoInterviewChat === false;
-      });
-      console.log('Number of candidates to who have no filtseredCandidates StartEngagement ::', filteredCandidatesToStartEngagement?.length, "for chatControl:", chatControl);
-    }
-    else if (chatControl === 'startVideoInterviewChat') {
-      filteredCandidatesToStartEngagement = peopleCandidateResponseEngagementArr?.filter(personNode => {
-        return personNode?.candidates?.edges?.length > 0 && personNode?.candidates?.edges[0]?.node?.startChat === true && personNode?.candidates?.edges[0]?.node?.whatsappMessages?.edges.length >0 && personNode?.candidates?.edges[0]?.node?.startVideoInterviewChat === true && personNode?.candidates?.edges[0]?.node?.lastEngagementChatControl !== "startVideoInterviewChat";
-      });
-      console.log('Number of candidates to who have no filteredCandidates StartEngagement ::', filteredCandidatesToStartEngagement?.length, "for chatControl:", chatControl);
-    }
-    else{
-      filteredCandidatesToStartEngagement = peopleCandidateResponseEngagementArr?.filter(personNode => {
-        return personNode?.candidates?.edges?.length > 0 && personNode?.candidates?.edges[0]?.node?.startChat === true && personNode?.candidates?.edges[0]?.node?.whatsappMessages?.edges.length >0;
-      });
-    }
-    console.log('Number of candidates to start chat after al filters for start chat ::', filteredCandidatesToStartEngagement?.length," for chatControl:", chatControl);
-    for (let i = 0; i < filteredCandidatesToStartEngagement?.length; i++) {
-      const chatReply = chatControl;
-      const candidateProfileDataNodeObj = filteredCandidatesToStartEngagement[i];
-      await new CandidateEngagementArx(this.workspaceQueryService).createAndUpdateCandidateStartChatChatMessage(chatReply, candidateProfileDataNodeObj, chatControl,apiToken);
+    const filterCandidates = (personNode: allDataObjects.PersonNode) => {
+      const candidate = personNode?.candidates?.edges[0]?.node;
+      if (!candidate) return false;
 
+      if (chatControl === 'startChat') {
+      return candidate.startChat && candidate.whatsappMessages?.edges.length === 0 && !candidate.startVideoInterviewChat;
+      } else if (chatControl === 'startVideoInterviewChat') {
+      return candidate.startChat && candidate.whatsappMessages?.edges.length > 0 && candidate.startVideoInterviewChat && candidate.lastEngagementChatControl !== "startVideoInterviewChat";
+      } else {
+      return candidate.startChat && candidate.whatsappMessages?.edges.length > 0;
+      }
+    };
+
+    const filteredCandidatesToStartEngagement = peopleCandidateResponseEngagementArr?.filter(filterCandidates);
+    console.log('Number of candidates to start chat after all filters for start chat ::', filteredCandidatesToStartEngagement?.length, "for chatControl:", chatControl);
+    for (const candidateProfileDataNodeObj of filteredCandidatesToStartEngagement) {
+      await this.createAndUpdateCandidateStartChatChatMessage(chatControl, candidateProfileDataNodeObj, chatControl, apiToken);
     }
   }
   
@@ -233,34 +214,20 @@ export default class CandidateEngagementArx {
   }
 
   async checkCandidateEngagement(apiToken:string) {
-
-
     try{
       console.log("Cron running and cycle started to check candidate engagement");
-      let chatControl:allDataObjects.chatControls 
-      chatControl = "startChat";
-      const peopleEngagementStartChatArr = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).fetchSpecificPeopleToEngageBasedOnChatControl(chatControl, apiToken);
-
-      this.checkIfAllInformationForSendingChatMessageIsAvailable(peopleEngagementStartChatArr, chatControl, apiToken);
-
-      console.log("Number of peopleEngagementStartChatArr for chat to start engagement or engage::", peopleEngagementStartChatArr.length, "for chatControl:", chatControl);
-      if (peopleEngagementStartChatArr) {
-        await this.engageCandidates(peopleEngagementStartChatArr, chatControl, apiToken);
-      }
-      if (peopleEngagementStartChatArr) {
-        await this.startChatEngagement(peopleEngagementStartChatArr, chatControl, apiToken);
-      }
-      chatControl = "startVideoInterviewChat";
-      const peopleEngagementStartVideoInterviewChatArr = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).fetchSpecificPeopleToEngageBasedOnChatControl(chatControl, apiToken);
-      console.log("Number of people for videointerview to start engagement or engage::", peopleEngagementStartVideoInterviewChatArr.length, "for chatControl:", chatControl);
-      if (peopleEngagementStartVideoInterviewChatArr) {
-        await this.setupVideoInterviewLinks(peopleEngagementStartVideoInterviewChatArr, chatControl, apiToken);
-      }      
-      if (peopleEngagementStartVideoInterviewChatArr) {
-        await this.startChatEngagement(peopleEngagementStartVideoInterviewChatArr, chatControl, apiToken);
-      }      
-      if (peopleEngagementStartVideoInterviewChatArr) {
-        await this.engageCandidates(peopleEngagementStartVideoInterviewChatArr, chatControl, apiToken);
+      const chatControls: allDataObjects.chatControls[] = ["startChat", "startVideoInterviewChat"];
+      for (const chatControl of chatControls) {
+        const peopleToEngage = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).fetchSpecificPeopleToEngageBasedOnChatControl(chatControl, apiToken);
+        this.checkIfAllInformationForSendingChatMessageIsAvailable(peopleToEngage, chatControl, apiToken);
+        console.log(`Number of people to engage for ${chatControl}:`, peopleToEngage.length);
+        if (peopleToEngage.length > 0) {
+          if (chatControl === "startVideoInterviewChat") {
+            await this.setupVideoInterviewLinks(peopleToEngage, chatControl, apiToken);
+          }
+          await this.startChatEngagement(peopleToEngage, chatControl, apiToken);
+          await this.engageCandidates(peopleToEngage, chatControl, apiToken);
+        }
       }
       return;
     }

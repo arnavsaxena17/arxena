@@ -457,23 +457,23 @@ export class FacebookWhatsappChatApi {
     if (whatappUpdateMessageObj?.messageType === 'botMessage') {
       console.log('TEmplate Message or Text Message depends on :', whatappUpdateMessageObj?.messages[0]?.content);
       let whatappUpdateMessageObjAfterWAMidUpdate: allDataObjects.candidateChatMessageType;
-      if (whatappUpdateMessageObj?.messages[0]?.content?.lower().includes('based recruitment company') || whatappUpdateMessageObj?.messages[0]?.content?.lower().includes('video interview as part of the')) {
+      if (whatappUpdateMessageObj?.messages[0]?.content?.toLowerCase().includes('based recruitment company') || whatappUpdateMessageObj?.messages[0]?.content?.toLowerCase().includes('video interview as part of the')) {
         let messageTemplate: string;
-        if (whatappUpdateMessageObj?.messages[0]?.content?.lower().includes('based recruitment company')) {
+        if (whatappUpdateMessageObj?.messages[0]?.content?.toLowerCase().includes('based recruitment company')) {
           if (chatControl === 'startChat') {
             const currentTimeInIndia = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
             const currentHourInIndia = new Date(currentTimeInIndia).getHours();
             if (currentHourInIndia >= 17) {
-              messageTemplate = 'application03_chat_tomorrow';
+              messageTemplate = 'application03';
             } else {
               messageTemplate = 'application03';
             }
           } else {
             messageTemplate = whatappUpdateMessageObj?.whatsappMessageType || 'application03';
           }
-        } else if (whatappUpdateMessageObj?.messages[0]?.content?.lower().includes('video interview as part of the') && whatappUpdateMessageObj?.messages[0]?.content?.lower().includes('questions at the link here')) {
+        } else if (whatappUpdateMessageObj?.messages[0]?.content?.toLowerCase().includes('video interview as part of the') && whatappUpdateMessageObj?.messages[0]?.content?.toLowerCase().includes('questions at the link here')) {
           if (chatControl === 'startVideoInterviewChat') {
-            messageTemplate = 'share_video_interview_link_with_start_link';
+            messageTemplate = 'share_video_interview_link_without_button';
           } else {
             messageTemplate = whatappUpdateMessageObj?.whatsappMessageType || 'application03';
           }
