@@ -14,8 +14,8 @@ import { ShowPageAddButton } from '@/ui/layout/show-page/components/ShowPageAddB
 import { ShowPageMoreButton } from '@/ui/layout/show-page/components/ShowPageMoreButton';
 import { PageTitle } from '@/ui/utilities/page-title/PageTitle';
 
-import { isAIInterviewModalOpenState } from '@/ai-interview/interview-creation/states/aIInterviewModalState';
-import { InterviewCreationModal } from '@/ai-interview/interview-creation/InterviewCreationModal';
+import { isVideoInterviewModalOpenState } from '@/video-interview/interview-creation/states/videoInterviewModalState';
+import { InterviewCreationModal } from '@/video-interview/interview-creation/InterviewCreationModal';
 
 export const RecordShowPage = () => {
   const parameters = useParams<{
@@ -25,7 +25,7 @@ export const RecordShowPage = () => {
 
   const { objectNameSingular, objectRecordId, headerIcon, loading, pageTitle, pageName, isFavorite, handleFavoriteButtonClick, record, objectMetadataItem } = useRecordShowPage(parameters.objectNameSingular ?? '', parameters.objectRecordId ?? '');
 
-  const isAIInterviewModalOpen = useRecoilValue(isAIInterviewModalOpenState);
+  const isVideoInterviewModalOpen = useRecoilValue(isVideoInterviewModalOpenState);
 
   return (
     <RecordFieldValueSelectorContextProvider>
@@ -53,7 +53,7 @@ export const RecordShowPage = () => {
             <RecordShowContainer objectNameSingular={objectNameSingular} objectRecordId={objectRecordId} loading={loading} />
           </TimelineActivityContext.Provider>
         </PageBody>
-        {isAIInterviewModalOpen ? (
+        {isVideoInterviewModalOpen ? (
           <InterviewCreationModal
             objectNameSingular={objectNameSingular}
             objectRecordId={objectRecordId}

@@ -55,9 +55,9 @@ export const mutations = {
             }
         }
     `,
-  createAIModel: `
-    mutation CreateOneAIModel($input: AIModelCreateInput!) {
-        createAIModel(data: $input) {
+  createVideoInterviewModel: `
+    mutation CreateOneVideoInterviewModel($input: VideoInterviewModelCreateInput!) {
+        createVideoInterviewModel(data: $input) {
             id
             name
             country
@@ -68,12 +68,12 @@ export const mutations = {
     }
 `,
 
-  createAIInterview: `
-    mutation CreateOneAIInterview($input: AIInterviewCreateInput!) {
-        createAIInterview(data: $input) {
+  createVideoInterviewTemplate: `
+    mutation CreateOneVideoInterviewTemplate($input: VideoInterviewTemplateCreateInput!) {
+        createVideoInterviewTemplate(data: $input) {
             id
             name
-            aIModelId
+            videoInterviewModelId
             jobId
             introduction
             instructions

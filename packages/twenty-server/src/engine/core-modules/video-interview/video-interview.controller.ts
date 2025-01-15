@@ -124,7 +124,7 @@ export class VideoInterviewController {
       const currentQuestionIndex = JSON.parse(req?.body?.currentQuestionIndex);
       console.log("REceived interviewData:", interviewData)
       console.log("REceived currentQuestionIndex:", currentQuestionIndex)
-      const questionId = interviewData.aIInterview.videoInterviewQuestions.edges[currentQuestionIndex].node.id;
+      const questionId = interviewData.videoInterviewTemplate.videoInterviewQuestions.edges[currentQuestionIndex].node.id;
       if (!files.audio || !files.video) {
         throw new BadRequestException('Both video and audio files are required');
 
@@ -263,7 +263,7 @@ export class VideoInterviewController {
 
 
 
-      // Update AI Interview Status mutation
+      // Update Video Interview Status mutation
       console.log('Preparing GraphQL mutation for status update');
       const updateStatusMutation = `
         mutation UpdateOneVideoInterview($idToUpdate: ID!, $input: VideoInterviewUpdateInput!) {
@@ -410,7 +410,7 @@ export class VideoInterviewController {
 
 // leaqve unauthenticated due to public candidate access to this endpoint
   @Post('get-questions')
-  async getQuestions(@Req() req, @Body() interviewData: { aIInterviewId: string }) {
+  async getQuestions(@Req() req, @Body() interviewData: { videoInterviewTemplateId: string }) {
     const apiToken = req.headers.authorization.split(' ')[1]; // Assuming Bearer token
 
     const token = req.interviewId;
@@ -430,7 +430,7 @@ export class VideoInterviewController {
               questionValue
               timeLimit
               position
-              aIInterviewId
+              videoInterviewTemplateId
             }
           }
         }
@@ -438,7 +438,7 @@ export class VideoInterviewController {
     `;
 
     const questionsVariables = {
-      filter: { aIInterviewId: { eq: interviewData.aIInterviewId } },
+      filter: { videoInterviewTemplateId: { eq: interviewData.videoInterviewTemplateId } },
       limit: 30,
       orderBy: { position: 'AscNullsFirst' },
     };
@@ -448,7 +448,7 @@ export class VideoInterviewController {
       variables: questionsVariables,
     });
 
-    const result = (await axiosRequest(graphqlQueryObjForVideoInterviewQuestions,apiToken)).data as { videoInterviewQuestions: { edges: { node: { id: string; name: string; questionValue: string; timeLimit: number; position: number; aIInterviewId: string } }[] } };
+    const result = (await axiosRequest(graphqlQueryObjForVideoInterviewQuestions,apiToken)).data as { videoInterviewQuestions: { edges: { node: { id: string; name: string; questionValue: string; timeLimit: number; position: number; videoInterviewTemplateId: string } }[] } };
     return result.videoInterviewQuestions.edges.map(edge => edge.node);
   }
 
@@ -573,7 +573,7 @@ export class VideoInterviewController {
                   createdAt
                   jobId
                   name
-                  aIModelId
+                  videoInterviewModelId
                   videoInterviewQuestions {
                     edges{
                         node{
@@ -635,7 +635,7 @@ export class VideoInterviewController {
         console.error('Error fetching interview data:', error);
         responseFromInterviewRequests = null
       }
-      const videoInterviewId = responseFromInterviewRequests?.data?.videoInterviews?.edges[0]?.node?.aIInterview?.id;
+      const videoInterviewId = responseFromInterviewRequests?.data?.videoInterviews?.edges[0]?.node?.videoInterviewTemplate?.id;
       console.log("Received videoInterviewId:", videoInterviewId);
       const videoInterviewIntroductionAttachmentDataQuery = JSON.stringify({
         query: `query FindManyAttachments($filter: AttachmentFilterInput, $orderBy: [AttachmentOrderByInput], $lastCursor: String, $limit: Int) {
@@ -656,9 +656,9 @@ export class VideoInterviewController {
         totalCount
           }
         }`,
-        variables: { filter: { aIInterviewId: { eq: videoInterviewId } }, orderBy: { createdAt: 'DescNullsFirst' } }
+        variables: { filter: { videoInterviewTemplateId: { eq: videoInterviewId } }, orderBy: { createdAt: 'DescNullsFirst' } }
       });
-      const allQuestionIds = responseFromInterviewRequests?.data?.videoInterviews?.edges[0]?.node?.aIInterview?.videoInterviewQuestions?.edges
+      const allQuestionIds = responseFromInterviewRequests?.data?.videoInterviews?.edges[0]?.node?.videoInterviewTemplate?.videoInterviewQuestions?.edges
         .map((edge: { node: { id: string; createdAt: string } }) => edge.node)
         .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
         .map(node => node.id);

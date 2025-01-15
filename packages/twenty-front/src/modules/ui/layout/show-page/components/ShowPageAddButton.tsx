@@ -4,7 +4,7 @@ import { IconCheckbox, IconNotes, IconPlus, IconScan } from 'twenty-ui';
 import { useOpenCreateActivityDrawer } from '@/activities/hooks/useOpenCreateActivityDrawer';
 import { ActivityType } from '@/activities/types/Activity';
 import { ActivityTargetableObject } from '@/activities/types/ActivityTargetableEntity';
-import { useInterviewCreationModal } from '@/ai-interview/interview-creation/hooks/useInterviewCreationModal';
+import { useInterviewCreationModal } from '@/video-interview/interview-creation/hooks/useInterviewCreationModal';
 import { CoreObjectNameSingular } from '@/object-metadata/types/CoreObjectNameSingular';
 import { PageHotkeyScope } from '@/types/PageHotkeyScope';
 import { IconButton } from '@/ui/input/button/components/IconButton';
@@ -40,7 +40,7 @@ export const ShowPageAddButton = ({ activityTargetObject }: { activityTargetObje
     closeDropdown();
   };
 
-  const isAIInterviewEnabled = [CoreObjectNameSingular.Job, CoreObjectNameSingular.Candidate, CoreObjectNameSingular.Person].includes(activityTargetObject.targetObjectNameSingular as CoreObjectNameSingular);
+  const isVideoInterviewEnabled = [CoreObjectNameSingular.Job, CoreObjectNameSingular.Candidate, CoreObjectNameSingular.Person].includes(activityTargetObject.targetObjectNameSingular as CoreObjectNameSingular);
 
   const menuItems = [
     {
@@ -53,10 +53,10 @@ export const ShowPageAddButton = ({ activityTargetObject }: { activityTargetObje
       icon: IconCheckbox,
       onClick: () => handleSelect('Task'),
     },
-    ...(isAIInterviewEnabled
+    ...(isVideoInterviewEnabled
       ? [
           {
-            text: 'AI Interview',
+            text: 'Video Interview',
             icon: IconScan,
             onClick: () => handleModal(),
           },

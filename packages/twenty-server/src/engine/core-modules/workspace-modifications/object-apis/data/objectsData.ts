@@ -190,20 +190,20 @@ export const objectCreationArr = [
         "object": {
             "description": "",
             "icon": "IconScan",
-            "labelPlural": "AI Interviews",
-            "labelSingular": "AI Interview",
-            "nameSingular": "aIInterview",
-            "namePlural": "aIInterviews"
+            "labelPlural": "Video Interview Templates",
+            "labelSingular": "Video Interview Template",
+            "nameSingular": "VideoInterviewTemplate",
+            "namePlural": "VideoInterviewTemplates"
         }
     },
     {
         "object": {
             "description": "",
             "icon": "IconCode",
-            "labelPlural": "AI Models",
-            "labelSingular": "AI Model",
-            "nameSingular": "aIModel",
-            "namePlural": "aIModels"
+            "labelPlural": "Video Interview Models",
+            "labelSingular": "Video Interview Model",
+            "nameSingular": "videoInterviewModel",
+            "namePlural": "videoInterviewModels"
         }
     },
         {

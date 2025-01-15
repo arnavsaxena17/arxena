@@ -31,7 +31,6 @@ console.log("CoreObjectNameSingular::", CoreObjectNameSingular)
 
 export const RecordIndexPage = () => {
   const objectNamePlural = useParams().objectNamePlural ?? '';
-  // const isAIInterviewModalOpen = useRecoilValue(isAIInterviewModalOpenState);
   const isArxEnrichModalOpen = useRecoilValue(isArxEnrichModalOpenState);
   
 

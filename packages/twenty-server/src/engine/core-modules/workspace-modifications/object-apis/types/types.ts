@@ -228,16 +228,16 @@ export interface FieldInput {
 
 
 
-// AI Model Types
-export interface AIModel {
+// Video Interview Model Types
+export interface VideoInterviewModel {
     name: string;
     country: string;
     language: string;
 }
 
-export interface AIInterview {
+export interface VideoInterviewTemplate {
     name: string;
-    aIModelId: string;
+    videoInterviewModelId: string;
     jobId: string;
     introduction?: string;
     instructions?: string;

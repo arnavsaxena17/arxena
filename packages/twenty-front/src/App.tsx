@@ -77,12 +77,12 @@ import { SettingsWorkspaceMembers } from '~/pages/settings/SettingsWorkspaceMemb
 import { Tasks } from '~/pages/tasks/Tasks';
 import { Chats } from '~/pages/chats/Chats';
 import { getPageTitleFromPath } from '~/utils/title-utils';
-import VideoInterviewResponseViewer  from '@/ai-interview/interview-response/VideoInterviewResponseViewer';
+import VideoInterviewResponseViewer  from '@/video-interview/interview-response/VideoInterviewResponseViewer';
 import GoogleSheet  from '@/google-sheet/GoogleSheet';
-import AIInterviewFlow from '@/ai-interview/interview-response/AIInterviewFlow';
+import VideoInterviewFlow from '@/video-interview/interview-response/VideoInterviewFlow';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { HotPage } from '@/hot/hotCandidates';
-// const AIInterviewFlow = lazy(() => import('@/ai-interview/interview-response/AIInterviewFlow'));
+// const VideoInterviewFlow = lazy(() => import('@/ai-interview/interview-response/VideoInterviewFlow'));
 // const VideoInterviewResponseViewer = lazy(() => import('@/ai-interview/interview-response/VideoInterviewResponseViewer'));
 
 
@@ -147,7 +147,7 @@ const createRouter = (isBillingEnabled?: boolean) =>
           <Route element={<BlankLayout />}>
             <Route
               path={`${AppPath.VideoInterview}/*`}
-              element={<AIInterviewFlow interviewId={window.location.pathname} />}
+              element={<VideoInterviewFlow interviewId={window.location.pathname} />}
             />
             <Route
               path={`${AppPath.GoogleSheet}/*`}

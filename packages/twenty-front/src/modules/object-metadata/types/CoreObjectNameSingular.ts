@@ -23,7 +23,7 @@ export enum CoreObjectNameSingular {
   ViewSort = 'viewSort',
   Webhook = 'webhook',
   WorkspaceMember = 'workspaceMember',
-  AIInterview = 'aIInterview',
+  VideoInterviewTemplate = 'videoInterviewTemplate',
   Job = 'job',
   Candidate = 'candidate',
   whatsappMessage = 'whatsappMessage',

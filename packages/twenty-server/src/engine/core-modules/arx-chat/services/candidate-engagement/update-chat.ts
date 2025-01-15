@@ -296,8 +296,8 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
       const response = await axiosRequest(graphqlQueryObj, apiToken);
       console.log("This is the response data:", response.data)
       console.log("This is the responsedata.data:", response.data.data)
-      console.log("This is the responseaIInterviews:", response.data.data.aIInterviews)
-      const interviewObj = response?.data?.data?.aIInterviews.edges[0].node;
+      console.log("This is the videoInterviewTemplates:", response.data.data.videoInterviewTemplates)
+      const interviewObj = response?.data?.data?.videoInterviewTemplates.edges[0].node;
       return interviewObj;
     } catch (error) {
       console.log('Error in fetching interviews:: ', error);

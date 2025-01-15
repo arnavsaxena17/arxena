@@ -882,7 +882,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
                     "value": "FR"
                 }
             ],
-            "objectMetadataId": objectsNameIdMap.aIModel,
+            "objectMetadataId": objectsNameIdMap.videoInterviewModel,
             "type": "SELECT"
         }
 
@@ -925,7 +925,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
                     "value": "FRENCH"
                 }
             ],
-            "objectMetadataId": objectsNameIdMap.aIModel,
+            "objectMetadataId": objectsNameIdMap.videoInterviewModel,
             "type": "SELECT"
         }
     },
@@ -935,7 +935,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
             "icon": "IconAbc",
             "label": "Introduction",
             "name": "introduction",
-            "objectMetadataId": objectsNameIdMap.aIInterview,
+            "objectMetadataId": objectsNameIdMap.videoInterviewTemplate,
             "type": "TEXT"
         }
 
@@ -946,7 +946,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
             "icon": "IconAbc",
             "label": "Instructions",
             "name": "instructions",
-            "objectMetadataId": objectsNameIdMap.aIInterview,
+            "objectMetadataId": objectsNameIdMap.videoInterviewTemplate,
             "type": "TEXT"
         }
 
@@ -959,7 +959,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
             "name": "questionType",
             "options": [{
                     "color": "green",
-                    "label": "Video (Uses AI Model)",
+                    "label": "Video",
                     "position": 0,
                     "value": "VIDEO"
                 },

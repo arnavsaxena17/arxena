@@ -1,7 +1,7 @@
 import { useQuery } from '@apollo/client';
 import styled from '@emotion/styled';
 import { useRecoilState, useResetRecoilState } from 'recoil';
-import { FIND_MANY_AI_MODELS } from '@/ai-interview/interview-creation/queries/findManyAIModels';
+import { FIND_MANY_VIDEO_INTERVIEW_MODELS } from '@/video-interview/interview-creation/queries/findManyVideoInterviewModels';
 
 import { ArxEnrichLeftSideContainer } from '@/arx-enrich/left-side/ArxEnrichLeftSideContainer';
 import { ArxEnrichRightSideContainer } from '@/arx-enrich/right-side/ArxEnrichRightSideContainer';
@@ -117,7 +117,7 @@ export const ArxEnrichmentModal = ({
     setIsArxEnrichModalOpen(false);
   };
 
-  const { loading, error, data } = useQuery(FIND_MANY_AI_MODELS);
+  const { loading, error, data } = useQuery(FIND_MANY_VIDEO_INTERVIEW_MODELS);
 
   if (loading) {
     return (

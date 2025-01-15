@@ -51,7 +51,7 @@ export const graphqlQueryToCreateVideoInterview = `mutation CreateOneVideoInterv
     id
     cameraOn
     name
-    aIInterviewId
+    videoInterviewTemplateId
   }
 }`
 
@@ -75,7 +75,7 @@ query FindManyVideoInterviews($filter: VideoInterviewFilterInput, $orderBy: [Vid
           id
           jobId
           instructions
-          aIModelId
+          videoInterviewModelId
           name
           position
           updatedAt
@@ -141,8 +141,8 @@ query FindManyVideoInterviews($filter: VideoInterviewFilterInput, $orderBy: [Vid
 }`
 
 
-export const graphqlQueryToFindInterviewsByJobId = `query FindManyAIInterviews($filter: AIInterviewFilterInput, $orderBy: [AIInterviewOrderByInput], $lastCursor: String, $limit: Int) {
-  aIInterviews(
+export const graphqlQueryToFindInterviewsByJobId = `query FindManyVideoInterviewTemplates($filter: VideoInterviewTemplateFilterInput, $orderBy: [VideoInterviewTemplateOrderByInput], $lastCursor: String, $limit: Int) {
+  videoInterviewTemplates(
     filter: $filter
     orderBy: $orderBy
     first: $limit
@@ -156,7 +156,7 @@ export const graphqlQueryToFindInterviewsByJobId = `query FindManyAIInterviews($
         createdAt
         position
         id
-        aIModel {
+        videoInterviewModel {
           language
           createdAt
           name
