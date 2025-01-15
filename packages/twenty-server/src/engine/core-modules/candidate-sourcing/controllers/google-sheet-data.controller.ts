@@ -16,7 +16,7 @@ import { GoogleSheetsService } from '../../google-sheets/google-sheets.service';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { In } from 'typeorm';
 import { DataSourceService } from 'src/engine/metadata-modules/data-source/data-source.service';
-import { graphqlToFetchActiveJob, graphqlToFetchAllCandidatesByStartChat, graphQlToUpdateCandidate } from '../../arx-chat/graphql-queries/graphql-queries-chatbot';
+import { graphqlToFetchActiveJob, graphqlToFetchAllCandidateData, graphQlToUpdateCandidate } from '../../arx-chat/graphql-queries/graphql-queries-chatbot';
 import { CandidateSourcingController } from './candidate-sourcing.controller';
 
 
@@ -240,15 +240,7 @@ export class GoogleSheetsDataController {
 
     const transformedData = this.transformData(dataToTransform);
   
-    const candidateQuery = {
-      query: graphqlToFetchAllCandidatesByStartChat,
-      variables: {
-        filter: {
-          uniqueStringKey: { eq: data.UniqueKey },
-        },
-        limit: 1
-      }
-    };
+    const candidateQuery = { query: graphqlToFetchAllCandidateData, variables: { filter: { uniqueStringKey: { eq: data.UniqueKey }, }, limit: 1 } };
   
     const candidateResponse = await axiosRequest(
       JSON.stringify(candidateQuery),

@@ -148,34 +148,42 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
   }
   
 
-  async fetchAllCandidatesWithSpecificChatControl(chatControl:allDataObjects.chatControls, apiToken:string): Promise<allDataObjects.Candidate[]> {
+  async fetchAllCandidatesWithSpecificChatControl(chatControl: allDataObjects.chatControls, apiToken: string): Promise<allDataObjects.Candidate[]> {
     console.log("Fetching all candidates with chatControl", chatControl);
     let allCandidates: allDataObjects.Candidate[] = [];
     let lastCursor: string | null = null;
-    let graphqlQueryObj;
+    const chatControlFilters: { [key: string]: any } = {
+      startChat: { startChat: { eq: true }, stopChat: { eq: false }, startVideoInterviewChat: { eq: false } },
+      allStartedAndStoppedChats: { startChat: { eq: true } },
+      startVideoInterviewChat: { startVideoInterviewChat: { eq: true }, stopChat: { eq: false } },
+      startMeetingSchedulingChat: { startMeetingSchedulingChat: { eq: true }, startVideoInterviewChat: { eq: true }, stopChat: { eq: false } }
+    };
+
+    const filter = chatControlFilters[chatControl];
+    if (!filter) {
+      console.log("Invalid chat control:", chatControl);
+      return allCandidates;
+    }
     while (true) {
-      if (chatControl === "startChat"){
-        graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlToFetchAllCandidatesByStartChat, variables: {lastCursor, limit: 30, filter: {startChat: {eq: true}, stopChat: { eq: false }, startVideoInterviewChat: {eq: false}}}});
-      }
-      if (chatControl === "allStartedAndStoppedChats"){
-        graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlToFetchAllCandidatesByStartChat, variables: {lastCursor, limit: 30, filter: {startChat: {eq: true}}}});
-      }
-      else if (chatControl === "startVideoInterviewChat"){
-        graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlToFetchAllCandidatesByStartChat, variables: {lastCursor, limit: 30, filter: {startVideoInterviewChat: {eq: true}, stopChat: { eq: false }}}});
-      }
-      else if (chatControl === "startMeetingSchedulingChat"){
-        graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlToFetchAllCandidatesByStartChat, variables: {lastCursor, limit: 30, filter: {startMeetingSchedulingChat: {eq: true}, startVideoInterviewChat: {eq: true}, stopChat: { eq: false }}}});
-      }
+      const graphqlQueryObj = JSON.stringify({
+        query: allGraphQLQueries.graphqlToFetchAllCandidateData,
+        variables: { lastCursor, limit: 30, filter }
+      });
+
       const response = await axiosRequest(graphqlQueryObj, apiToken);
       if (response.data.errors) {
         console.log("Errors in axiosRequest response when trying to fetch candidates with specific chat control:", response.data.errors);
+        break;
       }
+
       const edges = response?.data?.data?.candidates?.edges || [];
-      if (!edges || edges?.length === 0) break;
-      allCandidates = allCandidates?.concat(edges.map((edge: any) => edge.node));
+      if (!edges.length) break;
+
+      allCandidates = allCandidates.concat(edges.map((edge: any) => edge.node));
       lastCursor = edges[edges.length - 1].cursor;
     }
-    console.log("Number of candidates from fetchedcandidates:", allCandidates?.length, "for chatControl", chatControl)
+
+    console.log("Number of candidates from fetched candidates:", allCandidates.length, "for chatControl", chatControl);
     return allCandidates;
   }
   async fetchCandidateByCandidateId(candidateId: string, apiToken:string): Promise<allDataObjects.CandidateNode> {
@@ -485,7 +493,6 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
         const activeJobCandidate:allDataObjects.CandidateNode = activeJobCandidateObj?.node;
         const activeJob:allDataObjects.Jobs = activeJobCandidate?.jobs;
         const activeCompany = activeJob?.company;
-
         const candidateProfileObj: allDataObjects.CandidateNode = {
           name: personWithActiveJob?.node?.name?.firstName || "",
           id: activeJobCandidate?.id,

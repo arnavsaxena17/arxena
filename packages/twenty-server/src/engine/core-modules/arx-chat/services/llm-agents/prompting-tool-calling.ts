@@ -207,7 +207,6 @@ export class ToolsForAgents {
     else{
       return this.getStartChatPrompt(personNode,  apiToken);
     }
-    
   }
 
 

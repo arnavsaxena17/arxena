@@ -515,7 +515,7 @@ export const graphqlQueryToFindManyPeopleEngagedCandidates = `query FindManyPeop
     }
   }`;
 
-  export const graphqlToFetchAllCandidatesByStartChat = `
+  export const graphqlToFetchAllCandidateData = `
   query FindManyCandidates($lastCursor: String, $limit: Int, $filter: CandidateFilterInput) {
     candidates(after: $lastCursor, first: $limit, filter: $filter) {
       edges {
