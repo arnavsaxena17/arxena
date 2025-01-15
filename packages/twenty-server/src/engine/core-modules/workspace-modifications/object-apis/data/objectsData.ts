@@ -192,8 +192,8 @@ export const objectCreationArr = [
             "icon": "IconScan",
             "labelPlural": "Video Interview Templates",
             "labelSingular": "Video Interview Template",
-            "nameSingular": "VideoInterviewTemplate",
-            "namePlural": "VideoInterviewTemplates"
+            "nameSingular": "videoInterviewTemplate",
+            "namePlural": "videoInterviewTemplates"
         }
     },
     {

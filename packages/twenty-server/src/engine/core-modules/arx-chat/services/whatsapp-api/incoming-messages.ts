@@ -98,31 +98,26 @@ export class IncomingWhatsappMessages {
     }
   }
 
-  // private async getApiKeys(workspaceId: string, dataSourceSchema: string, transactionManager?: EntityManager) {
-  //   try {
-  //     const apiKeys = await this.workspaceDataSourceService.executeRawQuery(
-  //       `SELECT * FROM ${dataSourceSchema}."apiKey" where "apiKey"."revokedAt" IS NULL ORDER BY "apiKey"."createdAt" ASC`,
-  //       [],
-  //       workspaceId,
-  //       transactionManager,
-  //     );
-  //     return apiKeys;
-  //   } catch (e) {
-  //     console.log("Error in  ID", workspaceId, "for dataSourceSchema", dataSourceSchema);
-  //     return [];
-  //   }
-  // }
-
 
   async getApiKeyToUseFromPhoneNumberMessageReceived(requestBody:any, transactionManager?: EntityManager){
     const phoneNumber = requestBody?.entry[0]?.changes[0]?.value?.messages[0].from;
     const results = await this.workspaceQueryService.executeQueryAcrossWorkspaces(
       async (workspaceId, dataSourceSchema) => {
         const person = await this.workspaceQueryService.executeRawQuery(
-          `SELECT * FROM ${dataSourceSchema}.person where "person"."phone" ILIKE '%${phoneNumber}%'`,
+          `SELECT * FROM ${dataSourceSchema}.person WHERE "person"."phone" ILIKE '%${phoneNumber}%'`,
           [],
           workspaceId
         );
+        const phoneNumberId = requestBody?.entry[0]?.changes[0]?.value.metadata?.phone_number_id;
+        const workspace = await this.workspaceQueryService.executeRawQuery(
+          `SELECT * FROM core.workspace WHERE id = $1 AND facebook_whatsapp_phone_number_id = $2`,
+          [workspaceId, phoneNumberId],
+          workspaceId
+        );
+
+        if (workspace.length === 0) {
+          return null;
+        }
 
         if (person.length > 0) {
           const apiKeys = await this.workspaceQueryService.getApiKeys(workspaceId, dataSourceSchema, transactionManager);
