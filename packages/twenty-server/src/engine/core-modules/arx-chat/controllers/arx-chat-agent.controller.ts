@@ -2,7 +2,7 @@ import { Body, Controller, Get, Post, Req, Res, UseGuards } from '@nestjs/common
 import { JwtAuthGuard } from 'src/engine/guards/jwt.auth.guard';
 import * as allDataObjects from '../services/data-model-objects';
 import { FacebookWhatsappChatApi } from '../services/whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
-import CandidateEngagementArx from '../services/candidate-engagement/check-candidate-engagement';
+import CandidateEngagementArx from '../services/candidate-engagement/candidate-engagement';
 import { IncomingWhatsappMessages } from '../services/whatsapp-api/incoming-messages';
 import { FetchAndUpdateCandidatesChatsWhatsapps } from '../services/candidate-engagement/update-chat';
 import { StageWiseClassification } from '../services/llm-agents/get-stage-wise-classification';
@@ -11,7 +11,7 @@ import { ToolsForAgents } from 'src/engine/core-modules/arx-chat/services/llm-ag
 import { axiosRequest } from '../utils/arx-chat-agent-utils';
 import * as allGraphQLQueries from '../graphql-queries/graphql-queries-chatbot';
 import { ToolCallsProcessing } from '../services/llm-agents/tool-calls-processing';
-import { checkIfResponseMessageSoundsHumanLike } from '../services/llm-agents/human-or-bot-type-response-classification';
+import { HumanLikeLLM } from '../services/llm-agents/human-or-bot-type-response-classification';
 import { GmailMessageData } from '../../gmail-sender/services/gmail-sender-objects-types';
 import { SendEmailFunctionality, EmailTemplates } from '../services/candidate-engagement/send-gmail';
 import axios from 'axios';
@@ -945,7 +945,7 @@ async deletePeopleAndCandidatesBulk(@Req() request: any): Promise<object> {
 
       const personObj: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).getPersonDetailsByPhoneNumber(request.body.phoneNumberFrom,apiToken);
       console.log("Person object receiveed::", personObj)
-      const checkHumanLike = await checkIfResponseMessageSoundsHumanLike(request.body.contentObj);
+      const checkHumanLike = await new HumanLikeLLM(this.workspaceQueryService).checkIfResponseMessageSoundsHumanLike(request.body.contentObj, apiToken);
       console.log("checkHumanLike:", checkHumanLike)
       return { status: 'Success' };
     } catch (err) {

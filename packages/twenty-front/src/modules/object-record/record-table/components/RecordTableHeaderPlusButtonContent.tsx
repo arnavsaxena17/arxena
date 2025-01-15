@@ -15,7 +15,11 @@ import { useDropdown } from '@/ui/layout/dropdown/hooks/useDropdown';
 import { MenuItem } from '@/ui/navigation/menu-item/components/MenuItem';
 
 export const RecordTableHeaderPlusButtonContent = () => {
+  
   const { objectMetadataItem } = useContext(RecordTableContext);
+  if (!objectMetadataItem) {
+    return null;
+  }
   const { closeDropdown } = useDropdown();
 
   const { hiddenTableColumnsSelector } = useRecordTableStates();
@@ -33,10 +37,12 @@ export const RecordTableHeaderPlusButtonContent = () => {
     [handleColumnVisibilityChange, closeDropdown],
   );
 
+
   const StyledMenuItemLink = styled(Link)`
     text-decoration: none;
     width: 100%;
   `;
+  
   console.log("RecordTableHeaderPlusButtonContent render:", objectMetadataItem);
 
   return (

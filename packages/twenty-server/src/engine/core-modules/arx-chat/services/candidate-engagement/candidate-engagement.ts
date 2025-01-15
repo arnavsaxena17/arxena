@@ -1,4 +1,4 @@
-import * as allDataObjects from '../../services/data-model-objects';
+import * as allDataObjects from '../data-model-objects';
 import { FetchAndUpdateCandidatesChatsWhatsapps } from './update-chat';
 import { sortWhatsAppMessages } from '../../utils/arx-chat-agent-utils';
 import { OpenAIArxMultiStepClient } from '../llm-agents/arx-multi-step-client';
@@ -15,25 +15,28 @@ const rl = readline.createInterface({
 export default class CandidateEngagementArx {
   constructor( private readonly workspaceQueryService: WorkspaceQueryService ) {}
   async createAndUpdateCandidateStartChatChatMessage(chatReply: string, candidateProfileDataNodeObj: allDataObjects.PersonNode, chatControl: allDataObjects.chatControls, apiToken: string) {
-
     const recruiterProfile = allDataObjects.recruiterProfile;
-    let chatHistory = candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.messageObj || [];
-    
+    const messagesList: allDataObjects.MessageNode[] = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).fetchAllWhatsappMessages(candidateProfileDataNodeObj.candidates?.edges[0]?.node.id, apiToken);
+    const sortedMessagesList = messagesList.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    let chatHistory = sortedMessagesList[0]?.messageObj || [];
+    let whatsappTemplate:string
+
     if (chatReply === 'startChat' && candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges.length === 0) {
       const SYSTEM_PROMPT = await new ToolsForAgents(this.workspaceQueryService).getSystemPrompt(candidateProfileDataNodeObj, chatControl,  apiToken);
       chatHistory.push({ role: 'system', content: SYSTEM_PROMPT });
       chatHistory.push({ role: 'user', content: 'startChat' });
-    } else {
-      chatHistory = candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.messageObj;
-    }
-    
-    let whatsappTemplate:string
-
-    if (chatControl === 'startChat') {
       whatsappTemplate = "application03"
+
     }
-    else{ 
+    else if (chatReply === 'startVideoInterviewChat' && candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges.length > 0) {
+      chatHistory = sortedMessagesList[0]?.messageObj;
+      chatHistory.push({ role: 'user', content: 'startVideoInterviewChat' });
+      whatsappTemplate = "application03"
+
+    } else {
+      chatHistory = sortedMessagesList[0]?.messageObj;
       whatsappTemplate = candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.whatsappProvider || 'application03' 
+
     }
     
     let whatappUpdateMessageObj: allDataObjects.candidateChatMessageType = {
@@ -56,7 +59,7 @@ export default class CandidateEngagementArx {
   }
 
   async processCandidate(personNode: allDataObjects.PersonNode, chatControl: allDataObjects.chatControls, apiToken:string) {
-    console.log("Engagement Type the candidate ::", personNode.name.firstName + " " + personNode.name.lastName);
+    console.log("Engagement Type for the candidate ::", personNode.name.firstName + " " + personNode.name.lastName);
     try {
 
       const candidateNode = personNode.candidates.edges[0].node;

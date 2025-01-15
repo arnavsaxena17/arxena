@@ -1,11 +1,11 @@
 import { FacebookWhatsappChatApi } from '../../services/whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
-import { sendWhatsappMessageVIABaileysAPI, sendAttachmentMessageViaBaileys } from '../../services/whatsapp-api/baileys/callBaileys';
+import { BaileysWhatsappAPI } from '../../services/whatsapp-api/baileys/callBaileys';
 import * as allDataObjects from '../../services/data-model-objects';
 import fs from 'fs';
 import path from 'path';
 import mime from 'mime-types';
 import axios from 'axios';
-import CandidateEngagementArx from '../candidate-engagement/check-candidate-engagement';
+import CandidateEngagementArx from '../candidate-engagement/candidate-engagement';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 const baseUrl = 'http://localhost:' + process.env.PORT; // Base URL of your GraphQL server
@@ -49,7 +49,7 @@ export class WhatsappAPISelector {
     if (process.env.WHATSAPP_API === 'facebook') {
       const response = await new FacebookWhatsappChatApi(this.workspaceQueryService).sendWhatsappMessageVIAFacebookAPI(whatappUpdateMessageObj, personNode, mostRecentMessageArr, chatControl,apiToken);
     } else if (process.env.WHATSAPP_API === 'baileys') {
-      await sendWhatsappMessageVIABaileysAPI(whatappUpdateMessageObj, personNode, mostRecentMessageArr, chatControl,apiToken);
+      await new BaileysWhatsappAPI(this.workspaceQueryService).sendWhatsappMessageVIABaileysAPI(whatappUpdateMessageObj, personNode, mostRecentMessageArr, chatControl,apiToken);
     } else {
       console.log('No valid whatsapp API selected');
     }
@@ -59,7 +59,7 @@ export class WhatsappAPISelector {
     if (process.env.WHATSAPP_API === 'facebook') {
       await new FacebookWhatsappChatApi(this.workspaceQueryService).uploadAndSendFileToWhatsApp(attachmentMessage, chatControl,apiToken);
     } else if (process.env.WHATSAPP_API === 'baileys') {
-      await sendAttachmentMessageViaBaileys(attachmentMessage, personNode,apiToken);
+      await new BaileysWhatsappAPI(this.workspaceQueryService).sendAttachmentMessageViaBaileys(attachmentMessage, personNode,apiToken);
     }
   }
 

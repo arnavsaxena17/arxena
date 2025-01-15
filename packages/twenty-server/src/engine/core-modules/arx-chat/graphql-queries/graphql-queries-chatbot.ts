@@ -173,7 +173,7 @@ export const graphqlQueryToFindInterviewsByJobId = `query FindManyVideoInterview
           name
           position
           id
-          clientContactsId
+          clientContactId
           jobLocation
           googleSheetId
           createdAt

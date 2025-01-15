@@ -1,5 +1,5 @@
 import { FacebookWhatsappChatApi } from '../../services/whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
-import CandidateEngagementArx from '../../services/candidate-engagement/check-candidate-engagement';
+import CandidateEngagementArx from '../candidate-engagement/candidate-engagement';
 import { FetchAndUpdateCandidatesChatsWhatsapps } from '../../services/candidate-engagement/update-chat';
 import * as allDataObjects from '../../services/data-model-objects';
 import * as allGraphQLQueries from '../../graphql-queries/graphql-queries-chatbot';

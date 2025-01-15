@@ -4,7 +4,7 @@ import { FetchAndUpdateCandidatesChatsWhatsapps } from '../candidate-engagement/
 import fuzzy from 'fuzzy';
 import { CalendarEventType } from '../../../calendar-events/services/calendar-data-objects-types';
 import { CalendarEmailService } from '../candidate-engagement/calendar-email';
-import { SendEmailFunctionality } from '../candidate-engagement/send-gmail';
+import { EmailTemplates, SendEmailFunctionality } from '../candidate-engagement/send-gmail';
 import { GmailMessageData } from 'src/engine/core-modules/gmail-sender/services/gmail-sender-objects-types';
 import * as allGraphQLQueries from '../../graphql-queries/graphql-queries-chatbot';
 import { addHoursInDate, axiosRequest, toIsoString } from '../../utils/arx-chat-agent-utils';
@@ -20,9 +20,7 @@ const availableTimeSlots = '12PM-3PM, 4PM -6PM on the 24th and 25th August 2024.
 
 export class ToolsForAgents {
 
-  constructor(
-    private readonly workspaceQueryService: WorkspaceQueryService
-  ) {}
+  constructor( private readonly workspaceQueryService: WorkspaceQueryService ) {}
   currentConversationStage = z.object({
     stageOfTheConversation: z.enum(allDataObjects.allStatusesArray)
   });
@@ -117,7 +115,10 @@ export class ToolsForAgents {
     const current_job_position = jobProfile.name;
 
     const candidate_conversation_summary = "The candidate has mentioned that he/ she is interested in the role. They are okay to relocate and their salary falls in the bracket that the client is hiring for";
-    return `You will drive the conversation with candidates like a recruiter. Your goal is to guide candidates to appear for a video interview for the role of ${current_job_position}. 
+    
+    
+    
+    const VIDEO_INTERVIEW_PROMPT = `You will drive the conversation with candidates like a recruiter. Your goal is to guide candidates to appear for a video interview for the role of ${current_job_position}. 
     Following is the summary of the conversations that have happened with the candidate for reference :
     ${candidate_conversation_summary}
     First you start with telling the candidate that you discussed internally and liked their candidature and would like to get to know more about them.
@@ -141,9 +142,11 @@ export class ToolsForAgents {
     If you do not wish to respond to the candidate, you will reply with "#DONTRESPOND#" exact string without any text around it.
     If you do not have to respond, you will reply with "#DONTRESPOND#" exact string without any text around it.
     Your first message when you receive the prompt "startVideoInterview" is: Hey ${personNode.name.firstName},
-    We like your candidature and are keen to know more about you. We would like to start with a quick 15 minute video interview as part of the client's hiring process. 
-    Would you be available for the same?
+    We like your candidature and are keen to know more about you. We would like you to record a quick 15 minutes video interview as part of the client's hiring process. 
+    Would you be able to take 15-20 mins and record your responses to our 3-4 questions at the link here: {videoInterviewLink}
     `
+    console.log("Generated system prompt:", VIDEO_INTERVIEW_PROMPT);
+    return VIDEO_INTERVIEW_PROMPT 
   }
 
   async getStartChatPrompt(personNode: allDataObjects.PersonNode,  apiToken:string) {
@@ -167,15 +170,10 @@ export class ToolsForAgents {
     If the candidate asks for details about the company, let them know that you are hiring for ${jobProfile?.company?.name}, ${jobProfile?.company?.descriptionOneliner}
     If the candidate's answer is not specific enough, do not update the answer but ask the candidate to be more specific.
     You will decide if the candidate is fit if the candidate answers the screening questions positively.
-    When you start screening, also call the function "update_candidate_profile" to update the candidate profile as "SCREENING".
     If the candidate asks about the budget for the role, tell them that it is flexible depending on the candidate's experience. Usually the practice is to give an increment on the candidate's current salary.
-    If the candidate has shown interest and is fit, you will call the function "update_candidate_profile" and update the status as "INTERESTED".
-    If the candidate has sent an attachment or a resume, you will you will call the function "update_candidate_profile" and update the status as "CV_RECEIVED".
-    If the candidate is not interested, you will call the function "update_candidate_profile" and update the status as "NOT_INTERESTED".
-    If the candidate is interested but not fit, you will call the function "update_candidate_profile" and update the candidate profile with the status "NOT_FIT".
     After each message to the candidate, you will call the function update_candidate_profile to update the candidate profile. The update will comprise of one of the following updates - ${commaSeparatedStatuses}.
     If the candidate asks you for your email address to share the CV, share your email as ${recruiterProfile.email}. After sharing your email, as the candidate to share their resume on whatsapp as well.
-    After all the screening questions are answered, you will tell the candidate that you would get back to them with a few time slots shortly and setup a call. You can call the function "update_candidate_profile" to update the candidate profile as "RECRUITER_INTERVIEW".
+    After all the screening questions are answered, you will tell the candidate that you would get back to them with a few time slots shortly and setup a call.
     After this, you will not respond to the candidate until you have the time slots. You will not respond to any queries until you have the timeslots.
     If the candidate asks any questions that don't know the answer of, you will tell them that you will get back to them with the answer.
     If the candidate says that the phone number is not reachable or they would like to speak but cannot connect, let them know that you will get back to them shortly.
@@ -290,14 +288,21 @@ export class ToolsForAgents {
 
   async shareInterviewLink(inputs: any, personNode: allDataObjects.PersonNode, twenty_token: string) {
     const jobProfile = personNode?.candidates?.edges[0]?.node?.jobs;
-    const interviewLink = 'https://meet.google.com/abc-def-ghi';
-    const interviewLinkMessage = `Here is the link to the interview: ${interviewLink}`;
-    await new SendEmailFunctionality().sendEmailFunction({
-      sendEmailFrom: recruiterProfile?.email,
+    const videoInterviewUrl = personNode?.candidates?.edges[0]?.node?.videoInterview.edges[0].node.interviewLink.url;
+    console.log("job Profile:", jobProfile);
+    const jobName = jobProfile?.name;
+
+    const videoInterviewInviteTemplate = await new EmailTemplates().getInterviewInvitationTemplate(personNode, videoInterviewUrl);
+    console.log("allDataObjects.recruiterProfile?.email:", allDataObjects.recruiterProfile?.email);
+    const emailData: GmailMessageData = {
+      sendEmailFrom: allDataObjects.recruiterProfile?.email,
       sendEmailTo: personNode?.email,
-      subject: 'Interview Link',
-      message: interviewLinkMessage,
-    }, twenty_token);
+      subject: 'Video Interview - ' + personNode?.name?.firstName + '<>' + personNode?.candidates.edges[0].node.jobs.company.name,
+      message: videoInterviewInviteTemplate,
+    };
+    console.log("This is the email Data from createVideo Interview Send To Candidate:", emailData);
+    const sendVideoInterviewLinkResponse = await new SendEmailFunctionality().sendEmailFunction(emailData, twenty_token);
+    console.log("sendVideoInterviewLinkResponse:", sendVideoInterviewLinkResponse);
     return 'Interview link shared successfully.';
   }
 

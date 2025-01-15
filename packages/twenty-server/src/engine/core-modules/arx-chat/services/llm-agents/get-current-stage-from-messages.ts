@@ -1,7 +1,7 @@
 
 import * as allDataObjects from '../data-model-objects';
 import * as allGraphQLQueries from '../../graphql-queries/graphql-queries-chatbot';
-import CandidateEngagementArx from '../candidate-engagement/check-candidate-engagement';
+import CandidateEngagementArx from '../candidate-engagement/candidate-engagement';
 import { zodResponseFormat } from "openai/helpers/zod";
 import { ToolsForAgents } from './prompting-tool-calling';
 import { axiosRequest } from '../../utils/arx-chat-agent-utils';
@@ -37,10 +37,6 @@ export class GetCurrentStageByMessages{
 
 async getChatStageFromChatHistory(messages: any, currentWorkspaceMemberId:any, apiToken:string) {
     // console.log("Stage Prompt is:::", stagePrompt);
-
-
-
-
     const localStagePrompt = await this.getChatPromptFromWorksPageMember(currentWorkspaceMemberId,apiToken);
     console.log("Local Stage Prompt is:::", localStagePrompt)
     let mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = new CandidateEngagementArx(this.workspaceQueryService).getMostRecentMessageFromMessagesList(messages);

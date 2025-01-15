@@ -1,4 +1,5 @@
-import CandidateEngagementArx from '../../candidate-engagement/check-candidate-engagement';
+import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
+import CandidateEngagementArx from '../../candidate-engagement/candidate-engagement';
 import { FetchAndUpdateCandidatesChatsWhatsapps } from '../../candidate-engagement/update-chat';
 import * as allDataObjects from '../../data-model-objects';
 import axios from 'axios';
@@ -7,7 +8,14 @@ const FormData = require('form-data');
 const fs = require('fs');
 const baseUrl = process.env.SERVER_BASE_URL+'/whatsapp'; // Adjust the base URL as needed
 
-export async function sendWhatsappMessageVIABaileysAPI(whatappUpdateMessageObj: allDataObjects.candidateChatMessageType, personNode: allDataObjects.PersonNode, mostRecentMessageArr: allDataObjects.ChatHistoryItem[], chatControl: allDataObjects.chatControls,  apiToken:string) {
+
+
+export class BaileysWhatsappAPI{
+
+  constructor( private readonly workspaceQueryService: WorkspaceQueryService ) {}
+
+
+async sendWhatsappMessageVIABaileysAPI(whatappUpdateMessageObj: allDataObjects.candidateChatMessageType, personNode: allDataObjects.PersonNode, mostRecentMessageArr: allDataObjects.ChatHistoryItem[], chatControl: allDataObjects.chatControls,  apiToken:string) {
   console.log('Sending message to whatsapp via baileys api');
 
   console.log('whatappUpdateMessageObj.messageType', whatappUpdateMessageObj.messageType);
@@ -19,7 +27,7 @@ export async function sendWhatsappMessageVIABaileysAPI(whatappUpdateMessageObj: 
       phoneNumberTo: whatappUpdateMessageObj.phoneNumberTo,
       messages: whatappUpdateMessageObj.messages[0].content,
     };
-    const response = await sendWhatsappTextMessageViaBaileys(sendTextMessageObj, personNode,apiToken);
+    const response = await this.sendWhatsappTextMessageViaBaileys(sendTextMessageObj, personNode,apiToken);
     console.log(response);
     // console.log('99493:: response is here', response);
     const whatappUpdateMessageObjAfterWAMidUpdate = await new CandidateEngagementArx(this.workspaceQueryService).updateChatHistoryObjCreateWhatsappMessageObj( response?.messageId || 'placeholdermessageid', personNode, mostRecentMessageArr,chatControl, apiToken);
@@ -27,14 +35,12 @@ export async function sendWhatsappMessageVIABaileysAPI(whatappUpdateMessageObj: 
 
     await new CandidateEngagementArx(this.workspaceQueryService).updateCandidateEngagementDataInTable(personNode, whatappUpdateMessageObjAfterWAMidUpdate,   apiToken, true);
     const updateCandidateStatusObj = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).updateCandidateEngagementStatus(candidateProfileObj, whatappUpdateMessageObj,  apiToken);
-
-    // await updateCandidateEngagementStatus
   } else {
     console.log('This is send whatsapp message via bailsyes api and is a candidate message');
   }
 }
 
-export async function sendWhatsappTextMessageViaBaileys(sendTextMessageObj: allDataObjects.ChatRequestBody, personNode: allDataObjects.PersonNode,  apiToken:string) {
+async sendWhatsappTextMessageViaBaileys(sendTextMessageObj: allDataObjects.ChatRequestBody, personNode: allDataObjects.PersonNode,  apiToken:string) {
   // console.log('This is the ssendTextMessageObj for baileys to be sent ::', sendTextMessageObj);
   const sendMessageUrl = `${baseUrl}/send`;
   const data = {
@@ -109,11 +115,11 @@ export async function sendWhatsappTextMessageViaBaileys(sendTextMessageObj: allD
   } catch (error: any) {
     console.error('Send Message Error in the first time. Will try to send a test message and then send again:', error.response?.data || error.message);
     await new Promise(resolve => setTimeout(resolve, 10000));
-    await tryAgaintoSendWhatsappMessage(sendTextMessageObj,  apiToken);
+    await this.tryAgaintoSendWhatsappMessage(sendTextMessageObj,  apiToken);
   }
 }
 
-async function tryAgaintoSendWhatsappMessage(sendTextMessageObj: allDataObjects.ChatRequestBody, apiToken:string) {
+async tryAgaintoSendWhatsappMessage(sendTextMessageObj: allDataObjects.ChatRequestBody, apiToken:string) {
   try {
     const sendMessageUrl = `${baseUrl}/send`;
     const data = {
@@ -156,7 +162,7 @@ async function tryAgaintoSendWhatsappMessage(sendTextMessageObj: allDataObjects.
   }
 }
 
-export async function sendAttachmentMessageViaBaileys(sendTextMessageObj: allDataObjects.AttachmentMessageObject, personNode: allDataObjects.PersonNode,  apiToken:string) {
+async sendAttachmentMessageViaBaileys(sendTextMessageObj: allDataObjects.AttachmentMessageObject, personNode: allDataObjects.PersonNode,  apiToken:string) {
   const jobProfile = personNode?.candidates?.edges[0]?.node?.jobs;
   const uploadFileUrl = `${baseUrl}/send-wa-message-file`;
   const data = {
@@ -185,4 +191,5 @@ export async function sendAttachmentMessageViaBaileys(sendTextMessageObj: allDat
   } catch (error: any) {
     console.error('Upload File Error:', error.response?.data || error.message);
   }
+}
 }

@@ -38,10 +38,7 @@ class Semaphore {
 
 
 export class FetchAndUpdateCandidatesChatsWhatsapps {
-  constructor(
-    private readonly workspaceQueryService: WorkspaceQueryService
-  ) {}
-
+  constructor( private readonly workspaceQueryService: WorkspaceQueryService ) {}
   async fetchSpecificPeopleToEngageBasedOnChatControl(chatControl: allDataObjects.chatControls, apiToken:string): Promise<allDataObjects.PersonNode[]> {
     try {
       console.log('Fetching candidates to engage');
@@ -580,7 +577,6 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
     const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToCreateOneNewWhatsappMessage, variables: createNewWhatsappMessageUpdateVariables });
     try {
       console.log("GRAPHQL WITH WHATSAPP MESSAGE:", createNewWhatsappMessageUpdateVariables?.input?.message);
-      // console.log("GRAPHQL WITH createNewWhatsappMessageUpdateVariables:", createNewWhatsappMessageUpdateVariables);
       const response = await axiosRequest(graphqlQueryObj,apiToken);
       return response.data;
     } catch (error) {
@@ -590,14 +586,8 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
 
   async updateCandidateEngagementStatus(candidateProfileObj: allDataObjects.CandidateNode, whatappUpdateMessageObj: allDataObjects.candidateChatMessageType,apiToken:string) {
     const candidateEngagementStatus = whatappUpdateMessageObj.messageType !== 'botMessage';
+    const updateCandidateObjectVariables = { idToUpdate: candidateProfileObj?.id, input: { engagementStatus: candidateEngagementStatus, lastEngagementChatControl: whatappUpdateMessageObj.lastEngagementChatControl } };
     console.log('GOING TO UPDATE CANDIDATE ENGAGEMENT STATUS BECAUES OF THIS WHATSAPP MESSAGE OBJ::', candidateEngagementStatus);
-    const updateCandidateObjectVariables = { 
-      idToUpdate: candidateProfileObj?.id, 
-      input: { 
-        engagementStatus: candidateEngagementStatus,
-        lastEngagementChatControl: whatappUpdateMessageObj.lastEngagementChatControl // Store which chat control set this status
-      } 
-    };
     const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToUpdateCandidateEngagementStatus, variables: updateCandidateObjectVariables });
     try {
       const response = await axiosRequest(graphqlQueryObj, apiToken);
@@ -703,7 +693,6 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
   }
 
   async updateEngagementStatusBeforeRunningEngageCandidates(candidateId: string, apiToken:string) {
-    
     const updateCandidateObjectVariables = { idToUpdate: candidateId, input: { engagementStatus: false } };
     const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToUpdateCandidateEngagementStatus, variables: updateCandidateObjectVariables });
     try {

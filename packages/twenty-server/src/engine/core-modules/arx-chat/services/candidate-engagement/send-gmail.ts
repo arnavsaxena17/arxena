@@ -24,7 +24,6 @@ export class SendEmailFunctionality {
     const response = await gmailSender.saveDraftEmailWithAttachmentsController(gmailMessageData, twenty_token).catch(console.error);
     return response;
   }
-
 }
 
 

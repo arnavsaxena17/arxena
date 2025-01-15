@@ -44,8 +44,8 @@ export const objectCreationArr = [
         "object": {
             "description": "",
             "icon": "IconBrandWhatsapp",
-            "labelPlural": "WhatsappMessages",
-            "labelSingular": "WhatsappMessage",
+            "labelPlural": "Whatsapp Messages",
+            "labelSingular": "Whatsapp Message",
             "nameSingular": "whatsappMessage",
             "namePlural": "whatsappMessages"
         }

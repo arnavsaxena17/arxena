@@ -1,4 +1,4 @@
-import CandidateEngagementArx from '../candidate-engagement/check-candidate-engagement';
+import CandidateEngagementArx from './candidate-engagement';
 import { Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import {  In, EntityManager } from 'typeorm';

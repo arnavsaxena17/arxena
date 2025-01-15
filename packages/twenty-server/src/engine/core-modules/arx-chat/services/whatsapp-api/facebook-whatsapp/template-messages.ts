@@ -32,12 +32,10 @@ export class WhatsappTemplateMessages{
         // console.log("This is the template message object created:", templateMessageObj)
         return templateMessageObj;
       }
-    
-    
       getUpdatedUtilityMessageObj(sendTemplateMessageObj: allDataObjects.sendWhatsappUtilityMessageObjectType) {
         let templateMessageObj;
         console.log("Going to get utiltiy messages")
-        const templates = ['recruitment', 'application', 'application02','share_video_interview_link_with_start_link','share_video_interview_link_direct','rejection_template','follow_up'];
+        const templates = ['recruitment', 'application', 'application02','share_video_interview_link_direct_without_button', 'share_video_interview_link_with_start_link','share_video_interview_link_direct','rejection_template','follow_up'];
         switch (sendTemplateMessageObj.template_name) {
           case 'share_video_interview_link_with_start_link':
             templateMessageObj = JSON.stringify({
@@ -55,7 +53,7 @@ export class WhatsappTemplateMessages{
                       { type: 'text', text: "10 mins" },
                       { type: 'text', text: sendTemplateMessageObj.videoInterviewLink },
                       { type: 'text', text: "15 mins" },
-                      { type: 'text', text: "3-4 questions" },
+                      { type: 'text', text: "3-4" },
                     ],
                   },
                   {
@@ -64,13 +62,36 @@ export class WhatsappTemplateMessages{
                       {
                           "type": "URL",
                           "text": "Start Interview",
-                          "url": "https://arxena.com/video-interview/1ebf22e0-7865-44c7-b266-c0d08121f4c1/{{1}}",
-                          "example": [
-                              "https://arxena.com/video-interview/1ebf22e0-7865-44c7-b266-c0d08121f4c1"
-                          ]
+                          "url": sendTemplateMessageObj.videoInterviewLink,
+                          "example": [ sendTemplateMessageObj.videoInterviewLink ]
                       }
                   ]
                 }
+                ],
+              },
+            });
+            break;
+          case 'share_video_interview_link_without_button':
+            templateMessageObj = JSON.stringify({
+              messaging_product: 'whatsapp',
+              to: sendTemplateMessageObj.recipient,
+              type: 'template',
+              template: {
+                name: sendTemplateMessageObj.template_name,
+                language: { code: 'en' },
+                components: [
+                  {
+                    type: 'body',
+                    parameters: [
+                      { type: 'text', text: sendTemplateMessageObj.candidateFirstName },
+                      { type: 'text', text: "15 minute" },
+                      { type: 'text', text: sendTemplateMessageObj.videoInterviewLink },
+                      { type: 'text', text: "out time" },
+                      { type: 'text', text: "3-4" },
+                      { type: 'text', text: "48 hours" },
+                      { type: 'text', text: "record" },
+                    ],
+                  }
                 ],
               },
             });

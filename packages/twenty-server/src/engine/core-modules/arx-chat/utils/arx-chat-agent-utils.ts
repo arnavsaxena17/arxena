@@ -72,15 +72,6 @@ export async function updateMostRecentMessagesBasedOnNewSystemPrompt(mostRecentM
   mostRecentMessageArr[0] = { role: 'system', content: newSystemPrompt };
   return mostRecentMessageArr;
 }
-  
-export async function getMostRecentChatsByPerson(mostRecentMessageArr:allDataObjects.ChatHistoryItem[]){
-  const lastThreeChats = mostRecentMessageArr.slice(-3);
-  // Return the array in reverse order (most recent last)
-  return lastThreeChats.reverse().map(chat => ({
-    role: chat.role,
-    content: chat.content
-  }));
-}
 export async function axiosRequest(data: string, apiToken: string) {
   // console.log("Sending a post request to the graphql server:: with data", data);
   const response = await axios.request({

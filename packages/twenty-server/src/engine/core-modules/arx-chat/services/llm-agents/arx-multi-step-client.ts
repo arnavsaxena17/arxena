@@ -3,8 +3,8 @@ const modelName = 'gpt-4o';
 import { ToolsForAgents } from '../../services/llm-agents/prompting-tool-calling';
 import { ChatCompletionMessage } from 'openai/resources';
 import { WhatsappAPISelector } from '../../services/whatsapp-api/whatsapp-controls';
-import { checkIfResponseMessageSoundsHumanLike } from './human-or-bot-type-response-classification'
-import {getMostRecentChatsByPerson, updateMostRecentMessagesBasedOnNewSystemPrompt} from '../../utils/arx-chat-agent-utils'
+import { HumanLikeLLM } from './human-or-bot-type-response-classification'
+import { updateMostRecentMessagesBasedOnNewSystemPrompt} from '../../utils/arx-chat-agent-utils'
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 export class OpenAIArxMultiStepClient {
@@ -16,14 +16,11 @@ export class OpenAIArxMultiStepClient {
   }
   async createCompletion(mostRecentMessageArr: allDataObjects.ChatHistoryItem[],  chatControl:allDataObjects.chatControls,apiToken:string,  isChatEnabled: boolean = true ) {
     try{
-      const lastFewChats = await getMostRecentChatsByPerson(mostRecentMessageArr)
-      console.log("Going to run candidate facing agents with tool calls in and most recent message is :",lastFewChats )
-
       const newSystemPrompt = await new ToolsForAgents(this.workspaceQueryService).getSystemPrompt(this.personNode, chatControl,apiToken);
       const updatedMostRecentMessagesBasedOnNewSystemPrompt = await updateMostRecentMessagesBasedOnNewSystemPrompt(mostRecentMessageArr, newSystemPrompt);
       const tools = await new ToolsForAgents(this.workspaceQueryService).getTools(chatControl);
       const responseMessage = await this.getHumanLikeResponseMessageFromLLM(updatedMostRecentMessagesBasedOnNewSystemPrompt, tools, apiToken)
-      console.log('BOT_MESSAGE in  :', "at::", new Date().toString(), ' ::: ' ,JSON.stringify(responseMessage));
+      console.log('BOT_MESSAGE in at::', new Date().toString(), ' ::: ' ,JSON.stringify(responseMessage));
       if (responseMessage){
         mostRecentMessageArr.push(responseMessage);
       }
@@ -51,7 +48,7 @@ export class OpenAIArxMultiStepClient {
       const MAX_ATTEMPTS = 3;
       const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
       const { openAIclient } = await this.workspaceQueryService.initializeLLMClients(workspaceId);
-
+      console.log("mostRecentMessageArr:::", mostRecentMessageArr)
       for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
         // @ts-ignore
         const response = await openAIclient.chat.completions.create({ model: modelName, messages: mostRecentMessageArr, tools: tools, tool_choice: 'auto' }); 
@@ -61,7 +58,7 @@ export class OpenAIArxMultiStepClient {
           console.log("Response Message is mostly null");
           return responseMessage;
         }
-        const responseMessageType = await checkIfResponseMessageSoundsHumanLike(responseMessage);
+        const responseMessageType = await new HumanLikeLLM(this.workspaceQueryService).checkIfResponseMessageSoundsHumanLike(responseMessage, apiToken);
         console.log(`Check if this sounds like a human message ${attempt} time:`, responseMessageType);
         if (responseMessageType === "seemsHumanMessage") {
           return responseMessage;
@@ -80,7 +77,7 @@ export class OpenAIArxMultiStepClient {
   }
 
  
-  async addResponseAndToolCallsToMessageHistory(responseMessage: ChatCompletionMessage, mostRecentMessageArr: allDataObjects.ChatHistoryItem[],  chatControl:allDataObjects.chatControls, apiToken:string,isChatEnabled,) {
+  async addResponseAndToolCallsToMessageHistory(responseMessage: ChatCompletionMessage, mostRecentMessageArr: allDataObjects.ChatHistoryItem[],  chatControl:allDataObjects.chatControls, apiToken:string,isChatEnabled: boolean = true): Promise<allDataObjects.ChatHistoryItem[]> {
     const toolCalls = responseMessage?.tool_calls;
     console.log("We have made a total of ", toolCalls?.length, " tool calls in current chatResponseMessage")
     const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
