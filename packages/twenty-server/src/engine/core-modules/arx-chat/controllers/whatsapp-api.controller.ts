@@ -13,6 +13,7 @@ export class WhatsappControllers {
   ) {}
   @Post('uploadFile')
   async uploadFileToFBWAAPI(@Req() request: any): Promise<object> {
+    console.log("This is the request body:", request.body);
     const apiToken = request.headers.authorization.split(' ')[1];
 
     console.log('upload file to whatsapp api');

@@ -223,7 +223,7 @@ const queryByvideoInterviewStatus = `query FindOnevideoInterviewStatus($objectRe
           responseId
           candidateId
           createdAt
-          cvsentId
+          cvSentId
           candidateEnrichmentId
           videoInterviewId
           clientContactId

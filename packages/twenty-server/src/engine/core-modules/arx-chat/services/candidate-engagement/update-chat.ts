@@ -3,13 +3,9 @@ import * as allGraphQLQueries from '../../services/candidate-engagement/graphql-
 import { v4 } from 'uuid';
 import { axiosRequest } from '../../utils/arx-chat-agent-utils';
 import axios from 'axios';
-import { ToolsForAgents } from '../../services/llm-agents/prompting-tool-calling';
 import  {GetCurrentStageByMessages}  from '../../services/llm-agents/get-current-stage-from-messages';
-import { ApiKeyToken } from 'src/engine/core-modules/auth/dto/token.entity';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
-// import { last } from 'rxjs';
-// import { MicroserviceHealthIndicator } from '@nestjs/terminus';
-import { CreateManyCandidates, CreateManyPeople, graphQltoStartChat,UpdateOneJob , CreateOneJob, graphQltoStopChat, createOneQuestion, graphqlToFindManyJobByArxenaSiteId } from 'src/engine/core-modules/candidate-sourcing/graphql-queries';
+import { graphQltoStartChat } from 'src/engine/core-modules/candidate-sourcing/graphql-queries';
 
 class Semaphore {
   private permits: number;

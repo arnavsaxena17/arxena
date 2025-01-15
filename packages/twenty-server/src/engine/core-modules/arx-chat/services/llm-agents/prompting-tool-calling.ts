@@ -1,18 +1,14 @@
-import { shareJDtoCandidate, updateAnswerInDatabase, updateCandidateStatus } from './tool-calls-processing';
+import { ToolCallsProcessing } from './tool-calls-processing';
 import * as allDataObjects from '../data-model-objects';
 import { FetchAndUpdateCandidatesChatsWhatsapps } from '../candidate-engagement/update-chat';
 import fuzzy from 'fuzzy';
-import CandidateEngagementArx from '../candidate-engagement/check-candidate-engagement';
 import { CalendarEventType } from '../../../calendar-events/services/calendar-data-objects-types';
 import { CalendarEmailService } from '../candidate-engagement/calendar-email';
 import { SendEmailFunctionality } from '../candidate-engagement/send-gmail';
 import { GmailMessageData } from 'src/engine/core-modules/gmail-sender/services/gmail-sender-objects-types';
 import * as allGraphQLQueries from '../candidate-engagement/graphql-queries-chatbot';
 import { addHoursInDate, axiosRequest, toIsoString } from '../../utils/arx-chat-agent-utils';
-import { zodResponseFormat } from "openai/helpers/zod";
 import { z } from "zod";
-import { OpenAI } from "openai";
-import { StageWiseClassification } from './get-stage-wise-classification';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 const commaSeparatedStatuses = allDataObjects.statusesArray.join(', ');
@@ -344,7 +340,7 @@ export class ToolsForAgents {
   async shareJD(inputs: any, personNode: allDataObjects.PersonNode, chatControl: allDataObjects.chatControls,  apiToken:string) {
     try {
       console.log('Function Called: shareJD');
-      await shareJDtoCandidate(personNode,  chatControl,  apiToken);
+      await new ToolCallsProcessing(this.workspaceQueryService).shareJDtoCandidate(personNode,  chatControl,  apiToken);
       console.log('Function Called:  candidateProfileDataNodeObj:any', personNode);
     } catch {
       debugger;
@@ -358,7 +354,7 @@ export class ToolsForAgents {
       console.log('UPDATE CANDIDATE PROFILE CALLED AND UPDATING TO ::', inputs);
       console.log('Function Called:  candidateProfileDataNodeObj:any', personNode);
       // const status: allDataObjects.statuses = 'RECRUITER_INTERVIEW';
-      await updateCandidateStatus(personNode, inputs.candidateStatus,  apiToken);
+      await new ToolCallsProcessing(this.workspaceQueryService).updateCandidateStatus(personNode, inputs.candidateStatus,  apiToken);
       return 'Updated the candidate profile.';
     } catch (error) {
       console.log('Error in updateCandidateProfile:', error);
@@ -378,7 +374,7 @@ export class ToolsForAgents {
     const mostSimilarQuestion = questionIdArray.filter(questionObj => questionObj.question == matches[0]);
     const AnswerMessageObj = { questionsId: mostSimilarQuestion[0]?.questionId, name: inputs.answer, candidateId: candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.id };
 
-    await updateAnswerInDatabase(candidateProfileDataNodeObj, AnswerMessageObj,  apiToken);
+    await new ToolCallsProcessing(this.workspaceQueryService).updateAnswerInDatabase(candidateProfileDataNodeObj, AnswerMessageObj,  apiToken);
     try {
       console.log('Function Called:  candidateProfileDataNodeObj:any', candidateProfileDataNodeObj);
       console.log('Function Called: updateAnswer');

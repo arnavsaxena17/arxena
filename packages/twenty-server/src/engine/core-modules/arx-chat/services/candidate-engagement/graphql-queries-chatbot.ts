@@ -666,7 +666,7 @@ export const graphqlQueryTofindManyAttachmentsByJobId = `query FindManyAttachmen
           personId
           name
           opportunityId
-          cvsentId
+          cvSentId
           updatedAt
           createdAt
           jobId

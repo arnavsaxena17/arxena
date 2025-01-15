@@ -2,38 +2,16 @@
 import { Body, Controller, Get, Post, Req, Res, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/engine/guards/jwt.auth.guard';
 import * as allDataObjects from '../services/data-model-objects';
-import { FacebookWhatsappChatApi } from '../services/whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
-import CandidateEngagementArx from '../services/candidate-engagement/check-candidate-engagement';
-import { IncomingWhatsappMessages } from '../services/whatsapp-api/incoming-messages';
 import { FetchAndUpdateCandidatesChatsWhatsapps } from '../services/candidate-engagement/update-chat';
-import { StageWiseClassification } from '../services/llm-agents/get-stage-wise-classification';
-import { OpenAIArxMultiStepClient } from '../services/llm-agents/arx-multi-step-client';
-import { ToolsForAgents } from 'src/engine/core-modules/arx-chat/services/llm-agents/prompting-tool-calling';
-import { axiosRequest } from '../utils/arx-chat-agent-utils';
-import * as allGraphQLQueries from '../services/candidate-engagement/graphql-queries-chatbot';
-import { shareJDtoCandidate } from '../services/llm-agents/tool-calls-processing';
-import { checkIfResponseMessageSoundsHumanLike } from '../services/llm-agents/human-or-bot-type-response-classification';
-import twilio from 'twilio';
 import { GmailMessageData } from '../../gmail-sender/services/gmail-sender-objects-types';
 import { SendEmailFunctionality, EmailTemplates } from '../services/candidate-engagement/send-gmail';
-import { CalendarEventType } from '../../calendar-events/services/calendar-data-objects-types';
-import { CalendarEmailService } from '../services/candidate-engagement/calendar-email';
-import moment from 'moment-timezone';
-import axios from 'axios';
-import { WhatsappTemplateMessages } from '../services/whatsapp-api/facebook-whatsapp/template-messages';
-import { EnvironmentService } from 'src/engine/integrations/environment/environment.service';
 
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
-import { EmailService } from 'src/engine/integrations/email/email.service';
-
-
-
-
 
 
 @Controller('video-interview-process')
 export class VideoInterviewController {
-    constructor(private readonly workspaceQueryService: any) {}
+    constructor(private readonly workspaceQueryService: WorkspaceQueryService) {}
 
     @Post('create-video-interview')
     @UseGuards(JwtAuthGuard)

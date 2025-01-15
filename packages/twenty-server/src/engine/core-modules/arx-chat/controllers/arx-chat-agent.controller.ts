@@ -10,7 +10,7 @@ import { OpenAIArxMultiStepClient } from '../services/llm-agents/arx-multi-step-
 import { ToolsForAgents } from 'src/engine/core-modules/arx-chat/services/llm-agents/prompting-tool-calling';
 import { axiosRequest } from '../utils/arx-chat-agent-utils';
 import * as allGraphQLQueries from '../services/candidate-engagement/graphql-queries-chatbot';
-import { shareJDtoCandidate } from '../services/llm-agents/tool-calls-processing';
+import { ToolCallsProcessing } from '../services/llm-agents/tool-calls-processing';
 import { checkIfResponseMessageSoundsHumanLike } from '../services/llm-agents/human-or-bot-type-response-classification';
 import { GmailMessageData } from '../../gmail-sender/services/gmail-sender-objects-types';
 import { SendEmailFunctionality, EmailTemplates } from '../services/candidate-engagement/send-gmail';
@@ -929,7 +929,7 @@ async deletePeopleAndCandidatesBulk(@Req() request: any): Promise<object> {
 
     const personObj: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).getPersonDetailsByPhoneNumber(request.body.phoneNumberTo,apiToken);
     try {
-      await shareJDtoCandidate(personObj, 'startChat',  apiToken);
+      await new ToolCallsProcessing(this.workspaceQueryService).shareJDtoCandidate(personObj, 'startChat',  apiToken);
       return { status: 'Success' };
     } catch (err) {
       return { status: err };

@@ -2,7 +2,6 @@ import * as allDataObjects from '../data-model-objects';
 const modelName = 'gpt-4o';
 import { ToolsForAgents } from '../../services/llm-agents/prompting-tool-calling';
 import { ChatCompletionMessage } from 'openai/resources';
-import CandidateEngagementArx from '../../services/candidate-engagement/check-candidate-engagement';
 import { WhatsappAPISelector } from '../../services/whatsapp-api/whatsapp-controls';
 import { checkIfResponseMessageSoundsHumanLike } from './human-or-bot-type-response-classification'
 import {getMostRecentChatsByPerson, updateMostRecentMessagesBasedOnNewSystemPrompt} from '../../utils/arx-chat-agent-utils'
@@ -50,7 +49,6 @@ export class OpenAIArxMultiStepClient {
     try {
       console.log("Going to get human like response from llm");
       const MAX_ATTEMPTS = 3;
-
       const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
       const { openAIclient } = await this.workspaceQueryService.initializeLLMClients(workspaceId);
 

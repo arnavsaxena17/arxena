@@ -1,4 +1,3 @@
-import axios from "axios";
 import { CalendarEventType } from '../../../calendar-events/services/calendar-data-objects-types';
 import { GoogleCalendarController } from '../../../calendar-events/google-calendar.controller';
 import { GoogleCalendarService } from '../../../calendar-events/google-calendar.service';

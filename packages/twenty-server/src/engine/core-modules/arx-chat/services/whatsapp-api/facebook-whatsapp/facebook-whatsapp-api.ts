@@ -110,8 +110,8 @@ export class FacebookWhatsappChatApi {
 
       const fileName = path.basename(filePath);
       const contentType = await getContentTypeFromFileName(fileName);
-      console.log('This is the content type:', contentType);
-      console.log('This is the file name:', fileName);
+      console.log('This is the content type in upload file to whatsapp:', contentType);
+      console.log('This is the file name in upload file to whatsapp:', fileName);
 
       const fileData = createReadStream(filePath);
 
@@ -120,19 +120,31 @@ export class FacebookWhatsappChatApi {
         contentType: contentType,
         filename: fileName,
       });
+      console.log("This is the form data:", formData)
 
       formData.append('messaging_product', 'whatsapp');
       let response;
       try {
         let response;
-        response = await axios.post(process.env.SERVER_BASE_URL+'/whatsapp-controller/uploadFile', { filePath: filePath });
+        console.log("This is the process.env.SERVER_BASE_URL:", process.env.SERVER_BASE_URL)
+
+        response = await axios.post(process.env.SERVER_BASE_URL+'/whatsapp-controller/uploadFile', { filePath: filePath }, {
+          headers: {
+            Authorization: `Bearer ${apiToken}`,
+          },
+        });
+        console.log("This is the response data in upload file to whatsapp:", response.data)
         if (!response?.data?.mediaID) {
           console.error('Failed to upload JD to WhatsApp. Retrying it again...');
-          response = await axios.post(process.env.SERVER_BASE_URL+'/whatsapp-controller/uploadFile', { filePath: filePath });
+          response = await axios.post(process.env.SERVER_BASE_URL+'/whatsapp-controller/uploadFile', { filePath: filePath }, {
+            headers: {
+              Authorization: `Bearer ${apiToken}`,
+            },
+          });          
+          
           if (!response?.data?.mediaID) {
             console.error('Failed to upload JD to WhatsApp the second time. Bad luck! :(');
             const phoneNumberTo = attachmentMessage?.phoneNumberTo;
-
             const personObj = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).getPersonDetailsByPhoneNumber(phoneNumberTo,  apiToken);
             const mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.messageObj;
             mostRecentMessageArr.push({ role: 'user', content: 'Failed to send JD to the candidate.' });
@@ -153,7 +165,6 @@ export class FacebookWhatsappChatApi {
           contentType: contentType,
         };
       } catch (err) {
-        debugger;
         console.error('Errir heree', response?.data);
         console.error('upload', err.toJSON());
         console.log(err.data);
@@ -182,8 +193,8 @@ export class FacebookWhatsappChatApi {
       const filePath = filePathArg.slice();
       const fileName = path.basename(filePath);
       const contentType = await getContentTypeFromFileName(fileName);
-      console.log('This is the content type:', contentType);
-      console.log('This is the file name:', fileName);
+      console.log('This is the content type using controller api:', contentType);
+      console.log('This is the file name in upload file to whatsapp using controller api:', fileName);
 
       const formData = new FormData();
       formData.append('file', createReadStream(filePath), {

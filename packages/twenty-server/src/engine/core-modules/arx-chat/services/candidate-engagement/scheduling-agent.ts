@@ -1,29 +1,18 @@
 import CandidateEngagementArx from '../candidate-engagement/check-candidate-engagement';
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { Repository, In, EntityManager } from 'typeorm';
+import {  In, EntityManager } from 'typeorm';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { FetchAndUpdateCandidatesChatsWhatsapps } from './update-chat';
 
-let timeScheduleCron: string;
-let fiveMinutesCron: string;
-console.log('Current Environment Is:', process.env.NODE_ENV);
-if (process.env.NODE_ENV === 'development') {
-  // cron to run every 30 seconds in development
-  timeScheduleCron = CronExpression.EVERY_30_SECONDS;
-  fiveMinutesCron = CronExpression.EVERY_30_SECONDS; // for testing purposes
-} else {
-  // cron to run every 5 minutes
-  timeScheduleCron = CronExpression.EVERY_30_SECONDS;
-  fiveMinutesCron = CronExpression.EVERY_5_MINUTES;
-}
+
 
 @Injectable()
 export class TasksService {
   private isProcessing = false;
 
   constructor(private readonly workspaceQueryService: WorkspaceQueryService) {}
-  @Cron(timeScheduleCron)
+  @Cron(CronExpression.EVERY_10_SECONDS)
   async handleCron() {
     if (this.isProcessing) {
       console.log('Previous cron job still running, skipping this run');
@@ -41,7 +30,7 @@ export class TasksService {
     }
   }
 
-  @Cron(fiveMinutesCron)
+  @Cron(CronExpression.EVERY_5_MINUTES)
   async handleFiveMinutesCron() {
     if (this.isProcessing) {
       console.log('Previous 5 minutes cron job still running, skipping this run');

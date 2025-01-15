@@ -123,7 +123,8 @@ export default class CandidateEngagementArx {
 
   async filterCandidatesWhereEngagementStatusIsTrueAndByLastMessagedTime(sortedPeopleData: allDataObjects.PersonNode[], chatControl: allDataObjects.chatControls,  apiToken:string): Promise<allDataObjects.PersonNode[]> {
     console.log("The number of sorted people::", sortedPeopleData.length)
-    const minutesToWait = 2;
+    // const minutesToWait = 2;
+    const minutesToWait = 0;
     const twoMinutesAgo = new Date(Date.now() - minutesToWait * 60 * 1000);
     const filteredCandidatesToEngage = sortedPeopleData.filter(person => {
       if (person?.candidates?.edges?.length > 0) {
@@ -234,11 +235,16 @@ export default class CandidateEngagementArx {
   }
 
   async checkCandidateEngagement(apiToken:string) {
+
+
     try{
       console.log("Cron running and cycle started to check candidate engagement");
       let chatControl:allDataObjects.chatControls 
       chatControl = "startChat";
       const peopleEngagementStartChatArr = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).fetchSpecificPeopleToEngageBasedOnChatControl(chatControl, apiToken);
+
+      this.checkIfAllInformationForSendingChatMessageIsAvailable(peopleEngagementStartChatArr, chatControl, apiToken);
+
       console.log("Number of peopleEngagementStartChatArr for chat to start engagement or engage::", peopleEngagementStartChatArr.length, "for chatControl:", chatControl);
       if (peopleEngagementStartChatArr) {
         await this.engageCandidates(peopleEngagementStartChatArr, chatControl, apiToken);
@@ -263,5 +269,21 @@ export default class CandidateEngagementArx {
     catch(error){
       console.log("This is the error in checkCandidate Engagement", error);
     }
+  }
+  checkIfAllInformationForSendingChatMessageIsAvailable(peopleEngagementStartChatArr: allDataObjects.PersonNode[], chatControl: string, apiToken: string) {
+    
+
+    // candidateFirstName
+    // recruiterName
+    // recruiterJobTitle
+    // recruiterCompanyName
+    // recruiterCompanyDescription
+    // jobPositionName
+    // descriptionOneliner
+    // jobLocation
+    // Attachment For JD
+
+
+
   }
 }

@@ -1,10 +1,10 @@
 import * as allDataObjects from '../data-model-objects';
-const modelName = 'gpt-4o';
 import { ToolsForAgents } from '../../services/llm-agents/prompting-tool-calling';
 
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 
+const modelName = 'gpt-4o';
 
 export class StageWiseClassification{
   constructor(
