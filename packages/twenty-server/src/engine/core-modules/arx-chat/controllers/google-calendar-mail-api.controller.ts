@@ -7,12 +7,8 @@ import { SendEmailFunctionality, EmailTemplates } from '../services/candidate-en
 import { CalendarEventType } from '../../calendar-events/services/calendar-data-objects-types';
 import { CalendarEmailService } from '../services/candidate-engagement/calendar-email';
 import moment from 'moment-timezone';
-
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { EmailService } from 'src/engine/integrations/email/email.service';
-
-
-
 
 
 @Controller('google-mail-calendar-contacts')
@@ -24,7 +20,7 @@ export class GoogleControllers {
   ) {}
 
 
-  @Get('calendar-events')
+@Get('calendar-events')
 @UseGuards(JwtAuthGuard)
 async getCalendarEvents(@Req() request: any): Promise<object> {
   const apiToken = request.headers.authorization.split(' ')[1];

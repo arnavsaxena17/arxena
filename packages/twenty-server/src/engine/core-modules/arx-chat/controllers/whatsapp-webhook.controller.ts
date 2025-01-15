@@ -4,9 +4,6 @@ import { EnvironmentService } from 'src/engine/integrations/environment/environm
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 
-
-
-
 @Controller('webhook')
 export class WhatsappWebhook {
   

@@ -9,7 +9,7 @@ import { JobCandidateUtils } from '../utils/job-candidate-utils';
 import { CreateMetaDataStructure } from '../../workspace-modifications/object-apis/object-apis-creation';
 import { createFields } from '../../workspace-modifications/object-apis/services/field-service';
 import { createRelations } from '../../workspace-modifications/object-apis/services/relation-service';
-import * as allGraphQLQueries from '../../arx-chat/services/candidate-engagement/graphql-queries-chatbot';
+import * as allGraphQLQueries from '../../arx-chat/graphql-queries/graphql-queries-chatbot';
 import { CreateFieldsOnObject } from 'src/engine/core-modules/workspace-modifications/object-apis/data/createFields';
 import * as allDataObjects from '../../arx-chat/services/data-model-objects';
 import { GoogleSheetsService } from '../../google-sheets/google-sheets.service';

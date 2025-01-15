@@ -2,7 +2,7 @@ import { FacebookWhatsappChatApi } from '../../services/whatsapp-api/facebook-wh
 import CandidateEngagementArx from '../../services/candidate-engagement/check-candidate-engagement';
 import { FetchAndUpdateCandidatesChatsWhatsapps } from '../../services/candidate-engagement/update-chat';
 import * as allDataObjects from '../../services/data-model-objects';
-import * as allGraphQLQueries from '../../services/candidate-engagement/graphql-queries-chatbot';
+import * as allGraphQLQueries from '../../graphql-queries/graphql-queries-chatbot';
 import { axiosRequest } from 'src/engine/core-modules/arx-chat/utils/arx-chat-agent-utils';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';

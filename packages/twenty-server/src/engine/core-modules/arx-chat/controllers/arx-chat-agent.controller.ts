@@ -9,7 +9,7 @@ import { StageWiseClassification } from '../services/llm-agents/get-stage-wise-c
 import { OpenAIArxMultiStepClient } from '../services/llm-agents/arx-multi-step-client';
 import { ToolsForAgents } from 'src/engine/core-modules/arx-chat/services/llm-agents/prompting-tool-calling';
 import { axiosRequest } from '../utils/arx-chat-agent-utils';
-import * as allGraphQLQueries from '../services/candidate-engagement/graphql-queries-chatbot';
+import * as allGraphQLQueries from '../graphql-queries/graphql-queries-chatbot';
 import { ToolCallsProcessing } from '../services/llm-agents/tool-calls-processing';
 import { checkIfResponseMessageSoundsHumanLike } from '../services/llm-agents/human-or-bot-type-response-classification';
 import { GmailMessageData } from '../../gmail-sender/services/gmail-sender-objects-types';

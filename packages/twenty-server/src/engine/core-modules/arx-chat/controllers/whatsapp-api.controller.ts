@@ -1,9 +1,6 @@
-import {  Controller,  Post, Req } from '@nestjs/common';
-import { FacebookWhatsappChatApi } from '../services/whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
-
+import { Controller, Post, Req } from '@nestjs/common';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
-
-
+import { FacebookWhatsappChatApi } from '../services/whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
 
 @Controller('whatsapp-controller')
 export class WhatsappControllers {

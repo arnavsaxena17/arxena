@@ -1,6 +1,6 @@
 
 import * as allDataObjects from '../data-model-objects';
-import * as allGraphQLQueries from '../candidate-engagement/graphql-queries-chatbot';
+import * as allGraphQLQueries from '../../graphql-queries/graphql-queries-chatbot';
 import CandidateEngagementArx from '../candidate-engagement/check-candidate-engagement';
 import { zodResponseFormat } from "openai/helpers/zod";
 import { ToolsForAgents } from './prompting-tool-calling';

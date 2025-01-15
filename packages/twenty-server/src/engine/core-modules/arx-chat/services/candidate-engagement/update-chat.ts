@@ -1,5 +1,5 @@
 import * as allDataObjects from '../../services/data-model-objects';
-import * as allGraphQLQueries from '../../services/candidate-engagement/graphql-queries-chatbot';
+import * as allGraphQLQueries from '../../graphql-queries/graphql-queries-chatbot';
 import { v4 } from 'uuid';
 import { axiosRequest } from '../../utils/arx-chat-agent-utils';
 import axios from 'axios';
@@ -551,6 +551,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
     const questionIdArray = response?.data?.data?.questions?.edges?.map((val: { node: { id: string; name: string } }) => {
       return { questionId: val.node.id, question: val.node.name };
     });
+    console.log("This is the questions array:", questionsArray);
     return { questionArray: questionsArray, questionIdArray: questionIdArray };
   }
 

@@ -8,20 +8,12 @@ import { WhatsappTemplateMessages } from '../services/whatsapp-api/facebook-what
 
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
-
-
-
-
-
-
 @Controller('whatsapp-test')
 export class WhatsappTestAPI {
 
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService
   ) {}
-
-
 
   @Post('send-template-message')
   @UseGuards(JwtAuthGuard)

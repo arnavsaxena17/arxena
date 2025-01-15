@@ -120,7 +120,6 @@ export class FacebookWhatsappChatApi {
         contentType: contentType,
         filename: fileName,
       });
-      console.log("This is the form data:", formData)
 
       formData.append('messaging_product', 'whatsapp');
       let response;

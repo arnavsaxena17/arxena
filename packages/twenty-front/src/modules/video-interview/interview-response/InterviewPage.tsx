@@ -368,7 +368,6 @@ export const InterviewPage: React.FC<InterviewPageProps> = ({ InterviewData, que
         // formData.forEach((value, key) => {
         // console.log(key, value);
         // });
-        console.log('This is the form data:', formData);
         onNextQuestion(formData);
         setSubmitting(false);
         setResponseSubmitted(true);

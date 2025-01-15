@@ -16,7 +16,7 @@ import { GoogleSheetsService } from '../../google-sheets/google-sheets.service';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { In } from 'typeorm';
 import { DataSourceService } from 'src/engine/metadata-modules/data-source/data-source.service';
-import { graphqlToFetchActiveJob, graphqlToFetchAllCandidatesByStartChat } from '../../arx-chat/services/candidate-engagement/graphql-queries-chatbot';
+import { graphqlToFetchActiveJob, graphqlToFetchAllCandidatesByStartChat } from '../../arx-chat/graphql-queries/graphql-queries-chatbot';
 
 @Controller('candidate-sourcing')
 export class CandidateSourcingController {

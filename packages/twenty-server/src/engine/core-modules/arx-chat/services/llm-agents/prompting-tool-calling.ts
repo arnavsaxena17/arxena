@@ -6,7 +6,7 @@ import { CalendarEventType } from '../../../calendar-events/services/calendar-da
 import { CalendarEmailService } from '../candidate-engagement/calendar-email';
 import { SendEmailFunctionality } from '../candidate-engagement/send-gmail';
 import { GmailMessageData } from 'src/engine/core-modules/gmail-sender/services/gmail-sender-objects-types';
-import * as allGraphQLQueries from '../candidate-engagement/graphql-queries-chatbot';
+import * as allGraphQLQueries from '../../graphql-queries/graphql-queries-chatbot';
 import { addHoursInDate, axiosRequest, toIsoString } from '../../utils/arx-chat-agent-utils';
 import { z } from "zod";
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
@@ -194,6 +194,7 @@ export class ToolsForAgents {
     I'm hiring for a ${jobProfile.name} role for ${jobProfile?.company?.descriptionOneliner} based out of ${jobProfile.jobLocation} and got your application on my job posting. I believe this might be a good fit.
     Wanted to speak to you in regards your interests in our new role. Would you be available for a short call sometime today?
     `;
+    console.log("Generated system prompt:", SYSTEM_PROMPT);
     return SYSTEM_PROMPT;
   }
 

@@ -13,11 +13,7 @@ const rl = readline.createInterface({
 
 
 export default class CandidateEngagementArx {
-  constructor(
-    private readonly workspaceQueryService: WorkspaceQueryService
-  ) {
-  }
-
+  constructor( private readonly workspaceQueryService: WorkspaceQueryService ) {}
   async createAndUpdateCandidateStartChatChatMessage(chatReply: string, candidateProfileDataNodeObj: allDataObjects.PersonNode, chatControl: allDataObjects.chatControls, apiToken: string) {
 
     const recruiterProfile = allDataObjects.recruiterProfile;
@@ -104,7 +100,6 @@ export default class CandidateEngagementArx {
 
   async updateChatHistoryObjCreateWhatsappMessageObj(wamId: string, personNode: allDataObjects.PersonNode, chatHistory: allDataObjects.ChatHistoryItem[], chatControl:allDataObjects.chatControls,  apiToken:string): Promise<allDataObjects.candidateChatMessageType> {
     const candidateNode = personNode.candidates.edges[0].node;
-    console.log("This is the candidateNode in updateChatHistoryObjCreateWhatsappMessageObj::", candidateNode);
     const updatedChatHistoryObj: allDataObjects.candidateChatMessageType = {
       messageObj: chatHistory,
       candidateProfile: candidateNode,
@@ -271,8 +266,6 @@ export default class CandidateEngagementArx {
     }
   }
   checkIfAllInformationForSendingChatMessageIsAvailable(peopleEngagementStartChatArr: allDataObjects.PersonNode[], chatControl: string, apiToken: string) {
-    
-
     // candidateFirstName
     // recruiterName
     // recruiterJobTitle
@@ -282,8 +275,6 @@ export default class CandidateEngagementArx {
     // descriptionOneliner
     // jobLocation
     // Attachment For JD
-
-
-
+    // fetchQuestionsByJobId(jobId: string)
   }
 }
