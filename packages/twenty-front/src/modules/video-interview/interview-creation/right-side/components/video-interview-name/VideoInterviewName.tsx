@@ -1,7 +1,7 @@
 import styled from '@emotion/styled';
 
-import { VideoInterviewCreateButton } from '@/video-interview/interview-creation/right-side/components/ai-interview-name/VideoInterviewCreateButton';
-import { VideoInterviewModalCloseButton } from '@/video-interview/interview-creation/right-side/components/ai-interview-name/VideoInterviewModalCloseButton';
+import { VideoInterviewCreateButton } from '@/video-interview/interview-creation/right-side/components/video-interview-name/VideoInterviewCreateButton';
+import { VideoInterviewModalCloseButton } from '@/video-interview/interview-creation/right-side/components/video-interview-name/VideoInterviewModalCloseButton';
 
 const StyledVideoInterviewNameContainer = styled.div`
   display: flex;

@@ -1,8 +1,10 @@
 import styled from '@emotion/styled';
 
 import { useAddRemoveVideoInterviewQuestion } from '@/video-interview/interview-creation/hooks/useAddRemoveVideoInterviewQuestionHook';
-import { IntroductionNavElement } from '@/ai-interview/interview-creation/left-side/components/ai-interview-modal-nav-container/introduction/IntroductionNavElement';
+import { IntroductionNavElement } from '@/video-interview/interview-creation/left-side/components/video-interview-modal-nav-container/introduction/IntroductionNavElement';
 import { Key, ReactElement, JSXElementConstructor, ReactNode, ReactPortal } from 'react';
+
+
 
 const StyledModalNavElementContainer = styled.nav`
   display: flex;

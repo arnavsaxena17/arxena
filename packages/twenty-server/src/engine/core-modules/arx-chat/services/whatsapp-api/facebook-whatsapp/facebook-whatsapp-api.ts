@@ -13,15 +13,6 @@ import { FetchAndUpdateCandidatesChatsWhatsapps } from '../../candidate-engageme
 const { exec } = require('child_process');
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
-// let whatsappAPIToken = process.env.FACEBOOK_WHATSAPP_PERMANENT_API;
-
-// if (process.env.FACEBOOK_WHATSAPP_PERMANENT_API) {
-//   whatsappAPIToken = process.env.FACEBOOK_WHATSAPP_PERMANENT_API;
-// } else {
-//   whatsappAPIToken = process.env.FACEBOOK_WHATSAPP_API_TOKEN;
-// }
-
-const templates = ['hello_world', 'recruitment','application','application02', 'application03'];
 export class FacebookWhatsappChatApi {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService
@@ -146,7 +137,7 @@ export class FacebookWhatsappChatApi {
             const mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.messageObj;
             mostRecentMessageArr.push({ role: 'user', content: 'Failed to send JD to the candidate.' });
             const whatappUpdateMessageObj:allDataObjects.candidateChatMessageType = await new CandidateEngagementArx(this.workspaceQueryService).updateChatHistoryObjCreateWhatsappMessageObj( 'failed', personObj, mostRecentMessageArr, chatControl,  apiToken);
-            await new CandidateEngagementArx(this.workspaceQueryService).updateCandidateEngagementDataInTable(whatappUpdateMessageObj,  apiToken);
+            await new CandidateEngagementArx(this.workspaceQueryService).updateCandidateEngagementDataInTable(personObj, whatappUpdateMessageObj,  apiToken);
           }
         }
         console.log('media ID', response?.data?.mediaID);
@@ -272,7 +263,7 @@ export class FacebookWhatsappChatApi {
         mostRecentMessageArr,
         chatControl,  apiToken
       );
-      await new CandidateEngagementArx(this.workspaceQueryService).updateCandidateEngagementDataInTable(whatappUpdateMessageObj,  apiToken);
+      await new CandidateEngagementArx(this.workspaceQueryService).updateCandidateEngagementDataInTable(personObj, whatappUpdateMessageObj,  apiToken);
     } catch (error) {
       console.log(error);
     }
@@ -494,7 +485,6 @@ export class FacebookWhatsappChatApi {
           descriptionOneliner:whatappUpdateMessageObj?.candidateProfile?.jobs?.company?.descriptionOneliner,
           jobCode: whatappUpdateMessageObj?.candidateProfile?.jobs?.jobCode,
           jobLocation: whatappUpdateMessageObj?.candidateProfile?.jobs?.jobLocation,
-          // videoInterviewLink: process.env.SERVER_BASE_URL+personNode?.candidates?.edges[0]?.node?.videoInterview?.edges[0].node.interviewLink?.url || "",
           videoInterviewLink: videoInterviewLink,
           
         };
@@ -512,7 +502,7 @@ export class FacebookWhatsappChatApi {
       }
 
       whatappUpdateMessageObjAfterWAMidUpdate = await new CandidateEngagementArx(this.workspaceQueryService).updateChatHistoryObjCreateWhatsappMessageObj(response?.data?.messages[0]?.id || response.messages[0].id, personNode, mostRecentMessageArr, chatControl,  apiToken);
-      await new CandidateEngagementArx(this.workspaceQueryService).updateCandidateEngagementDataInTable(whatappUpdateMessageObjAfterWAMidUpdate,  apiToken);
+      await new CandidateEngagementArx(this.workspaceQueryService).updateCandidateEngagementDataInTable(personNode, whatappUpdateMessageObjAfterWAMidUpdate,  apiToken);
 
     } else {
       console.log('passing a human message so, going to trash it');

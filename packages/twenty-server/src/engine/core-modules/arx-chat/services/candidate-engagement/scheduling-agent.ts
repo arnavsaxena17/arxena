@@ -2,13 +2,6 @@ import CandidateEngagementArx from '../candidate-engagement/check-candidate-enga
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { Repository, In, EntityManager } from 'typeorm';
-import { EnvironmentService } from 'src/engine/integrations/environment/environment.service';
-import { InjectRepository } from '@nestjs/typeorm';
-
-import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
-import { DataSourceEntity } from 'src/engine/metadata-modules/data-source/data-source.entity';
-import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
-import { TokenService } from 'src/engine/core-modules/auth/services/token.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { FetchAndUpdateCandidatesChatsWhatsapps } from './update-chat';
 
@@ -38,15 +31,8 @@ export class TasksService {
     }
     try {
       this.isProcessing = true;
-      // this.logger.log("Evert 5 seconds check Candidate Engagement is called");
       console.log('Starting CRON CYCLE');
-      // await this.runWorkspaceServiceCandidateEngagement();
-      if (process.env.RUN_SCHEDULER === 'true') {
-        console.log('Checking Engagement');
-        // await new CandidateEngagementArx().checkCandidateEngagement();
-      } else {
-        console.log('Scheduler is turned off');
-      }
+      await this.runWorkspaceServiceCandidateEngagement();
     } catch (error) {
       console.log('Error in cron job', error);
     } finally {

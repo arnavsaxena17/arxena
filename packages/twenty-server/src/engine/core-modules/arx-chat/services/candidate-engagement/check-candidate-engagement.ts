@@ -56,9 +56,7 @@ export default class CandidateEngagementArx {
     
     console.log("Sending a messages")
     
-    await this.updateCandidateEngagementDataInTable(whatappUpdateMessageObj, apiToken);
-    
-    return whatappUpdateMessageObj;
+    await this.updateCandidateEngagementDataInTable(candidateProfileDataNodeObj, whatappUpdateMessageObj, apiToken);    
   }
 
   async processCandidate(personNode: allDataObjects.PersonNode, chatControl: allDataObjects.chatControls, apiToken:string) {
@@ -79,6 +77,7 @@ export default class CandidateEngagementArx {
       console.log('This is the error in processCandidate', error);
     }
   }
+
   getMostRecentMessageFromMessagesList(messagesList: allDataObjects.MessageNode[]) {
     let mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = [];
     if (messagesList) {
@@ -90,7 +89,7 @@ export default class CandidateEngagementArx {
     return mostRecentMessageArr;
   }
 
-  async updateCandidateEngagementDataInTable(whatappUpdateMessageObj: allDataObjects.candidateChatMessageType, apiToken:string, isAfterMessageSent: boolean = false) {
+  async updateCandidateEngagementDataInTable(personDataNodeObj:allDataObjects.PersonNode, whatappUpdateMessageObj: allDataObjects.candidateChatMessageType, apiToken:string, isAfterMessageSent: boolean = false) {
     let candidateProfileObj = whatappUpdateMessageObj.messageType !== 'botMessage' ? await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).getCandidateInformation(whatappUpdateMessageObj,apiToken) : whatappUpdateMessageObj.candidateProfile;
     if (candidateProfileObj.name === '') return;
     console.log('Candidate information retrieved successfully');
@@ -100,6 +99,8 @@ export default class CandidateEngagementArx {
     if (!updateCandidateStatusObj) return;
     return { status: 'success', message: 'Candidate engagement status updated successfully' };
   }
+
+
 
   async updateChatHistoryObjCreateWhatsappMessageObj(wamId: string, personNode: allDataObjects.PersonNode, chatHistory: allDataObjects.ChatHistoryItem[], chatControl:allDataObjects.chatControls,  apiToken:string): Promise<allDataObjects.candidateChatMessageType> {
     const candidateNode = personNode.candidates.edges[0].node;
@@ -156,23 +157,23 @@ export default class CandidateEngagementArx {
     console.log("Number of candidates who are filtered and will be engaged:", filteredCandidatesToEngage.length, "for chatControl:", chatControl)
     return filteredCandidatesToEngage;
   }
+
+  
   
   async startChatEngagement(peopleCandidateResponseEngagementArr: allDataObjects.PersonNode[],  chatControl: allDataObjects.chatControls,  apiToken:string) {
     console.log('Total number of candidates fetched to filter for start chat::', peopleCandidateResponseEngagementArr?.length, "for chatControl:", chatControl);
     let filteredCandidatesToStartEngagement: allDataObjects.PersonNode[];
     if (chatControl === 'startChat') {
-      // first create video interview links for all candidates with whom start chat will be done.
-      for (const personNode of peopleCandidateResponseEngagementArr) {
-        const candidateNode = personNode?.candidates?.edges[0]?.node;
-        const candidateId = candidateNode.id;
-        if (!candidateNode?.videoInterview?.edges[0]?.node?.interviewLink?.url) {
-          console.log(`Creating video interview link for candidate: ${candidateNode.name}`);
-          const createVideoInterviewResponse = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).createVideoInterviewForCandidate(candidateId, apiToken);
-          console.log(`Video interview link created: ${createVideoInterviewResponse}`);
-        } else {
-          // console.log(`Skipping candidate ${candidateNode.name} in start chat as they already have a video interview link.`);
-        }
-      }
+      // first create video interview links for all candidates with whom start chat will be done. Lets not do this for now
+      // for (const personNode of peopleCandidateResponseEngagementArr) {
+      //   const candidateNode = personNode?.candidates?.edges[0]?.node;
+      //   const candidateId = candidateNode.id;
+      //   if (!candidateNode?.videoInterview?.edges[0]?.node?.interviewLink?.url) {
+      //     console.log(`Creating video interview link for candidate: ${candidateNode.name}`);
+      //     const createVideoInterviewResponse = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).createVideoInterviewForCandidate(candidateId, apiToken);
+      //     console.log(`Video interview link created: ${createVideoInterviewResponse}`);
+      //   }
+      // }
 
       filteredCandidatesToStartEngagement = peopleCandidateResponseEngagementArr?.filter(personNode => {
         return personNode?.candidates?.edges?.length > 0 && personNode?.candidates?.edges[0]?.node?.startChat === true && personNode?.candidates?.edges[0]?.node?.whatsappMessages?.edges.length === 0 && personNode?.candidates?.edges[0]?.node?.startVideoInterviewChat === false;
@@ -198,10 +199,6 @@ export default class CandidateEngagementArx {
 
     }
   }
-  async delay(min: number, max: number): Promise<void> {
-    const ms = Math.floor(Math.random() * (max - min + 1)) + min;
-    await new Promise(resolve => setTimeout(resolve, ms));
-  }
   
   async engageCandidates(peopleCandidateResponseEngagementArr: allDataObjects.PersonNode[], chatControl: allDataObjects.chatControls,  apiToken:string) {
     console.log("These are the candidates who we want to engage ::",peopleCandidateResponseEngagementArr.length , "for chat Contro:", chatControl);
@@ -213,9 +210,6 @@ export default class CandidateEngagementArx {
       await this.processCandidate(personNode, chatControl,  apiToken);
     }
   }
-
-
-
   
   async setupVideoInterviewLinks(peopleEngagementStartVideoInterviewChatArr:allDataObjects.PersonNode[], chatControl: allDataObjects.chatControls,  apiToken:string) {
     if (chatControl === 'startVideoInterviewChat') {

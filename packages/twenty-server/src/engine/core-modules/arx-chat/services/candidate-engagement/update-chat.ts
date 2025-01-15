@@ -486,44 +486,49 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
       const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindPeopleByPhoneNumber, variables: graphVariables });
       const response = await axiosRequest(graphqlQueryObj,apiToken);
       const candidateDataObjs = response.data?.data?.people?.edges[0]?.node?.candidates?.edges;
-      const activeJobCandidateObj = candidateDataObjs?.find((edge: any) => edge?.node?.jobs?.isActive);
+      const activeJobCandidateObj = candidateDataObjs?.find((edge: allDataObjects.CandidatesEdge) => edge?.node?.jobs?.isActive);
       console.log('This is the number of candidates', candidateDataObjs?.length);
       console.log('This is the activeJobCandidateObj who got called', activeJobCandidateObj?.node?.name || "");
       if (activeJobCandidateObj) {
-        const personWithActiveJob = response?.data?.data?.people?.edges?.find((person: { node: { candidates: { edges: any[] } } }) => person?.node?.candidates?.edges?.some(candidate => candidate?.node?.jobs?.isActive));
+        const personWithActiveJob = response?.data?.data?.people?.edges?.find((person: allDataObjects.PersonEdge) => person?.node?.candidates?.edges?.some(candidate => candidate?.node?.jobs?.isActive));
+        const activeJobCandidate:allDataObjects.CandidateNode = activeJobCandidateObj?.node;
+        const activeJob:allDataObjects.Jobs = activeJobCandidate?.jobs;
+        const activeCompany = activeJob?.company;
+
         const candidateProfileObj: allDataObjects.CandidateNode = {
           name: personWithActiveJob?.node?.name?.firstName || "",
-          id: activeJobCandidateObj?.node?.id,
-          whatsappProvider : activeJobCandidateObj?.node?.whatsappProvider,
+          id: activeJobCandidate?.id,
+          whatsappProvider: activeJobCandidate?.whatsappProvider,
           jobs: {
-            name: activeJobCandidateObj?.node?.jobs?.name || "",
-            id: activeJobCandidateObj?.node?.jobs?.id,
-            recruiterId: activeJobCandidateObj?.node?.jobs?.recruiterId,
-            jobCode:activeJobCandidateObj?.node?.jobs?.jobCode,
+            name: activeJob?.name || "",
+            id: activeJob?.id,
+            recruiterId: activeJob?.recruiterId,
+            jobCode: activeJob?.jobCode,
+            isActive: activeJob?.isActive,
             company: {
-              name: activeJobCandidateObj?.node?.jobs?.companies?.name || "",
-              companyId: activeJobCandidateObj?.node?.jobs?.companies?.id,
-              domainName: activeJobCandidateObj?.node?.jobs?.companies?.domainName,
-              descriptionOneliner: activeJobCandidateObj?.node?.jobs?.companies?.descriptionOneliner,
+              name: activeCompany?.name || "",
+              companyId: activeCompany?.companyId,
+              domainName: activeCompany?.domainName,
+              descriptionOneliner: activeCompany?.descriptionOneliner,
             },
-            jobLocation: activeJobCandidateObj?.node?.jobs?.jobLocation,
-            whatsappMessages: activeJobCandidateObj?.node?.jobs?.whatsappMessages,
+            jobLocation: activeJob?.jobLocation,
+            whatsappMessages: activeJob?.whatsappMessages,
           },
-          videoInterview: activeJobCandidateObj?.node?.videoInterview,
-          engagementStatus: activeJobCandidateObj?.node?.engagementStatus,
-          lastEngagementChatControl: activeJobCandidateObj?.node?.lastEngagementChatControl,
+          videoInterview: activeJobCandidate?.videoInterview,
+          engagementStatus: activeJobCandidate?.engagementStatus,
+          lastEngagementChatControl: activeJobCandidate?.lastEngagementChatControl,
           phoneNumber: personWithActiveJob?.node?.phone,
           email: personWithActiveJob?.node?.email,
           input: userMessage?.messages[0]?.content,
-          startChat: activeJobCandidateObj?.node?.startChat,
-          startMeetingSchedulingChat: activeJobCandidateObj?.node?.startMeetingSchedulingChat,
-          startVideoInterviewChat: activeJobCandidateObj?.node?.startVideoInterviewChat,
-          stopChat: activeJobCandidateObj?.node?.stopChat,
-          whatsappMessages: activeJobCandidateObj?.node?.whatsappMessages,
-          status: activeJobCandidateObj?.node?.status,
-          emailMessages: { edges: activeJobCandidateObj?.node?.emailMessages?.edges },
+          startChat: activeJobCandidate?.startChat,
+          startMeetingSchedulingChat: activeJobCandidate?.startMeetingSchedulingChat,
+          startVideoInterviewChat: activeJobCandidate?.startVideoInterviewChat,
+          stopChat: activeJobCandidate?.stopChat,
+          whatsappMessages: activeJobCandidate?.whatsappMessages,
+          status: activeJobCandidate?.status,
+          emailMessages: { edges: activeJobCandidate?.emailMessages?.edges },
           candidateReminders: {
-            edges: activeJobCandidateObj?.node?.candidateReminders?.edges,
+            edges: activeJobCandidate?.candidateReminders?.edges,
           },
         };
         return candidateProfileObj;

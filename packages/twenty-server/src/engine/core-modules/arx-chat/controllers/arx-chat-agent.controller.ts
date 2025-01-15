@@ -273,7 +273,7 @@ export class ArxChatEndpoint {
       whatsappDeliveryStatus: 'startChatTriggered',
       whatsappMessageId: 'startChat',
     };
-    const engagementStatus = await new CandidateEngagementArx(this.workspaceQueryService ).updateCandidateEngagementDataInTable(whatappUpdateMessageObj,apiToken);
+    const engagementStatus = await new CandidateEngagementArx(this.workspaceQueryService ).updateCandidateEngagementDataInTable(personObj, whatappUpdateMessageObj,apiToken);
     if (engagementStatus?.status === 'success') {
       return { status: engagementStatus?.status };
     } else {

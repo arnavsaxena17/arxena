@@ -9,6 +9,7 @@ const baseUrl = process.env.SERVER_BASE_URL+'/whatsapp'; // Adjust the base URL 
 
 export async function sendWhatsappMessageVIABaileysAPI(whatappUpdateMessageObj: allDataObjects.candidateChatMessageType, personNode: allDataObjects.PersonNode, mostRecentMessageArr: allDataObjects.ChatHistoryItem[], chatControl: allDataObjects.chatControls,  apiToken:string) {
   console.log('Sending message to whatsapp via baileys api');
+
   console.log('whatappUpdateMessageObj.messageType', whatappUpdateMessageObj.messageType);
   if (whatappUpdateMessageObj.messageType === 'botMessage') {
     console.log('This is the standard message to send fromL', allDataObjects.recruiterProfile.phone, "for name:",whatappUpdateMessageObj.candidateProfile.name );
@@ -24,7 +25,7 @@ export async function sendWhatsappMessageVIABaileysAPI(whatappUpdateMessageObj: 
     const whatappUpdateMessageObjAfterWAMidUpdate = await new CandidateEngagementArx(this.workspaceQueryService).updateChatHistoryObjCreateWhatsappMessageObj( response?.messageId || 'placeholdermessageid', personNode, mostRecentMessageArr,chatControl, apiToken);
     let candidateProfileObj = whatappUpdateMessageObj.messageType !== 'botMessage' ? await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).getCandidateInformation(whatappUpdateMessageObj,  apiToken) : whatappUpdateMessageObj.candidateProfile;
 
-    await new CandidateEngagementArx(this.workspaceQueryService).updateCandidateEngagementDataInTable(whatappUpdateMessageObjAfterWAMidUpdate,   apiToken, true);
+    await new CandidateEngagementArx(this.workspaceQueryService).updateCandidateEngagementDataInTable(personNode, whatappUpdateMessageObjAfterWAMidUpdate,   apiToken, true);
     const updateCandidateStatusObj = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).updateCandidateEngagementStatus(candidateProfileObj, whatappUpdateMessageObj,  apiToken);
 
     // await updateCandidateEngagementStatus
