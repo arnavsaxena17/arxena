@@ -4,7 +4,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import {  In, EntityManager } from 'typeorm';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { FetchAndUpdateCandidatesChatsWhatsapps } from './update-chat';
-const workspacesToIgnore = ["workspaceIdsWithDataSources"];
+const workspacesToIgnore = ["20202020-1c25-4d02-bf25-6aeccf7ea419"];
 
 
 
