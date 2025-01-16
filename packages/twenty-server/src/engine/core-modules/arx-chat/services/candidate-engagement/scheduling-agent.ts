@@ -4,7 +4,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import {  In, EntityManager } from 'typeorm';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { FetchAndUpdateCandidatesChatsWhatsapps } from './update-chat';
-const workspacesToIgnore = ["20202020-1c25-4d02-bf25-6aeccf7ea419"];
+const workspacesToIgnore = ["20202020-1c25-4d02-bf25-6aeccf7ea419","3b8e6458-5fc1-4e63-8563-008ccddaa6db"];
 
 
 
@@ -35,6 +35,7 @@ export class CandidateEngagementCronService {
     const dataSources = await this.workspaceQueryService.dataSourceRepository.find({ where: { workspaceId: In(workspaceIds), }, });
     const workspaceIdsWithDataSources = new Set(dataSources.map(dataSource => dataSource.workspaceId));
     const filteredWorkspaceIds = Array.from(workspaceIdsWithDataSources).filter(workspaceId => !workspacesToIgnore.includes(workspaceId));
+    console.log("Going after filteredWorkspaceIds:", filteredWorkspaceIds)
     for (const workspaceId of filteredWorkspaceIds) {
       const dataSourceSchema = this.workspaceQueryService.workspaceDataSourceService.getSchemaName(workspaceId);
       const apiKeys = await this.workspaceQueryService.getApiKeys(workspaceId, dataSourceSchema, transactionManager);

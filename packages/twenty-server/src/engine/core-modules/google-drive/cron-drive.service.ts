@@ -8,7 +8,7 @@ import { In } from 'typeorm';
 import { google } from 'googleapis';
 import { CallAndSMSProcessingService } from './call-sms-processing';
 import { AttachmentProcessingService } from '../arx-chat/services/candidate-engagement/attachment-processing';
-const workspacesToIgnore = ["20202020-1c25-4d02-bf25-6aeccf7ea419"];
+const workspacesToIgnore = ["20202020-1c25-4d02-bf25-6aeccf7ea419","3b8e6458-5fc1-4e63-8563-008ccddaa6db"];
 
 @Injectable()
 export class CronDriveService {
