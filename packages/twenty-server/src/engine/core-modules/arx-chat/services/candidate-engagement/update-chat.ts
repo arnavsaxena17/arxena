@@ -172,7 +172,9 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
 
       const response = await axiosRequest(graphqlQueryObj, apiToken);
       if (response.data.errors) {
-        console.log("Errors in axiosRequest response when trying to fetch candidates with specific chat control:", response.data.errors);
+        const workspaceID = this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+
+        console.log("Errors in axiosRequest response when trying to fetch candidates with specific chat control:", response.data.errors, "with workspace Id:", workspaceID);
         break;
       }
 

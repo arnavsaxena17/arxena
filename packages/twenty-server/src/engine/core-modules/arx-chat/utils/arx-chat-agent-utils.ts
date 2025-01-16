@@ -6,11 +6,14 @@ import OpenAI from "openai";
 import ffmpeg from "fluent-ffmpeg";
 import ffmpegPath from "ffmpeg-static";
 import path from "path";
+import { WorkspaceQueryService } from "../../workspace-modifications/workspace-modifications.service";
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 // Set the path for the ffmpeg binary
 // ffmpeg.setFfmpegPath(ffmpegPath);
 // ``;
+
+
 
 export function cleanFilename(filename) {
   // Remove Naukri_

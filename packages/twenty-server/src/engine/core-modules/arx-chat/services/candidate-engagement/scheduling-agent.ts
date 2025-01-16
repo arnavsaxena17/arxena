@@ -4,6 +4,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import {  In, EntityManager } from 'typeorm';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { FetchAndUpdateCandidatesChatsWhatsapps } from './update-chat';
+const workspacesToIgnore = ["workspaceIdsWithDataSources"];
 
 
 
@@ -12,7 +13,7 @@ export class CandidateEngagementCronService {
   private isProcessing = false;
 
   constructor(private readonly workspaceQueryService: WorkspaceQueryService) {}
-  @Cron(CronExpression.EVERY_10_SECONDS)
+  @Cron(CronExpression.EVERY_30_SECONDS)
   async handleCron() {
     if (this.isProcessing) {
       console.log('Previous cron job still running, skipping this run');
@@ -33,14 +34,15 @@ export class CandidateEngagementCronService {
     const workspaceIds = await this.workspaceQueryService.getWorkspaces();
     const dataSources = await this.workspaceQueryService.dataSourceRepository.find({ where: { workspaceId: In(workspaceIds), }, });
     const workspaceIdsWithDataSources = new Set(dataSources.map(dataSource => dataSource.workspaceId));
-    for (const workspaceId of workspaceIdsWithDataSources) {
+    const filteredWorkspaceIds = Array.from(workspaceIdsWithDataSources).filter(workspaceId => !workspacesToIgnore.includes(workspaceId));
+    for (const workspaceId of filteredWorkspaceIds) {
       const dataSourceSchema = this.workspaceQueryService.workspaceDataSourceService.getSchemaName(workspaceId);
       const apiKeys = await this.workspaceQueryService.getApiKeys(workspaceId, dataSourceSchema, transactionManager);
       if (apiKeys.length > 0) {
-        const apiKeyToken = await this.workspaceQueryService.tokenService.generateApiKeyToken(workspaceId, apiKeys[0].id, apiKeys[0].expiresAt);
-        if (apiKeyToken) {
-          await new CandidateEngagementArx(this.workspaceQueryService).checkCandidateEngagement(apiKeyToken?.token);
-        }
+      const apiKeyToken = await this.workspaceQueryService.tokenService.generateApiKeyToken(workspaceId, apiKeys[0].id, apiKeys[0].expiresAt);
+      if (apiKeyToken) {
+        await new CandidateEngagementArx(this.workspaceQueryService).checkCandidateEngagement(apiKeyToken?.token);
+      }
       }
     }
   }
@@ -64,7 +66,8 @@ export class CandidateStatusClassificationCronService {
       const workspaceIds = await this.workspaceQueryService.getWorkspaces();
       const dataSources = await this.workspaceQueryService.dataSourceRepository.find({ where: { workspaceId: In(workspaceIds), }, });
       const workspaceIdsWithDataSources = new Set(dataSources.map(dataSource => dataSource.workspaceId));
-      for (const workspaceId of workspaceIdsWithDataSources) {
+      const filteredWorkspaceIds = Array.from(workspaceIdsWithDataSources).filter(workspaceId => !workspacesToIgnore.includes(workspaceId));
+      for (const workspaceId of filteredWorkspaceIds) {
         const dataSourceSchema = this.workspaceQueryService.workspaceDataSourceService.getSchemaName(workspaceId);
         const apiKeys = await this.workspaceQueryService.getApiKeys(workspaceId, dataSourceSchema);
         if (apiKeys.length > 0) {
