@@ -8,6 +8,7 @@ import { In } from 'typeorm';
 import { google } from 'googleapis';
 import { CallAndSMSProcessingService } from './call-sms-processing';
 import { AttachmentProcessingService } from '../arx-chat/services/candidate-engagement/attachment-processing';
+const workspacesToIgnore = ["20202020-1c25-4d02-bf25-6aeccf7ea419"];
 
 @Injectable()
 export class CronDriveService {
@@ -46,9 +47,9 @@ export class CronDriveService {
      const workspaceIdsWithDataSources = new Set(
        dataSources.map(ds => ds.workspaceId)
      );
-
-     for (const workspaceId of workspaceIdsWithDataSources) {
-       const schema = this.workspaceQueryService.workspaceDataSourceService.getSchemaName(workspaceId);
+     const filteredWorkspaceIds = Array.from(workspaceIdsWithDataSources).filter(workspaceId => !workspacesToIgnore.includes(workspaceId));
+     for (const workspaceId of filteredWorkspaceIds) {
+      const schema = this.workspaceQueryService.workspaceDataSourceService.getSchemaName(workspaceId);
        const apiKeys = await this.workspaceQueryService.getApiKeys(workspaceId, schema);
 
        if (apiKeys.length > 0) {

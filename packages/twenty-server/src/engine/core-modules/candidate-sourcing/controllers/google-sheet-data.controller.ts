@@ -19,6 +19,7 @@ import { DataSourceService } from 'src/engine/metadata-modules/data-source/data-
 import { graphqlToFetchActiveJob, graphqlToFetchAllCandidateData, graphQlToUpdateCandidate } from '../../arx-chat/graphql-queries/graphql-queries-chatbot';
 import { CandidateSourcingController } from './candidate-sourcing.controller';
 
+const workspacesToIgnore = ["20202020-1c25-4d02-bf25-6aeccf7ea419"];
 
 
 @Controller('fetch-google-apps-data')
@@ -67,7 +68,8 @@ export class GoogleSheetsDataController {
 
       const workspaceIdsWithDataSources = new Set(dataSources.map(dataSource => dataSource.workspaceId));
       
-      for (const workspaceId of workspaceIdsWithDataSources) {
+      const filteredWorkspaceIds = Array.from(workspaceIdsWithDataSources).filter(workspaceId => !workspacesToIgnore.includes(workspaceId));
+      for (const workspaceId of filteredWorkspaceIds) {
         if (!workspaceId) {
           throw new Error('Workspace ID not found');
         }

@@ -533,10 +533,7 @@ export const graphqlQueryToFindManyPeopleEngagedCandidates = `query FindManyPeop
             phone
             email
             jobTitle
-            uniqueStringKey
-
-            
-              
+            uniqueStringKey  
           }
           startChat
           candConversationStatus
