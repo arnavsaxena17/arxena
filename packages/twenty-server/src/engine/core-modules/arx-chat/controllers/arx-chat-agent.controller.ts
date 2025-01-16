@@ -530,10 +530,6 @@ export class ArxChatEndpoint {
     }
   }
 
-
-
-
-
   @Post('get-id-by-naukri-url')
   @UseGuards(JwtAuthGuard)
   async getCandidateIdByNaukriURL(@Req() request: any): Promise<{ candidateId: string | null }> {
@@ -883,8 +879,6 @@ async deletePeopleAndCandidatesBulk(@Req() request: any): Promise<object> {
     results
   };
 }
-
-
 
   @Post('remove-chats')
   async removeChats(@Req() request: any): Promise<object> {

@@ -36,14 +36,11 @@ export const useTableColumns = (props?: useRecordTableProps) => {
     [tableColumns]
   );
   
-
-
   const { handleColumnMove } = useMoveViewColumns();
 
   const handleColumnsChange = useCallback(
     async (columns: ColumnDefinition<FieldMetadata>[]) => {
       setTableColumns(columns);
-
       await onColumnsChange?.(columns);
     },
     [onColumnsChange, setTableColumns],
