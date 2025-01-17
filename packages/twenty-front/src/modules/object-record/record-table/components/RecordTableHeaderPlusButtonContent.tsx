@@ -42,8 +42,13 @@ export const RecordTableHeaderPlusButtonContent = () => {
     text-decoration: none;
     width: 100%;
   `;
+  console.log("objectMetadataItem:", objectMetadataItem);
+  console.log("hiddenTableColumns:", hiddenTableColumns);
+
+
   
   console.log("RecordTableHeaderPlusButtonContent render:", objectMetadataItem);
+  try {
 
   return (
     <>
@@ -72,4 +77,10 @@ export const RecordTableHeaderPlusButtonContent = () => {
       </DropdownMenuItemsContainer>
     </>
   );
-};
+
+} catch (error) {
+  console.error("Error in RecordTableHeaderPlusButtonContent:", error);
+  return null;
+}
+
+}

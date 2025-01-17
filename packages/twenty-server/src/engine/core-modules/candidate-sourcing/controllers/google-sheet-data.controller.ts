@@ -19,7 +19,7 @@ import { DataSourceService } from 'src/engine/metadata-modules/data-source/data-
 import { graphqlToFetchActiveJob, graphqlToFetchAllCandidateData, graphQlToUpdateCandidate } from '../../arx-chat/graphql-queries/graphql-queries-chatbot';
 import { CandidateSourcingController } from './candidate-sourcing.controller';
 
-const workspacesToIgnore = ["20202020-1c25-4d02-bf25-6aeccf7ea419"];
+const workspacesToIgnore = ["20202020-1c25-4d02-bf25-6aeccf7ea419","3b8e6458-5fc1-4e63-8563-008ccddaa6db"];
 
 
 @Controller('fetch-google-apps-data')
