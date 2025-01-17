@@ -461,7 +461,7 @@ export class ArxChatEndpoint {
       await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).updateCandidatesWithChatCount(candidateIds ,apiToken);
       return { status: 'Success' };
     } catch (err) {
-      console.error('Error in refresh chats:', err);
+      console.error('Error in refresh-chat-counts-by-candi chats:', err);
       return { status: 'Failed', error: err };
     }
   }
@@ -475,14 +475,14 @@ export class ArxChatEndpoint {
       console.log("going to refresh chat counts by candidate Ids",candidateIds)
       const url = process.env.ENV_NODE === 'production' ? 'https://arxena.com/create-gmail-draft-shortlist' : 'http://localhost:5050/create-gmail-draft-shortlist';
       console.log("This is the url:", url);
-      console.log("going to create shortlist by candidate Ids",candidateIds)
+      console.log("going to create gmail-draft-shortlist by candidate Ids",candidateIds)
       const response = await axios.post(url, { candidateIds: candidateIds }, {
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer ' + apiToken }
       });
       console.log("This is the response:", response);
       return { status: 'Success' };
     } catch (err) {
-      console.error('Error in refresh chats:', err);
+      console.error('Error in create-gmail-draft-shortlist chats:', err);
       return { status: 'Failed', error: err };
     }
   }
@@ -493,10 +493,9 @@ export class ArxChatEndpoint {
     try {
       const { candidateIds } = request.body;
       const apiToken = request.headers.authorization.split(' ')[1];
-      console.log("going to create shortlist by candidate Ids",candidateIds)
-      const url = process.env.ENV_NODE === 'production' ? 'https://arxena.com/create-shortlist' : 'http://localhost:5050/create-shortlist';
+      const url = process.env.ENV_NODE === 'production' ? 'https://arxena.com/create-shortlist' : 'http://127.0.0.1:5050/create-shortlist';
       console.log("This is the url:", url);
-      console.log("going to create shortlist by candidate Ids",candidateIds)
+      console.log("going to create create-shortlist by candidate Ids",candidateIds)
       const response = await axios.post(url, { candidateIds: candidateIds }, {
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer ' + apiToken }
       });
@@ -504,7 +503,7 @@ export class ArxChatEndpoint {
 
       return { status: 'Success' };
     } catch (err) {
-      console.error('Error in refresh chats:', err);
+      console.error('Error create-shortlist:', err);
       return { status: 'Failed', error: err };
     }
   }
@@ -518,7 +517,7 @@ export class ArxChatEndpoint {
       console.log("This is the NODE NEV:", process.env.ENV_NODE);
       const url = process.env.ENV_NODE === 'production' ? 'https://arxena.com/create-shortlist-document' : 'http://localhost:5050/create-shortlist-document';
       console.log("This is the url:", url);
-      console.log("going to create shortlist by candidate Ids",candidateIds)
+      console.log("going to create create-shortlist-document by candidate Ids",candidateIds)
       const response = await axios.post(url, { candidateIds: candidateIds }, {
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer ' + apiToken }
       });

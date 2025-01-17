@@ -22,12 +22,8 @@ export const useSendCVsToClient = ({
   const sendCVsToClient = async (candidateIds: string[], actionToTake:string) => {
     setLoading(true);
     setError(null);
-    
-
+  
     const url = `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/${actionToTake}`;
-
-
-
 
     try {
           const response = await axios.post(

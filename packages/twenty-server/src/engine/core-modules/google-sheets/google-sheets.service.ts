@@ -160,15 +160,23 @@ export class GoogleSheetsService {
       'resume_headline', 'key_skills', 'preferred_locations', 'std_function', 'std_grade', 'std_function_root', 'name', 'PG Year','UG Year', 'Status', 'Notes', 'UniqueKey'
     ];
     // Find new headers that don't exist in the current sheet
-    const newColumnsToAdd = newHeaders.filter(header => !existingHeaders.includes(header) && !headers_to_not_add.includes(header));
+    const chatColumns = ['startChat', 'startVideoInterviewChat', 'startMeetingSchedulingChat', 'stopChat', 'engagementStatus', 'candidateId', 'personId'];
+
+    
+    const newColumnsToAdd = newHeaders.filter(header => 
+      !existingHeaders.includes(header) && 
+      (!headers_to_not_add.includes(header) || chatColumns.includes(header))
+    );
+    
     console.log('New columns to add:', newColumnsToAdd);
     if (newColumnsToAdd.length > 0) {
       console.log('Adding new columns:', newColumnsToAdd);
-
+      
       // Add new columns to existing headers
       const updatedHeaders = [...existingHeaders, ...newColumnsToAdd];
       console.log("Thesea re the udpated headers:", updatedHeaders);
-
+      await this.expandSheetGrid(auth, googleSheetId, updatedHeaders.length);
+      
       // Update the first row with new headers
       await this.updateValues(auth, googleSheetId, 'Sheet1!A1', [updatedHeaders], apiToken);
       await this.formatHeadersBold(auth, googleSheetId, updatedHeaders.length);
@@ -204,20 +212,26 @@ export class GoogleSheetsService {
         headers.add(key);
       });
     });
-
     console.log("These are the headers:::", Array.from(headers));
-
     return Array.from(headers);
   }
 
 
   private formatCandidateRow(candidate: CandidateSourcingTypes.UserProfile, headers: string[]): string[] {
     return headers.map(header => {
+
+      if (header === 'personId' || header === 'candidateId') {
+        return '';
+    }
+
       // Handle Ans fields directly from candidate object
       if (header.startsWith('Ans(')) {
         // Access the Ans field directly since it's stored as a property
         return candidate[header]?.toString() || '';
       }
+  
+      if (header === 'personId') return candidate.personId || '';
+      if (header === 'candidateId') return candidate.candidateId || '';
   
       // Handle standard columns using columnDefinitions
       const definition = CandidateSourcingTypes.columnDefinitions.find(col => col.header === header);
@@ -300,7 +314,7 @@ export class GoogleSheetsService {
         }
 
         const headers = this.getHeadersFromData(batch);
-        const lastColumn = this.getColumnLetter(headers.length - 1);
+        const lastColumn = this.getColumnLetter(headers.length);
         const existingSheet = await this.findSpreadsheetByJobName(auth, jobObject.name);
 
         if (!existingSheet) {
@@ -311,6 +325,8 @@ export class GoogleSheetsService {
         await this.initializeSheetIfNeeded(auth, googleSheetId, headers, existingData, apiToken);
 
         await this.appendNewCandidatesToSheet(auth, googleSheetId, batch, headers, existingData, apiToken);
+        await this.updateIdsInSheet(auth, googleSheetId, tracking, apiToken);
+
       } catch (error) {
         console.log('Error in process Google Sheet Batch:', error);
         if (error.response?.data) {
@@ -395,7 +411,133 @@ export class GoogleSheetsService {
       }
     }
   }
+
+  private async expandSheetGrid(auth: any, spreadsheetId: string, newColumnCount: number): Promise<void> {
+    const sheets = google.sheets({ version: 'v4', auth });
+    
+    try {
+        await sheets.spreadsheets.batchUpdate({
+            spreadsheetId,
+            requestBody: {
+                requests: [{
+                    updateSheetProperties: {
+                        properties: {
+                            sheetId: 0,  // Assuming first sheet
+                            gridProperties: {
+                                columnCount: newColumnCount,
+                                rowCount: 1000  // Keep existing row count
+                            }
+                        },
+                        fields: 'gridProperties(rowCount,columnCount)'
+                    }
+                }]
+            }
+        });
+    } catch (error) {
+        console.error('Error expanding sheet grid:', error);
+        throw error;
+    }
+  }
+
+
   
+
+  private async updateIdsInSheet(
+    auth: any,
+    googleSheetId: string,
+    tracking: { personIdMap: Map<string, string>; candidateIdMap: Map<string, string> },
+    apiToken: string
+  ): Promise<void> {
+    try {
+        const sheets = google.sheets({ version: 'v4', auth });
+        
+        // Get existing data and headers
+        const existingData = await this.getValues(auth, googleSheetId, 'Sheet1');
+        if (!existingData?.values?.length) {
+            console.log('No data found in sheet');
+            return;
+        }
+
+        const headers = existingData.values[0];
+                // Calculate required columns
+                const requiredColumns = Math.max(
+                  headers.length + 2,  // Current columns + 2 new ones
+                  50  // Minimum columns to ensure space for future columns
+              );
+      
+        // Expand grid if needed
+        await this.expandSheetGrid(auth, googleSheetId, requiredColumns);
+      
+        // Find or add required columns
+        let personIdIndex = headers.findIndex(header => header === 'personId');
+        let candidateIdIndex = headers.findIndex(header => header === 'candidateId');
+        const uniqueKeyIndex = headers.findIndex(header => 
+            header.toLowerCase().includes('unique') && header.toLowerCase().includes('key')
+        );
+
+        // If columns don't exist, add them
+        const updates: Array<{range: string; values: string[][]}> = [];
+        
+        if (personIdIndex === -1) {
+            personIdIndex = headers.length;
+            headers.push('personId');
+            // Update headers row with new column
+            updates.push({
+                range: `Sheet1!${this.getColumnLetter(personIdIndex)}1:${this.getColumnLetter(personIdIndex)}1`,
+                values: [['personId']]
+            });
+        }
+
+        if (candidateIdIndex === -1) {
+            candidateIdIndex = headers.length;
+            headers.push('candidateId');
+            // Update headers row with new column
+            updates.push({
+                range: `Sheet1!${this.getColumnLetter(candidateIdIndex)}1:${this.getColumnLetter(candidateIdIndex)}1`,
+                values: [['candidateId']]
+            });
+        }
+
+        if (uniqueKeyIndex === -1) {
+            console.log('No unique key column found');
+            return;
+        }
+
+        // Update IDs in their respective columns
+        for (let i = 1; i < existingData.values.length; i++) {
+            const row = existingData.values[i];
+            const uniqueKey = row[uniqueKeyIndex];
+            
+            if (!uniqueKey) continue;
+
+            const personId = tracking.personIdMap.get(uniqueKey);
+            const candidateId = tracking.candidateIdMap.get(uniqueKey);
+            const rowNumber = i + 1;
+
+            if (personId) {
+                updates.push({
+                    range: `Sheet1!${this.getColumnLetter(personIdIndex)}${rowNumber}:${this.getColumnLetter(personIdIndex)}${rowNumber}`,
+                    values: [[personId]]
+                });
+            }
+            if (candidateId) {
+                updates.push({
+                    range: `Sheet1!${this.getColumnLetter(candidateIdIndex)}${rowNumber}:${this.getColumnLetter(candidateIdIndex)}${rowNumber}`,
+                    values: [[candidateId]]
+                });
+            }
+        }
+
+        // Batch update the sheet
+        if (updates.length > 0) {
+            await this.batchUpdateGoogleSheet(auth, googleSheetId, updates);
+            console.log(`Updated ${updates.length} ID entries in the sheet`);
+        }
+    } catch (error) {
+        console.error('Error updating IDs in sheet:', error);
+        throw error;
+    }
+  }
 
   async createSpreadsheetForJob(jobName: string, twentyToken: string): Promise<any> {
     const auth = await this.loadSavedCredentialsIfExist(twentyToken);
@@ -433,7 +575,12 @@ export class GoogleSheetsService {
           { userEnteredValue: { stringValue: 'startChat' }, userEnteredFormat: { textFormat: { bold: true } } },
           { userEnteredValue: { stringValue: 'startVideoInterviewChat' }, userEnteredFormat: { textFormat: { bold: true } } },
           { userEnteredValue: { stringValue: 'startMeetingSchedulingChat' }, userEnteredFormat: { textFormat: { bold: true } } },
-          { userEnteredValue: { stringValue: 'stopChat' }, userEnteredFormat: { textFormat: { bold: true } } }
+          { userEnteredValue: { stringValue: 'stopChat' }, userEnteredFormat: { textFormat: { bold: true } } },
+
+
+          { userEnteredValue: { stringValue: 'personId' }, userEnteredFormat: { textFormat: { bold: true } } },
+          { userEnteredValue: { stringValue: 'candidateId' }, userEnteredFormat: { textFormat: { bold: true } } },
+
             ]
           }]
         }]
@@ -628,22 +775,6 @@ export class GoogleSheetsService {
       });
     });
   }
-  
-  
-
-  // async batchUpdateValues(auth, spreadsheetId: string, updates: Array<{range: string, values: any[][]}>) {
-  //   const sheets = google.sheets({ version: 'v4', auth });
-  //   await sheets.spreadsheets.values.batchUpdate({
-  //     spreadsheetId,
-  //     requestBody: {
-  //       valueInputOption: 'RAW',
-  //       data: updates.map(update => ({
-  //         range: update.range,
-  //         values: update.values
-  //       }))
-  //     }
-  //   });
-  // }
   async getValues(auth, spreadsheetId: string, range: string) {
     const sheets = google.sheets({ version: 'v4', auth });
     console.log('spreadsheetId::', spreadsheetId);
@@ -658,7 +789,6 @@ export class GoogleSheetsService {
       console.log('Sheets API Errorin get Values:', error.response?.data || error);
     }
   }
-
   async deleteSheet(auth, spreadsheetId: string) {
     const drive = google.drive({ version: 'v3', auth });
     try {

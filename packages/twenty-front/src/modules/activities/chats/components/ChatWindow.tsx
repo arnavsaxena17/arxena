@@ -639,8 +639,6 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
     };
   }, []);
   
-  
-
   useEffect(() => {
     if (currentCandidateId) {
       getlistOfMessages(currentCandidateId).then(() => {

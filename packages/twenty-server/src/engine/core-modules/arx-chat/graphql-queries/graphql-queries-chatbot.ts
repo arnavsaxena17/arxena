@@ -15,7 +15,18 @@ export const graphQlToUpdateCandidate = `mutation UpdateOneCandidate($idToUpdate
       __typename
   }
   }`
-export const graphqlToCreateOneMetatDataObjectItems = `
+
+  export const mutationToUpdateOnePerson = `mutation UpdateOnePerson($idToUpdate: ID!, $input: PersonUpdateInput!) {
+    updatePerson(id: $idToUpdate, data: $input) {
+      __typename
+      city
+      salary
+    }
+  }
+  `
+
+
+  export const graphqlToCreateOneMetatDataObjectItems = `
         mutation CreateOneObjectMetadataItem($input: CreateOneObjectInput!) {
           createOneObject(input: $input) {
             id

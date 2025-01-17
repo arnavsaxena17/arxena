@@ -30,6 +30,18 @@ export class GoogleSheetsController {
     return this.sheetsService.updateValues(auth, spreadsheetId, range, values, twentyToken);
   }
 
+  @Post(':spreadsheetId/updateColumns')
+  async updateColumns(
+    @Headers('authorization') authHeader: string,
+    @Param('spreadsheetId') spreadsheetId: string,
+    @Body('range') range: string,
+    @Body('values') values: any[][],
+  ) {
+    const twentyToken = authHeader.replace('Bearer ', '');
+    const auth = await this.sheetsService.loadSavedCredentialsIfExist(twentyToken);
+    return this.sheetsService.updateValues(auth, spreadsheetId, range, values, twentyToken);
+  }
+
   @Get(':spreadsheetId/values/:range')
   async getValues(
     @Headers('authorization') authHeader: string,

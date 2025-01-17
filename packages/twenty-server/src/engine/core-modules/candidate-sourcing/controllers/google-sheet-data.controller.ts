@@ -16,7 +16,7 @@ import { GoogleSheetsService } from '../../google-sheets/google-sheets.service';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { In } from 'typeorm';
 import { DataSourceService } from 'src/engine/metadata-modules/data-source/data-source.service';
-import { graphqlToFetchActiveJob, graphqlToFetchAllCandidateData, graphQlToUpdateCandidate } from '../../arx-chat/graphql-queries/graphql-queries-chatbot';
+import { graphqlToFetchActiveJob, graphqlToFetchAllCandidateData, graphQlToUpdateCandidate, mutationToUpdateOnePerson } from '../../arx-chat/graphql-queries/graphql-queries-chatbot';
 import { CandidateSourcingController } from './candidate-sourcing.controller';
 
 const workspacesToIgnore = ["20202020-1c25-4d02-bf25-6aeccf7ea419","3b8e6458-5fc1-4e63-8563-008ccddaa6db"];
@@ -195,6 +195,141 @@ export class GoogleSheetsDataController {
   }
   
 
+  @Post('post-batch-data')
+  async postBatchData(@Body() data: { 
+      spreadsheetId: string, 
+      updates: Array<{
+          candidateId: string,
+          personId: string,
+          field: string,
+          value: any
+      }>
+  }) {
+      console.log("Batch data received:", data);
+      
+      const tokenData = await this.getWorkspaceTokenForGoogleSheet(data.spreadsheetId);
+      if (!tokenData) {
+          throw new Error('No valid workspace found for this spreadsheet');
+      }
+
+
+  
+      // Group updates by both candidateId and personId
+      const updates = data.updates.reduce((acc, update) => {
+          if (!acc[update.candidateId]) {
+              acc[update.candidateId] = {
+                  candidateUpdates: {},
+                  personUpdates: {},
+                  personId: update.personId
+              };
+          }
+          console.log("update.field:", update.field);
+          
+          // Determine if the field belongs to person or candidate
+          if (this.isPersonField(update.field)) {
+            
+              acc[update.candidateId].personUpdates[update.field] = update.value;
+          } else {
+              acc[update.candidateId].candidateUpdates[update.field] = update.value;
+          }
+          console.log("Acc:", acc);
+          return acc;
+      }, {} as Record<string, {
+          candidateUpdates: Record<string, any>,
+          personUpdates: Record<string, any>,
+          personId: string
+      }>);
+      
+      console.log("updates:", updates);
+      const results: Array<{
+          candidateId: string;
+          personId: string;
+          success: boolean;
+          timestamp?: string;
+          error?: any
+      }> = [];
+  
+      const candidateIds = Object.keys(updates);
+      const batchSize = 10;
+  
+      for (let i = 0; i < candidateIds.length; i += batchSize) {
+          const batch = candidateIds.slice(i, i + batchSize);
+          
+          const batchPromises = batch.map(async (candidateId) => {
+              try {
+                  const updateData = updates[candidateId];
+                  
+                  // Update candidate if there are candidate fields
+                  if (Object.keys(updateData.candidateUpdates).length > 0) {
+                      const candidateUpdateMutation = {
+                          query: graphQlToUpdateCandidate,
+                          variables: {
+                              idToUpdate: candidateId,
+                              input: updateData.candidateUpdates
+                          }
+                      };
+  
+                      await axiosRequest(
+                          JSON.stringify(candidateUpdateMutation),
+                          tokenData.token
+                      );
+                  }
+  
+                  // Update person if there are person fields
+                  if (Object.keys(updateData.personUpdates).length > 0 && updateData.personId) {
+                      const personUpdateMutation = {
+                          query: mutationToUpdateOnePerson, // You'll need to define this
+                          variables: {
+                              idToUpdate: updateData.personId,
+                              input: updateData.personUpdates
+                          }
+                      };
+  
+                      await axiosRequest(
+                          JSON.stringify(personUpdateMutation),
+                          tokenData.token
+                      );
+                  }
+  
+                  return {
+                      candidateId,
+                      personId: updateData.personId,
+                      success: true,
+                      timestamp: moment().format('YYYY-MM-DD HH:mm:ss')
+                  };
+  
+              } catch (error) {
+                  console.error(`Error processing update for candidateId ${candidateId}:`, error);
+                  return {
+                      candidateId,
+                      personId: updates[candidateId].personId,
+                      success: false,
+                      error: error.message
+                  };
+              }
+          });
+  
+          const batchResults = await Promise.all(batchPromises);
+          results.push(...batchResults);
+      }
+  
+      return {
+          total: results.length,
+          successful: results.filter(r => r.success).length,
+          failed: results.filter(r => !r.success).length,
+          results: results
+      };
+  }
+  
+  // Helper method to determine if a field belongs to person
+  private isPersonField(field: string): boolean {
+      const personFields = [
+          'phone_numbers',
+      ];
+      return personFields.includes(field);
+  }
+  
+  
   private transformData(data: { [key: string]: any }): Partial<CandidateSourcingTypes.ArxenaCandidateNode> {
     const transformedData: Partial<CandidateSourcingTypes.ArxenaCandidateNode> = {};
     
@@ -237,34 +372,25 @@ export class GoogleSheetsDataController {
     if (!tokenData) {
       throw new Error('No valid workspace found for this spreadsheet');
     }
-
-    const { spreadsheetId, ...dataToTransform } = data;
-
-    const transformedData = this.transformData(dataToTransform);
-  
     const candidateQuery = { query: graphqlToFetchAllCandidateData, variables: { filter: { uniqueStringKey: { eq: data.UniqueKey }, }, limit: 1 } };
-  
+    
     const candidateResponse = await axiosRequest(
       JSON.stringify(candidateQuery),
       tokenData?.token || ''
     );
-  
+    
     const candidate = candidateResponse.data?.data?.candidates?.edges[0]?.node;
     if (!candidate) {
       throw new NotFoundException('Candidate not found');
     }
-  
-  
-      // Find candidate using GraphQL query
-      // const { UniqueKey, ...dataWithoutUniqueKey } = transformedData;
-      console.log("transformedData:", transformedData)
-      const updateMutation = {
-        query: graphQlToUpdateCandidate,
-        variables: {
-          idToUpdate: candidate.id,
-          input: transformedData
-        }
-      };
+    
+    const updateMutation = {
+      query: graphQlToUpdateCandidate,
+      variables: {
+      idToUpdate: candidate.id,
+      input: data
+      }
+    };
     
       // Execute update mutation
       const updateResponse = await axiosRequest(

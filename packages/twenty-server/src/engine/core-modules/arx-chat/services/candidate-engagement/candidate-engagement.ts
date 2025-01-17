@@ -110,7 +110,6 @@ export default class CandidateEngagementArx {
   }
 
   isCandidateEligibleForEngagement = (candidate: allDataObjects.CandidateNode, sortedPeopleData, chatControl) => {
-    console.log("The number of sorted people::", sortedPeopleData.length);
     const minutesToWait = 0;
     const twoMinutesAgo = new Date(Date.now() - minutesToWait * 60 * 1000);
 

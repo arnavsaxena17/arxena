@@ -63,12 +63,12 @@ export const mapArxCandidateToCandidateNode = (candidate: { first_name: string; 
     jobsId: jobNode?.id,
     engagementStatus: false,
     startChat: false,
+    stopChat: false,
     startVideoInterviewChat: false,
     startMeetingSchedulingChat: false,
     uniqueStringKey:candidate?.unique_key_string,
     hiringNaukriUrl: {"label":candidate?.profile_url || '', "url":candidate?.profile_url || ''},
     displayPicture: {"label":"Display Picture", "url":candidate?.display_picture || ''},
-    stopChat: false,
     peopleId: '',
     jobSpecificFields: jobSpecificNode,
   };
