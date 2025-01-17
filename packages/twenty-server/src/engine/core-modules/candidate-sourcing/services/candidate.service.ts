@@ -322,6 +322,15 @@ private async processBatches(
       await googleSheetsService.processGoogleSheetBatch(batch, results, tracking, apiToken, googleSheetId, jobObject);
       await this.processPeopleBatch(batch, uniqueStringKeys, results, tracking, apiToken);
       await this.processCandidatesBatch(batch, jobObject, results, tracking, apiToken);  
+
+
+      const auth = await googleSheetsService.loadSavedCredentialsIfExist(apiToken);
+      if (auth) {
+          await googleSheetsService.updateIdsInSheet(auth, googleSheetId, tracking, apiToken);
+      }
+
+
+
       if (i + batchSize < data.length) {
         await delay(1000);
       }

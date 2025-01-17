@@ -325,7 +325,7 @@ export class GoogleSheetsService {
         await this.initializeSheetIfNeeded(auth, googleSheetId, headers, existingData, apiToken);
 
         await this.appendNewCandidatesToSheet(auth, googleSheetId, batch, headers, existingData, apiToken);
-        await this.updateIdsInSheet(auth, googleSheetId, tracking, apiToken);
+        // await this.updateIdsInSheet(auth, googleSheetId, tracking, apiToken);
 
       } catch (error) {
         console.log('Error in process Google Sheet Batch:', error);
@@ -442,17 +442,19 @@ export class GoogleSheetsService {
 
   
 
-  private async updateIdsInSheet(
+  async updateIdsInSheet(
     auth: any,
     googleSheetId: string,
     tracking: { personIdMap: Map<string, string>; candidateIdMap: Map<string, string> },
     apiToken: string
   ): Promise<void> {
     try {
-        const sheets = google.sheets({ version: 'v4', auth });
+        // const sheets = google.sheets({ version: 'v4', auth });
         
         // Get existing data and headers
         const existingData = await this.getValues(auth, googleSheetId, 'Sheet1');
+        console.log("existingData:::", existingData);
+        console.log("existingData:::", existingData?.values);
         if (!existingData?.values?.length) {
             console.log('No data found in sheet');
             return;
@@ -464,7 +466,7 @@ export class GoogleSheetsService {
                   headers.length + 2,  // Current columns + 2 new ones
                   50  // Minimum columns to ensure space for future columns
               );
-      
+              console.log("headers::", headers)
         // Expand grid if needed
         await this.expandSheetGrid(auth, googleSheetId, requiredColumns);
       
@@ -502,6 +504,14 @@ export class GoogleSheetsService {
             console.log('No unique key column found');
             return;
         }
+
+        console.log("Original number of rows in the sheet:", existingData.values.length);
+        console.log("Total number of updates being pushed:", updates.length);
+        console.log("Length of tracking.personIdMap:", tracking.personIdMap.size);
+        console.log("Length of tracking.candidateIdMap:", tracking.candidateIdMap.size);
+        console.log("This is the headers:::", headers);
+        console.log("This is the existingData:::", existingData);
+        console.log("This is the existingData:::", existingData.values.length);
 
         // Update IDs in their respective columns
         for (let i = 1; i < existingData.values.length; i++) {
