@@ -164,7 +164,6 @@ export class GoogleSheetsDataController {
           workspaceId,
           transactionManager
         );
-        console.log("sheetIntegration:::[]", sheetIntegration);
         if (sheetIntegration.length > 0) {
           // Get API keys for the workspace
           const apiKeys = await this.workspaceQueryService.getApiKeys(

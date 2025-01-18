@@ -86,6 +86,17 @@ const fetchSheetData = async (
   }
 };
 
+const getColumnLetter = (columnIndex: number): string => {
+  let letter = '';
+  let num = columnIndex;
+  
+  while (num >= 0) {
+    letter = String.fromCharCode(65 + (num % 26)) + letter;
+    num = Math.floor(num / 26) - 1;
+  }
+  
+  return letter;
+};
 
 const updateGoogleSheet = async (
   accessToken: string,
@@ -95,21 +106,24 @@ const updateGoogleSheet = async (
 ) => {
   try {
     const spreadsheetId = await getSpreadsheetIdForCandidate(apolloClient, candidateId);
+    console.log("Spreadsheet ID:", spreadsheetId);
     if (!spreadsheetId) {
       console.log('No spreadsheet ID found for candidate');
       return;
     }
-
+    console.log("This is the record", record);
     // Fetch current sheet data
     const sheetData = await fetchSheetData(spreadsheetId, accessToken);
+    console.log("Sheet data:", sheetData);
     if (!sheetData?.headers?.length) return;
-
+    
     // Find unique key column
     const uniqueKeyIndex = sheetData.headers.findIndex(
       (header: string) => 
         header.toLowerCase().includes('unique') && 
         header.toLowerCase().includes('key')
     );
+    console.log("Unique key index:", uniqueKeyIndex);
     if (uniqueKeyIndex === -1) return;
 
     // Find row to update
@@ -117,40 +131,61 @@ const updateGoogleSheet = async (
       (row: any[], index: number) => 
         index > 0 && row[uniqueKeyIndex] === record.uniqueStringKey
     );
+
+    console.log("Row index:", rowIndex);
+    
     if (rowIndex === -1) return;
 
-    // Prepare updated row data
-    const updatedRow = sheetData.headers.map((header: string) => {
-      if (header in record) {
-        return record[header]?.toString() || '';
-      }
-      return sheetData.values[rowIndex][sheetData.headers.indexOf(header)] || '';
+    // Find which column was modified by comparing record keys with headers
+    const modifiedColumns = Object.keys(record).filter(key => {
+      const columnIndex = sheetData.headers.findIndex((header: string) => 
+        header.toLowerCase() === key.toLowerCase()
+      );
+      return columnIndex !== -1;
     });
 
-    // Check if there are actual changes
-    const currentRow = sheetData.values[rowIndex];
-    const hasChanges = updatedRow.some(
-      (value: any, index: number) => value !== currentRow[index]
-    );
-    if (!hasChanges) return;
+    console.log("Modified columns:", modifiedColumns);
 
-    // Update the sheet
-    await axios.post(
-      `${process.env.REACT_APP_SERVER_BASE_URL}/sheets/${spreadsheetId}/values`,
-      {
-        range: `Sheet1!A${rowIndex + 1}`,
-        values: [updatedRow],
-      },
-      {
-        headers: { Authorization: `Bearer ${accessToken}` },
+    // If no modified columns found, return
+    if (modifiedColumns.length === 0) return;
+
+    // Update only the modified column
+    for (const columnKey of modifiedColumns) {
+      const columnIndex = sheetData.headers.findIndex((header: string) => 
+        header.toLowerCase() === columnKey.toLowerCase()
+      );
+      
+      if (columnIndex !== -1) {
+        const columnLetter = getColumnLetter(columnIndex);
+        const range = `Sheet1!${columnLetter}${rowIndex + 1}`;
+        
+        // Convert boolean values properly
+        let valueToUpdate = record[columnKey];
+        // if (typeof valueToUpdate === 'boolean') {
+        //   valueToUpdate = valueToUpdate.toString().toUpperCase(); // Convert to "TRUE" or "FALSE"
+        // }
+        
+        // Update only this specific cell
+        await axios.post(
+          `${process.env.REACT_APP_SERVER_BASE_URL}/sheets/${spreadsheetId}/values`,
+          {
+            range: range,
+            values: [[valueToUpdate || '']],
+          },
+          {
+            headers: { Authorization: `Bearer ${accessToken}` },
+          }
+        );
+        
+        console.log(`Successfully updated column ${columnLetter} at row ${rowIndex + 1} with value:`, valueToUpdate);
       }
-    );
+    }
 
-    console.log('Successfully updated Google Sheet');
   } catch (error) {
     console.error('Error updating Google Sheet:', error);
   }
 };
+
 
 export const useUpdateOneRecord = <UpdatedObjectRecord extends ObjectRecord = ObjectRecord>({ objectNameSingular, recordGqlFields }: useUpdateOneRecordProps) => {
   const apolloClient = useApolloClient();
@@ -253,6 +288,7 @@ export const useUpdateOneRecord = <UpdatedObjectRecord extends ObjectRecord = Ob
     const record = updatedRecord?.data?.[mutationResponseField];
     if (record && objectNameSingular === 'candidate' && tokenPair?.accessToken?.token) {
       try {
+        console.log("Going to try and update the damn google sheet"); 
         await updateGoogleSheet(
           tokenPair?.accessToken?.token,
           idToUpdate,
