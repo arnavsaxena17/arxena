@@ -75,6 +75,10 @@ export const mapArxCandidateToCandidateNode = (candidate: { first_name: string; 
   return candidateNode;
 };
 
+
+
+
+
 export const mapArxCandidateJobSpecificFields = candidate => {
   const jobSpecificFields = {
     profileTitle: candidate?.profile_title || '',
@@ -101,3 +105,133 @@ export const processArxCandidate = async (candidate, jobNode) => {
   // console.log("This is the job candidate node", jobCandidateNode);
   return { personNode, candidateNode, jobCandidateNode };
 };
+
+
+
+
+
+export function transformFieldName(field: string): string {
+  // Map of special field transformations based on the mapping functions
+  const fieldMappings: Record<string, string> = {
+      // From personNode mappings
+      'first_name': 'firstName',
+      'last_name': 'lastName',
+      'display_picture': 'displayPicture',
+      'email_address': 'email',
+      'linkedin_url': 'linkedinLink',
+      'phone_numbers': 'phone',
+      'unique_key_string': 'uniqueStringKey',
+      'job_title': 'jobTitle',
+
+      // From jobCandidateNode mappings
+      'profile_url': 'profileUrl',
+      'profile_title': 'profileTitle',
+      'location_name': 'currentLocation',
+      'preferred_locations': 'preferredLocations',
+      'birth_date': 'birthDate',
+      'inferred_salary': 'inferredSalary',
+      'inferred_years_experience': 'inferredYearsExperience',
+      'notice_period': 'noticePeriod',
+      'home_town': 'homeTown',
+      'marital_status': 'maritalStatus',
+      'ug_institute_name': 'ugInstituteName',
+      'ug_graduation_year': 'ugGraduationYear',
+      'pg_graduation_degree': 'pgGradudationDegree',
+      'ug_graduation_degree': 'ugGraduationDegree',
+      'pg_graduation_year': 'pgGraduationYear',
+      'resume_headline': 'resumeHeadline',
+      'key_skills': 'keySkills',
+      'modify_date_label': 'modifyDateLabel',
+      'experience_years': 'experienceYears',
+      'experience_months': 'experienceMonths',
+      'job_company_name': 'currentOrganization',
+
+      // From candidateNode mappings
+      'jobs_id': 'jobsId',
+      'engagement_status': 'engagementStatus',
+      'start_chat': 'startChat',
+      'stop_chat': 'stopChat',
+      'start_video_interview_chat': 'startVideoInterviewChat',
+      'start_meeting_scheduling_chat': 'startMeetingSchedulingChat',
+      'hiring_naukri_url': 'hiringNaukriUrl',
+      'people_id': 'peopleId',
+
+      // From jobSpecificFields mappings
+      'inferred_location': 'inferredLocation',
+      'std_function': 'stdFunction',
+      'std_grade': 'stdGrade',
+      'std_function_root': 'stdFunctionRoot'
+  };
+
+  // Check if there's a special mapping
+  if (fieldMappings[field]) {
+      return fieldMappings[field];
+  }
+
+  // Convert to camelCase for any unmapped fields
+  return field.replace(/_([a-z])/g, (match, letter) => letter.toUpperCase());
+}
+
+export function transformFieldValue(field: string, value: any): any {
+  // Boolean fields that should convert empty strings to false
+  const booleanFields = [
+      'start_chat',
+      'stop_chat',
+      'start_video_interview_chat',
+      'start_meeting_scheduling_chat',
+      'engagement_status',
+      'startChat',
+      'stopChat',
+      'startVideoInterviewChat',
+      'startMeetingSchedulingChat',
+  ];
+
+  // Handle boolean fields first
+  if (booleanFields.includes(field)) {
+      if (value === '' || value === null || value === undefined || value === false) {
+          return false;
+      }
+      return Boolean(value);
+  }
+
+  // Handle other field types
+  switch (field) {
+      case 'phone_numbers':
+          return Array.isArray(value) ? 
+              (typeof value[0] === 'string' ? value[0] : value[0]?.number) || "" : 
+              value?.toString() || "";
+          
+      case 'email_address':
+          return Array.isArray(value) ? value[0] : value;
+
+      case 'linkedin_url':
+      case 'profile_url':
+      case 'hiring_naukri_url':
+          return {
+              label: value || '',
+              url: value || ''
+          };
+
+      case 'display_picture':
+          return {
+              label: "Display Picture",
+              url: value || ''
+          };
+
+      case 'inferred_years_experience':
+      case 'notice_period':
+      case 'birth_date':
+          return value?.toString() || "";
+
+      case 'age':
+      case 'inferred_salary':
+      case 'ug_graduation_year':
+      case 'pg_graduation_year':
+      case 'experience_years':
+      case 'experience_months':
+          return value || 0;
+
+      default:
+          return value || "";
+  }
+}

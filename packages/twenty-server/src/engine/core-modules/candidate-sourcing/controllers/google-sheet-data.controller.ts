@@ -18,7 +18,7 @@ import { In } from 'typeorm';
 import { DataSourceService } from 'src/engine/metadata-modules/data-source/data-source.service';
 import { graphqlToFetchActiveJob, graphqlToFetchAllCandidateData, graphQlToUpdateCandidate, mutationToUpdateOnePerson } from '../../arx-chat/graphql-queries/graphql-queries-chatbot';
 import { CandidateSourcingController } from './candidate-sourcing.controller';
-
+import {transformFieldValue, transformFieldName} from '../utils/data-transformation-utility';
 const workspacesToIgnore = ["20202020-1c25-4d02-bf25-6aeccf7ea419","3b8e6458-5fc1-4e63-8563-008ccddaa6db"];
 
 
@@ -150,6 +150,7 @@ export class GoogleSheetsDataController {
     return result;
     }
 
+
   private async getWorkspaceTokenForGoogleSheet(spreadsheetId: string) {
     console.log("gpong to get workspace token for google sheet with id :", spreadsheetId);
     const results = await this.workspaceQueryService.executeQueryAcrossWorkspaces(
@@ -211,8 +212,6 @@ export class GoogleSheetsDataController {
           throw new Error('No valid workspace found for this spreadsheet');
       }
 
-
-  
       // Group updates by both candidateId and personId
       const updates = data.updates.reduce((acc, update) => {
           if (!acc[update.candidateId]) {
@@ -223,14 +222,20 @@ export class GoogleSheetsDataController {
               };
           }
           console.log("update.field:", update.field);
-          
-          // Determine if the field belongs to person or candidate
+
+
+          const transformedField = transformFieldName(update.field);
+          console.log("transformedField::", transformedField, "for transformed field:", update.field);
+          const transformedValue = transformFieldValue(update.field, update.value);
+          console.log("transformedField::", transformedValue, "for transformed field:", update.value);
+  
           if (this.isPersonField(update.field)) {
-            
-              acc[update.candidateId].personUpdates[update.field] = update.value;
+              acc[update.candidateId].personUpdates[transformedField] = transformedValue;
           } else {
-              acc[update.candidateId].candidateUpdates[update.field] = update.value;
+              acc[update.candidateId].candidateUpdates[transformedField] = transformedValue;
           }
+          
+
           console.log("Acc:", acc);
           return acc;
       }, {} as Record<string, {
@@ -267,13 +272,11 @@ export class GoogleSheetsDataController {
                               input: updateData.candidateUpdates
                           }
                       };
-  
                       await axiosRequest(
                           JSON.stringify(candidateUpdateMutation),
                           tokenData.token
                       );
                   }
-  
                   // Update person if there are person fields
                   if (Object.keys(updateData.personUpdates).length > 0 && updateData.personId) {
                       const personUpdateMutation = {
@@ -283,20 +286,17 @@ export class GoogleSheetsDataController {
                               input: updateData.personUpdates
                           }
                       };
-  
                       await axiosRequest(
                           JSON.stringify(personUpdateMutation),
                           tokenData.token
                       );
                   }
-  
                   return {
                       candidateId,
                       personId: updateData.personId,
                       success: true,
                       timestamp: moment().format('YYYY-MM-DD HH:mm:ss')
                   };
-  
               } catch (error) {
                   console.error(`Error processing update for candidateId ${candidateId}:`, error);
                   return {
@@ -307,11 +307,9 @@ export class GoogleSheetsDataController {
                   };
               }
           });
-  
           const batchResults = await Promise.all(batchPromises);
           results.push(...batchResults);
       }
-  
       return {
           total: results.length,
           successful: results.filter(r => r.success).length,
@@ -324,6 +322,7 @@ export class GoogleSheetsDataController {
   private isPersonField(field: string): boolean {
       const personFields = [
           'phone_numbers',
+          'email_address',
       ];
       return personFields.includes(field);
   }

@@ -170,7 +170,7 @@ export const objectCreationArr = [
         "object": {
             "description": "",
             "icon": "IconPencilDown",
-            "labelPlural": "Video Interview Response",
+            "labelPlural": "Video Interview Responses",
             "labelSingular": "Video Interview Response",
             "nameSingular": "videoInterviewResponse",
             "namePlural": "videoInterviewResponses"
