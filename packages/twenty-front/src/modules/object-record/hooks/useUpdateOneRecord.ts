@@ -23,130 +23,128 @@ type useUpdateOneRecordProps = {
   recordGqlFields?: Record<string, any>;
 };
 
-
-const findManyCandidatesQuery = gql`query FindManyCandidates($filter: CandidateFilterInput, $orderBy: [CandidateOrderByInput],$lastCursor: String, $limit: Int) {
-        candidates(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
-            edges {
-                node {
-                    id
-                    name
-                    jobs {
-                        id
-                        name
-                        isActive
-                        recruiterId
-                        jobLocation
-                        pathPosition
-                        googleSheetId
-                        jobCode
-                        createdAt
-                        company {
-                            name
-                            id
-                            domainName
-                            descriptionOneliner
-                        }
-                    }
-                }
+const findManyCandidatesQuery = gql`
+  query FindManyCandidates($filter: CandidateFilterInput, $orderBy: [CandidateOrderByInput], $lastCursor: String, $limit: Int) {
+    candidates(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
+      edges {
+        node {
+          id
+          name
+          jobs {
+            id
+            name
+            isActive
+            recruiterId
+            jobLocation
+            pathPosition
+            googleSheetId
+            jobCode
+            createdAt
+            company {
+              name
+              id
+              domainName
+              descriptionOneliner
             }
+          }
         }
+      }
     }
-`
-
+  }
+`;
 const getSpreadsheetIdForCandidate = async (
-  apolloClient: ApolloClient<any>,
+  apolloClient: ApolloClient<any>, 
   candidateId: string
 ): Promise<string | null> => {
   try {
-    console.log("looking for candidateId:", candidateId)
     const { data } = await apolloClient.query({
       query: findManyCandidatesQuery,
-      variables: { filter: { id: { eq: candidateId } } }
+      variables: { filter: { id: { eq: candidateId } } },
     });
-    console.log("data:", data)  
-    const spreadsheetId = data?.candidates.edges[0].node?.jobs?.googleSheetId;
-    return spreadsheetId || null;
+    return data?.candidates.edges[0].node?.jobs?.googleSheetId || null;
   } catch (error) {
     console.error('Error fetching spreadsheet ID:', error);
     return null;
   }
 };
 
+const fetchSheetData = async (
+  spreadsheetId: string,
+  accessToken: string
+): Promise<any> => {
+  try {
+    const response = await axios.get(
+      `${process.env.REACT_APP_SERVER_BASE_URL}/sheets/${spreadsheetId}`,
+      {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching sheet data:', error);
+    return null;
+  }
+};
 
 
 const updateGoogleSheet = async (
-  accessToken: string, 
+  accessToken: string,
   candidateId: string,
-  record: ObjectRecord,
-  objectMetadataItem: any,
+  record: any,
   apolloClient: ApolloClient<any>,
-  fetchSheetData: (spreadsheetId: string, accessToken: string) => Promise<any>,
-  invalidateCache: (spreadsheetId: string) => void
-
 ) => {
-
   try {
     const spreadsheetId = await getSpreadsheetIdForCandidate(apolloClient, candidateId);
-    console.log('spreadsheetId:', spreadsheetId);
     if (!spreadsheetId) {
       console.log('No spreadsheet ID found for candidate');
       return;
     }
 
-    // Use cached sheet data
+    // Fetch current sheet data
     const sheetData = await fetchSheetData(spreadsheetId, accessToken);
-    console.log("sheetData:", sheetData);
-    
-    if (!sheetData.headers.length) return;
-    console.log("sheetData.headers::", sheetData.headers)
-    const uniqueKeyIndex = sheetData.headers.findIndex((header: string) => 
-      header.toLowerCase().includes('unique') && header.toLowerCase().includes('key')
-    );
-    console.log("uniqueKeyIndex:", uniqueKeyIndex);
-    if (uniqueKeyIndex === -1) return;
-    console.log("record:", record);
-    console.log("record.uniqueStringKey:", record.uniqueStringKey);
-    console.log("sheetData.values:", sheetData.values);
-    const rowIndex = sheetData.values.findIndex((row: { [x: string]: any; }, index: number) => 
-      index > 0 && row[uniqueKeyIndex] === record.uniqueStringKey
-    );
+    if (!sheetData?.headers?.length) return;
 
-    console.log("rowIndex:", rowIndex);
+    // Find unique key column
+    const uniqueKeyIndex = sheetData.headers.findIndex(
+      (header: string) => 
+        header.toLowerCase().includes('unique') && 
+        header.toLowerCase().includes('key')
+    );
+    if (uniqueKeyIndex === -1) return;
+
+    // Find row to update
+    const rowIndex = sheetData.values.findIndex(
+      (row: any[], index: number) => 
+        index > 0 && row[uniqueKeyIndex] === record.uniqueStringKey
+    );
     if (rowIndex === -1) return;
 
-    // Only update columns that exist in the sheet
+    // Prepare updated row data
     const updatedRow = sheetData.headers.map((header: string) => {
       if (header in record) {
         return record[header]?.toString() || '';
       }
       return sheetData.values[rowIndex][sheetData.headers.indexOf(header)] || '';
     });
-    console.log("updatedRow:", updatedRow);
 
-    // Check for actual changes
+    // Check if there are actual changes
     const currentRow = sheetData.values[rowIndex];
-    const hasChanges = updatedRow.some((value: any, index: string | number) => value !== currentRow[index]);
-
-    if (!hasChanges) {
-      console.log('No changes detected in sheet columns');
-      return;
-    }
-    console.log("hasChanges:", hasChanges);
+    const hasChanges = updatedRow.some(
+      (value: any, index: number) => value !== currentRow[index]
+    );
+    if (!hasChanges) return;
 
     // Update the sheet
     await axios.post(
       `${process.env.REACT_APP_SERVER_BASE_URL}/sheets/${spreadsheetId}/values`,
       {
         range: `Sheet1!A${rowIndex + 1}`,
-        values: [updatedRow]
+        values: [updatedRow],
       },
       {
-        headers: { Authorization: `Bearer ${accessToken}` }
+        headers: { Authorization: `Bearer ${accessToken}` },
       }
     );
-
-    // Invalidate cache after update to ensure next fetch gets fresh data
-    invalidateCache(spreadsheetId);
 
     console.log('Successfully updated Google Sheet');
   } catch (error) {
@@ -154,25 +152,17 @@ const updateGoogleSheet = async (
   }
 };
 
-
-export const useUpdateOneRecord = <
-  UpdatedObjectRecord extends ObjectRecord = ObjectRecord,
->({
-  objectNameSingular,
-  recordGqlFields,
-}: useUpdateOneRecordProps) => {
+export const useUpdateOneRecord = <UpdatedObjectRecord extends ObjectRecord = ObjectRecord>({ objectNameSingular, recordGqlFields }: useUpdateOneRecordProps) => {
   const apolloClient = useApolloClient();
   const [tokenPair] = useRecoilState(tokenPairState);
-  const sheetCacheHooks = objectNameSingular === 'candidate' 
-    ? useSheetCache()
-    : null;
+  // Create a wrapper function to safely use the hook
+
 
   const { objectMetadataItem } = useObjectMetadataItem({
     objectNameSingular,
   });
 
-  const computedRecordGqlFields =
-    recordGqlFields ?? generateDepthOneRecordGqlFields({ objectMetadataItem });
+  const computedRecordGqlFields = recordGqlFields ?? generateDepthOneRecordGqlFields({ objectMetadataItem });
 
   const getRecordFromCache = useGetRecordFromCache({
     objectNameSingular,
@@ -185,13 +175,7 @@ export const useUpdateOneRecord = <
 
   const { objectMetadataItems } = useObjectMetadataItems();
 
-  const updateOneRecord = async ({
-    idToUpdate,
-    updateOneRecordInput,
-  }: {
-    idToUpdate: string;
-    updateOneRecordInput: Partial<Omit<UpdatedObjectRecord, 'id'>>;
-  }) => {
+  const updateOneRecord = async ({ idToUpdate, updateOneRecordInput }: { idToUpdate: string; updateOneRecordInput: Partial<Omit<UpdatedObjectRecord, 'id'>> }) => {
     const sanitizedInput = {
       ...sanitizeRecordInput({
         objectMetadataItem,
@@ -216,14 +200,13 @@ export const useUpdateOneRecord = <
       ...{ __typename: capitalize(objectMetadataItem.nameSingular) },
     };
 
-    const optimisticRecordWithConnection =
-      getRecordNodeFromRecord<ObjectRecord>({
-        record: optimisticRecord,
-        objectMetadataItem,
-        objectMetadataItems,
-        recordGqlFields: computedRecordGqlFields,
-        computeReferences: true,
-      });
+    const optimisticRecordWithConnection = getRecordNodeFromRecord<ObjectRecord>({
+      record: optimisticRecord,
+      objectMetadataItem,
+      objectMetadataItems,
+      recordGqlFields: computedRecordGqlFields,
+      computeReferences: true,
+    });
 
     if (!optimisticRecordWithConnection || !cachedRecordWithConnection) {
       return null;
@@ -244,8 +227,7 @@ export const useUpdateOneRecord = <
       objectMetadataItems,
     });
 
-    const mutationResponseField =
-      getUpdateOneRecordMutationResponseField(objectNameSingular);
+    const mutationResponseField = getUpdateOneRecordMutationResponseField(objectNameSingular);
 
     const updatedRecord = await apolloClient.mutate({
       mutation: updateOneRecordMutation,
@@ -269,27 +251,20 @@ export const useUpdateOneRecord = <
     });
 
     const record = updatedRecord?.data?.[mutationResponseField];
-
-
-    if (record && objectNameSingular === 'candidate' && tokenPair?.accessToken?.token && sheetCacheHooks) {
-      try{
-
+    if (record && objectNameSingular === 'candidate' && tokenPair?.accessToken?.token) {
+      try {
         await updateGoogleSheet(
-          tokenPair.accessToken.token,
-          idToUpdate, // Pass the candidate ID instead of spreadsheetId
+          tokenPair?.accessToken?.token,
+          idToUpdate,
           record,
-          objectMetadataItem,
-          apolloClient, 
-          sheetCacheHooks.fetchSheetData,
-          sheetCacheHooks.invalidateCache
-   // Pass the Apollo client
+          apolloClient
         );
-      }
-      catch (error) {
-        console.log('Error updating Google Sheet:', error);
+      } catch (error) {
+        console.error('Error updating Google Sheet:', error);
       }
     }
-      return record ?? null;
+
+    return record ?? null;
   };
 
   return {

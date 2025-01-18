@@ -18,6 +18,11 @@ export const RecordIndexTableContainer = ({
   objectNameSingular,
   createRecord,
 }: RecordIndexTableContainerProps) => {
+
+  if (!recordTableId || !viewBarId || !objectNameSingular) {
+    console.error('Required props are missing');
+    return null;
+  }  
   const { updateOneRecord } = useUpdateOneRecord({
     objectNameSingular,
   });

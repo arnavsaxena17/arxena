@@ -1,5 +1,5 @@
-import { useCallback } from 'react';
 import { useApolloClient } from '@apollo/client';
+import { useCallback } from 'react';
 import { useRecoilValue } from 'recoil';
 
 import { useObjectMetadataItem } from '@/object-metadata/hooks/useObjectMetadataItem';
@@ -32,11 +32,6 @@ export const useGetRecordFromCache = ({
       recordId: string,
       cache = apolloClient.cache,
     ) => {
-
-      if (!objectMetadataItems || !objectMetadataItem || !appliedRecordGqlFields) {
-        return null;
-      }
-
       return getRecordFromCache<T>({
         cache,
         recordId,
@@ -50,6 +45,6 @@ export const useGetRecordFromCache = ({
       objectMetadataItems,
       objectMetadataItem,
       appliedRecordGqlFields,
-    ].filter(Boolean), // Filter out undefined values from dependency array
+    ],
   );
 };

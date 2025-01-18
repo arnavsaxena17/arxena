@@ -28,12 +28,19 @@ export const RecordIndexTableContainerEffect = ({
     setOnToggleColumnFilter,
     setOnToggleColumnSort,
   } = useRecordTable({
-    recordTableId,
+    recordTableId: recordTableId ?? '', // Add fallback
   });
 
   const { objectMetadataItem } = useObjectMetadataItem({
-    objectNameSingular,
+    objectNameSingular: objectNameSingular ?? '', // Add fallback
   });
+
+  if (!objectMetadataItem) {
+    console.warn('Object metadata item is not available');
+    return null;
+  }
+  
+  
 
   const { columnDefinitions } =
     useColumnDefinitionsFromFieldMetadata(objectMetadataItem);
@@ -81,6 +88,12 @@ export const RecordIndexTableContainerEffect = ({
 
 
   useEffect(() => {
+
+    if (!columnDefinitions) {
+      console.warn('Column definitions are not available');
+      return;
+    }
+
     setAvailableTableColumns(columnDefinitions);
     setOnToggleColumnFilter(() => onToggleColumnFilter);
     setOnToggleColumnSort(() => onToggleColumnSort);

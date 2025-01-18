@@ -143,42 +143,54 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
   async fetchAllCandidatesWithSpecificChatControl(chatControl: allDataObjects.chatControls, apiToken: string): Promise<allDataObjects.Candidate[]> {
     console.log('Fetching all candidates with chatControl', chatControl);
     let allCandidates: allDataObjects.Candidate[] = [];
-    let lastCursor: string | null = null;
-    const chatControlFilters: { [key: string]: any } = {
-      startChat: { startChat: { eq: true }, stopChat: { eq: false }, startVideoInterviewChat: { eq: false } },
-      allStartedAndStoppedChats: { startChat: { eq: true } },
-      startVideoInterviewChat: { startVideoInterviewChat: { eq: true }, stopChat: { eq: false } },
-      startMeetingSchedulingChat: { startMeetingSchedulingChat: { eq: true }, startVideoInterviewChat: { eq: true }, stopChat: { eq: false } },
+    
+    const filters = {
+        startChat: [ { startChat: { eq: true }, startVideoInterviewChat: { is: "NULL" }, stopChat: { is: "NULL" } }, { startChat: { eq: true }, startVideoInterviewChat: { eq: false }, stopChat: { eq: false } }, { startChat: { eq: true }, startVideoInterviewChat: { is: "NULL" }, stopChat: { eq: false } }, { startChat: { eq: true }, startVideoInterviewChat: { eq: false }, stopChat: { is: "NULL" } } ],
+        allStartedAndStoppedChats: [{ startChat: { eq: true } }],
+        startVideoInterviewChat: [ { startVideoInterviewChat: { eq: true }, stopChat: { is: "NULL" } }, { startVideoInterviewChat: { eq: true }, stopChat: { eq: false } } ],
+        startMeetingSchedulingChat: [ { startMeetingSchedulingChat: { eq: true }, startVideoInterviewChat: { eq: true }, stopChat: { is: "NULL" } }, { startMeetingSchedulingChat: { eq: true }, startVideoInterviewChat: { eq: true }, stopChat: { eq: false } } ],    
     };
 
-    const filter = chatControlFilters[chatControl];
-    if (!filter) {
-      console.log('Invalid chat control:', chatControl);
-      return allCandidates;
-    }
-    while (true) {
-      const graphqlQueryObj = JSON.stringify({
-        query: allGraphQLQueries.graphqlToFetchAllCandidateData,
-        variables: { lastCursor, limit: 30, filter },
-      });
-
-      const response = await axiosRequest(graphqlQueryObj, apiToken);
-      if (response.data.errors) {
-        const workspaceID = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-        console.log('Errors in axiosRequest response when trying to fetch candidates with specific chat control:', response.data.errors, 'with workspace Id:', workspaceID);
-        break;
-      }
-
-      const edges = response?.data?.data?.candidates?.edges || [];
-      if (!edges.length) break;
-
-      allCandidates = allCandidates.concat(edges.map((edge: any) => edge.node));
-      lastCursor = edges[edges.length - 1].cursor;
+    const filtersToUse = filters[chatControl] || [];
+    
+    for (const filter of filtersToUse) {
+        let lastCursor: string | null = null;
+        while (true) {
+            const graphqlQueryObj = JSON.stringify({
+                query: allGraphQLQueries.graphqlToFetchAllCandidateData,
+                variables: { lastCursor, limit: 30, filter },
+            });
+            try {
+                const response = await axiosRequest(graphqlQueryObj, apiToken);
+                if (response.data.errors) {
+                    const workspaceID = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+                    console.log('Errors in axiosRequest response when trying to fetch candidates with specific chat control:', response.data.errors, 'with workspace Id:', workspaceID);
+                    break;
+                }
+                const edges = response?.data?.data?.candidates?.edges || [];
+                if (!edges.length) break;
+                // Add unique candidates only (avoid duplicates)
+                const newCandidates = edges.map((edge: any) => edge.node);
+                newCandidates.forEach((candidate: allDataObjects.Candidate) => {
+                    if (!allCandidates.some(existingCandidate => existingCandidate.id === candidate.id)) {
+                        allCandidates.push(candidate);
+                    }
+                });
+                lastCursor = edges[edges.length - 1].cursor;
+                if (edges.length < 30) {
+                    break;  // No more pages to fetch
+                }
+            } catch (error) {
+                console.error('Error fetching candidates:', error);
+                break;
+            }
+        }
     }
 
     console.log('Number of candidates from fetched candidates:', allCandidates.length, 'for chatControl', chatControl);
     return allCandidates;
-  }
+}
+
   async fetchCandidateByCandidateId(candidateId: string, apiToken: string): Promise<allDataObjects.CandidateNode> {
     try {
       const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToManyCandidateById, variables: { filter: { id: { eq: candidateId } } } });

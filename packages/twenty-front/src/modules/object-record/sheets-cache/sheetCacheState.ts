@@ -1,4 +1,3 @@
-// src/google-sheet/states/sheetCacheState.ts
 import { atom } from 'recoil';
 
 interface SheetData {
@@ -12,6 +11,6 @@ interface SheetCache {
 }
 
 export const sheetCacheState = atom<SheetCache>({
-  key: 'sheetCacheState',
+  key: 'twenty/googleSheets/sheetCacheState', // More specific, namespaced key
   default: {},
 });

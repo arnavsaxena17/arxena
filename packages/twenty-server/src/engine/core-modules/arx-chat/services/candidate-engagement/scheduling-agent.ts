@@ -13,7 +13,7 @@ export class CandidateEngagementCronService {
   private isProcessing = false;
 
   constructor(private readonly workspaceQueryService: WorkspaceQueryService) {}
-  @Cron(CronExpression.EVERY_30_SECONDS)
+  @Cron(CronExpression.EVERY_10_SECONDS)
   async handleCron() {
     if (this.isProcessing) {
       console.log('Previous cron job still running, skipping this run');
