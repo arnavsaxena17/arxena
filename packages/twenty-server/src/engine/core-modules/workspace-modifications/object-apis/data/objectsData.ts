@@ -104,8 +104,8 @@ export const objectCreationArr = [
         "object": {
             "description": "",
             "icon": "IconClockHour3",
-            "labelPlural": "CandidateReminders",
-            "labelSingular": "CandidateReminder",
+            "labelPlural": "Candidate Reminders",
+            "labelSingular": "Candidate Reminder",
             "nameSingular": "candidateReminder",
             "namePlural": "candidateReminders"
         }
@@ -114,8 +114,8 @@ export const objectCreationArr = [
         "object": {
             "description": "",
             "icon": "IconFilterSearch",
-            "labelPlural": "CandidateEnrichments",
-            "labelSingular": "CandidateEnrichment",
+            "labelPlural": "Candidate Enrichments",
+            "labelSingular": "Candidate Enrichment",
             "nameSingular": "candidateEnrichment",
             "namePlural": "candidateEnrichments"
         }
@@ -124,8 +124,8 @@ export const objectCreationArr = [
         "object": {
             "description": "",
             "icon": "IconFilterSearch",
-            "labelPlural": "Contacts",
-            "labelSingular": "Contact",
+            "labelPlural": "Client Contacts",
+            "labelSingular": "Client Contact",
             "nameSingular": "clientContact",
             "namePlural": "clientContacts"
         }
@@ -242,8 +242,8 @@ export const objectCreationArr = [
         "object": {
             "description": "",
             "icon": "IconUsersGroup",
-            "labelPlural": "RecruiterInterviews",
-            "labelSingular": "RecruiterInterview",
+            "labelPlural": "Recruiter Interviews",
+            "labelSingular": "Recruiter Interview",
             "nameSingular": "recruiterInterview",
             "namePlural": "recruiterInterviews"
         }
@@ -252,8 +252,8 @@ export const objectCreationArr = [
         "object": {
             "description": "",
             "icon": "IconSend",
-            "labelPlural": "CVSents",
-            "labelSingular": "CVSent",
+            "labelPlural": "CV Sents",
+            "labelSingular": "CV Sent",
             "nameSingular": "cvSent",
             "namePlural": "cvSents"
         }
@@ -262,8 +262,8 @@ export const objectCreationArr = [
         "object": {
             "description": "",
             "icon": "IconMoodCheck",
-            "labelPlural": "ClientInterviews",
-            "labelSingular": "ClientInterview",
+            "labelPlural": "Client Interviews",
+            "labelSingular": "Client Interview",
             "nameSingular": "clientInterview",
             "namePlural": "clientInterviews"
         }
