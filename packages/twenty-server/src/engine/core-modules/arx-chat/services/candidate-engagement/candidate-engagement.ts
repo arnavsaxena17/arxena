@@ -205,6 +205,8 @@ export default class CandidateEngagementArx {
     }
   }
   checkIfAllInformationForSendingChatMessageIsAvailable(peopleEngagementStartChatArr: allDataObjects.PersonNode[], chatControl: string, apiToken: string) {
+    // api key, keys created for each api token for each workspace
+    // Google integration is done
     // candidateFirstName
     // recruiterName
     // recruiterJobTitle
@@ -215,8 +217,9 @@ export default class CandidateEngagementArx {
     // jobLocation
     // Attachment For JD
     // fetchQuestionsByJobId(jobId: string)
-
     // videoInterviewTemplate
     // questionsTemplate
+    // CV for the candidate
+    // data in google sheet for the candidate
   }
 }

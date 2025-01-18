@@ -67,7 +67,6 @@ export class GoogleSheetsDataController {
       });
 
       const workspaceIdsWithDataSources = new Set(dataSources.map(dataSource => dataSource.workspaceId));
-      
       const filteredWorkspaceIds = Array.from(workspaceIdsWithDataSources).filter(workspaceId => !workspacesToIgnore.includes(workspaceId));
       for (const workspaceId of filteredWorkspaceIds) {
         if (!workspaceId) {
@@ -93,7 +92,7 @@ export class GoogleSheetsDataController {
         }
       }
     } catch (error) {
-      console.error('Error updating Google Sheet to Job map:', error);
+      console.log('Error updating Google Sheet to Job map:', error);
     } finally {
       this.isProcessing = false;
     }
