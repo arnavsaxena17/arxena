@@ -1,6 +1,6 @@
 import moment from 'moment-timezone';
 import { Body, Controller, Get, InternalServerErrorException, NotFoundException, Post, Req, UseGuards } from '@nestjs/common';
-import {UpdateOneJob , CreateOneJob, createOneQuestion, graphqlToFindManyJobByArxenaSiteId, graphQltoStartChat } from '../graphql-queries';
+import {UpdateOneJob , CreateOneJob, createOneQuestion, graphqlToFindManyJobByArxenaSiteId, graphQltoStartChat, graphqlToFindManyJobByArxenaSiteIdOlderSchema, workspacesWithOlderSchema } from '../graphql-queries';
 import { FetchAndUpdateCandidatesChatsWhatsapps } from '../../arx-chat/services/candidate-engagement/update-chat';
 import { axiosRequest , axiosRequestForMetadata} from '../utils/utils';
 import * as CandidateSourcingTypes from '../types/candidate-sourcing-types';
@@ -17,6 +17,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { In } from 'typeorm';
 import { DataSourceService } from 'src/engine/metadata-modules/data-source/data-source.service';
 import { graphqlToFetchActiveJob, graphqlToFetchAllCandidateData } from '../../arx-chat/graphql-queries/graphql-queries-chatbot';
+
 
 @Controller('candidate-sourcing')
 export class CandidateSourcingController {
@@ -430,6 +431,14 @@ async updateCandidateSpreadsheet(@Req() request: any): Promise<object> {
     const apiToken = request?.headers?.authorization?.split(' ')[1]; // Assuming Bearer token
     // first create companies
     console.log('Getting all jobs');
+    const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+    let graphqlQueryObjToFetchAllCandidatesForChats = '';
+    if (workspacesWithOlderSchema.includes(workspaceId)) {
+      graphqlQueryObjToFetchAllCandidatesForChats = graphqlToFindManyJobByArxenaSiteIdOlderSchema;
+    }
+    else{
+      graphqlQueryObjToFetchAllCandidatesForChats = graphqlToFindManyJobByArxenaSiteId;
+    }
     const responseFromGetAllJobs = await axiosRequest(
       JSON.stringify({
         query: graphqlToFindManyJobByArxenaSiteId,

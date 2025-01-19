@@ -57,7 +57,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
       return people;
     } catch (error) {
       console.log('This is the error in fetchPeopleToEngageByCheckingOnlyStartChat', error);
-      console.error('An error occurred:', error);
+      console.log('An error occurred:', error);
       throw error; // Re-throw the error to be handled by the caller
     }
   }
@@ -187,16 +187,22 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
         allStartedAndStoppedChats: [{ startChat: { eq: true } }],
         startVideoInterviewChat: [ { startVideoInterviewChat: { eq: true }, stopChat: { is: "NULL" } }, { startVideoInterviewChat: { eq: true }, stopChat: { eq: false } } ],
         startMeetingSchedulingChat: [ { startMeetingSchedulingChat: { eq: true }, startVideoInterviewChat: { eq: true }, stopChat: { is: "NULL" } }, { startMeetingSchedulingChat: { eq: true }, startVideoInterviewChat: { eq: true }, stopChat: { eq: false } } ],    
-    };
-
-    const filtersToUse = filters[chatControl] || [];
-    const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-    let graphqlQueryObjToFetchAllCandidatesForChats = '';
-    if (workspacesWithOlderSchema.includes(workspaceId)) {
-      graphqlQueryObjToFetchAllCandidatesForChats = allGraphQLQueries.graphqlToFetchManyCandidatesOlderSchema;
+      };
+      const filtersToUse = filters[chatControl] || [];
+      let graphqlQueryObjToFetchAllCandidatesForChats = '';
+    try{
+      const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+      console.log("This is the workspaceId", workspaceId);
+      console.log("This is the workspacesWithOlderSchema", workspacesWithOlderSchema);
+      if (workspacesWithOlderSchema.includes(workspaceId)) {
+        graphqlQueryObjToFetchAllCandidatesForChats = allGraphQLQueries.graphqlToFetchManyCandidatesOlderSchema;
+      }
+      else{
+        graphqlQueryObjToFetchAllCandidatesForChats = allGraphQLQueries.graphqlToFetchAllCandidateData;
+      }
     }
-    else{
-      graphqlQueryObjToFetchAllCandidatesForChats = allGraphQLQueries.graphqlToFetchAllCandidateData;
+    catch(error){
+      console.log('Error in fetching candidates:', error)
     }
 
     for (const filter of filtersToUse) {

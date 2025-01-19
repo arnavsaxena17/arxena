@@ -1,3 +1,6 @@
+export const workspacesWithOlderSchema = ["20202020-1c25-4d02-bf25-6aeccf7ea419","3b8e6458-5fc1-4e63-8563-008ccddaa6db"];
+
+
 export const CreateOneJob = `
 mutation CreateOneJob($input: JobCreateInput!) {
   createJob(data: $input) {
