@@ -4,25 +4,27 @@ import { graphQltoStartChat, graphQltoStopChat, graphqlQueryToFindPeopleByPhoneN
 import { FetchAndUpdateCandidatesChatsWhatsapps } from '../../arx-chat/services/candidate-engagement/update-chat';
 import * as allDataObjects from '../../arx-chat/services/data-model-objects';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
+import { GoogleSheetsService } from '../../google-sheets/google-sheets.service';
 
 @Injectable()
 export class ChatService {
   constructor(
-    private readonly workspaceQueryService: WorkspaceQueryService
+    private readonly workspaceQueryService: WorkspaceQueryService,
+    private readonly googleSheetsService: GoogleSheetsService
+
   ) {}
 
   async processCandidateChats(apiToken: string): Promise<object> {
     try {
         // TBD
       console.log("Processing candidate chats");
-      await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).processCandidatesChatsGetStatuses(apiToken);
+      const results = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).processCandidatesChatsGetStatuses(apiToken);
       return { status: 'Success' };
     } catch (err) {
       console.error('Error in process:', err);
       return { status: 'Failed', error: err };
     }
   }
-
   async refreshChats(
     candidateIds: string[], 
     currentWorkspaceMemberId: string, 
@@ -30,8 +32,13 @@ export class ChatService {
   ): Promise<object> {
     try {
       console.log("Refreshing chats");
-      await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService)
-        .processCandidatesChatsGetStatuses(apiToken,candidateIds, currentWorkspaceMemberId);
+      
+      // Process candidate chats and get statuses
+      const results = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).processCandidatesChatsGetStatuses(apiToken, candidateIds, currentWorkspaceMemberId);
+      
+      // Update Google Sheets with the processed results
+      await this.googleSheetsService.updateGoogleSheetsWithChatData(results, apiToken);
+      
       return { status: 'Success' };
     } catch (err) {
       console.error('Error in refresh chats:', err);

@@ -94,7 +94,6 @@ const getColumnLetter = (columnIndex: number): string => {
     letter = String.fromCharCode(65 + (num % 26)) + letter;
     num = Math.floor(num / 26) - 1;
   }
-  
   return letter;
 };
 

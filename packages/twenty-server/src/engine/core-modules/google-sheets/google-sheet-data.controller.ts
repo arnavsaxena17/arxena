@@ -1,33 +1,33 @@
 import moment from 'moment-timezone';
 import { Body, Controller, Get, InternalServerErrorException, NotFoundException, Post, Req, UseGuards } from '@nestjs/common';
-import {UpdateOneJob , CreateOneJob, createOneQuestion, graphqlToFindManyJobByArxenaSiteId, graphQltoStartChat } from '../graphql-queries';
-import { FetchAndUpdateCandidatesChatsWhatsapps } from '../../arx-chat/services/candidate-engagement/update-chat';
-import { axiosRequest , axiosRequestForMetadata} from '../utils/utils';
-import * as CandidateSourcingTypes from '../types/candidate-sourcing-types';
+import {UpdateOneJob , CreateOneJob, createOneQuestion, graphqlToFindManyJobByArxenaSiteId, graphQltoStartChat } from '../candidate-sourcing/graphql-queries';
+import { FetchAndUpdateCandidatesChatsWhatsapps } from '../arx-chat/services/candidate-engagement/update-chat';
+import { axiosRequest , axiosRequestForMetadata} from '../candidate-sourcing/utils/utils';
+import * as CandidateSourcingTypes from '../candidate-sourcing/types/candidate-sourcing-types';
 import axios from 'axios';
-import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
+import { WorkspaceQueryService } from '../workspace-modifications/workspace-modifications.service';
 import { JwtAuthGuard } from 'src/engine/guards/jwt.auth.guard';
-import { PersonService } from '../services/person.service';
-import { CandidateService } from '../services/candidate.service';
-import { ChatService } from '../services/chat.service';
-import { Enrichment } from '../../workspace-modifications/object-apis/types/types';
-import { ProcessCandidatesService } from '../jobs/process-candidates.service';
-import { GoogleSheetsService } from '../../google-sheets/google-sheets.service';
+import { PersonService } from '../candidate-sourcing/services/person.service';
+import { CandidateService } from '../candidate-sourcing/services/candidate.service';
+import { ChatService } from '../candidate-sourcing/services/chat.service';
+import { Enrichment } from '../workspace-modifications/object-apis/types/types';
+import { ProcessCandidatesService } from '../candidate-sourcing/jobs/process-candidates.service';
+import { GoogleSheetsService } from './google-sheets.service';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { In } from 'typeorm';
 import { DataSourceService } from 'src/engine/metadata-modules/data-source/data-source.service';
-import { graphqlToFetchActiveJob, graphqlToFetchAllCandidateData, graphQlToUpdateCandidate, mutationToUpdateOnePerson } from '../../arx-chat/graphql-queries/graphql-queries-chatbot';
-import { CandidateSourcingController } from './candidate-sourcing.controller';
-import {transformFieldValue, transformFieldName} from '../utils/data-transformation-utility';
-const workspacesToIgnore = ["20202020-1c25-4d02-bf25-6aeccf7ea419","3b8e6458-5fc1-4e63-8563-008ccddaa6db"];
+import { graphqlToFetchActiveJob, graphqlToFetchAllCandidateData, graphQlToUpdateCandidate, mutationToUpdateOnePerson } from '../arx-chat/graphql-queries/graphql-queries-chatbot';
+import { CandidateSourcingController } from '../candidate-sourcing/controllers/candidate-sourcing.controller';
+import {transformFieldValue, transformFieldName} from '../candidate-sourcing/utils/data-transformation-utility';
+// const workspacesToIgnore = ["20202020-1c25-4d02-bf25-6aeccf7ea419","3b8e6458-5fc1-4e63-8563-008ccddaa6db"];
 
 
 @Controller('fetch-google-apps-data')
 export class GoogleSheetsDataController {
-  private googleSheetToJobMap: Map<string, string> = new Map();
+  // private googleSheetToJobMap: Map<string, string> = new Map();
   // private readonly dataSourceRepository: DataSourceService;
 
-  private isProcessing = false;
+  // private isProcessing = false;
   
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
@@ -38,72 +38,74 @@ export class GoogleSheetsDataController {
     private readonly candidateService: CandidateService,
 
   ) {
-    this.initializeGoogleSheetJobMap();
+    // this.initializeGoogleSheetJobMap();
   }
 
-  private async initializeGoogleSheetJobMap() {
-    try {
-      await this.updateGoogleSheetJobMap();
-    } catch (error) {
-      console.error('Error initializing Google Sheet to Job map:', error);
-    }
-  }
+  // private async initializeGoogleSheetJobMap() {
+  //   try {
+  //     await this.updateGoogleSheetJobMap();
+  //   } catch (error) {
+  //     console.error('Error initializing Google Sheet to Job map:', error);
+  //   }
+  // }
 
 
-  @Cron(CronExpression.EVERY_5_MINUTES)
-  private async updateGoogleSheetJobMap() {
-    if (this.isProcessing) {
-      console.log('Previous mapping update still running, skipping this run');
-      return;
-    }
+  // @Cron(CronExpression.EVERY_5_MINUTES)
+  // private async updateGoogleSheetJobMap() {
+  //   if (this.isProcessing) {
+  //     console.log('Previous mapping update still running, skipping this run');
+  //     return;
+  //   }
 
-    try {
-      this.isProcessing = true;
-      const workspaceIds = await this.workspaceQueryService.getWorkspaces();
-      const dataSources = await this.workspaceQueryService.dataSourceRepository.find({
-        where: {
-          workspaceId: In(workspaceIds),
-        },
-      });
+  //   try {
+  //     this.isProcessing = true;
+  //     const workspaceIds = await this.workspaceQueryService.getWorkspaces();
+  //     const dataSources = await this.workspaceQueryService.dataSourceRepository.find({
+  //       where: {
+  //         workspaceId: In(workspaceIds),
+  //       },
+  //     });
 
-      const workspaceIdsWithDataSources = new Set(dataSources.map(dataSource => dataSource.workspaceId));
-      const filteredWorkspaceIds = Array.from(workspaceIdsWithDataSources).filter(workspaceId => !workspacesToIgnore.includes(workspaceId));
-      for (const workspaceId of filteredWorkspaceIds) {
-        if (!workspaceId) {
-          throw new Error('Workspace ID not found');
-        }
-        const dataSourceSchema = this.workspaceQueryService.workspaceDataSourceService.getSchemaName(workspaceId);
-        const apiKeys = await this.workspaceQueryService.getApiKeys(workspaceId, dataSourceSchema);
+  //     const workspaceIdsWithDataSources = new Set(dataSources.map(dataSource => dataSource.workspaceId));
+  //     const filteredWorkspaceIds = Array.from(workspaceIdsWithDataSources).filter(workspaceId => !workspacesToIgnore.includes(workspaceId));
+  //     for (const workspaceId of filteredWorkspaceIds) {
+  //       if (!workspaceId) {
+  //         throw new Error('Workspace ID not found');
+  //       }
+  //       const dataSourceSchema = this.workspaceQueryService.workspaceDataSourceService.getSchemaName(workspaceId);
+  //       const apiKeys = await this.workspaceQueryService.getApiKeys(workspaceId, dataSourceSchema);
 
-        if (apiKeys.length > 0) {
-          const apiKeyToken = await this.workspaceQueryService.tokenService.generateApiKeyToken(
-            workspaceId, 
-            apiKeys[0].id, 
-            apiKeys[0].expiresAt
-          );
+  //       if (apiKeys.length > 0) {
+  //         const apiKeyToken = await this.workspaceQueryService.tokenService.generateApiKeyToken(
+  //           workspaceId, 
+  //           apiKeys[0].id, 
+  //           apiKeys[0].expiresAt
+  //         );
 
-          if (apiKeyToken) {
-            // Fetch all jobs for this workspace
-            const response = await this.candidateService.getJobDetails('', '', apiKeyToken.token);
-            if (response?.googleSheetId) {
-              this.googleSheetToJobMap.set(response.googleSheetId, response.id);
-            }
-          }
-        }
-      }
-    } catch (error) {
-      console.log('Error updating Google Sheet to Job map:', error);
-    } finally {
-      this.isProcessing = false;
-    }
-  }
+  //         if (apiKeyToken) {
+  //           // Fetch all jobs for this workspace
+  //           const response = await this.candidateService.getJobDetails('', '', apiKeyToken.token);
+  //           if (response?.googleSheetId) {
+  //             this.googleSheetToJobMap.set(response.googleSheetId, response.id);
+  //           }
+  //         }
+  //       }
+  //     }
+  //   } catch (error) {
+  //     console.log('Error updating Google Sheet to Job map:', error);
+  //   } finally {
+  //     this.isProcessing = false;
+  //   }
+  // }
 
-  @Get('get-data')
-  getData() {
-    console.log("Get ata has been called lets see what we get");
-    sheetToJobMap: Object.fromEntries(this.googleSheetToJobMap);
-    return { };
-  }
+  // @Get('get-data')
+  // getData() {
+  //   console.log("Get ata has been called lets see what we get");
+  //   sheetToJobMap: Object.fromEntries(this.googleSheetToJobMap);
+  //   return { };
+  // }
+
+
   @Post('enrichment-data')
   async enrichmentData(@Body() body: any) {
     console.log('Called Enrichmetn Data with Request Body:', body);
@@ -327,39 +329,39 @@ export class GoogleSheetsDataController {
   }
   
   
-  private transformData(data: { [key: string]: any }): Partial<CandidateSourcingTypes.ArxenaCandidateNode> {
-    const transformedData: Partial<CandidateSourcingTypes.ArxenaCandidateNode> = {};
+  // private transformData(data: { [key: string]: any }): Partial<CandidateSourcingTypes.ArxenaCandidateNode> {
+  //   const transformedData: Partial<CandidateSourcingTypes.ArxenaCandidateNode> = {};
     
-    // Only transform fields that exist in the input data
-    if (data.full_name) transformedData.name = data.full_name.trim();
-    if (data.unique_key_string) transformedData.uniqueStringKey = data.unique_key_string;
-    if (data.profile_url) {
-      transformedData.hiringNaukriUrl = {
-        label: data.profile_url,
-        url: data.profile_url
-      };
-    }
-    if (data.startChat) {
-      transformedData.startChat = data.startChat === 'TRUE';
-    }
-    if (data.startVideoInterviewChat) {
-      transformedData.startVideoInterviewChat = data.startVideoInterviewChat === 'TRUE';
-    }
-    if (data.startMeetingSchedulingChat) {
-      transformedData.startMeetingSchedulingChat = data.startMeetingSchedulingChat === 'TRUE';
-    }
-    if (data.stopChat) {
-      transformedData.stopChat = data.stopChat === 'TRUE';
-    }
-    if (data.display_picture) {
-      transformedData.displayPicture = {
-        label: 'Display Picture',
-        url: data.display_picture
-      };
-    }
+  //   // Only transform fields that exist in the input data
+  //   if (data.full_name) transformedData.name = data.full_name.trim();
+  //   if (data.unique_key_string) transformedData.uniqueStringKey = data.unique_key_string;
+  //   if (data.profile_url) {
+  //     transformedData.hiringNaukriUrl = {
+  //       label: data.profile_url,
+  //       url: data.profile_url
+  //     };
+  //   }
+  //   if (data.startChat) {
+  //     transformedData.startChat = data.startChat === 'TRUE';
+  //   }
+  //   if (data.startVideoInterviewChat) {
+  //     transformedData.startVideoInterviewChat = data.startVideoInterviewChat === 'TRUE';
+  //   }
+  //   if (data.startMeetingSchedulingChat) {
+  //     transformedData.startMeetingSchedulingChat = data.startMeetingSchedulingChat === 'TRUE';
+  //   }
+  //   if (data.stopChat) {
+  //     transformedData.stopChat = data.stopChat === 'TRUE';
+  //   }
+  //   if (data.display_picture) {
+  //     transformedData.displayPicture = {
+  //       label: 'Display Picture',
+  //       url: data.display_picture
+  //     };
+  //   }
   
-    return transformedData;
-  }
+  //   return transformedData;
+  // }
   
   @Post('post-data')
   async postData(@Body() data: { spreadsheetId: string, full_name: string, UniqueKey: string }) {
@@ -409,38 +411,38 @@ export class GoogleSheetsDataController {
   
 
 
-  private async transformCandidateData(data: any) {
-    const transformed = {};
+  // private async transformCandidateData(data: any) {
+  //   const transformed = {};
     
-    for (const def of CandidateSourcingTypes.columnDefinitions) {
-      if (data[def.key]) {
-        if (def.format) {
-          transformed[def.key] = def.format(data[def.key]);
-        } else {
-          transformed[def.key] = data[def.key];
-        }
-      }
-    }
+  //   for (const def of CandidateSourcingTypes.columnDefinitions) {
+  //     if (data[def.key]) {
+  //       if (def.format) {
+  //         transformed[def.key] = def.format(data[def.key]);
+  //       } else {
+  //         transformed[def.key] = data[def.key];
+  //       }
+  //     }
+  //   }
   
-    return transformed;
-  }
+  //   return transformed;
+  // }
   
   
-  private async updateCandidateData(candidateId: string, data: any, apiToken: string) {
-    const graphqlVariables = {
-      idToUpdate: candidateId,
-      input: {
-        ...data,
-      },
-    };
-    const graphqlQueryObj = JSON.stringify({
-      query: graphQltoStartChat,
-      variables: graphqlVariables,
-    });
-    const response = await axiosRequest(graphqlQueryObj, apiToken);
-    if (response.data.errors) {
-      throw new Error(`Error updating candidate: ${JSON.stringify(response.data.errors)}`);
-    }     
-    return response.data;
-  }
+  // private async updateCandidateData(candidateId: string, data: any, apiToken: string) {
+  //   const graphqlVariables = {
+  //     idToUpdate: candidateId,
+  //     input: {
+  //       ...data,
+  //     },
+  //   };
+  //   const graphqlQueryObj = JSON.stringify({
+  //     query: graphQltoStartChat,
+  //     variables: graphqlVariables,
+  //   });
+  //   const response = await axiosRequest(graphqlQueryObj, apiToken);
+  //   if (response.data.errors) {
+  //     throw new Error(`Error updating candidate: ${JSON.stringify(response.data.errors)}`);
+  //   }     
+  //   return response.data;
+  // }
 }

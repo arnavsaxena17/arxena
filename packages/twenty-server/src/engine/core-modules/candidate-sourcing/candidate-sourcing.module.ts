@@ -1,7 +1,5 @@
 // import { CandidateSourcingController } from './controllers/candidate-sourcing.controller';
 import { CandidateSourcingController } from './controllers/candidate-sourcing.controller';
-import { GoogleSheetsDataController } from './controllers/google-sheet-data.controller';
-// import { CandidateSourcingController} from './candidate-sourcing.controller';
 import { AuthModule } from '../auth/auth.module';
 import { WorkspaceModificationsModule } from '../workspace-modifications/workspace-modifications.module';
 // import { JobService } from './services/job.service';
@@ -37,8 +35,7 @@ import { GoogleSheetsService } from '../google-sheets/google-sheets.service';
     TypeOrmModule.forFeature([AppToken], 'core'),
     DataSourceModule, 
   ],
-  controllers: [CandidateSourcingController, GoogleSheetsDataController],
-  // controllers: [CandidateSourcingController],
+  controllers: [CandidateSourcingController],
   providers: [
     // JobService,
     PersonService,

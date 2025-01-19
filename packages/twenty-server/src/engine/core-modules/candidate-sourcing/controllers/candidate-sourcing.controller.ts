@@ -84,7 +84,7 @@ async updateCandidateSpreadsheet(@Req() request: any): Promise<object> {
 
       console.log("going to process chats")
       // await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).processCandidatesChatsGetStatuses( apiToken);
-      await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).processCandidatesChatsGetStatuses(apiToken);
+      const results = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).processCandidatesChatsGetStatuses(apiToken);
 
       return { status: 'Success' };
     } catch (err) {
@@ -93,6 +93,13 @@ async updateCandidateSpreadsheet(@Req() request: any): Promise<object> {
     }
   }
 
+  @Post('refresh-chat-status-by-candidates')
+  @UseGuards(JwtAuthGuard)
+  async refreshChatStatus(@Req() request: any): Promise<object> {
+    const apiToken = request.headers.authorization.split(' ')[1];
+    const { candidateIds, currentWorkspaceMemberId } = request.body;
+    return this.chatService.refreshChats(candidateIds, currentWorkspaceMemberId, apiToken);
+  }
 
 
 
@@ -266,7 +273,7 @@ async updateCandidateSpreadsheet(@Req() request: any): Promise<object> {
         { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiToken}` } },
       );
 
-      // await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).processCandidatesChatsGetStatuses(apiToken);
+      // const results = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).processCandidatesChatsGetStatuses(apiToken);
       return { status: 'Success' };
     } catch (err) {
       console.error('Error in refresh chats:', err);
@@ -391,6 +398,7 @@ async updateCandidateSpreadsheet(@Req() request: any): Promise<object> {
     console.log('arxenaJobId:', jobId);
     const data: CandidateSourcingTypes.UserProfile[] = req.body?.data;
     console.log("Data len:",data.length)
+    console.log("First candidats:",data[0])
     await new Promise(resolve => setTimeout(resolve, Math.random() * 1000));
     const timestamp = req.body?.timestamp || new Date().toISOString();
 

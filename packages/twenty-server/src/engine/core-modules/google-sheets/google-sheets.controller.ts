@@ -18,10 +18,6 @@ export class GoogleSheetsController {
     return this.sheetsService.createSpreadsheetForJob(title, twentyToken);
   }
 
-
-
-
-  
   @Get(':spreadsheetId')
   async getSheetData(
     @Headers('authorization') authHeader: string,
@@ -95,11 +91,13 @@ export class GoogleSheetsController {
         values, 
         twentyToken
       );
-  
+
+    await this.sheetsService.sortSheetByInferredSalary(auth, spreadsheetId);
+
       return result;
     } catch (error) {
-      console.error('Error updating sheet values:', error);
-      throw new HttpException(
+      console.log('Error updating sheet values:', error);
+      throw new HttpException (
         'Failed to update sheet: ' + error.message,
         HttpStatus.INTERNAL_SERVER_ERROR
       );
