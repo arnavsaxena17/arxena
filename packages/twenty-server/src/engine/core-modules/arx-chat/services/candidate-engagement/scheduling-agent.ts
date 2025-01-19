@@ -68,7 +68,7 @@ export class CandidateStatusClassificationCronService {
       const workspaceIds = await this.workspaceQueryService.getWorkspaces();
       const dataSources = await this.workspaceQueryService.dataSourceRepository.find({ where: { workspaceId: In(workspaceIds), }, });
       const workspaceIdsWithDataSources = new Set(dataSources.map(dataSource => dataSource.workspaceId));
-      const filteredWorkspaceIds = Array.from(workspaceIdsWithDataSources).filter(workspaceId => !workspacesToIgnore.includes(workspaceId));
+      const filteredWorkspaceIds = Array.from(workspaceIdsWithDataSources).filter(workspaceId => !workspacesWithOlderSchema.includes(workspaceId));
       for (const workspaceId of filteredWorkspaceIds) {
         const dataSourceSchema = this.workspaceQueryService.workspaceDataSourceService.getSchemaName(workspaceId);
         const apiKeys = await this.workspaceQueryService.getApiKeys(workspaceId, dataSourceSchema);
