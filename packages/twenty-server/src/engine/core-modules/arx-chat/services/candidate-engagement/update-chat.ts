@@ -5,9 +5,7 @@ import { axiosRequest } from '../../utils/arx-chat-agent-utils';
 import axios from 'axios';
 import { GetCurrentStageByMessages } from '../../services/llm-agents/get-current-stage-from-messages';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
-import { graphQltoStartChat } from 'src/engine/core-modules/candidate-sourcing/graphql-queries';
-import { In } from 'typeorm';
-const workspacesWithOlderSchema = ["20202020-1c25-4d02-bf25-6aeccf7ea419","3b8e6458-5fc1-4e63-8563-008ccddaa6db"];
+import { graphQltoStartChat, workspacesWithOlderSchema } from 'src/engine/core-modules/candidate-sourcing/graphql-queries';
 
 
 

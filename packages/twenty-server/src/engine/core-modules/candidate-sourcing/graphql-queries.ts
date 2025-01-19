@@ -208,6 +208,38 @@ export const FindOneJob = `
   }
   `;
 
+
+  export const graphqlToFindManyJobByArxenaSiteIdOlderSchema = `
+    query FindManyJobs($filter: JobFilterInput, $orderBy: [JobOrderByInput], $lastCursor: String, $limit: Int) {
+  jobs(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
+    edges {
+      node {
+        __typename
+        updatedAt
+        isActive
+        recruiterId
+        arxenaSiteId
+        createdAt
+        name
+        jobLocation
+        companiesId
+        position
+        id
+      }
+      cursor
+      __typename
+    }
+    pageInfo {
+      hasNextPage
+      startCursor
+      endCursor
+      __typename
+    }
+    totalCount
+    __typename
+  }
+}`
+
 export const graphqlToFindManyJobByArxenaSiteId = `
   query FindManyJobs($filter: JobFilterInput, $orderBy: [JobOrderByInput], $lastCursor: String, $limit: Int) {
   jobs(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
