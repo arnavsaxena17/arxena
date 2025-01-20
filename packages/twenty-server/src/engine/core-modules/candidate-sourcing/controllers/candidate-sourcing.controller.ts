@@ -248,7 +248,6 @@ async updateCandidateSpreadsheet(@Req() request: any): Promise<object> {
     };
     const query = graphqlToFindManyJobByArxenaSiteId;
     const data = { query, variables };
-    // console.log("Data to find job:", data);
     const response = await axiosRequest(JSON.stringify(data), apiToken);
     const job = response.data?.data?.jobs?.edges[0]?.node;
     return job;

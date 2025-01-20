@@ -160,19 +160,17 @@ export class MailerService {
   cleanFilename(filename:string) {
     // Remove Naukri_
     let name = filename.replace(/Naukri_/, '');
-    
     // Remove content within []
     name = name.replace(/\[.*?\]/, '');
-    
     // Remove content within ()
     name = name.replace(/\(.*?\)/, '');
-    
     // Remove spaces
     name = name.replace(/\s+/, '');
-    
     // Remove special characters
     name = name.replace(/[^a-zA-Z0-9.]/g, '');
+    console.log("This is the name without the special characters:", name);
     name = name.toLowerCase();
+    console.log("This is the name without the special characters and in lower case:", name);
     
     return name;
  }

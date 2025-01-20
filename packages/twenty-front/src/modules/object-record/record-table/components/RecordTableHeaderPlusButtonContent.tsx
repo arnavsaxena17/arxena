@@ -17,6 +17,7 @@ import { MenuItem } from '@/ui/navigation/menu-item/components/MenuItem';
 export const RecordTableHeaderPlusButtonContent = () => {
   
   const { objectMetadataItem } = useContext(RecordTableContext);
+  console.log("RecordTableHeaderPlusButtonContent objectMetadataItem:", objectMetadataItem);
   if (!objectMetadataItem) {
     return null;
   }

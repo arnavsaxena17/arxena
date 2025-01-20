@@ -479,7 +479,7 @@ export class ArxChatEndpoint {
       const response = await axios.post(url, { candidateIds: candidateIds }, {
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer ' + apiToken }
       });
-      console.log("This is the response:", response);
+      console.log("This is the response in create gmail draft shortlist:", response.data);
       return { status: 'Success' };
     } catch (err) {
       console.error('Error in create-gmail-draft-shortlist chats:', err);
@@ -499,7 +499,7 @@ export class ArxChatEndpoint {
       const response = await axios.post(url, { candidateIds: candidateIds }, {
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer ' + apiToken }
       });
-      console.log("This is the response:", response);
+      console.log("This is the response i create shortlist:", response);
 
       return { status: 'Success' };
     } catch (err) {
@@ -521,7 +521,7 @@ export class ArxChatEndpoint {
       const response = await axios.post(url, { candidateIds: candidateIds }, {
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer ' + apiToken }
       });
-      console.log("This is the response:", response);
+      console.log("This is the response ihortlst documentn:", response);
       return { status: 'Success' };
     } catch (err) {
       console.error('Error in refresh chats:', err);

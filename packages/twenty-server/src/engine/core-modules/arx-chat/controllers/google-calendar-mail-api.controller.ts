@@ -100,7 +100,7 @@ async getCalendarEvents(@Req() request: any): Promise<object> {
     };
     console.log("This is the email Data in plain send meial:", emailData)
     const response = await new SendEmailFunctionality().sendEmailFunction(emailData, apiToken);
-    console.log("This is the response:", response)
+    console.log("This is the response. insend meail:", response)
     return response || {}; // Return an empty object if the response is undefined
   }
 
