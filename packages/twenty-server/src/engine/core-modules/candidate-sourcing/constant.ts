@@ -885,6 +885,7 @@ export const job = {
     { type: 'text', data: 'last_name', width: 60, title: 'Last Name', id: 45 },
     { type: 'text', data: 'job_name', width: 80, title: 'Job', id: 46, readOnly: 1, editor: 0, className: 'htCenter' },
     { type: 'text', data: '_id', width: 60, title: 'ID', readOnly: 1, editor: 0, id: 47 },
+    { type: 'text', data: 'unique_key_string', width: 60, title: 'unique_key_string', readOnly: 1, editor: 0, id: 48 },
   ],
   statuses: [
     { status_name: 'Sourced', status_value: 'sourced', progress_value: 1 },

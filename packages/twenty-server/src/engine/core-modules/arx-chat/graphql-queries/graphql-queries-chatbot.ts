@@ -496,7 +496,6 @@ export const graphqlQueryToFindManyPeopleEngagedCandidatesOlderSchema = `query F
                             jobsId
                             position
                             phoneTo
-                            messageObj
                             updatedAt
                             createdAt
                             lastEngagementChatControl
@@ -588,7 +587,6 @@ export const graphqlQueryToFindManyPeopleEngagedCandidates = `query FindManyPeop
                             jobsId
                             position
                             phoneTo
-                            messageObj
                             updatedAt
                             createdAt
                             lastEngagementChatControl
