@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useRecoilValue } from 'recoil';
 
 import { useColumnDefinitionsFromFieldMetadata } from '@/object-metadata/hooks/useColumnDefinitionsFromFieldMetadata';
@@ -28,37 +28,31 @@ export const RecordIndexTableContainerEffect = ({
     setOnToggleColumnFilter,
     setOnToggleColumnSort,
   } = useRecordTable({
-    recordTableId: recordTableId ?? '', // Add fallback
+    recordTableId,
   });
 
   const { objectMetadataItem } = useObjectMetadataItem({
-    objectNameSingular: objectNameSingular ?? '', // Add fallback
+    objectNameSingular,
   });
-
-  if (!objectMetadataItem) {
-    console.warn('Object metadata item is not available');
-    return null;
-  }
-  
-  
 
   const { columnDefinitions } =
     useColumnDefinitionsFromFieldMetadata(objectMetadataItem);
 
-  console.log("These are the column definitions:", columnDefinitions)
-
-
   const { setRecordCountInCurrentView } =
     useSetRecordCountInCurrentView(viewBarId);
 
+  useEffect(() => {
+    setAvailableTableColumns(columnDefinitions);
+  }, [columnDefinitions, setAvailableTableColumns]);
 
   const selectedRowIds = useRecoilValue(selectedRowIdsSelector());
 
-  const { setContextMenuEntries, setActionBarEntries } = useRecordActionBar({
+  const { setActionBarEntries, setContextMenuEntries } = useRecordActionBar({
     objectMetadataItem,
     selectedRecordIds: selectedRowIds,
     callback: resetTableRowSelection,
   });
+
   const handleToggleColumnFilter = useHandleToggleColumnFilter({
     objectNameSingular,
     viewBarId,
@@ -69,61 +63,30 @@ export const RecordIndexTableContainerEffect = ({
     viewBarId,
   });
 
-
-
-  const onToggleColumnFilter = useCallback(
-    (fieldMetadataId: string) => handleToggleColumnFilter(fieldMetadataId),
-    [handleToggleColumnFilter]
-  );
-
-  const onToggleColumnSort = useCallback(
-    (fieldMetadataId: string) => handleToggleColumnSort(fieldMetadataId),
-    [handleToggleColumnSort]
-  );
-
-  const onEntityCountChange = useCallback(
-    (entityCount: number) => setRecordCountInCurrentView(entityCount),
-    [setRecordCountInCurrentView]
-  );
-
+  useEffect(() => {
+    setOnToggleColumnFilter(
+      () => (fieldMetadataId: string) =>
+        handleToggleColumnFilter(fieldMetadataId),
+    );
+  }, [setOnToggleColumnFilter, handleToggleColumnFilter]);
 
   useEffect(() => {
+    setOnToggleColumnSort(
+      () => (fieldMetadataId: string) =>
+        handleToggleColumnSort(fieldMetadataId),
+    );
+  }, [setOnToggleColumnSort, handleToggleColumnSort]);
 
-    if (!columnDefinitions) {
-      console.warn('Column definitions are not available');
-      return;
-    }
+  useEffect(() => {
+    setActionBarEntries?.();
+    setContextMenuEntries?.();
+  }, [setActionBarEntries, setContextMenuEntries]);
 
-    setAvailableTableColumns(columnDefinitions);
-    setOnToggleColumnFilter(() => onToggleColumnFilter);
-    setOnToggleColumnSort(() => onToggleColumnSort);
-    setOnEntityCountChange(() => onEntityCountChange);
-}, [
-    columnDefinitions,
-    setAvailableTableColumns,
-    setOnToggleColumnFilter,
-    onToggleColumnFilter,
-    setOnToggleColumnSort,
-    onToggleColumnSort,
-    setOnEntityCountChange,
-    onEntityCountChange
-]);
+  useEffect(() => {
+    setOnEntityCountChange(
+      () => (entityCount: number) => setRecordCountInCurrentView(entityCount),
+    );
+  }, [setRecordCountInCurrentView, setOnEntityCountChange]);
 
-
-
-
-const handleEntriesUpdate = useCallback(() => {
-  if (setActionBarEntries && setContextMenuEntries) {
-      setActionBarEntries();
-      setContextMenuEntries();
-  }
-}, [setActionBarEntries, setContextMenuEntries]);
-
-useEffect(() => {
-  handleEntriesUpdate();
-}, [handleEntriesUpdate, selectedRowIds]);
-
-
-  
   return <></>;
 };
