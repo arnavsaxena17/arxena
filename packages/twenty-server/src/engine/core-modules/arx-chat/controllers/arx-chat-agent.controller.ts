@@ -499,7 +499,6 @@ export class ArxChatEndpoint {
       const response = await axios.post(url, { candidateIds: candidateIds }, {
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer ' + apiToken }
       });
-      console.log("This is the response i create shortlist:", response);
 
       return { status: 'Success' };
     } catch (err) {

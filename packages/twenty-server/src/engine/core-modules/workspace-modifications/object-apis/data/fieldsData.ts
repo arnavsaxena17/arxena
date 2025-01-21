@@ -402,6 +402,15 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
     {
         "field": {
             "description": "",
+            "label": "Transcript",
+            "name": "transcript",
+            "objectMetadataId": objectsNameIdMap.phoneCall,
+            "type": "TEXT"
+        }
+    },
+    {
+        "field": {
+            "description": "",
             "label": "phoneNumber",
             "name": "phoneNumber",
             "objectMetadataId": objectsNameIdMap.textMessage,
