@@ -169,8 +169,6 @@ export const RecordTable = ({
     objectNameSingular,
   });
 
-  console.log("objectMetadataItem", objectMetadataItem);
-  console.log("objectNameSingular", objectNameSingular);
   const { upsertRecord } = useUpsertRecordV2({
     objectNameSingular,
   });
@@ -223,9 +221,7 @@ export const RecordTable = ({
   const { handleContainerMouseEnter } = useHandleContainerMouseEnter({
     recordTableId,
   });
-  console.log("visibleTableColumnsSelector():", visibleTableColumnsSelector())
   const visibleTableColumns = useRecoilValue(visibleTableColumnsSelector());
-  console.log("visibleTableColumns::", visibleTableColumns)
 
   return (
     <RecordTableScope

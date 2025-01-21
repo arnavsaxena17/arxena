@@ -26,7 +26,7 @@ import { ViewType } from '@/views/types/ViewType';
 import { useSpreadsheetRecordImportAll } from '@/object-record/spreadsheet-import/useSpreadsheetRecordImportAll';
 import { useCountChats } from '@/object-record/hooks/useCountChats';
 import { useProcessMessagesGetStatus } from '@/object-record/hooks/useProcessMessagesGetStatus';
-import { useProcessJobCandidatesRefreshData } from '@/object-record/hooks/useProcessJobCandidatesRefreshData';
+// import { useProcessJobCandidatesRefreshData } from '@/object-record/hooks/useProcessJobCandidatesRefreshData';
 import { IconAbacus, IconCactus } from '@tabler/icons-react';
 
 type RecordIndexOptionsMenu = 'fields' | 'hiddenFields';
@@ -77,7 +77,7 @@ export const RecordIndexOptionsDropdownContent = ({ viewType, recordIndexId, obj
   const visibleRecordFields = viewType === ViewType.Kanban ? visibleBoardFields : visibleTableColumns;
 
   const hiddenRecordFields = viewType === ViewType.Kanban ? hiddenBoardFields : hiddenTableColumns;
-
+  console.log("hiddenRecordFieldshiddenRecordFields", hiddenRecordFields);
   const handleReorderFields = viewType === ViewType.Kanban ? handleReorderBoardFields : handleReorderColumns;
 
   const handleChangeFieldVisibility = viewType === ViewType.Kanban ? handleBoardFieldVisibilityChange : handleColumnVisibilityChange;
@@ -85,7 +85,7 @@ export const RecordIndexOptionsDropdownContent = ({ viewType, recordIndexId, obj
   const { openRecordSpreadsheetImport } = useSpreadsheetRecordImport(objectNameSingular);
   const { countChats } = useCountChats(objectNameSingular);
   const { processMessagesGetStatus } = useProcessMessagesGetStatus(objectNameSingular);
-  const { processJobCandidatesRefreshData } = useProcessJobCandidatesRefreshData(objectNameSingular);
+  // const { processJobCandidatesRefreshData } = useProcessJobCandidatesRefreshData(objectNameSingular);
   const { openRecordSpreadsheetImportAll } = useSpreadsheetRecordImportAll(objectNameSingular);
 
   const { progress, download } = useExportTableData({
@@ -107,9 +107,9 @@ export const RecordIndexOptionsDropdownContent = ({ viewType, recordIndexId, obj
           {objectNameSingular === 'candidate' && (
             <MenuItem onClick={() => processMessagesGetStatus()} LeftIcon={IconAbacus} text="Process Chats" />
           )}
-          {objectNameSingular.endsWith('JobCandidate') && (
+          {/* {objectNameSingular.endsWith('JobCandidate') && (
             <MenuItem onClick={() => processJobCandidatesRefreshData()} LeftIcon={IconAbacus} text="Refresh Data" />
-          )}
+          )} */}
           <MenuItem onClick={() => openRecordSpreadsheetImport()} LeftIcon={IconFileImport} text="Import" />
           <MenuItem onClick={() => openRecordSpreadsheetImportAll()} LeftIcon={IconFileImport} text="Import All" />
           <MenuItem onClick={download} LeftIcon={IconFileExport} text={displayedExportProgress(progress)} />

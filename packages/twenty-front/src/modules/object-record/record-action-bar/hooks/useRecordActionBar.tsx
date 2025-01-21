@@ -31,11 +31,11 @@ import { useRightDrawer } from '@/ui/layout/right-drawer/hooks/useRightDrawer';
 import { RightDrawerPages } from '@/ui/layout/right-drawer/types/RightDrawerPages';
 import { chatPanelState } from '@/activities/chats/states/chatPanelState';
 import { useStartChats } from '@/object-record/hooks/useStartChats';
-import { useGetCurrentView } from '@/views/hooks/useGetCurrentView';
-import { useHandleViews } from '@/views/hooks/useHandleViews';
-import { ViewScope } from '@/views/scopes/ViewScope';
-import { useAvailableScopeIdOrThrow } from '@/ui/utilities/recoil-scope/scopes-internal/hooks/useAvailableScopeId';
-import { ViewScopeInternalContext } from '@/views/scopes/scope-internal-context/ViewScopeInternalContext';
+// import { useGetCurrentView } from '@/views/hooks/useGetCurrentView';
+// import { useHandleViews } from '@/views/hooks/useHandleViews';
+// import { ViewScope } from '@/views/scopes/ViewScope';
+// import { useAvailableScopeIdOrThrow } from '@/ui/utilities/recoil-scope/scopes-internal/hooks/useAvailableScopeId';
+// import { ViewScopeInternalContext } from '@/views/scopes/scope-internal-context/ViewScopeInternalContext';
 import { currentViewWithFiltersState } from '@/views/states/currentViewState';
 
 
