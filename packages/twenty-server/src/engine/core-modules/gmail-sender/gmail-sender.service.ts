@@ -34,7 +34,6 @@ export class MailerService {
   private oauth2Client;
 
   constructor() {
-    
     this.oauth2Client = new google.auth.OAuth2(
       process.env.AUTH_GOOGLE_CLIENT_ID,
       process.env.AUTH_GOOGLE_CLIENT_SECRET,
