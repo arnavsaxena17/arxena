@@ -10,6 +10,7 @@ import { env } from "process";
 import * as gmailSenderTypes from "./services/gmail-sender-objects-types";
 import axios from "axios";
 import * as mime from "mime-types";
+import * as zip from 'node-zip';
 
 // If modifying these scopes, delete token.json.
 const SCOPES = [
@@ -197,30 +198,51 @@ export class MailerService {
       "",
       gmailMessageData.message,
     ];
-  
-    // Add attachments if they exist
     if (gmailMessageData.attachments && gmailMessageData.attachments.length > 0) {
+
       for (const attachment of gmailMessageData.attachments) {
         try {
-          console.log("Attachment:", attachment)
-          const urlContent = process.env.SERVER_BASE_URL +'/files/'+attachment.path
-          console.log("urlContent::::", urlContent);
-          const fileContent = attachment.path.includes('attachment')
-            ? await axios.get(urlContent, { responseType: 'arraybuffer' }).then(res => Buffer.from(res.data))
-            : await fs.readFile(attachment.path);
-          const mimeType = mime.lookup(attachment.path) || 'application/octet-stream';
-          const cleanFilenma  = this.cleanFilename(attachment.filename);
-          emailHeaders.push(`--${boundary}`);
-          emailHeaders.push(`Content-Type: ${mimeType}`);
-          emailHeaders.push('Content-Transfer-Encoding: base64');
-          emailHeaders.push(`Content-Disposition: attachment; filename="${cleanFilenma}"`);
-          emailHeaders.push('');
-          emailHeaders.push(fileContent.toString('base64').replace(/(.{76})/g, "$1\n"));
+        const fileContent = attachment.path.includes('attachment')
+          ? await axios.get(process.env.SERVER_BASE_URL + '/files/' + attachment.path, { responseType: 'arraybuffer' }).then(res => Buffer.from(res.data))
+          : await fs.readFile(attachment.path);
+        zip.file(attachment.filename, fileContent);
         } catch (error) {
-          console.error(`Error processing attachment ${attachment.filename}:`, error);
+        console.error(`Error processing attachment ${attachment.filename}:`, error);
         }
       }
-    }
+
+      const zipContent = zip.generate({ base64: false, compression: 'DEFLATE' });
+      const zipFilename = 'Attachments.zip';
+      emailHeaders.push(`--${boundary}`);
+      emailHeaders.push('Content-Type: application/zip');
+      emailHeaders.push('Content-Transfer-Encoding: base64');
+      emailHeaders.push(`Content-Disposition: attachment; filename="${zipFilename}"`);
+      emailHeaders.push('');
+      emailHeaders.push(Buffer.from(zipContent, 'binary').toString('base64').replace(/(.{76})/g, "$1\n"));
+
+
+    // Add attachments if they exist
+    // if (gmailMessageData.attachments && gmailMessageData.attachments.length > 0) {
+    //   for (const attachment of gmailMessageData.attachments) {
+    //     try {
+    //       console.log("Attachment:", attachment)
+    //       const urlContent = process.env.SERVER_BASE_URL +'/files/'+attachment.path
+    //       console.log("urlContent::::", urlContent);
+    //       const fileContent = attachment.path.includes('attachment')
+    //         ? await axios.get(urlContent, { responseType: 'arraybuffer' }).then(res => Buffer.from(res.data))
+    //         : await fs.readFile(attachment.path);
+    //       const mimeType = mime.lookup(attachment.path) || 'application/octet-stream';
+    //       const cleanFilenma  = this.cleanFilename(attachment.filename);
+    //       emailHeaders.push(`--${boundary}`);
+    //       emailHeaders.push(`Content-Type: ${mimeType}`);
+    //       emailHeaders.push('Content-Transfer-Encoding: base64');
+    //       emailHeaders.push(`Content-Disposition: attachment; filename="${cleanFilenma}"`);
+    //       emailHeaders.push('');
+    //       emailHeaders.push(fileContent.toString('base64').replace(/(.{76})/g, "$1\n"));
+    //     } catch (error) {
+    //       console.error(`Error processing attachment ${attachment.filename}:`, error);
+    //     }
+    //   }
   
     // Add final boundary
     emailHeaders.push(`--${boundary}--`);
@@ -245,6 +267,7 @@ export class MailerService {
     return draft.data;
   }
 
+}
 
 
   async sendMailsWithAttachments(auth, gmailMessageData: gmailSenderTypes.GmailMessageData) {

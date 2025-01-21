@@ -35513,6 +35513,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"jszip@npm:2.5.0":
+  version: 2.5.0
+  resolution: "jszip@npm:2.5.0"
+  dependencies:
+    pako: "npm:~0.2.5"
+  checksum: 10c0/62105c935b12e49510952810718517864f456e3e61b4b84b14545e3a47a8d60d979403a3f5dd84b60d6aece7d91c4ca662d3208b166247ea5f5733a10e01a392
+  languageName: node
+  linkType: hard
+
 "jszip@npm:^2.6.0":
   version: 2.7.0
   resolution: "jszip@npm:2.7.0"
@@ -40287,6 +40296,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"node-zip@npm:^1.1.1":
+  version: 1.1.1
+  resolution: "node-zip@npm:1.1.1"
+  dependencies:
+    jszip: "npm:2.5.0"
+  bin:
+    nodezip: bin/nodezip
+  checksum: 10c0/f5701f263196ecf3962d6f0e84bbe9076a495ea5048a5c429ef9da12c5b742bad786e6bd7e73773c838b13cbbc6301b8dc87b6a086ae656ea4397ff1fc318d42
+  languageName: node
+  linkType: hard
+
 "nodemailer@npm:^6.9.8":
   version: 6.9.16
   resolution: "nodemailer@npm:6.9.16"
@@ -41576,7 +41596,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"pako@npm:^0.2.5, pako@npm:~0.2.0":
+"pako@npm:^0.2.5, pako@npm:~0.2.0, pako@npm:~0.2.5":
   version: 0.2.9
   resolution: "pako@npm:0.2.9"
   checksum: 10c0/79c1806ebcf325b60ae599e4d7227c2e346d7b829dc20f5cf24cef07c934079dc3a61c5b3c8278a2f7a190c4a613e343ea11e5302dbe252efd11712df4b6b041
@@ -50292,6 +50312,7 @@ __metadata:
     nest-commander: "npm:^3.12.0"
     next: "npm:14.0.4"
     next-mdx-remote: "npm:^4.4.1"
+    node-zip: "npm:^1.1.1"
     nodemailer: "npm:^6.9.8"
     nx: "npm:18.3.3"
     openai: "npm:^4.57.1"
