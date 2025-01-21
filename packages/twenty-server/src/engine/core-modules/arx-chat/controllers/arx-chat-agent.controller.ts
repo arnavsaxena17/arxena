@@ -473,7 +473,7 @@ export class ArxChatEndpoint {
       const { candidateIds } = request.body;
       const apiToken = request.headers.authorization.split(' ')[1];
       console.log("going to refresh chat counts by candidate Ids",candidateIds)
-      const url = process.env.ENV_NODE === 'production' ? 'https://arxena.com/create-gmail-draft-shortlist' : 'http://localhost:5050/create-gmail-draft-shortlist';
+      const url = process.env.ENV_NODE === 'production' ? 'https://arxena.com/create-gmail-draft-shortlist' : 'http://127.0.0.1:5050/create-gmail-draft-shortlist';
       console.log("This is the url:", url);
       console.log("going to create gmail-draft-shortlist by candidate Ids",candidateIds)
       const response = await axios.post(url, { candidateIds: candidateIds }, {
@@ -514,7 +514,7 @@ export class ArxChatEndpoint {
       const { candidateIds } = request.body;
       const apiToken = request.headers.authorization.split(' ')[1];
       console.log("This is the NODE NEV:", process.env.ENV_NODE);
-      const url = process.env.ENV_NODE === 'production' ? 'https://arxena.com/create-shortlist-document' : 'http://localhost:5050/create-shortlist-document';
+      const url = process.env.ENV_NODE === 'production' ? 'https://arxena.com/create-shortlist-document' : 'http://127.0.0.1:5050/create-shortlist-document';
       console.log("This is the url:", url);
       console.log("going to create create-shortlist-document by candidate Ids",candidateIds)
       const response = await axios.post(url, { candidateIds: candidateIds }, {

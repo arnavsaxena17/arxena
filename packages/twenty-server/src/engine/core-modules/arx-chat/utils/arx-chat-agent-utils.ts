@@ -15,25 +15,6 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 
 
-export function cleanFilename(filename) {
-  // Remove Naukri_
-  let name = filename.replace(/Naukri_/, '');
-  
-  // Remove content within []
-  name = name.replace(/\[.*?\]/, '');
-  
-  // Remove content within ()
-  name = name.replace(/\(.*?\)/, '');
-  
-  // Remove spaces
-  name = name.replace(/\s+/, '');
-  
-  // Remove special characters
-  name = name.replace(/[^a-zA-Z0-9.]/g, '');
-  
-  return name;
-}
-
 export function sortWhatsAppMessages(candidateResponseEngagementArr: allDataObjects.PersonNode[]) {
   // console.log("Number of candidates being sorted:", candidateResponseEngagementArr.length)
   // console.log("This is the people data:", JSON.stringify(peopleData));
