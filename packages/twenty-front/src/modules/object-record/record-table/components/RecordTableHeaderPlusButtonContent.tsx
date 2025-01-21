@@ -15,12 +15,7 @@ import { useDropdown } from '@/ui/layout/dropdown/hooks/useDropdown';
 import { MenuItem } from '@/ui/navigation/menu-item/components/MenuItem';
 
 export const RecordTableHeaderPlusButtonContent = () => {
-  
   const { objectMetadataItem } = useContext(RecordTableContext);
-  console.log("RecordTableHeaderPlusButtonContent objectMetadataItem:", objectMetadataItem);
-  if (!objectMetadataItem) {
-    return null;
-  }
   const { closeDropdown } = useDropdown();
 
   const { hiddenTableColumnsSelector } = useRecordTableStates();
@@ -38,18 +33,10 @@ export const RecordTableHeaderPlusButtonContent = () => {
     [handleColumnVisibilityChange, closeDropdown],
   );
 
-
   const StyledMenuItemLink = styled(Link)`
     text-decoration: none;
     width: 100%;
   `;
-  console.log("objectMetadataItem:", objectMetadataItem);
-  console.log("hiddenTableColumns:", hiddenTableColumns);
-
-
-  
-  console.log("RecordTableHeaderPlusButtonContent render:", objectMetadataItem);
-  try {
 
   return (
     <>
@@ -67,7 +54,6 @@ export const RecordTableHeaderPlusButtonContent = () => {
           </DropdownMenuItemsContainer>
           <DropdownMenuSeparator />
         </>
-
       )}
       <DropdownMenuItemsContainer>
         <StyledMenuItemLink
@@ -78,10 +64,4 @@ export const RecordTableHeaderPlusButtonContent = () => {
       </DropdownMenuItemsContainer>
     </>
   );
-
-} catch (error) {
-  console.error("Error in RecordTableHeaderPlusButtonContent:", error);
-  return null;
-}
-
-}
+};
