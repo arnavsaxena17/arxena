@@ -35531,7 +35531,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"jszip@npm:^3.0.0, jszip@npm:^3.7.1":
+"jszip@npm:^3.0.0, jszip@npm:^3.10.1, jszip@npm:^3.7.1":
   version: 3.10.1
   resolution: "jszip@npm:3.10.1"
   dependencies:
@@ -50280,6 +50280,7 @@ __metadata:
     jsdom: "npm:~22.1.0"
     json-2-csv: "npm:^5.4.0"
     jsonwebtoken: "npm:^9.0.0"
+    jszip: "npm:^3.10.1"
     langchain: "npm:^0.2.3"
     libphonenumber-js: "npm:^1.10.26"
     lodash.camelcase: "npm:^4.3.0"

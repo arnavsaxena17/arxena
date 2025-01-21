@@ -178,7 +178,7 @@ export class MailerService {
  
   async createDraftWithAttachments(auth, gmailMessageData: gmailSenderTypes.GmailMessageData) {
     const gmail = google.gmail({ version: "v1", auth });
-    console.log("Tis is the gmail message dahta:", gmailMessageData);
+    console.log("This is the gmail message data:", gmailMessageData);
     console.log("This is the process.env.EMAIL_SMTP_USER_NAME:", process.env.EMAIL_SMTP_USER_NAME);
     console.log("This is the process.env.EMAIL_SMTP_USER:", process.env.EMAIL_SMTP_USER);
 
@@ -198,52 +198,46 @@ export class MailerService {
       "",
       gmailMessageData.message,
     ];
-    if (gmailMessageData.attachments && gmailMessageData.attachments.length > 0) {
 
+    const zipInstance = new zip();
+    let hasZipContent = false;
+
+    if (gmailMessageData.attachments && gmailMessageData.attachments.length > 0) {
       for (const attachment of gmailMessageData.attachments) {
         try {
-        const fileContent = attachment.path.includes('attachment')
-          ? await axios.get(process.env.SERVER_BASE_URL + '/files/' + attachment.path, { responseType: 'arraybuffer' }).then(res => Buffer.from(res.data))
-          : await fs.readFile(attachment.path);
-        zip.file(attachment.filename, fileContent);
+          const fileContent = attachment.path.includes('attachment')
+            ? await axios.get(process.env.SERVER_BASE_URL + '/files/' + attachment.path, { responseType: 'arraybuffer' }).then(res => Buffer.from(res.data))
+            : await fs.readFile(attachment.path);
+
+          if (attachment.filename !== "Executive Shortlist.pdf") {
+            zipInstance.file(attachment.filename, fileContent);
+            hasZipContent = true;
+          } else {
+            const mimeType = mime.lookup(attachment.path) || 'application/octet-stream';
+            emailHeaders.push(`--${boundary}`);
+            emailHeaders.push(`Content-Type: ${mimeType}`);
+            emailHeaders.push('Content-Transfer-Encoding: base64');
+            emailHeaders.push(`Content-Disposition: attachment; filename="${attachment.filename}"`);
+            emailHeaders.push('');
+            emailHeaders.push(fileContent.toString('base64').replace(/(.{76})/g, "$1\n"));
+          }
         } catch (error) {
-        console.error(`Error processing attachment ${attachment.filename}:`, error);
+          console.error(`Error processing attachment ${attachment.filename}:`, error);
         }
       }
 
-      const zipContent = zip.generate({ base64: false, compression: 'DEFLATE' });
-      const zipFilename = 'Attachments.zip';
-      emailHeaders.push(`--${boundary}`);
-      emailHeaders.push('Content-Type: application/zip');
-      emailHeaders.push('Content-Transfer-Encoding: base64');
-      emailHeaders.push(`Content-Disposition: attachment; filename="${zipFilename}"`);
-      emailHeaders.push('');
-      emailHeaders.push(Buffer.from(zipContent, 'binary').toString('base64').replace(/(.{76})/g, "$1\n"));
+      if (hasZipContent) {
+        const zipContent = zipInstance.generate({ base64: false, compression: 'DEFLATE' });
+        const zipFilename = 'Attachments.zip';
+        emailHeaders.push(`--${boundary}`);
+        emailHeaders.push('Content-Type: application/zip');
+        emailHeaders.push('Content-Transfer-Encoding: base64');
+        emailHeaders.push(`Content-Disposition: attachment; filename="${zipFilename}"`);
+        emailHeaders.push('');
+        emailHeaders.push(Buffer.from(zipContent, 'binary').toString('base64').replace(/(.{76})/g, "$1\n"));
+      }
+    }
 
-
-    // Add attachments if they exist
-    // if (gmailMessageData.attachments && gmailMessageData.attachments.length > 0) {
-    //   for (const attachment of gmailMessageData.attachments) {
-    //     try {
-    //       console.log("Attachment:", attachment)
-    //       const urlContent = process.env.SERVER_BASE_URL +'/files/'+attachment.path
-    //       console.log("urlContent::::", urlContent);
-    //       const fileContent = attachment.path.includes('attachment')
-    //         ? await axios.get(urlContent, { responseType: 'arraybuffer' }).then(res => Buffer.from(res.data))
-    //         : await fs.readFile(attachment.path);
-    //       const mimeType = mime.lookup(attachment.path) || 'application/octet-stream';
-    //       const cleanFilenma  = this.cleanFilename(attachment.filename);
-    //       emailHeaders.push(`--${boundary}`);
-    //       emailHeaders.push(`Content-Type: ${mimeType}`);
-    //       emailHeaders.push('Content-Transfer-Encoding: base64');
-    //       emailHeaders.push(`Content-Disposition: attachment; filename="${cleanFilenma}"`);
-    //       emailHeaders.push('');
-    //       emailHeaders.push(fileContent.toString('base64').replace(/(.{76})/g, "$1\n"));
-    //     } catch (error) {
-    //       console.error(`Error processing attachment ${attachment.filename}:`, error);
-    //     }
-    //   }
-  
     // Add final boundary
     emailHeaders.push(`--${boundary}--`);
   
@@ -266,8 +260,6 @@ export class MailerService {
   
     return draft.data;
   }
-
-}
 
 
   async sendMailsWithAttachments(auth, gmailMessageData: gmailSenderTypes.GmailMessageData) {
