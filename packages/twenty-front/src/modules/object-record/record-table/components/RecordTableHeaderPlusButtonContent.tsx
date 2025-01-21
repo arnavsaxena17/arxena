@@ -21,6 +21,7 @@ export const RecordTableHeaderPlusButtonContent = () => {
   const { hiddenTableColumnsSelector } = useRecordTableStates();
 
   const hiddenTableColumns = useRecoilValue(hiddenTableColumnsSelector());
+  console.log("hiddenTableColumns::", hiddenTableColumns);
   const { getIcon } = useIcons();
   const { handleColumnVisibilityChange } = useTableColumns();
 
