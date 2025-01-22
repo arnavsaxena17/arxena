@@ -238,7 +238,7 @@ export class VideoInterviewController {
           name: videoFilePath.replace(`${process.cwd()}/`, ''),
           fullPath: videoAttachmentObj?.data?.uploadFile,
           type: 'Video',
-          responseId: responseId,
+          videoInterviewResponseId: responseId,
         },
       };
       console.log('This is the video. Data to Uplaod in Attachment Table::', videoDataToUploadInAttachmentResponseTable);
@@ -250,7 +250,7 @@ export class VideoInterviewController {
           name: audioFilePath.replace(`${process.cwd()}/`, ''),
           fullPath: audioAttachmentObj?.data?.uploadFile,
           type: 'Audio',
-          responseId: responseId,
+          videoInterviewResponseId: responseId,
         },
       };
       console.log('This is the audio. Data to Uplaod in Attachment Table::', audioDataToUploadInAttachmentTable);
