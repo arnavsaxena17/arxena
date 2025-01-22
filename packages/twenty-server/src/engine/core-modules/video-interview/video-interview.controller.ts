@@ -190,8 +190,8 @@ export class VideoInterviewController {
 
       // Create response mutation
       console.log('Preparing GraphQL mutation for response creation');
-      const createResponseMutation = `mutation CreateOneResponse($input: ResponseCreateInput!) {
-          createResponse(data: $input) {
+      const createResponseMutation = `mutation CreateOneVideoInterviewResponse($input: VideoInterviewResponseCreateInput!) {
+          createVideoInterviewResponse(data: $input) {
             id
             videoInterviewId
             VideoInterviewQuestionId
