@@ -14,14 +14,14 @@ const rl = readline.createInterface({
 
 export default class CandidateEngagementArx {
   constructor( private readonly workspaceQueryService: WorkspaceQueryService ) {}
-  async createAndUpdateCandidateStartChatChatMessage(chatReply: string, candidateProfileDataNodeObj: allDataObjects.PersonNode, chatControl: allDataObjects.chatControls, apiToken: string) {
+  async createAndUpdateCandidateStartChatChatMessage(chatReply: string, candidateProfileDataNodeObj: allDataObjects.PersonNode,candidateJob:allDataObjects.Jobs, chatControl: allDataObjects.chatControls, apiToken: string) {
     const recruiterProfile = allDataObjects.recruiterProfile;
     const messagesList: allDataObjects.MessageNode[] = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).fetchAllWhatsappMessages(candidateProfileDataNodeObj.candidates?.edges[0]?.node.id, apiToken);
     const sortedMessagesList = messagesList.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     let chatHistory = sortedMessagesList[0]?.messageObj || [];
     let whatsappTemplate:string
     if (chatReply === 'startChat' && candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges.length === 0) {
-      const SYSTEM_PROMPT = await new ToolsForAgents(this.workspaceQueryService).getSystemPrompt(candidateProfileDataNodeObj, chatControl,  apiToken);
+      const SYSTEM_PROMPT = await new ToolsForAgents(this.workspaceQueryService).getSystemPrompt(candidateProfileDataNodeObj,candidateJob, chatControl,  apiToken);
       chatHistory.push({ role: 'system', content: SYSTEM_PROMPT });
       chatHistory.push({ role: 'user', content: 'startChat' });
       whatsappTemplate = "application03"
@@ -53,7 +53,7 @@ export default class CandidateEngagementArx {
     await this.updateCandidateEngagementDataInTable(candidateProfileDataNodeObj, whatappUpdateMessageObj, apiToken);    
   }
 
-  async processCandidate(personNode: allDataObjects.PersonNode, chatControl: allDataObjects.chatControls, apiToken:string) {
+  async processCandidate(personNode: allDataObjects.PersonNode,candidateJob:allDataObjects.Jobs, chatControl: allDataObjects.chatControls, apiToken:string) {
     console.log("Engagement Type for the candidate ::", personNode.name.firstName + " " + personNode.name.lastName);
     try {
       const candidateNode = personNode.candidates.edges[0].node;
@@ -61,7 +61,7 @@ export default class CandidateEngagementArx {
       let mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = this.getMostRecentMessageFromMessagesList(messagesList);
       if (mostRecentMessageArr?.length > 0) {
         console.log('Taking MULTI Step Client for - Prompt Engineering type:', process.env.PROMPT_ENGINEERING_TYPE);
-        await new OpenAIArxMultiStepClient(personNode, this.workspaceQueryService ).createCompletion(mostRecentMessageArr,chatControl, apiToken);
+        await new OpenAIArxMultiStepClient(personNode, this.workspaceQueryService ).createCompletion(mostRecentMessageArr,candidateJob, chatControl, apiToken);
       }
       else{
         console.log("mostRecentMessageArr?.length is not greater than 0, hence no engagement:: (length)::", mostRecentMessageArr?.length)
@@ -125,8 +125,7 @@ export default class CandidateEngagementArx {
     return true;
   };
 
-  async startChatEngagement(peopleCandidateResponseEngagementArr: allDataObjects.PersonNode[],  chatControl: allDataObjects.chatControls,  apiToken:string) {
-
+  async startChatEngagement(peopleCandidateResponseEngagementArr: allDataObjects.PersonNode[], candidateJob:allDataObjects.Jobs, chatControl: allDataObjects.chatControls,  apiToken:string) {
     const filterCandidates = (personNode: allDataObjects.PersonNode) => {
       const candidate = personNode?.candidates?.edges[0]?.node;
       if (!candidate) return false;
@@ -142,11 +141,11 @@ export default class CandidateEngagementArx {
     console.log('Number of candidates to start chat after all filters for start chat ::', filteredCandidatesToStartEngagement?.length, "for chatControl:", chatControl);
     for (const candidateProfileDataNodeObj of filteredCandidatesToStartEngagement) {
       const chatReply = chatControl
-      await this.createAndUpdateCandidateStartChatChatMessage(chatReply, candidateProfileDataNodeObj, chatControl, apiToken);
+      await this.createAndUpdateCandidateStartChatChatMessage(chatReply, candidateProfileDataNodeObj,candidateJob,  chatControl, apiToken);
     }
   }
   
-  async engageCandidates(peopleCandidateResponseEngagementArr: allDataObjects.PersonNode[], chatControl: allDataObjects.chatControls,  apiToken:string) {
+  async engageCandidates(peopleCandidateResponseEngagementArr: allDataObjects.PersonNode[], candidateJob:allDataObjects.Jobs,chatControl: allDataObjects.chatControls,  apiToken:string) {
     console.log("These are the candidates who we want to engage ::",peopleCandidateResponseEngagementArr.length , "for chat Contro:", chatControl);
     const sortedPeopleData: allDataObjects.PersonNode[] = sortWhatsAppMessages(peopleCandidateResponseEngagementArr);
     const filteredCandidatesToEngage = sortedPeopleData.filter(person => {
@@ -155,16 +154,15 @@ export default class CandidateEngagementArx {
     });
     console.log('Number processCandidateof filtered candidates to engage after time scheduling: ', filteredCandidatesToEngage?.length, "for chatcontrol", chatControl);
     for (const personNode of filteredCandidatesToEngage) {
-      await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).updateEngagementStatusBeforeRunningEngageCandidates(personNode?.candidates?.edges[0]?.node?.id,apiToken);
-      await this.processCandidate(personNode, chatControl,  apiToken);
+      await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).updateEngagementStatusBeforeRunningEngageCandidates(personNode?.candidates?.edges[0]?.node?.id,candidateJob,apiToken);
+      await this.processCandidate(personNode, candidateJob, chatControl,  apiToken);
     }
   }
   
-  async setupVideoInterviewLinks(peopleEngagementStartVideoInterviewChatArr:allDataObjects.PersonNode[], chatControl: allDataObjects.chatControls,  apiToken:string) {
+  async setupVideoInterviewLinks(peopleEngagementStartVideoInterviewChatArr:allDataObjects.PersonNode[], candidateJob:allDataObjects.Jobs,chatControl: allDataObjects.chatControls,  apiToken:string) {
     if (chatControl === 'startVideoInterviewChat') {
       let skippedCount = 0;
       let createdCount = 0;
-
       for (const personNode of peopleEngagementStartVideoInterviewChatArr) {
         const candidateNode = personNode?.candidates?.edges[0]?.node;
         const videoInterview = candidateNode?.videoInterview?.edges[0]?.node;
@@ -187,15 +185,16 @@ export default class CandidateEngagementArx {
       console.log("Cron running and cycle started to check candidate engagement");
       const chatControls: allDataObjects.chatControls[] = ["startChat", "startVideoInterviewChat"];
       for (const chatControl of chatControls) {
-        const peopleToEngage = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).fetchSpecificPeopleToEngageBasedOnChatControl(chatControl, apiToken);
-        this.checkIfAllInformationForSendingChatMessageIsAvailable(peopleToEngage, chatControl, apiToken);
-        console.log(`Number of people to engage for ${chatControl}:`, peopleToEngage.length);
-        if (peopleToEngage.length > 0) {
+        const {people, candidateJob} = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).fetchSpecificPeopleToEngageBasedOnChatControl(chatControl, apiToken);
+        
+        this.checkIfAllInformationForSendingChatMessageIsAvailable(people, chatControl, apiToken);
+        console.log(`Number of people to engage for ${chatControl}:`, people.length);
+        if (people.length > 0) {
           if (chatControl === "startVideoInterviewChat") {
-            await this.setupVideoInterviewLinks(peopleToEngage, chatControl, apiToken);
+            await this.setupVideoInterviewLinks(people,candidateJob, chatControl, apiToken);
           }
-          await this.startChatEngagement(peopleToEngage, chatControl, apiToken);
-          await this.engageCandidates(peopleToEngage, chatControl, apiToken);
+          await this.startChatEngagement(people,candidateJob, chatControl, apiToken);
+          await this.engageCandidates(people,candidateJob, chatControl, apiToken);
         }
       }
       return;

@@ -4,7 +4,7 @@ import * as allDataObjects from '../services/data-model-objects';
 import { FacebookWhatsappChatApi } from '../services/whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
 import CandidateEngagementArx from '../services/candidate-engagement/candidate-engagement';
 import { FetchAndUpdateCandidatesChatsWhatsapps } from '../services/candidate-engagement/update-chat';
-import { WhatsappTemplateMessages } from '../services/whatsapp-api/facebook-whatsapp/template-messages';
+import { WhatsappTemplateMessages } from '../services/whatsapp-api/facebook-whatsapp/whatsapp-template-messages';
 
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 

@@ -37,6 +37,7 @@ import { useStartChats } from '@/object-record/hooks/useStartChats';
 // import { useAvailableScopeIdOrThrow } from '@/ui/utilities/recoil-scope/scopes-internal/hooks/useAvailableScopeId';
 // import { ViewScopeInternalContext } from '@/views/scopes/scope-internal-context/ViewScopeInternalContext';
 import { currentViewWithFiltersState } from '@/views/states/currentViewState';
+import { useTranscribeCall } from '@/object-record/hooks/useTranscribeCall';
 
 
 type useRecordActionBarProps = {
@@ -129,6 +130,12 @@ export const useRecordActionBar = ({ objectMetadataItem, selectedRecordIds, call
   });  
 
   const { refreshChatStatus } = useRefreshChatStatus({
+    onSuccess: () => {},
+    onError: (error: any) => {
+      console.error('Failed to refresh chat status:', error);
+    },
+  });
+  const { transcribeCall } = useTranscribeCall({
     onSuccess: () => {},
     onError: (error: any) => {
       console.error('Failed to refresh chat status:', error);
@@ -422,6 +429,21 @@ const sendVideoInterviewLinkSelectRecord = useRecoilCallback(
                         onClick: async () => {
                           try {
                             await sendVideoInterviewLinkSelectRecord(selectedRecordIds);
+                          } catch (error) {
+                            console.error('Error creating videos:', error);
+                          }
+                        },
+                      },
+                      ]
+                    : []),
+                  ...(objectMetadataItem.nameSingular === 'phoneCall'
+                    ? [
+                      {
+                        label: 'Transcribe Call ',
+                        Icon: IconVideo,
+                        onClick: async () => {
+                          try {
+                            await transcribeCall(selectedRecordIds);
                           } catch (error) {
                             console.error('Error creating videos:', error);
                           }

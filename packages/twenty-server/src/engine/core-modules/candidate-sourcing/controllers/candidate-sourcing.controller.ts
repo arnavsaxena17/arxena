@@ -282,6 +282,33 @@ async updateCandidateSpreadsheet(@Req() request: any): Promise<object> {
   }
   
   
+  @Post('transcribe-call')
+  @UseGuards(JwtAuthGuard)
+  async transcribeCall(@Req() request: any): Promise<object>  {
+    const apiToken = request.headers.authorization.split(' ')[1]; // Assuming Bearer token
+
+    try {
+      // const { candidateIds } = body;
+      const phoneCallIds= request.body.phoneCallIds;
+      const url = process.env.ENV_NODE === 'production' ? 'https://arxena.com/transcribe_call' : 'http://127.0.0.1:5050/transcribe_call';
+
+      console.log('url:', url);
+      const response = await axios.post(
+        url,
+        { phoneCallIds: phoneCallIds},
+        { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiToken}` } },
+      );
+      console.log("Received this response:", response.data)
+
+      // const results = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).processCandidatesChatsGetStatuses(apiToken);
+      return { status: 'Success' };
+    } catch (err) {
+      console.error('Error in refresh chats:', err);
+      return { status: 'Failed', error: err };
+    }
+  }
+  
+  
 
    getJobCandidatePathPosition(jobName: string): string {
     return this.toCamelCase(jobName)

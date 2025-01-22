@@ -8,6 +8,7 @@ query FindManyPhoneCalls($filter: PhoneCallFilterInput, $orderBy: [PhoneCallOrde
                 phoneNumber
                 callType
                 duration
+                transcript
                 timestamp
             }
             cursor

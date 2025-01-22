@@ -1,4 +1,4 @@
-import * as allDataObjects from '../../../services/data-model-objects';
+import * as allDataObjects from '../../data-model-objects';
 
 export class WhatsappTemplateMessages{
 
@@ -178,6 +178,34 @@ export class WhatsappTemplateMessages{
             });
             // console.log("This is the template message object created:", templateMessageObj)
     
+          break;
+          case 'startchat':
+            templateMessageObj = JSON.stringify({
+              messaging_product: 'whatsapp',
+              to: sendTemplateMessageObj.recipient,
+              type: 'template',
+              template: {
+                name: sendTemplateMessageObj.template_name,
+                language: {
+                  code: 'en',
+                },
+                components: [
+                  {
+                    type: 'body',
+                    parameters: [
+                      { type: 'text', text: sendTemplateMessageObj.candidateFirstName },
+                      { type: 'text', text: sendTemplateMessageObj.recruiterName },
+                      { type: 'text', text: sendTemplateMessageObj.recruiterJobTitle },
+                      { type: 'text', text: sendTemplateMessageObj.recruiterCompanyName },
+                      { type: 'text', text: sendTemplateMessageObj.recruiterCompanyDescription },
+                      { type: 'text', text: sendTemplateMessageObj.jobPositionName },
+                      { type: 'text', text: sendTemplateMessageObj.descriptionOneliner },
+                      { type: 'text', text: sendTemplateMessageObj.jobLocation },
+                    ],
+                  },
+                ],
+              },
+            });
           break;
      
           case 'rejection_template':

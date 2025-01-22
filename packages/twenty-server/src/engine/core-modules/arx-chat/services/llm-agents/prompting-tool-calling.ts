@@ -93,7 +93,8 @@ export class ToolsForAgents {
   //   return STAGE_SYSTEM_PROMPT;
   // }
 
-  async getQuestionsToAsk(personNode: allDataObjects.PersonNode,  apiToken:string) {
+  async getQuestionsToAsk(personNode: allDataObjects.PersonNode, candidateJob:allDataObjects.Jobs,  apiToken:string) {
+    console.log("This is the job::::%s", candidateJob);
     // const questions = ["What is your current & expected CTC?", "Who do you report to and which functions report to you?", "Are you okay to relocate to {location}?"];
     // const location = "Surat";
     // const formattedQuestions = questions.map((question, index) =>  `${index + 1}. ${question.replace("{location}", location)}`).join("\n");
@@ -102,9 +103,13 @@ export class ToolsForAgents {
     console.log("Job Name:", personNode?.candidates?.edges[0]?.node?.jobs?.name)
     // console.log('This is the job Id:', jobId);
     const { questionArray, questionIdArray } = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).fetchQuestionsByJobId(jobId,apiToken);
+
     // Hardcoded questions to ask if no questions are found in the database
     if (questionArray.length == 0) {
       return ['Are you okay to relocate to {location}?','What is your current & expected CTC?', 'What is your notice period?'];
+    }
+    if (candidateJob.name == 'Transcom') {
+      return ['What is your current CTC?', 'What is your expected CTC?', 'This is an in-office role - Are you okay to work in a rotational shift based out of Transcom\'s Kharadi office?',  'What is your notice period/ How soon can you join?'];
     }
     return questionArray;
   }
@@ -113,11 +118,7 @@ export class ToolsForAgents {
   async getVideoInterviewPrompt(personNode: allDataObjects.PersonNode) {
     const jobProfile = personNode?.candidates?.edges[0]?.node?.jobs;
     const current_job_position = jobProfile.name;
-
     const candidate_conversation_summary = "The candidate has mentioned that he/ she is interested in the role. They are okay to relocate and their salary falls in the bracket that the client is hiring for";
-    
-    
-    
     const VIDEO_INTERVIEW_PROMPT = `You will drive the conversation with candidates like a recruiter. Your goal is to guide candidates to appear for a video interview for the role of ${current_job_position}. 
     Following is the summary of the conversations that have happened with the candidate for reference :
     ${candidate_conversation_summary}
@@ -149,13 +150,14 @@ export class ToolsForAgents {
     return VIDEO_INTERVIEW_PROMPT 
   }
 
-  async getStartChatPrompt(personNode: allDataObjects.PersonNode,  apiToken:string) {
+  async getStartChatPrompt(personNode: allDataObjects.PersonNode,candidateJob:allDataObjects.Jobs,  apiToken:string) {
+    // Generic start chat prompt. Not for specific job roles
     let receiveCV
     receiveCV = `If they have shared their interest after going through the JD, ask the candidate to share a copy of their updated CV prior to the meeting.
     If they say that you can take the CV from naukri, tell them that you would require a copy for records directly from them for candidate confirmation purposes.`
     receiveCV = ``
     const jobProfile = personNode?.candidates?.edges[0]?.node?.jobs;
-    const questionArray = await this.getQuestionsToAsk(personNode,  apiToken);
+    const questionArray = await this.getQuestionsToAsk(personNode, candidateJob, apiToken);
     const formattedQuestions = '\t'+questionArray.map((question, index) => `${index + 1}. ${question}`).join('\n\t');
     const SYSTEM_PROMPT = `
     You will drive the conversation with candidates like the recruiter. Your goal is to assess the candidates for interest and fitment.
@@ -196,16 +198,68 @@ export class ToolsForAgents {
     return SYSTEM_PROMPT;
   }
 
-  async getSystemPrompt(personNode: allDataObjects.PersonNode,chatControl:allDataObjects.chatControls,  apiToken:string) {
+
+
+  async getTranscomStartChatPrompt(personNode: allDataObjects.PersonNode, candidateJob:allDataObjects.Jobs, apiToken:string) {
+    let receiveCV
+    receiveCV = `If they have shared their interest after going through the JD, ask the candidate to share a copy of their updated CV prior to the meeting.
+    If they say that you can take the CV from naukri, tell them that you would require a copy for records directly from them for candidate confirmation purposes.`
+    receiveCV = ``
+    const jobProfile = personNode?.candidates?.edges[0]?.node?.jobs;
+    const questionArray = await this.getQuestionsToAsk(personNode, candidateJob,  apiToken);
+    const formattedQuestions = '\t'+questionArray.map((question, index) => `${index + 1}. ${question}`).join('\n\t');
+    const SYSTEM_PROMPT = `
+    You will drive the conversation with candidates like the recruiter. Your goal is to assess the candidates for interest and fitment.
+    The conversations are happening on whatsapp. So be short, conversational and to the point.
+    You will start the chat with asking if they are interested and available for a call.
+    They may either ask questions or show interest or provide a time slot. Do not schedule a meeting before he is fully qualified.
+    Next, share the JD with him/ her by calling the function "share_jd". Ask them if they would be keen on the role. Ask them if they are interested in the role only after sharing the JD.
+    ${receiveCV}
+    Your screening questions for understanding their profile are :
+    ${formattedQuestions}
+    Ask these questions in any order one by one and ensure a natural continuous conversation. Call the function update_answer after the candidate answers each question.
+    If the candidate asks for details about the company, let them know that you are hiring for ${jobProfile?.company?.name}, ${jobProfile?.company?.descriptionOneliner}
+    If the candidate's answer is not specific enough, do not update the answer but ask the candidate to be more specific.
+    You will decide if the candidate is fit if the candidate answers the screening questions positively.
+    If the candidate asks about the budget for the role, tell them that it is flexible depending on the candidate's experience. Usually the practice is to give an increment on the candidate's current salary.
+    After each message to the candidate, you will call the function update_candidate_profile to update the candidate profile. The update will comprise of one of the following updates - ${commaSeparatedStatuses}.
+    If the candidate asks you for your email address to share the CV, share your email as ${recruiterProfile.email}. After sharing your email, as the candidate to share their resume on whatsapp as well.
+    After all the screening questions are answered, you will tell the candidate that you would get back to them with a few time slots shortly and setup a call.
+    After this, you will not respond to the candidate until you have the time slots. You will not respond to any queries until you have the timeslots.
+    If the candidate asks any questions that don't know the answer of, you will tell them that you will get back to them with the answer.
+    If the candidate says that the phone number is not reachable or they would like to speak but cannot connect, let them know that you will get back to them shortly.
+    Sometimes candidates will send forwards and irrelevant messages. You will have to ignore them. If the candidate unnecessarily replies and messages, you will reply with "#DONTRESPOND#" exact string without any text around it.
+    You will not indicate any updates to the candidate. You will only ask questions and share the JD. You will not provide any feedback to the candidate. The candidate might ask for feedback, you will not provide any feedback. They can ask any queries unrelated to the role or the background inside any related questions. You will not respond to any queries unrelated to the role.
+    Apart from your starting sentence, Be direct, firm and to the point. No need to be overly polite or formal. Do not sound excited.
+    Your reponses will not show enthusiasm or joy or excitement. You will be neutral and to the point.
+    Do not respond or restart the conversation if you have already told the candidate that you would get back to them.
+    If you have discussed scheduling meetings, do not start screening questions. 
+    If you have had a long discussion, do not repeat the same questions and do not respond. 
+    If you believe that you have received only the latter part of the conversation without introductions and screening questions have not been covered, then check if the candidate has been told that you will get back to them. If yes, then do not respond. 
+    If you do not wish to respond to the candidate, you will reply with "#DONTRESPOND#" exact string without any text around it.
+    If you do not have to respond, you will reply with "#DONTRESPOND#" exact string without any text around it.
+    Your first message when you receive the prompt "startChat" is: Hey ${personNode.name.firstName},
+    I'm ${recruiterProfile.first_name}, ${recruiterProfile.job_title} at ${recruiterProfile.job_company_name}, ${recruiterProfile.company_description_oneliner}.
+    I'm hiring for a ${jobProfile.name} role for ${jobProfile?.company?.descriptionOneliner} based out of ${jobProfile.jobLocation} and got your application on my job posting. I believe this might be a good fit.
+    Wanted to speak to you in regards your interests in our new role. Would you be available for a short call sometime today?
+    `;
+    console.log("Generated system prompt:", SYSTEM_PROMPT);
+    return SYSTEM_PROMPT;
+  }
+
+
+
+
+  async getSystemPrompt(personNode: allDataObjects.PersonNode,candidateJob:allDataObjects.Jobs,chatControl:allDataObjects.chatControls,  apiToken:string) {
     console.log("This is the chatControl:", chatControl)
     if (chatControl == 'startVideoInterviewChat') {
       return this.getVideoInterviewPrompt(personNode);
     }
     else if (chatControl === "startChat"){
-      return this.getStartChatPrompt(personNode,  apiToken);
+      return this.getStartChatPrompt(personNode, candidateJob, apiToken);
     }
     else{
-      return this.getStartChatPrompt(personNode,  apiToken);
+      return this.getStartChatPrompt(personNode,candidateJob,  apiToken);
     }
   }
 
@@ -260,32 +314,32 @@ export class ToolsForAgents {
     return stageWiseActions;
   }
 
-  getAvailableFunctions(apiToken: string) {
+  getAvailableFunctions(candidateJob:allDataObjects.Jobs, apiToken: string) {
     return {
       share_jd: (inputs: any, personNode: allDataObjects.PersonNode, chatControl: allDataObjects.chatControls, apiToken: string) => 
-        this.shareJD(inputs, personNode, chatControl, apiToken),
+        this.shareJD(inputs, personNode,candidateJob, chatControl, apiToken),
       
       update_candidate_profile: (inputs: any, personNode: allDataObjects.PersonNode, chatControl: allDataObjects.chatControls, apiToken: string) => 
-        this.updateCandidateProfile(inputs, personNode, apiToken),
+        this.updateCandidateProfile(inputs, personNode, candidateJob,apiToken),
       
       update_answer: (inputs: { question: string; answer: string }, personNode: allDataObjects.PersonNode, chatControl: allDataObjects.chatControls, apiToken: string) => 
-        this.updateAnswer(inputs, personNode, apiToken),
+        this.updateAnswer(inputs, personNode,candidateJob, apiToken),
       
       schedule_meeting: (inputs: any, personNode: allDataObjects.PersonNode, chatControl: allDataObjects.chatControls, apiToken: string) => 
-        this.scheduleMeeting(inputs, personNode, apiToken),
+        this.scheduleMeeting(inputs, personNode, candidateJob, apiToken),
       
       send_email: (inputs: any, personNode: allDataObjects.PersonNode, chatControl: allDataObjects.chatControls, apiToken: string) => 
-        this.sendEmail(inputs, personNode, apiToken),
+        this.sendEmail(inputs, personNode,candidateJob, apiToken),
       
       create_reminder: (inputs: { reminderDuration: string }, personNode: allDataObjects.PersonNode, chatControl: allDataObjects.chatControls, apiToken: string) => 
-        this.createReminder(inputs, personNode, apiToken),
+        this.createReminder(inputs, personNode, candidateJob, apiToken),
       
       share_interview_link: (inputs: any, personNode: allDataObjects.PersonNode, chatControl: allDataObjects.chatControls, apiToken: string) => 
-        this.shareInterviewLink(inputs, personNode, apiToken)
+        this.shareInterviewLink(inputs, personNode,candidateJob, apiToken)
     };
   }
 
-  async shareInterviewLink(inputs: any, personNode: allDataObjects.PersonNode, twenty_token: string) {
+  async shareInterviewLink(inputs: any, personNode: allDataObjects.PersonNode, candidateJob:allDataObjects.Jobs, twenty_token: string) {
     const jobProfile = personNode?.candidates?.edges[0]?.node?.jobs;
     const videoInterviewUrl = personNode?.candidates?.edges[0]?.node?.videoInterview.edges[0].node.interviewLink.url;
     console.log("job Profile:", jobProfile);
@@ -305,7 +359,7 @@ export class ToolsForAgents {
     return 'Interview link shared successfully.';
   }
 
-  async createReminder(inputs: { reminderDuration: string }, candidateProfileDataNodeObj: allDataObjects.PersonNode,  apiToken:string) {
+  async createReminder(inputs: { reminderDuration: string }, candidateProfileDataNodeObj: allDataObjects.PersonNode, candidateJob:allDataObjects.Jobs,  apiToken:string) {
     console.log('Function Called:  candidateProfileDataNodeObj:any', candidateProfileDataNodeObj);
     debugger;
     const reminderTimestamp = addHoursInDate(new Date(), Number(inputs?.reminderDuration));
@@ -331,7 +385,7 @@ export class ToolsForAgents {
     return 'Reminder created successfully.';
   }
 
-  async sendEmail(inputs: any, person: allDataObjects.PersonNode, apiToken:string) {
+  async sendEmail(inputs: any, person: allDataObjects.PersonNode, candidateJob:allDataObjects.Jobs, apiToken:string) {
     const emailData: GmailMessageData = {
       sendEmailFrom: recruiterProfile?.email,
       sendEmailTo: person?.email,
@@ -342,7 +396,7 @@ export class ToolsForAgents {
     return 'Email sent successfully.';
   }
 
-  async shareJD(inputs: any, personNode: allDataObjects.PersonNode, chatControl: allDataObjects.chatControls,  apiToken:string) {
+  async shareJD(inputs: any, personNode: allDataObjects.PersonNode, candidateJob:allDataObjects.Jobs, chatControl: allDataObjects.chatControls,  apiToken:string) {
     try {
       console.log('Function Called: shareJD');
       await new ToolCallsProcessing(this.workspaceQueryService).shareJDtoCandidate(personNode,  chatControl,  apiToken);
@@ -354,7 +408,7 @@ export class ToolsForAgents {
   }
   
 
-  async updateCandidateProfile(inputs: any, personNode: allDataObjects.PersonNode,  apiToken:string) {
+  async updateCandidateProfile(inputs: any, personNode: allDataObjects.PersonNode,  candidateJob:allDataObjects.Jobs, apiToken:string) {
     try {
       console.log('UPDATE CANDIDATE PROFILE CALLED AND UPDATING TO ::', inputs);
       console.log('Function Called:  candidateProfileDataNodeObj:any', personNode);
@@ -366,7 +420,7 @@ export class ToolsForAgents {
     }
   }
 
-  async updateAnswer(inputs: { question: string; answer: string }, candidateProfileDataNodeObj: allDataObjects.PersonNode,  apiToken:string) {
+  async updateAnswer(inputs: { question: string; answer: string }, candidateProfileDataNodeObj: allDataObjects.PersonNode, candidateJob:allDataObjects.Jobs,  apiToken:string) {
     // const newQuestionArray = this.questionArray
     const jobId = candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.jobs?.id;
 
@@ -389,7 +443,7 @@ export class ToolsForAgents {
     return 'Updated the candidate updateAnswer.';
   }
 
-  async scheduleMeeting(inputs: any, candidateProfileDataNodeObj: allDataObjects.PersonNode,  apiToken:string) {
+  async scheduleMeeting(inputs: any, candidateProfileDataNodeObj: allDataObjects.PersonNode, candidateJob:allDataObjects.Jobs,  apiToken:string) {
     console.log('Function Called:  candidateProfileDataNodeObj:any', candidateProfileDataNodeObj);
     const gptInputs = inputs?.inputs;
 
@@ -416,16 +470,16 @@ export class ToolsForAgents {
 
 
 
-  async getTools(chatControl){
+  async getTools(candidateJob:allDataObjects.Jobs, chatControl:string){
     if (chatControl === 'startChat') {
-      return this.getStartChatTools()
+      return this.getStartChatTools(candidateJob)
     }
     else if (chatControl === 'startVideoInterviewChat') {
-      return this.getVideoInterviewTools()
+      return this.getVideoInterviewTools(candidateJob)
     }
   }
 
-  async getVideoInterviewTools(){
+  async getVideoInterviewTools(candidateJob:allDataObjects.Jobs){
     let tools;
       tools = [
         {
@@ -439,7 +493,7 @@ export class ToolsForAgents {
       return tools;
   }
 
-  async getStartChatTools() {
+  async getStartChatTools(candidateJob:allDataObjects.Jobs) {
     let tools;
       tools = [
         {

@@ -778,28 +778,28 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
   console.log('Current Individual::', currentIndividual);
   let currentMessageObject = currentIndividual?.candidates?.edges[0]?.node?.whatsappMessages?.edges[currentIndividual?.candidates?.edges[0]?.node?.whatsappMessages?.edges?.length - 1]?.node?.messageObj;
 
-  const handleInvokeChatAndRunToolCalls = async (
-    phoneNumber: string | undefined,
-    latestResponseGenerated: string,
-    setLatestResponseGenerated: React.Dispatch<React.SetStateAction<string>>,
-    setListOfToolCalls: React.Dispatch<React.SetStateAction<string[]>>,
-  ) => {
-    console.log('Invoke Chat + Run tool calls');
-    debugger;
-    console.log('Retrieve Bot Message');
-    //@ts-ignore
-    botResponsePreviewRef.current.value = '';
-    const response = await axios.post(
-      // ! Update host later to app.arxena.com/app
-      process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/invoke-chat',
-      {
-        phoneNumberFrom: phoneNumber,
-      },
-    );
-    // clear textarea
-    console.log('Got response after invoking the chat', response.data);
-    setListOfToolCalls([]);
-  };
+  // const handleInvokeChatAndRunToolCalls = async (
+  //   phoneNumber: string | undefined,
+  //   latestResponseGenerated: string,
+  //   setLatestResponseGenerated: React.Dispatch<React.SetStateAction<string>>,
+  //   setListOfToolCalls: React.Dispatch<React.SetStateAction<string[]>>,
+  // ) => {
+  //   console.log('Invoke Chat + Run tool calls');
+  //   debugger;
+  //   console.log('Retrieve Bot Message');
+  //   //@ts-ignore
+  //   botResponsePreviewRef.current.value = '';
+  //   const response = await axios.post(
+  //     // ! Update host later to app.arxena.com/app
+  //     process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/invoke-chat',
+  //     {
+  //       phoneNumberFrom: phoneNumber,
+  //     },
+  //   );
+  //   // clear textarea
+  //   console.log('Got response after invoking the chat', response.data);
+  //   setListOfToolCalls([]);
+  // };
 
   const scrollToBottom = () => {
     if (chatViewRef.current) {
@@ -885,49 +885,51 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
     }
   };
 
-  const handleRetrieveBotMessage = async (
-    phoneNumber: string | undefined,
-    latestResponseGenerated: string,
-    setLatestResponseGenerated: React.Dispatch<React.SetStateAction<string>>,
-    listOfToolCalls: string[],
-    setListOfToolCalls: React.Dispatch<React.SetStateAction<string[]>>,
-    messageHistory: frontChatTypes.MessageNode[],
-    setMessageHistory: React.Dispatch<React.SetStateAction<frontChatTypes.MessageNode[]>>,
-  ) => {
-    console.log('Retrieve Bot Message');
-    const oldLength = currentMessageObject.length;
-    const response = await axios.post(
-      // ! Update host later to app.arxena.com/app
-      process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/retrieve-chat-response',
-      {
-        phoneNumberFrom: phoneNumber,
-      },
-    );
-    console.log('Got response after retrieving bot message', response.data);
-    setMessageHistory(response.data);
-    const newMessageHistory = response.data;
+  // const handleRetrieveBotMessage = async (
+  //   phoneNumber: string | undefined,
+  //   latestResponseGenerated: string,
+  //   setLatestResponseGenerated: React.Dispatch<React.SetStateAction<string>>,
+  //   listOfToolCalls: string[],
+  //   setListOfToolCalls: React.Dispatch<React.SetStateAction<string[]>>,
+  //   messageHistory: frontChatTypes.MessageNode[],
+  //   setMessageHistory: React.Dispatch<React.SetStateAction<frontChatTypes.MessageNode[]>>,
+  // ) => {
+  //   console.log('Retrieve Bot Message');
+  //   const oldLength = currentMessageObject.length;
+  //   const response = await axios.post(
+  //     // ! Update host later to app.arxena.com/app
+  //     process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/retrieve-chat-response',
+  //     {
+  //       phoneNumberFrom: phoneNumber,
+  //     },
+  //   );
+  //   console.log('Got response after retrieving bot message', response.data);
+  //   setMessageHistory(response.data);
+  //   const newMessageHistory = response.data;
 
 
-    const newLength = newMessageHistory.length;
-    const diff = newLength - oldLength;
-    const arrObjOfToolCalls = response.data.slice(newLength - diff, newLength + 1);
+  //   const newLength = newMessageHistory.length;
+  //   const diff = newLength - oldLength;
+  //   const arrObjOfToolCalls = response.data.slice(newLength - diff, newLength + 1);
 
-    let latestObjectText = arrObjOfToolCalls?.filter((obj: any) => obj?.role === 'assistant' && (obj?.content !== null || obj?.content !== '')).pop()?.content || 'Failed to retrieve bot message';
+  //   let latestObjectText = arrObjOfToolCalls?.filter((obj: any) => obj?.role === 'assistant' && (obj?.content !== null || obj?.content !== '')).pop()?.content || 'Failed to retrieve bot message';
 
-    if (arrObjOfToolCalls.filter((obj: any) => obj?.tool_calls?.length > 0)?.length > 0) {
-      latestObjectText = 'Tool Calls being called';
-    }
-    //@ts-ignore
-    botResponsePreviewRef.current.value = latestObjectText;
-    setLatestResponseGenerated(latestObjectText);
-    // console.log(arrObjOfToolCalls);
-    setListOfToolCalls(
-      arrObjOfToolCalls
-        // .filter((obj: any) => obj?.role === "tool")
-        .filter((obj: any) => obj?.tool_calls?.length > 0)
-        .map((obj: any) => obj?.tool_calls?.map((tool: any) => tool?.function?.name)),
-    );
-  };
+  //   if (arrObjOfToolCalls.filter((obj: any) => obj?.tool_calls?.length > 0)?.length > 0) {
+  //     latestObjectText = 'Tool Calls being called';
+  //   }
+  //   //@ts-ignore
+  //   botResponsePreviewRef.current.value = latestObjectText;
+  //   setLatestResponseGenerated(latestObjectText);
+  //   // console.log(arrObjOfToolCalls);
+  //   setListOfToolCalls(
+  //     arrObjOfToolCalls
+  //       // .filter((obj: any) => obj?.role === "tool")
+  //       .filter((obj: any) => obj?.tool_calls?.length > 0)
+  //       .map((obj: any) => obj?.tool_calls?.map((tool: any) => tool?.function?.name)),
+  //   );
+  // };
+  
+  
   const handleToggleAttachmentPanel = () => {
     setIsAttachmentPanelOpen(!isAttachmentPanelOpen);
   };

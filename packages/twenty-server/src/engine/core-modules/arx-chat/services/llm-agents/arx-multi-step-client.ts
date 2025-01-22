@@ -14,11 +14,11 @@ export class OpenAIArxMultiStepClient {
     this.personNode = personNode;
     this.workspaceQueryService = workspaceQueryService;
   }
-  async createCompletion(mostRecentMessageArr: allDataObjects.ChatHistoryItem[],  chatControl:allDataObjects.chatControls,apiToken:string,  isChatEnabled: boolean = true ) {
+  async createCompletion(mostRecentMessageArr: allDataObjects.ChatHistoryItem[],  candidateJob:allDataObjects.Jobs,chatControl:allDataObjects.chatControls,apiToken:string,  isChatEnabled: boolean = true ) {
     try{
       const newSystemPrompt = await new ToolsForAgents(this.workspaceQueryService).getSystemPrompt(this.personNode, chatControl,apiToken);
       const updatedMostRecentMessagesBasedOnNewSystemPrompt = await updateMostRecentMessagesBasedOnNewSystemPrompt(mostRecentMessageArr, newSystemPrompt);
-      const tools = await new ToolsForAgents(this.workspaceQueryService).getTools(chatControl);
+      const tools = await new ToolsForAgents(this.workspaceQueryService).getTools(candidateJob, chatControl);
       const responseMessage = await this.getHumanLikeResponseMessageFromLLM(updatedMostRecentMessagesBasedOnNewSystemPrompt, tools, apiToken)
       console.log('BOT_MESSAGE in at::', new Date().toString(), ' ::: ' ,JSON.stringify(responseMessage));
       if (responseMessage){
@@ -29,7 +29,7 @@ export class OpenAIArxMultiStepClient {
         return mostRecentMessageArr
       }
       if (responseMessage?.tool_calls && isChatEnabled) {
-        mostRecentMessageArr = await this.addResponseAndToolCallsToMessageHistory(responseMessage, mostRecentMessageArr,chatControl, apiToken,isChatEnabled);
+        mostRecentMessageArr = await this.addResponseAndToolCallsToMessageHistory(responseMessage,candidateJob, mostRecentMessageArr,chatControl, apiToken,isChatEnabled);
       }
       console.log("Sending message to candidate from addResponseAndToolCallsToMessageHistory_stage1", mostRecentMessageArr.slice(-1)[0].content);
       console.log("Message text in stage 1 received based on which we will decide whether to send message or not::",  mostRecentMessageArr.slice(-1)[0].content)
@@ -77,7 +77,7 @@ export class OpenAIArxMultiStepClient {
   }
 
  
-  async addResponseAndToolCallsToMessageHistory(responseMessage: ChatCompletionMessage, mostRecentMessageArr: allDataObjects.ChatHistoryItem[],  chatControl:allDataObjects.chatControls, apiToken:string,isChatEnabled: boolean = true): Promise<allDataObjects.ChatHistoryItem[]> {
+  async addResponseAndToolCallsToMessageHistory(responseMessage: ChatCompletionMessage, candidateJob:allDataObjects.Jobs,mostRecentMessageArr: allDataObjects.ChatHistoryItem[],  chatControl:allDataObjects.chatControls, apiToken:string,isChatEnabled: boolean = true): Promise<allDataObjects.ChatHistoryItem[]> {
     const toolCalls = responseMessage?.tool_calls;
     console.log("We have made a total of ", toolCalls?.length, " tool calls in current chatResponseMessage")
     const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
@@ -87,13 +87,13 @@ export class OpenAIArxMultiStepClient {
       for (const toolCall of toolCalls) {
         const functionName = toolCall.function.name;
         console.log('Function name is:', functionName);
-        const availableFunctions = new ToolsForAgents(this.workspaceQueryService).getAvailableFunctions(apiToken);
+        const availableFunctions = new ToolsForAgents(this.workspaceQueryService).getAvailableFunctions(candidateJob, apiToken);
         const functionToCall = availableFunctions[functionName];
         const functionArgs = JSON.parse(toolCall.function.arguments);
-        const responseFromFunction = await functionToCall(functionArgs, this.personNode, chatControl,apiToken);
+        const responseFromFunction = await functionToCall(functionArgs, this.personNode,candidateJob, chatControl,apiToken);
         mostRecentMessageArr.push({ tool_call_id: toolCall.id, role: 'tool', name: functionName, content: responseFromFunction });
       }
-      const tools = await new ToolsForAgents(this.workspaceQueryService).getTools(chatControl);
+      const tools = await new ToolsForAgents(this.workspaceQueryService).getTools(candidateJob,chatControl);
       // @ts-ignore
       const response = await openAIclient.chat.completions.create({ model: modelName, messages: mostRecentMessageArr, tools: tools, tool_choice: 'auto' });
       console.log('BOT_MESSAGE in runCandidateFacingAgentsAlongWithToolCalls_stage2 :', "at::", new Date().toString(), ' ::: ' ,JSON.stringify(responseMessage));
@@ -101,7 +101,7 @@ export class OpenAIArxMultiStepClient {
       let firstStageMessageArr = mostRecentMessageArr.slice(-1)
       if (response?.choices[0]?.message?.tool_calls) {
         console.log('More Tool Calls inside of the addResponseAndToolCallsToMessageHistory. RECURSION Initiated:::: processorType::');
-        mostRecentMessageArr = await this.addResponseAndToolCallsToMessageHistory(response.choices[0].message, mostRecentMessageArr, chatControl,apiToken, isChatEnabled);
+        mostRecentMessageArr = await this.addResponseAndToolCallsToMessageHistory(response.choices[0].message, candidateJob, mostRecentMessageArr, chatControl,apiToken, isChatEnabled);
       } else {
         console.log('No Tool Calls received this in sub-response of the big response::');  
       }

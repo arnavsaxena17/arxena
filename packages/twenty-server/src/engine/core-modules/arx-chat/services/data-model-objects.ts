@@ -167,6 +167,7 @@ export interface Candidate {
   id: string;
   name: string;
   startChat: boolean;
+  jobs: Jobs;
   people: {
     id: string;
     name: {

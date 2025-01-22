@@ -43,18 +43,17 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
 
 
   }
-  async fetchSpecificPeopleToEngageBasedOnChatControl(chatControl: allDataObjects.chatControls, apiToken: string): Promise<allDataObjects.PersonNode[]> {
+  async fetchSpecificPeopleToEngageBasedOnChatControl(chatControl: allDataObjects.chatControls, apiToken: string): Promise<{ people: allDataObjects.PersonNode[], candidateJob: allDataObjects.Jobs}> {
     try {
-
-
       console.log('Fetching candidates to engage');
       const candidates = await this.fetchAllCandidatesWithSpecificChatControl(chatControl, apiToken);
       console.log('Fetched', candidates?.length, ' candidates with chatControl', chatControl);
       const candidatePeopleIds = candidates?.filter(c => c?.people?.id).map(c => c?.people?.id);
+      const candidateJob = candidates?.filter(c => c?.jobs?.id).map(c => c?.jobs)[0];
       console.log('Got a total of ', candidatePeopleIds?.length, 'candidate ids', 'for chatControl', chatControl);
       const people = await this.fetchAllPeopleByCandidatePeopleIds(candidatePeopleIds, apiToken);
       console.log('Fetched', people?.length, 'people in fetch all People', 'with chatControl', chatControl);
-      return people;
+      return { people, candidateJob };
     } catch (error) {
       console.log('This is the error in fetchPeopleToEngageByCheckingOnlyStartChat', error);
       console.log('An error occurred:', error);
@@ -755,7 +754,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
     }
   }
 
-  async updateEngagementStatusBeforeRunningEngageCandidates(candidateId: string, apiToken: string) {
+  async updateEngagementStatusBeforeRunningEngageCandidates(candidateId: string,candidateJob:allDataObjects.Jobs, apiToken: string) {
     const updateCandidateObjectVariables = { idToUpdate: candidateId, input: { engagementStatus: false } };
     const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToUpdateCandidateEngagementStatus, variables: updateCandidateObjectVariables });
     try {

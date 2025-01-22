@@ -52,7 +52,7 @@ export function getContentTypeFromFileName(filename: string) {
 }
 
 
-export async function updateMostRecentMessagesBasedOnNewSystemPrompt(mostRecentMessageArr: allDataObjects.ChatHistoryItem[], newSystemPrompt: string) {
+export async function updateMostRecentMessagesBasedOnNewSystemPrompt(mostRecentMessageArr: allDataObjects.ChatHistoryItem[],newSystemPrompt: string) {
   mostRecentMessageArr[0] = { role: 'system', content: newSystemPrompt };
   return mostRecentMessageArr;
 }

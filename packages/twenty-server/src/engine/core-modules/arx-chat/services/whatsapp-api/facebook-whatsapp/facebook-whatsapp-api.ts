@@ -8,7 +8,7 @@ import { AttachmentProcessingService } from '../../../services/candidate-engagem
 import CandidateEngagementArx from '../../candidate-engagement/candidate-engagement';
 const axios = require('axios');
 import { getTranscriptionFromWhisper } from '../../../utils/arx-chat-agent-utils';
-import { WhatsappTemplateMessages } from './template-messages';
+import { WhatsappTemplateMessages } from './whatsapp-template-messages';
 import { FetchAndUpdateCandidatesChatsWhatsapps } from '../../candidate-engagement/update-chat';
 const { exec } = require('child_process');
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';

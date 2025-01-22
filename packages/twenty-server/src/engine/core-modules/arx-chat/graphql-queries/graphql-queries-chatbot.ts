@@ -638,6 +638,19 @@ export const graphqlToFetchManyCandidatesOlderSchema = `
             jobTitle
             uniqueStringKey  
           }
+          jobs {
+            id
+            name
+            jobLocation
+            jobCode
+            recruiterId
+            company{
+              name
+              id
+              domainName
+              descriptionOneliner
+            }
+          }
           startChat
           candConversationStatus
           startVideoInterviewChat
@@ -691,6 +704,21 @@ export const graphqlToFetchManyCandidatesOlderSchema = `
             uniqueStringKey  
           }
           startChat
+
+          jobs {
+            id
+            name
+            jobLocation
+            jobCode
+            recruiterId
+            company{
+              name
+              id
+              domainName
+              descriptionOneliner
+            }
+          }
+
           candConversationStatus
           startVideoInterviewChat
           videoInterview{
