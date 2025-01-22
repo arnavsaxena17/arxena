@@ -16,7 +16,7 @@ export async function axiosRequest(data: string, apiToken: string) {
     data: data,
   });
   if (response.data.errors) {
-    console.log('Error axiosRequest', response.data);
+    console.log('Error axiosRequest', response.data, "for grapqhl request of ::", data);
   }
   return response;
 }

@@ -98,7 +98,6 @@ const VideoInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) 
     fetchInterviewData();
   }, [interviewId]);
   console.log("To do the interview vidoes the process.env.REACT_APP_SERVER_BASE_URL is ", process.env.REACT_APP_SERVER_BASE_URL);
-  console.log("To do the interview vidoes the process.env.REACT_APP_SERVER_BASE_URL is ", process.env.REACT_APP_SERVER_BASE_URL);
 
 
   // Function to preload a video
@@ -146,7 +145,7 @@ const VideoInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) 
       });
     }
   }, [interviewData, introductionVideoData, questionsVideoData]);
-
+  console.log("This is the interview data::", interviewData);
   const fetchInterviewData = async () => {
     setLoading(true);
     console.log("Going to fetch interview id:", interviewId);
@@ -158,7 +157,7 @@ const VideoInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) 
         // console.log('responseObj to fetch interview data:', responseObj);
         // console.log('responseObj to fetch interview data:', responseObj);
         const fetchedData: any = response?.data?.responseFromInterviewRequests?.data;
-        console.log('fetchedData to fetch interview data:', fetchedData);
+        console.log('fetchedData to fetch interview data:', JSON.stringify(fetchedData));
         const formattedData: InterviewResponseTypes.InterviewData = {
           name: fetchedData?.videoInterviews?.edges[0]?.node?.name || '',
           id: fetchedData?.videoInterviews?.edges[0]?.node?.id || '',
@@ -181,11 +180,11 @@ const VideoInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) 
             },
           },
           videoInterview: {
-            id: fetchedData?.videoInterviews?.edges[0]?.node?.videoInterview?.id || '',
-            name: fetchedData?.videoInterviews?.edges[0]?.node?.videoInterview?.name || '',
-            introduction: fetchedData?.videoInterviews?.edges[0]?.node?.videoInterview?.introduction || '',
-            instructions: fetchedData?.videoInterviews?.edges[0]?.node?.videoInterview?.instructions || '',
-            videoInterviewQuestions: fetchedData?.videoInterviews?.edges[0]?.node?.videoInterview?.videoInterviewQuestions || '',
+            id: fetchedData?.videoInterviews?.edges[0]?.node?.videoInterviewTemplate?.id || '',
+            name: fetchedData?.videoInterviews?.edges[0]?.node?.videoInterviewTemplate?.name || '',
+            introduction: fetchedData?.videoInterviews?.edges[0]?.node?.videoInterviewTemplate?.introduction || '',
+            instructions: fetchedData?.videoInterviews?.edges[0]?.node?.videoInterviewTemplate?.instructions || '',
+            videoInterviewQuestions: fetchedData?.videoInterviews?.edges[0]?.node?.videoInterviewTemplate?.videoInterviewQuestions || '',
           },
         };
         console.log('setting formatted interview data:', formattedData);

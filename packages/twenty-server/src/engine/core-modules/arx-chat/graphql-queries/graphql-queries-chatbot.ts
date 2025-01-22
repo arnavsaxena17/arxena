@@ -435,6 +435,74 @@ export const graphQlToFetchWhatsappMessages = `query FindManyWhatsappMessages($f
 `
 
 
+export const graphqlToFetchAllCandidateData = `
+query FindManyCandidates($lastCursor: String, $limit: Int, $filter: CandidateFilterInput) {
+  candidates(after: $lastCursor, first: $limit, filter: $filter) {
+    edges {
+      cursor
+      node {
+        id
+        name
+        whatsappProvider
+        people {
+          id
+          name {
+            firstName
+            lastName
+          }
+          phone
+          email
+          jobTitle
+          uniqueStringKey  
+        }
+        startChat
+
+        jobs {
+          id
+          name
+          jobLocation
+          jobCode
+          recruiterId
+          company{
+            name
+            id
+            domainName
+            descriptionOneliner
+          }
+        }
+
+        candConversationStatus
+        startVideoInterviewChat
+        videoInterview{
+            edges{
+                node{
+                    id
+                    interviewLink{
+                      url
+                    }
+                }
+            }
+        }
+        lastEngagementChatControl
+        startVideoInterviewChat
+        startMeetingSchedulingChat
+        stopChat
+        uniqueStringKey
+        hiringNaukriUrl{
+          url
+          label
+        }
+        resdexNaukriUrl{
+          url
+          label
+        }
+      }
+    }
+  }
+}
+`
+
+
 export const graphqlQueryToFindManyPeopleEngagedCandidatesOlderSchema = `query FindManyPeople($filter: PersonFilterInput, $orderBy: [PersonOrderByInput], $lastCursor: String, ) {
     people(filter: $filter, orderBy: $orderBy,  after: $lastCursor) {
       edges {
@@ -683,72 +751,6 @@ export const graphqlToFetchManyCandidatesOlderSchema = `
   }
 `
 
-  export const graphqlToFetchAllCandidateData = `
-  query FindManyCandidates($lastCursor: String, $limit: Int, $filter: CandidateFilterInput) {
-    candidates(after: $lastCursor, first: $limit, filter: $filter) {
-      edges {
-        cursor
-        node {
-          id
-          name
-          whatsappProvider
-          people {
-            id
-            name {
-              firstName
-              lastName
-            }
-            phone
-            email
-            jobTitle
-            uniqueStringKey  
-          }
-          startChat
-
-          jobs {
-            id
-            name
-            jobLocation
-            jobCode
-            recruiterId
-            company{
-              name
-              id
-              domainName
-              descriptionOneliner
-            }
-          }
-
-          candConversationStatus
-          startVideoInterviewChat
-          videoInterview{
-              edges{
-                  node{
-                      id
-                      interviewLink{
-                        url
-                      }
-                  }
-              }
-          }
-          lastEngagementChatControl
-          startVideoInterviewChat
-          startMeetingSchedulingChat
-          stopChat
-          uniqueStringKey
-          hiringNaukriUrl{
-            url
-            label
-          }
-          resdexNaukriUrl{
-            url
-            label
-          }
-        }
-      }
-    }
-  }
-`
 
 export const graphqlQueryToFetchWorksPaceMembers = `query FindManyWorkspaceMembers($filter: WorkspaceMemberFilterInput, $orderBy: [WorkspaceMemberOrderByInput], $lastCursor: String, $limit: Int) {
         workspaceMembers(

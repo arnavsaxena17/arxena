@@ -92,7 +92,6 @@ export class AppModule {
 
   configure(consumer: MiddlewareConsumer) {
     consumer.apply(GraphQLHydrateRequestFromTokenMiddleware).forRoutes({ path: 'graphql', method: RequestMethod.ALL });
-
     consumer.apply(GraphQLHydrateRequestFromTokenMiddleware).forRoutes({ path: 'metadata', method: RequestMethod.ALL });
   }
 }

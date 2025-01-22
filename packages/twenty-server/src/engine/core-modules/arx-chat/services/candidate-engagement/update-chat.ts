@@ -368,6 +368,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
       console.log('Error in fetching interviews:: ', error);
     }
   }
+  
   async createVideoInterviewForCandidate(candidateId: string, apiToken: string) {
     try {
       const candidateObj: allDataObjects.CandidateNode = await this.fetchCandidateByCandidateId(candidateId, apiToken);
