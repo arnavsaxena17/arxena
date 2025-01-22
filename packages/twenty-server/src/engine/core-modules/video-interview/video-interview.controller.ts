@@ -194,7 +194,7 @@ export class VideoInterviewController {
           createVideoInterviewResponse(data: $input) {
             id
             videoInterviewId
-            VideoInterviewQuestionId
+            videoInterviewQuestionId
             transcript
             completedResponse
             createdAt
@@ -204,7 +204,7 @@ export class VideoInterviewController {
       console.log("req.body?.responseDatareq.body?.responseData:", req.body?.responseData)
       console.log("req.body?.responseDatareq.body?.req.body?.responseData:", req.body)
       console.log("This is the responseData:", interviewData?.name)
-      console.log("This is the responseData:", req.body?.responseData?.VideoInterviewQuestionId)
+      console.log("This is the responseData in questionsId:", req.body?.responseData?.videoInterviewQuestionId)
       console.log("This is the timeLimitAdherence:", req.body?.responseData?.timeLimitAdherence)
 
       const createResponseVariables = {
@@ -217,7 +217,7 @@ export class VideoInterviewController {
           candidateId:interviewData.candidate.id,
           jobId: interviewData.candidate.jobs.id,
           personId: interviewData.candidate.people.id,
-          timeLimitAdherence: req.body.responseData?.timeLimitAdherence,
+          timeLimitAdherence: req.body.responseData?.timeLimitAdherence || true,
         },
       };
       const graphqlQueryObjForCreationOfResponse = JSON.stringify({
