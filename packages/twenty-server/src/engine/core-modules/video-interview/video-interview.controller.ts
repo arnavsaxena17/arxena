@@ -124,7 +124,7 @@ export class VideoInterviewController {
       const currentQuestionIndex = JSON.parse(req?.body?.currentQuestionIndex);
       console.log("REceived interviewData:", interviewData)
       console.log("REceived currentQuestionIndex:", currentQuestionIndex)
-      const questionId = interviewData.videoInterviewTemplate.videoInterviewQuestions.edges[currentQuestionIndex].node.id;
+      const questionId = interviewData.videoInterview.videoInterviewQuestions.edges[currentQuestionIndex].node.id;
       if (!files.audio || !files.video) {
         throw new BadRequestException('Both video and audio files are required');
 
