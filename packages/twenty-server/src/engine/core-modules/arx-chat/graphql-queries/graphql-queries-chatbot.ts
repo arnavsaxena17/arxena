@@ -644,7 +644,7 @@ export const graphqlToFetchManyCandidatesOlderSchema = `
             jobLocation
             jobCode
             recruiterId
-            company{
+            companies{
               name
               id
               domainName

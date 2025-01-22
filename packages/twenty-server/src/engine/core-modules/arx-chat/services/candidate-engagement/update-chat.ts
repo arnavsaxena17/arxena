@@ -194,6 +194,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
       console.log("This is the workspaceId", workspaceId);
       console.log("This is the workspacesWithOlderSchema", workspacesWithOlderSchema);
       if (workspacesWithOlderSchema.includes(workspaceId)) {
+        console.log("Using older scheme for fetching candidates for worksapce id::", workspaceId);
         graphqlQueryObjToFetchAllCandidatesForChats = allGraphQLQueries.graphqlToFetchManyCandidatesOlderSchema;
       }
       else{
