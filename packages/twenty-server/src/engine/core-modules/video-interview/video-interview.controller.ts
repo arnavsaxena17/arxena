@@ -229,9 +229,9 @@ export class VideoInterviewController {
       const responseResult = (await axiosRequest(graphqlQueryObjForCreationOfResponse,apiToken)).data;
       console.log('Response creation result:', JSON.stringify(responseResult, null, 2));
       console.log("ResponseResult data:", responseResult.data);
-      console.log("ResponseResult ID:", responseResult.data.createResponse.id);
+      console.log("ResponseResult ID:", responseResult?.data?.createVideoInterviewResponse.id);
 
-      const responseId = responseResult.data.createResponse.id;
+      const responseId = responseResult.data.createVideoInterviewResponse.id;
       const videoDataToUploadInAttachmentResponseTable = {
         input: {
           authorId: interviewData.candidate.jobs.recruiterId,
@@ -326,7 +326,7 @@ export class VideoInterviewController {
 
       console.log('Preparing response');
       const response = {
-        response: responseResult?.createResponse,
+        response: responseResult?.createVideoInterviewResponse,
         status: statusResult?.updateVideoInterview,
         videoFile: videoFile?.filename,
         audioFile: audioFile?.filename,
