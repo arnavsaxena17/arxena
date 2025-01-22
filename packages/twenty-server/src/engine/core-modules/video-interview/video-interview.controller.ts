@@ -190,8 +190,7 @@ export class VideoInterviewController {
 
       // Create response mutation
       console.log('Preparing GraphQL mutation for response creation');
-      const createResponseMutation = `
-        mutation CreateOneResponse($input: ResponseCreateInput!) {
+      const createResponseMutation = `mutation CreateOneResponse($input: ResponseCreateInput!) {
           createResponse(data: $input) {
             id
             videoInterviewId
@@ -200,12 +199,13 @@ export class VideoInterviewController {
             completedResponse
             createdAt
           }
-        }
-      `;
+        }`;
 
+      console.log("req.body?.responseDatareq.body?.responseData:", req.body?.responseData)
+      console.log("req.body?.responseDatareq.body?.req.body?.responseData:", req.body)
       console.log("This is the responseData:", interviewData?.name)
-      console.log("This is the responseData:", req.body.responseData?.VideoInterviewQuestionId)
-      console.log("This is the timeLimitAdherence:", req.body.responseData?.timeLimitAdherence)
+      console.log("This is the responseData:", req.body?.responseData?.VideoInterviewQuestionId)
+      console.log("This is the timeLimitAdherence:", req.body?.responseData?.timeLimitAdherence)
 
       const createResponseVariables = {
         input: {
