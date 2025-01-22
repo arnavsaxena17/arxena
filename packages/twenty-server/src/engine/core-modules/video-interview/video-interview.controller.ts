@@ -228,12 +228,10 @@ export class VideoInterviewController {
       console.log('Sending GraphQL mutation for response creation::', graphqlQueryObjForCreationOfResponse);
       const responseResult = (await axiosRequest(graphqlQueryObjForCreationOfResponse,apiToken)).data;
       console.log('Response creation result:', JSON.stringify(responseResult, null, 2));
-      console.log("ResponseResult data:", responseResult.data)
-      console.log("ResponseResult ID:", responseResult.data.createResponse.id)
+      console.log("ResponseResult data:", responseResult.data);
+      console.log("ResponseResult ID:", responseResult.data.createResponse.id);
 
       const responseId = responseResult.data.createResponse.id;
-
-
       const videoDataToUploadInAttachmentResponseTable = {
         input: {
           authorId: interviewData.candidate.jobs.recruiterId,
@@ -245,8 +243,7 @@ export class VideoInterviewController {
       };
       console.log('This is the video. Data to Uplaod in Attachment Table::', videoDataToUploadInAttachmentResponseTable);
       const videoAttachmentResponseUpload = await new AttachmentProcessingService().createOneAttachmentFromFilePath(videoDataToUploadInAttachmentResponseTable,apiToken);
-      console.log("videoAttachmentResponseUpload:"  , videoAttachmentResponseUpload)
-
+      console.log("videoAttachmentResponseUpload:"  , videoAttachmentResponseUpload);
       const audioDataToUploadInAttachmentResponseTable = {
         input: {
           authorId: interviewData.candidate.jobs.recruiterId,
@@ -258,7 +255,7 @@ export class VideoInterviewController {
       };
       console.log('This is the audio. Data to Uplaod in Attachment Table::', audioDataToUploadInAttachmentTable);
       const audioAttachmentResponseUpload = await new AttachmentProcessingService().createOneAttachmentFromFilePath(audioDataToUploadInAttachmentResponseTable,apiToken);
-      console.log("audioAttachmentResponseUpload:"  , audioAttachmentResponseUpload)
+      console.log("audioAttachmentResponseUpload:"  , audioAttachmentResponseUpload);
 
 
 
