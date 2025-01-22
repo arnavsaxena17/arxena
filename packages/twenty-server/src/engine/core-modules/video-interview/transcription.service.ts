@@ -21,19 +21,19 @@ export class TranscriptionService {
       });
 
       const transcript = resp.text;
-
+      console.log("This is the transcript:", transcript);
       // Content moderation check
-      const response = await this.openai.moderations.create({
-        input: transcript,
-      });
+      // const response = await this.openai.moderations.create({
+      //   input: transcript,
+      // });
 
-      if (response.results[0].flagged) {
-        throw new BadRequestException('Inappropriate content detected. Please try again.');
-      }
+      // if (response.results[0].flagged) {
+      //   throw new BadRequestException('Inappropriate content detected. Please try again.');
+      // }
 
       return transcript;
     } catch (error) {
-      console.error('Transcription error', error);
+      console.log('Transcription error', error);
       throw new BadRequestException('Error during transcription');
     }
   }
