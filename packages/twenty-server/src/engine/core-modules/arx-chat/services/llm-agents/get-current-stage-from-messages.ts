@@ -5,6 +5,7 @@ import { zodResponseFormat } from 'openai/helpers/zod';
 import { ToolsForAgents } from './prompting-tool-calling';
 import { axiosRequest } from '../../utils/arx-chat-agent-utils';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
+import { Tranformations } from '../candidate-engagement/transformations';
 const axios = require('axios');
 
 export class GetCurrentStageByMessages {
@@ -32,7 +33,7 @@ export class GetCurrentStageByMessages {
     // console.log("Stage Prompt is:::", stagePrompt);
     const localStagePrompt = await this.getChatPromptFromWorksPageMember(currentWorkspaceMemberId, apiToken);
     console.log('Local Stage Prompt is:::', localStagePrompt);
-    let mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = new CandidateEngagementArx(this.workspaceQueryService).getMostRecentMessageFromMessagesList(messages);
+    let mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = new Tranformations().getMostRecentMessageFromMessagesList(messages);
     function generateHumanReadableConversation(messages: allDataObjects.ChatHistoryItem[]): string {
       return messages
         .slice(2)

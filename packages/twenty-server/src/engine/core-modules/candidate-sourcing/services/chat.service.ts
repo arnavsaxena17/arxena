@@ -5,6 +5,7 @@ import { FetchAndUpdateCandidatesChatsWhatsapps } from '../../arx-chat/services/
 import * as allDataObjects from '../../arx-chat/services/data-model-objects';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { GoogleSheetsService } from '../../google-sheets/google-sheets.service';
+import { FilterCandidates } from '../../arx-chat/services/candidate-engagement/filter-candidates';
 
 @Injectable()
 export class ChatService {
@@ -85,7 +86,7 @@ export class ChatService {
   async fetchCandidateByPhoneNumberAndStartChat(phoneNumber: string, apiToken: string): Promise<any> {
     console.log('Fetching candidate by phone number:', phoneNumber);
     
-    const personObj: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps(
+    const personObj: allDataObjects.PersonNode = await new FilterCandidates(
       this.workspaceQueryService
     ).getPersonDetailsByPhoneNumber(phoneNumber, apiToken);
 

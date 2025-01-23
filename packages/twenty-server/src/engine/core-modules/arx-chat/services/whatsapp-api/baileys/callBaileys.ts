@@ -4,6 +4,7 @@ import { FetchAndUpdateCandidatesChatsWhatsapps } from '../../candidate-engageme
 import * as allDataObjects from '../../data-model-objects';
 import axios from 'axios';
 import { FilterCandidates } from '../../candidate-engagement/filter-candidates';
+import { Tranformations } from '../../candidate-engagement/transformations';
 
 const FormData = require('form-data');
 const fs = require('fs');
@@ -31,10 +32,10 @@ async sendWhatsappMessageVIABaileysAPI(whatappUpdateMessageObj: allDataObjects.c
     const response = await this.sendWhatsappTextMessageViaBaileys(sendTextMessageObj, personNode,apiToken);
     console.log(response);
     // console.log('99493:: response is here', response);
-    const whatappUpdateMessageObjAfterWAMidUpdate = await new CandidateEngagementArx(this.workspaceQueryService).updateChatHistoryObjCreateWhatsappMessageObj( response?.messageId || 'placeholdermessageid', personNode, mostRecentMessageArr,chatControl, apiToken);
+    const whatappUpdateMessageObjAfterWAMidUpdate = await new Tranformations().updateChatHistoryObjCreateWhatsappMessageObj( response?.messageId || 'placeholdermessageid', personNode, mostRecentMessageArr,chatControl, apiToken);
     let candidateProfileObj = whatappUpdateMessageObj.messageType !== 'botMessage' ? await new FilterCandidates(this.workspaceQueryService).getCandidateInformation(whatappUpdateMessageObj,  apiToken) : whatappUpdateMessageObj.candidateProfile;
 
-    await new CandidateEngagementArx(this.workspaceQueryService).updateCandidateEngagementDataInTable(personNode, whatappUpdateMessageObjAfterWAMidUpdate,   apiToken, true);
+    await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).updateCandidateEngagementDataInTable(personNode, whatappUpdateMessageObjAfterWAMidUpdate,   apiToken, true);
     const updateCandidateStatusObj = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).updateCandidateEngagementStatus(candidateProfileObj, whatappUpdateMessageObj,  apiToken);
   } else {
     console.log('This is send whatsapp message via bailsyes api and is a candidate message');

@@ -5,8 +5,9 @@ import { FacebookWhatsappChatApi } from '../services/whatsapp-api/facebook-whats
 import CandidateEngagementArx from '../services/candidate-engagement/candidate-engagement';
 import { FetchAndUpdateCandidatesChatsWhatsapps } from '../services/candidate-engagement/update-chat';
 import { WhatsappTemplateMessages } from '../services/whatsapp-api/facebook-whatsapp/whatsapp-template-messages';
-
+import {Tranformations} from '../services/candidate-engagement/transformations';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
+import { FilterCandidates } from '../services/candidate-engagement/filter-candidates';
 
 @Controller('whatsapp-test')
 export class WhatsappTestAPI {
@@ -22,7 +23,7 @@ export class WhatsappTestAPI {
     const requestBody = request.body as any;
     const apiToken = request.headers.authorization.split(' ')[1];
 
-    const personObj: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).getPersonDetailsByPhoneNumber(requestBody.phoneNumberTo,apiToken);
+    const personObj: allDataObjects.PersonNode = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPhoneNumber(requestBody.phoneNumberTo,apiToken);
     console.log("This is the process.env.SERVER_BASE_URL:",process.env.SERVER_BASE_URL)
     const sendTemplateMessageObj = {
       recipient: personObj.phone.replace('+', ''),
@@ -50,7 +51,7 @@ export class WhatsappTestAPI {
     console.log("This is the mostRecentMessageArr:", mostRecentMessageArr)
     const chatControl = personObj?.candidates?.edges[0].node.lastEngagementChatControl;
     mostRecentMessageArr.push({ role: 'user', content: whatsappTemplateMessageSent });
-    const whatappUpdateMessageObj:allDataObjects.candidateChatMessageType = await new CandidateEngagementArx(this.workspaceQueryService).updateChatHistoryObjCreateWhatsappMessageObj( 'success', personObj, mostRecentMessageArr, chatControl,apiToken);
+    const whatappUpdateMessageObj:allDataObjects.candidateChatMessageType = await new Tranformations().updateChatHistoryObjCreateWhatsappMessageObj( 'success', personObj, mostRecentMessageArr, chatControl,apiToken);
     await new CandidateEngagementArx(this.workspaceQueryService).updateCandidateEngagementDataInTable(personObj, whatappUpdateMessageObj,apiToken);
     console.log("This is ther esponse:", response.data)
     return { status: 'success' };

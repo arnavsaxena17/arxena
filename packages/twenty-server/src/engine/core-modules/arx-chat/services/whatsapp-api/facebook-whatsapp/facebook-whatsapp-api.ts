@@ -12,6 +12,8 @@ import { WhatsappTemplateMessages } from './whatsapp-template-messages';
 import { FetchAndUpdateCandidatesChatsWhatsapps } from '../../candidate-engagement/update-chat';
 const { exec } = require('child_process');
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
+import { FilterCandidates } from '../../candidate-engagement/filter-candidates';
+import { Tranformations } from '../../candidate-engagement/transformations';
 
 export class FacebookWhatsappChatApi {
   constructor(private readonly workspaceQueryService: WorkspaceQueryService) {}
@@ -31,7 +33,7 @@ export class FacebookWhatsappChatApi {
       mediaFileName: fileName ?? 'AttachmentFile',
       mediaID: mediaID,
     };
-    const personObj = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).getPersonDetailsByPhoneNumber(phoneNumberTo, apiToken);
+    const personObj = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPhoneNumber(phoneNumberTo, apiToken);
     const mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.messageObj;
     mostRecentMessageArr.push({ role: 'user', content: 'Sharing the JD' });
     this.sendWhatsappAttachmentMessage(sendTextMessageObj, personObj, mostRecentMessageArr, chatControl, apiToken);
@@ -131,17 +133,17 @@ export class FacebookWhatsappChatApi {
           if (!response?.data?.mediaID) {
             console.error('Failed to upload JD to WhatsApp the second time. Bad luck! :(');
             const phoneNumberTo = attachmentMessage?.phoneNumberTo;
-            const personObj = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).getPersonDetailsByPhoneNumber(phoneNumberTo, apiToken);
+            const personObj = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPhoneNumber(phoneNumberTo, apiToken);
             const mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.messageObj;
             mostRecentMessageArr.push({ role: 'user', content: 'Failed to send JD to the candidate.' });
-            const whatappUpdateMessageObj: allDataObjects.candidateChatMessageType = await new CandidateEngagementArx(this.workspaceQueryService).updateChatHistoryObjCreateWhatsappMessageObj(
+            const whatappUpdateMessageObj: allDataObjects.candidateChatMessageType = await new Tranformations().updateChatHistoryObjCreateWhatsappMessageObj(
               'failed',
               personObj,
               mostRecentMessageArr,
               chatControl,
               apiToken,
             );
-            await new CandidateEngagementArx(this.workspaceQueryService).updateCandidateEngagementDataInTable(personObj, whatappUpdateMessageObj, apiToken);
+            await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).updateCandidateEngagementDataInTable(personObj, whatappUpdateMessageObj, apiToken);
           }
         }
         console.log('media ID', response?.data?.mediaID);
@@ -256,7 +258,7 @@ export class FacebookWhatsappChatApi {
       const response = await axios.request(config);
       console.log('This is response data after sendAttachment is called', JSON.stringify(response.data));
       const wamId = response?.data?.messages[0]?.id;
-      const whatappUpdateMessageObj: allDataObjects.candidateChatMessageType = await new CandidateEngagementArx(this.workspaceQueryService).updateChatHistoryObjCreateWhatsappMessageObj(
+      const whatappUpdateMessageObj: allDataObjects.candidateChatMessageType = await new Tranformations().updateChatHistoryObjCreateWhatsappMessageObj(
         wamId,
         // response,
         personObj,
@@ -264,7 +266,7 @@ export class FacebookWhatsappChatApi {
         chatControl,
         apiToken,
       );
-      await new CandidateEngagementArx(this.workspaceQueryService).updateCandidateEngagementDataInTable(personObj, whatappUpdateMessageObj, apiToken);
+      await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).updateCandidateEngagementDataInTable(personObj, whatappUpdateMessageObj, apiToken);
     } catch (error) {
       console.log(error);
     }
@@ -511,14 +513,14 @@ export class FacebookWhatsappChatApi {
         response = await this.sendWhatsappTextMessage(sendTextMessageObj, apiToken);
       }
 
-      whatappUpdateMessageObjAfterWAMidUpdate = await new CandidateEngagementArx(this.workspaceQueryService).updateChatHistoryObjCreateWhatsappMessageObj(
+      whatappUpdateMessageObjAfterWAMidUpdate = await new Tranformations().updateChatHistoryObjCreateWhatsappMessageObj(
         response?.data?.messages[0]?.id || response.messages[0].id,
         personNode,
         mostRecentMessageArr,
         chatControl,
         apiToken,
       );
-      await new CandidateEngagementArx(this.workspaceQueryService).updateCandidateEngagementDataInTable(personNode, whatappUpdateMessageObjAfterWAMidUpdate, apiToken);
+      await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).updateCandidateEngagementDataInTable(personNode, whatappUpdateMessageObjAfterWAMidUpdate, apiToken);
     } else {
       console.log('passing a human message so, going to trash it');
     }

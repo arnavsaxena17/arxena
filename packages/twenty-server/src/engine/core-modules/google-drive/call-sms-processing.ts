@@ -12,6 +12,7 @@ import {
     graphqlMutationToUpdatePhoneCall,
     graphqlMutationToUpdateSMS
 } from './graphql-queries';
+import { FilterCandidates } from '../arx-chat/services/candidate-engagement/filter-candidates';
 
 
 export class CallAndSMSProcessingService {
@@ -73,7 +74,7 @@ export class CallAndSMSProcessingService {
 
     const cleanPhoneNumbersObj = new CleanPhoneNumbers();
     const cleanedPhoneNumber = cleanPhoneNumbersObj.cleanPhoneNumber(phoneNumber);
-    const person = await new FetchAndUpdateCandidatesChatsWhatsapps(
+    const person = await new FilterCandidates(
       this.workspaceQueryService
     ).getPersonDetailsByPhoneNumber(cleanedPhoneNumber, apiToken);
   

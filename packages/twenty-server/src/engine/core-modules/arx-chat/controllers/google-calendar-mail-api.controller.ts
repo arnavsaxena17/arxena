@@ -9,6 +9,7 @@ import { CalendarEmailService } from '../services/candidate-engagement/calendar-
 import moment from 'moment-timezone';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { EmailService } from 'src/engine/integrations/email/email.service';
+import { FilterCandidates } from '../services/candidate-engagement/filter-candidates';
 
 
 @Controller('google-mail-calendar-contacts')
@@ -90,7 +91,7 @@ async getCalendarEvents(@Req() request: any): Promise<object> {
   async sendEmail(@Req() request: any): Promise<object> {
     const apiToken = request.headers.authorization.split(' ')[1];
 
-    const person: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).getPersonDetailsByPhoneNumber(request.body.phoneNumber,apiToken);
+    const person: allDataObjects.PersonNode = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPhoneNumber(request.body.phoneNumber,apiToken);
     console.log("allDataObjects.recruiterProfile?.email:", allDataObjects.recruiterProfile?.email)
     const emailData: GmailMessageData = {
       sendEmailFrom: allDataObjects.recruiterProfile?.email,
@@ -109,7 +110,7 @@ async getCalendarEvents(@Req() request: any): Promise<object> {
   async sendEmailWithAttachment(@Req() request: any): Promise<object> {
     const apiToken = request.headers.authorization.split(' ')[1];
 
-    const person: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).getPersonDetailsByPhoneNumber(request.body.phoneNumber,apiToken);
+    const person: allDataObjects.PersonNode = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPhoneNumber(request.body.phoneNumber,apiToken);
     
     const emailData: GmailMessageData = {
       sendEmailFrom: allDataObjects.recruiterProfile?.email,
@@ -127,7 +128,7 @@ async getCalendarEvents(@Req() request: any): Promise<object> {
   @UseGuards(JwtAuthGuard)
   async saveDraftEmailWithAttachments (@Req() request: any): Promise<object> {
     const apiToken = request.headers.authorization.split(' ')[1];
-    const person: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).getPersonDetailsByPhoneNumber(request.body.phoneNumber,apiToken);
+    const person: allDataObjects.PersonNode = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPhoneNumber(request.body.phoneNumber,apiToken);
     const emailData: GmailMessageData = {
       sendEmailFrom: allDataObjects.recruiterProfile?.email,
       sendEmailTo: person?.email,
@@ -153,7 +154,7 @@ async getCalendarEvents(@Req() request: any): Promise<object> {
   async sendCalendarInvite(@Req() request: any): Promise<object> {
     const apiToken = request.headers.authorization.split(' ')[1];
 
-    const person: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).getPersonDetailsByPhoneNumber(request.body.phoneNumber,apiToken);
+    const person: allDataObjects.PersonNode = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPhoneNumber(request.body.phoneNumber,apiToken);
     const gptInputs = request.body;
 
     const convertToUTC = (dateTime: string, timeZone: string): string => {

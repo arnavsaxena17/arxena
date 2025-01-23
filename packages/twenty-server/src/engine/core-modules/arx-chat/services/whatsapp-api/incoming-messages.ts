@@ -289,7 +289,7 @@ export class IncomingWhatsappMessages {
     replyObject: { whatsappDeliveryStatus: string; chatReply: string; phoneNumberFrom:string,whatsappMessageId: string; databaseFilePath?: string | null; type?: string; isFromMe?: boolean },
     candidateProfileDataNodeObj: allDataObjects.CandidateNode,apiToken: string
   ) {
-    const personObj: allDataObjects.PersonNode = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).getPersonDetailsByPhoneNumber(replyObject.phoneNumberFrom,apiToken);
+    const personObj: allDataObjects.PersonNode = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPhoneNumber(replyObject.phoneNumberFrom,apiToken);
 
 
     const recruiterProfile = allDataObjects.recruiterProfile;
@@ -330,7 +330,7 @@ export class IncomingWhatsappMessages {
       databaseFilePath: replyObject?.databaseFilePath || '',
     };
 
-    await new CandidateEngagementArx(this.workspaceQueryService).updateCandidateEngagementDataInTable(personObj, whatappUpdateMessageObj,apiToken);
+    await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).updateCandidateEngagementDataInTable(personObj, whatappUpdateMessageObj,apiToken);
     // return whatappUpdateMessageObj;
   }
 }
