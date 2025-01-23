@@ -49,7 +49,7 @@ export class WorkspaceSchemaStorageService {
       `objectMetadataCollection:${workspaceId}`,
       objectMetadataCollection,
     );
-    console.log('setObjectMetadataCollection', setObjectMetadataCollection);
+    // console.log('setObjectMetadataCollection', setObjectMetadataCollection);
     return setObjectMetadataCollection;
   }
 

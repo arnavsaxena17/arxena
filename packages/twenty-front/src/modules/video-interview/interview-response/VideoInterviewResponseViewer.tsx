@@ -436,16 +436,16 @@ const VideoInterviewResponseViewer: React.FC<VideoInterviewResponseViewerProps> 
     console.log("Going to try and transform the data::", responseData);
     const videoInterviewStatus = responseData.data.videoInterviewStatus;
     const candidate = videoInterviewStatus.candidate;
-    const responses = videoInterviewStatus.videoInterviewResponses.edges || [];
+    const responses = videoInterviewStatus.videoInterviewResponse.edges || [];
     const videoInterview = videoInterviewStatus.videoInterview;
     console.log("videoInterview.videoInterviewQuestions:videoInterview.videoInterviewQuestions", videoInterview.videoInterviewQuestions)
     const transformedData: InterviewData =  {
       job: {
         id: candidate.jobs.id,
         company: {
-          name: candidate.jobs.company.name,
+          name: candidate?.jobs?.company?.name,
         },
-        name: candidate.jobs.name,
+        name: candidate?.jobs?.name,
       },
       videoInterviewTemplate: {
         videoInterviewQuestions: {
@@ -546,8 +546,8 @@ const VideoInterviewResponseViewer: React.FC<VideoInterviewResponseViewerProps> 
   return (
     <StyledContainer theme={theme}>
       <CompanyInfo>
-        <h2>{interviewData.job.company.name}</h2>
-        <h3>{interviewData.job.name}</h3>
+        <h2>{interviewData.job?.company?.name}</h2>
+        <h3>{interviewData.job?.name}</h3>
       </CompanyInfo>
 
 
