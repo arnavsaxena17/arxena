@@ -66,7 +66,7 @@ export class FieldMetadataResolver {
           id: input.id.toString(),
         },
       });
-
+    
     if (!fieldMetadata) {
       throw new BadRequestException('Field does not exist');
     }

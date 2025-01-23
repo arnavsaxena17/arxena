@@ -445,6 +445,9 @@ export class FieldMetadataService extends TypeOrmQueryService<FieldMetadataEntit
     id: string,
     options?: FindOneOptions<FieldMetadataEntity>,
   ) {
+    console.log("These are teh options in fieldMetadata::", options)
+    console.log("These are id::", id)
+
     const fieldMetadata = await this.fieldMetadataRepository.findOne({
       ...options,
       where: {
@@ -452,7 +455,7 @@ export class FieldMetadataService extends TypeOrmQueryService<FieldMetadataEntit
         id,
       },
     });
-
+    console.log("This is the fieldMetadata in findOneOrFail:", fieldMetadata);
     if (!fieldMetadata) {
       throw new NotFoundException('Field does not exist');
     }
@@ -464,13 +467,17 @@ export class FieldMetadataService extends TypeOrmQueryService<FieldMetadataEntit
     workspaceId: string,
     options: FindOneOptions<FieldMetadataEntity>,
   ) {
-    return this.fieldMetadataRepository.findOne({
+    console.log("These are teh options in fieldMetadata::", options)
+    const fieldMetadata =  this.fieldMetadataRepository.findOne({
       ...options,
       where: {
         ...options.where,
         workspaceId,
       },
     });
+    console.log("This is the fieldMetadata in findOneWithinWorkspace:", fieldMetadata);
+
+    return fieldMetadata;
   }
 
   public async deleteFieldsMetadata(workspaceId: string) {

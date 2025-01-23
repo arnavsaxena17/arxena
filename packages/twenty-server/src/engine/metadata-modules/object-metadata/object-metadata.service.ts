@@ -60,6 +60,7 @@ import { RemoteTableRelationsService } from 'src/engine/metadata-modules/remote-
 import { ObjectMetadataEntity } from './object-metadata.entity';
 
 import { CreateObjectInput } from './dtos/create-object.input';
+import { object } from 'zod';
 
 @Injectable()
 export class ObjectMetadataService extends TypeOrmQueryService<ObjectMetadataEntity> {
@@ -354,7 +355,8 @@ export class ObjectMetadataService extends TypeOrmQueryService<ObjectMetadataEnt
     workspaceId: string,
     options: FindOneOptions<ObjectMetadataEntity>,
   ): Promise<ObjectMetadataEntity | null> {
-    return this.objectMetadataRepository.findOne({
+    console.log("options in objectmetadataservice:findOneWithinWorkspace:", options)
+    const objectMetadata =  this.objectMetadataRepository.findOne({
       relations: [
         'fields',
         'fields.fromRelationMetadata',
@@ -366,13 +368,16 @@ export class ObjectMetadataService extends TypeOrmQueryService<ObjectMetadataEnt
         workspaceId,
       },
     });
+    console.log("objectMetadata in objectmetadataservice:findOneWithinWorkspace:", objectMetadata)
+    return objectMetadata;
   }
 
   public async findOneOrFailWithinWorkspace(
     workspaceId: string,
     options: FindOneOptions<ObjectMetadataEntity>,
   ): Promise<ObjectMetadataEntity> {
-    return this.objectMetadataRepository.findOneOrFail({
+    console.log("options in objectmetadataservice:findOneOrFailWithinWorkspace:", options)
+    const objectMetadata = this.objectMetadataRepository.findOneOrFail({
       relations: [
         'fields',
         'fields.fromRelationMetadata',
@@ -384,30 +389,47 @@ export class ObjectMetadataService extends TypeOrmQueryService<ObjectMetadataEnt
         workspaceId,
       },
     });
+    console.log("objectMetadata in objectmetadataservice:findOneOrFailWithinWorkspace:", objectMetadata)
+    return objectMetadata;
   }
 
   public async findManyWithinWorkspace(
     workspaceId: string,
     options?: FindManyOptions<ObjectMetadataEntity>,
   ) {
-    return this.objectMetadataRepository.find({
+    console.log("options in objectmetadataservice:findManyWithinWorkspace:", options)
+    const objectMetadata = await this.objectMetadataRepository.find({
       relations: [
-        'fields.object',
-        'fields',
-        'fields.fromRelationMetadata',
-        'fields.toRelationMetadata',
-        'fields.fromRelationMetadata.toObjectMetadata',
+      'fields.object',
+      'fields',
+      'fields.fromRelationMetadata',
+      'fields.toRelationMetadata',
+      'fields.fromRelationMetadata.toObjectMetadata',
       ],
       ...options,
       where: {
-        ...options?.where,
-        workspaceId,
+      ...options?.where,
+      workspaceId,
       },
     });
+
+    console.log("objectMetadata in objectmetadataservice:findManyWithinWorkspace:", objectMetadata);
+
+    // const companyObjectMetadata = objectMetadata.find(
+    //   (metadata) => metadata.nameSingular === 'company'
+    // );
+
+    // if (companyObjectMetadata) {
+    //   console.log("Field Metadata Entities for 'company':", companyObjectMetadata.fields);
+    // }
+
+    return objectMetadata;
   }
 
   public async findMany(options?: FindManyOptions<ObjectMetadataEntity>) {
-    return this.objectMetadataRepository.find({
+    console.log("options in objectmetadataservicefindMany::", options)
+
+    const objectMetadata = await this.objectMetadataRepository.find({
       relations: [
         'fields',
         'fields.fromRelationMetadata',
@@ -419,6 +441,9 @@ export class ObjectMetadataService extends TypeOrmQueryService<ObjectMetadataEnt
         ...options?.where,
       },
     });
+    console.log("objectMetadata in objectmetadataservice::findMany", objectMetadata)
+
+    return objectMetadata;
   }
 
   public async deleteObjectsMetadata(workspaceId: string) {

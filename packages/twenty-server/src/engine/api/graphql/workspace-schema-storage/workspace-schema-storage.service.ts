@@ -44,18 +44,22 @@ export class WorkspaceSchemaStorageService {
     workspaceId: string,
     objectMetadataCollection: ObjectMetadataEntity[],
   ) {
-    return this.workspaceSchemaCache.set<ObjectMetadataEntity[]>(
+
+    const setObjectMetadataCollection =  this.workspaceSchemaCache.set<ObjectMetadataEntity[]>(
       `objectMetadataCollection:${workspaceId}`,
       objectMetadataCollection,
     );
+    console.log('setObjectMetadataCollection', setObjectMetadataCollection);
+    return setObjectMetadataCollection;
   }
 
   getObjectMetadataCollection(
     workspaceId: string,
   ): Promise<ObjectMetadataEntity[] | undefined> {
-    return this.workspaceSchemaCache.get<ObjectMetadataEntity[]>(
+    const getObjectMetadataCollection =  this.workspaceSchemaCache.get<ObjectMetadataEntity[]>(
       `objectMetadataCollection:${workspaceId}`,
     );
+    return getObjectMetadataCollection;
   }
 
   setTypeDefs(workspaceId: string, typeDefs: string): Promise<void> {

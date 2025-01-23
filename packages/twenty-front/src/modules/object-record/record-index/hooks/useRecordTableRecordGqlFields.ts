@@ -14,7 +14,6 @@ export const useRecordTableRecordGqlFields = ({
   const { visibleTableColumnsSelector } = useRecordTableStates();
   const { columnDefinitions } =
   useColumnDefinitionsFromFieldMetadata(objectMetadataItem);
-  console.log("visibleTableColumnsSelector::", visibleTableColumnsSelector);
   console.log("These are the column definitions inside recordGqlFields:", columnDefinitions);
 // Add columnDefinitions to recordGqlFields and deduplicate
 

@@ -52,9 +52,10 @@ export class WorkspaceSchemaFactory {
 
     // If object metadata is not cached, get it from the database
     if (!objectMetadataCollection) {
+      console.log('objectMetadataCollection not found in cache');
       objectMetadataCollection =
         await this.objectMetadataService.findManyWithinWorkspace(workspaceId);
-
+      console.log("objectMetadataCollection that was fetched from out of cacche", objectMetadataCollection);
       await this.workspaceSchemaStorageService.setObjectMetadataCollection(
         workspaceId,
         objectMetadataCollection,
@@ -108,6 +109,7 @@ export class WorkspaceSchemaFactory {
       },
     });
 
+    console.log("This is the damn executable schema:", JSON.stringify(executableSchema));
     return executableSchema;
   }
 }

@@ -194,83 +194,9 @@ const VideoContainer = styled.div`
   margin: 10px 0;
 `;
 
-const queryByvideoInterviewStatus = `query FindOnevideoInterviewStatus($objectRecordId: ID!) {
-  videoInterviewStatus(filter: {id: {eq: $objectRecordId}}) {
-    timelineActivities {
-      edges {
-        node {
-          offerId
-          screeningId
-          videoInterviewStatusId
-          linkedRecordCachedName
-          jobId
-          properties
-          clientInterviewId
-          videoInterviewQuestionId
-          questionId
-          candidateReminderId
-          answerId
-          whatsappMessageId
-          name
-          id
-          promptId
-          personId
-          opportunityId
-          updatedAt
-          videoInterviewModelId
-          workspaceMemberId
-          linkedRecordId
-          responseId
-          candidateId
-          createdAt
-          cvSentId
-          candidateEnrichmentId
-          videoInterviewId
-          clientContactId
-          shortlistId
-          recruiterInterviewId
-          linkedObjectMetadataId
-          companyId
-          happensAt
-          whatsappTemplateId
-        }
-      }
-    }
-    candidateId
-    videoInterview {
-      introduction
-      createdAt
-      id
-      jobId
-      instructions
-      videoInterviewModelId
-      name
-
-      videoInterviewQuestions {
-        edges {
-          node {
-            id
-            questionValue
-            timeLimit
-          }
-        }
-      }
-      position
-      updatedAt
-    }
-    videoInterviewId
-    position
-    interviewLink {
-      label
-      url
-    }
-    cameraOn
-    interviewReviewLink {
-      label
-      url
-    }
-    id
-    videoInterviewResponses {
+const queryByvideoInterviewStatus = `query FindOneVideoInterview($objectRecordId: ID!) {
+  videoInterview(filter: {id: {eq: $objectRecordId}}) {
+      videoInterviewResponse {
       edges {
         node {
           timeLimitAdherence
@@ -305,6 +231,82 @@ const queryByvideoInterviewStatus = `query FindOnevideoInterviewStatus($objectRe
         }
       }
     }
+    timelineActivities {
+      edges {
+        node {
+          jobId
+          companyId
+          clientContactId
+          workspaceMemberTypeId
+          questionId
+          candidateReminderId
+          cvSentId
+          candidateEnrichmentId
+          videoInterviewQuestionId
+          opportunityId
+          linkedObjectMetadataId
+          id
+          videoInterviewId
+          clientInterviewId
+          phoneCallId
+          offerId
+          whatsappMessageId
+          name
+          interviewScheduleId
+          videoInterviewTemplateId
+          screeningId
+          createdAt
+          updatedAt
+          recruiterInterviewId
+          shortlistId
+          whatsappTemplateId
+          textMessageId
+          linkedRecordCachedName
+          videoInterviewModelId
+          candidateId
+          properties
+          personId
+          videoInterviewResponseId
+          promptId
+          answerId
+          happensAt
+          workspaceMemberId
+
+        }
+      }
+    }
+    candidateId
+    videoInterviewTemplate {
+      introduction
+      createdAt
+      id
+      jobId
+      instructions
+      videoInterviewModelId
+      name
+      videoInterviewQuestions {
+        edges {
+          node {
+            id
+            questionValue
+            timeLimit
+          }
+        }
+      }
+      position
+      updatedAt
+    }
+    position
+    interviewLink {
+      label
+      url
+    }
+    cameraOn
+    interviewReviewLink {
+      label
+      url
+    }
+    id
     interviewStarted
     interviewCompleted
     micOn

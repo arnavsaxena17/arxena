@@ -152,10 +152,11 @@ export class GraphQLConfigService
         strict: false,
       },
     );
-
-    return await workspaceFactory.createGraphQLSchema(
+    const graphqlSchema = await workspaceFactory.createGraphQLSchema(
       data.workspace.id,
       data.user?.id,
     );
+    console.log('graphqlSchema found', graphqlSchema);
+    return graphqlSchema;
   }
 }

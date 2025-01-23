@@ -294,15 +294,26 @@ export class RelationMetadataService extends TypeOrmQueryService<RelationMetadat
           },
         },
       );
+      console.log("objectMetadataEntries: objectMetadataEntries::getObjectMetadataMap", objectMetadataEntries);
 
-    return objectMetadataEntries.reduce(
-      (acc, curr) => {
-        acc[curr.id] = curr;
 
-        return acc;
-      },
-      {} as { [key: string]: ObjectMetadataEntity },
+    const companyObjectMetadata = objectMetadataEntries.find(
+      (metadata) => metadata.nameSingular === 'company'
     );
+
+    if (companyObjectMetadata) {
+      console.log("Field Metadata  objectMetadataEntries Entities for 'company':getObjectMetadataMap", companyObjectMetadata.fields);
+    }
+      const objectMetadataMap = objectMetadataEntries.reduce(
+        (acc, curr) => {
+          acc[curr.id] = curr;
+  
+          return acc;
+        },
+        {} as { [key: string]: ObjectMetadataEntity },
+      );
+      console.log("objectMetadataMap in getObjectMetadataMap:", objectMetadataMap);
+    return objectMetadataMap
   }
 
   public async findOneWithinWorkspace(
