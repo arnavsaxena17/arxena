@@ -156,7 +156,7 @@ export class GraphQLConfigService
       data.workspace.id,
       data.user?.id,
     );
-    console.log('graphqlSchema found', graphqlSchema);
+    // console.log('graphqlSchema found', graphqlSchema);
     return graphqlSchema;
   }
 }

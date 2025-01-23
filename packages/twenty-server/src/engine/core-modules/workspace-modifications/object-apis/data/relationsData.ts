@@ -372,8 +372,8 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
       relation: {
         fromDescription: null,
         fromIcon: 'IconUser',
-        fromLabel: 'response',
-        fromName: 'response',
+        fromLabel: 'Video Interview Response',
+        fromName: 'videoInterviewResponse',
         fromObjectMetadataId: objectsNameIdMap.candidate,
         relationType: 'ONE_TO_MANY',
         toObjectMetadataId: objectsNameIdMap.videoInterviewResponse,

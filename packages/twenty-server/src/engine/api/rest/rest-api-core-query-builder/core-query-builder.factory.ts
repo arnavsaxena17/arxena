@@ -64,7 +64,7 @@ export class CoreQueryBuilderFactory {
       (object) => object.namePlural === parsedObject,
     );
 
-    console.log("objectMetadataobjectMetadata in getObjectMetadata:", objectMetadata);
+    // console.log("objectMetadataobjectMetadata in getObjectMetadata:", objectMetadata);
     if (!objectMetadata) {
       const [wrongObjectMetadata] = objectMetadataItems.filter(
         (object) => object.nameSingular === parsedObject,
@@ -80,7 +80,7 @@ export class CoreQueryBuilderFactory {
         `object '${parsedObject}' not found. ${hint}`,
       );
     }
-    console.log("objectMetadataobjectMetadata in getObjectMetadata:", objectMetadata);
+    // console.log("objectMetadataobjectMetadata in getObjectMetadata:", objectMetadata);
 
     return {
       objectMetadataItems,
