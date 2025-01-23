@@ -10,6 +10,7 @@ import * as allGraphQLQueries from '../../graphql-queries/graphql-queries-chatbo
 import { addHoursInDate, axiosRequest, toIsoString } from '../../utils/arx-chat-agent-utils';
 import { z } from "zod";
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
+import { FilterCandidates } from '../candidate-engagement/filter-candidates';
 
 const commaSeparatedStatuses = allDataObjects.statusesArray.join(', ');
 
@@ -102,7 +103,7 @@ export class ToolsForAgents {
     const jobId = personNode?.candidates?.edges[0]?.node?.jobs?.id;
     console.log("Job Name:", personNode?.candidates?.edges[0]?.node?.jobs?.name)
     // console.log('This is the job Id:', jobId);
-    const { questionArray, questionIdArray } = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).fetchQuestionsByJobId(jobId,apiToken);
+    const { questionArray, questionIdArray } = await new FilterCandidates(this.workspaceQueryService).fetchQuestionsByJobId(jobId,apiToken);
 
     // Hardcoded questions to ask if no questions are found in the database
     if (questionArray.length == 0) {
@@ -205,6 +206,7 @@ export class ToolsForAgents {
     receiveCV = `If they have shared their interest after going through the JD, ask the candidate to share a copy of their updated CV prior to the meeting.
     If they say that you can take the CV from naukri, tell them that you would require a copy for records directly from them for candidate confirmation purposes.`
     receiveCV = ``
+    const salaryPayable = `Rs. 28.5k - Rs. 40k per month with inhand of Rs. 25k - Rs. 35k per month`;
     const jobProfile = personNode?.candidates?.edges[0]?.node?.jobs;
     const questionArray = await this.getQuestionsToAsk(personNode, candidateJob,  apiToken);
     const formattedQuestions = '\t'+questionArray.map((question, index) => `${index + 1}. ${question}`).join('\n\t');
@@ -215,21 +217,21 @@ export class ToolsForAgents {
     They may either ask questions or show interest or provide a time slot. Do not schedule a meeting before he is fully qualified.
     Next, share the JD with him/ her by calling the function "share_jd". Ask them if they would be keen on the role. Ask them if they are interested in the role only after sharing the JD.
     ${receiveCV}
+    If the candidate asks you for your email address to share the CV, share your email as ${recruiterProfile.email}. After sharing your email, as the candidate to share their resume on whatsapp as well.
     Your screening questions for understanding their profile are :
     ${formattedQuestions}
-    Ask these questions in any order one by one and ensure a natural continuous conversation. Call the function update_answer after the candidate answers each question.
+    Ask these questions in a single text and ask them to fill out the responses.
     If the candidate asks for details about the company, let them know that you are hiring for ${jobProfile?.company?.name}, ${jobProfile?.company?.descriptionOneliner}
-    If the candidate's answer is not specific enough, do not update the answer but ask the candidate to be more specific.
+    If the candidate's answer is not specific enough, ask the candidate to be more specific.
     You will decide if the candidate is fit if the candidate answers the screening questions positively.
-    If the candidate asks about the budget for the role, tell them that it is flexible depending on the candidate's experience. Usually the practice is to give an increment on the candidate's current salary.
-    After each message to the candidate, you will call the function update_candidate_profile to update the candidate profile. The update will comprise of one of the following updates - ${commaSeparatedStatuses}.
-    If the candidate asks you for your email address to share the CV, share your email as ${recruiterProfile.email}. After sharing your email, as the candidate to share their resume on whatsapp as well.
-    After all the screening questions are answered, you will tell the candidate that you would get back to them with a few time slots shortly and setup a call.
-    After this, you will not respond to the candidate until you have the time slots. You will not respond to any queries until you have the timeslots.
+    If the candidate asks about the budget for the role, tell them that it is ${salaryPayable} depending on the candidate experience.
+    After all the screening questions are answered, you will tell the candidate that you will get back to them with next steps.
+    After this, you will not respond to the candidate until you have the time slots. You will not respond to any queries until you have the next steps.
     If the candidate asks any questions that don't know the answer of, you will tell them that you will get back to them with the answer.
     If the candidate says that the phone number is not reachable or they would like to speak but cannot connect, let them know that you will get back to them shortly.
     Sometimes candidates will send forwards and irrelevant messages. You will have to ignore them. If the candidate unnecessarily replies and messages, you will reply with "#DONTRESPOND#" exact string without any text around it.
-    You will not indicate any updates to the candidate. You will only ask questions and share the JD. You will not provide any feedback to the candidate. The candidate might ask for feedback, you will not provide any feedback. They can ask any queries unrelated to the role or the background inside any related questions. You will not respond to any queries unrelated to the role.
+    You will not indicate any updates to the candidate. You will only ask questions and share the JD. You will not provide any feedback to the candidate. The candidate might ask for feedback, you will not provide any feedback. 
+    Candidates sometimes ask any queries unrelated to the role - You will not respond to any queries unrelated to the role.
     Apart from your starting sentence, Be direct, firm and to the point. No need to be overly polite or formal. Do not sound excited.
     Your reponses will not show enthusiasm or joy or excitement. You will be neutral and to the point.
     Do not respond or restart the conversation if you have already told the candidate that you would get back to them.
@@ -248,7 +250,36 @@ export class ToolsForAgents {
   }
 
 
+  async getStartMeetingScheduling(personNode, candidateJob, apiToken){
+    const candidate_conversation_summary = ``
+    const meeting_type = 'F2F meeting';
+    const secondary_available_slots = '12PM-3PM, 4PM -6PM on the 24th and 25th August 2024';
+    const primary_available_slots = `12PM-3PM, 4PM -6PM on the 24th and 25th August 2024`
 
+    const MEETING_SCHEDULING_PROMPT = `
+    You will drive the conversation with candidates like a recruiter. Your goal is to setup a ${meeting_type} at a mutually agreed time. 
+    Following is the summary of the conversations that have happened with the candidate for reference :
+    ${candidate_conversation_summary}
+    First you start with telling the candidate that you discussed internally and liked their candidature and would like to get to know more about them.
+    Explain to them that the next step in the process is to have a ${meeting_type} with them.
+    The available slots are ${primary_available_slots}. 
+    If the above slots do not work for the candidate, check with them with for the availability on ${secondary_available_slots}.
+    If none of the slots work for the candidate, let them know that we are in a hurry to share profiles with the candidates and close the position and would like to schedule the meeting at the earliest.
+    If they are unavailable for any of the slots, let them know that you might not be able to proceed with their candidature.
+    If they say they can do a telephonic or whatsapp call, let them know that a F2F meeting is crucial as per the process agreed with the client.
+    If they ask for the agenda of the meeting, let them know that the meeting would be to discuss their experience, motivations and interests.
+    If the time is confirmed, let them know that you would share a calendar invite with the meeting link. 
+    Share the meeting link with the candidate by calling the function "share_meeting_link".
+    Once they let you know that it is done, thank them and let them know that you look forward to the meeting. Then do not respond to subsequent chats.
+    Sometimes candidates will send forwards and irrelevant messages. You will have to ignore them. If the candidate unnecessarily replies and messages, you will reply with "#DONTRESPOND#" exact string without any text around it.
+    You will not indicate any updates to the candidate. The candidate might ask for feedback, you will not provide any feedback. They can ask any queries unrelated to the role or the background inside any related questions. You will not respond to any queries unrelated to the role.
+    Be direct, firm and to the point. No need to be overly polite or formal. Do not sound excited.
+    Your reponses will not show enthusiasm or joy or excitement. You will be neutral and to the point.
+    If you do not wish to respond to the candidate, you will reply with "#DONTRESPOND#" exact string without any text around it.
+    If you do not have to respond, you will reply with "#DONTRESPOND#" exact string without any text around it.
+    `
+    return MEETING_SCHEDULING_PROMPT
+  }
 
   async getSystemPrompt(personNode: allDataObjects.PersonNode,candidateJob:allDataObjects.Jobs,chatControl:allDataObjects.chatControls,  apiToken:string) {
     console.log("This is the chatControl:", chatControl)
@@ -257,6 +288,9 @@ export class ToolsForAgents {
     }
     else if (chatControl === "startChat"){
       return this.getStartChatPrompt(personNode, candidateJob, apiToken);
+    }
+    else if (chatControl === "startMeetingSchedulingChat"){
+      return this.getStartMeetingScheduling(personNode, candidateJob, apiToken);
     }
     else{
       return this.getStartChatPrompt(personNode,candidateJob,  apiToken);
@@ -424,7 +458,7 @@ export class ToolsForAgents {
     // const newQuestionArray = this.questionArray
     const jobId = candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.jobs?.id;
 
-    const { questionIdArray, questionArray } = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).fetchQuestionsByJobId(jobId,  apiToken);
+    const { questionIdArray, questionArray } = await new FilterCandidates(this.workspaceQueryService).fetchQuestionsByJobId(jobId,  apiToken);
     const results = fuzzy.filter(inputs.question, questionArray);
     const matches = results.map(function (el) {
       return el.string;

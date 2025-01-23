@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { axiosRequest } from '../utils/utils';
-import { graphQltoStartChat, graphQltoStopChat, graphqlQueryToFindPeopleByPhoneNumber } from '../graphql-queries';
+import { graphQltoUpdateOneCandidate, graphqlQueryToFindManyPeople } from '../graphql-queries';
 import { FetchAndUpdateCandidatesChatsWhatsapps } from '../../arx-chat/services/candidate-engagement/update-chat';
 import * as allDataObjects from '../../arx-chat/services/data-model-objects';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
@@ -55,7 +55,7 @@ export class ChatService {
     };
     
     const graphqlQueryObj = JSON.stringify({
-      query: graphQltoStartChat,
+      query: graphQltoUpdateOneCandidate,
       variables: graphqlVariables,
     });
 
@@ -73,7 +73,7 @@ export class ChatService {
     };
     
     const graphqlQueryObj = JSON.stringify({
-      query: graphQltoStopChat,
+      query: graphQltoUpdateOneCandidate,
       variables: graphqlVariables,
     });
 

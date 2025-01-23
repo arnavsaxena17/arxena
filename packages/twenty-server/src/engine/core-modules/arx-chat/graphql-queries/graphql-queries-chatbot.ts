@@ -254,7 +254,7 @@ query FindManyCandidate($filter: CandidateFilterInput) {
 }`;
 
 
-export const graphqlQueryToFindPeopleByPhoneNumber = `query FindManyPeople($filter: PersonFilterInput, $orderBy: [PersonOrderByInput], $lastCursor: String, $limit: Int) {
+export const graphqlQueryToFindManyPeople = `query FindManyPeople($filter: PersonFilterInput, $orderBy: [PersonOrderByInput], $lastCursor: String, $limit: Int) {
   people(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
     edges {
       node {
@@ -363,12 +363,6 @@ export const graphqlQueryToUpdateCandidateChatCount = `mutation UpdateOneCandida
       id
     }
   }`;
-
-export const graphQlToStopChat = `mutation UpdateOneCandidate($idToUpdate: ID!, $input: CandidateUpdateInput!) {
-  updateCandidate(id: $idToUpdate, data: $input) {
-    __typename
-  }
-}`
 
 export const graphqlQueryToUpdateCandidateStatus = `mutation UpdateOneCandidate($idToUpdate: ID!, $input: CandidateUpdateInput!) {
   updateCandidate(id: $idToUpdate, data: $input) {
@@ -480,6 +474,8 @@ query FindManyCandidates($lastCursor: String, $limit: Int, $filter: CandidateFil
                     interviewLink{
                       url
                     }
+                    interviewStarted
+                    interviewCompleted
                 }
             }
         }

@@ -33,7 +33,7 @@ export class PersonService {
     };
 
     const graphqlQuery = JSON.stringify({
-      query: allGraphQLQueries.graphqlQueryToFindPeopleByPhoneNumber,
+      query: allGraphQLQueries.graphqlQueryToFindManyPeople,
       variables: graphqlVariables,
     });
 

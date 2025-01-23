@@ -16367,6 +16367,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/compression@npm:^1.7.5":
+  version: 1.7.5
+  resolution: "@types/compression@npm:1.7.5"
+  dependencies:
+    "@types/express": "npm:*"
+  checksum: 10c0/3818f3d10cede38a835b40b80c341eae162aef1691f2e8f81178a77dbc109f04234cf760b6066eaa06ecbb1da143433c00db2fd9999198b76cd5a193e1d09675
+  languageName: node
+  linkType: hard
+
 "@types/connect-history-api-fallback@npm:^1.3.5":
   version: 1.5.4
   resolution: "@types/connect-history-api-fallback@npm:1.5.4"
@@ -24166,7 +24175,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"compression@npm:^1.7.4":
+"compression@npm:^1.7.4, compression@npm:^1.7.5":
   version: 1.7.5
   resolution: "compression@npm:1.7.5"
   dependencies:
@@ -50143,6 +50152,7 @@ __metadata:
     "@types/better-sqlite3": "npm:^7.6.8"
     "@types/bytes": "npm:^3.1.1"
     "@types/chrome": "npm:^0.0.267"
+    "@types/compression": "npm:^1.7.5"
     "@types/deep-equal": "npm:^1.0.1"
     "@types/dompurify": "npm:^3.0.5"
     "@types/express": "npm:^4.17.13"
@@ -50209,6 +50219,7 @@ __metadata:
     class-transformer: "npm:^0.5.1"
     class-validator: "npm:^0.14.1"
     clsx: "npm:^2.1.1"
+    compression: "npm:^1.7.5"
     concurrently: "npm:^8.2.2"
     cross-env: "npm:^7.0.3"
     cross-var: "npm:^1.1.0"

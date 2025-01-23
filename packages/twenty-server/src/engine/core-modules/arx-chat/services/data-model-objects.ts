@@ -164,6 +164,7 @@ export interface WhatsAppMessages {
 
 
 export interface Candidate {
+  videoInterview?: videoInterview;
   id: string;
   name: string;
   startChat: boolean;
@@ -189,6 +190,8 @@ export interface videoInterviewEdge {
 export interface videoInterviewNode {
   id: string;
   interviewLink: InterviewLink;
+  interviewCompleted: boolean;
+  interviewStarted: boolean;
 }
 
 export interface InterviewLink {
@@ -434,6 +437,8 @@ export const emptyCandidateProfileObj: CandidateNode = {
           interviewLink: {
             url: '',
           },
+          interviewCompleted: false,
+          interviewStarted: false
         },
       },
     ],

@@ -6,6 +6,7 @@ import { FetchAndUpdateCandidatesChatsWhatsapps } from '../services/candidate-en
 import { GmailMessageData } from '../../gmail-sender/services/gmail-sender-objects-types';
 import { SendEmailFunctionality, EmailTemplates } from '../services/candidate-engagement/send-gmail';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
+import { FilterCandidates } from '../services/candidate-engagement/filter-candidates';
 
 
 @Controller('video-interview-process')
@@ -33,8 +34,8 @@ export class VideoInterviewController {
             const candidateId = request.body.candidateId;
             console.log('candidateId to create video-interview:', candidateId);
             const createVideoInterviewResponse = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).createVideoInterviewForCandidate(candidateId, apiToken);
-            const personObj = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).getPersonDetailsByCandidateId(candidateId, apiToken);
-            const person = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).getPersonDetailsByPersonId(personObj.id, apiToken);
+            const personObj = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByCandidateId(candidateId, apiToken);
+            const person = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPersonId(personObj.id, apiToken);
             console.log("Got person:", person);
             const videoInterviewUrl = createVideoInterviewResponse?.data?.createVideoInterview?.interviewLink?.url;
             console.log("This is the video interview link:", videoInterviewUrl);
@@ -71,8 +72,8 @@ export class VideoInterviewController {
         try {
             let sendVideoInterviewLinkResponse;
             const candidateId = request?.body?.candidateId;
-            const personObj = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).getPersonDetailsByCandidateId(candidateId, apiToken);
-            const person = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).getPersonDetailsByPersonId(personObj.id, apiToken);
+            const personObj = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByCandidateId(candidateId, apiToken);
+            const person = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPersonId(personObj.id, apiToken);
             console.log("Got person:", person);
             const videoInterviewUrl = person?.candidates?.edges[0]?.node?.videoInterview?.edges[0]?.node?.interviewLink?.url;
             console.log("This is the video interview in send-video-interview-to-candidate link:", videoInterviewUrl);

@@ -3,6 +3,7 @@ import CandidateEngagementArx from '../../candidate-engagement/candidate-engagem
 import { FetchAndUpdateCandidatesChatsWhatsapps } from '../../candidate-engagement/update-chat';
 import * as allDataObjects from '../../data-model-objects';
 import axios from 'axios';
+import { FilterCandidates } from '../../candidate-engagement/filter-candidates';
 
 const FormData = require('form-data');
 const fs = require('fs');
@@ -31,7 +32,7 @@ async sendWhatsappMessageVIABaileysAPI(whatappUpdateMessageObj: allDataObjects.c
     console.log(response);
     // console.log('99493:: response is here', response);
     const whatappUpdateMessageObjAfterWAMidUpdate = await new CandidateEngagementArx(this.workspaceQueryService).updateChatHistoryObjCreateWhatsappMessageObj( response?.messageId || 'placeholdermessageid', personNode, mostRecentMessageArr,chatControl, apiToken);
-    let candidateProfileObj = whatappUpdateMessageObj.messageType !== 'botMessage' ? await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).getCandidateInformation(whatappUpdateMessageObj,  apiToken) : whatappUpdateMessageObj.candidateProfile;
+    let candidateProfileObj = whatappUpdateMessageObj.messageType !== 'botMessage' ? await new FilterCandidates(this.workspaceQueryService).getCandidateInformation(whatappUpdateMessageObj,  apiToken) : whatappUpdateMessageObj.candidateProfile;
 
     await new CandidateEngagementArx(this.workspaceQueryService).updateCandidateEngagementDataInTable(personNode, whatappUpdateMessageObjAfterWAMidUpdate,   apiToken, true);
     const updateCandidateStatusObj = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).updateCandidateEngagementStatus(candidateProfileObj, whatappUpdateMessageObj,  apiToken);

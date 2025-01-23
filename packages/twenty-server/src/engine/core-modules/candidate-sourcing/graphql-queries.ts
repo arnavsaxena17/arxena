@@ -45,7 +45,7 @@ mutation CreatePeople($data: [PersonCreateInput!]!) {
   }
 }`;
 
-export const graphqlQueryToFindPeopleByPhoneNumber = `query FindManyPeople($filter: PersonFilterInput, $orderBy: [PersonOrderByInput], $lastCursor: String, $limit: Int) {
+export const graphqlQueryToFindManyPeople = `query FindManyPeople($filter: PersonFilterInput, $orderBy: [PersonOrderByInput], $lastCursor: String, $limit: Int) {
   people(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
     edges {
       node {
@@ -277,7 +277,7 @@ export const graphqlToFindManyJobByArxenaSiteId = `
   `;
 
 
-  export const graphQltoStartChat = `mutation UpdateOneCandidate($idToUpdate: ID!, $input: CandidateUpdateInput!) {
+  export const graphQltoUpdateOneCandidate = `mutation UpdateOneCandidate($idToUpdate: ID!, $input: CandidateUpdateInput!) {
   updateCandidate(id: $idToUpdate, data: $input) {
     __typename
     engagementStatus
@@ -289,8 +289,4 @@ export const graphqlToFindManyJobByArxenaSiteId = `
   }
 }`
 
-  export const graphQltoStopChat = `mutation UpdateOneCandidate($idToUpdate: ID!, $input: CandidateUpdateInput!) {
-  updateCandidate(id: $idToUpdate, data: $input) {
-    __typename
-  }
-}`
+  

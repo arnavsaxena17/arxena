@@ -21,6 +21,8 @@ import { json, urlencoded } from 'express';
 import * as express from 'express';
 import * as path from 'path';
 import * as fs from 'fs';
+import compression from 'compression';
+
 // import { BaileysModule } from 'src/engine/core-modules/baileys/baileys.module';
 import * as dotenv from 'dotenv';
 // import { CoopCoepMiddleware } from './utils/coop-coep.middleware';
@@ -120,6 +122,7 @@ const bootstrap = async () => {
   app.use(json({ limit: '50mb' }));
   app.use(urlencoded({ limit: '50mb', extended: true }));
   // app.use(CoopCoepMiddleware);
+  app.use(compression()); // Add this line
 
 
   await app.listen(process.env.PORT ?? 3000);

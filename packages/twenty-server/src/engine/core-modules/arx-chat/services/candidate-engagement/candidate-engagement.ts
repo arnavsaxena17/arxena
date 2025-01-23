@@ -4,6 +4,7 @@ import { sortWhatsAppMessages } from '../../utils/arx-chat-agent-utils';
 import { OpenAIArxMultiStepClient } from '../llm-agents/arx-multi-step-client';
 import { ToolsForAgents } from '../llm-agents/prompting-tool-calling';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
+import { FilterCandidates } from './filter-candidates';
 const readline = require('node:readline');
 const rl = readline.createInterface({
   input: process.stdin,
@@ -16,7 +17,7 @@ export default class CandidateEngagementArx {
   constructor( private readonly workspaceQueryService: WorkspaceQueryService ) {}
   async createAndUpdateCandidateStartChatChatMessage(chatReply: string, candidateProfileDataNodeObj: allDataObjects.PersonNode,candidateJob:allDataObjects.Jobs, chatControl: allDataObjects.chatControls, apiToken: string) {
     const recruiterProfile = allDataObjects.recruiterProfile;
-    const messagesList: allDataObjects.MessageNode[] = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).fetchAllWhatsappMessages(candidateProfileDataNodeObj.candidates?.edges[0]?.node.id, apiToken);
+    const messagesList: allDataObjects.MessageNode[] = await new FilterCandidates(this.workspaceQueryService).fetchAllWhatsappMessages(candidateProfileDataNodeObj.candidates?.edges[0]?.node.id, apiToken);
     const sortedMessagesList = messagesList.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     let chatHistory = sortedMessagesList[0]?.messageObj || [];
     let whatsappTemplate:string
@@ -57,7 +58,7 @@ export default class CandidateEngagementArx {
     console.log("Engagement Type for the candidate ::", personNode.name.firstName + " " + personNode.name.lastName);
     try {
       const candidateNode = personNode.candidates.edges[0].node;
-      const messagesList: allDataObjects.MessageNode[] = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).fetchAllWhatsappMessages(candidateNode.id, apiToken);
+      const messagesList: allDataObjects.MessageNode[] = await new FilterCandidates(this.workspaceQueryService).fetchAllWhatsappMessages(candidateNode.id, apiToken);
       let mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = this.getMostRecentMessageFromMessagesList(messagesList);
       if (mostRecentMessageArr?.length > 0) {
         console.log('Taking MULTI Step Client for - Prompt Engineering type:', process.env.PROMPT_ENGINEERING_TYPE);
@@ -81,7 +82,7 @@ export default class CandidateEngagementArx {
   }
 
   async updateCandidateEngagementDataInTable(personDataNodeObj:allDataObjects.PersonNode, whatappUpdateMessageObj: allDataObjects.candidateChatMessageType, apiToken:string, isAfterMessageSent: boolean = false) {
-    let candidateProfileObj = whatappUpdateMessageObj.messageType !== 'botMessage' ? await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).getCandidateInformation(whatappUpdateMessageObj,apiToken) : whatappUpdateMessageObj.candidateProfile;
+    let candidateProfileObj = whatappUpdateMessageObj.messageType !== 'botMessage' ? await new FilterCandidates(this.workspaceQueryService).getCandidateInformation(whatappUpdateMessageObj,apiToken) : whatappUpdateMessageObj.candidateProfile;
     if (candidateProfileObj.name === '') return;
     console.log('Candidate information retrieved successfully');
     const whatsappMessage = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).createAndUpdateWhatsappMessage(candidateProfileObj, whatappUpdateMessageObj,apiToken);
@@ -115,6 +116,7 @@ export default class CandidateEngagementArx {
 
     if (!candidate.engagementStatus || candidate.lastEngagementChatControl !== chatControl) return false;
     if (chatControl === 'startVideoInterviewChat' && (!candidate.startVideoInterviewChat || !candidate.startChat)) return false;
+    if (chatControl === 'startMeetingSchedulingChat' && (!candidate.startMeetingSchedulingChat || !candidate.startVideoInterviewChat || !candidate.startChat)) return false;
     if (candidate.whatsappMessages?.edges?.length > 0) {
     const latestMessage = candidate.whatsappMessages.edges[0].node;
     if (new Date(latestMessage.createdAt) >= twoMinutesAgo) {
@@ -133,6 +135,8 @@ export default class CandidateEngagementArx {
       return candidate.startChat && candidate.whatsappMessages?.edges.length === 0 && !candidate.startVideoInterviewChat;
       } else if (chatControl === 'startVideoInterviewChat') {
       return candidate.startChat && candidate.whatsappMessages?.edges.length > 0 && candidate.startVideoInterviewChat && candidate.lastEngagementChatControl !== "startVideoInterviewChat";
+      } else if (chatControl === 'startMeetingSchedulingChat') {
+      return candidate.startChat && candidate.whatsappMessages?.edges.length > 0 && candidate.startVideoInterviewChat && candidate.startMeetingSchedulingChat && candidate.lastEngagementChatControl !== "startMeetingSchedulingChat";
       } else {
       return candidate.startChat && candidate.whatsappMessages?.edges.length > 0;
       }
@@ -183,9 +187,9 @@ export default class CandidateEngagementArx {
   async checkCandidateEngagement(apiToken:string) {
     try{
       console.log("Cron running and cycle started to check candidate engagement");
-      const chatControls: allDataObjects.chatControls[] = ["startChat", "startVideoInterviewChat"];
+      const chatControls: allDataObjects.chatControls[] = ["startChat", "startVideoInterviewChat", "startMeetingSchedulingChat"];
       for (const chatControl of chatControls) {
-        const {people, candidateJob} = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).fetchSpecificPeopleToEngageBasedOnChatControl(chatControl, apiToken);
+        const {people, candidateJob} = await new FilterCandidates(this.workspaceQueryService).fetchSpecificPeopleToEngageBasedOnChatControl(chatControl, apiToken);
         
         this.checkIfAllInformationForSendingChatMessageIsAvailable(people, chatControl, apiToken);
         console.log(`Number of people to engage for ${chatControl}:`, people.length);

@@ -1,6 +1,6 @@
 import moment from 'moment-timezone';
 import { Body, Controller, Get, InternalServerErrorException, NotFoundException, Post, Req, UseGuards } from '@nestjs/common';
-import {UpdateOneJob , CreateOneJob, createOneQuestion, graphqlToFindManyJobByArxenaSiteId, graphQltoStartChat, graphqlToFindManyJobByArxenaSiteIdOlderSchema, workspacesWithOlderSchema } from '../graphql-queries';
+import {UpdateOneJob , CreateOneJob, createOneQuestion, graphqlToFindManyJobByArxenaSiteId, graphQltoUpdateOneCandidate, graphqlToFindManyJobByArxenaSiteIdOlderSchema, workspacesWithOlderSchema } from '../graphql-queries';
 import { FetchAndUpdateCandidatesChatsWhatsapps } from '../../arx-chat/services/candidate-engagement/update-chat';
 import { axiosRequest , axiosRequestForMetadata} from '../utils/utils';
 import * as CandidateSourcingTypes from '../types/candidate-sourcing-types';

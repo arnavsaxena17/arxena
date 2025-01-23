@@ -57,7 +57,7 @@ export class CandidateStatusClassificationCronService {
   private isProcessing = false;
   constructor(private readonly workspaceQueryService: WorkspaceQueryService) {}
   @Cron(CronExpression.EVERY_5_MINUTES)
-  async handleFiveMinutesCron() {
+  async handleFiveMinutesCronToUpdateChatStatuses() {
     if (this.isProcessing) {
       console.log('Previous 5 minutes cron job still running, skipping this run');
       return;
@@ -77,6 +77,36 @@ export class CandidateStatusClassificationCronService {
           if (apiKeyToken) {
             await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).updateRecentCandidatesChatCount(apiKeyToken.token);
             await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).updateRecentCandidatesProcessCandidateChatsGetStatuses(apiKeyToken.token);
+          }
+        }
+      }
+    } catch (error) {
+      console.log('Error in 5 minutes cron job', error);
+    } finally {
+      this.isProcessing = false;
+      console.log('ENDING 5 minutes CRON CYCLE');
+    }
+  }
+  @Cron(CronExpression.EVERY_5_HOURS)
+  async handleFiveHoursCronToUpdateChatControls() {
+    if (this.isProcessing) {
+      console.log('Previous 5 minutes cron job still running, skipping this run');
+      return;
+    }
+    try {
+      this.isProcessing = true;
+      console.log('Starting 5 minutes for Chat Count Chat Processing  CRON CYCLE');
+      const workspaceIds = await this.workspaceQueryService.getWorkspaces();
+      const dataSources = await this.workspaceQueryService.dataSourceRepository.find({ where: { workspaceId: In(workspaceIds), }, });
+      const workspaceIdsWithDataSources = new Set(dataSources.map(dataSource => dataSource.workspaceId));
+      const filteredWorkspaceIds = Array.from(workspaceIdsWithDataSources).filter(workspaceId => !workspacesWithOlderSchema.includes(workspaceId));
+      for (const workspaceId of filteredWorkspaceIds) {
+        const dataSourceSchema = this.workspaceQueryService.workspaceDataSourceService.getSchemaName(workspaceId);
+        const apiKeys = await this.workspaceQueryService.getApiKeys(workspaceId, dataSourceSchema);
+        if (apiKeys.length > 0) {
+          const apiKeyToken = await this.workspaceQueryService.tokenService.generateApiKeyToken(workspaceId, apiKeys[0].id, apiKeys[0].expiresAt);
+          if (apiKeyToken) {
+            await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).updateRecentCandidatesChatControls(apiKeyToken.token);
           }
         }
       }

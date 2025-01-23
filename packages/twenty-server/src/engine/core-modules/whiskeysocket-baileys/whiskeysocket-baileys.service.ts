@@ -31,6 +31,7 @@ import { FetchAndUpdateCandidatesChatsWhatsapps } from '../arx-chat/services/can
 import { axiosRequest } from '../arx-chat/utils/arx-chat-agent-utils';
 import { graphqlToFetchWhatsappMessageByCandidateId, graphqlToFetchWhatsappMessageByWhatsappId, graphqlToUpdateWhatsappMessageId } from './graphql-queries';
 import {WorkspaceQueryService} from '../workspace-modifications/workspace-modifications.service';
+import { FilterCandidates } from '../arx-chat/services/candidate-engagement/filter-candidates';
 
 const nodeCache = new NodeCache();
 
@@ -173,7 +174,7 @@ export class WhatsappService {
                 messageType: 'string',
               };
 
-              const candidateProfileData = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).getCandidateInformation(whatsappIncomingMessage, apiToken);
+              const candidateProfileData = await new FilterCandidates(this.workspaceQueryService).getCandidateInformation(whatsappIncomingMessage, apiToken);
 
               if (msg?.message?.protocolMessage?.type === 0) {
                 await this.handleDeleteForEveryoneMessage(msg, candidateProfileData);

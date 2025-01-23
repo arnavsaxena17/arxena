@@ -12,6 +12,7 @@ import { EnvironmentService } from 'src/engine/integrations/environment/environm
 import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
 import { TokenService } from 'src/engine/core-modules/auth/services/token.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
+import { FilterCandidates } from '../candidate-engagement/filter-candidates';
 
 export class IncomingWhatsappMessages {
   constructor(
@@ -38,7 +39,7 @@ export class IncomingWhatsappMessages {
     const chatReply = savedMessage;
     const status = '';
     console.log('We will first go and get the candiate who sent us the message');
-    const candidateProfileData = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).getCandidateInformation(whatsappIncomingMessage, apiToken);
+    const candidateProfileData = await new FilterCandidates(this.workspaceQueryService).getCandidateInformation(whatsappIncomingMessage, apiToken);
     console.log('This is the candiate who has sent us the message fromBaileys., we have to update the database that this message has been recemivged::', chatReply);
     if (candidateProfileData != allDataObjects.emptyCandidateProfileObj) {
       // console.log('This is the candiate who has sent us candidateProfileData::', candidateProfileData);
@@ -58,7 +59,7 @@ export class IncomingWhatsappMessages {
     };
     const chatReply = requestBody.message;
     console.log('We will first go and get the candiate who sent us the message');
-    const candidateProfileData = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).getCandidateInformation(whatsappIncomingMessage,apiToken);
+    const candidateProfileData = await new FilterCandidates(this.workspaceQueryService).getCandidateInformation(whatsappIncomingMessage,apiToken);
     console.log('This is the SELF message., we have to update the database that this message has been received::', chatReply);
     if (candidateProfileData != allDataObjects.emptyCandidateProfileObj) {
       // console.log('This is the candiate who has sent us candidateProfileData::', candidateProfileData);
@@ -207,7 +208,7 @@ export class IncomingWhatsappMessages {
             messageType: 'string',
           };
           console.log('We will first go and get the candiate who sent us the message');
-          const candidateProfileData = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).getCandidateInformation(whatsappIncomingMessage,apiToken);
+          const candidateProfileData = await new FilterCandidates(this.workspaceQueryService).getCandidateInformation(whatsappIncomingMessage,apiToken);
           console.log('This is the candiate who has sent us the message., we have to update the database that this message has been recemivged::', chatReply);
           // console.log('This is the candiate who has sent us candidateProfileData::', candidateProfileData);
           const replyObject = {
@@ -243,7 +244,7 @@ export class IncomingWhatsappMessages {
           };
 
           const replyObject = { chatReply: userMessageBody?.text?.body || 'Attachment Received', whatsappDeliveryStatus: 'receivedFromCandidate',phoneNumberFrom: whatsappIncomingMessage.phoneNumberFrom, whatsappMessageId: requestBody?.entry[0]?.changes[0]?.value?.messages[0].id };
-          const candidateProfileData = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).getCandidateInformation(whatsappIncomingMessage,apiToken);
+          const candidateProfileData = await new FilterCandidates(this.workspaceQueryService).getCandidateInformation(whatsappIncomingMessage,apiToken);
           await new FacebookWhatsappChatApi(this.workspaceQueryService).downloadWhatsappAttachmentMessage(sendTemplateMessageObj, candidateProfileData,apiToken);
           await this.createAndUpdateIncomingCandidateChatMessage(replyObject, candidateProfileData,apiToken );
         }
@@ -263,7 +264,7 @@ export class IncomingWhatsappMessages {
             messageType: 'string',
           };
 
-          const candidateProfileData = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).getCandidateInformation(whatsappIncomingMessage,apiToken);
+          const candidateProfileData = await new FilterCandidates(this.workspaceQueryService).getCandidateInformation(whatsappIncomingMessage,apiToken);
           const audioMessageDetails = await new FacebookWhatsappChatApi(this.workspaceQueryService).handleAudioMessage(audioMessageObject, candidateProfileData,apiToken);
 
           console.log('This is the audioMessageDetails::', audioMessageDetails);
