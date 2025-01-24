@@ -9,7 +9,7 @@ import { OpenAIArxMultiStepClient } from '../services/llm-agents/arx-multi-step-
 import { axiosRequest } from '../utils/arx-chat-agent-utils';
 import * as allGraphQLQueries from '../graphql-queries/graphql-queries-chatbot';
 import { ToolCallsProcessing } from '../services/llm-agents/tool-calls-processing';
-import { HumanLikeLLM } from '../services/llm-agents/human-or-bot-type-response-classification';
+import { HumanLikeLLM } from '../services/llm-agents/human-or-bot-classification';
 import { GmailMessageData } from '../../gmail-sender/services/gmail-sender-objects-types';
 import { SendEmailFunctionality, EmailTemplates } from '../services/candidate-engagement/send-gmail';
 import axios from 'axios';

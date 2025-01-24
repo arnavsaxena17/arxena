@@ -3,7 +3,7 @@ const modelName = 'gpt-4o';
 import { ToolCallingAgents } from './tool-calling-agents';
 import { ChatCompletionMessage } from 'openai/resources';
 import { WhatsappControls } from '../whatsapp-api/whatsapp-controls';
-import { HumanLikeLLM } from './human-or-bot-type-response-classification'
+import { HumanLikeLLM } from './human-or-bot-classification'
 import { Transformations } from '../candidate-engagement/transformations';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { PromptingAgents } from './prompting-agents';

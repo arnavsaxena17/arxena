@@ -91,7 +91,7 @@ export default class CandidateEngagementArx {
       for (const chatControl of chatControls) {
         const {people, candidateJob} = await new FilterCandidates(this.workspaceQueryService).fetchSpecificPeopleToEngageBasedOnChatControl(chatControl, apiToken);
         this.checkIfAllInformationForSendingChatMessageIsAvailable(people,candidateJob, chatControl, apiToken);
-        console.log(`Number of people to engage for ${chatControl}:`, people.length);
+        console.log(`Number of people to engage for ${chatControl.chatControlType}:`, people.length);
         if (people.length > 0) {
           if (chatControl.chatControlType === "startVideoInterviewChat") {
             await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).setupVideoInterviewLinks(people,candidateJob, chatControl, apiToken);
