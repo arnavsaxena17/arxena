@@ -7,6 +7,7 @@ import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modific
 import { graphQltoUpdateOneCandidate, workspacesWithOlderSchema } from 'src/engine/core-modules/candidate-sourcing/graphql-queries';
 import {FilterCandidates} from './filter-candidates';
 import { StageWiseClassification } from '../llm-agents/stage-classification';
+import { logging } from 'googleapis/build/src/apis/logging';
 
 class Semaphore {
   private permits: number;
@@ -318,19 +319,20 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
   async updateCandidateEngagementStatus(candidateProfileObj: allDataObjects.CandidateNode, whatappUpdateMessageObj: allDataObjects.whatappUpdateMessageObjType, apiToken: string) {
     const candidateEngagementStatus = whatappUpdateMessageObj.messageType !== 'botMessage';
     const updateCandidateObjectVariables = { idToUpdate: candidateProfileObj?.id, input: { engagementStatus: candidateEngagementStatus, lastEngagementChatControl: whatappUpdateMessageObj.lastEngagementChatControl } };
-    console.log('GOING TO UPDATE CANDIDATE ENGAGEMENT STATUS BECAUES OF THIS WHATSAPP MESSAGE OBJ::', candidateEngagementStatus);
     const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToUpdateCandidateEngagementStatus, variables: updateCandidateObjectVariables });
     try {
       const response = await axiosRequest(graphqlQueryObj, apiToken);
-      console.log('Candidate engagement status updated successfully');
+      console.log('Candidate engagement status updated successfully to ::',candidateEngagementStatus );
       return response.data;
     } catch (error) {
       console.log('Error in updating candidate status::', error);
     }
   }
 
-  async setCandidateEngagementStatusToFalse(candidateProfileObj: allDataObjects.CandidateNode, apiToken: string) {
-    const updateCandidateObjectVariables = { idToUpdate: candidateProfileObj?.id, input: { engagementStatus: false } };
+
+  async setCandidateEngagementStatusToFalse(candidateId: string, apiToken: string) {
+    console.log("Setting Candidate ENgagement Status sto false");
+    const updateCandidateObjectVariables = { idToUpdate: candidateId, input: { engagementStatus: false } };
     console.log('This is the value of updatecandidateobject variables::0', updateCandidateObjectVariables);
     const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToUpdateCandidateEngagementStatus, variables: updateCandidateObjectVariables });
     try {
@@ -413,15 +415,5 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
     }
   }
 
-  async updateEngagementStatusBeforeRunningEngageCandidates(candidateId: string,candidateJob:allDataObjects.Jobs, apiToken: string) {
-    const updateCandidateObjectVariables = { idToUpdate: candidateId, input: { engagementStatus: false } };
-    const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToUpdateCandidateEngagementStatus, variables: updateCandidateObjectVariables });
-    try {
-      const response = await axiosRequest(graphqlQueryObj, apiToken);
-      console.log('Candidate engagement status updated successfully');
-      return response.data;
-    } catch (error) {
-      console.log('Error in updating candidate status::', error);
-    }
-  }
+
 }

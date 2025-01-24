@@ -147,7 +147,7 @@ export class PromptingAgents {
     We like your candidature and are keen to know more about you. We would like you to record a quick 15 minutes video interview as part of the client's hiring process. 
     Would you be able to take 15-20 mins and record your responses to our 3-4 questions at the link here: {videoInterviewLink}
     `
-    console.log("Generated system prompt:", VIDEO_INTERVIEW_PROMPT);
+    console.log("Generated sygetVideoInterviewPromptstem prompt:", VIDEO_INTERVIEW_PROMPT);
     return VIDEO_INTERVIEW_PROMPT 
   }
 
@@ -195,7 +195,7 @@ export class PromptingAgents {
     I'm hiring for a ${jobProfile.name} role for ${jobProfile?.company?.descriptionOneliner} based out of ${jobProfile.jobLocation} and got your application on my job posting. I believe this might be a good fit.
     Wanted to speak to you in regards your interests in our new role. Would you be available for a short call sometime today?
     `;
-    console.log("Generated system prompt:", SYSTEM_PROMPT);
+    console.log("Generated getStartChatPrompt prompt:", SYSTEM_PROMPT);
     return SYSTEM_PROMPT;
   }
 
@@ -245,7 +245,7 @@ export class PromptingAgents {
     I'm hiring for a ${jobProfile.name} role for ${jobProfile?.company?.descriptionOneliner} based out of ${jobProfile.jobLocation} and got your application on my job posting. I believe this might be a good fit.
     Wanted to speak to you in regards your interests in our new role. Would you be available for a short call sometime today?
     `;
-    console.log("Generated system prompt:", SYSTEM_PROMPT);
+    console.log("Generated getTranscomStartChatPrompt prompt:", SYSTEM_PROMPT);
     return SYSTEM_PROMPT;
   }
 
@@ -317,8 +317,6 @@ export class PromptingAgents {
     console.log('Using reminder prompt');
     return REMINDER_SYSTEM_PROMPT;
   }
-
-
 
   async getStageWiseActivity() {
     const stageWiseActions = {

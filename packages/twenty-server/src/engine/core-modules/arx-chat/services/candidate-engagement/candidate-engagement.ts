@@ -22,8 +22,8 @@ export default class CandidateEngagementArx {
     const messagesList: allDataObjects.MessageNode[] = await new FilterCandidates(this.workspaceQueryService).fetchAllWhatsappMessages(candidatePersonNodeObj.candidates?.edges[0]?.node.id, apiToken);
     const sortedMessagesList:allDataObjects.MessageNode[] = messagesList.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     const whatappUpdateMessageObj = await new ChatControls(this.workspaceQueryService).getChatTemplateFromChatControls(chatControl, sortedMessagesList, candidateJob, candidatePersonNodeObj, apiToken, chatReply, recruiterProfile);
-    console.log("Sending a messages")
     await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).updateCandidateEngagementDataInTable(whatappUpdateMessageObj, apiToken);    
+    console.log("Sending a messages::", chatReply, "to the candidate::", personNode.name.firstName + " " + personNode.name.lastName);
   }
 
   async processCandidate(personNode: allDataObjects.PersonNode,candidateJob:allDataObjects.Jobs, chatControl: allDataObjects.chatControls, apiToken:string) {
@@ -44,22 +44,7 @@ export default class CandidateEngagementArx {
     }
   }
 
-  isCandidateEligibleForEngagement = (candidate: allDataObjects.CandidateNode, chatControl) => {
-    const minutesToWait = 0;
-    const twoMinutesAgo = new Date(Date.now() - minutesToWait * 60 * 1000);
 
-    if (!candidate.engagementStatus || candidate.lastEngagementChatControl !== chatControl) return false;
-    if (chatControl === 'startVideoInterviewChat' && (!candidate.startVideoInterviewChat || !candidate.startChat)) return false;
-    if (chatControl === 'startMeetingSchedulingChat' && (!candidate.startMeetingSchedulingChat || !candidate.startVideoInterviewChat || !candidate.startChat)) return false;
-    if (candidate.whatsappMessages?.edges?.length > 0) {
-    const latestMessage = candidate.whatsappMessages.edges[0].node;
-    if (new Date(latestMessage.createdAt) >= twoMinutesAgo) {
-      console.log(`Candidate messaged less than ${minutesToWait} minutes ago:: ${candidate.name} for chatControl: ${chatControl}`);
-      return false;
-    }
-    }
-    return true;
-  };
 
   async startChatEngagement(peopleCandidateResponseEngagementArr: allDataObjects.PersonNode[], candidateJob:allDataObjects.Jobs, chatControl: allDataObjects.chatControls,  apiToken:string) {
     const filteredCandidatesToStartEngagement = await new ChatControls(this.workspaceQueryService).filterCandidatesAsPerChatControls(peopleCandidateResponseEngagementArr, chatControl);
@@ -74,16 +59,15 @@ export default class CandidateEngagementArx {
     const sortedPeopleData: allDataObjects.PersonNode[] = sortWhatsAppMessages(peopleCandidateResponseEngagementArr);
     const filteredCandidatesToEngage = sortedPeopleData.filter(person => {
       const candidate = person?.candidates?.edges?.[0]?.node;
-      return candidate ? this.isCandidateEligibleForEngagement(candidate, chatControl) : false;
+      return candidate ? new ChatControls(this.workspaceQueryService).isCandidateEligibleForEngagement(candidate, chatControl) : false;
     });
     console.log('Number processCandidateof filtered candidates to engage after time scheduling: ', filteredCandidatesToEngage?.length, "for chatcontrol", chatControl);
     for (const personNode of filteredCandidatesToEngage) {
-      await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).updateEngagementStatusBeforeRunningEngageCandidates(personNode?.candidates?.edges[0]?.node?.id,candidateJob,apiToken);
+      await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).setCandidateEngagementStatusToFalse(personNode?.candidates?.edges[0]?.node?.id,apiToken);
       await this.processCandidate(personNode, candidateJob, chatControl,  apiToken);
     }
   }
   
-
   async executeCandidateEngagement(apiToken:string) {
     try{
       console.log("Cron running and cycle started to check candidate engagement");
