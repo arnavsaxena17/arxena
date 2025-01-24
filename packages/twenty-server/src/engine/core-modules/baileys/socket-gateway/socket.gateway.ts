@@ -2,6 +2,7 @@ import { SubscribeMessage, WebSocketGateway, WebSocketServer, OnGatewayConnectio
 import { Server, Socket } from 'socket.io';
 import { BaileysBot } from '../baileys';
 // import { Mimetype } from '@whiskeysockets/baileys';
+import * as allDataObjects from '../../arx-chat/services/data-model-objects';
 
 import * as jwt from 'jsonwebtoken';
 import { FileDataDto, MessageDto } from '../types/baileys-types';
@@ -82,7 +83,8 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     console.log(`client:(${client.id}) connected...`, authToken);
     (async () => {
       try {
-        this.baileys = await new BaileysBot('sendWhatsappMessagehandleConnection', this.workspaceQueryService).initApp(this, 'started from handleConnection',"startChat",apiToken);
+        const chatControl:allDataObjects.chatControls = {"chatControlType": "startChat"};
+        this.baileys = await new BaileysBot('sendWhatsappMessagehandleConnection', this.workspaceQueryService).initApp(this, 'started from handleConnection',chatControl,apiToken);
         console.log('Baileys service initialized from SocketGateway.handleConnection.');
       } catch (error) {
         this.handleError(error);
@@ -106,7 +108,9 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
         // throw new Error("Baileys service is not initialized.");
         (async () => {
           try {
-            this.baileys = await new BaileysBot('sendMessageServiceNotInitilaised',this.workspaceQueryService).initApp(this, 'because service is not initilised',"startChat",apiToken);
+            const chatControl:allDataObjects.chatControls = {"chatControlType": "startChat"};
+
+            this.baileys = await new BaileysBot('sendMessageServiceNotInitilaised',this.workspaceQueryService).initApp(this, 'because service is not initilised',chatControl,apiToken);
             // await delay(2000);
             return await this.sendMessageToBaileys(body); // ! Recursion
             // let { jid, message } = body;

@@ -224,7 +224,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
 
 
   async setupVideoInterviewLinks(peopleEngagementStartVideoInterviewChatArr:allDataObjects.PersonNode[], candidateJob:allDataObjects.Jobs,chatControl: allDataObjects.chatControls,  apiToken:string) {
-    if (chatControl === 'startVideoInterviewChat') {
+    if (chatControl.chatControlType === 'startVideoInterviewChat') {
       let skippedCount = 0;
       let createdCount = 0;
       for (const personNode of peopleEngagementStartVideoInterviewChatArr) {

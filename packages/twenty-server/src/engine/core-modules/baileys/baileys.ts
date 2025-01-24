@@ -22,6 +22,7 @@ import { FetchAndUpdateCandidatesChatsWhatsapps } from 'src/engine/core-modules/
 import * as allDataObjects from 'src/engine/core-modules/arx-chat/services/data-model-objects';
 console.log('Baileys being called!!!');
 import {WorkspaceQueryService} from '../workspace-modifications/workspace-modifications.service';
+import { FilterCandidates } from '../arx-chat/services/candidate-engagement/filter-candidates';
 
 
 const agent = new SocksProxyAgent(process.env.SMART_PROXY_URL || '');
@@ -200,14 +201,16 @@ export class BaileysBot {
       };
 
       console.log('baileysWhatsappOutgoingObj:', baileysWhatsappOutgoingObj);
-  const candidateProfileData = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).getCandidateDetailsByPhoneNumber(baileysWhatsappOutgoingObj.phoneNumberTo,apiToken);
+  const candidateProfileData = await new FilterCandidates(this.workspaceQueryService).getCandidateDetailsByPhoneNumber(baileysWhatsappOutgoingObj.phoneNumberTo,apiToken);
       console.log('This is the candidateProfileData', candidateProfileData);
       if (candidateProfileData && candidateProfileData != allDataObjects.emptyCandidateProfileObj) {
         const messageBeingSent = m?.messages[0]?.message?.extendedTextMessage?.text || m?.messages[0]?.message?.conversation || '';
+        const chatControl:allDataObjects.chatControls = {"chatControlType": "startChat"};
+        
         const userMessage: allDataObjects.candidateChatMessageType = {
           phoneNumberFrom: phoneNumberFrom,
           whatsappMessageType: '',
-          lastEngagementChatControl:chatControl,
+          lastEngagementChatControl:chatControl.chatControlType,
           phoneNumberTo: m?.messages[0]?.key?.remoteJid?.replace('@s.whatsapp.net', ''),
           messages: [{ text: messageBeingSent }],
           candidateFirstName: candidateProfileData?.name,
@@ -327,7 +330,9 @@ export class BaileysBot {
       console.log('This is the value of isLoggedOut ', {
         isConnectionRefreshed,
       });
-    const chatControl = "startChat";
+    // const chatControl = "startChat";
+    const chatControl:allDataObjects.chatControls = {"chatControlType": "startChat"};
+
       // reconnect if not logged out
       if (shouldReconnect) {
         if (!isConnectionRefreshed) {

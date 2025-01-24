@@ -17,7 +17,7 @@ export class Tranformations {
       candidateFirstName: personNode.name?.firstName,
       phoneNumberFrom: allDataObjects.recruiterProfile?.phone,
       phoneNumberTo: personNode.phone,
-      lastEngagementChatControl: chatControl,
+      lastEngagementChatControl: chatControl.chatControlType,
       messages: chatHistory.slice(-1),
       messageType: 'botMessage',
       whatsappDeliveryStatus: 'created',

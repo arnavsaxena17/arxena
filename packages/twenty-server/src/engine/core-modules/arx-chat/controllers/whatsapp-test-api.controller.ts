@@ -49,10 +49,12 @@ export class WhatsappTestAPI {
     console.log("This is the mesasge obj:", personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges)
     const mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.messageObj;
     console.log("This is the mostRecentMessageArr:", mostRecentMessageArr)
-    const chatControl = personObj?.candidates?.edges[0].node.lastEngagementChatControl;
+    const chatControlType = personObj?.candidates?.edges[0].node.lastEngagementChatControl;
+    const chatControl:allDataObjects.chatControls = { chatControlType: chatControlType, chatMessageTemplate: 'success' };
     mostRecentMessageArr.push({ role: 'user', content: whatsappTemplateMessageSent });
+
     const whatappUpdateMessageObj:allDataObjects.candidateChatMessageType = await new Tranformations().updateChatHistoryObjCreateWhatsappMessageObj( 'success', personObj, mostRecentMessageArr, chatControl,apiToken);
-    await new CandidateEngagementArx(this.workspaceQueryService).updateCandidateEngagementDataInTable(personObj, whatappUpdateMessageObj,apiToken);
+    await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).updateCandidateEngagementDataInTable(personObj, whatappUpdateMessageObj,apiToken);
     console.log("This is ther esponse:", response.data)
     return { status: 'success' };
   }
@@ -98,7 +100,9 @@ export class WhatsappTestAPI {
     console.log('upload file to whatsapp api');
     const requestBody = request?.body;
     const filePath = requestBody?.filePath;
-    const chatControl = 'startChat';
+    // const chatControl = 'startChat';
+    const chatControl:allDataObjects.chatControls = {chatControlType:"startChat"};
+
     const response = await new FacebookWhatsappChatApi(this.workspaceQueryService).uploadFileToWhatsApp(filePath, chatControl,apiToken);
     return response || {}; 
   }
@@ -123,7 +127,8 @@ export class WhatsappTestAPI {
   async uploadAndSendFileToFBWAAPIUser(@Req() request: any): Promise<object> {
     const apiToken = request.headers.authorization.split(' ')[1];
     const sendFileObj = request.body;
-    const chatControl = 'startChat';
+    const chatControl:allDataObjects.chatControls = {chatControlType:"startChat"};
+
     new FacebookWhatsappChatApi(this.workspaceQueryService).uploadAndSendFileToWhatsApp(sendFileObj, chatControl,  apiToken);
     return { status: 'success' };
   }

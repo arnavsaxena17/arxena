@@ -462,7 +462,7 @@ export class FacebookWhatsappChatApi {
       if (whatappUpdateMessageObj?.messages[0]?.content?.toLowerCase().includes('based recruitment company') || whatappUpdateMessageObj?.messages[0]?.content?.toLowerCase().includes('video interview as part of the')) {
         let messageTemplate: string;
         if (whatappUpdateMessageObj?.messages[0]?.content?.toLowerCase().includes('based recruitment company')) {
-          if (chatControl === 'startChat') {
+          if (chatControl.chatControlType === 'startChat') {
             const currentTimeInIndia = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
             const currentHourInIndia = new Date(currentTimeInIndia).getHours();
             if (currentHourInIndia >= 17) {
@@ -474,7 +474,7 @@ export class FacebookWhatsappChatApi {
             messageTemplate = whatappUpdateMessageObj?.whatsappMessageType || 'application03';
           }
         } else if (whatappUpdateMessageObj?.messages[0]?.content?.toLowerCase().includes('video interview as part of the') && whatappUpdateMessageObj?.messages[0]?.content?.toLowerCase().includes('questions at the link here')) {
-          if (chatControl === 'startVideoInterviewChat') {
+          if (chatControl.chatControlType === 'startVideoInterviewChat') {
             messageTemplate = 'share_video_interview_link_without_button';
           } else {
             messageTemplate = whatappUpdateMessageObj?.whatsappMessageType || 'application03';

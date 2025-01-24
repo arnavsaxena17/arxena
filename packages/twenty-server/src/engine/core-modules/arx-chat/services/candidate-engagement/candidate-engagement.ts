@@ -43,7 +43,7 @@ export default class CandidateEngagementArx {
       whatsappMessageType :whatsappTemplate,
       phoneNumberTo: recruiterProfile.phone,
       messages: [{ content: chatReply }],
-      lastEngagementChatControl: chatControl,
+      lastEngagementChatControl: chatControl.chatControlType,
       messageType: 'candidateMessage',
       messageObj: chatHistory,
       whatsappDeliveryStatus: 'startChatTriggered',
@@ -98,11 +98,11 @@ export default class CandidateEngagementArx {
     const filterCandidates = (personNode: allDataObjects.PersonNode) => {
       const candidate = personNode?.candidates?.edges[0]?.node;
       if (!candidate) return false;
-      if (chatControl === 'startChat') {
+      if (chatControl.chatControlType === 'startChat') {
       return candidate.startChat && candidate.whatsappMessages?.edges.length === 0 && !candidate.startVideoInterviewChat;
-      } else if (chatControl === 'startVideoInterviewChat') {
+      } else if (chatControl.chatControlType === 'startVideoInterviewChat') {
       return candidate.startChat && candidate.whatsappMessages?.edges.length > 0 && candidate.startVideoInterviewChat && candidate.lastEngagementChatControl !== "startVideoInterviewChat";
-      } else if (chatControl === 'startMeetingSchedulingChat') {
+      } else if (chatControl.chatControlType === 'startMeetingSchedulingChat') {
       return candidate.startChat && candidate.whatsappMessages?.edges.length > 0 && candidate.startVideoInterviewChat && candidate.startMeetingSchedulingChat && candidate.lastEngagementChatControl !== "startMeetingSchedulingChat";
       } else {
       return candidate.startChat && candidate.whatsappMessages?.edges.length > 0;
@@ -111,7 +111,7 @@ export default class CandidateEngagementArx {
     const filteredCandidatesToStartEngagement = peopleCandidateResponseEngagementArr?.filter(filterCandidates);
     console.log('Number of candidates to start chat after all filters for start chat ::', filteredCandidatesToStartEngagement?.length, "for chatControl:", chatControl);
     for (const candidateProfileDataNodeObj of filteredCandidatesToStartEngagement) {
-      const chatReply = chatControl
+      const chatReply = chatControl.chatControlType
       await this.createAndUpdateCandidateStartChatChatMessage(chatReply, candidateProfileDataNodeObj,candidateJob,  chatControl, apiToken);
     }
   }
@@ -134,13 +134,13 @@ export default class CandidateEngagementArx {
   async checkCandidateEngagement(apiToken:string) {
     try{
       console.log("Cron running and cycle started to check candidate engagement");
-      const chatControls: allDataObjects.chatControls[] = ["startChat", "startVideoInterviewChat", "startMeetingSchedulingChat"];
+      const chatControls: allDataObjects.chatControls[] = [{chatControlType:"startChat"},{ chatControlType:"startVideoInterviewChat"}, {chatControlType:"startMeetingSchedulingChat"}];
       for (const chatControl of chatControls) {
         const {people, candidateJob} = await new FilterCandidates(this.workspaceQueryService).fetchSpecificPeopleToEngageBasedOnChatControl(chatControl, apiToken);
         this.checkIfAllInformationForSendingChatMessageIsAvailable(people, chatControl, apiToken);
         console.log(`Number of people to engage for ${chatControl}:`, people.length);
         if (people.length > 0) {
-          if (chatControl === "startVideoInterviewChat") {
+          if (chatControl.chatControlType === "startVideoInterviewChat") {
             await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).setupVideoInterviewLinks(people,candidateJob, chatControl, apiToken);
           }
           await this.startChatEngagement(people,candidateJob, chatControl, apiToken);
@@ -153,7 +153,7 @@ export default class CandidateEngagementArx {
       console.log("This is the error in checkCandidate Engagement", error);
     }
   }
-  checkIfAllInformationForSendingChatMessageIsAvailable(peopleEngagementStartChatArr: allDataObjects.PersonNode[], chatControl: string, apiToken: string) {
+  checkIfAllInformationForSendingChatMessageIsAvailable(peopleEngagementStartChatArr: allDataObjects.PersonNode[], chatControl: allDataObjects.chatControls, apiToken: string) {
     // api key, keys created for each api token for each workspace
     // Google integration is done
     // candidateFirstName

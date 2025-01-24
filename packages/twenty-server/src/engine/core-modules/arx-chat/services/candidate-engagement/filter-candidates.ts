@@ -14,7 +14,7 @@ export class FilterCandidates {
   async fetchSpecificPeopleToEngageBasedOnChatControl(chatControl: allDataObjects.chatControls, apiToken: string): Promise<{ people: allDataObjects.PersonNode[], candidateJob: allDataObjects.Jobs}> {
     try {
       console.log('Fetching candidates to engage');
-      const candidates = await this.fetchAllCandidatesWithSpecificChatControl(chatControl, apiToken);
+      const candidates = await this.fetchAllCandidatesWithSpecificChatControl(chatControl.chatControlType, apiToken);
       console.log('Fetched', candidates?.length, ' candidates with chatControl', chatControl);
       const candidatePeopleIds = candidates?.filter(c => c?.people?.id).map(c => c?.people?.id);
       const candidateJob = candidates?.filter(c => c?.jobs?.id).map(c => c?.jobs)[0];
@@ -42,8 +42,8 @@ export class FilterCandidates {
   }
 
 
-  async fetchAllCandidatesWithSpecificChatControl(chatControl: allDataObjects.chatControls, apiToken: string): Promise<allDataObjects.Candidate[]> {
-    console.log('Fetching all candidates with chatControl', chatControl);
+  async fetchAllCandidatesWithSpecificChatControl(chatControlType: allDataObjects.chatControlType, apiToken: string): Promise<allDataObjects.Candidate[]> {
+    console.log('Fetching all candidates with chatControlType', chatControlType);
     let allCandidates: allDataObjects.Candidate[] = [];
     
     const filters = {
@@ -52,7 +52,7 @@ export class FilterCandidates {
         startVideoInterviewChat: [ { startVideoInterviewChat: { eq: true }, stopChat: { is: "NULL" } }, { startVideoInterviewChat: { eq: true }, stopChat: { eq: false } } ],
         startMeetingSchedulingChat: [ { startMeetingSchedulingChat: { eq: true }, startVideoInterviewChat: { eq: true }, stopChat: { is: "NULL" } }, { startMeetingSchedulingChat: { eq: true }, startVideoInterviewChat: { eq: true }, stopChat: { eq: false } } ],    
       };
-      const filtersToUse = filters[chatControl] || [];
+      const filtersToUse = filters[chatControlType] || [];
       let graphqlQueryObjToFetchAllCandidatesForChats = '';
     try{
       const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
@@ -104,7 +104,7 @@ export class FilterCandidates {
         }
     }
 
-    console.log('Number of candidates from fetched candidates:', allCandidates.length, 'for chatControl', chatControl);
+    console.log('Number of candidates from fetched candidates:', allCandidates.length, 'for chatControlType', chatControlType);
     return allCandidates;
 }
 

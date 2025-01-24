@@ -23,7 +23,13 @@ export const allStatusesArray: [string, ...string[]] = [
 
 export type allStatuses = typeof allStatusesArray[number];
 export type statuses = typeof statusesArray[number];
-export type chatControls = "startChat" | "allStartedAndStoppedChats" | "startVideoInterviewChat" | "startMeetingSchedulingChat"
+
+
+export type chatControlType = "startChat" | "allStartedAndStoppedChats" | "startVideoInterviewChat" | "startMeetingSchedulingChat";
+export interface chatControls {
+  chatControlType: chatControlType;
+  chatMessageTemplate?: string;
+}
 
 
 
@@ -108,7 +114,7 @@ export interface candidateChatMessageType {
   phoneNumberTo: string;
   whatsappMessageType: string | "";
   messageType: string;
-  lastEngagementChatControl?:chatControls;
+  lastEngagementChatControl?:chatControlType;
   videoInterviewLink?: string;
   whatsappDeliveryStatus?: string;
   whatsappMessageId?: string;
@@ -206,7 +212,7 @@ export interface CandidateNode {
   engagementStatus: boolean;
   startVideoInterviewChat: boolean;
   startMeetingSchedulingChat: boolean;
-  lastEngagementChatControl: chatControls;
+  lastEngagementChatControl: chatControlType;
   phoneNumber: string;
   email: string;
   input: string;
@@ -464,7 +470,7 @@ export const emptyCandidateProfileObj: CandidateNode = {
   startChat: false,
   candConversationStatus: '',
   startMeetingSchedulingChat:false,
-  lastEngagementChatControl: 'startChat',
+  lastEngagementChatControl: 'startChat' as chatControlType,
   startVideoInterviewChat: false,
   stopChat: false,
   whatsappMessages: {

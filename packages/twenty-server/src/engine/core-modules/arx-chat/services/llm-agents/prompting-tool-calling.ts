@@ -283,13 +283,13 @@ export class ToolsForAgents {
 
   async getSystemPrompt(personNode: allDataObjects.PersonNode,candidateJob:allDataObjects.Jobs,chatControl:allDataObjects.chatControls,  apiToken:string) {
     console.log("This is the chatControl:", chatControl)
-    if (chatControl == 'startVideoInterviewChat') {
+    if (chatControl.chatControlType == 'startVideoInterviewChat') {
       return this.getVideoInterviewPrompt(personNode);
     }
-    else if (chatControl === "startChat"){
+    else if (chatControl.chatControlType === "startChat"){
       return this.getStartChatPrompt(personNode, candidateJob, apiToken);
     }
-    else if (chatControl === "startMeetingSchedulingChat"){
+    else if (chatControl.chatControlType === "startMeetingSchedulingChat"){
       return this.getStartMeetingScheduling(personNode, candidateJob, apiToken);
     }
     else{
@@ -504,11 +504,11 @@ export class ToolsForAgents {
 
 
 
-  async getTools(candidateJob:allDataObjects.Jobs, chatControl:string){
-    if (chatControl === 'startChat') {
+  async getTools(candidateJob:allDataObjects.Jobs, chatControl: allDataObjects.chatControls) {
+    if (chatControl.chatControlType === 'startChat') {
       return this.getStartChatTools(candidateJob)
     }
-    else if (chatControl === 'startVideoInterviewChat') {
+    else if (chatControl.chatControlType === 'startVideoInterviewChat') {
       return this.getVideoInterviewTools(candidateJob)
     }
   }

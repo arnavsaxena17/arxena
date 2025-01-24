@@ -295,7 +295,7 @@ export class ArxChatEndpoint {
     console.log('Recruiter profile', recruiterProfile);
     const chatMessages = personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges;
     let chatHistory = chatMessages[0]?.node?.messageObj || [];
-    const chatControl = 'startChat';
+    const chatControl:allDataObjects.chatControls = {chatControlType:'startChat'};
     chatHistory = personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.messageObj;
     let whatappUpdateMessageObj: allDataObjects.candidateChatMessageType = {
       candidateProfile: personObj?.candidates?.edges[0]?.node,
@@ -306,7 +306,7 @@ export class ArxChatEndpoint {
       messages: [{ content: request?.body?.messageToSend }],
       messageType: 'recruiterMessage',
       messageObj: chatHistory,
-      lastEngagementChatControl: chatControl,
+      lastEngagementChatControl: chatControl.chatControlType,
       whatsappDeliveryStatus: 'created',
       whatsappMessageId: 'startChat',
     };
@@ -564,7 +564,7 @@ export class ArxChatEndpoint {
   async getCandidatesAndChats(@Req() request: any): Promise<object> {
     console.log("Going to get all candidates and chats")
     const apiToken = request?.headers?.authorization?.split(' ')[1];
-    const chatControl = "allStartedAndStoppedChats";
+    const chatControl:allDataObjects.chatControls = {chatControlType:"allStartedAndStoppedChats"};
     const {people, candidateJob} = await new FilterCandidates(this.workspaceQueryService).fetchSpecificPeopleToEngageBasedOnChatControl(chatControl, apiToken);
     console.log("All people length:", people?.length)
     return people
@@ -576,7 +576,9 @@ export class ArxChatEndpoint {
     const apiToken = request.headers.authorization.split(' ')[1];
     const candidateId = request.query.candidateId;
     const person = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByCandidateId(candidateId,apiToken);
-    const allPeople = await new FilterCandidates(this.workspaceQueryService).fetchSpecificPersonToEngageBasedOnChatControl("allStartedAndStoppedChats", person.id,apiToken);
+    const chatControl:allDataObjects.chatControls = {chatControlType:"allStartedAndStoppedChats"};
+
+    const allPeople = await new FilterCandidates(this.workspaceQueryService).fetchSpecificPersonToEngageBasedOnChatControl(chatControl, person.id,apiToken);
     console.log("All people length:", allPeople?.length)
     return allPeople
   }
@@ -924,7 +926,9 @@ async deletePeopleAndCandidatesBulk(@Req() request: any): Promise<object> {
 
     const personObj: allDataObjects.PersonNode = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPhoneNumber(request.body.phoneNumberTo,apiToken);
     try {
-      await new ToolCallsProcessing(this.workspaceQueryService).shareJDtoCandidate(personObj, 'startChat',  apiToken);
+      const chatControl:allDataObjects.chatControls = {chatControlType:"startChat"};
+
+      await new ToolCallsProcessing(this.workspaceQueryService).shareJDtoCandidate(personObj, chatControl,  apiToken);
       return { status: 'Success' };
     } catch (err) {
       return { status: err };

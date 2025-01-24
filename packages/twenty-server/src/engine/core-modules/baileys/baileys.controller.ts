@@ -5,6 +5,7 @@ import { SocketGateway } from './socket-gateway/socket.gateway';
 import { BaileysBot, SendMessageDto } from './baileys';
 import { MessageDto } from './types/baileys-types';
 import { WorkspaceQueryService } from '../workspace-modifications/workspace-modifications.service';
+import * as allDataObjects from '../arx-chat/services/data-model-objects';
 
 console.log('BaileysController being called!!!');
 
@@ -18,7 +19,9 @@ export class BaileysController {
     private readonly socket: SocketGateway,
   ) {
     (async () => {
-      let b = await new BaileysBot( 'baileysController', this.workspaceQueryService).initApp(this.socket, 'because baileyscontroller wants it', 'startChat', apiToken);
+      
+      const chatControl:allDataObjects.chatControls = {"chatControlType": "startChat"};
+      let b = await new BaileysBot( 'baileysController', this.workspaceQueryService).initApp(this.socket, 'because baileyscontroller wants it', chatControl, apiToken);
       // this.socket.setBaileys(b);
     })();
   }
