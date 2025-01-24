@@ -55,10 +55,7 @@ export class IncomingWhatsappMessages {
     const candidateProfileData = await new FilterCandidates(this.workspaceQueryService).getCandidateInformation(whatsappIncomingMessage,apiToken);
     console.log('This is the SELF message., we have to update the database that this message has been received::', chatReply);
     if (candidateProfileData != allDataObjects.emptyCandidateProfileObj) {
-      // console.log('This is the candiate who has sent us candidateProfileData::', candidateProfileData);
       await this.createAndUpdateIncomingCandidateChatMessage({ chatReply: chatReply, whatsappDeliveryStatus: 'delivered',phoneNumberFrom:requestBody.phoneNumberFrom, whatsappMessageId: requestBody.baileysMessageId, isFromMe: true }, candidateProfileData,apiToken);
-      // const replyObject = { chatReply: chatReply, whatsappDeliveryStatus: 'receivedFromHumanBot', whatsappMessageId: requestBody?.baileysMessageId };
-      // await this.createAndUpdateIncomingCandidateChatMessage(replyObject, candidateProfileData);
       new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).setCandidateEngagementStatusToFalse(candidateProfileData.id,apiToken);
     } else {
       console.log('Message has been received from a candidate however the candidate is not in the database');
