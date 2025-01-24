@@ -52,10 +52,7 @@ export function getContentTypeFromFileName(filename: string) {
 }
 
 
-export async function updateMostRecentMessagesBasedOnNewSystemPrompt(mostRecentMessageArr: allDataObjects.ChatHistoryItem[],newSystemPrompt: string) {
-  mostRecentMessageArr[0] = { role: 'system', content: newSystemPrompt };
-  return mostRecentMessageArr;
-}
+
 export async function axiosRequest(data: string, apiToken: string) {
   // console.log("Sending a post request to the graphql server:: with data", data);
   const response = await axios.request({

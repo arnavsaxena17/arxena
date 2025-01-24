@@ -4,7 +4,7 @@ import * as allDataObjects from '../services/data-model-objects';
 import { FacebookWhatsappChatApi } from '../services/whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
 import { FetchAndUpdateCandidatesChatsWhatsapps } from '../services/candidate-engagement/update-chat';
 import { WhatsappTemplateMessages } from '../services/whatsapp-api/facebook-whatsapp/whatsapp-template-messages';
-import {Tranformations} from '../services/candidate-engagement/transformations';
+import {Transformations} from '../services/candidate-engagement/transformations';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { FilterCandidates } from '../services/candidate-engagement/filter-candidates';
 
@@ -52,7 +52,7 @@ export class WhatsappTestAPI {
     const chatControl:allDataObjects.chatControls = { chatControlType: chatControlType, chatMessageTemplate: 'success' };
     mostRecentMessageArr.push({ role: 'user', content: whatsappTemplateMessageSent });
 
-    const whatappUpdateMessageObj:allDataObjects.whatappUpdateMessageObjType = await new Tranformations().updateChatHistoryObjCreateWhatsappMessageObj( 'success', personObj, mostRecentMessageArr, chatControl,apiToken);
+    const whatappUpdateMessageObj:allDataObjects.whatappUpdateMessageObjType = await new Transformations().updateChatHistoryObjCreateWhatsappMessageObj( 'success', personObj, mostRecentMessageArr, chatControl,apiToken);
     await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).updateCandidateEngagementDataInTable(whatappUpdateMessageObj,apiToken);
     console.log("This is ther esponse:", response.data)
     return { status: 'success' };

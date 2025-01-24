@@ -4,7 +4,7 @@ import * as allDataObjects from '../services/data-model-objects';
 import { FacebookWhatsappChatApi } from '../services/whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
 import { IncomingWhatsappMessages } from '../services/whatsapp-api/incoming-messages';
 import { FetchAndUpdateCandidatesChatsWhatsapps } from '../services/candidate-engagement/update-chat';
-import { StageWiseClassification } from '../services/llm-agents/get-stage-wise-classification';
+import { StageWiseClassification } from '../services/llm-agents/stage-classification';
 import { OpenAIArxMultiStepClient } from '../services/llm-agents/arx-multi-step-client';
 import { axiosRequest } from '../utils/arx-chat-agent-utils';
 import * as allGraphQLQueries from '../graphql-queries/graphql-queries-chatbot';

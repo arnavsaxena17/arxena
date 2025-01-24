@@ -1,7 +1,7 @@
 import * as allDataObjects from '../data-model-objects';
 import * as allGraphQLQueries from '../../graphql-queries/graphql-queries-chatbot';
 
-export class Tranformations {
+export class Transformations {
   async updateChatHistoryObjCreateWhatsappMessageObj(
     wamId: string,
     personNode: allDataObjects.PersonNode,
@@ -28,6 +28,14 @@ export class Tranformations {
 
 
 
+
+  async updateMostRecentMessagesBasedOnNewSystemPrompt(
+    mostRecentMessageArr: allDataObjects.ChatHistoryItem[],
+    newSystemPrompt: string
+  ): Promise<allDataObjects.ChatHistoryItem[]> {
+    mostRecentMessageArr[0] = { role: 'system', content: newSystemPrompt };
+    return mostRecentMessageArr;
+  }
 
     getMostRecentMessageFromMessagesList(messagesList: allDataObjects.MessageNode[]) {
       let mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = [];

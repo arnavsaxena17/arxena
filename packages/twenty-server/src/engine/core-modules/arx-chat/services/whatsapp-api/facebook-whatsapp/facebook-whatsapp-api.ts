@@ -13,7 +13,7 @@ import { FetchAndUpdateCandidatesChatsWhatsapps } from '../../candidate-engageme
 const { exec } = require('child_process');
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { FilterCandidates } from '../../candidate-engagement/filter-candidates';
-import { Tranformations } from '../../candidate-engagement/transformations';
+import { Transformations } from '../../candidate-engagement/transformations';
 
 export class FacebookWhatsappChatApi {
   constructor(private readonly workspaceQueryService: WorkspaceQueryService) {}
@@ -63,7 +63,6 @@ export class FacebookWhatsappChatApi {
     };
     const response = await axios.request(config);
     console.log('Status on sending that whatsaapp message::', response?.status);
-
     return response;
   }
 
@@ -136,7 +135,7 @@ export class FacebookWhatsappChatApi {
             const personObj = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPhoneNumber(phoneNumberTo, apiToken);
             const mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.messageObj;
             mostRecentMessageArr.push({ role: 'user', content: 'Failed to send JD to the candidate.' });
-            const whatappUpdateMessageObj: allDataObjects.whatappUpdateMessageObjType = await new Tranformations().updateChatHistoryObjCreateWhatsappMessageObj(
+            const whatappUpdateMessageObj: allDataObjects.whatappUpdateMessageObjType = await new Transformations().updateChatHistoryObjCreateWhatsappMessageObj(
               'failed',
               personObj,
               mostRecentMessageArr,
@@ -258,9 +257,8 @@ export class FacebookWhatsappChatApi {
       const response = await axios.request(config);
       console.log('This is response data after sendAttachment is called', JSON.stringify(response.data));
       const wamId = response?.data?.messages[0]?.id;
-      const whatappUpdateMessageObj: allDataObjects.whatappUpdateMessageObjType = await new Tranformations().updateChatHistoryObjCreateWhatsappMessageObj(
+      const whatappUpdateMessageObj: allDataObjects.whatappUpdateMessageObjType = await new Transformations().updateChatHistoryObjCreateWhatsappMessageObj(
         wamId,
-        // response,
         personObj,
         mostRecentMessageArr,
         chatControl,
@@ -358,7 +356,6 @@ export class FacebookWhatsappChatApi {
       if (response?.data?.messages[0]?.message_status === 'accepted') {
         console.log('Message sent successfully and accepted by FACEBOOK API with id::', response?.data?.messages[0]?.id);
         return response?.data;
-        // wamid.HBgMOTE4NDExOTM3NzY5FQIAERgSNjI0NkM1RjlCNzBGMEE5MjY5AA
       }
       console.log('This is the message sent successfully');
     } catch (error) {
@@ -513,7 +510,7 @@ export class FacebookWhatsappChatApi {
         response = await this.sendWhatsappTextMessage(sendTextMessageObj, apiToken);
       }
 
-      whatappUpdateMessageObjAfterWAMidUpdate = await new Tranformations().updateChatHistoryObjCreateWhatsappMessageObj(
+      whatappUpdateMessageObjAfterWAMidUpdate = await new Transformations().updateChatHistoryObjCreateWhatsappMessageObj(
         response?.data?.messages[0]?.id || response.messages[0].id,
         personNode,
         mostRecentMessageArr,

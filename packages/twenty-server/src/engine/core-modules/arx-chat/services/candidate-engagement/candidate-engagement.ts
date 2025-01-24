@@ -2,12 +2,10 @@ import * as allDataObjects from '../data-model-objects';
 import { FetchAndUpdateCandidatesChatsWhatsapps } from './update-chat';
 import { sortWhatsAppMessages } from '../../utils/arx-chat-agent-utils';
 import { OpenAIArxMultiStepClient } from '../llm-agents/arx-multi-step-client';
-import { ToolsForAgents } from '../llm-agents/prompting-tool-calling';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { FilterCandidates } from './filter-candidates';
-import {Tranformations} from './transformations'
-import { FacebookWhatsappChatApi } from '../whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
-import { WhatsappControls } from '../whatsapp-api/whatsapp-controls';
+import {Transformations} from './transformations'
+import { ChatControls } from './chat-controls';
 const readline = require('node:readline');
 const rl = readline.createInterface({
   input: process.stdin,
@@ -22,39 +20,9 @@ export default class CandidateEngagementArx {
     const personNode = candidatePersonNodeObj;
     const recruiterProfile = allDataObjects.recruiterProfile;
     const messagesList: allDataObjects.MessageNode[] = await new FilterCandidates(this.workspaceQueryService).fetchAllWhatsappMessages(candidatePersonNodeObj.candidates?.edges[0]?.node.id, apiToken);
-    const sortedMessagesList = messagesList.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    let chatHistory = sortedMessagesList[0]?.messageObj || [];
-    let whatsappTemplate:string
-    if (chatReply === 'startChat' && candidatePersonNodeObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges.length === 0) {
-      const SYSTEM_PROMPT = await new ToolsForAgents(this.workspaceQueryService).getSystemPrompt(candidatePersonNodeObj,candidateJob, chatControl,  apiToken);
-      chatHistory.push({ role: 'system', content: SYSTEM_PROMPT });
-      chatHistory.push({ role: 'user', content: 'startChat' });
-      whatsappTemplate = "application03"
-    }
-    else if (chatReply === 'startVideoInterviewChat' && candidatePersonNodeObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges.length > 0) {
-      chatHistory = sortedMessagesList[0]?.messageObj;
-      chatHistory.push({ role: 'user', content: 'startVideoInterviewChat' });
-      whatsappTemplate = "application03"
-    } else {
-      chatHistory = sortedMessagesList[0]?.messageObj;
-      whatsappTemplate = candidatePersonNodeObj?.candidates?.edges[0]?.node?.whatsappProvider || 'application03' 
-    }
-    let whatappUpdateMessageObj: allDataObjects.whatappUpdateMessageObjType = {
-      candidateProfile: candidatePersonNodeObj?.candidates?.edges[0]?.node,
-      candidateFirstName: candidatePersonNodeObj?.name?.firstName,
-      phoneNumberFrom: candidatePersonNodeObj?.phone,
-      whatsappMessageType :whatsappTemplate,
-      phoneNumberTo: recruiterProfile.phone,
-      messages: [{ content: chatReply }],
-      lastEngagementChatControl: chatControl.chatControlType,
-      messageType: 'candidateMessage',
-      messageObj: chatHistory,
-      whatsappDeliveryStatus: 'startChatTriggered',
-      whatsappMessageId: 'NA',
-    };
-    
+    const sortedMessagesList:allDataObjects.MessageNode[] = messagesList.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    const whatappUpdateMessageObj = await new ChatControls(this.workspaceQueryService).getChatTemplateFromChatControls(chatControl, sortedMessagesList, candidateJob, candidatePersonNodeObj, apiToken, chatReply, recruiterProfile);
     console.log("Sending a messages")
-    
     await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).updateCandidateEngagementDataInTable(whatappUpdateMessageObj, apiToken);    
   }
 
@@ -63,7 +31,7 @@ export default class CandidateEngagementArx {
     try {
       const candidateNode = personNode.candidates.edges[0].node;
       const messagesList: allDataObjects.MessageNode[] = await new FilterCandidates(this.workspaceQueryService).fetchAllWhatsappMessages(candidateNode.id, apiToken);
-      let mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = new Tranformations().getMostRecentMessageFromMessagesList(messagesList);
+      let mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = new Transformations().getMostRecentMessageFromMessagesList(messagesList);
       if (mostRecentMessageArr?.length > 0) {
         console.log('Taking MULTI Step Client for - Prompt Engineering type:', process.env.PROMPT_ENGINEERING_TYPE);
         await new OpenAIArxMultiStepClient(personNode, this.workspaceQueryService ).createCompletion(mostRecentMessageArr,candidateJob, chatControl, apiToken);
@@ -76,11 +44,7 @@ export default class CandidateEngagementArx {
     }
   }
 
-
-
-
-
-  isCandidateEligibleForEngagement = (candidate: allDataObjects.CandidateNode, sortedPeopleData, chatControl) => {
+  isCandidateEligibleForEngagement = (candidate: allDataObjects.CandidateNode, chatControl) => {
     const minutesToWait = 0;
     const twoMinutesAgo = new Date(Date.now() - minutesToWait * 60 * 1000);
 
@@ -98,21 +62,7 @@ export default class CandidateEngagementArx {
   };
 
   async startChatEngagement(peopleCandidateResponseEngagementArr: allDataObjects.PersonNode[], candidateJob:allDataObjects.Jobs, chatControl: allDataObjects.chatControls,  apiToken:string) {
-    const filterCandidates = (personNode: allDataObjects.PersonNode) => {
-      const candidate = personNode?.candidates?.edges[0]?.node;
-      if (!candidate) return false;
-      if (chatControl.chatControlType === 'startChat') {
-      return candidate.startChat && candidate.whatsappMessages?.edges.length === 0 && !candidate.startVideoInterviewChat;
-      } else if (chatControl.chatControlType === 'startVideoInterviewChat') {
-      return candidate.startChat && candidate.whatsappMessages?.edges.length > 0 && candidate.startVideoInterviewChat && candidate.lastEngagementChatControl !== "startVideoInterviewChat";
-      } else if (chatControl.chatControlType === 'startMeetingSchedulingChat') {
-      return candidate.startChat && candidate.whatsappMessages?.edges.length > 0 && candidate.startVideoInterviewChat && candidate.startMeetingSchedulingChat && candidate.lastEngagementChatControl !== "startMeetingSchedulingChat";
-      } else {
-      return candidate.startChat && candidate.whatsappMessages?.edges.length > 0;
-      }
-    };
-    const filteredCandidatesToStartEngagement = peopleCandidateResponseEngagementArr?.filter(filterCandidates);
-    console.log('Number of candidates to start chat after all filters for start chat ::', filteredCandidatesToStartEngagement?.length, "for chatControl:", chatControl);
+    const filteredCandidatesToStartEngagement = await new ChatControls(this.workspaceQueryService).filterCandidatesAsPerChatControls(peopleCandidateResponseEngagementArr, chatControl);
     for (const candidatePersonNodeObj of filteredCandidatesToStartEngagement) {
       const chatReply:allDataObjects.chatControlType = chatControl.chatControlType
       await this.createAndUpdateCandidateStartChatChatMessage(chatReply, candidatePersonNodeObj,candidateJob,  chatControl, apiToken);
@@ -124,7 +74,7 @@ export default class CandidateEngagementArx {
     const sortedPeopleData: allDataObjects.PersonNode[] = sortWhatsAppMessages(peopleCandidateResponseEngagementArr);
     const filteredCandidatesToEngage = sortedPeopleData.filter(person => {
       const candidate = person?.candidates?.edges?.[0]?.node;
-      return candidate ? this.isCandidateEligibleForEngagement(candidate, sortedPeopleData, chatControl) : false;
+      return candidate ? this.isCandidateEligibleForEngagement(candidate, chatControl) : false;
     });
     console.log('Number processCandidateof filtered candidates to engage after time scheduling: ', filteredCandidatesToEngage?.length, "for chatcontrol", chatControl);
     for (const personNode of filteredCandidatesToEngage) {

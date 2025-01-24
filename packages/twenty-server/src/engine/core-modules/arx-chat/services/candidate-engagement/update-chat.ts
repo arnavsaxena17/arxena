@@ -3,10 +3,10 @@ import * as allGraphQLQueries from '../../graphql-queries/graphql-queries-chatbo
 import { v4 } from 'uuid';
 import { axiosRequest } from '../../utils/arx-chat-agent-utils';
 import axios from 'axios';
-import { GetCurrentStageByMessages } from '../../services/llm-agents/get-current-stage-from-messages';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { graphQltoUpdateOneCandidate, workspacesWithOlderSchema } from 'src/engine/core-modules/candidate-sourcing/graphql-queries';
 import {FilterCandidates} from './filter-candidates';
+import { StageWiseClassification } from '../llm-agents/stage-classification';
 
 class Semaphore {
   private permits: number;
@@ -91,7 +91,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
     console.log('Fetched', allCandidates?.length, ' candidates with chatControl allStartedAndStoppedChats');
   
     const semaphore = new Semaphore(10); // Allow 10 concurrent requests
-    const getCurrentStageInstance = new GetCurrentStageByMessages(this.workspaceQueryService);
+    const getCurrentStageInstance = new StageWiseClassification(this.workspaceQueryService);
   
     const processWithSemaphore = async (candidate: any) => {
       await semaphore.acquire();
