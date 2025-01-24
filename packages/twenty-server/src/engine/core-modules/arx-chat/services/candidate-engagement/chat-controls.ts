@@ -46,26 +46,26 @@ export class ChatControls {
   }
 
 
-    isCandidateEligibleForEngagement = (candidate: allDataObjects.CandidateNode, chatControl) => {
+    isCandidateEligibleForEngagement = (candidate: allDataObjects.CandidateNode, chatControl:allDataObjects.chatControls) => {
       const minutesToWait = 0;
       const twoMinutesAgo = new Date(Date.now() - minutesToWait * 60 * 1000);
   
-      if (!candidate.engagementStatus || candidate.lastEngagementChatControl !== chatControl) {
+      if (!candidate.engagementStatus || candidate.lastEngagementChatControl !== chatControl.chatControlType) {
         console.log(`Candidate is not being engaged because engagement status is missing or last engagement chat control does not match for candidate: ${candidate.name}`, "candidate.engagementStatus::", candidate.engagementStatus, "candidate.lastEngagementChatControl::", candidate.lastEngagementChatControl, "chatControl::", chatControl);
         return false;
       }
-      if (chatControl === 'startVideoInterviewChat' && (!candidate.startVideoInterviewChat || !candidate.startChat)) {
+      if (chatControl.chatControlType === 'startVideoInterviewChat' && (!candidate.startVideoInterviewChat || !candidate.startChat)) {
         console.log(`Candidate is not being engaged because startVideoInterviewChat or startChat is missing for candidate: ${candidate.name}`);
         return false;
       }
-      if (chatControl === 'startMeetingSchedulingChat' && (!candidate.startMeetingSchedulingChat || !candidate.startVideoInterviewChat || !candidate.startChat)) {
+      if (chatControl.chatControlType === 'startMeetingSchedulingChat' && (!candidate.startMeetingSchedulingChat || !candidate.startVideoInterviewChat || !candidate.startChat)) {
         console.log(`Candidate is not being engaged because startMeetingSchedulingChat, startVideoInterviewChat, or startChat is missing for candidate: ${candidate.name}`);
         return false;
       }
       if (candidate.whatsappMessages?.edges?.length > 0) {
         const latestMessage = candidate.whatsappMessages.edges[0].node;
         if (new Date(latestMessage.createdAt) >= twoMinutesAgo) {
-        console.log(`Candidate messaged less than ${minutesToWait} minutes ago:: ${candidate.name} for chatControl: ${chatControl}`);
+        console.log(`Candidate messaged less than ${minutesToWait} minutes ago:: ${candidate.name} for chatControl: ${chatControl.chatControlType}`);
         return false;
         }
       }
