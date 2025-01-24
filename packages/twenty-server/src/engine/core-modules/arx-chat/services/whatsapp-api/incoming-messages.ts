@@ -1,16 +1,9 @@
 import { FacebookWhatsappChatApi } from '../../services/whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
-import CandidateEngagementArx from '../candidate-engagement/candidate-engagement';
 import { FetchAndUpdateCandidatesChatsWhatsapps } from '../../services/candidate-engagement/update-chat';
 import * as allDataObjects from '../../services/data-model-objects';
 import * as allGraphQLQueries from '../../graphql-queries/graphql-queries-chatbot';
 import { axiosRequest } from 'src/engine/core-modules/arx-chat/utils/arx-chat-agent-utils';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
-import { DataSourceEntity } from 'src/engine/metadata-modules/data-source/data-source.entity';
-import { EntityManager, In, Repository } from 'typeorm';
-import { EnvironmentService } from 'src/engine/integrations/environment/environment.service';
-import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
-import { TokenService } from 'src/engine/core-modules/auth/services/token.service';
+import { EntityManager } from 'typeorm';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { FilterCandidates } from '../candidate-engagement/filter-candidates';
 

@@ -2,12 +2,10 @@ import { Body, Controller, Get, Post, Req, Res, UseGuards } from '@nestjs/common
 import { JwtAuthGuard } from 'src/engine/guards/jwt.auth.guard';
 import * as allDataObjects from '../services/data-model-objects';
 import { FacebookWhatsappChatApi } from '../services/whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
-import CandidateEngagementArx from '../services/candidate-engagement/candidate-engagement';
 import { IncomingWhatsappMessages } from '../services/whatsapp-api/incoming-messages';
 import { FetchAndUpdateCandidatesChatsWhatsapps } from '../services/candidate-engagement/update-chat';
 import { StageWiseClassification } from '../services/llm-agents/get-stage-wise-classification';
 import { OpenAIArxMultiStepClient } from '../services/llm-agents/arx-multi-step-client';
-import { ToolsForAgents } from 'src/engine/core-modules/arx-chat/services/llm-agents/prompting-tool-calling';
 import { axiosRequest } from '../utils/arx-chat-agent-utils';
 import * as allGraphQLQueries from '../graphql-queries/graphql-queries-chatbot';
 import { ToolCallsProcessing } from '../services/llm-agents/tool-calls-processing';
@@ -16,11 +14,9 @@ import { GmailMessageData } from '../../gmail-sender/services/gmail-sender-objec
 import { SendEmailFunctionality, EmailTemplates } from '../services/candidate-engagement/send-gmail';
 import axios from 'axios';
 import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/services/candidate.service';
-
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { graphQltoUpdateOneCandidate } from 'src/engine/core-modules/candidate-sourcing/graphql-queries';
 import { CreateMetaDataStructure } from 'src/engine/core-modules/workspace-modifications/object-apis/object-apis-creation';
-import { job } from '../../candidate-sourcing/constant';
 import { FilterCandidates } from '../services/candidate-engagement/filter-candidates';
 
 
@@ -33,87 +29,6 @@ export class ArxChatEndpoint {
     private readonly workspaceQueryService: WorkspaceQueryService,
   ) {}
 
-
-  // @Post('invoke-chat')
-  // @UseGuards(JwtAuthGuard)
-  // async evaluate(@Req() request: any) {
-  //   const apiToken = request.headers.authorization.split(' ')[1];
-
-  //   const personObj: allDataObjects.PersonNode = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPhoneNumber(request.body.phoneNumberFrom,apiToken);
-  //   const personCandidateNode = personObj?.candidates?.edges[0]?.node;
-  //   // const messagesList = personCandidateNode?.whatsappMessages?.edges;
-  //   const messagesList: allDataObjects.MessageNode[] = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).fetchAllWhatsappMessages(personCandidateNode.id,apiToken);
-  //   // const messagesList: allDataObjects.MessageNode[] = whatsappMessagesEdges.map(edge => edge?.node);
-
-  //   console.log('Current Messages list:', messagesList);
-
-  //   let mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = new Tranformations().getMostRecentMessageFromMessagesList(messagesList);
-  //   if (mostRecentMessageArr?.length > 0) {
-  //     let chatAgent: OpenAIArxMultiStepClient;
-  //     chatAgent = new OpenAIArxMultiStepClient(personObj, this.workspaceQueryService);
-  //     const chatControl = "startChat";
-  //     await chatAgent.createCompletion(mostRecentMessageArr,chatControl,apiToken);
-  //     const whatappUpdateMessageObj:allDataObjects.candidateChatMessageType = await new CandidateEngagementArx(this.workspaceQueryService).updateChatHistoryObjCreateWhatsappMessageObj('ArxChatEndpoint', personObj, mostRecentMessageArr, chatControl,apiToken);
-  //     return whatappUpdateMessageObj;
-  //   }
-  // }
-
-  // @Post('retrieve-chat-response')
-  // @UseGuards(JwtAuthGuard)
-  // async retrieve(@Req() request: any): Promise<object> {
-  //   const apiToken = request.headers.authorization.split(' ')[1];
-
-  //   const personObj: allDataObjects.PersonNode = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPhoneNumber(request.body.phoneNumberFrom,apiToken);
-  //   // debugger;
-
-  //   try {
-  //     const personCandidateNode = personObj?.candidates?.edges[0]?.node;
-  //     // const messagesList = personCandidateNode?.whatsappMessages?.edges;
-  //     const messagesList: allDataObjects.MessageNode[] = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).fetchAllWhatsappMessages(personCandidateNode.id,apiToken);
-  //     let mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = new Tranformations().getMostRecentMessageFromMessagesList(messagesList);
-  //     const isChatEnabled: boolean = false;
-  //     if (mostRecentMessageArr?.length > 0) {
-  //       let chatAgent: OpenAIArxMultiStepClient;
-  //       chatAgent = new OpenAIArxMultiStepClient(personObj, this.workspaceQueryService);
-  //       const chatControl = 'startChat';
-  //       mostRecentMessageArr = await chatAgent.createCompletion(mostRecentMessageArr, chatControl, apiToken, isChatEnabled);
-  //       return mostRecentMessageArr;
-  //     }
-  //   } catch (err) {
-  //     return { status: err };
-  //   }
-  //   return { status: 'Failed' };
-  // }
-
-
-  // @Post('run-chat-completion')
-  // @UseGuards(JwtAuthGuard)
-  // async runChatCompletion(@Req() request: any): Promise<object> {
-  //   const apiToken = request.headers.authorization.split(' ')[1];
-
-  //   console.log('JSON.string', JSON.stringify(request.body));
-  //   const personObj: allDataObjects.PersonNode = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPhoneNumber('918411937768',apiToken);
-  //   const messagesList = request.body;
-  //   let chatAgent: OpenAIArxMultiStepClient;
-  //   chatAgent = new OpenAIArxMultiStepClient(personObj,this.workspaceQueryService);
-  //   const chatControl = 'startChat';
-  //   job = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).getJobDetailsByCandidateId(personObj.candidates.edges[0].node.id,apiToken);
-  //   const mostRecentMessageArr = await chatAgent.createCompletion(messagesList,  chatControl,apiToken);
-  //   return mostRecentMessageArr;
-  // }
-
-
-  // @Post('get-system-prompt')
-  // @UseGuards(JwtAuthGuard)
-  // async getSystemPrompt(@Req() request: any): Promise<object> {
-  //   const apiToken = request.headers.authorization.split(' ')[1];
-  //   console.log('JSON.string', JSON.stringify(request.body));
-  //   const personObj: allDataObjects.PersonNode = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPhoneNumber(request.body.phoneNumber,apiToken);
-  //   const chatControl = 'startChat';
-  //   const systemPrompt = await new ToolsForAgents(this.workspaceQueryService).getSystemPrompt(personObj, chatControl, apiToken);
-  //   console.log("This is the system prompt::", systemPrompt)
-  //   return {"system_prompt" : systemPrompt};
-  // }
 
   @Post('run-stage-prompt')
   @UseGuards(JwtAuthGuard)
@@ -232,56 +147,6 @@ export class ArxChatEndpoint {
   }
 
 
-  
-
-  // @Post('start-chat-by-phone-number')
-  // @UseGuards(JwtAuthGuard)
-  // async startChatByPhoneNumber(@Req() request: any): Promise<object> {
-  //   const apiToken = request.headers.authorization.split(' ')[1];
-
-  //   const whatsappIncomingMessage: allDataObjects.chatMessageType = {
-  //     phoneNumberFrom: request.body.phoneNumberFrom,
-  //     phoneNumberTo: '918591724917',
-  //     messages: [{ role: 'user', content: 'startChat' }],
-  //     messageType: 'string',
-  //   };
-  //   console.log('This is the Chat Reply:', whatsappIncomingMessage);
-  //   const chatReply = 'startChat';
-  //   const personObj: allDataObjects.PersonNode = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPhoneNumber(request.body.phoneNumberFrom,apiToken);
-  //   console.log('This is the Chat Reply:', chatReply);
-  //   const recruiterProfile = allDataObjects.recruiterProfile;
-  //   console.log('Recruiter profile', recruiterProfile);
-  //   const chatMessages = personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges;
-  //   let chatHistory = chatMessages[0]?.node?.messageObj || [];
-  //   const chatControl = 'startChat';
-  //   if (chatReply === 'startChat' && chatMessages.length === 0) {
-  //     const SYSTEM_PROMPT = await new ToolsForAgents(this.workspaceQueryService).getSystemPrompt(personObj, chatControl,apiToken);
-  //     chatHistory.push({ role: 'system', content: SYSTEM_PROMPT });
-  //     chatHistory.push({ role: 'user', content: 'startChat' });
-  //   } else {
-  //     chatHistory = personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.messageObj;
-  //   }
-
-  //   let whatappUpdateMessageObj: allDataObjects.candidateChatMessageType = {
-  //     candidateProfile: personObj?.candidates?.edges[0]?.node,
-  //     candidateFirstName: personObj?.name?.firstName,
-  //     phoneNumberFrom: personObj?.phone,
-  //     whatsappMessageType : personObj?.candidates?.edges[0]?.node.whatsappProvider || "application03",
-  //     phoneNumberTo: recruiterProfile.phone,
-  //     messages: [{ content: chatReply }],
-  //     messageType: 'candidateMessage',
-  //     messageObj: chatHistory,
-  //     lastEngagementChatControl: chatControl,
-  //     whatsappDeliveryStatus: 'startChatTriggered',
-  //     whatsappMessageId: 'startChat',
-  //   };
-  //   const engagementStatus = await new CandidateEngagementArx(this.workspaceQueryService ).updateCandidateEngagementDataInTable(personObj, whatappUpdateMessageObj,apiToken);
-  //   if (engagementStatus?.status === 'success') {
-  //     return { status: engagementStatus?.status };
-  //   } else {
-  //     return { status: 'Failed' };
-  //   }
-  // }
 
   @Post('send-chat')
   @UseGuards(JwtAuthGuard)
@@ -410,7 +275,6 @@ export class ArxChatEndpoint {
     }
   }
   
-
 
   @Post('get-id-by-unique-string-key')
   @UseGuards(JwtAuthGuard)

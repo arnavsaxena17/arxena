@@ -5,14 +5,12 @@ import { OpenAIArxMultiStepClient } from '../llm-agents/arx-multi-step-client';
 import { ToolsForAgents } from '../llm-agents/prompting-tool-calling';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { FilterCandidates } from './filter-candidates';
+import {Tranformations} from './transformations'
 const readline = require('node:readline');
 const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout,
 });
-
-import {Tranformations} from './transformations'
-
 
 export default class CandidateEngagementArx {
   constructor( private readonly workspaceQueryService: WorkspaceQueryService ) {}

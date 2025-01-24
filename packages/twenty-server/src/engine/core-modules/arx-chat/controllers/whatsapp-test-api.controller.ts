@@ -2,7 +2,6 @@ import { Controller,  Post, Req, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/engine/guards/jwt.auth.guard';
 import * as allDataObjects from '../services/data-model-objects';
 import { FacebookWhatsappChatApi } from '../services/whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
-import CandidateEngagementArx from '../services/candidate-engagement/candidate-engagement';
 import { FetchAndUpdateCandidatesChatsWhatsapps } from '../services/candidate-engagement/update-chat';
 import { WhatsappTemplateMessages } from '../services/whatsapp-api/facebook-whatsapp/whatsapp-template-messages';
 import {Tranformations} from '../services/candidate-engagement/transformations';
