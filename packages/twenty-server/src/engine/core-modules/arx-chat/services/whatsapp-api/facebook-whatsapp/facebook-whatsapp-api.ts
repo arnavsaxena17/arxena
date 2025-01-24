@@ -136,14 +136,14 @@ export class FacebookWhatsappChatApi {
             const personObj = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPhoneNumber(phoneNumberTo, apiToken);
             const mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.messageObj;
             mostRecentMessageArr.push({ role: 'user', content: 'Failed to send JD to the candidate.' });
-            const whatappUpdateMessageObj: allDataObjects.candidateChatMessageType = await new Tranformations().updateChatHistoryObjCreateWhatsappMessageObj(
+            const whatappUpdateMessageObj: allDataObjects.whatappUpdateMessageObjType = await new Tranformations().updateChatHistoryObjCreateWhatsappMessageObj(
               'failed',
               personObj,
               mostRecentMessageArr,
               chatControl,
               apiToken,
             );
-            await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).updateCandidateEngagementDataInTable(personObj, whatappUpdateMessageObj, apiToken);
+            await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).updateCandidateEngagementDataInTable(whatappUpdateMessageObj, apiToken);
           }
         }
         console.log('media ID', response?.data?.mediaID);
@@ -258,7 +258,7 @@ export class FacebookWhatsappChatApi {
       const response = await axios.request(config);
       console.log('This is response data after sendAttachment is called', JSON.stringify(response.data));
       const wamId = response?.data?.messages[0]?.id;
-      const whatappUpdateMessageObj: allDataObjects.candidateChatMessageType = await new Tranformations().updateChatHistoryObjCreateWhatsappMessageObj(
+      const whatappUpdateMessageObj: allDataObjects.whatappUpdateMessageObjType = await new Tranformations().updateChatHistoryObjCreateWhatsappMessageObj(
         wamId,
         // response,
         personObj,
@@ -266,7 +266,7 @@ export class FacebookWhatsappChatApi {
         chatControl,
         apiToken,
       );
-      await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).updateCandidateEngagementDataInTable(personObj, whatappUpdateMessageObj, apiToken);
+      await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).updateCandidateEngagementDataInTable(whatappUpdateMessageObj, apiToken);
     } catch (error) {
       console.log(error);
     }
@@ -441,7 +441,7 @@ export class FacebookWhatsappChatApi {
     });
   }
   async sendWhatsappMessageVIAFacebookAPI(
-    whatappUpdateMessageObj: allDataObjects.candidateChatMessageType,
+    whatappUpdateMessageObj: allDataObjects.whatappUpdateMessageObjType,
     personNode: allDataObjects.PersonNode,
     mostRecentMessageArr: allDataObjects.ChatHistoryItem[],
     chatControl: allDataObjects.chatControls,
@@ -458,7 +458,7 @@ export class FacebookWhatsappChatApi {
     }
     if (whatappUpdateMessageObj?.messageType === 'botMessage') {
       console.log('TEmplate Message or Text Message depends on :', whatappUpdateMessageObj?.messages[0]?.content);
-      let whatappUpdateMessageObjAfterWAMidUpdate: allDataObjects.candidateChatMessageType;
+      let whatappUpdateMessageObjAfterWAMidUpdate: allDataObjects.whatappUpdateMessageObjType;
       if (whatappUpdateMessageObj?.messages[0]?.content?.toLowerCase().includes('based recruitment company') || whatappUpdateMessageObj?.messages[0]?.content?.toLowerCase().includes('video interview as part of the')) {
         let messageTemplate: string;
         if (whatappUpdateMessageObj?.messages[0]?.content?.toLowerCase().includes('based recruitment company')) {
@@ -520,7 +520,7 @@ export class FacebookWhatsappChatApi {
         chatControl,
         apiToken,
       );
-      await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).updateCandidateEngagementDataInTable(personNode, whatappUpdateMessageObjAfterWAMidUpdate, apiToken);
+      await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).updateCandidateEngagementDataInTable(whatappUpdateMessageObjAfterWAMidUpdate, apiToken);
     } else {
       console.log('passing a human message so, going to trash it');
     }

@@ -99,7 +99,7 @@ export interface BaileysIncomingMessage {
   phoneNumberTo: string;
 }
 
-export interface candidateChatMessageType {
+export interface whatappUpdateMessageObjType {
   // executorResultObj: ChainValues;
   messageObj: ChatHistoryItem[];
   candidateProfile: CandidateNode;

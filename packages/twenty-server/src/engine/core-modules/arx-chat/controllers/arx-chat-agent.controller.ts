@@ -162,7 +162,7 @@ export class ArxChatEndpoint {
     let chatHistory = chatMessages[0]?.node?.messageObj || [];
     const chatControl:allDataObjects.chatControls = {chatControlType:'startChat'};
     chatHistory = personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.messageObj;
-    let whatappUpdateMessageObj: allDataObjects.candidateChatMessageType = {
+    let whatappUpdateMessageObj: allDataObjects.whatappUpdateMessageObjType = {
       candidateProfile: personObj?.candidates?.edges[0]?.node,
       candidateFirstName: personObj?.name?.firstName,
       phoneNumberFrom: recruiterProfile.phone,

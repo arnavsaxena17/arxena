@@ -8,9 +8,9 @@ export class Tranformations {
     chatHistory: allDataObjects.ChatHistoryItem[],
     chatControl: allDataObjects.chatControls,
     apiToken: string,
-  ): Promise<allDataObjects.candidateChatMessageType> {
+  ): Promise<allDataObjects.whatappUpdateMessageObjType> {
     const candidateNode = personNode.candidates.edges[0].node;
-    const updatedChatHistoryObj: allDataObjects.candidateChatMessageType = {
+    const updatedChatHistoryObj: allDataObjects.whatappUpdateMessageObjType = {
       messageObj: chatHistory,
       candidateProfile: candidateNode,
       whatsappMessageType: candidateNode?.whatsappProvider || 'application03',

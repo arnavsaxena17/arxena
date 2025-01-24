@@ -52,8 +52,8 @@ export class WhatsappTestAPI {
     const chatControl:allDataObjects.chatControls = { chatControlType: chatControlType, chatMessageTemplate: 'success' };
     mostRecentMessageArr.push({ role: 'user', content: whatsappTemplateMessageSent });
 
-    const whatappUpdateMessageObj:allDataObjects.candidateChatMessageType = await new Tranformations().updateChatHistoryObjCreateWhatsappMessageObj( 'success', personObj, mostRecentMessageArr, chatControl,apiToken);
-    await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).updateCandidateEngagementDataInTable(personObj, whatappUpdateMessageObj,apiToken);
+    const whatappUpdateMessageObj:allDataObjects.whatappUpdateMessageObjType = await new Tranformations().updateChatHistoryObjCreateWhatsappMessageObj( 'success', personObj, mostRecentMessageArr, chatControl,apiToken);
+    await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).updateCandidateEngagementDataInTable(whatappUpdateMessageObj,apiToken);
     console.log("This is ther esponse:", response.data)
     return { status: 'success' };
   }

@@ -1,6 +1,6 @@
 import * as allDataObjects from '../../services/data-model-objects';
 import { AttachmentProcessingService } from '../../services/candidate-engagement/attachment-processing';
-import { WhatsappAPISelector } from '../../services/whatsapp-api/whatsapp-controls';
+import { WhatsappControls } from '../whatsapp-api/whatsapp-controls';
 import { FetchAndUpdateCandidatesChatsWhatsapps } from '../../services/candidate-engagement/update-chat';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 // import { chat } from 'googleapis/build/src/apis/chat';
@@ -23,7 +23,7 @@ export class ToolCallsProcessing{
       console.log('No attachments found for this job');
     }
     const attachment = jobAttachments?.node ?? '';
-    await new WhatsappAPISelector(this.workspaceQueryService).sendJDViaWhatsapp( person, attachment, chatControl, apiToken);
+    await new WhatsappControls(this.workspaceQueryService).sendJDViaWhatsapp( person, attachment, chatControl, apiToken);
   }
   
   async updateCandidateStatus(person: allDataObjects.PersonNode, status: string, apiToken: string) {
@@ -31,7 +31,7 @@ export class ToolCallsProcessing{
     const candidateId = person?.candidates?.edges[0]?.node?.id;
     console.log('This is the candidateID for which we are trying to update the status:', candidateId);
     const candidateProfileObj = person?.candidates?.edges[0]?.node;
-    let UpdateCandidateMessageObj: allDataObjects.candidateChatMessageType = {
+    let whatappUpdateMessageObj: allDataObjects.whatappUpdateMessageObjType = {
       // executorResultObj: {},
       whatsappMessageType: "",
       candidateProfile: person?.candidates?.edges[0]?.node,
@@ -45,7 +45,7 @@ export class ToolCallsProcessing{
       whatsappDeliveryStatus: 'updateCandidateStatus',
       whatsappMessageId: 'updateCandidateStatus',
     };
-    const updateCandidateStatusObj = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).updateCandidateProfileStatus(candidateProfileObj, UpdateCandidateMessageObj, apiToken);
+    const updateCandidateStatusObj = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).updateCandidateProfileStatus(candidateProfileObj, whatappUpdateMessageObj, apiToken);
     console.log("This is the updateCandidateStatusObj:", updateCandidateStatusObj)
     return 'Updated the candidate profile with the status.';
   }
@@ -55,7 +55,7 @@ export class ToolCallsProcessing{
     const candidateId = person?.candidates?.edges[0]?.node?.id;
     console.log('This is the candidateID for which we are trying to update the status:', candidateId);
     const candidateProfileObj = person?.candidates?.edges[0]?.node;
-    let whatappUpdateMessageObj: allDataObjects.candidateChatMessageType = {
+    let whatappUpdateMessageObj: allDataObjects.whatappUpdateMessageObjType = {
       // executorResultObj: {},
       whatsappMessageType: "",
       candidateProfile: person?.candidates?.edges[0]?.node,

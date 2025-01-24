@@ -1,16 +1,15 @@
-import { FacebookWhatsappChatApi } from '../../services/whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
-import { BaileysWhatsappAPI } from '../../services/whatsapp-api/baileys/callBaileys';
-import * as allDataObjects from '../../services/data-model-objects';
+import { FacebookWhatsappChatApi } from './facebook-whatsapp/facebook-whatsapp-api';
+import { BaileysWhatsappAPI } from './baileys/callBaileys';
+import * as allDataObjects from '../data-model-objects';
 import fs from 'fs';
 import path from 'path';
 import mime from 'mime-types';
 import axios from 'axios';
-import CandidateEngagementArx from '../candidate-engagement/candidate-engagement';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { Tranformations } from '../candidate-engagement/transformations';
 
 const baseUrl = 'http://localhost:' + process.env.PORT; // Base URL of your GraphQL server
-export class WhatsappAPISelector {
+export class WhatsappControls {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService
   ) {}
@@ -26,7 +25,7 @@ export class WhatsappAPISelector {
       return;
     }
     console.log("Going to create whatsaappupdatemessage obj for message text::", messageText)
-    const whatappUpdateMessageObj:allDataObjects.candidateChatMessageType = await new Tranformations().updateChatHistoryObjCreateWhatsappMessageObj('sendWhatsappMessageToCandidateMulti', personNode, mostRecentMessageArr, chatControl,apiToken);
+    const whatappUpdateMessageObj:allDataObjects.whatappUpdateMessageObjType = await new Tranformations().updateChatHistoryObjCreateWhatsappMessageObj('sendWhatsappMessageToCandidateMulti', personNode, mostRecentMessageArr, chatControl,apiToken);
     if (whatappUpdateMessageObj.messages[0].content?.includes('#DONTRESPOND#') || whatappUpdateMessageObj.messages[0].content?.includes('DONTRESPOND') && whatappUpdateMessageObj.messages[0].content) {
       console.log('Found a #DONTRESPOND# message, so not sending any message');
       return;
@@ -39,14 +38,14 @@ export class WhatsappAPISelector {
     }
     if (whatappUpdateMessageObj.messages[0].content ||  messageText) {
       if (process.env.WHATSAPP_ENABLED === 'true' && (isChatEnabled === undefined || isChatEnabled)) {
-        await new WhatsappAPISelector(this.workspaceQueryService).sendWhatsappMessage(whatappUpdateMessageObj, personNode, mostRecentMessageArr, chatControl,apiToken);
+        await this.sendWhatsappMessage(whatappUpdateMessageObj, personNode, mostRecentMessageArr, chatControl,apiToken);
       } else {
         console.log('Whatsapp is not enabled, so not sending message:', whatappUpdateMessageObj.messages[0].content);
       }
     }
   }
 
-  async sendWhatsappMessage(whatappUpdateMessageObj: allDataObjects.candidateChatMessageType, personNode: allDataObjects.PersonNode, mostRecentMessageArr: allDataObjects.ChatHistoryItem[], chatControl: allDataObjects.chatControls,apiToken:string) {
+  async sendWhatsappMessage(whatappUpdateMessageObj: allDataObjects.whatappUpdateMessageObjType, personNode: allDataObjects.PersonNode, mostRecentMessageArr: allDataObjects.ChatHistoryItem[], chatControl: allDataObjects.chatControls,apiToken:string) {
     if (process.env.WHATSAPP_API === 'facebook') {
       const response = await new FacebookWhatsappChatApi(this.workspaceQueryService).sendWhatsappMessageVIAFacebookAPI(whatappUpdateMessageObj, personNode, mostRecentMessageArr, chatControl,apiToken);
     } else if (process.env.WHATSAPP_API === 'baileys') {
@@ -104,6 +103,6 @@ async sendJDViaWhatsapp( person: allDataObjects.PersonNode, attachment: allDataO
         mimetype: mime.lookup(name) || 'application/octet-stream',
       },
     };
-    await new WhatsappAPISelector(this.workspaceQueryService).sendAttachmentMessageOnWhatsapp(attachmentMessageObj, person, chatControl,apiToken);
+    await new WhatsappControls(this.workspaceQueryService).sendAttachmentMessageOnWhatsapp(attachmentMessageObj, person, chatControl,apiToken);
   }
 }

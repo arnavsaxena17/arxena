@@ -306,7 +306,7 @@ export class IncomingWhatsappMessages {
     // console.log("replyObject?.candidateProfileDataNodeObj?.phoneNumber::", candidateProfileDataNodeObj?.phoneNumber)
     // const phoneNumberThatMessageCameFrom = replyObject?.phoneNumberFrom || candidateProfileDataNodeObj?.phoneNumber;
     if (mostRecentMessageObj?.length > 0) mostRecentMessageObj.push({ role: replyObject.isFromMe ? 'assistant' : 'user', content: replyObject.chatReply });
-    let whatappUpdateMessageObj: allDataObjects.candidateChatMessageType = {
+    let whatappUpdateMessageObj: allDataObjects.whatappUpdateMessageObjType = {
       // executorResultObj: {},
       candidateProfile: candidateProfileDataNodeObj,
       whatsappMessageType: candidateProfileDataNodeObj?.whatsappProvider || '',
@@ -323,7 +323,7 @@ export class IncomingWhatsappMessages {
       databaseFilePath: replyObject?.databaseFilePath || '',
     };
 
-    await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).updateCandidateEngagementDataInTable(personObj, whatappUpdateMessageObj,apiToken);
+    await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).updateCandidateEngagementDataInTable(whatappUpdateMessageObj,apiToken);
     // return whatappUpdateMessageObj;
   }
 }

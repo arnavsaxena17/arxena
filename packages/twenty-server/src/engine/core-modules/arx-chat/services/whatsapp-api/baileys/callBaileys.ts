@@ -17,7 +17,7 @@ export class BaileysWhatsappAPI{
   constructor( private readonly workspaceQueryService: WorkspaceQueryService ) {}
 
 
-async sendWhatsappMessageVIABaileysAPI(whatappUpdateMessageObj: allDataObjects.candidateChatMessageType, personNode: allDataObjects.PersonNode, mostRecentMessageArr: allDataObjects.ChatHistoryItem[], chatControl: allDataObjects.chatControls,  apiToken:string) {
+async sendWhatsappMessageVIABaileysAPI(whatappUpdateMessageObj: allDataObjects.whatappUpdateMessageObjType, personNode: allDataObjects.PersonNode, mostRecentMessageArr: allDataObjects.ChatHistoryItem[], chatControl: allDataObjects.chatControls,  apiToken:string) {
   console.log('Sending message to whatsapp via baileys api');
 
   console.log('whatappUpdateMessageObj.messageType', whatappUpdateMessageObj.messageType);
@@ -35,7 +35,7 @@ async sendWhatsappMessageVIABaileysAPI(whatappUpdateMessageObj: allDataObjects.c
     const whatappUpdateMessageObjAfterWAMidUpdate = await new Tranformations().updateChatHistoryObjCreateWhatsappMessageObj( response?.messageId || 'placeholdermessageid', personNode, mostRecentMessageArr,chatControl, apiToken);
     let candidateProfileObj = whatappUpdateMessageObj.messageType !== 'botMessage' ? await new FilterCandidates(this.workspaceQueryService).getCandidateInformation(whatappUpdateMessageObj,  apiToken) : whatappUpdateMessageObj.candidateProfile;
 
-    await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).updateCandidateEngagementDataInTable(personNode, whatappUpdateMessageObjAfterWAMidUpdate,   apiToken, true);
+    await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).updateCandidateEngagementDataInTable(whatappUpdateMessageObjAfterWAMidUpdate,   apiToken, true);
     const updateCandidateStatusObj = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).updateCandidateEngagementStatus(candidateProfileObj, whatappUpdateMessageObj,  apiToken);
   } else {
     console.log('This is send whatsapp message via bailsyes api and is a candidate message');
@@ -173,13 +173,13 @@ async sendAttachmentMessageViaBaileys(sendTextMessageObj: allDataObjects.Attachm
     fileData: sendTextMessageObj.fileData,
     message: `Hiring for ${jobProfile.company.name}. Their site is ${jobProfile.company.domainName}. The role will be based in ${jobProfile.jobLocation}.`,
   };
-
-  const payloadToSendToWhiskey = { recruiterId: personNode?.candidates?.edges[0]?.node?.jobs?.recruiterId, fileToSendData: data, }; try {
-    const response = await axios.post(uploadFileUrl, payloadToSendToWhiskey);
+  const payloadToSendToWhiskeySockets = { recruiterId: personNode?.candidates?.edges[0]?.node?.jobs?.recruiterId, fileToSendData: data, }; 
+  try {
+    const response = await axios.post(uploadFileUrl, payloadToSendToWhiskeySockets);
     if (response.data.status == "failed" ) {
       console.log("Retryngt o send the at/tachment message again because sending failed and possibly disconnected, so trying to wait for a few mins and retrying");
       await new Promise(resolve => setTimeout(resolve, 20000));
-      const response = await axios.post(uploadFileUrl, payloadToSendToWhiskey, {
+      const response = await axios.post(uploadFileUrl, payloadToSendToWhiskeySockets, {
         headers: {
           'Authorization': `Bearer ${apiToken}`,
           'Content-Type': 'application/json'

@@ -207,7 +207,7 @@ export class BaileysBot {
         const messageBeingSent = m?.messages[0]?.message?.extendedTextMessage?.text || m?.messages[0]?.message?.conversation || '';
         const chatControl:allDataObjects.chatControls = {"chatControlType": "startChat"};
         
-        const userMessage: allDataObjects.candidateChatMessageType = {
+        const userMessage: allDataObjects.whatappUpdateMessageObjType = {
           phoneNumberFrom: phoneNumberFrom,
           whatsappMessageType: '',
           lastEngagementChatControl:chatControl.chatControlType,

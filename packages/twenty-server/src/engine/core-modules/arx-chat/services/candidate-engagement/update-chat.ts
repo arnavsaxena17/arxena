@@ -283,7 +283,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
   }
 
   
-  async createAndUpdateWhatsappMessage(candidateProfileObj: allDataObjects.CandidateNode, userMessage: allDataObjects.candidateChatMessageType, apiToken: string) {
+  async createAndUpdateWhatsappMessage(candidateProfileObj: allDataObjects.CandidateNode, userMessage: allDataObjects.whatappUpdateMessageObjType, apiToken: string) {
     console.log('This is the message being updated in the database ', userMessage?.messages[0]?.content);
     const createNewWhatsappMessageUpdateVariables = {
       input: {
@@ -315,7 +315,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
     }
   }
 
-  async updateCandidateEngagementStatus(candidateProfileObj: allDataObjects.CandidateNode, whatappUpdateMessageObj: allDataObjects.candidateChatMessageType, apiToken: string) {
+  async updateCandidateEngagementStatus(candidateProfileObj: allDataObjects.CandidateNode, whatappUpdateMessageObj: allDataObjects.whatappUpdateMessageObjType, apiToken: string) {
     const candidateEngagementStatus = whatappUpdateMessageObj.messageType !== 'botMessage';
     const updateCandidateObjectVariables = { idToUpdate: candidateProfileObj?.id, input: { engagementStatus: candidateEngagementStatus, lastEngagementChatControl: whatappUpdateMessageObj.lastEngagementChatControl } };
     console.log('GOING TO UPDATE CANDIDATE ENGAGEMENT STATUS BECAUES OF THIS WHATSAPP MESSAGE OBJ::', candidateEngagementStatus);
@@ -352,7 +352,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
       console.log(error);
     }
   }
-  async scheduleCandidateInterview(candidateProfileObj: allDataObjects.CandidateNode, scheduleInterviewObj: allDataObjects.candidateChatMessageType, apiToken: string) {
+  async scheduleCandidateInterview(candidateProfileObj: allDataObjects.CandidateNode, scheduleInterviewObj: allDataObjects.whatappUpdateMessageObjType, apiToken: string) {
     const updateCandidateObjectVariables = { idToUpdate: candidateProfileObj?.id, input: { scheduleInterviewObj: scheduleInterviewObj } };
     const graphqlQueryObj = JSON.stringify({ query: {}, variables: updateCandidateObjectVariables });
     try {
@@ -363,7 +363,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
     }
   }
 
-  async updateCandidateEngagementDataInTable(personDataNodeObj:allDataObjects.PersonNode, whatappUpdateMessageObj: allDataObjects.candidateChatMessageType, apiToken:string, isAfterMessageSent: boolean = false) {
+  async updateCandidateEngagementDataInTable(whatappUpdateMessageObj: allDataObjects.whatappUpdateMessageObjType, apiToken:string, isAfterMessageSent: boolean = false) {
     let candidateProfileObj = whatappUpdateMessageObj.messageType !== 'botMessage' ? await new FilterCandidates(this.workspaceQueryService).getCandidateInformation(whatappUpdateMessageObj,apiToken) : whatappUpdateMessageObj.candidateProfile;
     if (candidateProfileObj.name === '') return;
     console.log('Candidate information retrieved successfully');
@@ -396,8 +396,8 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
   }
 
 
-  async updateCandidateProfileStatus(candidateProfileObj: allDataObjects.CandidateNode, updateCandidateMessageObj: allDataObjects.candidateChatMessageType, apiToken: string) {
-    const candidateStatus = updateCandidateMessageObj.messageType;
+  async updateCandidateProfileStatus(candidateProfileObj: allDataObjects.CandidateNode, whatappUpdateMessageObj: allDataObjects.whatappUpdateMessageObjType, apiToken: string) {
+    const candidateStatus = whatappUpdateMessageObj.messageType;
     console.log('Updating the candidate status::', candidateStatus);
     const candidateId = candidateProfileObj?.id;
     console.log('This is the candidateID for which we are trying to update the status:', candidateId);

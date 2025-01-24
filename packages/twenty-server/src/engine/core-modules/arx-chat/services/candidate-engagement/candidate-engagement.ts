@@ -6,6 +6,8 @@ import { ToolsForAgents } from '../llm-agents/prompting-tool-calling';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { FilterCandidates } from './filter-candidates';
 import {Tranformations} from './transformations'
+import { FacebookWhatsappChatApi } from '../whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
+import { WhatsappControls } from '../whatsapp-api/whatsapp-controls';
 const readline = require('node:readline');
 const rl = readline.createInterface({
   input: process.stdin,
@@ -14,30 +16,33 @@ const rl = readline.createInterface({
 
 export default class CandidateEngagementArx {
   constructor( private readonly workspaceQueryService: WorkspaceQueryService ) {}
-  async createAndUpdateCandidateStartChatChatMessage(chatReply: string, candidateProfileDataNodeObj: allDataObjects.PersonNode,candidateJob:allDataObjects.Jobs, chatControl: allDataObjects.chatControls, apiToken: string) {
+  async createAndUpdateCandidateStartChatChatMessage(chatReply: allDataObjects.chatControlType, candidatePersonNodeObj: allDataObjects.PersonNode,candidateJob:allDataObjects.Jobs, chatControl: allDataObjects.chatControls, apiToken: string) {
+
+    // await new WhatsappControls(this.workspaceQueryService).sendWhatsappMessage(whatappUpdateMessageObj, personNode, mostRecentMessageArr, chatControl,apiToken);
+    const personNode = candidatePersonNodeObj;
     const recruiterProfile = allDataObjects.recruiterProfile;
-    const messagesList: allDataObjects.MessageNode[] = await new FilterCandidates(this.workspaceQueryService).fetchAllWhatsappMessages(candidateProfileDataNodeObj.candidates?.edges[0]?.node.id, apiToken);
+    const messagesList: allDataObjects.MessageNode[] = await new FilterCandidates(this.workspaceQueryService).fetchAllWhatsappMessages(candidatePersonNodeObj.candidates?.edges[0]?.node.id, apiToken);
     const sortedMessagesList = messagesList.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     let chatHistory = sortedMessagesList[0]?.messageObj || [];
     let whatsappTemplate:string
-    if (chatReply === 'startChat' && candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges.length === 0) {
-      const SYSTEM_PROMPT = await new ToolsForAgents(this.workspaceQueryService).getSystemPrompt(candidateProfileDataNodeObj,candidateJob, chatControl,  apiToken);
+    if (chatReply === 'startChat' && candidatePersonNodeObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges.length === 0) {
+      const SYSTEM_PROMPT = await new ToolsForAgents(this.workspaceQueryService).getSystemPrompt(candidatePersonNodeObj,candidateJob, chatControl,  apiToken);
       chatHistory.push({ role: 'system', content: SYSTEM_PROMPT });
       chatHistory.push({ role: 'user', content: 'startChat' });
       whatsappTemplate = "application03"
     }
-    else if (chatReply === 'startVideoInterviewChat' && candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges.length > 0) {
+    else if (chatReply === 'startVideoInterviewChat' && candidatePersonNodeObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges.length > 0) {
       chatHistory = sortedMessagesList[0]?.messageObj;
       chatHistory.push({ role: 'user', content: 'startVideoInterviewChat' });
       whatsappTemplate = "application03"
     } else {
       chatHistory = sortedMessagesList[0]?.messageObj;
-      whatsappTemplate = candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.whatsappProvider || 'application03' 
+      whatsappTemplate = candidatePersonNodeObj?.candidates?.edges[0]?.node?.whatsappProvider || 'application03' 
     }
-    let whatappUpdateMessageObj: allDataObjects.candidateChatMessageType = {
-      candidateProfile: candidateProfileDataNodeObj?.candidates?.edges[0]?.node,
-      candidateFirstName: candidateProfileDataNodeObj?.name?.firstName,
-      phoneNumberFrom: candidateProfileDataNodeObj?.phone,
+    let whatappUpdateMessageObj: allDataObjects.whatappUpdateMessageObjType = {
+      candidateProfile: candidatePersonNodeObj?.candidates?.edges[0]?.node,
+      candidateFirstName: candidatePersonNodeObj?.name?.firstName,
+      phoneNumberFrom: candidatePersonNodeObj?.phone,
       whatsappMessageType :whatsappTemplate,
       phoneNumberTo: recruiterProfile.phone,
       messages: [{ content: chatReply }],
@@ -50,7 +55,7 @@ export default class CandidateEngagementArx {
     
     console.log("Sending a messages")
     
-    await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).updateCandidateEngagementDataInTable(candidateProfileDataNodeObj, whatappUpdateMessageObj, apiToken);    
+    await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).updateCandidateEngagementDataInTable(whatappUpdateMessageObj, apiToken);    
   }
 
   async processCandidate(personNode: allDataObjects.PersonNode,candidateJob:allDataObjects.Jobs, chatControl: allDataObjects.chatControls, apiToken:string) {
@@ -108,9 +113,9 @@ export default class CandidateEngagementArx {
     };
     const filteredCandidatesToStartEngagement = peopleCandidateResponseEngagementArr?.filter(filterCandidates);
     console.log('Number of candidates to start chat after all filters for start chat ::', filteredCandidatesToStartEngagement?.length, "for chatControl:", chatControl);
-    for (const candidateProfileDataNodeObj of filteredCandidatesToStartEngagement) {
-      const chatReply = chatControl.chatControlType
-      await this.createAndUpdateCandidateStartChatChatMessage(chatReply, candidateProfileDataNodeObj,candidateJob,  chatControl, apiToken);
+    for (const candidatePersonNodeObj of filteredCandidatesToStartEngagement) {
+      const chatReply:allDataObjects.chatControlType = chatControl.chatControlType
+      await this.createAndUpdateCandidateStartChatChatMessage(chatReply, candidatePersonNodeObj,candidateJob,  chatControl, apiToken);
     }
   }
   

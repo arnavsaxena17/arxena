@@ -2,7 +2,7 @@ import * as allDataObjects from '../data-model-objects';
 const modelName = 'gpt-4o';
 import { ToolsForAgents } from '../../services/llm-agents/prompting-tool-calling';
 import { ChatCompletionMessage } from 'openai/resources';
-import { WhatsappAPISelector } from '../../services/whatsapp-api/whatsapp-controls';
+import { WhatsappControls } from '../whatsapp-api/whatsapp-controls';
 import { HumanLikeLLM } from './human-or-bot-type-response-classification'
 import { updateMostRecentMessagesBasedOnNewSystemPrompt} from '../../utils/arx-chat-agent-utils'
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
@@ -33,7 +33,7 @@ export class OpenAIArxMultiStepClient {
       }
       console.log("Sending message to candidate from addResponseAndToolCallsToMessageHistory_stage1", mostRecentMessageArr.slice(-1)[0].content);
       console.log("Message text in stage 1 received based on which we will decide whether to send message or not::",  mostRecentMessageArr.slice(-1)[0].content)
-      await new WhatsappAPISelector(this.workspaceQueryService).sendWhatsappMessageToCandidate( mostRecentMessageArr.slice(-1)[0].content || '', this.personNode,mostRecentMessageArr, 'runCandidateFacingAgentsAlongWithToolCalls_stage1', chatControl,apiToken, isChatEnabled);
+      await new WhatsappControls(this.workspaceQueryService).sendWhatsappMessageToCandidate( mostRecentMessageArr.slice(-1)[0].content || '', this.personNode,mostRecentMessageArr, 'runCandidateFacingAgentsAlongWithToolCalls_stage1', chatControl,apiToken, isChatEnabled);
       return mostRecentMessageArr;
     }
     catch (error){
@@ -108,7 +108,7 @@ export class OpenAIArxMultiStepClient {
       let messageArr_stage2 = mostRecentMessageArr.slice(-1)
       if ( messageArr_stage2[0].content != firstStageMessageArr[0].content) {
         console.log("Sending message to candidate from addResponseAndToolCallsToMessageHistory_stage2", messageArr_stage2);
-        await new WhatsappAPISelector(this.workspaceQueryService).sendWhatsappMessageToCandidate(response?.choices[0]?.message?.content || '', this.personNode,messageArr_stage2,'addResponseAndToolCallsToMessageHistory_stage2', chatControl,apiToken, isChatEnabled);
+        await new WhatsappControls(this.workspaceQueryService).sendWhatsappMessageToCandidate(response?.choices[0]?.message?.content || '', this.personNode,messageArr_stage2,'addResponseAndToolCallsToMessageHistory_stage2', chatControl,apiToken, isChatEnabled);
       }
       else{
         console.log("The message we tried to send but sending is is ::", messageArr_stage2[0].content, "processorType")
