@@ -129,13 +129,13 @@ export default class CandidateEngagementArx {
   }
   
 
-  async checkCandidateEngagement(apiToken:string) {
+  async executeCandidateEngagement(apiToken:string) {
     try{
       console.log("Cron running and cycle started to check candidate engagement");
       const chatControls: allDataObjects.chatControls[] = [{chatControlType:"startChat"},{ chatControlType:"startVideoInterviewChat"}, {chatControlType:"startMeetingSchedulingChat"}];
       for (const chatControl of chatControls) {
         const {people, candidateJob} = await new FilterCandidates(this.workspaceQueryService).fetchSpecificPeopleToEngageBasedOnChatControl(chatControl, apiToken);
-        this.checkIfAllInformationForSendingChatMessageIsAvailable(people, chatControl, apiToken);
+        this.checkIfAllInformationForSendingChatMessageIsAvailable(people,candidateJob, chatControl, apiToken);
         console.log(`Number of people to engage for ${chatControl}:`, people.length);
         if (people.length > 0) {
           if (chatControl.chatControlType === "startVideoInterviewChat") {
@@ -151,7 +151,7 @@ export default class CandidateEngagementArx {
       console.log("This is the error in checkCandidate Engagement", error);
     }
   }
-  checkIfAllInformationForSendingChatMessageIsAvailable(peopleEngagementStartChatArr: allDataObjects.PersonNode[], chatControl: allDataObjects.chatControls, apiToken: string) {
+  checkIfAllInformationForSendingChatMessageIsAvailable(peopleEngagementStartChatArr: allDataObjects.PersonNode[], candidateJob:allDataObjects.Jobs, chatControl: allDataObjects.chatControls, apiToken: string) {
     // api key, keys created for each api token for each workspace
     // Google integration is done
     // candidateFirstName
@@ -167,6 +167,10 @@ export default class CandidateEngagementArx {
     // videoInterviewTemplate
     // questionsTemplate
     // CV for the candidate
+    // questions for chat
+    // questions for video interview
+    // video interview attachments (videos)
+    // video interview instructionrs, number of questions, etc. 
     // data in google sheet for the candidate
   }
 }

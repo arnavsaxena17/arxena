@@ -66,7 +66,7 @@ export class CandidateEngagementCronService extends BaseCronService {
   async handleCron() {
     await this.executeWorkspaceTask(async (token) => {
       await new CandidateEngagementArx(this.workspaceQueryService)
-        .checkCandidateEngagement(token);
+        .executeCandidateEngagement(token);
     });
   }
 }

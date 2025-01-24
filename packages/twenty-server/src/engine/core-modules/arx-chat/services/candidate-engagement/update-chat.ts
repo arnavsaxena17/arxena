@@ -237,7 +237,6 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
           skippedCount++;
         }
       }
-
       console.log(`Total candidates skipped for video interview creation: ${skippedCount}`);
       console.log(`Total video interviews created: ${createdCount}`);
     }
