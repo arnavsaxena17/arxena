@@ -637,10 +637,23 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
     {
         "field": {
             "description": "",
+            "label": "isProfilePurchsed",
+            "name": "isProfilePurchsed",
+            "objectMetadataId": objectsNameIdMap.candidate,
+            "type": "BOOLEAN",
+            "defaultValue": false
+
+        }
+    },
+    {
+        "field": {
+            "description": "",
             "label": "engagementStatus",
             "name": "engagementStatus",
             "objectMetadataId": objectsNameIdMap.candidate,
-            "type": "BOOLEAN"
+            "type": "BOOLEAN",
+            "defaultValue": false
+
         }
     },
     
@@ -768,7 +781,9 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
             "label": "isReminderActive",
             "name": "isReminderActive",
             "objectMetadataId": objectsNameIdMap.candidateReminder,
-            "type": "BOOLEAN"
+            "type": "BOOLEAN",
+            "defaultValue": false
+
         }
     },
     {
@@ -1071,7 +1086,9 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
             "label": "Started Responding",
             "name": "startedResponding",
             "objectMetadataId": objectsNameIdMap.videoInterviewResponse,
-            "type": "BOOLEAN"
+            "type": "BOOLEAN",
+            "defaultValue": false
+
         }
 
     },
@@ -1082,7 +1099,9 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
             "label": "Completed Response",
             "name": "completedResponse",
             "objectMetadataId": objectsNameIdMap.videoInterviewResponse,
-            "type": "BOOLEAN"
+            "type": "BOOLEAN",
+            "defaultValue": false
+
         }
 
     },
@@ -1104,7 +1123,9 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
             "label": "Time Limit Adherence",
             "name": "timeLimitAdherence",
             "objectMetadataId": objectsNameIdMap.videoInterviewResponse,
-            "type": "BOOLEAN"
+            "type": "BOOLEAN",
+            "defaultValue": false
+
         }
 
     },
@@ -1377,7 +1398,6 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
             "type": "LINK"
         }
     },
-
     {
         "field": {
             "description": "Interview Started or Not",
@@ -1385,43 +1405,22 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
             "label": "Interview Started",
             "name": "interviewStarted",
             "objectMetadataId": objectsNameIdMap.videoInterview,
-            "type": "BOOLEAN"
+            "type": "BOOLEAN",
+            "defaultValue": false
+
         }
 
     },
-
     {
         "field": {
-            "description": "Interview Started or Not",
+            "description": "Interview Completed or Not",
             "icon": "IconAdjustmentsCheck",
             "label": "Interview Completed",
             "name": "interviewCompleted",
             "objectMetadataId": objectsNameIdMap.videoInterview,
-            "type": "BOOLEAN"
-        }
+            "type": "BOOLEAN",
+            "defaultValue": false
 
-    },
-
-    {
-        "field": {
-            "description": "Camera on or not",
-            "icon": "IconCameraQuestion",
-            "label": "Camera On",
-            "name": "cameraOn",
-            "objectMetadataId": objectsNameIdMap.videoInterview,
-            "type": "BOOLEAN"
-        }
-
-    },
-
-    {
-        "field": {
-            "description": "Camera on or not",
-            "icon": "IconMicrophone",
-            "label": "Mic On",
-            "name": "micOn",
-            "objectMetadataId": objectsNameIdMap.videoInterview,
-            "type": "BOOLEAN"
         }
 
     },

@@ -1,13 +1,36 @@
 // google-sheets.service.ts
-import { Injectable } from '@nestjs/common';
+import { ConsoleLogger, Injectable } from '@nestjs/common';
 import { google } from 'googleapis';
-import axios from 'axios';
+import axios, { all } from 'axios';
 import * as CandidateSourcingTypes from 'src/engine/core-modules/candidate-sourcing/types/candidate-sourcing-types';
 import { OAuth2Client } from 'google-auth-library';
 import { UpdateOneJob } from '../candidate-sourcing/graphql-queries';
 import { axiosRequest } from '../workspace-modifications/workspace-modifications.controller';
 import { FetchAndUpdateCandidatesChatsWhatsapps } from '../arx-chat/services/candidate-engagement/update-chat';
 import { WorkspaceQueryService } from '../workspace-modifications/workspace-modifications.service';
+import uniq from 'lodash.uniq';
+
+const rowDataValues = [
+  ...CandidateSourcingTypes.columnDefinitions.map(col => ({
+    userEnteredValue: { stringValue: col.header },
+    userEnteredFormat: {
+      textFormat: { bold: true },
+    },
+  })),
+  { userEnteredValue: { stringValue: 'engagementStatus' }, userEnteredFormat: { textFormat: { bold: true } } },
+  { userEnteredValue: { stringValue: 'startChat' }, userEnteredFormat: { textFormat: { bold: true } } },
+  { userEnteredValue: { stringValue: 'startVideoInterviewChat' }, userEnteredFormat: { textFormat: { bold: true } } },
+  { userEnteredValue: { stringValue: 'startMeetingSchedulingChat' }, userEnteredFormat: { textFormat: { bold: true } } },
+  { userEnteredValue: { stringValue: 'stopChat' }, userEnteredFormat: { textFormat: { bold: true } } },
+  { userEnteredValue: { stringValue: 'candConversationStatus' }, userEnteredFormat: { textFormat: { bold: true } } },
+  { userEnteredValue: { stringValue: 'chatCount' }, userEnteredFormat: { textFormat: { bold: true } } },
+  { userEnteredValue: { stringValue: 'chatMessages' }, userEnteredFormat: { textFormat: { bold: true } } },
+
+
+  { userEnteredValue: { stringValue: 'personId' }, userEnteredFormat: { textFormat: { bold: true } } },
+  { userEnteredValue: { stringValue: 'candidateId' }, userEnteredFormat: { textFormat: { bold: true } } },
+]
+
 
 @Injectable()
 export class GoogleSheetsService {
@@ -254,6 +277,7 @@ export class GoogleSheetsService {
   }
 
   private async initializeSheetIfNeeded(auth: any, googleSheetId: string, newHeaders: string[], existingData: any, apiToken: string): Promise<void> {
+    console.log("This is the new  headers that are being entered in initialise sheet if needed:::", newHeaders);
     const sheets = google.sheets({ version: 'v4', auth });
 
     console.log('Going to check for new headers:::', newHeaders);
@@ -532,14 +556,18 @@ export class GoogleSheetsService {
         }
 
         const headers = this.getHeadersFromData(batch);
-        const lastColumn = this.getColumnLetter(headers.length);
+        console.log("This is the headers that we objtain from the data:::", headers);
+        const lastColumn = this.getColumnLetter(rowDataValues.length);
         const existingSheet = await this.findSpreadsheetByJobName(auth, jobObject.name);
 
         if (!existingSheet) {
-          googleSheetId = await this.createAndInitializeSheet(auth, jobObject, apiToken);
+          console.log("Existing job sheet not found, so creating a new one and initialising");
+          googleSheetId = await this.createAndInitializeSheet(auth, headers, jobObject, apiToken);
         }
+        console.log("This is the lastColumn:::", lastColumn);
+        const existingData = await this.getValues(auth, googleSheetId, `Sheet1`);
+        
 
-        const existingData = await this.getValues(auth, googleSheetId, `Sheet1!A1:${lastColumn}`);
         await this.initializeSheetIfNeeded(auth, googleSheetId, headers, existingData, apiToken);
 
         await this.appendNewCandidatesToSheet(auth, googleSheetId, batch, headers, existingData, apiToken);
@@ -553,7 +581,7 @@ export class GoogleSheetsService {
     });
   }
 
-  private async createAndInitializeSheet(auth: any, jobObject: CandidateSourcingTypes.Jobs, apiToken: string): Promise<string> {
+  private async createAndInitializeSheet(auth: any, headers:string[], jobObject: CandidateSourcingTypes.Jobs, apiToken: string): Promise<string> {
     const newSheet = await this.createSpreadsheetForJob(jobObject.name, apiToken);
     const googleSheetId = newSheet.googleSheetId;
     const googleSheetUrl = `https://docs.google.com/spreadsheets/d/${googleSheetId}`;
@@ -563,15 +591,33 @@ export class GoogleSheetsService {
 
   private async appendNewCandidatesToSheet(auth: any, googleSheetId: string, batch: CandidateSourcingTypes.UserProfile[], headers: string[], existingData: any, apiToken: string): Promise<void> {
     const updates: Array<{ range: string; values: any[][] }> = [];
-    const uniqueKeyIndex = headers.findIndex(header => header.toLowerCase().includes('unique') && header.toLowerCase().includes('key'));
+    // console.log("existingData.values::", existingData.values);
+    const uniqueKeyIndex = existingData?.values[0].indexOf('UniqueKey');
+    // console.log("UniqueKey is at index:", uniqueKeyIndex);
+    
     const existingKeys = new Set(
       existingData?.values
-        ?.slice(1)
-        ?.map(row => row[uniqueKeyIndex])
-        ?.filter(key => key) || [],
+        ?.slice(1)  // Skip header row
+        ?.map(row => {
+          console.log("Row UniqueKey:", row[uniqueKeyIndex]); 
+          return row[uniqueKeyIndex];
+        })
+        ?.filter(key => key) || []
     );
-    const newCandidates = batch.filter(candidate => candidate?.unique_key_string && !existingKeys.has(candidate.unique_key_string));
+    
+    // console.log("Sample candidate unique key:", batch[0]?.unique_key_string);
 
+    
+    // const existingKeys = new Set(
+    //   existingData?.values
+    //     ?.slice(1)
+    //     ?.map(row => row[uniqueKeyIndex])
+    //     ?.filter(key => key) || [],
+    // );
+    // console.log("existingKeys:::", existingKeys);
+    // console.log("existingKeys leng:::", existingKeys.size);
+    const newCandidates = batch.filter(candidate => candidate?.unique_key_string && !existingKeys.has(candidate.unique_key_string));
+    console.log("New number of candidates ::", newCandidates.length);
     if (newCandidates.length > 0) {
       const currentHeaders = existingData?.values ? existingData.values[0] : [];
       console.log('This is the current headers:::', currentHeaders);
@@ -579,8 +625,9 @@ export class GoogleSheetsService {
       console.log('This is the candidateRows:::', candidateRows);
       const nextRow = (existingData?.values?.length || 0) + 1;
       updates.push({ range: `Sheet1!A${nextRow}`, values: candidateRows });
+      console.log('This is the number of updates:::', updates.length);
       await this.batchUpdateGoogleSheet(auth, googleSheetId, updates);
-      console.log(`Successfully appended ${candidateRows.length} new candidates to Google Sheet`);
+      console.log(`Successfully appended ${candidateRows.length} new candidates to Google Sheet in appendNewCandidatesToSheet`);
     }
   }
 
@@ -664,7 +711,6 @@ export class GoogleSheetsService {
 
       // Get existing data and headers
       const existingData = await this.getValues(auth, googleSheetId, 'Sheet1');
-      console.log('existingData:::', existingData);
       console.log('existingData:::', existingData?.values);
       if (!existingData?.values?.length) {
         console.log('No data found in sheet');
@@ -710,7 +756,7 @@ export class GoogleSheetsService {
       }
 
       if (uniqueKeyIndex === -1) {
-        console.log('No unique key column found');
+        console.log('No unique key column found in update ids in sheet');
         return;
       }
 
@@ -768,6 +814,8 @@ export class GoogleSheetsService {
       const sheets = google.sheets({ version: 'v4', auth: auth as OAuth2Client });
       const spreadsheetTitle = `${jobName} - Job Tracking`;
 
+
+      console.log('This is the rowDataValues:::', rowDataValues);
       // Create new spreadsheet with initial structure
       const newSpreadsheet = await sheets.spreadsheets.create({
         requestBody: {
@@ -784,29 +832,7 @@ export class GoogleSheetsService {
                 {
                   startRow: 0,
                   startColumn: 0,
-                  rowData: [
-                    {
-                      values: [
-                        ...CandidateSourcingTypes.columnDefinitions.map(col => ({
-                          userEnteredValue: { stringValue: col.header },
-                          userEnteredFormat: {
-                            textFormat: { bold: true },
-                          },
-                        })),
-                        { userEnteredValue: { stringValue: 'engagementStatus' }, userEnteredFormat: { textFormat: { bold: true } } },
-                        { userEnteredValue: { stringValue: 'startChat' }, userEnteredFormat: { textFormat: { bold: true } } },
-                        { userEnteredValue: { stringValue: 'startVideoInterviewChat' }, userEnteredFormat: { textFormat: { bold: true } } },
-                        { userEnteredValue: { stringValue: 'startMeetingSchedulingChat' }, userEnteredFormat: { textFormat: { bold: true } } },
-                        { userEnteredValue: { stringValue: 'stopChat' }, userEnteredFormat: { textFormat: { bold: true } } },
-                        { userEnteredValue: { stringValue: 'candConversationStatus' }, userEnteredFormat: { textFormat: { bold: true } } },
-                        { userEnteredValue: { stringValue: 'chatCount' }, userEnteredFormat: { textFormat: { bold: true } } },
-                        { userEnteredValue: { stringValue: 'chatMessages' }, userEnteredFormat: { textFormat: { bold: true } } },
-
-
-                        { userEnteredValue: { stringValue: 'personId' }, userEnteredFormat: { textFormat: { bold: true } } },
-                        { userEnteredValue: { stringValue: 'candidateId' }, userEnteredFormat: { textFormat: { bold: true } } },
-                      ],
-                    },
+                  rowData: [ { values: rowDataValues, },
                   ],
                 },
               ],
@@ -896,7 +922,7 @@ export class GoogleSheetsService {
       const uniqueKeyIndex = headers.findIndex(header => header.toLowerCase().includes('unique') && header.toLowerCase().includes('key'));
 
       if (uniqueKeyIndex === -1) {
-        console.log('No unique key column found');
+        console.log('No unique key column found in create spreadsheet');
         return;
       }
 

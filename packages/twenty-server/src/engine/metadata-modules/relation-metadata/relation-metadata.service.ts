@@ -294,7 +294,7 @@ export class RelationMetadataService extends TypeOrmQueryService<RelationMetadat
           },
         },
       );
-      console.log("objectMetadataEntries: objectMetadataEntries::getObjectMetadataMap", objectMetadataEntries);
+      // console.log("objectMetadataEntries: objectMetadataEntries::getObjectMetadataMap", objectMetadataEntries);
 
 
     const companyObjectMetadata = objectMetadataEntries.find(
@@ -302,7 +302,7 @@ export class RelationMetadataService extends TypeOrmQueryService<RelationMetadat
     );
 
     if (companyObjectMetadata) {
-      console.log("Field Metadata  objectMetadataEntries Entities for 'company':getObjectMetadataMap", companyObjectMetadata.fields);
+      // console.log("Field Metadata  objectMetadataEntries Entities for 'company':getObjectMetadataMap", companyObjectMetadata.fields);
     }
       const objectMetadataMap = objectMetadataEntries.reduce(
         (acc, curr) => {
@@ -312,7 +312,7 @@ export class RelationMetadataService extends TypeOrmQueryService<RelationMetadat
         },
         {} as { [key: string]: ObjectMetadataEntity },
       );
-      console.log("objectMetadataMap in getObjectMetadataMap:", objectMetadataMap);
+      // console.log("objectMetadataMap in getObjectMetadataMap:", objectMetadataMap);
     return objectMetadataMap
   }
 

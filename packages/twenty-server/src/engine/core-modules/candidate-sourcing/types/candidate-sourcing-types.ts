@@ -36,7 +36,7 @@ export enum NoticeStatus {
 export interface ColumnDefinition {
   key: string;
   header: string;
-  type: 'string' | 'number' | 'date' | 'enum' | 'boolean' | 'array' | 'url';
+  type: 'string' | 'number' | 'date' | 'enum' | 'boolean' | 'array' | 'url' | 'object';
   enum?: any;
   format?: (value: any) => string;
 }
@@ -154,6 +154,8 @@ export const columnDefinitions: ColumnDefinition[] = [
     key: 'inferred_years_experience',
     header: 'Total Experience',
     type: 'string',
+    format: (value: number) => (value ? value.toFixed(1) : '0'),
+
   },
   {
     key: 'notice_period',
@@ -172,11 +174,15 @@ export const columnDefinitions: ColumnDefinition[] = [
     key: 'education_course_ug',
     header: 'UG Degree',
     type: 'string',
+    format: (value: string) => value || '',
+
   },
   {
     key: 'education_institute_ug',
     header: 'UG Institute',
     type: 'string',
+    format: (value: string) => value || '',
+
   },
   {
     key: 'ug_graduation_year',
@@ -188,11 +194,15 @@ export const columnDefinitions: ColumnDefinition[] = [
     key: 'education_course_pg',
     header: 'PG Degree',
     type: 'string',
+    format: (value: string) => value || '',
+
   },
   {
     key: 'education_institute_pg',
     header: 'PG Institute',
     type: 'string',
+    format: (value: string) => value || '',
+
   },
   {
     key: 'pg_graduation_year',
@@ -210,19 +220,106 @@ export const columnDefinitions: ColumnDefinition[] = [
     key: 'status',
     header: 'Status',
     type: 'string',
-    format: () => 'New',
+    format: (value: string) => value || '',
   },
   {
     key: 'notes',
     header: 'Notes',
     type: 'string',
-    format: () => '',
+    format: (value: string) => value || '',
   },
   {
     key: 'unique_key_string',
     header: 'UniqueKey',
     type: 'string',
+    format: (value: string) => value || '',
+
   },
+  {
+    key: 'languages',
+    header: 'Languages',
+    type: 'array',
+    format: (value: string[]) => (Array.isArray(value) ? value.join('; ') : ''),
+  },
+  {
+    key: 'english_level',
+    header: 'English Proficiency',
+    type: 'object',
+    format: (value: { level: string; description: string }) => value?.level || '',
+  },
+  {
+    key: 'experience_departments',
+    header: 'Experience Departments',
+    type: 'array',
+    format: (value: string[]) => (Array.isArray(value) ? value.join('; ') : ''),
+  },
+  {
+    key: 'preferred_locations',
+    header: 'Preferred Locations',
+    type: 'array',
+    format: (value: string[]) => (Array.isArray(value) ? value.join('; ') : ''),
+  },
+  {
+    key: 'may_also_know',
+    header: 'Related Skills',
+    type: 'array',
+    format: (value: string[]) => (Array.isArray(value) ? value.join('; ') : ''),
+  },
+  {
+    key: 'is_fresher',
+    header: 'Is Fresher',
+    type: 'boolean',
+    format: (value: boolean) => (value ? 'Yes' : 'No'),
+  },
+  {
+    key: 'is_experienced',
+    header: 'Is Experienced',
+    type: 'boolean',
+    format: (value: boolean) => (value ? 'Yes' : 'No'),
+  },
+  {
+    key: 'active_on',
+    header: 'Last Active',
+    type: 'date',
+    format: (value: string) => {
+      try {
+        return value ? new Date(value).toISOString().split('T')[0] : '';
+      } catch {
+        return '';
+      }
+    },
+  },
+  {
+    key: 'is_cv_attached',
+    header: 'CV Attached',
+    type: 'boolean',
+    format: (value: boolean) => (value ? 'Yes' : 'No'),
+  },
+  {
+    key: 'is_profile_purchased',
+    header: 'isProfilePurchsed',
+    type: 'boolean',
+    format: (value: boolean) => (value ? 'Yes' : 'No'),
+  },
+  {
+    key: 'profile_photo_url',
+    header: 'Profile Photo URL',
+    type: 'url',
+    format: (value: string) => value || '',
+  },
+  {
+    key: 'english_audio_intro_url',
+    header: 'English Audio Intro URL',
+    type: 'url',
+    format: (value: string) => value || '',
+  },
+  {
+    key: 'highest_education_level',
+    header: 'Highest Education',
+    type: 'string',
+    format: (value: string) => value || '',
+  },
+
 ];
 
 interface Profile {
