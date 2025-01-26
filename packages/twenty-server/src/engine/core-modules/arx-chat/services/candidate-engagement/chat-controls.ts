@@ -49,9 +49,13 @@ export class ChatControls {
     isCandidateEligibleForEngagement = (candidate: allDataObjects.CandidateNode, chatControl:allDataObjects.chatControls) => {
       const minutesToWait = 0;
       const twoMinutesAgo = new Date(Date.now() - minutesToWait * 60 * 1000);
-  
+      console.log("Checking for candidate Id:", candidate.id, "for chatControl:", chatControl.chatControlType);
       if (!candidate.engagementStatus || candidate.lastEngagementChatControl !== chatControl.chatControlType) {
-        console.log(`Candidate is not being engaged because engagement status is missing or last engagement chat control does not match for candidate: ${candidate.name}`, "candidate.engagementStatus::", candidate.engagementStatus, "candidate.lastEngagementChatControl::", candidate.lastEngagementChatControl, "chatControl::", chatControl);
+        console.log(`Candidate is not being engaged because engagement status is missing or last engagement chat control does not match for candidate: ${candidate.name}`);
+        console.log(`Candidate is not being engaged because engagement status"candidate.engagementStatus::`, candidate.engagementStatus)
+        console.log( "candidate.lastEngagementChatControl::", candidate.lastEngagementChatControl, "chatControl::", chatControl);
+        console.log( "Value of candidate.lastEngagementChatControl::", candidate.lastEngagementChatControl !== chatControl.chatControlType);
+        console.log( "Value of fulle::", !candidate.engagementStatus || candidate.lastEngagementChatControl !== chatControl.chatControlType);
         return false;
       }
       if (chatControl.chatControlType === 'startVideoInterviewChat' && (!candidate.startVideoInterviewChat || !candidate.startChat)) {

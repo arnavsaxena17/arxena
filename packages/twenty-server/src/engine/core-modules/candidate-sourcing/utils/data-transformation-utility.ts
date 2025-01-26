@@ -185,14 +185,25 @@ export function transformFieldValue(field: string, value: any): any {
       'stopChat',
       'startVideoInterviewChat',
       'startMeetingSchedulingChat',
+      'isProfilePurchsed'
   ];
 
   // Handle boolean fields first
   if (booleanFields.includes(field)) {
-      if (value === '' || value === null || value === undefined || value === false) {
+    console.log("This is the value", value, "field", field);
+      if (value === true || value === 'true' || value === 'True' || value === 'TRUE') {
+        return true;
+      }
+      if (value === '' || value === null || value === undefined || value === false || value.toLowerCase() === 'no') {
           return false;
       }
-      return Boolean(value);
+      if (value.toLowerCase() === 'yes') {
+          return true;
+      }
+      console.log("This is the value", value);
+      const booleanValue = Boolean(value)
+      console.log("This is the vboolean alue", value);
+      return booleanValue;
   }
 
   // Handle other field types

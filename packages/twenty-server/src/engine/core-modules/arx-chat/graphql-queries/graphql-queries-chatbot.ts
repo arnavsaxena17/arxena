@@ -48,7 +48,6 @@ export const graphQlToUpdateCandidate = `mutation UpdateOneCandidate($idToUpdate
       `
 export const graphqlQueryToCreateVideoInterview = `mutation CreateOneVideoInterview($input: VideoInterviewCreateInput!) {
   createVideoInterview(data: $input) {
-    micOn
     interviewStarted
     position
     candidateId
@@ -60,7 +59,6 @@ export const graphqlQueryToCreateVideoInterview = `mutation CreateOneVideoInterv
     }
     createdAt
     id
-    cameraOn
     name
     videoInterviewTemplateId
   }
@@ -97,11 +95,9 @@ query FindManyVideoInterviews($filter: VideoInterviewFilterInput, $orderBy: [Vid
           url
           __typename
         }
-        cameraOn
         id
         interviewStarted
         interviewCompleted
-        micOn
         name
         createdAt
         candidate {

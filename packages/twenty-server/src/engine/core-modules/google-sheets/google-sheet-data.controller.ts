@@ -10,6 +10,7 @@ import {  graphqlToFetchAllCandidateData, graphQlToUpdateCandidate, mutationToUp
 import { CandidateSourcingController } from '../candidate-sourcing/controllers/candidate-sourcing.controller';
 import {transformFieldValue, transformFieldName} from '../candidate-sourcing/utils/data-transformation-utility';
 import { ProcessCandidatesService } from '../candidate-sourcing/jobs/process-candidates.service';
+import { request } from 'node:http';
 
 
 @Controller('fetch-google-apps-data')
@@ -115,6 +116,26 @@ export class GoogleSheetsDataController {
     return results.find(result => result !== null);
   }
   
+  sheetUpdateExternalTasks(field: string, value: any, candidateId: string, personId: string, unique_string_key:string, apiToken: string, spreadsheetId:string) {
+    console.log("Field:", field, "Value:", value, "candidateId:", candidateId, "personId:", personId, "unique_string_key:", unique_string_key);
+    switch (field) {
+        case 'isProfilePurchsed':
+            if (value.toLowerCase() === 'yes' || value === true) {
+              this.personService.purchaseAndUpdateApnaProfile(field, value, candidateId, personId, unique_string_key, apiToken, spreadsheetId);
+            }
+            else{
+              console.log("isProfilePurchsed probably no:", value);
+            }
+            console.log("isProfilePurchsed:", value);
+            break;
+        case 'email_address':
+            console.log("Email address field:", value);
+            break;
+        default:
+            console.log("Field not recognized:", field);
+    }
+  }
+
 
   @Post('post-batch-data')
   async postBatchData(@Body() data: { 
@@ -123,6 +144,7 @@ export class GoogleSheetsDataController {
           candidateId: string,
           personId: string,
           field: string,
+          unique_string_key:string,
           value: any
       }>
   }) {
@@ -132,6 +154,11 @@ export class GoogleSheetsDataController {
       if (!tokenData) {
           throw new Error('No valid workspace found for this spreadsheet');
       }
+
+        for (const update of data.updates) {
+          console.log("update:", update);
+          this.sheetUpdateExternalTasks(update.field, update.value, update.candidateId, update.personId, update.unique_string_key, tokenData.token, data.spreadsheetId);
+        }
 
       // Group updates by both candidateId and personId
       const updates = data.updates.reduce((acc, update) => {
@@ -146,24 +173,28 @@ export class GoogleSheetsDataController {
 
 
           const transformedField = transformFieldName(update.field);
-          console.log("transformedField::", transformedField, "for transformed field:", update.field);
+          console.log("transformed Field:: field", transformedField, "for transformed field:", update.field, "update value is :", update.value);
           const transformedValue = transformFieldValue(update.field, update.value);
-          console.log("transformedField::", transformedValue, "for transformed field:", update.value);
+          console.log("transformed Field:: value", transformedValue, "for transformed field:", update.value);
   
           if (this.isPersonField(update.field)) {
               acc[update.candidateId].personUpdates[transformedField] = transformedValue;
           } else {
               acc[update.candidateId].candidateUpdates[transformedField] = transformedValue;
           }
-          
-
           console.log("Acc:", acc);
+          console.log("Accupdate unique:", update.unique_string_key);
+
+
           return acc;
       }, {} as Record<string, {
           candidateUpdates: Record<string, any>,
           personUpdates: Record<string, any>,
           personId: string
       }>);
+
+
+
       
       console.log("updates:", updates);
       const results: Array<{
@@ -294,6 +325,14 @@ export class GoogleSheetsDataController {
         timestamp: moment().format('YYYY-MM-DD HH:mm:ss')
       };
   
+    } 
+  
+  
+  @Get('get-data')
+  async getData(@Body()request: any) {
+    
+    console.log("get data called");
+
     } 
   
 

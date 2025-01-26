@@ -711,7 +711,7 @@ export class GoogleSheetsService {
 
       // Get existing data and headers
       const existingData = await this.getValues(auth, googleSheetId, 'Sheet1');
-      console.log('existingData:::', existingData?.values);
+      // console.log('existingData:::', existingData?.values);
       if (!existingData?.values?.length) {
         console.log('No data found in sheet');
         return;
@@ -765,7 +765,7 @@ export class GoogleSheetsService {
       console.log('Length of tracking.personIdMap:', tracking.personIdMap.size);
       console.log('Length of tracking.candidateIdMap:', tracking.candidateIdMap.size);
       console.log('This is the headers:::', headers);
-      console.log('This is the existingData:::', existingData);
+      // console.log('This is the existingData:::', existingData);
       console.log('This is the existingData:::', existingData.values.length);
 
       // Update IDs in their respective columns
@@ -814,8 +814,6 @@ export class GoogleSheetsService {
       const sheets = google.sheets({ version: 'v4', auth: auth as OAuth2Client });
       const spreadsheetTitle = `${jobName} - Job Tracking`;
 
-
-      console.log('This is the rowDataValues:::', rowDataValues);
       // Create new spreadsheet with initial structure
       const newSpreadsheet = await sheets.spreadsheets.create({
         requestBody: {

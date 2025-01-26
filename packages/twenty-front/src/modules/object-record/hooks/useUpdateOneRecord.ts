@@ -101,6 +101,7 @@ const updateGoogleSheet = async (
   accessToken: string,
   candidateId: string,
   record: any,
+  sanitizedInput:any,
   apolloClient: ApolloClient<any>,
 ) => {
   try {
@@ -138,9 +139,9 @@ const updateGoogleSheet = async (
     // Find which column was modified by comparing record keys with headers
     const modifiedColumns = Object.keys(record).filter(key => {
       const columnIndex = sheetData.headers.findIndex((header: string) => 
-        header.toLowerCase() === key.toLowerCase()
+      header.toLowerCase() === key.toLowerCase()
       );
-      return columnIndex !== -1;
+      return columnIndex !== -1 && key in sanitizedInput;
     });
 
     console.log("Modified columns:", modifiedColumns);
@@ -217,7 +218,12 @@ export const useUpdateOneRecord = <UpdatedObjectRecord extends ObjectRecord = Ob
       }),
     };
 
+    console.log("Sanitized input", sanitizedInput);
+    console.log("Sanitized updateOneRecordInput", updateOneRecordInput);
+    console.log("Sanitized computedRecordGqlFields", computedRecordGqlFields);
+    
     const cachedRecord = getRecordFromCache<ObjectRecord>(idToUpdate);
+    console.log("Sanitized cachedRecord", cachedRecord);
 
     const cachedRecordWithConnection = getRecordNodeFromRecord<ObjectRecord>({
       record: cachedRecord,
@@ -262,7 +268,7 @@ export const useUpdateOneRecord = <UpdatedObjectRecord extends ObjectRecord = Ob
     });
 
     const mutationResponseField = getUpdateOneRecordMutationResponseField(objectNameSingular);
-
+    console.log("Santitisex input", sanitizedInput);
     const updatedRecord = await apolloClient.mutate({
       mutation: updateOneRecordMutation,
       variables: {
@@ -287,11 +293,12 @@ export const useUpdateOneRecord = <UpdatedObjectRecord extends ObjectRecord = Ob
     const record = updatedRecord?.data?.[mutationResponseField];
     if (record && objectNameSingular === 'candidate' && tokenPair?.accessToken?.token) {
       try {
-        console.log("Going to try and update the damn google sheet"); 
+        console.log("Going to try and update the damn google sheet because of the damn update to id:", idToUpdate); 
         await updateGoogleSheet(
           tokenPair?.accessToken?.token,
           idToUpdate,
           record,
+          sanitizedInput,
           apolloClient
         );
       } catch (error) {

@@ -400,7 +400,14 @@ async getCandidateInformation(userMessage: allDataObjects.chatMessageType, apiTo
       console.log('going to get candidate information');
       const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindManyPeople, variables: graphVariables });
       const response = await axiosRequest(graphqlQueryObj, apiToken);
+
+
       const candidateDataObjs = response.data?.data?.people?.edges[0]?.node?.candidates?.edges;
+
+
+      console.log("Thesea re ntue number of candidate data objects::", candidateDataObjs);
+
+
       const activeJobCandidateObj = candidateDataObjs?.find((edge: allDataObjects.CandidatesEdge) => edge?.node?.jobs?.isActive);
       console.log('This is the number of candidates', candidateDataObjs?.length);
       console.log('This is the activeJobCandidateObj who got called', activeJobCandidateObj?.node?.name || '');

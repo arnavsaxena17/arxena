@@ -59,7 +59,7 @@ export class CoreQueryBuilderFactory {
       );
     }
 
-    console.log("parsedObjectparsedObject:", parsedObject);
+    console.log("called parsedObjectparsedObject in getObjectMetadata:", parsedObject);
     const [objectMetadata] = objectMetadataItems.filter(
       (object) => object.namePlural === parsedObject,
     );
@@ -108,6 +108,7 @@ export class CoreQueryBuilderFactory {
 
   async createOne(request: Request): Promise<Query> {
     const { object: parsedObject } = parseCorePath(request);
+    console.log("Going to create one")
     const objectMetadata = await this.getObjectMetadata(request, parsedObject);
 
     const depth = computeDepth(request);
@@ -120,6 +121,7 @@ export class CoreQueryBuilderFactory {
 
   async createMany(request: Request): Promise<Query> {
     const { object: parsedObject } = parseCoreBatchPath(request);
+    console.log("Going to create many")
     const objectMetadata = await this.getObjectMetadata(request, parsedObject);
     const depth = computeDepth(request);
 
@@ -131,6 +133,7 @@ export class CoreQueryBuilderFactory {
 
   async update(request: Request): Promise<Query> {
     const { object: parsedObject } = parseCorePath(request);
+    console.log("Going to update one")
     const objectMetadata = await this.getObjectMetadata(request, parsedObject);
 
     const depth = computeDepth(request);
@@ -150,6 +153,7 @@ export class CoreQueryBuilderFactory {
   }
 
   async get(request: Request): Promise<Query> {
+    console.log("Going to get one")
     const { object: parsedObject } = parseCorePath(request);
     const objectMetadata = await this.getObjectMetadata(request, parsedObject);
 

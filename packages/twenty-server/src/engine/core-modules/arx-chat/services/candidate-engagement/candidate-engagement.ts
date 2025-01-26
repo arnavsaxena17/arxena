@@ -19,11 +19,15 @@ export default class CandidateEngagementArx {
     // await new WhatsappControls(this.workspaceQueryService).sendWhatsappMessage(whatappUpdateMessageObj, personNode, mostRecentMessageArr, chatControl,apiToken);
     const personNode = candidatePersonNodeObj;
     const recruiterProfile = allDataObjects.recruiterProfile;
-    const messagesList: allDataObjects.MessageNode[] = await new FilterCandidates(this.workspaceQueryService).fetchAllWhatsappMessages(candidatePersonNodeObj.candidates?.edges[0]?.node.id, apiToken);
+    const candidate = candidatePersonNodeObj?.candidates?.edges?.find(edge => edge.node.jobs.id === candidateJob.id)?.node;
+    const candidateId = candidate?.id || "";
+    console.log("Candidate ID to start chat::", candidateId);
+
+    const messagesList: allDataObjects.MessageNode[] = await new FilterCandidates(this.workspaceQueryService).fetchAllWhatsappMessages(candidateId, apiToken);
     const sortedMessagesList:allDataObjects.MessageNode[] = messagesList.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     const whatappUpdateMessageObj = await new ChatControls(this.workspaceQueryService).getChatTemplateFromChatControls(chatControl, sortedMessagesList, candidateJob, candidatePersonNodeObj, apiToken, chatReply, recruiterProfile);
     await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).updateCandidateEngagementDataInTable(whatappUpdateMessageObj, apiToken);    
-    console.log("Sending a messages::", chatReply, "to the candidate::", personNode.name.firstName + " " + personNode.name.lastName);
+    console.log("Sending a messages::", chatReply, "to the candidate::", personNode.name.firstName + " " + personNode.name.lastName, "with candidate id::", candidateId);
   }
 
   async processCandidate(personNode: allDataObjects.PersonNode,candidateJob:allDataObjects.Jobs, chatControl: allDataObjects.chatControls, apiToken:string) {
@@ -49,6 +53,7 @@ export default class CandidateEngagementArx {
   async startChatEngagement(peopleCandidateResponseEngagementArr: allDataObjects.PersonNode[], candidateJob:allDataObjects.Jobs, chatControl: allDataObjects.chatControls,  apiToken:string) {
     const filteredCandidatesToStartEngagement = await new ChatControls(this.workspaceQueryService).filterCandidatesAsPerChatControls(peopleCandidateResponseEngagementArr, chatControl);
     for (const candidatePersonNodeObj of filteredCandidatesToStartEngagement) {
+      console.log("Starting chat engagement for the candidate::", candidatePersonNodeObj.name.firstName + " " + candidatePersonNodeObj.name.lastName);
       const chatReply:allDataObjects.chatControlType = chatControl.chatControlType
       await this.createAndUpdateCandidateStartChatChatMessage(chatReply, candidatePersonNodeObj,candidateJob,  chatControl, apiToken);
     }
@@ -58,7 +63,7 @@ export default class CandidateEngagementArx {
     console.log("These are the candidates who we want to engage ::",peopleCandidateResponseEngagementArr.length , "for chat Contro:", chatControl);
     const sortedPeopleData: allDataObjects.PersonNode[] = sortWhatsAppMessages(peopleCandidateResponseEngagementArr);
     const filteredCandidatesToEngage = sortedPeopleData.filter(person => {
-      const candidate = person?.candidates?.edges?.[0]?.node;
+      const candidate = person?.candidates?.edges?.find(edge => edge.node.jobs.id === candidateJob.id)?.node;
       return candidate ? new ChatControls(this.workspaceQueryService).isCandidateEligibleForEngagement(candidate, chatControl) : false;
     });
     console.log('Number processCandidateof filtered candidates to engage after time scheduling: ', filteredCandidatesToEngage?.length, "for chatcontrol", chatControl);

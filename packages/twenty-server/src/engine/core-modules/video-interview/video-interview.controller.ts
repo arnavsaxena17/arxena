@@ -527,10 +527,8 @@ export class VideoInterviewController {
               node {
                 id
                 createdAt
-                cameraOn
                 interviewCompleted
                 name
-                micOn
                 attachments{
                     edges{
                         node{

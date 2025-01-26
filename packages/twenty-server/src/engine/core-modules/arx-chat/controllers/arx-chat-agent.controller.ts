@@ -468,6 +468,7 @@ export class ArxChatEndpoint {
     try {
       const candidateId = request.body.candidateId;
       console.log('candidateId to create video-interview:', candidateId);
+
       const createVideoInterviewResponse = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).createVideoInterviewForCandidate(candidateId,apiToken);
       const personObj = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByCandidateId(candidateId,apiToken);
       const person = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPersonId(personObj.id,apiToken);

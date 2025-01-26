@@ -287,9 +287,7 @@ const queryByvideoInterview = `query FindOneVideoInterview($objectRecordId: ID!)
       url
     }
     interviewCompleted
-    cameraOn
     createdAt
-    micOn
   }
   }
 `;
