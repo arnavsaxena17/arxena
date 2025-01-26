@@ -26,7 +26,7 @@ export class OpenAIArxMultiStepClient {
         mostRecentMessageArr.push(responseMessage);
       }
       else{
-        console.log("Response message from getHumanLikeResponse MessageFromLLM is null, so returning as it is")
+        console.log("Response message from get Human LikeResponse Message From LLM is null, so returning as it is")
         return mostRecentMessageArr
       }
       if (responseMessage?.tool_calls && isChatEnabled) {
@@ -34,7 +34,7 @@ export class OpenAIArxMultiStepClient {
       }
       console.log("Sending message to candidate from addResponseAndToolCallsToMessageHistory_stage1", mostRecentMessageArr.slice(-1)[0].content);
       console.log("Message text in stage 1 received based on which we will decide whether to send message or not::",  mostRecentMessageArr.slice(-1)[0].content)
-      await new WhatsappControls(this.workspaceQueryService).sendWhatsappMessageToCandidate( mostRecentMessageArr.slice(-1)[0].content || '', this.personNode,mostRecentMessageArr, 'runCandidateFacingAgentsAlongWithToolCalls_stage1', chatControl,apiToken, isChatEnabled);
+      await new WhatsappControls(this.workspaceQueryService).sendWhatsappMessageToCandidate( mostRecentMessageArr.slice(-1)[0].content || '',  this.personNode,candidateJob,mostRecentMessageArr, 'runCandidateFacingAgentsAlongWithToolCalls_stage1', chatControl,apiToken, isChatEnabled);
       return mostRecentMessageArr;
     }
     catch (error){
@@ -109,7 +109,7 @@ export class OpenAIArxMultiStepClient {
       let messageArr_stage2 = mostRecentMessageArr.slice(-1)
       if ( messageArr_stage2[0].content != firstStageMessageArr[0].content) {
         console.log("Sending message to candidate from addResponseAndToolCallsToMessageHistory_stage2", messageArr_stage2);
-        await new WhatsappControls(this.workspaceQueryService).sendWhatsappMessageToCandidate(response?.choices[0]?.message?.content || '', this.personNode,messageArr_stage2,'addResponseAndToolCallsToMessageHistory_stage2', chatControl,apiToken, isChatEnabled);
+        await new WhatsappControls(this.workspaceQueryService).sendWhatsappMessageToCandidate(response?.choices[0]?.message?.content || '', this.personNode,candidateJob,messageArr_stage2,'addResponseAndToolCallsToMessageHistory_stage2', chatControl,apiToken, isChatEnabled);
       }
       else{
         console.log("The message we tried to send but sending is is ::", messageArr_stage2[0].content, "processorType")

@@ -5,27 +5,30 @@ export class Transformations {
   async updateChatHistoryObjCreateWhatsappMessageObj(
     wamId: string,
     personNode: allDataObjects.PersonNode,
+    candidateJob: allDataObjects.Jobs,
     chatHistory: allDataObjects.ChatHistoryItem[],
     chatControl: allDataObjects.chatControls,
-    apiToken: string,
-  ): Promise<allDataObjects.whatappUpdateMessageObjType> {
-    const candidateNode = personNode.candidates.edges[0].node;
-    const updatedChatHistoryObj: allDataObjects.whatappUpdateMessageObjType = {
-      messageObj: chatHistory,
-      candidateProfile: candidateNode,
-      whatsappMessageType: candidateNode?.whatsappProvider || 'application03',
-      candidateFirstName: personNode.name?.firstName,
-      phoneNumberFrom: allDataObjects.recruiterProfile?.phone,
-      phoneNumberTo: personNode.phone,
-      lastEngagementChatControl: chatControl.chatControlType,
-      messages: chatHistory.slice(-1),
-      messageType: 'botMessage',
-      whatsappDeliveryStatus: 'created',
-      whatsappMessageId: wamId,
-    };
-    return updatedChatHistoryObj;
+    
+  ): Promise<allDataObjects.whatappUpdateMessageObjType | undefined> {
+    const candidateNode = personNode?.candidates?.edges?.find(edge => edge.node.jobs.id == candidateJob.id)?.node;
+    if (candidateNode) {
+      const updatedChatHistoryObj: allDataObjects.whatappUpdateMessageObjType = {
+        messageObj: chatHistory,
+        candidateProfile: candidateNode,
+        candidateFirstName: personNode.name?.firstName,
+        phoneNumberFrom: allDataObjects.recruiterProfile?.phone,
+        phoneNumberTo: personNode.phone,
+        lastEngagementChatControl: chatControl.chatControlType,
+        messages: chatHistory.slice(-1),
+        messageType: 'botMessage',
+        whatsappDeliveryStatus: 'created',
+        whatsappMessageId: wamId,
+        whatsappMessageType: ''
+      };
+      return updatedChatHistoryObj;
+    }
+    return undefined;
   }
-
 
 
 

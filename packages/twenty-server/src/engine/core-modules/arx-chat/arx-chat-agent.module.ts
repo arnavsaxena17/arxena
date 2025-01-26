@@ -20,11 +20,12 @@ import {WorkspaceModificationsModule} from 'src/engine/core-modules/workspace-mo
 import { AttachmentProcessingService } from './services/candidate-engagement/attachment-processing';
 import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/services/candidate.service';
 import { PersonService } from '../candidate-sourcing/services/person.service';
+import { VideoInterviewProcessController } from './controllers/video-interview-controller';
 
 @Module({
   
   imports: [AuthModule,WorkspaceModificationsModule,GoogleCalendarModule,DataSourceModule, TypeORMModule, TypeOrmModule.forFeature([Workspace, FeatureFlagEntity], 'core'), TypeOrmModule.forFeature([DataSourceEntity], 'metadata') ],
-  controllers: [ArxChatEndpoint,  WhatsappWebhook, WhatsappControllers,WhatsappTestAPI,TwilioControllers, GoogleControllers],
+  controllers: [ArxChatEndpoint,  WhatsappWebhook, WhatsappControllers,WhatsappTestAPI,TwilioControllers, GoogleControllers, VideoInterviewProcessController],
   providers: [CandidateStatusClassificationCronService, CandidateEngagementCronService,PersonService, CandidateService, WorkspaceDataSourceService],
   exports: [],
 })

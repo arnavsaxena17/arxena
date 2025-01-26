@@ -9,7 +9,7 @@ export class ToolCallsProcessing{
     constructor(
       private readonly workspaceQueryService: WorkspaceQueryService
     ) {}
-  async shareJDtoCandidate(person: allDataObjects.PersonNode, chatControl: allDataObjects.chatControls,  apiToken:string) {
+  async shareJDtoCandidate(person: allDataObjects.PersonNode, candidateJob:allDataObjects.Jobs, chatControl: allDataObjects.chatControls,  apiToken:string) {
     console.log('This is the person for which we are trying to send the JD:', person);
     const candidateId = person?.candidates?.edges[0]?.node?.id;
     console.log('This is the candidateID for which we are trying to send the JD:', candidateId);
@@ -23,7 +23,7 @@ export class ToolCallsProcessing{
       console.log('No attachments found for this job');
     }
     const attachment = jobAttachments?.node ?? '';
-    await new WhatsappControls(this.workspaceQueryService).sendJDViaWhatsapp( person, attachment, chatControl, apiToken);
+    await new WhatsappControls(this.workspaceQueryService).sendJDViaWhatsapp( person,candidateJob, attachment, chatControl, apiToken);
   }
   
   async updateCandidateStatus(person: allDataObjects.PersonNode, status: string, apiToken: string) {

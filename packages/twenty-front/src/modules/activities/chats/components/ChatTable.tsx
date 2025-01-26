@@ -400,8 +400,6 @@ const DraggableTableRow = ({
   catch(e){
     messageTime = 'N/A';
   }
-  // console.log("messageTime:",messageTime)
-  // console.log("individual.candidates.edges[0].node.whatsappMessages.edges[0].node.createdAt:",individual.candidates.edges[0].node.whatsappMessages.edges[0].node.createdAt)
   return (
     console.log("individual:",individual),
     <Draggable draggableId={individual.id} index={index}>

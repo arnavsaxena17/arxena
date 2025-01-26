@@ -1,4 +1,5 @@
 
+
 import { Controller, Post, Req, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/engine/guards/jwt.auth.guard';
 import * as allDataObjects from '../services/data-model-objects';
@@ -10,7 +11,7 @@ import { FilterCandidates } from '../services/candidate-engagement/filter-candid
 
 
 @Controller('video-interview-process')
-export class VideoInterviewController {
+export class VideoInterviewProcessController {
     constructor(private readonly workspaceQueryService: WorkspaceQueryService) {}
 
     @Post('create-video-interview')
@@ -39,15 +40,18 @@ export class VideoInterviewController {
             console.log("Got person:", person);
             const videoInterviewUrl = createVideoInterviewResponse?.data?.createVideoInterview?.interviewLink?.url;
             console.log("This is the video interview link:", videoInterviewUrl);
-
+            const companyName = person?.candidates?.edges
+            .filter(edge => edge.node.id === candidateId)
+            .map(edge => edge.node.jobs.company.name)[0];
+    
             if (videoInterviewUrl) {
                 console.log("Going to send email to person:", person);
-                const videoInterviewInviteTemplate = await new EmailTemplates().getInterviewInvitationTemplate(person, videoInterviewUrl);
+                const videoInterviewInviteTemplate = await new EmailTemplates().getInterviewInvitationTemplate(person, candidateId, videoInterviewUrl);
                 console.log("allDataObjects.recruiterProfile?.email:", allDataObjects.recruiterProfile?.email);
                 const emailData: GmailMessageData = {
                     sendEmailFrom: allDataObjects.recruiterProfile?.email,
                     sendEmailTo: person?.email,
-                    subject: 'Video Interview - ' + person?.name?.firstName + '<>' + person?.candidates.edges[0].node.jobs.company.name,
+                    subject: 'Video Interview - ' + person?.name?.firstName + '<>' + companyName,
                     message: videoInterviewInviteTemplate,
                 };
                 console.log("This is the email Data from createVideo Interview Send To Candidate:", emailData);
@@ -77,14 +81,17 @@ export class VideoInterviewController {
             console.log("Got person:", person);
             const videoInterviewUrl = person?.candidates?.edges[0]?.node?.videoInterview?.edges[0]?.node?.interviewLink?.url;
             console.log("This is the video interview in send-video-interview-to-candidate link:", videoInterviewUrl);
-
+            const companyName = person?.candidates?.edges
+            .filter(edge => edge.node.id === candidateId)
+            .map(edge => edge.node.jobs.company.name)[0];
+    
             if (videoInterviewUrl) {
-                const videoInterviewInviteTemplate = await new EmailTemplates().getInterviewInvitationTemplate(person, videoInterviewUrl);
+                const videoInterviewInviteTemplate = await new EmailTemplates().getInterviewInvitationTemplate(person, candidateId, videoInterviewUrl);
                 console.log("allDataObjects.recruiterProfile?.email:", allDataObjects.recruiterProfile?.email);
                 const emailData: GmailMessageData = {
                     sendEmailFrom: allDataObjects.recruiterProfile?.email,
                     sendEmailTo: person?.email,
-                    subject: 'Video Interview - ' + person?.name?.firstName + '<>' + person?.candidates.edges[0].node.jobs.company.name,
+                    subject: 'Video Interview - ' + person?.name?.firstName + '<>' + companyName,
                     message: videoInterviewInviteTemplate,
                 };
                 console.log("This is the email Data sendVideoInterviewSendToCandidate:", emailData);

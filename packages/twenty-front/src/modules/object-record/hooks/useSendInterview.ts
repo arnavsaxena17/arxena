@@ -29,8 +29,8 @@ export const useSendVideoInterview = ({
     
     try {
       const url = isCreate 
-        ? `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/create-video-interview-send-to-candidate`
-        : `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/send-video-interview-to-candidate`;
+        ? `${process.env.REACT_APP_SERVER_BASE_URL}/video-interview-process/create-video-interview-send-to-candidate`
+        : `${process.env.REACT_APP_SERVER_BASE_URL}/video-interview-process/send-video-interview-to-candidate`;
 
       const results = await Promise.all(
         candidateIds.map((candidateId) =>

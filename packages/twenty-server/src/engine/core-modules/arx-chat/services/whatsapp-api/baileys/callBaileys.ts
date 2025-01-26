@@ -17,7 +17,7 @@ export class BaileysWhatsappAPI{
   constructor( private readonly workspaceQueryService: WorkspaceQueryService ) {}
 
 
-async sendWhatsappMessageVIABaileysAPI(whatappUpdateMessageObj: allDataObjects.whatappUpdateMessageObjType, personNode: allDataObjects.PersonNode, mostRecentMessageArr: allDataObjects.ChatHistoryItem[], chatControl: allDataObjects.chatControls,  apiToken:string) {
+async sendWhatsappMessageVIABaileysAPI(whatappUpdateMessageObj: allDataObjects.whatappUpdateMessageObjType, personNode: allDataObjects.PersonNode, candidateJob:allDataObjects.Jobs, mostRecentMessageArr: allDataObjects.ChatHistoryItem[], chatControl: allDataObjects.chatControls,  apiToken:string) {
   console.log('Sending message to whatsapp via baileys api');
 
   console.log('whatappUpdateMessageObj.messageType', whatappUpdateMessageObj.messageType);
@@ -32,10 +32,16 @@ async sendWhatsappMessageVIABaileysAPI(whatappUpdateMessageObj: allDataObjects.w
     const response = await this.sendWhatsappTextMessageViaBaileys(sendTextMessageObj, personNode,apiToken);
     console.log(response);
     // console.log('99493:: response is here', response);
-    const whatappUpdateMessageObjAfterWAMidUpdate = await new Transformations().updateChatHistoryObjCreateWhatsappMessageObj( response?.messageId || 'placeholdermessageid', personNode, mostRecentMessageArr,chatControl, apiToken);
+    const candidateNode = personNode?.candidates?.edges?.find(edge => edge.node.jobs.id == candidateJob.id)?.node;
+
+    if (!candidateNode) {
+      console.log('Candidate node not found, cannot proceed with sending the message');
+      return;
+    }
+    const whatappUpdateMessageObjAfterWAMidUpdate = await new Transformations().updateChatHistoryObjCreateWhatsappMessageObj( response?.messageId || 'placeholdermessageid', personNode, candidateNode, mostRecentMessageArr,chatControl);
     let candidateProfileObj = whatappUpdateMessageObj.messageType !== 'botMessage' ? await new FilterCandidates(this.workspaceQueryService).getCandidateInformation(whatappUpdateMessageObj,  apiToken) : whatappUpdateMessageObj.candidateProfile;
 
-    await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).updateCandidateEngagementDataInTable(whatappUpdateMessageObjAfterWAMidUpdate,   apiToken, true);
+    await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).updateCandidateEngagementDataInTable(whatappUpdateMessageObjAfterWAMidUpdate, candidateJob,  apiToken, true);
     const updateCandidateStatusObj = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).updateCandidateEngagementStatus(candidateProfileObj, whatappUpdateMessageObj,  apiToken);
   } else {
     console.log('This is send whatsapp message via bailsyes api and is a candidate message');

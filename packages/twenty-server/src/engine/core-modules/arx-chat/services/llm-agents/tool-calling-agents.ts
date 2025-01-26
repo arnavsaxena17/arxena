@@ -52,17 +52,25 @@ export class ToolCallingAgents {
   }
 
   async shareInterviewLink(inputs: any, personNode: allDataObjects.PersonNode, candidateJob:allDataObjects.Jobs, twenty_token: string) {
-    const jobProfile = personNode?.candidates?.edges[0]?.node?.jobs;
-    const videoInterviewUrl = personNode?.candidates?.edges[0]?.node?.videoInterview.edges[0].node.interviewLink.url;
-    console.log("job Profile:", jobProfile);
-    const jobName = jobProfile?.name;
+    // const jobProfile = personNode?.candidates?.edges[0]?.node?.jobs;
+    const candidate = personNode?.candidates?.edges?.find(edge => edge.node.jobs.id === candidateJob.id)?.node;
 
-    const videoInterviewInviteTemplate = await new EmailTemplates().getInterviewInvitationTemplate(personNode, videoInterviewUrl);
+    const videoInterviewUrl = candidate?.videoInterview.edges[0].node?.interviewLink?.url;
+    // console.log("job Profile:", jobProfile);
+
+    const companyName = personNode?.candidates?.edges
+    .filter(edge => candidate && edge.node.id === candidate.id)
+    .map(edge => edge.node.jobs.company.name)[0];
+
+    if (!videoInterviewUrl) {
+      throw new Error('Video interview URL is undefined');
+    }
+    const videoInterviewInviteTemplate = await new EmailTemplates().getInterviewInvitationTemplate(personNode, candidateJob, videoInterviewUrl);
     console.log("allDataObjects.recruiterProfile?.email:", allDataObjects.recruiterProfile?.email);
     const emailData: GmailMessageData = {
       sendEmailFrom: allDataObjects.recruiterProfile?.email,
       sendEmailTo: personNode?.email,
-      subject: 'Video Interview - ' + personNode?.name?.firstName + '<>' + personNode?.candidates.edges[0].node.jobs.company.name,
+      subject: 'Video Interview - ' + personNode?.name?.firstName + '<>' + companyName,
       message: videoInterviewInviteTemplate,
     };
     console.log("This is the email Data from createVideo Interview Send To Candidate:", emailData);
@@ -111,7 +119,7 @@ export class ToolCallingAgents {
   async shareJD(inputs: any, personNode: allDataObjects.PersonNode, candidateJob:allDataObjects.Jobs, chatControl: allDataObjects.chatControls,  apiToken:string) {
     try {
       console.log('Function Called: shareJD');
-      await new ToolCallsProcessing(this.workspaceQueryService).shareJDtoCandidate(personNode,  chatControl,  apiToken);
+      await new ToolCallsProcessing(this.workspaceQueryService).shareJDtoCandidate(personNode,  candidateJob, chatControl,  apiToken);
       console.log('Function Called:  candidateProfileDataNodeObj:any', personNode);
     } catch {
       debugger;

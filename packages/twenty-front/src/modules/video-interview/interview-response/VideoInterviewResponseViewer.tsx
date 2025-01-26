@@ -110,7 +110,7 @@ interface InterviewData {
   };
 }
 
-const query = `query FindManyCandidates($filter: CandidateFilterInput) {
+const findManyCandidatesQuery = `query FindManyCandidates($filter: CandidateFilterInput) {
     candidates(filter: $filter) {
       edges {
         node {
@@ -397,7 +397,7 @@ const VideoInterviewResponseViewer: React.FC<VideoInterviewResponseViewerProps> 
             Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
           },
           body: JSON.stringify({
-            query,
+            findManyCandidatesQuery,
             variables: {
               filter: {
                 id: { eq: cleanId(candidateId) },

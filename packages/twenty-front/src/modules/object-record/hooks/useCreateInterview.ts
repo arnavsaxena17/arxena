@@ -32,7 +32,7 @@ export const useCreateVideoInterview = ({
       const results = await Promise.all(
         candidateIds.map((candidateId) =>
           axios.post(
-            `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/create-video-interview`,
+            `${process.env.REACT_APP_SERVER_BASE_URL}/video-interview-process/create-video-interview`,
             { candidateId },
             {
               headers: {

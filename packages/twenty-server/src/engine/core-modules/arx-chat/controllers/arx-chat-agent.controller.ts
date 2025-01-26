@@ -447,103 +447,7 @@ export class ArxChatEndpoint {
     return allPeople
   }
   
-  @Post('create-video-interview')
-  @UseGuards(JwtAuthGuard)
-  async createVideoInterviewForCandidate(@Req() request: any): Promise<object> {
-    const candidateId = request.body.candidateId;
-    const apiToken = request.headers.authorization.split(' ')[1];
-    console.log('candidateId to create video-interview:', candidateId);
-    const createVideoInterviewResponse = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).createVideoInterviewForCandidate(candidateId,apiToken);
-    console.log("createVideoInterviewResponse:", createVideoInterviewResponse)
-    return createVideoInterviewResponse;
-  }
-  
-  
-  @Post('create-video-interview-send-to-candidate')
-  @UseGuards(JwtAuthGuard)
-  async createVideoInterviewSendToCandidate(@Req() request: any): Promise<object> {
-    const { workspace } = await this.workspaceQueryService.tokenService.validateToken(request);
-    console.log("workspace:", workspace);
-    const apiToken = request.headers.authorization.split(' ')[1];
-    try {
-      const candidateId = request.body.candidateId;
-      console.log('candidateId to create video-interview:', candidateId);
 
-      const createVideoInterviewResponse = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).createVideoInterviewForCandidate(candidateId,apiToken);
-      const personObj = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByCandidateId(candidateId,apiToken);
-      const person = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPersonId(personObj.id,apiToken);
-      console.log("Got person:", person);
-      const videoInterviewUrl = createVideoInterviewResponse?.data?.createvideoInterview?.interviewLink?.url;
-      console.log("This is the video interview link:", videoInterviewUrl);
-
-      if (videoInterviewUrl) {
-      console.log("Going to send email to person:", person);
-      const videoInterviewInviteTemplate = await new EmailTemplates().getInterviewInvitationTemplate(person, videoInterviewUrl);
-      console.log("allDataObjects.recruiterProfile?.email:", allDataObjects.recruiterProfile?.email);
-      const emailData: GmailMessageData = {
-        sendEmailFrom: allDataObjects.recruiterProfile?.email,
-        sendEmailTo: person?.email,
-        subject: 'Video Interview - ' + person?.name?.firstName + '<>' + person?.candidates.edges[0].node.jobs.company.name,
-        message: videoInterviewInviteTemplate,
-      };
-      console.log("This is the email Data from createVideo Interview Send To Candidate:", emailData);
-      const sendVideoInterviewLinkResponse = await new SendEmailFunctionality().sendEmailFunction(emailData, apiToken);
-      console.log("sendVideoInterviewLinkResponse::", sendVideoInterviewLinkResponse);
-      return sendVideoInterviewLinkResponse || {};
-      } else {
-      return createVideoInterviewResponse;
-      }
-    } catch (error) {
-      console.error('Error in createVideoInterviewSendToCandidate:', error);
-      throw new Error('Failed to create and send video interview');
-    }
-  }
-  
-  @Post('send-video-interview-to-candidate')
-  @UseGuards(JwtAuthGuard)
-  async sendVideoInterviewSendToCandidate(@Req() request: any): Promise<object> {
-    const apiToken = request.headers.authorization.split(' ')[1];
-
-    const { workspace } = await this.workspaceQueryService.tokenService.validateToken(request);
-    console.log("workspace:", workspace);
-    try {
-      let sendVideoInterviewLinkResponse
-      // const videoInterviewUrl = request.body.videoInterviewUrl;
-      const candidateId = request?.body?.candidateId;
-      // console.log('candidateId to create video-interview:', candidateId);
-      // const createVideoInterviewResponse = await new FetchAndUpdateCandidatesChatsWhatsapps().createVideoInterviewForCandidate(candidateId);
-      const personObj = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByCandidateId(candidateId,apiToken);
-      const person = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPersonId(personObj.id,apiToken);
-      console.log("Got person:", person);
-      console.log("interview link",person?.candidates?.edges[0]?.node?.videoInterview?.edges[0]?.node?.interviewLink?.url);
-      console.log("interview link",person?.candidates);
-      console.log("interview link",person?.candidates.edges);
-      console.log("interview link",person?.candidates?.edges[0]?.node.videoInterview);
-      const videoInterviewUrl = person?.candidates?.edges[0]?.node?.videoInterview?.edges[0]?.node?.interviewLink?.url;
-      console.log("This is the video interview in send-video-interview-to-candidate link:", videoInterviewUrl);
-
-      if (videoInterviewUrl) {
-      // console.log("Going to send email to person:", person);
-      const videoInterviewInviteTemplate = await new EmailTemplates().getInterviewInvitationTemplate(person, videoInterviewUrl);
-      console.log("allDataObjects.recruiterProfile?.email:", allDataObjects.recruiterProfile?.email);
-      const emailData: GmailMessageData = {
-        sendEmailFrom: allDataObjects.recruiterProfile?.email,
-        sendEmailTo: person?.email,
-        subject: 'Video Interview - ' + person?.name?.firstName + '<>' + person?.candidates.edges[0].node.jobs.company.name,
-        message: videoInterviewInviteTemplate,
-      };
-      console.log("This is the email Data sendVideoInterviewSendToCandidate:", emailData);
-      sendVideoInterviewLinkResponse = await new SendEmailFunctionality().sendEmailFunction(emailData, apiToken);
-      console.log("sendVideoInterviewLinkResponse::", sendVideoInterviewLinkResponse);
-      return sendVideoInterviewLinkResponse || {};
-      } else {
-      return sendVideoInterviewLinkResponse;
-      }
-    } catch (error) {
-      console.error('Error in sendVideoInterviewSendToCandidate:', error);
-      throw new Error('Failed to create and send video interview');
-    }
-  }
 
   @Post('delete-people-and-candidates-from-candidate-id')
   @UseGuards(JwtAuthGuard)
@@ -783,22 +687,6 @@ async deletePeopleAndCandidatesBulk(@Req() request: any): Promise<object> {
     return { status: 'Success' };
   }
 
-  @Post('send-jd-from-frontend')
-  @UseGuards(JwtAuthGuard)
-  async uploadAttachment(@Req() request: any): Promise<object> {
-    console.log('This is the request body', request.body);
-    const apiToken = request.headers.authorization.split(' ')[1];
-
-    const personObj: allDataObjects.PersonNode = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPhoneNumber(request.body.phoneNumberTo,apiToken);
-    try {
-      const chatControl:allDataObjects.chatControls = {chatControlType:"startChat"};
-
-      await new ToolCallsProcessing(this.workspaceQueryService).shareJDtoCandidate(personObj, chatControl,  apiToken);
-      return { status: 'Success' };
-    } catch (err) {
-      return { status: err };
-    }
-  }
 
   @Post('check-human-like')
   @UseGuards(JwtAuthGuard)

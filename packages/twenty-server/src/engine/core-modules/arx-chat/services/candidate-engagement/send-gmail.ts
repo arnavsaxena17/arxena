@@ -29,13 +29,17 @@ export class SendEmailFunctionality {
 
 export class EmailTemplates{
 
-  async getInterviewInvitationTemplate(person: allDataObjects.PersonNode,interviewLink: string) {
+  async getInterviewInvitationTemplate(person: allDataObjects.PersonNode,candidateJob:allDataObjects.Jobs, interviewLink: string) {
     console.log("Goign to try and create template")
+    const candidate = person?.candidates?.edges?.find(edge => edge.node.jobs.id === candidateJob.id)?.node;
+    const jobName = candidate?.jobs.name;
+    const companyName = candidate?.jobs.company.name;
+
     const template = `
       <div>
         <p>Dear ${person?.name?.firstName},</p>
         
-        <p>We have reviewed your profile and would like to invite you for a video interview for the position of <b>${person?.candidates?.edges[0].node.jobs.name}</b> at <b>${person.candidates.edges[0].node.jobs?.company?.name}</b>.</p>
+        <p>We have reviewed your profile and would like to invite you for a video interview for the position of <b>${jobName}</b> at <b>${companyName}</b>.</p>
 
         <p><strong>Interview Details:</strong></p>
         <p>Interview Link: ${process.env.FRONT_BASE_URL+ interviewLink}</p>
