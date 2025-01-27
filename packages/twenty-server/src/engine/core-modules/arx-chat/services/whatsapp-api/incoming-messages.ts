@@ -33,10 +33,12 @@ export class IncomingWhatsappMessages {
     const status = '';
     console.log('We will first go and get the candiate who sent us the message');
     const candidateProfileData = await new FilterCandidates(this.workspaceQueryService).getCandidateInformation(whatsappIncomingMessage, apiToken);
+    const candidateJob:allDataObjects.Jobs = candidateProfileData.jobs
+
     console.log('This is the candiate who has sent us the message fromBaileys., we have to update the database that this message has been recemivged::', chatReply);
     if (candidateProfileData != allDataObjects.emptyCandidateProfileObj) {
       // console.log('This is the candiate who has sent us candidateProfileData::', candidateProfileData);
-      await this.createAndUpdateIncomingCandidateChatMessage({ chatReply: savedMessage, whatsappDeliveryStatus: 'delivered',phoneNumberFrom:requestBody.phoneNumberFrom, whatsappMessageId: requestBody.baileysMessageId }, candidateProfileData,apiToken);
+      await this.createAndUpdateIncomingCandidateChatMessage({ chatReply: savedMessage, whatsappDeliveryStatus: 'delivered',phoneNumberFrom:requestBody.phoneNumberFrom, whatsappMessageId: requestBody.baileysMessageId }, candidateProfileData,candidateJob, apiToken);
     } else {
       console.log('Message has been received from a candidate however the candidate is not in the database');
     }
@@ -53,9 +55,10 @@ export class IncomingWhatsappMessages {
     const chatReply = requestBody.message;
     console.log('We will first go and get the candiate who sent us the message');
     const candidateProfileData = await new FilterCandidates(this.workspaceQueryService).getCandidateInformation(whatsappIncomingMessage,apiToken);
+    const candidateJob:allDataObjects.Jobs = candidateProfileData.jobs
     console.log('This is the SELF message., we have to update the database that this message has been received::', chatReply);
     if (candidateProfileData != allDataObjects.emptyCandidateProfileObj) {
-      await this.createAndUpdateIncomingCandidateChatMessage({ chatReply: chatReply, whatsappDeliveryStatus: 'delivered',phoneNumberFrom:requestBody.phoneNumberFrom, whatsappMessageId: requestBody.baileysMessageId, isFromMe: true }, candidateProfileData,apiToken);
+      await this.createAndUpdateIncomingCandidateChatMessage({ chatReply: chatReply, whatsappDeliveryStatus: 'delivered',phoneNumberFrom:requestBody.phoneNumberFrom, whatsappMessageId: requestBody.baileysMessageId, isFromMe: true }, candidateProfileData,candidateJob, apiToken);
       new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).setCandidateEngagementStatusToFalse(candidateProfileData.id,apiToken);
     } else {
       console.log('Message has been received from a candidate however the candidate is not in the database');
@@ -199,6 +202,7 @@ export class IncomingWhatsappMessages {
           };
           console.log('We will first go and get the candiate who sent us the message');
           const candidateProfileData = await new FilterCandidates(this.workspaceQueryService).getCandidateInformation(whatsappIncomingMessage,apiToken);
+          const candidateJob:allDataObjects.Jobs = candidateProfileData.jobs
           console.log('This is the candiate who has sent us the message., we have to update the database that this message has been recemivged::', chatReply);
           // console.log('This is the candiate who has sent us candidateProfileData::', candidateProfileData);
           const replyObject = {
@@ -208,7 +212,7 @@ export class IncomingWhatsappMessages {
             whatsappMessageId: requestBody?.entry[0]?.changes[0]?.value?.messages[0]?.id,
           };
 
-          const responseAfterMessageUpdate = await this.createAndUpdateIncomingCandidateChatMessage(replyObject, candidateProfileData,apiToken);
+          const responseAfterMessageUpdate = await this.createAndUpdateIncomingCandidateChatMessage(replyObject, candidateProfileData,candidateJob, apiToken);
           if (candidateProfileData?.candidateReminders?.edges.length > 0) {
             console.log("Candidate reminder found, updating the reminder status to false")
             const listOfReminders = candidateProfileData?.candidateReminders?.edges;
@@ -235,8 +239,10 @@ export class IncomingWhatsappMessages {
 
           const replyObject = { chatReply: userMessageBody?.text?.body || 'Attachment Received', whatsappDeliveryStatus: 'receivedFromCandidate',phoneNumberFrom: whatsappIncomingMessage.phoneNumberFrom, whatsappMessageId: requestBody?.entry[0]?.changes[0]?.value?.messages[0].id };
           const candidateProfileData = await new FilterCandidates(this.workspaceQueryService).getCandidateInformation(whatsappIncomingMessage,apiToken);
+          const candidateJob:allDataObjects.Jobs = candidateProfileData.jobs
+
           await new FacebookWhatsappChatApi(this.workspaceQueryService).downloadWhatsappAttachmentMessage(sendTemplateMessageObj, candidateProfileData,apiToken);
-          await this.createAndUpdateIncomingCandidateChatMessage(replyObject, candidateProfileData,apiToken );
+          await this.createAndUpdateIncomingCandidateChatMessage(replyObject, candidateProfileData,candidateJob, apiToken );
         }
         // Audio message
         else if (requestBody?.entry[0]?.changes[0]?.value?.messages[0].type === 'audio') {
@@ -267,8 +273,8 @@ export class IncomingWhatsappMessages {
             databaseFilePath: audioMessageDetails?.databaseFilePath,
             whatsappMessageId: requestBody?.entry[0]?.changes[0]?.value?.messages[0].id,
           };
-
-          await this.createAndUpdateIncomingCandidateChatMessage(replyObject, candidateProfileData,apiToken);
+          const candidateJob:allDataObjects.Jobs = candidateProfileData.jobs
+          await this.createAndUpdateIncomingCandidateChatMessage(replyObject, candidateProfileData,candidateJob, apiToken);
         }
       }
     } else {
@@ -276,8 +282,8 @@ export class IncomingWhatsappMessages {
     }
   }
   async createAndUpdateIncomingCandidateChatMessage(
-    replyObject: { whatsappDeliveryStatus: string; chatReply: string; phoneNumberFrom:string,whatsappMessageId: string; databaseFilePath?: string | null; type?: string; isFromMe?: boolean },
-    candidateProfileDataNodeObj: allDataObjects.CandidateNode,apiToken: string
+    replyObject: { whatsappDeliveryStatus: string; chatReply: string;  phoneNumberFrom:string,whatsappMessageId: string; databaseFilePath?: string | null; type?: string; isFromMe?: boolean },
+    candidateProfileDataNodeObj: allDataObjects.CandidateNode,candidateJob:allDataObjects.Jobs, apiToken: string
   ) {
     const personObj: allDataObjects.PersonNode = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPhoneNumber(replyObject.phoneNumberFrom,apiToken);
 
@@ -320,7 +326,8 @@ export class IncomingWhatsappMessages {
       databaseFilePath: replyObject?.databaseFilePath || '',
     };
 
-    await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).updateCandidateEngagementDataInTable(whatappUpdateMessageObj,apiToken);
+
+    await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).updateCandidateEngagementDataInTable(whatappUpdateMessageObj,candidateJob, apiToken);
     // return whatappUpdateMessageObj;
   }
 }

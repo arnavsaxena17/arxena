@@ -289,7 +289,9 @@ export class FilterCandidates {
   async getCandidateIdsWithVideoInterviewCompleted(apiToken:string): Promise<string[]> {
     let allCandidates = await this.fetchAllCandidatesWithSpecificChatControl('startVideoInterviewChat', apiToken);
     console.log('Fetched', allCandidates?.length, ' candidates with chatControl startVideoInterviewChat');
-    const candidateIdsWithVideoInterviewCompleted = allCandidates.filter(candidate => candidate?.videoInterview?.edges[0].node.interviewCompleted).map(candidate => candidate.id);
+    const candidateIdsWithVideoInterviewCompleted = allCandidates
+      .filter(candidate => candidate?.videoInterview?.edges[0]?.node?.interviewCompleted && candidate?.videoInterview?.edges[0]?.node?.interviewCompleted !== undefined)
+      .map(candidate => candidate.id);
     return candidateIdsWithVideoInterviewCompleted;
   }
 
@@ -400,16 +402,12 @@ async getCandidateInformation(userMessage: allDataObjects.chatMessageType, apiTo
       console.log('going to get candidate information');
       const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindManyPeople, variables: graphVariables });
       const response = await axiosRequest(graphqlQueryObj, apiToken);
-
-
       const candidateDataObjs = response.data?.data?.people?.edges[0]?.node?.candidates?.edges;
-
-
       console.log("Thesea re ntue number of candidate data objects::", candidateDataObjs);
-
-
-      const activeJobCandidateObj = candidateDataObjs?.find((edge: allDataObjects.CandidatesEdge) => edge?.node?.jobs?.isActive);
+      const maxCreatedAt = candidateDataObjs.length > 0 ? Math.max(...candidateDataObjs.map(e => new Date(e.node.jobs.createdAt).getTime())) : 0;
+      const activeJobCandidateObj = candidateDataObjs?.find((edge: allDataObjects.CandidatesEdge) => edge?.node?.jobs?.isActive && edge?.node?.jobs?.createdAt && new Date(edge?.node?.jobs?.createdAt).getTime() === maxCreatedAt);
       console.log('This is the number of candidates', candidateDataObjs?.length);
+      console.log('This is the number of most recent active candidate for whom we can do active job', candidateDataObjs);
       console.log('This is the activeJobCandidateObj who got called', activeJobCandidateObj?.node?.name || '');
       if (activeJobCandidateObj) {
         const personWithActiveJob = response?.data?.data?.people?.edges?.find((person: allDataObjects.PersonEdge) => person?.node?.candidates?.edges?.some(candidate => candidate?.node?.jobs?.isActive));

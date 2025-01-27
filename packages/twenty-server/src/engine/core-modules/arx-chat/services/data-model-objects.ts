@@ -344,6 +344,7 @@ export interface Jobs {
   jobLocation: string;
   jobCode:string;
   company: company;
+  createdAt?: string;
   isActive: boolean;
   whatsappMessages: WhatsAppMessages;
 }

@@ -15,48 +15,6 @@ export class WhatsappTestAPI {
     private readonly workspaceQueryService: WorkspaceQueryService
   ) {}
 
-  // @Post('send-template-message')
-  // @UseGuards(JwtAuthGuard)
-  // async sendTemplateMessage(@Req() request: any): Promise<object> {
-
-  //   const requestBody = request.body as any;
-  //   const apiToken = request.headers.authorization.split(' ')[1];
-
-  //   const personObj: allDataObjects.PersonNode = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPhoneNumber(requestBody.phoneNumberTo,apiToken);
-  //   console.log("This is the process.env.SERVER_BASE_URL:",process.env.SERVER_BASE_URL)
-  //   const sendTemplateMessageObj = {
-  //     recipient: personObj.phone.replace('+', ''),
-  //     template_name: requestBody.templateName,
-  //     candidateFirstName: personObj.name.firstName,
-  //     recruiterName: allDataObjects.recruiterProfile.name,
-  //     recruiterFirstName: allDataObjects.recruiterProfile.name.split(' ')[0],
-  //     recruiterJobTitle: allDataObjects.recruiterProfile.job_title,
-  //     recruiterCompanyName: allDataObjects.recruiterProfile.job_company_name,
-  //     recruiterCompanyDescription: allDataObjects.recruiterProfile.company_description_oneliner,
-  //     jobPositionName: personObj?.candidates?.edges[0]?.node?.jobs?.name,
-  //     companyName: personObj?.candidates?.edges[0]?.node?.jobs?.company?.name,
-  //     descriptionOneliner:personObj?.candidates?.edges[0]?.node?.jobs?.company?.descriptionOneliner,
-  //     jobCode: personObj?.candidates?.edges[0]?.node?.jobs?.jobCode,
-  //     jobLocation: personObj?.candidates?.edges[0]?.node?.jobs?.jobLocation,
-  //     videoInterviewLink: process.env.SERVER_BASE_URL+personObj?.candidates?.edges[0]?.node?.videoInterview?.edges[0]?.node?.interviewLink?.url || "",
-  //   };
-  //   console.log("This is the sendTemplateMessageObj:", sendTemplateMessageObj)
-
-  //   const response = await new FacebookWhatsappChatApi(this.workspaceQueryService).sendWhatsappUtilityMessage(sendTemplateMessageObj,apiToken);
-  //   let utilityMessage = await new WhatsappTemplateMessages().getUpdatedUtilityMessageObj(sendTemplateMessageObj);
-  //   const whatsappTemplateMessageSent = await new WhatsappTemplateMessages().generateMessage(requestBody.templateName, sendTemplateMessageObj);
-  //   console.log("This is the mesasge obj:", personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges)
-  //   const mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.messageObj;
-  //   console.log("This is the mostRecentMessageArr:", mostRecentMessageArr)
-  //   const chatControlType = personObj?.candidates?.edges[0].node.lastEngagementChatControl;
-  //   const chatControl:allDataObjects.chatControls = { chatControlType: chatControlType, chatMessageTemplate: 'success' };
-  //   mostRecentMessageArr.push({ role: 'user', content: whatsappTemplateMessageSent });
-
-  //   const whatappUpdateMessageObj:allDataObjects.whatappUpdateMessageObjType = await new Transformations().updateChatHistoryObjCreateWhatsappMessageObj( 'success', personObj, mostRecentMessageArr, chatControl,apiToken);
-  //   await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).updateCandidateEngagementDataInTable(whatappUpdateMessageObj,apiToken);
-  //   console.log("This is ther esponse:", response.data)
-  //   return { status: 'success' };
-  // }
 
 
   @Post('template')

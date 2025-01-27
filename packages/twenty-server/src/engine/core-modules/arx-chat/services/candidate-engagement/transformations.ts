@@ -5,13 +5,11 @@ export class Transformations {
   async updateChatHistoryObjCreateWhatsappMessageObj(
     wamId: string,
     personNode: allDataObjects.PersonNode,
-    candidateJob: allDataObjects.Jobs,
+    candidateNode: allDataObjects.CandidateNode,
     chatHistory: allDataObjects.ChatHistoryItem[],
     chatControl: allDataObjects.chatControls,
     
-  ): Promise<allDataObjects.whatappUpdateMessageObjType | undefined> {
-    const candidateNode = personNode?.candidates?.edges?.find(edge => edge.node.jobs.id == candidateJob.id)?.node;
-    if (candidateNode) {
+  ): Promise<allDataObjects.whatappUpdateMessageObjType> {
       const updatedChatHistoryObj: allDataObjects.whatappUpdateMessageObjType = {
         messageObj: chatHistory,
         candidateProfile: candidateNode,
@@ -26,8 +24,6 @@ export class Transformations {
         whatsappMessageType: ''
       };
       return updatedChatHistoryObj;
-    }
-    return undefined;
   }
 
 

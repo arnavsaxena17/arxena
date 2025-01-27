@@ -46,23 +46,23 @@ export class ArxChatEndpoint {
     return { stage: stage };
   }
 
-  @Post('add-chat')
-  @UseGuards(JwtAuthGuard)
-  async addChat(@Req() request: any): Promise<object> {
-    const apiToken = request.headers.authorization.split(' ')[1];
+  // @Post('add-chat')
+  // @UseGuards(JwtAuthGuard)
+  // async addChat(@Req() request: any): Promise<object> {
+  //   const apiToken = request.headers.authorization.split(' ')[1];
 
-    const whatsappIncomingMessage: allDataObjects.chatMessageType = {
-      phoneNumberFrom: request.body.phoneNumberFrom,
-      phoneNumberTo: '918591724917',
-      messages: [{ role: 'user', content: request.body.message }],
-      messageType: 'string',
-    };
-    const chatReply = request.body.message;
-    console.log('We will first go and get the candiate who sent us the message');
-    const candidateProfileData = await new FilterCandidates(this.workspaceQueryService).getCandidateInformation(whatsappIncomingMessage,apiToken);
-    await new IncomingWhatsappMessages(this.workspaceQueryService).createAndUpdateIncomingCandidateChatMessage( { chatReply: chatReply, whatsappDeliveryStatus: 'delivered', phoneNumberFrom: request.body.phoneNumberFrom, whatsappMessageId: 'receiveIncomingMessagesFromController', }, candidateProfileData,apiToken );
-    return { status: 'Success' };
-  }
+  //   const whatsappIncomingMessage: allDataObjects.chatMessageType = {
+  //     phoneNumberFrom: request.body.phoneNumberFrom,
+  //     phoneNumberTo: '918591724917',
+  //     messages: [{ role: 'user', content: request.body.message }],
+  //     messageType: 'string',
+  //   };
+  //   const chatReply = request.body.message;
+  //   console.log('We will first go and get the candiate who sent us the message');
+  //   const candidateProfileData = await new FilterCandidates(this.workspaceQueryService).getCandidateInformation(whatsappIncomingMessage,apiToken);
+  //   await new IncomingWhatsappMessages(this.workspaceQueryService).createAndUpdateIncomingCandidateChatMessage( { chatReply: chatReply, whatsappDeliveryStatus: 'delivered', phoneNumberFrom: request.body.phoneNumberFrom, whatsappMessageId: 'receiveIncomingMessagesFromController', }, candidateProfileData,apiToken );
+  //   return { status: 'Success' };
+  // }
 
 
 

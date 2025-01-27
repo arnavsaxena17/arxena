@@ -77,7 +77,7 @@ export class FacebookWhatsappChatApi {
     const personObj = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPhoneNumber(phoneNumberTo, apiToken);
     const candidate = personObj?.candidates?.edges?.find(edge => edge.node.jobs.id === candidateJob.id)?.node;
 
-    const mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.messageObj;
+  const mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.messageObj;
     mostRecentMessageArr.push({ role: 'user', content: 'Sharing the JD' });
     this.sendWhatsappAttachmentMessage(sendTextMessageObj, personObj,candidateJob, mostRecentMessageArr, chatControl, apiToken);
   }
