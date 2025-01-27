@@ -62,7 +62,7 @@ abstract class BaseCronService {
 
 @Injectable()
 export class CandidateEngagementCronService extends BaseCronService {
-  @Cron(CronExpression.EVERY_10_SECONDS)
+  @Cron(CronExpression.EVERY_5_SECONDS)
   async handleCron() {
     await this.executeWorkspaceTask(async (token) => {
       await new CandidateEngagementArx(this.workspaceQueryService)

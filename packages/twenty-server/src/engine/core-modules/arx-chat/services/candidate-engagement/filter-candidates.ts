@@ -151,18 +151,7 @@ export class FilterCandidates {
       const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
       const graphqlQueryObj = JSON.stringify({
         query: allGraphQLQueries.graphQlToFetchWhatsappMessages,
-        variables: {
-          filter: {
-            createdAt: {
-              gte: fiveMinutesAgo,
-            },
-          },
-          orderBy: [
-            {
-              position: 'AscNullsFirst',
-            },
-          ],
-        },
+        variables: { filter: { createdAt: { gte: fiveMinutesAgo } }, orderBy: [ { position: 'AscNullsFirst' } ] },
       });
 
       const data = await axiosRequest(graphqlQueryObj, apiToken);
@@ -170,12 +159,7 @@ export class FilterCandidates {
       // Extract unique candidate IDs
       if (data?.data?.whatsappMessages?.edges?.length > 0) {
         console.log('This is the number of perople who messaged recently in getRecentCandidateIds', data?.data?.whatsappMessages?.edges?.length);
-        const candidateIds: string[] = Array.from(
-          new Set(
-            data?.data?.whatsappMessages?.edges.map(edge => edge?.node?.candidate?.id).filter(id => id), // Remove any null/undefined values
-          ),
-        ) as unknown as string[];
-
+        const candidateIds: string[] = Array.from( new Set( data?.data?.whatsappMessages?.edges.map(edge => edge?.node?.candidate?.id).filter(id => id) ), ) as unknown as string[];
         return candidateIds;
       } else {
         console.log('No recent candidates found');
@@ -188,40 +172,20 @@ export class FilterCandidates {
   }
   async getRecentlyUpdatedCandidateIdsWithStatusConversationClosed(apiToken: string): Promise<string[]> {
     try {
-      // Calculate timestamp from 6 hours ago
       const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString();
       const graphqlQueryObj = JSON.stringify({
         query: allGraphQLQueries.graphQlToFetchWhatsappMessages,
-        variables: {
-          filter: {
-            updatedAt: {
-              lte: sixHoursAgo,
-            },
-            candConversationStatus: {
-              eq: 'CONVERSATION_CLOSED_TO_BE_CONTACTED',
-            },
-          },
-          orderBy: [
-            {
-              position: 'AscNullsFirst',
-            },
-          ],
-        },
-      });
+        variables: { filter: { updatedAt: { lte: sixHoursAgo }, candConversationStatus: { eq: 'CONVERSATION_CLOSED_TO_BE_CONTACTED' } }, orderBy: [ { position: 'AscNullsFirst' } ] } });
 
       const data = await axiosRequest(graphqlQueryObj, apiToken);
       // Extract unique candidate IDs
       if (data?.data?.whatsappMessages?.edges?.length > 0) {
         console.log('This is the number of people who messaged recently in getRecentCandidateIds', data?.data?.whatsappMessages?.edges?.length);
-        const candidateIds: string[] = Array.from(
-          new Set(
-            data?.data?.whatsappMessages?.edges.map(edge => edge?.node?.candidate?.id).filter(id => id), // Remove any null/undefined values
-          ),
-        ) as unknown as string[];
+        const candidateIds: string[] = Array.from( new Set( data?.data?.whatsappMessages?.edges.map(edge => edge?.node?.candidate?.id).filter(id => id), ), ) as unknown as string[];
 
         // Filter out candidates who have messages created in the last 6 hours
-        const recentMessages = data?.data?.whatsappMessages?.edges.filter(edge => new Date(edge?.node?.createdAt) >= new Date(sixHoursAgo));
-        const recentCandidateIds = recentMessages.map(edge => edge?.node?.candidate?.id);
+        const recentMessages = data?.data?.whatsappMessages?.edges.filter((edge: { node: { createdAt: string | number | Date; }; }) => new Date(edge?.node?.createdAt) >= new Date(sixHoursAgo));
+        const recentCandidateIds = recentMessages.map((edge: { node: { candidate: { id: any; }; }; }) => edge?.node?.candidate?.id);
         const filteredCandidateIds = candidateIds.filter(id => !recentCandidateIds.includes(id));
 
         return filteredCandidateIds;
@@ -235,62 +199,12 @@ export class FilterCandidates {
     }
   }
 
-  async getRecentlyUpdatedCandidateIdsWithStatusConversationClosedAndVideoInterviewCompleted(apiToken: string): Promise<string[]> {
-    try {
-      // Calculate timestamp from 6 hours ago
-      const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString();
-      const graphqlQueryObj = JSON.stringify({
-        query: allGraphQLQueries.graphQlToFetchWhatsappMessages,
-        variables: {
-          filter: {
-            updatedAt: {
-              lte: sixHoursAgo,
-            },
-            candConversationStatus: {
-              eq: 'CONVERSATION_CLOSED_TO_BE_CONTACTED',
-            },
-          },
-          orderBy: [
-            {
-              position: 'AscNullsFirst',
-            },
-          ],
-        },
-      });
-
-      const data = await axiosRequest(graphqlQueryObj, apiToken);
-      // Extract unique candidate IDs
-      if (data?.data?.whatsappMessages?.edges?.length > 0) {
-        console.log('This is the number of people who messaged recently in getRecentCandidateIds', data?.data?.whatsappMessages?.edges?.length);
-        const candidateIds: string[] = Array.from(
-          new Set(
-            data?.data?.whatsappMessages?.edges.map(edge => edge?.node?.candidate?.id).filter(id => id), // Remove any null/undefined values
-          ),
-        ) as unknown as string[];
-
-        // Filter out candidates who have messages created in the last 6 hours
-        const recentMessages = data?.data?.whatsappMessages?.edges.filter(edge => new Date(edge?.node?.createdAt) >= new Date(sixHoursAgo));
-        const recentCandidateIds = recentMessages.map(edge => edge?.node?.candidate?.id);
-        const filteredCandidateIds = candidateIds.filter(id => !recentCandidateIds.includes(id));
-        const candidateIdsWithVideoInterviewCompleted = await this.getCandidateIdsWithVideoInterviewCompleted(apiToken);
-        const filteredCandidateIdsWithVideoInterviewCompleted = filteredCandidateIds.filter(id => candidateIdsWithVideoInterviewCompleted.includes(id));
-        return filteredCandidateIdsWithVideoInterviewCompleted;
-      } else {
-        console.log('No recent candidates found');
-        return [];
-      }
-    } catch (error) {
-      console.log('Error fetching recent WhatsApp messages:', error);
-      return [];
-    }
-  }
-
-
-  async getCandidateIdsWithVideoInterviewCompleted(apiToken:string): Promise<string[]> {
+  async getCandidateIdsWithVideoInterviewCompleted(apiToken: string): Promise<string[]> {
     let allCandidates = await this.fetchAllCandidatesWithSpecificChatControl('startVideoInterviewChat', apiToken);
     console.log('Fetched', allCandidates?.length, ' candidates with chatControl startVideoInterviewChat');
+    const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString();
     const candidateIdsWithVideoInterviewCompleted = allCandidates
-      .filter(candidate => candidate?.videoInterview?.edges[0]?.node?.interviewCompleted && candidate?.videoInterview?.edges[0]?.node?.interviewCompleted !== undefined)
+      .filter(candidate => candidate?.videoInterview?.edges[0]?.node?.interviewCompleted && typeof candidate?.videoInterview?.edges[0]?.node?.interviewCompleted === 'string' && !isNaN(Date.parse(candidate?.videoInterview?.edges[0]?.node?.interviewCompleted)) && new Date(candidate?.videoInterview?.edges[0]?.node?.interviewCompleted) < new Date(sixHoursAgo))
       .map(candidate => candidate.id);
     return candidateIdsWithVideoInterviewCompleted;
   }

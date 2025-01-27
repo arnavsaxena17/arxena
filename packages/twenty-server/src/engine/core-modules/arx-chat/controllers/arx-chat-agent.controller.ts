@@ -70,7 +70,9 @@ export class ArxChatEndpoint {
   @UseGuards(JwtAuthGuard)
   async startChat(@Req() request: any) {
     const apiToken = request.headers.authorization.split(' ')[1]; // Assuming Bearer token
-    const response = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).startChatByCandidateId(request.body.candidateId, apiToken);
+    const chatControl:allDataObjects.chatControls = {chatControlType:'startChat'};
+
+    const response = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).startChatControl(request.body.candidateId, chatControl, apiToken);
     console.log('Response from create startChat', response);
   }
     
@@ -95,7 +97,8 @@ export class ArxChatEndpoint {
     console.log("Got a total of filteredCandidates length, ", filteredCandidateIds.length)
     console.log("Starting chat for , ", filteredCandidateIds.length," candidates")
     for (const candidateId of filteredCandidateIds) {
-      await await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).startChatByCandidateId(candidateId, apiToken);
+      const chatControl:allDataObjects.chatControls = {chatControlType:'startChat'};
+      await await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).startChatControl(candidateId, chatControl, apiToken);
     }
     return { status: 'Success' };
   }
