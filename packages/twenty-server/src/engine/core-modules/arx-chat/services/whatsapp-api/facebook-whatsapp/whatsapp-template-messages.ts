@@ -24,7 +24,7 @@ export class WhatsappTemplateMessages{
                   { type: 'text', text: sendTemplateMessageObj.recruiterCompanyDescription, },
                   { type: 'text', text: sendTemplateMessageObj.jobPositionName, },
                   { type: 'text', text: sendTemplateMessageObj.jobLocation, },
-                ],
+              ],
               },
             ],
           },

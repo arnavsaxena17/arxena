@@ -25,7 +25,7 @@ import { BaileysIncomingMessage } from '../arx-chat/services/data-model-objects'
 import { FileDataDto, MessageDto } from './types/baileys-types';
 import { SocksProxyAgent } from 'socks-proxy-agent';
 import { EventsGateway } from './events-gateway-module/events-gateway';
-import { AttachmentProcessingService } from '../arx-chat/services/candidate-engagement/attachment-processing';
+import { AttachmentProcessingService } from '../arx-chat/services/candidate-engagement/attachment-processes';
 import * as allDataObjects from '../arx-chat/services/data-model-objects';
 import { FetchAndUpdateCandidatesChatsWhatsapps } from '../arx-chat/services/candidate-engagement/update-chat';
 import { axiosRequest } from '../arx-chat/utils/arx-chat-agent-utils';

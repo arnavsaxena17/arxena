@@ -52,6 +52,31 @@ export function getContentTypeFromFileName(filename: string) {
 }
 
 
+  export async function formatChat(messages) {
+    console.log("Formatting chat");
+
+    let formattedChat = '';
+    let messageCount = 1;
+    messages.forEach(message => {
+      const timestamp = new Date(message.createdAt).toLocaleString();
+      let sender = '';
+      if (message.name === 'candidateMessage') {
+        sender = 'Candidate';
+      } else if (message.name === 'botMessage' || message.name === 'recruiterMessage') {
+        sender = 'Recruiter';
+      } else {
+        sender = message.name;
+      }
+
+      formattedChat += `[${timestamp}] ${sender}:\n`;
+      formattedChat += `${message.message}\n\n`;
+      messageCount++;
+    });
+
+    return formattedChat;
+  }
+  
+
 
 export async function axiosRequest(data: string, apiToken: string) {
   // console.log("Sending a post request to the graphql server:: with data", data);
@@ -65,7 +90,7 @@ export async function axiosRequest(data: string, apiToken: string) {
     data: data,
   });
   if (response.data.errors) {
-    console.log('Error axiosRequest', response.data, "for grapqhl request of ::", data);
+    console.log('Error axiosRequest', response.data, "for grapqhl request of ::", data, "token given is ::", apiToken);
   }
   return response;
 }

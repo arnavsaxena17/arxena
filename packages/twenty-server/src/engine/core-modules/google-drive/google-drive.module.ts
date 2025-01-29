@@ -17,7 +17,7 @@ import { FeatureFlagEntity } from '../feature-flag/feature-flag.entity';
 import { DataSourceEntity } from 'src/engine/metadata-modules/data-source/data-source.entity';
 import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
 import { CallAndSMSProcessingService } from './call-sms-processing';
-import { AttachmentProcessingService } from '../arx-chat/services/candidate-engagement/attachment-processing';
+import { AttachmentProcessingService } from '../arx-chat/services/candidate-engagement/attachment-processes';
 
 @Module({
   imports: [AuthModule, WorkspaceModificationsModule, DataSourceModule, TypeORMModule, TypeOrmModule.forFeature([Workspace, FeatureFlagEntity], 'core'), TypeOrmModule.forFeature([DataSourceEntity], 'metadata') ],

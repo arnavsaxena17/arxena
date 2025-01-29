@@ -6,7 +6,7 @@ import { IncomingWhatsappMessages } from '../services/whatsapp-api/incoming-mess
 import { FetchAndUpdateCandidatesChatsWhatsapps } from '../services/candidate-engagement/update-chat';
 import { StageWiseClassification } from '../services/llm-agents/stage-classification';
 import { OpenAIArxMultiStepClient } from '../services/llm-agents/arx-multi-step-client';
-import { axiosRequest } from '../utils/arx-chat-agent-utils';
+import { axiosRequest, formatChat } from '../utils/arx-chat-agent-utils';
 import * as allGraphQLQueries from '../graphql-queries/graphql-queries-chatbot';
 import { ToolCallsProcessing } from '../services/llm-agents/tool-calls-processing';
 import { HumanLikeLLM } from '../services/llm-agents/human-or-bot-classification';
@@ -18,6 +18,7 @@ import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modific
 import { graphQltoUpdateOneCandidate } from 'src/engine/core-modules/candidate-sourcing/graphql-queries';
 import { CreateMetaDataStructure } from 'src/engine/core-modules/workspace-modifications/object-apis/object-apis-creation';
 import { FilterCandidates } from '../services/candidate-engagement/filter-candidates';
+import { ChatControls } from '../services/candidate-engagement/chat-controls';
 
 
 
@@ -30,50 +31,14 @@ export class ArxChatEndpoint {
   ) {}
 
 
-  @Post('run-stage-prompt')
-  @UseGuards(JwtAuthGuard)
-
-  async runStagePrompt(@Req() request: any): Promise<object> {
-    const apiToken = request.headers.authorization.split(' ')[1];
-
-    console.log('JSON.string', JSON.stringify(request.body));
-    const personObj: allDataObjects.PersonNode = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPhoneNumber('918411937768',apiToken);
-    const messagesList = request.body;
-    let chatAgent = new OpenAIArxMultiStepClient(personObj, this.workspaceQueryService);
-    const engagementType = 'engage';
-    const processorType = 'stage';
-    const stage = new StageWiseClassification(this.workspaceQueryService).getStageOfTheConversation(personObj, messagesList);
-    return { stage: stage };
-  }
-
-  // @Post('add-chat')
-  // @UseGuards(JwtAuthGuard)
-  // async addChat(@Req() request: any): Promise<object> {
-  //   const apiToken = request.headers.authorization.split(' ')[1];
-
-  //   const whatsappIncomingMessage: allDataObjects.chatMessageType = {
-  //     phoneNumberFrom: request.body.phoneNumberFrom,
-  //     phoneNumberTo: '918591724917',
-  //     messages: [{ role: 'user', content: request.body.message }],
-  //     messageType: 'string',
-  //   };
-  //   const chatReply = request.body.message;
-  //   console.log('We will first go and get the candiate who sent us the message');
-  //   const candidateProfileData = await new FilterCandidates(this.workspaceQueryService).getCandidateInformation(whatsappIncomingMessage,apiToken);
-  //   await new IncomingWhatsappMessages(this.workspaceQueryService).createAndUpdateIncomingCandidateChatMessage( { chatReply: chatReply, whatsappDeliveryStatus: 'delivered', phoneNumberFrom: request.body.phoneNumberFrom, whatsappMessageId: 'receiveIncomingMessagesFromController', }, candidateProfileData,apiToken );
-  //   return { status: 'Success' };
-  // }
-
-
 
   @Post('start-chat')
   @UseGuards(JwtAuthGuard)
   async startChat(@Req() request: any) {
     const apiToken = request.headers.authorization.split(' ')[1]; // Assuming Bearer token
     const chatControl:allDataObjects.chatControls = {chatControlType:'startChat'};
-
-    const response = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).startChatControl(request.body.candidateId, chatControl, apiToken);
-    console.log('Response from create startChat', response);
+    const response = await new ChatControls(this.workspaceQueryService).createChatControl(request.body.candidateId, chatControl, apiToken);
+    console.log('Response from create start-Chat api', response);
   }
     
   
@@ -98,7 +63,7 @@ export class ArxChatEndpoint {
     console.log("Starting chat for , ", filteredCandidateIds.length," candidates")
     for (const candidateId of filteredCandidateIds) {
       const chatControl:allDataObjects.chatControls = {chatControlType:'startChat'};
-      await await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).startChatControl(candidateId, chatControl, apiToken);
+      await await new ChatControls(this.workspaceQueryService).createChatControl(candidateId, chatControl, apiToken);
     }
     return { status: 'Success' };
   }
@@ -122,16 +87,16 @@ export class ArxChatEndpoint {
     });
 
     const response = await axiosRequest(graphqlQueryObj, apiToken);
-    console.log('Response from create startChat', response.data);
+    console.log('Response from create stopchat', response.data);
   }
 
   @Post('fetch-candidate-by-phone-number-start-chat')
   @UseGuards(JwtAuthGuard)
   async fetchCandidateByPhoneNumber(@Req() request: any) {
     const apiToken = request.headers.authorization.split(' ')[1]; // Assuming Bearer token
-
-    console.log('called fetchCandidateByPhoneNumber for phone:', request.body.phoneNumber);
-    const personObj: allDataObjects.PersonNode = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPhoneNumber(request.body.phoneNumber,apiToken);
+    const phoneNumber = request.body.phoneNumber
+    console.log('called fetchCandidateByPhoneNumber for phone:', phoneNumber);
+    const personObj: allDataObjects.PersonNode = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPhoneNumber(phoneNumber,apiToken);
     const candidateId = personObj.candidates?.edges[0]?.node?.id;
     const graphqlVariables = {
       idToUpdate: candidateId,
@@ -145,7 +110,7 @@ export class ArxChatEndpoint {
     });
 
     const response = await axiosRequest(graphqlQueryObj, apiToken);
-    console.log('Response from create startChat::', response.data);
+    console.log('Response from create fetch-candidate-by-phone-number-start::', response.data);
     return response.data;
   }
 
@@ -157,7 +122,9 @@ export class ArxChatEndpoint {
     const apiToken = request.headers.authorization.split(' ')[1];
 
     const messageToSend = request?.body?.messageToSend;
-    const personObj: allDataObjects.PersonNode = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPhoneNumber(request.body.phoneNumberTo,apiToken);
+    const phoneNumber = request.body.phoneNumberTo
+
+    const personObj: allDataObjects.PersonNode = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPhoneNumber(phoneNumber,apiToken);
     console.log('This is the chat reply:', messageToSend);
     const recruiterProfile = allDataObjects.recruiterProfile;
     console.log('Recruiter profile', recruiterProfile);
@@ -207,7 +174,7 @@ export class ArxChatEndpoint {
     const personObj: allDataObjects.PersonNode = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPhoneNumber(request.body.phoneNumber,apiToken);
     const candidateId = personObj?.candidates?.edges[0]?.node?.id;
     const allWhatsappMessages = await new FilterCandidates(this.workspaceQueryService).fetchAllWhatsappMessages(candidateId,apiToken);
-    const formattedMessages = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).formatChat(allWhatsappMessages);
+    const formattedMessages = await formatChat(allWhatsappMessages);
     console.log("All messages length:", allWhatsappMessages?.length, "for phone number:", request.body.phoneNumber);
     return {"formattedMessages":formattedMessages};
   }

@@ -1,5 +1,5 @@
 import * as allDataObjects from '../../services/data-model-objects';
-import { AttachmentProcessingService } from '../../services/candidate-engagement/attachment-processing';
+import { AttachmentProcessingService } from '../candidate-engagement/attachment-processes';
 import { WhatsappControls } from '../whatsapp-api/whatsapp-controls';
 import { FetchAndUpdateCandidatesChatsWhatsapps } from '../../services/candidate-engagement/update-chat';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
@@ -27,7 +27,7 @@ export class ToolCallsProcessing{
   }
   
   async updateCandidateStatus(person: allDataObjects.PersonNode, status: string, apiToken: string) {
-    console.log('Updating the candidate status::', status);
+    console.log('Updating the candidate status::', status, "aipi token:", apiToken);
     const candidateId = person?.candidates?.edges[0]?.node?.id;
     console.log('This is the candidateID for which we are trying to update the status:', candidateId);
     const candidateProfileObj = person?.candidates?.edges[0]?.node;

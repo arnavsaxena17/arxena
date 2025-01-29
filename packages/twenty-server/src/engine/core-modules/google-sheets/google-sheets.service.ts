@@ -9,6 +9,7 @@ import { axiosRequest } from '../workspace-modifications/workspace-modifications
 import { FetchAndUpdateCandidatesChatsWhatsapps } from '../arx-chat/services/candidate-engagement/update-chat';
 import { WorkspaceQueryService } from '../workspace-modifications/workspace-modifications.service';
 import uniq from 'lodash.uniq';
+import { formatChat } from '../arx-chat/utils/arx-chat-agent-utils';
 
 const rowDataValues = [
   ...CandidateSourcingTypes.columnDefinitions.map(col => ({
@@ -75,7 +76,7 @@ export class GoogleSheetsService {
     for (const result of results) {
       if (!result?.googleSheetId) continue;
 
-      const formattedChat = await fetchUpdateService.formatChat(result.whatsappMessages);
+      const formattedChat = await formatChat(result.whatsappMessages);
       const updateData = {
         candidateId: result.candidateId,
         chatMessages: formattedChat,

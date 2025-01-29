@@ -218,7 +218,6 @@ export class IncomingWhatsappMessages {
             const listOfReminders = candidateProfileData?.candidateReminders?.edges;
             const updateOneReminderVariables = { idToUpdate: listOfReminders[0]?.node?.id, input: { isReminderActive: false } };
             const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToCreateOneNewWhatsappMessage, variables: updateOneReminderVariables });
-            console.log('This is the graphqlQueryObj after updating the reminder status::', graphqlQueryObj);
           }
 
           console.log("Graphqlreqsponse after message update",responseAfterMessageUpdate);
@@ -285,17 +284,11 @@ export class IncomingWhatsappMessages {
     replyObject: { whatsappDeliveryStatus: string; chatReply: string;  phoneNumberFrom:string,whatsappMessageId: string; databaseFilePath?: string | null; type?: string; isFromMe?: boolean },
     candidateProfileDataNodeObj: allDataObjects.CandidateNode,candidateJob:allDataObjects.Jobs, apiToken: string
   ) {
-    const personObj: allDataObjects.PersonNode = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPhoneNumber(replyObject.phoneNumberFrom,apiToken);
-
-
     const recruiterProfile = allDataObjects.recruiterProfile;
     const messagesList = candidateProfileDataNodeObj?.whatsappMessages?.edges;
-    // Ensure messagesList is not undefined before sorting
-    // console.log( 'This is the messageObj:', messagesList.map((edge: any) => edge.node.messageObj), );
-    console.log('This is the chat reply in createAndUpdateIncomingCandidateChatMessage:', replyObject.chatReply);
+    console.log('This is the chat reply in create And Update Incoming Candidate Chat Message:', replyObject.chatReply);
     let mostRecentMessageObj;
     if (messagesList) {
-      // console.log('This is the messagesList:', messagesList);
       messagesList.sort((a, b) => new Date(b.node.createdAt).getTime() - new Date(a.node.createdAt).getTime());
       mostRecentMessageObj = messagesList[0]?.node.messageObj;
     } else {
@@ -303,11 +296,7 @@ export class IncomingWhatsappMessages {
       mostRecentMessageObj = candidateProfileDataNodeObj?.whatsappMessages.edges[0].node.messageObj;
     }
     console.log('These are message kwargs length:', mostRecentMessageObj?.length);
-    // console.log('This is the most recent message object being considered::', mostRecentMessageObj);
-    // chatHistory = await this.getChatHistoryFromMongo(mostRecentMessageObj);
     console.log("replyObject?.phoneNumberFrom::", replyObject?.phoneNumberFrom)
-    // console.log("replyObject?.candidateProfileDataNodeObj?.phoneNumber::", candidateProfileDataNodeObj?.phoneNumber)
-    // const phoneNumberThatMessageCameFrom = replyObject?.phoneNumberFrom || candidateProfileDataNodeObj?.phoneNumber;
     if (mostRecentMessageObj?.length > 0) mostRecentMessageObj.push({ role: replyObject.isFromMe ? 'assistant' : 'user', content: replyObject.chatReply });
     let whatappUpdateMessageObj: allDataObjects.whatappUpdateMessageObjType = {
       // executorResultObj: {},
@@ -327,7 +316,7 @@ export class IncomingWhatsappMessages {
     };
 
 
-    await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).updateCandidateEngagementDataInTable(whatappUpdateMessageObj,candidateJob, apiToken);
+    await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).updateCandidateEngagementDataInTable(whatappUpdateMessageObj, apiToken);
     // return whatappUpdateMessageObj;
   }
 }

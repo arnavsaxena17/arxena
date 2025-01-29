@@ -1,6 +1,5 @@
 import { ToolCallsProcessing } from './tool-calls-processing';
 import * as allDataObjects from '../data-model-objects';
-import { FetchAndUpdateCandidatesChatsWhatsapps } from '../candidate-engagement/update-chat';
 import fuzzy from 'fuzzy';
 import { CalendarEventType } from '../../../calendar-events/services/calendar-data-objects-types';
 import { CalendarEmailService } from '../candidate-engagement/calendar-email';
@@ -28,25 +27,25 @@ export class ToolCallingAgents {
   
   getAvailableFunctions(candidateJob:allDataObjects.Jobs, apiToken: string) {
     return {
-      share_jd: (inputs: any, personNode: allDataObjects.PersonNode, chatControl: allDataObjects.chatControls, apiToken: string) => 
+      share_jd: (inputs: any, personNode: allDataObjects.PersonNode, candidateJob:allDataObjects.Jobs, chatControl: allDataObjects.chatControls, apiToken: string) => 
         this.shareJD(inputs, personNode,candidateJob, chatControl, apiToken),
       
-      update_candidate_profile: (inputs: any, personNode: allDataObjects.PersonNode, chatControl: allDataObjects.chatControls, apiToken: string) => 
+      update_candidate_profile: (inputs: any, personNode: allDataObjects.PersonNode, candidateJob:allDataObjects.Jobs, chatControl: allDataObjects.chatControls, apiToken: string) => 
         this.updateCandidateProfile(inputs, personNode, candidateJob,apiToken),
       
-      update_answer: (inputs: { question: string; answer: string }, personNode: allDataObjects.PersonNode, chatControl: allDataObjects.chatControls, apiToken: string) => 
+      update_answer: (inputs: { question: string; answer: string }, personNode: allDataObjects.PersonNode, candidateJob:allDataObjects.Jobs, chatControl: allDataObjects.chatControls, apiToken: string) => 
         this.updateAnswer(inputs, personNode,candidateJob, apiToken),
       
-      schedule_meeting: (inputs: any, personNode: allDataObjects.PersonNode, chatControl: allDataObjects.chatControls, apiToken: string) => 
+      schedule_meeting: (inputs: any, personNode: allDataObjects.PersonNode,candidateJob:allDataObjects.Jobs,  chatControl: allDataObjects.chatControls, apiToken: string) => 
         this.scheduleMeeting(inputs, personNode, candidateJob, apiToken),
       
-      send_email: (inputs: any, personNode: allDataObjects.PersonNode, chatControl: allDataObjects.chatControls, apiToken: string) => 
+      send_email: (inputs: any, personNode: allDataObjects.PersonNode,candidateJob:allDataObjects.Jobs,  chatControl: allDataObjects.chatControls, apiToken: string) => 
         this.sendEmail(inputs, personNode,candidateJob, apiToken),
       
-      create_reminder: (inputs: { reminderDuration: string }, personNode: allDataObjects.PersonNode, chatControl: allDataObjects.chatControls, apiToken: string) => 
+      create_reminder: (inputs: { reminderDuration: string }, personNode: allDataObjects.PersonNode, candidateJob:allDataObjects.Jobs, chatControl: allDataObjects.chatControls, apiToken: string) => 
         this.createReminder(inputs, personNode, candidateJob, apiToken),
       
-      share_interview_link: (inputs: any, personNode: allDataObjects.PersonNode, chatControl: allDataObjects.chatControls, apiToken: string) => 
+      share_interview_link: (inputs: any, personNode: allDataObjects.PersonNode, candidateJob:allDataObjects.Jobs, chatControl: allDataObjects.chatControls, apiToken: string) => 
         this.shareInterviewLink(inputs, personNode,candidateJob, apiToken)
     };
   }
@@ -118,7 +117,11 @@ export class ToolCallingAgents {
 
   async shareJD(inputs: any, personNode: allDataObjects.PersonNode, candidateJob:allDataObjects.Jobs, chatControl: allDataObjects.chatControls,  apiToken:string) {
     try {
-      console.log('Function Called: shareJD');
+      console.log('Function Called: inputs', inputs);
+      console.log('Function Called: personNode', personNode);
+      console.log('Function Called: candidateJob', candidateJob);
+      console.log('Function Called: chatControl', chatControl);
+      console.log('Function Called: apiToken', apiToken);
       await new ToolCallsProcessing(this.workspaceQueryService).shareJDtoCandidate(personNode,  candidateJob, chatControl,  apiToken);
       console.log('Function Called:  candidateProfileDataNodeObj:any', personNode);
     } catch {
@@ -190,14 +193,7 @@ export class ToolCallingAgents {
 
 
 
-  async getTools(candidateJob:allDataObjects.Jobs, chatControl: allDataObjects.chatControls) {
-    if (chatControl.chatControlType === 'startChat') {
-      return this.getStartChatTools(candidateJob)
-    }
-    else if (chatControl.chatControlType === 'startVideoInterviewChat') {
-      return this.getVideoInterviewTools(candidateJob)
-    }
-  }
+
 
   async getVideoInterviewTools(candidateJob:allDataObjects.Jobs){
     let tools;

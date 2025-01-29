@@ -9,6 +9,7 @@ import CandidateEngagementArx from '../candidate-engagement/candidate-engagement
 import { zodResponseFormat } from 'openai/helpers/zod';
 import { axiosRequest } from '../../utils/arx-chat-agent-utils';
 import { PromptingAgents } from './prompting-agents';
+import { JobCandidateUtils } from 'src/engine/core-modules/candidate-sourcing/utils/job-candidate-utils';
 
 const modelName = 'gpt-4o';
 
@@ -16,23 +17,6 @@ export class StageWiseClassification{
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService
   ) {}
-
-  async getStageOfTheConversation(personNode:allDataObjects.PersonNode, mostRecentMessageArr: allDataObjects.ChatHistoryItem[]) {
-      let stage: string | null;
-      console.log('got here to get the stage of the conversation');
-        const stagePrompt = await new PromptingAgents(this.workspaceQueryService).getStagePrompt();
-        // console.log('got here to with the stage prompt', stagePrompt);
-        const updatedMostRecentMessagesBasedOnNewSystemPrompt = await new Transformations().updateMostRecentMessagesBasedOnNewSystemPrompt(mostRecentMessageArr, stagePrompt);
-        console.log('Got the updated recement messages for stage prompt:', updatedMostRecentMessagesBasedOnNewSystemPrompt);
-        // @ts-ignore
-        const response = await new this.workspaceQueryService.llmProviders.openAIclient.chat.completions.create({ model: modelName, messages: updatedMostRecentMessagesBasedOnNewSystemPrompt });
-        console.log("This is the stage that is arrived at:::", response.choices[0].message.content)
-        stage = response.choices[0].message.content ?? '1';
-        console.log('This the stage that is determined by the model:', response.choices[0].message.content);
-      // }
-      console.log('This is the stage that is arrived at:', stage);
-      return stage;
-    }
 
 
     async getChatPromptFromWorksPageMember(currentWorkspaceMemberId: any, apiToken: string) {
@@ -53,9 +37,35 @@ export class StageWiseClassification{
         throw error;
       }
     }
-    async getChatStageFromChatHistory(messages: any, currentWorkspaceMemberId: any, apiToken: string) {
-      // console.log("Stage Prompt is:::", stagePrompt);
-      const localStagePrompt = await this.getChatPromptFromWorksPageMember(currentWorkspaceMemberId, apiToken);
+
+    async getPromptByJobIdAndName(jobId: string, promptName: string, apiToken: string) {
+      let data = JSON.stringify({
+        query: allGraphQLQueries.graphqlQueryToFetchPrompts,
+        variables: { filter: { jobId: { eq: jobId }, name: { ilike: `%${promptName}%` } }, limit: 1, orderBy: [{ position: 'AscNullsFirst' }] },
+      });
+      try {
+        const response = await axiosRequest(data, apiToken);
+        const prompts = response.data.data.prompts.edges;
+      if (prompts.length > 0) {
+        return prompts[0].node.prompt;
+      } else {
+        throw new Error('No prompts found for the given jobId and name.');
+      }
+      } catch (error) {
+      console.error('Error fetching prompt:', error);
+      throw error;
+      }
+    }
+
+
+    async getChatStageFromChatHistory(messages: any,candidateId:String,jobId:string,currentWorkspaceMemberId: any, apiToken: string) {
+      // const stagePrompt = await new PromptingAgents(this.workspaceQueryService).getStagePrompt();
+      console.log('Getting stage from jobIdy:::', jobId);
+      console.log('Getting stage from candidateId:::', candidateId);
+      const promptName = 'PROMPT_FOR_CHAT_CLASSIFICATION'
+      const stagePrompt = await this.getPromptByJobIdAndName(jobId,promptName , apiToken);
+      console.log("This is the stage prompt that is discovered:::", stagePrompt);
+      const localStagePrompt = await this.getPromptByJobIdAndName(jobId, 'PROMPT_FOR_CHAT_CLASSIFICATION', apiToken);
       console.log('Local Stage Prompt is:::', localStagePrompt);
       let mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = new Transformations().getMostRecentMessageFromMessagesList(messages);
       function generateHumanReadableConversation(messages: allDataObjects.ChatHistoryItem[]): string {
@@ -68,18 +78,15 @@ export class StageWiseClassification{
           .join('\n\n');
       }
       const humanReadableConversation = generateHumanReadableConversation(mostRecentMessageArr);
-      console.log('Human readable conversation:\n', humanReadableConversation);
+      console.log('Human readable conversation for statge classifcation from cahtshistory:\n', humanReadableConversation);
       // mostRecentMessageArr[0] = { role: 'system', content: stagePrompt };
       const messagesToLLM = [ { role: 'system', content: localStagePrompt }, { role: 'user', content: humanReadableConversation } ];
       console.log('Messages to LLM:::', messagesToLLM);
-      console.log('Finally Sent messages for converation classificaation to OpenAI:::', mostRecentMessageArr);
-  
+      console.log('Finally Sent messages for converation classificaation to OpenAI::: getting stage from chat historry::', mostRecentMessageArr );
+      const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+      const { openAIclient } = await this.workspaceQueryService.initializeLLMClients(workspaceId);
       // @ts-ignore
-      const completion = await this.workspaceQueryService.llmProviders.openAIclient.beta.chat.completions.parse({
-        model: 'gpt-4o',
-        messages: messagesToLLM,
-        response_format: zodResponseFormat(new ToolCallingAgents(this.workspaceQueryService).currentConversationStage, 'conversationStage'),
-      });
+      const completion = await openAIclient.beta.chat.completions.parse({ model: 'gpt-4o', messages: messagesToLLM, response_format: zodResponseFormat(new ToolCallingAgents(this.workspaceQueryService).currentConversationStage, 'conversationStage'), });
       const conversationStage = completion.choices[0].message.parsed as { stageOfTheConversation: string } | null;
       if (conversationStage) {
         console.log('This is the stage that is arrived at:::', conversationStage.stageOfTheConversation);

@@ -17,10 +17,10 @@ import { FeatureFlagEntity } from '../feature-flag/feature-flag.entity';
 import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
 import { DataSourceModule } from 'src/engine/metadata-modules/data-source/data-source.module'; // Add this import
 import {WorkspaceModificationsModule} from 'src/engine/core-modules/workspace-modifications/workspace-modifications.module'; // Add this import
-import { AttachmentProcessingService } from './services/candidate-engagement/attachment-processing';
+import { AttachmentProcessingService } from './services/candidate-engagement/attachment-processes';
 import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/services/candidate.service';
 import { PersonService } from '../candidate-sourcing/services/person.service';
-import { VideoInterviewProcessController } from './controllers/video-interview-controller';
+import { VideoInterviewProcessController } from './controllers/video-interview-process-controller';
 
 @Module({
   

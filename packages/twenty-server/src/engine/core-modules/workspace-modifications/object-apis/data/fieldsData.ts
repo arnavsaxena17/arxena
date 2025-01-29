@@ -825,6 +825,15 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
     {
         "field": {
             "description": "",
+            "label": "Prompt",
+            "name": "prompt",
+            "objectMetadataId": objectsNameIdMap.prompt,
+            "type": "TEXT"
+        }
+    },
+    {
+        "field": {
+            "description": "",
             "label": "prompt",
             "name": "prompt",
             "objectMetadataId": objectsNameIdMap.candidateEnrichment,

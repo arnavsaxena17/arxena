@@ -2,9 +2,75 @@ import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modific
 import * as allDataObjects from '../data-model-objects';
 import { PromptingAgents } from '../llm-agents/prompting-agents';
 import { FacebookWhatsappChatApi } from '../whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
+import { TimeManagement } from './scheduling-agent';
+import { FetchAndUpdateCandidatesChatsWhatsapps } from './update-chat';
+import { FilterCandidates } from './filter-candidates';
+import { ToolCallingAgents } from '../llm-agents/tool-calling-agents';
+import { axiosRequest } from '../../utils/arx-chat-agent-utils';
+import * as allGraphQLQueries from '../../graphql-queries/graphql-queries-chatbot';
+import { graphQltoUpdateOneCandidate } from 'src/engine/core-modules/candidate-sourcing/graphql-queries';
+import { StartChatProcesses } from './chat-control-processes/start-chat-processes';
+import { StartVideoInterviewChatProcesses } from './chat-control-processes/start-video-interview-chat-processes';
+
 export class ChatControls {
   constructor(private readonly workspaceQueryService: WorkspaceQueryService) {}
 
+    async createChatControl(candidateId: string, chatControl: allDataObjects.chatControls, apiToken: string) {
+      console.log("Dynamically changing the chat controls to true if conditions are being met.")
+      console.log("Setting the:::chatControl.chatControlType:::", chatControl.chatControlType, "to true for candidate::", candidateId);
+      const graphqlVariables = { idToUpdate: candidateId, input: { [chatControl.chatControlType]: true } };
+      const graphqlQueryObj = JSON.stringify({ query: graphQltoUpdateOneCandidate, variables: graphqlVariables });
+      const response = await axiosRequest(graphqlQueryObj, apiToken);
+      if (response.data.errors) {
+        console.log('Error in startChat:', response.data.errors);
+      }
+      console.log('Response from create ChatControl', response.data.data.updateCandidate, "for chat control", chatControl.chatControlType);
+      return response.data;
+    }  
+
+  async updateRecentCandidatesChatControls(apiToken: string) {
+      const candidateIdsForStartChatConversationClosed = await new StartChatProcesses().getRecentlyUpdatedCandidateIdsWithStatusConversationClosed(apiToken);
+      for (const candidateId of candidateIdsForStartChatConversationClosed) {
+        const chatControlType = 'startVideoInterviewChat';
+        const chatControl:allDataObjects.chatControls = {chatControlType:chatControlType};
+        await this.createChatControl(candidateId, chatControl, apiToken);
+      }
+      const candidateIdsForVideoInterviewsCompleted = await new StartVideoInterviewChatProcesses(this.workspaceQueryService).getCandidateIdsWithVideoInterviewCompleted(apiToken);
+      for (const candidateId of candidateIdsForVideoInterviewsCompleted) {
+        const chatControlType = 'startMeetingSchedulingChat';
+        const chatControl:allDataObjects.chatControls = {chatControlType:chatControlType};
+        await this.createChatControl(candidateId, chatControl, apiToken);
+      }
+    }
+  async getSystemPrompt(personNode: allDataObjects.PersonNode,candidateJob:allDataObjects.Jobs,chatControl:allDataObjects.chatControls,  apiToken:string) {
+    console.log("This is the chatControl:", chatControl)
+    if (chatControl.chatControlType == 'startVideoInterviewChat') {
+      return new PromptingAgents(this.workspaceQueryService).getVideoInterviewPrompt(personNode);
+    }
+    else if (chatControl.chatControlType === "startChat"){
+      return new PromptingAgents(this.workspaceQueryService).getStartChatPrompt(personNode, candidateJob, apiToken);
+    }
+    else if (chatControl.chatControlType === "startMeetingSchedulingChat"){
+      return new PromptingAgents(this.workspaceQueryService).getStartMeetingScheduling(personNode, candidateJob, apiToken);
+    }
+    else{
+      return new PromptingAgents(this.workspaceQueryService).getStartChatPrompt(personNode,candidateJob,  apiToken);
+    }
+  }
+
+
+
+
+  getFiltersForChatControl(chatControlType: allDataObjects.chatControlType) {
+    const filters = {
+      startChat: [ { startChat: { eq: true }, startVideoInterviewChat: { is: "NULL" }, stopChat: { is: "NULL" } }, { startChat: { eq: true }, startVideoInterviewChat: { eq: false }, stopChat: { eq: false } }, { startChat: { eq: true }, startVideoInterviewChat: { is: "NULL" }, stopChat: { eq: false } }, { startChat: { eq: true }, startVideoInterviewChat: { eq: false }, stopChat: { is: "NULL" } } ],
+      allStartedAndStoppedChats: [{ startChat: { eq: true } }],
+      startVideoInterviewChat: [ { startVideoInterviewChat: { eq: true }, stopChat: { is: "NULL" } }, { startVideoInterviewChat: { eq: true }, stopChat: { eq: false } } ],
+      startMeetingSchedulingChat: [ { startMeetingSchedulingChat: { eq: true }, startVideoInterviewChat: { eq: true }, stopChat: { is: "NULL" } }, { startMeetingSchedulingChat: { eq: true }, startVideoInterviewChat: { eq: true }, stopChat: { eq: false } } ],    
+    };
+    const filtersToUse = filters[chatControlType] || [];
+    return filtersToUse;
+  }
   async getChatTemplateFromChatControls(
     chatControl: allDataObjects.chatControls,
     sortedMessagesList: allDataObjects.MessageNode[],
@@ -17,14 +83,18 @@ export class ChatControls {
     let whatsappTemplate: string;
     let chatHistory = sortedMessagesList[0]?.messageObj || [];
     if (chatReply === 'startChat' && candidatePersonNodeObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges.length === 0) {
-      const SYSTEM_PROMPT = await new PromptingAgents(this.workspaceQueryService).getSystemPrompt(candidatePersonNodeObj, candidateJob, chatControl, apiToken);
+      const SYSTEM_PROMPT = await this.getSystemPrompt(candidatePersonNodeObj, candidateJob, chatControl, apiToken);
       chatHistory.push({ role: 'system', content: SYSTEM_PROMPT });
       chatHistory.push({ role: 'user', content: 'startChat' });
       whatsappTemplate = 'application03';
     } else if (chatReply === 'startVideoInterviewChat' && candidatePersonNodeObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges.length > 0) {
       chatHistory = sortedMessagesList[0]?.messageObj;
       chatHistory.push({ role: 'user', content: 'startVideoInterviewChat' });
-      whatsappTemplate = 'application03';
+      whatsappTemplate = 'application03'; // should change
+    } else if (chatReply === 'startMeetingSchedulingChat' && candidatePersonNodeObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges.length > 0) {
+      chatHistory = sortedMessagesList[0]?.messageObj;
+      chatHistory.push({ role: 'user', content: 'startMeetingSchedulingChat' });
+      whatsappTemplate = 'application03';// should change
     } else {
       chatHistory = sortedMessagesList[0]?.messageObj;
       whatsappTemplate = candidatePersonNodeObj?.candidates?.edges[0]?.node?.whatsappProvider || 'application03';
@@ -44,111 +114,134 @@ export class ChatControls {
     };
     return whatappUpdateMessageObj;
   }
+  isCandidateEligibleForEngagement (candidate: allDataObjects.CandidateNode, chatControl:allDataObjects.chatControls) {
+    console.log("Checking for candidate Id:", candidate.id, "for chatControl:", chatControl.chatControlType);
+    console.log("Values of candidate.engagementStatus::", candidate.engagementStatus);
+    console.log("Values of candidate.lastEngagementChatControl::", candidate.lastEngagementChatControl);
+    console.log("Values of candidate.engagementStatus::", chatControl.chatControlType);
+    if (!candidate.engagementStatus || candidate.lastEngagementChatControl !== chatControl.chatControlType) {
+      console.log(`Candidate is not being engaged because engagement status is missing or last engagement chat control does not match for candidate: ${candidate.name}`);
+      console.log(`Candidate is not being engaged because engagement status"candidate.engagementStatus::`, candidate.engagementStatus)
+      console.log( "candidate.lastEngagementChatControl::", candidate.lastEngagementChatControl, "chatControl::", chatControl);
+      console.log( "Value of candidate.lastEngagementChatControl equality::", candidate.lastEngagementChatControl !== chatControl.chatControlType);
+      console.log( "Value of fulle::", !candidate.engagementStatus || candidate.lastEngagementChatControl !== chatControl.chatControlType);
+      return false;
+    }
+    if (chatControl.chatControlType === 'startVideoInterviewChat' && (!candidate.startVideoInterviewChat || !candidate.startChat)) {
+      console.log(`Candidate is not being engaged because startVideoInterviewChat or startChat is missing for candidate: ${candidate.name}`);
+      return false;
+    }
+    if (chatControl.chatControlType === 'startMeetingSchedulingChat' && (!candidate.startMeetingSchedulingChat || !candidate.startVideoInterviewChat || !candidate.startChat)) {
+      console.log(`Candidate is not being engaged because startMeetingSchedulingChat, startVideoInterviewChat, or startChat is missing for candidate: ${candidate.name}`);
+      return false;
+    }
+
+    const twoMinutesAgo = new Date(Date.now() - TimeManagement.timeDifferentials.timeDifferentialinMinutesToCheckTimeDifferentialBetweenlastMessage * 60 * 1000);
+    if (candidate.whatsappMessages?.edges?.length > 0) {
+      const latestMessage = candidate.whatsappMessages.edges[0].node;
+      if (new Date(latestMessage.createdAt) >= twoMinutesAgo) {
+      console.log(`Candidate messaged less than ${TimeManagement.timeDifferentials.timeDifferentialinMinutesToCheckTimeDifferentialBetweenlastMessage} minutes ago:: ${candidate.name} for chatControl: ${chatControl.chatControlType}`);
+      return false;
+      }
+    }
+    return true;
+  };
 
 
-    isCandidateEligibleForEngagement = (candidate: allDataObjects.CandidateNode, chatControl:allDataObjects.chatControls) => {
-      const minutesToWait = 0;
-      const twoMinutesAgo = new Date(Date.now() - minutesToWait * 60 * 1000);
-      console.log("Checking for candidate Id:", candidate.id, "for chatControl:", chatControl.chatControlType);
-      if (!candidate.engagementStatus || candidate.lastEngagementChatControl !== chatControl.chatControlType) {
-        console.log(`Candidate is not being engaged because engagement status is missing or last engagement chat control does not match for candidate: ${candidate.name}`);
-        console.log(`Candidate is not being engaged because engagement status"candidate.engagementStatus::`, candidate.engagementStatus)
-        console.log( "candidate.lastEngagementChatControl::", candidate.lastEngagementChatControl, "chatControl::", chatControl);
-        console.log( "Value of candidate.lastEngagementChatControl::", candidate.lastEngagementChatControl !== chatControl.chatControlType);
-        console.log( "Value of fulle::", !candidate.engagementStatus || candidate.lastEngagementChatControl !== chatControl.chatControlType);
-        return false;
+    async getTools(candidateJob:allDataObjects.Jobs, chatControl: allDataObjects.chatControls) {
+      if (chatControl.chatControlType === 'startChat') {
+        return new ToolCallingAgents(this.workspaceQueryService).getStartChatTools(candidateJob)
       }
-      if (chatControl.chatControlType === 'startVideoInterviewChat' && (!candidate.startVideoInterviewChat || !candidate.startChat)) {
-        console.log(`Candidate is not being engaged because startVideoInterviewChat or startChat is missing for candidate: ${candidate.name}`);
-        return false;
+      else if (chatControl.chatControlType === 'startVideoInterviewChat') {
+        return new ToolCallingAgents(this.workspaceQueryService).getVideoInterviewTools(candidateJob)
       }
-      if (chatControl.chatControlType === 'startMeetingSchedulingChat' && (!candidate.startMeetingSchedulingChat || !candidate.startVideoInterviewChat || !candidate.startChat)) {
-        console.log(`Candidate is not being engaged because startMeetingSchedulingChat, startVideoInterviewChat, or startChat is missing for candidate: ${candidate.name}`);
-        return false;
+      else if (chatControl.chatControlType === 'startMeetingSchedulingChat') {
+        return new ToolCallingAgents(this.workspaceQueryService).getStartChatTools(candidateJob)
       }
-      if (candidate.whatsappMessages?.edges?.length > 0) {
-        const latestMessage = candidate.whatsappMessages.edges[0].node;
-        if (new Date(latestMessage.createdAt) >= twoMinutesAgo) {
-        console.log(`Candidate messaged less than ${minutesToWait} minutes ago:: ${candidate.name} for chatControl: ${chatControl.chatControlType}`);
-        return false;
-        }
-      }
-      return true;
-    };
-  filterCandidatesAsPerChatControls(peopleCandidateResponseEngagementArr: allDataObjects.PersonNode[], chatControl: allDataObjects.chatControls) {
+    }
+  async filterCandidatesAsPerChatControls(peopleCandidateResponseEngagementArr: allDataObjects.PersonNode[], candidateJob, chatControl: allDataObjects.chatControls, apiToken:string) {
+    if (chatControl.chatControlType === "startVideoInterviewChat") {
+      await new StartVideoInterviewChatProcesses(this.workspaceQueryService).setupVideoInterviewLinks(peopleCandidateResponseEngagementArr,candidateJob, chatControl, apiToken);
+    }
     const filterCandidates = (personNode: allDataObjects.PersonNode) => {
       const candidate = personNode?.candidates?.edges[0]?.node;
       if (!candidate) return false;
       if (chatControl.chatControlType === 'startChat') {
         return candidate.startChat && candidate.whatsappMessages?.edges.length === 0 && !candidate.startVideoInterviewChat;
       } else if (chatControl.chatControlType === 'startVideoInterviewChat') {
-        return candidate.startChat && candidate.whatsappMessages?.edges.length > 0 && candidate.startVideoInterviewChat && candidate.lastEngagementChatControl !== 'startVideoInterviewChat';
+        return candidate.startChat && candidate.whatsappMessages?.edges.length > 0 && candidate.startVideoInterviewChat && candidate.lastEngagementChatControl === 'startChat';
       } else if (chatControl.chatControlType === 'startMeetingSchedulingChat') {
-        return candidate.startChat && candidate.whatsappMessages?.edges.length > 0 && candidate.startVideoInterviewChat && candidate.startMeetingSchedulingChat && candidate.lastEngagementChatControl !== 'startMeetingSchedulingChat';
+        return candidate.startChat && candidate.whatsappMessages?.edges.length > 0 && candidate.startVideoInterviewChat && candidate.startMeetingSchedulingChat && candidate.lastEngagementChatControl === 'startVideoInterviewChat';
       } else {
         return candidate.startChat && candidate.whatsappMessages?.edges.length > 0;
       }
     };
     const filteredCandidatesToStartEngagement = peopleCandidateResponseEngagementArr?.filter(filterCandidates);
+    console.log("Number of candidates to start chat engagement::", filteredCandidatesToStartEngagement?.length, "for chatControl::", chatControl.chatControlType);
     return filteredCandidatesToStartEngagement;
   }
-
   async runChatControlMessageSending(whatappUpdateMessageObj: allDataObjects.whatappUpdateMessageObjType, chatControl: allDataObjects.chatControls, personNode: allDataObjects.PersonNode, apiToken:string) {
     let response;
-
-    if (whatappUpdateMessageObj?.messages[0]?.content?.toLowerCase().includes('based recruitment company') || whatappUpdateMessageObj?.messages[0]?.content?.toLowerCase().includes('video interview as part of the')) {
-      let messageTemplate: string;
-      if (whatappUpdateMessageObj?.messages[0]?.content?.toLowerCase().includes('based recruitment company')) {
-        if (chatControl.chatControlType === 'startChat') {
-          const currentTimeInIndia = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
-          const currentHourInIndia = new Date(currentTimeInIndia).getHours();
-          if (currentHourInIndia >= 17) {
-            messageTemplate = 'application03';
+    try {
+      if (whatappUpdateMessageObj?.messages[0]?.content?.toLowerCase().includes('based recruitment company') || whatappUpdateMessageObj?.messages[0]?.content?.toLowerCase().includes('video interview as part of the')) {
+        let messageTemplate: string;
+        if (whatappUpdateMessageObj?.messages[0]?.content?.toLowerCase().includes('based recruitment company')) {
+          if (chatControl.chatControlType === 'startChat') {
+            const currentTimeInIndia = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
+            const currentHourInIndia = new Date(currentTimeInIndia).getHours();
+            if (currentHourInIndia >= 17) {
+              messageTemplate = 'application03';
+            } else {
+              messageTemplate = 'application03';
+            }
           } else {
-            messageTemplate = 'application03';
+            messageTemplate = whatappUpdateMessageObj?.whatsappMessageType || 'application03';
           }
-        } else {
-          messageTemplate = whatappUpdateMessageObj?.whatsappMessageType || 'application03';
+        } else if (whatappUpdateMessageObj?.messages[0]?.content?.toLowerCase().includes('video interview as part of the') && whatappUpdateMessageObj?.messages[0]?.content?.toLowerCase().includes('questions at the link here')) {
+          if (chatControl.chatControlType === 'startVideoInterviewChat') {
+            messageTemplate = 'share_video_interview_link_without_button';
+          } else {
+            messageTemplate = whatappUpdateMessageObj?.whatsappMessageType || 'application03';
+          }
         }
-      } else if (whatappUpdateMessageObj?.messages[0]?.content?.toLowerCase().includes('video interview as part of the') && whatappUpdateMessageObj?.messages[0]?.content?.toLowerCase().includes('questions at the link here')) {
-        if (chatControl.chatControlType === 'startVideoInterviewChat') {
-          messageTemplate = 'share_video_interview_link_without_button';
-        } else {
-          messageTemplate = whatappUpdateMessageObj?.whatsappMessageType || 'application03';
+
+
+        // likely to add chat control for the meeting setup
+        else{
+          messageTemplate = 'application03';
         }
+        const videoInterviewLink = process.env.FRONT_BASE_URL + personNode?.candidates?.edges[0]?.node?.videoInterview?.edges[0]?.node?.interviewLink?.url || '';
+        console.log('videoInterviewLink::', videoInterviewLink);
+        const sendTemplateMessageObj: allDataObjects.sendWhatsappUtilityMessageObjectType = {
+          recipient: whatappUpdateMessageObj.phoneNumberTo.replace('+', ''),
+          template_name: messageTemplate,
+          recruiterFirstName: allDataObjects.recruiterProfile.name,
+          candidateFirstName: whatappUpdateMessageObj.candidateFirstName,
+          recruiterName: allDataObjects.recruiterProfile.name,
+          recruiterJobTitle: allDataObjects.recruiterProfile.job_title,
+          recruiterCompanyName: allDataObjects.recruiterProfile.job_company_name,
+          recruiterCompanyDescription: allDataObjects.recruiterProfile.company_description_oneliner,
+          jobPositionName: whatappUpdateMessageObj?.candidateProfile?.jobs?.name,
+          companyName: whatappUpdateMessageObj?.candidateProfile?.jobs?.company?.name,
+          descriptionOneliner: whatappUpdateMessageObj?.candidateProfile?.jobs?.company?.descriptionOneliner,
+          jobCode: whatappUpdateMessageObj?.candidateProfile?.jobs?.jobCode,
+          jobLocation: whatappUpdateMessageObj?.candidateProfile?.jobs?.jobLocation,
+          videoInterviewLink: videoInterviewLink,
+        };
+        response = await new FacebookWhatsappChatApi(this.workspaceQueryService).sendWhatsappUtilityMessage(sendTemplateMessageObj, apiToken);
+      } else {
+        console.log('This is the standard message to send from', allDataObjects.recruiterProfile.phone);
+        console.log('This is the standard message to send to phone:', whatappUpdateMessageObj.phoneNumberTo);
+        const sendTextMessageObj: allDataObjects.ChatRequestBody = {
+          phoneNumberFrom: allDataObjects.recruiterProfile.phone,
+          phoneNumberTo: whatappUpdateMessageObj.phoneNumberTo,
+          messages: whatappUpdateMessageObj.messages[0].content,
+        };
+        response = await new FacebookWhatsappChatApi(this.workspaceQueryService).sendWhatsappTextMessage(sendTextMessageObj, apiToken);
       }
-      else{
-        messageTemplate = 'application03';
-      }
-      const videoInterviewLink = process.env.SERVER_BASE_URL + personNode?.candidates?.edges[0]?.node?.videoInterview?.edges[0]?.node?.interviewLink?.url || '';
-      console.log('videoInterviewLink::', videoInterviewLink);
-      const sendTemplateMessageObj: allDataObjects.sendWhatsappUtilityMessageObjectType = {
-        recipient: whatappUpdateMessageObj.phoneNumberTo.replace('+', ''),
-        template_name: messageTemplate,
-        recruiterFirstName: allDataObjects.recruiterProfile.name,
-        candidateFirstName: whatappUpdateMessageObj.candidateFirstName,
-        recruiterName: allDataObjects.recruiterProfile.name,
-        recruiterJobTitle: allDataObjects.recruiterProfile.job_title,
-        recruiterCompanyName: allDataObjects.recruiterProfile.job_company_name,
-        recruiterCompanyDescription: allDataObjects.recruiterProfile.company_description_oneliner,
-        jobPositionName: whatappUpdateMessageObj?.candidateProfile?.jobs?.name,
-        companyName: whatappUpdateMessageObj?.candidateProfile?.jobs?.company?.name,
-        descriptionOneliner: whatappUpdateMessageObj?.candidateProfile?.jobs?.company?.descriptionOneliner,
-        jobCode: whatappUpdateMessageObj?.candidateProfile?.jobs?.jobCode,
-        jobLocation: whatappUpdateMessageObj?.candidateProfile?.jobs?.jobLocation,
-        videoInterviewLink: videoInterviewLink,
-      };
-      response = await new FacebookWhatsappChatApi(this.workspaceQueryService).sendWhatsappUtilityMessage(sendTemplateMessageObj, apiToken);
-    } else {
-      console.log('This is the standard message to send from', allDataObjects.recruiterProfile.phone);
-      console.log('This is the standard message to send to phone:', whatappUpdateMessageObj.phoneNumberTo);
-      const sendTextMessageObj: allDataObjects.ChatRequestBody = {
-        phoneNumberFrom: allDataObjects.recruiterProfile.phone,
-        phoneNumberTo: whatappUpdateMessageObj.phoneNumberTo,
-        messages: whatappUpdateMessageObj.messages[0].content,
-      };
-      response = await new FacebookWhatsappChatApi(this.workspaceQueryService).sendWhatsappTextMessage(sendTextMessageObj, apiToken);
-    }  
-    return  
+    } catch (error) {
+      console.log('Error in runChatControlMessageSending:', error);
+    }
+    return response;
   }
 }

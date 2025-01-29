@@ -10,42 +10,55 @@ query FindOneWhatsappMessage($whatsappMessageId: String!) {
 }
 `;
 
+
+export const graphqlQueryToFetchPrompts = `
+  query FindManyPrompts($filter: PromptFilterInput, $orderBy: [PromptOrderByInput], $limit: Int) {
+  prompts(filter: $filter, orderBy: $orderBy, first: $limit) {
+    edges {
+    node {
+      prompt
+    }
+    }
+  }
+  }
+`
+
 export const graphQlToUpdateCandidate = `mutation UpdateOneCandidate($idToUpdate: ID!, $input: CandidateUpdateInput!) {
   updateCandidate(id: $idToUpdate, data: $input) {
       __typename
   }
-  }`
+}`
 
-  export const mutationToUpdateOnePerson = `mutation UpdateOnePerson($idToUpdate: ID!, $input: PersonUpdateInput!) {
-    updatePerson(id: $idToUpdate, data: $input) {
-      __typename
-      city
-      salary
-    }
+export const mutationToUpdateOnePerson = `mutation UpdateOnePerson($idToUpdate: ID!, $input: PersonUpdateInput!) {
+  updatePerson(id: $idToUpdate, data: $input) {
+    __typename
+    city
+    salary
   }
-  `
+}`
 
 
-  export const graphqlToCreateOneMetatDataObjectItems = `
-        mutation CreateOneObjectMetadataItem($input: CreateOneObjectInput!) {
-          createOneObject(input: $input) {
-            id
-            dataSourceId
-            nameSingular
-            namePlural
-            labelSingular
-            labelPlural
-            description
-            icon
-            isCustom
-            isActive
-            createdAt
-            updatedAt
-            labelIdentifierFieldMetadataId
-            imageIdentifierFieldMetadataId
-          }
+export const graphqlToCreateOneMetatDataObjectItems = `
+      mutation CreateOneObjectMetadataItem($input: CreateOneObjectInput!) {
+        createOneObject(input: $input) {
+          id
+          dataSourceId
+          nameSingular
+          namePlural
+          labelSingular
+          labelPlural
+          description
+          icon
+          isCustom
+          isActive
+          createdAt
+          updatedAt
+          labelIdentifierFieldMetadataId
+          imageIdentifierFieldMetadataId
         }
-      `
+      }
+    `
+
 export const graphqlQueryToCreateVideoInterview = `mutation CreateOneVideoInterview($input: VideoInterviewCreateInput!) {
   createVideoInterview(data: $input) {
     interviewStarted
@@ -403,8 +416,17 @@ export const graphQlToFetchWhatsappMessages = `query FindManyWhatsappMessages($f
         whatsappDeliveryStatus
         createdAt
         messageObj
+        jobsId
         whatsappProvider
         phoneFrom
+        candidate{
+            name
+            createdAt
+            updatedAt
+            startChat
+            startMeetingSchedulingChat
+            startVideoInterviewChat
+        }
         id
         phoneTo
         position
@@ -433,6 +455,7 @@ query FindManyCandidates($lastCursor: String, $limit: Int, $filter: CandidateFil
       node {
         id
         name
+        updatedAt
         whatsappProvider
         people {
           id
@@ -446,7 +469,16 @@ query FindManyCandidates($lastCursor: String, $limit: Int, $filter: CandidateFil
           uniqueStringKey  
         }
         startChat
-
+        whatsappMessages {
+          edges {
+            node {
+              updatedAt
+              createdAt
+              id
+              name
+            }
+          }
+        }
         jobs {
           id
           name
@@ -470,6 +502,8 @@ query FindManyCandidates($lastCursor: String, $limit: Int, $filter: CandidateFil
                     interviewLink{
                       url
                     }
+                    createdAt
+                    updatedAt
                     interviewStarted
                     interviewCompleted
                 }
@@ -616,6 +650,8 @@ export const graphqlQueryToFindManyPeopleEngagedCandidates = `query FindManyPeop
                         edges{
                             node{
                                 id
+                                createdAt
+                                updatedAt
                                 interviewLink{
                                   url
                                 }

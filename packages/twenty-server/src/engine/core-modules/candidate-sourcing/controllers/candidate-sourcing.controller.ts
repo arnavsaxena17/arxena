@@ -83,9 +83,11 @@ async updateCandidateSpreadsheet(@Req() request: any): Promise<object> {
       const candidateIds= request.body.candidateIds;
       const currentWorkspaceMemberId = request.body.currentWorkspaceMemberId;
 
+      const jobIds = await this.candidateService.getJobIdsFromCandidateIds(candidateIds, apiToken);
+
       console.log("going to process chats")
       // await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).processCandidatesChatsGetStatuses( apiToken);
-      const results = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).processCandidatesChatsGetStatuses(apiToken);
+      const results = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).processCandidatesChatsGetStatuses(apiToken, candidateIds,jobIds, currentWorkspaceMemberId);
 
       return { status: 'Success' };
     } catch (err) {
@@ -273,7 +275,6 @@ async updateCandidateSpreadsheet(@Req() request: any): Promise<object> {
         { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiToken}` } },
       );
 
-      // const results = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).processCandidatesChatsGetStatuses(apiToken);
       return { status: 'Success' };
     } catch (err) {
       console.error('Error in refresh chats:', err);
@@ -300,7 +301,6 @@ async updateCandidateSpreadsheet(@Req() request: any): Promise<object> {
       );
       console.log("Received this response:", response.data)
 
-      // const results = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).processCandidatesChatsGetStatuses(apiToken);
       return { status: 'Success' };
     } catch (err) {
       console.error('Error in refresh chats:', err);

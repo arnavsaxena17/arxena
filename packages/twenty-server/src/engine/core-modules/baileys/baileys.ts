@@ -201,7 +201,7 @@ export class BaileysBot {
       };
 
       console.log('baileysWhatsappOutgoingObj:', baileysWhatsappOutgoingObj);
-  const candidateProfileData = await new FilterCandidates(this.workspaceQueryService).getCandidateDetailsByPhoneNumber(baileysWhatsappOutgoingObj.phoneNumberTo,apiToken);
+      const candidateProfileData = await new FilterCandidates(this.workspaceQueryService).getCandidateDetailsByPhoneNumber(baileysWhatsappOutgoingObj.phoneNumberTo,apiToken);
       console.log('This is the candidateProfileData', candidateProfileData);
       if (candidateProfileData && candidateProfileData != allDataObjects.emptyCandidateProfileObj) {
         const messageBeingSent = m?.messages[0]?.message?.extendedTextMessage?.text || m?.messages[0]?.message?.conversation || '';

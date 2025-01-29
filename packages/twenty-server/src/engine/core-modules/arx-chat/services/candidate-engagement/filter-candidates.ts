@@ -5,12 +5,22 @@ import * as allGraphQLQueries from '../../graphql-queries/graphql-queries-chatbo
 import { axiosRequest } from "../../utils/arx-chat-agent-utils";
 import { workspacesWithOlderSchema } from "src/engine/core-modules/candidate-sourcing/graphql-queries";
 import axios from "axios";
+import { TimeManagement } from "./scheduling-agent";
+import { ChatControls } from "./chat-controls";
 
 
 
 export class FilterCandidates {
-      constructor(private readonly workspaceQueryService: WorkspaceQueryService) { }
-    
+  constructor(private readonly workspaceQueryService: WorkspaceQueryService) {}
+
+          
+
+  async getJobIdsFromCandidateIds(candidateIds: string[], apiToken: string): Promise<string[]> {
+    console.log('Getting job ids from candidate ids:', candidateIds);
+    return Promise.all(candidateIds.map(candidateId => this.fetchCandidateByCandidateId(candidateId, apiToken).then(candidate => candidate?.jobs?.id)));
+  }
+
+
   async fetchSpecificPeopleToEngageBasedOnChatControl(chatControl: allDataObjects.chatControls, apiToken: string): Promise<{ people: allDataObjects.PersonNode[], candidateJob: allDataObjects.Jobs}> {
     try {
       console.log('Fetching candidates to engage');
@@ -46,14 +56,9 @@ export class FilterCandidates {
     console.log('Fetching all candidates with chatControlType', chatControlType);
     let allCandidates: allDataObjects.Candidate[] = [];
     
-    const filters = {
-        startChat: [ { startChat: { eq: true }, startVideoInterviewChat: { is: "NULL" }, stopChat: { is: "NULL" } }, { startChat: { eq: true }, startVideoInterviewChat: { eq: false }, stopChat: { eq: false } }, { startChat: { eq: true }, startVideoInterviewChat: { is: "NULL" }, stopChat: { eq: false } }, { startChat: { eq: true }, startVideoInterviewChat: { eq: false }, stopChat: { is: "NULL" } } ],
-        allStartedAndStoppedChats: [{ startChat: { eq: true } }],
-        startVideoInterviewChat: [ { startVideoInterviewChat: { eq: true }, stopChat: { is: "NULL" } }, { startVideoInterviewChat: { eq: true }, stopChat: { eq: false } } ],
-        startMeetingSchedulingChat: [ { startMeetingSchedulingChat: { eq: true }, startVideoInterviewChat: { eq: true }, stopChat: { is: "NULL" } }, { startMeetingSchedulingChat: { eq: true }, startVideoInterviewChat: { eq: true }, stopChat: { eq: false } } ],    
-      };
-      const filtersToUse = filters[chatControlType] || [];
-      let graphqlQueryObjToFetchAllCandidatesForChats = '';
+    const filtersToUse = new ChatControls(this.workspaceQueryService).getFiltersForChatControl(chatControlType);
+
+    let graphqlQueryObjToFetchAllCandidatesForChats = '';
     try{
       const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
       console.log("This is the workspaceId", workspaceId);
@@ -145,70 +150,7 @@ export class FilterCandidates {
     return allPeople;
   }
 
-  async getRecentCandidateIds(apiToken: string): Promise<string[]> {
-    try {
-      // Calculate timestamp from 5 minutes ago
-      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
-      const graphqlQueryObj = JSON.stringify({
-        query: allGraphQLQueries.graphQlToFetchWhatsappMessages,
-        variables: { filter: { createdAt: { gte: fiveMinutesAgo } }, orderBy: [ { position: 'AscNullsFirst' } ] },
-      });
-
-      const data = await axiosRequest(graphqlQueryObj, apiToken);
-      // console.log("This is the number of perople who edges data messaged recently in getRecentCandidateIds", data);
-      // Extract unique candidate IDs
-      if (data?.data?.whatsappMessages?.edges?.length > 0) {
-        console.log('This is the number of perople who messaged recently in getRecentCandidateIds', data?.data?.whatsappMessages?.edges?.length);
-        const candidateIds: string[] = Array.from( new Set( data?.data?.whatsappMessages?.edges.map(edge => edge?.node?.candidate?.id).filter(id => id) ), ) as unknown as string[];
-        return candidateIds;
-      } else {
-        console.log('No recent candidates found');
-        return [];
-      }
-    } catch (error) {
-      console.log('Error fetching recent WhatsApp messages:', error);
-      return [];
-    }
-  }
-  async getRecentlyUpdatedCandidateIdsWithStatusConversationClosed(apiToken: string): Promise<string[]> {
-    try {
-      const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString();
-      const graphqlQueryObj = JSON.stringify({
-        query: allGraphQLQueries.graphQlToFetchWhatsappMessages,
-        variables: { filter: { updatedAt: { lte: sixHoursAgo }, candConversationStatus: { eq: 'CONVERSATION_CLOSED_TO_BE_CONTACTED' } }, orderBy: [ { position: 'AscNullsFirst' } ] } });
-
-      const data = await axiosRequest(graphqlQueryObj, apiToken);
-      // Extract unique candidate IDs
-      if (data?.data?.whatsappMessages?.edges?.length > 0) {
-        console.log('This is the number of people who messaged recently in getRecentCandidateIds', data?.data?.whatsappMessages?.edges?.length);
-        const candidateIds: string[] = Array.from( new Set( data?.data?.whatsappMessages?.edges.map(edge => edge?.node?.candidate?.id).filter(id => id), ), ) as unknown as string[];
-
-        // Filter out candidates who have messages created in the last 6 hours
-        const recentMessages = data?.data?.whatsappMessages?.edges.filter((edge: { node: { createdAt: string | number | Date; }; }) => new Date(edge?.node?.createdAt) >= new Date(sixHoursAgo));
-        const recentCandidateIds = recentMessages.map((edge: { node: { candidate: { id: any; }; }; }) => edge?.node?.candidate?.id);
-        const filteredCandidateIds = candidateIds.filter(id => !recentCandidateIds.includes(id));
-
-        return filteredCandidateIds;
-      } else {
-        console.log('No recent candidates found');
-        return [];
-      }
-    } catch (error) {
-      console.log('Error fetching recent WhatsApp messages:', error);
-      return [];
-    }
-  }
-
-  async getCandidateIdsWithVideoInterviewCompleted(apiToken: string): Promise<string[]> {
-    let allCandidates = await this.fetchAllCandidatesWithSpecificChatControl('startVideoInterviewChat', apiToken);
-    console.log('Fetched', allCandidates?.length, ' candidates with chatControl startVideoInterviewChat');
-    const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString();
-    const candidateIdsWithVideoInterviewCompleted = allCandidates
-      .filter(candidate => candidate?.videoInterview?.edges[0]?.node?.interviewCompleted && typeof candidate?.videoInterview?.edges[0]?.node?.interviewCompleted === 'string' && !isNaN(Date.parse(candidate?.videoInterview?.edges[0]?.node?.interviewCompleted)) && new Date(candidate?.videoInterview?.edges[0]?.node?.interviewCompleted) < new Date(sixHoursAgo))
-      .map(candidate => candidate.id);
-    return candidateIdsWithVideoInterviewCompleted;
-  }
-
+  
   async fetchAllWhatsappMessages(candidateId: string, apiToken: string): Promise<allDataObjects.MessageNode[]> {
     let allWhatsappMessages: allDataObjects.MessageNode[] = [];
     let lastCursor = null;
@@ -317,11 +259,10 @@ async getCandidateInformation(userMessage: allDataObjects.chatMessageType, apiTo
       const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindManyPeople, variables: graphVariables });
       const response = await axiosRequest(graphqlQueryObj, apiToken);
       const candidateDataObjs = response.data?.data?.people?.edges[0]?.node?.candidates?.edges;
-      console.log("Thesea re ntue number of candidate data objects::", candidateDataObjs);
       const maxCreatedAt = candidateDataObjs.length > 0 ? Math.max(...candidateDataObjs.map(e => new Date(e.node.jobs.createdAt).getTime())) : 0;
       const activeJobCandidateObj = candidateDataObjs?.find((edge: allDataObjects.CandidatesEdge) => edge?.node?.jobs?.isActive && edge?.node?.jobs?.createdAt && new Date(edge?.node?.jobs?.createdAt).getTime() === maxCreatedAt);
       console.log('This is the number of candidates', candidateDataObjs?.length);
-      console.log('This is the number of most recent active candidate for whom we can do active job', candidateDataObjs);
+      // console.log('This is the number of most recent active candidate for whom we can do active job', candidateDataObjs);
       console.log('This is the activeJobCandidateObj who got called', activeJobCandidateObj?.node?.name || '');
       if (activeJobCandidateObj) {
         const personWithActiveJob = response?.data?.data?.people?.edges?.find((person: allDataObjects.PersonEdge) => person?.node?.candidates?.edges?.some(candidate => candidate?.node?.jobs?.isActive));

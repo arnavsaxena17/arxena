@@ -283,9 +283,9 @@ export class GoogleSheetsDataController {
   
   @Post('post-data')
   async postData(@Body() data: { spreadsheetId: string, full_name: string, UniqueKey: string }) {
-    console.log("data:::::", data);
+    console.log("data:::: of post-data:", data);
     const tokenData = await this.getWorkspaceTokenForGoogleSheet(data.spreadsheetId);
-    console.log("tokenData:::::", tokenData);
+    console.log("tokenData for workspace token google sheet:::::", tokenData);
     if (!tokenData) {
       throw new Error('No valid workspace found for this spreadsheet');
     }

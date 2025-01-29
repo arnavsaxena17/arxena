@@ -8,6 +8,7 @@ import { GmailMessageData } from '../../gmail-sender/services/gmail-sender-objec
 import { SendEmailFunctionality, EmailTemplates } from '../services/candidate-engagement/send-gmail';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { FilterCandidates } from '../services/candidate-engagement/filter-candidates';
+import { StartVideoInterviewChatProcesses } from '../services/candidate-engagement/chat-control-processes/start-video-interview-chat-processes';
 
 
 @Controller('video-interview-process')
@@ -20,7 +21,7 @@ export class VideoInterviewProcessController {
         const candidateId = request.body.candidateId;
         const apiToken = request.headers.authorization.split(' ')[1];
         console.log('candidateId to create video-interview:', candidateId);
-        const createVideoInterviewResponse = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).createVideoInterviewForCandidate(candidateId, apiToken);
+        const createVideoInterviewResponse = await new StartVideoInterviewChatProcesses(this.workspaceQueryService).createVideoInterviewForCandidate(candidateId, apiToken);
         console.log("createVideoInterviewResponse:", createVideoInterviewResponse);
         return createVideoInterviewResponse;
     }
@@ -34,7 +35,7 @@ export class VideoInterviewProcessController {
         try {
             const candidateId = request.body.candidateId;
             console.log('candidateId to create video-interview:', candidateId);
-            const createVideoInterviewResponse = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).createVideoInterviewForCandidate(candidateId, apiToken);
+            const createVideoInterviewResponse = await new StartVideoInterviewChatProcesses(this.workspaceQueryService).createVideoInterviewForCandidate(candidateId, apiToken);
             const personObj = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByCandidateId(candidateId, apiToken);
             const person = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPersonId(personObj.id, apiToken);
             console.log("Got person:", person);

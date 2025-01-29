@@ -5,7 +5,47 @@ import {  In, EntityManager } from 'typeorm';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { FetchAndUpdateCandidatesChatsWhatsapps } from './update-chat';
 import { workspacesWithOlderSchema } from 'src/engine/core-modules/candidate-sourcing/graphql-queries';
+import { ChatControls } from './chat-controls';
+import * as allDataObjects from '../../services/data-model-objects';
 
+
+export let TimeManagement;
+
+const TimeManagementLocal = {
+  crontabs:{
+    crontTabToExecuteCandidateEngagement:CronExpression.EVERY_5_SECONDS,
+    crontTabToMakeUpdatesForNewChats:CronExpression.EVERY_30_SECONDS,
+    crontTabToUpdateRecentCandidatesChatControls:CronExpression.EVERY_10_SECONDS
+  },
+  timeDifferentials:{
+    timeDifferentialinMinutesToCheckTimeDifferentialBetweenlastMessage: 0,
+    timeDifferentialinMinutesForCheckingCandidateIdsToMakeUpdatesOnChatsForNextChatControls: 15,
+    timeDifferentialinHoursForCheckingCandidateIdsWithStatusOfConversationClosed:.15,
+    timeDifferentialinHoursForCheckingCandidateIdsWithVideoInterviewCompleted:.15
+  }
+}
+
+const TimeManagementProd = {
+  crontabs:{
+    crontTabToExecuteCandidateEngagement:CronExpression.EVERY_30_SECONDS,
+    crontTabToMakeUpdatesForNewChats:CronExpression.EVERY_5_MINUTES,
+    crontTabToUpdateRecentCandidatesChatControls:CronExpression.EVERY_10_SECONDS
+  },
+  timeDifferentials:{
+    timeDifferentialinMinutesToCheckTimeDifferentialBetweenlastMessage: 5,
+    timeDifferentialinMinutesForCheckingCandidateIdsToMakeUpdatesOnChatsForNextChatControls: 5,
+    timeDifferentialinHoursForCheckingCandidateIdsWithStatusOfConversationClosed:6,
+    timeDifferentialinHoursForCheckingCandidateIdsWithVideoInterviewCompleted:6
+  }
+}
+if (process.env.ENV_NODE === 'production') {
+  TimeManagement = TimeManagementProd;
+}
+else {
+  TimeManagement = TimeManagementLocal;
+}
+
+console.log("TimeManagement::", TimeManagement)
 
 @Injectable()
 abstract class BaseCronService {
@@ -18,13 +58,10 @@ abstract class BaseCronService {
       console.log('Previous job still running, skipping');
       return;
     }
-
     try {
       this.isProcessing = true;
       console.log('Starting cycle');
-      
       const workspaces = await this.getFilteredWorkspaces();
-      
       for (const workspaceId of workspaces) {
         const token = await this.getWorkspaceToken(workspaceId);
         if (token) await callback(token);
@@ -62,7 +99,7 @@ abstract class BaseCronService {
 
 @Injectable()
 export class CandidateEngagementCronService extends BaseCronService {
-  @Cron(CronExpression.EVERY_5_SECONDS)
+  @Cron(TimeManagement.crontabs.crontTabToExecuteCandidateEngagement)
   async handleCron() {
     await this.executeWorkspaceTask(async (token) => {
       await new CandidateEngagementArx(this.workspaceQueryService)
@@ -73,19 +110,18 @@ export class CandidateEngagementCronService extends BaseCronService {
 
 @Injectable()
 export class CandidateStatusClassificationCronService extends BaseCronService {
-  @Cron(CronExpression.EVERY_5_MINUTES)
+  @Cron(TimeManagement.crontabs.crontTabToMakeUpdatesForNewChats)
   async handleFiveMinutesCron() {
     await this.executeWorkspaceTask(async (token) => {
-      const service = new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService);
-      await service.updateRecentCandidatesChatCount(token);
-      await service.updateRecentCandidatesProcessCandidateChatsGetStatuses(token);
+      const service = new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService)
+      .makeUpdatesForNewChats(token);
     });
   }
 
-  @Cron(CronExpression.EVERY_5_HOURS)
+  @Cron(TimeManagement.crontabs.crontTabToUpdateRecentCandidatesChatControls)
   async handleFiveHoursCron() {
     await this.executeWorkspaceTask(async (token) => {
-      await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService)
+      await new ChatControls(this.workspaceQueryService)
         .updateRecentCandidatesChatControls(token);
     });
   }

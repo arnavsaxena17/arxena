@@ -13,40 +13,11 @@ import * as allGraphQLQueries from '../../arx-chat/graphql-queries/graphql-queri
 import { CreateFieldsOnObject } from 'src/engine/core-modules/workspace-modifications/object-apis/data/createFields';
 import * as allDataObjects from '../../arx-chat/services/data-model-objects';
 import { GoogleSheetsService } from '../../google-sheets/google-sheets.service';
+import { FilterCandidates } from '../../arx-chat/services/candidate-engagement/filter-candidates';
 
 
 
-export const newFieldsToCreate = [
-  "name",
-  "jobTitle",
-  "currentOrganization",
-  "age",
-  "currentLocation",
-  "inferredSalary",
-  "email",
-  "profileUrl",
-  "phone",
-  "uniqueStringKey",
-  "profileTitle",
-  "displayPicture",
-  "preferredLocations",
-  "birthDate",
-  "inferredYearsExperience",
-  "noticePeriod",
-  "homeTown",
-  "maritalStatus",
-  "ugInstituteName",
-  "ugGraduationYear",
-  "pgGradudationDegree",
-  "ugGraduationDegree",
-  "pgGraduationYear",
-  "resumeHeadline",
-  "keySkills",
-  "industry",
-  "modifyDateLabel",
-  "experienceYears",
-  "experienceMonths",
-]
+export const newFieldsToCreate = [ "name", "jobTitle", "currentOrganization", "age", "currentLocation", "inferredSalary", "email", "profileUrl", "phone", "uniqueStringKey", "profileTitle", "displayPicture", "preferredLocations", "birthDate", "inferredYearsExperience", "noticePeriod", "homeTown", "maritalStatus", "ugInstituteName", "ugGraduationYear", "pgGradudationDegree", "ugGraduationDegree", "pgGraduationYear", "resumeHeadline", "keySkills", "industry", "modifyDateLabel", "experienceYears", "experienceMonths",  ];
 interface ProcessingContext {
   jobCandidateInfo: {
     jobCandidateObjectId: string;
@@ -168,6 +139,11 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
       }
     }
   }
+  }
+
+  async getJobIdsFromCandidateIds(candidateIds: string[], apiToken: string): Promise<string[]> { 
+    const jobids = await new FilterCandidates(this.workspaceQueryService).getJobIdsFromCandidateIds(candidateIds, apiToken)
+    return jobids;
   }
 
   async batchCheckExistingCandidates(uniqueStringKeys: string[], jobId: string, apiToken: string): Promise<Map<string, any>> {

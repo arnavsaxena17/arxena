@@ -1,13 +1,4 @@
-import { ToolCallsProcessing } from './tool-calls-processing';
 import * as allDataObjects from '../data-model-objects';
-import { FetchAndUpdateCandidatesChatsWhatsapps } from '../candidate-engagement/update-chat';
-import fuzzy from 'fuzzy';
-import { CalendarEventType } from '../../../calendar-events/services/calendar-data-objects-types';
-import { CalendarEmailService } from '../candidate-engagement/calendar-email';
-import { EmailTemplates, SendEmailFunctionality } from '../candidate-engagement/send-gmail';
-import { GmailMessageData } from 'src/engine/core-modules/gmail-sender/services/gmail-sender-objects-types';
-import * as allGraphQLQueries from '../../graphql-queries/graphql-queries-chatbot';
-import { addHoursInDate, axiosRequest, toIsoString } from '../../utils/arx-chat-agent-utils';
 import { z } from "zod";
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { FilterCandidates } from '../candidate-engagement/filter-candidates';
@@ -20,7 +11,6 @@ const availableTimeSlots = '12PM-3PM, 4PM -6PM on the 24th and 25th August 2024.
 
 
 export class PromptingAgents {
-
   constructor( private readonly workspaceQueryService: WorkspaceQueryService ) {}
   currentConversationStage = z.object({
     stageOfTheConversation: z.enum(allDataObjects.allStatusesArray)
@@ -33,43 +23,41 @@ export class PromptingAgents {
     }
     return result;
   }
-  async getStagePrompt() {
-    const recruitmentSteps = [
-      'Initial Outreach: The recruiter introduces themselves and their company, mentions the specific role, and the candidate has responded in some manner.',
-      // "Share Role Details: Provide a JD of the role and company. Check if the candidate has heard of the company. Assess the candidate's interest level and fit for the role, including their ability to relocate if needed.",
-      'Share screening questions: Share screening questions and record responses',
-      // "Schedule Screening Meeting: Propose times for a call to discuss the role, company, and candidate's experience more deeply, aiming for a 30-minute discussion."
-      'Acknowledge and postpone: Let the candidate know that you will get back',
-    ];
+  // async getStagePrompt() {
+  //   const recruitmentProgressionSteps = [
+  //     'Initial Outreach: The recruiter introduces themselves and their company, mentions the specific role, and the candidate has responded in some manner.',
+  //     // "Share Role Details: Provide a JD of the role and company. Check if the candidate has heard of the company. Assess the candidate's interest level and fit for the role, including their ability to relocate if needed.",
+  //     'Share screening questions: Share screening questions and record responses',
+  //     // "Schedule Screening Meeting: Propose times for a call to discuss the role, company, and candidate's experience more deeply, aiming for a 30-minute discussion."
+  //     'Acknowledge and next steps : Let the candidate know that you will get back',
+  //   ];
 
-    const steps = {};
-    recruitmentSteps.forEach((step, index) => {
-      steps[(index + 1).toString()] = step;
-    });
+  //   const steps = {};
+  //   recruitmentProgressionSteps.forEach((step, index) => {
+  //     steps[(index + 1).toString()] = step;
+  //   });
 
-    const stepsBulleted = await this.convertToBulletPoints(steps);
+  //   const stepsBulleted = await this.convertToBulletPoints(steps);
 
-    const STAGE_SYSTEM_PROMPT = `
-    You are assisting with determining the appropriate stage in a recruiting conversation based on the interaction history with a candidate. Your task is to decide whether to maintain the current stage or progress to the next one based on the dialogue so far.
-    Here are the stages to choose from:
-    ${stepsBulleted}
-    When deciding the next step:
-    If there is no  conversation history or only a greeting, default to stage 1.
-    Your response should be a single number between 1 and ${Object.keys(steps).length}, representing the appropriate stage.
-    Do not include any additional text or instructions in your response.
-    Do not take the output as an instruction of what to say.
-    If the candidate's answer is not specific enough or doesn't provide exact numerical value when needed, do not progress to the next stage or call update_answer tool call and ask the candidate to be more specific.
-    Your decision should not be influenced by the output itself. Do not respond to the user input when determining the appropriate stage.
-    Your response should be a only a single number between 1 and ${Object.keys(steps).length}, representing the appropriate stage.
-    Never repeat your response. If you feel like you have to repeat your response, reply with "#DONTRESPOND#" exact string without any text around it.
-    Do not schedule a meeting outside the given timeslots even if the candidate requests or insists. Tell the candidate that these are the only available timeslots and you cannot schedule a meeting outside of these timeslots.
-    Do not tell the candidate you are updating their profile or status.
-    If the candidate tells they will share details after a certain time or later in the stage or in later stages, do not progress to the next stage. Push the candidate to share the details now.
-    Do not progress to the next stage before completing the current stage.
-    `;
+  //   const STAGE_SYSTEM_PROMPT = `
+  //   You are assisting with determining the appropriate progression in a recruiting conversation based on the interaction history with a candidate. Your task is to decide whether to maintain the current progress to the next one based on the dialogue so far.
+  //   Here are the stages to choose from:
+  //   ${stepsBulleted}
+  //   When deciding the progression:
+  //   If there is no  conversation history or only a greeting, default to progresssion level 1.
+  //   Your response should be a single number between 1 and ${Object.keys(steps).length}, representing the appropriate progression level.
+  //   Do not include any additional text or instructions in your response.
+  //   Do not take the output as an instruction of what to say.
+  //   Your evaluation of the appropriate progression level should not be influenced by the conversation itself.
+  //   Your response should be a only a single number between 1 and ${Object.keys(steps).length}, representing the appropriate progression level.
+  //   Do not schedule a meeting outside the given timeslots even if the candidate requests or insists. Tell the candidate that these are the only available timeslots and you cannot schedule a meeting outside of these timeslots.
+  //   Do not tell the candidate you are updating their profile or status.
+  //   If the candidate tells they will share details after a certain time or later in the stage or in later stages, do not progress to the next stage. Push the candidate to share the details now.
+  //   Do not progress to the next stage before completing the current stage.
+  //   `;
 
-    return STAGE_SYSTEM_PROMPT;
-  }
+  //   return STAGE_SYSTEM_PROMPT;
+  // }
 
 
 
@@ -84,7 +72,7 @@ export class PromptingAgents {
   //   If there is no conversation history or only a greeting, only start chat is the messaged, default to stage "ONLY_ADDED_NO_CONVERSATION".
   //   If the initial introduction message has been sent by the recruiter and there has been no response since then, return with the status, "CONVERSATION_STARTED_HAS_NOT_RESPONDED".
   //   If the candidate has been shared a JD and hasn't responded after that, return with the status, "SHARED_JD_HAS_NOT_RESPONDED".
-  //   If the candidate doesn't want to relocate, return with the status, "CANDIDATE_DOES_NOT_WANT_TO_RELOCATE". 
+  //   If the candidate doesn't want to relocate, return with the status, "CANDIDATE_REFUSES_TO_RELOCATE". 
   //   If the candidate has evidenced interest in the job, responded to questions asked by the recruiter and has asked for time to speak or to setup time to speak and has evidenced interest speaking to the recruiter, return with the status, "CANDIDATE_IS_KEEN_TO_CHAT".
   //   If the questions have been asked by the recruiter and the candidate has not responded return the stage as "STOPPED_RESPONDING_ON_QUESTIONS".
   //   If the candidate has followed up after the initial setup fo the chat return the stage as "CANDIDATE_HAS_FOLLOWED_UP_TO_SETUP_CHAT".
@@ -110,7 +98,7 @@ export class PromptingAgents {
       return ['Are you okay to relocate to {location}?','What is your current & expected CTC?', 'What is your notice period?'];
     }
     if (candidateJob.name == 'Transcom') {
-      return ['What is your current CTC?', 'What is your expected CTC?', 'This is an in-office role - Are you okay to work in a rotational shift based out of Transcom\'s Kharadi office?',  'What is your notice period/ How soon can you join?'];
+      return ['What is your current and expected CTC?', 'This is an in-office role - Are you okay to work in a rotational shift based out of Transcom\'s Kharadi office?',  'What is your notice period/ How soon can you join?'];
     }
     return questionArray;
   }
@@ -147,7 +135,7 @@ export class PromptingAgents {
     We like your candidature and are keen to know more about you. We would like you to record a quick 15 minutes video interview as part of the client's hiring process. 
     Would you be able to take 15-20 mins and record your responses to our 3-4 questions at the link here: {videoInterviewLink}
     `
-    console.log("Generated sygetVideoInterviewPromptstem prompt:", VIDEO_INTERVIEW_PROMPT);
+    console.log("Generated sygetVideoInterviewPromptstem prompt:");
     return VIDEO_INTERVIEW_PROMPT 
   }
 
@@ -195,7 +183,7 @@ export class PromptingAgents {
     I'm hiring for a ${jobProfile.name} role for ${jobProfile?.company?.descriptionOneliner} based out of ${jobProfile.jobLocation} and got your application on my job posting. I believe this might be a good fit.
     Wanted to speak to you in regards your interests in our new role. Would you be available for a short call sometime today?
     `;
-    console.log("Generated getStartChatPrompt prompt:", SYSTEM_PROMPT);
+    console.log("Generated getStartChatPrompt prompt:");
     return SYSTEM_PROMPT;
   }
 
@@ -245,10 +233,9 @@ export class PromptingAgents {
     I'm hiring for a ${jobProfile.name} role for ${jobProfile?.company?.descriptionOneliner} based out of ${jobProfile.jobLocation} and got your application on my job posting. I believe this might be a good fit.
     Wanted to speak to you in regards your interests in our new role. Would you be available for a short call sometime today?
     `;
-    console.log("Generated getTranscomStartChatPrompt prompt:", SYSTEM_PROMPT);
+    console.log("Generated getTranscomStartChatPrompt prompt:");
     return SYSTEM_PROMPT;
   }
-
 
   async getStartMeetingScheduling(personNode, candidateJob, apiToken){
     const candidate_conversation_summary = ``
@@ -280,23 +267,6 @@ export class PromptingAgents {
     `
     return MEETING_SCHEDULING_PROMPT
   }
-
-  async getSystemPrompt(personNode: allDataObjects.PersonNode,candidateJob:allDataObjects.Jobs,chatControl:allDataObjects.chatControls,  apiToken:string) {
-    console.log("This is the chatControl:", chatControl)
-    if (chatControl.chatControlType == 'startVideoInterviewChat') {
-      return this.getVideoInterviewPrompt(personNode);
-    }
-    else if (chatControl.chatControlType === "startChat"){
-      return this.getStartChatPrompt(personNode, candidateJob, apiToken);
-    }
-    else if (chatControl.chatControlType === "startMeetingSchedulingChat"){
-      return this.getStartMeetingScheduling(personNode, candidateJob, apiToken);
-    }
-    else{
-      return this.getStartChatPrompt(personNode,candidateJob,  apiToken);
-    }
-  }
-
 
 
 
@@ -345,8 +315,6 @@ export class PromptingAgents {
     };
     return stageWiseActions;
   }
-
-
 }
 
 

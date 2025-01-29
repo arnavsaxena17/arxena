@@ -1,29 +1,23 @@
 import * as allDataObjects from '../../services/data-model-objects';
 import * as allGraphQLQueries from '../../graphql-queries/graphql-queries-chatbot';
 import { v4 } from 'uuid';
-import { axiosRequest } from '../../utils/arx-chat-agent-utils';
+import { axiosRequest, formatChat } from '../../utils/arx-chat-agent-utils';
 import axios from 'axios';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { graphQltoUpdateOneCandidate, workspacesWithOlderSchema } from 'src/engine/core-modules/candidate-sourcing/graphql-queries';
 import {FilterCandidates} from './filter-candidates';
 import { StageWiseClassification } from '../llm-agents/stage-classification';
-import { logging } from 'googleapis/build/src/apis/logging';
 import {Semaphore} from '../../utils/semaphore';
+import { ChatControls } from './chat-controls';
+import { StartChatProcesses } from './chat-control-processes/start-chat-processes';
 export class FetchAndUpdateCandidatesChatsWhatsapps {
   constructor(private readonly workspaceQueryService: WorkspaceQueryService) { }
-  async updateRecentCandidatesChatControls(apiToken: string) {
-    const candidateIdsForStartChatConversationClosed = await new FilterCandidates(this.workspaceQueryService).getRecentlyUpdatedCandidateIdsWithStatusConversationClosed(apiToken);
-    for (const candidateId of candidateIdsForStartChatConversationClosed) {
-      const chatControlType = 'startVideoInterviewChat';
-      const chatControl:allDataObjects.chatControls = {chatControlType:chatControlType};
-      await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).startChatControl(candidateId, chatControl, apiToken);
-    }
-    const candidateIdsForVideoInterviewsCompleted = await new FilterCandidates(this.workspaceQueryService).getCandidateIdsWithVideoInterviewCompleted(apiToken);
-    for (const candidateId of candidateIdsForVideoInterviewsCompleted) {
-      const chatControlType = 'startMeetingSchedulingChat';
-      const chatControl:allDataObjects.chatControls = {chatControlType:chatControlType};
-      await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).startChatControl(candidateId, chatControl, apiToken);
-    }
+  async makeUpdatesForNewChats(apiToken:string){
+    console.log("making updates to candidates based on the rchats they have made")
+    const { candidateIds, jobIds } = await new StartChatProcesses().getRecentCandidateIdsToMakeUpdatesonChats(apiToken);
+    console.log("Received a total of ", candidateIds.length, " candidates to make updates for based on the chats that they have done");
+    await this.updateCandidatesWithChatCount(candidateIds, apiToken);
+    await this.processCandidatesChatsGetStatuses(apiToken,jobIds, candidateIds);
   }
 
   async updateCandidatesWithChatCount(candidateIds: string[] | null = null, apiToken: string) {
@@ -42,43 +36,33 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
       try {
         const response = await axiosRequest(graphqlQueryObj, apiToken);
         console.log('Candidate chat count updated successfully:', response.data);
-        console.log('Candidate chat count updated successfully');
       } catch (error) {
         console.log('Error in updating candidate chat count:', error);
       }
     }
   }
 
-
-  async makeUpdatesForNewChats(apiToken:string){
-    const candidateIds = await new FilterCandidates(this.workspaceQueryService).getRecentCandidateIds(apiToken);
-    await this.updateCandidatesWithChatCount(candidateIds, apiToken);
-    await this.processCandidatesChatsGetStatuses(apiToken, candidateIds);
-
-  }
-
-
-  async processCandidatesChatsGetStatuses(apiToken: string, candidateIds: string[] | null = null, currentWorkspaceMemberId: string | null = null) {
+  async processCandidatesChatsGetStatuses(apiToken: string, jobIds: string[], candidateIds: string[] | null = null, currentWorkspaceMemberId: string | null = null) {
     console.log('Processing candidates chats to get statuses with start chat true');
     let allCandidates = await new FilterCandidates(this.workspaceQueryService).fetchAllCandidatesWithSpecificChatControl('allStartedAndStoppedChats', apiToken);
     if (candidateIds && Array.isArray(candidateIds)) {
       allCandidates = allCandidates.filter(candidate => candidateIds.includes(candidate.id));
     }
     console.log('Fetched', allCandidates?.length, ' candidates with chatControl allStartedAndStoppedChats');
-  
     const semaphore = new Semaphore(10); // Allow 10 concurrent requests
-    const getCurrentStageInstance = new StageWiseClassification(this.workspaceQueryService);
-  
     const processWithSemaphore = async (candidate: any) => {
       await semaphore.acquire();
       try {
         const candidateId = candidate?.id;
+        const jobId = candidateIds ? jobIds[candidateIds.indexOf(candidateId)] : '';
         const whatsappMessages = await new FilterCandidates(this.workspaceQueryService).fetchAllWhatsappMessages(candidateId, apiToken);
         
         // Get the chat status and formatted chat in parallel
         const [candidateStatus] = await Promise.all([
-          getCurrentStageInstance.getChatStageFromChatHistory(
+          new StageWiseClassification(this.workspaceQueryService).getChatStageFromChatHistory(
             whatsappMessages, 
+            candidateId,
+            jobId || '', // Ensure jobId is a string
             currentWorkspaceMemberId, 
             apiToken
           ) as Promise<allDataObjects.allStatuses>
@@ -118,7 +102,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
   
       try {
         const response = await axiosRequest(graphqlQueryObj, apiToken);
-        console.log('Candidate chat status updated successfully:', response.data);
+        console.log('Candidate chat status updated successfully:', response.data, "with the status of ::", result.candidateStatus);
       } catch (error) {
         console.log('Error in updating candidate chat count:', error);
       }
@@ -127,116 +111,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
     await Promise.all(updatePromises);
     return validResults;
   }
-  async createVideoInterviewForCandidate(candidateId: string, apiToken: string) {
-    try {
-      const candidateObj: allDataObjects.CandidateNode = await new FilterCandidates(this.workspaceQueryService).fetchCandidateByCandidateId(candidateId, apiToken);
-      const jobId = candidateObj?.jobs?.id;
-      console.log('jobId:', jobId);
-      const interviewObj = await new FilterCandidates(this.workspaceQueryService).getInterviewByJobId(jobId, apiToken);
-      console.log('interviewObj:::', interviewObj);
-      const videoInterviewId = v4();
-      const graphqlQueryObj = JSON.stringify({
-        query: allGraphQLQueries.graphqlQueryToCreateVideoInterview,
-        variables: {
-          input: {
-            id: videoInterviewId,
-            candidateId: candidateObj?.id,
-            name: 'Interview - ' + candidateObj?.name + ' for ' + candidateObj?.jobs?.name,
-            videoInterviewTemplateId: interviewObj?.id,
-            interviewStarted: false,
-            interviewCompleted: false,
-            interviewLink: {
-              url: '/video-interview/' + videoInterviewId,
-              label: '/video-interview/' + videoInterviewId,
-            },
-            interviewReviewLink: {
-              url: '/video-interview-review/' + candidateObj?.id,
-              label: '/video-interview-review/' + candidateObj?.id,
-            },
-            position: 'first',
-          },
-        },
-      });
 
-      const response = await axiosRequest(graphqlQueryObj, apiToken);
-      if (response.data.errors) {
-        console.log('Error in response for create interview for candidate:', response?.data?.errors);
-      } else {
-        console.log('Video Interview created successfully');
-      }
-
-      return response.data;
-    } catch (error) {
-      console.log('Error in creating video interview:', error.message);
-    }
-  }
-
-  async formatChat(messages) {
-    console.log("Formatting chat");
-
-    let formattedChat = '';
-    let messageCount = 1;
-    messages.forEach(message => {
-      const timestamp = new Date(message.createdAt).toLocaleString();
-      let sender = '';
-      if (message.name === 'candidateMessage') {
-        sender = 'Candidate';
-      } else if (message.name === 'botMessage' || message.name === 'recruiterMessage') {
-        sender = 'Recruiter';
-      } else {
-        sender = message.name;
-      }
-
-      formattedChat += `[${timestamp}] ${sender}:\n`;
-      formattedChat += `${message.message}\n\n`;
-      messageCount++;
-    });
-
-    return formattedChat;
-  }
-
-
-  async setupVideoInterviewLinks(peopleEngagementStartVideoInterviewChatArr:allDataObjects.PersonNode[], candidateJob:allDataObjects.Jobs,chatControl: allDataObjects.chatControls,  apiToken:string) {
-    if (chatControl.chatControlType === 'startVideoInterviewChat') {
-      let skippedCount = 0;
-      let createdCount = 0;
-      for (const personNode of peopleEngagementStartVideoInterviewChatArr) {
-        const candidateNode = personNode?.candidates?.edges[0]?.node;
-        const videoInterview = candidateNode?.videoInterview?.edges[0]?.node;
-        if (!videoInterview || !videoInterview.interviewLink?.url) {
-          await this.createVideoInterviewForCandidate(candidateNode.id, apiToken);
-          createdCount++;
-        } else {
-          skippedCount++;
-        }
-      }
-      console.log(`Total candidates skipped for video interview creation: ${skippedCount}`);
-      console.log(`Total video interviews created: ${createdCount}`);
-    }
-  }
-
-  async startChatControl(candidateId: string, chatControl: allDataObjects.chatControls, apiToken: string) {
-    const graphqlVariables = {
-      idToUpdate: candidateId,
-      input: {
-        [chatControl.chatControlType]: true,
-      },
-    };
-    const graphqlQueryObj = JSON.stringify({
-      query: graphQltoUpdateOneCandidate,
-      variables: graphqlVariables,
-    });
-
-    const response = await axiosRequest(graphqlQueryObj, apiToken);
-    if (response.data.errors) {
-      console.log('Error in startChat:', response.data.errors);
-    }
-    console.log('Response from create startChat', response.data.data);
-    return response.data;
-  }
-
-
-  
   async createAndUpdateWhatsappMessage(candidateProfileObj: allDataObjects.CandidateNode, userMessage: allDataObjects.whatappUpdateMessageObjType, apiToken: string) {
     console.log('This is the message being updated in the database ', userMessage?.messages[0]?.content);
     const createNewWhatsappMessageUpdateVariables = {
@@ -320,7 +195,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
     }
   }
 
-  async updateCandidateEngagementDataInTable(whatappUpdateMessageObj: allDataObjects.whatappUpdateMessageObjType,candidateJob:allDataObjects.Jobs,  apiToken:string, isAfterMessageSent: boolean = false) {
+  async updateCandidateEngagementDataInTable(whatappUpdateMessageObj: allDataObjects.whatappUpdateMessageObjType, apiToken:string, isAfterMessageSent: boolean = false) {
     let candidateProfileObj = whatappUpdateMessageObj.messageType !== 'botMessage' ? await new FilterCandidates(this.workspaceQueryService).getCandidateInformation(whatappUpdateMessageObj,apiToken) : whatappUpdateMessageObj.candidateProfile;
     if (candidateProfileObj.name === '') return;
     console.log('Candidate information retrieved successfully');
@@ -330,8 +205,6 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
     if (!updateCandidateStatusObj) return;
     return { status: 'success', message: 'Candidate engagement status updated successfully' };
   }
-
-
 
   async removeChatsByPhoneNumber(phoneNumberFrom: string, apiToken: string) {
     const personObj: allDataObjects.PersonNode = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPhoneNumber(phoneNumberFrom, apiToken);
@@ -356,6 +229,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
   async updateCandidateProfileStatus(candidateProfileObj: allDataObjects.CandidateNode, whatappUpdateMessageObj: allDataObjects.whatappUpdateMessageObjType, apiToken: string) {
     const candidateStatus = whatappUpdateMessageObj.messageType;
     console.log('Updating the candidate status::', candidateStatus);
+    console.log('Updating the candidate api token::', apiToken);
     const candidateId = candidateProfileObj?.id;
     console.log('This is the candidateID for which we are trying to update the status:', candidateId);
     const updateCandidateObjectVariables = { idToUpdate: candidateId, input: { status: candidateStatus } };

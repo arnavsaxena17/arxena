@@ -7,6 +7,7 @@ import { HumanLikeLLM } from './human-or-bot-classification'
 import { Transformations } from '../candidate-engagement/transformations';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { PromptingAgents } from './prompting-agents';
+import { ChatControls } from '../candidate-engagement/chat-controls';
 
 export class OpenAIArxMultiStepClient {
   private readonly personNode: allDataObjects.PersonNode;
@@ -17,9 +18,9 @@ export class OpenAIArxMultiStepClient {
   }
   async createCompletion(mostRecentMessageArr: allDataObjects.ChatHistoryItem[],  candidateJob:allDataObjects.Jobs,chatControl:allDataObjects.chatControls,apiToken:string,  isChatEnabled: boolean = true ) {
     try{
-      const newSystemPrompt = await new PromptingAgents(this.workspaceQueryService).getSystemPrompt(this.personNode,candidateJob, chatControl,apiToken);
+      const newSystemPrompt = await new ChatControls(this.workspaceQueryService).getSystemPrompt(this.personNode,candidateJob, chatControl,apiToken);
       const updatedMostRecentMessagesBasedOnNewSystemPrompt:allDataObjects.ChatHistoryItem[] = await new Transformations().updateMostRecentMessagesBasedOnNewSystemPrompt(mostRecentMessageArr, newSystemPrompt);
-      const tools = await new ToolCallingAgents(this.workspaceQueryService).getTools(candidateJob, chatControl);
+      const tools = await new ChatControls(this.workspaceQueryService).getTools(candidateJob, chatControl);
       const responseMessage = await this.getHumanLikeResponseMessageFromLLM(updatedMostRecentMessagesBasedOnNewSystemPrompt, tools, apiToken)
       console.log('BOT_MESSAGE in at::', new Date().toString(), ' ::: ' ,JSON.stringify(responseMessage));
       if (responseMessage){
@@ -94,7 +95,7 @@ export class OpenAIArxMultiStepClient {
         const responseFromFunction = await functionToCall(functionArgs, this.personNode,candidateJob, chatControl,apiToken);
         mostRecentMessageArr.push({ tool_call_id: toolCall.id, role: 'tool', name: functionName, content: responseFromFunction });
       }
-      const tools = await new ToolCallingAgents(this.workspaceQueryService).getTools(candidateJob,chatControl);
+      const tools = await new ChatControls(this.workspaceQueryService).getTools(candidateJob,chatControl);
       // @ts-ignore
       const response = await openAIclient.chat.completions.create({ model: modelName, messages: mostRecentMessageArr, tools: tools, tool_choice: 'auto' });
       console.log('BOT_MESSAGE in runCandidateFacingAgentsAlongWithToolCalls_stage2 :', "at::", new Date().toString(), ' ::: ' ,JSON.stringify(responseMessage));

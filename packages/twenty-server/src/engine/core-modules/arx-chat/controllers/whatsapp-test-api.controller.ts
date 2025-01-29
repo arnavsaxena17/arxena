@@ -49,20 +49,7 @@ export class WhatsappTestAPI {
     new FacebookWhatsappChatApi(this.workspaceQueryService).sendWhatsappTextMessage(sendTextMessageObj, apiToken);
     return { status: 'success' };
   }
-  // @Post('uploadFile')
-  // @UseGuards(JwtAuthGuard)
-  // async uploadFileToFBWAAPI(@Req() request: any): Promise<object> {
-  //   const apiToken = request.headers.authorization.split(' ')[1];
 
-  //   console.log('upload file to whatsapp api');
-  //   const requestBody = request?.body;
-  //   const filePath = requestBody?.filePath;
-  //   // const chatControl = 'startChat';
-  //   const chatControl:allDataObjects.chatControls = {chatControlType:"startChat"};
-
-  //   const response = await new FacebookWhatsappChatApi(this.workspaceQueryService).uploadFileToWhatsApp(filePath, chatControl,apiToken);
-  //   return response || {}; 
-  // }
 
   @Post('sendAttachment')
   @UseGuards(JwtAuthGuard)

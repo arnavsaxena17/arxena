@@ -6,13 +6,27 @@ export type ChatRole = 'system' | 'user' | 'tool' | 'assistant';
 
 export const statusesArray = ['SCREENING', "INTERESTED", "NOT_INTERESTED", "NOT_FIT",'CV_SENT',"CV_RECEIVED",'RECRUITER_INTERVIEW','CLIENT_INTERVIEW','NEGOTIATION'] as const;
 
+export type WhatsappMessageType = "messages" | "media"
+export interface ChatControlNode {
+  chatControlType: string;
+  nextNodes: string[];
+  conditions?: {
+    nextNode: string;
+    evaluator: (candidate: CandidateNode) => boolean;
+  }[];
+}
+
+export interface ChatFlowConfig {
+  [key: string]: ChatControlNode;
+}
+
+
 
 export const allStatusesArray: [string, ...string[]] = [
   "ONLY_ADDED_NO_CONVERSATION",
   "CONVERSATION_STARTED_HAS_NOT_RESPONDED",
   "SHARED_JD_HAS_NOT_RESPONDED",
-  "CANDIDATE_DOES_NOT_WANT_TO_RELOCATE",
-  "CANDIDATE_STOPPED_RESPONDING",
+  "CANDIDATE_REFUSES_TO_RELOCATE",
   "CANDIDATE_IS_KEEN_TO_CHAT",
   "CANDIDATE_HAS_FOLLOWED_UP_TO_SETUP_CHAT",
   "CANDIDATE_IS_RELUCTANT_TO_DISCUSS_COMPENSATION",
@@ -194,6 +208,7 @@ export interface videoInterviewEdge {
 }
 
 export interface videoInterviewNode {
+  updatedAt: string | number | Date;
   id: string;
   interviewLink: InterviewLink;
   interviewCompleted: boolean;
@@ -444,6 +459,7 @@ export const emptyCandidateProfileObj: CandidateNode = {
           interviewLink: {
             url: '',
           },
+          updatedAt: '',
           interviewCompleted: false,
           interviewStarted: false
         },

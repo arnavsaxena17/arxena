@@ -7,7 +7,7 @@ import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modific
 import { In } from 'typeorm';
 import { google } from 'googleapis';
 import { CallAndSMSProcessingService } from './call-sms-processing';
-import { AttachmentProcessingService } from '../arx-chat/services/candidate-engagement/attachment-processing';
+import { AttachmentProcessingService } from '../arx-chat/services/candidate-engagement/attachment-processes';
 import { workspacesWithOlderSchema } from '../candidate-sourcing/graphql-queries';
 // const workspacesToIgnore = ["20202020-1c25-4d02-bf25-6aeccf7ea419","3b8e6458-5fc1-4e63-8563-008ccddaa6db"];
 

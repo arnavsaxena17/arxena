@@ -25,9 +25,6 @@ export class Transformations {
       };
       return updatedChatHistoryObj;
   }
-
-
-
   async updateMostRecentMessagesBasedOnNewSystemPrompt(
     mostRecentMessageArr: allDataObjects.ChatHistoryItem[],
     newSystemPrompt: string
