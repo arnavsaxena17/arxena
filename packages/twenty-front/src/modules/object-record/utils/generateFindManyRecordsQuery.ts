@@ -16,32 +16,38 @@ export const generateFindManyRecordsQuery = ({
   objectMetadataItems: ObjectMetadataItem[];
   recordGqlFields?: RecordGqlOperationGqlRecordFields;
   computeReferences?: boolean;
-}) => gql`
-query FindMany${capitalize(
-  objectMetadataItem.namePlural,
-)}($filter: ${capitalize(
-  objectMetadataItem.nameSingular,
-)}FilterInput, $orderBy: [${capitalize(
-  objectMetadataItem.nameSingular,
-)}OrderByInput], $lastCursor: String, $limit: Int) {
-  ${
-    objectMetadataItem.namePlural
-  }(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor){
-    edges {
-      node ${mapObjectMetadataToGraphQLQuery({
-        objectMetadataItems,
-        objectMetadataItem,
-        recordGqlFields,
-        computeReferences,
-      })}
-      cursor
+}) => {
+  // console.log('objectMetadataItem:', objectMetadataItem);
+  // console.log('objectMetadataItem:', objectMetadataItems);
+  // console.log('recordGqlFields:', recordGqlFields);
+
+  return gql`
+    query FindMany${capitalize(
+      objectMetadataItem.namePlural,
+    )}($filter: ${capitalize(
+      objectMetadataItem.nameSingular,
+    )}FilterInput, $orderBy: [${capitalize(
+      objectMetadataItem.nameSingular,
+    )}OrderByInput], $lastCursor: String, $limit: Int) {
+      ${
+        objectMetadataItem.namePlural
+      }(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor){
+        edges {
+          node ${mapObjectMetadataToGraphQLQuery({
+            objectMetadataItems,
+            objectMetadataItem,
+            recordGqlFields,
+            computeReferences,
+          })}
+          cursor
+        }
+        pageInfo {
+          ${isAggregationEnabled(objectMetadataItem) ? 'hasNextPage' : ''}
+          startCursor
+          endCursor
+        }
+        ${isAggregationEnabled(objectMetadataItem) ? 'totalCount' : ''}
+      }
     }
-    pageInfo {
-      ${isAggregationEnabled(objectMetadataItem) ? 'hasNextPage' : ''}
-      startCursor
-      endCursor
-    }
-    ${isAggregationEnabled(objectMetadataItem) ? 'totalCount' : ''}
-  }
-}
-`;
+  `;
+};

@@ -25,6 +25,7 @@ export async function getJobIds(apiToken: string): Promise<string[]> {
                 edges {
                     node {
                         id
+                        isActive
                     }
                 }
             }

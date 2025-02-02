@@ -141,13 +141,21 @@ async getCalendarEvents(@Req() request: any): Promise<object> {
     return response || {};
   }
 
-
-
-
-
-
-
-
+  @Post('send-mail-to-self')
+  @UseGuards(JwtAuthGuard)
+  async sendEmailToSelf(@Req() request: any): Promise<object> {
+    const apiToken = request.headers.authorization.split(' ')[1];
+    const emailData: GmailMessageData = {
+      sendEmailFrom: allDataObjects.recruiterProfile?.email,
+      sendEmailTo: allDataObjects.recruiterProfile?.email,
+      subject: request.body?.subject || 'Email from the recruiter',
+      message: request.body?.message || 'This is a test email',
+      attachments: request.body.attachments || [],
+    };
+    console.log("This si the email data to send attachemnts:", emailData)
+    const response = await new SendEmailFunctionality().sendEmailWithAttachmentFunction(emailData, apiToken);
+    return response || {};
+  }
 
   @Post('send-calendar-invite')
   @UseGuards(JwtAuthGuard)

@@ -646,6 +646,7 @@ export interface Jobs {
   googleSheetId?: string;
   name: string;
   id: string;
+  isActive: boolean;
   recruiterId: string;
   jobLocation?: string;
   arxenaSiteId?: string;

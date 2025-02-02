@@ -69,10 +69,7 @@ export const RecordIndexContainer = ({ createRecord, recordIndexId, objectNamePl
   });
 
   const { columnDefinitions, filterDefinitions, sortDefinitions } = useColumnDefinitionsFromFieldMetadata(objectMetadataItem);
-  console.log("columnDefinitions:", columnDefinitions);
-  console.log("filterDefinitions:", filterDefinitions);
-  console.log("sortDefinitions:", sortDefinitions);
-
+  
   const setRecordIndexFilters = useSetRecoilState(recordIndexFiltersState);
   const setRecordIndexSorts = useSetRecoilState(recordIndexSortsState);
   const setRecordIndexIsCompactModeActive = useSetRecoilState(recordIndexIsCompactModeActiveState);

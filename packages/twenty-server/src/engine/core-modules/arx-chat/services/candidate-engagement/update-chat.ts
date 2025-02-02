@@ -10,6 +10,7 @@ import { StageWiseClassification } from '../llm-agents/stage-classification';
 import {Semaphore} from '../../utils/semaphore';
 import { ChatControls } from './chat-controls';
 import { StartChatProcesses } from './chat-control-processes/start-chat-processes';
+import {ArxChatEndpoint} from 'src/engine/core-modules/arx-chat/controllers/arx-chat-agent.controller';
 export class FetchAndUpdateCandidatesChatsWhatsapps {
   constructor(private readonly workspaceQueryService: WorkspaceQueryService) { }
   async makeUpdatesForNewChats(apiToken:string){
@@ -18,7 +19,48 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
     console.log("Received a total of ", candidateIds.length, " candidates to make updates for based on the chats that they have done");
     await this.updateCandidatesWithChatCount(candidateIds, apiToken);
     await this.processCandidatesChatsGetStatuses(apiToken,jobIds, candidateIds);
+    // await this.processCandidatesStartMeetingSchedulingChat(apiToken,jobIds, candidateIds);
   }
+  async checkScheduledClientMeetingsCount(jobId, apiToken:string){
+    const scheduledClientMeetings = await new FilterCandidates(this.workspaceQueryService).fetchScheduledClientMeetings(jobId, apiToken);
+    const scheduledClientMeetingsCount = scheduledClientMeetings.length;
+    const today = new Date();
+    const dayAfterTomorrow = new Date(today);
+    dayAfterTomorrow.setDate(today.getDate() + 2);
+
+    const countScheduledMeetings = scheduledClientMeetings.filter(meeting => {
+      const meetingDate = new Date(meeting.interviewTime.date);
+      return meetingDate.toDateString() === dayAfterTomorrow.toDateString();
+    }).length;
+
+    console.log(`Number of scheduled meetings for the day after tomorrow: ${countScheduledMeetings}`);
+
+    // Send candidate details to email
+    const candidateDetails = scheduledClientMeetings.map(meeting => ({
+      candidateId: meeting.candidateId,
+      candidateName: meeting.candidateName,
+      interviewTime: meeting.interviewTime,
+    }));
+    const candidateIds = scheduledClientMeetings.map(meeting => meeting.candidateId);
+    await this.createShortlist(candidateIds, apiToken);
+    return scheduledClientMeetings;
+
+  }
+
+
+  async createShortlist(candidateIds: string[], apiToken: string) {
+    const url = process.env.ENV_NODE === 'production' ? 'https://arxena.com/create-shortlist' : 'http://127.0.0.1:5050/create-shortlist';
+    console.log("This is the url:", url);
+    console.log("going to create create-shortlist by candidate Ids",candidateIds)
+    const response = await axios.post(url, { candidateIds: candidateIds }, {
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer ' + apiToken }
+    });
+
+    console.log("Response from create-shortlist",response.data);
+    return response.data;
+
+  }
+
 
   async updateCandidatesWithChatCount(candidateIds: string[] | null = null, apiToken: string) {
     let allCandidates = await new FilterCandidates(this.workspaceQueryService).fetchAllCandidatesWithSpecificChatControl('startChat', apiToken);
@@ -59,7 +101,7 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
         
         // Get the chat status and formatted chat in parallel
         const [candidateStatus] = await Promise.all([
-          new StageWiseClassification(this.workspaceQueryService).getChatStageFromChatHistory(
+          new StageWiseClassification(this.workspaceQueryService).getChatStageFromChatHistory (
             whatsappMessages, 
             candidateId,
             jobId || '', // Ensure jobId is a string

@@ -172,7 +172,6 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
     {
       relation: {
         fromDescription: null,
-        // "fromIcon": "IconBuilding",
         fromLabel: 'Member Type',
         fromName: 'workspaceMemberType',
         fromObjectMetadataId: objectsNameIdMap.person,
@@ -187,7 +186,6 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
     {
       relation: {
         fromDescription: null,
-        // "fromIcon": "IconBuilding",
         fromLabel: 'WhatsappMessages',
         fromName: 'whatsappMessages',
         fromObjectMetadataId: objectsNameIdMap.person,
@@ -202,7 +200,6 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
     {
       relation: {
         fromDescription: null,
-        // "fromIcon": "IconBuilding",
         fromLabel: 'WhatsappMessages',
         fromName: 'whatsappMessages',
         fromObjectMetadataId: objectsNameIdMap.workspaceMember,
@@ -216,7 +213,6 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
     {
       relation: {
         fromDescription: null,
-        // "fromIcon": "IconBuilding",
         fromLabel: 'WhatsappMessages',
         fromName: 'whatsappMessages',
         fromObjectMetadataId: objectsNameIdMap.job,
@@ -227,26 +223,23 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
         toName: 'jobs',
       },
     },
-
     {
       relation: {
         fromDescription: null,
-        // "fromIcon": "IconBuilding",
-        fromLabel: 'Jobs',
-        fromName: 'jobs',
-        fromObjectMetadataId: objectsNameIdMap.clientContact,
+        fromLabel: 'Client Contact',
+        fromName: 'clientContact',
+        fromObjectMetadataId: objectsNameIdMap.job,
         relationType: 'ONE_TO_MANY',
-        toObjectMetadataId: objectsNameIdMap.job,
+        toObjectMetadataId: objectsNameIdMap.clientContact,
         toDescription: '',
-        toLabel: 'ClientContact',
-        toName: 'clientContact',
+        toLabel: 'Job',
+        toName: 'job',
       },
     },
     {
       relation: {
         fromDescription: null,
-        // "fromIcon": "IconBuilding",
-        fromLabel: 'ClientContact',
+        fromLabel: 'Client Contact',
         fromName: 'clientContact',
         fromObjectMetadataId: objectsNameIdMap.person,
         relationType: 'ONE_TO_MANY',
@@ -257,6 +250,45 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
       },
     },
 
+    {
+      relation: {
+        fromDescription: null,
+        fromLabel: 'Client Interview',
+        fromName: 'clientInterview',
+        fromObjectMetadataId: objectsNameIdMap.clientContact,
+        relationType: 'ONE_TO_MANY',
+        toObjectMetadataId: objectsNameIdMap.clientInterview,
+        toDescription: '',
+        toLabel: 'Client Contact',
+        toName: 'clientContact',
+      },
+    },
+    {
+      relation: {
+        fromDescription: null,
+        fromLabel: 'Client Interview',
+        fromName: 'clientInterview',
+        fromObjectMetadataId: objectsNameIdMap.candidate,
+        relationType: 'ONE_TO_MANY',
+        toObjectMetadataId: objectsNameIdMap.clientInterview,
+        toDescription: '',
+        toLabel: 'Candidate',
+        toName: 'candidate',
+      },
+    },
+    {
+      relation: {
+        fromDescription: null,
+        fromLabel: 'Client Interview',
+        fromName: 'clientInterview',
+        fromObjectMetadataId: objectsNameIdMap.job,
+        relationType: 'ONE_TO_MANY',
+        toObjectMetadataId: objectsNameIdMap.clientInterview,
+        toDescription: '',
+        toLabel: 'Job',
+        toName: 'job',
+      },
+    },
     {
       relation: {
         fromDescription: null,
@@ -345,7 +377,7 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
         fromObjectMetadataId: objectsNameIdMap.job,
         relationType: 'ONE_TO_MANY',
         toObjectMetadataId: objectsNameIdMap.videoInterviewResponse,
-        toIcon: 'IconQuestionMark',
+        toIcon: 'IconScan',
         toDescription: '',
         toLabel: 'Job',
         toName: 'job',
@@ -459,20 +491,6 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
     relation: {
       fromDescription: null,
       // "fromIcon": "IconBuilding",
-      fromLabel: 'ClientInterviews',
-      fromName: 'clientInterviews',
-      fromObjectMetadataId: objectsNameIdMap.candidate,
-      relationType: 'ONE_TO_MANY',
-      toObjectMetadataId: objectsNameIdMap.clientInterview,
-      toDescription: '',
-      toLabel: 'Candidate',
-      toName: 'candidate',
-    },
-  },
-  {
-    relation: {
-      fromDescription: null,
-      // "fromIcon": "IconBuilding",
       fromLabel: 'CVsents',
       fromName: 'cvSents',
       fromObjectMetadataId: objectsNameIdMap.candidate,
@@ -528,6 +546,20 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
         toName: 'job',
       },
     },
+    // {
+    //   relation: {
+    //     fromDescription: null,
+    //     // "fromIcon": "IconBuilding",
+    //     fromLabel: 'Interview Schedule',
+    //     fromName: 'interviewSchedule',
+    //     fromObjectMetadataId: objectsNameIdMap.clientContact,
+    //     relationType: 'ONE_TO_MANY',
+    //     toObjectMetadataId: objectsNameIdMap.interviewSchedule,
+    //     toDescription: '',
+    //     toLabel: 'Client Contact',
+    //     toName: 'clientContact',
+    //   },
+    // },
     {
       relation: {
         fromDescription: null,

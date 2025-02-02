@@ -169,10 +169,11 @@ export class ToolCallingAgents {
   async scheduleMeeting(inputs: any, candidateProfileDataNodeObj: allDataObjects.PersonNode, candidateJob:allDataObjects.Jobs,  apiToken:string) {
     console.log('Function Called:  candidateProfileDataNodeObj:any', candidateProfileDataNodeObj);
     const gptInputs = inputs?.inputs;
+    console.log('GPT Inputs:any', gptInputs);
 
     console.log('Function Called: scheduleMeeting');
     const calendarEventObj: CalendarEventType = {
-      summary: gptInputs?.summary || 'Meeting with the candidate',
+      summary: `${candidateProfileDataNodeObj?.name.firstName} & ${candidateProfileDataNodeObj.candidates.edges[0].node.jobs.company.name}`  ||gptInputs?.summary || 'Meeting with the candidate',
       typeOfMeeting: gptInputs?.typeOfMeeting || 'Virtual',
       location: gptInputs?.location || 'Google Meet',
       description: gptInputs?.description || 'This meeting is scheduled to discuss the role and the company.',
@@ -188,6 +189,33 @@ export class ToolCallingAgents {
       },
     };
     await new CalendarEmailService().createNewCalendarEvent(calendarEventObj, apiToken);
+    // other tasks apart from calendar invite like saving this in the database
+
+    const interviewTime = [
+      {
+      date: new Date(gptInputs?.startDateTime).toISOString().split('T')[0],
+      slots: [
+        {
+        startTime: new Date(gptInputs?.startDateTime).toISOString().split('T')[1].substring(0, 5),
+        endTime: new Date(gptInputs?.endDateTime).toISOString().split('T')[1].substring(0, 5),
+        },
+      ],
+      },
+    ];
+
+    const updateClientInterviewVariables = {
+      idToUpdate: candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.id,
+      input: {
+      interviewTime: interviewTime,
+      // jobId : candidateJob.id
+      },
+    };
+    const graphqlQueryObj = JSON.stringify({
+      query:allGraphQLQueries.graphqlToUpdateOneClientInterview,
+      variables: updateClientInterviewVariables,
+    });
+
+    await axiosRequest(graphqlQueryObj, apiToken);
     return 'scheduleMeeting the candidate meeting.';
   }
 
@@ -222,6 +250,50 @@ export class ToolCallingAgents {
         {
           type: 'function',
           function: {
+            name: 'update_candidate_profile',
+            description: 'Update the candidate profile',
+            parameters: {
+              type: 'object',
+              properties: {
+                candidateStatus: {
+                  type: 'string',
+                  description: 'The status of the candidate',
+                },
+              },
+              required: ['candidateStatus'],
+            },
+          },
+        },
+        {
+          type: 'function',
+          function: {
+            name: 'update_answer',
+            description: "Update the candidate's answer based on the question asked",
+            parameters: {
+              type: 'object',
+              properties: {
+                question: {
+                  type: 'string',
+                  description: 'The question asked',
+                },
+                answer: {
+                  type: 'string',
+                  description: 'The answer provided by the candidate',
+                },
+              },
+              required: ['question', 'answer'],
+            },
+          },
+        },
+      ];
+    return tools;
+  }
+  async getStartMeetingSchedulingTools(candidateJob:allDataObjects.Jobs) {
+    let tools;
+      tools = [
+        {
+          type: 'function',
+          function: {
             name: 'schedule_meeting',
             description: 'Schedule a meeting with the candidate',
             parameters: {
@@ -229,7 +301,7 @@ export class ToolCallingAgents {
               properties: {
                 inputs: {
                   type: 'object',
-                  description: 'Details about the meeting',
+                  description: 'Name of the candidate + Client Name',
                   properties: {
                     summary: {
                       type: 'string',
@@ -284,41 +356,20 @@ export class ToolCallingAgents {
         {
           type: 'function',
           function: {
-            name: 'update_candidate_profile',
-            description: 'Update the candidate profile',
+            name: 'create_reminder',
+            description: 'Create a reminder for the candidate',
             parameters: {
               type: 'object',
               properties: {
-                candidateStatus: {
+                reminderDuration: {
                   type: 'string',
-                  description: 'The status of the candidate',
+                  description: 'Number of hours for the reminder.',
                 },
               },
-              required: ['candidateStatus'],
+              required: ['reminderDuration', 'hours'],
             },
           },
-        },
-        {
-          type: 'function',
-          function: {
-            name: 'update_answer',
-            description: "Update the candidate's answer based on the question asked",
-            parameters: {
-              type: 'object',
-              properties: {
-                question: {
-                  type: 'string',
-                  description: 'The question asked',
-                },
-                answer: {
-                  type: 'string',
-                  description: 'The answer provided by the candidate',
-                },
-              },
-              required: ['question', 'answer'],
-            },
-          },
-        },
+        },  
       ];
     return tools;
   }

@@ -113,6 +113,7 @@ export class GoogleCalendarService {
    * @param {google.auth.OAuth2} auth An authorized OAuth2 client.
    */
   async createEvent(auth, calendarEventData: CalendarEventType): Promise<object> {
+    console.log("Going to create calendar event with details::", calendarEventData);
     if (!auth?.credentials?.refresh_token) {
       throw new Error("No access token found");
     }
@@ -138,6 +139,8 @@ export class GoogleCalendarService {
         };
       }
 
+
+
       calendar.events.insert(
         {
           auth: auth,
@@ -151,7 +154,8 @@ export class GoogleCalendarService {
             console.log( "There was an error contacting the Calendar service: " + err );
             return;
           }
-          console.log("Event created: %s", event.htmlLink);
+          console.log("Event created: %s", JSON.stringify(event));
+          console.log("Event created: htmlLink%s", event.htmlLink);
         }
       );
       return { status: "Event created successfully" };

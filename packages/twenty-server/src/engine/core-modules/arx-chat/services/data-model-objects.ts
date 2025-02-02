@@ -360,6 +360,7 @@ export interface Jobs {
   jobCode:string;
   company: company;
   createdAt?: string;
+  interviewSchedule?: any;
   isActive: boolean;
   whatsappMessages: WhatsAppMessages;
 }

@@ -29,12 +29,7 @@ export const useSendCVsToClient = ({
           const response = await axios.post(
             url,
             { candidateIds },
-            {
-              headers: {
-                Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
-                'Content-Type': 'application/json',
-              },
-            }
+            { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}`, 'Content-Type': 'application/json', }, }
           )
 
 

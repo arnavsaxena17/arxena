@@ -335,54 +335,63 @@ export const InterviewPage: React.FC<InterviewPageProps> = ({ InterviewData, que
     if (recordedChunks.length) {
       setError(null);
       setSubmitting(true);
-      // if (!isLastQuestion) {
-      //   setTimer(5);
-      // }
-
+  
       const file = new Blob(recordedChunks, {
         type: `video/webm`,
       });
+  
       try {
         const unique_id = uuid();
-        if (!ffmpeg.isLoaded()) {
-          await ffmpeg.load();
+        let audioBlob: Blob | null = null;
+  
+        // Try to convert audio, but continue if it fails
+        try {
+          if (!ffmpeg.isLoaded()) {
+            await ffmpeg.load();
+          }
+  
+          ffmpeg.FS('writeFile', `${unique_id}.webm`, await fetchFile(file));
+          await ffmpeg.run('-i', `${unique_id}.webm`, '-vn', '-acodec', 'pcm_s16le', '-ac', '1', '-ar', '16000', `${unique_id}.wav`);
+          const fileData = ffmpeg.FS('readFile', `${unique_id}.wav`);
+          audioBlob = new Blob([fileData], {
+            type: 'audio/wav',
+          });
+        } catch (ffmpegError) {
+          console.log('FFmpeg audio conversion failed:', ffmpegError);
+          // Continue without audio conversion
         }
-
-        ffmpeg.FS('writeFile', `${unique_id}.webm`, await fetchFile(file));
-        await ffmpeg.run('-i', `${unique_id}.webm`, '-vn', '-acodec', 'pcm_s16le', '-ac', '1', '-ar', '16000', `${unique_id}.wav`);
-        // This reads the converted file from the file system
-        const fileData = ffmpeg.FS('readFile', `${unique_id}.wav`);
-        const output = new Blob([fileData], {
-          type: 'audio/wav',
-        });
+  
         const formData = new FormData();
         formData.append('operations', '{}');
         formData.append('map', '{}');
         formData.append('model', 'whisper-12');
-        // formData.append('question2', 'Whats the question');
         formData.append('video', file, `${InterviewData.id}-video-${unique_id}.webm`);
         formData.append('video', file, `${InterviewData.id}-video-${unique_id}.webm`);
-        formData.append('audio', output, `${InterviewData.id}-audio-${unique_id}.wav`);
-        formData.append('isSelectedResponse', 'true'); // Add flag for selected response
-
-        // formData.forEach((value, key) => {
-        // console.log(key, value);
-        // });
+        
+        // Only append audio if conversion was successful
+        if (audioBlob) {
+          formData.append('audio', audioBlob, `${InterviewData.id}-audio-${unique_id}.wav`);
+        }
+        
+        formData.append('isSelectedResponse', 'true');
+  
         onNextQuestion(formData);
         setSubmitting(false);
         setResponseSubmitted(true);
-
+  
         if (isLastQuestion) {
           setFinalSubmissionComplete(true);
           onFinish();
         }
-        } catch (error) {
-        console.error('Error submitting response:', error);
+      } catch (error) {
+        console.log('Error submitting response in handle submit:', error);
         setSubmitting(false);
         setError('Failed to submit response. Please try again.');
       }
     }
   };
+
+
   if (!hasCamera) {
     return <StyledError>{error}</StyledError>;
   }

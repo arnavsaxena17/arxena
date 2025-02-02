@@ -309,7 +309,7 @@ export class ArxChatEndpoint {
       const { candidateIds } = request.body;
       const apiToken = request.headers.authorization.split(' ')[1];
       console.log("going to refresh chat counts by candidate Ids",candidateIds)
-      const url = process.env.ENV_NODE === 'production' ? 'https://arxena.com/create-gmail-draft-shortlist' : 'http://127.0.0.1:5050/create-gmail-draft-shortlist';
+      const url = process.env.ENV_NODE === 'production' ? 'https://arxena.com/create_gmail_draft_shortlist' : 'http://127.0.0.1:5050/create_gmail_draft_shortlist';
       console.log("This is the url:", url);
       console.log("going to create gmail-draft-shortlist by candidate Ids",candidateIds)
       const response = await axios.post(url, { candidateIds: candidateIds }, {
@@ -318,7 +318,28 @@ export class ArxChatEndpoint {
       console.log("This is the response in create gmail draft shortlist:", response.data);
       return { status: 'Success' };
     } catch (err) {
-      console.error('Error in create-gmail-draft-shortlist chats:', err);
+      console.error('Error in create_gmail_draft_shortlist chats:', err);
+      return { status: 'Failed', error: err };
+    }
+  }
+
+  @Post('chat-based-shortlist-delivery')
+  @UseGuards(JwtAuthGuard)
+  async chatBasedShortlistDelivery(@Req() request: any): Promise<object>  {
+    try {
+      const { candidateIds } = request.body;
+      const apiToken = request.headers.authorization.split(' ')[1];
+      console.log("going to refresh chat counts by candidate Ids",candidateIds)
+      const url = process.env.ENV_NODE === 'production' ? 'https://arxena.com/chat_based_shortlist_delivery' : 'http://127.0.0.1:5050/chat_based_shortlist_delivery';
+      console.log("This is the url:", url);
+      console.log("going to create gmail-draft-shortlist by candidate Ids",candidateIds)
+      const response = await axios.post(url, { candidateIds: candidateIds }, {
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer ' + apiToken }
+      });
+      console.log("This is the response in create gmail draft shortlist:", response.data);
+      return { status: 'Success' };
+    } catch (err) {
+      console.error('Error in create_gmail_draft_shortlist chats:', err);
       return { status: 'Failed', error: err };
     }
   }
@@ -329,12 +350,13 @@ export class ArxChatEndpoint {
     try {
       const { candidateIds } = request.body;
       const apiToken = request.headers.authorization.split(' ')[1];
-      const url = process.env.ENV_NODE === 'production' ? 'https://arxena.com/create-shortlist' : 'http://127.0.0.1:5050/create-shortlist';
-      console.log("This is the url:", url);
-      console.log("going to create create-shortlist by candidate Ids",candidateIds)
-      const response = await axios.post(url, { candidateIds: candidateIds }, {
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer ' + apiToken }
-      });
+      await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).createShortlist(candidateIds, apiToken);
+      // const url = process.env.ENV_NODE === 'production' ? 'https://arxena.com/create-shortlist' : 'http://127.0.0.1:5050/create-shortlist';
+      // console.log("This is the url:", url);
+      // console.log("going to create create-shortlist by candidate Ids",candidateIds)
+      // const response = await axios.post(url, { candidateIds: candidateIds }, {
+      //   headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer ' + apiToken }
+      // });
 
       return { status: 'Success' };
     } catch (err) {

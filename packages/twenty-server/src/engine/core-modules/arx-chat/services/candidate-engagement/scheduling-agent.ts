@@ -1,56 +1,57 @@
 import CandidateEngagementArx from './candidate-engagement';
 import { Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import {  In, EntityManager } from 'typeorm';
+import { In, EntityManager } from 'typeorm';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { FetchAndUpdateCandidatesChatsWhatsapps } from './update-chat';
 import { workspacesWithOlderSchema } from 'src/engine/core-modules/candidate-sourcing/graphql-queries';
 import { ChatControls } from './chat-controls';
 import * as allDataObjects from '../../services/data-model-objects';
 
-
 export let TimeManagement;
 
 const TimeManagementLocal = {
-  crontabs:{
-    crontTabToExecuteCandidateEngagement:CronExpression.EVERY_5_SECONDS,
-    crontTabToMakeUpdatesForNewChats:CronExpression.EVERY_30_SECONDS,
-    crontTabToUpdateRecentCandidatesChatControls:CronExpression.EVERY_10_SECONDS
+  crontabs: {
+    crontTabToExecuteCandidateEngagement: CronExpression.EVERY_5_SECONDS,
+    crontTabToMakeUpdatesForNewChats: CronExpression.EVERY_30_SECONDS,
+    crontTabToUpdateRecentCandidatesChatControls: CronExpression.EVERY_10_SECONDS
   },
-  timeDifferentials:{
+  timeDifferentials: {
     timeDifferentialinMinutesToCheckTimeDifferentialBetweenlastMessage: 0,
-    timeDifferentialinMinutesForCheckingCandidateIdsToMakeUpdatesOnChatsForNextChatControls: 15,
-    timeDifferentialinHoursForCheckingCandidateIdsWithStatusOfConversationClosed:.15,
-    timeDifferentialinHoursForCheckingCandidateIdsWithVideoInterviewCompleted:.15
+    timeDifferentialinMinutesForCheckingCandidateIdsToMakeUpdatesOnChatsForNextChatControls: 10,
+    timeDifferentialinHoursForCheckingCandidateIdsWithStatusOfConversationClosed: .05,
+    timeDifferentialinHoursForCheckingCandidateIdsWithVideoInterviewCompleted: .001
   }
-}
+};
 
 const TimeManagementProd = {
-  crontabs:{
-    crontTabToExecuteCandidateEngagement:CronExpression.EVERY_30_SECONDS,
-    crontTabToMakeUpdatesForNewChats:CronExpression.EVERY_5_MINUTES,
-    crontTabToUpdateRecentCandidatesChatControls:CronExpression.EVERY_10_SECONDS
+  crontabs: {
+    crontTabToExecuteCandidateEngagement: CronExpression.EVERY_30_SECONDS,
+    crontTabToMakeUpdatesForNewChats: CronExpression.EVERY_5_MINUTES,
+    crontTabToUpdateRecentCandidatesChatControls: CronExpression.EVERY_10_SECONDS
   },
-  timeDifferentials:{
+  timeDifferentials: {
     timeDifferentialinMinutesToCheckTimeDifferentialBetweenlastMessage: 5,
     timeDifferentialinMinutesForCheckingCandidateIdsToMakeUpdatesOnChatsForNextChatControls: 5,
-    timeDifferentialinHoursForCheckingCandidateIdsWithStatusOfConversationClosed:6,
-    timeDifferentialinHoursForCheckingCandidateIdsWithVideoInterviewCompleted:6
+    timeDifferentialinHoursForCheckingCandidateIdsWithStatusOfConversationClosed: 6,
+    timeDifferentialinHoursForCheckingCandidateIdsWithVideoInterviewCompleted: 6
   }
-}
+};
+
+const CRON_DISABLED = false;
+
 if (process.env.ENV_NODE === 'production') {
   TimeManagement = TimeManagementProd;
-}
-else {
+} else {
   TimeManagement = TimeManagementLocal;
 }
 
-console.log("TimeManagement::", TimeManagement)
+console.log("TimeManagement::", TimeManagement);
 
 @Injectable()
 abstract class BaseCronService {
   protected isProcessing = false;
-  
+
   constructor(protected readonly workspaceQueryService: WorkspaceQueryService) {}
 
   protected async executeWorkspaceTask(callback: (token: string) => Promise<void>) {
@@ -86,21 +87,21 @@ abstract class BaseCronService {
   private async getWorkspaceToken(workspaceId: string): Promise<string | null> {
     const schema = this.workspaceQueryService.workspaceDataSourceService.getSchemaName(workspaceId);
     const apiKeys = await this.workspaceQueryService.getApiKeys(workspaceId, schema);
-    
+
     if (!apiKeys.length) return null;
-    
+
     const token = await this.workspaceQueryService.tokenService
       .generateApiKeyToken(workspaceId, apiKeys[0].id, apiKeys[0].expiresAt);
-    
+
     return token?.token || null;
   }
 }
 
-
 @Injectable()
 export class CandidateEngagementCronService extends BaseCronService {
-  @Cron(TimeManagement.crontabs.crontTabToExecuteCandidateEngagement)
+  @Cron(TimeManagement.crontabs.crontTabToExecuteCandidateEngagement, { disabled: CRON_DISABLED })
   async handleCron() {
+    if (CRON_DISABLED) return;
     await this.executeWorkspaceTask(async (token) => {
       await new CandidateEngagementArx(this.workspaceQueryService)
         .executeCandidateEngagement(token);
@@ -110,16 +111,18 @@ export class CandidateEngagementCronService extends BaseCronService {
 
 @Injectable()
 export class CandidateStatusClassificationCronService extends BaseCronService {
-  @Cron(TimeManagement.crontabs.crontTabToMakeUpdatesForNewChats)
+  @Cron(TimeManagement.crontabs.crontTabToMakeUpdatesForNewChats, {disabled: CRON_DISABLED})
   async handleFiveMinutesCron() {
+    if (CRON_DISABLED) return;
     await this.executeWorkspaceTask(async (token) => {
       const service = new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService)
-      .makeUpdatesForNewChats(token);
+        .makeUpdatesForNewChats(token);
     });
   }
 
-  @Cron(TimeManagement.crontabs.crontTabToUpdateRecentCandidatesChatControls)
+  @Cron(TimeManagement.crontabs.crontTabToUpdateRecentCandidatesChatControls, { disabled: CRON_DISABLED })
   async handleFiveHoursCron() {
+    if (CRON_DISABLED) return;
     await this.executeWorkspaceTask(async (token) => {
       await new ChatControls(this.workspaceQueryService)
         .updateRecentCandidatesChatControls(token);

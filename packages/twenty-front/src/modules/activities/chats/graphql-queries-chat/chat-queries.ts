@@ -20,7 +20,6 @@ export const mutationToUpdateOnePerson = `mutation UpdateOnePerson($idToUpdate: 
   updatePerson(id: $idToUpdate, data: $input) {
     __typename
     city
-    salary
   }
 }
 `

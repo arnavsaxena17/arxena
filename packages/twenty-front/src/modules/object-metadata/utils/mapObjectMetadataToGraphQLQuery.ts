@@ -25,13 +25,14 @@ export const mapObjectMetadataToGraphQLQuery = ({
         }),
       ) ?? [];
 
+
   if (!isRootLevel && computeReferences) {
     return `{
       __ref
     }`;
   }
 
-  return `{
+  const finalMapping = `{
 __typename
 ${fieldsThatShouldBeQueried
   .map((field) => {
@@ -47,4 +48,6 @@ ${fieldsThatShouldBeQueried
   })
   .join('\n')}
 }`;
+
+  return finalMapping;
 };

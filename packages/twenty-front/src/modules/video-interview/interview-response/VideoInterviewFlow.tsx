@@ -236,7 +236,7 @@ const VideoInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) 
       return true; // Return success status
 
     } catch (error) {
-      console.error('Error submitting response:', error);
+      console.log('Error submitting response in VideoInterviewFlow:', error);
     }
   };
 

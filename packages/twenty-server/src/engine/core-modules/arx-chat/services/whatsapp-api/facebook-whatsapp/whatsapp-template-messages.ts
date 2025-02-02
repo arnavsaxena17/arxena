@@ -34,6 +34,14 @@ export class WhatsappTemplateMessages{
       }
       getUpdatedUtilityMessageObj(sendTemplateMessageObj: allDataObjects.sendWhatsappUtilityMessageObjectType) {
         let templateMessageObj;
+        let meetingDate = new Date();
+        meetingDate.setDate(meetingDate.getDate() + 2);
+        // Ensure the meeting date is not a Sunday
+        while (meetingDate.getDay() === 0) {
+          meetingDate.setDate(meetingDate.getDate() + 1);
+        }
+        const formattedMeetingWeekdayDate = meetingDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    
         console.log("Going to get utiltiy messages")
         const templates = ['recruitment', 'application', 'application02','share_video_interview_link_direct_without_button', 'share_video_interview_link_with_start_link','share_video_interview_link_direct','rejection_template','follow_up'];
         switch (sendTemplateMessageObj.template_name) {
@@ -71,6 +79,10 @@ export class WhatsappTemplateMessages{
               },
             });
             break;
+
+
+
+
           case 'share_video_interview_link_without_button':
             templateMessageObj = JSON.stringify({
               messaging_product: 'whatsapp',
@@ -96,6 +108,33 @@ export class WhatsappTemplateMessages{
               },
             });
             break;
+
+          case 'walkin_meeting_scheduling':
+            templateMessageObj = JSON.stringify({
+              messaging_product: 'whatsapp',
+              to: sendTemplateMessageObj.recipient,
+              type: 'template',
+              template: {
+                name: sendTemplateMessageObj.template_name,
+                language: { code: 'en' },
+                components: [
+                  {
+                    type: 'body',
+                    parameters: [
+                      { type: 'text', text: sendTemplateMessageObj.candidateFirstName },
+                      { type: 'text', text: "11AM" },
+                      { type: 'text', text: formattedMeetingWeekdayDate },
+                      { type: 'text', text: "Kharadi, Pune" },
+                    ],
+                  }
+                ],
+              },
+            });
+            break;
+
+
+
+
           case 'share_video_interview_link_direct':
             templateMessageObj = JSON.stringify({
               messaging_product: 'whatsapp',

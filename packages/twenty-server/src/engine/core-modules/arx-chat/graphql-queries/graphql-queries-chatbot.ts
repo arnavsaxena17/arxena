@@ -11,6 +11,43 @@ query FindOneWhatsappMessage($whatsappMessageId: String!) {
 `;
 
 
+export const graphqlQueryToFindScheduledClientMeetings = `query FindManyClientInterviews($filter: ClientInterviewFilterInput, $orderBy: [ClientInterviewOrderByInput], $lastCursor: String, $limit: Int) {
+  clientInterviews(
+    filter: $filter
+    orderBy: $orderBy
+    first: $limit
+    after: $lastCursor
+  ) {
+    edges {
+      node {
+        __typename
+        createdAt
+        interviewTime
+        updatedAt
+        clientContactId
+        interviewScheduleId
+        clientInterviewCompleted
+        id
+        name
+        position
+        candidateId
+      }
+      cursor
+      __typename
+    }
+    pageInfo {
+      hasNextPage
+      startCursor
+      endCursor
+      __typename
+    }
+    totalCount
+    __typename
+  }
+}`;
+
+
+
 export const graphqlQueryToFetchPrompts = `
   query FindManyPrompts($filter: PromptFilterInput, $orderBy: [PromptOrderByInput], $limit: Int) {
   prompts(filter: $filter, orderBy: $orderBy, first: $limit) {
@@ -33,7 +70,6 @@ export const mutationToUpdateOnePerson = `mutation UpdateOnePerson($idToUpdate: 
   updatePerson(id: $idToUpdate, data: $input) {
     __typename
     city
-    salary
   }
 }`
 
@@ -193,7 +229,6 @@ export const graphqlQueryToFindInterviewsByJobId = `query FindManyVideoInterview
           name
           position
           id
-          clientContactId
           jobLocation
           googleSheetId
           createdAt
@@ -484,7 +519,19 @@ query FindManyCandidates($lastCursor: String, $limit: Int, $filter: CandidateFil
           name
           jobLocation
           jobCode
+          isActive
           recruiterId
+          interviewSchedule{
+          edges{
+              node{
+                  id
+                  name
+                  createdAt
+                  slotsAvailable
+                  meetingType
+              }
+            }
+          }
           company{
             name
             id
@@ -545,9 +592,11 @@ export const graphqlQueryToFindManyPeopleEngagedCandidatesOlderSchema = `query F
                       jobs {
                          name
                          id
+                         isActive
                          jobLocation
                          jobCode
                          recruiterId
+
                          companies{
                           name
                           id
@@ -636,6 +685,7 @@ export const graphqlQueryToFindManyPeopleEngagedCandidates = `query FindManyPeop
                       jobs {
                          name
                          id
+                         isActive
                          jobLocation
                          jobCode
                          recruiterId
@@ -739,6 +789,7 @@ export const graphqlToFetchManyCandidatesOlderSchema = `
             name
             jobLocation
             jobCode
+            isActive
             recruiterId
             companies{
               name
@@ -824,7 +875,19 @@ export const graphqlQueryToFetchWorksPaceMembers = `query FindManyWorkspaceMembe
             name
             jobLocation
             jobCode
+            isActive
             recruiterId
+            interviewSchedule{
+            edges{
+                node{
+                    id
+                    name
+                    createdAt
+                    slotsAvailable
+                    meetingType
+                }
+              }
+            }
             company{
               name
               id
@@ -924,6 +987,17 @@ export const graphqlQueryToFindManyQuestionsByJobId = `query FindManyQuestions($
             name
             position
             createdAt
+                      interviewSchedule{
+          edges{
+              node{
+                  id
+                  name
+                  createdAt
+                  slotsAvailable
+                  meetingType
+              }
+            }
+          }
             isActive
             jobLocation
             jobCode
@@ -953,6 +1027,33 @@ export const graphqlQueryToCreateOneAnswer = `mutation CreateOneAnswer($input: A
       id
     }
   }`;
+
+
+  export const graphqlToUpdateOneClientInterview =  `mutation UpdateOneClientInterview($idToUpdate: ID!, $input: ClientInterviewUpdateInput!) {
+    updateClientInterview(id: $idToUpdate, data: $input) {
+      __typename
+      createdAt
+      interviewSchedule {
+        __typename
+        meetingType
+        position
+        name
+        slotsAvailable
+        id
+        jobId
+        updatedAt
+        createdAt
+      }
+      interviewTime
+      updatedAt  
+      id
+      name
+      position
+      candidateId
+    }
+  }`
+
+
 
 export const graphqlToFindManyAnswers = `query FindManyAnswers($filter: AnswerFilterInput, $orderBy: [AnswerOrderByInput], $lastCursor: String, $limit: Int) {
     answers(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {

@@ -124,6 +124,7 @@ const findManyCandidatesQuery = `query FindManyCandidates($filter: CandidateFilt
           jobs {
             id
             name
+            isActive
             company {
               name
             }
@@ -226,7 +227,6 @@ const queryByvideoInterview = `query FindOneVideoInterview($objectRecordId: ID!)
           candidateId
           promptId
           questionId
-          whatsappTemplateId
           personId
           videoInterviewTemplateId
           offerId
@@ -397,7 +397,7 @@ const VideoInterviewResponseViewer: React.FC<VideoInterviewResponseViewerProps> 
             Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
           },
           body: JSON.stringify({
-            findManyCandidatesQuery,
+            query:findManyCandidatesQuery,
             variables: {
               filter: {
                 id: { eq: cleanId(candidateId) },
@@ -541,6 +541,31 @@ const VideoInterviewResponseViewer: React.FC<VideoInterviewResponseViewerProps> 
   console.log("interviewData.videoInterview.videoInterviewQuestionsinterviewData.videoInterview::", interviewData?.videoInterviewTemplate?.videoInterviewQuestions);
 
 
+  if (interviewData.videoInterviewTemplate.videoInterviewQuestions.edges.length === 0) {
+    console.log('No video interview questions available');
+  } else {
+    interviewData.videoInterviewTemplate.videoInterviewQuestions.edges.forEach(({ node: question }) => {
+      const matchingResponses = question.videoInterviewResponses.edges.filter(
+        ({ node: response }) => response.videoInterviewQuestionId === question.id
+      );
+
+      if (matchingResponses.length === 0) {
+        console.log(`No responses available for question ID: ${question.id}`);
+      } else {
+        matchingResponses.forEach(({ node: response }) => {
+            const videoAttachment = response.attachments.edges.find(
+            edge => edge.node.type === 'Video' || 
+            ['mp4', 'webm', 'avi'].some(ext => edge.node.fullPath.endsWith(ext))
+            );
+
+          if (!videoAttachment) {
+            console.log(`No video available for response ID: ${response.id}`);
+          }
+        });
+      }
+    });
+  }
+
   return (
     <StyledContainer theme={theme}>
       <CompanyInfo>
@@ -561,9 +586,10 @@ const VideoInterviewResponseViewer: React.FC<VideoInterviewResponseViewerProps> 
             </QuestionText>
       
             {matchingResponses.map(({ node: response }) => {
-              const videoAttachment = response.attachments.edges.find(
-                edge => edge.node.type === 'Video'
-              );
+                const videoAttachment = response.attachments.edges.find(
+                edge => edge.node.type === 'Video' || 
+                ['mp4', 'webm', 'avi'].some(ext => edge.node.fullPath.endsWith(ext))
+                );
               return videoAttachment ? (
                 <VideoContainer key={response.id}>
                   <VideoDownloaderPlayer 

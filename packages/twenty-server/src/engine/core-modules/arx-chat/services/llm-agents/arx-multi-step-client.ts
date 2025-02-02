@@ -19,6 +19,10 @@ export class OpenAIArxMultiStepClient {
   async createCompletion(mostRecentMessageArr: allDataObjects.ChatHistoryItem[],  candidateJob:allDataObjects.Jobs,chatControl:allDataObjects.chatControls,apiToken:string,  isChatEnabled: boolean = true ) {
     try{
       const newSystemPrompt = await new ChatControls(this.workspaceQueryService).getSystemPrompt(this.personNode,candidateJob, chatControl,apiToken);
+      if (!newSystemPrompt) {
+        console.log("New System Prompt is null, so returning as it is.FUCK FUCK")
+        return
+      };
       const updatedMostRecentMessagesBasedOnNewSystemPrompt:allDataObjects.ChatHistoryItem[] = await new Transformations().updateMostRecentMessagesBasedOnNewSystemPrompt(mostRecentMessageArr, newSystemPrompt);
       const tools = await new ChatControls(this.workspaceQueryService).getTools(candidateJob, chatControl);
       const responseMessage = await this.getHumanLikeResponseMessageFromLLM(updatedMostRecentMessagesBasedOnNewSystemPrompt, tools, apiToken)
@@ -80,46 +84,49 @@ export class OpenAIArxMultiStepClient {
 
  
   async addResponseAndToolCallsToMessageHistory(responseMessage: ChatCompletionMessage, candidateJob:allDataObjects.Jobs,mostRecentMessageArr: allDataObjects.ChatHistoryItem[],  chatControl:allDataObjects.chatControls, apiToken:string,isChatEnabled: boolean = true): Promise<allDataObjects.ChatHistoryItem[]> {
-    const toolCalls = responseMessage?.tool_calls;
-    console.log("We have made a total of ", toolCalls?.length, " tool calls in current chatResponseMessage")
-    const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-    const { openAIclient } = await this.workspaceQueryService.initializeLLMClients(workspaceId);
+    try {
+      const toolCalls = responseMessage?.tool_calls;
+      console.log("We have made a total of ", toolCalls?.length, " tool calls in current chatResponseMessage")
+      const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+      const { openAIclient } = await this.workspaceQueryService.initializeLLMClients(workspaceId);
 
-    if (toolCalls) {
+      if (toolCalls) {
       for (const toolCall of toolCalls) {
         const functionName = toolCall.function.name;
         console.log('Function name is:', functionName);
         const availableFunctions = new ToolCallingAgents(this.workspaceQueryService).getAvailableFunctions(candidateJob, apiToken);
         const functionToCall = availableFunctions[functionName];
         const functionArgs = JSON.parse(toolCall.function.arguments);
-        const responseFromFunction = await functionToCall(functionArgs, this.personNode,candidateJob, chatControl,apiToken);
+        const responseFromFunction = await functionToCall(functionArgs, this.personNode, candidateJob, chatControl, apiToken);
         mostRecentMessageArr.push({ tool_call_id: toolCall.id, role: 'tool', name: functionName, content: responseFromFunction });
       }
-      const tools = await new ChatControls(this.workspaceQueryService).getTools(candidateJob,chatControl);
+      const tools = await new ChatControls(this.workspaceQueryService).getTools(candidateJob, chatControl);
       // @ts-ignore
       const response = await openAIclient.chat.completions.create({ model: modelName, messages: mostRecentMessageArr, tools: tools, tool_choice: 'auto' });
-      console.log('BOT_MESSAGE in runCandidateFacingAgentsAlongWithToolCalls_stage2 :', "at::", new Date().toString(), ' ::: ' ,JSON.stringify(responseMessage));
+      console.log('BOT_MESSAGE in runCandidateFacingAgentsAlongWithToolCalls_stage2 :', "at::", new Date().toString(), ' ::: ', JSON.stringify(responseMessage));
       mostRecentMessageArr.push(response.choices[0].message);
       let firstStageMessageArr = mostRecentMessageArr.slice(-1)
       if (response?.choices[0]?.message?.tool_calls) {
         console.log('More Tool Calls inside of the addResponseAndToolCallsToMessageHistory. RECURSION Initiated:::: processorType::');
-        mostRecentMessageArr = await this.addResponseAndToolCallsToMessageHistory(response.choices[0].message, candidateJob, mostRecentMessageArr, chatControl,apiToken, isChatEnabled);
+        mostRecentMessageArr = await this.addResponseAndToolCallsToMessageHistory(response.choices[0].message, candidateJob, mostRecentMessageArr, chatControl, apiToken, isChatEnabled);
       } else {
-        console.log('No Tool Calls received this in sub-response of the big response::');  
+        console.log('No Tool Calls received this in sub-response of the big response::');
       }
       let messageArr_stage2 = mostRecentMessageArr.slice(-1)
-      if ( messageArr_stage2[0].content != firstStageMessageArr[0].content) {
+      if (messageArr_stage2[0].content != firstStageMessageArr[0].content) {
         console.log("Sending message to candidate from addResponseAndToolCallsToMessageHistory_stage2", messageArr_stage2);
-        await new WhatsappControls(this.workspaceQueryService).sendWhatsappMessageToCandidate(response?.choices[0]?.message?.content || '', this.personNode,candidateJob,messageArr_stage2,'addResponseAndToolCallsToMessageHistory_stage2', chatControl,apiToken, isChatEnabled);
-      }
-      else{
+        await new WhatsappControls(this.workspaceQueryService).sendWhatsappMessageToCandidate(response?.choices[0]?.message?.content || '', this.personNode, candidateJob, messageArr_stage2, 'addResponseAndToolCallsToMessageHistory_stage2', chatControl, apiToken, isChatEnabled);
+      } else {
         console.log("The message we tried to send but sending is is ::", messageArr_stage2[0].content, "processorType")
       }
-    }
-    else{
+      } else {
       console.log("No tool calls in response message")
+      }
+      return mostRecentMessageArr;
+    } catch (error) {
+      console.log("Error in addResponseAndToolCallsToMessageHistory:", error);
+      return mostRecentMessageArr;
     }
-    return mostRecentMessageArr;
   }
 
   

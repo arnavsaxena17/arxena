@@ -28,7 +28,7 @@ export default class CandidateEngagementArx {
   }
 
   async processCandidate(personNode: allDataObjects.PersonNode,candidateJob:allDataObjects.Jobs, chatControl: allDataObjects.chatControls, apiToken:string) {
-    console.log("Engagement Type for the candidate ::", personNode.name.firstName + " " + personNode.name.lastName);
+    console.log("Engagement Type for the candidate ::", personNode.name.firstName + " " + personNode.name.lastName, "for chat control::", chatControl.chatControlType);
     try {
       const candidate = personNode?.candidates?.edges?.find(edge => edge.node.jobs.id === candidateJob.id)?.node;
       const candidateId = candidate?.id || "";
@@ -37,7 +37,7 @@ export default class CandidateEngagementArx {
 
       let mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = new Transformations().getMostRecentMessageFromMessagesList(messagesList);
       if (mostRecentMessageArr?.length > 0) {
-        console.log('Taking MULTI Step Client for - Prompt Engineering type:', process.env.PROMPT_ENGINEERING_TYPE);
+        console.log('Taking MULTI Step Client for - Prompt Engineering type:', process.env.PROMPT_ENGINEERING_TYPE, 'for candidate::', personNode.name.firstName + " " + personNode.name.lastName);
         await new OpenAIArxMultiStepClient(personNode, this.workspaceQueryService ).createCompletion(mostRecentMessageArr,candidateJob, chatControl, apiToken);
       }
       else{

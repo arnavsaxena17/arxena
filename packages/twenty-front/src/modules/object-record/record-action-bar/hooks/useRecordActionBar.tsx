@@ -17,7 +17,7 @@ import { actionBarEntriesState } from '@/ui/navigation/action-bar/states/actionB
 import { contextMenuEntriesState } from '@/ui/navigation/context-menu/states/contextMenuEntriesState';
 import { ContextMenuEntry } from '@/ui/navigation/context-menu/types/ContextMenuEntry';
 import { isDefined } from '~/utils/isDefined';
-import { IconCopy, IconMessage, IconPaperclip, IconRefresh, IconBrandWhatsapp, IconRefreshDot, IconSend2, IconUsersPlus, IconVideo } from '@tabler/icons-react';
+import { IconCopy, IconMessage, IconPaperclip, IconRefresh, IconBrandWhatsapp, IconRefreshDot, IconSend2, IconUsersPlus, IconVideo, IconDatabase } from '@tabler/icons-react';
 import { useCreateVideoInterview } from '@/object-record/hooks/useCreateInterview';
 import { useSendVideoInterview } from '@/object-record/hooks/useSendInterview';
 import { useRefreshChatStatus } from '@/object-record/hooks/useRefreshChatStatus';
@@ -503,7 +503,7 @@ const sendVideoInterviewLinkSelectRecord = useRecoilCallback(
                         },
                         {
                           label: 'Create Shortlist',
-                          Icon: IconSend2,
+                          Icon: IconDatabase,
                           onClick: async () => {
                             try {
                               await sendCVsToClient(selectedRecordIds, 'create-shortlist');
@@ -513,16 +513,27 @@ const sendVideoInterviewLinkSelectRecord = useRecoilCallback(
                           },
                         },
                         {
-                          label: 'Create Shortlist Document',
-                          Icon: IconSend2,
+                          label: 'Create Chat Based Shortlist',
+                          Icon: IconDatabase,
                           onClick: async () => {
                             try {
-                              await sendCVsToClient(selectedRecordIds, 'create-shortlist-document');
+                              await sendCVsToClient(selectedRecordIds, 'chat-based-shortlist-delivery');
                             } catch (error) {
                               console.error('Error creating videos:', error);
                             }
                           },
                         },
+                        // {
+                        //   label: 'Create Shortlist Document',
+                        //   Icon: IconSend2,
+                        //   onClick: async () => {
+                        //     try {
+                        //       await sendCVsToClient(selectedRecordIds, 'create-shortlist-document');
+                        //     } catch (error) {
+                        //       console.error('Error creating videos:', error);
+                        //     }
+                        //   },
+                        // },
                         {
                           label: 'Send Shortlist To Client',
                           Icon: IconSend2,

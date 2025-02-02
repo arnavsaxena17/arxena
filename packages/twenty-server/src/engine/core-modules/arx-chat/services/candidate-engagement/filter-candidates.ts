@@ -21,6 +21,15 @@ export class FilterCandidates {
   }
 
 
+
+  async fetchScheduledClientMeetings(job_id:string, apiToken: string){
+    const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindScheduledClientMeetings, variables: { filter: { jobId: { in: [job_id] } } } });
+    const response = await axiosRequest(graphqlQueryObj, apiToken);
+    console.log('This is the response from fetchScheduledClientMeetings:', response.data.data);
+    return response.data.data;
+
+  }
+
   async fetchSpecificPeopleToEngageBasedOnChatControl(chatControl: allDataObjects.chatControls, apiToken: string): Promise<{ people: allDataObjects.PersonNode[], candidateJob: allDataObjects.Jobs}> {
     try {
       console.log('Fetching candidates to engage');
@@ -61,10 +70,7 @@ export class FilterCandidates {
     let graphqlQueryObjToFetchAllCandidatesForChats = '';
     try{
       const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-      console.log("This is the workspaceId", workspaceId);
-      console.log("This is the workspacesWithOlderSchema", workspacesWithOlderSchema);
       if (workspacesWithOlderSchema.includes(workspaceId)) {
-        console.log("Using older scheme for fetching candidates for worksapce id::", workspaceId);
         graphqlQueryObjToFetchAllCandidatesForChats = allGraphQLQueries.graphqlToFetchManyCandidatesOlderSchema;
       }
       else{

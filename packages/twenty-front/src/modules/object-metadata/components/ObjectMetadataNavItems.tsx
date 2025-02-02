@@ -46,7 +46,7 @@ export const ObjectMetadataNavItems = ({ isRemote }: { isRemote: boolean }) => {
     'recruiterInterview',
     // 'candidateEnrichment',
     'offer',
-    'clientContact',
+    // 'clientContact',
     'candidateReminder',
     'screening',
     'opportunity'

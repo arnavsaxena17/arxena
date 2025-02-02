@@ -573,26 +573,26 @@ const ChatTable: React.FC<ChatTableProps> = ({
     console.log("createCandidateShortlists");
     console.log("selectedIds:",selectedIds)
 
-    async function createCandidateShortlists() {
-      try {
-        const response = await axios.post('/candidate-sourcing/create-shortlist', {
-          candidateIds: selectedIds,
-        });
-        console.log('Shortlist created successfully:', response.data);
-        enqueueSnackBar('Shortlist created successfully', {
-          variant: SnackBarVariant.Success,
-          icon: <IconCopy size={theme.icon.size.md} />,
-          duration: 2000,
-        });
-      } catch (error) {
-        console.log('Error creating shortlist:', error);
-        enqueueSnackBar('Error creating shortlist', {
-          variant: SnackBarVariant.Error,
-          icon: <IconCopy size={theme.icon.size.md} />,
-          duration: 2000,
-        });
-      }
-    }
+    // async function createCandidateShortlists() {
+    //   try {
+    //     const response = await axios.post('/candidate-sourcing/create-shortlist', {
+    //       candidateIds: selectedIds,
+    //     });
+    //     console.log('Shortlist created successfully:', response.data);
+    //     enqueueSnackBar('Shortlist created successfully', {
+    //       variant: SnackBarVariant.Success,
+    //       icon: <IconCopy size={theme.icon.size.md} />,
+    //       duration: 2000,
+    //     });
+    //   } catch (error) {
+    //     console.log('Error creating shortlist:', error);
+    //     enqueueSnackBar('Error creating shortlist', {
+    //       variant: SnackBarVariant.Error,
+    //       icon: <IconCopy size={theme.icon.size.md} />,
+    //       duration: 2000,
+    //     });
+    //   }
+    // }
 
   }
 

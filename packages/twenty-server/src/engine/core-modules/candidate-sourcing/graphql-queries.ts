@@ -54,7 +54,6 @@ export const graphqlQueryToFindManyPeople = `query FindManyPeople($filter: Perso
           lastName
         }
         city
-        salary
         uniqueStringKey
         candidates{
             edges{

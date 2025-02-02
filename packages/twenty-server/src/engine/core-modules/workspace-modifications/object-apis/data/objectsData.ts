@@ -9,16 +9,16 @@ export const objectCreationArr = [
             "namePlural": "jobs"
         }
     },
-        {
-        "object": {
-            "description": "",
-            "icon": "IconReplace",
-            "labelPlural": "Whatsapp Templates",
-            "labelSingular": "Whatsapp Templates",
-            "nameSingular": "whatsappTemplate",
-            "namePlural": "whatsappTemplates"
-        }
-    },
+    //     {
+    //     "object": {
+    //         "description": "",
+    //         "icon": "IconReplace",
+    //         "labelPlural": "Whatsapp Templates",
+    //         "labelSingular": "Whatsapp Templates",
+    //         "nameSingular": "whatsappTemplate",
+    //         "namePlural": "whatsappTemplates"
+    //     }
+    // },
     {
         "object": {
             "description": "",
@@ -123,7 +123,7 @@ export const objectCreationArr = [
     {
         "object": {
             "description": "",
-            "icon": "IconFilterSearch",
+            "icon": "IconUsers",
             "labelPlural": "Client Contacts",
             "labelSingular": "Client Contact",
             "nameSingular": "clientContact",
@@ -209,7 +209,7 @@ export const objectCreationArr = [
         {
         "object": {
             "description": "",
-            "icon": "IconPrompt",
+            "icon": "IconPhone",
             "labelPlural": "Phone Calls",
             "labelSingular": "Phone Call",
             "nameSingular": "phoneCall",
@@ -219,7 +219,7 @@ export const objectCreationArr = [
         {
         "object": {
             "description": "",
-            "icon": "IconPrompt",
+            "icon": "IconMessage",
             "labelPlural": "Text Messages",
             "labelSingular": "Text Message",
             "nameSingular": "textMessage",
@@ -271,11 +271,21 @@ export const objectCreationArr = [
     {
         "object": {
             "description": "",
-            "icon": "IconMoodCheck",
+            "icon": "IconTimeDuration60",
             "labelPlural": "Interview Schedules",
             "labelSingular": "Interview Schedule",
             "nameSingular": "interviewSchedule",
             "namePlural": "interviewSchedules"
         }
     },
+    // {
+    //     "object": {
+    //         "description": "",
+    //         "icon": "IconUsers",
+    //         "labelPlural": "Interview Meetings",
+    //         "labelSingular": "Interview Meeting",
+    //         "nameSingular": "interviewMeeting",
+    //         "namePlural": "interviewMeetings"
+    //     }
+    // },
 ];

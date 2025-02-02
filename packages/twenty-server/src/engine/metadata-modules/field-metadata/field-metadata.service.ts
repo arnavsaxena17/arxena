@@ -455,7 +455,7 @@ export class FieldMetadataService extends TypeOrmQueryService<FieldMetadataEntit
         id,
       },
     });
-    console.log("This is the fieldMetadata in findOneOrFail:", fieldMetadata);
+    // console.log("This is the fieldMetadata in findOneOrFail:", fieldMetadata);
     if (!fieldMetadata) {
       throw new NotFoundException('Field does not exist');
     }
@@ -475,7 +475,7 @@ export class FieldMetadataService extends TypeOrmQueryService<FieldMetadataEntit
         workspaceId,
       },
     });
-    console.log("This is the fieldMetadata in findOneWithinWorkspace:", fieldMetadata);
+    // console.log("This is the fieldMetadata in findOneWithinWorkspace:", fieldMetadata);
 
     return fieldMetadata;
   }

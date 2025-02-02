@@ -110,6 +110,12 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
                     "value": "STOPPED_RESPONDING_ON_QUESTIONS"
                 },
                 {
+                    "color": "turquoise",
+                    "label": "Candidate Salary Out of Range",
+                    "position": 0,
+                    "value": "CANDIDATE_SALARY_OUT_OF_RANGE"
+                },
+                {
                     "color": "green",
                     "label": "Candidate Is Keen To Chat",
                     "position": 0,
@@ -150,17 +156,8 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
     {
         "field": {
             "description": "",
-            "label": "Date of Interview",
-            "name": "dateofInterview",
-            "objectMetadataId": objectsNameIdMap.clientInterview,
-            "type": "DATE_TIME"
-        }
-    },
-    {
-        "field": {
-            "description": "",
-            "label": "Time Slots Available",
-            "name": "timeSlotsAvailable",
+            "label": "Slots Available",
+            "name": "slotsAvailable",
             "objectMetadataId": objectsNameIdMap.interviewSchedule,
             "type": "RAW_JSON"
         }
@@ -168,38 +165,88 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
     {
         "field": {
             "description": "",
+            "label": "Interview Time",
+            "name": "interviewTime",
+            "objectMetadataId": objectsNameIdMap.clientInterview,
+            "type": "RAW_JSON"
+        }
+    },
+    {
+        "field": {
+            "description": "",
+            "label": "Client Interview Completed",
+            "name": "clientInterviewCompleted",
+            "objectMetadataId": objectsNameIdMap.clientInterview,
+            "type": "BOOLEAN",
+            "defaultValue": false
+        }
+    },
+
+    // {
+    //     "field": {
+    //         "description": "",
+    //         "icon": "IconReload",
+    //         "label": "Meeting Duration",
+    //         "name": "durationMeeting",
+    //         "options": [{
+    //                 "color": "green",
+    //                 "label": "30 mins",
+    //                 "position": 0,
+    //                 "value": "mins30"
+    //             },
+    //             {
+    //                 "color": "turquoise",
+    //                 "label": "45 mins",
+    //                 "position": 1,
+    //                 "value": "mins45"
+    //             },
+    //             {
+    //                 "color": "sky",
+    //                 "label": "1 hour",
+    //                 "position": 2,
+    //                 "value": "hour1"
+    //             },
+    //             {
+    //                 "color": "sky",
+    //                 "label": "1.5 hours",
+    //                 "position": 3,
+    //                 "value": "hours15"
+    //             },
+    //             {
+    //                 "color": "sky",
+    //                 "label": "2 hours",
+    //                 "position": 3,
+    //                 "value": "hours2"
+    //             },
+    //         ],
+    //         "objectMetadataId": objectsNameIdMap.interviewSchedule,
+    //         "type": "SELECT"
+    //     }
+
+    // },
+    {
+        "field": {
+            "description": "",
             "icon": "IconReload",
-            "label": "Meeting Duration",
-            "name": "durationMeeting",
+            "label": "Meeting Type",
+            "name": "meetingType",
             "options": [{
                     "color": "green",
-                    "label": "30 mins",
+                    "label": "In Person",
                     "position": 0,
-                    "value": "mins30"
+                    "value": "inPerson"
                 },
                 {
                     "color": "turquoise",
-                    "label": "45 mins",
+                    "label": "Online",
                     "position": 1,
-                    "value": "mins45"
+                    "value": "online"
                 },
                 {
                     "color": "sky",
-                    "label": "1 hour",
+                    "label": "Walk In",
                     "position": 2,
-                    "value": "hour1"
-                },
-                {
-                    "color": "sky",
-                    "label": "1.5 hours",
-                    "position": 3,
-                    "value": "hours15"
-                },
-                {
-                    "color": "sky",
-                    "label": "2 hours",
-                    "position": 3,
-                    "value": "hours2"
+                    "value": "walkIn"
                 },
             ],
             "objectMetadataId": objectsNameIdMap.interviewSchedule,
@@ -528,7 +575,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
     {
         "field": {
             "description": "",
-            "label": "googleSheetId",
+            "label": "Google Sheet Id",
             "name": "googleSheetId",
             "objectMetadataId": objectsNameIdMap.job,
             "type": "TEXT"
@@ -645,6 +692,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
 
         }
     },
+
     {
         "field": {
             "description": "",
@@ -746,6 +794,15 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
             "name": "jobSpecificFields",
             "objectMetadataId": objectsNameIdMap.candidate,
             "type": "RAW_JSON"
+        }
+    },
+    {
+        "field": {
+            "description": "",
+            "label": "shortlistObj",
+            "name": "shortlistObj",
+            "objectMetadataId": objectsNameIdMap.candidate,
+            "type": "RAW_JSON",
         }
     },
     {
