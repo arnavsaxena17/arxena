@@ -211,7 +211,23 @@ export class CreateMetaDataStructure {
 
 
 
-
+  async addAPIKeys(apiToken: string) {
+    const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+    // Update API keys using the service method
+    await this.workspaceQueryService.updateWorkspaceApiKeys(workspaceId, {
+      openaikey: process.env.OPENAI_KEY,
+      twilio_account_sid: undefined,
+      twilio_auth_token: undefined,
+      smart_proxy_url: undefined,
+      whatsapp_key: undefined,
+      anthropic_key: process.env.ANTHROPIC_API_KEY,
+      facebook_whatsapp_api_token: process.env.FACEBOOK_WHATSAPP_PERMANENT_API,
+      facebook_whatsapp_phone_number_id: process.env.FACEBOOK_WHATSAPP_PHONE_NUMBER_ID,
+      facebook_whatsapp_app_id: undefined
+    });
+    console.log('API keys updated successfully');
+    return 
+  }
 
   async createMetadataStructure(apiToken: string): Promise<void> {
     try {
@@ -220,9 +236,13 @@ export class CreateMetaDataStructure {
       try {
         await createObjectMetadataItems(apiToken, objectCreationArr);
         console.log('Object metadata items created successfully');
+
         const objectsNameIdMap = await this.fetchObjectsNameIdMap(apiToken);
+
         const fieldsData = getFieldsData(objectsNameIdMap);
+
         console.log("Number of fieldsData", fieldsData.length);
+
         await createFields(fieldsData, apiToken);
         console.log('Fields created successfully');
         const relationsFields = getRelationsData(objectsNameIdMap);
@@ -254,7 +274,7 @@ export class CreateMetaDataStructure {
         await this.createStartChatPrompt(apiToken);
         const apiKey = await apiKeyService.createApiKey(apiToken);
         console.log('API key created successfully:', apiKey);
-        // await this.addAPIKeys(apiToken);
+        await this.addAPIKeys(apiToken);
       } catch (error) {
         console.log('Error during API key creation or workspace member update:', error);
       }
