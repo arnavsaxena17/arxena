@@ -31,22 +31,37 @@ const ffmpeg = createFFmpeg({
   log: true,
 });
 
-const PreviewControls = styled.div`
-  display: flex;
-  justify-content: center; // Align to the right
-  margin-top: 24px; // Add more space from the video
-  padding-right: 16px; // Add some right padding
-`;
 
 const PreviewContainer = styled.div`
   position: relative;
   width: 100%;
+  height:80%;
+
+  border-radius: 50%;
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 24px;
+  margin: 16px 0;
+
 `;
+
+const PreviewControls = styled.div`
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 24px;
+  padding: 16px 0;
+  border-top: 1px solid #E5E7EB;
+`;
+
+
 
 const PreviewVideo = styled.video`
   width: 100%;
   transform: scaleX(1);
   -webkit-transform: scaleX(1);
+  
   
   // &::-webkit-media-controls-play-button {
   //   background-color: rgba(255, 255, 255, 0.8);
@@ -452,11 +467,11 @@ export const InterviewPage: React.FC<InterviewPageProps> = ({ InterviewData, que
 
             {showPreview && (
               <PreviewContainer>
-                <h3 style={{ marginBottom: '16px', textAlign: 'center' }}>
+                <h3 style={{  textAlign: 'center' }}>
                   Review your recording before submitting
                 </h3>
 
-                <PreviewVideo src={recordedVideoUrl || undefined} controls width="100%" />
+                <PreviewVideo src={recordedVideoUrl || undefined} controls width="100%" height="60%"/>
                 <PreviewControls>
                   <ButtonGroup variant="primary" size="medium" accent="blue">
                     <Button

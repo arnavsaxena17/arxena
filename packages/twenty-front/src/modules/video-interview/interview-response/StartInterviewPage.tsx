@@ -19,6 +19,7 @@ import {
   AccessMessage,
 
 } from './styled-components/StyledComponentsInterviewResponse';
+import { useStream } from '../StreamManager';
 
 interface StartInterviewPageProps extends InterviewResponseTypes.StartInterviewPageProps {
   videoPlaybackState: { isPlaying: boolean; isMuted: boolean };
@@ -26,6 +27,15 @@ interface StartInterviewPageProps extends InterviewResponseTypes.StartInterviewP
 }
 
 export const StartInterviewPage: React.FC<StartInterviewPageProps> = ({ onStart, InterviewData, introductionVideoData, videoPlaybackState,  onVideoStateChange }) => {
+
+
+  const { isStreamReady, error } = useStream();
+
+  useEffect(() => {
+    if (isStreamReady) {
+      setHasAccess(true);
+    }
+  }, [isStreamReady]);
 
   const [hasAccess, setHasAccess] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -65,19 +75,19 @@ export const StartInterviewPage: React.FC<StartInterviewPageProps> = ({ onStart,
 
 
 
-  useEffect(() => {
-    checkMediaAccess();
-  }, []);
+  // useEffect(() => {
+  //   checkMediaAccess();
+  // }, []);
 
-  const checkMediaAccess = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      setHasAccess(true);
-      stream.getTracks().forEach(track => track.stop());
-    } catch (err) {
-      setHasAccess(false);
-    }
-  };
+  // const checkMediaAccess = async () => {
+  //   try {
+  //     const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+  //     setHasAccess(true);
+  //     stream.getTracks().forEach(track => track.stop());
+  //   } catch (err) {
+  //     setHasAccess(false);
+  //   }
+  // };
 
   const requestMediaAccess = async () => {
     try {

@@ -4,6 +4,7 @@ import Webcam from 'react-webcam';
 
 import { StyledControlsOverlay,StyledAnswerTimer, StyledCountdownOverlay,StyledVideoContainer,  StyledRecordButton, ButtonText } from './styled-components/StyledComponentsInterviewResponse';
 import { is } from 'date-fns/locale';
+import { useStream } from '../StreamManager';
 
 interface VideoContainerProps {
   countdown: number | null;
@@ -25,9 +26,93 @@ const UnmirroredWebcam = styled(Webcam as any)`
   -webkit-transform: scaleX(-1);
   & video {
     width: 100%;
-    height: 100%;
+    // height: 100%;
     object-fit: cover;
   }
+`;
+
+
+
+
+const LoadingOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+`;
+
+const LoaderCard = styled.div`
+  background-color: white;
+  padding: 32px;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+`;
+
+const SpinnerContainer = styled.div`
+  width: 48px;
+  height: 48px;
+  position: relative;
+`;
+
+const Spinner = styled.div`
+  width: 100%;
+  height: 100%;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #3498db;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  
+  @keyframes spin {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+`;
+
+const LoaderText = styled.p`
+  font-size: 18px;
+  font-weight: 500;
+  color: #333;
+`;
+
+const ErrorOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+`;
+
+const ErrorMessage = styled.div`
+  background-color: white;
+  padding: 24px;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  color: #dc2626;
+  font-size: 16px;
+  font-weight: 500;
+  max-width: 400px;
+  text-align: center;
 `;
 
 const TimerContainer = styled.div`
@@ -82,7 +167,11 @@ const VideoContainer: React.FC<VideoContainerProps> = ({
 
 }) => {
   const [isStreamInitialized, setIsStreamInitialized] = useState(false);
+  const { stream, isStreamReady, error, getWarmedUpRecorder } = useStream();
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const [isRecorderInitialized, setIsRecorderInitialized] = useState(false);
+  // const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const [recordedChunks, setRecordedChunks] = useState<Blob[]>([]);
 
   console.log("Anshwer TIme:", answerTimer, "isRecording:", isRecording)
   const totalTime = interviewTime; // 4 minutes in seconds
@@ -94,6 +183,95 @@ const VideoContainer: React.FC<VideoContainerProps> = ({
     height: 720,
     facingMode: "user",
   };
+
+
+
+
+  useEffect(() => {
+    if (stream && webcamRef.current?.video) {
+      webcamRef.current.video.srcObject = stream;
+    }
+  }, [stream]);
+
+  const handleDataAvailable = (event: BlobEvent) => {
+    if (event.data && event.data.size > 0) {
+      setRecordedChunks(prev => [...prev, event.data]);
+    }
+  };
+
+
+
+
+  useEffect(() => {
+    if (isRecording) {
+      const recorder = getWarmedUpRecorder();
+      if (recorder) {
+        recorder.ondataavailable = handleDataAvailable;
+        recorder.start();
+      }
+    }
+  }, [isRecording]);
+
+
+
+  const handleRecordingClick = () => {
+    if (!isRecording) {
+      // Ensure we have a fresh recorder for each new recording
+      const recorder = getWarmedUpRecorder();
+      if (recorder) {
+        setIsPlaying(false);
+        onRecordingClick();
+      }
+    } else {
+      const recorder = getWarmedUpRecorder();
+      if (recorder && recorder.state === 'recording') {
+        recorder.stop();
+      }
+      onRecordingClick();
+    }
+  };
+
+
+  // useEffect(() => {
+  //   if (stream && webcamRef.current && !isRecorderInitialized) {
+  //     webcamRef.current.video!.srcObject = stream;
+      
+  //     try {
+  //       mediaRecorderRef.current = new MediaRecorder(stream, {
+  //         mimeType: 'video/webm',
+  //         videoBitsPerSecond: 1000000
+  //       });
+        
+  //       setIsRecorderInitialized(true);
+  //     } catch (error) {
+  //       console.error('Failed to initialize MediaRecorder:', error);
+  //     }
+  //   }
+  // }, [stream, isRecorderInitialized]);
+
+  // Show loading state if stream isn't ready
+  if (!isStreamReady) {
+    return (
+      <LoadingOverlay>
+        <LoaderCard>
+          <SpinnerContainer>
+            <Spinner />
+          </SpinnerContainer>
+          <LoaderText>Preparing camera...</LoaderText>
+        </LoaderCard>
+      </LoadingOverlay>
+    );
+  }
+
+  if (error) {
+    return (
+      <ErrorOverlay>
+        <ErrorMessage>Failed to access camera: {error.message}</ErrorMessage>
+      </ErrorOverlay>
+    );
+  }
+
+
 
 
   useEffect(() => {
@@ -138,13 +316,13 @@ const VideoContainer: React.FC<VideoContainerProps> = ({
     
   }, [isRecording, setIsPlaying]);
 
-  const handleRecordingClick = () => {
-    if (isRecording) {
-      setIsPlaying(false);
-    }
-    console.log("isRecording:", isRecording)
-    onRecordingClick();
-  };
+  // const handleRecordingClick = () => {
+  //   if (isRecording) {
+  //     setIsPlaying(false);
+  //   }
+  //   console.log("isRecording:", isRecording)
+  //   onRecordingClick();
+  // };
 
 
   return (

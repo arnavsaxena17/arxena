@@ -7,6 +7,7 @@ import { ErrorBoundary } from './ErrorBoundary'; // Import the ErrorBoundary com
 import styled from '@emotion/styled';
 
 import * as InterviewResponseTypes from './types/interviewResponseTypes';
+import { StreamProvider, useStream } from '../StreamManager';
 
 const LoaderOverlay = styled.div`
   position: fixed;
@@ -83,6 +84,9 @@ const VideoInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) 
   const [videoLoadingStatus, setVideoLoadingStatus] = useState<Record<string, boolean>>({});
   const [finalSubmissionComplete, setFinalSubmissionComplete] = useState(false);
 
+
+  const { stream } = useStream();  // Add this line to get stream from context
+
   const [globalVideoPlaybackState, setGlobalVideoPlaybackState] = useState({
     isPlaying: false,
     isMuted: false
@@ -91,6 +95,7 @@ const VideoInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) 
   const handleVideoStateChange = (newState: { isPlaying: boolean; isMuted: boolean }) => {
     setGlobalVideoPlaybackState(newState);
   };
+
 
 
 
@@ -118,6 +123,18 @@ const VideoInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) 
       video.load();
     });
   };
+
+
+
+  useEffect(() => {
+    return () => {
+      // Clean up streams when component unmounts
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [stream]);  // Add stream to dependency array
+
 
   // Preload all videos when interview data is fetched
   useEffect(() => {
@@ -303,7 +320,12 @@ const VideoInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) 
     }
   };
 
-  return <div>{renderCurrentStage()}</div>;
+
+  return (
+    <StreamProvider>
+      <div>{renderCurrentStage()}</div>
+    </StreamProvider>
+  );
 };
 
 export default VideoInterviewFlow;
