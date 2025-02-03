@@ -28,7 +28,9 @@ export class ChatControls {
   }
 
   async updateRecentCandidatesChatControls(apiToken: string) {
+    console.log('Updating recent candidates chat controls::');
     const candidateIdsForStartChatConversationClosed = await new StartChatProcesses().getRecentlyUpdatedCandidateIdsWithStatusConversationClosed(apiToken);
+    console.log("Number of candidates for candidateIdsForStartChatConversationClosed::", candidateIdsForStartChatConversationClosed.length);
     for (const candidateId of candidateIdsForStartChatConversationClosed) {
       const chatControlType = 'startVideoInterviewChat';
       const chatControl: allDataObjects.chatControls = { chatControlType: chatControlType };

@@ -39,7 +39,7 @@ const TimeManagementProd = {
 };
 
 const CRON_DISABLED = false;
-
+console.log("process.env.ENV_NODE::", process.env.ENV_NODE)
 if (process.env.ENV_NODE === 'production') {
   TimeManagement = TimeManagementProd;
 } else {

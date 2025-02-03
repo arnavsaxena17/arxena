@@ -45,25 +45,31 @@ export class StartChatProcesses {
 
   async getRecentlyUpdatedCandidateIdsWithStatusConversationClosed(apiToken: string): Promise<string[]> {
     if (!this.isWithinWorkingHours()) {
+      console.log('Outside working hours, skipping conversation closed checks');
       return [];
     }
 
     try {
-      console.log('Goign to get recent candidate ids with status conversations');
-      console.log('Date.now()::', new Date(Date.now()).toISOString());
-      const sixHoursAgo = new Date(Date.now() - TimeManagement.timeDifferentials.timeDifferentialinHoursForCheckingCandidateIdsWithStatusOfConversationClosed * 60 * 60 * 1000).toISOString();
       const timeWindow = TimeManagement.timeDifferentials.timeDifferentialinHoursForCheckingCandidateIdsWithStatusOfConversationClosed;
+      const currentTime = new Date();
+      const cutoffTime = new Date(currentTime.getTime() - (timeWindow * 60 * 60 * 1000));
 
-      const endTime = new Date();
-      const startTime = new Date(endTime.getTime() - timeWindow * 60 * 60 * 1000);
+      console.log('Time window for conversation closed check:');
+      console.log('Current time:', currentTime.toISOString());
+      console.log('Cutoff time:', cutoffTime.toISOString());
+      console.log('Time window (hours):', timeWindow);
 
-      console.log('Date.now() time differential ago that::', sixHoursAgo);
       const graphqlQueryObj = JSON.stringify({
         query: allGraphQLQueries.graphqlToFetchAllCandidateData,
         variables: {
           filter: {
-            updatedAt: { gte: startTime.toISOString(), lte: endTime.toISOString() },
-            candConversationStatus: { in: ['CONVERSATION_CLOSED_TO_BE_CONTACTED', 'CANDIDATE_IS_KEEN_TO_CHAT'] },
+            updatedAt: { 
+              gte: cutoffTime.toISOString(), 
+              lte: currentTime.toISOString() 
+            },
+            candConversationStatus: { 
+              in: ['CONVERSATION_CLOSED_TO_BE_CONTACTED', 'CANDIDATE_IS_KEEN_TO_CHAT'] 
+            },
             startChat: { eq: true },
             startVideoInterviewChat: { eq: false },
             startMeetingSchedulingChat: { eq: false },
@@ -71,49 +77,29 @@ export class StartChatProcesses {
           orderBy: [{ position: 'AscNullsFirst' }],
         },
       });
-      const data = await axiosRequest(graphqlQueryObj, apiToken);
-      console.log('data of :getRecentlyUpdated CandidateIdsWithStatusConversationClosed:::', data?.data?.data.candidates);
 
-      const graphQltoGetConversationStatusOfAllClosedCandidates = JSON.stringify({
-        query: allGraphQLQueries.graphqlToFetchAllCandidateData,
-        variables: {
-          filter: { candConversationStatus: { in: ['CONVERSATION_CLOSED_TO_BE_CONTACTED', 'CANDIDATE_IS_KEEN_TO_CHAT'] }, startChat: { eq: true }, startVideoInterviewChat: { eq: false }, startMeetingSchedulingChat: { eq: false } },
-          orderBy: [{ position: 'AscNullsFirst' }],
-        },
-      });
-      const conversationStatusesOfAllClosedCandidates = await axiosRequest(graphQltoGetConversationStatusOfAllClosedCandidates, apiToken);
+      const response = await axiosRequest(graphqlQueryObj, apiToken);
+      const candidates = response?.data?.data?.candidates?.edges || [];
 
-      // Log the last updatedAt for the candidates who match the criteria
-      const lastUpdatedAt = conversationStatusesOfAllClosedCandidates?.data?.data.candidates.edges.forEach(edge => {
-        console.log(`Candidate ID: ${edge.node.id}, last Updated At: ${edge.node.updatedAt}`);
+      // Log candidate details for debugging
+      candidates.forEach(edge => {
+        console.log(`Candidate ID: ${edge.node.id}`);
+        console.log(`Status: ${edge.node.candConversationStatus}`);
+        console.log(`Updated At: ${edge.node.updatedAt}`);
+        console.log('---');
       });
+
       // Extract unique candidate IDs
-      if (data?.data?.data.candidates.edges.length > 0) {
-        console.log('This is the number of people who messaged recently in getRecentC andidateIds', data?.data?.data.candidates.edges.length);
-        const candidateIds: string[] = Array.from(new Set(data?.data?.data.candidates.edges.map(edge => edge?.node?.id))) as unknown as string[];
+      const candidateIds = Array.from(new Set(
+        candidates.map(edge => edge.node.id)
+      ));
 
-        console.log('This is the candidateIds who have messaged recently', candidateIds, "and are in teh CONVERSATION_CLOSED_TO_BE_CONTACTED','CANDIDATE_IS_KEEN_TO_CHAT stages and for start chat stage");
+      console.log(`Found ${candidateIds.length} candidates with conversation closed status`);
+      
+      return candidateIds as string[];
 
-        const filteredCandidateIds = candidateIds.filter(candidateId => {
-          const candidate = data?.data?.data?.candidates?.edges.find(edge => edge?.node?.id === candidateId);
-          if (candidate) {
-            const updatedAt = candidate.node.updatedAt;
-            console.log('This is updated at :', candidate.node.updatedAt);
-            console.log('This is sixHoursAgo at :', sixHoursAgo);
-            return new Date(updatedAt) < new Date(sixHoursAgo);
-          }
-          return false;
-        });
-        console.log('Thesea re the candidates who wre filtered Candidates Ids:', filteredCandidateIds);
-
-        return filteredCandidateIds;
-      } else {
-        console.log('No recent candidates found which were updated in the last {} hours', sixHoursAgo);
-        return [];
-      }
     } catch (error) {
-      console.log('Error fetching recent WhatsApp messages:', error);
+      console.error('Error fetching candidates with conversation closed status:', error);
       return [];
     }
-  }
-}
+}}
