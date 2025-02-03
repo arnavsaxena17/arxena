@@ -411,7 +411,7 @@ export const recruiterProfile: recruiterProfileType = {
   status: '',
   job_title: 'Director',
   job_company_name: 'Arxena Inc',
-  company_description_oneliner: 'a US Based Recruitment Company',
+  company_description_oneliner: 'a Global Recruitment Company',
 };
 
 export const emptyCandidateProfileObj: CandidateNode = {

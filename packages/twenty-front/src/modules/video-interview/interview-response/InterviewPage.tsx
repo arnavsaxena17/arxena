@@ -34,7 +34,7 @@ const ffmpeg = createFFmpeg({
 
 const PreviewContainer = styled.div`
   position: relative;
-  width: 100%;
+  width: 90%;
   height:80%;
 
   border-radius: 50%;
