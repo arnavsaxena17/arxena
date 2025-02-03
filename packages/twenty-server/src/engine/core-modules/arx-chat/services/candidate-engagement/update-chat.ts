@@ -11,11 +11,17 @@ import {Semaphore} from '../../utils/semaphore';
 import { ChatControls } from './chat-controls';
 import { StartChatProcesses } from './chat-control-processes/start-chat-processes';
 import {ArxChatEndpoint} from 'src/engine/core-modules/arx-chat/controllers/arx-chat-agent.controller';
-export class FetchAndUpdateCandidatesChatsWhatsapps {
+import { TimeManagement } from './scheduling-agent';
+export class UpdateChat {
   constructor(private readonly workspaceQueryService: WorkspaceQueryService) { }
   async makeUpdatesForNewChats(apiToken:string){
     console.log("making updates to candidates based on the rchats they have made")
-    const { candidateIds, jobIds } = await new StartChatProcesses().getRecentCandidateIdsToMakeUpdatesonChats(apiToken);
+
+    const timeWindow = TimeManagement.timeDifferentials.timeDifferentialinMinutesForCheckingCandidateIdsToMakeUpdatesOnChatsForNextChatControls
+    const endTime = new Date();
+    const startTime = new Date(endTime.getTime() - (timeWindow * 60 * 1000));
+
+    const { candidateIds, jobIds } = await new StartChatProcesses().getRecentCandidateIdsToMakeUpdatesonChats(apiToken, startTime, endTime);
     console.log("Received a total of ", candidateIds.length, " candidates to make updates for based on the chats that they have done");
     await this.updateCandidatesWithChatCount(candidateIds, apiToken);
     await this.processCandidatesChatsGetStatuses(apiToken,jobIds, candidateIds);
@@ -241,9 +247,9 @@ export class FetchAndUpdateCandidatesChatsWhatsapps {
     let candidateProfileObj = whatappUpdateMessageObj.messageType !== 'botMessage' ? await new FilterCandidates(this.workspaceQueryService).getCandidateInformation(whatappUpdateMessageObj,apiToken) : whatappUpdateMessageObj.candidateProfile;
     if (candidateProfileObj.name === '') return;
     console.log('Candidate information retrieved successfully');
-    const whatsappMessage = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).createAndUpdateWhatsappMessage(candidateProfileObj, whatappUpdateMessageObj,apiToken);
+    const whatsappMessage = await new UpdateChat(this.workspaceQueryService).createAndUpdateWhatsappMessage(candidateProfileObj, whatappUpdateMessageObj,apiToken);
     if (!whatsappMessage || isAfterMessageSent) return;
-    const updateCandidateStatusObj = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).updateCandidateEngagementStatus(candidateProfileObj, whatappUpdateMessageObj, apiToken);
+    const updateCandidateStatusObj = await new UpdateChat(this.workspaceQueryService).updateCandidateEngagementStatus(candidateProfileObj, whatappUpdateMessageObj, apiToken);
     if (!updateCandidateStatusObj) return;
     return { status: 'success', message: 'Candidate engagement status updated successfully' };
   }

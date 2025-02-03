@@ -1,5 +1,5 @@
 import * as allDataObjects from '../data-model-objects';
-import { FetchAndUpdateCandidatesChatsWhatsapps } from './update-chat';
+import { UpdateChat } from './update-chat';
 import { sortWhatsAppMessages } from '../../utils/arx-chat-agent-utils';
 import { OpenAIArxMultiStepClient } from '../llm-agents/arx-multi-step-client';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
@@ -23,7 +23,7 @@ export default class CandidateEngagementArx {
     const messagesList: allDataObjects.MessageNode[] = await new FilterCandidates(this.workspaceQueryService).fetchAllWhatsappMessages(candidateId, apiToken);
     const sortedMessagesList:allDataObjects.MessageNode[] = messagesList.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     const whatappUpdateMessageObj = await new ChatControls(this.workspaceQueryService).getChatTemplateFromChatControls(chatControl, sortedMessagesList, candidateJob, candidatePersonNodeObj, apiToken, chatReply, recruiterProfile);
-    await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).updateCandidateEngagementDataInTable(whatappUpdateMessageObj, apiToken);    
+    await new UpdateChat(this.workspaceQueryService).updateCandidateEngagementDataInTable(whatappUpdateMessageObj, apiToken);    
     console.log("Sending a messages::", chatReply, "to the candidate::", personNode.name.firstName + " " + personNode.name.lastName, "with candidate id::", candidateId);
   }
 
@@ -69,7 +69,7 @@ export default class CandidateEngagementArx {
     });
     console.log('Number processCandidateof filtered candidates to engage after time scheduling: ', filteredCandidatesToEngage?.length, "for chatcontrol", chatControl.chatControlType);
     for (const personNode of filteredCandidatesToEngage) {
-      await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).setCandidateEngagementStatusToFalse(personNode?.candidates?.edges[0]?.node?.id,apiToken);
+      await new UpdateChat(this.workspaceQueryService).setCandidateEngagementStatusToFalse(personNode?.candidates?.edges[0]?.node?.id,apiToken);
       await this.processCandidate(personNode, candidateJob, chatControl,  apiToken);
     }
   }

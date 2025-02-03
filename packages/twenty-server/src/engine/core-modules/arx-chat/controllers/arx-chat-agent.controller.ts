@@ -3,7 +3,7 @@ import { JwtAuthGuard } from 'src/engine/guards/jwt.auth.guard';
 import * as allDataObjects from '../services/data-model-objects';
 import { FacebookWhatsappChatApi } from '../services/whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
 import { IncomingWhatsappMessages } from '../services/whatsapp-api/incoming-messages';
-import { FetchAndUpdateCandidatesChatsWhatsapps } from '../services/candidate-engagement/update-chat';
+import { UpdateChat } from '../services/candidate-engagement/update-chat';
 import { StageWiseClassification } from '../services/llm-agents/stage-classification';
 import { OpenAIArxMultiStepClient } from '../services/llm-agents/arx-multi-step-client';
 import { axiosRequest, formatChat } from '../utils/arx-chat-agent-utils';
@@ -153,7 +153,7 @@ export class ArxChatEndpoint {
     const sendMessageResponse = await new FacebookWhatsappChatApi(this.workspaceQueryService).sendWhatsappTextMessage(messageObj, apiToken);
     whatappUpdateMessageObj.whatsappMessageId = sendMessageResponse?.data?.messages[0]?.id;
     whatappUpdateMessageObj.whatsappDeliveryStatus = 'sent';
-    await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).createAndUpdateWhatsappMessage(personObj.candidates.edges[0].node, whatappUpdateMessageObj,apiToken);
+    await new UpdateChat(this.workspaceQueryService).createAndUpdateWhatsappMessage(personObj.candidates.edges[0].node, whatappUpdateMessageObj,apiToken);
     return { status: 'success' };
   }
 
@@ -278,7 +278,7 @@ export class ArxChatEndpoint {
       const { candidateIds } = request.body;
       console.log("going to count chats")
       // const candidateIds = ['5f9b3b3b-0b3b-4b3b-8b3b-3b0b3b0b3b0b'];
-      await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).updateCandidatesWithChatCount(candidateIds, apiToken);
+      await new UpdateChat(this.workspaceQueryService).updateCandidatesWithChatCount(candidateIds, apiToken);
       return { status: 'Success' };
     } catch (err) {
       console.error('Error in countChats:', err);
@@ -294,7 +294,7 @@ export class ArxChatEndpoint {
     try {
       const { candidateIds } = request.body;
       console.log("going to refresh chat counts by candidate Ids")
-      await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).updateCandidatesWithChatCount(candidateIds ,apiToken);
+      await new UpdateChat(this.workspaceQueryService).updateCandidatesWithChatCount(candidateIds ,apiToken);
       return { status: 'Success' };
     } catch (err) {
       console.error('Error in refresh-chat-counts-by-candi chats:', err);
@@ -350,7 +350,7 @@ export class ArxChatEndpoint {
     try {
       const { candidateIds } = request.body;
       const apiToken = request.headers.authorization.split(' ')[1];
-      await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).createShortlist(candidateIds, apiToken);
+      await new UpdateChat(this.workspaceQueryService).createShortlist(candidateIds, apiToken);
       // const url = process.env.ENV_NODE === 'production' ? 'https://arxena.com/create-shortlist' : 'http://127.0.0.1:5050/create-shortlist';
       // console.log("This is the url:", url);
       // console.log("going to create create-shortlist by candidate Ids",candidateIds)

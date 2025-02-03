@@ -3,7 +3,7 @@ import * as allDataObjects from '../data-model-objects';
 import { PromptingAgents } from '../llm-agents/prompting-agents';
 import { FacebookWhatsappChatApi } from '../whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
 import { TimeManagement } from './scheduling-agent';
-import { FetchAndUpdateCandidatesChatsWhatsapps } from './update-chat';
+import { UpdateChat } from './update-chat';
 import { FilterCandidates } from './filter-candidates';
 import { ToolCallingAgents } from '../llm-agents/tool-calling-agents';
 import { axiosRequest } from '../../utils/arx-chat-agent-utils';
@@ -131,11 +131,14 @@ export class ChatControls {
       console.log(`Candidate is not being engaged because startMeetingSchedulingChat, startVideoInterviewChat, or startChat is missing for candidate: ${candidate.name}`);
       return false;
     }
+    const waitTime = TimeManagement.timeDifferentials.timeDifferentialinMinutesToCheckTimeDifferentialBetweenlastMessage;
+    const cutoffTime = new Date(Date.now() - (waitTime * 60 * 1000));
+
     const twoMinutesAgo = new Date(Date.now() - TimeManagement.timeDifferentials.timeDifferentialinMinutesToCheckTimeDifferentialBetweenlastMessage * 60 * 1000);
     if (candidate.whatsappMessages?.edges?.length > 0) {
       const latestMessage = candidate.whatsappMessages.edges[0].node;
-      if (new Date(latestMessage.createdAt) >= twoMinutesAgo) {
-        console.log(`Candidate messaged less than ${TimeManagement.timeDifferentials.timeDifferentialinMinutesToCheckTimeDifferentialBetweenlastMessage} minutes ago:: ${candidate.name} for chatControl: ${chatControl.chatControlType}`);
+      if (new Date(latestMessage.createdAt) >= cutoffTime) {
+        console.log(`Candidate messaged less than ${waitTime} minutes ago:: ${candidate.name} for chatControl: ${chatControl.chatControlType}`);
         return false;
       }
     }

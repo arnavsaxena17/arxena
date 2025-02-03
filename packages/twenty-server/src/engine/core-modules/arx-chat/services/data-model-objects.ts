@@ -184,6 +184,7 @@ export interface WhatsAppMessages {
 
 
 export interface Candidate {
+  startMeetingSchedulingChat: any;
   videoInterview?: videoInterview;
   id: string;
   name: string;

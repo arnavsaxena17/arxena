@@ -3,7 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { In, EntityManager } from 'typeorm';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
-import { FetchAndUpdateCandidatesChatsWhatsapps } from './update-chat';
+import { UpdateChat } from './update-chat';
 import { workspacesWithOlderSchema } from 'src/engine/core-modules/candidate-sourcing/graphql-queries';
 import { ChatControls } from './chat-controls';
 import * as allDataObjects from '../../services/data-model-objects';
@@ -17,10 +17,10 @@ const TimeManagementLocal = {
     crontTabToUpdateRecentCandidatesChatControls: CronExpression.EVERY_10_SECONDS
   },
   timeDifferentials: {
-    timeDifferentialinMinutesToCheckTimeDifferentialBetweenlastMessage: 0,
-    timeDifferentialinMinutesForCheckingCandidateIdsToMakeUpdatesOnChatsForNextChatControls: 10,
-    timeDifferentialinHoursForCheckingCandidateIdsWithStatusOfConversationClosed: .05,
-    timeDifferentialinHoursForCheckingCandidateIdsWithVideoInterviewCompleted: .001
+    timeDifferentialinMinutesToCheckTimeDifferentialBetweenlastMessage: 0.33, // 20 seconds
+    timeDifferentialinMinutesForCheckingCandidateIdsToMakeUpdatesOnChatsForNextChatControls: 0.5, // 30 seconds
+    timeDifferentialinHoursForCheckingCandidateIdsWithStatusOfConversationClosed: 0.016, // ~1 minute
+    timeDifferentialinHoursForCheckingCandidateIdsWithVideoInterviewCompleted: 0.016 // ~1 minute
   }
 };
 
@@ -31,9 +31,9 @@ const TimeManagementProd = {
     crontTabToUpdateRecentCandidatesChatControls: CronExpression.EVERY_10_SECONDS
   },
   timeDifferentials: {
-    timeDifferentialinMinutesToCheckTimeDifferentialBetweenlastMessage: 5,
-    timeDifferentialinMinutesForCheckingCandidateIdsToMakeUpdatesOnChatsForNextChatControls: 5,
-    timeDifferentialinHoursForCheckingCandidateIdsWithStatusOfConversationClosed: 6,
+    timeDifferentialinMinutesToCheckTimeDifferentialBetweenlastMessage: 4,
+    timeDifferentialinMinutesForCheckingCandidateIdsToMakeUpdatesOnChatsForNextChatControls: 30,
+    timeDifferentialinHoursForCheckingCandidateIdsWithStatusOfConversationClosed: 3,
     timeDifferentialinHoursForCheckingCandidateIdsWithVideoInterviewCompleted: 6
   }
 };
@@ -115,7 +115,7 @@ export class CandidateStatusClassificationCronService extends BaseCronService {
   async handleFiveMinutesCron() {
     if (CRON_DISABLED) return;
     await this.executeWorkspaceTask(async (token) => {
-      const service = new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService)
+      const service = new UpdateChat(this.workspaceQueryService)
         .makeUpdatesForNewChats(token);
     });
   }

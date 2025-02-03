@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { axiosRequest } from '../utils/utils';
 import { graphQltoUpdateOneCandidate, graphqlQueryToFindManyPeople } from '../graphql-queries';
-import { FetchAndUpdateCandidatesChatsWhatsapps } from '../../arx-chat/services/candidate-engagement/update-chat';
+import { UpdateChat } from '../../arx-chat/services/candidate-engagement/update-chat';
 import * as allDataObjects from '../../arx-chat/services/data-model-objects';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { GoogleSheetsService } from '../../google-sheets/google-sheets.service';
@@ -30,7 +30,7 @@ export class ChatService {
       const jobIds = await this.candidateService.getJobIdsFromCandidateIds(candidateIds, apiToken);
 
       // Process candidate chats and get statuses
-      const results = await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).processCandidatesChatsGetStatuses(apiToken, candidateIds, jobIds, currentWorkspaceMemberId);
+      const results = await new UpdateChat(this.workspaceQueryService).processCandidatesChatsGetStatuses(apiToken, candidateIds, jobIds, currentWorkspaceMemberId);
       
       // Update Google Sheets with the processed results
       await this.googleSheetsService.updateGoogleSheetsWithChatData(results, apiToken);

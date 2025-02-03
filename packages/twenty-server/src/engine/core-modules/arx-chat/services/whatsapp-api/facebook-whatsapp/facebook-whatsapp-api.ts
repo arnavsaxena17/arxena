@@ -8,7 +8,7 @@ import { AttachmentProcessingService } from '../../candidate-engagement/attachme
 const axios = require('axios');
 import { getTranscriptionFromWhisper } from '../../../utils/arx-chat-agent-utils';
 import { WhatsappTemplateMessages } from './whatsapp-template-messages';
-import { FetchAndUpdateCandidatesChatsWhatsapps } from '../../candidate-engagement/update-chat';
+import { UpdateChat } from '../../candidate-engagement/update-chat';
 const { exec } = require('child_process');
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { FilterCandidates } from '../../candidate-engagement/filter-candidates';
@@ -142,7 +142,7 @@ export class FacebookWhatsappChatApi {
             }
             const whatappUpdateMessageObj: allDataObjects.whatappUpdateMessageObjType = await new Transformations().updateChatHistoryObjCreateWhatsappMessageObj( 'failed', personObj,candidateNode, mostRecentMessageArr, chatControl );
             
-            await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).updateCandidateEngagementDataInTable(whatappUpdateMessageObj, apiToken);
+            await new UpdateChat(this.workspaceQueryService).updateCandidateEngagementDataInTable(whatappUpdateMessageObj, apiToken);
           }
         }
         console.log('media ID', response?.data?.mediaID);
@@ -244,7 +244,7 @@ export class FacebookWhatsappChatApi {
         chatControl,
       );
       if (whatappUpdateMessageObj) {
-        await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService)
+        await new UpdateChat(this.workspaceQueryService)
           .updateCandidateEngagementDataInTable(whatappUpdateMessageObj, apiToken);
       }
         
@@ -402,7 +402,7 @@ export class FacebookWhatsappChatApi {
         return;
       }
       const whatappUpdateMessageObjAfterWAMidUpdate = await new Transformations().updateChatHistoryObjCreateWhatsappMessageObj( response?.data?.messages[0]?.id || response.messages[0].id, personNode, candidateNode, mostRecentMessageArr, chatControl);
-      await new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService).updateCandidateEngagementDataInTable(whatappUpdateMessageObjAfterWAMidUpdate, apiToken);
+      await new UpdateChat(this.workspaceQueryService).updateCandidateEngagementDataInTable(whatappUpdateMessageObjAfterWAMidUpdate, apiToken);
       } else {
       console.log('passing a human message so, going to trash it');
       }

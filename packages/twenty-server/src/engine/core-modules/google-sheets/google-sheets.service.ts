@@ -6,7 +6,7 @@ import * as CandidateSourcingTypes from 'src/engine/core-modules/candidate-sourc
 import { OAuth2Client } from 'google-auth-library';
 import { UpdateOneJob } from '../candidate-sourcing/graphql-queries';
 import { axiosRequest } from '../workspace-modifications/workspace-modifications.controller';
-import { FetchAndUpdateCandidatesChatsWhatsapps } from '../arx-chat/services/candidate-engagement/update-chat';
+import { UpdateChat } from '../arx-chat/services/candidate-engagement/update-chat';
 import { WorkspaceQueryService } from '../workspace-modifications/workspace-modifications.service';
 import uniq from 'lodash.uniq';
 import { formatChat } from '../arx-chat/utils/arx-chat-agent-utils';
@@ -70,7 +70,7 @@ export class GoogleSheetsService {
       }>
     >();
 
-    const fetchUpdateService = new FetchAndUpdateCandidatesChatsWhatsapps(this.workspaceQueryService);
+    const fetchUpdateService = new UpdateChat(this.workspaceQueryService);
 
     // Process results and group by sheet ID
     for (const result of results) {

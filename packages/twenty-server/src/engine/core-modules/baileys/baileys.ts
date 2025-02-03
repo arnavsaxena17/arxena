@@ -18,7 +18,7 @@ import { FileDataDto } from './types/baileys-types';
 import { formatGoogleCalendarEvent } from 'src/modules/calendar/utils/format-google-calendar-event.util';
 // import {  } from 'src/engine/core-modules/recruitment-agent/services/whatsapp-api/baileys/callBaileys';
 import { IncomingWhatsappMessages } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/incoming-messages';
-import { FetchAndUpdateCandidatesChatsWhatsapps } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/update-chat';
+import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/update-chat';
 import * as allDataObjects from 'src/engine/core-modules/arx-chat/services/data-model-objects';
 console.log('Baileys being called!!!');
 import {WorkspaceQueryService} from '../workspace-modifications/workspace-modifications.service';

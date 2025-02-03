@@ -12,15 +12,10 @@ import { ChatControls } from "./chat-controls";
 
 export class FilterCandidates {
   constructor(private readonly workspaceQueryService: WorkspaceQueryService) {}
-
-          
-
   async getJobIdsFromCandidateIds(candidateIds: string[], apiToken: string): Promise<string[]> {
     console.log('Getting job ids from candidate ids:', candidateIds);
     return Promise.all(candidateIds.map(candidateId => this.fetchCandidateByCandidateId(candidateId, apiToken).then(candidate => candidate?.jobs?.id)));
   }
-
-
 
   async fetchScheduledClientMeetings(job_id:string, apiToken: string){
     const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindScheduledClientMeetings, variables: { filter: { jobId: { in: [job_id] } } } });
