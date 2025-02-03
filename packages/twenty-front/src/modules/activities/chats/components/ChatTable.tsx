@@ -387,6 +387,11 @@ const DraggableTableRow = ({
 
   
   const unreadCount = getUnreadCount(individual?.id);
+
+
+  console.log("unreadCount:", unreadCount);
+  console.log("UnreadIndicator rendering condition:", unreadCount > 0);
+
   let messageTime = 'N/A';
   try{
     messageTime = new Date(individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.createdAt)
@@ -668,11 +673,17 @@ const ChatTable: React.FC<ChatTableProps> = ({
   };
 
   const getUnreadCount = (individualId: string) => {
+    // Get the candidate ID for this individual
+    const candidateId = individuals.find(ind => ind.id === individualId)
+      ?.candidates?.edges[0]?.node?.id;
+  
     const unreadInfo = unreadMessages.listOfUnreadMessages.find(
-      (item) => item.candidateId === individualId
+      (item) => item.candidateId === candidateId
     );
+    
     return unreadInfo ? unreadInfo.ManyUnreadMessages.length : 0;
   };
+
   const handleDragEnd = (result: any) => {
     console.log("fradg gend result:",result)
     if (!result.destination) return;

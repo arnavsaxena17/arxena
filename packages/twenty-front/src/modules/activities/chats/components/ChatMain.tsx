@@ -173,6 +173,11 @@ export default function ChatMain({ initialCandidateId }: ChatMainProps) {
     }
   };
 
+  useEffect(() => {
+    console.log("Current unreadMessages state:", unreadMessages);
+  }, [unreadMessages]);
+
+  
 
   useEffect(() => {
     const initializeData = async () => {

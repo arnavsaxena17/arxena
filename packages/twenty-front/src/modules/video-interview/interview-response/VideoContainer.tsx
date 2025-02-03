@@ -23,7 +23,6 @@ const UnmirroredWebcam = styled(Webcam as any)`
   height: 100%;
   transform: scaleX(-1); // Mirror the preview
   -webkit-transform: scaleX(-1);
-  
   & video {
     width: 100%;
     height: 100%;
