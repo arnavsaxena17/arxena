@@ -150,6 +150,7 @@ export interface sendWhatsappTemplateMessageObjectType {
   candidateFirstName: string;
   recruiterJobTitle: string;
   recruiterCompanyName: string;
+  candidateSource:string;
   recruiterCompanyDescription: string;
   jobPositionName: string;
   jobLocation: string;
@@ -160,6 +161,8 @@ export interface sendWhatsappUtilityMessageObjectType {
   availableDate?: string | "";
   template_name: string | "";
   recipient: string | "";
+
+  candidateSource:string;
   recruiterName: string | "";
   recruiterFirstName: string | "";
   candidateFirstName: string | "";

@@ -29,7 +29,6 @@ export class UpdateChat {
   }
   async checkScheduledClientMeetingsCount(jobId, apiToken:string){
     const scheduledClientMeetings = await new FilterCandidates(this.workspaceQueryService).fetchScheduledClientMeetings(jobId, apiToken);
-    const scheduledClientMeetingsCount = scheduledClientMeetings.length;
     const today = new Date();
     const dayAfterTomorrow = new Date(today);
     dayAfterTomorrow.setDate(today.getDate() + 2);

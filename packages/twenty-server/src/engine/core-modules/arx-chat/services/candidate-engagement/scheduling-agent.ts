@@ -20,7 +20,7 @@ const TimeManagementLocal = {
     timeDifferentialinMinutesToCheckTimeDifferentialBetweenlastMessage: 0.33, // 20 seconds
     timeDifferentialinMinutesForCheckingCandidateIdsToMakeUpdatesOnChatsForNextChatControls: 0.5, // 30 seconds
     timeDifferentialinHoursForCheckingCandidateIdsWithStatusOfConversationClosed: 0.016, // ~1 minute
-    timeDifferentialinHoursForCheckingCandidateIdsWithVideoInterviewCompleted: 0.016 // ~1 minute
+    timeDifferentialinHoursForCheckingCandidateIdsWithVideoInterviewCompleted: 0.6 // ~1 minute
   }
 };
 

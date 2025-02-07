@@ -20,8 +20,8 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
       relation: {
         fromDescription: null,
         fromIcon: 'IconBuilding',
-        fromLabel: 'Workspace Members',
-        fromName: 'workspaceMembers',
+        fromLabel: 'Prompt',
+        fromName: 'prompt',
         fromObjectMetadataId: objectsNameIdMap.workspaceMember,
         relationType: 'ONE_TO_MANY',
         toObjectMetadataId: objectsNameIdMap.prompt,
@@ -34,8 +34,8 @@ export function getRelationsData(objectsNameIdMap: Record<string, string>): Rela
       relation: {
         fromDescription: null,
         fromIcon: 'IconBuilding',
-        fromLabel: 'Job',
-        fromName: 'job',
+        fromLabel: 'Prompt',
+        fromName: 'prompt',
         fromObjectMetadataId: objectsNameIdMap.job,
         relationType: 'ONE_TO_MANY',
         toObjectMetadataId: objectsNameIdMap.prompt,

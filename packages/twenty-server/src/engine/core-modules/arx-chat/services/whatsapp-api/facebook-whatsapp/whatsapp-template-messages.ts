@@ -187,6 +187,9 @@ export class WhatsappTemplateMessages{
               },
             });
             break;
+
+
+            
           case 'application03':
             // First template example
             templateMessageObj = JSON.stringify({
@@ -213,6 +216,44 @@ export class WhatsappTemplateMessages{
                     ],
                   },
                 ],
+              },
+            });
+            // console.log("This is the template message object created:", templateMessageObj)
+    
+          break;
+
+          case 'application03_any_source_passive_chat_any':
+            // First template example
+            const currentISTTime = new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
+            const currentHour = new Date(currentISTTime).getHours();
+            const dayText = currentHour < 17 ? "today" : "tomorrow";
+
+            templateMessageObj = JSON.stringify({
+              messaging_product: 'whatsapp',
+              to: sendTemplateMessageObj.recipient,
+              type: 'template',
+              template: {
+              name: sendTemplateMessageObj.template_name,
+              language: {
+                code: 'en',
+              },
+              components: [
+                {
+                type: 'body',
+                parameters: [
+                  { type: 'text', text: sendTemplateMessageObj.candidateFirstName, },
+                  { type: 'text', text: sendTemplateMessageObj.recruiterName, },
+                  { type: 'text', text: sendTemplateMessageObj.recruiterJobTitle, },
+                  { type: 'text', text: sendTemplateMessageObj.recruiterCompanyName, },
+                  { type: 'text', text: sendTemplateMessageObj.recruiterCompanyDescription, },
+                  { type: 'text', text: "a " + sendTemplateMessageObj.jobPositionName, },
+                  { type: 'text', text: sendTemplateMessageObj.descriptionOneliner, },
+                  { type: 'text', text: sendTemplateMessageObj.jobLocation, },
+                  { type: 'text', text: sendTemplateMessageObj.candidateSource, },
+                  { type: 'text', text: dayText, },
+                ],
+                },
+              ],
               },
             });
             // console.log("This is the template message object created:", templateMessageObj)

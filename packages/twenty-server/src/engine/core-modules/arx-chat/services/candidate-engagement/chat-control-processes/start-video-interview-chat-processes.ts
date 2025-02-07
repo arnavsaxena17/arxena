@@ -10,12 +10,6 @@ import { TimeManagement } from '../scheduling-agent';
 export class StartVideoInterviewChatProcesses {
   constructor(private readonly workspaceQueryService: WorkspaceQueryService) {}
 
-  private isWithinMorningWindow(): boolean {
-    const currentTime = new Date();
-    const hours = currentTime.getHours();
-    console.log("Current hours are :", hours)
-    return hours >= 8 && hours < 21; // 8 AM to 9 AM IST
-  }
 
   async setupVideoInterviewLinks(peopleEngagementStartVideoInterviewChatArr: allDataObjects.PersonNode[], candidateJob: allDataObjects.Jobs, chatControl: allDataObjects.chatControls, apiToken: string) {
     if (chatControl.chatControlType === 'startVideoInterviewChat') {
@@ -36,52 +30,6 @@ export class StartVideoInterviewChatProcesses {
     }
   }
 
-  async getCandidateIdsWithVideoInterviewCompleted(apiToken: string): Promise<string[]> {
-    console.log('Checking for candidates with video interviews completed');
-    if (!this.isWithinMorningWindow()) {
-      console.log("Not within the monring window, so will not send chat control for video interview");
-      return [];
-    }
-
-    let allCandidatesWhoHaveStartedVideoInterviews = await new FilterCandidates(this.workspaceQueryService).fetchAllCandidatesWithSpecificChatControl('startVideoInterviewChat', apiToken);
-    console.log('Fetched', allCandidatesWhoHaveStartedVideoInterviews?.length, ' candidates with chatControl startVideoInterviewChat');
-    if (allCandidatesWhoHaveStartedVideoInterviews.length > 0) {
-      const timeWindow = TimeManagement.timeDifferentials.timeDifferentialinHoursForCheckingCandidateIdsWithVideoInterviewCompleted;
-
-      const currentTime = new Date();
-      const cutoffTime = new Date(currentTime.getTime() - timeWindow * 60 * 60 * 1000);
-      // const sixHoursAgo = new Date(Date.now() - TimeManagement.timeDifferentials.timeDifferentialinHoursForCheckingCandidateIdsWithVideoInterviewCompleted * 60 * 60 * 1000).toISOString();
-      // console.log('Date.now() sixHoursAgo::', sixHoursAgo);
-      console.log('Date.now() for video interview compeleted::::', new Date(Date.now()).toISOString());
-      const candidateIdsWithVideoInterviewCompleted = allCandidatesWhoHaveStartedVideoInterviews
-        .filter(candidate => {
-          const hasCompletedInterview = candidate?.videoInterview?.edges[0]?.node?.interviewCompleted;
-          if (!hasCompletedInterview) {
-            return false;
-          }
-          const updatedAt = candidate?.videoInterview?.edges[0]?.node?.updatedAt;
-          if (!updatedAt) {
-            return false;
-          }
-          const interviewCompletionTime = new Date(updatedAt);
-          const isWithinTimeWindow = interviewCompletionTime >= cutoffTime && interviewCompletionTime <= currentTime;
-          const meetingChatNotStarted = !candidate.startMeetingSchedulingChat;
-          if (hasCompletedInterview) {
-            console.log('Candidate ID:', candidate.id);
-            console.log('Interview completion time:', interviewCompletionTime.toISOString());
-            console.log('Within time window:', isWithinTimeWindow);
-            console.log('Meeting chat not started:', meetingChatNotStarted);
-          }
-          return hasCompletedInterview && isWithinTimeWindow && meetingChatNotStarted;
-        })
-        .map(candidate => candidate.id);
-
-      console.log('Found', candidateIdsWithVideoInterviewCompleted.length, 'candidates with completed video interviews within the time window');
-      return candidateIdsWithVideoInterviewCompleted;
-    } else {
-      return [];
-    }
-  }
 
   async createVideoInterviewForCandidate(candidateId: string, apiToken: string) {
     try {

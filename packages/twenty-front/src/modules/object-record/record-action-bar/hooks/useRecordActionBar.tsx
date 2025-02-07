@@ -17,7 +17,7 @@ import { actionBarEntriesState } from '@/ui/navigation/action-bar/states/actionB
 import { contextMenuEntriesState } from '@/ui/navigation/context-menu/states/contextMenuEntriesState';
 import { ContextMenuEntry } from '@/ui/navigation/context-menu/types/ContextMenuEntry';
 import { isDefined } from '~/utils/isDefined';
-import { IconCopy, IconMessage, IconPaperclip, IconRefresh, IconBrandWhatsapp, IconRefreshDot, IconSend2, IconUsersPlus, IconVideo, IconDatabase } from '@tabler/icons-react';
+import { IconCopy, IconMessage, IconPaperclip, IconRefresh, IconBrandWhatsapp, IconRefreshDot, IconSend2, IconUsersPlus, IconVideo, IconDatabase, IconDashboard } from '@tabler/icons-react';
 import { useCreateVideoInterview } from '@/object-record/hooks/useCreateInterview';
 import { useSendVideoInterview } from '@/object-record/hooks/useSendInterview';
 import { useRefreshChatStatus } from '@/object-record/hooks/useRefreshChatStatus';
@@ -38,6 +38,7 @@ import { useStartChats } from '@/object-record/hooks/useStartChats';
 // import { ViewScopeInternalContext } from '@/views/scopes/scope-internal-context/ViewScopeInternalContext';
 import { currentViewWithFiltersState } from '@/views/states/currentViewState';
 import { useTranscribeCall } from '@/object-record/hooks/useTranscribeCall';
+import { useCheckDataIntegrityOfJob } from '@/object-record/hooks/useCheckDataIntegrityOfJob';
 
 
 type useRecordActionBarProps = {
@@ -69,10 +70,6 @@ export const useRecordActionBar = ({ objectMetadataItem, selectedRecordIds, call
   }, [selectedRecordIds, setSelectedRecordsForModal]);
   
   
-
-
-
-
   const { createFavorite, favorites, deleteFavorite } = useFavorites();
 
   const { deleteManyRecords } = useDeleteManyRecords({
@@ -114,6 +111,15 @@ export const useRecordActionBar = ({ objectMetadataItem, selectedRecordIds, call
       console.error('Failed to create video interview:', error);
     },
   });
+
+
+  const { checkDataIntegrityOfJob } = useCheckDataIntegrityOfJob({
+    onSuccess: () => {},
+    onError: (error: any) => {
+      console.error('Failed to check data integrity:', error);
+    },
+  });
+
   
   const { sendVideoInterviewLink } = useSendVideoInterview({
     createVideoInterviewLink: false,
@@ -125,7 +131,7 @@ export const useRecordActionBar = ({ objectMetadataItem, selectedRecordIds, call
   const { sendStartChatRequest } = useStartChats({
     onSuccess: () => {},
     onError: (error: any) => {
-      console.error('Failed to send starrt chat:', error);
+      console.error('Failed to send start chat:', error);
     },
   });  
 
@@ -138,9 +144,10 @@ export const useRecordActionBar = ({ objectMetadataItem, selectedRecordIds, call
   const { transcribeCall } = useTranscribeCall({
     onSuccess: () => {},
     onError: (error: any) => {
-      console.error('Failed to refresh chat status:', error);
+      console.error('Failed to transcribe call:', error);
     },
   });
+
   const { refreshChatCounts } = useRefreshChatCounts({
     onSuccess: () => {},
     onError: (error: any) => {
@@ -320,8 +327,6 @@ const sendVideoInterviewLinkSelectRecord = useRecoilCallback(
   const isFavorite = isNonEmptyString(selectedRecordIds[0]) && !!favorites?.find(favorite => favorite.recordId === selectedRecordIds[0]);
 
 
-  
-
   return {
     setContextMenuEntries: useCallback(() => {
       setContextMenuEntries([
@@ -401,9 +406,19 @@ const sendVideoInterviewLinkSelectRecord = useRecoilCallback(
                             }
                           },
                         },
+                        {
+                          label: 'Check Data Integrity ',
+                          Icon: IconDashboard,
+                          onClick: async () => {
+                            try {
+                              await checkDataIntegrityOfJob(selectedRecordIds);
+                            } catch (error) {
+                              console.error('Error creating videos:', error);
+                            }
+                          },
+                        },
                       ]
                     : []),
-
                     ...(objectMetadataItem.nameSingular.toLowerCase().includes( 'jobcandidate')
                       ? [
                         {
@@ -451,6 +466,7 @@ const sendVideoInterviewLinkSelectRecord = useRecoilCallback(
                       },
                       ]
                     : []),
+
                   ...(objectMetadataItem.nameSingular === 'candidate'
                     ? [
                         {

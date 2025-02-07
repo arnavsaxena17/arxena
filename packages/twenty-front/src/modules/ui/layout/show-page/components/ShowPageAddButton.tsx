@@ -14,6 +14,7 @@ import { SHOW_PAGE_ADD_BUTTON_DROPDOWN_ID } from '@/ui/layout/show-page/constant
 import { MenuItem } from '@/ui/navigation/menu-item/components/MenuItem';
 import { Dropdown } from '../../dropdown/components/Dropdown';
 import { DropdownMenu } from '../../dropdown/components/DropdownMenu';
+import { useCheckDataIntegrityOfJob } from '@/object-record/hooks/useCheckDataIntegrityOfJob';
 
 const StyledContainer = styled.div`
   z-index: 1;
@@ -40,6 +41,13 @@ export const ShowPageAddButton = ({ activityTargetObject }: { activityTargetObje
     closeDropdown();
   };
 
+    const { checkDataIntegrityOfJob } = useCheckDataIntegrityOfJob({
+      onSuccess: () => {},
+      onError: (error: any) => {
+        console.error('Failed to check data integrity:', error);
+      },
+    });
+
   const isVideoInterviewEnabled = [CoreObjectNameSingular.Job, CoreObjectNameSingular.Candidate, CoreObjectNameSingular.Person].includes(activityTargetObject.targetObjectNameSingular as CoreObjectNameSingular);
 
   const menuItems = [
@@ -59,6 +67,11 @@ export const ShowPageAddButton = ({ activityTargetObject }: { activityTargetObje
             text: 'Video Interview',
             icon: IconScan,
             onClick: () => handleModal(),
+          },
+          {
+            text: 'Check Integrity of Job',
+            icon: IconScan,
+            onClick: () => checkDataIntegrityOfJob([activityTargetObject.id]),
           },
         ]
       : []),

@@ -47,9 +47,6 @@ export default class CandidateEngagementArx {
       console.log('This is the error in processCandidate', error);
     }
   }
-
-
-
   async startChatControlEngagement(peopleCandidateResponseEngagementArr: allDataObjects.PersonNode[], candidateJob:allDataObjects.Jobs, chatControl: allDataObjects.chatControls,  apiToken:string) {
     const filteredCandidatesToStartEngagement = await new ChatControls(this.workspaceQueryService).filterCandidatesAsPerChatControls(peopleCandidateResponseEngagementArr, candidateJob, chatControl, apiToken);
     console.log("Number of candidates to start chat engagement::", filteredCandidatesToStartEngagement.length, "for chatControl::", chatControl.chatControlType);
@@ -59,7 +56,6 @@ export default class CandidateEngagementArx {
       await this.createAndUpdateCandidateStartChatChatMessage(chatReply, candidatePersonNodeObj,candidateJob,  chatControl, apiToken);
     }
   }
-  
   async engageCandidates(peopleCandidateResponseEngagementArr: allDataObjects.PersonNode[], candidateJob:allDataObjects.Jobs,chatControl: allDataObjects.chatControls, apiToken:string) {
     console.log("These are the candidates who we want to engage ::",peopleCandidateResponseEngagementArr.length , "for chat Contro:", chatControl.chatControlType);
     const sortedPeopleData: allDataObjects.PersonNode[] = sortWhatsAppMessages(peopleCandidateResponseEngagementArr);
@@ -73,7 +69,6 @@ export default class CandidateEngagementArx {
       await this.processCandidate(personNode, candidateJob, chatControl,  apiToken);
     }
   }
-  
   async executeCandidateEngagement(apiToken:string) {
     try{
       console.log("Cron running and cycle started to check candidate engagement");
@@ -94,5 +89,4 @@ export default class CandidateEngagementArx {
       console.log("This is the error in checkCandidate Engagement", error);
     }
   }
-
 }

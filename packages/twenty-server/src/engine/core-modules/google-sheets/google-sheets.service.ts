@@ -555,20 +555,16 @@ export class GoogleSheetsService {
           console.log('Google Sheets authentication failed');
           return;
         }
-
         const headers = this.getHeadersFromData(batch);
         console.log("This is the headers that we objtain from the data:::", headers);
         const lastColumn = this.getColumnLetter(rowDataValues.length);
         const existingSheet = await this.findSpreadsheetByJobName(auth, jobObject.name);
-
         if (!existingSheet) {
           console.log("Existing job sheet not found, so creating a new one and initialising");
           googleSheetId = await this.createAndInitializeSheet(auth, headers, jobObject, apiToken);
         }
         console.log("This is the lastColumn:::", lastColumn);
         const existingData = await this.getValues(auth, googleSheetId, `Sheet1`);
-        
-
         await this.initializeSheetIfNeeded(auth, googleSheetId, headers, existingData, apiToken);
 
         await this.appendNewCandidatesToSheet(auth, googleSheetId, batch, headers, existingData, apiToken);

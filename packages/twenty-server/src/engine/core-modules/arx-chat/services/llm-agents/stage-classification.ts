@@ -38,34 +38,16 @@ export class StageWiseClassification{
       }
     }
 
-    async getPromptByJobIdAndName(jobId: string, promptName: string, apiToken: string) {
-      let data = JSON.stringify({
-        query: allGraphQLQueries.graphqlQueryToFetchPrompts,
-        variables: { filter: { jobId: { eq: jobId }, name: { ilike: `%${promptName}%` } }, limit: 1, orderBy: [{ position: 'AscNullsFirst' }] },
-      });
-      try {
-        const response = await axiosRequest(data, apiToken);
-        const prompts = response.data.data.prompts.edges;
-      if (prompts.length > 0) {
-        return prompts[0].node.prompt;
-      } else {
-        throw new Error('No prompts found for the given jobId and name.');
-      }
-      } catch (error) {
-      console.error('Error fetching prompt:', error);
-      throw error;
-      }
-    }
-
+ 
 
     async getChatStageFromChatHistory(messages: any,candidateId:String,jobId:string,currentWorkspaceMemberId: any, apiToken: string) {
       // const stagePrompt = await new PromptingAgents(this.workspaceQueryService).getStagePrompt();
       console.log('Getting stage from jobIdy:::', jobId);
       console.log('Getting stage from candidateId:::', candidateId);
       const promptName = 'PROMPT_FOR_CHAT_CLASSIFICATION'
-      const stagePrompt = await this.getPromptByJobIdAndName(jobId,promptName , apiToken);
-      console.log("This is the stage prompt that is discovered:::", stagePrompt);
-      const localStagePrompt = await this.getPromptByJobIdAndName(jobId, 'PROMPT_FOR_CHAT_CLASSIFICATION', apiToken);
+      // const stagePrompt = await new PromptingAgents(this.workspaceQueryService).getPromptByJobIdAndName(jobId,promptName , apiToken);
+      // console.log("This is the stage prompt that is discovered:::", stagePrompt);
+      const localStagePrompt = await new PromptingAgents(this.workspaceQueryService).getPromptByJobIdAndName(jobId, 'PROMPT_FOR_CHAT_CLASSIFICATION', apiToken);
       console.log('Local Stage Prompt is:::', localStagePrompt);
       let mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = new Transformations().getMostRecentMessageFromMessagesList(messages);
       function generateHumanReadableConversation(messages: allDataObjects.ChatHistoryItem[]): string {

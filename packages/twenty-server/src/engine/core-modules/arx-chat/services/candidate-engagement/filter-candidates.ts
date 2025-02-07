@@ -8,10 +8,122 @@ import axios from "axios";
 import { TimeManagement } from "./scheduling-agent";
 import { ChatControls } from "./chat-controls";
 
-
-
 export class FilterCandidates {
   constructor(private readonly workspaceQueryService: WorkspaceQueryService) {}
+  private isWithinMorningWindow(): boolean {
+    const currentTime = new Date();
+    const hours = currentTime.getHours();
+    console.log("Current hours are :", hours)
+    return hours >= 8 && hours < 21; // 8 AM to 9 AM IST
+  }
+  private isWithinWorkingHours(): boolean {
+    const currentTime = new Date();
+    const hours = currentTime.getHours();
+    return hours >= 9 && hours < 20; // 9 AM to 8 PM IST
+  }
+  async getRecentlyUpdatedCandidateIdsWithStatusConversationClosed(apiToken: string): Promise<string[]> {
+    if (!this.isWithinWorkingHours()) {
+      console.log('Outside working hours, skipping conversation closed checks');
+      return [];
+    }
+    try {
+      const timeWindow = TimeManagement.timeDifferentials.timeDifferentialinHoursForCheckingCandidateIdsWithStatusOfConversationClosed;
+      const currentTime = new Date();
+      const cutoffTime = new Date(currentTime.getTime() - (timeWindow * 60 * 60 * 1000));
+      console.log('Time window for conversation closed check:');
+      console.log('Current time:', currentTime.toISOString());
+      console.log('Cutoff time:', cutoffTime.toISOString());
+      console.log('Time window (hours):', timeWindow);
+      const graphqlQueryObj = JSON.stringify({
+        query: allGraphQLQueries.graphqlToFetchAllCandidateData,
+        variables: {
+          filter: {
+            updatedAt: { 
+              gte: cutoffTime.toISOString(), 
+              lte: currentTime.toISOString() 
+            },
+            candConversationStatus: { 
+              in: ['CONVERSATION_CLOSED_TO_BE_CONTACTED', 'CANDIDATE_IS_KEEN_TO_CHAT'] 
+            },
+            startChat: { eq: true },
+            startVideoInterviewChat: { eq: false },
+            startMeetingSchedulingChat: { eq: false },
+          },
+          orderBy: [{ position: 'AscNullsFirst' }],
+        },
+      });
+
+      const response = await axiosRequest(graphqlQueryObj, apiToken);
+      const candidates = response?.data?.data?.candidates?.edges || [];
+
+      // Log candidate details for debugging
+      candidates.forEach(edge => {
+        console.log(`Candidate ID: ${edge.node.id}`);
+        console.log(`Status: ${edge.node.candConversationStatus}`);
+        console.log(`Updated At: ${edge.node.updatedAt}`);
+        console.log('---');
+      });
+
+      // Extract unique candidate IDs
+      const candidateIds = Array.from(new Set(
+        candidates.map(edge => edge.node.id)
+      ));
+
+      console.log(`Found ${candidateIds.length} candidates with conversation closed status`);
+      
+      return candidateIds as string[];
+
+    } catch (error) {
+      console.error('Error fetching candidates with conversation closed status:', error);
+      return [];
+    }
+}
+
+
+  async getCandidateIdsWithVideoInterviewCompleted(apiToken: string): Promise<string[]> {
+    console.log('Checking for candidates with video interviews completed');
+    if (!this.isWithinMorningWindow()) {
+      console.log("Not within the monring window, so will not send chat control for video interview");
+      return [];
+    }
+    let allCandidatesWhoHaveStartedVideoInterviews = await new FilterCandidates(this.workspaceQueryService).fetchAllCandidatesWithSpecificChatControl('startVideoInterviewChat', apiToken);
+    console.log('Fetched', allCandidatesWhoHaveStartedVideoInterviews?.length, 'candidates with chatControl startVideoInterviewChat');
+    if (allCandidatesWhoHaveStartedVideoInterviews.length > 0) {
+      const timeWindow = TimeManagement.timeDifferentials.timeDifferentialinHoursForCheckingCandidateIdsWithVideoInterviewCompleted;
+      const currentTime = new Date();
+      const cutoffTime = new Date(currentTime.getTime() - timeWindow * 60 * 60 * 1000);
+      console.log('Date.now() for video interview compeleted::::', new Date(Date.now()).toISOString());
+      const candidateIdsWithVideoInterviewCompleted = allCandidatesWhoHaveStartedVideoInterviews
+        .filter(candidate => {
+          const hasCompletedInterview = candidate?.videoInterview?.edges[0]?.node?.interviewCompleted;
+          if (!hasCompletedInterview) {
+            return false;
+          }
+          const updatedAt = candidate?.videoInterview?.edges[0]?.node?.updatedAt;
+          if (!updatedAt) {
+            return false;
+          }
+          const interviewCompletionTime = new Date(updatedAt);
+          const isWithinTimeWindow = interviewCompletionTime >= cutoffTime && interviewCompletionTime <= currentTime;
+          const meetingChatNotStarted = !candidate.startMeetingSchedulingChat;
+          if (hasCompletedInterview) {
+            console.log('Candidate ID:', candidate.id);
+            console.log('Interview completion time:', interviewCompletionTime.toISOString());
+            console.log('Within time window:', isWithinTimeWindow);
+            console.log('Meeting chat not started:', meetingChatNotStarted);
+          }
+          return hasCompletedInterview && isWithinTimeWindow && meetingChatNotStarted;
+        })
+        .map(candidate => candidate.id);
+
+      console.log('Found', candidateIdsWithVideoInterviewCompleted.length, 'candidates with completed video interviews within the time window');
+      return candidateIdsWithVideoInterviewCompleted;
+    } else {
+      return [];
+    }
+  }
+
+
   async getJobIdsFromCandidateIds(candidateIds: string[], apiToken: string): Promise<string[]> {
     console.log('Getting job ids from candidate ids:', candidateIds);
     return Promise.all(candidateIds.map(candidateId => this.fetchCandidateByCandidateId(candidateId, apiToken).then(candidate => candidate?.jobs?.id)));
@@ -42,26 +154,12 @@ export class FilterCandidates {
       throw error; // Re-throw the error to be handled by the caller
     }
   }
-  async fetchSpecificPersonToEngageBasedOnChatControl(chatControl: allDataObjects.chatControls, personId: string, apiToken: string): Promise<allDataObjects.PersonNode[]> {
-    try {
-      console.log('Fetching candidates to engage');
-      const people = await this.fetchAllPeopleByCandidatePeopleIds([personId], apiToken);
-      console.log('Fetched', people?.length, 'people in fetch person', 'with chatControl', chatControl);
-      return people;
-    } catch (error) {
-      console.log('This is the error in fetchPeopleToEngageByCheckingOnlyStartChat', error);
-      console.error('An error occurred:', error);
-      throw error; // Re-throw the error to be handled by the caller
-    }
-  }
 
 
   async fetchAllCandidatesWithSpecificChatControl(chatControlType: allDataObjects.chatControlType, apiToken: string): Promise<allDataObjects.Candidate[]> {
     console.log('Fetching all candidates with chatControlType', chatControlType);
     let allCandidates: allDataObjects.Candidate[] = [];
-    
-    const filtersToUse = new ChatControls(this.workspaceQueryService).getFiltersForChatControl(chatControlType);
-
+    const filtersToUse = new ChatControls(this.workspaceQueryService).getFiltersToEngageBasedOnExistingChatControl(chatControlType);
     let graphqlQueryObjToFetchAllCandidatesForChats = '';
     try{
       const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
@@ -75,7 +173,6 @@ export class FilterCandidates {
     catch(error){
       console.log('Error in fetching candidates:', error)
     }
-
     for (const filter of filtersToUse) {
         let lastCursor: string | null = null;
         while (true) {
@@ -92,7 +189,6 @@ export class FilterCandidates {
                 }
                 const edges = response?.data?.data?.candidates?.edges || [];
                 if (!edges.length) break;
-                // Add unique candidates only (avoid duplicates)
                 const newCandidates = edges.map((edge: any) => edge.node);
                 newCandidates.forEach((candidate: allDataObjects.Candidate) => {
                     if (!allCandidates.some(existingCandidate => existingCandidate.id === candidate.id)) {
