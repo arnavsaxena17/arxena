@@ -4,7 +4,7 @@ import path from 'path';
 const FormData = require('form-data');
 import { createReadStream } from 'fs';
 import { getContentTypeFromFileName } from '../../../utils/arx-chat-agent-utils';
-import { AttachmentProcessingService } from '../../candidate-engagement/attachment-processes';
+import { AttachmentProcessingService } from '../../../utils/attachment-processes';
 const axios = require('axios');
 import { getTranscriptionFromWhisper } from '../../../utils/arx-chat-agent-utils';
 import { WhatsappTemplateMessages } from './whatsapp-template-messages';

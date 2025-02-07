@@ -1,8 +1,8 @@
 // sendRequestsSequentially();
 
 import axios from "axios";
-import { axiosRequest } from "../../utils/arx-chat-agent-utils";
-import * as allGraphQLQueries from "../../graphql-queries/graphql-queries-chatbot";
+import { axiosRequest } from "./arx-chat-agent-utils";
+import * as allGraphQLQueries from "../graphql-queries/graphql-queries-chatbot";
 const FormData = require("form-data");
 const fs = require("fs");
 

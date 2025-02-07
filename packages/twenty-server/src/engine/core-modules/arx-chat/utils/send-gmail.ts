@@ -1,7 +1,7 @@
-import { GmailMessageData } from "../../../gmail-sender/services/gmail-sender-objects-types";
-import { GmailSender } from "../../../gmail-sender/gmail-sender"
-import { MailerService } from "../../../gmail-sender/gmail-sender.service";
-import * as allDataObjects from '../data-model-objects';
+import { GmailMessageData } from "../../gmail-sender/services/gmail-sender-objects-types";
+import { GmailSender } from "../../gmail-sender/gmail-sender"
+import { MailerService } from "../../gmail-sender/gmail-sender.service";
+import * as allDataObjects from '../services/data-model-objects';
 
 export class SendEmailFunctionality {
   async sendEmailFunction(gmailMessageData: GmailMessageData, twenty_token: string) {

@@ -1,5 +1,5 @@
 import * as allDataObjects from '../../services/data-model-objects';
-import { AttachmentProcessingService } from '../candidate-engagement/attachment-processes';
+import { AttachmentProcessingService } from '../../utils/attachment-processes';
 import { WhatsappControls } from '../whatsapp-api/whatsapp-controls';
 import { UpdateChat } from '../../services/candidate-engagement/update-chat';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';

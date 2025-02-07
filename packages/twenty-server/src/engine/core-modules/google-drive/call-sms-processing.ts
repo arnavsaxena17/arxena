@@ -1,6 +1,6 @@
 import { parseStringPromise } from 'xml2js';
 import * as fs from 'fs';
-import { AttachmentProcessingService } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/attachment-processes';
+import { AttachmentProcessingService } from 'src/engine/core-modules/arx-chat/utils/attachment-processes';
 import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/update-chat';
 import { axiosRequest } from '../workspace-modifications/workspace-modifications.controller';
 import { CleanPhoneNumbers } from 'src/engine/core-modules/candidate-sourcing/utils/clean-phone-numbers';

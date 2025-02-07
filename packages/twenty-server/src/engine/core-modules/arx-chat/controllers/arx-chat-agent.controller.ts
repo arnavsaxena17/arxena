@@ -11,7 +11,7 @@ import * as allGraphQLQueries from '../graphql-queries/graphql-queries-chatbot';
 import { ToolCallsProcessing } from '../services/llm-agents/tool-calls-processing';
 import { HumanLikeLLM } from '../services/llm-agents/human-or-bot-classification';
 import { GmailMessageData } from '../../gmail-sender/services/gmail-sender-objects-types';
-import { SendEmailFunctionality, EmailTemplates } from '../services/candidate-engagement/send-gmail';
+import { SendEmailFunctionality, EmailTemplates } from '../utils/send-gmail';
 import axios from 'axios';
 import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/services/candidate.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';

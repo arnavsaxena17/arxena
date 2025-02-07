@@ -5,7 +5,7 @@ import { JwtAuthGuard } from 'src/engine/guards/jwt.auth.guard';
 import * as allDataObjects from '../services/data-model-objects';
 import { UpdateChat } from '../services/candidate-engagement/update-chat';
 import { GmailMessageData } from '../../gmail-sender/services/gmail-sender-objects-types';
-import { SendEmailFunctionality, EmailTemplates } from '../services/candidate-engagement/send-gmail';
+import { SendEmailFunctionality, EmailTemplates } from '../utils/send-gmail';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { FilterCandidates } from '../services/candidate-engagement/filter-candidates';
 import { StartVideoInterviewChatProcesses } from '../services/candidate-engagement/chat-control-processes/start-video-interview-chat-processes';

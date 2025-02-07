@@ -7,7 +7,7 @@ import { GraphQLClient } from 'graphql-request';
 import axios from 'axios';
 import * as multer from 'multer';
 import { TranscriptionService } from './transcription.service';
-import { AttachmentProcessingService } from '../arx-chat/services/candidate-engagement/attachment-processes';
+import { AttachmentProcessingService } from '../arx-chat/utils/attachment-processes';
 import * as path from 'path';
 import * as fs from 'fs';
 import ffmpeg from 'fluent-ffmpeg';
