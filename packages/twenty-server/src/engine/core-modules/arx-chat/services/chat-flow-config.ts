@@ -115,41 +115,56 @@ const createStatusUpdate = (order: number, type: string): allDataObjects.ChatFlo
   }
 };
 
-export const chatFlowConfigObj: Record<string, allDataObjects.ChatFlowConfig> = {
+// Define the chat flow order
+const chatFlowOrder = [
+  'startChat',
+  'startVideoInterviewChat',
+  'startMeetingSchedulingChat'
+] as const;
+
+// Create a type for the chat flow keys
+type ChatFlowKey = typeof chatFlowOrder[number];
+
+// Helper function to get order number (1-based index)
+const getOrderNumber = (type: ChatFlowKey): number => 
+  chatFlowOrder.indexOf(type) + 1;
+
+
+export const chatFlowConfigObj: Record<ChatFlowKey, allDataObjects.ChatFlowConfig> = {
   startChat: {
-    order: 1,
+    get order() { return getOrderNumber('startChat'); },
     type: 'startChat',
-    filterLogic: candidate => createFilterLogic(1, candidate),
+    filterLogic: candidate => createFilterLogic(getOrderNumber('startChat'), candidate),
     filter: { ...baseFilters, startChat: { eq: true } },
     orderBy: [{ createdAt: 'DESC' }],
     get chatFilters() { return createChatFilters(this); },
-    isEligibleForEngagement: candidate => createIsEligibleForEngagement(candidate, 'startChat', 1),
+    isEligibleForEngagement: candidate => createIsEligibleForEngagement(candidate, 'startChat', getOrderNumber('startChat')),
     templateConfig: { ...baseTemplateConfig, messageSetup: isFirstMessage => baseTemplateConfig.messageSetup(isFirstMessage, 'startChat') },
-    statusUpdate: createStatusUpdate(1, 'startChat'),
+    statusUpdate: createStatusUpdate(getOrderNumber('startChat'), 'startChat'),
   },
   startVideoInterviewChat: {
-    order: 2,
+    get order() { return getOrderNumber('startVideoInterviewChat'); },
     type: 'startVideoInterviewChat',
-    filterLogic: candidate => createFilterLogic(2, candidate),
+    filterLogic: candidate => createFilterLogic(getOrderNumber('startVideoInterviewChat'), candidate),
     preProcessing: async (candidates, candidateJob, chatControl, apiToken, workspaceQueryService) => {
-      await new StartVideoInterviewChatProcesses(workspaceQueryService).setupVideoInterviewLinks(candidates, candidateJob, chatControl, apiToken);
+      await new StartVideoInterviewChatProcesses(workspaceQueryService) .setupVideoInterviewLinks(candidates, candidateJob, chatControl, apiToken);
     },
     filter: { ...baseFilters, startVideoInterviewChat: { eq: true } },
     orderBy: [{ position: 'AscNullsFirst' }],
     get chatFilters() { return createChatFilters(this); },
-    isEligibleForEngagement: candidate => createIsEligibleForEngagement(candidate, 'startVideoInterviewChat', 2),
-    statusUpdate: createStatusUpdate(2, 'startVideoInterviewChat'),
+    isEligibleForEngagement: candidate => createIsEligibleForEngagement(candidate, 'startVideoInterviewChat', getOrderNumber('startVideoInterviewChat')),
+    statusUpdate: createStatusUpdate(getOrderNumber('startVideoInterviewChat'), 'startVideoInterviewChat'),
     templateConfig: { ...baseTemplateConfig, messageSetup: isFirstMessage => baseTemplateConfig.messageSetup(isFirstMessage, 'startVideoInterviewChat') },
   },
   startMeetingSchedulingChat: {
-    order: 3,
+    get order() { return getOrderNumber('startMeetingSchedulingChat'); },
     type: 'startMeetingSchedulingChat',
-    filterLogic: candidate => createFilterLogic(3, candidate),
+    filterLogic: candidate => createFilterLogic(getOrderNumber('startMeetingSchedulingChat'), candidate),
     filter: { ...baseFilters, startMeetingSchedulingChat: { eq: true } },
     orderBy: [{ createdAt: 'DESC' }],
     get chatFilters() { return createChatFilters(this); },
-    isEligibleForEngagement: candidate => createIsEligibleForEngagement(candidate, 'startMeetingSchedulingChat', 3),
-    statusUpdate: createStatusUpdate(3, 'startMeetingSchedulingChat'),
+    isEligibleForEngagement: candidate => createIsEligibleForEngagement(candidate, 'startMeetingSchedulingChat', getOrderNumber('startMeetingSchedulingChat')),
+    statusUpdate: createStatusUpdate(getOrderNumber('startMeetingSchedulingChat'), 'startMeetingSchedulingChat'),
     templateConfig: { ...baseTemplateConfig, messageSetup: isFirstMessage => baseTemplateConfig.messageSetup(isFirstMessage, 'startMeetingSchedulingChat') },
   },
 };
