@@ -139,7 +139,7 @@ export class GoogleSheetsService {
             await this.batchUpdateGoogleSheet(auth, sheetId, batchUpdates);
           }
         } catch (error) {
-          console.error(`Error updating sheet ${sheetId}:`, error);
+          console.log(`Error updating sheet ${sheetId}:`, error);
         }
       }
     }
@@ -194,7 +194,7 @@ export class GoogleSheetsService {
         },
       });
     } catch (error) {
-      console.error('Error sorting sheet:', error);
+      console.log('Error sorting sheet:', error);
       throw error;
     }
   }
@@ -543,7 +543,7 @@ export class GoogleSheetsService {
       const responseToUpdateJob = await axiosRequest(graphqlToUpdateJob, apiToken);
       console.log('Response from update job in update job with job details:', responseToUpdateJob.data.data);
     } catch (error) {
-      console.error('Error updating job with sheet details:', error);
+      console.log('Error updating job with sheet details:', error);
     }
   }
 
@@ -555,24 +555,64 @@ export class GoogleSheetsService {
           console.log('Google Sheets authentication failed');
           return;
         }
-        const headers = this.getHeadersFromData(batch);
-        console.log("This is the headers that we objtain from the data:::", headers);
-        const lastColumn = this.getColumnLetter(rowDataValues.length);
-        const existingSheet = await this.findSpreadsheetByJobName(auth, jobObject.name);
-        if (!existingSheet) {
-          console.log("Existing job sheet not found, so creating a new one and initialising");
-          googleSheetId = await this.createAndInitializeSheet(auth, headers, jobObject, apiToken);
-        }
-        console.log("This is the lastColumn:::", lastColumn);
-        const existingData = await this.getValues(auth, googleSheetId, `Sheet1`);
-        await this.initializeSheetIfNeeded(auth, googleSheetId, headers, existingData, apiToken);
 
-        await this.appendNewCandidatesToSheet(auth, googleSheetId, batch, headers, existingData, apiToken);
-        // await this.updateIdsInSheet(auth, googleSheetId, tracking, apiToken);
+        let headers;
+        try {
+          headers = this.getHeadersFromData(batch);
+          console.log("This is the headers that we obtain from the data:::", headers);
+        } catch (error) {
+          console.log('Error getting headers from data:', error);
+        }
+
+        const lastColumn = this.getColumnLetter(rowDataValues.length);
+        let existingSheet;
+        try {
+          existingSheet = await this.findSpreadsheetByJobName(auth, jobObject.name);
+        } catch (error) {
+          console.log('Error finding spreadsheet by job name:', error);
+        }
+
+        if (!existingSheet) {
+          try {
+            console.log("Existing job sheet not found, so creating a new one and initializing");
+            googleSheetId = await this.createAndInitializeSheet(auth, headers, jobObject, apiToken);
+          } catch (error) {
+            console.log('Error creating and initializing sheet:', error);
+          }
+        }
+
+        console.log("This is the lastColumn:::", lastColumn);
+
+        let existingData;
+        try {
+          existingData = await this.getValues(auth, googleSheetId, `Sheet1`);
+        } catch (error) {
+          console.log('Error getting values from sheet:', error);
+        }
+
+        try {
+          await this.initializeSheetIfNeeded(auth, googleSheetId, headers, existingData, apiToken);
+        } catch (error) {
+          console.log('Error initializing sheet if needed:', error);
+          throw error;
+        }
+
+        try {
+          await this.appendNewCandidatesToSheet(auth, googleSheetId, batch, headers, existingData, apiToken);
+        } catch (error) {
+          console.log('Error appending new candidates to sheet:', error);
+        }
+
+        // try {
+        //   await this.updateIdsInSheet(auth, googleSheetId, tracking, apiToken);
+        // } catch (error) {
+        //   console.log('Error updating IDs in sheet:', error);
+        //   throw error;
+        // }
       } catch (error) {
         console.log('Error in process Google Sheet Batch:', error);
         if (error.response?.data) {
-          console.error('Detailed error:', error.response.data);
+          console.log('Detailed error:', error.response.data);
         }
       }
     });
@@ -650,7 +690,7 @@ export class GoogleSheetsService {
       }
       return null;
     } catch (error) {
-      console.error('Error searching for spreadsheet:', error);
+      console.log('Error searching for spreadsheet:', error);
       throw error;
     }
   }
@@ -697,7 +737,7 @@ export class GoogleSheetsService {
         },
       });
     } catch (error) {
-      console.error('Error expanding sheet grid:', error);
+      console.log('Error expanding sheet grid:', error);
       throw error;
     }
   }
@@ -796,7 +836,7 @@ export class GoogleSheetsService {
         console.log(`Updated ${updates.length} ID entries in the sheet`);
       }
     } catch (error) {
-      console.error('Error updating IDs in sheet:', error);
+      console.log('Error updating IDs in sheet:', error);
       throw error;
     }
   }
@@ -895,7 +935,7 @@ export class GoogleSheetsService {
         googleSheetUrl: `https://docs.google.com/spreadsheets/d/${newSpreadsheet.data.spreadsheetId}`,
       };
     } catch (error) {
-      console.error('Error creating/finding spreadsheet:', error);
+      console.log('Error creating/finding spreadsheet:', error);
       throw error;
     }
   }
@@ -943,7 +983,7 @@ export class GoogleSheetsService {
 
       console.log('Successfully updated candidate in sheet');
     } catch (error) {
-      console.error('Error updating candidate in sheet:', error);
+      console.log('Error updating candidate in sheet:', error);
       throw error;
     }
   }
@@ -1032,7 +1072,7 @@ export class GoogleSheetsService {
       await drive.files.delete({ fileId: spreadsheetId });
       return { success: true };
     } catch (error) {
-      console.error('Drive API Error:', error.response?.data || error);
+      console.log('Drive API Error:', error.response?.data || error);
       throw error;
     }
   }

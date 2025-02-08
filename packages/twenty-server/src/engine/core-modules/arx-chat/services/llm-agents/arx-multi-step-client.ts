@@ -4,10 +4,11 @@ import { ToolCallingAgents } from './tool-calling-agents';
 import { ChatCompletionMessage } from 'openai/resources';
 import { WhatsappControls } from '../whatsapp-api/whatsapp-controls';
 import { HumanLikeLLM } from './human-or-bot-classification'
-import { Transformations } from '../candidate-engagement/transformations';
+// import { Transformations } from '../candidate-engagement/transformations';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
-import { PromptingAgents } from './prompting-agents';
 import { ChatControls } from '../candidate-engagement/chat-controls';
+import CandidateEngagementArx from '../candidate-engagement/candidate-engagement';
+import { FilterCandidates } from '../candidate-engagement/filter-candidates';
 
 export class OpenAIArxMultiStepClient {
   private readonly personNode: allDataObjects.PersonNode;
@@ -18,12 +19,12 @@ export class OpenAIArxMultiStepClient {
   }
   async createCompletion(mostRecentMessageArr: allDataObjects.ChatHistoryItem[],  candidateJob:allDataObjects.Jobs,chatControl:allDataObjects.chatControls,apiToken:string,  isChatEnabled: boolean = true ) {
     try{
-      const newSystemPrompt = await new ChatControls(this.workspaceQueryService).getSystemPrompt(this.personNode,candidateJob, chatControl,apiToken);
+      const newSystemPrompt = await new CandidateEngagementArx(this.workspaceQueryService).getSystemPrompt(this.personNode,candidateJob, chatControl,apiToken);
       if (!newSystemPrompt) {
         console.log("New System Prompt is null, so returning as it is.FUCK FUCK")
         return
       };
-      const updatedMostRecentMessagesBasedOnNewSystemPrompt:allDataObjects.ChatHistoryItem[] = await new Transformations().updateMostRecentMessagesBasedOnNewSystemPrompt(mostRecentMessageArr, newSystemPrompt);
+      const updatedMostRecentMessagesBasedOnNewSystemPrompt:allDataObjects.ChatHistoryItem[] = await new FilterCandidates(this.workspaceQueryService).updateMostRecentMessagesBasedOnNewSystemPrompt(mostRecentMessageArr, newSystemPrompt);
       const tools = await new ChatControls(this.workspaceQueryService).getTools(candidateJob, chatControl);
       const responseMessage = await this.getHumanLikeResponseMessageFromLLM(updatedMostRecentMessagesBasedOnNewSystemPrompt, tools, apiToken)
       console.log('BOT_MESSAGE in at::', new Date().toString(), ' ::: ' ,JSON.stringify(responseMessage));

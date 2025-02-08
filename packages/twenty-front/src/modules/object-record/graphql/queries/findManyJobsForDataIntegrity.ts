@@ -73,9 +73,19 @@ export const FIND_MANY_JOBS_QUERY = gql`query FindManyJobs($filter: JobFilterInp
             name
             descriptionOneliner
         }
+        interviewSchedule{
+            edges{
+                node{
+                    id
+                    name
+                    slotsAvailable
+                    meetingType
+                    jobId
+                }
+            }
+        }
         jobCode
         jobLocation
-        
         attachments{
             edges{
                 node{

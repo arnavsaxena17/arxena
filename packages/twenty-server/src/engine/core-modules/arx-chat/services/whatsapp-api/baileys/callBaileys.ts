@@ -4,7 +4,6 @@ import { UpdateChat } from '../../candidate-engagement/update-chat';
 import * as allDataObjects from '../../data-model-objects';
 import axios from 'axios';
 import { FilterCandidates } from '../../candidate-engagement/filter-candidates';
-import { Transformations } from '../../candidate-engagement/transformations';
 
 const FormData = require('form-data');
 const fs = require('fs');
@@ -39,7 +38,7 @@ async sendWhatsappMessageVIABaileysAPI(whatappUpdateMessageObj: allDataObjects.w
       return;
     }
     
-    const whatappUpdateMessageObjAfterWAMidUpdate = await new Transformations().updateChatHistoryObjCreateWhatsappMessageObj( response?.messageId || 'placeholdermessageid', personNode, candidateNode, mostRecentMessageArr,chatControl);
+    const whatappUpdateMessageObjAfterWAMidUpdate = await new FilterCandidates(this.workspaceQueryService).updateChatHistoryObjCreateWhatsappMessageObj( response?.messageId || 'placeholdermessageid', personNode, candidateNode, mostRecentMessageArr,chatControl);
     let candidateProfileObj = whatappUpdateMessageObj.messageType !== 'botMessage' ? await new FilterCandidates(this.workspaceQueryService).getCandidateInformation(whatappUpdateMessageObj,  apiToken) : whatappUpdateMessageObj.candidateProfile;
 
     await new UpdateChat(this.workspaceQueryService).updateCandidateEngagementDataInTable(whatappUpdateMessageObjAfterWAMidUpdate, apiToken, true);

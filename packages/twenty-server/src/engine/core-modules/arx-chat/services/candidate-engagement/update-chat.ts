@@ -1,45 +1,73 @@
 import * as allDataObjects from '../../services/data-model-objects';
 import * as allGraphQLQueries from '../../graphql-queries/graphql-queries-chatbot';
 import { v4 } from 'uuid';
-import { axiosRequest, formatChat } from '../../utils/arx-chat-agent-utils';
+import { axiosRequest } from '../../utils/arx-chat-agent-utils';
 import axios from 'axios';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
-import { graphQltoUpdateOneCandidate, workspacesWithOlderSchema } from 'src/engine/core-modules/candidate-sourcing/graphql-queries';
 import {FilterCandidates} from './filter-candidates';
 import { StageWiseClassification } from '../llm-agents/stage-classification';
 import {Semaphore} from '../../utils/semaphore';
-import { ChatControls } from './chat-controls';
-import { StartChatProcesses } from './chat-control-processes/start-chat-processes';
-import {ArxChatEndpoint} from 'src/engine/core-modules/arx-chat/controllers/arx-chat-agent.controller';
-import { TimeManagement } from './scheduling-agent';
+import CandidateEngagementArx from './candidate-engagement';
+import { TimeManagement } from '../time-management';
 export class UpdateChat {
   constructor(private readonly workspaceQueryService: WorkspaceQueryService) { }
+  async getRecentCandidateIdsToMakeUpdatesonChats(apiToken: string): Promise<{ candidateIds: string[]; jobIds: string[] }> {
+    try {
+      const timeWindow = TimeManagement.timeDifferentials.timeDifferentialinMinutesForCheckingCandidateIdsToMakeUpdatesOnChatsForNextChatControls
+      const endTime = new Date();
+      const startTime = new Date(endTime.getTime() - (timeWindow * 60 * 1000));
+
+      const graphqlQueryObj = JSON.stringify({
+        query: allGraphQLQueries.graphQlToFetchWhatsappMessages,
+        variables: { filter: { createdAt: { gte: startTime.toISOString(), lte: endTime.toISOString() } }, orderBy: [{ position: 'AscNullsFirst' }] },
+      });
+
+      const data = await axiosRequest(graphqlQueryObj, apiToken);
+      // Extract unique candidate IDs
+      console.log(`Fetching WhatsApp messages between ${startTime.toISOString()} and ${endTime.toISOString()}`);
+      console.log('Number of whatsappmessages  minutes ago', data?.data?.data.whatsappMessages?.edges?.length);
+
+      if (data?.data?.data?.whatsappMessages?.edges?.length > 0) {
+        console.log('This is the number of messagesgetRecent mesages', data?.data?.data.whatsappMessages?.edges?.length);
+
+        const filteredMessages = data?.data?.data.whatsappMessages?.edges.filter(
+          (edge: { node: { candidate: { startChat: boolean; startMeetingSchedulingChat: boolean; startVideoInterviewChat: boolean } } }) => !edge.node.candidate.startMeetingSchedulingChat && !edge.node.candidate.startVideoInterviewChat,
+        );
+        const candidateIds: string[] = Array.from(new Set(filteredMessages.map((edge: { node: { candidateId: any } }) => edge?.node?.candidateId))) as unknown as string[];
+        console.log('This is the candidateIds who have messaged recently', candidateIds, 'and are not in video interview stages or meeting scheduling stages');
+        const jobIds: string[] = Array.from(new Set(filteredMessages.map((edge: { node: { jobsId: any } }) => edge?.node?.jobsId))) as unknown as string[];
+        console.log('This is the jobIds who have messaged recently', jobIds, 'and are not in video interview stages or meeting scheduling stages');
+        return { candidateIds, jobIds };
+      } else {
+        console.log('No recent candidates found');
+        return { candidateIds: [], jobIds: [] };
+      }
+    } catch (error) {
+      console.log('Error fetching recent WhatsApp messages:', error);
+      return { candidateIds: [], jobIds: [] };
+    }
+  }
+
+  
   async makeUpdatesForNewChats(apiToken:string){
     console.log("making updates to candidates based on the rchats they have made")
-
-    const timeWindow = TimeManagement.timeDifferentials.timeDifferentialinMinutesForCheckingCandidateIdsToMakeUpdatesOnChatsForNextChatControls
-    const endTime = new Date();
-    const startTime = new Date(endTime.getTime() - (timeWindow * 60 * 1000));
-
-    const { candidateIds, jobIds } = await new StartChatProcesses().getRecentCandidateIdsToMakeUpdatesonChats(apiToken, startTime, endTime);
+    const { candidateIds, jobIds } = await this.getRecentCandidateIdsToMakeUpdatesonChats(apiToken);
     console.log("Received a total of ", candidateIds.length, " candidates to make updates for based on the chats that they have done");
     await this.updateCandidatesWithChatCount(candidateIds, apiToken);
     await this.processCandidatesChatsGetStatuses(apiToken,jobIds, candidateIds);
     // await this.processCandidatesStartMeetingSchedulingChat(apiToken,jobIds, candidateIds);
   }
+
   async checkScheduledClientMeetingsCount(jobId, apiToken:string){
     const scheduledClientMeetings = await new FilterCandidates(this.workspaceQueryService).fetchScheduledClientMeetings(jobId, apiToken);
     const today = new Date();
     const dayAfterTomorrow = new Date(today);
     dayAfterTomorrow.setDate(today.getDate() + 2);
-
     const countScheduledMeetings = scheduledClientMeetings.filter(meeting => {
       const meetingDate = new Date(meeting.interviewTime.date);
       return meetingDate.toDateString() === dayAfterTomorrow.toDateString();
     }).length;
-
     console.log(`Number of scheduled meetings for the day after tomorrow: ${countScheduledMeetings}`);
-
     // Send candidate details to email
     const candidateDetails = scheduledClientMeetings.map(meeting => ({
       candidateId: meeting.candidateId,
@@ -49,7 +77,6 @@ export class UpdateChat {
     const candidateIds = scheduledClientMeetings.map(meeting => meeting.candidateId);
     await this.createShortlist(candidateIds, apiToken);
     return scheduledClientMeetings;
-
   }
 
 
@@ -60,19 +87,17 @@ export class UpdateChat {
     const response = await axios.post(url, { candidateIds: candidateIds }, {
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer ' + apiToken }
     });
-
     console.log("Response from create-shortlist",response.data);
     return response.data;
-
   }
 
 
   async updateCandidatesWithChatCount(candidateIds: string[] | null = null, apiToken: string) {
-    let allCandidates = await new FilterCandidates(this.workspaceQueryService).fetchAllCandidatesWithSpecificChatControl('startChat', apiToken);
+    let allCandidates = await new CandidateEngagementArx(this.workspaceQueryService).fetchAllCandidatesWithSpecificChatControl('startChat', apiToken);
     if (candidateIds && Array.isArray(candidateIds)) {
       allCandidates = allCandidates.filter(candidate => candidateIds.includes(candidate.id));
     }
-    console.log('Fetched', allCandidates?.length, ' candidates with chatControl allStartedAndStoppedChats');
+    console.log('Fetched', allCandidates?.length, ' candidates with chatControl startChat in chatCount');
     for (const candidate of allCandidates) {
       const candidateId = candidate?.id;
       const whatsappMessages = await new FilterCandidates(this.workspaceQueryService).fetchAllWhatsappMessages(candidateId, apiToken);
@@ -90,12 +115,20 @@ export class UpdateChat {
   }
 
   async processCandidatesChatsGetStatuses(apiToken: string, jobIds: string[], candidateIds: string[] | null = null, currentWorkspaceMemberId: string | null = null) {
-    console.log('Processing candidates chats to get statuses with start chat true');
-    let allCandidates = await new FilterCandidates(this.workspaceQueryService).fetchAllCandidatesWithSpecificChatControl('allStartedAndStoppedChats', apiToken);
+    console.log('Processing candidates chats to get statuses with chat true');
+    console.log('Received a lngth of candidate Ids::', candidateIds?.length);
+    console.log('candidate Ids::', candidateIds);
+    let allCandidates = await new CandidateEngagementArx(this.workspaceQueryService).fetchAllCandidatesWithSpecificChatControl('allStartedAndStoppedChats', apiToken);
+    console.log('Received a lngth of allCandidates in process Candidates Chats GetStatuses::', allCandidates?.length);
     if (candidateIds && Array.isArray(candidateIds)) {
-      allCandidates = allCandidates.filter(candidate => candidateIds.includes(candidate.id));
+      allCandidates = allCandidates.filter(candidate => 
+        candidateIds.includes(candidate.id) && 
+        (candidate.candConversationStatus !== "CONVERSATION_CLOSED_TO_BE_CONTACTED" && candidate.candConversationStatus !== "CANDIDATE_IS_KEEN_TO_CHAT")
+      );
     }
-    console.log('Fetched', allCandidates?.length, ' candidates with chatControl allStartedAndStoppedChats');
+    
+    console.log('Fetched', allCandidates?.length, ' candidates with chatControl allStartedAndStoppedChats in getStatus');
+    console.log('Fetched filtered', allCandidates);
     const semaphore = new Semaphore(10); // Allow 10 concurrent requests
     const processWithSemaphore = async (candidate: any) => {
       await semaphore.acquire();
@@ -103,6 +136,7 @@ export class UpdateChat {
         const candidateId = candidate?.id;
         const jobId = candidateIds ? jobIds[candidateIds.indexOf(candidateId)] : '';
         const whatsappMessages = await new FilterCandidates(this.workspaceQueryService).fetchAllWhatsappMessages(candidateId, apiToken);
+        console.log("These are the whtsapp messages::", whatsappMessages);
         
         // Get the chat status and formatted chat in parallel
         const [candidateStatus] = await Promise.all([

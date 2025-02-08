@@ -10,6 +10,19 @@ query FindOneWhatsappMessage($whatsappMessageId: String!) {
 }
 `;
 
+export const graphQltoUpdateOneCandidate = `mutation UpdateOneCandidate($idToUpdate: ID!, $input: CandidateUpdateInput!) {
+  updateCandidate(id: $idToUpdate, data: $input) {
+    __typename
+    engagementStatus
+    whatsappProvider
+    jobsId
+    updatedAt
+    startChat
+    position
+  }
+}`
+
+  
 
 export const graphqlQueryToFindScheduledClientMeetings = `query FindManyClientInterviews($filter: ClientInterviewFilterInput, $orderBy: [ClientInterviewOrderByInput], $lastCursor: String, $limit: Int) {
   clientInterviews(

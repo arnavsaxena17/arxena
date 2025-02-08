@@ -6,7 +6,8 @@ import path from 'path';
 import mime from 'mime-types';
 import axios from 'axios';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
-import { Transformations } from '../candidate-engagement/transformations';
+import { FilterCandidates } from '../candidate-engagement/filter-candidates';
+// import { Transformations } from '../candidate-engagement/transformations';
 
 const baseUrl = 'http://localhost:' + process.env.PORT; // Base URL of your GraphQL server
 export class WhatsappControls {
@@ -40,7 +41,7 @@ export class WhatsappControls {
         return;
       }
 
-      const whatappUpdateMessageObj = await new Transformations().updateChatHistoryObjCreateWhatsappMessageObj('sendWhatsappMessageToCandidateMulti', personNode, candidateNode, mostRecentMessageArr, chatControl);
+      const whatappUpdateMessageObj = await new FilterCandidates(this.workspaceQueryService).updateChatHistoryObjCreateWhatsappMessageObj('sendWhatsappMessageToCandidateMulti', personNode, candidateNode, mostRecentMessageArr, chatControl);
       
       if (!whatappUpdateMessageObj || whatappUpdateMessageObj.messages[0].content?.includes('#DONTRESPOND#') || (whatappUpdateMessageObj.messages[0].content?.includes('DONTRESPOND') && whatappUpdateMessageObj.messages[0].content)) {
         console.log('Found a #DONTRESPOND# message, so not sending any message');

@@ -5,124 +5,51 @@ import * as allGraphQLQueries from '../../graphql-queries/graphql-queries-chatbo
 import { axiosRequest } from "../../utils/arx-chat-agent-utils";
 import { workspacesWithOlderSchema } from "src/engine/core-modules/candidate-sourcing/graphql-queries";
 import axios from "axios";
-import { TimeManagement } from "./scheduling-agent";
 import { ChatControls } from "./chat-controls";
+import CandidateEngagementArx from "./candidate-engagement";
 
 export class FilterCandidates {
   constructor(private readonly workspaceQueryService: WorkspaceQueryService) {}
-  private isWithinMorningWindow(): boolean {
-    const currentTime = new Date();
-    const hours = currentTime.getHours();
-    console.log("Current hours are :", hours)
-    return hours >= 8 && hours < 21; // 8 AM to 9 AM IST
+
+  async updateChatHistoryObjCreateWhatsappMessageObj(
+    wamId: string,
+    personNode: allDataObjects.PersonNode,
+    candidateNode: allDataObjects.CandidateNode,
+    chatHistory: allDataObjects.ChatHistoryItem[],
+    chatControl: allDataObjects.chatControls,
+    
+  ): Promise<allDataObjects.whatappUpdateMessageObjType> {
+      const updatedChatHistoryObj: allDataObjects.whatappUpdateMessageObjType = {
+        messageObj: chatHistory,
+        candidateProfile: candidateNode,
+        candidateFirstName: personNode.name?.firstName,
+        phoneNumberFrom: allDataObjects.recruiterProfile?.phone,
+        phoneNumberTo: personNode.phone,
+        lastEngagementChatControl: chatControl.chatControlType,
+        messages: chatHistory.slice(-1),
+        messageType: 'botMessage',
+        whatsappDeliveryStatus: 'created',
+        whatsappMessageId: wamId,
+        whatsappMessageType: ''
+      };
+      return updatedChatHistoryObj;
   }
-  private isWithinWorkingHours(): boolean {
-    const currentTime = new Date();
-    const hours = currentTime.getHours();
-    return hours >= 9 && hours < 20; // 9 AM to 8 PM IST
-  }
-  async getRecentlyUpdatedCandidateIdsWithStatusConversationClosed(apiToken: string): Promise<string[]> {
-    if (!this.isWithinWorkingHours()) {
-      console.log('Outside working hours, skipping conversation closed checks');
-      return [];
-    }
-    try {
-      const timeWindow = TimeManagement.timeDifferentials.timeDifferentialinHoursForCheckingCandidateIdsWithStatusOfConversationClosed;
-      const currentTime = new Date();
-      const cutoffTime = new Date(currentTime.getTime() - (timeWindow * 60 * 60 * 1000));
-      console.log('Time window for conversation closed check:');
-      console.log('Current time:', currentTime.toISOString());
-      console.log('Cutoff time:', cutoffTime.toISOString());
-      console.log('Time window (hours):', timeWindow);
-      const graphqlQueryObj = JSON.stringify({
-        query: allGraphQLQueries.graphqlToFetchAllCandidateData,
-        variables: {
-          filter: {
-            updatedAt: { 
-              gte: cutoffTime.toISOString(), 
-              lte: currentTime.toISOString() 
-            },
-            candConversationStatus: { 
-              in: ['CONVERSATION_CLOSED_TO_BE_CONTACTED', 'CANDIDATE_IS_KEEN_TO_CHAT'] 
-            },
-            startChat: { eq: true },
-            startVideoInterviewChat: { eq: false },
-            startMeetingSchedulingChat: { eq: false },
-          },
-          orderBy: [{ position: 'AscNullsFirst' }],
-        },
-      });
-
-      const response = await axiosRequest(graphqlQueryObj, apiToken);
-      const candidates = response?.data?.data?.candidates?.edges || [];
-
-      // Log candidate details for debugging
-      candidates.forEach(edge => {
-        console.log(`Candidate ID: ${edge.node.id}`);
-        console.log(`Status: ${edge.node.candConversationStatus}`);
-        console.log(`Updated At: ${edge.node.updatedAt}`);
-        console.log('---');
-      });
-
-      // Extract unique candidate IDs
-      const candidateIds = Array.from(new Set(
-        candidates.map(edge => edge.node.id)
-      ));
-
-      console.log(`Found ${candidateIds.length} candidates with conversation closed status`);
-      
-      return candidateIds as string[];
-
-    } catch (error) {
-      console.error('Error fetching candidates with conversation closed status:', error);
-      return [];
-    }
-}
-
-
-  async getCandidateIdsWithVideoInterviewCompleted(apiToken: string): Promise<string[]> {
-    console.log('Checking for candidates with video interviews completed');
-    if (!this.isWithinMorningWindow()) {
-      console.log("Not within the monring window, so will not send chat control for video interview");
-      return [];
-    }
-    let allCandidatesWhoHaveStartedVideoInterviews = await new FilterCandidates(this.workspaceQueryService).fetchAllCandidatesWithSpecificChatControl('startVideoInterviewChat', apiToken);
-    console.log('Fetched', allCandidatesWhoHaveStartedVideoInterviews?.length, 'candidates with chatControl startVideoInterviewChat');
-    if (allCandidatesWhoHaveStartedVideoInterviews.length > 0) {
-      const timeWindow = TimeManagement.timeDifferentials.timeDifferentialinHoursForCheckingCandidateIdsWithVideoInterviewCompleted;
-      const currentTime = new Date();
-      const cutoffTime = new Date(currentTime.getTime() - timeWindow * 60 * 60 * 1000);
-      console.log('Date.now() for video interview compeleted::::', new Date(Date.now()).toISOString());
-      const candidateIdsWithVideoInterviewCompleted = allCandidatesWhoHaveStartedVideoInterviews
-        .filter(candidate => {
-          const hasCompletedInterview = candidate?.videoInterview?.edges[0]?.node?.interviewCompleted;
-          if (!hasCompletedInterview) {
-            return false;
-          }
-          const updatedAt = candidate?.videoInterview?.edges[0]?.node?.updatedAt;
-          if (!updatedAt) {
-            return false;
-          }
-          const interviewCompletionTime = new Date(updatedAt);
-          const isWithinTimeWindow = interviewCompletionTime >= cutoffTime && interviewCompletionTime <= currentTime;
-          const meetingChatNotStarted = !candidate.startMeetingSchedulingChat;
-          if (hasCompletedInterview) {
-            console.log('Candidate ID:', candidate.id);
-            console.log('Interview completion time:', interviewCompletionTime.toISOString());
-            console.log('Within time window:', isWithinTimeWindow);
-            console.log('Meeting chat not started:', meetingChatNotStarted);
-          }
-          return hasCompletedInterview && isWithinTimeWindow && meetingChatNotStarted;
-        })
-        .map(candidate => candidate.id);
-
-      console.log('Found', candidateIdsWithVideoInterviewCompleted.length, 'candidates with completed video interviews within the time window');
-      return candidateIdsWithVideoInterviewCompleted;
-    } else {
-      return [];
-    }
+  async updateMostRecentMessagesBasedOnNewSystemPrompt(
+    mostRecentMessageArr: allDataObjects.ChatHistoryItem[],
+    newSystemPrompt: string
+  ): Promise<allDataObjects.ChatHistoryItem[]> {
+    mostRecentMessageArr[0] = { role: 'system', content: newSystemPrompt };
+    return mostRecentMessageArr;
   }
 
+    getMostRecentMessageFromMessagesList(messagesList: allDataObjects.MessageNode[]) {
+      let mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = [];
+      if (messagesList) {
+        messagesList.sort((a, b) => new Date(b?.createdAt).getTime() - new Date(a?.createdAt).getTime());
+        mostRecentMessageArr = messagesList[0]?.messageObj;
+      }
+      return mostRecentMessageArr;
+    }
 
   async getJobIdsFromCandidateIds(candidateIds: string[], apiToken: string): Promise<string[]> {
     console.log('Getting job ids from candidate ids:', candidateIds);
@@ -136,79 +63,6 @@ export class FilterCandidates {
     return response.data.data;
 
   }
-
-  async fetchSpecificPeopleToEngageBasedOnChatControl(chatControl: allDataObjects.chatControls, apiToken: string): Promise<{ people: allDataObjects.PersonNode[], candidateJob: allDataObjects.Jobs}> {
-    try {
-      console.log('Fetching candidates to engage');
-      const candidates = await this.fetchAllCandidatesWithSpecificChatControl(chatControl.chatControlType, apiToken);
-      console.log('Fetched', candidates?.length, ' candidates with chatControl', chatControl);
-      const candidatePeopleIds = candidates?.filter(c => c?.people?.id).map(c => c?.people?.id);
-      const candidateJob = candidates?.filter(c => c?.jobs?.id).map(c => c?.jobs)[0];
-      console.log('Got a total of ', candidatePeopleIds?.length, 'candidate ids', 'for chatControl', chatControl);
-      const people = await this.fetchAllPeopleByCandidatePeopleIds(candidatePeopleIds, apiToken);
-      console.log('Fetched', people?.length, 'people in fetch all People', 'with chatControl', chatControl);
-      return { people, candidateJob };
-    } catch (error) {
-      console.log('This is the error in fetchPeopleToEngageByCheckingOnlyStartChat', error);
-      console.log('An error occurred:', error);
-      throw error; // Re-throw the error to be handled by the caller
-    }
-  }
-
-
-  async fetchAllCandidatesWithSpecificChatControl(chatControlType: allDataObjects.chatControlType, apiToken: string): Promise<allDataObjects.Candidate[]> {
-    console.log('Fetching all candidates with chatControlType', chatControlType);
-    let allCandidates: allDataObjects.Candidate[] = [];
-    const filtersToUse = new ChatControls(this.workspaceQueryService).getFiltersToEngageBasedOnExistingChatControl(chatControlType);
-    let graphqlQueryObjToFetchAllCandidatesForChats = '';
-    try{
-      const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-      if (workspacesWithOlderSchema.includes(workspaceId)) {
-        graphqlQueryObjToFetchAllCandidatesForChats = allGraphQLQueries.graphqlToFetchManyCandidatesOlderSchema;
-      }
-      else{
-        graphqlQueryObjToFetchAllCandidatesForChats = allGraphQLQueries.graphqlToFetchAllCandidateData;
-      }
-    }
-    catch(error){
-      console.log('Error in fetching candidates:', error)
-    }
-    for (const filter of filtersToUse) {
-        let lastCursor: string | null = null;
-        while (true) {
-            const graphqlQueryObj = JSON.stringify({
-                query: graphqlQueryObjToFetchAllCandidatesForChats,
-                variables: { lastCursor, limit: 30, filter },
-            });
-            try {
-                const response = await axiosRequest(graphqlQueryObj, apiToken);
-                if (response.data.errors) {
-                    const workspaceID = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-                    console.log('Errors in axiosRequest response when trying to fetch candidates with specific chat control:', response.data.errors, 'with workspace Id:', workspaceID);
-                    break;
-                }
-                const edges = response?.data?.data?.candidates?.edges || [];
-                if (!edges.length) break;
-                const newCandidates = edges.map((edge: any) => edge.node);
-                newCandidates.forEach((candidate: allDataObjects.Candidate) => {
-                    if (!allCandidates.some(existingCandidate => existingCandidate.id === candidate.id)) {
-                        allCandidates.push(candidate);
-                    }
-                });
-                lastCursor = edges[edges.length - 1].cursor;
-                if (edges.length < 30) {
-                    break;  // No more pages to fetch
-                }
-            } catch (error) {
-                console.error('Error fetching candidates:', error);
-                break;
-            }
-        }
-    }
-
-    console.log('Number of candidates from fetched candidates:', allCandidates.length, 'for chatControlType', chatControlType);
-    return allCandidates;
-}
 
   async fetchCandidateByCandidateId(candidateId: string, apiToken: string): Promise<allDataObjects.CandidateNode> {
     try {

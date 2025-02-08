@@ -12,7 +12,6 @@ import { UpdateChat } from '../../candidate-engagement/update-chat';
 const { exec } = require('child_process');
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { FilterCandidates } from '../../candidate-engagement/filter-candidates';
-import { Transformations } from '../../candidate-engagement/transformations';
 import { ChatControls } from '../../candidate-engagement/chat-controls';
 
 export class FacebookWhatsappChatApi {
@@ -134,7 +133,7 @@ export class FacebookWhatsappChatApi {
               console.log('Candidate node not found, cannot proceed with sending the message');
               return;
             }
-            const whatappUpdateMessageObj: allDataObjects.whatappUpdateMessageObjType = await new Transformations().updateChatHistoryObjCreateWhatsappMessageObj('failed', personObj, candidateNode, mostRecentMessageArr, chatControl);
+            const whatappUpdateMessageObj: allDataObjects.whatappUpdateMessageObjType = await new FilterCandidates(this.workspaceQueryService).updateChatHistoryObjCreateWhatsappMessageObj('failed', personObj, candidateNode, mostRecentMessageArr, chatControl);
 
             await new UpdateChat(this.workspaceQueryService).updateCandidateEngagementDataInTable(whatappUpdateMessageObj, apiToken);
           }
@@ -231,7 +230,7 @@ export class FacebookWhatsappChatApi {
         console.log('Candidate node not found, cannot proceed with sending the message');
         return;
       }
-      const whatappUpdateMessageObj = await new Transformations().updateChatHistoryObjCreateWhatsappMessageObj(wamId, personObj, candidateNode, mostRecentMessageArr, chatControl);
+      const whatappUpdateMessageObj = await new FilterCandidates(this.workspaceQueryService).updateChatHistoryObjCreateWhatsappMessageObj(wamId, personObj, candidateNode, mostRecentMessageArr, chatControl);
       if (whatappUpdateMessageObj) {
         await new UpdateChat(this.workspaceQueryService).updateCandidateEngagementDataInTable(whatappUpdateMessageObj, apiToken);
       }
@@ -391,7 +390,7 @@ export class FacebookWhatsappChatApi {
           return;
         }
 
-        const whatappUpdateMessageObjAfterWAMidUpdate = await new Transformations().updateChatHistoryObjCreateWhatsappMessageObj(
+        const whatappUpdateMessageObjAfterWAMidUpdate = await new FilterCandidates(this.workspaceQueryService).updateChatHistoryObjCreateWhatsappMessageObj(
           response?.data?.messages[0]?.id || response.messages[0].id,
           personNode,
           candidateNode,

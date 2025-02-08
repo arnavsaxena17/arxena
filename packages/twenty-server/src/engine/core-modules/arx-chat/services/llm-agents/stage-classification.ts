@@ -2,7 +2,6 @@ import * as allDataObjects from '../data-model-objects';
 import { ToolCallingAgents } from './tool-calling-agents';
 
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
-import { Transformations } from '../candidate-engagement/transformations';
 
 import * as allGraphQLQueries from '../../graphql-queries/graphql-queries-chatbot';
 import CandidateEngagementArx from '../candidate-engagement/candidate-engagement';
@@ -10,6 +9,7 @@ import { zodResponseFormat } from 'openai/helpers/zod';
 import { axiosRequest } from '../../utils/arx-chat-agent-utils';
 import { PromptingAgents } from './prompting-agents';
 import { JobCandidateUtils } from 'src/engine/core-modules/candidate-sourcing/utils/job-candidate-utils';
+import { FilterCandidates } from '../candidate-engagement/filter-candidates';
 
 const modelName = 'gpt-4o';
 
@@ -49,7 +49,7 @@ export class StageWiseClassification{
       // console.log("This is the stage prompt that is discovered:::", stagePrompt);
       const localStagePrompt = await new PromptingAgents(this.workspaceQueryService).getPromptByJobIdAndName(jobId, 'PROMPT_FOR_CHAT_CLASSIFICATION', apiToken);
       console.log('Local Stage Prompt is:::', localStagePrompt);
-      let mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = new Transformations().getMostRecentMessageFromMessagesList(messages);
+      let mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = new FilterCandidates(this.workspaceQueryService).getMostRecentMessageFromMessagesList(messages);
       function generateHumanReadableConversation(messages: allDataObjects.ChatHistoryItem[]): string {
         return messages
           .slice(2)

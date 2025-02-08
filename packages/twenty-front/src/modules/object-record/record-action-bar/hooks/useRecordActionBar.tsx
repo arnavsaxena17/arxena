@@ -39,6 +39,7 @@ import { useStartChats } from '@/object-record/hooks/useStartChats';
 import { currentViewWithFiltersState } from '@/views/states/currentViewState';
 import { useTranscribeCall } from '@/object-record/hooks/useTranscribeCall';
 import { useCheckDataIntegrityOfJob } from '@/object-record/hooks/useCheckDataIntegrityOfJob';
+import { useCloneMultipleRecords } from '@/object-record/hooks/useCloneMultipleRecords';
 
 
 type useRecordActionBarProps = {
@@ -179,30 +180,24 @@ export const useRecordActionBar = ({ objectMetadataItem, selectedRecordIds, call
   });
   console.log("These are the selectred IDz:", selectedRecordIds)
 
-  const handleClone = useCallback(async () => {
-    callback?.();
-    console.log('Going to try and clone:', selectedRecordIds);
-    try {
-      // Wait for hook to be ready
-      if (!isReady) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-      }
-      // Clone records sequentially
-      for (const recordId of selectedRecordIds) {
-        // Update the recordIdToClone through state updates
-        const clonedRecord = await cloneRecord();
-        if (clonedRecord) {
-          console.log('Successfully cloned record:', clonedRecord);
-        } else {
-          console.log('Could not clone record - check if data is available');
-        }
-        // Add delay between clones
-        await new Promise(resolve => setTimeout(resolve, 500));
-      }
-    } catch (error) {
-      console.error('Error cloning record:', error);
-    }
-  }, [callback, cloneRecord, isReady, selectedRecordIds]);
+  // Then in useRecordActionBar:
+const { cloneMultipleRecords } = useCloneMultipleRecords({
+  objectNameSingular: objectMetadataItem.nameSingular,
+});
+
+
+const handleClone = useCallback(async () => {
+  callback?.();
+  console.log('Going to try and clone:', selectedRecordIds);
+  
+  try {
+    const clonedRecords = await cloneMultipleRecords(selectedRecordIds);
+    console.log('Successfully cloned records:', clonedRecords);
+  } catch (error) {
+    console.error('Error cloning records:', error);
+  }
+}, [callback, cloneMultipleRecords, selectedRecordIds]);
+
 
 
 const sendVideoInterviewLinkSelectRecord = useRecoilCallback(

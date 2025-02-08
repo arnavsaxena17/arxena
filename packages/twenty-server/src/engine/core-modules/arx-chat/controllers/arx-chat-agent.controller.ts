@@ -19,6 +19,7 @@ import { graphQltoUpdateOneCandidate } from 'src/engine/core-modules/candidate-s
 import { CreateMetaDataStructure } from 'src/engine/core-modules/workspace-modifications/object-apis/object-apis-creation';
 import { FilterCandidates } from '../services/candidate-engagement/filter-candidates';
 import { ChatControls } from '../services/candidate-engagement/chat-controls';
+import CandidateEngagementArx from '../services/candidate-engagement/candidate-engagement';
 
 
 
@@ -37,7 +38,7 @@ export class ArxChatEndpoint {
   async startChat(@Req() request: any) {
     const apiToken = request.headers.authorization.split(' ')[1]; // Assuming Bearer token
     const chatControl:allDataObjects.chatControls = {chatControlType:'startChat'};
-    const response = await new ChatControls(this.workspaceQueryService).createChatControl(request.body.candidateId, chatControl, apiToken);
+    const response = await new CandidateEngagementArx(this.workspaceQueryService).createChatControl(request.body.candidateId, chatControl, apiToken);
     console.log('Response from create start-Chat api', response);
   }
     
@@ -63,7 +64,7 @@ export class ArxChatEndpoint {
     console.log("Starting chat for , ", filteredCandidateIds.length," candidates")
     for (const candidateId of filteredCandidateIds) {
       const chatControl:allDataObjects.chatControls = {chatControlType:'startChat'};
-      await await new ChatControls(this.workspaceQueryService).createChatControl(candidateId, chatControl, apiToken);
+      await await new CandidateEngagementArx(this.workspaceQueryService).createChatControl(candidateId, chatControl, apiToken);
     }
     return { status: 'Success' };
   }
@@ -421,7 +422,7 @@ export class ArxChatEndpoint {
     console.log("Going to get all candidates and chats")
     const apiToken = request?.headers?.authorization?.split(' ')[1];
     const chatControl:allDataObjects.chatControls = {chatControlType:"allStartedAndStoppedChats"};
-    const {people, candidateJob} = await new FilterCandidates(this.workspaceQueryService).fetchSpecificPeopleToEngageBasedOnChatControl(chatControl, apiToken);
+    const {people, candidateJob} = await new CandidateEngagementArx(this.workspaceQueryService).fetchSpecificPeopleToEngageBasedOnChatControl(chatControl, apiToken);
     console.log("All people length:", people?.length)
     return people
   }

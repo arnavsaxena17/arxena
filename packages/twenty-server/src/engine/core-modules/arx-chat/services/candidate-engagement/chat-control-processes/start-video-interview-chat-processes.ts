@@ -5,8 +5,6 @@ import { FilterCandidates } from '../filter-candidates';
 import * as allGraphQLQueries from '../../../graphql-queries/graphql-queries-chatbot';
 import { WorkspaceQueryService } from '../../../../workspace-modifications/workspace-modifications.service';
 import { axiosRequest } from '../../../utils/arx-chat-agent-utils';
-import { TimeManagement } from '../scheduling-agent';
-
 export class StartVideoInterviewChatProcesses {
   constructor(private readonly workspaceQueryService: WorkspaceQueryService) {}
 

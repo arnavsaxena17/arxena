@@ -153,9 +153,8 @@ export const columnDefinitions: ColumnDefinition[] = [
   {
     key: 'inferred_years_experience',
     header: 'Total Experience',
-    type: 'string',
+    type: 'number',
     format: (value: number) => (value ? value.toFixed(1) : '0'),
-
   },
   {
     key: 'notice_period',

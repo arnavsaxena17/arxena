@@ -86,7 +86,6 @@ async updateCandidateSpreadsheet(@Req() request: any): Promise<object> {
       const jobIds = await this.candidateService.getJobIdsFromCandidateIds(candidateIds, apiToken);
 
       console.log("going to process chats")
-      // await new UpdateChat(this.workspaceQueryService).processCandidatesChatsGetStatuses( apiToken);
       const results = await new UpdateChat(this.workspaceQueryService).processCandidatesChatsGetStatuses(apiToken, candidateIds,jobIds, currentWorkspaceMemberId);
 
       return { status: 'Success' };

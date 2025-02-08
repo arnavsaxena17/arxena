@@ -1,8 +1,40 @@
 import Anthropic from '@anthropic-ai/sdk';
 import OpenAI from 'openai';
+import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 
 // Define the possible roles in the chat
 export type ChatRole = 'system' | 'user' | 'tool' | 'assistant';
+
+export interface ChatFlowConfig {
+  order: number;
+  type: chatControlType;
+  filterLogic: (candidate: CandidateNode) => boolean;
+  preProcessing?: (
+    candidates: PersonNode[],
+    candidateJob: Jobs,
+    chatControl: chatControls,
+    apiToken: string,
+    workspaceQueryService: WorkspaceQueryService
+  ) => Promise<void>;
+  get chatFilters(): Array<Record<string, any>>;  // Changed to getter
+  isEligibleForEngagement: (candidate: CandidateNode) => boolean;
+  statusUpdate?: {
+    timeWindow: number;
+    isWithinAllowedTime: () => boolean;
+    filter: Record<string, any>;
+    orderBy?: Array<Record<string, any>>;
+  };
+  filter: Record<string, any>;
+  orderBy: Array<Record<string, any>>;
+  templateConfig: {
+    defaultTemplate: string;
+    messageSetup: (isFirstMessage: boolean) => {
+      whatsappTemplate: string;
+      requiresSystemPrompt: boolean;
+      userContent: string;
+    };
+  };
+}
 
 export const statusesArray = ['SCREENING', "INTERESTED", "NOT_INTERESTED", "NOT_FIT",'CV_SENT',"CV_RECEIVED",'RECRUITER_INTERVIEW','CLIENT_INTERVIEW','NEGOTIATION'] as const;
 
@@ -16,9 +48,6 @@ export interface ChatControlNode {
   }[];
 }
 
-export interface ChatFlowConfig {
-  [key: string]: ChatControlNode;
-}
 
 
 
@@ -187,6 +216,7 @@ export interface WhatsAppMessages {
 
 
 export interface Candidate {
+  candConversationStatus: string;
   startMeetingSchedulingChat: any;
   videoInterview?: videoInterview;
   id: string;
