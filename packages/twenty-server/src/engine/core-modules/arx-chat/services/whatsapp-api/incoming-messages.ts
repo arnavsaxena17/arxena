@@ -108,11 +108,9 @@ export class IncomingWhatsappMessages {
           [workspaceId, phoneNumberId],
           workspaceId
         );
-
         if (workspace.length === 0) {
           return null;
         }
-
         if (person.length > 0) {
           const apiKeys = await this.workspaceQueryService.getApiKeys(workspaceId, dataSourceSchema, transactionManager);
           if (apiKeys.length > 0) {

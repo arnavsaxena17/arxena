@@ -36,6 +36,8 @@ export interface ChatFlowConfig {
   };
 }
 
+
+
 export const statusesArray = ['SCREENING', "INTERESTED", "NOT_INTERESTED", "NOT_FIT",'CV_SENT',"CV_RECEIVED",'RECRUITER_INTERVIEW','CLIENT_INTERVIEW','NEGOTIATION'] as const;
 
 export type WhatsappMessageType = "messages" | "media"

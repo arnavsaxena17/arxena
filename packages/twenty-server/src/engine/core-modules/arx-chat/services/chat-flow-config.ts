@@ -130,41 +130,38 @@ const getOrderNumber = (type: ChatFlowKey): number =>
   chatFlowOrder.indexOf(type) + 1;
 
 
-export const chatFlowConfigObj: Record<ChatFlowKey, allDataObjects.ChatFlowConfig> = {
-  startChat: {
-    get order() { return getOrderNumber('startChat'); },
-    type: 'startChat',
-    filterLogic: candidate => createFilterLogic(getOrderNumber('startChat'), candidate),
-    filter: { ...baseFilters, startChat: { eq: true } },
-    orderBy: [{ createdAt: 'DESC' }],
+const createChatFlowConfig = (type: ChatFlowKey): allDataObjects.ChatFlowConfig => {
+  const order = getOrderNumber(type);
+  const baseConfig = {
+    get order() { return order },
+    type,
+    filterLogic: (candidate: allDataObjects.CandidateNode) => createFilterLogic(order, candidate),
+    filter: { ...baseFilters, [type]: { eq: true } },
     get chatFilters() { return createChatFilters(this); },
-    isEligibleForEngagement: candidate => createIsEligibleForEngagement(candidate, 'startChat', getOrderNumber('startChat')),
-    templateConfig: { ...baseTemplateConfig, messageSetup: isFirstMessage => baseTemplateConfig.messageSetup(isFirstMessage, 'startChat') },
-    statusUpdate: createStatusUpdate(getOrderNumber('startChat'), 'startChat'),
-  },
-  startVideoInterviewChat: {
-    get order() { return getOrderNumber('startVideoInterviewChat'); },
-    type: 'startVideoInterviewChat',
-    filterLogic: candidate => createFilterLogic(getOrderNumber('startVideoInterviewChat'), candidate),
-    preProcessing: async (candidates, candidateJob, chatControl, apiToken, workspaceQueryService) => {
-      await new StartVideoInterviewChatProcesses(workspaceQueryService) .setupVideoInterviewLinks(candidates, candidateJob, chatControl, apiToken);
-    },
-    filter: { ...baseFilters, startVideoInterviewChat: { eq: true } },
-    orderBy: [{ position: 'AscNullsFirst' }],
-    get chatFilters() { return createChatFilters(this); },
-    isEligibleForEngagement: candidate => createIsEligibleForEngagement(candidate, 'startVideoInterviewChat', getOrderNumber('startVideoInterviewChat')),
-    statusUpdate: createStatusUpdate(getOrderNumber('startVideoInterviewChat'), 'startVideoInterviewChat'),
-    templateConfig: { ...baseTemplateConfig, messageSetup: isFirstMessage => baseTemplateConfig.messageSetup(isFirstMessage, 'startVideoInterviewChat') },
-  },
-  startMeetingSchedulingChat: {
-    get order() { return getOrderNumber('startMeetingSchedulingChat'); },
-    type: 'startMeetingSchedulingChat',
-    filterLogic: candidate => createFilterLogic(getOrderNumber('startMeetingSchedulingChat'), candidate),
-    filter: { ...baseFilters, startMeetingSchedulingChat: { eq: true } },
-    orderBy: [{ createdAt: 'DESC' }],
-    get chatFilters() { return createChatFilters(this); },
-    isEligibleForEngagement: candidate => createIsEligibleForEngagement(candidate, 'startMeetingSchedulingChat', getOrderNumber('startMeetingSchedulingChat')),
-    statusUpdate: createStatusUpdate(getOrderNumber('startMeetingSchedulingChat'), 'startMeetingSchedulingChat'),
-    templateConfig: { ...baseTemplateConfig, messageSetup: isFirstMessage => baseTemplateConfig.messageSetup(isFirstMessage, 'startMeetingSchedulingChat') },
-  },
+    isEligibleForEngagement: (candidate: allDataObjects.CandidateNode) => createIsEligibleForEngagement(candidate, type, order),
+    templateConfig: { ...baseTemplateConfig, messageSetup: (isFirstMessage: boolean) => baseTemplateConfig.messageSetup(isFirstMessage, type) },
+    statusUpdate: createStatusUpdate(order, type)
+  };
+
+  // Add type-specific configurations
+  switch(type) {
+    case 'startChat':
+      return { ...baseConfig, orderBy: [{ createdAt: 'DESC' }] };
+      
+    case 'startVideoInterviewChat':
+      return {
+        ...baseConfig,
+        orderBy: [{ position: 'AscNullsFirst' }],
+        preProcessing: async (candidates, candidateJob, chatControl, apiToken, workspaceQueryService) => {
+          await new StartVideoInterviewChatProcesses(workspaceQueryService) .setupVideoInterviewLinks(candidates, candidateJob, chatControl, apiToken);
+        }
+      };
+      
+    case 'startMeetingSchedulingChat':
+      return { ...baseConfig, orderBy: [{ createdAt: 'DESC' }] };
+  }
 };
+
+export const chatFlowConfigObj = Object.fromEntries(
+  chatFlowOrder.map(type => [type, createChatFlowConfig(type)])
+) as Record<ChatFlowKey, allDataObjects.ChatFlowConfig>;

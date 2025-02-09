@@ -22,7 +22,6 @@ export function sortWhatsAppMessages(candidateResponseEngagementArr: allDataObje
   candidateResponseEngagementArr?.forEach((personEdge) => {
     personEdge?.candidates?.edges.forEach((candidateEdge) => {
       candidateEdge?.node?.whatsappMessages?.edges.sort((a, b) => {
-        // Sorting in descending order by the createdAt timestamp
         return ( new Date(b.node.createdAt).getTime() - new Date(a.node.createdAt).getTime() );
       });
     });
