@@ -3,14 +3,11 @@ import { IncomingWhatsappMessages } from '../services/whatsapp-api/incoming-mess
 import { EnvironmentService } from 'src/engine/integrations/environment/environment.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
-
 @Controller('webhook')
 export class WhatsappWebhook {
-  
   constructor(
-    private readonly workspaceQueryService: WorkspaceQueryService,  
+    private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly environmentService: EnvironmentService,
-
   ) {}
 
   @Get()
@@ -52,6 +49,13 @@ export class WhatsappWebhook {
     // const apiToken = request.headers.authorization.split(' ')[1];
 
     const requestBody = request.body;
+    const userMessageBodyFrom = requestBody?.entry[0]?.changes[0]?.value?.messages[0].from;
+    console.log('UserMessageBodyFrom::', userMessageBodyFrom);
+    if (userMessageBodyFrom === '1234567890') {
+      console.log('This is a cron test to check if the connection exists or not');
+      return;
+    }
+
     try {
       await new IncomingWhatsappMessages(this.workspaceQueryService).receiveIncomingMessagesFromFacebook(requestBody);
     } catch (error) {
@@ -59,6 +63,4 @@ export class WhatsappWebhook {
     }
     response.sendStatus(200);
   }
-
 }
-

@@ -1,6 +1,4 @@
-import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { StartVideoInterviewChatProcesses } from './candidate-engagement/chat-control-processes/start-video-interview-chat-processes';
-import { FilterCandidates } from './candidate-engagement/filter-candidates';
 import { TimeManagement } from './time-management';
 import * as allDataObjects from './data-model-objects';
 
@@ -101,7 +99,7 @@ const createStatusUpdate = (order: number, type: string): allDataObjects.ChatFlo
         ...baseStatusUpdate,
         filter: { candConversationStatus: { in: ['CONVERSATION_CLOSED_TO_BE_CONTACTED', 'CANDIDATE_IS_KEEN_TO_CHAT'] }, startChat: { eq: true }, startVideoInterviewChat: { eq: false }, startMeetingSchedulingChat: { eq: false } },
         orderBy: [{ position: 'AscNullsFirst' }],
-      }
+      };
       return filter;
 
     case 'startVideoInterviewChat':
@@ -111,57 +109,54 @@ const createStatusUpdate = (order: number, type: string): allDataObjects.ChatFlo
       };
 
     default:
-      return undefined; 
+      return undefined;
   }
 };
 
 // Define the chat flow order
-const chatFlowOrder = [
-  'startChat',
-  'startVideoInterviewChat',
-  'startMeetingSchedulingChat'
-] as const;
+// const chatFlowOrder = ['startChat', 'startVideoInterviewChat', 'startMeetingSchedulingChat'] as const;
+const chatFlowOrder = ['startChat', 'startVideoInterviewChat', 'startMeetingSchedulingChat'] as const;
 
 // Create a type for the chat flow keys
-type ChatFlowKey = typeof chatFlowOrder[number];
+type ChatFlowKey = (typeof chatFlowOrder)[number];
 
 // Helper function to get order number (1-based index)
-const getOrderNumber = (type: ChatFlowKey): number => 
-  chatFlowOrder.indexOf(type) + 1;
-
+const getOrderNumber = (type: ChatFlowKey): number => chatFlowOrder.indexOf(type) + 1;
 
 const createChatFlowConfig = (type: ChatFlowKey): allDataObjects.ChatFlowConfig => {
   const order = getOrderNumber(type);
   const baseConfig = {
-    get order() { return order },
+    get order() {
+      return order;
+    },
     type,
     filterLogic: (candidate: allDataObjects.CandidateNode) => createFilterLogic(order, candidate),
     filter: { ...baseFilters, [type]: { eq: true } },
-    get chatFilters() { return createChatFilters(this); },
+    get chatFilters() {
+      return createChatFilters(this);
+    },
     isEligibleForEngagement: (candidate: allDataObjects.CandidateNode) => createIsEligibleForEngagement(candidate, type, order),
     templateConfig: { ...baseTemplateConfig, messageSetup: (isFirstMessage: boolean) => baseTemplateConfig.messageSetup(isFirstMessage, type) },
-    statusUpdate: createStatusUpdate(order, type)
+    statusUpdate: createStatusUpdate(order, type),
   };
 
   // Add type-specific configurations
-  switch(type) {
+  switch (type) {
     case 'startChat':
       return { ...baseConfig, orderBy: [{ createdAt: 'DESC' }] };
-      
+
     case 'startVideoInterviewChat':
       return {
         ...baseConfig,
         orderBy: [{ position: 'AscNullsFirst' }],
         preProcessing: async (candidates, candidateJob, chatControl, apiToken, workspaceQueryService) => {
-          await new StartVideoInterviewChatProcesses(workspaceQueryService) .setupVideoInterviewLinks(candidates, candidateJob, chatControl, apiToken);
-        }
+          await new StartVideoInterviewChatProcesses(workspaceQueryService).setupVideoInterviewLinks(candidates, candidateJob, chatControl, apiToken);
+        },
       };
-      
+
     case 'startMeetingSchedulingChat':
       return { ...baseConfig, orderBy: [{ createdAt: 'DESC' }] };
   }
 };
 
-export const chatFlowConfigObj = Object.fromEntries(
-  chatFlowOrder.map(type => [type, createChatFlowConfig(type)])
-) as Record<ChatFlowKey, allDataObjects.ChatFlowConfig>;
+export const chatFlowConfigObj = Object.fromEntries(chatFlowOrder.map(type => [type, createChatFlowConfig(type)])) as Record<ChatFlowKey, allDataObjects.ChatFlowConfig>;

@@ -168,6 +168,7 @@ export class IncomingWhatsappMessages {
       // to check if the incoming message is the message
       console.log('There is a request body for sure', requestBody?.entry[0]?.changes[0]?.value?.messages[0]);
       const userMessageBody = requestBody?.entry[0]?.changes[0]?.value?.messages[0];
+      
       // console.log("This is the user messageBody :", userMessageBody)
       if (userMessageBody) {
         let timestamp = requestBody?.entry[0]?.changes[0]?.value?.messages[0].timestamp; // Assuming this is the Unix timestamp in seconds
@@ -192,6 +193,10 @@ export class IncomingWhatsappMessages {
             chatReply = messageToAppend
           }
           const phoneNumberTo = requestBody?.entry[0]?.changes[0]?.value?.metadata?.display_phone_number;
+          if (userMessageBody.from === '1234567890'){
+            console.log("This is a cron test to check if the connection exists or not")
+            return
+          }
           const whatsappIncomingMessage: allDataObjects.chatMessageType = {
             phoneNumberFrom: userMessageBody.from,
             phoneNumberTo: phoneNumberTo,
