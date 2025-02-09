@@ -8,6 +8,8 @@ const TimeManagementLocal = {
   },
   timeDifferentials: {
     timeDifferentialinMinutesToCheckTimeDifferentialBetweenlastMessage: 0.33,
+    timeDifferentialinMinutesForCheckingChatContent: 0.33,
+    timeDifferentialForStageTransitions: 15, // minutes
     timeDifferentialinMinutesForCheckingCandidateIdsToMakeUpdatesOnChatsForNextChatControls: 60,
     timeDifferentialinHoursForCheckingCandidateIdsWithStatusOfConversationClosed: 2,
     timeDifferentialinHoursForCheckingCandidateIdsWithVideoInterviewCompleted: 2,

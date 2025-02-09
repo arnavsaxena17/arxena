@@ -253,16 +253,24 @@ export class VideoInterviewController {
       const updateCandidateVariables = {
         idToUpdate: interviewData.candidate.id,
         input: {
-          isVideoInterviewCompleted: true,
+          startVideoInterviewChatCompleted: true,
         },
       };
 
       const graphqlQueryObjForUpdationForCandidateStatus = JSON.stringify({
-        query: videoInterviewQueries.mutationToUpdateOneCandidate,
+        query: videoInterviewQueries.graphQltoUpdateOneCandidate,
         variables: updateCandidateVariables,
       });
 
       console.log('graphqlQueryObjForUpdationForCandidateStatus::', graphqlQueryObjForUpdationForCandidateStatus);
+      try{
+
+        const statusCandidateUpdateResult = (await axiosRequest(graphqlQueryObjForUpdationForCandidateStatus,apiToken)).data;
+      }
+      catch(e){
+        console.log("Error in candidate status update::", e)
+      }
+
       const updateStatusVariables = {
         idToUpdate: interviewData.id.replace("/video-interview/", ""),
         input: {
@@ -284,13 +292,7 @@ export class VideoInterviewController {
       catch(e){
         console.log("Error in UpdateOneVideoInterview status update::", e)
       }
-      try{
 
-        const statusCandidateUpdateResult = (await axiosRequest(graphqlQueryObjForUpdationForCandidateStatus,apiToken)).data;
-      }
-      catch(e){
-        console.log("Error in candidate status update::", e)
-      }
       // console.log('Status update result:', JSON.stringify(statusResult, null, 2));
 
       console.log('Preparing response');

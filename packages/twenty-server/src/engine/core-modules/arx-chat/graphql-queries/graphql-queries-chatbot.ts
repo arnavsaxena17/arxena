@@ -10,6 +10,33 @@ query FindOneWhatsappMessage($whatsappMessageId: String!) {
 }
 `;
 
+
+
+
+export const graphqlToFetchCandidatesWithRecentUpdates = `
+  query getCandidatesWithRecentUpdates($filter: CandidateFilter) {
+    candidates(filter: $filter) {
+      edges {
+        node {
+          id
+          jobs {
+            id
+          }
+          startChat
+          startChatCompleted
+          startVideoInterviewChat
+          startVideoInterviewChatCompleted
+          startMeetingSchedulingChat
+          startMeetingSchedulingChatCompleted
+          updatedAt
+        }
+      }
+    }
+  }
+`;
+
+
+
 export const graphQltoUpdateOneCandidate = `mutation UpdateOneCandidate($idToUpdate: ID!, $input: CandidateUpdateInput!) {
   updateCandidate(id: $idToUpdate, data: $input) {
     __typename
@@ -18,6 +45,12 @@ export const graphQltoUpdateOneCandidate = `mutation UpdateOneCandidate($idToUpd
     jobsId
     updatedAt
     startChat
+    stopChat
+    startChatCompleted
+    startMeetingSchedulingChat
+    startMeetingSchedulingChatCompleted
+    startVideoInterviewChat
+    startVideoInterviewChatCompleted
     position
   }
 }`
@@ -176,6 +209,12 @@ query FindManyVideoInterviews($filter: VideoInterviewFilterInput, $orderBy: [Vid
           chatCount
           personId
           startChat
+          stopChat
+          startChatCompleted
+          startMeetingSchedulingChat
+          startMeetingSchedulingChatCompleted
+          startVideoInterviewChat
+          startVideoInterviewChatCompleted
           status
           jobSpecificFields
           jobsId
@@ -264,6 +303,7 @@ export const graphqlToFetchActiveJob = `query FindManyJobs($filter: JobFilterInp
         jobs(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
           edges {
             node {
+              chatFlowOrder
               candidates {
                 edges {
                   node {
@@ -469,11 +509,15 @@ export const graphQlToFetchWhatsappMessages = `query FindManyWhatsappMessages($f
         phoneFrom
         candidate{
             name
+            id
             createdAt
             updatedAt
             startChat
+            startChatCompleted
             startMeetingSchedulingChat
+            startMeetingSchedulingChatCompleted
             startVideoInterviewChat
+            startVideoInterviewChatCompleted
         }
         id
         phoneTo
@@ -517,6 +561,11 @@ query FindManyCandidates($lastCursor: String, $limit: Int, $filter: CandidateFil
           uniqueStringKey  
         }
         startChat
+        startChatCompleted
+        startMeetingSchedulingChat
+        startMeetingSchedulingChatCompleted
+        startVideoInterviewChat
+        startVideoInterviewChatCompleted
         whatsappMessages {
           edges {
             node {
@@ -534,6 +583,7 @@ query FindManyCandidates($lastCursor: String, $limit: Int, $filter: CandidateFil
           jobCode
           isActive
           recruiterId
+          chatFlowOrder
           interviewSchedule{
           edges{
               node{
@@ -628,9 +678,12 @@ export const graphqlQueryToFindManyPeopleEngagedCandidatesOlderSchema = `query F
                         }
                       }
                       engagementStatus
-                      startVideoInterviewChat
-                      startMeetingSchedulingChat
                       startChat
+                      startChatCompleted
+                      startMeetingSchedulingChat
+                      startMeetingSchedulingChatCompleted
+                      startVideoInterviewChat
+                      startVideoInterviewChatCompleted
                       status
                       stopChat
                       candidateReminders{
@@ -803,6 +856,7 @@ export const graphqlToFetchManyCandidatesOlderSchema = `
             name
             jobLocation
             jobCode
+            chatFlowOrder
             isActive
             recruiterId
             companies{
@@ -891,6 +945,7 @@ export const graphqlQueryToFetchWorksPaceMembers = `query FindManyWorkspaceMembe
             jobCode
             isActive
             recruiterId
+            chatFlowOrder
             interviewSchedule{
             edges{
                 node{

@@ -17,7 +17,7 @@ import { Notes } from '@/activities/notes/components/Notes';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 
 import AttachmentPanel from './AttachmentPanel';
-import { mutationToUpdateOneCandidate, mutationToUpdateOnePerson } from '../graphql-queries-chat/chat-queries';
+import { graphQltoUpdateOneCandidate, mutationToUpdateOnePerson } from '../graphql-queries-chat/chat-queries';
 
 import { useNavigate } from 'react-router-dom';
 // import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -864,7 +864,7 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
       const response = await axios.post(
         process.env.REACT_APP_SERVER_BASE_URL + '/graphql',
         {
-          query: mutationToUpdateOneCandidate,
+          query: graphQltoUpdateOneCandidate,
           variables: {
             idToUpdate: currentCandidateId,
             input: { status: newStatus },

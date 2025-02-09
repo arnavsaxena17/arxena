@@ -4,11 +4,11 @@ import { TypeORMModule } from 'src/database/typeorm/typeorm.module';
 
 import { WhatsappWebhook } from 'src/engine/core-modules/arx-chat/controllers/whatsapp-webhook.controller';
 import { WhatsappControllers } from 'src/engine/core-modules/arx-chat/controllers/whatsapp-api.controller';
-import { WhatsappTestAPI } from 'src/engine/core-modules/arx-chat/controllers/whatsapp-test-api.controller';
+import { WebhookTestCronService, WhatsappTestAPI } from 'src/engine/core-modules/arx-chat/controllers/whatsapp-test-api.controller';
 import { TwilioControllers } from 'src/engine/core-modules/arx-chat/controllers/twilio-api.controller';
 import { GoogleControllers } from 'src/engine/core-modules/arx-chat/controllers/google-calendar-mail-api.controller';
 import { ArxChatEndpoint } from 'src/engine/core-modules/arx-chat/controllers/arx-chat-agent.controller';
-import { CandidateStatusClassificationCronService, CandidateEngagementCronService, WebhookTestCronService } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/scheduling-agent';
+import { CandidateEngagementCronService, CandidateStatusClassificationCronService} from 'src/engine/core-modules/arx-chat/services/candidate-engagement/scheduling-agent';
 import { AuthModule } from 'src/engine/core-modules/auth/auth.module';
 import { GoogleCalendarModule } from 'src/engine/core-modules/calendar-events/google-calendar.module';
 import { Workspace } from '../workspace/workspace.entity';
@@ -26,7 +26,7 @@ import { VideoInterviewProcessController } from './controllers/video-interview-p
   
   imports: [AuthModule,WorkspaceModificationsModule,GoogleCalendarModule,DataSourceModule, TypeORMModule, TypeOrmModule.forFeature([Workspace, FeatureFlagEntity], 'core'), TypeOrmModule.forFeature([DataSourceEntity], 'metadata') ],
   controllers: [ArxChatEndpoint,  WhatsappWebhook, WhatsappControllers,WhatsappTestAPI,TwilioControllers, GoogleControllers, VideoInterviewProcessController],
-  providers: [CandidateStatusClassificationCronService, WebhookTestCronService, CandidateEngagementCronService,PersonService, CandidateService, WorkspaceDataSourceService],
+  providers: [CandidateStatusClassificationCronService, WebhookTestCronService, PersonService,CandidateEngagementCronService, CandidateService, WorkspaceDataSourceService],
   exports: [],
 })
 export class ArxChatAgentModule {}

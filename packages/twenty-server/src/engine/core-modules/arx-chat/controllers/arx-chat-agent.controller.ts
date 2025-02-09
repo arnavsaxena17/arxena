@@ -422,7 +422,7 @@ export class ArxChatEndpoint {
     console.log("Going to get all candidates and chats")
     const apiToken = request?.headers?.authorization?.split(' ')[1];
     const chatControl:allDataObjects.chatControls = {chatControlType:"allStartedAndStoppedChats"};
-    const {people, candidateJob} = await new CandidateEngagementArx(this.workspaceQueryService).fetchSpecificPeopleToEngageBasedOnChatControl(chatControl, apiToken);
+    const {people, candidateJob} = await new CandidateEngagementArx(this.workspaceQueryService).fetchSpecificPeopleToEngageAcrossAllChatControls(chatControl, apiToken);
     console.log("All people length:", people?.length)
     return people
   }

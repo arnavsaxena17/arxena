@@ -124,6 +124,7 @@ const findManyCandidatesQuery = `query FindManyCandidates($filter: CandidateFilt
           jobs {
             id
             name
+            chatFlowOrder
             isActive
             company {
               name

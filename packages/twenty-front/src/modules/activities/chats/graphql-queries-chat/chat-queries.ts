@@ -3,11 +3,17 @@ import { gql } from "@apollo/client";
 
 
 
-export const mutationToUpdateOneCandidate = `mutation UpdateOneCandidate($idToUpdate: ID!, $input: CandidateUpdateInput!) {
+export const graphQltoUpdateOneCandidate = `mutation UpdateOneCandidate($idToUpdate: ID!, $input: CandidateUpdateInput!) {
     updateCandidate(id: $idToUpdate, data: $input) {
         whatsappProvider
         startChat
         status
+        stopChat
+        startChatCompleted
+        startMeetingSchedulingChat
+        startMeetingSchedulingChatCompleted
+        startVideoInterviewChat
+        startVideoInterviewChatCompleted
         jobsId
         createdAt
         updatedAt

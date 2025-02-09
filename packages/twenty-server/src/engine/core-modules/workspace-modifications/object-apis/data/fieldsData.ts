@@ -719,6 +719,17 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
     {
         "field": {
             "description": "",
+            "label": "startChatCompleted",
+            "name": "startChatCompleted",
+            "objectMetadataId": objectsNameIdMap.candidate,
+            "type": "BOOLEAN",
+            "defaultValue": false
+
+        }
+    },
+    {
+        "field": {
+            "description": "",
             "label": "startVideoInterviewChat",
             "name": "startVideoInterviewChat",
             "objectMetadataId": objectsNameIdMap.candidate,
@@ -750,6 +761,17 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
     },
     {
         "field": {
+            "description": "",
+            "label": "startMeetingSchedulingChatCompleted",
+            "name": "startMeetingSchedulingChatCompleted",
+            "objectMetadataId": objectsNameIdMap.candidate,
+            "type": "BOOLEAN",
+            "defaultValue": false
+
+        }
+    },
+    {
+        "field": {
             "description": "This will stop the chatbot from chatting with the candidates",
             "defaultValue": false,
             "label": "stopChat",
@@ -771,8 +793,9 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
     {
         "field": {
             "description": "",
-            "label": "isVideoInterviewCompleted",
-            "name": "isVideoInterviewCompleted",
+            "label": "startVideoInterviewChatCompleted",
+            // "name": "isVideoInterviewCompleted",
+            "name": "startVideoInterviewChatCompleted",
             "objectMetadataId": objectsNameIdMap.candidate,
             "type": "BOOLEAN",
             "defaultValue": false,
@@ -796,6 +819,18 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
             "type": "RAW_JSON"
         }
     },
+
+    {
+        "field": {
+            "description": "",
+            "label": "chatFlowOrder",
+            "name": "chatFlowOrder",
+            "objectMetadataId": objectsNameIdMap.job,
+            "type": "RAW_JSON"
+        }
+    },
+
+
     {
         "field": {
             "description": "",

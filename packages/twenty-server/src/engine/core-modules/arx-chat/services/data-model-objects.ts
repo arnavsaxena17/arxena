@@ -5,6 +5,7 @@ import { WorkspaceQueryService } from '../../workspace-modifications/workspace-m
 // Define the possible roles in the chat
 export type ChatRole = 'system' | 'user' | 'tool' | 'assistant';
 
+
 export interface ChatFlowConfig {
   order: number;
   type: chatControlType;
@@ -218,6 +219,9 @@ export interface WhatsAppMessages {
 
 
 export interface Candidate {
+  stopChat: any;
+  startVideoInterviewChat: any;
+  startChatCompleted: any;
   updatedAt: string | number | Date;
   candConversationStatus: string;
   startMeetingSchedulingChat: any;
@@ -390,6 +394,7 @@ export interface jobProfileType {
   company: companyInfoType;
 }
 export interface Jobs {
+  chatFlowOrder?: chatControlType[]; // Array defining the order for this job
   name: string;
   id: string;
   recruiterId: string;

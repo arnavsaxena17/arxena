@@ -36,6 +36,7 @@ const findManyCandidatesQuery = gql`
             isActive
             recruiterId
             jobLocation
+            chatFlowOrder
             pathPosition
             googleSheetId
             jobCode

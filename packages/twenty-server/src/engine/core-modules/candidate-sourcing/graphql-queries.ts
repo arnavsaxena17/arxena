@@ -275,6 +275,30 @@ export const graphqlToFindManyJobByArxenaSiteId = `
 }
   `;
 
+  export const graphqlToFetchCandidatesWithRecentUpdates = `
+  query getCandidatesWithRecentUpdates($filter: CandidateFilter) {
+    candidates(filter: $filter) {
+      edges {
+        node {
+          id
+          jobs {
+            id
+          }
+          startChat
+          startChatCompleted
+          startVideoInterviewChat
+          startVideoInterviewChatCompleted
+          startMeetingSchedulingChat
+          startMeetingSchedulingChatCompleted
+          updatedAt
+        }
+      }
+    }
+  }
+`;
+
+
+
 
   export const graphQltoUpdateOneCandidate = `mutation UpdateOneCandidate($idToUpdate: ID!, $input: CandidateUpdateInput!) {
   updateCandidate(id: $idToUpdate, data: $input) {
@@ -284,6 +308,12 @@ export const graphqlToFindManyJobByArxenaSiteId = `
     jobsId
     updatedAt
     startChat
+    stopChat
+    startChatCompleted
+    startMeetingSchedulingChat
+    startMeetingSchedulingChatCompleted
+    startVideoInterviewChat
+    startVideoInterviewChatCompleted
     position
   }
 }`

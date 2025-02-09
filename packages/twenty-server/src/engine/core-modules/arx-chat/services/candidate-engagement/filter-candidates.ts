@@ -1,12 +1,9 @@
 import { WorkspaceQueryService } from "src/engine/core-modules/workspace-modifications/workspace-modifications.service";
-
 import * as allDataObjects from '../../services/data-model-objects';
 import * as allGraphQLQueries from '../../graphql-queries/graphql-queries-chatbot';
 import { axiosRequest } from "../../utils/arx-chat-agent-utils";
 import { workspacesWithOlderSchema } from "src/engine/core-modules/candidate-sourcing/graphql-queries";
 import axios from "axios";
-import { ChatControls } from "./chat-controls";
-import CandidateEngagementArx from "./candidate-engagement";
 
 export class FilterCandidates {
   constructor(private readonly workspaceQueryService: WorkspaceQueryService) {}
@@ -41,6 +38,16 @@ export class FilterCandidates {
     mostRecentMessageArr[0] = { role: 'system', content: newSystemPrompt };
     return mostRecentMessageArr;
   }
+
+    async fetchJobById(jobId: string, apiToken: string): Promise<allDataObjects.Jobs | null> {
+      const graphqlQueryObj = JSON.stringify({
+        query: allGraphQLQueries.graphqlToFetchActiveJob,
+        variables: { id: jobId },
+      });
+  
+      const response = await axiosRequest(graphqlQueryObj, apiToken);
+      return response?.data?.data?.job || null;
+    }
 
     getMostRecentMessageFromMessagesList(messagesList: allDataObjects.MessageNode[]) {
       let mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = [];

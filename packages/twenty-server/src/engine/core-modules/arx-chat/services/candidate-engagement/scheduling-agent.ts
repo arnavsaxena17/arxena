@@ -68,12 +68,12 @@ export class CandidateEngagementCronService extends BaseCronService {
 @Injectable()
 export class CandidateStatusClassificationCronService extends BaseCronService {
   @Cron(TimeManagement.crontabs.crontTabToMakeUpdatesForNewChats, { disabled: CRON_DISABLED })
-  async handleFiveMinutesCron() {
-    if (CRON_DISABLED) return;
-    await this.executeWorkspaceTask(async token => {
-      const service = new UpdateChat(this.workspaceQueryService).makeUpdatesForNewChats(token);
-    });
-  }
+  // async handleFiveMinutesCron() {
+  //   if (CRON_DISABLED) return;
+  //   await this.executeWorkspaceTask(async token => {
+  //     const service = await new CandidateEngagementArx(this.workspaceQueryService).makeUpdatesForNewChats(token);
+  //   });
+  // }
 
   @Cron(TimeManagement.crontabs.crontTabToUpdateRecentCandidatesChatControls, { disabled: CRON_DISABLED })
   async handleFiveHoursCron() {
@@ -85,60 +85,3 @@ export class CandidateStatusClassificationCronService extends BaseCronService {
 }
 
 
-
-@Injectable()
-export class WebhookTestCronService extends BaseCronService {
-  @Cron(TimeManagement.crontabs.crontTabToExecuteCandidateEngagement) // or any timing you prefer
-  async handleWebhookTest() {
-    console.log('Starting webhook test:', new Date().toISOString());
-    
-    try {
-      // Test GET verification
-      // const verificationResponse = await fetch('https://mrvpnl3x-3000.inc1.devtunnels.ms/webhook?hub.mode=subscribe&hub.verify_token=12345&hub.challenge=test_challenge', {
-      //   method: 'GET'
-      // });
-      
-      // console.log('Webhook GET verification response:', {
-      //   status: verificationResponse.status,
-      //   // body: await verificationResponse.text()
-      // });
-
-      // Test POST message
-      const testMessage = {
-        entry: [{
-          changes: [{
-            value: {
-              messages: [{
-                from: '1234567890',
-                text: { body: 'Test message from cron' },
-                type: 'text',
-                timestamp: Math.floor(Date.now() / 1000)
-              }],
-              metadata: {
-                display_phone_number: '0987654321'
-              }
-            }
-          }]
-        }]
-      };
-
-      const messageResponse = await fetch('https://mrvpnl3x-3000.inc1.devtunnels.ms/webhook', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(testMessage)
-      });
-
-      console.log('Webhook POST test response:', {
-        status: messageResponse.status,
-        body: await messageResponse.text()
-      });
-
-    } catch (error) {
-      console.error('Webhook test failed:', error);
-    }
-    
-    console.log('Webhook test completed:', new Date().toISOString());
-  }
-}

@@ -176,7 +176,7 @@ mutation UpdateOneVideoInterview($idToUpdate: ID!, $input: VideoInterviewUpdateI
   }
 }
 `;
-export const mutationToUpdateOneCandidate = `
+export const graphQltoUpdateOneCandidate = `
 mutation UpdateOneCandidate($idToUpdate: ID!, $input: CandidateUpdateInput!) {
   updateCandidate(id: $idToUpdate, data: $input) {
     id
