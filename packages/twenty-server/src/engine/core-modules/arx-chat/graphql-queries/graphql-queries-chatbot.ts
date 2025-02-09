@@ -785,6 +785,7 @@ export const graphqlToFetchManyCandidatesOlderSchema = `
         node {
           id
           name
+          updatedAt
           whatsappProvider
           people {
             id

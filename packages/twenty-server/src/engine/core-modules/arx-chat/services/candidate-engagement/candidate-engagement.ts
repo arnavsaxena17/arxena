@@ -242,8 +242,6 @@ export default class CandidateEngagementArx {
 
   async fetchAllCandidatesWithSpecificChatControl(chatControlType: allDataObjects.chatControlType, apiToken: string): Promise<allDataObjects.Candidate[]> {
     console.log('Fetching all candidates with chatControlType', chatControlType);
-
-    // console.log("these are the chat filtesr::", chatFlowConfigObj['startChat']?.chatFilters);
     
     let filters;
     if (chatControlType === 'allStartedAndStoppedChats') {
@@ -260,71 +258,105 @@ export default class CandidateEngagementArx {
       }
       filters = config.chatFilters;
     }
-
+  
     let allCandidates: allDataObjects.Candidate[] = [];
     let graphqlQueryObjToFetchAllCandidatesForChats = '';
     
     try {
       const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-      graphqlQueryObjToFetchAllCandidatesForChats = workspacesWithOlderSchema.includes(workspaceId) ? allGraphQLQueries.graphqlToFetchManyCandidatesOlderSchema : allGraphQLQueries.graphqlToFetchAllCandidateData;
-
+      graphqlQueryObjToFetchAllCandidatesForChats = workspacesWithOlderSchema.includes(workspaceId) 
+        ? allGraphQLQueries.graphqlToFetchManyCandidatesOlderSchema 
+        : allGraphQLQueries.graphqlToFetchAllCandidateData;
+  
+      // Add timestamp to ensure fresh data
+      const timestamp = new Date().toISOString();
+  
       for (const filter of filters) {
         let lastCursor: string | null = null;
+        
+        // Add updatedAt filter to ensure fresh data
+        const timestampedFilter = {
+          ...filter,
+          updatedAt: { lte: timestamp }  // Only get candidates updated up to now
+        };
+  
         while (true) {
           const graphqlQueryObj = JSON.stringify({
             query: graphqlQueryObjToFetchAllCandidatesForChats,
-            variables: { lastCursor, limit: 30, filter },
+            variables: { 
+              lastCursor, 
+              limit: 30, 
+              filter: timestampedFilter,
+              // Add explicit ordering by updatedAt to get most recent changes first
+              orderBy: [{ updatedAt: 'DESC' }]
+            },
           });
-
+  
           const response = await axiosRequest(graphqlQueryObj, apiToken);
           if (response.data.errors) {
             console.log('Errors in axiosRequest:', response.data.errors, 'with workspace Id:', workspaceId);
             break;
           }
-
+  
           const edges = response?.data?.data?.candidates?.edges || [];
           if (!edges.length) break;
-
-          const newCandidates = edges.map((edge: any) => edge.node);
-          allCandidates.push(...newCandidates.filter((candidate: allDataObjects.Candidate) => !allCandidates.some(existing => existing.id === candidate.id)));
-
+  
+          // Verify each candidate's timestamp before adding
+          const newCandidates = edges
+            .map((edge: any) => edge.node)
+            .filter((candidate: allDataObjects.Candidate) => {
+              const isNew = !allCandidates.some(existing => existing.id === candidate.id);
+              const isRecent = new Date(candidate.updatedAt) <= new Date(timestamp);
+              return isNew && isRecent;
+            });
+  
+          allCandidates.push(...newCandidates);
+  
           if (edges.length < 30) break;
           lastCursor = edges[edges.length - 1].cursor;
         }
       }
+  
+      // Add logging for transparency
+      console.log(`Fetched ${allCandidates.length} fresh candidates at ${timestamp} for chatControlType ${chatControlType}`);
+      
     } catch (error) {
       console.error('Error fetching candidates:', error);
     }
-
-    console.log('Fetched candidates count:', allCandidates.length, 'for chatControlType', chatControlType);
+  
     return allCandidates;
   }
+  
   async executeCandidateEngagement(apiToken: string) {
     try {
       console.log('Cron running and cycle started to check candidate engagement');
-
+      console.log(`Execution started at: ${new Date().toISOString()}`);
       const chatFlow = Object.entries(chatFlowConfigObj)
-        .filter(([, config]) => config.order > 0) // Only include chat controls with order > 0
+        .filter(([, config]) => config.order > 0)
         .sort(([, a], [, b]) => a.order - b.order)
         .map(([, config]) => ({
           chatControlType: config.type,
         }));
-
-
-
+  
       for (const chatControl of chatFlow) {
+        // Add execution timestamp for this iteration
+        const executionTime = new Date().toISOString();
+        console.log(`Starting ${chatControl.chatControlType} execution at ${executionTime}`);
+        
         const { people, candidateJob } = await this.fetchSpecificPeopleToEngageBasedOnChatControl(chatControl, apiToken);
-
+  
         console.log(`Number of people to engage for ${chatControl.chatControlType}:`, people.length);
-
+  
         if (people.length > 0) {
           await this.startChatControlEngagement(people, candidateJob, chatControl, apiToken, chatFlowConfigObj);
           await this.engageCandidates(people, candidateJob, chatControl, apiToken);
         }
+        
+        console.log(`Completed ${chatControl.chatControlType} execution at ${new Date().toISOString()}`);
       }
       return;
     } catch (error) {
-      console.log('This is the error in checkCandidate Engagement', error);
+      console.log('Error in checkCandidate Engagement', error);
     }
   }
 }

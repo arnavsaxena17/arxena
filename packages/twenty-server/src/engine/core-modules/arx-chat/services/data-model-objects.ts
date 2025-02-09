@@ -218,6 +218,7 @@ export interface WhatsAppMessages {
 
 
 export interface Candidate {
+  updatedAt: string | number | Date;
   candConversationStatus: string;
   startMeetingSchedulingChat: any;
   videoInterview?: videoInterview;
