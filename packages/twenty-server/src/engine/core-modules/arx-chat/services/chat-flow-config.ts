@@ -35,24 +35,22 @@ export class ChatFlowConfigBuilder {
   }
 
   isReadyForNextStage(candidate: any, currentStage: string, chatFlowOrder: string[]): boolean {
-    const currentIndex = chatFlowOrder.indexOf(currentStage);
-    const previousStage = currentIndex > 0 ? chatFlowOrder[currentIndex - 1] : null;
-
-    // If this is a continuation of current stage
-    if (candidate[currentStage] && !candidate[`${currentStage}Completed`]) {
-        // Just check if previous stage is completed if it exists
-        return !previousStage || candidate[`${previousStage}Completed`];
+    // Check if current stage is complete
+    if (!this.isStageComplete(candidate, currentStage)) {
+      return false;
     }
 
-    // For progressing to next stage
-    if (previousStage && !candidate[`${previousStage}Completed`]) {
-        return false;
+    // Get next stage
+    const nextStage = this.getNextStageInFlow(currentStage, chatFlowOrder);
+    if (!nextStage) {
+      return false;
     }
 
-    return true;
-}
+    // Check if next stage hasn't started yet
+    return !candidate[nextStage];
+  }
 
-private getStagesByOrder(currentOrder: number, direction: 'before' | 'after', chatFlowOrder: allDataObjects.chatControlType[]): string[] {
+  private getStagesByOrder(currentOrder: number, direction: 'before' | 'after', chatFlowOrder: allDataObjects.chatControlType[]): string[] {
     const stages = [...chatFlowOrder];
     const currentIndex = currentOrder - 1;
 
@@ -60,46 +58,58 @@ private getStagesByOrder(currentOrder: number, direction: 'before' | 'after', ch
   }
 
   baseEngagementChecks = (candidate: allDataObjects.CandidateNode, chatControlType: allDataObjects.chatControlType, chatFlowOrder: allDataObjects.chatControlType[]) => {
-    // Allow engagement if stage is started but not completed
-    if (candidate[chatControlType] === true && 
-        (candidate[`${chatControlType}Completed`] === false || candidate[`${chatControlType}Completed`] === null)) {
-        
-        // For non-first stages, check if previous stage is completed
-        const currentIndex = chatFlowOrder.indexOf(chatControlType);
-        if (currentIndex > 0) {
-            const previousStage = chatFlowOrder[currentIndex - 1];
-            if (!candidate[`${previousStage}Completed`]) {
-                return false;
-            }
-        }
-        
-        // Time check
-        if (candidate.whatsappMessages?.edges?.length > 0) {
-            const latestMessage = candidate.whatsappMessages.edges[0].node;
-            const waitTime = TimeManagement.timeDifferentials.timeDifferentialinMinutesToCheckTimeDifferentialBetweenlastMessage;
-            const cutoffTime = new Date(Date.now() - waitTime * 60 * 1000);
-            if (new Date(latestMessage.createdAt) >= cutoffTime) {
-                console.log(`Candidate ${candidate.name} messaged too recently for ${chatControlType}`);
-                return false;
-            }
-        }
-        
-        return true;
+    if (candidate.engagementStatus === false) {
+        console.log(`Candidate ${candidate.name} is not eligible for engagement due to engagementStatus being false.`);
+        return false;
     }
 
-    return false;
+    const currentIndex = chatFlowOrder.indexOf(chatControlType);
+    if (currentIndex > 0) {
+        const previousStage = chatFlowOrder[currentIndex - 1];
+        const previousStageCompleted = candidate[`${previousStage}Completed`];
+        const currentStageStarted = candidate[chatControlType];
+        const currentStageCompleted = candidate[`${chatControlType}Completed`];
+        
+        if (previousStageCompleted && currentStageStarted && !currentStageCompleted) {
+            return true;
+        }
+    }
+
+    if (candidate.whatsappMessages?.edges?.length > 0) {
+        const latestMessage = candidate.whatsappMessages.edges[0].node;
+        const waitTime = TimeManagement.timeDifferentials.timeDifferentialinMinutesToCheckTimeDifferentialBetweenlastMessage;
+        const cutoffTime = new Date(Date.now() - waitTime * 60 * 1000);
+        if (new Date(latestMessage.createdAt) >= cutoffTime) {
+            console.log(`Candidate ${candidate.name} messaged too recently for ${chatControlType}`);
+            return false;
+        }
+    }
+    return true;
 };
 
 createIsEligibleForEngagement = (candidate: allDataObjects.CandidateNode, chatControlType: allDataObjects.chatControlType, order: number, chatFlowOrder) => {
+  if (candidate.engagementStatus === false) {
+      console.log(`Candidate ${candidate.name} is not eligible for engagement.`);
+      return false;
+  }
+
   const currentIndex = chatFlowOrder.indexOf(chatControlType);
+
+  if (currentIndex === 0) {
+      const currentStageStarted = candidate[chatControlType];
+      const currentStageCompleted = candidate[`${chatControlType}Completed`];
+      if (currentStageStarted && !currentStageCompleted) {
+          return this.baseEngagementChecks(candidate, chatControlType, chatFlowOrder);
+      }
+      return false;
+  }
+
   if (currentIndex > 0) {
       const previousStage = chatFlowOrder[currentIndex - 1];
       const previousStageCompleted = candidate[`${previousStage}Completed`];
       const currentStageStarted = candidate[chatControlType];
       const currentStageCompleted = candidate[`${chatControlType}Completed`];
-      
-      // Allow engagement if:
-      // 1. Previous stage is completed AND current stage is started but not completed
+
       if (previousStageCompleted && currentStageStarted && !currentStageCompleted) {
           return this.baseEngagementChecks(candidate, chatControlType, chatFlowOrder);
       }
@@ -108,42 +118,20 @@ createIsEligibleForEngagement = (candidate: allDataObjects.CandidateNode, chatCo
   return false;
 };
 
-private createFilterLogic(currentOrder: number, chatFlowOrder: allDataObjects.chatControlType[]) {
-  return (candidate: allDataObjects.CandidateNode) => {
-      // Get current stage info
 
-      console.log("`createFilterLogic` called with currentOrder: ", currentOrder, " and chatFlowOrder: ", chatFlowOrder);
-      console.log("`candidate: ", candidate, " and chatFlowOrder: ", chatFlowOrder);
-      const currentStage = chatFlowOrder[currentOrder - 1];
-      console.log("`currentStage: ", currentStage);
-      const previousStage = currentOrder > 1 ? chatFlowOrder[currentOrder - 2] : null;
-
-      // First stage logic
+  private createFilterLogic(currentOrder: number, chatFlowOrder: allDataObjects.chatControlType[]) {
+    return (candidate: allDataObjects.CandidateNode) => {
       if (currentOrder === 1) {
-          return candidate.startChat && candidate.whatsappMessages?.edges.length === 0;
-      }
-      console.log("candidate[currentStage::", candidate[currentStage]);
-      console.log("candidate[`${currentStage}Completed`]::", candidate[`${currentStage}Completed`]);
-      console.log("candidate[`${currentStage}Completed`]::", candidate[`${currentStage}Completed`]);
-      console.log("candidate[`${previousStage}Completed`][currentStage::", candidate[`${previousStage}Completed`]);
-      // For continuing existing stage
-      if (candidate[currentStage] && 
-          (candidate[`${currentStage}Completed`] === false || candidate[`${currentStage}Completed`] === null) &&
-          candidate[`${previousStage}Completed`] === true) {
-          
-          // Add debug logging
-          console.log(`Candidate ${candidate.id} eligible for ${currentStage} continuation because:
-              - Current stage (${currentStage}) started: ${candidate[currentStage]}
-              - Current stage not completed: ${candidate[`${currentStage}Completed`]}
-              - Previous stage (${previousStage}) completed: ${candidate[`${previousStage}Completed`]}`);
-          
-          return true;
+        return candidate.startChat && candidate.whatsappMessages?.edges.length === 0;
       }
 
-      return false;
-  };
-}
-
+      const previousStages = this.getStagesByOrder(currentOrder, 'before', chatFlowOrder);
+      const previousStage = previousStages[previousStages.length - 1];
+      const baseConditions = candidate.startChat && candidate.whatsappMessages?.edges.length > 0 && candidate.lastEngagementChatControl === previousStage;
+      const hasCompletedPreviousStages = previousStages.every(stage => candidate[stage as keyof typeof candidate]);
+      return baseConditions && hasCompletedPreviousStages;
+    };
+  }
 
   private createChatFilters(
     config: { 
