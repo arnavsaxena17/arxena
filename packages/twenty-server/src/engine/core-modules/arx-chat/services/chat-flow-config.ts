@@ -209,7 +209,8 @@ createIsEligibleForEngagement = (candidate: allDataObjects.CandidateNode, chatCo
         ...baseStatusUpdate,
         filter: {
           candConversationStatus: {
-            in: ['CONVERSATION_CLOSED_TO_BE_CONTACTED', 'CANDIDATE_IS_KEEN_TO_CHAT'],
+            // in: ['CONVERSATION_CLOSED_TO_BE_CONTACTED', 'CANDIDATE_IS_KEEN_TO_CHAT'],
+            in: ['CONVERSATION_CLOSED_TO_BE_CONTACTED'],
           },
           startChat: { eq: true },
           ...futureStageFilters,

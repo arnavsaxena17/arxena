@@ -78,7 +78,8 @@ export class UpdateChat {
     if (candidateIds && Array.isArray(candidateIds)) {
       allCandidates = allCandidates.filter(candidate => 
         candidateIds.includes(candidate.id) && 
-        (candidate.candConversationStatus !== "CONVERSATION_CLOSED_TO_BE_CONTACTED" && candidate.candConversationStatus !== "CANDIDATE_IS_KEEN_TO_CHAT")
+        // (candidate.candConversationStatus !== "CONVERSATION_CLOSED_TO_BE_CONTACTED" && candidate.candConversationStatus !== "CANDIDATE_IS_KEEN_TO_CHAT")
+        (candidate.candConversationStatus !== "CONVERSATION_CLOSED_TO_BE_CONTACTED" )
       );
     }
     
@@ -136,7 +137,8 @@ export class UpdateChat {
         variables: updateCandidateObjectVariables,
       });
 
-      if (['CONVERSATION_CLOSED_TO_BE_CONTACTED', 'CANDIDATE_IS_KEEN_TO_CHAT'].includes(result.candidateStatus)){
+      // if (['CONVERSATION_CLOSED_TO_BE_CONTACTED', 'CANDIDATE_IS_KEEN_TO_CHAT'].includes(result.candidateStatus)){
+      if (['CONVERSATION_CLOSED_TO_BE_CONTACTED'].includes(result.candidateStatus)){
         const updateCandidateVariables = {
           idToUpdate: result.candidateId,
           input: {
