@@ -776,7 +776,12 @@ export const graphqlQueryToFindManyPeopleEngagedCandidates = `query FindManyPeop
                       }
                       engagementStatus
                       startVideoInterviewChat
+                      engagementStatus
+                      startChatCompleted
                       startMeetingSchedulingChat
+                      startMeetingSchedulingChatCompleted
+                      startVideoInterviewChat
+                      startVideoInterviewChatCompleted
                       startChat
                       status
                       stopChat

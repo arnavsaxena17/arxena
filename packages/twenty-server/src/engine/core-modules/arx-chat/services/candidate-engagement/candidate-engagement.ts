@@ -199,8 +199,8 @@ export default class CandidateEngagementArx {
         // First update chat counts and statuses for all candidates in this job
         const candidateIds = jobMessages.map(message => message.node.candidate.id);
         console.log("Number of Candidate IDs for which we are going to do updates::", candidateIds.length);
-        console.log(" Candidate IDs here::", candidateIds);
-        console.log(" Candidate IDs here::", jobMessages);
+        // console.log(" Candidate IDs here::", candidateIds);
+        // console.log(" Candidate IDs here::", jobMessages);
         
         // Update chat counts first
         await new UpdateChat(this.workspaceQueryService).updateCandidatesWithChatCount(candidateIds, apiToken);
@@ -336,14 +336,15 @@ export default class CandidateEngagementArx {
     }
     // Run any pre-processing steps
     await config.preProcessing?.(peopleCandidateResponseEngagementArr, candidateJob, chatControl, apiToken, this.workspaceQueryService);
-
     // Filter candidates using config's filter logic
     const filterCandidates = (personNode: allDataObjects.PersonNode) => {
       const candidate = personNode?.candidates?.edges[0]?.node;
       if (!candidate) return false;
       return config.filterLogic(candidate);
     };
-
+    console.log("peopleCandidateResponse EngagementArr length::", peopleCandidateResponseEngagementArr.length, "for chatControl::", chatControl.chatControlType);
+    
+    // console.log("this is the config.filterLogic::", config.filterLogic)
     const filteredCandidatesToStartEngagement = peopleCandidateResponseEngagementArr?.filter(filterCandidates);
 
     console.log('Number of candidates to start chat engagement::', filteredCandidatesToStartEngagement.length, 'for chatControl::', chatControl.chatControlType);
@@ -523,7 +524,7 @@ export default class CandidateEngagementArx {
           }
 
           const edges = response?.data?.data?.candidates?.edges || [];
-          console.log(`Received ${edges.length} candidates for current filter`);
+          console.log(`Received ${edges.length} candidates for current filter, for chatControlType ${chatControlType}`);
           
           if (!edges.length) {
             console.log('No candidates found for this filter condition');
@@ -548,6 +549,9 @@ export default class CandidateEngagementArx {
               startChat: newCandidates[0].startChat,
               startChatCompleted: newCandidates[0].startChatCompleted,
               startVideoInterviewChat: newCandidates[0].startVideoInterviewChat,
+              startVideoInterviewChatCompleted: newCandidates[0].startVideoInterviewChatCompleted,
+              startMeetingSchedulingChat: newCandidates[0].startMeetingSchedulingChat,
+              startMeetingSchedulingChatCompleted: newCandidates[0].startMeetingSchedulingChatCompleted,
               stopChat: newCandidates[0].stopChat
             });
           }
