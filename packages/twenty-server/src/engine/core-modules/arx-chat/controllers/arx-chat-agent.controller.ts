@@ -349,6 +349,7 @@ export class ArxChatEndpoint {
   @UseGuards(JwtAuthGuard)
   async createShortlist(@Req() request: any): Promise<object>  {
     try {
+      console.log("Create shortlist called")
       const { candidateIds } = request.body;
       const apiToken = request.headers.authorization.split(' ')[1];
       await new UpdateChat(this.workspaceQueryService).createShortlist(candidateIds, apiToken);

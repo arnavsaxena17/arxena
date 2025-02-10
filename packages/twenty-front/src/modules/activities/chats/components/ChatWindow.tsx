@@ -1,4 +1,3 @@
-import React, { useEffect, useRef, useState } from 'react';
 import * as frontChatTypes from '../types/front-chat-types';
 import axios from 'axios';
 import { useRecoilCallback, useRecoilState, useRecoilValue } from 'recoil';
@@ -6,12 +5,15 @@ import { tokenPairState } from '@/auth/states/tokenPairState';
 import FileUpload from './FileUpload';
 import SingleChatContainer from './SingleChatContainer';
 import dayjs from 'dayjs';
-import { Server } from 'socket.io';
-import { io } from 'socket.io-client';
+
+import React, { useEffect, useRef, useState } from 'react';
+import styled from '@emotion/styled';
+
+// import { Server } from 'socket.io';
+// import { io } from 'socket.io-client';
 import QRCode from 'react-qr-code';
 // import { p } from 'node_modules/msw/lib/core/GraphQLHandler-907fc607';
 import { useHotkeys } from 'react-hotkeys-hook';
-import styled from '@emotion/styled';
 import { css } from '@emotion/react';
 import { Notes } from '@/activities/notes/components/Notes';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
@@ -20,8 +22,7 @@ import AttachmentPanel from './AttachmentPanel';
 import { graphQltoUpdateOneCandidate, mutationToUpdateOnePerson } from '../graphql-queries-chat/chat-queries';
 
 import { useNavigate } from 'react-router-dom';
-// import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { TopbarContainer, FieldsContainer, AdditionalInfo, CopyableField, StyledTopBar, EditableField, ButtonGroup, MainInfo, StyledSelect, AdditionalInfoAndButtons, AdditionalInfoContent } from './TopbarComponents';
+
 import { recordStoreFamilyState } from '@/object-record/record-store/states/recordStoreFamilyState';
 
 const statusLabels: { [key: string]: string } = {
@@ -37,8 +38,8 @@ const statusLabels: { [key: string]: string } = {
 };
 
 // const templatesList = [ ];
-const templates = ['recruitment', 'application', 'application02','share_video_interview_link_direct','rejection_template','follow_up'];
-const chatLayers = ['startChat','videoInterview','meetingScheduling']
+const templates = ['recruitment', 'application', 'application02', 'share_video_interview_link_direct', 'rejection_template', 'follow_up'];
+const chatLayers = ['startChat', 'videoInterview', 'meetingScheduling'];
 
 const statusesArray = Object.keys(statusLabels);
 const PersonIcon = () => (
@@ -70,14 +71,202 @@ const StopIcon = () => (
 //   gap: 8px;
 // `;
 
+const TopbarContainer = styled.div`
+  background-color: #f3f4f6;
+  padding: 8px;
+  border-radius: 4px;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  width: 100%;
+
+  @media (max-width: 1024px) {
+    padding: 6px;
+  }
+
+  @media (max-width: 768px) {
+    padding: 4px;
+  }
+`;
+
+const FieldsContainer = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  font-size: 14px;
+
+  @media (max-width: 1024px) {
+    gap: 12px;
+    font-size: 13px;
+  }
+
+  @media (max-width: 768px) {
+    gap: 8px;
+    font-size: 12px;
+  }
+`;
+
+const AdditionalInfoAndButtons = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+
+  @media (max-width: 1024px) {
+    gap: 16px;
+  }
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    width: 100%;
+  }
+`;
+
+const AdditionalInfo = styled.div`
+  font-size: 12px;
+  color: #4b5563;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+
+  @media (max-width: 1024px) {
+    font-size: 11px;
+    gap: 6px;
+  }
+
+  @media (max-width: 768px) {
+    font-size: 10px;
+    gap: 4px;
+    width: 100%;
+  }
+`;
+
+const CopyableField = styled.span`
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 250px;
+
+  &:hover {
+    text-decoration: underline;
+  }
+
+  @media (max-width: 1024px) {
+    max-width: 200px;
+  }
+
+  @media (max-width: 768px) {
+    max-width: 150px;
+  }
+`;
+
+const MainInfo = styled.div`
+  flex: 1;
+`;
+
+const StyledTopBar = styled.div<{ sidebarWidth: number }>`
+  padding: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  background-color: rgba(255, 255, 255, 0.8);
+  filter: drop-shadow(0px 2px 4px rgba(0, 0, 0, 0.1));
+  z-index: 10;
+  backdrop-filter: saturate(180%) blur(10px);
+  width: 100%;
+  box-sizing: border-box;
+`;
+
+
+
+const EditableField = styled.span<{ isEditing: boolean }>`
+  cursor: ${props => (props.isEditing ? 'text' : 'pointer')};
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 150px;
+
+  &:hover {
+    text-decoration: ${props => (props.isEditing ? 'none' : 'underline')};
+  }
+
+  input {
+    max-width: 120px;
+    padding: 2px 4px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    font-size: inherit;
+  }
+
+  @media (max-width: 768px) {
+    max-width: 100px;
+
+    input {
+      max-width: 80px;
+    }
+  }
+`;
+
+const ButtonGroup = styled.div`
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  white-space: nowrap;
+
+  @media (max-width: 768px) {
+    width: 100%;
+    justify-content: flex-start;
+  }
+`;
+
+const StyledSelect = styled.select`
+  padding: 0.5em;
+  margin-right: 1em;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: white;
+  font-size: 14px;
+
+  @media (max-width: 768px) {
+    padding: 0.3em;
+    margin-right: 0.5em;
+    font-size: 12px;
+  }
+`;
+
+const SeparatorDot = styled.span`
+  margin: 0 4px;
+
+  @media (max-width: 768px) {
+    margin: 0 2px;
+  }
+`;
+
 const Container = styled.div`
   gap: 2rem;
   padding: 1.5rem;
   background-color: #f9fafb;
   border-radius: 0.5rem;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-  display: flex; // Add this
-  justify-content: space-between; // Add this
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+`;
+
+const InputWrapper = styled.div`
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 `;
 
 const PreviewSection = styled.div`
@@ -123,29 +312,6 @@ const HeaderText = styled.h3`
   margin: 0;
 `;
 
-const StyledTextArea = styled.textarea`
-  width: 100%;
-  height: 8rem;
-  padding: 0.75rem;
-  border: 1px solid #e5e7eb;
-  border-radius: 0.375rem;
-  resize: none;
-  background-color: ${props => (props.disabled ? '#f3f4f6' : 'white')};
-
-  &:focus {
-    outline: none;
-    border-color: #2563eb;
-    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
-  }
-`;
-
-const ButtonContainer = styled.div`
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-  flex-wrap: wrap;
-`;
-
 const ActionButton = styled.button`
   width: 100%;
   padding: 0.4rem;
@@ -167,11 +333,6 @@ const ActionButton = styled.button`
   }
 `;
 
-const ToolCallsText = styled.span`
-  color: #6b7280;
-  font-size: 0.875rem;
-`;
-
 const Select = styled.select`
   width: 100%;
   padding: 0.4rem;
@@ -188,13 +349,11 @@ const Select = styled.select`
   }
 `;
 
-
 const ChatContainer = styled.div`
   display: flex;
   height: 70vh;
   z-index: 3;
   overflow: hidden; // Add this to prevent body scroll interference
-
 `;
 
 const StyledButton = styled.button<{ bgColor: string }>`
@@ -241,7 +400,7 @@ const NotesPanel = styled.div`
   display: flex;
   position: relative;
   overflow-y: scroll;
-  width: 800px;
+  // width: 800px;
   border-left: 1px solid #ccc;
 `;
 
@@ -258,17 +417,12 @@ const StyledButtonBottom = styled.button`
   cursor: pointer;
   border-radius: 4px;
 `;
-
 const StyledWindow = styled.div`
-  position: fixed;
-  display: block;
+  display: flex;
   flex-direction: column;
-  height: 90vh;
-  // padding-left:40rem;
-  // margin-left:500px;
-  margin: 0 auto;
-  margin-left:40px
-  z-index: 2;
+  width: 100%;
+  height: 100vh;
+  position: relative;
 `;
 
 const StyledChatInput = styled.input`
@@ -280,47 +434,26 @@ const StyledChatInput = styled.input`
   outline: none;
 `;
 
-const StyledChatInputBox = styled.div`
-  position: sticky;
+const StyledChatInputBox = styled.div<{ sidebarWidth: number }>`
+  position: fixed;
   bottom: 0;
-  display: flex;
+  width: calc(100% - ${props => props.sidebarWidth + 250}px);
   background-color: rgba(255, 255, 255, 0.8);
   filter: drop-shadow(0px -2px 4px rgba(0, 0, 0, 0.1));
-  // z-index: 1;
   backdrop-filter: saturate(180%) blur(10px);
-  max-width: auto;
   padding: 1rem;
-  flex: 1;
-  flex-direction: column;
+  z-index: 10;
 
-  & > * {
-    margin: 0.5rem 0;
-  }
+  box-sizing: border-box;
 `;
 
 const ChatView = styled.div`
-  position: relative;
-  border: 1px solid #ccc;
-  overflow-y: scroll;
-  width: 100%;
-  height: 60vh;
-  scroll-behavior: smooth;
-  
-  /* For webkit browsers */
-  &::-webkit-scrollbar {
-    width: 8px;
-  }
-  
-  &::-webkit-scrollbar-track {
-    background: #f1f1f1;
-  }
-  
-  &::-webkit-scrollbar-thumb {
-    background: #888;
-    border-radius: 4px;
-  }
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+  height: calc(100vh - 200px); // Adjust based on your top and bottom bars
+  margin-bottom: 200px; // Space for the input box
 `;
-
 
 const StyledDateComponent = styled.span`
   padding: 0.5em;
@@ -336,120 +469,6 @@ const StyledScrollingView = styled.div`
   margin-bottom: 5rem;
   z-index: 1;
 `;
-
-const StyledButtonsBelowChatMessage = styled.div`
-  display: flex;
-`;
-
-const StyledButton2 = styled.button`
-  background-color: #666666;
-  border: none;
-  border-radius: 10px;
-  color: white;
-  cursor: pointer;
-  margin-right: 0.5rem;
-`;
-
-const BotResponseContainer = styled.div`
-  display: flex;
-  gap: 1rem;
-  width: 100%;
-  align-items: flex-start;
-
-  textarea {
-    flex: 1;
-    min-height: 100px;
-    resize: vertical;
-  }
-
-  .buttons-container {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-`;
-
-// const StyledTopBar = styled.div`
-//   padding: 1.5rem;
-//   position: fixed;
-//   display: flex;
-//   justify-content: space-between;
-//   align-items: center;
-//   width: 62vw;
-//   background-color: rgba(255, 255, 255, 0.8);
-//   filter: drop-shadow(0px 2px 4px rgba(0, 0, 0, 0.1));
-//   z-index: 1;
-//   backdrop-filter: saturate(180%) blur(10px);
-// `;
-
-// const TopbarContainer = styled.div`
-//   background-color: #f3f4f6;
-//   padding: 8px;
-//   border-radius: 4px;
-//   box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-// `;
-
-// const FieldsContainer = styled.div`
-//   display: flex;
-//   flex-wrap: wrap;
-//   gap: 16px;
-//   font-size: 14px;
-// `;
-
-// const AdditionalInfo = styled.div`
-//   margin-top: 8px;
-//   font-size: 12px;
-//   color: #4b5563;
-// `;
-
-// const CopyableField = styled.span`
-//   cursor: pointer;
-//   &:hover {
-//     text-decoration: underline;
-//   }
-//   display: flex;
-//   align-items: center;
-//   gap: 4px;
-// `;
-const ChatInputContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  padding: 1rem;
-  background-color: rgba(255, 255, 255, 0.8);
-  backdrop-filter: saturate(180%) blur(10px);
-`;
-
-const ResponsePreviewContainer = styled.div`
-  display: flex;
-  gap: 1rem;
-  width: 100%;
-`;
-
-// const PreviewSection = styled.div`
-//   flex: 1;
-//   display: flex;
-//   flex-direction: column;
-//   gap: 0.5rem;
-//   margin: 1rem;
-//   textarea {
-//     width: 100%;
-//     min-height: 100px;
-//     resize: vertical;
-//     padding: 0.5rem;
-//     border: 1px solid #ccc;
-//     border-radius: 4px;
-//   }
-// `;
-
-const ButtonsRow = styled.div`
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-`;
-
-
 
 const iconStyles = css`
   width: 16px;
@@ -508,6 +527,35 @@ const CloseButton = styled.button`
   }
 `;
 
+const AdditionalInfoContent: React.FC<{
+  messageCount: number;
+  jobName: string;
+  salary: string;
+  city: string;
+  isEditingSalary: boolean;
+  isEditingCity: boolean;
+  onSalaryEdit: () => void;
+  onCityEdit: () => void;
+  onSalaryUpdate: () => void;
+  onCityUpdate: () => void;
+  setSalary: (value: string) => void;
+  setCity: (value: string) => void;
+}> = ({ messageCount, jobName, salary, city, isEditingSalary, isEditingCity, onSalaryEdit, onCityEdit, onSalaryUpdate, onCityUpdate, setSalary, setCity }) => (
+  <>
+    Messages: {messageCount}
+    <SeparatorDot>•</SeparatorDot>
+    Current Job: {jobName || 'N/A'}
+    <SeparatorDot>•</SeparatorDot>
+    <EditableField isEditing={isEditingSalary} onDoubleClick={onSalaryEdit}>
+      {isEditingSalary ? <input value={salary} onChange={e => setSalary(e.target.value)} onBlur={onSalaryUpdate} onKeyPress={e => e.key === 'Enter' && onSalaryUpdate()} autoFocus /> : `Salary: ${salary || 'N/A'}`}
+    </EditableField>
+    <SeparatorDot>•</SeparatorDot>
+    <EditableField isEditing={isEditingCity} onDoubleClick={onCityEdit}>
+      {isEditingCity ? <input value={city} onChange={e => setCity(e.target.value)} onBlur={onCityUpdate} onKeyPress={e => e.key === 'Enter' && onCityUpdate()} autoFocus /> : `City: ${city || 'N/A'}`}
+    </EditableField>
+  </>
+);
+
 interface Toast {
   id: number;
   message: string;
@@ -535,14 +583,13 @@ const AttachmentIcon = () => (
 
 const formatDate = (date: string) => dayjs(date).format('YYYY-MM-DD');
 
-
 const getTemplatePreview = (templateName: string) => {
   switch (templateName) {
     case 'recruitment':
       return `Dear [Candidate Name],
 
 My name is [Recruiter Name], [Job Title] at [Company Name], [Company Description]. I am reaching out to you regarding the [Position Name] position for [Location].`;
-      
+
     case 'application':
       return `Dear [Candidate Name],
 
@@ -578,10 +625,17 @@ Best regards,
   }
 };
 
-export default function ChatWindow(props: { selectedIndividual: string; individuals: frontChatTypes.PersonNode[],onMessageSent: () => void;}) {
-  const allIndividuals = props?.individuals;
+interface ChatWindowProps {
+  selectedIndividual: string;
+  individuals: frontChatTypes.PersonNode[];
+  onMessageSent: () => void;
+  sidebarWidth: number;
+}
 
-  const currentIndividual = allIndividuals?.find(individual => individual?.id === props?.selectedIndividual);
+export default function ChatWindow({ selectedIndividual, individuals, onMessageSent, sidebarWidth }: ChatWindowProps) {
+  const allIndividuals = individuals;
+
+  const currentIndividual = allIndividuals?.find(individual => individual?.id === selectedIndividual);
   const currentCandidateId = currentIndividual?.candidates?.edges[0]?.node?.id;
 
   const navigate = useNavigate();
@@ -591,10 +645,8 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
   const [listOfToolCalls, setListOfToolCalls] = useState<string[]>([]);
   const [isAttachmentPanelOpen, setIsAttachmentPanelOpen] = useState(false);
 
-  const [qrCode, setQrCode] = useState('');
+  // const [qrCode, setQrCode] = useState('');
   const [isWhatsappLoggedIn, setIsWhatsappLoggedIn] = useState(false);
-  
-
 
   const botResponsePreviewRef = useRef(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -613,32 +665,32 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
 
   const [toasts, setToasts] = useState<Toast[]>([]);
 
-  useEffect(() => {
-    const URL = process.env.REACT_APP_SERVER_SOCKET_URL || 'http://localhost:3000';
-    const socket = io(URL, {
-      path: process.env.REACT_APP_SOCKET_PATH_FRONT,
-      query: {
-        token: tokenPair?.accessToken?.token,
-      },
-    });
-  
-    console.log('Listening for QR code updates');
-    socket.on('qr', (qr: any) => {
-      console.log('Received QR code:', qr);
-      setQrCode(qr);
-    });
-  
-    socket.on('isWhatsappLoggedIn', (isWhatsappLoggedIn: boolean) => {
-      console.log('Received isWhatsappLoggedIn:', isWhatsappLoggedIn);
-      setIsWhatsappLoggedIn(isWhatsappLoggedIn);
-    });
-  
-    return () => {
-      socket.off('qr');
-      socket.off('isWhatsappLoggedIn');
-    };
-  }, []);
-  
+  // useEffect(() => {
+  //   const URL = process.env.REACT_APP_SERVER_SOCKET_URL || 'http://localhost:3000';
+  //   const socket = io(URL, {
+  //     path: process.env.REACT_APP_SOCKET_PATH_FRONT,
+  //     query: {
+  //       token: tokenPair?.accessToken?.token,
+  //     },
+  //   });
+
+  //   console.log('Listening for QR code updates');
+  //   socket.on('qr', (qr: any) => {
+  //     console.log('Received QR code:', qr);
+  //     setQrCode(qr);
+  //   });
+
+  //   socket.on('isWhatsappLoggedIn', (isWhatsappLoggedIn: boolean) => {
+  //     console.log('Received isWhatsappLoggedIn:', isWhatsappLoggedIn);
+  //     setIsWhatsappLoggedIn(isWhatsappLoggedIn);
+  //   });
+
+  //   return () => {
+  //     socket.off('qr');
+  //     socket.off('isWhatsappLoggedIn');
+  //   };
+  // }, []);
+
   useEffect(() => {
     if (currentCandidateId) {
       getlistOfMessages(currentCandidateId).then(() => {
@@ -649,8 +701,7 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
         }
       });
     }
-  }, [props.individuals, props.selectedIndividual, messageHistory.length]);
-    
+  }, [individuals, selectedIndividual, messageHistory.length]);
 
   useEffect(() => {
     setSalary(currentIndividual?.salary || '');
@@ -745,21 +796,14 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
 
   async function getlistOfMessages(currentCandidateId: string) {
     try {
-      const response = await axios.post(
-        process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/get-all-messages-by-candidate-id',
-        { candidateId: currentCandidateId },
-        { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } }
-      );
+      const response = await axios.post(process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/get-all-messages-by-candidate-id', { candidateId: currentCandidateId }, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } });
 
       const sortedMessages = response.data.sort((a: frontChatTypes.MessageNode, b: frontChatTypes.MessageNode) => {
         return dayjs(a.createdAt).valueOf() - dayjs(b.createdAt).valueOf();
       });
 
       // Merge with pending message if it exists and hasn't appeared in the response
-      if (pendingMessage && !sortedMessages.some((msg: frontChatTypes.MessageNode) => 
-          msg.message === pendingMessage.message && 
-          Math.abs(dayjs(msg.createdAt).diff(dayjs(pendingMessage.createdAt), 'second')) < 30
-      )) {
+      if (pendingMessage && !sortedMessages.some((msg: frontChatTypes.MessageNode) => msg.message === pendingMessage.message && Math.abs(dayjs(msg.createdAt).diff(dayjs(pendingMessage.createdAt), 'second')) < 30)) {
         setMessageHistory([...sortedMessages, pendingMessage]);
       } else {
         setMessageHistory(sortedMessages);
@@ -771,9 +815,6 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
       setMessageHistory(pendingMessage ? [pendingMessage] : []);
     }
   }
-
-
-
 
   console.log('Current Individual::', currentIndividual);
   let currentMessageObject = currentIndividual?.candidates?.edges[0]?.node?.whatsappMessages?.edges[currentIndividual?.candidates?.edges[0]?.node?.whatsappMessages?.edges?.length - 1]?.node?.messageObj;
@@ -805,11 +846,11 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
     if (chatViewRef.current) {
       chatViewRef.current.scrollTo({
         top: chatViewRef.current.scrollHeight,
-        behavior: 'smooth'
+        behavior: 'smooth',
       });
     }
   };
-  
+
   const sendMessage = async (messageText: string) => {
     console.log('send message');
     const response = await axios.post(process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/send-chat', { messageToSend: messageText, phoneNumberTo: currentIndividual?.phone }, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } });
@@ -818,7 +859,7 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
   const handleSubmit = async () => {
     console.log('submit');
     //@ts-ignore
-    const messageSent = inputRef?.current?.value || ""; 
+    const messageSent = inputRef?.current?.value || '';
     console.log(messageSent);
 
     if (inputRef.current) {
@@ -827,12 +868,12 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
 
     const newMessage: frontChatTypes.MessageNode = {
       recruiterId: currentWorkspaceMember?.id || '',
-      message: messageSent || "",
-      candidateId: currentCandidateId || "",
-      jobsId: currentIndividual?.candidates?.edges[0]?.node?.jobs?.id || "",
+      message: messageSent || '',
+      candidateId: currentCandidateId || '',
+      jobsId: currentIndividual?.candidates?.edges[0]?.node?.jobs?.id || '',
       position: messageHistory.length + 1,
       messageType: 'template',
-      phoneTo: currentIndividual?.phone || "",
+      phoneTo: currentIndividual?.phone || '',
       updatedAt: new Date().toISOString(),
       createdAt: new Date().toISOString(),
       id: Date.now().toString(),
@@ -844,14 +885,10 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
 
     setMessageHistory(prev => [...prev, newMessage]);
     await sendMessage(messageSent);
-    
+
     scrollToBottom();
-    props.onMessageSent();
-
+    onMessageSent();
   };
-
-
-
 
   const handleShareJD = async () => {
     console.log('share JD');
@@ -907,7 +944,6 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
   //   setMessageHistory(response.data);
   //   const newMessageHistory = response.data;
 
-
   //   const newLength = newMessageHistory.length;
   //   const diff = newLength - oldLength;
   //   const arrObjOfToolCalls = response.data.slice(newLength - diff, newLength + 1);
@@ -928,8 +964,7 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
   //       .map((obj: any) => obj?.tool_calls?.map((tool: any) => tool?.function?.name)),
   //   );
   // };
-  
-  
+
   const handleToggleAttachmentPanel = () => {
     setIsAttachmentPanelOpen(!isAttachmentPanelOpen);
   };
@@ -948,7 +983,7 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
   );
 
   const allIndividualsForCurrentJob = allIndividuals?.filter(individual => individual?.candidates?.edges[0]?.node?.jobs?.id === currentIndividual?.candidates?.edges[0]?.node?.jobs?.id);
-  console.log("allIndividualsForCurrentJob:",allIndividualsForCurrentJob)
+  console.log('allIndividualsForCurrentJob:', allIndividualsForCurrentJob);
 
   const lastStatus = currentIndividual?.candidates?.edges[0]?.node?.status;
   const totalCandidates = allIndividualsForCurrentJob?.length;
@@ -972,36 +1007,39 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
 
   const handleTemplateSend = async (templateName: string) => {
     try {
-      console.log("templateName:", templateName);
-      console.log("process.env.REACT_APP_SERVER_BASE_URL:", process.env.REACT_APP_SERVER_BASE_URL);
-      console.log("currentIndividual?.phone:",currentIndividual?.phone);
-      const response = await axios.post(process.env.REACT_APP_SERVER_BASE_URL + '/whatsapp-test/send-template-message', { templateName:templateName, phoneNumberTo: currentIndividual?.phone.replace("+","") }, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } });
-      console.log("This is reponse:", response)
+      console.log('templateName:', templateName);
+      console.log('process.env.REACT_APP_SERVER_BASE_URL:', process.env.REACT_APP_SERVER_BASE_URL);
+      console.log('currentIndividual?.phone:', currentIndividual?.phone);
+      const response = await axios.post(
+        process.env.REACT_APP_SERVER_BASE_URL + '/whatsapp-test/send-template-message',
+        { templateName: templateName, phoneNumberTo: currentIndividual?.phone.replace('+', '') },
+        { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } },
+      );
+      console.log('This is reponse:', response);
       addToast('Template sent successfully', 'success');
       setSelectedTemplate(''); // Reset selection after successful send
 
-      props.onMessageSent();
+      onMessageSent();
 
-    const newMessage: frontChatTypes.MessageNode = {
-      recruiterId: currentWorkspaceMember?.id || '',
-      message: templateName,
-      candidateId: currentCandidateId || "",
-      jobsId: currentIndividual?.candidates?.edges[0]?.node?.jobs?.id || "",
-      position: messageHistory.length + 1,
-      messageType: 'template',
-      phoneTo: currentIndividual?.phone || "",
-      updatedAt: new Date().toISOString(),
-      createdAt: new Date().toISOString(),
-      id: Date.now().toString(),
-      name: `${currentIndividual?.name.firstName} ${currentIndividual?.name.lastName}`,
-      phoneFrom: 'system',
-      messageObj: { content: templateName },
-      whatsappDeliveryStatus: 'sent',
-    };
+      const newMessage: frontChatTypes.MessageNode = {
+        recruiterId: currentWorkspaceMember?.id || '',
+        message: templateName,
+        candidateId: currentCandidateId || '',
+        jobsId: currentIndividual?.candidates?.edges[0]?.node?.jobs?.id || '',
+        position: messageHistory.length + 1,
+        messageType: 'template',
+        phoneTo: currentIndividual?.phone || '',
+        updatedAt: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+        id: Date.now().toString(),
+        name: `${currentIndividual?.name.firstName} ${currentIndividual?.name.lastName}`,
+        phoneFrom: 'system',
+        messageObj: { content: templateName },
+        whatsappDeliveryStatus: 'sent',
+      };
 
-    setMessageHistory(prev => [...prev, newMessage]);
-            scrollToBottom();
-
+      setMessageHistory(prev => [...prev, newMessage]);
+      scrollToBottom();
     } catch (error) {
       addToast('Failed to send template', 'error');
       console.error('Error sending template:', error);
@@ -1019,25 +1057,21 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
     }
   };
 
-
   const handleScroll = () => {
     if (chatViewRef.current) {
       const { scrollTop, scrollHeight, clientHeight } = chatViewRef.current;
       const isAtBottom = Math.abs(scrollHeight - scrollTop - clientHeight) < 50;
-      
+
       setUserHasScrolled(true);
       setShouldScrollToBottom(isAtBottom);
     }
   };
-  
-
 
   console.log('Current Candidate ID:', currentCandidateId);
   console.log('Targetable Object:', {
     targetObjectNameSingular: 'candidate',
     id: currentCandidateId,
   });
-
 
   const initializeRecord = useRecoilCallback(({ set }) => () => {
     if (currentCandidateId) {
@@ -1049,84 +1083,83 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
       });
     }
   });
-  
+
   useEffect(() => {
     if (currentCandidateId) {
       initializeRecord();
     }
   }, [currentCandidateId]);
-  
-  
+
   console.log('Current Individual::', currentIndividual);
   console.log('Current currentWorkspaceMember::', currentWorkspaceMember);
   return (
     <>
       <div style={{ display: 'flex', flexDirection: 'column' }}>
-      {props.selectedIndividual ? (
+        {selectedIndividual ? (
           <StyledWindow>
-            <ChatContainer>
-            <ChatView ref={chatViewRef} onScroll={handleScroll}>
-            <StyledTopBar>
-                  <TopbarContainer>
-                    <MainInfo>
-                      <FieldsContainer>
-                        <CopyableFieldComponent label="Name" value={`${currentIndividual?.name.firstName} ${currentIndividual?.name.lastName}`} field="name" alwaysShowFull={true} />
-                        <CopyableFieldComponent label="Phone" value={currentIndividual?.phone || ''} field="phone" />
-                        <CopyableFieldComponent label="Person ID" value={currentIndividual?.id || ''} field="personId" />
-                        <CopyableFieldComponent label="Candidate ID" value={currentIndividual?.candidates.edges[0].node.id || ''} field="candidateId" />
-                      </FieldsContainer>
-                      <AdditionalInfoAndButtons>
-                        <AdditionalInfo>
-                          <AdditionalInfoContent
-                            messageCount={messageHistory?.length || 0}
-                            jobName={currentIndividual?.candidates?.edges[0]?.node?.jobs?.name || ''}
-                            salary={salary}
-                            city={city}
-                            isEditingSalary={isEditingSalary}
-                            isEditingCity={isEditingCity}
-                            onSalaryEdit={() => setIsEditingSalary(true)}
-                            onCityEdit={() => setIsEditingCity(true)}
-                            onSalaryUpdate={handleSalaryUpdate}
-                            onCityUpdate={handleCityUpdate}
-                            setSalary={setSalary}
-                            setCity={setCity}
-                          />
-                        </AdditionalInfo>
-                        <ButtonGroup>
-                          <StyledSelect value={lastStatus || ''} onChange={e => handleStatusUpdate(e.target.value)}>
+            <StyledTopBar sidebarWidth={sidebarWidth}>
+              <TopbarContainer>
+                <MainInfo>
+                  <FieldsContainer>
+                    <CopyableFieldComponent label="Name" value={`${currentIndividual?.name.firstName} ${currentIndividual?.name.lastName}`} field="name" alwaysShowFull={true} />
+                    <CopyableFieldComponent label="Phone" value={currentIndividual?.phone || ''} field="phone" />
+                    <CopyableFieldComponent label="Person ID" value={currentIndividual?.id || ''} field="personId" />
+                    <CopyableFieldComponent label="Candidate ID" value={currentIndividual?.candidates.edges[0].node.id || ''} field="candidateId" />
+                  </FieldsContainer>
+                  <AdditionalInfoAndButtons>
+                    <AdditionalInfo>
+                      <AdditionalInfoContent
+                        messageCount={messageHistory?.length || 0}
+                        jobName={currentIndividual?.candidates?.edges[0]?.node?.jobs?.name || ''}
+                        salary={salary}
+                        city={city}
+                        isEditingSalary={isEditingSalary}
+                        isEditingCity={isEditingCity}
+                        onSalaryEdit={() => setIsEditingSalary(true)}
+                        onCityEdit={() => setIsEditingCity(true)}
+                        onSalaryUpdate={handleSalaryUpdate}
+                        onCityUpdate={handleCityUpdate}
+                        setSalary={setSalary}
+                        setCity={setCity}
+                      />
+                    </AdditionalInfo>
+                    <ButtonGroup>
+                      <StyledSelect value={lastStatus || ''} onChange={e => handleStatusUpdate(e.target.value)}>
+                        {' '}
+                        <option value="" disabled>
+                          Update Status
+                        </option>{' '}
+                        {statusesArray.map(status => (
+                          <option key={status} value={status}>
                             {' '}
-                            <option value="" disabled>
-                              Update Status
-                            </option>{' '}
-                            {statusesArray.map(status => (
-                              <option key={status} value={status}>
-                                {' '}
-                                {statusLabels[status]}{' '}
-                              </option>
-                            ))}{' '}
-                          </StyledSelect>
-                          <StyledButton onClick={handleStopCandidate} bgColor="black" data-tooltip="Stop Chat">
-                            {' '}
-                            <StopIcon />{' '}
-                          </StyledButton>
-                          <StyledButton onClick={handleNavigateToPersonPage} bgColor="black" data-tooltip="Person">
-                            {' '}
-                            <PersonIcon />{' '}
-                          </StyledButton>
-                          <StyledButton onClick={handleNavigateToCandidatePage} bgColor="black" data-tooltip="Candidate">
-                            {' '}
-                            <CandidateIcon />{' '}
-                          </StyledButton>
+                            {statusLabels[status]}{' '}
+                          </option>
+                        ))}{' '}
+                      </StyledSelect>
+                      <StyledButton onClick={handleStopCandidate} bgColor="black" data-tooltip="Stop Chat">
+                        {' '}
+                        <StopIcon />{' '}
+                      </StyledButton>
+                      <StyledButton onClick={handleNavigateToPersonPage} bgColor="black" data-tooltip="Person">
+                        {' '}
+                        <PersonIcon />{' '}
+                      </StyledButton>
+                      <StyledButton onClick={handleNavigateToCandidatePage} bgColor="black" data-tooltip="Candidate">
+                        {' '}
+                        <CandidateIcon />{' '}
+                      </StyledButton>
 
-                          <AttachmentButton onClick={handleToggleAttachmentPanel} bgColor="black" data-tooltip="View Attachments">
-                            {' '}
-                            <AttachmentIcon />
-                          </AttachmentButton>
-                        </ButtonGroup>
-                      </AdditionalInfoAndButtons>
-                    </MainInfo>
-                  </TopbarContainer>
-                </StyledTopBar>
+                      <AttachmentButton onClick={handleToggleAttachmentPanel} bgColor="black" data-tooltip="View Attachments">
+                        {' '}
+                        <AttachmentIcon />
+                      </AttachmentButton>
+                    </ButtonGroup>
+                  </AdditionalInfoAndButtons>
+                </MainInfo>
+              </TopbarContainer>
+            </StyledTopBar>
+            <ChatContainer>
+              <ChatView ref={chatViewRef} onScroll={handleScroll}>
                 <StyledScrollingView>
                   {messageHistory.map((message, index) => {
                     const showDateSeparator = index === 0 || formatDate(messageHistory[index - 1]?.createdAt) !== formatDate(message?.createdAt);
@@ -1154,9 +1187,8 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
                   />
                 )}
               </NotesPanel>
-
             </ChatContainer>
-            <StyledChatInputBox>
+            <StyledChatInputBox sidebarWidth={sidebarWidth}>
               <Container>
                 {/* <PreviewSection>
                   <SectionHeader>
@@ -1176,22 +1208,26 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
                 </PreviewSection> */}
 
                 <PreviewSection>
-                <ControlsContainer>
-
-                  <SectionHeader>
-                    <HeaderIcon viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 5h16a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V7a2 2 0 012-2z" />
-                    </HeaderIcon>
-                    <HeaderText>Templates & Chat Layers</HeaderText>
-                  </SectionHeader>
+                  <ControlsContainer>
+                    <SectionHeader>
+                      <HeaderIcon viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 5h16a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V7a2 2 0 012-2z" />
+                      </HeaderIcon>
+                      <HeaderText>Templates & Chat Layers</HeaderText>
+                    </SectionHeader>
                     <div>
-                    <Select value={selectedTemplate} onChange={e => setSelectedTemplate(e.target.value)}>
-                        <option value="" disabled> Select a template </option>
+                      <Select value={selectedTemplate} onChange={e => setSelectedTemplate(e.target.value)}>
+                        <option value="" disabled>
+                          {' '}
+                          Select a template{' '}
+                        </option>
                         {templates.map(template => (
-                        <option key={template} value={template}>{template}</option>
+                          <option key={template} value={template}>
+                            {template}
+                          </option>
                         ))}
-                    </Select>
-                    <ActionButton onClick={() => handleTemplateSend(selectedTemplate)}>Send Template</ActionButton>
+                      </Select>
+                      <ActionButton onClick={() => handleTemplateSend(selectedTemplate)}>Send Template</ActionButton>
                     </div>
                     {/* <br />
                     <div>
@@ -1203,12 +1239,9 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
                     </Select>
                     <ActionButton onClick={() => handleStartNewChatLayer(selectedTemplate)}>Start New Chat Layer</ActionButton>
                     </div> */}
-                      </ControlsContainer>
+                  </ControlsContainer>
 
-                      <TemplatePreview>
-                      {getTemplatePreview(selectedTemplate)}
-                    </TemplatePreview>
-
+                  <TemplatePreview>{getTemplatePreview(selectedTemplate)}</TemplatePreview>
                 </PreviewSection>
               </Container>
 
@@ -1221,31 +1254,32 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
                 ))}
               </NotificationContainer>
 
-                <div style={{ display: 'flex' }}>
-                <StyledChatInput
-                  type="text"
-                  ref={inputRef}
-                  placeholder="Type your message"
-                  onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    handleSubmit();
-                  }
-                  }}
-                />
-                <StyledButtonBottom onClick={handleSubmit}>Submit</StyledButtonBottom>
-                <StyledButtonBottom onClick={handleShareJD}>Share JD</StyledButtonBottom>
+              <InputWrapper>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <StyledChatInput
+                    type="text"
+                    ref={inputRef}
+                    placeholder="Type your message"
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleSubmit();
+                      }
+                    }}
+                  />
+                  <StyledButtonBottom onClick={handleSubmit}>Submit</StyledButtonBottom>
+                  <StyledButtonBottom onClick={handleShareJD}>Share JD</StyledButtonBottom>
                 </div>
-              <div style={{ display: 'flex' }}>
-                Last Status: {lastStatus} | Total: {totalCandidates} | Screening: {screeningState} ({screeningPercent}%) | Unresponsive: {unresponsive} ({unresponsivePercent}%) | Not Interested: {notInterested} ({notInterestedPercent}%) | Not Fit:{' '}
-                {notFit} ({notFitPercent}%) | Recruiter Interviews: {recruiterInterviews} ({recruiterInterviewsPercent}%)
-              </div>
+                <div style={{ fontSize: '0.875rem', color: '#666' }}>
+                  Last Status: {lastStatus} | Total: {totalCandidates} | ... {/* rest of the status text */}
+                </div>
+              </InputWrapper>
             </StyledChatInputBox>
           </StyledWindow>
-      ) : (
-        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center' }}>
-          <div style={{ marginBottom: '2rem' }}>
-            <h1>WhatsApp QR Code</h1>
+        ) : (
+          <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center' }}>
+            <div style={{ marginBottom: '2rem' }}>
+              {/* <h1>WhatsApp QR Code</h1>
             {!isWhatsappLoggedIn ? (
               qrCode ? (
                 <QRCode value={qrCode} />
@@ -1254,13 +1288,13 @@ export default function ChatWindow(props: { selectedIndividual: string; individu
               )
             ) : (
               <p>Your WhatsApp is logged in! Enjoy!</p>
-            )}
+            )} */}
+            </div>
+            <img src="/images/placeholders/moving-image/empty_inbox.png" alt="" />
+            <p>Select a chat to start talking</p>
           </div>
-          <img src="/images/placeholders/moving-image/empty_inbox.png" alt="" />
-          <p>Select a chat to start talking</p>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
       <AttachmentPanel isOpen={isAttachmentPanelOpen} onClose={() => setIsAttachmentPanelOpen(false)} candidateId={currentCandidateId || ''} candidateName={currentCandidateName} />
     </>
   );

@@ -12,6 +12,8 @@ import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { Button } from '@/ui/input/button/components/Button';
 import { useTheme } from '@emotion/react';
 import dayjs from 'dayjs';
+import { useRecoilState } from 'recoil';
+import { tokenPairState } from '@/auth/states/tokenPairState';
 
 const TableContainer = styled.div`
   width: 100%;
@@ -500,6 +502,7 @@ const ChatTable: React.FC<ChatTableProps> = ({
   const [isChatOpen, setIsChatOpen] = useState(false);
 
 
+  const [tokenPair] = useRecoilState(tokenPairState);
 
 
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
@@ -572,34 +575,44 @@ const ChatTable: React.FC<ChatTableProps> = ({
     console.log("View CVs");
     setCurrentCandidateIndex(0);
     setIsAttachmentPanelOpen(true);
-  };
+  };  
 
-  function createCandidateShortlists(){
-    console.log("createCandidateShortlists");
-    console.log("selectedIds:",selectedIds)
+  // function createCandidateShortlists(){
+  //   console.log("createCandidateShortlists");
+  //   console.log("selectedIds:",selectedIds)
 
-    // async function createCandidateShortlists() {
-    //   try {
-    //     const response = await axios.post('/candidate-sourcing/create-shortlist', {
-    //       candidateIds: selectedIds,
-    //     });
-    //     console.log('Shortlist created successfully:', response.data);
-    //     enqueueSnackBar('Shortlist created successfully', {
-    //       variant: SnackBarVariant.Success,
-    //       icon: <IconCopy size={theme.icon.size.md} />,
-    //       duration: 2000,
-    //     });
-    //   } catch (error) {
-    //     console.log('Error creating shortlist:', error);
-    //     enqueueSnackBar('Error creating shortlist', {
-    //       variant: SnackBarVariant.Error,
-    //       icon: <IconCopy size={theme.icon.size.md} />,
-    //       duration: 2000,
-    //     });
-    //   }
-    // }
+    async function createCandidateShortlists() {
+      try {
+        const url = process.env.ENV_NODE === 'production' ? 'https://app.arxena.com' : 'http://localhost:3000';
 
-  }
+        const response = await axios.post(url+'/arx-chat/create-shortlist', {
+          candidateIds: selectedIds,
+        }, 
+        {
+          headers: {
+            authorization: `Bearer ${tokenPair?.accessToken?.token}`,
+            'content-type': 'application/json',
+            'x-schema-version': '66',
+          },
+        },
+        );
+        console.log('Shortlist created successfully:', response.data);
+        enqueueSnackBar('Shortlist created successfully', {
+          variant: SnackBarVariant.Success,
+          icon: <IconCopy size={theme.icon.size.md} />,
+          duration: 2000,
+        });
+      } catch (error) {
+        console.log('Error creating shortlist:', error);
+        enqueueSnackBar('Error creating shortlist', {
+          variant: SnackBarVariant.Error,
+          icon: <IconCopy size={theme.icon.size.md} />,
+          duration: 2000,
+        });
+      }
+    }
+
+  // }
 
   const handlePrevCandidate = () => {
     setCurrentCandidateIndex(prev => Math.max(0, prev - 1));
@@ -611,28 +624,23 @@ const ChatTable: React.FC<ChatTableProps> = ({
 
   const filterData = (data: frontChatTypes.PersonNode[], term: string) => {
     if (!term) return data;
-    
     return data.filter(individual => {
       const searchString = `
-        ${individual.name.firstName} 
-        ${individual.name.lastName} 
-        ${individual.city || ''} 
-        ${individual.jobTitle || ''} 
-        ${individual.salary || ''} 
-        ${individual.candidates?.edges[0]?.node?.status || ''} 
+        ${individual.name.firstName}
+        ${individual.name.lastName}
+        ${individual.city || ''}
+        ${individual.jobTitle || ''}
+        ${individual.salary || ''}
+        ${individual.candidates?.edges[0]?.node?.status || ''}
         ${individual.candidates?.edges[0]?.node?.candConversationStatus || ''}
       `.toLowerCase();
-      
       return searchString.includes(term.toLowerCase());
     });
   };
 
-
   const sortData = (data: frontChatTypes.PersonNode[], key: string, direction: 'asc' | 'desc') => {
     return [...data].sort((a, b) => {
       let aValue: any, bValue: any;
-
-      // Handle nested properties based on key
       switch (key) {
         case 'name':
           aValue = `${a.name.firstName} ${a.name.lastName}`;
@@ -867,8 +875,8 @@ const ChatTable: React.FC<ChatTableProps> = ({
               variant="primary"
               accent="blue"
               title="Create Candidate Shortlist"
-              onClick={() => {
-                createCandidateShortlists();
+              onClick={async () => {
+                await createCandidateShortlists();
                 enqueueSnackBar('Create Candidate Shortlists', {
                   variant: SnackBarVariant.Success,
                   icon: <IconCopy size={theme.icon.size.md} />,

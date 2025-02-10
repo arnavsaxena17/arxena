@@ -17,23 +17,37 @@ interface ChatMainProps {
 const ChatContainer = styled.div`
   display: flex;
   height: 100vh;
+  width: 100%;
+  position: relative;
+  margin-left: 8px;
+  margin-right: 8px;
+    overflow: hidden; // Add this
+
 `;
 
-const SidebarContainer = styled.div`
+
+
+const SidebarContainer = styled.div<{ width: number }>`
   overflow-x: auto;
   display: flex;
   height: 100vh;
+  width: ${props => props.width}px;
+  min-width: 200px;
+  max-width: 800px;
+  flex-shrink: 0; // Prevent sidebar from shrinking
 `;
 
-const ChatWindowContainer = styled.div`
-  z-index: 1;
-`;
 
-const SpinnerContainer = styled.div`
-  width: 48px;
-  height: 48px;
+const ChatWindowContainer = styled.div<{ sidebarWidth: number }>`
   position: relative;
+  flex-grow: 1;
+  min-width: 0;
+  height: 100vh;
+  overflow: hidden; // Change from overflow-y: auto
+  display: flex;
+  flex-direction: column; // Add this
 `;
+
 
 const Spinner = styled.div`
   width: 100%;
@@ -47,6 +61,26 @@ const Spinner = styled.div`
     100% { transform: rotate(360deg); }
   }
 `;
+
+const Resizer = styled.div`
+  width: 8px;
+  cursor: col-resize;
+  background-color: #e0e0e0;
+  height: 100vh;
+  position: relative;
+  transition: background-color 0.2s;
+  z-index: 10;
+
+  &:hover {
+    background-color: #bdbdbd;
+  }
+
+  &:active {
+    background-color: #9e9e9e;
+  }
+`;
+
+
 
 const LoadingStates = {
   INITIAL: 'initial',
@@ -79,6 +113,39 @@ export default function ChatMain({ initialCandidateId }: ChatMainProps) {
   // Recoil states
   const [tokenPair] = useRecoilState(tokenPairState);
   const [currentUnreadMessages, setCurrentUnreadMessages] = useRecoilState(currentUnreadChatMessagesState);
+
+  const [sidebarWidth, setSidebarWidth] = useState(300);
+  const [isResizing, setIsResizing] = useState(false);
+
+  const startResizing = (e: React.MouseEvent) => {
+    setIsResizing(true);
+    e.preventDefault();
+  };
+
+  const stopResizing = () => {
+    setIsResizing(false);
+  };
+
+  const resize = (e: MouseEvent) => {
+    if (isResizing) {
+      const newWidth = e.clientX;
+      if (newWidth > 200 && newWidth < 800) {
+        setSidebarWidth(newWidth);
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (isResizing) {
+      window.addEventListener('mousemove', resize);
+      window.addEventListener('mouseup', stopResizing);
+    }
+
+    return () => {
+      window.removeEventListener('mousemove', resize);
+      window.removeEventListener('mouseup', stopResizing);
+    };
+  }, [isResizing]);
 
 
 
@@ -260,7 +327,7 @@ export default function ChatMain({ initialCandidateId }: ChatMainProps) {
 
   return (
     <ChatContainer>
-      <SidebarContainer>
+      <SidebarContainer width={sidebarWidth}>
         <ChatSidebar 
           individuals={individuals} 
           selectedIndividual={selectedIndividual} 
@@ -268,13 +335,17 @@ export default function ChatMain({ initialCandidateId }: ChatMainProps) {
           unreadMessages={unreadMessages} 
           jobs={jobs}
           isRefreshing={isRefreshing} 
+          width={sidebarWidth}  // Add this
+
         />
       </SidebarContainer>
-      <ChatWindowContainer>
+      <Resizer onMouseDown={startResizing} />
+      <ChatWindowContainer sidebarWidth={sidebarWidth}>
         <ChatWindow 
           selectedIndividual={selectedIndividual} 
           individuals={individuals} 
           onMessageSent={fetchData}
+          sidebarWidth={sidebarWidth}
         />
       </ChatWindowContainer>
     </ChatContainer>

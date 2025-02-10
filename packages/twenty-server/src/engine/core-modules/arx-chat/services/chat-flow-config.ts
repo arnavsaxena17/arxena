@@ -21,34 +21,6 @@ export class ChatFlowConfigBuilder {
     return chatFlowOrder.indexOf(type) + 1;
   }
 
-  getNextStageInFlow(currentStage: string, chatFlowOrder: string[]): string | null {
-    const currentIndex = chatFlowOrder.indexOf(currentStage);
-    if (currentIndex === -1 || currentIndex === chatFlowOrder.length - 1) {
-      return null;
-    }
-    return chatFlowOrder[currentIndex + 1];
-  }
-
-  isStageComplete(candidate: any, stage: string): boolean {
-    const completedField = `${stage}Completed`;
-    return candidate[completedField] === true;
-  }
-
-  isReadyForNextStage(candidate: any, currentStage: string, chatFlowOrder: string[]): boolean {
-    // Check if current stage is complete
-    if (!this.isStageComplete(candidate, currentStage)) {
-      return false;
-    }
-
-    // Get next stage
-    const nextStage = this.getNextStageInFlow(currentStage, chatFlowOrder);
-    if (!nextStage) {
-      return false;
-    }
-
-    // Check if next stage hasn't started yet
-    return !candidate[nextStage];
-  }
 
   private getStagesByOrder(currentOrder: number, direction: 'before' | 'after', chatFlowOrder: allDataObjects.chatControlType[]): string[] {
     const stages = [...chatFlowOrder];
@@ -192,7 +164,7 @@ export class ChatFlowConfigBuilder {
     ];
   }
 
-  createStatusUpdate = (order: number, type: string, chatFlowOrder): allDataObjects.ChatFlowConfig['statusUpdate'] => {
+  createStatusUpdate = (order: number, type: allDataObjects.chatControlType, chatFlowOrder:allDataObjects.chatControlType[]): allDataObjects.ChatFlowConfig['statusUpdate'] => {
     const baseStatusUpdate = {
       isWithinAllowedTime: () => {
         const hours = new Date().getHours();
@@ -275,23 +247,6 @@ export class ChatFlowConfigBuilder {
       orderBy: [{ createdAt: 'DESC' }],
     };
   }
-
-  specificConfigs: Record<allDataObjects.chatControlType, (baseConfig: allDataObjects.ChatFlowConfig) => allDataObjects.ChatFlowConfig> = {
-    startChat: baseConfig => ({
-      ...baseConfig,
-    }),
-
-    startVideoInterviewChat: baseConfig => ({
-      ...baseConfig,
-      preProcessing: async (candidates, candidateJob, chatControl, apiToken, workspaceQueryService) => {
-        await new StartVideoInterviewChatProcesses(workspaceQueryService).setupVideoInterviewLinks(candidates, candidateJob, chatControl, apiToken);
-      },
-    }),
-    startMeetingSchedulingChat: baseConfig => ({
-      ...baseConfig,
-    }),
-    allStartedAndStoppedChats: baseConfig => baseConfig,
-  };
 
   private applySpecificConfig(type: allDataObjects.chatControlType, baseConfig: allDataObjects.ChatFlowConfig): allDataObjects.ChatFlowConfig {
     const specificConfigs: Record<allDataObjects.chatControlType, (baseConfig: allDataObjects.ChatFlowConfig) => allDataObjects.ChatFlowConfig> = {

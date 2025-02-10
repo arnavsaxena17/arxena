@@ -11,10 +11,10 @@ import SearchBox from "./SearchBox";
 import { Job } from "../types/front-chat-types";
 
 
-const StyledSidebarContainer = styled.div`
+const StyledSidebarContainer = styled.div<{ width: number }>`
   display: flex;
   flex-direction: column;
-  width: 20vw;
+  width: ${props => props.width}px;
   height: 100%;
   background-color: #f5f5f5;
   border-right: 1px solid #e0e0e0;
@@ -23,6 +23,8 @@ const StyledSidebarContainer = styled.div`
     width: 30vw;
   }
 `;
+
+
 const StyledDropdownContainer = styled.div`
   display: flex;
   padding: 10px;
@@ -119,6 +121,8 @@ interface ChatSidebarProps {
   unreadMessages: frontChatTypes.UnreadMessageListManyCandidates;
   jobs: Job[];
   isRefreshing?: boolean;
+    width: number; // Add this
+
 
 }
 
@@ -155,6 +159,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   unreadMessages,
   jobs,
   isRefreshing = false,
+  width,  // Add this
 
 }) => {
   const navigate = useNavigate();
@@ -375,7 +380,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
 
   
   return (
-    <StyledSidebarContainer ref={sidebarRef}>
+    <StyledSidebarContainer width={width} ref={sidebarRef}>
     <RefreshIndicator isRefreshing={isRefreshing} />
 
     <FixedHeader>

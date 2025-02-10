@@ -328,19 +328,14 @@ export default class CandidateEngagementArx {
       console.log(`No configuration found for chat control type: ${chatControl.chatControlType}`);
       return;
     }
-    // Run any pre-processing steps
     await config.preProcessing?.(peopleCandidateResponseEngagementArr, candidateJob, chatControl, apiToken, this.workspaceQueryService);
-    // Filter candidates using config's filter logic
     const filterCandidates = (personNode: allDataObjects.PersonNode) => {
       const candidate = personNode?.candidates?.edges[0]?.node;
       if (!candidate) return false;
       return config.filterLogic(candidate);
     };
     console.log("peopleCandidateResponse EngagementArr length::", peopleCandidateResponseEngagementArr.length, "for chatControl::", chatControl.chatControlType);
-    
-    // console.log("this is the config.filterLogic::", config.filterLogic)
     const filteredCandidatesToStartEngagement = peopleCandidateResponseEngagementArr?.filter(filterCandidates);
-
     console.log('Number of candidates to start chat engagement::', filteredCandidatesToStartEngagement.length, 'for chatControl::', chatControl.chatControlType);
     // Process filtered candidates
     for (const candidatePersonNodeObj of filteredCandidatesToStartEngagement) {
