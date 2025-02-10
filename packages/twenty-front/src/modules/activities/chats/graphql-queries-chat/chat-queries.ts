@@ -11,6 +11,7 @@ export const graphQltoUpdateOneCandidate = `mutation UpdateOneCandidate($idToUpd
         stopChat
         startChatCompleted
         startMeetingSchedulingChat
+        chatCount
         startMeetingSchedulingChatCompleted
         startVideoInterviewChat
         startVideoInterviewChatCompleted

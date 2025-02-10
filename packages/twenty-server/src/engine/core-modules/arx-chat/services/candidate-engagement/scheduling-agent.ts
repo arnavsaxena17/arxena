@@ -67,7 +67,7 @@ export class CandidateEngagementCronService extends BaseCronService {
 
 @Injectable()
 export class CandidateStatusClassificationCronService extends BaseCronService {
-  @Cron(TimeManagement.crontabs.crontTabToMakeUpdatesForNewChats, { disabled: CRON_DISABLED })
+  // @Cron(TimeManagement.crontabs.crontTabToMakeUpdatesForNewChats, { disabled: CRON_DISABLED })
   // async handleFiveMinutesCron() {
   //   if (CRON_DISABLED) return;
   //   await this.executeWorkspaceTask(async token => {
@@ -75,11 +75,11 @@ export class CandidateStatusClassificationCronService extends BaseCronService {
   //   });
   // }
 
-  @Cron(TimeManagement.crontabs.crontTabToUpdateRecentCandidatesChatControls, { disabled: CRON_DISABLED })
+  @Cron(TimeManagement.crontabs.crontTabToUpdateCandidatesChatControls, { disabled: CRON_DISABLED })
   async handleFiveHoursCron() {
     if (CRON_DISABLED) return;
     await this.executeWorkspaceTask(async token => {
-      await new CandidateEngagementArx(this.workspaceQueryService).updateRecentCandidatesChatControls(token);
+      await new CandidateEngagementArx(this.workspaceQueryService).updateCandidatesChatControls(token);
     });
   }
 }

@@ -59,65 +59,82 @@ export class ChatFlowConfigBuilder {
 
   baseEngagementChecks = (candidate: allDataObjects.CandidateNode, chatControlType: allDataObjects.chatControlType, chatFlowOrder: allDataObjects.chatControlType[]) => {
     if (candidate.engagementStatus === false) {
-        console.log(`Candidate ${candidate.name} is not eligible for engagement due to engagementStatus being false.`);
-        return false;
+      console.log(`Candidate ${candidate.name} is not eligible for engagement due to engagementStatus being false.`);
+      return false;
     }
 
     const currentIndex = chatFlowOrder.indexOf(chatControlType);
     if (currentIndex > 0) {
-        const previousStage = chatFlowOrder[currentIndex - 1];
-        const previousStageCompleted = candidate[`${previousStage}Completed`];
-        const currentStageStarted = candidate[chatControlType];
-        const currentStageCompleted = candidate[`${chatControlType}Completed`];
-        
-        if (previousStageCompleted && currentStageStarted && !currentStageCompleted) {
-            return true;
-        }
-    }
-
-    if (candidate.whatsappMessages?.edges?.length > 0) {
-        const latestMessage = candidate.whatsappMessages.edges[0].node;
-        const waitTime = TimeManagement.timeDifferentials.timeDifferentialinMinutesToCheckTimeDifferentialBetweenlastMessage;
-        const cutoffTime = new Date(Date.now() - waitTime * 60 * 1000);
-        if (new Date(latestMessage.createdAt) >= cutoffTime) {
-            console.log(`Candidate ${candidate.name} messaged too recently for ${chatControlType}`);
-            return false;
-        }
-    }
-    return true;
-};
-
-createIsEligibleForEngagement = (candidate: allDataObjects.CandidateNode, chatControlType: allDataObjects.chatControlType, order: number, chatFlowOrder) => {
-  if (candidate.engagementStatus === false) {
-      console.log(`Candidate ${candidate.name} is not eligible for engagement.`);
-      return false;
-  }
-
-  const currentIndex = chatFlowOrder.indexOf(chatControlType);
-
-  if (currentIndex === 0) {
-      const currentStageStarted = candidate[chatControlType];
-      const currentStageCompleted = candidate[`${chatControlType}Completed`];
-      if (currentStageStarted && !currentStageCompleted) {
-          return this.baseEngagementChecks(candidate, chatControlType, chatFlowOrder);
-      }
-      return false;
-  }
-
-  if (currentIndex > 0) {
       const previousStage = chatFlowOrder[currentIndex - 1];
       const previousStageCompleted = candidate[`${previousStage}Completed`];
       const currentStageStarted = candidate[chatControlType];
       const currentStageCompleted = candidate[`${chatControlType}Completed`];
 
       if (previousStageCompleted && currentStageStarted && !currentStageCompleted) {
-          return this.baseEngagementChecks(candidate, chatControlType, chatFlowOrder);
+        return true;
       }
-  }
+    }
 
-  return false;
-};
+    if (candidate.whatsappMessages?.edges?.length > 0) {
+      const latestMessage = candidate.whatsappMessages.edges[0].node;
+      const waitTime = TimeManagement.timeDifferentials.timeDifferentialinMinutesToCheckTimeDifferentialBetweenlastMessage;
+      const cutoffTime = new Date(Date.now() - waitTime * 60 * 1000);
+      if (new Date(latestMessage.createdAt) >= cutoffTime) {
+        console.log(`Candidate ${candidate.name} messaged too recently for ${chatControlType}`);
+        return false;
+      }
+    }
+    return true;
+  };
 
+  createIsEligibleForEngagement = (candidate: allDataObjects.CandidateNode, chatControlType: allDataObjects.chatControlType, order: number, chatFlowOrder) => {
+    if (candidate.engagementStatus === false) {
+      console.log(`Candidate ${candidate.name} is not eligible for engagement.`);
+      return false;
+    }
+    const currentIndex = chatFlowOrder.indexOf(chatControlType);
+    if (currentIndex === 0) {
+      const currentStageStarted = candidate[chatControlType];
+      const currentStageCompleted = candidate[`${chatControlType}Completed`];
+      if (currentStageStarted && !currentStageCompleted) {
+        return this.baseEngagementChecks(candidate, chatControlType, chatFlowOrder);
+      }
+      return false;
+    }
+    if (currentIndex > 0) {
+      // Get all previous stages in the flow
+      const previousStages = chatFlowOrder.slice(0, currentIndex);
+      // Check if ALL previous stages are completed
+      const allPreviousStagesCompleted = previousStages.every(stage => candidate[`${stage}Completed`] === true);
+      const currentStageStarted = candidate[chatControlType];
+      const currentStageCompleted = candidate[`${chatControlType}Completed`];
+            // Check the waiting period since the last update
+      if (candidate.updatedAt) {
+        const waitingPeriodInMinutes = TimeManagement.timeDifferentials.timeDifferentialInMinutesBeforeStartingNextStageMessaging;
+        const waitTime = waitingPeriodInMinutes * 60 * 1000; // convert to milliseconds
+        const cutoffTime = new Date(Date.now() - waitTime).toISOString();
+        
+        if (new Date(candidate.updatedAt).toISOString() > cutoffTime) {
+          console.log(`Waiting period not elapsed for candidate ${candidate.name} for ${chatControlType}, waiting period is ${waitingPeriodInMinutes} minutes, last updated at ${candidate.updatedAt} and cutoff time is ${cutoffTime}`);
+          return false;
+        }
+        else{
+          console.log(`Waiting period elapsed for candidate ${candidate.name} for ${chatControlType}`);
+        }
+      }
+      else{
+        console.log(`Candidate ${candidate.name} does not have updatedAt field`);
+      }
+
+
+      // Allow engagement if all previous stages are completed and current stage hasn't started
+      if (allPreviousStagesCompleted && (!currentStageStarted || (currentStageStarted && !currentStageCompleted))) {
+        return this.baseEngagementChecks(candidate, chatControlType, chatFlowOrder);
+      }
+    }
+
+    return false;
+  };
 
   private createFilterLogic(currentOrder: number, chatFlowOrder: allDataObjects.chatControlType[]) {
     return (candidate: allDataObjects.CandidateNode) => {
@@ -134,52 +151,49 @@ createIsEligibleForEngagement = (candidate: allDataObjects.CandidateNode, chatCo
   }
 
   private createChatFilters(
-    config: { 
-        type: allDataObjects.chatControlType; 
-        filter: Record<string, any> 
-    }, 
-    chatFlowOrder: allDataObjects.chatControlType[]
-) {
+    config: {
+      type: allDataObjects.chatControlType;
+      filter: Record<string, any>;
+    },
+    chatFlowOrder: allDataObjects.chatControlType[],
+  ) {
     const currentIndex = chatFlowOrder.indexOf(config.type);
     if (currentIndex > 0) {
-        const previousStage = chatFlowOrder[currentIndex - 1];
-        return [
-            // First filter: Check for completed previous stage
-            {
-              stopChat: { eq: false },
-              [`${previousStage}Completed`]: { eq: true },
-              [config.type]: { eq: true },
-              [`${config.type}Completed`]: { eq: false }
-          },
-          // For candidates who have started but not completed (with null)
-          {
-              stopChat: { eq: false },
-              [`${previousStage}Completed`]: { eq: true },
-              [config.type]: { eq: true },
-              [`${config.type}Completed`]: { is: 'NULL' }
-          },
-          // For candidates who haven't started
-          {
-              stopChat: { eq: false },
-              [`${previousStage}Completed`]: { eq: true },
-              [config.type]: { eq: false }
-          }
-        ];
+      const previousStage = chatFlowOrder[currentIndex - 1];
+      return [
+        // First filter: Check for completed previous stage
+        {
+          stopChat: { eq: false },
+          [`${previousStage}Completed`]: { eq: true },
+          [config.type]: { eq: true },
+          [`${config.type}Completed`]: { eq: false },
+        },
+        // For candidates who have started but not completed (with null)
+        {
+          stopChat: { eq: false },
+          [`${previousStage}Completed`]: { eq: true },
+          [config.type]: { eq: true },
+          [`${config.type}Completed`]: { is: 'NULL' },
+        },
+        // For candidates who haven't started
+        {
+          stopChat: { eq: false },
+          [`${previousStage}Completed`]: { eq: true },
+          [config.type]: { eq: false },
+        },
+      ];
     }
 
     return [
-        { 
-            stopChat: { eq: false }, 
-            [config.type]: { eq: true } 
-        }
+      {
+        stopChat: { eq: false },
+        [config.type]: { eq: true },
+      },
     ];
-}
-
-
+  }
 
   createStatusUpdate = (order: number, type: string, chatFlowOrder): allDataObjects.ChatFlowConfig['statusUpdate'] => {
     const baseStatusUpdate = {
-      timeWindow: TimeManagement.timeDifferentials.timeDifferentialinHoursForCheckingCandidateIdsWithStatusOfConversationClosed,
       isWithinAllowedTime: () => {
         const hours = new Date().getHours();
         return hours >= 8 && hours < 21;
@@ -232,28 +246,27 @@ createIsEligibleForEngagement = (candidate: allDataObjects.CandidateNode, chatCo
     };
   };
 
-  private createBaseChatFlowConfig(
-    type: allDataObjects.chatControlType, 
-    order: number, 
-    chatFlowOrder: allDataObjects.chatControlType[]
-): allDataObjects.ChatFlowConfig {
+  private createBaseChatFlowConfig(type: allDataObjects.chatControlType, order: number, chatFlowOrder: allDataObjects.chatControlType[]): allDataObjects.ChatFlowConfig {
     const self = this;
     const filter = { ...this.baseFilters, [type]: { eq: true } };
 
     return {
-        order,
-        type,
-        filterLogic: this.createFilterLogic(order, chatFlowOrder),
-        filter,
-        get chatFilters() {
-            // Use the config object's properties, not self's
-            return self.createChatFilters({
-                type: type,  // Use the type parameter
-                filter: filter  // Use the filter we created above
-            }, chatFlowOrder);
-        },
+      order,
+      type,
+      filterLogic: this.createFilterLogic(order, chatFlowOrder),
+      filter,
+      get chatFilters() {
+        // Use the config object's properties, not self's
+        return self.createChatFilters(
+          {
+            type: type, // Use the type parameter
+            filter: filter, // Use the filter we created above
+          },
+          chatFlowOrder,
+        );
+      },
 
-    isEligibleForEngagement: candidate => this.createIsEligibleForEngagement(candidate, type, order, chatFlowOrder),
+      isEligibleForEngagement: candidate => this.createIsEligibleForEngagement(candidate, type, order, chatFlowOrder),
       templateConfig: {
         ...this.baseTemplateConfig,
         messageSetup: (isFirstMessage: boolean) => this.baseTemplateConfig.messageSetup(isFirstMessage, type),

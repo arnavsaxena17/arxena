@@ -309,6 +309,7 @@ export const graphqlToFindManyJobByArxenaSiteId = `
     updatedAt
     startChat
     stopChat
+    updatedAt
     startChatCompleted
     startMeetingSchedulingChat
     startMeetingSchedulingChatCompleted

@@ -177,7 +177,7 @@ export default class CandidateEngagementArx {
   
   async getRecentCandidateIdsToMakeUpdatesonChats(apiToken: string): Promise<{ candidateIds: string[]; jobIds: string[] }> {
     try {
-      const timeWindow = TimeManagement.timeDifferentials.timeDifferentialinMinutesForCheckingCandidateIdsToMakeUpdatesOnChatsForNextChatControls;
+      const timeWindow = TimeManagement.timeDifferentials.timeDifferentialinMinutesForCheckingCandidateIdsForLastHowManyHoursOfMessagesToFetchForToMakingUpdatesOnChatsForNextChatControls;
       const endTime = new Date();
       const startTime = new Date(endTime.getTime() - (timeWindow * 60 * 1000));
   
@@ -193,7 +193,11 @@ export default class CandidateEngagementArx {
       const eligibleJobs = new Set<string>();
   
       for (const [jobId, jobMessages] of messagesByJob.entries()) {
+        console.log("this is hte ojb id:", jobId)
         const job = await new FilterCandidates(this.workspaceQueryService).fetchJobById(jobId, apiToken);
+        console.log("Got this joib ::", job)
+        console.log("This is the job chatfloworder::", job?.chatFlowOrder);
+        console.log("This is the default job chatfloworder::", this.chatFlowConfigBuilder.getDefaultChatFlowOrder());
         const chatFlowOrder = job?.chatFlowOrder || this.chatFlowConfigBuilder.getDefaultChatFlowOrder();
   
         // First update chat counts and statuses for all candidates in this job
@@ -206,11 +210,7 @@ export default class CandidateEngagementArx {
         await new UpdateChat(this.workspaceQueryService).updateCandidatesWithChatCount(candidateIds, apiToken);
         
         // Then process chat statuses
-        await new UpdateChat(this.workspaceQueryService).processCandidatesChatsGetStatuses(
-          apiToken,
-          [jobId],
-          candidateIds
-        );
+        await new UpdateChat(this.workspaceQueryService).processCandidatesChatsGetStatuses( apiToken, [jobId], candidateIds );
   
         // After updates are complete, check which candidates are eligible for stage transitions
         for (const message of jobMessages) {
@@ -231,7 +231,7 @@ export default class CandidateEngagementArx {
           }
         }
       }
-  
+
       console.log("Number of eligibleCandidates::", eligibleCandidates.size, "Number of eligibleJobs::", eligibleJobs.size);
       return {
         candidateIds: Array.from(eligibleCandidates),
@@ -322,13 +322,7 @@ export default class CandidateEngagementArx {
       await this.processCandidate(personNode, candidateJob, chatControl, apiToken);
     }
   }
-  async startChatControlEngagement(
-    peopleCandidateResponseEngagementArr: allDataObjects.PersonNode[],
-    candidateJob: allDataObjects.Jobs,
-    chatControl: allDataObjects.chatControls,
-    chatFlowConfigObj: Record<string, allDataObjects.ChatFlowConfig>,
-    apiToken: string,
-  ) {
+  async startChatControlEngagement( peopleCandidateResponseEngagementArr: allDataObjects.PersonNode[], candidateJob: allDataObjects.Jobs, chatControl: allDataObjects.chatControls, chatFlowConfigObj: Record<string, allDataObjects.ChatFlowConfig>, apiToken: string, ) {
     const config = chatFlowConfigObj[chatControl.chatControlType];
     if (!config) {
       console.log(`No configuration found for chat control type: ${chatControl.chatControlType}`);
@@ -375,11 +369,7 @@ export default class CandidateEngagementArx {
     }
   }
 
-  async fetchSpecificPeopleToEngageBasedOnChatControl(
-    chatControl: allDataObjects.chatControls,
-    chatFlowConfigObj: Record<string, allDataObjects.ChatFlowConfig>,
-    apiToken: string,
-  ): Promise<{ people: allDataObjects.PersonNode[]; candidateJob: allDataObjects.Jobs }> {
+  async fetchSpecificPeopleToEngageBasedOnChatControl( chatControl: allDataObjects.chatControls, chatFlowConfigObj: Record<string, allDataObjects.ChatFlowConfig>, apiToken: string, ): Promise<{ people: allDataObjects.PersonNode[]; candidateJob: allDataObjects.Jobs }> {
     try {
       console.log('Fetching candidates to engage');
       const candidates = await this.fetchAllCandidatesWithSpecificChatControl(chatControl.chatControlType, chatFlowConfigObj, apiToken);
@@ -420,7 +410,6 @@ export default class CandidateEngagementArx {
 
       for (const filter of filters) {
         let lastCursor: string | null = null;
-
         // Add updatedAt filter to ensure fresh data
         const timestampedFilter = {
           ...filter,
@@ -434,7 +423,6 @@ export default class CandidateEngagementArx {
               lastCursor,
               limit: 30,
               filter: timestampedFilter,
-              // Add explicit ordering by updatedAt to get most recent changes first
               orderBy: [{ updatedAt: 'DESC' }],
             },
           });
@@ -475,9 +463,7 @@ export default class CandidateEngagementArx {
 
   async fetchAllCandidatesWithSpecificChatControl(chatControlType: allDataObjects.chatControlType, chatFlowConfigObj: Record<string, allDataObjects.ChatFlowConfig>, apiToken: string): Promise<allDataObjects.Candidate[]> {
     console.log('Fetching all candidates with chatControlType', chatControlType);
-
     let filters;
-
     const config = chatFlowConfigObj[chatControlType];
     if (!config || !config.chatFilters) {
       console.log(`No configuration or filters found for chat control type: ${chatControlType}`);
@@ -485,27 +471,20 @@ export default class CandidateEngagementArx {
     }
     filters = config.chatFilters;
     console.log("These are the filters for the chatControlType::", chatControlType, "are::", filters);
-
     let allCandidates: allDataObjects.Candidate[] = [];
     let graphqlQueryObjToFetchAllCandidatesForChats = '';
-
     try {
       const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
       graphqlQueryObjToFetchAllCandidatesForChats = workspacesWithOlderSchema.includes(workspaceId) ? allGraphQLQueries.graphqlToFetchManyCandidatesOlderSchema : allGraphQLQueries.graphqlToFetchAllCandidateData;
-
       const timestamp = new Date().toISOString();
-
       for (const filter of filters) {
         console.log(`Trying filter condition:`, filter);
         let lastCursor: string | null = null;
-
         const timestampedFilter = {
           ...filter,
           updatedAt: { lte: timestamp },
         };
-
         console.log(`Using timestamped filter:`, timestampedFilter);
-
         while (true) {
           const graphqlQueryObj = JSON.stringify({
             query: graphqlQueryObjToFetchAllCandidatesForChats,
@@ -516,31 +495,24 @@ export default class CandidateEngagementArx {
               orderBy: [{ updatedAt: 'DESC' }],
             },
           });
-
           const response = await axiosRequest(graphqlQueryObj, apiToken);
           if (response.data.errors) {
             console.log('Errors in axiosRequest:', response.data.errors, 'with workspace Id:', workspaceId);
             break;
           }
-
           const edges = response?.data?.data?.candidates?.edges || [];
           console.log(`Received ${edges.length} candidates for current filter, for chatControlType ${chatControlType}`);
-          
           if (!edges.length) {
             console.log('No candidates found for this filter condition');
             break;
           }
-
-          const newCandidates = edges
-            .map((edge: any) => edge.node)
-            .filter((candidate: allDataObjects.Candidate) => {
+          const newCandidates = edges.map((edge: any) => edge.node).filter((candidate: allDataObjects.Candidate) => {
               const isNew = !allCandidates.some(existing => existing.id === candidate.id);
               const isRecent = new Date(candidate.updatedAt) <= new Date(timestamp);
               if (!isNew) console.log(`Skipping duplicate candidate: ${candidate.id}`);
               if (!isRecent) console.log(`Skipping non-recent candidate: ${candidate.id}`);
               return isNew && isRecent;
             });
-
           console.log(`Found ${newCandidates.length} new candidates after filtering`);
           
           if (newCandidates.length > 0) {
@@ -581,6 +553,8 @@ export default class CandidateEngagementArx {
 
     return allCandidates;
   }
+
+
   // async makeUpdatesForNewChats(apiToken: string) {
   //   console.log('making updates to candidates based on the rchats they have made');
   //   const { candidateIds, jobIds } = await this.getRecentCandidateIdsToMakeUpdatesonChats(apiToken);
@@ -604,45 +578,31 @@ export default class CandidateEngagementArx {
 
 
 
-  async updateRecentCandidatesChatControls(apiToken: string) {
+  async updateCandidatesChatControls(apiToken: string) {
     console.log('Updating recent candidates chat controls');
-  
     const { candidateIds, jobIds } = await this.getRecentCandidateIdsToMakeUpdatesonChats(apiToken);
     console.log("Number of CandidateIds::", candidateIds.length, "Number of JobIds::", jobIds.length);
     const candidatesByJob = await this.groupCandidatesByJob(candidateIds, apiToken);
-  
     for (const [jobId, jobCandidates] of Object.entries(candidatesByJob)) {
       const job = await new FilterCandidates(this.workspaceQueryService).fetchJobById(jobId, apiToken);
       const chatFlowOrder = job?.chatFlowOrder || this.chatFlowConfigBuilder.getDefaultChatFlowOrder();
-  
       for (const candidateId of jobCandidates) {
         const candidate = await this.fetchCandidateById(candidateId, apiToken);
-        
-        // Find current stage and check for transition
         for (let i = 0; i < chatFlowOrder.length - 1; i++) {
           const currentStage = chatFlowOrder[i];
           const nextStage = chatFlowOrder[i + 1];
-          
           const isCurrentStageCompleted = candidate[`${currentStage}Completed`];
           const hasNextStageStarted = candidate[nextStage];
-          
           if (isCurrentStageCompleted && !hasNextStageStarted) {
-            // Transition to next stage
-            await this.createChatControl(
-              candidateId, 
-              { chatControlType: nextStage as allDataObjects.chatControlType }, 
-              apiToken
-            );
-            
+            await this.createChatControl( candidateId, { chatControlType: nextStage as allDataObjects.chatControlType }, apiToken );
             console.log(`Transitioned candidate ${candidateId} from ${currentStage} to ${nextStage}`);
-            break; // Only do one transition at a time
+            break; 
           }
         }
       }
-    }  
+    }
   }
   
-
   async executeCandidateEngagement(apiToken: string) {
     try {
       console.log('Cron running and cycle started to check candidate engagement');

@@ -46,29 +46,59 @@ export class UpdateChat {
   }
 
 
-  async updateCandidatesWithChatCount(candidateIds: string[] | null = null, apiToken: string) {
-    let allCandidates = await new CandidateEngagementArx(this.workspaceQueryService).fetchAllCandidatesWithAllChatControls('allStartedAndStoppedChats', apiToken);
-    if (candidateIds && Array.isArray(candidateIds)) {
-      allCandidates = allCandidates.filter(candidate => candidateIds.includes(candidate.id));
-    }
-    console.log('Fetched', allCandidates?.length, ' candidates with chatControl startChat in chatCount');
-    for (const candidate of allCandidates) {
-      const candidateId = candidate?.id;
-      const whatsappMessages = await new FilterCandidates(this.workspaceQueryService).fetchAllWhatsappMessages(candidateId, apiToken);
-      const chatCount = whatsappMessages?.length;
-      const updateCandidateObjectVariables = { idToUpdate: candidateId, input: { chatCount: chatCount } };
-      const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToUpdateCandidateChatCount, variables: updateCandidateObjectVariables });
-
-      try {
-        const response = await axiosRequest(graphqlQueryObj, apiToken);
-        console.log('Candidate chat count updated successfully:', response.data);
-      } catch (error) {
-        console.log('Error in updating candidate chat count:', error);
+  async updateCandidatesWithChatCount(candidateIds: string[], apiToken: string) {
+    try {
+      // First fetch current candidates with their chat counts
+      const graphqlQueryObj = JSON.stringify({
+        query: allGraphQLQueries.graphqlToFetchAllCandidateData,
+        variables: { 
+          filter: { 
+            id: { in: candidateIds }
+          }
+        }
+      });
+  
+      const response = await axiosRequest(graphqlQueryObj, apiToken);
+      const currentCandidates = response?.data?.data?.candidates?.edges || [];
+      console.log("Number of current Candidates:", currentCandidates.length);
+      for (const candidate of currentCandidates) {
+        const currentCount = candidate.node.chatCount || 0;
+        console.log("Current chat count::", currentCount);
+        
+        // Get messages for this candidate
+        const messagesList = await await new FilterCandidates(this.workspaceQueryService).fetchAllWhatsappMessages(candidate.node.id, apiToken);
+        const newCount = messagesList.length;
+        console.log("New chat count::", newCount);
+  
+        // Only update if count has changed
+        if (newCount !== currentCount) {
+          const graphqlVariables = {
+            idToUpdate: candidate.node.id,
+            input: { chatCount: newCount }
+          };
+          
+          const updateGraphqlQueryObj = JSON.stringify({
+            query: allGraphQLQueries.graphQltoUpdateOneCandidate,
+            variables: graphqlVariables
+          });
+          
+          const updateResponse = await axiosRequest(updateGraphqlQueryObj, apiToken);
+          
+          if (updateResponse.data.errors) {
+            console.log('Error updating chat count:', updateResponse.data.errors);
+          } else {
+            console.log(`Updated chat count for candidate ${candidate.node.id} from ${currentCount} to ${newCount}`);
+          }
+        }
+        else{
+          console.log(`Chat count for candidate ${candidate.node.id} is already up to date`);
+        }
       }
+    } catch (error) {
+      console.error('Error in updateCandidates WithChatCount:', error);
     }
   }
-
-  async processCandidatesChatsGetStatuses(apiToken: string, jobIds: string[],  candidateIds: string[] | null = null, currentWorkspaceMemberId: string | null = null) {
+    async processCandidatesChatsGetStatuses(apiToken: string, jobIds: string[],  candidateIds: string[] | null = null, currentWorkspaceMemberId: string | null = null) {
     console.log('Processing candidates chats to get statuses with chat true');
     console.log('Received a lngth of candidate Ids::', candidateIds?.length);
     console.log('candidate Ids::', candidateIds);
@@ -81,6 +111,9 @@ export class UpdateChat {
         // (candidate.candConversationStatus !== "CONVERSATION_CLOSED_TO_BE_CONTACTED" && candidate.candConversationStatus !== "CANDIDATE_IS_KEEN_TO_CHAT")
         (candidate.candConversationStatus !== "CONVERSATION_CLOSED_TO_BE_CONTACTED" )
       );
+    }
+    else{
+      console.log("Candidate Ids are not present in the request");
     }
     
     console.log('Fetched', allCandidates?.length, ' candidates with chatControl allStartedAndStoppedChats in getStatus');

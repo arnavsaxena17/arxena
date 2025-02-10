@@ -42,11 +42,11 @@ export class FilterCandidates {
     async fetchJobById(jobId: string, apiToken: string): Promise<allDataObjects.Jobs | null> {
       const graphqlQueryObj = JSON.stringify({
         query: allGraphQLQueries.graphqlToFetchActiveJob,
-        variables: { id: jobId },
+        variables:  { "filter": { "id": {"eq":jobId} } },
       });
   
       const response = await axiosRequest(graphqlQueryObj, apiToken);
-      return response?.data?.data?.job || null;
+      return response?.data?.data?.jobs.edges[0].node || null;
     }
 
     getMostRecentMessageFromMessagesList(messagesList: allDataObjects.MessageNode[]) {
@@ -262,6 +262,7 @@ async getCandidateInformation(userMessage: allDataObjects.chatMessageType, apiTo
           candidateReminders: {
             edges: activeJobCandidate?.candidateReminders?.edges,
           },
+          updatedAt: activeJobCandidate.updatedAt
         };
         return candidateProfileObj;
       } else {

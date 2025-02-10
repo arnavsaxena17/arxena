@@ -4,15 +4,12 @@ const TimeManagementLocal = {
   crontabs: {
     crontTabToExecuteCandidateEngagement: CronExpression.EVERY_5_SECONDS,
     crontTabToMakeUpdatesForNewChats: CronExpression.EVERY_30_SECONDS,
-    crontTabToUpdateRecentCandidatesChatControls: CronExpression.EVERY_10_SECONDS,
+    crontTabToUpdateCandidatesChatControls: CronExpression.EVERY_5_MINUTES,
   },
   timeDifferentials: {
     timeDifferentialinMinutesToCheckTimeDifferentialBetweenlastMessage: 0.33,
-    timeDifferentialinMinutesForCheckingChatContent: 0.33,
-    timeDifferentialForStageTransitions: 15, // minutes
-    timeDifferentialinMinutesForCheckingCandidateIdsToMakeUpdatesOnChatsForNextChatControls: 60,
-    timeDifferentialinHoursForCheckingCandidateIdsWithStatusOfConversationClosed: 2,
-    timeDifferentialinHoursForCheckingCandidateIdsWithVideoInterviewCompleted: 2,
+    timeDifferentialinMinutesForCheckingCandidateIdsForLastHowManyHoursOfMessagesToFetchForToMakingUpdatesOnChatsForNextChatControls: 60,
+    timeDifferentialInMinutesBeforeStartingNextStageMessaging: 1,
   },
 };
 
@@ -20,13 +17,13 @@ const TimeManagementProd = {
   crontabs: {
     crontTabToExecuteCandidateEngagement: CronExpression.EVERY_30_SECONDS,
     crontTabToMakeUpdatesForNewChats: CronExpression.EVERY_5_MINUTES,
-    crontTabToUpdateRecentCandidatesChatControls: CronExpression.EVERY_10_SECONDS,
+    crontTabToUpdateCandidatesChatControls: CronExpression.EVERY_10_SECONDS,
   },
   timeDifferentials: {
     timeDifferentialinMinutesToCheckTimeDifferentialBetweenlastMessage: 4,
-    timeDifferentialinMinutesForCheckingCandidateIdsToMakeUpdatesOnChatsForNextChatControls: 30,
-    timeDifferentialinHoursForCheckingCandidateIdsWithStatusOfConversationClosed: 3,
-    timeDifferentialinHoursForCheckingCandidateIdsWithVideoInterviewCompleted: 6,
+    timeDifferentialinMinutesForCheckingCandidateIdsForLastHowManyHoursOfMessagesToFetchForToMakingUpdatesOnChatsForNextChatControls: 30,
+    timeDifferentialInMinutesBeforeStartingNextStageMessaging: 360, // 6 hours for prod
+
   },
 };
 

@@ -27,6 +27,7 @@ export const graphqlToFetchCandidatesWithRecentUpdates = `
           startVideoInterviewChat
           startVideoInterviewChatCompleted
           startMeetingSchedulingChat
+          chatCount
           startMeetingSchedulingChatCompleted
           updatedAt
         }
@@ -46,6 +47,7 @@ export const graphQltoUpdateOneCandidate = `mutation UpdateOneCandidate($idToUpd
     updatedAt
     startChat
     stopChat
+    chatCount
     startChatCompleted
     startMeetingSchedulingChat
     startMeetingSchedulingChatCompleted
@@ -211,6 +213,7 @@ query FindManyVideoInterviews($filter: VideoInterviewFilterInput, $orderBy: [Vid
           startChat
           stopChat
           startChatCompleted
+          chatCount
           startMeetingSchedulingChat
           startMeetingSchedulingChatCompleted
           startVideoInterviewChat
@@ -303,6 +306,8 @@ export const graphqlToFetchActiveJob = `query FindManyJobs($filter: JobFilterInp
         jobs(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
           edges {
             node {
+              id
+              name
               chatFlowOrder
               candidates {
                 edges {
@@ -513,6 +518,7 @@ export const graphQlToFetchWhatsappMessages = `query FindManyWhatsappMessages($f
             createdAt
             updatedAt
             startChat
+            chatCount
             startChatCompleted
             startMeetingSchedulingChat
             startMeetingSchedulingChatCompleted
@@ -561,6 +567,7 @@ query FindManyCandidates($lastCursor: String, $limit: Int, $filter: CandidateFil
           uniqueStringKey  
         }
         startChat
+        chatCount
         startChatCompleted
         startMeetingSchedulingChat
         startMeetingSchedulingChatCompleted
@@ -649,6 +656,7 @@ export const graphqlQueryToFindManyPeopleEngagedCandidatesOlderSchema = `query F
                   node{
                       id
                       name
+                      updatedAt
                       whatsappProvider
                       lastEngagementChatControl
                       candConversationStatus
@@ -681,6 +689,7 @@ export const graphqlQueryToFindManyPeopleEngagedCandidatesOlderSchema = `query F
                       startChat
                       startChatCompleted
                       startMeetingSchedulingChat
+                      chatCount
                       startMeetingSchedulingChatCompleted
                       startVideoInterviewChat
                       startVideoInterviewChatCompleted
@@ -779,11 +788,13 @@ export const graphqlQueryToFindManyPeopleEngagedCandidates = `query FindManyPeop
                       engagementStatus
                       startChatCompleted
                       startMeetingSchedulingChat
+                      chatCount
                       startMeetingSchedulingChatCompleted
                       startVideoInterviewChat
                       startVideoInterviewChatCompleted
                       startChat
                       status
+                      updatedAt
                       stopChat
                       candidateReminders{
                         edges{

@@ -238,9 +238,9 @@ export class CreateMetaDataStructure {
         Your first message when you receive the prompt "startMeetingSchedulingChat" is: 
         Hi \${personNode.name.firstName},
 
-        Further to your application, we liked your candidature and wish to move forward and schedule an in-person meeting with the client at \${meetingTime} on \${formattedMeetingWeekdayDate} in \${interviewLocation}.
+        Further to your application, we liked your candidature and wish to move forward and schedule an in-person meeting at the client's office in \${interviewLocation}.
 
-        Would you be able to visit the office on \${formattedMeetingWeekday}?`,
+        Would you be able to visit the office at \${meetingTime} on \${formattedMeetingWeekday}?`,
       },
       {
         name: 'ONLINE_MEETING_PROMPT',

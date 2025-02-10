@@ -20,7 +20,6 @@ export interface ChatFlowConfig {
   get chatFilters(): Array<Record<string, any>>;  // Changed to getter
   isEligibleForEngagement: (candidate: CandidateNode) => boolean;
   statusUpdate?: {
-    timeWindow: number;
     isWithinAllowedTime: () => boolean;
     filter: Record<string, any>;
     orderBy?: Array<Record<string, any>>;
@@ -261,6 +260,7 @@ export interface InterviewLink {
 }
 
 export interface CandidateNode {
+  updatedAt: string | number | Date;
   videoInterview: videoInterview;
   whatsappProvider?: string | "application03";
   name: string;
@@ -529,7 +529,7 @@ export const emptyCandidateProfileObj: CandidateNode = {
   input: '',
   startChat: false,
   candConversationStatus: '',
-  startMeetingSchedulingChat:false,
+  startMeetingSchedulingChat: false,
   lastEngagementChatControl: 'startChat' as chatControlType,
   startVideoInterviewChat: false,
   stopChat: false,
@@ -573,6 +573,7 @@ export const emptyCandidateProfileObj: CandidateNode = {
       },
     ],
   },
+  updatedAt: ''
 };
 
 export interface Attachment {
