@@ -108,6 +108,7 @@ export class IncomingWhatsappMessages {
           [workspaceId, phoneNumberId],
           workspaceId
         );
+        console.log("This is the workspace we plan to use:", workspace)
         if (workspace.length === 0) {
           return null;
         }

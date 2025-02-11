@@ -26,9 +26,9 @@ const TimeManagementProd = {
   },
 };
 
-// export const TimeManagement = process.env.ENV_NODE === 'production' 
-//   ? TimeManagementProd 
-//   : TimeManagementLocal;
 export const TimeManagement = process.env.ENV_NODE === 'production' 
-  ? TimeManagementLocal 
+  ? TimeManagementProd 
   : TimeManagementLocal;
+// export const TimeManagement = process.env.ENV_NODE === 'production' 
+//   ? TimeManagementLocal 
+//   : TimeManagementLocal;
