@@ -50,8 +50,8 @@ export class GoogleCalendarService {
         "content-type": "application/json",
       },
     });
-    console.log("connectedAccountsResponse::::", connectedAccountsResponse.data.data.connectedAccounts);
-    console.log("process.env.EMAIL_SMTP_USER::::", process.env.EMAIL_SMTP_USER);
+    // console.log("connectedAccountsResponse::::", connectedAccountsResponse.data.data.connectedAccounts);
+    // console.log("process.env.EMAIL_SMTP_USER::::", process.env.EMAIL_SMTP_USER);
 
     if (connectedAccountsResponse?.data?.data?.connectedAccounts?.length > 0) {
       const connectedAccountToUse = connectedAccountsResponse?.data?.data?.connectedAccounts.filter(x => x.handle === process.env.EMAIL_SMTP_USER)[0];

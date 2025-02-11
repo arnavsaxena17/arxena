@@ -31,7 +31,7 @@ export class ChatFlowConfigBuilder {
 
   baseEngagementChecks = (candidate: allDataObjects.CandidateNode, chatControlType: allDataObjects.chatControlType, chatFlowOrder: allDataObjects.chatControlType[]) => {
     if (candidate.engagementStatus === false) {
-      console.log(`Candidate ${candidate.name} is not eligible for engagement due to engagementStatus being false.`);
+      console.log(`Candidate ${candidate.name} is not eligible for engagement due to engagementStatus being false. Current time: ${new Date().toISOString()}, Candidate Last updated: ${candidate.updatedAt}`);
       return false;
     }
 
@@ -61,7 +61,7 @@ export class ChatFlowConfigBuilder {
 
   createIsEligibleForEngagement = (candidate: allDataObjects.CandidateNode, chatControlType: allDataObjects.chatControlType, order: number, chatFlowOrder) => {
     if (candidate.engagementStatus === false) {
-      console.log(`Candidate ${candidate.name} is not eligible for engagement because engagement status is false.`);
+      console.log(`Candidate ${candidate.name} is not eligible for engagement due to engagementStatus being false. Current time: ${new Date().toISOString()}, Candidate Last updated: ${candidate.updatedAt}`);
       return false;
     }
     const currentIndex = chatFlowOrder.indexOf(chatControlType);

@@ -267,10 +267,12 @@ export class UpdateChat {
         audioFilePath: userMessage?.databaseFilePath,
       },
     };
+    console.log("This si the create update whatsapp message::", createNewWhatsappMessageUpdateVariables);
     const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToCreateOneNewWhatsappMessage, variables: createNewWhatsappMessageUpdateVariables });
     try {
       console.log('GRAPHQL WITH WHATSAPP MESSAGE:', createNewWhatsappMessageUpdateVariables?.input?.message);
       const response = await axiosRequest(graphqlQueryObj, apiToken);
+      console.log("This is the response data from the axios request in udpate message::", response.data);
       return response.data;
     } catch (error) {
       console.log(error);
@@ -279,12 +281,12 @@ export class UpdateChat {
 
   async updateCandidateEngagementStatus(candidateProfileObj: allDataObjects.CandidateNode, whatappUpdateMessageObj: allDataObjects.whatappUpdateMessageObjType, apiToken: string) {
     const candidateEngagementStatus = whatappUpdateMessageObj.messageType !== 'botMessage';
-    console.log('Updating candidate engagement status to:', candidateEngagementStatus, "for candidate id::", candidateProfileObj.id);
+    console.log('Updating candidate engagement status to:', candidateEngagementStatus, "for candidate id::", candidateProfileObj.id, " at time :: ", new Date().toISOString());
     const updateCandidateObjectVariables = { idToUpdate: candidateProfileObj?.id, input: { engagementStatus: candidateEngagementStatus, lastEngagementChatControl: whatappUpdateMessageObj.lastEngagementChatControl } };
     const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToUpdateCandidateEngagementStatus, variables: updateCandidateObjectVariables });
     try {
       const response = await axiosRequest(graphqlQueryObj, apiToken);
-      console.log('Candidate engagement status updated successfully to ::',candidateEngagementStatus );
+      console.log('Candidate engagement status updated successfully to ::',candidateEngagementStatus, " at time :: ", new Date().toISOString() );
       return response.data;
     } catch (error) {
       console.log('Error in updating candidate status::', error);
@@ -293,14 +295,14 @@ export class UpdateChat {
 
 
   async setCandidateEngagementStatusToFalse(candidateId: string, apiToken: string) {
-    console.log("Setting candidate engagement status sto false::", candidateId);
+    console.log("Setting candidate engagement status to false::", candidateId, " at time :: ", new Date().toISOString());
     const updateCandidateObjectVariables = { idToUpdate: candidateId, input: { engagementStatus: false } };
     console.log('This is the value of updatecandidateobject variables::0', updateCandidateObjectVariables);
     const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToUpdateCandidateEngagementStatus, variables: updateCandidateObjectVariables });
     try {
       const response = await axiosRequest(graphqlQueryObj, apiToken);
       console.log('Response from axios update request:', response.data);
-      console.log('Candidate engagement status updated successfully to ::',false );
+      console.log('Candidate engagement status updated successfully to false ::',false, " at time :: ", new Date().toISOString() );
       return response.data;
     } catch (error) {
       console.log(error);
@@ -333,7 +335,10 @@ export class UpdateChat {
     if (candidateProfileObj.name === '') return;
     console.log('Candidate information retrieved successfully');
     const whatsappMessage = await new UpdateChat(this.workspaceQueryService).createAndUpdateWhatsappMessage(candidateProfileObj, whatappUpdateMessageObj,apiToken);
-    if (!whatsappMessage || isAfterMessageSent) return;
+    if (!whatsappMessage || isAfterMessageSent) {
+      console.log('WhatsApp message not found or message already sent, hence not updating the candidate engagement status to true');
+      return;
+    }
     const updateCandidateStatusObj = await new UpdateChat(this.workspaceQueryService).updateCandidateEngagementStatus(candidateProfileObj, whatappUpdateMessageObj, apiToken);
     if (!updateCandidateStatusObj) return;
     return { status: 'success', message: 'Candidate engagement status updated successfully' };

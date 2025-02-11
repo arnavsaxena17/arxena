@@ -59,7 +59,6 @@ export class CoreQueryBuilderFactory {
       );
     }
 
-    console.log("called parsedObjectparsedObject in getObjectMetadata:", parsedObject);
     const [objectMetadata] = objectMetadataItems.filter(
       (object) => object.namePlural === parsedObject,
     );
