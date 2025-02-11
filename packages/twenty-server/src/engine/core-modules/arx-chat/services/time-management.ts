@@ -20,16 +20,15 @@ const TimeManagementProd = {
     crontTabToUpdateCandidatesChatControls: CronExpression.EVERY_10_SECONDS,
   },
   timeDifferentials: {
-    timeDifferentialinMinutesToCheckTimeDifferentialBetweenlastMessage: 4,
-    timeDifferentialinMinutesForCheckingCandidateIdsForLastHowManyHoursOfMessagesToFetchForToMakingUpdatesOnChatsForNextChatControls: 30,
+    timeDifferentialinMinutesToCheckTimeDifferentialBetweenlastMessage: 3,
+    timeDifferentialinMinutesForCheckingCandidateIdsForLastHowManyHoursOfMessagesToFetchForToMakingUpdatesOnChatsForNextChatControls: 60,
     timeDifferentialInMinutesBeforeStartingNextStageMessaging: 360, // 6 hours for prod
-
   },
 };
 
-// export const TimeManagement = process.env.ENV_NODE === 'production' 
-//   ? TimeManagementProd 
-//   : TimeManagementLocal;
 export const TimeManagement = process.env.ENV_NODE === 'production' 
-  ? TimeManagementLocal 
+  ? TimeManagementProd 
   : TimeManagementLocal;
+// export const TimeManagement = process.env.ENV_NODE === 'production' 
+//   ? TimeManagementLocal 
+//   : TimeManagementLocal;
