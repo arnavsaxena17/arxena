@@ -15,9 +15,9 @@ const TimeManagementLocal = {
 
 const TimeManagementProd = {
   crontabs: {
-    crontTabToExecuteCandidateEngagement: CronExpression.EVERY_30_SECONDS,
+    crontTabToExecuteCandidateEngagement: CronExpression.EVERY_MINUTE,
     crontTabToMakeUpdatesForNewChats: CronExpression.EVERY_5_MINUTES,
-    crontTabToUpdateCandidatesChatControls: CronExpression.EVERY_10_SECONDS,
+    crontTabToUpdateCandidatesChatControls: CronExpression.EVERY_30_MINUTES,
   },
   timeDifferentials: {
     timeDifferentialinMinutesToCheckTimeDifferentialBetweenlastMessage: 3,
