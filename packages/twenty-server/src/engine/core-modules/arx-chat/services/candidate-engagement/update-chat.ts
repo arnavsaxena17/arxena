@@ -44,6 +44,47 @@ export class UpdateChat {
     console.log("Response from create-shortlist",response.data);
     return response.data;
   }
+  async createShortlistDocument(candidateIds: string[], apiToken: string) {
+    const url = process.env.ENV_NODE === 'production' ? 'https://arxena.com/create-shortlist-document' : 'http://127.0.0.1:5050/create-shortlist-document';
+    console.log("This is the url:", url);
+    console.log("going to create create-shortlist by candidate Ids",candidateIds)
+    const response = await axios.post(url, { candidateIds: candidateIds }, {
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer ' + apiToken }
+    });
+    console.log("Response from create-shortlist",response.data);
+    return response.data;
+  }
+
+  async createGmailDraftShortlist(candidateIds: string[], apiToken: string) {
+    const url = process.env.ENV_NODE === 'production' ? 'https://arxena.com/create-create_gmail_draft_shortlist' : 'http://127.0.0.1:5050/create_gmail_draft_shortlist';
+    console.log("This is the url:", url);
+    console.log("going to create create-shortlist by candidate Ids",candidateIds)
+    const response = await axios.post(url, { candidateIds: candidateIds }, {
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer ' + apiToken }
+    });
+    console.log("Response from create-shortlist",response.data);
+    return response.data;
+  }
+
+  async createChatBasedShortlistDelivery(candidateIds: string[], apiToken: string) {
+    const url = process.env.ENV_NODE === 'production' ? 'https://arxena.com/chat_based_shortlist_delivery' : 'http://127.0.0.1:5050/chat_based_shortlist_delivery';
+    console.log("This is the url:", url);
+    console.log("going to create gmail-draft-shortlist by shortlists by candidate Ids",candidateIds)
+    const response = await axios.post(url, { candidateIds: candidateIds }, {
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer ' + apiToken }
+    });
+  return response.data;
+  }
+  
+  async createInterviewVideos(jobId: string, apiToken: string) {
+    const url = process.env.ENV_NODE === 'production' ? 'https://arxena.com/create-interview-videos' : 'http://127.0.0.1:5050/create-interview-videos';
+    console.log("This is the url:", url);
+    console.log("going to create jobId based interview videos",jobId)
+    const response = await axios.post(url, { jobId:jobId }, {
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer ' + apiToken }
+    });
+    return response.data;
+  }
 
 
   async updateCandidatesWithChatCount(candidateIds: string[], apiToken: string) {
@@ -132,18 +173,12 @@ export class UpdateChat {
           new StageWiseClassification(this.workspaceQueryService).getChatStageFromChatHistory (
             whatsappMessages, 
             candidateId,
-            jobId || '', // Ensure jobId is a string
+            jobId || '',
             currentWorkspaceMemberId, 
             apiToken
           ) as Promise<allDataObjects.allStatuses>
         ])
-        // Return this info for later batch updates
-        return {
-          candidateId,
-          candidateStatus,
-          googleSheetId: candidate?.jobs?.googleSheetId,
-          whatsappMessages,
-        };
+        return { candidateId, candidateStatus, googleSheetId: candidate?.jobs?.googleSheetId, whatsappMessages, };
       } catch (error) {
         console.log('Error in processing candidate:', error);
         return null;

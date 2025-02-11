@@ -23,6 +23,9 @@ export const useSendCVsToClient = ({
     setLoading(true);
     setError(null);
   
+
+
+      console.log("Thesea re the candidate ids for whom CVs being sent::", candidateIds);
     const url = `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/${actionToTake}`;
 
     try {

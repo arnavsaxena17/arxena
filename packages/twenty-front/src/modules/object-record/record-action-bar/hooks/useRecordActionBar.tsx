@@ -158,13 +158,13 @@ export const useRecordActionBar = ({ objectMetadataItem, selectedRecordIds, call
   const { sendCVsToClient } = useSendCVsToClient({
     onSuccess: () => {},
     onError: (error: any) => {
-      console.error('Failed to refresh chat counts:', error);
+      console.error('Failed to useSendCVsToClient:', error);
     },
   });
   const { sendToWhatsapp } = useSendToWhatsapp({
     onSuccess: () => {},
     onError: (error: any) => {
-      console.error('Failed to refresh chat counts:', error);
+      console.error('Failed to useSendToWhatsapp:', error);
     },
   });
 

@@ -168,20 +168,27 @@ const CopyableField = styled.span`
 const MainInfo = styled.div`
   flex: 1;
 `;
-
 const StyledTopBar = styled.div<{ sidebarWidth: number }>`
   padding: 1.5rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  position: sticky;
-  top: 0;
+  position: fixed;
+  top: 10vh;
   background-color: rgba(255, 255, 255, 0.8);
   filter: drop-shadow(0px 2px 4px rgba(0, 0, 0, 0.1));
   z-index: 10;
   backdrop-filter: saturate(180%) blur(10px);
-  width: 100%;
+  width: 62vw;
   box-sizing: border-box;
+
+  @media (max-width: 768px) {
+    width: 100%;
+    top: 40vh; // Position below sidebar
+    padding: 1rem;
+    flex-direction: column;
+    gap: 1rem;
+  }
 `;
 
 
@@ -267,7 +274,13 @@ const InputWrapper = styled.div`
   display: flex;
   flex-direction: column;
   gap: 1rem;
+
+  @media (max-width: 768px) {
+    gap: 0.5rem;
+    padding: 0.5rem;
+  }
 `;
+
 
 const PreviewSection = styled.div`
   display: flex;
@@ -351,10 +364,21 @@ const Select = styled.select`
 
 const ChatContainer = styled.div`
   display: flex;
-  height: 70vh;
-  z-index: 3;
-  overflow: hidden; // Add this to prevent body scroll interference
+  height: 100vh;
+  width: 100%;
+  position: relative;
+  margin-left: 8px;
+  margin-right: 8px;
+  overflow: hidden;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    margin: 0;
+    height: calc(100vh - 60px); // Adjust for mobile header
+    padding-bottom: 60px; // Space for input area
+  }
 `;
+
 
 const StyledButton = styled.button<{ bgColor: string }>`
   display: flex;
@@ -422,7 +446,7 @@ const StyledWindow = styled.div`
   flex-direction: column;
   width: 100%;
   height: 100vh;
-  position: relative;
+  position: fixed;
 `;
 
 const StyledChatInput = styled.input`
@@ -433,7 +457,6 @@ const StyledChatInput = styled.input`
   border: 1px solid #ccc;
   outline: none;
 `;
-
 const StyledChatInputBox = styled.div<{ sidebarWidth: number }>`
   position: fixed;
   bottom: 0;
@@ -443,17 +466,33 @@ const StyledChatInputBox = styled.div<{ sidebarWidth: number }>`
   backdrop-filter: saturate(180%) blur(10px);
   padding: 1rem;
   z-index: 10;
-
   box-sizing: border-box;
+
+  @media (max-width: 768px) {
+    width: 100%;
+    padding: 0.5rem;
+    bottom: 0;
+    left: 0;
+  }
 `;
+
+
 
 const ChatView = styled.div`
   flex: 1;
   overflow-y: auto;
   padding: 1rem;
-  height: calc(100vh - 200px); // Adjust based on your top and bottom bars
-  margin-bottom: 200px; // Space for the input box
+  margin-bottom: 35vh;
+  width:75%;
+
+  @media (max-width: 768px) {
+    padding: 0.5rem;
+    margin-bottom: 70px; // Increased space for mobile input area
+  }
 `;
+
+
+
 
 const StyledDateComponent = styled.span`
   padding: 0.5em;

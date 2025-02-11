@@ -21,10 +21,14 @@ const ChatContainer = styled.div`
   position: relative;
   margin-left: 8px;
   margin-right: 8px;
-    overflow: hidden; // Add this
+  overflow: hidden;
 
+  @media (max-width: 768px) {
+    flex-direction: column; // Stack components vertically on mobile
+    margin: 0;
+    height: 100vh;
+  }
 `;
-
 
 
 const SidebarContainer = styled.div<{ width: number }>`
@@ -34,8 +38,18 @@ const SidebarContainer = styled.div<{ width: number }>`
   width: ${props => props.width}px;
   min-width: 200px;
   max-width: 800px;
-  flex-shrink: 0; // Prevent sidebar from shrinking
+  flex-shrink: 0;
+
+  @media (max-width: 768px) {
+    width: 100%;
+    height: 40vh;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 10;
+  }
 `;
+
 
 
 const ChatWindowContainer = styled.div<{ sidebarWidth: number }>`
@@ -43,9 +57,15 @@ const ChatWindowContainer = styled.div<{ sidebarWidth: number }>`
   flex-grow: 1;
   min-width: 0;
   height: 100vh;
-  overflow: hidden; // Change from overflow-y: auto
+  overflow: hidden;
   display: flex;
-  flex-direction: column; // Add this
+  flex-direction: column;
+
+  @media (max-width: 768px) {
+    height: 60vh;
+    width: 100%;
+    margin-top: 40vh; // Adjust based on sidebar height
+  }
 `;
 
 
@@ -92,6 +112,20 @@ const LoadingStates = {
 
 
 export default function ChatMain({ initialCandidateId }: ChatMainProps) {
+
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+
+
   // States
   // const [individuals, setIndividuals] = useState<frontChatTypes.PersonNode[]>(() => 
   //   cacheUtils.getCache(CACHE_KEYS.CHATS_DATA) || []
@@ -339,7 +373,7 @@ export default function ChatMain({ initialCandidateId }: ChatMainProps) {
 
         />
       </SidebarContainer>
-      <Resizer onMouseDown={startResizing} />
+      {!isMobile && <Resizer onMouseDown={startResizing} />}
       <ChatWindowContainer sidebarWidth={sidebarWidth}>
         <ChatWindow 
           selectedIndividual={selectedIndividual} 

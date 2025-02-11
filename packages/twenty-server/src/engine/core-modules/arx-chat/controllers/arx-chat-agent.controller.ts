@@ -21,55 +21,46 @@ import { FilterCandidates } from '../services/candidate-engagement/filter-candid
 import { ChatControls } from '../services/candidate-engagement/chat-controls';
 import CandidateEngagementArx from '../services/candidate-engagement/candidate-engagement';
 
-
-
 @Controller('arx-chat')
 export class ArxChatEndpoint {
-
   constructor(
     private readonly candidateService: CandidateService,
     private readonly workspaceQueryService: WorkspaceQueryService,
   ) {}
 
-
-
   @Post('start-chat')
   @UseGuards(JwtAuthGuard)
   async startChat(@Req() request: any) {
     const apiToken = request.headers.authorization.split(' ')[1]; // Assuming Bearer token
-    const chatControl:allDataObjects.chatControls = {chatControlType:'startChat'};
+    const chatControl: allDataObjects.chatControls = { chatControlType: 'startChat' };
     const response = await new CandidateEngagementArx(this.workspaceQueryService).createChatControl(request.body.candidateId, chatControl, apiToken);
     console.log('Response from create start-Chat api', response);
   }
-    
-  
-  
-    @Post('start-chats')
+
+  @Post('start-chats')
   async startChats(@Req() request: any): Promise<object> {
     const apiToken = request.headers.authorization.split(' ')[1];
     const jobCandidateIds = request.body.jobCandidateIds;
     const currentViewWithCombinedFiltersAndSorts = request.body.currentViewWithCombinedFiltersAndSorts;
     const objectNameSingular = request.body.objectNameSingular;
-    console.log("jobCandidateIds::", jobCandidateIds);
-    console.log("objectNameSingular::", objectNameSingular);
-    console.log("currentViewWithCombinedFiltersAndSorts::", currentViewWithCombinedFiltersAndSorts);
-    const path_position = request?.body?.objectNameSingular.replace("JobCandidate", "")
+    console.log('jobCandidateIds::', jobCandidateIds);
+    console.log('objectNameSingular::', objectNameSingular);
+    console.log('currentViewWithCombinedFiltersAndSorts::', currentViewWithCombinedFiltersAndSorts);
+    const path_position = request?.body?.objectNameSingular.replace('JobCandidate', '');
     const allDataObjects = await new CreateMetaDataStructure(this.workspaceQueryService).fetchAllObjects(apiToken);
-    
+
     const allJobCandidates = await this.candidateService.findManyJobCandidatesWithCursor(path_position, apiToken);
-    console.log("All Job Candidates:", allJobCandidates?.length)
-    const filteredCandidateIds = await this.candidateService.filterCandidatesBasedOnView(allJobCandidates, currentViewWithCombinedFiltersAndSorts,allDataObjects);
-    console.log("This is the filteredCandidates, ", filteredCandidateIds)
-    console.log("Got a total of filteredCandidates length, ", filteredCandidateIds.length)
-    console.log("Starting chat for , ", filteredCandidateIds.length," candidates")
+    console.log('All Job Candidates:', allJobCandidates?.length);
+    const filteredCandidateIds = await this.candidateService.filterCandidatesBasedOnView(allJobCandidates, currentViewWithCombinedFiltersAndSorts, allDataObjects);
+    console.log('This is the filteredCandidates, ', filteredCandidateIds);
+    console.log('Got a total of filteredCandidates length, ', filteredCandidateIds.length);
+    console.log('Starting chat for , ', filteredCandidateIds.length, ' candidates');
     for (const candidateId of filteredCandidateIds) {
-      const chatControl:allDataObjects.chatControls = {chatControlType:'startChat'};
+      const chatControl: allDataObjects.chatControls = { chatControlType: 'startChat' };
       await await new CandidateEngagementArx(this.workspaceQueryService).createChatControl(candidateId, chatControl, apiToken);
     }
     return { status: 'Success' };
   }
-
-
 
   @Post('stop-chat')
   @UseGuards(JwtAuthGuard)
@@ -95,9 +86,9 @@ export class ArxChatEndpoint {
   @UseGuards(JwtAuthGuard)
   async fetchCandidateByPhoneNumber(@Req() request: any) {
     const apiToken = request.headers.authorization.split(' ')[1]; // Assuming Bearer token
-    const phoneNumber = request.body.phoneNumber
+    const phoneNumber = request.body.phoneNumber;
     console.log('called fetchCandidateByPhoneNumber for phone:', phoneNumber);
-    const personObj: allDataObjects.PersonNode = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPhoneNumber(phoneNumber,apiToken);
+    const personObj: allDataObjects.PersonNode = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPhoneNumber(phoneNumber, apiToken);
     const candidateId = personObj.candidates?.edges[0]?.node?.id;
     const graphqlVariables = {
       idToUpdate: candidateId,
@@ -115,29 +106,27 @@ export class ArxChatEndpoint {
     return response.data;
   }
 
-
-
   @Post('send-chat')
   @UseGuards(JwtAuthGuard)
   async SendChat(@Req() request: any): Promise<object> {
     const apiToken = request.headers.authorization.split(' ')[1];
 
     const messageToSend = request?.body?.messageToSend;
-    const phoneNumber = request.body.phoneNumberTo
+    const phoneNumber = request.body.phoneNumberTo;
 
-    const personObj: allDataObjects.PersonNode = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPhoneNumber(phoneNumber,apiToken);
+    const personObj: allDataObjects.PersonNode = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPhoneNumber(phoneNumber, apiToken);
     console.log('This is the chat reply:', messageToSend);
     const recruiterProfile = allDataObjects.recruiterProfile;
     console.log('Recruiter profile', recruiterProfile);
     const chatMessages = personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges;
     let chatHistory = chatMessages[0]?.node?.messageObj || [];
-    const chatControl:allDataObjects.chatControls = {chatControlType:'startChat'};
+    const chatControl: allDataObjects.chatControls = { chatControlType: 'startChat' };
     chatHistory = personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.messageObj;
     let whatappUpdateMessageObj: allDataObjects.whatappUpdateMessageObjType = {
       candidateProfile: personObj?.candidates?.edges[0]?.node,
       candidateFirstName: personObj?.name?.firstName,
       phoneNumberFrom: recruiterProfile.phone,
-      whatsappMessageType: personObj?.candidates?.edges[0]?.node.whatsappProvider || "application03",
+      whatsappMessageType: personObj?.candidates?.edges[0]?.node.whatsappProvider || 'application03',
       phoneNumberTo: personObj?.phone,
       messages: [{ content: request?.body?.messageToSend }],
       messageType: 'recruiterMessage',
@@ -154,7 +143,7 @@ export class ArxChatEndpoint {
     const sendMessageResponse = await new FacebookWhatsappChatApi(this.workspaceQueryService).sendWhatsappTextMessage(messageObj, apiToken);
     whatappUpdateMessageObj.whatsappMessageId = sendMessageResponse?.data?.messages[0]?.id;
     whatappUpdateMessageObj.whatsappDeliveryStatus = 'sent';
-    await new UpdateChat(this.workspaceQueryService).createAndUpdateWhatsappMessage(personObj.candidates.edges[0].node, whatappUpdateMessageObj,apiToken);
+    await new UpdateChat(this.workspaceQueryService).createAndUpdateWhatsappMessage(personObj.candidates.edges[0].node, whatappUpdateMessageObj, apiToken);
     return { status: 'success' };
   }
 
@@ -163,89 +152,87 @@ export class ArxChatEndpoint {
   async getWhatsappMessagessByCandidateId(@Req() request: any): Promise<object[]> {
     const apiToken = request.headers.authorization.split(' ')[1];
     const candidateId = request.body.candidateId;
-    const allWhatsappMessages = await new FilterCandidates(this.workspaceQueryService).fetchAllWhatsappMessages(candidateId,apiToken);
+    const allWhatsappMessages = await new FilterCandidates(this.workspaceQueryService).fetchAllWhatsappMessages(candidateId, apiToken);
     return allWhatsappMessages;
   }
-  
+
   @Post('get-all-messages-by-phone-number')
   @UseGuards(JwtAuthGuard)
   async getAllMessagesByPhoneNumber(@Req() request: any): Promise<object> {
     const apiToken = request.headers.authorization.split(' ')[1];
-    console.log("Going to get all messages by phone Number for :", request.body.phoneNumber);
-    const personObj: allDataObjects.PersonNode = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPhoneNumber(request.body.phoneNumber,apiToken);
+    console.log('Going to get all messages by phone Number for :', request.body.phoneNumber);
+    const personObj: allDataObjects.PersonNode = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPhoneNumber(request.body.phoneNumber, apiToken);
     const candidateId = personObj?.candidates?.edges[0]?.node?.id;
-    const allWhatsappMessages = await new FilterCandidates(this.workspaceQueryService).fetchAllWhatsappMessages(candidateId,apiToken);
+    const allWhatsappMessages = await new FilterCandidates(this.workspaceQueryService).fetchAllWhatsappMessages(candidateId, apiToken);
     const formattedMessages = await formatChat(allWhatsappMessages);
-    console.log("All messages length:", allWhatsappMessages?.length, "for phone number:", request.body.phoneNumber);
-    return {"formattedMessages":formattedMessages};
+    console.log('All messages length:', allWhatsappMessages?.length, 'for phone number:', request.body.phoneNumber);
+    return { formattedMessages: formattedMessages };
   }
-  
+
   @Post('get-candidate-status-by-phone-number')
   @UseGuards(JwtAuthGuard)
   async getCandidateStatusByPhoneNumber(@Req() request: any): Promise<object> {
     const apiToken = request.headers.authorization.split(' ')[1];
 
-    console.log("Going to get candidate status by phone Number for :", request.body.phoneNumber);
-    const personObj: allDataObjects.PersonNode = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPhoneNumber(request.body.phoneNumber,apiToken);
-    const candidateStatus = personObj?.candidates?.edges[0]?.node?.status || "Unknown";
-    console.log("Candidate satus:", candidateStatus, "for phone number:", request.body.phoneNumber);
-    return {"status":candidateStatus};
+    console.log('Going to get candidate status by phone Number for :', request.body.phoneNumber);
+    const personObj: allDataObjects.PersonNode = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPhoneNumber(request.body.phoneNumber, apiToken);
+    const candidateStatus = personObj?.candidates?.edges[0]?.node?.status || 'Unknown';
+    console.log('Candidate satus:', candidateStatus, 'for phone number:', request.body.phoneNumber);
+    return { status: candidateStatus };
   }
-  
+
   @Post('get-candidate-by-phone-number')
   @UseGuards(JwtAuthGuard)
   async getCandidateIdsByPhoneNumbers(@Req() request: any): Promise<object> {
     const apiToken = request.headers.authorization.split(' ')[1];
-    console.log("Going to get candidate by phone Number for :", request.body.phoneNumber);
-    const personObj: allDataObjects.PersonNode = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPhoneNumber(request.body.phoneNumber,apiToken);
-    const candidateId = personObj?.candidates?.edges[0]?.node?.id
+    console.log('Going to get candidate by phone Number for :', request.body.phoneNumber);
+    const personObj: allDataObjects.PersonNode = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPhoneNumber(request.body.phoneNumber, apiToken);
+    const candidateId = personObj?.candidates?.edges[0]?.node?.id;
     console.log('candidateId to fetch all candidateby phonenumber:', candidateId);
-    return {"candidateId":candidateId};
+    return { candidateId: candidateId };
   }
-  
+
   @Post('get-candidate-id-by-hiring-naukri-url')
   @UseGuards(JwtAuthGuard)
   async getCandidateIdsByHiringNaukriURL(@Req() request: any): Promise<object> {
-    try{
+    try {
       const apiToken = request.headers.authorization.split(' ')[1];
-      console.log("Going to get candidate by hiring-naukri-url :", request?.body?.hiringNaukriUrl);
-      const hiringNaukriUrl = request.body.hiringNaukriUrl
+      console.log('Going to get candidate by hiring-naukri-url :', request?.body?.hiringNaukriUrl);
+      const hiringNaukriUrl = request.body.hiringNaukriUrl;
       const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToManyCandidateById, variables: { filter: { hiringNaukriUrl: { url: { eq: hiringNaukriUrl } } } } });
-      const response = await axiosRequest(graphqlQueryObj,apiToken);
-      console.log("Fetched candidate by candidate ID:", response?.data);
+      const response = await axiosRequest(graphqlQueryObj, apiToken);
+      console.log('Fetched candidate by candidate ID:', response?.data);
       const candidateObj = response?.data?.data?.candidates?.edges[0]?.node;
-      console.log("Fetched candidate by candidate OB:", candidateObj);
-      const candidateId = candidateObj?.id
+      console.log('Fetched candidate by candidate OB:', candidateObj);
+      const candidateId = candidateObj?.id;
       console.log('candidateId to fetch all candidateby hiring-naukri:', candidateId);
-      return {candidateId};
-    }
-    catch(err){
-      console.log("Error in fetching candidate by hiring-naukri-url :", err);
-      return {candidateId:null};
+      return { candidateId };
+    } catch (err) {
+      console.log('Error in fetching candidate by hiring-naukri-url :', err);
+      return { candidateId: null };
     }
   }
-  
+
   @Post('get-candidate-id-by-resdex-naukri-url')
   @UseGuards(JwtAuthGuard)
   async getCandidateIdsByResdexNaukriURL(@Req() request: any): Promise<object> {
     try {
       const apiToken = request.headers.authorization.split(' ')[1];
-      console.log("Going to get candidate esdex-naukri-ur :", request.body.resdexNaukriUrl);
+      console.log('Going to get candidate esdex-naukri-ur :', request.body.resdexNaukriUrl);
       const resdexNaukriUrl = request.body.resdexNaukriUrl;
-      const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToManyCandidateById, variables: { filter: { resdexNaukriUrl: {url: { eq: resdexNaukriUrl } }} } });
-      const response = await axiosRequest(graphqlQueryObj,apiToken);
-      console.log("Fetched candidate by candidate ID:", response?.data);
+      const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToManyCandidateById, variables: { filter: { resdexNaukriUrl: { url: { eq: resdexNaukriUrl } } } } });
+      const response = await axiosRequest(graphqlQueryObj, apiToken);
+      console.log('Fetched candidate by candidate ID:', response?.data);
       const candidateObj = response?.data?.data?.candidates?.edges[0]?.node;
-      console.log("Fetched candidate by candidate Obj ID:", candidateObj);
+      console.log('Fetched candidate by candidate Obj ID:', candidateObj);
       const candidateId = candidateObj?.id;
       console.log('candidateId to fetch all candidateby resdex-naukri:', candidateId);
       return { candidateId };
     } catch (err) {
-      console.log("Error in fetching candidate by resdex-naukri-url:", err);
+      console.log('Error in fetching candidate by resdex-naukri-url:', err);
       return { candidateId: null };
     }
   }
-  
 
   @Post('get-id-by-unique-string-key')
   @UseGuards(JwtAuthGuard)
@@ -257,11 +244,11 @@ export class ArxChatEndpoint {
         query: allGraphQLQueries.graphqlQueryToFindManyPeople,
         variables: {
           filter: { uniqueStringKey: { eq: request.body.uniqueStringKey } },
-          limit: 1
-        }
+          limit: 1,
+        },
       });
 
-      const response = await axiosRequest(graphqlQuery,apiToken);
+      const response = await axiosRequest(graphqlQuery, apiToken);
       const candidateId = response?.data?.data?.people?.edges[0]?.node?.candidates?.edges[0]?.node?.id || null;
       return { candidateId };
     } catch (err) {
@@ -270,14 +257,13 @@ export class ArxChatEndpoint {
     }
   }
 
-
   @Post('count-chats')
   @UseGuards(JwtAuthGuard)
   async countChats(@Req() request: any): Promise<object> {
     try {
       const apiToken = request.headers.authorization.split(' ')[1];
       const { candidateIds } = request.body;
-      console.log("going to count chats")
+      console.log('going to count chats');
       // const candidateIds = ['5f9b3b3b-0b3b-4b3b-8b3b-3b0b3b0b3b0b'];
       await new UpdateChat(this.workspaceQueryService).updateCandidatesWithChatCount(candidateIds, apiToken);
       return { status: 'Success' };
@@ -287,15 +273,14 @@ export class ArxChatEndpoint {
     }
   }
 
-
   @Post('refresh-chat-counts-by-candidates')
   @UseGuards(JwtAuthGuard)
-  async refreshChats(@Req() request: any): Promise<object>  {
+  async refreshChats(@Req() request: any): Promise<object> {
     const apiToken = request.headers.authorization.split(' ')[1];
     try {
       const { candidateIds } = request.body;
-      console.log("going to refresh chat counts by candidate Ids")
-      await new UpdateChat(this.workspaceQueryService).updateCandidatesWithChatCount(candidateIds ,apiToken);
+      console.log('going to refresh chat counts by candidate Ids');
+      await new UpdateChat(this.workspaceQueryService).updateCandidatesWithChatCount(candidateIds, apiToken);
       return { status: 'Success' };
     } catch (err) {
       console.error('Error in refresh-chat-counts-by-candi chats:', err);
@@ -303,20 +288,15 @@ export class ArxChatEndpoint {
     }
   }
 
-  @Post('create-gmail-draft-shortlist')
+  @Post('create-shortlist-document')
   @UseGuards(JwtAuthGuard)
-  async sendCVsToClient(@Req() request: any): Promise<object>  {
+  async createShortlistDocument(@Req() request: any): Promise<object> {
     try {
       const { candidateIds } = request.body;
       const apiToken = request.headers.authorization.split(' ')[1];
-      console.log("going to refresh chat counts by candidate Ids",candidateIds)
-      const url = process.env.ENV_NODE === 'production' ? 'https://arxena.com/create_gmail_draft_shortlist' : 'http://127.0.0.1:5050/create_gmail_draft_shortlist';
-      console.log("This is the url:", url);
-      console.log("going to create gmail-draft-shortlist by candidate Ids",candidateIds)
-      const response = await axios.post(url, { candidateIds: candidateIds }, {
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer ' + apiToken }
-      });
-      console.log("This is the response in create gmail draft shortlist:", response.data);
+      console.log('going to refresh chat counts by candidate Ids', candidateIds);
+      await new UpdateChat(this.workspaceQueryService).createShortlistDocument(candidateIds, apiToken);
+      console.log('This is the response in create chatBasedShortlistDelivery shortlist');
       return { status: 'Success' };
     } catch (err) {
       console.error('Error in create_gmail_draft_shortlist chats:', err);
@@ -326,18 +306,29 @@ export class ArxChatEndpoint {
 
   @Post('chat-based-shortlist-delivery')
   @UseGuards(JwtAuthGuard)
-  async chatBasedShortlistDelivery(@Req() request: any): Promise<object>  {
+  async chatBasedShortlistDelivery(@Req() request: any): Promise<object> {
     try {
       const { candidateIds } = request.body;
       const apiToken = request.headers.authorization.split(' ')[1];
-      console.log("going to refresh chat counts by candidate Ids",candidateIds)
-      const url = process.env.ENV_NODE === 'production' ? 'https://arxena.com/chat_based_shortlist_delivery' : 'http://127.0.0.1:5050/chat_based_shortlist_delivery';
-      console.log("This is the url:", url);
-      console.log("going to create gmail-draft-shortlist by candidate Ids",candidateIds)
-      const response = await axios.post(url, { candidateIds: candidateIds }, {
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer ' + apiToken }
-      });
-      console.log("This is the response in create gmail draft shortlist:", response.data);
+      console.log('going to refresh chat counts by candidate Ids', candidateIds);
+      await new UpdateChat(this.workspaceQueryService).createChatBasedShortlistDelivery(candidateIds, apiToken);
+      console.log('This is the response in create chatBasedShortlistDelivery shortlist');
+      return { status: 'Success' };
+    } catch (err) {
+      console.error('Error in create_gmail_draft_shortlist chats:', err);
+      return { status: 'Failed', error: err };
+    }
+  }
+
+  @Post('create-gmail-draft-shortlist')
+  @UseGuards(JwtAuthGuard)
+  async chatGmailDraftShortlist(@Req() request: any): Promise<object> {
+    try {
+      const { candidateIds } = request.body;
+      const apiToken = request.headers.authorization.split(' ')[1];
+      console.log('going to refresh chat counts by candidate Ids', candidateIds);
+      const createGmailBasedShortlist = await new UpdateChat(this.workspaceQueryService).createGmailDraftShortlist(candidateIds, apiToken);
+      console.log('This is the response in create chatBasedShortlistDelivery shortlist');
       return { status: 'Success' };
     } catch (err) {
       console.error('Error in create_gmail_draft_shortlist chats:', err);
@@ -347,43 +338,30 @@ export class ArxChatEndpoint {
 
   @Post('create-shortlist')
   @UseGuards(JwtAuthGuard)
-  async createShortlist(@Req() request: any): Promise<object>  {
+  async createShortlist(@Req() request: any): Promise<object> {
     try {
-      console.log("Create shortlist called")
+      console.log('Create shortlist called');
       const { candidateIds } = request.body;
       const apiToken = request.headers.authorization.split(' ')[1];
       await new UpdateChat(this.workspaceQueryService).createShortlist(candidateIds, apiToken);
-      // const url = process.env.ENV_NODE === 'production' ? 'https://arxena.com/create-shortlist' : 'http://127.0.0.1:5050/create-shortlist';
-      // console.log("This is the url:", url);
-      // console.log("going to create create-shortlist by candidate Ids",candidateIds)
-      // const response = await axios.post(url, { candidateIds: candidateIds }, {
-      //   headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer ' + apiToken }
-      // });
-
       return { status: 'Success' };
     } catch (err) {
-      console.error('Error create-shortlist:', err);
+      console.error('Error creating shortlist:', err);
       return { status: 'Failed', error: err };
     }
   }
 
-  @Post('create-shortlist-document')
+  @Post('create-interview-videos')
   @UseGuards(JwtAuthGuard)
-  async createShortlistDocument(@Req() request: any): Promise<object>  {
+  async createInterviewVideos(@Req() request: any): Promise<object> {
     try {
-      const { candidateIds } = request.body;
+      console.log('Create video interview called');
       const apiToken = request.headers.authorization.split(' ')[1];
-      console.log("This is the NODE NEV:", process.env.ENV_NODE);
-      const url = process.env.ENV_NODE === 'production' ? 'https://arxena.com/create-shortlist-document' : 'http://127.0.0.1:5050/create-shortlist-document';
-      console.log("This is the url:", url);
-      console.log("going to create create-shortlist-document by candidate Ids",candidateIds)
-      const response = await axios.post(url, { candidateIds: candidateIds }, {
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer ' + apiToken }
-      });
-      console.log("This is the response ihortlst documentn:", response);
+      const jobId = request.body.jobId;
+      await new UpdateChat(this.workspaceQueryService).createInterviewVideos(jobId, apiToken);
       return { status: 'Success' };
     } catch (err) {
-      console.error('Error in refresh chats:', err);
+      console.log('Error creating interview videos:', err);
       return { status: 'Failed', error: err };
     }
   }
@@ -396,19 +374,19 @@ export class ArxChatEndpoint {
     try {
       const url = request.body[request.body.resdexNaukriUrl ? 'resdexNaukriUrl' : 'hiringNaukriUrl'];
       const type = request.body.resdexNaukriUrl ? 'resdex' : 'hiring';
-      
+
       const graphqlQueryObj = JSON.stringify({
         query: allGraphQLQueries.graphqlQueryToManyCandidateById,
         variables: {
           filter: {
-            [`${type}NaukriUrl`]: { url: { eq: url } }
-          }
-        }
+            [`${type}NaukriUrl`]: { url: { eq: url } },
+          },
+        },
       });
 
       const response = await axiosRequest(graphqlQueryObj, apiToken);
       const candidateId = response?.data?.data?.candidates?.edges[0]?.node?.id || null;
-      
+
       console.log(`Fetched candidateId for ${type}: ${candidateId}`);
       return { candidateId };
     } catch (err) {
@@ -420,12 +398,12 @@ export class ArxChatEndpoint {
   @Get('get-candidates-and-chats')
   @UseGuards(JwtAuthGuard)
   async getCandidatesAndChats(@Req() request: any): Promise<object> {
-    console.log("Going to get all candidates and chats")
+    console.log('Going to get all candidates and chats');
     const apiToken = request?.headers?.authorization?.split(' ')[1];
-    const chatControl:allDataObjects.chatControls = {chatControlType:"allStartedAndStoppedChats"};
-    const {people, candidateJob} = await new CandidateEngagementArx(this.workspaceQueryService).fetchSpecificPeopleToEngageAcrossAllChatControls(chatControl, apiToken);
-    console.log("All people length:", people?.length)
-    return people
+    const chatControl: allDataObjects.chatControls = { chatControlType: 'allStartedAndStoppedChats' };
+    const { people, candidateJob } = await new CandidateEngagementArx(this.workspaceQueryService).fetchSpecificPeopleToEngageAcrossAllChatControls(chatControl, apiToken);
+    console.log('All people length:', people?.length);
+    return people;
   }
 
   @Get('get-person-chat')
@@ -433,14 +411,12 @@ export class ArxChatEndpoint {
   async getCandidateAndChat(@Req() request: any): Promise<object> {
     const apiToken = request.headers.authorization.split(' ')[1];
     const candidateId = request.query.candidateId;
-    const person = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByCandidateId(candidateId,apiToken);
-    const chatControl:allDataObjects.chatControls = {chatControlType:"allStartedAndStoppedChats"};
+    const person = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByCandidateId(candidateId, apiToken);
+    const chatControl: allDataObjects.chatControls = { chatControlType: 'allStartedAndStoppedChats' };
     const allPeople = await new FilterCandidates(this.workspaceQueryService).fetchAllPeopleByCandidatePeopleIds([person.id], apiToken);
-    console.log("All people length:", allPeople?.length)
-    return allPeople
+    console.log('All people length:', allPeople?.length);
+    return allPeople;
   }
-  
-
 
   @Post('delete-people-and-candidates-from-candidate-id')
   @UseGuards(JwtAuthGuard)
@@ -450,10 +426,10 @@ export class ArxChatEndpoint {
 
     console.log('candidateId to create video-interview:', candidateId);
     const graphqlQueryObjToFetchCandidate = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToManyCandidateById, variables: { filter: { id: { eq: candidateId } } } });
-    const candidateObjresponse = await axiosRequest(graphqlQueryObjToFetchCandidate,apiToken);
+    const candidateObjresponse = await axiosRequest(graphqlQueryObjToFetchCandidate, apiToken);
     const candidateObj = candidateObjresponse?.data?.data;
-    console.log("candidate objk1:", candidateObj);
-    
+    console.log('candidate objk1:', candidateObj);
+
     const candidateNode = candidateObjresponse?.data?.data?.candidates?.edges[0]?.node;
     if (!candidateNode) {
       console.log('Candidate not found');
@@ -470,9 +446,9 @@ export class ArxChatEndpoint {
       variables: { filter: { id: { in: [candidateId] } } },
     });
 
-    console.log("Going to try and delete candidate");
+    console.log('Going to try and delete candidate');
     try {
-      const response = await axiosRequest(graphqlQueryObj,apiToken);
+      const response = await axiosRequest(graphqlQueryObj, apiToken);
       console.log('Deleted candidate:', response.data);
     } catch (err) {
       console.log('Error deleting candidate:', err.response?.data || err.message);
@@ -482,9 +458,9 @@ export class ArxChatEndpoint {
       query: allGraphQLQueries.graphqlMutationToDeleteManyPeople,
       variables: { filter: { id: { in: [personId] } } },
     });
-    console.log("Going to try and delete person");
+    console.log('Going to try and delete person');
     try {
-      const response = await axiosRequest(graphqlQueryObjToDeletePerson,apiToken);
+      const response = await axiosRequest(graphqlQueryObjToDeletePerson, apiToken);
       console.log('Deleted person:', response.data);
       return { status: 'Success' };
     } catch (err) {
@@ -492,7 +468,6 @@ export class ArxChatEndpoint {
       return { status: 'Failed', message: 'Error deleting person' };
     }
   }
-
 
   @Post('delete-people-and-candidates-from-person-id')
   @UseGuards(JwtAuthGuard)
@@ -501,29 +476,29 @@ export class ArxChatEndpoint {
     const apiToken = request.headers.authorization.split(' ')[1];
     console.log('personId to delete:', personId);
     const graphqlQueryObjToFetchPerson = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindManyPeople, variables: { filter: { id: { eq: personId } } } });
-    const personresponse = await axiosRequest(graphqlQueryObjToFetchPerson,apiToken);
+    const personresponse = await axiosRequest(graphqlQueryObjToFetchPerson, apiToken);
     const personObj = personresponse?.data?.data;
-    console.log("personresponse objk1:", personObj);
+    console.log('personresponse objk1:', personObj);
     const personNode = personresponse?.data?.data?.people?.edges[0]?.node;
     if (!personNode) {
       console.log('Person not found');
       return { status: 'Failed', message: 'Candidate not found' };
     }
     const candidateId = personNode?.candidates?.edges[0].node.id;
-    console.log("personNode:", personNode);
-    console.log("candidateId:", candidateId);
+    console.log('personNode:', personNode);
+    console.log('candidateId:', candidateId);
     if (!candidateId) {
       console.log('candidateId ID not found');
       return { status: 'Failed', message: 'candidateId ID not found' };
     }
-    console.log("candidateId ID:", candidateId);
+    console.log('candidateId ID:', candidateId);
     const graphqlQueryObj = JSON.stringify({
       query: allGraphQLQueries.graphqlMutationToDeleteManyCandidates,
       variables: { filter: { id: { in: [candidateId] } } },
     });
-    console.log("Going to try and delete candidate");
+    console.log('Going to try and delete candidate');
     try {
-      const response = await axiosRequest(graphqlQueryObj,apiToken);
+      const response = await axiosRequest(graphqlQueryObj, apiToken);
       console.log('Deleted candidate:', response.data);
     } catch (err) {
       console.log('Error deleting candidate:', err.response?.data || err.message);
@@ -533,9 +508,9 @@ export class ArxChatEndpoint {
       query: allGraphQLQueries.graphqlMutationToDeleteManyPeople,
       variables: { filter: { id: { in: [personId] } } },
     });
-    console.log("Going to try and delete person");
+    console.log('Going to try and delete person');
     try {
-      const response = await axiosRequest(graphqlQueryObjToDeletePerson,apiToken);
+      const response = await axiosRequest(graphqlQueryObjToDeletePerson, apiToken);
       console.log('Deleted person:', response.data);
       return { status: 'Success' };
     } catch (err) {
@@ -544,142 +519,109 @@ export class ArxChatEndpoint {
     }
   }
 
-@Post('delete-people-and-candidates-bulk')
-@UseGuards(JwtAuthGuard)
-async deletePeopleAndCandidatesBulk(@Req() request: any): Promise<object> {
-  const apiToken = request.headers.authorization.split(' ')[1];
+  @Post('delete-people-and-candidates-bulk')
+  @UseGuards(JwtAuthGuard)
+  async deletePeopleAndCandidatesBulk(@Req() request: any): Promise<object> {
+    const apiToken = request.headers.authorization.split(' ')[1];
 
-  const { candidateIds, personIds } = request.body;
-  const results: { succeeded: string[], failed: string[] } = {
-    succeeded: [],
-    failed: []
-  };
+    const { candidateIds, personIds } = request.body;
+    const results: { succeeded: string[]; failed: string[] } = {
+      succeeded: [],
+      failed: [],
+    };
 
-  if (candidateIds?.length) {
-    // First fetch all candidate information to get associated person IDs
-    const graphqlQueryObjToFetchCandidates = JSON.stringify({
-      query: allGraphQLQueries.graphqlQueryToManyCandidateById,
-      variables: { filter: { id: { in: candidateIds } } }
-    });
-
-    const candidatesResponse = await axiosRequest(graphqlQueryObjToFetchCandidates,apiToken);
-    const candidateNodes = candidatesResponse?.data?.data?.candidates?.edges || [];
-    
-    // Collect all person IDs associated with these candidates
-    const personIdsFromCandidates = candidateNodes
-      .map(edge => edge.node?.people?.id)
-      .filter(id => id);
-
-    // Delete candidates in bulk
-    try {
-      const graphqlQueryObjDeleteCandidates = JSON.stringify({
-        query: allGraphQLQueries.graphqlMutationToDeleteManyCandidates,
-        variables: { filter: { id: { in: candidateIds } } }
+    if (candidateIds?.length) {
+      // First fetch all candidate information to get associated person IDs
+      const graphqlQueryObjToFetchCandidates = JSON.stringify({
+        query: allGraphQLQueries.graphqlQueryToManyCandidateById,
+        variables: { filter: { id: { in: candidateIds } } },
       });
-      await axiosRequest(graphqlQueryObjDeleteCandidates,apiToken);
-      
-      // Delete associated people in bulk
-      const graphqlQueryObjDeletePeople = JSON.stringify({
-        query: allGraphQLQueries.graphqlMutationToDeleteManyPeople,
-        variables: { filter: { id: { in: personIdsFromCandidates } } }
-      });
-      await axiosRequest(graphqlQueryObjDeletePeople,apiToken);
-      
-      results.succeeded.push(...candidateIds);
-    } catch (err) {
-      console.error('Error in bulk deletion:', err);
-      results.failed.push(...candidateIds);
+
+      const candidatesResponse = await axiosRequest(graphqlQueryObjToFetchCandidates, apiToken);
+      const candidateNodes = candidatesResponse?.data?.data?.candidates?.edges || [];
+
+      // Collect all person IDs associated with these candidates
+      const personIdsFromCandidates = candidateNodes.map(edge => edge.node?.people?.id).filter(id => id);
+
+      // Delete candidates in bulk
+      try {
+        const graphqlQueryObjDeleteCandidates = JSON.stringify({
+          query: allGraphQLQueries.graphqlMutationToDeleteManyCandidates,
+          variables: { filter: { id: { in: candidateIds } } },
+        });
+        await axiosRequest(graphqlQueryObjDeleteCandidates, apiToken);
+
+        // Delete associated people in bulk
+        const graphqlQueryObjDeletePeople = JSON.stringify({
+          query: allGraphQLQueries.graphqlMutationToDeleteManyPeople,
+          variables: { filter: { id: { in: personIdsFromCandidates } } },
+        });
+        await axiosRequest(graphqlQueryObjDeletePeople, apiToken);
+
+        results.succeeded.push(...candidateIds);
+      } catch (err) {
+        console.error('Error in bulk deletion:', err);
+        results.failed.push(...candidateIds);
+      }
     }
-  }
 
-  if (personIds?.length) {
-    // First fetch all person information to get associated candidate IDs
-    const graphqlQueryObjToFetchPeople = JSON.stringify({
-      query: allGraphQLQueries.graphqlQueryToFindManyPeople,
-      variables: { filter: { id: { in: personIds } } }
-    });
-
-    const peopleResponse = await axiosRequest(graphqlQueryObjToFetchPeople,apiToken);
-    const peopleNodes = peopleResponse?.data?.data?.people?.edges || [];
-    
-    // Collect all candidate IDs associated with these people
-    const candidateIdsFromPeople = peopleNodes
-      .flatMap(edge => edge.node?.candidates?.edges || [])
-      .map(edge => edge?.node?.id)
-      .filter(id => id);
-
-    try {
-      // Delete candidates first
-      const graphqlQueryObjDeleteCandidates = JSON.stringify({
-        query: allGraphQLQueries.graphqlMutationToDeleteManyCandidates,
-        variables: { filter: { id: { in: candidateIdsFromPeople } } }
+    if (personIds?.length) {
+      // First fetch all person information to get associated candidate IDs
+      const graphqlQueryObjToFetchPeople = JSON.stringify({
+        query: allGraphQLQueries.graphqlQueryToFindManyPeople,
+        variables: { filter: { id: { in: personIds } } },
       });
-      await axiosRequest(graphqlQueryObjDeleteCandidates,apiToken);
-      
-      // Then delete people
-      const graphqlQueryObjDeletePeople = JSON.stringify({
-        query: allGraphQLQueries.graphqlMutationToDeleteManyPeople,
-        variables: { filter: { id: { in: personIds } } }
-      });
-      await axiosRequest(graphqlQueryObjDeletePeople,apiToken);
-      
-      results.succeeded.push(...personIds);
-    } catch (err) {
-      console.error('Error in bulk deletion:', err);
-      results.failed.push(...personIds);
+
+      const peopleResponse = await axiosRequest(graphqlQueryObjToFetchPeople, apiToken);
+      const peopleNodes = peopleResponse?.data?.data?.people?.edges || [];
+
+      // Collect all candidate IDs associated with these people
+      const candidateIdsFromPeople = peopleNodes
+        .flatMap(edge => edge.node?.candidates?.edges || [])
+        .map(edge => edge?.node?.id)
+        .filter(id => id);
+
+      try {
+        // Delete candidates first
+        const graphqlQueryObjDeleteCandidates = JSON.stringify({
+          query: allGraphQLQueries.graphqlMutationToDeleteManyCandidates,
+          variables: { filter: { id: { in: candidateIdsFromPeople } } },
+        });
+        await axiosRequest(graphqlQueryObjDeleteCandidates, apiToken);
+
+        // Then delete people
+        const graphqlQueryObjDeletePeople = JSON.stringify({
+          query: allGraphQLQueries.graphqlMutationToDeleteManyPeople,
+          variables: { filter: { id: { in: personIds } } },
+        });
+        await axiosRequest(graphqlQueryObjDeletePeople, apiToken);
+
+        results.succeeded.push(...personIds);
+      } catch (err) {
+        console.error('Error in bulk deletion:', err);
+        results.failed.push(...personIds);
+      }
     }
-  }
 
-  if (results.failed.length > 0) {
+    if (results.failed.length > 0) {
+      return {
+        status: 'Partial',
+        message: `Successfully deleted ${results.succeeded.length} items, failed to delete ${results.failed.length} items`,
+        results,
+      };
+    }
+
     return {
-      status: 'Partial',
-      message: `Successfully deleted ${results.succeeded.length} items, failed to delete ${results.failed.length} items`,
-      results
+      status: 'Success',
+      message: `Successfully deleted ${results.succeeded.length} items`,
+      results,
     };
   }
-
-  return {
-    status: 'Success',
-    message: `Successfully deleted ${results.succeeded.length} items`,
-    results
-  };
-}
 
   @Post('remove-chats')
   async removeChats(@Req() request: any): Promise<object> {
     return { status: 'Success' };
   }
-
-  @Post('create-interview-videos')
-  @UseGuards(JwtAuthGuard)
-
-  async createInterviewVideos(@Req() request: any): Promise<object> {
-    console.log("This is the request body:", request.body);
-    const jobId = request.body.jobId;
-    const apiToken = request.headers.authorization.split(' ')[1];
-
-    console.log("This is the jobId:", jobId);
-
-
-    console.log("This is the NODE NEV:", process.env.ENV_NODE);
-    const url = process.env.ENV_NODE === 'production' ? 'https://arxena.com/create-interview-videos' : 'http://localhost:5050/create-interview-videos';
-    console.log("This is the url:", url);
-    try {
-      const response = await axios.post(url, { jobId:jobId }, {
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer ' + apiToken }, 
-        timeout: 10000,
-        validateStatus: (status) => status >= 200 && status < 500,
-        proxy: false,
-        family: 4,
-      }
-      );
-      console.log('Response from /create-interview-videos:', response.data);
-    } catch (error) {
-      console.error('Error sending request to /create-interview-videos:', error);
-    }
-    return { status: 'Success' };
-  }
-
 
   @Post('check-human-like')
   @UseGuards(JwtAuthGuard)
@@ -688,10 +630,10 @@ async deletePeopleAndCandidatesBulk(@Req() request: any): Promise<object> {
     try {
       const apiToken = request.headers.authorization.split(' ')[1];
 
-      const personObj: allDataObjects.PersonNode = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPhoneNumber(request.body.phoneNumberFrom,apiToken);
-      console.log("Person object receiveed::", personObj)
+      const personObj: allDataObjects.PersonNode = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPhoneNumber(request.body.phoneNumberFrom, apiToken);
+      console.log('Person object receiveed::', personObj);
       const checkHumanLike = await new HumanLikeLLM(this.workspaceQueryService).checkIfResponseMessageSoundsHumanLike(request.body.contentObj, apiToken);
-      console.log("checkHumanLike:", checkHumanLike)
+      console.log('checkHumanLike:', checkHumanLike);
       return { status: 'Success' };
     } catch (err) {
       return { status: err };
@@ -717,8 +659,8 @@ async deletePeopleAndCandidatesBulk(@Req() request: any): Promise<object> {
           variables: variablesToUpdateDeliveryStatus,
         });
 
-        const responseOfDeliveryStatus = await axiosRequest(graphqlQueryObjForUpdationForDeliveryStatus,apiToken);
-        console.log("responseOfDeliveryStatus::", responseOfDeliveryStatus?.data)
+        const responseOfDeliveryStatus = await axiosRequest(graphqlQueryObjForUpdationForDeliveryStatus, apiToken);
+        console.log('responseOfDeliveryStatus::', responseOfDeliveryStatus?.data);
         // console.log('Res:::', responseOfDeliveryStatus?.data, "for wamid::", responseOfDeliveryStatus?.data);
         console.log('---------------DELIVERY STATUS UPDATE DONE-----------------------');
       }
@@ -728,4 +670,3 @@ async deletePeopleAndCandidatesBulk(@Req() request: any): Promise<object> {
     }
   }
 }
-

@@ -495,8 +495,11 @@ const ChatTable: React.FC<ChatTableProps> = ({
 
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isAttachmentPanelOpen, setIsAttachmentPanelOpen] = useState(false);
-  const [currentCandidateIndex, setCurrentCandidateIndex] = useState(0);
+  const [currentPersonIndex, setCurrentPersonIndex] = useState(0);
 
+
+  console.log("These are the selected ids::", selectedIds)
+  console.log("These are the currentPersonIndex::", currentPersonIndex)
   const [searchTerm, setSearchTerm] = useState('');
 
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -518,7 +521,7 @@ const ChatTable: React.FC<ChatTableProps> = ({
 
 
   const currentCandidate = selectedIds.length > 0 ? 
-  individuals.find(individual => individual.id === selectedIds[currentCandidateIndex]) : null;
+  individuals.find(individual => individual.id === selectedIds[currentPersonIndex]) : null;
 
   const handleCheckboxChange = (individualId: string, event: React.ChangeEvent<HTMLInputElement>) => {
     event.stopPropagation();
@@ -563,23 +566,18 @@ const ChatTable: React.FC<ChatTableProps> = ({
     }
   };
 
-  function createDraftEmail(selectedIds: string[]) {
-    console.log("createDraftEmail");
-  
-  }
+
   const clearSelection = () => {
     setSelectedIds([]);
     onSelectionChange?.([]);
   };
   const handleViewCVs = () => {
     console.log("View CVs");
-    setCurrentCandidateIndex(0);
+    setCurrentPersonIndex(0);
     setIsAttachmentPanelOpen(true);
   };  
 
-  // function createCandidateShortlists(){
-  //   console.log("createCandidateShortlists");
-  //   console.log("selectedIds:",selectedIds)
+
 
     async function createCandidateShortlists() {
       try {
@@ -611,15 +609,46 @@ const ChatTable: React.FC<ChatTableProps> = ({
         });
       }
     }
+    
+    async function createChatBasedShortlistDelivery() {
+      try {
+        const url = process.env.ENV_NODE === 'production' ? 'https://app.arxena.com' : 'http://localhost:3000';
+
+        const response = await axios.post(url+'/arx-chat/chat-based-shortlist-delivery', {
+          candidateIds: selectedIds,
+        }, 
+        {
+          headers: {
+            authorization: `Bearer ${tokenPair?.accessToken?.token}`,
+            'content-type': 'application/json',
+            'x-schema-version': '66',
+          },
+        },
+        );
+        console.log('Shortlist created successfully:', response.data);
+        enqueueSnackBar('Shortlist created successfully', {
+          variant: SnackBarVariant.Success,
+          icon: <IconCopy size={theme.icon.size.md} />,
+          duration: 2000,
+        });
+      } catch (error) {
+        console.log('Error creating shortlist:', error);
+        enqueueSnackBar('Error creating shortlist', {
+          variant: SnackBarVariant.Error,
+          icon: <IconCopy size={theme.icon.size.md} />,
+          duration: 2000,
+        });
+      }
+    }
 
   // }
 
   const handlePrevCandidate = () => {
-    setCurrentCandidateIndex(prev => Math.max(0, prev - 1));
+    setCurrentPersonIndex(prev => Math.max(0, prev - 1));
   };
 
   const handleNextCandidate = () => {
-    setCurrentCandidateIndex(prev => Math.min(selectedIds.length - 1, prev + 1));
+    setCurrentPersonIndex(prev => Math.min(selectedIds.length - 1, prev + 1));
   };
 
   const filterData = (data: frontChatTypes.PersonNode[], term: string) => {
@@ -861,9 +890,10 @@ const ChatTable: React.FC<ChatTableProps> = ({
               Icon={IconMessages}
               variant="primary"
               accent="blue"
-              title="Create Draft Email"
-              onClick={() => {
-                enqueueSnackBar('Create Drafts', {
+              title="Create Chat Based Shortlist"
+              onClick={async () => {
+                await createChatBasedShortlistDelivery();
+                enqueueSnackBar('Create Chat Based Shortlist', {
                   variant: SnackBarVariant.Success,
                   icon: <IconCopy size={theme.icon.size.md} />,
                   duration: 2000,
@@ -921,7 +951,7 @@ const ChatTable: React.FC<ChatTableProps> = ({
               <CandidateNavigation>
                 <NavIconButton 
                   onClick={handlePrevCandidate} 
-                  disabled={currentCandidateIndex === 0} 
+                  disabled={currentPersonIndex === 0} 
                   title="Previous Candidate"
                 >
                   <IconChevronLeft size={20} />
@@ -929,7 +959,7 @@ const ChatTable: React.FC<ChatTableProps> = ({
     
                 <NavIconButton 
                   onClick={handleNextCandidate} 
-                  disabled={currentCandidateIndex === selectedIds.length - 1} 
+                  disabled={currentPersonIndex === selectedIds.length - 1} 
                   title="Next Candidate"
                 >
                   <IconChevronRight size={20} />
