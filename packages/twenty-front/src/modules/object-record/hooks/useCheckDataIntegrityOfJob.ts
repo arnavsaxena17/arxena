@@ -109,7 +109,7 @@ export const useCheckDataIntegrityOfJob = ({
           });
         }
         // Are whatsapp message elements (one liner description,// jobLocation, jobCode etc. avialable)
-        if (data.jobs.edges[0].node.interviewSchedule.edges[0].node.slotsAvailable === null) {
+        if (data.jobs?.edges[0]?.node?.interviewSchedule?.edges?.length== 0 || data.jobs.edges[0].node?.interviewSchedule?.edges[0]?.node?.slotsAvailable === null) {
           console.log('Job has no slotsAvailable in interviewSchedule')
           enqueueSnackBar('Job has no slotsAvailable in interviewSchedule', {
             variant: SnackBarVariant.Error,
@@ -118,7 +118,7 @@ export const useCheckDataIntegrityOfJob = ({
         }
         
         // Are whatsapp message elements (one liner description,// jobLocation, jobCode etc. avialable)
-        if (data.jobs.edges[0].node.interviewSchedule.edges[0].node.meetingType === null) {
+        if (data.jobs.edges[0]?.node?.interviewSchedule?.edges[0]?.node?.meetingType === null) {
           console.log('Job has no meetingType in interviewSchedule')
           enqueueSnackBar('Job has no meetingType in interviewSchedule', {
             variant: SnackBarVariant.Error,

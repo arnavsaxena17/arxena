@@ -247,15 +247,12 @@ export default class CandidateEngagementArx {
   
   // Helper methods for grouping candidates by job
   private async groupCandidatesByJob(candidateIds: string[], apiToken: string): Promise<Record<string, string[]>> {
-    console.log('Input candidateIds:', candidateIds);
-
     const graphqlQueryObj = JSON.stringify({
         query: allGraphQLQueries.graphqlToFetchAllCandidateData,
         variables: { filter: { id: { in: candidateIds } } }
     });
 
     const response = await axiosRequest(graphqlQueryObj, apiToken);
-    console.log('GraphQL response:', JSON.stringify(response?.data, null, 2));
 
     const candidates = response?.data?.data?.candidates?.edges || [];
     console.log('Candidates array:', candidates);
