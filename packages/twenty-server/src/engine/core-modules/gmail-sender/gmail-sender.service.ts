@@ -197,6 +197,7 @@ export class MailerService {
   let hasZipContent = false;
 
   if (gmailMessageData.attachments && gmailMessageData.attachments.length > 0) {
+    console.log("This is the gmailMessageData.attachments:", gmailMessageData.attachments);
     for (const attachment of gmailMessageData.attachments) {
       try {
         const fileContent = attachment.path.includes('attachment')
@@ -204,7 +205,7 @@ export class MailerService {
             .then(res => Buffer.from(res.data))
           : await fs.readFile(attachment.path);
 
-        if (attachment.filename !== "Executive Shortlist.pdf") {
+        if (attachment.filename !== "Executive Shortlist.pdf" && attachment.filename !== 'shortlist.xlsx') {
           // Add file to zip
           zipFile.file(this.cleanFilename(attachment.filename), fileContent);
           hasZipContent = true;

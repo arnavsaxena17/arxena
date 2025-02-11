@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import styled from "@emotion/styled";
-import { IconX, IconUsers,IconFileText,IconChevronLeft, IconGripVertical,IconMessages,IconChevronRight, IconSend, IconTrash, IconChevronUp, IconChevronDown, IconLink, IconCopy } from '@tabler/icons-react';
-import * as frontChatTypes from "../types/front-chat-types";
+import styled from '@emotion/styled';
+import { IconX, IconUsers, IconFileText, IconChevronLeft, IconGripVertical, IconMessages, IconChevronRight, IconSend, IconTrash, IconChevronUp, IconChevronDown, IconLink, IconCopy } from '@tabler/icons-react';
+import * as frontChatTypes from '../types/front-chat-types';
 import AttachmentPanel from './AttachmentPanel';
 import MultiCandidateChat from './MultiCandidateChat';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
@@ -21,7 +21,7 @@ const TableContainer = styled.div`
   white-space: nowrap;
   text-overflow: ellipsis;
   -webkit-overflow-scrolling: touch;
-  
+
   @media (max-width: 768px) {
     margin: 0;
     padding: 0;
@@ -54,7 +54,6 @@ const CandidateNavigation = styled.div`
   z-index: 1001;
 `;
 
-
 const NavIconButton = styled.button`
   display: flex;
   align-items: center;
@@ -66,12 +65,12 @@ const NavIconButton = styled.button`
   border: none;
   cursor: pointer;
   transition: all 0.2s;
-  
+
   &:hover {
     background-color: #f3f4f6;
     transform: scale(1.05);
   }
-  
+
   &:disabled {
     background-color: #e5e7eb;
     cursor: not-allowed;
@@ -82,7 +81,7 @@ const NavIconButton = styled.button`
   // Make buttons more visible with a white background
   color: #374151;
   background-color: white;
-  
+
   // Add hover state shadow
   &:hover:not(:disabled) {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
@@ -92,12 +91,12 @@ const NavIconButton = styled.button`
 const StyledTableRow = styled.div<{ $selected: boolean; $isDragging?: boolean }>`
   display: table-row;
   height: 12px;
-  background-color: ${(props) => {
-    if (props.$isDragging) return "#e5e7eb";
-    return props.$selected ? "#f5f9fd" : "white";
+  background-color: ${props => {
+    if (props.$isDragging) return '#e5e7eb';
+    return props.$selected ? '#f5f9fd' : 'white';
   }};
   cursor: pointer;
-  
+
   @media (max-width: 768px) {
     display: flex;
     flex-direction: column;
@@ -108,15 +107,12 @@ const StyledTableRow = styled.div<{ $selected: boolean; $isDragging?: boolean }>
   }
 `;
 
-
-
-
 const CheckboxCell = styled.div`
   display: table-cell;
   padding: 0.25rem;
   width: 40px;
   text-align: left;
-  
+
   > div {
     display: flex;
     align-items: center;
@@ -128,15 +124,13 @@ const CheckboxCell = styled.div`
     left: 0.5rem;
     top: 50%;
     transform: translateY(-50%);
-    
+
     // Hide drag handle on mobile
     > div > *:first-child {
       display: none;
     }
   }
 `;
-
-
 
 const ActionsBar = styled.div`
   position: fixed;
@@ -153,8 +147,8 @@ const ActionsBar = styled.div`
   transform: translateY(100%);
   transition: transform 0.3s ease-in-out;
   z-index: 1000;
-  
-  &[data-visible="true"] {
+
+  &[data-visible='true'] {
     transform: translateY(0);
   }
 `;
@@ -180,29 +174,29 @@ const ActionButton = styled.button`
   border-radius: 0.375rem;
   font-weight: 500;
   transition: all 0.2s;
-  
+
   &.primary {
     background-color: #2563eb;
     color: white;
-    
+
     &:hover {
       background-color: #1d4ed8;
     }
   }
-  
+
   &.secondary {
     background-color: #f3f4f6;
     color: #374151;
-    
+
     &:hover {
       background-color: #e5e7eb;
     }
   }
-  
+
   &.danger {
     background-color: #ef4444;
     color: white;
-    
+
     &:hover {
       background-color: #dc2626;
     }
@@ -216,14 +210,11 @@ const CloseButton = styled.button`
   padding: 0.25rem;
   border-radius: 0.375rem;
   color: #6b7280;
-  
+
   &:hover {
     background-color: #f3f4f6;
   }
 `;
-
-
-
 
 const Checkbox = styled.input`
   width: 16px;
@@ -231,13 +222,11 @@ const Checkbox = styled.input`
   cursor: pointer;
 `;
 
-
-
 const StyledTable = styled.div`
   width: 100%;
   display: table;
   border-collapse: collapse;
-  
+
   @media (max-width: 768px) {
     display: block;
   }
@@ -253,9 +242,9 @@ const StyledTableCell = styled.div`
     display: block;
     padding: 0.5rem;
     border: none;
-    
+
     // Add this conditional styling for name cell
-    &[data-label="Name"] {
+    &[data-label='Name'] {
       font-weight: 600;
       font-size: 1.1rem;
       padding: 1rem 0.5rem;
@@ -263,8 +252,6 @@ const StyledTableCell = styled.div`
     }
   }
 `;
-
-
 
 const StyledTableHeaderCell = styled.div<{ isSorted: boolean }>`
   display: table-cell;
@@ -280,7 +267,9 @@ const StyledTableHeaderCell = styled.div<{ isSorted: boolean }>`
     background-color: #e8e8e8;
   }
 
-  ${({ isSorted }) => isSorted && `
+  ${({ isSorted }) =>
+    isSorted &&
+    `
     background-color: #e8e8e8;
   `}
 `;
@@ -298,7 +287,7 @@ const SortIconsContainer = styled.div`
 `;
 
 const SortIcon = styled.div<{ isActive: boolean }>`
-  color: ${({ isActive }) => isActive ? '#2563eb' : '#a0a0a0'};
+  color: ${({ isActive }) => (isActive ? '#2563eb' : '#a0a0a0')};
   display: flex;
   align-items: center;
   margin-top: -2px;
@@ -307,7 +296,7 @@ const SortIcon = styled.div<{ isActive: boolean }>`
 
 const StyledTableBody = styled.div`
   display: table-row-group;
-  
+
   @media (max-width: 768px) {
     display: block;
   }
@@ -318,13 +307,11 @@ const StyledTableHeader = styled.div`
   position: sticky;
   top: 0;
   z-index: 1;
-  
+
   @media (max-width: 768px) {
     display: none;
   }
 `;
-
-
 
 const UnreadIndicator = styled.span`
   background-color: red;
@@ -337,7 +324,7 @@ const UnreadIndicator = styled.span`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  
+
   @media (max-width: 768px) {
     position: absolute;
     top: 1rem;
@@ -352,7 +339,7 @@ const NameCell = styled.div`
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  
+
   @media (max-width: 768px) {
     font-weight: 600;
     padding-right: 3rem; // Space for unread indicator
@@ -360,10 +347,6 @@ const NameCell = styled.div`
     overflow: visible;
   }
 `;
-
-
-
-
 
 const DraggableTableRow = ({
   individual,
@@ -382,74 +365,52 @@ const DraggableTableRow = ({
   onIndividualSelect: (id: string) => void;
   getUnreadCount: (id: string) => number;
 }) => {
-
-
-
-
-
-  
   const unreadCount = getUnreadCount(individual?.id);
 
-
-  console.log("unreadCount:", unreadCount);
-  console.log("UnreadIndicator rendering condition:", unreadCount > 0);
+  console.log('unreadCount:', unreadCount);
+  console.log('UnreadIndicator rendering condition:', unreadCount > 0);
 
   let messageTime = 'N/A';
-  try{
-    messageTime = new Date(individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.createdAt)
-   .toLocaleString('en-US', {
-     month: 'short',
-     day: 'numeric',
-     hour: '2-digit',
-     minute: '2-digit',
-   });
-  }
-  catch(e){
+  try {
+    messageTime = new Date(individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.createdAt).toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  } catch (e) {
     messageTime = 'N/A';
   }
   return (
-    console.log("individual:",individual),
-    <Draggable draggableId={individual.id} index={index}>
-      {(provided, snapshot) => (
-        <StyledTableRow
-          ref={provided.innerRef}
-          {...provided.draggableProps}
-          $selected={selectedIndividual === individual?.id}
-          $isDragging={snapshot.isDragging}
-          onClick={() => onIndividualSelect(individual?.id)}
-          data-selectable-id={individual.id}
-        >
-          <CheckboxCell onClick={e => e.stopPropagation()}>
-            <div {...provided.dragHandleProps}>
-              <IconGripVertical size={20} />
-            </div>
-            <Checkbox
-              type="checkbox"
-              checked={selectedIds.includes(individual.id)}
-              onChange={e => handleCheckboxChange(individual.id, e)}
-            />
-          </CheckboxCell>
-          <StyledTableCell data-label="Name">
-          <NameCell>
-              {`${individual.name.firstName} ${individual.name.lastName}`}
-              {unreadCount > 0 && <UnreadIndicator>{unreadCount}</UnreadIndicator>}
-            </NameCell>
-          </StyledTableCell>
-          <StyledTableCell> {individual.candidates?.edges[0]?.node?.candConversationStatus || 'N/A'} </StyledTableCell>
-          <StyledTableCell>
-            {individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.createdAt ? messageTime : 'N/A'}
-          </StyledTableCell>
-          <StyledTableCell> {individual.candidates?.edges[0]?.node?.status || 'N/A'} </StyledTableCell>
-          <StyledTableCell>{individual.salary || 'N/A'}</StyledTableCell>
-          <StyledTableCell>{individual.city || 'N/A'}</StyledTableCell>
-          <StyledTableCell>{individual.jobTitle || 'N/A'}</StyledTableCell>
-        </StyledTableRow>
-      )}
-    </Draggable>
+    console.log('individual:', individual),
+    (
+      <Draggable draggableId={individual.id} index={index}>
+        {(provided, snapshot) => (
+          <StyledTableRow ref={provided.innerRef} {...provided.draggableProps} $selected={selectedIndividual === individual?.id} $isDragging={snapshot.isDragging} onClick={() => onIndividualSelect(individual?.id)} data-selectable-id={individual.id}>
+            <CheckboxCell onClick={e => e.stopPropagation()}>
+              <div {...provided.dragHandleProps}>
+                <IconGripVertical size={20} />
+              </div>
+              <Checkbox type="checkbox" checked={selectedIds.includes(individual.id)} onChange={e => handleCheckboxChange(individual.id, e)} />
+            </CheckboxCell>
+            <StyledTableCell data-label="Name">
+              <NameCell>
+                {`${individual.name.firstName} ${individual.name.lastName}`}
+                {unreadCount > 0 && <UnreadIndicator>{unreadCount}</UnreadIndicator>}
+              </NameCell>
+            </StyledTableCell>
+            <StyledTableCell> {individual.candidates?.edges[0]?.node?.candConversationStatus || 'N/A'} </StyledTableCell>
+            <StyledTableCell>{individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.createdAt ? messageTime : 'N/A'}</StyledTableCell>
+            <StyledTableCell> {individual.candidates?.edges[0]?.node?.status || 'N/A'} </StyledTableCell>
+            <StyledTableCell>{individual.salary || 'N/A'}</StyledTableCell>
+            <StyledTableCell>{individual.city || 'N/A'}</StyledTableCell>
+            <StyledTableCell>{individual.jobTitle || 'N/A'}</StyledTableCell>
+          </StyledTableRow>
+        )}
+      </Draggable>
+    )
   );
 };
-
-
 
 interface ChatTableProps extends frontChatTypes.ChatTableProps {
   onSelectionChange?: (selectedIds: string[]) => void;
@@ -459,31 +420,16 @@ interface ChatTableProps extends frontChatTypes.ChatTableProps {
   onReorder?: (selectedIds: frontChatTypes.PersonNode[]) => void;
 }
 
-
 interface SortConfig {
   key: string | null;
   direction: 'asc' | 'desc' | null;
 }
 
-const ChatTable: React.FC<ChatTableProps> = ({
-  individuals,
-  selectedIndividual,
-  unreadMessages,
-  onIndividualSelect,
-  onSelectionChange,
-  onBulkMessage,
-  onBulkDelete,
-  onBulkAssign,
-  onReorder,
-
-
-}) => {
+const ChatTable: React.FC<ChatTableProps> = ({ individuals, selectedIndividual, unreadMessages, onIndividualSelect, onSelectionChange, onBulkMessage, onBulkDelete, onBulkAssign, onReorder }) => {
   const [sortConfig, setSortConfig] = useState<SortConfig>({
     key: null,
-    direction: null
+    direction: null,
   });
-
-  
 
   const [tableData, setTableData] = useState(individuals);
   useEffect(() => {
@@ -497,16 +443,13 @@ const ChatTable: React.FC<ChatTableProps> = ({
   const [isAttachmentPanelOpen, setIsAttachmentPanelOpen] = useState(false);
   const [currentPersonIndex, setCurrentPersonIndex] = useState(0);
 
-
-  console.log("These are the selected ids::", selectedIds)
-  console.log("These are the currentPersonIndex::", currentPersonIndex)
+  console.log('These are the selected ids::', selectedIds);
+  console.log('These are the currentPersonIndex::', currentPersonIndex);
   const [searchTerm, setSearchTerm] = useState('');
 
   const [isChatOpen, setIsChatOpen] = useState(false);
 
-
   const [tokenPair] = useRecoilState(tokenPairState);
-
 
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
@@ -514,39 +457,34 @@ const ChatTable: React.FC<ChatTableProps> = ({
     const handleResize = () => {
       setIsMobile(window.innerWidth <= 768);
     };
-  
+
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-
-  const currentCandidate = selectedIds.length > 0 ? 
-  individuals.find(individual => individual.id === selectedIds[currentPersonIndex]) : null;
+  const currentCandidate = selectedIds.length > 0 ? individuals.find(individual => individual.id === selectedIds[currentPersonIndex]) : null;
 
   const handleCheckboxChange = (individualId: string, event: React.ChangeEvent<HTMLInputElement>) => {
     event.stopPropagation();
-    const newSelectedIds = event.target.checked
-      ? [...selectedIds, individualId]
-      : selectedIds.filter(id => id !== individualId);
-    
+    const newSelectedIds = event.target.checked ? [...selectedIds, individualId] : selectedIds.filter(id => id !== individualId);
+
     setSelectedIds(newSelectedIds);
     onSelectionChange?.(newSelectedIds);
   };
 
-  const selectedPeople = individuals.filter(individual => 
-    selectedIds.includes(individual.id)
+  const selectedPeople = individuals.filter(individual => selectedIds.includes(individual.id));
+
+  console.log('selectedIds:', selectedIds);
+  console.log('selectedPeople:', selectedPeople);
+  console.log('individuals:', individuals);
+  console.log(
+    'selectedCandidateIds:',
+    selectedPeople.map(person => person.candidates.edges[0].node.id),
   );
-
-  console.log("selectedIds:",selectedIds)
-  console.log("selectedPeople:",selectedPeople)
-  console.log("individuals:",individuals)
-  console.log("selectedCandidateIds:",selectedPeople.map(person => person.candidates.edges[0].node.id))
-
+  const selectedCandidateIds = selectedPeople.map(person => person.candidates.edges[0].node.id);
   const handleSelectAll = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const newSelectedIds = event.target.checked
-      ? individuals.map(individual => individual.id)
-      : [];
-    
+    const newSelectedIds = event.target.checked ? individuals.map(individual => individual.id) : [];
+
     setSelectedIds(newSelectedIds);
     onSelectionChange?.(newSelectedIds);
   };
@@ -560,32 +498,31 @@ const ChatTable: React.FC<ChatTableProps> = ({
   }, [searchTerm, individuals, sortConfig]);
 
   const handleViewChats = () => {
-    console.log("View Chats");
+    console.log('View Chats');
     if (selectedIds.length > 0) {
       setIsChatOpen(true);
     }
   };
-
 
   const clearSelection = () => {
     setSelectedIds([]);
     onSelectionChange?.([]);
   };
   const handleViewCVs = () => {
-    console.log("View CVs");
+    console.log('View CVs');
     setCurrentPersonIndex(0);
     setIsAttachmentPanelOpen(true);
-  };  
+  };
 
+  async function createCandidateShortlists() {
+    try {
+      const url = process.env.ENV_NODE === 'production' ? 'https://app.arxena.com' : 'http://localhost:3000';
 
-
-    async function createCandidateShortlists() {
-      try {
-        const url = process.env.ENV_NODE === 'production' ? 'https://app.arxena.com' : 'http://localhost:3000';
-
-        const response = await axios.post(url+'/arx-chat/create-shortlist', {
-          candidateIds: selectedIds,
-        }, 
+      const response = await axios.post(
+        url + '/arx-chat/create-shortlist',
+        {
+          candidateIds: selectedCandidateIds,
+        },
         {
           headers: {
             authorization: `Bearer ${tokenPair?.accessToken?.token}`,
@@ -593,30 +530,32 @@ const ChatTable: React.FC<ChatTableProps> = ({
             'x-schema-version': '66',
           },
         },
-        );
-        console.log('Shortlist created successfully:', response.data);
-        enqueueSnackBar('Shortlist created successfully', {
-          variant: SnackBarVariant.Success,
-          icon: <IconCopy size={theme.icon.size.md} />,
-          duration: 2000,
-        });
-      } catch (error) {
-        console.log('Error creating shortlist:', error);
-        enqueueSnackBar('Error creating shortlist', {
-          variant: SnackBarVariant.Error,
-          icon: <IconCopy size={theme.icon.size.md} />,
-          duration: 2000,
-        });
-      }
+      );
+      console.log('Shortlist created successfully:', response.data);
+      enqueueSnackBar('Shortlist created successfully', {
+        variant: SnackBarVariant.Success,
+        icon: <IconCopy size={theme.icon.size.md} />,
+        duration: 2000,
+      });
+    } catch (error) {
+      console.log('Error creating shortlist:', error);
+      enqueueSnackBar('Error creating shortlist', {
+        variant: SnackBarVariant.Error,
+        icon: <IconCopy size={theme.icon.size.md} />,
+        duration: 2000,
+      });
     }
-    
-    async function createChatBasedShortlistDelivery() {
-      try {
-        const url = process.env.ENV_NODE === 'production' ? 'https://app.arxena.com' : 'http://localhost:3000';
+  }
 
-        const response = await axios.post(url+'/arx-chat/chat-based-shortlist-delivery', {
-          candidateIds: selectedIds,
-        }, 
+  async function createChatBasedShortlistDelivery() {
+    try {
+      const url = process.env.ENV_NODE === 'production' ? 'https://app.arxena.com' : 'http://localhost:3000';
+
+      const response = await axios.post(
+        url + '/arx-chat/chat-based-shortlist-delivery',
+        {
+          candidateIds: selectedCandidateIds,
+        },
         {
           headers: {
             authorization: `Bearer ${tokenPair?.accessToken?.token}`,
@@ -624,22 +563,22 @@ const ChatTable: React.FC<ChatTableProps> = ({
             'x-schema-version': '66',
           },
         },
-        );
-        console.log('Shortlist created successfully:', response.data);
-        enqueueSnackBar('Shortlist created successfully', {
-          variant: SnackBarVariant.Success,
-          icon: <IconCopy size={theme.icon.size.md} />,
-          duration: 2000,
-        });
-      } catch (error) {
-        console.log('Error creating shortlist:', error);
-        enqueueSnackBar('Error creating shortlist', {
-          variant: SnackBarVariant.Error,
-          icon: <IconCopy size={theme.icon.size.md} />,
-          duration: 2000,
-        });
-      }
+      );
+      console.log('Shortlist created successfully:', response.data);
+      enqueueSnackBar('Shortlist created successfully', {
+        variant: SnackBarVariant.Success,
+        icon: <IconCopy size={theme.icon.size.md} />,
+        duration: 2000,
+      });
+    } catch (error) {
+      console.log('Error creating shortlist:', error);
+      enqueueSnackBar('Error creating shortlist', {
+        variant: SnackBarVariant.Error,
+        icon: <IconCopy size={theme.icon.size.md} />,
+        duration: 2000,
+      });
     }
+  }
 
   // }
 
@@ -711,265 +650,212 @@ const ChatTable: React.FC<ChatTableProps> = ({
 
   const getUnreadCount = (individualId: string) => {
     // Get the candidate ID for this individual
-    const candidateId = individuals.find(ind => ind.id === individualId)
-      ?.candidates?.edges[0]?.node?.id;
-  
-    const unreadInfo = unreadMessages.listOfUnreadMessages.find(
-      (item) => item.candidateId === candidateId
-    );
-    
+    const candidateId = individuals.find(ind => ind.id === individualId)?.candidates?.edges[0]?.node?.id;
+
+    const unreadInfo = unreadMessages.listOfUnreadMessages.find(item => item.candidateId === candidateId);
+
     return unreadInfo ? unreadInfo.ManyUnreadMessages.length : 0;
   };
 
   const handleDragEnd = (result: any) => {
-    console.log("fradg gend result:",result)
+    console.log('fradg gend result:', result);
     if (!result.destination) return;
     const items = Array.from(tableData);
     const [reorderedItem] = items.splice(result.source.index, 1);
     items.splice(result.destination.index, 0, reorderedItem);
-    console.log("items:",items)
+    console.log('items:', items);
     setTableData(items);
     onReorder?.(items);
   };
 
+  const sortedIndividuals = sortConfig.key && sortConfig.direction ? sortData(individuals, sortConfig.key, sortConfig.direction) : individuals;
 
-  const sortedIndividuals = sortConfig.key && sortConfig.direction
-    ? sortData(individuals, sortConfig.key, sortConfig.direction)
-    : individuals;
+  console.log('isAttachmentPanelOpen:', isAttachmentPanelOpen);
+  console.log('isChatOpen:', isChatOpen);
+  console.log('value of selectedIds.length > 1 && (isAttachmentPanelOpen || isChatOpen:', selectedIds.length > 1 && (isAttachmentPanelOpen || isChatOpen));
 
-    console.log("isAttachmentPanelOpen:",isAttachmentPanelOpen)
-    console.log("isChatOpen:",isChatOpen)
-    console.log("value of selectedIds.length > 1 && (isAttachmentPanelOpen || isChatOpen:",selectedIds.length > 1 && (isAttachmentPanelOpen || isChatOpen))
-
-
-
-    return (
-      <>
-        <TableContainer>
-          {!isMobile ? (
-            <DragDropContext onDragEnd={handleDragEnd}>
-              <StyledTable>
-                <StyledTableHeader>
-                  <tr>
-                    <StyledTableHeaderCell as="th" isSorted={false}>
-                      <Checkbox 
-                        type="checkbox" 
-                        checked={selectedIds.length === individuals.length} 
-                        onChange={handleSelectAll} 
-                      />
-                    </StyledTableHeaderCell>
-                    {[
-                      { key: 'name', label: 'Name' },
-                      { key: 'candidateStatus', label: 'Candidate Status' },
-                      { key: 'startDate', label: 'Start Date' },
-                      { key: 'status', label: 'Status' },
-                      { key: 'salary', label: 'Salary' },
-                      { key: 'city', label: 'City' },
-                      { key: 'jobTitle', label: 'Job Title' },
-                    ].map(({ key, label }) => (
-                      <StyledTableHeaderCell 
-                        key={key} 
-                        onClick={() => handleSort(key)} 
-                        isSorted={sortConfig.key === key}
-                      >
-                        <HeaderContent>
-                          {label}
-                          <SortIconsContainer>
-                            <SortIcon isActive={sortConfig.key === key && sortConfig.direction === 'asc'}>
-                              <IconChevronUp size={14} />
-                            </SortIcon>
-                            <SortIcon isActive={sortConfig.key === key && sortConfig.direction === 'desc'}>
-                              <IconChevronDown size={14} />
-                            </SortIcon>
-                          </SortIconsContainer>
-                        </HeaderContent>
-                      </StyledTableHeaderCell>
-                    ))}
-                  </tr>
-                </StyledTableHeader>
-                <Droppable droppableId="chat-table-rows">
-                  {(provided) => (
-                    <StyledTableBody
-                      {...provided.droppableProps}
-                      ref={provided.innerRef}
-                    >
-                      {tableData.map((individual, index) => (
-                        <DraggableTableRow
-                          key={individual.id}
-                          individual={individual}
-                          index={index}
-                          selectedIndividual={selectedIndividual}
-                          selectedIds={selectedIds}
-                          handleCheckboxChange={handleCheckboxChange}
-                          onIndividualSelect={onIndividualSelect}
-                          getUnreadCount={getUnreadCount}
-                        />
-                      ))}
-                      {provided.placeholder}
-                    </StyledTableBody>
-                  )}
-                </Droppable>
-              </StyledTable>
-            </DragDropContext>
-          ) : (
+  return (
+    <>
+      <TableContainer>
+        {!isMobile ? (
+          <DragDropContext onDragEnd={handleDragEnd}>
             <StyledTable>
-              <StyledTableBody>
-                {tableData.map((individual) => (
-                  <StyledTableRow
-                    key={individual.id}
-                    $selected={selectedIndividual === individual?.id}
-                    onClick={() => onIndividualSelect(individual?.id)}
-                  >
-                    <CheckboxCell onClick={e => e.stopPropagation()}>
-                      <Checkbox
-                        type="checkbox"
-                        checked={selectedIds.includes(individual.id)}
-                        onChange={e => handleCheckboxChange(individual.id, e)}
+              <StyledTableHeader>
+                <tr>
+                  <StyledTableHeaderCell as="th" isSorted={false}>
+                    <Checkbox type="checkbox" checked={selectedIds.length === individuals.length} onChange={handleSelectAll} />
+                  </StyledTableHeaderCell>
+                  {[
+                    { key: 'name', label: 'Name' },
+                    { key: 'candidateStatus', label: 'Candidate Status' },
+                    { key: 'startDate', label: 'Start Date' },
+                    { key: 'status', label: 'Status' },
+                    { key: 'salary', label: 'Salary' },
+                    { key: 'city', label: 'City' },
+                    { key: 'jobTitle', label: 'Job Title' },
+                  ].map(({ key, label }) => (
+                    <StyledTableHeaderCell key={key} onClick={() => handleSort(key)} isSorted={sortConfig.key === key}>
+                      <HeaderContent>
+                        {label}
+                        <SortIconsContainer>
+                          <SortIcon isActive={sortConfig.key === key && sortConfig.direction === 'asc'}>
+                            <IconChevronUp size={14} />
+                          </SortIcon>
+                          <SortIcon isActive={sortConfig.key === key && sortConfig.direction === 'desc'}>
+                            <IconChevronDown size={14} />
+                          </SortIcon>
+                        </SortIconsContainer>
+                      </HeaderContent>
+                    </StyledTableHeaderCell>
+                  ))}
+                </tr>
+              </StyledTableHeader>
+              <Droppable droppableId="chat-table-rows">
+                {provided => (
+                  <StyledTableBody {...provided.droppableProps} ref={provided.innerRef}>
+                    {tableData.map((individual, index) => (
+                      <DraggableTableRow
+                        key={individual.id}
+                        individual={individual}
+                        index={index}
+                        selectedIndividual={selectedIndividual}
+                        selectedIds={selectedIds}
+                        handleCheckboxChange={handleCheckboxChange}
+                        onIndividualSelect={onIndividualSelect}
+                        getUnreadCount={getUnreadCount}
                       />
-                    </CheckboxCell>
-                    <StyledTableCell data-label="Name">
-                      <NameCell>
-                        {`${individual.name.firstName} ${individual.name.lastName}`}
-                        {getUnreadCount(individual.id) > 0 && (
-                          <UnreadIndicator>{getUnreadCount(individual.id)}</UnreadIndicator>
-                        )}
-                      </NameCell>
-                    </StyledTableCell>
-                    <StyledTableCell data-label="Status">
-                      {individual.candidates?.edges[0]?.node?.candConversationStatus || 'N/A'}
-                    </StyledTableCell>
-                    <StyledTableCell data-label="Last Message">
-                      {individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.createdAt
-                        ? dayjs(individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.createdAt).format('MMM D, HH:mm')
-                        : 'N/A'}
-                    </StyledTableCell>
-                    <StyledTableCell data-label="Candidate Status">
-                      {individual.candidates?.edges[0]?.node?.status || 'N/A'}
-                    </StyledTableCell>
-                    <StyledTableCell data-label="Salary">
-                      {individual.salary || 'N/A'}
-                    </StyledTableCell>
-                    <StyledTableCell data-label="City">
-                      {individual.city || 'N/A'}
-                    </StyledTableCell>
-                    <StyledTableCell data-label="Job Title">
-                      {individual.jobTitle || 'N/A'}
-                    </StyledTableCell>
-                  </StyledTableRow>
-                ))}
-              </StyledTableBody>
+                    ))}
+                    {provided.placeholder}
+                  </StyledTableBody>
+                )}
+              </Droppable>
             </StyledTable>
-          )}
-        </TableContainer>
-    
-        <ActionsBar data-visible={selectedIds.length > 0}>
-          <SelectedCount>
-            <IconUsers size={20} />
-            {selectedIds.length} {selectedIds.length === 1 ? 'person' : 'people'} selected
-            <CloseButton onClick={clearSelection}>
-              <IconX size={20} />
-            </CloseButton>
-          </SelectedCount>
-    
-          <ActionButtons>
-            <Button
-              Icon={IconMessages}
-              variant="primary"
-              accent="blue"
-              title="View Chats"
-              onClick={() => {
-                handleViewChats();
-                enqueueSnackBar('Opened Chats', {
-                  variant: SnackBarVariant.Success,
-                  icon: <IconCopy size={theme.icon.size.md} />,
-                  duration: 2000,
-                });
-              }}
-            />
-            <Button
-              Icon={IconMessages}
-              variant="primary"
-              accent="blue"
-              title="Create Chat Based Shortlist"
-              onClick={async () => {
-                await createChatBasedShortlistDelivery();
-                enqueueSnackBar('Create Chat Based Shortlist', {
-                  variant: SnackBarVariant.Success,
-                  icon: <IconCopy size={theme.icon.size.md} />,
-                  duration: 2000,
-                });
-              }}
-            />
-            <Button
-              Icon={IconMessages}
-              variant="primary"
-              accent="blue"
-              title="Create Candidate Shortlist"
-              onClick={async () => {
-                await createCandidateShortlists();
-                enqueueSnackBar('Create Candidate Shortlists', {
-                  variant: SnackBarVariant.Success,
-                  icon: <IconCopy size={theme.icon.size.md} />,
-                  duration: 2000,
-                });
-              }}
-            />
-            <Button
-              Icon={IconFileText}
-              variant="primary"
-              accent="blue"
-              title="View CVs"
-              onClick={() => {
-                handleViewCVs();
-                enqueueSnackBar('Opened CVs', {
-                  variant: SnackBarVariant.Success,
-                  icon: <IconCopy size={theme.icon.size.md} />,
-                  duration: 2000,
-                });
-              }}
-            />
-          </ActionButtons>
-        </ActionsBar>
-    
-        <MultiCandidateChat 
-          isOpen={isChatOpen} 
-          onClose={() => setIsChatOpen(false)} 
-          selectedPeople={selectedPeople} 
-        />
-    
-        {isAttachmentPanelOpen && currentCandidate && (
-          <>
-            <AttachmentPanel
-              isOpen={isAttachmentPanelOpen}
-              onClose={() => setIsAttachmentPanelOpen(false)}
-              candidateId={currentCandidate.candidates.edges[0].node.id}
-              candidateName={`${currentCandidate.name.firstName} ${currentCandidate.name.lastName}`}
-              PanelContainer={PanelContainer}
-            />
-    
-            {selectedIds.length > 1 && (isAttachmentPanelOpen || isChatOpen) && (
-              <CandidateNavigation>
-                <NavIconButton 
-                  onClick={handlePrevCandidate} 
-                  disabled={currentPersonIndex === 0} 
-                  title="Previous Candidate"
-                >
-                  <IconChevronLeft size={20} />
-                </NavIconButton>
-    
-                <NavIconButton 
-                  onClick={handleNextCandidate} 
-                  disabled={currentPersonIndex === selectedIds.length - 1} 
-                  title="Next Candidate"
-                >
-                  <IconChevronRight size={20} />
-                </NavIconButton>
-              </CandidateNavigation>
-            )}
-          </>
+          </DragDropContext>
+        ) : (
+          <StyledTable>
+            <StyledTableBody>
+              {tableData.map(individual => (
+                <StyledTableRow key={individual.id} $selected={selectedIndividual === individual?.id} onClick={() => onIndividualSelect(individual?.id)}>
+                  <CheckboxCell onClick={e => e.stopPropagation()}>
+                    <Checkbox type="checkbox" checked={selectedIds.includes(individual.id)} onChange={e => handleCheckboxChange(individual.id, e)} />
+                  </CheckboxCell>
+                  <StyledTableCell data-label="Name">
+                    <NameCell>
+                      {`${individual.name.firstName} ${individual.name.lastName}`}
+                      {getUnreadCount(individual.id) > 0 && <UnreadIndicator>{getUnreadCount(individual.id)}</UnreadIndicator>}
+                    </NameCell>
+                  </StyledTableCell>
+                  <StyledTableCell data-label="Status">{individual.candidates?.edges[0]?.node?.candConversationStatus || 'N/A'}</StyledTableCell>
+                  <StyledTableCell data-label="Last Message">
+                    {individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.createdAt ? dayjs(individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.createdAt).format('MMM D, HH:mm') : 'N/A'}
+                  </StyledTableCell>
+                  <StyledTableCell data-label="Candidate Status">{individual.candidates?.edges[0]?.node?.status || 'N/A'}</StyledTableCell>
+                  <StyledTableCell data-label="Salary">{individual.salary || 'N/A'}</StyledTableCell>
+                  <StyledTableCell data-label="City">{individual.city || 'N/A'}</StyledTableCell>
+                  <StyledTableCell data-label="Job Title">{individual.jobTitle || 'N/A'}</StyledTableCell>
+                </StyledTableRow>
+              ))}
+            </StyledTableBody>
+          </StyledTable>
         )}
-      </>
-    );
-  };
+      </TableContainer>
+
+      <ActionsBar data-visible={selectedIds.length > 0}>
+        <SelectedCount>
+          <IconUsers size={20} />
+          {selectedIds.length} {selectedIds.length === 1 ? 'person' : 'people'} selected
+          <CloseButton onClick={clearSelection}>
+            <IconX size={20} />
+          </CloseButton>
+        </SelectedCount>
+
+        <ActionButtons>
+          <Button
+            Icon={IconMessages}
+            variant="primary"
+            accent="blue"
+            title="View Chats"
+            onClick={() => {
+              handleViewChats();
+              enqueueSnackBar('Opened Chats', {
+                variant: SnackBarVariant.Success,
+                icon: <IconCopy size={theme.icon.size.md} />,
+                duration: 2000,
+              });
+            }}
+          />
+          <Button
+            Icon={IconMessages}
+            variant="primary"
+            accent="blue"
+            title="Create Chat Based Shortlist"
+            onClick={async () => {
+              await createChatBasedShortlistDelivery();
+              enqueueSnackBar('Create Chat Based Shortlist', {
+                variant: SnackBarVariant.Success,
+                icon: <IconCopy size={theme.icon.size.md} />,
+                duration: 2000,
+              });
+            }}
+          />
+          <Button
+            Icon={IconMessages}
+            variant="primary"
+            accent="blue"
+            title="Create Candidate Shortlist"
+            onClick={async () => {
+              await createCandidateShortlists();
+              enqueueSnackBar('Create Candidate Shortlists', {
+                variant: SnackBarVariant.Success,
+                icon: <IconCopy size={theme.icon.size.md} />,
+                duration: 2000,
+              });
+            }}
+          />
+          <Button
+            Icon={IconFileText}
+            variant="primary"
+            accent="blue"
+            title="View CVs"
+            onClick={() => {
+              handleViewCVs();
+              enqueueSnackBar('Opened CVs', {
+                variant: SnackBarVariant.Success,
+                icon: <IconCopy size={theme.icon.size.md} />,
+                duration: 2000,
+              });
+            }}
+          />
+        </ActionButtons>
+      </ActionsBar>
+
+      <MultiCandidateChat isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} selectedPeople={selectedPeople} />
+
+      {isAttachmentPanelOpen && currentCandidate && (
+        <>
+          <AttachmentPanel
+            isOpen={isAttachmentPanelOpen}
+            onClose={() => setIsAttachmentPanelOpen(false)}
+            candidateId={currentCandidate.candidates.edges[0].node.id}
+            candidateName={`${currentCandidate.name.firstName} ${currentCandidate.name.lastName}`}
+            PanelContainer={PanelContainer}
+          />
+
+          {selectedIds.length > 1 && (isAttachmentPanelOpen || isChatOpen) && (
+            <CandidateNavigation>
+              <NavIconButton onClick={handlePrevCandidate} disabled={currentPersonIndex === 0} title="Previous Candidate">
+                <IconChevronLeft size={20} />
+              </NavIconButton>
+
+              <NavIconButton onClick={handleNextCandidate} disabled={currentPersonIndex === selectedIds.length - 1} title="Next Candidate">
+                <IconChevronRight size={20} />
+              </NavIconButton>
+            </CandidateNavigation>
+          )}
+        </>
+      )}
+    </>
+  );
+};
 
 export default ChatTable;

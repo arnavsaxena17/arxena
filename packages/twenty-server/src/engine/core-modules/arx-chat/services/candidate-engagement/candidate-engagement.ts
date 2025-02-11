@@ -473,13 +473,13 @@ export default class CandidateEngagementArx {
       graphqlQueryObjToFetchAllCandidatesForChats = workspacesWithOlderSchema.includes(workspaceId) ? allGraphQLQueries.graphqlToFetchManyCandidatesOlderSchema : allGraphQLQueries.graphqlToFetchAllCandidateData;
       const timestamp = new Date().toISOString();
       for (const filter of filters) {
-        console.log(`Trying filter condition:`, filter);
+        // console.log(`Trying filter condition:`, filter);
         let lastCursor: string | null = null;
         const timestampedFilter = {
           ...filter,
           updatedAt: { lte: timestamp },
         };
-        console.log(`Using timestamped filter:`, timestampedFilter);
+        // console.log(`Using timestamped filter:`, timestampedFilter);
         while (true) {
           const graphqlQueryObj = JSON.stringify({
             query: graphqlQueryObjToFetchAllCandidatesForChats,
