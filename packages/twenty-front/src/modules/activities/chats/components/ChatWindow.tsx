@@ -365,7 +365,7 @@ const Select = styled.select`
 const ChatContainer = styled.div`
   display: flex;
   height: 100vh;
-  width: 100%;
+      width: 60%;
   position: relative;
   margin-left: 8px;
   margin-right: 8px;
@@ -483,7 +483,7 @@ const ChatView = styled.div`
   overflow-y: auto;
   padding: 1rem;
   margin-bottom: 35vh;
-  width:75%;
+  width:70%;
 
   @media (max-width: 768px) {
     padding: 0.5rem;
@@ -1203,12 +1203,7 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
                   {messageHistory.map((message, index) => {
                     const showDateSeparator = index === 0 || formatDate(messageHistory[index - 1]?.createdAt) !== formatDate(message?.createdAt);
                     return (
-                      <React.Fragment key={index}>
-                        {showDateSeparator && (
-                          <p style={{ textAlign: 'center' }}>
-                            <StyledDateComponent>{dayjs(message?.createdAt).format("ddd DD MMM, 'YY")}</StyledDateComponent>
-                          </p>
-                        )}
+                      <React.Fragment key={index}> {showDateSeparator && ( <p style={{ textAlign: 'center' }}> <StyledDateComponent>{dayjs(message?.createdAt).format("ddd DD MMM, 'YY")}</StyledDateComponent> </p> )}
                         <SingleChatContainer phoneNumber={currentIndividual?.phone} message={message} messageName={`${currentIndividual?.name.firstName} ${currentIndividual?.name.lastName}`} />
                       </React.Fragment>
                     );

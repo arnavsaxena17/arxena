@@ -8,7 +8,7 @@ export const FIND_MANY_JOBS_QUERY = gql`query FindManyJobs($filter: JobFilterInp
         __typename
         updatedAt
         isActive
-        
+        chatFlowOrder
         recruiterId
         createdAt
         prompt{

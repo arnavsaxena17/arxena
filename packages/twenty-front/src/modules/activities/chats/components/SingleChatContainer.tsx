@@ -88,11 +88,7 @@ export default function SingleChatContainer(props: {
     <div>
       <StyledContainer>
         <ChatMessageInfo
-          messageName={
-            props.message?.name === "candidateMessage"
-              ? props.messageName
-              : "You"
-          }
+          messageName={ props.message?.name === "candidateMessage" ? props.messageName : "You" }
           messageTime={props.message?.createdAt}
           messageReadStatus={props.message?.whatsappDeliveryStatus}
         />

@@ -47,6 +47,8 @@ export const useCheckDataIntegrityOfJob = ({
 
       if (data) {
 
+        
+
         const response = await fetch(process.env.REACT_APP_SERVER_BASE_URL+'/workspace-modifications/api-keys', { headers: { 'Accept': '*/*', 'Authorization': `Bearer ${tokenPair?.accessToken?.token}`, } });
         const apiKeys = await response.json();
         if (!apiKeys.openaikey || !apiKeys.facebook_whatsapp_phone_number_id || !apiKeys.facebook_whatsapp_api_token) {
@@ -78,6 +80,15 @@ export const useCheckDataIntegrityOfJob = ({
         if (data.jobs.edges[0].node.jobLocation === "") {
           console.log('Has no jobLocation')
           enqueueSnackBar('Has no jobLocation', {
+            variant: SnackBarVariant.Error,
+            duration: 3000,
+          });
+        }
+        console.log("this is thedata.jobs.edges[0].node.chatFlowOrder  ", data.jobs.edges[0].node)
+        // Are whatsapp message elements (one liner description,// jobLocation, jobCode etc. avialable)
+        if (data.jobs.edges[0].node.chatFlowOrder === null || !Array.isArray(data.jobs.edges[0].node.chatFlowOrder) || data.jobs.edges[0].node.chatFlowOrder.length === 0) {
+          console.log('Has no chatFlowOrder')
+          enqueueSnackBar('Has no chatFlowOrder', {
             variant: SnackBarVariant.Error,
             duration: 3000,
           });
