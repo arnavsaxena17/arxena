@@ -82,6 +82,13 @@ export class ChatFlowConfigBuilder {
       const currentStageCompleted = candidate[`${chatControlType}Completed`];
             // Check the waiting period since the last update
       if (candidate.updatedAt) {
+        // Check if current time is after 11 PM IST
+        const istTime = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+        if (istTime.getHours() >= 23 || istTime.getHours() < 7) {
+          console.log(`Current time ${istTime.toLocaleString()} is between 11 PM and 7 AM IST, not messaging`);
+          return false;
+        }
+
         const waitingPeriodInMinutes = TimeManagement.timeDifferentials.timeDifferentialInMinutesBeforeStartingNextStageMessaging;
         const waitTime = waitingPeriodInMinutes * 60 * 1000; // convert to milliseconds
         const cutoffTime = new Date(Date.now() - waitTime).toISOString();
