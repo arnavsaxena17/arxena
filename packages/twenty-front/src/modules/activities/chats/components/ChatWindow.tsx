@@ -1224,6 +1224,7 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
             </ChatContainer>
             <StyledChatInputBox sidebarWidth={sidebarWidth}>
               <Container>
+
                 {/* <PreviewSection>
                   <SectionHeader>
                     <HeaderIcon viewBox="0 0 24 24" fill="none" stroke="currentColor">

@@ -27,28 +27,9 @@ export const useCheckDataIntegrityOfJob = ({
 
   const checkDataIntegrityOfJob = useCallback(async (recordIds: string[]) => {
     try {
-      const { data } = await executeQuery({
-        variables: {
-          filter: {
-            id: {
-              in: recordIds
-            }
-          },
-          limit: 30,
-          orderBy: [
-            {
-              position: "AscNullsFirst"
-            }
-          ]
-        }
-      });
-
+      const { data } = await executeQuery({ variables: { filter: { id: { in: recordIds } }, limit: 30, orderBy: [ { position: "AscNullsFirst" } ] } });
       console.log("data from data integrity check of the damn job", data);
-
       if (data) {
-
-        
-
         const response = await fetch(process.env.REACT_APP_SERVER_BASE_URL+'/workspace-modifications/api-keys', { headers: { 'Accept': '*/*', 'Authorization': `Bearer ${tokenPair?.accessToken?.token}`, } });
         const apiKeys = await response.json();
         if (!apiKeys.openaikey || !apiKeys.facebook_whatsapp_phone_number_id || !apiKeys.facebook_whatsapp_api_token) {
@@ -264,8 +245,8 @@ export const useCheckDataIntegrityOfJob = ({
         }
         
         if (data.jobs.edges[0].node.videoInterviewTemplate.edges[0].node.introduction === '') {
-          console.log('Has no videoInterview introduction')
-          enqueueSnackBar('Has no videoInterview introduction', {
+          console.log('Has no text videoInterview introduction')
+          enqueueSnackBar('Has no text videoInterview introduction', {
             variant: SnackBarVariant.Error,
             duration: 3000,
           });

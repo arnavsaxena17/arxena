@@ -269,7 +269,7 @@ export const useUpdateOneRecord = <UpdatedObjectRecord extends ObjectRecord = Ob
     });
 
     const mutationResponseField = getUpdateOneRecordMutationResponseField(objectNameSingular);
-    console.log("Santitisex input", sanitizedInput);
+    console.log("Santised input", sanitizedInput);
     const updatedRecord = await apolloClient.mutate({
       mutation: updateOneRecordMutation,
       variables: {
