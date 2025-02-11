@@ -61,7 +61,7 @@ export class ChatFlowConfigBuilder {
 
   createIsEligibleForEngagement = (candidate: allDataObjects.CandidateNode, chatControlType: allDataObjects.chatControlType, order: number, chatFlowOrder) => {
     if (candidate.engagementStatus === false) {
-      console.log(`Candidate ${candidate.name} is not eligible for engagement.`);
+      console.log(`Candidate ${candidate.name} is not eligible for engagement because engagement status is false.`);
       return false;
     }
     const currentIndex = chatFlowOrder.indexOf(chatControlType);

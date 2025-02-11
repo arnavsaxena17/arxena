@@ -293,7 +293,7 @@ export class UpdateChat {
 
 
   async setCandidateEngagementStatusToFalse(candidateId: string, apiToken: string) {
-    console.log("Setting Candidate ENgagement Status sto false::", candidateId);
+    console.log("Setting candidate engagement status sto false::", candidateId);
     const updateCandidateObjectVariables = { idToUpdate: candidateId, input: { engagementStatus: false } };
     console.log('This is the value of updatecandidateobject variables::0', updateCandidateObjectVariables);
     const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToUpdateCandidateEngagementStatus, variables: updateCandidateObjectVariables });

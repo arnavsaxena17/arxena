@@ -454,7 +454,6 @@ export default class CandidateEngagementArx {
   }
 
   async fetchAllCandidatesWithSpecificChatControl(chatControlType: allDataObjects.chatControlType, chatFlowConfigObj: Record<string, allDataObjects.ChatFlowConfig>, apiToken: string): Promise<allDataObjects.Candidate[]> {
-    console.log('Fetching all candidates with chatControlType', chatControlType);
     let filters;
     const config = chatFlowConfigObj[chatControlType];
     if (!config || !config.chatFilters) {
@@ -462,7 +461,6 @@ export default class CandidateEngagementArx {
       return [];
     }
     filters = config.chatFilters;
-    console.log("These are the filters for the chatControlType::", chatControlType, "are::", filters);
     let allCandidates: allDataObjects.Candidate[] = [];
     let graphqlQueryObjToFetchAllCandidatesForChats = '';
     try {
