@@ -69,7 +69,7 @@ export class GoogleSheetsService {
         candConversationStatus: string;
       }>
     >();
-
+      console.log("This is the results:::", results);
     for (const result of results) {
       if (!result?.googleSheetId) continue;
 
@@ -87,6 +87,8 @@ export class GoogleSheetsService {
       sheetUpdates.get(result.googleSheetId)?.push(updateData);
     }
 
+
+    console.log("This is the sheet updates:::", sheetUpdates);
     // Update each Google Sheet with batched updates
     const auth = await this.loadSavedCredentialsIfExist(apiToken);
     if (auth) {
@@ -101,8 +103,9 @@ export class GoogleSheetsService {
           const chatMessagesIndex = headers.findIndex(h => h === 'chatMessages');
           const chatCountIndex = headers.findIndex(h => h === 'chatCount');
           const candConversationStatusIndex = headers.findIndex(h => h === 'candConversationStatus');
+          console.log("This is the headers:::", headers);
 
-          // Prepare batch updates
+          // Prepare batch updates  
           const batchUpdates: Array<{ range: string; values: string[][] }> = updates.flatMap(update => {
             const rowIndex = existingData?.values?.findIndex(row => row[candidateIdIndex] === update.candidateId);
             if (rowIndex === -1) return [];
@@ -1034,6 +1037,7 @@ export class GoogleSheetsService {
   }
 
   async batchUpdateGoogleSheet(auth: any, spreadsheetId: string, updates: Array<{ range: string; values: any[][] }>): Promise<void> {
+    console.log("Going to do batch update of google sheet with retry with backoff for sheet id:", spreadsheetId);
     return this.retryWithBackoff(async () => {
       const sheets = google.sheets({ version: 'v4', auth });
       await sheets.spreadsheets.values.batchUpdate({
