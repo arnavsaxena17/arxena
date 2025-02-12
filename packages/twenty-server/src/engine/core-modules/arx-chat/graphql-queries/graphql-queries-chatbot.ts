@@ -342,8 +342,7 @@ export const graphqlToFetchActiveJob = `query FindManyJobs($filter: JobFilterInp
 
 
 
-  export const graphqlQueryToFindMessageByWAMId = `
-query FindManyWhatsappMessages($filter: WhatsappMessageFilterInput, $orderBy: [WhatsappMessageOrderByInput], $lastCursor: String, $limit: Int) {
+  export const graphqlQueryToFindMessageByWAMId = `query FindManyWhatsappMessages($filter: WhatsappMessageFilterInput, $orderBy: [WhatsappMessageOrderByInput], $lastCursor: String, $limit: Int) {
   whatsappMessages(
     filter: $filter
     orderBy: $orderBy

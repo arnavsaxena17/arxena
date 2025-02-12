@@ -132,6 +132,7 @@ export class IncomingWhatsappMessages {
         return null;
       }
     );
+    
 
     return results.find(result => result !== null);
   }
