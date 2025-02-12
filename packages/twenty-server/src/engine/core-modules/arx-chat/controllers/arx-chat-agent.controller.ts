@@ -21,6 +21,7 @@ import { FilterCandidates } from '../services/candidate-engagement/filter-candid
 import { ChatControls } from '../services/candidate-engagement/chat-controls';
 import CandidateEngagementArx from '../services/candidate-engagement/candidate-engagement';
 import { consoleIntegration } from '@sentry/node';
+import { GoogleSheetsService } from '../../google-sheets/google-sheets.service';
 
 @Controller('arx-chat')
 export class ArxChatEndpoint {
@@ -276,7 +277,10 @@ export class ArxChatEndpoint {
       // const jobIds = response?.data?.data?.candidates?.edges.map((edge: { node?: { jobs?: { id: string } } }) => edge?.node?.jobs?.id)
       // console.log("Found job IDs:", jobIds);
       const jobIds = await new FilterCandidates(this.workspaceQueryService).getJobIdsFromCandidateIds(candidateIds, apiToken);
-      await new UpdateChat(this.workspaceQueryService).processCandidatesChatsGetStatuses(apiToken, jobIds, candidateIds);
+      const results = await new UpdateChat(this.workspaceQueryService).processCandidatesChatsGetStatuses(apiToken, jobIds, candidateIds);
+      console.log("Have received results and will try and update the sheets also from the controlelr")
+      await new GoogleSheetsService().updateGoogleSheetsWithChatData(results, apiToken);
+      
       return { status: 'Success' };
     } catch (err) {
       console.error('Error in countChats:', err);

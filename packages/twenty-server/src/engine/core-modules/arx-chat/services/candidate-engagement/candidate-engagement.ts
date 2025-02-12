@@ -219,6 +219,7 @@ export default class CandidateEngagementArx {
 
         // Then process chat statuses
         const results = await new UpdateChat(this.workspaceQueryService).processCandidatesChatsGetStatuses(apiToken, jobIds, candidateIds);
+        console.log("Results from processCandidatesChatsGetStatuses::", results);
         await new GoogleSheetsService().updateGoogleSheetsWithChatData(results, apiToken);
 
         // After updates are complete, check which candidates are eligible for stage transitions
