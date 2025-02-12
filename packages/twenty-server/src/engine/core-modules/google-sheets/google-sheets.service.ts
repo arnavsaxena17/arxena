@@ -70,9 +70,6 @@ export class GoogleSheetsService {
       }>
     >();
 
-    const fetchUpdateService = new UpdateChat(this.workspaceQueryService);
-
-    // Process results and group by sheet ID
     for (const result of results) {
       if (!result?.googleSheetId) continue;
 

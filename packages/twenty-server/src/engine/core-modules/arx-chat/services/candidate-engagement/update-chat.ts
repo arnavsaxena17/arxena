@@ -175,14 +175,15 @@ export class UpdateChat {
           
           // Get the chat status and formatted chat in parallel
           const [candidateStatus] = await Promise.all([
-            new StageWiseClassification(this.workspaceQueryService).getChatStageFromChatHistory (
+            new StageWiseClassification(this.workspaceQueryService).getChatStageFromChatHistory(
               whatsappMessages, 
               candidateId,
               jobId,
               apiToken
             ) as Promise<allDataObjects.allStatuses>
           ])
-          return { candidateId, candidateStatus, googleSheetId: candidate?.jobs?.googleSheetId, whatsappMessages, };
+
+          return { candidateId, candidateStatus, googleSheetId: candidate?.jobs?.googleSheetId, whatsappMessages};
         } catch (error) {
           console.log('Error in processing candidate:', error);
           return null;

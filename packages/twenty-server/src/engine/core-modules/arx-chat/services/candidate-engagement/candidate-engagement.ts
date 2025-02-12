@@ -16,6 +16,7 @@ const rl = readline.createInterface({
 });
 import { graphQltoUpdateOneCandidate } from 'src/engine/core-modules/candidate-sourcing/graphql-queries';
 import { TimeManagement } from '../time-management';
+import { GoogleSheetsService } from 'src/engine/core-modules/google-sheets/google-sheets.service';
 
 export default class CandidateEngagementArx {
   private chatFlowConfigBuilder: ChatFlowConfigBuilder;
@@ -217,7 +218,8 @@ export default class CandidateEngagementArx {
         await new UpdateChat(this.workspaceQueryService).updateCandidatesWithChatCount(candidateIds, apiToken);
 
         // Then process chat statuses
-        await new UpdateChat(this.workspaceQueryService).processCandidatesChatsGetStatuses(apiToken, jobIds, candidateIds);
+        const results = await new UpdateChat(this.workspaceQueryService).processCandidatesChatsGetStatuses(apiToken, jobIds, candidateIds);
+        await new GoogleSheetsService().updateGoogleSheetsWithChatData(results, apiToken);
 
         // After updates are complete, check which candidates are eligible for stage transitions
         for (const message of jobMessages) {
