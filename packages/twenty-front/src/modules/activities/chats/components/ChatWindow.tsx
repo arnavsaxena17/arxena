@@ -191,8 +191,6 @@ const StyledTopBar = styled.div<{ sidebarWidth: number }>`
   }
 `;
 
-
-
 const EditableField = styled.span<{ isEditing: boolean }>`
   cursor: ${props => (props.isEditing ? 'text' : 'pointer')};
   white-space: nowrap;
@@ -281,7 +279,6 @@ const InputWrapper = styled.div`
   }
 `;
 
-
 const PreviewSection = styled.div`
   display: flex;
   gap: 1rem;
@@ -365,7 +362,7 @@ const Select = styled.select`
 const ChatContainer = styled.div`
   display: flex;
   height: 100vh;
-      width: 60%;
+  width: 60%;
   position: relative;
   margin-left: 8px;
   margin-right: 8px;
@@ -378,7 +375,6 @@ const ChatContainer = styled.div`
     padding-bottom: 60px; // Space for input area
   }
 `;
-
 
 const StyledButton = styled.button<{ bgColor: string }>`
   display: flex;
@@ -476,23 +472,18 @@ const StyledChatInputBox = styled.div<{ sidebarWidth: number }>`
   }
 `;
 
-
-
 const ChatView = styled.div`
   flex: 1;
   overflow-y: auto;
   padding: 1rem;
   margin-bottom: 35vh;
-  width:70%;
+  width: 70%;
 
   @media (max-width: 768px) {
     padding: 0.5rem;
     margin-bottom: 70px; // Increased space for mobile input area
   }
 `;
-
-
-
 
 const StyledDateComponent = styled.span`
   padding: 0.5em;
@@ -1039,6 +1030,27 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
   const candidateEngagementStatus = currentIndividual?.candidates?.edges[0]?.node?.engagementStatus;
   const candidateStopChatStatus = currentIndividual?.candidates?.edges[0]?.node?.stopChat;
 
+  const onlyAddedNoConversation = allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.candConversationStatus === 'ONLY_ADDED_NO_CONVERSATION').length;
+  const onlyAddedNoConversationPercent = ((onlyAddedNoConversation / allIndividualsForCurrentJob.length) * 100).toFixed(1);
+  const conversationStartedNoResponse = allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.candConversationStatus === 'CONVERSATION_STARTED_HAS_NOT_RESPONDED').length;
+  const conversationStartedNoResponsePercent = ((conversationStartedNoResponse / allIndividualsForCurrentJob.length) * 100).toFixed(1);
+  const sharedJdNoResponse = allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.candConversationStatus === 'SHARED_JD_HAS_NOT_RESPONDED').length;
+  const sharedJdNoResponsePercent = ((sharedJdNoResponse / allIndividualsForCurrentJob.length) * 100).toFixed(1);
+  const refusesToRelocate = allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.candConversationStatus === 'CANDIDATE_REFUSES_TO_RELOCATE').length;
+  const refusesToRelocatePercent = ((refusesToRelocate / allIndividualsForCurrentJob.length) * 100).toFixed(1);
+  const stoppedRespondingQuestions = allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.candConversationStatus === 'STOPPED_RESPONDING_ON_QUESTIONS').length;
+  const stoppedRespondingQuestionsPercent = ((stoppedRespondingQuestions / allIndividualsForCurrentJob.length) * 100).toFixed(1);
+  const salaryOutOfRange = allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.candConversationStatus === 'CANDIDATE_SALARY_OUT_OF_RANGE').length;
+  const salaryOutOfRangePercent = ((salaryOutOfRange / allIndividualsForCurrentJob.length) * 100).toFixed(1);
+  const keenToChat = allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.candConversationStatus === 'CANDIDATE_IS_KEEN_TO_CHAT').length;
+  const keenToChatPercent = ((keenToChat / allIndividualsForCurrentJob.length) * 100).toFixed(1);
+  const followedUpForChat = allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.candConversationStatus === 'CANDIDATE_HAS_FOLLOWED_UP_TO_SETUP_CHAT').length;
+  const followedUpForChatPercent = ((followedUpForChat / allIndividualsForCurrentJob.length) * 100).toFixed(1);
+  const reluctantCompensation = allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.candConversationStatus === 'CANDIDATE_IS_RELUCTANT_TO_DISCUSS_COMPENSATION').length;
+  const reluctantCompensationPercent = ((reluctantCompensation / allIndividualsForCurrentJob.length) * 100).toFixed(1);
+  const closedToBeContacted = allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.candConversationStatus === 'CONVERSATION_CLOSED_TO_BE_CONTACTED').length;
+  const closedToBeContactedPercent = ((closedToBeContacted / allIndividualsForCurrentJob.length) * 100).toFixed(1);
+
   const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
 
   const [selectedTemplate, setSelectedTemplate] = useState('');
@@ -1057,9 +1069,7 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
       console.log('This is reponse:', response);
       addToast('Template sent successfully', 'success');
       setSelectedTemplate(''); // Reset selection after successful send
-
       onMessageSent();
-
       const newMessage: frontChatTypes.MessageNode = {
         recruiterId: currentWorkspaceMember?.id || '',
         message: templateName,
@@ -1203,7 +1213,14 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
                   {messageHistory.map((message, index) => {
                     const showDateSeparator = index === 0 || formatDate(messageHistory[index - 1]?.createdAt) !== formatDate(message?.createdAt);
                     return (
-                      <React.Fragment key={index}> {showDateSeparator && ( <p style={{ textAlign: 'center' }}> <StyledDateComponent>{dayjs(message?.createdAt).format("ddd DD MMM, 'YY")}</StyledDateComponent> </p> )}
+                      <React.Fragment key={index}>
+                        {' '}
+                        {showDateSeparator && (
+                          <p style={{ textAlign: 'center' }}>
+                            {' '}
+                            <StyledDateComponent>{dayjs(message?.createdAt).format("ddd DD MMM, 'YY")}</StyledDateComponent>{' '}
+                          </p>
+                        )}
                         <SingleChatContainer phoneNumber={currentIndividual?.phone} message={message} messageName={`${currentIndividual?.name.firstName} ${currentIndividual?.name.lastName}`} />
                       </React.Fragment>
                     );
@@ -1224,7 +1241,6 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
             </ChatContainer>
             <StyledChatInputBox sidebarWidth={sidebarWidth}>
               <Container>
-
                 {/* <PreviewSection>
                   <SectionHeader>
                     <HeaderIcon viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -1306,8 +1322,16 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
                   <StyledButtonBottom onClick={handleShareJD}>Share JD</StyledButtonBottom>
                 </div>
                 <div style={{ fontSize: '0.875rem', color: '#666' }}>
-                Last Status: {lastStatus} | Total: {totalCandidates} | Screening: {screeningState} ({screeningPercent}%) | Unresponsive: {unresponsive} ({unresponsivePercent}%) | Not Interested: {notInterested} ({notInterestedPercent}%) | Not Fit:{' '}
-                {notFit} ({notFitPercent}%) | Recruiter Interviews: {recruiterInterviews} ({recruiterInterviewsPercent}%)
+                  {' '}
+                  Last Status: {lastStatus} | Total: {totalCandidates} | Screening: {screeningState} ({screeningPercent}%) | Unresponsive: {unresponsive} ({unresponsivePercent}%) | Not Interested: {notInterested} ({notInterestedPercent}%) | Not Fit:{' '}
+                  {notFit} ({notFitPercent}%) | Recruiter Interviews: {recruiterInterviews} ({recruiterInterviewsPercent}%){' '}
+                </div>
+                <div style={{ fontSize: '0.875rem', color: '#666', whiteSpace: 'nowrap', overflow: 'auto' }}>
+                  {' '}
+                  Total: {totalCandidates} | No Conversation: {onlyAddedNoConversation} ({onlyAddedNoConversationPercent}%) | Started, No Response: {conversationStartedNoResponse} ({conversationStartedNoResponsePercent}%) | Shared JD, No Response:{' '}
+                  {sharedJdNoResponse} ({sharedJdNoResponsePercent}%) | Refuses Relocation: {refusesToRelocate} ({refusesToRelocatePercent}%) | Stopped Responding: {stoppedRespondingQuestions} ({stoppedRespondingQuestionsPercent}%) | Salary Out of
+                  Range: {salaryOutOfRange} ({salaryOutOfRangePercent}%) | Keen to Chat: {keenToChat} ({keenToChatPercent}%) | Followed Up: {followedUpForChat} ({followedUpForChatPercent}%) | Reluctant on Compensation: {reluctantCompensation} (
+                  {reluctantCompensationPercent}%) | Closed to Contact: {closedToBeContacted} ({closedToBeContactedPercent}%){' '}
                 </div>
               </InputWrapper>
             </StyledChatInputBox>

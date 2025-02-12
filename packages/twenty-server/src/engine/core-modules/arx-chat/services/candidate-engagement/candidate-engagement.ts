@@ -180,18 +180,7 @@ export default class CandidateEngagementArx {
     return messagesByJob;
   }
   
-  private async getJobIdsFromCandidateIds(candidateIds: string[], apiToken: string) {
-    console.log("Fetching job IDs for candidate IDs:", candidateIds);
-    const graphqlQuery = JSON.stringify({
-      query: allGraphQLQueries.graphqlQueryToManyCandidateById,
-      variables: { filter: { id: { in: candidateIds } } }
-    });
 
-    const response = await axiosRequest(graphqlQuery, apiToken);
-    console.log("Number of candidates fetched:", response?.data?.data?.candidates?.edges.length);
-    const jobIds = response?.data?.data?.candidates?.edges.map((edge: { node?: { jobs?: { id: string } } }) => edge?.node?.jobs?.id)    
-    return jobIds;
-  }
   async makeUpdatesonChats(apiToken: string): Promise<{ candidateIds: string[]; jobIds: string[] }> {
     console.log('Going to make updates on chats');
     try {
@@ -219,7 +208,7 @@ export default class CandidateEngagementArx {
 
         // First update chat counts and statuses for all candidates in this job
         const candidateIds = [...new Set(jobMessages.map(message => message.node.candidate.id))];
-        const jobIds = await this.getJobIdsFromCandidateIds(candidateIds, apiToken);
+        const jobIds = await new FilterCandidates(this.workspaceQueryService).getJobIdsFromCandidateIds(candidateIds, apiToken);
         console.log('Number of Candidate IDs for which we are going to do updates::', candidateIds.length);
         // console.log(" Candidate IDs here::", candidateIds);
         // console.log(" Candidate IDs here::", jobMessages);

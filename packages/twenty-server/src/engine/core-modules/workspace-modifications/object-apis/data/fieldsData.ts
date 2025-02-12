@@ -134,6 +134,12 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
                     "value": "CANDIDATE_IS_RELUCTANT_TO_DISCUSS_COMPENSATION"
                 },
                 {
+                    "color": "red",
+                    "label": "Candidate Declined Opportunity",
+                    "position": 2,
+                    "value": "CANDIDATE_DECLINED_OPPORTUNITY"
+                },
+                {
                     "color": "blue",
                     "label": "Conversation Closed To Be Contacted",
                     "position": 3,

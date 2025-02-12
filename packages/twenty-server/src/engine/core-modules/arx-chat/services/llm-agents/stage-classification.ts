@@ -4,11 +4,9 @@ import { ToolCallingAgents } from './tool-calling-agents';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 import * as allGraphQLQueries from '../../graphql-queries/graphql-queries-chatbot';
-import CandidateEngagementArx from '../candidate-engagement/candidate-engagement';
 import { zodResponseFormat } from 'openai/helpers/zod';
 import { axiosRequest } from '../../utils/arx-chat-agent-utils';
 import { PromptingAgents } from './prompting-agents';
-import { JobCandidateUtils } from 'src/engine/core-modules/candidate-sourcing/utils/job-candidate-utils';
 import { FilterCandidates } from '../candidate-engagement/filter-candidates';
 
 const modelName = 'gpt-4o';
