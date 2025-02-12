@@ -1,9 +1,9 @@
-import { WorkspaceQueryService } from "src/engine/core-modules/workspace-modifications/workspace-modifications.service";
+import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import * as allDataObjects from '../../services/data-model-objects';
 import * as allGraphQLQueries from '../../graphql-queries/graphql-queries-chatbot';
-import { axiosRequest } from "../../utils/arx-chat-agent-utils";
-import { workspacesWithOlderSchema } from "src/engine/core-modules/candidate-sourcing/graphql-queries";
-import axios from "axios";
+import { axiosRequest } from '../../utils/arx-chat-agent-utils';
+import { workspacesWithOlderSchema } from 'src/engine/core-modules/candidate-sourcing/graphql-queries';
+import axios from 'axios';
 
 export class FilterCandidates {
   constructor(private readonly workspaceQueryService: WorkspaceQueryService) {}
@@ -14,61 +14,69 @@ export class FilterCandidates {
     candidateNode: allDataObjects.CandidateNode,
     chatHistory: allDataObjects.ChatHistoryItem[],
     chatControl: allDataObjects.chatControls,
-    
   ): Promise<allDataObjects.whatappUpdateMessageObjType> {
-      const updatedChatHistoryObj: allDataObjects.whatappUpdateMessageObjType = {
-        messageObj: chatHistory,
-        candidateProfile: candidateNode,
-        candidateFirstName: personNode.name?.firstName,
-        phoneNumberFrom: allDataObjects.recruiterProfile?.phone,
-        phoneNumberTo: personNode.phone,
-        lastEngagementChatControl: chatControl.chatControlType,
-        messages: chatHistory.slice(-1),
-        messageType: 'botMessage',
-        whatsappDeliveryStatus: 'created',
-        whatsappMessageId: wamId,
-        whatsappMessageType: ''
-      };
-      return updatedChatHistoryObj;
+    const updatedChatHistoryObj: allDataObjects.whatappUpdateMessageObjType = {
+      messageObj: chatHistory,
+      candidateProfile: candidateNode,
+      candidateFirstName: personNode.name?.firstName,
+      phoneNumberFrom: allDataObjects.recruiterProfile?.phone,
+      phoneNumberTo: personNode.phone,
+      lastEngagementChatControl: chatControl.chatControlType,
+      messages: chatHistory.slice(-1),
+      messageType: 'botMessage',
+      whatsappDeliveryStatus: 'created',
+      whatsappMessageId: wamId,
+      whatsappMessageType: '',
+    };
+    return updatedChatHistoryObj;
   }
-  async updateMostRecentMessagesBasedOnNewSystemPrompt(
-    mostRecentMessageArr: allDataObjects.ChatHistoryItem[],
-    newSystemPrompt: string
-  ): Promise<allDataObjects.ChatHistoryItem[]> {
+  async updateMostRecentMessagesBasedOnNewSystemPrompt(mostRecentMessageArr: allDataObjects.ChatHistoryItem[], newSystemPrompt: string): Promise<allDataObjects.ChatHistoryItem[]> {
     mostRecentMessageArr[0] = { role: 'system', content: newSystemPrompt };
     return mostRecentMessageArr;
   }
 
-    async fetchJobById(jobId: string, apiToken: string): Promise<allDataObjects.Jobs | null> {
-      const graphqlQueryObj = JSON.stringify({
-        query: allGraphQLQueries.graphqlToFetchActiveJob,
-        variables:  { "filter": { "id": {"eq":jobId} } },
-      });
-  
-      const response = await axiosRequest(graphqlQueryObj, apiToken);
-      return response?.data?.data?.jobs.edges[0].node || null;
-    }
+  async fetchJobById(jobId: string, apiToken: string): Promise<allDataObjects.Jobs | null> {
+    const graphqlQueryObj = JSON.stringify({
+      query: allGraphQLQueries.graphqlToFetchActiveJob,
+      variables: { filter: { id: { eq: jobId } } },
+    });
 
-    getMostRecentMessageFromMessagesList(messagesList: allDataObjects.MessageNode[]) {
-      let mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = [];
-      if (messagesList) {
-        messagesList.sort((a, b) => new Date(b?.createdAt).getTime() - new Date(a?.createdAt).getTime());
-        mostRecentMessageArr = messagesList[0]?.messageObj;
-      }
-      return mostRecentMessageArr.filter(message => 'content' in message);
+    const response = await axiosRequest(graphqlQueryObj, apiToken);
+    return response?.data?.data?.jobs.edges[0].node || null;
+  }
+
+  getMostRecentMessageFromMessagesList(messagesList: allDataObjects.MessageNode[]) {
+    let mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = [];
+    if (messagesList) {
+      messagesList.sort((a, b) => new Date(b?.createdAt).getTime() - new Date(a?.createdAt).getTime());
+      mostRecentMessageArr = messagesList[0]?.messageObj;
     }
+    return mostRecentMessageArr.filter(message => 'content' in message);
+  }
 
   async getJobIdsFromCandidateIds(candidateIds: string[], apiToken: string): Promise<string[]> {
     console.log('Getting job ids from candidate ids:', candidateIds);
     return Promise.all(candidateIds.map(candidateId => this.fetchCandidateByCandidateId(candidateId, apiToken).then(candidate => candidate?.jobs?.id)));
   }
 
-  async fetchScheduledClientMeetings(job_id:string, apiToken: string){
+  // private async getJobIdsFromCandidateIds(candidateIds: string[], apiToken: string) {
+  //   console.log("Fetching job IDs for candidate IDs:", candidateIds);
+  //   const graphqlQuery = JSON.stringify({
+  //     query: allGraphQLQueries.graphqlQueryToManyCandidateById,
+  //     variables: { filter: { id: { in: candidateIds } } }
+  //   });
+
+  //   const response = await axiosRequest(graphqlQuery, apiToken);
+  //   console.log("Number of candidates fetched:", response?.data?.data?.candidates?.edges.length);
+  //   const jobIds = response?.data?.data?.candidates?.edges.map((edge: { node?: { jobs?: { id: string } } }) => edge?.node?.jobs?.id)
+  //   return jobIds;
+  // }
+
+  async fetchScheduledClientMeetings(job_id: string, apiToken: string) {
     const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindScheduledClientMeetings, variables: { filter: { jobId: { in: [job_id] } } } });
     const response = await axiosRequest(graphqlQueryObj, apiToken);
     console.log('This is the response from fetchScheduledClientMeetings:', response.data.data);
     return response.data.data;
-
   }
 
   async fetchCandidateByCandidateId(candidateId: string, apiToken: string): Promise<allDataObjects.CandidateNode> {
@@ -91,8 +99,7 @@ export class FilterCandidates {
     let graphqlQueryObjToFetchAllPeopleForChats = '';
     if (workspacesWithOlderSchema.includes(workspaceId)) {
       graphqlQueryObjToFetchAllPeopleForChats = allGraphQLQueries.graphqlQueryToFindManyPeopleEngagedCandidatesOlderSchema;
-    }
-    else{
+    } else {
       graphqlQueryObjToFetchAllPeopleForChats = allGraphQLQueries.graphqlQueryToFindManyPeopleEngagedCandidates;
     }
 
@@ -108,7 +115,6 @@ export class FilterCandidates {
     return allPeople;
   }
 
-  
   async fetchAllWhatsappMessages(candidateId: string, apiToken: string): Promise<allDataObjects.MessageNode[]> {
     let allWhatsappMessages: allDataObjects.MessageNode[] = [];
     let lastCursor = null;
@@ -136,7 +142,7 @@ export class FilterCandidates {
         break;
       }
     }
-    console.log('Number of whatsapp messages fetched for candidate Id::', candidateId," is ::",  allWhatsappMessages?.length);
+    console.log('Number of whatsapp messages fetched for candidate Id::', candidateId, ' is ::', allWhatsappMessages?.length);
     return allWhatsappMessages;
   }
 
@@ -155,22 +161,20 @@ export class FilterCandidates {
     }
   }
 
-
-    async getCandidateDetailsByPhoneNumber(phoneNumber: string, apiToken: string): Promise<allDataObjects.CandidateNode> {
-      const graphVariables = { filter: { phone: { ilike: '%' + phoneNumber + '%' } }, orderBy: { position: 'AscNullsFirst' } };
-      try {
-        const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindManyPeople, variables: graphVariables });
-        const response = await axiosRequest(graphqlQueryObj, apiToken);
-        console.log('This is the response from getCandidate Information FROM PHONENUMBER in getPersonDetailsByPhoneNumber', response.data.data);
-        const candidateDataObjs = response.data?.data?.people?.edges[0]?.node?.candidates?.edges;
-        return candidateDataObjs;
-      } catch (error) {
-        console.log('Getting an error and returning empty candidate profile objeect:', error);
-        return allDataObjects.emptyCandidateProfileObj;
-      }
+  async getCandidateDetailsByPhoneNumber(phoneNumber: string, apiToken: string): Promise<allDataObjects.CandidateNode> {
+    const graphVariables = { filter: { phone: { ilike: '%' + phoneNumber + '%' } }, orderBy: { position: 'AscNullsFirst' } };
+    try {
+      const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindManyPeople, variables: graphVariables });
+      const response = await axiosRequest(graphqlQueryObj, apiToken);
+      console.log('This is the response from getCandidate Information FROM PHONENUMBER in getPersonDetailsByPhoneNumber', response.data.data);
+      const candidateDataObjs = response.data?.data?.people?.edges[0]?.node?.candidates?.edges;
+      return candidateDataObjs;
+    } catch (error) {
+      console.log('Getting an error and returning empty candidate profile objeect:', error);
+      return allDataObjects.emptyCandidateProfileObj;
     }
-  
-  
+  }
+
   async getPersonDetailsByPhoneNumber(phoneNumber: string, apiToken: string) {
     console.log('Trying to get person details by phone number:', phoneNumber);
 
@@ -196,7 +200,7 @@ export class FilterCandidates {
     }
   }
 
-async getCandidateInformation(userMessage: allDataObjects.chatMessageType, apiToken: string) {
+  async getCandidateInformation(userMessage: allDataObjects.chatMessageType, apiToken: string) {
     console.log('This is the phoneNumberFrom', userMessage.phoneNumberFrom);
     let phoneNumberToSearch: string;
     if (userMessage.messageType === 'messageFromSelf') {
@@ -263,7 +267,7 @@ async getCandidateInformation(userMessage: allDataObjects.chatMessageType, apiTo
           candidateReminders: {
             edges: activeJobCandidate?.candidateReminders?.edges,
           },
-          updatedAt: activeJobCandidate.updatedAt
+          updatedAt: activeJobCandidate.updatedAt,
         };
         return candidateProfileObj;
       } else {
@@ -331,8 +335,6 @@ async getCandidateInformation(userMessage: allDataObjects.chatMessageType, apiTo
     }
   }
 
-
-
   async getPersonDetailsByPersonId(personID: string, apiToken: string): Promise<allDataObjects.PersonNode> {
     const graphVariables = { filter: { id: { eq: personID } }, orderBy: { position: 'AscNullsFirst' } };
     const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindManyPeople, variables: graphVariables });
@@ -342,5 +344,4 @@ async getCandidateInformation(userMessage: allDataObjects.chatMessageType, apiTo
     console.log('personDataobjs:', personDataObjs);
     return personDataObjs;
   }
-
 }

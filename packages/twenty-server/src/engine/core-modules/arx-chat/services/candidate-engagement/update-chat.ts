@@ -162,7 +162,14 @@ export class UpdateChat {
         await semaphore.acquire();
         try {
           const candidateId = candidate?.id;
+          console.log("This is the candidate ID::", candidateId);
+          console.log("This is the candidate ::", candidate);
           const jobId = candidateIds ? jobIds[candidateIds.indexOf(candidateId)] : '';
+          console.log("This is the job ID::", jobId);
+
+          if (jobId == ""){
+            console.log("Job ID is not present for the candidate::", candidateId);
+          }
           const whatsappMessages = await new FilterCandidates(this.workspaceQueryService).fetchAllWhatsappMessages(candidateId, apiToken);
           console.log("These are the whtsapp messages::", whatsappMessages);
           
@@ -171,7 +178,7 @@ export class UpdateChat {
             new StageWiseClassification(this.workspaceQueryService).getChatStageFromChatHistory (
               whatsappMessages, 
               candidateId,
-              jobId || '',
+              jobId,
               apiToken
             ) as Promise<allDataObjects.allStatuses>
           ])

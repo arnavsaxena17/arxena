@@ -266,15 +266,16 @@ export class ArxChatEndpoint {
       const { candidateIds } = request.body;
       console.log('going to refresh chats');
       console.log('Fetching job IDs for candidates:', candidateIds);
-      const graphqlQuery = JSON.stringify({
-        query: allGraphQLQueries.graphqlQueryToManyCandidateById,
-        variables: { filter: { id: { in: candidateIds } } }
-      });
+      // const graphqlQuery = JSON.stringify({
+      //   query: allGraphQLQueries.graphqlQueryToManyCandidateById,
+      //   variables: { filter: { id: { in: candidateIds } } }
+      // });
 
-      const response = await axiosRequest(graphqlQuery, apiToken);
-      console.log("Number of candidates fetched:", response?.data?.data?.candidates?.edges.length);
-      const jobIds = response?.data?.data?.candidates?.edges.map((edge: { node?: { jobs?: { id: string } } }) => edge?.node?.jobs?.id)
-      console.log("Found job IDs:", jobIds);
+      // const response = await axiosRequest(graphqlQuery, apiToken);
+      // console.log("Number of candidates fetched:", response?.data?.data?.candidates?.edges.length);
+      // const jobIds = response?.data?.data?.candidates?.edges.map((edge: { node?: { jobs?: { id: string } } }) => edge?.node?.jobs?.id)
+      // console.log("Found job IDs:", jobIds);
+      const jobIds = await new FilterCandidates(this.workspaceQueryService).getJobIdsFromCandidateIds(candidateIds, apiToken);
       await new UpdateChat(this.workspaceQueryService).processCandidatesChatsGetStatuses(apiToken, jobIds, candidateIds);
       return { status: 'Success' };
     } catch (err) {
