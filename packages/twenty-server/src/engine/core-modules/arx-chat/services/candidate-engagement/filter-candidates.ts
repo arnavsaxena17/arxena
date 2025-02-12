@@ -55,7 +55,7 @@ export class FilterCandidates {
         messagesList.sort((a, b) => new Date(b?.createdAt).getTime() - new Date(a?.createdAt).getTime());
         mostRecentMessageArr = messagesList[0]?.messageObj;
       }
-      return mostRecentMessageArr;
+      return mostRecentMessageArr.filter(message => 'content' in message);
     }
 
   async getJobIdsFromCandidateIds(candidateIds: string[], apiToken: string): Promise<string[]> {
