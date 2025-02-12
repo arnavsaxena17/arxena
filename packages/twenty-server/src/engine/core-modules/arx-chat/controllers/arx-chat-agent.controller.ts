@@ -20,6 +20,7 @@ import { CreateMetaDataStructure } from 'src/engine/core-modules/workspace-modif
 import { FilterCandidates } from '../services/candidate-engagement/filter-candidates';
 import { ChatControls } from '../services/candidate-engagement/chat-controls';
 import CandidateEngagementArx from '../services/candidate-engagement/candidate-engagement';
+import { consoleIntegration } from '@sentry/node';
 
 @Controller('arx-chat')
 export class ArxChatEndpoint {
@@ -263,7 +264,7 @@ export class ArxChatEndpoint {
     try {
       const apiToken = request.headers.authorization.split(' ')[1];
       const { candidateIds } = request.body;
-      console.log('going to count chats');
+      console.log('going to refresh chats');
       console.log('Fetching job IDs for candidates:', candidateIds);
       const graphqlQuery = JSON.stringify({
         query: allGraphQLQueries.graphqlQueryToManyCandidateById,
@@ -271,12 +272,9 @@ export class ArxChatEndpoint {
       });
 
       const response = await axiosRequest(graphqlQuery, apiToken);
-
-      const jobIds = response?.data?.data?.candidates?.edges
-        ?.map((edge: { node?: { jobs?: { id: string }[] } }) => edge?.node?.jobs?.[0]?.id)
-        .filter((id: string | undefined): id is string => !!id);
-
-      console.log('Found job IDs:', jobIds);
+      console.log("Number of candidates fetched:", response?.data?.data?.candidates?.edges.length);
+      const jobIds = response?.data?.data?.candidates?.edges.map((edge: { node?: { jobs?: { id: string } } }) => edge?.node?.jobs?.id)
+      console.log("Found job IDs:", jobIds);
       await new UpdateChat(this.workspaceQueryService).processCandidatesChatsGetStatuses(apiToken, jobIds, candidateIds);
       return { status: 'Success' };
     } catch (err) {

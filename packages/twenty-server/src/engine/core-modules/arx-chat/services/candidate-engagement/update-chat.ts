@@ -124,7 +124,6 @@ export class UpdateChat {
           });
           
           const updateResponse = await axiosRequest(updateGraphqlQueryObj, apiToken);
-          
           if (updateResponse.data.errors) {
             console.log('Error updating chat count:', updateResponse.data.errors);
           } else {
@@ -139,11 +138,10 @@ export class UpdateChat {
       console.error('Error in updateCandidates WithChatCount:', error);
     }
   }
-    async processCandidatesChatsGetStatuses(apiToken: string, jobIds: string[],  candidateIds: string[] | null = null, currentWorkspaceMemberId: string | null = null) {
+    async processCandidatesChatsGetStatuses(apiToken: string, jobIds: string[],  candidateIds: string[] | null = null) {
       console.log('Processing candidates chats to get statuses with chat true');
       console.log('Received a lngth of candidate Ids::', candidateIds?.length);
       console.log('candidate Ids::', candidateIds);
-      
       let allCandidates = await new CandidateEngagementArx(this.workspaceQueryService).fetchAllCandidatesWithAllChatControls('allStartedAndStoppedChats',  apiToken);
       console.log('Received a lngth of allCandidates in process Candidates Chats GetStatuses::', allCandidates?.length);
       if (candidateIds && Array.isArray(candidateIds)) {
@@ -158,7 +156,7 @@ export class UpdateChat {
       }
       
       console.log('Fetched', allCandidates?.length, ' candidates with chatControl allStartedAndStoppedChats in getStatus');
-      console.log('Fetched filtered', allCandidates);
+      console.log('Fetched filtered candidates of', allCandidates);
       const semaphore = new Semaphore(10); // Allow 10 concurrent requests
       const processWithSemaphore = async (candidate: any) => {
         await semaphore.acquire();
@@ -174,7 +172,6 @@ export class UpdateChat {
               whatsappMessages, 
               candidateId,
               jobId || '',
-              currentWorkspaceMemberId, 
               apiToken
             ) as Promise<allDataObjects.allStatuses>
           ])

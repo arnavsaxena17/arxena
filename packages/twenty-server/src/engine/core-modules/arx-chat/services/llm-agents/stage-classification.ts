@@ -44,9 +44,6 @@ export class StageWiseClassification{
       // const stagePrompt = await new PromptingAgents(this.workspaceQueryService).getStagePrompt();
       console.log('Getting stage from jobIdy:::', jobId);
       console.log('Getting stage from candidateId:::', candidateId);
-      const promptName = 'PROMPT_FOR_CHAT_CLASSIFICATION'
-      // const stagePrompt = await new PromptingAgents(this.workspaceQueryService).getPromptByJobIdAndName(jobId,promptName , apiToken);
-      // console.log("This is the stage prompt that is discovered:::", stagePrompt);
       const localStagePrompt = await new PromptingAgents(this.workspaceQueryService).getPromptByJobIdAndName(jobId, 'PROMPT_FOR_CHAT_CLASSIFICATION', apiToken);
       console.log('Local Stage Prompt is:::', localStagePrompt);
       let mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = new FilterCandidates(this.workspaceQueryService).getMostRecentMessageFromMessagesList(messages);

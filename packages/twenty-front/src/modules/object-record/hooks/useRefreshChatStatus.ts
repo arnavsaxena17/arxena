@@ -28,7 +28,7 @@ export const useRefreshChatStatus = ({
     
     try {
           const response = await axios.post(
-            `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/refresh-chat-status-by-candidates`,
+            `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/refresh-chat-status-by-candidates`,
             { candidateIds:candidateIds, currentWorkspaceMemberId: currentWorkspaceMember?.id },
             {
               headers: {
