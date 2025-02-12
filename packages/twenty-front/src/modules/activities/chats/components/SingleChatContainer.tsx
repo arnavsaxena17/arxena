@@ -84,6 +84,9 @@ export default function SingleChatContainer(props: {
   messageName: string | undefined;
   phoneNumber: string | undefined;
 }) {
+
+
+  console.log("props.message", props.message);
   return (
     <div>
       <StyledContainer>

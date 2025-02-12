@@ -59,11 +59,24 @@ export class ChatFlowConfigBuilder {
     return true;
   };
 
+
+    getMostRecentMessageFromMessagesList(messagesList: allDataObjects.MessageNode[]) {
+      let mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = [];
+      if (messagesList) {
+        messagesList.sort((a, b) => new Date(b?.createdAt).getTime() - new Date(a?.createdAt).getTime());
+        mostRecentMessageArr = messagesList[0]?.messageObj;
+      }
+      return mostRecentMessageArr;
+    }
+
+  
   createIsEligibleForEngagement = (candidate: allDataObjects.CandidateNode, chatControlType: allDataObjects.chatControlType, order: number, chatFlowOrder) => {
+    
     if (candidate.engagementStatus === false) {
-      console.log(`Candidate ${candidate.name} is not eligible for engagement due to engagementStatus being false. Current time: ${new Date().toISOString()}, Candidate Last updated: ${candidate.updatedAt}`);
+      console.log(`Candidate ${candidate.name} is not eligible for engagement in ${chatControlType} due to engagementStatus being false. Current time: ${new Date().toISOString()}, Candidate Last updated: ${candidate.updatedAt}`);
       return false;
     }
+
     const currentIndex = chatFlowOrder.indexOf(chatControlType);
     if (currentIndex === 0) {
       const currentStageStarted = candidate[chatControlType];
@@ -88,13 +101,11 @@ export class ChatFlowConfigBuilder {
           console.log(`Current time ${istTime.toLocaleString()} is between 11 PM and 7 AM IST, not messaging`);
           return false;
         }
-
-        const waitingPeriodInMinutes = TimeManagement.timeDifferentials.timeDifferentialInMinutesBeforeStartingNextStageMessaging;
+        const waitingPeriodInMinutes =  TimeManagement.timeDifferentials.timeDifferentialinMinutesToCheckTimeDifferentialBetweenlastMessage;
         const waitTime = waitingPeriodInMinutes * 60 * 1000; // convert to milliseconds
         const cutoffTime = new Date(Date.now() - waitTime).toISOString();
-        
         if (new Date(candidate.updatedAt).toISOString() > cutoffTime) {
-          console.log(`Waiting period not elapsed for candidate ${candidate.name} for ${chatControlType}, waiting period is ${waitingPeriodInMinutes} minutes, last updated at ${candidate.updatedAt} and cutoff time is ${cutoffTime}`);
+          console.log(`Waiting period not elapsed for candidate ${candidate.name} for ${chatControlType}, and last chat control is ${candidate.lastEngagementChatControl} and waiting period is ${waitingPeriodInMinutes} minutes, last updated at ${candidate.updatedAt} and cutoff time is ${cutoffTime}`);
           return false;
         }
         else{
@@ -162,12 +173,8 @@ export class ChatFlowConfigBuilder {
         },
       ];
     }
-
     return [
-      {
-        stopChat: { eq: false },
-        [config.type]: { eq: true },
-      },
+      { stopChat: { eq: false }, [config.type]: { eq: true }, },
     ];
   }
 
@@ -180,76 +187,47 @@ export class ChatFlowConfigBuilder {
       filter: {} as Record<string, any>,
       orderBy: [] as Array<Record<string, any>>,
     };
-
     // Get previous stage name
     const currentIndex = chatFlowOrder.indexOf(type);
     const previousStage = currentIndex > 0 ? chatFlowOrder[currentIndex - 1] : null;
-
     if (previousStage) {
       return {
         ...baseStatusUpdate,
-        filter: {
-          [`${previousStage}Completed`]: { eq: true },
-          [type]: { eq: false },
-        },
+        filter: { [`${previousStage}Completed`]: { eq: true }, [type]: { eq: false }, },
       };
     }
     const futureStages = this.getStagesByOrder(order, 'after', chatFlowOrder);
     const futureStageFilters = Object.fromEntries(futureStages.map(stage => [stage, { eq: false }]));
-
+    
     if (type === 'startChat') {
       return {
         ...baseStatusUpdate,
         filter: {
-          candConversationStatus: {
-            // in: ['CONVERSATION_CLOSED_TO_BE_CONTACTED', 'CANDIDATE_IS_KEEN_TO_CHAT'],
-            in: ['CONVERSATION_CLOSED_TO_BE_CONTACTED'],
-          },
-          startChat: { eq: true },
+          candConversationStatus: { in: ['CONVERSATION_CLOSED_TO_BE_CONTACTED'], }, startChat: { eq: true },
           ...futureStageFilters,
         },
         orderBy: [{ position: 'AscNullsFirst' }],
       };
     }
-
     const previousStages = this.getStagesByOrder(order, 'before', chatFlowOrder);
     const previousStageFilters = Object.fromEntries(previousStages.map(stage => [`${stage}Completed`, { eq: true }]));
-
     return {
       ...baseStatusUpdate,
-      filter: {
-        ...previousStageFilters,
-        ...futureStageFilters,
-        [type]: { eq: false },
-      },
+      filter: { ...previousStageFilters, ...futureStageFilters, [type]: { eq: false }, },
     };
   };
 
   private createBaseChatFlowConfig(type: allDataObjects.chatControlType, order: number, chatFlowOrder: allDataObjects.chatControlType[]): allDataObjects.ChatFlowConfig {
     const self = this;
     const filter = { ...this.baseFilters, [type]: { eq: true } };
-
     return {
       order,
       type,
       filterLogic: this.createFilterLogic(order, chatFlowOrder),
       filter,
-      get chatFilters() {
-        // Use the config object's properties, not self's
-        return self.createChatFilters(
-          {
-            type: type, // Use the type parameter
-            filter: filter, // Use the filter we created above
-          },
-          chatFlowOrder,
-        );
-      },
-
+      get chatFilters() { return self.createChatFilters( { type: type, filter: filter, }, chatFlowOrder, ); },
       isEligibleForEngagement: candidate => this.createIsEligibleForEngagement(candidate, type, order, chatFlowOrder),
-      templateConfig: {
-        ...this.baseTemplateConfig,
-        messageSetup: (isFirstMessage: boolean) => this.baseTemplateConfig.messageSetup(isFirstMessage, type),
-      },
+      templateConfig: { ...this.baseTemplateConfig, messageSetup: (isFirstMessage: boolean) => this.baseTemplateConfig.messageSetup(isFirstMessage, type) },
       statusUpdate: this.createStatusUpdate(order, type, chatFlowOrder),
       orderBy: [{ createdAt: 'DESC' }],
     };
@@ -258,12 +236,7 @@ export class ChatFlowConfigBuilder {
   private applySpecificConfig(type: allDataObjects.chatControlType, baseConfig: allDataObjects.ChatFlowConfig): allDataObjects.ChatFlowConfig {
     const specificConfigs: Record<allDataObjects.chatControlType, (baseConfig: allDataObjects.ChatFlowConfig) => allDataObjects.ChatFlowConfig> = {
       startChat: config => ({ ...config }),
-      startVideoInterviewChat: config => ({
-        ...config,
-        preProcessing: async (candidates, candidateJob, chatControl, apiToken) => {
-          await new StartVideoInterviewChatProcesses(this.workspaceQueryService).setupVideoInterviewLinks(candidates, candidateJob, chatControl, apiToken);
-        },
-      }),
+      startVideoInterviewChat: config => ({ ...config, preProcessing: async (candidates, candidateJob, chatControl, apiToken) => { await new StartVideoInterviewChatProcesses(this.workspaceQueryService).setupVideoInterviewLinks(candidates, candidateJob, chatControl, apiToken); }, }),
       startMeetingSchedulingChat: config => ({ ...config }),
       allStartedAndStoppedChats: config => config,
     };

@@ -998,7 +998,6 @@ export class GoogleSheetsService {
       },
     });
 
-    console.log('connectedAccountsResponse:', connectedAccountsResponse.data);
     if (connectedAccountsResponse?.data?.data?.connectedAccounts?.length > 0) {
       const connectedAccountToUse = connectedAccountsResponse.data.data.connectedAccounts.filter(x => x.handle === process.env.EMAIL_SMTP_USER)[0];
       const refreshToken = connectedAccountToUse?.refreshToken;

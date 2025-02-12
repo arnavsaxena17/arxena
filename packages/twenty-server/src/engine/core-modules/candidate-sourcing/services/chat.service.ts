@@ -19,29 +19,6 @@ export class ChatService {
   ) {}
 
 
-  async refreshChats(
-    candidateIds: string[], 
-    currentWorkspaceMemberId: string, 
-    apiToken: string
-  ): Promise<object> {
-    try {
-      console.log("Refreshing chats");
-      
-      const jobIds = await this.candidateService.getJobIdsFromCandidateIds(candidateIds, apiToken);
-
-      // Process candidate chats and get statuses
-      const results = await new UpdateChat(this.workspaceQueryService).processCandidatesChatsGetStatuses(apiToken, candidateIds, jobIds, currentWorkspaceMemberId);
-      
-      // Update Google Sheets with the processed results
-      await this.googleSheetsService.updateGoogleSheetsWithChatData(results, apiToken);
-      
-      return { status: 'Success' };
-    } catch (err) {
-      console.error('Error in refresh chats:', err);
-      return { status: 'Failed', error: err };
-    }
-  }
-
   async startChat(candidateId: string, apiToken: string): Promise<any> {
     const graphqlVariables = {
       idToUpdate: candidateId,

@@ -85,7 +85,7 @@ export class IncomingWhatsappMessages {
         }),apiToken
       );
       console.log('Response from fetchWhatsappMessageById:', response?.data);
-      return response?.data;
+      return response?.data.data.whatsappMessage?.message || '';
     } catch (error) {
       console.log('Error fetching whatsapp message by id:', error);
       return { error: error };
@@ -94,7 +94,10 @@ export class IncomingWhatsappMessages {
 
 
   async getApiKeyToUseFromPhoneNumberMessageReceived(requestBody:any, transactionManager?: EntityManager){
-    const phoneNumber = requestBody?.entry[0]?.changes[0]?.value?.messages[0].from;
+    let phoneNumber;
+
+    phoneNumber = requestBody?.entry[0]?.changes[0]?.value?.messages?.[0]?.from || requestBody?.entry[0]?.changes[0]?.value?.statuses[0].recipient_id;
+    console.log("This is the phone number to use in getApiKeyToUseFrom PhoneNumberMessageReceived::", phoneNumber)
     const results = await this.workspaceQueryService.executeQueryAcrossWorkspaces(
       async (workspaceId, dataSourceSchema) => {
         const person = await this.workspaceQueryService.executeRawQuery(
@@ -108,8 +111,9 @@ export class IncomingWhatsappMessages {
           [workspaceId, phoneNumberId],
           workspaceId
         );
-        console.log("This is the workspace we plan to use:", workspace)
+        console.log("This is the workspace we plan to use:", workspace, "for the phone numbers::", phoneNumber)
         if (workspace.length === 0) {
+          console.log('NO WORKSPACE FOUND FOR WHATSAPP INCOMING PHONE NUMBER');
           return null;
         }
         if (person.length > 0) {
@@ -139,15 +143,17 @@ export class IncomingWhatsappMessages {
     const apiToken = await this.getApiKeyToUseFromPhoneNumberMessageReceived(requestBody) || '';
     console.log('This is the apiToken to use in receiving facebook messages:', apiToken);
     if (requestBody?.entry[0]?.changes[0]?.value?.statuses && requestBody?.entry[0]?.changes[0]?.value?.statuses[0]?.status && !requestBody?.entry[0]?.changes[0]?.value?.messages) {
+      console.log("This is the status message::", requestBody?.entry[0]?.changes[0]?.value?.statuses[0]?.status)
       const messageId = requestBody?.entry[0]?.changes[0]?.value?.statuses[0]?.id;
+      console.log("This ishte message id:", messageId)
       const messageStatus = requestBody?.entry[0]?.changes[0]?.value?.statuses[0]?.status;
-
+      console.log("This is the message statuse:", messageStatus)
       const variables = { filter: { whatsappMessageId: { ilike: `%${messageId}%` } }, orderBy: { position: 'AscNullsFirst' } };
       const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindMessageByWAMId, variables: variables });
       const response = await axiosRequest(graphqlQueryObj,apiToken);
       console.log('-----------------This is the response from the query to find the message by WAMID::-------------------');
       // debugger
-      // console.log("Response to query on who sent the messages::", response?.data?.data);
+      console.log("Response to query on who sent the messages::", response?.data?.data);
 
       if (response?.data?.data?.whatsappMessages?.edges.length === 0) {
         console.log('No message found with the given WAMID');
@@ -158,10 +164,12 @@ export class IncomingWhatsappMessages {
         console.log('Message has already been read/delivered, skipping the update');
         return;
       }
+      console.log("Will try and do a delivery status update now:: ", response?.data?.data?.whatsappMessages?.edges[0]?.node?.id, "with delivery satatus::", messageStatus)
       const variablesToUpdateDeliveryStatus = { idToUpdate: response?.data?.data?.whatsappMessages?.edges[0]?.node?.id, input: { whatsappDeliveryStatus: messageStatus } };
       // debugger
       const graphqlQueryObjForUpdationForDeliveryStatus = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToUpdateMessageDeliveryStatus, variables: variablesToUpdateDeliveryStatus });
       const responseOfDeliveryStatus = await axiosRequest(graphqlQueryObjForUpdationForDeliveryStatus,apiToken);
+      // console.log("This is the response of the delivery status update::", responseOfDeliveryStatus);
 
       console.log('---------------DELIVERY STATUS UPDATE DONE-----------------------');
       // console.log(responseOfDeliveryStatus);
@@ -169,8 +177,9 @@ export class IncomingWhatsappMessages {
       // to check if the incoming message is the message
       console.log('There is a request body for sure', requestBody?.entry[0]?.changes[0]?.value?.messages[0]);
       const userMessageBody = requestBody?.entry[0]?.changes[0]?.value?.messages[0];
-      
-      // console.log("This is the user messageBody :", userMessageBody)
+      let chatReply:string = "";
+      let whatsappMessageCommentedOn:string = "";
+      console.log("This is the user messageBody :", userMessageBody)
       if (userMessageBody) {
         let timestamp = requestBody?.entry[0]?.changes[0]?.value?.messages[0].timestamp; // Assuming this is the Unix timestamp in seconds
         let result = this.isWithinLast5Minutes(timestamp);
@@ -178,20 +187,46 @@ export class IncomingWhatsappMessages {
           console.log('MESSAGE IS NOT WITHIN 5 MINUTES:::: ', userMessageBody);
           return;
         }
+        // if (userMessageBody.reaction){
+        //   console.log("This is a reaction message", userMessageBody.reaction.emoji)
+        //   console.log("its likely an emoji message or emoji reaction to precededing message")
+        //   const whatsappMessageCommentedOn = await this.fetchWhatsappMessageById(userMessageBody?.reaction?.message_id,apiToken);
+        //   console.log("this is the messages commented on ::", whatsappMessageCommentedOn)
+        //   if (!userMessageBody.reaction.emoji){
+        //     console.log("This is a reaction message without an emoji")
+        //     chatReply = "Removed emoji " + " from " + "'" + whatsappMessageCommentedOn + "'" || "";
+        //   }
+        //   const messageToAppend = 'Reacted ' + userMessageBody.reaction.emoji + ' to ' + "'" + whatsappMessageCommentedOn + "'" || '';
+        //   chatReply = messageToAppend || ""
+        // }
 
         // console.log('There is a usermessage body in the request', userMessageBody);
         if (requestBody?.entry[0]?.changes[0]?.value?.messages[0].type !== 'utility' && requestBody?.entry[0]?.changes[0]?.value?.messages[0].type !== 'document' && requestBody?.entry[0]?.changes[0]?.value?.messages[0].type !== 'audio') {
           // debugger
           console.log('We have a whatsapp incoming message which is a text one we have to do set of things with which is not a utility message');
-          let chatReply = userMessageBody?.text?.body;
-          if (!chatReply && userMessageBody.reaction.id){
-          const whatsappMessageCommentedOn = await this.fetchWhatsappMessageById(userMessageBody?.reaction?.id,apiToken);
+          chatReply = userMessageBody?.text?.body || "";
+          if (!userMessageBody?.text?.body && userMessageBody.reaction.message_id){
+            console.log("There is not chat body and we have a reaction id, so we will fetch based on the reaction")
+             whatsappMessageCommentedOn = await this.fetchWhatsappMessageById(userMessageBody?.reaction?.message_id,apiToken);
+            if (typeof whatsappMessageCommentedOn === 'object' && whatsappMessageCommentedOn !== null && 'error' in whatsappMessageCommentedOn) {
+              console.log("Error in fetching the message commented on")
+              whatsappMessageCommentedOn = "Message commented on not found"
+            }
+            console.log("this is the messages commented on ::", whatsappMessageCommentedOn)
 
             console.log("its likely an emoji message or emoji reaction to precededing message")
-            console.log("Emoji message:", userMessageBody.reaction.emoji, "to message id:", userMessageBody.reaction.id, "from ::", userMessageBody.reaction.from)
+            console.log("its likely an emoji message or userMessageBody.reaction.from", userMessageBody?.reaction?.from)
+            console.log("its likely an emoji message or userMessageBody.reaction.from", userMessageBody?.reaction?.message_id)
+            console.log("Emoji message:", userMessageBody.reaction.emoji, "to message id:", userMessageBody.reaction.message_id, "from ::", userMessageBody.reaction.from)
             // Adhoc setting chatReply to emoji. lets see how it goes.
-            const messageToAppend = 'Reacted ' + userMessageBody.reaction.emoji + ' to ' + "'" + whatsappMessageCommentedOn + "'" || '';
-            chatReply = messageToAppend
+            if (!userMessageBody.reaction.emoji){
+              console.log("This is a reaction message without an emoji")
+              chatReply = "Removed emoji " + " from " + "'" + whatsappMessageCommentedOn + "'" || "";
+            }
+            else{
+              chatReply = 'Reacted ' + userMessageBody.reaction.emoji + ' to ' + "'" + whatsappMessageCommentedOn + "'" || '';
+            }
+            console.log("This is the chatReply", chatReply)
           }
           const phoneNumberTo = requestBody?.entry[0]?.changes[0]?.value?.metadata?.display_phone_number;
           if (userMessageBody.from === '1234567890'){
@@ -201,7 +236,7 @@ export class IncomingWhatsappMessages {
           const whatsappIncomingMessage: allDataObjects.chatMessageType = {
             phoneNumberFrom: userMessageBody.from,
             phoneNumberTo: phoneNumberTo,
-            messages: [{ role: 'user', content: chatReply }],
+            messages: [{ role: 'user', content: chatReply || "" }],
             messageType: 'string',
           };
           console.log('We will first go and get the candiate who sent us the message');
@@ -240,7 +275,7 @@ export class IncomingWhatsappMessages {
             messageType: 'string',
           };
 
-          const replyObject = { chatReply: userMessageBody?.text?.body || 'Attachment Received', whatsappDeliveryStatus: 'receivedFromCandidate',phoneNumberFrom: whatsappIncomingMessage.phoneNumberFrom, whatsappMessageId: requestBody?.entry[0]?.changes[0]?.value?.messages[0].id };
+          const replyObject = { chatReply: chatReply || 'Attachment Received', whatsappDeliveryStatus: 'receivedFromCandidate',phoneNumberFrom: whatsappIncomingMessage.phoneNumberFrom, whatsappMessageId: requestBody?.entry[0]?.changes[0]?.value?.messages[0].id };
           const candidateProfileData = await new FilterCandidates(this.workspaceQueryService).getCandidateInformation(whatsappIncomingMessage,apiToken);
           const candidateJob:allDataObjects.Jobs = candidateProfileData.jobs
 

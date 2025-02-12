@@ -246,14 +246,15 @@ export class UpdateChat {
   }
 
   async createAndUpdateWhatsappMessage(candidateProfileObj: allDataObjects.CandidateNode, userMessage: allDataObjects.whatappUpdateMessageObjType, apiToken: string) {
-    console.log('This is the message being updated in the database ', userMessage?.messages[0]?.content);
+    console.log('This is the message being updated in the database ', userMessage?.messages[0]?.content || "");
+    console.log("This is the user candidateProfileObj::", candidateProfileObj);
     const createNewWhatsappMessageUpdateVariables = {
       input: {
         position: 'first',
         id: v4(),
         candidateId: candidateProfileObj?.id,
         personId: candidateProfileObj?.person?.id,
-        message: userMessage?.messages[0]?.content || userMessage?.messages[0]?.text,
+        message: userMessage?.messages[0]?.content || userMessage?.messages[0]?.text || '',
         phoneFrom: userMessage?.phoneNumberFrom,
         phoneTo: userMessage?.phoneNumberTo,
         jobsId: candidateProfileObj.jobs?.id,
@@ -297,11 +298,9 @@ export class UpdateChat {
   async setCandidateEngagementStatusToFalse(candidateId: string, apiToken: string) {
     console.log("Setting candidate engagement status to false::", candidateId, " at time :: ", new Date().toISOString());
     const updateCandidateObjectVariables = { idToUpdate: candidateId, input: { engagementStatus: false } };
-    console.log('This is the value of updatecandidateobject variables::0', updateCandidateObjectVariables);
     const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToUpdateCandidateEngagementStatus, variables: updateCandidateObjectVariables });
     try {
       const response = await axiosRequest(graphqlQueryObj, apiToken);
-      console.log('Response from axios update request:', response.data);
       console.log('Candidate engagement status updated successfully to false ::',false, " at time :: ", new Date().toISOString() );
       return response.data;
     } catch (error) {

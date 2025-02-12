@@ -74,35 +74,6 @@ async updateCandidateSpreadsheet(@Req() request: any): Promise<object> {
 }
 
 
-  // @Post('process-candidate-chats')
-  // @UseGuards(JwtAuthGuard)
-
-  // async processCandidateChats(@Req() request: any): Promise<object> {
-  //   try {
-  //     const apiToken = request.headers.authorization.split(' ')[1]; // Assuming Bearer token
-  //     const candidateIds= request.body.candidateIds;
-  //     const currentWorkspaceMemberId = request.body.currentWorkspaceMemberId;
-
-  //     const jobIds = await this.candidateService.getJobIdsFromCandidateIds(candidateIds, apiToken);
-
-  //     console.log("going to process chats")
-  //     const results = await new UpdateChat(this.workspaceQueryService).processCandidatesChatsGetStatuses(apiToken, candidateIds,jobIds, currentWorkspaceMemberId);
-
-  //     return { status: 'Success' };
-  //   } catch (err) {
-  //     console.error('Error in process:', err);
-  //     return { status: 'Failed', error: err };
-  //   }
-  // }
-
-  // @Post('refresh-chat-status-by-candidates')
-  // @UseGuards(JwtAuthGuard)
-  // async refreshChatStatus(@Req() request: any): Promise<object> {
-  //   const apiToken = request.headers.authorization.split(' ')[1];
-  //   const { candidateIds, currentWorkspaceMemberId } = request.body;
-  //   return this.chatService.refreshChats(candidateIds, currentWorkspaceMemberId, apiToken);
-  // }
-
 
 
   @Post('find-many-enrichments')

@@ -40,7 +40,7 @@ export class StageWiseClassification{
 
  
 
-    async getChatStageFromChatHistory(messages: any,candidateId:String,jobId:string,currentWorkspaceMemberId: any, apiToken: string) {
+    async getChatStageFromChatHistory(messages: any,candidateId:string,jobId:string,currentWorkspaceMemberId: any, apiToken: string) {
       // const stagePrompt = await new PromptingAgents(this.workspaceQueryService).getStagePrompt();
       console.log('Getting stage from jobIdy:::', jobId);
       console.log('Getting stage from candidateId:::', candidateId);

@@ -1306,7 +1306,8 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
                   <StyledButtonBottom onClick={handleShareJD}>Share JD</StyledButtonBottom>
                 </div>
                 <div style={{ fontSize: '0.875rem', color: '#666' }}>
-                  Last Status: {lastStatus} | Total: {totalCandidates} | ... {/* rest of the status text */}
+                Last Status: {lastStatus} | Total: {totalCandidates} | Screening: {screeningState} ({screeningPercent}%) | Unresponsive: {unresponsive} ({unresponsivePercent}%) | Not Interested: {notInterested} ({notInterestedPercent}%) | Not Fit:{' '}
+                {notFit} ({notFitPercent}%) | Recruiter Interviews: {recruiterInterviews} ({recruiterInterviewsPercent}%)
                 </div>
               </InputWrapper>
             </StyledChatInputBox>

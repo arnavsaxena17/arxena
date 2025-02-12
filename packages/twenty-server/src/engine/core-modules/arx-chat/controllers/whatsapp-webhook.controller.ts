@@ -45,15 +45,20 @@ export class WhatsappWebhook {
   async create(@Req() request: any, @Res() response: any) {
     console.log('-------------- New Request POST --------------');
     // console.log('Headers:' + JSON.stringify(request.headers, null, 3));
-    // console.log('Body:' + JSON.stringify(request.body, null, 3));
+    console.log('Body from POST REQUEST:' + JSON.stringify(request.body, null, 3));
     // const apiToken = request.headers.authorization.split(' ')[1];
 
     const requestBody = request.body;
-    const userMessageBodyFrom = requestBody?.entry[0]?.changes[0]?.value?.messages[0].from;
-    console.log('UserMessageBodyFrom::', userMessageBodyFrom);
-    if (userMessageBodyFrom === '1234567890') {
+    console.log('Request Body::', requestBody);
+    try {
+      const userMessageBodyFrom = requestBody?.entry[0]?.changes[0]?.value?.messages[0]?.from || '';
+      console.log('UserMessageBodyFrom::', userMessageBodyFrom);
+      if (userMessageBodyFrom === '1234567890') {
       console.log('This is a cron test to check if the connection exists or not');
       return;
+      }
+    } catch (error) {
+      console.log('Incoming message could be utility messages:');
     }
 
     try {

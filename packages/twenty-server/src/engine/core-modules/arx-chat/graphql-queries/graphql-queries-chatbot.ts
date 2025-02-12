@@ -323,7 +323,27 @@ export const graphqlToFetchActiveJob = `query FindManyJobs($filter: JobFilterInp
       }`
 
 
-export const graphqlQueryToFindMessageByWAMId = `query FindManyWhatsappMessages($filter: WhatsappMessageFilterInput, $orderBy: [WhatsappMessageOrderByInput], $lastCursor: String, $limit: Int) {
+// export const graphqlQueryToFindMessageByWAMId = `query FindManyWhatsappMessages($filter: WhatsappMessageFilterInput, $orderBy: [WhatsappMessageOrderByInput], $lastCursor: String, $limit: Int) {
+//   whatsappMessages(
+//     filter: $filter
+//     orderBy: $orderBy
+//     first: $limit
+//     after: $lastCursor
+//   ) {
+//     edges {
+//       node {
+//         __typename
+//         id
+//         whatsappMessageId
+//       }
+//   }
+// }}
+//   `;
+
+
+
+  export const graphqlQueryToFindMessageByWAMId = `
+query FindManyWhatsappMessages($filter: WhatsappMessageFilterInput, $orderBy: [WhatsappMessageOrderByInput], $lastCursor: String, $limit: Int) {
   whatsappMessages(
     filter: $filter
     orderBy: $orderBy
@@ -333,13 +353,29 @@ export const graphqlQueryToFindMessageByWAMId = `query FindManyWhatsappMessages(
     edges {
       node {
         __typename
-        id
+        updatedAt
+        candidateId
+        position
+        whatsappDeliveryStatus
         whatsappMessageId
-        lastEngagementChatControl
+        phoneFrom
+        createdAt
+        message
+        audioFilePath
+        id
+        name
+        recruiterId
+        messageObj
+        phoneTo
+        jobsId
+        typeOfMessage
+        whatsappProvider
       }
+    }
   }
-}}
-  `;
+}
+`;
+
 
   export const graphqlQueryToFindCandidateByUniqueKey = `
 query FindManyCandidate($filter: CandidateFilterInput) {
@@ -376,6 +412,14 @@ export const graphqlQueryToFindManyPeople = `query FindManyPeople($filter: Perso
                     lastEngagementChatControl
                     candConversationStatus
                     engagementStatus
+                    people {
+                      name {
+                        firstName
+                        lastName
+                      }
+                      id
+                    }
+
                     jobs{
                         id
                         name
@@ -512,18 +556,18 @@ export const graphQlToFetchWhatsappMessages = `query FindManyWhatsappMessages($f
         jobsId
         whatsappProvider
         phoneFrom
-        candidate{
-            name
-            id
-            createdAt
-            updatedAt
-            startChat
-            chatCount
-            startChatCompleted
-            startMeetingSchedulingChat
-            startMeetingSchedulingChatCompleted
-            startVideoInterviewChat
-            startVideoInterviewChatCompleted
+        candidate {
+          name
+          id
+          createdAt
+          updatedAt
+          startChat
+          chatCount
+          startChatCompleted
+          startMeetingSchedulingChat
+          startMeetingSchedulingChatCompleted
+          startVideoInterviewChat
+          startVideoInterviewChatCompleted
         }
         id
         phoneTo

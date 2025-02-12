@@ -136,6 +136,7 @@ export class FilterCandidates {
         break;
       }
     }
+    console.log('Number of whatsapp messages fetched for candidate Id::', candidateId," is ::",  allWhatsappMessages?.length);
     return allWhatsappMessages;
   }
 
