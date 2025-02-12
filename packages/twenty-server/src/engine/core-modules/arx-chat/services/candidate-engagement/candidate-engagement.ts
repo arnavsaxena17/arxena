@@ -139,6 +139,7 @@ export default class CandidateEngagementArx {
   }
 
   private async fetchRecentMessages(startTime: Date, endTime: Date, apiToken: string) {
+    console.log("Fetching recent messages from startTime to endTime");
     const graphqlQueryObj = JSON.stringify({
       query: allGraphQLQueries.graphQlToFetchWhatsappMessages,
       variables: {
@@ -150,9 +151,19 @@ export default class CandidateEngagementArx {
         },
       },
     });
+    console.log("The value of startTime.toISOString():",  startTime.toISOString())
+    console.log("The value of endTime.toISOString()():",  endTime.toISOString())
 
     const response = await axiosRequest(graphqlQueryObj, apiToken);
+    console.log("This is the response from fetc hRecentMessages::", response?.data?.data?.whatsappMessages?.edges);
+    console.log("Number of messages in fetchRe centMessages::", response?.data?.data?.whatsappMessages?.edges.length);
+    console.log("This is the response from cre atedAt::", response?.data?.data?.whatsappMessages?.edges.map((message) => message.node.createdAt));
     return response?.data?.data?.whatsappMessages?.edges || [];
+
+
+    // The value of startTime.toISOString(): 2025-02-12T10:38:00.018Z
+    // The value of endTime.toISOString()(): 2025-02-12T11:38:00.018Z
+    // This is the response from createdAt:: [ '2025-02-12T11:37:28.989Z', '2025-02-12T11:37:53.282Z' ]
   }
 
   private groupMessagesByJob(messages: any[]): Map<string, any[]> {
@@ -176,6 +187,9 @@ export default class CandidateEngagementArx {
       const endTime = new Date();
       const startTime = new Date(endTime.getTime() - timeWindow * 60 * 1000);
       // Get recent messages
+
+      // const allWhatsappMessages = await new FilterCandidates(this.workspaceQueryService).fetchAllWhatsappMessages(candidateId, apiToken);
+
       const messages = await this.fetchRecentMessages(startTime, endTime, apiToken);
       console.log('Number of messages::', messages.length);
       // Group by job for different chat flows

@@ -67,13 +67,6 @@ export class CandidateEngagementCronService extends BaseCronService {
 
 @Injectable()
 export class CandidateStatusClassificationCronService extends BaseCronService {
-  // @Cron(TimeManagement.crontabs.crontTabToMakeUpdatesForNewChats, { disabled: CRON_DISABLED })
-  // async handleFiveMinutesCron() {
-  //   if (CRON_DISABLED) return;
-  //   await this.executeWorkspaceTask(async token => {
-  //     const service = await new CandidateEngagementArx(this.workspaceQueryService).makeUpdatesForNewChats(token);
-  //   });
-  // }
 
   @Cron(TimeManagement.crontabs.crontTabToUpdateCandidatesChatControls, { disabled: CRON_DISABLED })
   async handleFiveHoursCron() {

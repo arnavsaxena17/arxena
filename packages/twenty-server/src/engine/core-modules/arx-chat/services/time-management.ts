@@ -3,7 +3,6 @@ import { CronExpression } from '@nestjs/schedule';
 const TimeManagementLocal = {
   crontabs: {
     crontTabToExecuteCandidateEngagement: CronExpression.EVERY_5_SECONDS,
-    crontTabToMakeUpdatesForNewChats: CronExpression.EVERY_30_SECONDS,
     crontTabToUpdateCandidatesChatControls: CronExpression.EVERY_MINUTE,
   },
   timeDifferentials: {
@@ -16,12 +15,11 @@ const TimeManagementLocal = {
 const TimeManagementProd = {
   crontabs: {
     crontTabToExecuteCandidateEngagement: CronExpression.EVERY_30_SECONDS,
-    crontTabToMakeUpdatesForNewChats: CronExpression.EVERY_5_MINUTES,
     crontTabToUpdateCandidatesChatControls: CronExpression.EVERY_30_MINUTES,
   },
   timeDifferentials: {
     timeDifferentialinMinutesToCheckTimeDifferentialBetweenlastMessage: 3,
-    timeDifferentialinMinutesForCheckingCandidateIdsForLastHowManyHoursOfMessagesToFetchForToMakingUpdatesOnChatsForNextChatControls: 60,
+    timeDifferentialinMinutesForCheckingCandidateIdsForLastHowManyHoursOfMessagesToFetchForToMakingUpdatesOnChatsForNextChatControls: 120,
     timeDifferentialInMinutesBeforeStartingNextStageMessaging: 360, // 6 hours for prod
   },
 };
