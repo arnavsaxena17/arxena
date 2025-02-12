@@ -632,6 +632,7 @@ query FindManyCandidates($lastCursor: String, $limit: Int, $filter: CandidateFil
           jobLocation
           jobCode
           isActive
+          googleSheetId
           recruiterId
           chatFlowOrder
           interviewSchedule{

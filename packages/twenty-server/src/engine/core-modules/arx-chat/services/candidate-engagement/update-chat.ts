@@ -182,6 +182,8 @@ export class UpdateChat {
               apiToken
             ) as Promise<allDataObjects.allStatuses>
           ])
+          console.log("This is the candidate status::", candidate);
+          console.log("This is the candidate jhobs::", candidate.jobs);
 
           return { candidateId, candidateStatus, googleSheetId: candidate?.jobs?.googleSheetId, whatsappMessages};
         } catch (error) {

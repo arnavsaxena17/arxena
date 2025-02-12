@@ -841,6 +841,22 @@ export class GoogleSheetsService {
     }
   }
 
+  private async getSheetId(auth: any, spreadsheetId: string): Promise<number> {
+    const sheets = google.sheets({ version: 'v4', auth });
+    const response = await sheets.spreadsheets.get({
+      spreadsheetId,
+      fields: 'sheets.properties'
+    });
+    
+    if (!response.data.sheets?.[0]?.properties?.sheetId) {
+      throw new Error('Sheet ID not found in response');
+    }
+    
+    return response.data.sheets[0].properties.sheetId;
+  }
+  
+  
+
   async createSpreadsheetForJob(jobName: string, twentyToken: string): Promise<any> {
     const auth = await this.loadSavedCredentialsIfExist(twentyToken);
     if (!auth) {
@@ -1040,18 +1056,44 @@ export class GoogleSheetsService {
     console.log("Going to do batch update of google sheet with retry with backoff for sheet id:", spreadsheetId);
     return this.retryWithBackoff(async () => {
       const sheets = google.sheets({ version: 'v4', auth });
-      await sheets.spreadsheets.values.batchUpdate({
-        spreadsheetId,
-        requestBody: {
-          valueInputOption: 'RAW',
-          data: updates.map(update => ({
-            range: update.range,
-            values: update.values,
-          })),
-        },
-      });
+      const sheetId = await this.getSheetId(auth, spreadsheetId);
+      const valueRequests = {
+        valueInputOption: 'RAW',
+        data: updates.map(update => ({
+          range: update.range,
+          values: update.values,
+        })),
+      };
+  
+      const formatRequest = {
+        requests: [{
+          updateDimensionProperties: {
+            range: {
+              sheetId: sheetId,
+              dimension: 'ROWS',
+              startIndex: 0,
+              endIndex: 2000 // Adjust this number based on your sheet size
+            },
+            properties: {
+              pixelSize: 21 // Standard row height in pixels
+            },
+            fields: 'pixelSize'
+          }
+        }]
+      };
+  
+      await Promise.all([
+        sheets.spreadsheets.values.batchUpdate({
+          spreadsheetId,
+          requestBody: valueRequests,
+        }),
+        sheets.spreadsheets.batchUpdate({
+          spreadsheetId,
+          requestBody: formatRequest,
+        })
+      ]);
     });
-  }
+    }
   async getValues(auth, spreadsheetId: string, range: string) {
     const sheets = google.sheets({ version: 'v4', auth });
     console.log('spreadsheetId::', spreadsheetId);
