@@ -257,15 +257,27 @@ export class ArxChatEndpoint {
     }
   }
 
-  @Post('count-chats')
+  @Post('refresh-chat-status-by-candidates')
   @UseGuards(JwtAuthGuard)
   async countChats(@Req() request: any): Promise<object> {
     try {
       const apiToken = request.headers.authorization.split(' ')[1];
       const { candidateIds } = request.body;
       console.log('going to count chats');
-      // const candidateIds = ['5f9b3b3b-0b3b-4b3b-8b3b-3b0b3b0b3b0b'];
-      await new UpdateChat(this.workspaceQueryService).updateCandidatesWithChatCount(candidateIds, apiToken);
+      console.log('Fetching job IDs for candidates:', candidateIds);
+      const graphqlQuery = JSON.stringify({
+        query: allGraphQLQueries.graphqlQueryToManyCandidateById,
+        variables: { filter: { id: { in: candidateIds } } }
+      });
+
+      const response = await axiosRequest(graphqlQuery, apiToken);
+
+      const jobIds = response?.data?.data?.candidates?.edges
+        ?.map((edge: { node?: { jobs?: { id: string }[] } }) => edge?.node?.jobs?.[0]?.id)
+        .filter((id: string | undefined): id is string => !!id);
+
+      console.log('Found job IDs:', jobIds);
+      await new UpdateChat(this.workspaceQueryService).processCandidatesChatsGetStatuses(apiToken, jobIds, candidateIds);
       return { status: 'Success' };
     } catch (err) {
       console.error('Error in countChats:', err);

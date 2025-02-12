@@ -18,7 +18,7 @@ export const useCountChats = (objectNameSingular: string, candidateIds= null) =>
     try {
       const response = await axios({
         method: 'post',
-        url: process.env.REACT_APP_SERVER_BASE_URL+'/arx-chat/count-chats',
+        url: process.env.REACT_APP_SERVER_BASE_URL+'/arx-chat/refresh-chat-counts-by-candidates',
         headers: {
           Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
         },

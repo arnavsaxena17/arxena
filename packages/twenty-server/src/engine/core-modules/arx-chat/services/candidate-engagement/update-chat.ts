@@ -140,109 +140,109 @@ export class UpdateChat {
     }
   }
     async processCandidatesChatsGetStatuses(apiToken: string, jobIds: string[],  candidateIds: string[] | null = null, currentWorkspaceMemberId: string | null = null) {
-    console.log('Processing candidates chats to get statuses with chat true');
-    console.log('Received a lngth of candidate Ids::', candidateIds?.length);
-    console.log('candidate Ids::', candidateIds);
-    
-    let allCandidates = await new CandidateEngagementArx(this.workspaceQueryService).fetchAllCandidatesWithAllChatControls('allStartedAndStoppedChats',  apiToken);
-    console.log('Received a lngth of allCandidates in process Candidates Chats GetStatuses::', allCandidates?.length);
-    if (candidateIds && Array.isArray(candidateIds)) {
-      allCandidates = allCandidates.filter(candidate => 
-        candidateIds.includes(candidate.id) && 
-        // (candidate.candConversationStatus !== "CONVERSATION_CLOSED_TO_BE_CONTACTED" && candidate.candConversationStatus !== "CANDIDATE_IS_KEEN_TO_CHAT")
-        (candidate.candConversationStatus !== "CONVERSATION_CLOSED_TO_BE_CONTACTED" )
-      );
-    }
-    else{
-      console.log("Candidate Ids are not present in the request");
-    }
-    
-    console.log('Fetched', allCandidates?.length, ' candidates with chatControl allStartedAndStoppedChats in getStatus');
-    console.log('Fetched filtered', allCandidates);
-    const semaphore = new Semaphore(10); // Allow 10 concurrent requests
-    const processWithSemaphore = async (candidate: any) => {
-      await semaphore.acquire();
-      try {
-        const candidateId = candidate?.id;
-        const jobId = candidateIds ? jobIds[candidateIds.indexOf(candidateId)] : '';
-        const whatsappMessages = await new FilterCandidates(this.workspaceQueryService).fetchAllWhatsappMessages(candidateId, apiToken);
-        console.log("These are the whtsapp messages::", whatsappMessages);
-        
-        // Get the chat status and formatted chat in parallel
-        const [candidateStatus] = await Promise.all([
-          new StageWiseClassification(this.workspaceQueryService).getChatStageFromChatHistory (
-            whatsappMessages, 
-            candidateId,
-            jobId || '',
-            currentWorkspaceMemberId, 
-            apiToken
-          ) as Promise<allDataObjects.allStatuses>
-        ])
-        return { candidateId, candidateStatus, googleSheetId: candidate?.jobs?.googleSheetId, whatsappMessages, };
-      } catch (error) {
-        console.log('Error in processing candidate:', error);
-        return null;
-      } finally {
-        semaphore.release();
+      console.log('Processing candidates chats to get statuses with chat true');
+      console.log('Received a lngth of candidate Ids::', candidateIds?.length);
+      console.log('candidate Ids::', candidateIds);
+      
+      let allCandidates = await new CandidateEngagementArx(this.workspaceQueryService).fetchAllCandidatesWithAllChatControls('allStartedAndStoppedChats',  apiToken);
+      console.log('Received a lngth of allCandidates in process Candidates Chats GetStatuses::', allCandidates?.length);
+      if (candidateIds && Array.isArray(candidateIds)) {
+        allCandidates = allCandidates.filter(candidate => 
+          candidateIds.includes(candidate.id) && 
+          // (candidate.candConversationStatus !== "CONVERSATION_CLOSED_TO_BE_CONTACTED" && candidate.candConversationStatus !== "CANDIDATE_IS_KEEN_TO_CHAT")
+          (candidate.candConversationStatus !== "CONVERSATION_CLOSED_TO_BE_CONTACTED" )
+        );
       }
-    };
-  
-    // Process all candidates and collect results
-    const results = await Promise.all(allCandidates.map(candidate => processWithSemaphore(candidate)));
-    const validResults = results.filter(result => result !== null);
-  
-    // Batch update the candidate statuses
-    const updatePromises = validResults.map(async result => {
-      if (!result) return;
-  
-      const updateCandidateObjectVariables = {
-        idToUpdate: result.candidateId,
-        input: { candConversationStatus: result.candidateStatus },
+      else{
+        console.log("Candidate Ids are not present in the request");
+      }
+      
+      console.log('Fetched', allCandidates?.length, ' candidates with chatControl allStartedAndStoppedChats in getStatus');
+      console.log('Fetched filtered', allCandidates);
+      const semaphore = new Semaphore(10); // Allow 10 concurrent requests
+      const processWithSemaphore = async (candidate: any) => {
+        await semaphore.acquire();
+        try {
+          const candidateId = candidate?.id;
+          const jobId = candidateIds ? jobIds[candidateIds.indexOf(candidateId)] : '';
+          const whatsappMessages = await new FilterCandidates(this.workspaceQueryService).fetchAllWhatsappMessages(candidateId, apiToken);
+          console.log("These are the whtsapp messages::", whatsappMessages);
+          
+          // Get the chat status and formatted chat in parallel
+          const [candidateStatus] = await Promise.all([
+            new StageWiseClassification(this.workspaceQueryService).getChatStageFromChatHistory (
+              whatsappMessages, 
+              candidateId,
+              jobId || '',
+              currentWorkspaceMemberId, 
+              apiToken
+            ) as Promise<allDataObjects.allStatuses>
+          ])
+          return { candidateId, candidateStatus, googleSheetId: candidate?.jobs?.googleSheetId, whatsappMessages, };
+        } catch (error) {
+          console.log('Error in processing candidate:', error);
+          return null;
+        } finally {
+          semaphore.release();
+        }
       };
   
-      const graphqlQueryObj = JSON.stringify({
-        query: allGraphQLQueries.graphqlQueryToUpdateCandidateChatCount,
-        variables: updateCandidateObjectVariables,
-      });
-
-      // if (['CONVERSATION_CLOSED_TO_BE_CONTACTED', 'CANDIDATE_IS_KEEN_TO_CHAT'].includes(result.candidateStatus)){
-      if (['CONVERSATION_CLOSED_TO_BE_CONTACTED'].includes(result.candidateStatus)){
-        const updateCandidateVariables = {
+    // Process all candidates and collect results
+      const results = await Promise.all(allCandidates.map(candidate => processWithSemaphore(candidate)));
+      const validResults = results.filter(result => result !== null);
+    
+      // Batch update the candidate statuses
+      const updatePromises = validResults.map(async result => {
+        if (!result) return;
+    
+        const updateCandidateObjectVariables = {
           idToUpdate: result.candidateId,
-          input: {
-            startChatCompleted: true,
-          },
+          input: { candConversationStatus: result.candidateStatus },
         };
-  
-        const graphqlQueryObjForUpdationForCandidateStatus = JSON.stringify({
-          query: allGraphQLQueries.graphQltoUpdateOneCandidate,
-          variables: updateCandidateVariables,
+    
+        const graphqlQueryObj = JSON.stringify({
+          query: allGraphQLQueries.graphqlQueryToUpdateCandidateChatCount,
+          variables: updateCandidateObjectVariables,
         });
-  
-        console.log('graphqlQueryObjForUpdationForCandidateStatus::', graphqlQueryObjForUpdationForCandidateStatus);
-        try{
-  
-          const statusCandidateUpdateResult = (await axiosRequest(graphqlQueryObjForUpdationForCandidateStatus,apiToken)).data;
+
+        // if (['CONVERSATION_CLOSED_TO_BE_CONTACTED', 'CANDIDATE_IS_KEEN_TO_CHAT'].includes(result.candidateStatus)){
+        if (['CONVERSATION_CLOSED_TO_BE_CONTACTED'].includes(result.candidateStatus)){
+          const updateCandidateVariables = {
+            idToUpdate: result.candidateId,
+            input: {
+              startChatCompleted: true,
+            },
+          };
+    
+          const graphqlQueryObjForUpdationForCandidateStatus = JSON.stringify({
+            query: allGraphQLQueries.graphQltoUpdateOneCandidate,
+            variables: updateCandidateVariables,
+          });
+    
+          console.log('graphqlQueryObjForUpdationForCandidateStatus::', graphqlQueryObjForUpdationForCandidateStatus);
+          try{
+    
+            const statusCandidateUpdateResult = (await axiosRequest(graphqlQueryObjForUpdationForCandidateStatus,apiToken)).data;
+          }
+          catch(e){
+            console.log("Error in candidate status update::", e)
+          }
+          
+          
         }
-        catch(e){
-          console.log("Error in candidate status update::", e)
-        }
-        
-        
-      }
 
 
-  
-      try {
-        const response = await axiosRequest(graphqlQueryObj, apiToken);
-        console.log('Candidate chat status updated successfully:', response.data, "with the status of ::", result.candidateStatus);
-      } catch (error) {
-        console.log('Error in updating candidate chat count:', error);
-      }
-    });
-  
-    await Promise.all(updatePromises);
-    return validResults;
+    
+        try {
+          const response = await axiosRequest(graphqlQueryObj, apiToken);
+          console.log('Candidate chat status updated successfully:', response.data, "with the status of ::", result.candidateStatus);
+        } catch (error) {
+          console.log('Error in updating candidate chat count:', error);
+        }
+      });
+    
+      await Promise.all(updatePromises);
+      return validResults;
   }
 
   async createAndUpdateWhatsappMessage(candidateProfileObj: allDataObjects.CandidateNode, userMessage: allDataObjects.whatappUpdateMessageObjType, apiToken: string) {
