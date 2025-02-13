@@ -518,7 +518,8 @@ const ChatTable: React.FC<ChatTableProps> = ({ individuals, selectedIndividual, 
   async function createCandidateShortlists() {
     try {
       const url = process.env.ENV_NODE === 'production' ? 'https://app.arxena.com' : 'http://localhost:3000';
-
+      console.log("This is the process.env.ENV_NODE:", process.env.ENV_NODE)
+      console.log("This is the url:", url)
       const response = await axios.post(
         url + '/arx-chat/create-shortlist',
         {
