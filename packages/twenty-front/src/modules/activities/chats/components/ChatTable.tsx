@@ -7,6 +7,7 @@ import MultiCandidateChat from './MultiCandidateChat';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import axios from 'axios';
+import ActionsBar from './ActionsBar'; // Add this import
 
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { Button } from '@/ui/input/button/components/Button';
@@ -132,26 +133,26 @@ const CheckboxCell = styled.div`
   }
 `;
 
-const ActionsBar = styled.div`
-  position: fixed;
-  bottom: 0;
-  left: 30%;
-  width: 40%;
-  right: 0;
-  background-color: white;
-  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
-  padding: 1rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  transform: translateY(100%);
-  transition: transform 0.3s ease-in-out;
-  z-index: 1000;
+// const ActionsBar = styled.div`
+//   position: fixed;
+//   bottom: 0;
+//   left: 30%;
+//   width: 40%;
+//   right: 0;
+//   background-color: white;
+//   box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+//   padding: 1rem;
+//   display: flex;
+//   align-items: center;
+//   justify-content: space-between;
+//   transform: translateY(100%);
+//   transition: transform 0.3s ease-in-out;
+//   z-index: 1000;
 
-  &[data-visible='true'] {
-    transform: translateY(0);
-  }
-`;
+//   &[data-visible='true'] {
+//     transform: translateY(0);
+//   }
+// `;
 
 const SelectedCount = styled.div`
   display: flex;
@@ -579,6 +580,38 @@ const ChatTable: React.FC<ChatTableProps> = ({ individuals, selectedIndividual, 
       });
     }
   }
+  async function createUpdateCandidateStatus() {
+    try {
+      const url = process.env.ENV_NODE === 'production' ? 'https://app.arxena.com' : 'http://localhost:3000';
+
+      const response = await axios.post(
+        url + '/arx-chat/refresh-chat-status-by-candidates',
+        {
+          candidateIds: selectedCandidateIds,
+        },
+        {
+          headers: {
+            authorization: `Bearer ${tokenPair?.accessToken?.token}`,
+            'content-type': 'application/json',
+            'x-schema-version': '66',
+          },
+        },
+      );
+      console.log('Shortlist created successfully:', response.data);
+      enqueueSnackBar('Shortlist created successfully', {
+        variant: SnackBarVariant.Success,
+        icon: <IconCopy size={theme.icon.size.md} />,
+        duration: 2000,
+      });
+    } catch (error) {
+      console.log('Error creating shortlist:', error);
+      enqueueSnackBar('Error creating shortlist', {
+        variant: SnackBarVariant.Error,
+        icon: <IconCopy size={theme.icon.size.md} />,
+        duration: 2000,
+      });
+    }
+  }
 
   // }
 
@@ -759,75 +792,17 @@ const ChatTable: React.FC<ChatTableProps> = ({ individuals, selectedIndividual, 
           </StyledTable>
         )}
       </TableContainer>
-
-      <ActionsBar data-visible={selectedIds.length > 0}>
-        <SelectedCount>
-          <IconUsers size={20} />
-          {selectedIds.length} {selectedIds.length === 1 ? 'person' : 'people'} selected
-          <CloseButton onClick={clearSelection}>
-            <IconX size={20} />
-          </CloseButton>
-        </SelectedCount>
-
-        <ActionButtons>
-          <Button
-            Icon={IconMessages}
-            variant="primary"
-            accent="blue"
-            title="View Chats"
-            onClick={() => {
-              handleViewChats();
-              enqueueSnackBar('Opened Chats', {
-                variant: SnackBarVariant.Success,
-                icon: <IconCopy size={theme.icon.size.md} />,
-                duration: 2000,
-              });
-            }}
-          />
-          <Button
-            Icon={IconMessages}
-            variant="primary"
-            accent="blue"
-            title="Create Chat Based Shortlist"
-            onClick={async () => {
-              await createChatBasedShortlistDelivery();
-              enqueueSnackBar('Create Chat Based Shortlist', {
-                variant: SnackBarVariant.Success,
-                icon: <IconCopy size={theme.icon.size.md} />,
-                duration: 2000,
-              });
-            }}
-          />
-          <Button
-            Icon={IconMessages}
-            variant="primary"
-            accent="blue"
-            title="Create Candidate Shortlist"
-            onClick={async () => {
-              await createCandidateShortlists();
-              enqueueSnackBar('Create Candidate Shortlists', {
-                variant: SnackBarVariant.Success,
-                icon: <IconCopy size={theme.icon.size.md} />,
-                duration: 2000,
-              });
-            }}
-          />
-          <Button
-            Icon={IconFileText}
-            variant="primary"
-            accent="blue"
-            title="View CVs"
-            onClick={() => {
-              handleViewCVs();
-              enqueueSnackBar('Opened CVs', {
-                variant: SnackBarVariant.Success,
-                icon: <IconCopy size={theme.icon.size.md} />,
-                duration: 2000,
-              });
-            }}
-          />
-        </ActionButtons>
-      </ActionsBar>
+      
+      
+      <ActionsBar 
+        selectedIds={selectedIds}
+        clearSelection={clearSelection}
+        handleViewChats={handleViewChats}
+        handleViewCVs={handleViewCVs}
+        createChatBasedShortlistDelivery={createChatBasedShortlistDelivery}
+        createUpdateCandidateStatus={createUpdateCandidateStatus}
+        createCandidateShortlists={createCandidateShortlists}
+      />
 
       <MultiCandidateChat isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} selectedPeople={selectedPeople} />
 
