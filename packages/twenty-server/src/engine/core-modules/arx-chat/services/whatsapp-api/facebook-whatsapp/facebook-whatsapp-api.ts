@@ -362,6 +362,52 @@ export class FacebookWhatsappChatApi {
     });
   }
 
+  async getWhatsappTemplates(apiToken: string) {
+    try {
+      const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+      const whatsappAPIToken = await this.workspaceQueryService.getWorkspaceApiKey(workspaceId, 'facebook_whatsapp_api_token');
+      const phoneNumberId = await this.workspaceQueryService.getWorkspaceApiKey(workspaceId, 'facebook_whatsapp_phone_number_id');
+      const facebookWhatsappAssetId = await this.workspaceQueryService.getWorkspaceApiKey(workspaceId, 'facebook_whatsapp_asset_id') || '201570686381881';
+      console.log("Using whatsappAPIToken::", whatsappAPIToken);
+      const config = {
+        method: 'get',
+        url: `https://graph.facebook.com/v21.0/${facebookWhatsappAssetId}/message_templates`,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${whatsappAPIToken}`
+        }
+      };
+      // Use a Map to track unique templates by ID
+      const templatesMap = new Map();
+      let nextPageUrl = config.url;
+      while (nextPageUrl) {
+        const response = await axios.get(nextPageUrl, {
+          headers: config.headers
+        });
+        // Add only UTILITY templates to map using ID as key to automatically deduplicate
+        response.data.data.forEach(template => {
+          if (template.category === 'UTILITY') {
+        templatesMap.set(template.name, template);
+          }
+        });
+        nextPageUrl = response.data.paging?.next || null;
+      }
+      // Convert map values back to array
+      const uniqueTemplates = Array.from(templatesMap.values());
+      console.log("All unique utility templates::", uniqueTemplates);
+      return uniqueTemplates;
+    } catch (error) {
+      const errorResponse = {
+        status: error.response?.status,
+        message: error.message,
+        details: error.response?.data
+      };
+      
+      console.error('Error fetching WhatsApp templates:', errorResponse);
+    }
+  }
+
+
   async sendWhatsappMessageVIAFacebookAPI(
     whatappUpdateMessageObj: allDataObjects.whatappUpdateMessageObjType,
     personNode: allDataObjects.PersonNode,

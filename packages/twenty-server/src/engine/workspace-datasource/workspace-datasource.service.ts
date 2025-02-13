@@ -133,7 +133,7 @@ export class WorkspaceDataSourceService {
 
       return await workspaceDataSource.query(query, parameters);
     } catch (error) {
-      throw new Error(
+      console.log(
         `Error executing raw query for workspace ${workspaceId}: ${error.message}`,
       );
     }

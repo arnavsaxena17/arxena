@@ -33,11 +33,9 @@ export class WorkspaceQueryService {
   }
   async getWorkspaceApiKey(workspaceId: string, keyName: string): Promise<string | null> {
     try {
-
       return this.getSpecificWorkspaceKey(workspaceId, keyName);
-  
     } catch (error) {
-      console.error(`Error fetching ${keyName} for workspace ${workspaceId}:`, error);
+      console.log(`Error fetching ${keyName} for workspace ${workspaceId}:`, error);
       return null;
     }
   }
@@ -282,6 +280,7 @@ async getWorkspaceApiKeys(workspaceId: string): Promise<{
       facebook_whatsapp_api_token?: string;
       facebook_whatsapp_phone_number_id?: string;
       facebook_whatsapp_app_id?: string;
+      facebook_whatsapp_asset_id?: string;
       }
   ): Promise<boolean> {
     try {

@@ -275,9 +275,10 @@ export class CreateMetaDataStructure {
       smart_proxy_url: undefined,
       whatsapp_key: undefined,
       anthropic_key: process.env.ANTHROPIC_API_KEY,
-      facebook_whatsapp_api_token: process.env.FACEBOOK_WHATSAPP_PERMANENT_API,
+      facebook_whatsapp_api_token: process.env.FACEBOOK_WHATSAPP_API_TOKEN,
       facebook_whatsapp_phone_number_id: process.env.FACEBOOK_WHATSAPP_PHONE_NUMBER_ID,
       facebook_whatsapp_app_id: undefined,
+      facebook_whatsapp_asset_id: process.env.FACEBOOK_WHATSAPP_ASSET_ID,
     });
     console.log('API keys updated successfully');
     return;

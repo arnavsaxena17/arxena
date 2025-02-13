@@ -5,6 +5,8 @@ import { tokenPairState } from '@/auth/states/tokenPairState';
 import FileUpload from './FileUpload';
 import SingleChatContainer from './SingleChatContainer';
 import dayjs from 'dayjs';
+import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
+import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 
 import React, { useEffect, useRef, useState } from 'react';
 import styled from '@emotion/styled';
@@ -13,7 +15,6 @@ import styled from '@emotion/styled';
 // import { io } from 'socket.io-client';
 import QRCode from 'react-qr-code';
 // import { p } from 'node_modules/msw/lib/core/GraphQLHandler-907fc607';
-import { useHotkeys } from 'react-hotkeys-hook';
 import { css } from '@emotion/react';
 import { Notes } from '@/activities/notes/components/Notes';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
@@ -39,7 +40,7 @@ const statusLabels: { [key: string]: string } = {
 };
 
 // const templatesList = [ ];
-const chatLayers = ['startChat', 'videoInterview', 'meetingScheduling'];
+const interimChats = ['remindCandidate', 'firstInterviewReminder', 'secondInterviewreminder'];
 
 const statusesArray = Object.keys(statusLabels);
 const PersonIcon = () => (
@@ -66,11 +67,6 @@ const StopIcon = () => (
   </svg>
 );
 
-// const StyledButtonGroup = styled.div`
-//   display: flex;
-//   gap: 8px;
-// `;
-
 const TopbarContainer = styled.div`
   background-color: #f3f4f6;
   padding: 8px;
@@ -86,19 +82,6 @@ const TopbarContainer = styled.div`
     padding: 4px;
   }
 `;
-
-interface Template {
-  id: string;
-  name: string;
-  components: {
-    type: string;
-    text: string;
-  }[];
-  language: string;
-  status: string;
-}
-
-
 
 const FieldsContainer = styled.div`
   display: flex;
@@ -192,7 +175,7 @@ const StyledTopBar = styled.div<{ sidebarWidth: number }>`
   filter: drop-shadow(0px 2px 4px rgba(0, 0, 0, 0.1));
   z-index: 10;
   backdrop-filter: saturate(180%) blur(10px);
-  width: 62vw;
+  width: 65%;
   box-sizing: border-box;
 
   @media (max-width: 768px) {
@@ -251,13 +234,16 @@ const StyledSelect = styled.select`
   border-radius: 4px;
   background-color: white;
   font-size: 14px;
+  min-width: 120px;
 
   @media (max-width: 768px) {
     padding: 0.3em;
     margin-right: 0.5em;
     font-size: 12px;
+    min-width: 100px;
   }
 `;
+
 
 const SeparatorDot = styled.span`
   margin: 0 4px;
@@ -429,11 +415,9 @@ const StyledButton = styled.button<{ bgColor: string }>`
 `;
 
 const NotesPanel = styled.div`
-  margin-top: 100px;
   display: flex;
   position: relative;
   overflow-y: scroll;
-  // width: 800px;
   border-left: 1px solid #ccc;
 `;
 
@@ -522,54 +506,6 @@ const StyledSvg = styled.svg`
   ${iconStyles}
 `;
 
-const NotificationContainer = styled.div`
-  position: fixed;
-  bottom: 1rem;
-  right: 1rem;
-  z-index: 50;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-`;
-
-const Notification = styled.div<{ type: 'success' | 'error' }>`
-  padding: 1rem;
-  border-radius: 0.375rem;
-  background-color: ${props => (props.type === 'success' ? '#34d399' : '#f87171')};
-  color: white;
-  min-width: 300px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  animation: slideIn 0.3s ease-out;
-
-  @keyframes slideIn {
-    from {
-      transform: translateX(100%);
-      opacity: 0;
-    }
-    to {
-      transform: translateX(0);
-      opacity: 1;
-    }
-  }
-`;
-
-const CloseButton = styled.button`
-  background: none;
-  border: none;
-  color: white;
-  cursor: pointer;
-  padding: 0.25rem;
-  opacity: 0.8;
-  transition: opacity 0.2s;
-
-  &:hover {
-    opacity: 1;
-  }
-`;
-
 const AdditionalInfoContent: React.FC<{
   messageCount: number;
   jobName: string;
@@ -599,12 +535,6 @@ const AdditionalInfoContent: React.FC<{
   </>
 );
 
-interface Toast {
-  id: number;
-  message: string;
-  type: 'success' | 'error';
-}
-
 const CopyIcon = () => (
   <StyledSvg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <path d="M8 4v12a2 2 0 002 2h8a2 2 0 002-2V7.242a2 2 0 00-.602-1.43L16.083 2.57A2 2 0 0014.685 2H10a2 2 0 00-2 2z" />
@@ -632,7 +562,6 @@ interface ChatWindowProps {
   onMessageSent: () => void;
   sidebarWidth: number;
 }
-
 
 export default function ChatWindow({ selectedIndividual, individuals, onMessageSent, sidebarWidth }: ChatWindowProps) {
   const allIndividuals = individuals;
@@ -664,86 +593,64 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
   const [shouldScrollToBottom, setShouldScrollToBottom] = useState(true);
   const [userHasScrolled, setUserHasScrolled] = useState(false);
   const [previousMessageCount, setPreviousMessageCount] = useState(0);
-  
-  
+
   const [templates, setTemplates] = useState<string[]>([]);
   const [templatePreviews, setTemplatePreviews] = useState<{ [key: string]: string }>({});
   const [selectedTemplate, setSelectedTemplate] = useState('');
   const [isLoadingTemplates, setIsLoadingTemplates] = useState(true);
 
-  const [toasts, setToasts] = useState<Toast[]>([]);
+  const { enqueueSnackBar } = useSnackBar();
 
-
-
-  async function fetchAllTemplates() {
+  const fetchAllTemplates = async () => {
     try {
-      let allTemplates: any[] = [];
-      let nextPageUrl = 'https://graph.facebook.com/v21.0/201570686381881/message_templates';
-      
-      while (nextPageUrl) {
-        const response = await axios.get(nextPageUrl, {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer EAAJZCWDSIUBwBOwZAXhyFg7YNiaqfCmPoAO0IUpJChN3ZBndHZB6jBDnFgekAAif8q5NOST5Xiah5gHGTGZAlEbkgCECjJEwJeoN57Y5JVPqvGgZCOF274Oi2lZCZA9iDHeeW8J7L277QIv7IKWkLHjVA8ZBzI1j3dsI2vz11ThnP2pfZBRYv97HeOPQaHeHL1QnbZB'
-          }
-        });
-        
-        allTemplates = [...allTemplates, ...response.data.data];
-        
-        // Check if there's a next page
-        nextPageUrl = response.data.paging?.next || null;
-      }
-      
-      return allTemplates;
+      const response = await axios.get(`${process.env.REACT_APP_SERVER_BASE_URL}/whatsapp-test/get-templates`, {
+        headers: {
+          Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
+        },
+      });
+
+      return response.data;
     } catch (error) {
       console.error('Error fetching templates:', error);
       return [];
     }
-  }
-  
-  
+  };
+
   const getTemplatePreview = (templateName: string): string => {
     if (!templateName) return 'Select a template to see preview';
-    
+
     return templatePreviews[templateName] || 'Template preview not available';
   };
-  
-  
-
 
   useEffect(() => {
     const loadTemplates = async () => {
       setIsLoadingTemplates(true);
       try {
         const fetchedTemplates = await fetchAllTemplates();
-        const templateNames = fetchedTemplates
-          .filter(template => template.status === 'APPROVED')
-          .map(template => template.name);
-        
+        console.log('REceived templates::', fetchedTemplates);
+        const templateNames = fetchedTemplates.templates.filter((template: { status: string }) => template.status === 'APPROVED').map((template: { name: any }) => template.name);
+        console.log('Template Names::', templateNames);
         const previews: { [key: string]: string } = {};
-        fetchedTemplates.forEach(template => {
-          const bodyComponent = template.components.find((comp: { type: string; }) => comp.type === 'BODY');
+        fetchedTemplates.templates.forEach((template: { components: any[]; name: string | number }) => {
+          const bodyComponent = template.components.find(comp => comp.type === 'BODY');
           if (bodyComponent) {
             previews[template.name] = bodyComponent.text;
           }
         });
-        
+
         setTemplates(templateNames);
         setTemplatePreviews(previews);
       } catch (error) {
         console.error('Error loading templates:', error);
-        addToast('Failed to load templates', 'error');
+        showSnackbar('Failed to load templates', 'error');
       } finally {
         setIsLoadingTemplates(false);
       }
     };
-    
+
     loadTemplates();
   }, []);
 
-
-  
-  
   // useEffect(() => {
   //   const URL = process.env.REACT_APP_SERVER_SOCKET_URL || 'http://localhost:3000';
   //   const socket = io(URL, {
@@ -857,20 +764,11 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
     }
   };
 
-  const addToast = (message: string, type: 'success' | 'error') => {
-    const newToast = {
-      id: Date.now(),
-      message,
-      type,
-    };
-    setToasts(prev => [...prev, newToast]);
-    setTimeout(() => {
-      removeToast(newToast.id);
-    }, 5000);
-  };
-
-  const removeToast = (id: number) => {
-    setToasts(prev => prev.filter(toast => toast.id !== id));
+  const showSnackbar = (message: string, type: 'success' | 'error') => {
+    enqueueSnackBar(message, {
+      variant: type === 'success' ? SnackBarVariant.Success : SnackBarVariant.Error,
+      duration: 5000,
+    });
   };
 
   async function getlistOfMessages(currentCandidateId: string) {
@@ -969,6 +867,10 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
     onMessageSent();
   };
 
+
+
+  
+  
   const handleShareJD = async () => {
     console.log('share JD');
     //@ts-ignore
@@ -1100,8 +1002,6 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
   const closedToBeContacted = allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.candConversationStatus === 'CONVERSATION_CLOSED_TO_BE_CONTACTED').length;
   const closedToBeContactedPercent = ((closedToBeContacted / allIndividualsForCurrentJob.length) * 100).toFixed(1);
 
-
-
   const statisticsArray = [
     { label: 'No Conversation', count: onlyAddedNoConversation, percent: parseFloat(onlyAddedNoConversationPercent) },
     { label: 'Started, No Response', count: conversationStartedNoResponse, percent: parseFloat(conversationStartedNoResponsePercent) },
@@ -1112,7 +1012,7 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
     { label: 'Keen to Chat', count: keenToChat, percent: parseFloat(keenToChatPercent) },
     { label: 'Followed Up', count: followedUpForChat, percent: parseFloat(followedUpForChatPercent) },
     { label: 'Reluctant on Compensation', count: reluctantCompensation, percent: parseFloat(reluctantCompensationPercent) },
-    { label: 'Closed to Contact', count: closedToBeContacted, percent: parseFloat(closedToBeContactedPercent) }
+    { label: 'Closed to Contact', count: closedToBeContacted, percent: parseFloat(closedToBeContactedPercent) },
   ];
   const sortedStatistics = [...statisticsArray].sort((a, b) => b.percent - a.percent);
 
@@ -1121,15 +1021,12 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
     { label: 'Unresponsive', count: unresponsive, percent: parseFloat(unresponsivePercent) },
     { label: 'Not Interested', count: notInterested, percent: parseFloat(notInterestedPercent) },
     { label: 'Not Fit', count: notFit, percent: parseFloat(notFitPercent) },
-    { label: 'Recruiter Interviews', count: recruiterInterviews, percent: parseFloat(recruiterInterviewsPercent) }
+    { label: 'Recruiter Interviews', count: recruiterInterviews, percent: parseFloat(recruiterInterviewsPercent) },
   ];
-  
 
   const sortedStatusStatistics = [...statusStatisticsArray].sort((a, b) => b.percent - a.percent);
 
-
   const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
-
 
   const handleTemplateSend = async (templateName: string) => {
     try {
@@ -1142,7 +1039,7 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
         { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } },
       );
       console.log('This is reponse:', response);
-      addToast('Template sent successfully', 'success');
+      showSnackbar('Template sent successfully', 'success');
       setSelectedTemplate(''); // Reset selection after successful send
       onMessageSent();
       const newMessage: frontChatTypes.MessageNode = {
@@ -1165,21 +1062,21 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
       setMessageHistory(prev => [...prev, newMessage]);
       scrollToBottom();
     } catch (error) {
-      addToast('Failed to send template', 'error');
+      showSnackbar('Failed to send template', 'error');
+
       console.error('Error sending template:', error);
     }
   };
 
-
-  const [selectedChatLayer, setSelectedChatLayer] = useState('');
-  const handleStartNewChatLayer = async (chatLayer: string) => {
+  const [selectedInterimChat, setSelectedInterimChat] = useState('');
+  const handleStartNewInterimChat = async (interimChat: string) => {
     try {
-      await axios.post(process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/send-chatLayer-start', { chatLayer, phoneNumberTo: currentIndividual?.phone }, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } });
-      addToast('Chat layer started successfully', 'success');
-      setSelectedChatLayer(''); // Reset selection after successful start
+      await axios.post(process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/start-interim-chat-prompt', { interimChat, phoneNumber: currentIndividual?.phone }, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } });
+      showSnackbar('Interim Chat started successfully', 'success');
+      setSelectedInterimChat(''); // Reset selection after successful start
     } catch (error) {
-      addToast('Failed to start chat layer', 'error');
-      console.error('Error starting chat layer:', error);
+      showSnackbar('Failed to start interim chat', 'error');
+      console.error('Error starting interim chat:', error);
     }
   };
 
@@ -1262,6 +1159,23 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
                           </option>
                         ))}{' '}
                       </StyledSelect>
+
+                      <StyledSelect value={selectedInterimChat} onChange={e => setSelectedInterimChat(e.target.value)}>
+                        <option value="" disabled>
+                          Select Interim Chat
+                        </option>
+                        {interimChats.map(layer => (
+                          <option key={layer} value={layer}>
+                            {layer}
+                          </option>
+                        ))}
+                      </StyledSelect>
+
+                      {/* Add new button for starting interim chat layer */}
+                      <StyledButton onClick={() => handleStartNewInterimChat(selectedInterimChat)} bgColor="black" data-tooltip="Start Interim Chat">
+                        Start Layer
+                      </StyledButton>
+
                       <StyledButton onClick={handleStopCandidate} bgColor="black" data-tooltip="Stop Chat">
                         {' '}
                         <StopIcon />{' '}
@@ -1359,28 +1273,19 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
                     </div>
                     {/* <br />
                     <div>
-                    <Select value={selectedChatLayer} onChange={e => setSelectedChatLayer(e.target.value)}>
-                        <option value="" disabled> Select a ChatLayer </option>
-                        {chatLayers.map(layer => (
+                    <Select value={selectedInterimChat} onChange={e => setSelectedInterimChat(e.target.value)}>
+                        <option value="" disabled> Select a InterimChat </option>
+                        {interimChats.map(layer => (
                         <option key={layer} value={layer}>{layer}</option>
                         ))}
                     </Select>
-                    <ActionButton onClick={() => handleStartNewChatLayer(selectedTemplate)}>Start New Chat Layer</ActionButton>
+                    <ActionButton onClick={() => handleStartNewInterimChat(selectedTemplate)}>Start New Chat Layer</ActionButton>
                     </div> */}
                   </ControlsContainer>
 
                   <TemplatePreview>{getTemplatePreview(selectedTemplate)}</TemplatePreview>
                 </PreviewSection>
               </Container>
-
-              <NotificationContainer>
-                {toasts.map(toast => (
-                  <Notification key={toast.id} type={toast.type}>
-                    <span>{toast.message}</span>
-                    <CloseButton onClick={() => removeToast(toast.id)}>✕</CloseButton>
-                  </Notification>
-                ))}
-              </NotificationContainer>
 
               <InputWrapper>
                 <div style={{ display: 'flex', gap: '8px' }}>

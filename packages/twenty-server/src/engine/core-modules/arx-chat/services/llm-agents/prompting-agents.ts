@@ -110,7 +110,8 @@ export class PromptingAgents {
     receiveCV = ``;
     const jobProfile = personNode?.candidates?.edges[0]?.node?.jobs;
     const questionArray = await this.getQuestionsToAsk(personNode, candidateJob, apiToken);
-    const formattedQuestions = '\t' + questionArray.map((question, index) => `${index + 1}. ${question}`).join('\n\t');
+    const filteredQuestionArray = questionArray.filter(question => !question.toLowerCase().includes('aadhaar'));
+    const formattedQuestions = '\t' + filteredQuestionArray.map((question, index) => `${index + 1}. ${question}`).join('\n\t');
     let mannerOfAskingQuestions;
     mannerOfAskingQuestions = 'Ask these questions in any order one by one and ensure a natural continuous conversation.';
     mannerOfAskingQuestions = 'Ask these questions in a single message and ask the candidate to answer each of them.';

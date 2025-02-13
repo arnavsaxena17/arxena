@@ -108,6 +108,35 @@ export class ArxChatEndpoint {
     return response.data;
   }
 
+  @Post('start-interim-chat-prompt')
+  @UseGuards(JwtAuthGuard)
+  async startChatPrompt(@Req() request: any) {
+    const apiToken = request.headers.authorization.split(' ')[1]; // Assuming Bearer token
+    const interimChat = request.body.interimChat;
+    const phoneNumber = request.body.phoneNumber;
+    console.log('called interimChat:', interimChat);
+    const personObj: allDataObjects.PersonNode = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPhoneNumber(phoneNumber, apiToken);
+    const candidateId = personObj.candidates?.edges[0]?.node?.id;
+    const chatReply = interimChat;
+      const whatsappIncomingMessage: allDataObjects.chatMessageType = {
+        phoneNumberFrom: phoneNumber,
+        phoneNumberTo: allDataObjects.recruiterProfile.phone,
+        messages: [{ role: 'user', content: chatReply }],
+        messageType: 'string',
+      };
+      const candidateProfileData = await new FilterCandidates(this.workspaceQueryService).getCandidateInformation(whatsappIncomingMessage,apiToken);
+      const candidateJob:allDataObjects.Jobs = candidateProfileData.jobs
+      console.log('This is the candiate who has sent us the message., we have to update the database that this message has been recemivged::', chatReply);
+      const replyObject = {
+        chatReply: chatReply,
+        whatsappDeliveryStatus: 'receivedFromCandidate',
+        phoneNumberFrom: phoneNumber,
+        whatsappMessageId: "NA",
+      };
+      const responseAfterMessageUpdate = await new IncomingWhatsappMessages(this.workspaceQueryService).createAndUpdateIncomingCandidateChatMessage(replyObject, candidateProfileData,candidateJob, apiToken);
+    return;
+  }
+
   @Post('send-chat')
   @UseGuards(JwtAuthGuard)
   async SendChat(@Req() request: any): Promise<object> {

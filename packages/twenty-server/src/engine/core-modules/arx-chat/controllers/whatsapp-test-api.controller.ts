@@ -1,4 +1,4 @@
-import { Controller,  Injectable,  Post, Req, UseGuards } from '@nestjs/common';
+import { Controller,  Get,  Injectable,  Post, Req, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/engine/guards/jwt.auth.guard';
 import * as allDataObjects from '../services/data-model-objects';
 import { FacebookWhatsappChatApi } from '../services/whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
@@ -86,6 +86,17 @@ export class WhatsappTestAPI {
     const downloadAttachmentMessageObj = request.body;
     return { status: 'success' };
   }
+
+
+  @Get('get-templates')
+  @UseGuards(JwtAuthGuard)
+  async getTemplates(@Req() request: any): Promise<object> {
+
+    const apiToken = request.headers.authorization.split(' ')[1];
+    const templates = await new FacebookWhatsappChatApi(this.workspaceQueryService).getWhatsappTemplates(apiToken);
+    return { templates };
+}
+
 }
 
 
