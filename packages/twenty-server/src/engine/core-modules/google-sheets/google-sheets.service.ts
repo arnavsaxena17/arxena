@@ -847,8 +847,9 @@ export class GoogleSheetsService {
       spreadsheetId,
       fields: 'sheets.properties'
     });
-    
-    if (!response.data.sheets?.[0]?.properties?.sheetId) {
+    console.log("This is the response from getSheetId:::", response);
+    console.log("This is the response data from getSheetId:::", response?.data?.sheets?.[0]);
+    if (typeof response.data.sheets?.[0]?.properties?.sheetId !== 'number') {
       throw new Error('Sheet ID not found in response');
     }
     
