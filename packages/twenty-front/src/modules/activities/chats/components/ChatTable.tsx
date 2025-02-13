@@ -517,20 +517,13 @@ const ChatTable: React.FC<ChatTableProps> = ({ individuals, selectedIndividual, 
 
   async function createCandidateShortlists() {
     try {
-      const url = process.env.ENV_NODE === 'production' ? 'https://app.arxena.com' : 'http://localhost:3000';
+      const url = process.env.ENV_NODE === 'production' ? 'https://app.arxena.com/app' : 'http://localhost:3000';
       console.log("This is the process.env.ENV_NODE:", process.env.ENV_NODE)
       console.log("This is the url:", url)
       const response = await axios.post(
         url + '/arx-chat/create-shortlist',
-        {
-          candidateIds: selectedCandidateIds,
-        },
-        {
-          headers: {
-            authorization: `Bearer ${tokenPair?.accessToken?.token}`,
-            'content-type': 'application/json',
-            'x-schema-version': '66',
-          },
+        { candidateIds: selectedCandidateIds, }, {
+          headers: { authorization: `Bearer ${tokenPair?.accessToken?.token}`, 'content-type': 'application/json', 'x-schema-version': '66', },
         },
       );
       console.log('Shortlist created successfully:', response.data);
@@ -551,7 +544,7 @@ const ChatTable: React.FC<ChatTableProps> = ({ individuals, selectedIndividual, 
 
   async function createChatBasedShortlistDelivery() {
     try {
-      const url = process.env.ENV_NODE === 'production' ? 'https://app.arxena.com' : 'http://localhost:3000';
+      const url = process.env.ENV_NODE === 'production' ? 'https://app.arxena.com/app' : 'http://localhost:3000';
 
       const response = await axios.post(
         url + '/arx-chat/chat-based-shortlist-delivery',
