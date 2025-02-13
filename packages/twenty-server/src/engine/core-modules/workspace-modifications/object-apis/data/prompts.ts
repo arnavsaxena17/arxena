@@ -169,42 +169,54 @@ export const prompts = [
             Sample Conversations with Classifications
 
             Example 1: Positive Progress
-            Recruiter10:30 AM
+            Recruiter 10:30 AM
             Hi Rahul, I'm Priya from TechHire, recruiting for a Senior Developer role at XYZ Corp. Would you be interested in learning more?
-            Rahul10:45 AM
+            Rahul 10:45 AM
             Yes, I'd be interested in knowing more about the role.
-            Recruiter11:00 AM
+            Recruiter 11:00 AM
             Great! Here's the JD. Could you share your current CTC and notice period?
-            Rahul11:15 AM
+            Rahul 11:15 AM
             Thanks for sharing. My current CTC is 24L, expecting 35L. Notice period is 3 months.
-
             Classification: CANDIDATE_IS_KEEN_TO_CHAT
             Reasoning: Candidate showed interest, recruiter asked questions, candidate responded promptly, and shared required information.
 
             Example 2: No Response
-            Recruiter2:00 PM
+            Recruiter 2:00 PM
             Hi Neha, I'm Amit from JobSearch Inc. We have an exciting Product Manager role. Would you like to learn more?
             [No response received]
             Classification: CONVERSATION_STARTED_HAS_NOT_RESPONDED
             Reasoning: Initial message sent, no response from candidate.
-            Example 3: Closed Positive
-            Recruiter9:00 AM
-            Hi Arun, recruiting for CTO position at a funded startup. Compensation range 80L-1.2Cr. Interested?
-            Arun9:30 AM
-            Yes, quite interested. Please share details.
-            Recruiter10:00 AM
-            [Shares JD] What's your current CTC and expected?
-            Arun10:15 AM
-            Current is 90L, expecting 1.1Cr.
-            Recruiter10:30 AM
-            Thanks, I'll schedule a call and get back to you with slots.
+            
+            Example 3: Stopped Responding to Questions
+            Recruiter 10:30 AM
+            Hi Rahul, I'm Priya from TechHire, recruiting for a Senior Developer role at XYZ Corp. Would you be interested in learning more?
+            Rahul 10:45 AM
+            Yes, I'd be interested in knowing more about the role.
+            Recruiter 11:00 AM
+            Great! Here's the JD. Could you share your current CTC and notice period?
 
+            Classification: STOPPED_RESPONDING_ON_QUESTIONS
+            Reasoning: candidate has shown Interest, recruiter has asked questions, candidate has not responded to questions.
+
+            
+            Example 4: Closed Positive
+            Recruiter 9:00 AM
+            Hi Arun, recruiting for CTO position at a funded startup. Compensation range 80L-1.2Cr. Interested?
+            Arun 9:30 AM
+            Yes, quite interested. Please share details.
+            Recruiter 10:00 AM
+            [Shares JD] What's your current CTC and expected?
+            Arun 10:15 AM
+            Current is 90L, expecting 1.1Cr.
+            Recruiter 10:30 AM
+            Thanks, I'll schedule a call and get back to you with slots.
             Classification: CONVERSATION_CLOSED_TO_BE_CONTACTED
             Reasoning: candidate has shown Interest, recruiter has asked questions, candidate has responded, salary in range, recruiter promised follow-up.
 
             Status Codes and Classification Rules
             Available Statuses
             ONLY_ADDED_NO_CONVERSATION
+            STOPPED_RESPONDING_ON_QUESTIONS
             CONVERSATION_STARTED_HAS_NOT_RESPONDED
             SHARED_JD_HAS_NOT_RESPONDED
             CANDIDATE_STOPPED_RESPONDING

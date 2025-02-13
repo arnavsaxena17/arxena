@@ -1051,6 +1051,34 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
   const closedToBeContacted = allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.candConversationStatus === 'CONVERSATION_CLOSED_TO_BE_CONTACTED').length;
   const closedToBeContactedPercent = ((closedToBeContacted / allIndividualsForCurrentJob.length) * 100).toFixed(1);
 
+
+
+  const statisticsArray = [
+    { label: 'No Conversation', count: onlyAddedNoConversation, percent: parseFloat(onlyAddedNoConversationPercent) },
+    { label: 'Started, No Response', count: conversationStartedNoResponse, percent: parseFloat(conversationStartedNoResponsePercent) },
+    { label: 'Shared JD, No Response', count: sharedJdNoResponse, percent: parseFloat(sharedJdNoResponsePercent) },
+    { label: 'Refuses Relocation', count: refusesToRelocate, percent: parseFloat(refusesToRelocatePercent) },
+    { label: 'Stopped Responding', count: stoppedRespondingQuestions, percent: parseFloat(stoppedRespondingQuestionsPercent) },
+    { label: 'Salary Out of Range', count: salaryOutOfRange, percent: parseFloat(salaryOutOfRangePercent) },
+    { label: 'Keen to Chat', count: keenToChat, percent: parseFloat(keenToChatPercent) },
+    { label: 'Followed Up', count: followedUpForChat, percent: parseFloat(followedUpForChatPercent) },
+    { label: 'Reluctant on Compensation', count: reluctantCompensation, percent: parseFloat(reluctantCompensationPercent) },
+    { label: 'Closed to Contact', count: closedToBeContacted, percent: parseFloat(closedToBeContactedPercent) }
+  ];
+  const sortedStatistics = [...statisticsArray].sort((a, b) => b.percent - a.percent);
+
+  const statusStatisticsArray = [
+    { label: 'Screening', count: screeningState, percent: parseFloat(screeningPercent) },
+    { label: 'Unresponsive', count: unresponsive, percent: parseFloat(unresponsivePercent) },
+    { label: 'Not Interested', count: notInterested, percent: parseFloat(notInterestedPercent) },
+    { label: 'Not Fit', count: notFit, percent: parseFloat(notFitPercent) },
+    { label: 'Recruiter Interviews', count: recruiterInterviews, percent: parseFloat(recruiterInterviewsPercent) }
+  ];
+  
+
+  const sortedStatusStatistics = [...statusStatisticsArray].sort((a, b) => b.percent - a.percent);
+
+
   const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
 
   const [selectedTemplate, setSelectedTemplate] = useState('');
@@ -1322,16 +1350,22 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
                   <StyledButtonBottom onClick={handleShareJD}>Share JD</StyledButtonBottom>
                 </div>
                 <div style={{ fontSize: '0.875rem', color: '#666' }}>
-                  {' '}
-                  Last Status: {lastStatus} | Total: {totalCandidates} | Screening: {screeningState} ({screeningPercent}%) | Unresponsive: {unresponsive} ({unresponsivePercent}%) | Not Interested: {notInterested} ({notInterestedPercent}%) | Not Fit:{' '}
-                  {notFit} ({notFitPercent}%) | Recruiter Interviews: {recruiterInterviews} ({recruiterInterviewsPercent}%){' '}
+                  Last Status: {lastStatus} | Total: {totalCandidates} |{' '}
+                  {sortedStatusStatistics.map((stat, index) => (
+                    <React.Fragment key={stat.label}>
+                      {stat.label}: {stat.count} ({stat.percent}%)
+                      {index < sortedStatusStatistics.length - 1 ? ' | ' : ''}
+                    </React.Fragment>
+                  ))}
                 </div>
                 <div style={{ fontSize: '0.875rem', color: '#666', whiteSpace: 'nowrap', overflow: 'auto' }}>
-                  {' '}
-                  Total: {totalCandidates} | No Conversation: {onlyAddedNoConversation} ({onlyAddedNoConversationPercent}%) | Started, No Response: {conversationStartedNoResponse} ({conversationStartedNoResponsePercent}%) | Shared JD, No Response:{' '}
-                  {sharedJdNoResponse} ({sharedJdNoResponsePercent}%) | Refuses Relocation: {refusesToRelocate} ({refusesToRelocatePercent}%) | Stopped Responding: {stoppedRespondingQuestions} ({stoppedRespondingQuestionsPercent}%) | Salary Out of
-                  Range: {salaryOutOfRange} ({salaryOutOfRangePercent}%) | Keen to Chat: {keenToChat} ({keenToChatPercent}%) | Followed Up: {followedUpForChat} ({followedUpForChatPercent}%) | Reluctant on Compensation: {reluctantCompensation} (
-                  {reluctantCompensationPercent}%) | Closed to Contact: {closedToBeContacted} ({closedToBeContactedPercent}%){' '}
+                  Total: {totalCandidates} |{' '}
+                  {sortedStatistics.map((stat, index) => (
+                    <React.Fragment key={stat.label}>
+                      {stat.label}: {stat.count} ({stat.percent}%)
+                      {index < sortedStatistics.length - 1 ? ' | ' : ''}
+                    </React.Fragment>
+                  ))}
                 </div>
               </InputWrapper>
             </StyledChatInputBox>

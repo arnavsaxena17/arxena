@@ -111,7 +111,7 @@ export class IncomingWhatsappMessages {
           [workspaceId, phoneNumberId],
           workspaceId
         );
-        console.log("This is the workspace we plan to use:", workspace, "for the phone numbers::", phoneNumber)
+        console.log("This is the workspace we plan to use:", workspace[0].displayName, "for the phone numbers::", phoneNumber)
         if (workspace.length === 0) {
           console.log('NO WORKSPACE FOUND FOR WHATSAPP INCOMING PHONE NUMBER');
           return null;
