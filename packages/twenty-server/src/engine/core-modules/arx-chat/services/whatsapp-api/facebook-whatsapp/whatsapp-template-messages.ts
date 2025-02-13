@@ -41,6 +41,11 @@ export class WhatsappTemplateMessages{
           meetingDate.setDate(meetingDate.getDate() + 1);
         }
         const formattedMeetingWeekdayDate = meetingDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+
+        const currentISTTime = new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
+        const currentHour = new Date(currentISTTime).getHours();
+        const dayText = currentHour < 17 ? "today" : "tomorrow";
+
     
         console.log("Going to get utiltiy messages")
         const templates = ['recruitment', 'application', 'application02','share_video_interview_link_direct_without_button', 'share_video_interview_link_with_start_link','share_video_interview_link_direct','rejection_template','follow_up'];
@@ -224,9 +229,41 @@ export class WhatsappTemplateMessages{
 
           case 'application03_any_source_passive_chat_any':
             // First template example
-            const currentISTTime = new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
-            const currentHour = new Date(currentISTTime).getHours();
-            const dayText = currentHour < 17 ? "today" : "tomorrow";
+
+            templateMessageObj = JSON.stringify({
+              messaging_product: 'whatsapp',
+              to: sendTemplateMessageObj.recipient,
+              type: 'template',
+              template: {
+              name: sendTemplateMessageObj.template_name,
+              language: {
+                code: 'en',
+              },
+              components: [
+                {
+                type: 'body',
+                parameters: [
+                  { type: 'text', text: sendTemplateMessageObj.candidateFirstName, },
+                  { type: 'text', text: sendTemplateMessageObj.recruiterName, },
+                  { type: 'text', text: sendTemplateMessageObj.recruiterJobTitle, },
+                  { type: 'text', text: sendTemplateMessageObj.recruiterCompanyName, },
+                  { type: 'text', text: sendTemplateMessageObj.recruiterCompanyDescription, },
+                  { type: 'text', text: "a " + sendTemplateMessageObj.jobPositionName, },
+                  { type: 'text', text: sendTemplateMessageObj.descriptionOneliner, },
+                  { type: 'text', text: sendTemplateMessageObj.jobLocation, },
+                  { type: 'text', text: sendTemplateMessageObj.candidateSource, },
+                  { type: 'text', text: dayText, },
+                ],
+                },
+              ],
+              },
+            });
+            // console.log("This is the template message object created:", templateMessageObj)
+    
+          break;
+
+          case 'application_any_source_passive_chat_any_company':
+            // First template example
 
             templateMessageObj = JSON.stringify({
               messaging_product: 'whatsapp',

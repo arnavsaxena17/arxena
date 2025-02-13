@@ -66,7 +66,7 @@ export class ChatControls {
           jobCode: whatappUpdateMessageObj?.candidateProfile?.jobs?.jobCode,
           jobLocation: whatappUpdateMessageObj?.candidateProfile?.jobs?.jobLocation,
           videoInterviewLink: videoInterviewLink,
-          candidateSource: "Apna",
+          candidateSource: "Apna Jobs",
 
         };
         response = await new FacebookWhatsappChatApi(this.workspaceQueryService).sendWhatsappUtilityMessage(sendTemplateMessageObj, apiToken);

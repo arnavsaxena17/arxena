@@ -24,6 +24,7 @@ import { graphQltoUpdateOneCandidate, mutationToUpdateOnePerson } from '../graph
 import { useNavigate } from 'react-router-dom';
 
 import { recordStoreFamilyState } from '@/object-record/record-store/states/recordStoreFamilyState';
+// import { templates, getTemplatePreview } from './chatTemplates';
 
 const statusLabels: { [key: string]: string } = {
   NOT_INTERESTED: 'Not Interested',
@@ -38,7 +39,6 @@ const statusLabels: { [key: string]: string } = {
 };
 
 // const templatesList = [ ];
-const templates = ['recruitment', 'application', 'application02', 'share_video_interview_link_direct', 'rejection_template', 'follow_up'];
 const chatLayers = ['startChat', 'videoInterview', 'meetingScheduling'];
 
 const statusesArray = Object.keys(statusLabels);
@@ -86,6 +86,19 @@ const TopbarContainer = styled.div`
     padding: 4px;
   }
 `;
+
+interface Template {
+  id: string;
+  name: string;
+  components: {
+    type: string;
+    text: string;
+  }[];
+  language: string;
+  status: string;
+}
+
+
 
 const FieldsContainer = styled.div`
   display: flex;
@@ -613,54 +626,13 @@ const AttachmentIcon = () => (
 
 const formatDate = (date: string) => dayjs(date).format('YYYY-MM-DD');
 
-const getTemplatePreview = (templateName: string) => {
-  switch (templateName) {
-    case 'recruitment':
-      return `Dear [Candidate Name],
-
-My name is [Recruiter Name], [Job Title] at [Company Name], [Company Description]. I am reaching out to you regarding the [Position Name] position for [Location].`;
-
-    case 'application':
-      return `Dear [Candidate Name],
-
-Thank you for your time earlier. Please let me know your availability for the next steps.`;
-
-    case 'application02':
-      return `Dear [Candidate Name],
-
-I hope this message finds you well. I am following up to check on your availability for the next steps regarding the [Position Name] position in [Location]. Kindly update me when you get a chance.`;
-
-    case 'share_video_interview_link_direct':
-      return `Dear [Candidate Name],
-
-Please complete your video interview within the next 10 mins. Here's your link: [Interview Link]
-The interview will take approximately 15 mins and include 3-4 questions.`;
-
-    case 'rejection_template':
-      return `Hi [Candidate Name],
-
-Further to your profile discussed last week, we discussed internally and believe that your profile won't be a good fit.
-Will reach out to you in the future with relevant roles.`;
-
-    case 'follow_up':
-      return `Hi [Candidate Name],
-
-Following up on our discussion from [Date]. Would you be available [Proposed Date] for a quick chat?
-
-Best regards,
-[Recruiter Name]`;
-
-    default:
-      return 'Select a template to see preview';
-  }
-};
-
 interface ChatWindowProps {
   selectedIndividual: string;
   individuals: frontChatTypes.PersonNode[];
   onMessageSent: () => void;
   sidebarWidth: number;
 }
+
 
 export default function ChatWindow({ selectedIndividual, individuals, onMessageSent, sidebarWidth }: ChatWindowProps) {
   const allIndividuals = individuals;
@@ -692,9 +664,86 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
   const [shouldScrollToBottom, setShouldScrollToBottom] = useState(true);
   const [userHasScrolled, setUserHasScrolled] = useState(false);
   const [previousMessageCount, setPreviousMessageCount] = useState(0);
+  
+  
+  const [templates, setTemplates] = useState<string[]>([]);
+  const [templatePreviews, setTemplatePreviews] = useState<{ [key: string]: string }>({});
+  const [selectedTemplate, setSelectedTemplate] = useState('');
+  const [isLoadingTemplates, setIsLoadingTemplates] = useState(true);
 
   const [toasts, setToasts] = useState<Toast[]>([]);
 
+
+
+  async function fetchAllTemplates() {
+    try {
+      let allTemplates: any[] = [];
+      let nextPageUrl = 'https://graph.facebook.com/v21.0/201570686381881/message_templates';
+      
+      while (nextPageUrl) {
+        const response = await axios.get(nextPageUrl, {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer EAAJZCWDSIUBwBOwZAXhyFg7YNiaqfCmPoAO0IUpJChN3ZBndHZB6jBDnFgekAAif8q5NOST5Xiah5gHGTGZAlEbkgCECjJEwJeoN57Y5JVPqvGgZCOF274Oi2lZCZA9iDHeeW8J7L277QIv7IKWkLHjVA8ZBzI1j3dsI2vz11ThnP2pfZBRYv97HeOPQaHeHL1QnbZB'
+          }
+        });
+        
+        allTemplates = [...allTemplates, ...response.data.data];
+        
+        // Check if there's a next page
+        nextPageUrl = response.data.paging?.next || null;
+      }
+      
+      return allTemplates;
+    } catch (error) {
+      console.error('Error fetching templates:', error);
+      return [];
+    }
+  }
+  
+  
+  const getTemplatePreview = (templateName: string): string => {
+    if (!templateName) return 'Select a template to see preview';
+    
+    return templatePreviews[templateName] || 'Template preview not available';
+  };
+  
+  
+
+
+  useEffect(() => {
+    const loadTemplates = async () => {
+      setIsLoadingTemplates(true);
+      try {
+        const fetchedTemplates = await fetchAllTemplates();
+        const templateNames = fetchedTemplates
+          .filter(template => template.status === 'APPROVED')
+          .map(template => template.name);
+        
+        const previews: { [key: string]: string } = {};
+        fetchedTemplates.forEach(template => {
+          const bodyComponent = template.components.find((comp: { type: string; }) => comp.type === 'BODY');
+          if (bodyComponent) {
+            previews[template.name] = bodyComponent.text;
+          }
+        });
+        
+        setTemplates(templateNames);
+        setTemplatePreviews(previews);
+      } catch (error) {
+        console.error('Error loading templates:', error);
+        addToast('Failed to load templates', 'error');
+      } finally {
+        setIsLoadingTemplates(false);
+      }
+    };
+    
+    loadTemplates();
+  }, []);
+
+
+  
+  
   // useEffect(() => {
   //   const URL = process.env.REACT_APP_SERVER_SOCKET_URL || 'http://localhost:3000';
   //   const socket = io(URL, {
@@ -1081,8 +1130,6 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
 
   const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
 
-  const [selectedTemplate, setSelectedTemplate] = useState('');
-  const [selectedChatLayer, setSelectedChatLayer] = useState('');
 
   const handleTemplateSend = async (templateName: string) => {
     try {
@@ -1123,6 +1170,8 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
     }
   };
 
+
+  const [selectedChatLayer, setSelectedChatLayer] = useState('');
   const handleStartNewChatLayer = async (chatLayer: string) => {
     try {
       await axios.post(process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/send-chatLayer-start', { chatLayer, phoneNumberTo: currentIndividual?.phone }, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } });
