@@ -583,7 +583,7 @@ const ChatTable: React.FC<ChatTableProps> = ({ individuals, selectedIndividual, 
   async function createUpdateCandidateStatus() {
     try {
       const url = process.env.ENV_NODE === 'production' ? 'https://app.arxena.com' : 'http://localhost:3000';
-
+      console.log("using Url:", url)
       const response = await axios.post(
         url + '/arx-chat/refresh-chat-status-by-candidates',
         {
