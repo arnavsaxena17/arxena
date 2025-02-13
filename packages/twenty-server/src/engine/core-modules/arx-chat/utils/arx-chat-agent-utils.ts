@@ -56,7 +56,8 @@ export function getContentTypeFromFileName(filename: string) {
 
     let formattedChat = '';
     let messageCount = 1;
-    messages.forEach(message => {
+    // Create a copy of messages array and reverse it
+    [...messages].reverse().forEach(message => {
       const timestamp = new Date(message.createdAt).toLocaleString();
       let sender = '';
       if (message.name === 'candidateMessage') {

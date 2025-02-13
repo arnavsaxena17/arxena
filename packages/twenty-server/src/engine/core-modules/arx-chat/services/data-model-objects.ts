@@ -49,26 +49,22 @@ export interface ChatControlNode {
     evaluator: (candidate: CandidateNode) => boolean;
   }[];
 }
-
-
-
-
 export const allStatusesArray: [string, ...string[]] = [
   "ONLY_ADDED_NO_CONVERSATION",
   "CONVERSATION_STARTED_HAS_NOT_RESPONDED",
   "SHARED_JD_HAS_NOT_RESPONDED",
   "CANDIDATE_REFUSES_TO_RELOCATE",
+  "STOPPED_RESPONDING_ON_QUESTIONS",
+  "CANDIDATE_SALARY_OUT_OF_RANGE",
   "CANDIDATE_IS_KEEN_TO_CHAT",
   "CANDIDATE_HAS_FOLLOWED_UP_TO_SETUP_CHAT",
   "CANDIDATE_IS_RELUCTANT_TO_DISCUSS_COMPENSATION",
-  "CONVERSATION_CLOSED_TO_BE_CONTACTED",
-  "CANDIDATE_SALARY_OUT_OF_RANGE",
   "CANDIDATE_DECLINED_OPPORTUNITY",
+  "CONVERSATION_CLOSED_TO_BE_CONTACTED",
 ];
 
 export type allStatuses = typeof allStatusesArray[number];
 export type statuses = typeof statusesArray[number];
-
 
 export type chatControlType = "startChat" | "allStartedAndStoppedChats" | "startVideoInterviewChat" | "startMeetingSchedulingChat";
 export interface chatControls {
@@ -624,19 +620,16 @@ export interface candidateProfileType {
   responsibleWorkspaceMemberId: string;
   input: string; // Add the 'input' property
 }
-
 export interface OpenAIArxSingleStepClient {
   personNode: PersonNode;
   openAIclient: OpenAI;
   anthropic: Anthropic;
 }
-
 export interface OpenAIArxMultiStepClient {
   personNode: PersonNode;
   openAIclient: OpenAI;
   anthropic: Anthropic;
 }
-
 export interface AttachmentMessageObject {
   phoneNumberTo: string;
   phoneNumberFrom: string;

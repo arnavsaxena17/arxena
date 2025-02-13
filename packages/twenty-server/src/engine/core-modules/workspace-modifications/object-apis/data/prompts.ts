@@ -215,12 +215,12 @@ export const prompts = [
 
             Status Codes and Classification Rules
             Available Statuses
+
             ONLY_ADDED_NO_CONVERSATION
             STOPPED_RESPONDING_ON_QUESTIONS
             CONVERSATION_STARTED_HAS_NOT_RESPONDED
             SHARED_JD_HAS_NOT_RESPONDED
-            CANDIDATE_STOPPED_RESPONDING
-            CANDIDATE_DOES_NOT_WANT_TO_RELOCATE
+            CANDIDATE_REFUSES_TO_RELOCATE
             CANDIDATE_IS_KEEN_TO_CHAT
             CANDIDATE_HAS_FOLLOWED_UP_TO_SETUP_CHAT
             CANDIDATE_SALARY_OUT_OF_RANGE
@@ -246,13 +246,13 @@ export const prompts = [
             When: No response after JD shared
 
 
-            Negative Outcomes
-            CANDIDATE_STOPPED_RESPONDING
-            When: No response after any recruiter question
-            When: Extended silence in active conversation
+            CANDIDATE_IS_RELUCTANT_TO_DISCUSS_COMPENSATION
+            When: When candidate has shown interest but when asked salary has mentioned that they can discuss over a call
+            When: Candidate has shown interest, answered other questions but has not shared salary details
+            When: Candidate has shown interest but has not shared salary details 
 
 
-            CANDIDATE_DOES_NOT_WANT_TO_RELOCATE
+            CANDIDATE_REFUSES_TO_RELOCATE
             When: Explicit unwillingness to relocate
             When: Clear statement about location constraints
 
@@ -287,7 +287,7 @@ export const prompts = [
             Priority Order for Classification
             CANDIDATE_DECLINED_OPPORTUNITY
             CANDIDATE_SALARY_OUT_OF_RANGE
-            CANDIDATE_DOES_NOT_WANT_TO_RELOCATE
+            CANDIDATE_REFUSES_TO_RELOCATE
             CANDIDATE_HAS_FOLLOWED_UP_TO_SETUP_CHAT
             CONVERSATION_CLOSED_TO_BE_CONTACTED
 
