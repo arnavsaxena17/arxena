@@ -107,7 +107,7 @@ export class IncomingWhatsappMessages {
         );
         const phoneNumberId = requestBody?.entry[0]?.changes[0]?.value.metadata?.phone_number_id;
         const workspace = await this.workspaceQueryService.executeRawQuery(
-          `SELECT * FROM core.workspace WHERE id = $1 AND facebook_whatsapp_phone_number_id = $2`,
+          `SELECT * FROM core.workspace WHERE id = $1 AND facebook_whatsapp_number_id = $2`,
           [workspaceId, phoneNumberId],
           workspaceId
         );

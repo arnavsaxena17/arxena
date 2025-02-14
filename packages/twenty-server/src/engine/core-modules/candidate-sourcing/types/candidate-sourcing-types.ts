@@ -296,7 +296,7 @@ export const columnDefinitions: ColumnDefinition[] = [
   },
   {
     key: 'is_profile_purchased',
-    header: 'isProfilePurchsed',
+    header: 'isProfilePurchased',
     type: 'boolean',
     format: (value: boolean) => (value ? 'Yes' : 'No'),
   },

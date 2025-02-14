@@ -172,8 +172,8 @@ export const ApiKeysForm = () => {
       {renderInput('anthropic_key', 'Anthropic Key')}
       {renderInput('facebook_whatsapp_api_token', 'Facebook WhatsApp API Token')}
       {renderInput('facebook_whatsapp_phone_number_id', 'Facebook WhatsApp Phone Number ID')}
-      {renderInput('facebook_whatsapp_asset_id', 'Facebook WhatsApp Asset ID')}
       {renderInput('facebook_whatsapp_app_id', 'Facebook WhatsApp App ID')}
+      {renderInput('facebook_whatsapp_asset_id', 'Facebook WhatsApp Asset ID')}
 
       <StyledButtonContainer>
         {isEditing ? (

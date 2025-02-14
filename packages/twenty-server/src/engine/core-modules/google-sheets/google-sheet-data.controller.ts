@@ -119,14 +119,14 @@ export class GoogleSheetsDataController {
   sheetUpdateExternalTasks(field: string, value: any, candidateId: string, personId: string, unique_string_key:string, apiToken: string, spreadsheetId:string) {
     console.log("Field:", field, "Value:", value, "candidateId:", candidateId, "personId:", personId, "unique_string_key:", unique_string_key);
     switch (field) {
-        case 'isProfilePurchsed':
+        case 'isProfilePurchased':
             if (value.toLowerCase() === 'yes' || value === true) {
               this.personService.purchaseAndUpdateApnaProfile(field, value, candidateId, personId, unique_string_key, apiToken, spreadsheetId);
             }
             else{
-              console.log("isProfilePurchsed probably no:", value);
+              console.log("isProfilePurchased probably no:", value);
             }
-            console.log("isProfilePurchsed:", value);
+            console.log("isProfilePurchased:", value);
             break;
         case 'email_address':
             console.log("Email address field:", value);

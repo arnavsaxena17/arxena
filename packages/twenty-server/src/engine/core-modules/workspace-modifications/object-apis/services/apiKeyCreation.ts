@@ -132,12 +132,7 @@ export class ApiKeyService {
       const response = await axios.post(
         arxenaSiteBaseUrl+'/update-twenty-api-keys',
         { twenty_api_key: twentyApiKey },
-        {
-          headers: {
-            'Authorization': `Bearer ${authToken}`,
-            'Content-Type': 'application/json',
-          },
-        }
+        { headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json', }, }
       );
       console.log("Response from update twenty api keys", response.data);
 

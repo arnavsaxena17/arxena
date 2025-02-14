@@ -183,6 +183,7 @@ async getWorkspaceApiKeys(workspaceId: string): Promise<{
   facebook_whatsapp_api_token?: string;
   facebook_whatsapp_phone_number_id?: string;
   facebook_whatsapp_app_id?: string;
+  facebook_whatsapp_asset_id?: string;
 }> {
   try {
     // First, ensure all necessary columns exist
@@ -196,7 +197,8 @@ async getWorkspaceApiKeys(workspaceId: string): Promise<{
       ADD COLUMN IF NOT EXISTS anthropic_key varchar(255),
       ADD COLUMN IF NOT EXISTS facebook_whatsapp_api_token varchar(255),
       ADD COLUMN IF NOT EXISTS facebook_whatsapp_phone_number_id varchar(255),
-      ADD COLUMN IF NOT EXISTS facebook_whatsapp_app_id varchar(255)
+      ADD COLUMN IF NOT EXISTS facebook_whatsapp_app_id varchar(255),
+      ADD COLUMN IF NOT EXISTS facebook_whatsapp_asset_id varchar(255)
     `;
 
     await this.executeRawQuery(alterTableQuery, [], workspaceId);
@@ -212,7 +214,8 @@ async getWorkspaceApiKeys(workspaceId: string): Promise<{
         anthropic_key,
         facebook_whatsapp_api_token,
         facebook_whatsapp_phone_number_id,
-        facebook_whatsapp_app_id
+        facebook_whatsapp_app_id,
+        facebook_whatsapp_asset_id
       FROM core.workspace 
       WHERE id = $1
     `;
@@ -229,7 +232,8 @@ async getWorkspaceApiKeys(workspaceId: string): Promise<{
         anthropic_key: result[0].anthropic_key,
         facebook_whatsapp_api_token: result[0].facebook_whatsapp_api_token,
         facebook_whatsapp_phone_number_id: result[0].facebook_whatsapp_phone_number_id,
-        facebook_whatsapp_app_id: result[0].facebook_whatsapp_app_id
+        facebook_whatsapp_app_id: result[0].facebook_whatsapp_app_id,
+        facebook_whatsapp_asset_id: result[0].facebook_whatsapp_asset_id
       };
     }
     return {};

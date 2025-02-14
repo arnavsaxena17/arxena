@@ -690,8 +690,8 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
     {
         "field": {
             "description": "",
-            "label": "isProfilePurchsed",
-            "name": "isProfilePurchsed",
+            "label": "isProfilePurchased",
+            "name": "isProfilePurchased",
             "objectMetadataId": objectsNameIdMap.candidate,
             "type": "BOOLEAN",
             "defaultValue": false

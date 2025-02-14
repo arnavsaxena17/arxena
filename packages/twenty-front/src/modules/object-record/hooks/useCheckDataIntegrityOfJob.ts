@@ -40,6 +40,7 @@ export const useCheckDataIntegrityOfJob = ({
           // API Keys
           !apiKeys?.openaikey && 'OpenAI API key is missing',
           !apiKeys?.facebook_whatsapp_phone_number_id && 'WhatsApp phone number ID is missing',
+          !apiKeys?.facebook_whatsapp_asset_id && 'WhatsApp facebook_whatsapp_asset_id ID is missing',
           !apiKeys?.facebook_whatsapp_api_token && 'WhatsApp API token is missing',
         
           // Basic job validation

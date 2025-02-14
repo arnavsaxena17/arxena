@@ -192,7 +192,7 @@ export function transformFieldValue(field: string, value: any): any {
       'stopChat',
       'startVideoInterviewChat',
       'startMeetingSchedulingChat',
-      'isProfilePurchsed'
+      'isProfilePurchased'
   ];
 
   // Handle boolean fields first
