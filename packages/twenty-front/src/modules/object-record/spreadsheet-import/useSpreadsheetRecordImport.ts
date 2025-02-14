@@ -1,5 +1,6 @@
 import { isNonEmptyString } from '@sniptt/guards';
 import { IconComponent, useIcons } from 'twenty-ui';
+import lavenstein from 'js-levenshtein';
 
 import { useObjectMetadataItem } from '@/object-metadata/hooks/useObjectMetadataItem';
 import { useCreateManyRecords } from '@/object-record/hooks/useCreateManyRecords';
@@ -10,6 +11,9 @@ import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/Snac
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { FieldMetadataType } from '~/generated-metadata/graphql';
 import { isDefined } from '~/utils/isDefined';
+import { useFindManyRecords } from '../hooks/useFindManyRecords';
+import { Job } from '@/activities/chats/types/front-chat-types';
+import { CoreObjectNameSingular } from '@/object-metadata/types/CoreObjectNameSingular';
 
 const firstName = 'Firstname';
 const lastName = 'Lastname';
@@ -23,6 +27,13 @@ export const useSpreadsheetRecordImport = (objectNameSingular: string) => {
     objectNameSingular,
   });
   const fields = objectMetadataItem.fields.filter(x => x.isActive && !x.isSystem && x.name !== 'createdAt' && (x.type !== FieldMetadataType.Relation || x.toRelationMetadata)).sort((a, b) => a.name.localeCompare(b.name));
+
+  const splitFullName = (fullName: string) => {
+    const parts = fullName.trim().split(' ');
+    const firstName = parts[0] || '';
+    const lastName = parts.slice(1).join(' ') || '';
+    return { firstName, lastName };
+  };
 
   const templateFields: {
     icon: IconComponent;
@@ -80,6 +91,51 @@ export const useSpreadsheetRecordImport = (objectNameSingular: string) => {
     objectNameSingular,
   });
 
+  const { createManyRecords: createManyPeopleRecords } = useCreateManyRecords({
+    objectNameSingular: 'person',
+  });
+
+  // const fetchActiveJobs = async () => {
+  //   try {
+  //     const response = await fetch('/api/get-active-jobs'); // Adjust the endpoint as needed
+  //     const jobs = await response.json();
+  //     return jobs;
+  //   } catch (error) {
+  //     console.error('Error fetching active jobs:', error);
+  //     return [];
+  //   }
+  // };
+
+  const { records: activeJobs } = useFindManyRecords({
+    objectNameSingular: CoreObjectNameSingular.Job,
+    filter: {
+      isActive: { eq: true },
+    },
+  });
+
+  const findBestMatchingJob = (jobName: string, jobs: any[]) => {
+    console.log('These are the jobs that we found:', jobs);
+    console.log('These are the jobName that we found:', jobName);
+    let bestMatch = null;
+    let lowestDistance = Infinity;
+    const threshold = 15;
+
+    const normalizedJobName = jobName.toLowerCase().trim();
+    console.log('normalizedJobName::', normalizedJobName);
+
+    for (const job of jobs) {
+      const normalizedName = job.name.toLowerCase().trim();
+      const distance = lavenstein(normalizedJobName, normalizedName);
+      console.log('This is the distance::', distance, 'for job::', job, 'and normalizedJobName::', normalizedJobName, 'and normalizedName::', normalizedName);
+      if (distance < lowestDistance && distance <= threshold) {
+        lowestDistance = distance;
+        bestMatch = job;
+      }
+    }
+    console.log('This is the best match::', bestMatch);
+    return bestMatch;
+  };
+
   const openRecordSpreadsheetImport = (options?: Omit<SpreadsheetOptions<any>, 'fields' | 'isOpen' | 'onClose'>) => {
     openSpreadsheetImport({
       ...options,
@@ -96,6 +152,13 @@ export const useSpreadsheetRecordImport = (objectNameSingular: string) => {
               case FieldMetadataType.Number:
               case FieldMetadataType.Numeric:
                 fieldMapping[field.name] = Number(value);
+                break;
+              case FieldMetadataType.Phone:
+                if (value && typeof value === 'string') {
+                  // Transform phone number here
+                  const phoneNumber = value.startsWith('+') ? value : `+91${value}`;
+                  fieldMapping[field.name] = phoneNumber;
+                }
                 break;
               case FieldMetadataType.Currency:
                 if (value !== undefined) {
@@ -115,8 +178,23 @@ export const useSpreadsheetRecordImport = (objectNameSingular: string) => {
                 break;
               case FieldMetadataType.Relation:
                 if (isDefined(value) && (isNonEmptyString(value) || value !== false)) {
-                  fieldMapping[field.name + 'Id'] = value;
+                  if (field.name.includes('job') && activeJobs && typeof value === 'string') {
+                    const matchedJob = findBestMatchingJob(value, activeJobs);
+                    console.log('This si the matched job', matchedJob);
+                    if (matchedJob) {
+                      console.log('Setting field :', field.name + 'Id', matchedJob.id);
+                      fieldMapping[field.name + 'Id'] = matchedJob.id;
+                    } else {
+                      console.warn(`No matching job found for: ${value}`);
+                    }
+                  } else {
+                    fieldMapping[field.name + 'Id'] = value;
+                  }
                 }
+
+                // if (isDefined(value) && (isNonEmptyString(value) || value !== false)) {
+                //   fieldMapping[field.name + 'Id'] = value;
+                // }
                 break;
               case FieldMetadataType.FullName:
                 if (isDefined(record[`${firstName} (${field.name})`] || record[`${lastName} (${field.name})`])) {
@@ -134,7 +212,39 @@ export const useSpreadsheetRecordImport = (objectNameSingular: string) => {
           return fieldMapping;
         });
         try {
-          await createManyRecords(createInputs);
+          console.log('These are the create Inputs::, ', createInputs);
+          if (objectNameSingular === 'candidate') {
+            const personInputs = createInputs.map((input) => {
+              if (input.name && typeof input.name === 'string') {
+                const nameParts = input.name.trim().split(' ');
+                const firstName = nameParts[0] || '';
+                const lastName = nameParts.slice(1).join(' ') || '';
+          
+                return {
+                  ...input,
+                  name: { firstName, lastName },
+                  phone: input.phoneNumber || '',
+                };
+              }
+              return input;
+            });
+            console.log("These are the personInputs::", personInputs);
+          
+            // First create person records
+            const createdPersonRecords = await createManyPeopleRecords(personInputs);
+            console.log('These are the created person records::', createdPersonRecords);
+            // Then map the person IDs to candidate records
+            const candidateInputsWithPersonIds = createInputs.map((input, index) => ({
+              ...input,
+              peopleId: createdPersonRecords[index].id
+            }));
+
+            console.log('These are the candidateInputsWithPersonIds::', candidateInputsWithPersonIds);
+          
+            // Create candidate records with person IDs
+            const createdRecords = await createManyRecords(candidateInputsWithPersonIds);
+            console.log('These are the created records::', createdRecords);
+          }
         } catch (error: any) {
           enqueueSnackBar(error?.message || 'Something went wrong', {
             variant: SnackBarVariant.Error,

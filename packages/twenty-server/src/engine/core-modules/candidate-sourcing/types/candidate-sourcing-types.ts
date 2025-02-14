@@ -522,6 +522,10 @@ export interface ArxenaCandidateNode {
   name: string;
   engagementStatus: boolean;
   startChat: boolean;
+  phoneNumber:string
+  email:string
+  campaign:string
+  source:string
   startVideoInterviewChat: boolean;
   startMeetingSchedulingChat: boolean;
   uniqueStringKey: string;

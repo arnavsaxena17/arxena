@@ -38,6 +38,7 @@ type RecordIndexOptionsDropdownContentProps = {
 };
 
 export const RecordIndexOptionsDropdownContent = ({ viewType, recordIndexId, objectNameSingular }: RecordIndexOptionsDropdownContentProps) => {
+  console.log("when clicking on the options button, this objectNameSingular is rendered", objectNameSingular);
   const { currentViewWithCombinedFiltersAndSorts } = useGetCurrentView();
 
   const { closeDropdown } = useDropdown(RECORD_INDEX_OPTIONS_DROPDOWN_ID);
@@ -77,15 +78,15 @@ export const RecordIndexOptionsDropdownContent = ({ viewType, recordIndexId, obj
   const visibleRecordFields = viewType === ViewType.Kanban ? visibleBoardFields : visibleTableColumns;
 
   const hiddenRecordFields = viewType === ViewType.Kanban ? hiddenBoardFields : hiddenTableColumns;
-  console.log("hiddenRecordFieldshiddenRecordFields", hiddenRecordFields);
   const handleReorderFields = viewType === ViewType.Kanban ? handleReorderBoardFields : handleReorderColumns;
-
   const handleChangeFieldVisibility = viewType === ViewType.Kanban ? handleBoardFieldVisibilityChange : handleColumnVisibilityChange;
-
   const { openRecordSpreadsheetImport } = useSpreadsheetRecordImport(objectNameSingular);
+
   const { countChats } = useCountChats(objectNameSingular);
+
   const { processMessagesGetStatus } = useProcessMessagesGetStatus(objectNameSingular);
   // const { processJobCandidatesRefreshData } = useProcessJobCandidatesRefreshData(objectNameSingular);
+
   const { openRecordSpreadsheetImportAll } = useSpreadsheetRecordImportAll(objectNameSingular);
 
   const { progress, download } = useExportTableData({
@@ -95,6 +96,8 @@ export const RecordIndexOptionsDropdownContent = ({ viewType, recordIndexId, obj
     recordIndexId,
   });
 
+
+  console.log("So far all the way::", objectNameSingular);
 
   return (
     <>

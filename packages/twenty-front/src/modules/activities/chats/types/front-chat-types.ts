@@ -30,6 +30,7 @@ export interface JobDropdownProps {
 
 export interface Job {
   node:{
+
     id: string;
     name: string;
   }

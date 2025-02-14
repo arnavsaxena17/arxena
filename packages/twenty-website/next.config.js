@@ -13,6 +13,20 @@ const nextConfig = {
     config.resolve.alias.canvas = false;
     return config;
   },
+    async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: "frame-ancestors 'self' https://*.webflow.io https://*.webflow.com"
+          }
+        ]
+      }
+    ]
+  }
+
     
 };
 

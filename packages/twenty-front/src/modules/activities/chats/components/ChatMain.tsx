@@ -83,7 +83,7 @@ const Spinner = styled.div`
 `;
 
 const Resizer = styled.div`
-  width: 8px;
+  width: 4px;
   cursor: col-resize;
   background-color: #e0e0e0;
   height: 100vh;

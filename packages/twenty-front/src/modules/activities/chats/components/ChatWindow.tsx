@@ -1070,8 +1070,23 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
 
   const [selectedInterimChat, setSelectedInterimChat] = useState('');
   const handleStartNewInterimChat = async (interimChat: string) => {
+    if (!interimChat || interimChat === '') {
+      showSnackbar('Please select an interim chat first', 'error');
+      return;
+    }
+    
     try {
-      await axios.post(process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/start-interim-chat-prompt', { interimChat, phoneNumber: currentIndividual?.phone }, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } });
+      await axios.post(process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/start-interim-chat-prompt', 
+        { 
+          interimChat, 
+          phoneNumber: currentIndividual?.phone 
+        }, 
+        { 
+          headers: { 
+            Authorization: `Bearer ${tokenPair?.accessToken?.token}` 
+          } 
+        }
+      );
       showSnackbar('Interim Chat started successfully', 'success');
       setSelectedInterimChat(''); // Reset selection after successful start
     } catch (error) {

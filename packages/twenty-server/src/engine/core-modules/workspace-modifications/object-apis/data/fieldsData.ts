@@ -698,6 +698,26 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
 
         }
     },
+    {
+        "field": {
+            "description": "",
+            "label": "email",
+            "name": "email",
+            "objectMetadataId": objectsNameIdMap.candidate,
+            "type": "EMAIL",
+
+        }
+    },
+    {
+        "field": {
+            "description": "",
+            "label": "phoneNumber",
+            "name": "phoneNumber",
+            "objectMetadataId": objectsNameIdMap.candidate,
+            "type": "PHONE",
+
+        }
+    },
 
     {
         "field": {
@@ -1431,9 +1451,27 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
             "objectMetadataId": objectsNameIdMap.candidate,
             "type": "TEXT"
         }
-
     },
-
+    {
+        "field": {
+            "description": "source for the candidate",
+            "icon": "IconPencilStar",
+            "label": "source",
+            "name": "source",
+            "objectMetadataId": objectsNameIdMap.candidate,
+            "type": "TEXT"
+        }
+    },
+    {
+        "field": {
+            "description": "campaign for the candidate",
+            "icon": "IconPencilStar",
+            "label": "campaign",
+            "name": "campaign",
+            "objectMetadataId": objectsNameIdMap.candidate,
+            "type": "TEXT"
+        }
+    },
     {
         "field": {
             "description": "Link for Candidate Tracker Google Sheet",

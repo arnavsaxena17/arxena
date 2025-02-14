@@ -6,6 +6,7 @@ const Container = styled.div`
   display: flex;
   flex-direction: column;
   width: 100%;
+  height: 100vh; // Add this
   padding: 0px 96px 0px 96px;
   @media (max-width: 809px) {
     width: 100%;
@@ -20,3 +21,4 @@ export const ContentContainer = ({
 }) => {
   return <Container>{children}</Container>;
 };
+

@@ -202,7 +202,7 @@ export interface RelationInput {
     relation?: Relation;
 }
 
-export type FieldType = "SELECT" | "DATE_TIME" | "TEXT" | "NUMBER" | "BOOLEAN" | "LINK" | "RAW_JSON";
+export type FieldType = "SELECT" | "DATE_TIME" | "TEXT" | "NUMBER" | "BOOLEAN" | "LINK" | "RAW_JSON" | "EMAIL" | "PHONE";
 
 export interface FieldOption {
     color?: string;

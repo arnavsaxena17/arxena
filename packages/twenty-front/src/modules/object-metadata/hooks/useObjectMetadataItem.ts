@@ -35,7 +35,12 @@ export const useObjectMetadataItem = ({
     objectMetadataItems = mockObjectMetadataItems;
   }
 
+
   if (!isDefined(objectMetadataItem)) {
+
+    console.log("")
+    console.log("objectNameSingular in ObjectMetadataItemNotFoundError", objectNameSingular)
+    console.log("objectMetadataItems ObjectMetadataItemNotFoundError", objectMetadataItems)
     throw new ObjectMetadataItemNotFoundError(
       objectNameSingular,
       objectMetadataItems,

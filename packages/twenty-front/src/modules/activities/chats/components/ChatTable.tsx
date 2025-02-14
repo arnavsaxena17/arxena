@@ -542,6 +542,25 @@ const ChatTable: React.FC<ChatTableProps> = ({ individuals, selectedIndividual, 
     }
   }
 
+  const getStatusPriority = (status: string): number => {
+    const statusPriorities: { [key: string]: number } = {
+      'CONVERSATION_CLOSED_TO_BE_CONTACTED': 11,
+      'CANDIDATE_HAS_FOLLOWED_UP_TO_SETUP_CHAT': 10,
+      'CANDIDATE_IS_KEEN_TO_CHAT': 9,
+      'CANDIDATE_SALARY_OUT_OF_RANGE': 8,
+      'CANDIDATE_DOES_NOT_WANT_TO_RELOCATE': 7,
+      'CANDIDATE_DECLINED_OPPORTUNITY': 6,
+      'SHARED_JD_HAS_NOT_RESPONDED': 5,
+      'STOPPED_RESPONDING_ON_QUESTIONS': 4,
+      'CANDIDATE_STOPPED_RESPONDING': 3,
+      'CONVERSATION_STARTED_HAS_NOT_RESPONDED': 2,
+      'ONLY_ADDED_NO_CONVERSATION': 1
+    };
+    return statusPriorities[status] || 0;
+  };
+  
+  
+
   async function createChatBasedShortlistDelivery() {
     try {
       const url = process.env.ENV_NODE === 'production' ? 'https://app.arxena.com/app' : 'http://localhost:3000';
@@ -646,8 +665,12 @@ const ChatTable: React.FC<ChatTableProps> = ({ individuals, selectedIndividual, 
           bValue = b.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.createdAt || '';
           break;
         case 'candidateStatus':
-          aValue = a.candidates?.edges[0]?.node?.status || '';
-          bValue = b.candidates?.edges[0]?.node?.status || '';
+          // Get the status values
+          const aStatus = a.candidates?.edges[0]?.node?.status || '';
+          const bStatus = b.candidates?.edges[0]?.node?.status || '';
+          // Convert to priority numbers
+          aValue = getStatusPriority(aStatus);
+          bValue = getStatusPriority(bStatus);
           break;
         case 'status':
           aValue = a.candidates?.edges[0]?.node?.candConversationStatus || '';

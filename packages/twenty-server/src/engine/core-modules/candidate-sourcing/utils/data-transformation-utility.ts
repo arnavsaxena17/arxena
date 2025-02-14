@@ -57,21 +57,28 @@ export const mapArxCandidateToJobCandidateNode = candidate => {
   return jobCandidateNode;
 };
 
-export const mapArxCandidateToCandidateNode = (candidate: { first_name: string; last_name: string; unique_key_string: any; profile_url: any; display_picture: any; }, jobNode: { id: any; }, jobSpecificNode: { profileTitle: any; inferredSalary: any; inferredYearsExperience: any; inferredLocation: any; skills: any; stdFunction: any; stdGrade: any; stdFunctionRoot: any; }) => {
+export const mapArxCandidateToCandidateNode = (candidate: {
+  email_address: any;
+  phone_numbers: any; first_name: string; last_name: string; unique_key_string: any; profile_url: any; display_picture: any; 
+}, jobNode: { id: any; }, jobSpecificNode: { profileTitle: any; inferredSalary: any; inferredYearsExperience: any; inferredLocation: any; skills: any; stdFunction: any; stdGrade: any; stdFunctionRoot: any; }) => {
   const candidateNode: ArxenaCandidateNode = {
     name: candidate?.first_name + ' ' + candidate?.last_name || "",
     jobsId: jobNode?.id,
     engagementStatus: false,
     startChat: false,
+    phoneNumber: candidate?.phone_numbers && candidate?.phone_numbers?.length > 0 ? (typeof candidate?.phone_numbers[0] === 'string' ? candidate?.phone_numbers[0] : candidate?.phone_numbers[0]?.number) || "" : "",
+    email: Array.isArray(candidate?.email_address) ? candidate?.email_address[0] : candidate?.email_address || "",
     stopChat: false,
     startVideoInterviewChat: false,
     startMeetingSchedulingChat: false,
-    uniqueStringKey:candidate?.unique_key_string,
-    hiringNaukriUrl: {"label":candidate?.profile_url || '', "url":candidate?.profile_url || ''},
-    resdexNaukriUrl: {"label":candidate?.profile_url || '', "url":candidate?.profile_url || ''},
-    displayPicture: {"label":"Display Picture", "url":candidate?.display_picture || ''},
+    uniqueStringKey: candidate?.unique_key_string,
+    hiringNaukriUrl: { "label": candidate?.profile_url || '', "url": candidate?.profile_url || '' },
+    resdexNaukriUrl: { "label": candidate?.profile_url || '', "url": candidate?.profile_url || '' },
+    displayPicture: { "label": "Display Picture", "url": candidate?.display_picture || '' },
     peopleId: '',
     jobSpecificFields: jobSpecificNode,
+    campaign: '',
+    source: ''
   };
   return candidateNode;
 };

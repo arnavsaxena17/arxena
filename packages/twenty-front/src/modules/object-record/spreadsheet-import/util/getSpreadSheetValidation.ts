@@ -22,21 +22,40 @@ export const getSpreadSheetValidation = (
       return [
         {
           rule: 'function',
-          isValid: (value: string) => isValidPhoneNumber(value),
+          isValid: (value: string) => {
+            const phoneNumber = value.startsWith('+') 
+              ? value 
+              : `+91${value}`;
+            return isValidPhoneNumber(phoneNumber, 'IN');
+          },
           errorMessage: fieldName + ' is not valid',
           level: 'error',
         },
       ];
-    case FieldMetadataType.Relation:
-      return [
-        {
-          rule: 'function',
-          isValid: (value: string) => isValidUuid(value),
-          errorMessage: fieldName + ' is not valid',
-          level: 'error',
-        },
-      ];
-    default:
+      case FieldMetadataType.Relation:
+        if (fieldName.toLowerCase().includes('job')) {
+          return [
+            {
+              rule: 'function',
+              isValid: (value: string) => {
+                return value ? true : false; // Allow any non-empty value for jobs
+              },
+              errorMessage: fieldName + ' cannot be empty',
+              level: 'error',
+            },
+          ];
+        } else {
+          return [
+            {
+              rule: 'function',
+              isValid: (value: string) => isValidUuid(value),
+              errorMessage: fieldName + ' is not valid',
+              level: 'error',
+            },
+          ];
+        }
+        
+      default:
       return [];
   }
 };
