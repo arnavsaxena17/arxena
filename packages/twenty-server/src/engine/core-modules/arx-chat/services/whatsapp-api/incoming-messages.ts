@@ -93,60 +93,85 @@ export class IncomingWhatsappMessages {
   }
 
 
-  async getApiKeyToUseFromPhoneNumberMessageReceived(requestBody:any, transactionManager?: EntityManager){
-    let phoneNumber;
+    async getApiKeyToUseFromPhoneNumberMessageReceived(requestBody:any, transactionManager?: EntityManager){
+      let phoneNumber = requestBody?.entry[0]?.changes[0]?.value?.messages?.[0]?.from || 
+                      requestBody?.entry[0]?.changes[0]?.value?.statuses[0].recipient_id;
+      const phoneNumberId = requestBody?.entry[0]?.changes[0]?.value.metadata?.phone_number_id;
 
-    phoneNumber = requestBody?.entry[0]?.changes[0]?.value?.messages?.[0]?.from || requestBody?.entry[0]?.changes[0]?.value?.statuses[0].recipient_id;
-    console.log("This is the phone number to use in getApiKeyToUseFrom PhoneNumberMessageReceived::", phoneNumber)
-    const results = await this.workspaceQueryService.executeQueryAcrossWorkspaces(
-      async (workspaceId, dataSourceSchema) => {
-        const person = await this.workspaceQueryService.executeRawQuery(
-          `SELECT * FROM ${dataSourceSchema}.person WHERE "person"."phone" ILIKE '%${phoneNumber}%'`,
-          [],
-          workspaceId
-        );
-        console.log("This is the person we plan to use:", person[0], "for the phone numbers::", phoneNumber)
-        const phoneNumberId = requestBody?.entry[0]?.changes[0]?.value.metadata?.phone_number_id;
+      console.log("This is the phone number to use:", phoneNumber);
 
-        const workspace = await this.workspaceQueryService.executeRawQuery(
-          `SELECT * FROM core.workspace WHERE id = $1 AND facebook_whatsapp_phone_number_id = $2`,
-          [workspaceId, phoneNumberId],
-          workspaceId
-        );
-        
-        
-        
-        if (workspace.length === 0) {
-          console.log('NO WORKSPACE FOUND FOR WHATSAPP INCOMING PHONE NUMBER');
-          return null;
-        }
-        console.log("This is the workspace we plan to use:", workspace[0]?.displayName, "for the phone numbers::", phoneNumber)
+      const results = await this.workspaceQueryService.executeQueryAcrossWorkspaces(
+        async (workspaceId, dataSourceSchema) => {
+          // First check if this workspace is valid for the phone number ID
+          const workspace = await this.workspaceQueryService.executeRawQuery(
+            `SELECT * FROM core.workspace WHERE id = $1 AND facebook_whatsapp_phone_number_id = $2`,
+            [workspaceId, phoneNumberId],
+            workspaceId
+          );
 
-        if (person.length > 0) {
-          const apiKeys = await this.workspaceQueryService.getApiKeys(workspaceId, dataSourceSchema, transactionManager);
-          if (apiKeys.length > 0) {
-            const apiKeyToken = await this.workspaceQueryService.tokenService.generateApiKeyToken(
-              workspaceId,
-              apiKeys[0].id,
-              apiKeys[0].expiresAt
-            );
-            if (apiKeyToken) {
-              return apiKeyToken?.token;
+          if (workspace.length === 0) {
+            console.log('NO WORKSPACE FOUND FOR WHATSAPP INCOMING PHONE NUMBER');
+            return null;
+          }
+
+          // Get the most recent message for this phone number in this workspace
+          const recentMessage = await this.workspaceQueryService.executeRawQuery(
+            `SELECT * FROM ${dataSourceSchema}."_whatsappMessage" 
+            WHERE ("phoneFrom" = $1 OR "phoneTo" = $1)
+            ORDER BY "updatedAt" DESC
+            LIMIT 1`,
+            [phoneNumber],
+            workspaceId
+          );
+
+          if (recentMessage.length === 0) {
+            console.log("No messages found for this phone number in workspace:", workspaceId);
+            return null;
+          }
+
+          // Get the person associated with this phone number
+          const person = await this.workspaceQueryService.executeRawQuery(
+            `SELECT * FROM ${dataSourceSchema}.person WHERE "phone" ILIKE '%${phoneNumber}%'`,
+            [],
+            workspaceId
+          );
+
+          if (person.length > 0) {
+            const apiKeys = await this.workspaceQueryService.getApiKeys(workspaceId, dataSourceSchema, transactionManager);
+            if (apiKeys.length > 0) {
+              const apiKeyToken = await this.workspaceQueryService.tokenService.generateApiKeyToken(
+                workspaceId,
+                apiKeys[0].id,
+                apiKeys[0].expiresAt
+              );
+              
+              if (apiKeyToken) {
+                // Return both the token and the last message timestamp for comparison
+                return {
+                  token: apiKeyToken.token,
+                  lastMessageTime: recentMessage[0].updatedAt,
+                  workspaceId
+                };
+              }
             }
           }
+          return null;
         }
-        else{
-          console.log("No person found for the phone number in the workspace::, workspaceId::", workspaceId, "phoneNumber::", phoneNumber)
-        }
-        return null;
-      }
-    );
-    
-    console.log("All results ::", results)
-    return results.find(result => result !== null);
+      );
+      
+      console.log("All results:", results);
+
+      // Filter out null results and find the workspace with the most recent message
+      const validResults = results.filter(result => result !== null);
+      if (validResults.length === 0) return null;
+
+      // Sort by lastMessageTime in descending order and take the first result
+      const mostRecentResult = validResults.sort((a, b) => 
+        new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime()
+      )[0];
+
+      return mostRecentResult.token;
   }
-
-
 
   async receiveIncomingMessagesFromFacebook(requestBody: allDataObjects.WhatsAppBusinessAccount) {
     console.log('This is requestBody from Facebook::', JSON.stringify(requestBody));
