@@ -109,6 +109,7 @@ export class IncomingWhatsappMessages {
   
       const results = await this.workspaceQueryService.executeQueryAcrossWorkspaces(
         async (workspaceId, dataSourceSchema) => {
+          console.log("Data source schema is::", dataSourceSchema)
           // First check if this workspace is valid for the phone number ID
           const workspace = await this.workspaceQueryService.executeRawQuery(
             `SELECT * FROM core.workspace WHERE id = $1 AND facebook_whatsapp_phone_number_id = $2`,
@@ -116,6 +117,7 @@ export class IncomingWhatsappMessages {
             workspaceId
           );
   
+          console.log("Workspace is ::", workspace)
           if (workspace.length === 0) {
             console.log('NO WORKSPACE FOUND FOR WHATSAPP INCOMING PHONE NUMBER');
             return null;
@@ -124,12 +126,14 @@ export class IncomingWhatsappMessages {
           // Get the most recent message for this phone number in this workspace
           const recentMessage = await this.workspaceQueryService.executeRawQuery(
             `SELECT * FROM ${dataSourceSchema}."_whatsappMessage" 
-             WHERE ("phoneFrom" = $1 OR "phoneTo" = $1)
+             WHERE ("_whatsappMessage"."phoneFrom" ILIKE '%${phoneNumber}%' OR "_whatsappMessage"."phoneTo" ILIKE '%${phoneNumber}%')
              ORDER BY "updatedAt" DESC
              LIMIT 1`,
-            [phoneNumber],
+            [],
             workspaceId
           );
+          console.log
+          console.log("recentMessage::", recentMessage)
   
           if (recentMessage.length === 0) {
             console.log("No messages found for this phone number in workspace:", workspaceId);
@@ -138,11 +142,13 @@ export class IncomingWhatsappMessages {
   
           // Get the person associated with this phone number
           const person = await this.workspaceQueryService.executeRawQuery(
-            `SELECT * FROM ${dataSourceSchema}.person WHERE "phone" ILIKE '%${phoneNumber}%'`,
+            `SELECT * FROM ${dataSourceSchema}.person WHERE "person"."phone" ILIKE '%${phoneNumber}%'`,
             [],
             workspaceId
           );
   
+
+          console.log("person i s::", person);
           if (person.length > 0) {
             const apiKeys = await this.workspaceQueryService.getApiKeys(workspaceId, dataSourceSchema, transactionManager);
             if (apiKeys.length > 0) {
@@ -175,8 +181,9 @@ export class IncomingWhatsappMessages {
       const sortedResults = validResults.sort((a, b) => 
         new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime()
       );
-  
-      return sortedResults[0]?.token ?? null;
+      const sortedResultsToken = sortedResults[0]?.token ?? null;
+      console.log("sortedResultsToken::", sortedResultsToken)
+      return sortedResultsToken
   }
 
 
@@ -185,7 +192,13 @@ export class IncomingWhatsappMessages {
     console.log('This is requestBody from Facebook::', JSON.stringify(requestBody));
     // to check if the incoming message is the status of the message
     // have to use system API Key and get the status updates of all the workspaces where the phone number resides. Then get the api keys of the workspaces and then update the messages
-    const apiToken = await this.getApiKeyToUseFromPhoneNumberMessageReceived(requestBody) || '';
+    const apiToken = await this.getApiKeyToUseFromPhoneNumberMessageReceived(requestBody)
+
+
+    if (apiToken === null) {
+      console.log('NO API KEY FOUND FOR THIS PHONE NUMBER FUCK!!!!');
+      return;
+    }
     console.log('This is the apiToken to use in receiving facebook messages:', apiToken);
     if (requestBody?.entry[0]?.changes[0]?.value?.statuses && requestBody?.entry[0]?.changes[0]?.value?.statuses[0]?.status && !requestBody?.entry[0]?.changes[0]?.value?.messages) {
       console.log("This is the status message::", requestBody?.entry[0]?.changes[0]?.value?.statuses[0]?.status)
