@@ -7,6 +7,13 @@ import { EntityManager } from 'typeorm';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { FilterCandidates } from '../candidate-engagement/filter-candidates';
 
+
+interface MessageResult {
+  token: string;
+  lastMessageTime: Date;
+  workspaceId: string;
+}
+
 export class IncomingWhatsappMessages {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
@@ -92,14 +99,14 @@ export class IncomingWhatsappMessages {
     }
   }
 
-
-    async getApiKeyToUseFromPhoneNumberMessageReceived(requestBody:any, transactionManager?: EntityManager){
+  
+  async getApiKeyToUseFromPhoneNumberMessageReceived(requestBody:any, transactionManager?: EntityManager): Promise<string | null> {
       let phoneNumber = requestBody?.entry[0]?.changes[0]?.value?.messages?.[0]?.from || 
-                      requestBody?.entry[0]?.changes[0]?.value?.statuses[0].recipient_id;
+                       requestBody?.entry[0]?.changes[0]?.value?.statuses[0].recipient_id;
       const phoneNumberId = requestBody?.entry[0]?.changes[0]?.value.metadata?.phone_number_id;
-
+  
       console.log("This is the phone number to use:", phoneNumber);
-
+  
       const results = await this.workspaceQueryService.executeQueryAcrossWorkspaces(
         async (workspaceId, dataSourceSchema) => {
           // First check if this workspace is valid for the phone number ID
@@ -108,34 +115,34 @@ export class IncomingWhatsappMessages {
             [workspaceId, phoneNumberId],
             workspaceId
           );
-
+  
           if (workspace.length === 0) {
             console.log('NO WORKSPACE FOUND FOR WHATSAPP INCOMING PHONE NUMBER');
             return null;
           }
-
+  
           // Get the most recent message for this phone number in this workspace
           const recentMessage = await this.workspaceQueryService.executeRawQuery(
             `SELECT * FROM ${dataSourceSchema}."_whatsappMessage" 
-            WHERE ("phoneFrom" = $1 OR "phoneTo" = $1)
-            ORDER BY "updatedAt" DESC
-            LIMIT 1`,
+             WHERE ("phoneFrom" = $1 OR "phoneTo" = $1)
+             ORDER BY "updatedAt" DESC
+             LIMIT 1`,
             [phoneNumber],
             workspaceId
           );
-
+  
           if (recentMessage.length === 0) {
             console.log("No messages found for this phone number in workspace:", workspaceId);
             return null;
           }
-
+  
           // Get the person associated with this phone number
           const person = await this.workspaceQueryService.executeRawQuery(
             `SELECT * FROM ${dataSourceSchema}.person WHERE "phone" ILIKE '%${phoneNumber}%'`,
             [],
             workspaceId
           );
-
+  
           if (person.length > 0) {
             const apiKeys = await this.workspaceQueryService.getApiKeys(workspaceId, dataSourceSchema, transactionManager);
             if (apiKeys.length > 0) {
@@ -146,12 +153,11 @@ export class IncomingWhatsappMessages {
               );
               
               if (apiKeyToken) {
-                // Return both the token and the last message timestamp for comparison
                 return {
                   token: apiKeyToken.token,
                   lastMessageTime: recentMessage[0].updatedAt,
                   workspaceId
-                };
+                } as MessageResult;
               }
             }
           }
@@ -160,18 +166,20 @@ export class IncomingWhatsappMessages {
       );
       
       console.log("All results:", results);
-
+  
       // Filter out null results and find the workspace with the most recent message
-      const validResults = results.filter(result => result !== null);
+      const validResults = results.filter((result): result is MessageResult => result !== null);
       if (validResults.length === 0) return null;
-
+  
       // Sort by lastMessageTime in descending order and take the first result
-      const mostRecentResult = validResults.sort((a, b) => 
+      const sortedResults = validResults.sort((a, b) => 
         new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime()
-      )[0];
-
-      return mostRecentResult.token;
+      );
+  
+      return sortedResults[0]?.token ?? null;
   }
+
+
 
   async receiveIncomingMessagesFromFacebook(requestBody: allDataObjects.WhatsAppBusinessAccount) {
     console.log('This is requestBody from Facebook::', JSON.stringify(requestBody));
