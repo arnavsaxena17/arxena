@@ -89,7 +89,9 @@ export const TemplateColumn = <T extends string>({
   const column = columns[columnIndex];
   const isIgnored = column.type === ColumnType.ignored;
   const isSelect = 'matchedOptions' in column;
+  console.log("fields", fields)
   const fieldOptions = fields.map(({ icon, label, key }) => {
+
     const isSelected =
       columns.findIndex((column) => {
         if ('value' in column) {
@@ -114,6 +116,8 @@ export const TemplateColumn = <T extends string>({
     },
     ...fieldOptions,
   ];
+  console.log("selectOptions", selectOptions)
+  console.log("fieldOptions", fieldOptions)
   const selectValue = fieldOptions.find(
     ({ value }) => 'value' in column && column.value === value,
   );

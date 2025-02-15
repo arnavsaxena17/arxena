@@ -32,10 +32,6 @@ export const useCheckDataIntegrityOfJob = ({
       if (data) {
         const response = await fetch(process.env.REACT_APP_SERVER_BASE_URL+'/workspace-modifications/api-keys', { headers: { 'Accept': '*/*', 'Authorization': `Bearer ${tokenPair?.accessToken?.token}`, } });
         const apiKeys = await response.json();
-
-
-
-
         const consolidatedErrorMessage = [
           // API Keys
           !apiKeys?.openaikey && 'OpenAI API key is missing',

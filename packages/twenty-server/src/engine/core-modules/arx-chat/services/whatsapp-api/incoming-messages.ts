@@ -105,17 +105,23 @@ export class IncomingWhatsappMessages {
           [],
           workspaceId
         );
+        console.log("This is the person we plan to use:", person[0], "for the phone numbers::", phoneNumber)
         const phoneNumberId = requestBody?.entry[0]?.changes[0]?.value.metadata?.phone_number_id;
+
         const workspace = await this.workspaceQueryService.executeRawQuery(
-          `SELECT * FROM core.workspace WHERE id = $1 AND facebook_whatsapp_number_id = $2`,
+          `SELECT * FROM core.workspace WHERE id = $1 AND facebook_whatsapp_phone_number_id = $2`,
           [workspaceId, phoneNumberId],
           workspaceId
         );
-        console.log("This is the workspace we plan to use:", workspace[0].displayName, "for the phone numbers::", phoneNumber)
+        
+        
+        
         if (workspace.length === 0) {
           console.log('NO WORKSPACE FOUND FOR WHATSAPP INCOMING PHONE NUMBER');
           return null;
         }
+        console.log("This is the workspace we plan to use:", workspace[0]?.displayName, "for the phone numbers::", phoneNumber)
+
         if (person.length > 0) {
           const apiKeys = await this.workspaceQueryService.getApiKeys(workspaceId, dataSourceSchema, transactionManager);
           if (apiKeys.length > 0) {
@@ -129,13 +135,18 @@ export class IncomingWhatsappMessages {
             }
           }
         }
+        else{
+          console.log("No person found for the phone number in the workspace::, workspaceId::", workspaceId, "phoneNumber::", phoneNumber)
+        }
         return null;
       }
     );
     
-
+    console.log("All results ::", results)
     return results.find(result => result !== null);
   }
+
+
 
   async receiveIncomingMessagesFromFacebook(requestBody: allDataObjects.WhatsAppBusinessAccount) {
     console.log('This is requestBody from Facebook::', JSON.stringify(requestBody));
