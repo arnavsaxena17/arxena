@@ -23,14 +23,20 @@ export const useStartChats = ({
   // let currentViewWithCombinedFiltersAndSorts: any;
   const sendStartChatRequest = async ( jobCandidateIds: string[], currentViewWithCombinedFiltersAndSorts:any, objectNameSingular:string) => {
     console.log("jobCandidateIds::", jobCandidateIds);
-    console.log("currentViewWithCombinedFiltersAndSorts::", currentViewWithCombinedFiltersAndSorts);
     console.log("objectNameSingular::", objectNameSingular);
     
     setLoading(true);
     setError(null);
 
     try {
-      const url = `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/start-chats`
+      let apiEndpoint = 'start-chats';
+      if (objectNameSingular === 'candidate') {
+        apiEndpoint = 'start-chats-by-candidate-ids';
+      }
+      const url = `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/${apiEndpoint}`;
+
+
+      // const url = `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/start-chats`
       const results = await  axios.post( url, { jobCandidateIds, currentViewWithCombinedFiltersAndSorts, objectNameSingular }, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}`, 'Content-Type': 'application/json', }, } );
       console.log("results::", results);
       return results;

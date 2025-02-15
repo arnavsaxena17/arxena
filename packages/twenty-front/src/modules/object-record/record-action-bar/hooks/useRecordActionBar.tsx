@@ -431,6 +431,23 @@ const sendVideoInterviewLinkSelectRecord = useRecoilCallback(
                         },
                         ]
                       : []),
+                    ...(objectMetadataItem.nameSingular.toLowerCase().includes( 'candidate')
+                      ? [
+                        {
+                          label: 'Start Chat with Candidates',
+                          Icon: IconBrandWhatsapp,
+                          onClick: async () => {
+                            try {
+                              console.log("Current FcurrentViewWithCombinedFiltersAndSorts:", currentViewWithCombinedFiltersAndSorts);  
+                              console.log("Current selectedRecordIds:", selectedRecordIds);  
+                              await sendStartChatRequest(selectedRecordIds, currentViewWithCombinedFiltersAndSorts, objectMetadataItem.nameSingular);
+                            } catch (error) {
+                              console.error('Error creating start chat:', error);
+                            }
+                          },
+                        },
+                        ]
+                      : []),
                   ...(objectMetadataItem.nameSingular === 'videoInterview'
                     ? [
                       {

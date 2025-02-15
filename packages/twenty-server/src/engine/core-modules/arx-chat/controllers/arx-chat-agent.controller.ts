@@ -39,25 +39,34 @@ export class ArxChatEndpoint {
     console.log('Response from create start-Chat api', response);
   }
 
-  @Post('start-chats')
-  async startChats(@Req() request: any): Promise<object> {
-    const apiToken = request.headers.authorization.split(' ')[1];
-    const jobCandidateIds = request.body.jobCandidateIds;
-    const currentViewWithCombinedFiltersAndSorts = request.body.currentViewWithCombinedFiltersAndSorts;
-    const objectNameSingular = request.body.objectNameSingular;
-    console.log('jobCandidateIds::', jobCandidateIds);
-    console.log('objectNameSingular::', objectNameSingular);
-    console.log('currentViewWithCombinedFiltersAndSorts::', currentViewWithCombinedFiltersAndSorts);
-    const path_position = request?.body?.objectNameSingular.replace('JobCandidate', '');
-    const allDataObjects = await new CreateMetaDataStructure(this.workspaceQueryService).fetchAllObjects(apiToken);
+  // @Post('start-chats')
+  // async startChatsByJobCandidateIds(@Req() request: any): Promise<object> {
+  //   const apiToken = request.headers.authorization.split(' ')[1];
+  //   const jobCandidateIds = request.body.jobCandidateIds;
+  //   const currentViewWithCombinedFiltersAndSorts = request.body.currentViewWithCombinedFiltersAndSorts;
+  //   const objectNameSingular = request.body.objectNameSingular;
+  //   console.log('jobCandidateIds::', jobCandidateIds);
+  //   console.log('objectNameSingular::', objectNameSingular);
+  //   const path_position = request?.body?.objectNameSingular.replace('JobCandidate', '');
+  //   const allDataObjects = await new CreateMetaDataStructure(this.workspaceQueryService).fetchAllObjects(apiToken);
 
-    const allJobCandidates = await this.candidateService.findManyJobCandidatesWithCursor(path_position, apiToken);
-    console.log('All Job Candidates:', allJobCandidates?.length);
-    const filteredCandidateIds = await this.candidateService.filterCandidatesBasedOnView(allJobCandidates, currentViewWithCombinedFiltersAndSorts, allDataObjects);
-    console.log('This is the filteredCandidates, ', filteredCandidateIds);
-    console.log('Got a total of filteredCandidates length, ', filteredCandidateIds.length);
-    console.log('Starting chat for , ', filteredCandidateIds.length, ' candidates');
-    for (const candidateId of filteredCandidateIds) {
+  //   const allJobCandidates = await this.candidateService.findManyJobCandidatesWithCursor(path_position, apiToken);
+  //   console.log('All Job Candidates:', allJobCandidates?.length);
+  //   const filteredCandidateIds = await this.candidateService.filterCandidatesBasedOnView(allJobCandidates, currentViewWithCombinedFiltersAndSorts, allDataObjects);
+  //   console.log('This is the filteredCandidates, ', filteredCandidateIds);
+  //   console.log('Got a total of filteredCandidates length, ', filteredCandidateIds.length);
+  //   console.log('Starting chat for , ', filteredCandidateIds.length, ' candidates');
+  //   for (const candidateId of filteredCandidateIds) {
+  //     const chatControl: allDataObjects.chatControls = { chatControlType: 'startChat' };
+  //     await await new CandidateEngagementArx(this.workspaceQueryService).createChatControl(candidateId, chatControl, apiToken);
+  //   }
+  //   return { status: 'Success' };
+  // }
+  @Post('start-chats-by-candidate-ids')
+  async startChatsByCandidateIds(@Req() request: any): Promise<object> {
+    const apiToken = request.headers.authorization.split(' ')[1];
+    const candidateIds = request.body.jobCandidateIds;
+    for (const candidateId of candidateIds) {
       const chatControl: allDataObjects.chatControls = { chatControlType: 'startChat' };
       await await new CandidateEngagementArx(this.workspaceQueryService).createChatControl(candidateId, chatControl, apiToken);
     }
