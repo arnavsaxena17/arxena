@@ -30698,6 +30698,25 @@ __metadata:
   languageName: node
   linkType: hard
 
+"gojs-react@npm:^1.1.2":
+  version: 1.1.2
+  resolution: "gojs-react@npm:1.1.2"
+  dependencies:
+    tslib: "npm:~2.5.0"
+  peerDependencies:
+    gojs: ">=2.1.22"
+    react: ">=16.0.0"
+  checksum: 10c0/69927c67ab931d547744bc45938bb487697af02577e1f850e56dc98f8dce9cdce8c4f8104a54f5a6ca8cf0c0655e241c6b07a6452193a2f87bb48f0b43d60bdd
+  languageName: node
+  linkType: hard
+
+"gojs@npm:^3.0.19":
+  version: 3.0.19
+  resolution: "gojs@npm:3.0.19"
+  checksum: 10c0/b00220548d1f2f9494de370182bb02536974745d82989d9516a6b6ee8e6749b699e85bd8ee01b5ca069d813d36c1c3bd804e9dcb95606374942c25175356bd46
+  languageName: node
+  linkType: hard
+
 "google-auth-library@npm:^8.0.2":
   version: 8.9.0
   resolution: "google-auth-library@npm:8.9.0"
@@ -50268,6 +50287,8 @@ __metadata:
     fluent-ffmpeg: "npm:^2.1.3"
     framer-motion: "npm:^10.12.17"
     fuzzy: "npm:^0.1.3"
+    gojs: "npm:^3.0.19"
+    gojs-react: "npm:^1.1.2"
     google-libphonenumber: "npm:^3.2.40"
     googleapis: "npm:105"
     graphiql: "npm:^3.1.1"

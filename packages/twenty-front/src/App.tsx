@@ -82,6 +82,7 @@ import GoogleSheet  from '@/google-sheet/GoogleSheet';
 import VideoInterviewFlow from '@/video-interview/interview-response/VideoInterviewFlow';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { HotPage } from '@/hot/hotCandidates';
+import OrgChart from '@/orgchart/OrgChart';
 // const VideoInterviewFlow = lazy(() => import('@/ai-interview/interview-response/VideoInterviewFlow'));
 // const VideoInterviewResponseViewer = lazy(() => import('@/ai-interview/interview-response/VideoInterviewResponseViewer'));
 
@@ -152,6 +153,10 @@ const createRouter = (isBillingEnabled?: boolean) =>
             <Route
               path={`${AppPath.GoogleSheet}/*`}
               element={<GoogleSheet />}
+            />
+            <Route
+              path={`${AppPath.OrgChart}/*`}
+              element={<OrgChart />}
             />
             <Route
               path={`${AppPath.hot}/*`}

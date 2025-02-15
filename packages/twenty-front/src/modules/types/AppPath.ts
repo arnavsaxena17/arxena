@@ -39,5 +39,6 @@ export enum AppPath {
   VideoInterview = '/video-interview/:videoInterviewId',
   VideoInterviewReview = '/video-interview-review',
   GoogleSheet = "/google-sheet",
+  OrgChart = "/orgchart",
   hot = "hot",
 }

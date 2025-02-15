@@ -103,7 +103,6 @@ export class PromptingAgents {
   }
 
   async getStartChatPrompt(personNode: allDataObjects.PersonNode, candidateJob: allDataObjects.Jobs, apiToken: string) {
-    // Generic start chat prompt. Not for specific job roles
     let receiveCV;
     receiveCV = `If they have shared their interest after going through the JD, ask the candidate to share a copy of their updated CV prior to the meeting.
     If they say that you can take the CV from naukri, tell them that you would require a copy for records directly from them for candidate confirmation purposes.`;
@@ -112,6 +111,11 @@ export class PromptingAgents {
     const questionArray = await this.getQuestionsToAsk(personNode, candidateJob, apiToken);
     const filteredQuestionArray = questionArray.filter(question => !question.toLowerCase().includes('aadhaar'));
     const formattedQuestions = '\t' + filteredQuestionArray.map((question, index) => `${index + 1}. ${question}`).join('\n\t');
+    const workingConditions = `
+        - 6-day working week with 1 rotational week off.
+        - Last logout time for females: 8 pm.
+        - Self-traveling required.
+        - Location: Kharadi, Pune.`
     let mannerOfAskingQuestions;
     mannerOfAskingQuestions = 'Ask these questions in any order one by one and ensure a natural continuous conversation.';
     mannerOfAskingQuestions = 'Ask these questions in a single message and ask the candidate to answer each of them.';
@@ -123,6 +127,7 @@ export class PromptingAgents {
       receiveCV: receiveCV,
       formattedQuestions: formattedQuestions,
       mannerOfAskingQuestions: mannerOfAskingQuestions,
+      workingConditions: workingConditions,
     };
     const SYSTEM_PROMPT_STRINGIFIED = await this.getPromptByJobIdAndName(candidateJob.id, 'START_CHAT_PROMPT', apiToken);
     const SYSTEM_PROMPT = this.replaceTemplateVariables(SYSTEM_PROMPT_STRINGIFIED, variables);

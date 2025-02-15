@@ -14,6 +14,8 @@ import { isDefined } from '~/utils/isDefined';
 import { useFindManyRecords } from '../hooks/useFindManyRecords';
 import { Job } from '@/activities/chats/types/front-chat-types';
 import { CoreObjectNameSingular } from '@/object-metadata/types/CoreObjectNameSingular';
+import { useRecoilState } from 'recoil';
+import { tokenPairState } from '@/auth/states/tokenPairState';
 
 const firstName = 'Firstname';
 const lastName = 'Lastname';
@@ -22,6 +24,7 @@ export const useSpreadsheetRecordImport = (objectNameSingular: string) => {
   const { openSpreadsheetImport } = useSpreadsheetImport<any>();
   const { enqueueSnackBar } = useSnackBar();
   const { getIcon } = useIcons();
+  const [tokenPair] = useRecoilState(tokenPairState);
 
   const { objectMetadataItem } = useObjectMetadataItem({
     objectNameSingular,
@@ -113,6 +116,46 @@ export const useSpreadsheetRecordImport = (objectNameSingular: string) => {
     },
   });
 
+
+  const uploadCandidatesToArxena = async (candidates: any[]) => {
+    try {
+      const url = process.env.ENV_NODE === 'production' ? 'https://arxena.com/' : 'http://localhost:5050';
+      console.log("This is the url::", url);
+      const popup_data = {}
+      const singleCandidate = candidates[0];
+      const jobAppliedFor = singleCandidate['Job Applied For'];
+      const job = findBestMatchingJob(jobAppliedFor, activeJobs);
+      
+      const data_source = "spreadsheet_import_twenty";
+  
+      const response = await fetch(url+'/upload_profiles', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${tokenPair?.accessToken?.token}` || '',
+        },
+        body: JSON.stringify({ candidates, popup_data, data_source,  }),
+      });
+  
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+  
+      const responseText = await response.text();
+      if (!responseText) {
+        return [];
+      }
+  
+      const data = JSON.parse(responseText);
+      return data;
+    } catch (error) {
+      console.error('Error uploading candidates to Arxena:', error);
+      throw error; // Re-throw to handle it in the calling function
+    }
+  }
+  
+  
+  
   const findBestMatchingJob = (jobName: string, jobs: any[]) => {
     console.log('These are the jobs that we found:', jobs);
     console.log('These are the jobName that we found:', jobName);
@@ -137,9 +180,38 @@ export const useSpreadsheetRecordImport = (objectNameSingular: string) => {
   };
 
   const openRecordSpreadsheetImport = (options?: Omit<SpreadsheetOptions<any>, 'fields' | 'isOpen' | 'onClose'>) => {
+    let completeData: any = null;
+
     openSpreadsheetImport({
       ...options,
+
+
+      selectHeaderStepHook: async (headerValues: any, data: any[]) => {
+        // Only store complete data if it's a candidate import
+        if (objectNameSingular === 'candidate') {
+          completeData = data.map((row) => {
+            const rowObject: any = {};
+            headerValues.forEach((header: string | number, index: string | number) => {
+              rowObject[header] = row[index];
+            });
+            return rowObject;
+          });
+        }
+        return { headerValues, data };
+      },
+  
       onSubmit: async data => {
+        
+
+        console.log('Full data structure:', {
+          validData: data.validData,
+          invalidData: data.invalidData,
+          all: data.all,
+          firstRow: data.all[0] // Let's see all properties of the first row
+        });
+
+        
+
         const createInputs = data.validData.map(record => {
           const fieldMapping: Record<string, any> = {};
           for (const field of fields) {
@@ -208,28 +280,27 @@ export const useSpreadsheetRecordImport = (objectNameSingular: string) => {
                 fieldMapping[field.name] = value;
                 break;
             }
+
+
+
           }
           return fieldMapping;
         });
         try {
           console.log('These are the create Inputs::, ', createInputs);
           if (objectNameSingular === 'candidate') {
+            console.log('These are the data all create Inputs in ::, ', data.all);
+            console.log('These are the data create Inputs in ::, ', data);
             const personInputs = createInputs.map((input) => {
               if (input.name && typeof input.name === 'string') {
                 const nameParts = input.name.trim().split(' ');
                 const firstName = nameParts[0] || '';
                 const lastName = nameParts.slice(1).join(' ') || '';
-          
-                return {
-                  ...input,
-                  name: { firstName, lastName },
-                  phone: input.phoneNumber || '',
-                };
+                return { ...input, name: { firstName, lastName }, phone: input.phoneNumber || '', };
               }
               return input;
             });
             console.log("These are the personInputs::", personInputs);
-          
             // First create person records
             const createdPersonRecords = await createManyPeopleRecords(personInputs);
             console.log('These are the created person records::', createdPersonRecords);
@@ -238,12 +309,17 @@ export const useSpreadsheetRecordImport = (objectNameSingular: string) => {
               ...input,
               peopleId: createdPersonRecords[index].id
             }));
-
             console.log('These are the candidateInputsWithPersonIds::', candidateInputsWithPersonIds);
-          
             // Create candidate records with person IDs
             const createdRecords = await createManyRecords(candidateInputsWithPersonIds);
-            console.log('These are the created records::', createdRecords);
+            // const uploadCandidates = await createUploadProfilesToArxena(createdRecords);
+            
+            
+            console.log('These are the completeData records::', completeData);
+            // await uploadCandidatesToArxena(completeData);
+          }
+          else{
+            await createManyRecords(createInputs);
           }
         } catch (error: any) {
           enqueueSnackBar(error?.message || 'Something went wrong', {
@@ -251,8 +327,16 @@ export const useSpreadsheetRecordImport = (objectNameSingular: string) => {
           });
         }
       },
-      fields: templateFields,
-    });
+      fields: [
+        ...templateFields,
+        {
+          key: 'rawData',
+          label: 'Raw Data',
+          icon: null,
+          fieldType: { type: 'input' }
+        }
+      ]
+      });
   };
 
   return { openRecordSpreadsheetImport };
