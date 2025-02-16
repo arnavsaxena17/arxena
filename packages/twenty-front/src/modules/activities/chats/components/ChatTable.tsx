@@ -368,9 +368,6 @@ const DraggableTableRow = ({
 }) => {
   const unreadCount = getUnreadCount(individual?.id);
 
-  console.log('unreadCount:', unreadCount);
-  console.log('UnreadIndicator rendering condition:', unreadCount > 0);
-
   let messageTime = 'N/A';
   try {
     messageTime = new Date(individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.createdAt).toLocaleString('en-US', {
@@ -383,7 +380,6 @@ const DraggableTableRow = ({
     messageTime = 'N/A';
   }
   return (
-    console.log('individual:', individual),
     (
       <Draggable draggableId={individual.id} index={index}>
         {(provided, snapshot) => (
@@ -443,9 +439,6 @@ const ChatTable: React.FC<ChatTableProps> = ({ individuals, selectedIndividual, 
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isAttachmentPanelOpen, setIsAttachmentPanelOpen] = useState(false);
   const [currentPersonIndex, setCurrentPersonIndex] = useState(0);
-
-  console.log('These are the selected ids::', selectedIds);
-  console.log('These are the currentPersonIndex::', currentPersonIndex);
   const [searchTerm, setSearchTerm] = useState('');
 
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -475,13 +468,6 @@ const ChatTable: React.FC<ChatTableProps> = ({ individuals, selectedIndividual, 
 
   const selectedPeople = individuals.filter(individual => selectedIds.includes(individual.id));
 
-  console.log('selectedIds:', selectedIds);
-  console.log('selectedPeople:', selectedPeople);
-  console.log('individuals:', individuals);
-  console.log(
-    'selectedCandidateIds:',
-    selectedPeople.map(person => person.candidates.edges[0].node.id),
-  );
   const selectedCandidateIds = selectedPeople.map(person => person.candidates.edges[0].node.id);
   const handleSelectAll = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newSelectedIds = event.target.checked ? individuals.map(individual => individual.id) : [];
@@ -517,11 +503,8 @@ const ChatTable: React.FC<ChatTableProps> = ({ individuals, selectedIndividual, 
 
   async function createCandidateShortlists() {
     try {
-      const url = process.env.ENV_NODE === 'production' ? 'https://app.arxena.com/app' : 'http://localhost:3000';
-      console.log("This is the process.env.ENV_NODE:", process.env.ENV_NODE)
-      console.log("This is the url:", url)
       const response = await axios.post(
-        url + '/arx-chat/create-shortlist',
+        process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/create-shortlist',
         { candidateIds: selectedCandidateIds, }, {
           headers: { authorization: `Bearer ${tokenPair?.accessToken?.token}`, 'content-type': 'application/json', 'x-schema-version': '66', },
         },
@@ -563,10 +546,8 @@ const ChatTable: React.FC<ChatTableProps> = ({ individuals, selectedIndividual, 
 
   async function createChatBasedShortlistDelivery() {
     try {
-      const url = process.env.ENV_NODE === 'production' ? 'https://app.arxena.com/app' : 'http://localhost:3000';
-
       const response = await axios.post(
-        url + '/arx-chat/chat-based-shortlist-delivery',
+        process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/chat-based-shortlist-delivery',
         {
           candidateIds: selectedCandidateIds,
         },
@@ -595,10 +576,8 @@ const ChatTable: React.FC<ChatTableProps> = ({ individuals, selectedIndividual, 
   }
   async function createUpdateCandidateStatus() {
     try {
-      const url = process.env.ENV_NODE === 'production' ? 'https://app.arxena.com' : 'http://localhost:3000';
-      console.log("using Url:", url)
       const response = await axios.post(
-        url + '/arx-chat/refresh-chat-status-by-candidates',
+        process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/refresh-chat-status-by-candidates',
         {
           candidateIds: selectedCandidateIds,
         },

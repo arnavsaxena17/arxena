@@ -394,7 +394,6 @@ export class FacebookWhatsappChatApi {
       }
       // Convert map values back to array
       const uniqueTemplates = Array.from(templatesMap.values());
-      console.log("All unique utility templates::", uniqueTemplates);
       return uniqueTemplates;
     } catch (error) {
       const errorResponse = {

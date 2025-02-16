@@ -233,14 +233,6 @@ export default class CandidateEngagementArx {
           } else {
             // Log ineligible candidates and reasons
             console.log(`Candidate ${candidate.name} ineligible for transition: Current stage incomplete or next stage already started`);
-            console.log(
-              'Stage status:',
-              chatFlowOrder.map(stage => ({
-                stage,
-                completed: candidate[`${stage}Completed`],
-                started: candidate[stage],
-              })),
-            );
           }
         }
       }

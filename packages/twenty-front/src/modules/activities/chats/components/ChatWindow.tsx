@@ -1002,6 +1002,42 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
   const closedToBeContacted = allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.candConversationStatus === 'CONVERSATION_CLOSED_TO_BE_CONTACTED').length;
   const closedToBeContactedPercent = ((closedToBeContacted / allIndividualsForCurrentJob.length) * 100).toFixed(1);
 
+
+  const undeliveredMessages = allIndividualsForCurrentJob?.filter(individual => 
+    individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges?.some( edge => edge?.node?.whatsappDeliveryStatus === 'undelivered' ) ).length;
+  const undeliveredPercent = ((undeliveredMessages / allIndividualsForCurrentJob.length) * 100).toFixed(1);
+  
+  // Messages read but not responded
+  const readNotResponded = allIndividualsForCurrentJob?.filter(individual => {
+    const messages = individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges;
+    return messages?.some(edge => edge?.node?.whatsappDeliveryStatus === 'read' && !messages.some(m => m?.node?.phoneFrom === individual.phone) ); }).length;
+  const readNotRespondedPercent = ((readNotResponded / allIndividualsForCurrentJob.length) * 100).toFixed(1);
+  
+  // Messages unread and not responded
+  const unreadNotResponded = allIndividualsForCurrentJob?.filter(individual => {
+    const messages = individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges;
+    return messages?.some(edge => edge?.node?.whatsappDeliveryStatus === 'delivered' && !messages.some(m => m?.node?.phoneFrom === individual.phone) ); }).length;
+  const unreadNotRespondedPercent = ((unreadNotResponded / allIndividualsForCurrentJob.length) * 100).toFixed(1);
+  
+  // Total messages not responded
+  const totalNotResponded = readNotResponded + unreadNotResponded;
+  const totalNotRespondedPercent = ((totalNotResponded / allIndividualsForCurrentJob.length) * 100).toFixed(1);
+  
+  // Total messages responded
+  const totalResponded = allIndividualsForCurrentJob?.filter(individual => 
+    individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges?.some( edge => edge?.node?.phoneFrom === individual.phone ) ).length;
+  const totalRespondedPercent = ((totalResponded / allIndividualsForCurrentJob.length) * 100).toFixed(1);
+  
+  const messageStatisticsArray = [
+    { label: 'Undelivered Messages', count: undeliveredMessages, percent: parseFloat(undeliveredPercent) },
+    { label: 'Read Not Responded', count: readNotResponded, percent: parseFloat(readNotRespondedPercent) },
+    { label: 'Unread Not Responded', count: unreadNotResponded, percent: parseFloat(unreadNotRespondedPercent) },
+    { label: 'Total Not Responded', count: totalNotResponded, percent: parseFloat(totalNotRespondedPercent) },
+    { label: 'Total Responded', count: totalResponded, percent: parseFloat(totalRespondedPercent) }
+  ];
+  
+
+
   const statisticsArray = [
     { label: 'No Conversation', count: onlyAddedNoConversation, percent: parseFloat(onlyAddedNoConversationPercent) },
     { label: 'Started, No Response', count: conversationStartedNoResponse, percent: parseFloat(conversationStartedNoResponsePercent) },
@@ -1327,6 +1363,16 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
                     </React.Fragment>
                   ))}
                 </div>
+                <div style={{ fontSize: '0.875rem', color: '#666', whiteSpace: 'nowrap', overflow: 'auto' }}>
+                  Message Stats: |{' '}
+                  {messageStatisticsArray.map((stat, index) => (
+                    <React.Fragment key={stat.label}>
+                      {stat.label}: {stat.count} ({stat.percent}%)
+                      {index < messageStatisticsArray.length - 1 ? ' | ' : ''}
+                    </React.Fragment>
+                  ))}
+                </div>
+
                 <div style={{ fontSize: '0.875rem', color: '#666', whiteSpace: 'nowrap', overflow: 'auto' }}>
                   Total: {totalCandidates} |{' '}
                   {sortedStatistics.map((stat, index) => (
