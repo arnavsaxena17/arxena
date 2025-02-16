@@ -111,11 +111,23 @@ export class PromptingAgents {
     const questionArray = await this.getQuestionsToAsk(personNode, candidateJob, apiToken);
     const filteredQuestionArray = questionArray.filter(question => !question.toLowerCase().includes('aadhaar'));
     const formattedQuestions = '\t' + filteredQuestionArray.map((question, index) => `${index + 1}. ${question}`).join('\n\t');
-    const workingConditions = `
-        - 6-day working week with 1 rotational week off.
-        - Last logout time for females: 8 pm.
-        - Self-traveling required.
-        - Location: Kharadi, Pune.`
+    let workingConditions = ``;
+    if (candidateJob.name.includes('customer')) {
+      workingConditions = `
+          - 6-day working week with 1 rotational week off.
+          - Last logout time for females: 8 pm.
+          - Self-traveling required.
+          - Location: Kharadi, Pune.`
+    }
+    else if (candidateJob.name.includes('recruit')){
+      workingConditions = `
+      - 6-day working week with 1 rotational week off.
+      - Self-traveling required.
+      - Location: Chennai.`
+
+
+    }
+
     let mannerOfAskingQuestions;
     mannerOfAskingQuestions = 'Ask these questions in any order one by one and ensure a natural continuous conversation.';
     mannerOfAskingQuestions = 'Ask these questions in a single message and ask the candidate to answer each of them.';
