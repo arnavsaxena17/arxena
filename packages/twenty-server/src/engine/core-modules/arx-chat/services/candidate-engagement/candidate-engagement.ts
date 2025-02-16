@@ -397,6 +397,7 @@ export default class CandidateEngagementArx {
       console.log('Fetching candidates to engage');
       const candidates = await this.fetchAllCandidatesWithSpecificChatControl(chatControl.chatControlType, chatFlowConfigObj, apiToken);
       console.log('Fetched', candidates?.length, ' fetchSpecificPeopleTo EngageBasedOnChatControl candidates with chatControl', chatControl);
+      console.log('Fetched candidate names ::', candidates.map(candidate => candidate.name), '  with chatControl', chatControl);
       const candidatePeopleIds = candidates?.filter(c => c?.people?.id).map(c => c?.people?.id);
       const candidateJob = candidates?.filter(c => c?.jobs?.id).map(c => c?.jobs)[0];
       console.log('Got a total of ', candidatePeopleIds?.length, 'candidate ids for chatControl', chatControl);
