@@ -402,6 +402,7 @@ export default class CandidateEngagementArx {
       console.log('Got a total of ', candidatePeopleIds?.length, 'candidate ids for chatControl', chatControl);
       const people = await new FilterCandidates(this.workspaceQueryService).fetchAllPeopleByCandidatePeopleIds(candidatePeopleIds, apiToken);
       console.log('Fetched', people?.length, 'people in fetch all People in fetchSpecificPeopleTo EngageBasedOnChatControl with chatControl', chatControl);
+      console.log('Caniddate Names', people.map(person => person?.name?.firstName), "for job :", candidateJob?.name);
       return { people, candidateJob };
     } catch (error) {
       console.log('This is the error in fetchPeopleToEngageBy CheckingOnlyStartChat', error);

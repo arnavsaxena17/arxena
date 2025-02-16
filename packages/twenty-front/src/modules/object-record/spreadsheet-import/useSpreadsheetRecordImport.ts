@@ -313,8 +313,6 @@ export const useSpreadsheetRecordImport = (objectNameSingular: string) => {
             // Create candidate records with person IDs
             const createdRecords = await createManyRecords(candidateInputsWithPersonIds);
             // const uploadCandidates = await createUploadProfilesToArxena(createdRecords);
-            
-            
             console.log('These are the completeData records::', completeData);
             // await uploadCandidatesToArxena(completeData);
           }

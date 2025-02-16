@@ -132,7 +132,6 @@ export class IncomingWhatsappMessages {
             [],
             workspaceId
           );
-          console.log
           console.log("recentMessage::", recentMessage)
   
           if (recentMessage.length === 0) {
