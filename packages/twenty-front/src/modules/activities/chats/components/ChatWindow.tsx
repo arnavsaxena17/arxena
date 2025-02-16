@@ -1004,19 +1004,20 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
 
 
   const undeliveredMessages = allIndividualsForCurrentJob?.filter(individual => 
-    individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges?.some( edge => edge?.node?.whatsappDeliveryStatus === 'undelivered' ) ).length;
+    individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges?.some( edge => edge?.node?.whatsappDeliveryStatus === 'failed' ) ).length;
   const undeliveredPercent = ((undeliveredMessages / allIndividualsForCurrentJob.length) * 100).toFixed(1);
   
   // Messages read but not responded
   const readNotResponded = allIndividualsForCurrentJob?.filter(individual => {
+    console.log("individual phone:", individual.phone.replace("+", ""));
     const messages = individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges;
-    return messages?.some(edge => edge?.node?.whatsappDeliveryStatus === 'read' && !messages.some(m => m?.node?.phoneFrom === individual.phone) ); }).length;
+    return messages?.some(edge => edge?.node?.whatsappDeliveryStatus === 'read' && !messages.some(m => m?.node?.phoneFrom.replace("+", "") === individual.phone.replace("+", "")) ); }).length;
   const readNotRespondedPercent = ((readNotResponded / allIndividualsForCurrentJob.length) * 100).toFixed(1);
   
   // Messages unread and not responded
   const unreadNotResponded = allIndividualsForCurrentJob?.filter(individual => {
     const messages = individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges;
-    return messages?.some(edge => edge?.node?.whatsappDeliveryStatus === 'delivered' && !messages.some(m => m?.node?.phoneFrom === individual.phone) ); }).length;
+    return messages?.some(edge => edge?.node?.whatsappDeliveryStatus === 'delivered' && !messages.some(m => m?.node?.phoneFrom.replace("+", "") === individual.phone.replace("+", "")) ); }).length;
   const unreadNotRespondedPercent = ((unreadNotResponded / allIndividualsForCurrentJob.length) * 100).toFixed(1);
   
   // Total messages not responded
@@ -1025,7 +1026,7 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
   
   // Total messages responded
   const totalResponded = allIndividualsForCurrentJob?.filter(individual => 
-    individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges?.some( edge => edge?.node?.phoneFrom === individual.phone ) ).length;
+    individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges?.some( edge => edge?.node?.phoneFrom.replace("+", "") === individual.phone.replace("+", "") ) ).length;
   const totalRespondedPercent = ((totalResponded / allIndividualsForCurrentJob.length) * 100).toFixed(1);
   
   const messageStatisticsArray = [
