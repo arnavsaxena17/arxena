@@ -505,10 +505,7 @@ const ChatTable: React.FC<ChatTableProps> = ({ individuals, selectedIndividual, 
     try {
       const response = await axios.post(
         process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/create-shortlist',
-        { candidateIds: selectedCandidateIds, }, {
-          headers: { authorization: `Bearer ${tokenPair?.accessToken?.token}`, 'content-type': 'application/json', 'x-schema-version': '66', },
-        },
-      );
+        { candidateIds: selectedCandidateIds, }, { headers: { authorization: `Bearer ${tokenPair?.accessToken?.token}`, 'content-type': 'application/json', 'x-schema-version': '66', }, }, );
       console.log('Shortlist created successfully:', response.data);
       enqueueSnackBar('Shortlist created successfully', {
         variant: SnackBarVariant.Success,
@@ -539,6 +536,7 @@ const ChatTable: React.FC<ChatTableProps> = ({ individuals, selectedIndividual, 
       'CONVERSATION_STARTED_HAS_NOT_RESPONDED': 2,
       'ONLY_ADDED_NO_CONVERSATION': 1
     };
+    console.log("status priority is:", statusPriorities[status] || 0);
     return statusPriorities[status] || 0;
   };
   
@@ -548,17 +546,7 @@ const ChatTable: React.FC<ChatTableProps> = ({ individuals, selectedIndividual, 
     try {
       const response = await axios.post(
         process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/chat-based-shortlist-delivery',
-        {
-          candidateIds: selectedCandidateIds,
-        },
-        {
-          headers: {
-            authorization: `Bearer ${tokenPair?.accessToken?.token}`,
-            'content-type': 'application/json',
-            'x-schema-version': '66',
-          },
-        },
-      );
+        { candidateIds: selectedCandidateIds, }, { headers: { authorization: `Bearer ${tokenPair?.accessToken?.token}`, 'content-type': 'application/json', 'x-schema-version': '66', }, }, );
       console.log('Shortlist created successfully:', response.data);
       enqueueSnackBar('Shortlist created successfully', {
         variant: SnackBarVariant.Success,
@@ -578,17 +566,7 @@ const ChatTable: React.FC<ChatTableProps> = ({ individuals, selectedIndividual, 
     try {
       const response = await axios.post(
         process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/refresh-chat-status-by-candidates',
-        {
-          candidateIds: selectedCandidateIds,
-        },
-        {
-          headers: {
-            authorization: `Bearer ${tokenPair?.accessToken?.token}`,
-            'content-type': 'application/json',
-            'x-schema-version': '66',
-          },
-        },
-      );
+        { candidateIds: selectedCandidateIds, }, { headers: { authorization: `Bearer ${tokenPair?.accessToken?.token}`, 'content-type': 'application/json', 'x-schema-version': '66', }, }, );
       console.log('Shortlist created successfully:', response.data);
       enqueueSnackBar('Shortlist created successfully', {
         variant: SnackBarVariant.Success,
@@ -644,22 +622,19 @@ const ChatTable: React.FC<ChatTableProps> = ({ individuals, selectedIndividual, 
           bValue = b.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.createdAt || '';
           break;
         case 'candidateStatus':
-          // Get the status values
-          const aStatus = a.candidates?.edges[0]?.node?.status || '';
-          const bStatus = b.candidates?.edges[0]?.node?.status || '';
-          // Convert to priority numbers
+          const aStatus = a.candidates?.edges[0]?.node?.candConversationStatus || '';
+          const bStatus = b.candidates?.edges[0]?.node?.candConversationStatus || '';
           aValue = getStatusPriority(aStatus);
           bValue = getStatusPriority(bStatus);
           break;
         case 'status':
-          aValue = a.candidates?.edges[0]?.node?.candConversationStatus || '';
-          bValue = b.candidates?.edges[0]?.node?.candConversationStatus || '';
+          aValue = a.candidates?.edges[0]?.node?.status || '';
+          bValue = b.candidates?.edges[0]?.node?.status || '';
           break;
         default:
           aValue = (a as any)[key] || '';
           bValue = (b as any)[key] || '';
       }
-
       if (direction === 'asc') {
         return aValue > bValue ? 1 : -1;
       }
@@ -678,11 +653,8 @@ const ChatTable: React.FC<ChatTableProps> = ({ individuals, selectedIndividual, 
   };
 
   const getUnreadCount = (individualId: string) => {
-    // Get the candidate ID for this individual
     const candidateId = individuals.find(ind => ind.id === individualId)?.candidates?.edges[0]?.node?.id;
-
     const unreadInfo = unreadMessages.listOfUnreadMessages.find(item => item.candidateId === candidateId);
-
     return unreadInfo ? unreadInfo.ManyUnreadMessages.length : 0;
   };
 
@@ -699,9 +671,9 @@ const ChatTable: React.FC<ChatTableProps> = ({ individuals, selectedIndividual, 
 
   const sortedIndividuals = sortConfig.key && sortConfig.direction ? sortData(individuals, sortConfig.key, sortConfig.direction) : individuals;
 
-  console.log('isAttachmentPanelOpen:', isAttachmentPanelOpen);
-  console.log('isChatOpen:', isChatOpen);
-  console.log('value of selectedIds.length > 1 && (isAttachmentPanelOpen || isChatOpen:', selectedIds.length > 1 && (isAttachmentPanelOpen || isChatOpen));
+  // console.log('isAttachmentPanelOpen:', isAttachmentPanelOpen);
+  // console.log('isChatOpen:', isChatOpen);
+  // console.log('value of selectedIds.length > 1 && (isAttachmentPanelOpen || isChatOpen:', selectedIds.length > 1 && (isAttachmentPanelOpen || isChatOpen));
 
   return (
     <>

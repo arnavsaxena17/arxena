@@ -41,7 +41,6 @@ const statusLabels: { [key: string]: string } = {
 
 // const templatesList = [ ];
 const interimChats = ['remindCandidate', 'firstInterviewReminder', 'secondInterviewreminder'];
-
 const statusesArray = Object.keys(statusLabels);
 const PersonIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -983,17 +982,16 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
 
   // Messages read but not responded
   const readNotResponded = allIndividualsForCurrentJob?.filter(individual => {
-    console.log('individual phone:', individual?.phone?.replace('+', ''));
+    const phone = individual?.phone || '';
+    console.log('individual phone:', phone.replace('+', ''));
     const messages = individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges;
-    return messages?.some(edge => edge?.node?.whatsappDeliveryStatus === 'read' && !messages.some(m => m?.node?.phoneFrom?.replace('+', '') === individual?.phone?.replace('+', '')));
+    return messages?.some(edge => edge?.node?.whatsappDeliveryStatus === 'read' && !messages.some(m => m?.node?.phoneFrom?.replace('+', '') === phone.replace('+', '')));
   }).length;
   const readNotRespondedPercent = ((readNotResponded / allIndividualsForCurrentJob.length) * 100).toFixed(1);
 
   // Messages unread and not responded
   const unreadNotResponded = allIndividualsForCurrentJob?.filter(individual => {
-    const messages = individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges;
-    return messages?.some(edge => edge?.node?.whatsappDeliveryStatus === 'delivered' && !messages.some(m => m?.node?.phoneFrom?.replace('+', '') === individual?.phone?.replace('+', '')));
-  }).length;
+    const messages = individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges; return messages?.some(edge => edge?.node?.whatsappDeliveryStatus === 'delivered' && !messages.some(m => m?.node?.phoneFrom?.replace('+', '') === individual?.phone?.replace('+', ''))); }).length;
   const unreadNotRespondedPercent = ((unreadNotResponded / allIndividualsForCurrentJob.length) * 100).toFixed(1);
 
   // Total messages not responded
@@ -1001,7 +999,7 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
   const totalNotRespondedPercent = ((totalNotResponded / allIndividualsForCurrentJob.length) * 100).toFixed(1);
 
   // Total messages responded
-  const totalResponded = allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges?.some(edge => edge?.node?.phoneFrom.replace('+', '') === individual?.phone?.replace('+', ''))).length;
+  const totalResponded = allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges?.some(edge => edge?.node?.phoneFrom?.replace('+', '') === individual?.phone?.replace('+', ''))).length;
   const totalRespondedPercent = ((totalResponded / allIndividualsForCurrentJob.length) * 100).toFixed(1);
 
   const messageStatisticsArray = [
@@ -1040,9 +1038,6 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
 
   const handleTemplateSend = async (templateName: string) => {
     try {
-      console.log('templateName:', templateName);
-      console.log('process.env.REACT_APP_SERVER_BASE_URL:', process.env.REACT_APP_SERVER_BASE_URL);
-      console.log('currentIndividual?.phone:', currentIndividual?.phone);
       const response = await axios.post(
         process.env.REACT_APP_SERVER_BASE_URL + '/whatsapp-test/send-template-message',
         { templateName: templateName, phoneNumberTo: currentIndividual?.phone.replace('+', '') }, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } }, );
@@ -1071,7 +1066,6 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
       scrollToBottom();
     } catch (error) {
       showSnackbar('Failed to send template', 'error');
-
       console.error('Error sending template:', error);
     }
   };
@@ -1104,11 +1098,6 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
     }
   };
 
-  console.log('Current Candidate ID:', currentCandidateId);
-  console.log('Targetable Object:', {
-    targetObjectNameSingular: 'candidate',
-    id: currentCandidateId,
-  });
 
   const initializeRecord = useRecoilCallback(({ set }) => () => {
     if (currentCandidateId) {
