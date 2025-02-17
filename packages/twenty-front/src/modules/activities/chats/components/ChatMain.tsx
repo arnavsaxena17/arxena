@@ -64,7 +64,7 @@ const ChatWindowContainer = styled.div<{ sidebarWidth: number }>`
   @media (max-width: 768px) {
     height: 60vh;
     width: 100%;
-    margin-top: 40vh; // Adjust based on sidebar height
+    margin-top: 0vh; // Adjust based on sidebar height
   }
 `;
 

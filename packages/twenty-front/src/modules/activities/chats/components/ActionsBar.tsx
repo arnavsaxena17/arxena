@@ -2,12 +2,9 @@
 import React from 'react';
 import styled from '@emotion/styled';
 import { IconX, IconUsers, IconMessages, IconFileText, IconList, IconRefresh } from '@tabler/icons-react';
-
 const ActionsBarContainer = styled.div`
   position: fixed;
   bottom: 0;
-//   left: 0;
-//   width: 100%;
   background-color: white;
   padding: 12px 24px;
   display: flex;
@@ -17,6 +14,13 @@ const ActionsBarContainer = styled.div`
   transform: translateY(100%);
   transition: transform 0.2s ease;
   z-index: 1000;
+
+  @media (max-width: 768px) {
+    padding: 8px 16px;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+  }
 
   &[data-visible='true'] {
     transform: translateY(0);

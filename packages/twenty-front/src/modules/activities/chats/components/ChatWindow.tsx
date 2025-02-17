@@ -179,7 +179,7 @@ const StyledTopBar = styled.div<{ sidebarWidth: number }>`
 
   @media (max-width: 768px) {
     width: 100%;
-    top: 40vh; // Position below sidebar
+    top: 11vh; // Position below sidebar
     padding: 1rem;
     flex-direction: column;
     gap: 1rem;
@@ -368,6 +368,7 @@ const ChatContainer = styled.div`
   @media (max-width: 768px) {
     flex-direction: column;
     margin: 0;
+    left:30vw;
     height: calc(100vh - 60px); // Adjust for mobile header
     padding-bottom: 60px; // Space for input area
   }
@@ -602,6 +603,16 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
   const [isLoadingTemplates, setIsLoadingTemplates] = useState(true);
 
   const { enqueueSnackBar } = useSnackBar();
+    const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const showSnackbar = (message: string, type: 'success' | 'error') => {
     enqueueSnackBar(message, {
@@ -809,6 +820,9 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
 
   let currentMessageObject = currentIndividual?.candidates?.edges[0]?.node?.whatsappMessages?.edges[currentIndividual?.candidates?.edges[0]?.node?.whatsappMessages?.edges?.length - 1]?.node?.messageObj;
 
+
+
+  
   // const handleInvokeChatAndRunToolCalls = async (
   //   phoneNumber: string | undefined,
   //   latestResponseGenerated: string,
@@ -1221,17 +1235,17 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
                   })}
                 </StyledScrollingView>
               </ChatView>
-              <NotesPanel>
-                {currentCandidateId && currentWorkspaceMember && (
+                <NotesPanel>
+                {currentCandidateId && currentWorkspaceMember && window.innerWidth > 768 && (
                   <Notes
-                    targetableObject={{
-                      id: currentCandidateId,
-                      targetObjectNameSingular: 'candidate',
-                    }}
-                    key={currentCandidateId}
+                  targetableObject={{
+                    id: currentCandidateId,
+                    targetObjectNameSingular: 'candidate',
+                  }}
+                  key={currentCandidateId}
                   />
                 )}
-              </NotesPanel>
+                </NotesPanel>
             </ChatContainer>
             <StyledChatInputBox sidebarWidth={sidebarWidth}>
               <Container>

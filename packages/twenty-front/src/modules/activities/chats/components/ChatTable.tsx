@@ -751,9 +751,13 @@ const ChatTable: React.FC<ChatTableProps> = ({ individuals, selectedIndividual, 
                     {individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.createdAt ? dayjs(individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.createdAt).format('MMM D, HH:mm') : 'N/A'}
                   </StyledTableCell>
                   <StyledTableCell data-label="Candidate Status">{individual.candidates?.edges[0]?.node?.status || 'N/A'}</StyledTableCell>
-                  <StyledTableCell data-label="Salary">{individual.salary || 'N/A'}</StyledTableCell>
-                  <StyledTableCell data-label="City">{individual.city || 'N/A'}</StyledTableCell>
-                  <StyledTableCell data-label="Job Title">{individual.jobTitle || 'N/A'}</StyledTableCell>
+                    {!isMobile && (
+                    <>
+                      <StyledTableCell data-label="Salary">{individual.salary || 'N/A'}</StyledTableCell>
+                      <StyledTableCell data-label="City">{individual.city || 'N/A'}</StyledTableCell>
+                      <StyledTableCell data-label="Job Title">{individual.jobTitle || 'N/A'}</StyledTableCell>
+                    </>
+                    )}
                 </StyledTableRow>
               ))}
             </StyledTableBody>
