@@ -117,6 +117,37 @@ export class ArxChatEndpoint {
     return response.data;
   }
 
+  @Post('retrieve-chat-response')
+  @UseGuards(JwtAuthGuard)
+  async retrieve(@Req() request: any): Promise<object> {
+    const apiToken = request.headers.authorization.split(' ')[1];
+
+    const personObj: allDataObjects.PersonNode = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPhoneNumber(request.body.phoneNumberFrom,apiToken);
+    // debugger;
+
+    try {
+      const personCandidateNode = personObj?.candidates?.edges[0]?.node;
+      const candidateJob = personCandidateNode?.jobs;
+      // const messagesList = personCandidateNode?.whatsappMessages?.edges;
+      const messagesList: allDataObjects.MessageNode[] = await new FilterCandidates(this.workspaceQueryService).fetchAllWhatsappMessages(personCandidateNode.id,apiToken);
+      let mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = new FilterCandidates(this.workspaceQueryService ).getMostRecentMessageFromMessagesList(messagesList);
+      const isChatEnabled: boolean = false;
+      if (mostRecentMessageArr?.length > 0) {
+        let chatAgent: OpenAIArxMultiStepClient;
+        chatAgent = new OpenAIArxMultiStepClient(personObj, this.workspaceQueryService);
+        const chatControl: allDataObjects.chatControls = { chatControlType: 'startChat' };
+        mostRecentMessageArr = (await chatAgent.createCompletion(mostRecentMessageArr, candidateJob, chatControl, apiToken, isChatEnabled)) || [];
+        return mostRecentMessageArr;
+      }
+    } catch (err) {
+      return { status: err };
+    }
+    return { status: 'Failed' };
+  }
+
+
+
+
   @Post('start-interim-chat-prompt')
   @UseGuards(JwtAuthGuard)
   async startChatPrompt(@Req() request: any) {
