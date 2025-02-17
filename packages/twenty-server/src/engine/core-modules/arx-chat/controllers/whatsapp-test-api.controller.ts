@@ -24,12 +24,13 @@ export class WhatsappTestAPI {
   @UseGuards(JwtAuthGuard)
   async sendTemplateMessage(@Req() request: any): Promise<object> {
 
-    const requestBody = request.body as any;
-    const apiToken = request.headers.authorization.split(' ')[1];
+    try {
+      const requestBody = request.body as any;
+      const apiToken = request.headers.authorization.split(' ')[1];
 
-    const personObj: allDataObjects.PersonNode = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPhoneNumber(requestBody.phoneNumberTo,apiToken);
-    console.log("This is the process.env.SERVER_BASE_URL:",process.env.SERVER_BASE_URL)
-    const sendTemplateMessageObj = {
+      const personObj: allDataObjects.PersonNode = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPhoneNumber(requestBody.phoneNumberTo,apiToken);
+      console.log("This is the process.env.SERVER_BASE_URL:",process.env.SERVER_BASE_URL)
+      const sendTemplateMessageObj = {
       recipient: personObj.phone.replace('+', ''),
       template_name: requestBody.templateName,
       candidateFirstName: personObj.name.firstName,
@@ -43,23 +44,26 @@ export class WhatsappTestAPI {
       descriptionOneliner:personObj?.candidates?.edges[0]?.node?.jobs?.company?.descriptionOneliner,
       jobCode: personObj?.candidates?.edges[0]?.node?.jobs?.jobCode,
       jobLocation: personObj?.candidates?.edges[0]?.node?.jobs?.jobLocation,
-      // videoInterviewLink: process.env.SERVER_BASE_URL+personObj?.candidates?.edges[0]?.node?.aIInterviewStatus?.edges[0].node.interviewLink.url,
       videoInterviewLink: process.env.SERVER_BASE_URL+personObj?.candidates?.edges[0]?.node?.videoInterview?.edges[0]?.node?.interviewLink?.url || "",
       candidateSource: "Apna",
-    };
-    console.log("This is the sendTemplateMessageObj:", sendTemplateMessageObj)
+      };
+      console.log("This is the sendTemplateMessageObj:", sendTemplateMessageObj)
 
-    const response = await new FacebookWhatsappChatApi(this.workspaceQueryService).sendWhatsappUtilityMessage(sendTemplateMessageObj,apiToken);
-    let utilityMessage = await new WhatsappTemplateMessages().getUpdatedUtilityMessageObj(sendTemplateMessageObj);
-    const whatsappTemplateMessageSent = await new WhatsappTemplateMessages().generateMessage(requestBody.templateName, sendTemplateMessageObj);
-    console.log("This is the mesasge obj:", personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges)
-    const mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.messageObj;
-    console.log("This is the mostRecentMessageArr:", mostRecentMessageArr)
-    const chatControl = { chatControlType: personObj?.candidates?.edges[0].node.lastEngagementChatControl };
-    mostRecentMessageArr.push({ role: 'user', content: whatsappTemplateMessageSent });
-    const whatappUpdateMessageObj = await new FilterCandidates(this.workspaceQueryService).updateChatHistoryObjCreateWhatsappMessageObj('success', personObj, personObj.candidates.edges[0].node, mostRecentMessageArr, chatControl);
-    await new UpdateChat(this.workspaceQueryService).updateCandidateEngagementDataInTable(whatappUpdateMessageObj,apiToken);
-    console.log("This is ther esponse:", response.data)
+      const response = await new FacebookWhatsappChatApi(this.workspaceQueryService).sendWhatsappUtilityMessage(sendTemplateMessageObj,apiToken);
+      let utilityMessage = await new WhatsappTemplateMessages().getUpdatedUtilityMessageObj(sendTemplateMessageObj);
+      const whatsappTemplateMessageSent = await new WhatsappTemplateMessages().generateMessage(requestBody.templateName, sendTemplateMessageObj);
+      console.log("This is the mesasge obj:", personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges)
+      const mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.messageObj;
+      console.log("This is the mostRecentMessageArr:", mostRecentMessageArr)
+      const chatControl = { chatControlType: personObj?.candidates?.edges[0].node.lastEngagementChatControl };
+      mostRecentMessageArr.push({ role: 'user', content: whatsappTemplateMessageSent });
+      const whatappUpdateMessageObj = await new FilterCandidates(this.workspaceQueryService).updateChatHistoryObjCreateWhatsappMessageObj('success', personObj, personObj.candidates.edges[0].node, mostRecentMessageArr, chatControl);
+      await new UpdateChat(this.workspaceQueryService).updateCandidateEngagementDataInTable(whatappUpdateMessageObj,apiToken);
+      console.log("This is ther esponse:", response.data)
+    } catch (error) {
+      console.error('Error in sendTemplateMessage:', error);
+      throw error;
+    }
     return { status: 'success' };
   }
 

@@ -50,6 +50,9 @@ export class WhatsappTemplateMessages{
         console.log("Going to get utiltiy messages")
         const templates = ['recruitment', 'application', 'application02','share_video_interview_link_direct_without_button', 'share_video_interview_link_with_start_link','share_video_interview_link_direct','rejection_template','follow_up'];
         switch (sendTemplateMessageObj.template_name) {
+
+
+
           case 'share_video_interview_link_with_start_link':
             templateMessageObj = JSON.stringify({
               messaging_product: 'whatsapp',
@@ -140,7 +143,26 @@ export class WhatsappTemplateMessages{
 
 
 
-          case 'share_video_interview_link_direct':
+          case 'follow_up_interview_scheduling':
+            templateMessageObj = JSON.stringify({
+              messaging_product: 'whatsapp',
+              to: sendTemplateMessageObj.recipient,
+              type: 'template',
+              template: {
+                name: sendTemplateMessageObj.template_name,
+                language: { code: 'en' },
+                components: [
+                  {
+                    type: 'body',
+                    parameters: [],
+                  },
+                ],
+              },
+            });
+            break;
+
+
+            case 'share_video_interview_link_direct':
             templateMessageObj = JSON.stringify({
               messaging_product: 'whatsapp',
               to: sendTemplateMessageObj.recipient,
