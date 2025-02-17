@@ -214,9 +214,9 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (sidebarRef.current && !sidebarRef.current.contains(event.target as Node)) {
-        setSearchQuery("");
-      }
+      // if (sidebarRef.current && !sidebarRef.current.contains(event.target as Node)) {
+      //   setSearchQuery("");
+      // }
 
       if (jobDropdownRef.current && !jobDropdownRef.current.contains(event.target as Node)) {
         setIsJobDropdownOpen(false);
