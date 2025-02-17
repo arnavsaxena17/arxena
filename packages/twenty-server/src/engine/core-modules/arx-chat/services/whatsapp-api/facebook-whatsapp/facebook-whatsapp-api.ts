@@ -287,6 +287,7 @@ export class FacebookWhatsappChatApi {
     try {
       const response = await axios.request(config);
       if (response?.data?.messages[0]?.message_status === 'accepted') {
+        console.log("Message to facebook is accepted (utility message", response?.data);
         return response?.data;
       }
     } catch (error) {

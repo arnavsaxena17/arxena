@@ -51,12 +51,11 @@ export class WhatsappTestAPI {
 
       const response = await new FacebookWhatsappChatApi(this.workspaceQueryService).sendWhatsappUtilityMessage(sendTemplateMessageObj,apiToken);
       let utilityMessage = await new WhatsappTemplateMessages().getUpdatedUtilityMessageObj(sendTemplateMessageObj);
-      const whatsappTemplateMessageSent = await new WhatsappTemplateMessages().generateMessage(requestBody.templateName, sendTemplateMessageObj);
-      console.log("This is the mesasge obj:", personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges)
+      // const whatsappTemplateMessageSent = await new WhatsappTemplateMessages().generateMessage(requestBody.templateName, sendTemplateMessageObj);
       const mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.messageObj;
       console.log("This is the mostRecentMessageArr:", mostRecentMessageArr)
-      const chatControl = { chatControlType: personObj?.candidates?.edges[0].node.lastEngagementChatControl };
-      mostRecentMessageArr.push({ role: 'user', content: whatsappTemplateMessageSent });
+      const chatControl = { chatControlType: personObj?.candidates?.edges[0]?.node?.lastEngagementChatControl };
+      mostRecentMessageArr.push({ role: 'user', content: utilityMessage});
       const whatappUpdateMessageObj = await new FilterCandidates(this.workspaceQueryService).updateChatHistoryObjCreateWhatsappMessageObj('success', personObj, personObj.candidates.edges[0].node, mostRecentMessageArr, chatControl);
       await new UpdateChat(this.workspaceQueryService).updateCandidateEngagementDataInTable(whatappUpdateMessageObj,apiToken);
       console.log("This is ther esponse:", response.data)

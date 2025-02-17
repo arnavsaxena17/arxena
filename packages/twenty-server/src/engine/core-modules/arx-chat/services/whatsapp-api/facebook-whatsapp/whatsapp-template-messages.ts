@@ -1,7 +1,7 @@
 import * as allDataObjects from '../../data-model-objects';
+import { MessageGenerator } from './template-message-generator';
 
 export class WhatsappTemplateMessages{
-
 
     getTemplateMessageObj(sendTemplateMessageObj: allDataObjects.sendWhatsappTemplateMessageObjectType) {
         const templateMessageObj = JSON.stringify({
@@ -497,45 +497,109 @@ export class WhatsappTemplateMessages{
         }
         
     
-        generateMessage(templateName: string, data: allDataObjects.sendWhatsappUtilityMessageObjectType): string {
-          
-          switch (templateName) {
-            case 'recruitment':
-              return this.generateRecruitmentMessage(data);
-            case 'application':
-              return this.generateApplicationMessage(data);
-            case 'application02':
-              return this.generateApplication02Message(data);
-            case 'rejection_template':
-              return this.generateRejectionMessage(data);
-            default:
-              return 'Invalid template name';
+
+
+        // generateMessage(templateName: string, data: allDataObjects.sendWhatsappUtilityMessageObjectType): string {
+        //   try {
+        //     const messageGenerator = new MessageGenerator(templatesJson);
+        //     return this.messageGenerator.generateMessage(templateName, this.transformData(data));
+        //   } catch (error) {
+        //     console.error(`Error generating message: ${error.message}`);
+        //     return 'Invalid template name';
+        //   }
+        // }
+
+
+        private transformData(data: allDataObjects.sendWhatsappUtilityMessageObjectType): Record<string, any> {
+          const currentISTTime = new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
+          const currentHour = new Date(currentISTTime).getHours();
+          const dayText = currentHour < 17 ? "today" : "tomorrow";
+        
+          let meetingDate = new Date();
+          meetingDate.setDate(meetingDate.getDate() + 2);
+          while (meetingDate.getDay() === 0) {
+            meetingDate.setDate(meetingDate.getDate() + 1);
           }
-        }    
-        generateRecruitmentMessage(data: allDataObjects.sendWhatsappUtilityMessageObjectType): string {
-          return `Dear ${data.candidateFirstName},\n\n` +
-            `My name is ${data.recruiterName}, ${data.recruiterJobTitle} at ${data.recruiterCompanyName}, ${data.recruiterCompanyDescription}. ` +
-            `I am reaching out to you regarding the ${data.jobPositionName} position for ${data.jobLocation}. ` +
-            `Job Code: ${data.jobCode}\n${data.descriptionOneliner}\n`;
+          const formattedMeetingDate = meetingDate.toLocaleDateString('en-US', { 
+            weekday: 'short', 
+            month: 'short', 
+            day: 'numeric' 
+          });
+        
+          return {
+            // Basic candidate info
+            param1: data.candidateFirstName,
+            param2: data.recruiterName,
+            param3: data.recruiterJobTitle,
+            param4: data.recruiterCompanyName,
+            param5: data.recruiterCompanyDescription,
+            param6: data.jobPositionName,
+            param7: data.descriptionOneliner,
+            param8: data.jobLocation,
+            param9: data.candidateSource || "Naukri",
+            param10: dayText,
+            
+            // Additional parameters for specific templates
+            param11: data.jobCode,
+            param12: data.companyName,
+            param13: data.discussionDate || "earlier",
+            param14: data.nextStep || "next steps",
+            param15: data.availableDate || "tomorrow for a quick chat?",
+            param16: data.videoInterviewLink,
+            param17: "15 mins",
+            param18: "3-4 questions",
+            param19: "48 hours",
+            param20: formattedMeetingDate,
+            param21: "11AM",
+            param22: "Kharadi, Pune",
+            param23: "your profile discussed last week",
+            param24: "internally",
+            param25: "believe that your profile won't be a good fit"
+          };
         }
+        
+
+        
+
+        // generateMessage(templateName: string, data: allDataObjects.sendWhatsappUtilityMessageObjectType): string {
+          
+        //   switch (templateName) {
+        //     case 'recruitment':
+        //       return this.generateRecruitmentMessage(data);
+        //     case 'application':
+        //       return this.generateApplicationMessage(data);
+        //     case 'application02':
+        //       return this.generateApplication02Message(data);
+        //     case 'rejection_template':
+        //       return this.generateRejectionMessage(data);
+        //     default:
+        //       return 'Invalid template name';
+        //   }
+        // }    
+        // generateRecruitmentMessage(data: allDataObjects.sendWhatsappUtilityMessageObjectType): string {
+        //   return `Dear ${data.candidateFirstName},\n\n` +
+        //     `My name is ${data.recruiterName}, ${data.recruiterJobTitle} at ${data.recruiterCompanyName}, ${data.recruiterCompanyDescription}. ` +
+        //     `I am reaching out to you regarding the ${data.jobPositionName} position for ${data.jobLocation}. ` +
+        //     `Job Code: ${data.jobCode}\n${data.descriptionOneliner}\n`;
+        // }
       
-        generateApplicationMessage(data: allDataObjects.sendWhatsappUtilityMessageObjectType): string {
-          return `Dear ${data.candidateFirstName},\n\n` +
-            `Thank you for your time earlier on ${data.discussionDate}. ` +
-            `Please let me know your availability for the next steps ${data.nextStep}.\n`;
-        }
+        // generateApplicationMessage(data: allDataObjects.sendWhatsappUtilityMessageObjectType): string {
+        //   return `Dear ${data.candidateFirstName},\n\n` +
+        //     `Thank you for your time earlier on ${data.discussionDate}. ` +
+        //     `Please let me know your availability for the next steps ${data.nextStep}.\n`;
+        // }
       
-        generateApplication02Message(data: allDataObjects.sendWhatsappUtilityMessageObjectType): string {
-          return `Dear ${data.candidateFirstName},\n\n` +
-            `I hope this message finds you well. I am following up to check on your availability for the next steps regarding the ` +
-            `${data.jobPositionName} position in ${data.jobLocation}. Kindly update me when you get a chance.\n`;
-        }
-        generateRejectionMessage(data: allDataObjects.sendWhatsappUtilityMessageObjectType): string {
-          console.log("This is the data for rejection message", data)
-          return `Hi  ${data.candidateFirstName},
-            Further to your profile discussed last week, we discussed internally and believe that your profile won't be a good fit.
-            Will reach out to you in the future with relevant roles.`
-        }
+        // generateApplication02Message(data: allDataObjects.sendWhatsappUtilityMessageObjectType): string {
+        //   return `Dear ${data.candidateFirstName},\n\n` +
+        //     `I hope this message finds you well. I am following up to check on your availability for the next steps regarding the ` +
+        //     `${data.jobPositionName} position in ${data.jobLocation}. Kindly update me when you get a chance.\n`;
+        // }
+        // generateRejectionMessage(data: allDataObjects.sendWhatsappUtilityMessageObjectType): string {
+        //   console.log("This is the data for rejection message", data)
+        //   return `Hi  ${data.candidateFirstName},
+        //     Further to your profile discussed last week, we discussed internally and believe that your profile won't be a good fit.
+        //     Will reach out to you in the future with relevant roles.`
+        // }
 
         // { type: 'text', text: "your profile discussed last week", },
         // { type: 'text', text: "internally", },

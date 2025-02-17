@@ -156,9 +156,8 @@ export default class CandidateEngagementArx {
     console.log("The value of endTime.toISOString()():",  endTime.toISOString())
 
     const response = await axiosRequest(graphqlQueryObj, apiToken);
-    console.log("This is the response from fetc hRecentMessages::", response?.data?.data?.whatsappMessages?.edges);
     console.log("Number of messages in fetchRe centMessages::", response?.data?.data?.whatsappMessages?.edges.length);
-    console.log("This is the response from cre atedAt::", response?.data?.data?.whatsappMessages?.edges.map((message) => message.node.createdAt));
+    // console.log("This is the response from cre atedAt::", response?.data?.data?.whatsappMessages?.edges.map((message) => message.node.createdAt));
     return response?.data?.data?.whatsappMessages?.edges || [];
 
 
@@ -190,8 +189,7 @@ export default class CandidateEngagementArx {
       const startTime = new Date(endTime.getTime() - timeWindow * 60 * 1000);
       // Get recent messages
 
-      // const allWhatsappMessages = await new FilterCandidates(this.workspaceQueryService).fetchAllWhatsappMessages(candidateId, apiToken);
-
+      // const allWhatsappMessages = await new FilterCandidates(this.workspaceQueryService).fetchAllWhatsappMessages(candidateId, apiToken)
       const messages = await this.fetchRecentMessages(startTime, endTime, apiToken);
       console.log('Number of messages::', messages.length);
       // Group by job for different chat flows
