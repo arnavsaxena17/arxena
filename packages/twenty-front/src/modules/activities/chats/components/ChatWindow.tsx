@@ -505,6 +505,8 @@ const StyledSvg = styled.svg`
   ${iconStyles}
 `;
 
+
+
 const AdditionalInfoContent: React.FC<{
   messageCount: number;
   jobName: string;
@@ -533,6 +535,8 @@ const AdditionalInfoContent: React.FC<{
     </EditableField>
   </>
 );
+
+
 
 const CopyIcon = () => (
   <StyledSvg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -600,13 +604,17 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
 
   const { enqueueSnackBar } = useSnackBar();
 
+  const showSnackbar = (message: string, type: 'success' | 'error') => {
+    enqueueSnackBar(message, {
+      variant: type === 'success' ? SnackBarVariant.Success : SnackBarVariant.Error,
+      duration: 5000,
+    });
+  };
+
   const fetchAllTemplates = async () => {
     try {
       const response = await axios.get(`${process.env.REACT_APP_SERVER_BASE_URL}/whatsapp-test/get-templates`, {
-        headers: {
-          Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
-        },
-      });
+        headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}`, }, });
 
       return response.data;
     } catch (error) {
@@ -620,6 +628,23 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
 
     return templatePreviews[templateName] || 'Template preview not available';
   };
+
+  useEffect(() => {
+    if (currentCandidateId) {
+      getlistOfMessages(currentCandidateId).then(() => {
+        // If we have more messages than before, scroll to bottom
+        if (messageHistory.length > previousMessageCount) {
+          scrollToBottom();
+          setPreviousMessageCount(messageHistory.length);
+        }
+      });
+    }
+  }, [individuals, selectedIndividual, messageHistory.length]);
+
+  useEffect(() => {
+    setSalary(currentIndividual?.salary || '');
+    setCity(currentIndividual?.city || '');
+  }, [currentIndividual]);
 
   useEffect(() => {
     const loadTemplates = async () => {
@@ -676,22 +701,7 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
   //   };
   // }, []);
 
-  useEffect(() => {
-    if (currentCandidateId) {
-      getlistOfMessages(currentCandidateId).then(() => {
-        // If we have more messages than before, scroll to bottom
-        if (messageHistory.length > previousMessageCount) {
-          scrollToBottom();
-          setPreviousMessageCount(messageHistory.length);
-        }
-      });
-    }
-  }, [individuals, selectedIndividual, messageHistory.length]);
 
-  useEffect(() => {
-    setSalary(currentIndividual?.salary || '');
-    setCity(currentIndividual?.city || '');
-  }, [currentIndividual]);
 
   const currentCandidateName = currentIndividual?.name.firstName + ' ' + currentIndividual?.name.lastName;
 
@@ -732,20 +742,7 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
     try {
       const response = await axios.post(
         process.env.REACT_APP_SERVER_BASE_URL + '/graphql',
-        {
-          query: mutationToUpdateOnePerson,
-          variables: {
-            idToUpdate: currentIndividual?.id,
-            input: { city: city },
-          },
-        },
-        {
-          headers: {
-            authorization: `Bearer ${tokenPair?.accessToken?.token}`,
-            'content-type': 'application/json',
-            'x-schema-version': '136',
-          },
-        },
+        { query: mutationToUpdateOnePerson, variables: { idToUpdate: currentIndividual?.id, input: { city: city }, }, }, { headers: { authorization: `Bearer ${tokenPair?.accessToken?.token}`, 'content-type': 'application/json', 'x-schema-version': '136', }, },
       );
       console.log('City updated:', response.data);
       setIsEditingCity(false);
@@ -763,12 +760,7 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
     }
   };
 
-  const showSnackbar = (message: string, type: 'success' | 'error') => {
-    enqueueSnackBar(message, {
-      variant: type === 'success' ? SnackBarVariant.Success : SnackBarVariant.Error,
-      duration: 5000,
-    });
-  };
+
 
   const sendMessage = async (messageText: string) => {
     console.log('send message');
@@ -778,7 +770,6 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
   async function getlistOfMessages(currentCandidateId: string) {
     try {
       const response = await axios.post(process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/get-all-messages-by-candidate-id', { candidateId: currentCandidateId }, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } });
-
       const sortedMessages = response.data.sort((a: frontChatTypes.MessageNode, b: frontChatTypes.MessageNode) => {
         return dayjs(a.createdAt).valueOf() - dayjs(b.createdAt).valueOf();
       });
@@ -796,6 +787,27 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
       setMessageHistory(pendingMessage ? [pendingMessage] : []);
     }
   }
+
+  const handleShareJD = async () => {
+    console.log('share JD');
+    //@ts-ignore
+    const response = await axios.post(process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/send-jd-from-frontend', 
+      { phoneNumberTo: currentIndividual?.phone }, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } }); };
+
+  const handleStatusUpdate = async (newStatus: string) => {
+    try {
+      const response = await axios.post(
+        process.env.REACT_APP_SERVER_BASE_URL + '/graphql',
+        { query: graphQltoUpdateOneCandidate, variables: { idToUpdate: currentCandidateId, input: { status: newStatus }, }, },
+        { headers: { authorization: `Bearer ${tokenPair?.accessToken?.token}`, 'content-type': 'application/json', 'x-schema-version': '66', }, },
+      );
+      console.log('Status updated:', response.data);
+      // You might want to refresh the candidate data here
+    } catch (error) {
+      console.error('Error updating status:', error);
+    }
+  };
+
   let currentMessageObject = currentIndividual?.candidates?.edges[0]?.node?.whatsappMessages?.edges[currentIndividual?.candidates?.edges[0]?.node?.whatsappMessages?.edges?.length - 1]?.node?.messageObj;
 
   // const handleInvokeChatAndRunToolCalls = async (
@@ -865,25 +877,7 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
     onMessageSent();
   };
 
-  const handleShareJD = async () => {
-    console.log('share JD');
-    //@ts-ignore
-    const response = await axios.post(process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/send-jd-from-frontend', 
-      { phoneNumberTo: currentIndividual?.phone }, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } }); };
 
-  const handleStatusUpdate = async (newStatus: string) => {
-    try {
-      const response = await axios.post(
-        process.env.REACT_APP_SERVER_BASE_URL + '/graphql',
-        { query: graphQltoUpdateOneCandidate, variables: { idToUpdate: currentCandidateId, input: { status: newStatus }, }, },
-        { headers: { authorization: `Bearer ${tokenPair?.accessToken?.token}`, 'content-type': 'application/json', 'x-schema-version': '66', }, },
-      );
-      console.log('Status updated:', response.data);
-      // You might want to refresh the candidate data here
-    } catch (error) {
-      console.error('Error updating status:', error);
-    }
-  };
 
   // const handleRetrieveBotMessage = async (
   //   phoneNumber: string | undefined,
