@@ -997,9 +997,9 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
   // Messages read but not responded
   const readNotResponded = allIndividualsForCurrentJob?.filter(individual => {
     const phone = individual?.phone || '';
-    console.log('individual phone:', phone.replace('+', ''));
+    console.log('individual phone:', phone?.replace('+', ''));
     const messages = individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges;
-    return messages?.some(edge => edge?.node?.whatsappDeliveryStatus === 'read' && !messages.some(m => m?.node?.phoneFrom?.replace('+', '') === phone.replace('+', '')));
+    return messages?.some(edge => edge?.node?.whatsappDeliveryStatus === 'read' && !messages.some(m => m?.node?.phoneFrom?.replace('+', '') === phone?.replace('+', '')));
   }).length;
   const readNotRespondedPercent = ((readNotResponded / allIndividualsForCurrentJob.length) * 100).toFixed(1);
 
@@ -1054,7 +1054,7 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
     try {
       const response = await axios.post(
         process.env.REACT_APP_SERVER_BASE_URL + '/whatsapp-test/send-template-message',
-        { templateName: templateName, phoneNumberTo: currentIndividual?.phone.replace('+', '') }, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } }, );
+        { templateName: templateName, phoneNumberTo: currentIndividual?.phone?.replace('+', '') }, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } }, );
       console.log('This is reponse:', response);
       showSnackbar('Template sent successfully', 'success');
       setSelectedTemplate(''); // Reset selection after successful send
