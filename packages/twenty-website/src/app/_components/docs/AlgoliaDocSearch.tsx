@@ -1,4 +1,3 @@
-import { DocSearch } from '@docsearch/react';
 import { DocSearch, StoredDocSearchHit } from '@docsearch/react';
 
 interface AlgoliaHit extends StoredDocSearchHit {
