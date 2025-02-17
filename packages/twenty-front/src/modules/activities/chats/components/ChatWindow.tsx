@@ -505,21 +505,26 @@ const StyledSvg = styled.svg`
 `;
 
 
-
 const AdditionalInfoContent: React.FC<{
   messageCount: number;
   jobName: string;
   salary: string;
   city: string;
+  candidateStatus: string;
   isEditingSalary: boolean;
   isEditingCity: boolean;
+  isEditingCandidateStatus: boolean;
   onSalaryEdit: () => void;
   onCityEdit: () => void;
+  onCandidateStatusEdit: () => void;
   onSalaryUpdate: () => void;
   onCityUpdate: () => void;
+  onCandidateStatusUpdate: () => void;
   setSalary: (value: string) => void;
   setCity: (value: string) => void;
-}> = ({ messageCount, jobName, salary, city, isEditingSalary, isEditingCity, onSalaryEdit, onCityEdit, onSalaryUpdate, onCityUpdate, setSalary, setCity }) => (
+  setCandidateStatus: (value: string) => void;
+}> = ({ messageCount, jobName, salary, city, candidateStatus, isEditingSalary, isEditingCity, isEditingCandidateStatus, onSalaryEdit, onCityEdit, onCandidateStatusEdit, onSalaryUpdate, onCityUpdate, onCandidateStatusUpdate, setSalary, setCity, setCandidateStatus }) => (
+  
   <>
     Messages: {messageCount}
     <SeparatorDot>•</SeparatorDot>
@@ -531,6 +536,10 @@ const AdditionalInfoContent: React.FC<{
     <SeparatorDot>•</SeparatorDot>
     <EditableField isEditing={isEditingCity} onDoubleClick={onCityEdit}>
       {isEditingCity ? <input value={city} onChange={e => setCity(e.target.value)} onBlur={onCityUpdate} onKeyPress={e => e.key === 'Enter' && onCityUpdate()} autoFocus /> : `City: ${city || 'N/A'}`}
+    </EditableField>
+    <SeparatorDot>•</SeparatorDot>
+    <EditableField isEditing={isEditingCandidateStatus} onDoubleClick={onCandidateStatusEdit}>
+    {isEditingCandidateStatus ? <input value={candidateStatus} onChange={e => setCandidateStatus(e.target.value)} onBlur={onCandidateStatusUpdate} onKeyPress={e => e.key === 'Enter' && onCandidateStatusUpdate()} autoFocus /> : `Candidate Status: ${candidateStatus || 'N/A'}`}
     </EditableField>
   </>
 );
@@ -588,8 +597,10 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
   const [copiedField, setCopiedField] = useState(null);
   const [isEditingSalary, setIsEditingSalary] = useState(false);
   const [isEditingCity, setIsEditingCity] = useState(false);
+  const [isEditingCandidateStatus, setIsEditingCandidateStatus] = useState(false);
   const [salary, setSalary] = useState(currentIndividual?.salary || '');
   const [city, setCity] = useState(currentIndividual?.city || '');
+  const [candidateStatus, setCandidateStatus] = useState(currentIndividual?.candidates?.edges[0].node?.candConversationStatus || '');
   const [isMessagePending, setIsMessagePending] = useState(false);
   const [pendingMessage, setPendingMessage] = useState<frontChatTypes.MessageNode | null>(null);
   const [shouldScrollToBottom, setShouldScrollToBottom] = useState(true);
@@ -725,21 +736,7 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
     try {
       const response = await axios.post(
         process.env.REACT_APP_SERVER_BASE_URL + '/graphql',
-        {
-          query: mutationToUpdateOnePerson,
-          variables: {
-            idToUpdate: currentIndividual?.id,
-            input: { salary: salary },
-          },
-        },
-        {
-          headers: {
-            authorization: `Bearer ${tokenPair?.accessToken?.token}`,
-            'content-type': 'application/json',
-            'x-schema-version': '136',
-          },
-        },
-      );
+        { query: mutationToUpdateOnePerson, variables: { idToUpdate: currentIndividual?.id, input: { salary: salary }, }, }, { headers: { authorization: `Bearer ${tokenPair?.accessToken?.token}`, 'content-type': 'application/json', 'x-schema-version': '136', }, }, );
       console.log('Salary updated:', response.data);
       setIsEditingSalary(false);
     } catch (error) {
@@ -757,6 +754,20 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
       setIsEditingCity(false);
     } catch (error) {
       console.log('Error updating city:', error);
+    }
+  };
+  const handleCandidateStatusUpdate = async () => {
+    try {
+      const response = await axios.post(
+        process.env.REACT_APP_SERVER_BASE_URL + '/graphql',
+        { query: mutationToUpdateOnePerson, variables: { idToUpdate: currentIndividual?.id, input: { candConversationStatus: candidateStatus }, }, }, { headers: { authorization: `Bearer ${tokenPair?.accessToken?.token}`, 'content-type': 'application/json', 'x-schema-version': '136', }, },
+      );
+      console.log('candidate status updated:', response.data);
+      setIsEditingCandidateStatus(false);
+    } catch (error) {
+      console.log('Error updating candidate status:', error);
+      setIsEditingCandidateStatus(false);
+
     }
   };
 
@@ -1128,6 +1139,7 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
       initializeRecord();
     }
   }, [currentCandidateId]);
+  console.log("Candidate status is :", candidateStatus);
 
   console.log('Current Individual::', currentIndividual);
   console.log('Current currentWorkspaceMember::', currentWorkspaceMember);
@@ -1152,14 +1164,19 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
                         jobName={currentIndividual?.candidates?.edges[0]?.node?.jobs?.name || ''}
                         salary={salary}
                         city={city}
+                        candidateStatus = {candidateStatus}
                         isEditingSalary={isEditingSalary}
                         isEditingCity={isEditingCity}
+                        isEditingCandidateStatus={isEditingCandidateStatus}
                         onSalaryEdit={() => setIsEditingSalary(true)}
                         onCityEdit={() => setIsEditingCity(true)}
+                        onCandidateStatusEdit={() => setIsEditingCandidateStatus(true)}
                         onSalaryUpdate={handleSalaryUpdate}
                         onCityUpdate={handleCityUpdate}
+                        onCandidateStatusUpdate={handleCandidateStatusUpdate}
                         setSalary={setSalary}
                         setCity={setCity}
+                        setCandidateStatus={setCandidateStatus}
                       />
                     </AdditionalInfo>
                     <ButtonGroup>

@@ -89,40 +89,19 @@ export class UpdateChat {
 
   async updateCandidatesWithChatCount(candidateIds: string[], apiToken: string) {
     try {
-      // First fetch current candidates with their chat counts
-      const graphqlQueryObj = JSON.stringify({
-        query: allGraphQLQueries.graphqlToFetchAllCandidateData,
-        variables: { 
-          filter: { 
-            id: { in: candidateIds }
-          }
-        }
-      });
-  
+      const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlToFetchAllCandidateData, variables: { filter: { id: { in: candidateIds } } } });
       const response = await axiosRequest(graphqlQueryObj, apiToken);
       const currentCandidates = response?.data?.data?.candidates?.edges || [];
       console.log("Number of current Candidates:", currentCandidates.length);
       for (const candidate of currentCandidates) {
         const currentCount = candidate.node.chatCount || 0;
         console.log("Current chat count::", currentCount);
-        
-        // Get messages for this candidate
         const messagesList = await await new FilterCandidates(this.workspaceQueryService).fetchAllWhatsappMessages(candidate.node.id, apiToken);
         const newCount = messagesList.length;
         console.log("New chat count::", newCount);
-  
-        // Only update if count has changed
         if (newCount !== currentCount) {
-          const graphqlVariables = {
-            idToUpdate: candidate.node.id,
-            input: { chatCount: newCount }
-          };
-          
-          const updateGraphqlQueryObj = JSON.stringify({
-            query: allGraphQLQueries.graphQltoUpdateOneCandidate,
-            variables: graphqlVariables
-          });
-          
+          const graphqlVariables = { idToUpdate: candidate.node.id, input: { chatCount: newCount } };
+          const updateGraphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphQltoUpdateOneCandidate, variables: graphqlVariables });
           const updateResponse = await axiosRequest(updateGraphqlQueryObj, apiToken);
           if (updateResponse.data.errors) {
             console.log('Error updating chat count:', updateResponse.data.errors);
@@ -162,29 +141,17 @@ export class UpdateChat {
         await semaphore.acquire();
         try {
           const candidateId = candidate?.id;
-          console.log("This is the candidate ID::", candidateId);
-          console.log("This is the candidate ::", candidate);
+          console.log("This is the candidate ID::", candidateId, "and candidate name for processing and getting udpated status::", candidate?.name);
           const jobId = candidateIds ? jobIds[candidateIds.indexOf(candidateId)] : '';
           console.log("This is the job ID::", jobId);
 
-          if (jobId == ""){
-            console.log("Job ID is not present for the candidate::", candidateId);
-          }
+          if (jobId == ""){ console.log("Job ID is not present for the candidate::", candidateId); }
           const whatsappMessages = await new FilterCandidates(this.workspaceQueryService).fetchAllWhatsappMessages(candidateId, apiToken);
-          console.log("These are the whtsapp messages::", whatsappMessages);
-          
           // Get the chat status and formatted chat in parallel
           const [candidateStatus] = await Promise.all([
-            new StageWiseClassification(this.workspaceQueryService).getChatStageFromChatHistory(
-              whatsappMessages, 
-              candidateId,
-              jobId,
-              apiToken
-            ) as Promise<allDataObjects.allStatuses>
+            new StageWiseClassification(this.workspaceQueryService).getChatStageFromChatHistory( whatsappMessages, candidateId, jobId, apiToken ) as Promise<allDataObjects.allStatuses>
           ])
-          console.log("This is the candidate status::", candidate);
-          console.log("This is the candidate jhobs::", candidate.jobs);
-
+          console.log("This is the candidate status::", candidate, "for the candidate::", candidateId, "and the status is::", candidateStatus);
           return { candidateId, candidateStatus, googleSheetId: candidate?.jobs?.googleSheetId, whatsappMessages};
         } catch (error) {
           console.log('Error in processing candidate:', error);
@@ -193,56 +160,28 @@ export class UpdateChat {
           semaphore.release();
         }
       };
-  
-    // Process all candidates and collect results
       const results = await Promise.all(allCandidates.map(candidate => processWithSemaphore(candidate)));
       const validResults = results.filter(result => result !== null);
-    
       // Batch update the candidate statuses
       const updatePromises = validResults.map(async result => {
         if (!result) return;
-    
-        const updateCandidateObjectVariables = {
-          idToUpdate: result.candidateId,
-          input: { candConversationStatus: result.candidateStatus },
-        };
-    
-        const graphqlQueryObj = JSON.stringify({
-          query: allGraphQLQueries.graphqlQueryToUpdateCandidateChatCount,
-          variables: updateCandidateObjectVariables,
-        });
-
+        const updateCandidateObjectVariables = { idToUpdate: result.candidateId, input: { candConversationStatus: result.candidateStatus } };
+        const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToUpdateCandidateChatCount, variables: updateCandidateObjectVariables, });
         // if (['CONVERSATION_CLOSED_TO_BE_CONTACTED', 'CANDIDATE_IS_KEEN_TO_CHAT'].includes(result.candidateStatus)){
         if (['CONVERSATION_CLOSED_TO_BE_CONTACTED'].includes(result.candidateStatus)){
-          const updateCandidateVariables = {
-            idToUpdate: result.candidateId,
-            input: {
-              startChatCompleted: true,
-            },
-          };
-    
-          const graphqlQueryObjForUpdationForCandidateStatus = JSON.stringify({
-            query: allGraphQLQueries.graphQltoUpdateOneCandidate,
-            variables: updateCandidateVariables,
-          });
-    
+          const updateCandidateVariables = { idToUpdate: result.candidateId, input: { startChatCompleted: true } };
+          const graphqlQueryObjForUpdationForCandidateStatus = JSON.stringify({ query: allGraphQLQueries.graphQltoUpdateOneCandidate, variables: updateCandidateVariables, });
           console.log('graphqlQueryObjForUpdationForCandidateStatus::', graphqlQueryObjForUpdationForCandidateStatus);
           try{
-    
-            const statusCandidateUpdateResult = (await axiosRequest(graphqlQueryObjForUpdationForCandidateStatus,apiToken)).data;
+            await axiosRequest(graphqlQueryObjForUpdationForCandidateStatus,apiToken)
           }
           catch(e){
             console.log("Error in candidate status update::", e)
           }
-          
-          
         }
-
-
-    
         try {
           const response = await axiosRequest(graphqlQueryObj, apiToken);
-          console.log('Candidate chat status updated successfully:', response.data, "with the status of ::", result.candidateStatus);
+          console.log('Candidate chat status updated successfully "with the status of ::', result.candidateStatus);
         } catch (error) {
           console.log('Error in updating candidate chat count:', error);
         }

@@ -139,7 +139,7 @@ const statusLabels: { [key: string]: string } = {
 };
 
 
-const chatStatusLabels: { [key: string]: string } = {
+export const chatStatusLabels: { [key: string]: string } = {
     "ONLY_ADDED_NO_CONVERSATION": "Only Added No Conversation",
     "CONVERSATION_STARTED_HAS_NOT_RESPONDED": "Conversation Started Has Not Responded",
     "SHARED_JD_HAS_NOT_RESPONDED": "Shared JD Has Not Responded",
@@ -392,28 +392,10 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
           <DropdownContent isOpen={isJobDropdownOpen}>
               {jobs.map((job) => (
                 <CheckboxLabel key={job.node.id}>
-                  <Checkbox 
-                    type="checkbox" 
-                    checked={selectedJobs.includes(job.node.id)} 
-                    onChange={() => handleJobToggle(job.node.id)} 
-                  /> 
-                  {job.node.name} ({jobCounts[job.node.id] || 0})
+                  <Checkbox type="checkbox" checked={selectedJobs.includes(job.node.id)} onChange={() => handleJobToggle(job.node.id)} /> {job.node.name} ({jobCounts[job.node.id] || 0})
                 </CheckboxLabel>
               ))}
             </DropdownContent>
-        </DropdownContainer>
-        <DropdownContainer ref={statusDropdownRef}>
-          <DropdownButton onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}>
-            {selectedStatuses.length > 0 ? `${selectedStatuses.length} Statuses Selected` : 'All Statuses'}
-          </DropdownButton>
-          <DropdownContent isOpen={isStatusDropdownOpen}>
-              {Object.entries(statusLabels).map(([value, label]) => (
-                <CheckboxLabel key={value}>
-                  <Checkbox type="checkbox" checked={selectedStatuses.includes(value)} onChange={() => handleStatusToggle(value)} /> 
-                  {label} ({statusCounts[value] || 0})
-                </CheckboxLabel>
-              ))}
-          </DropdownContent>
         </DropdownContainer>
         <DropdownContainer ref={chatStatusDropdownRef}>
           <DropdownButton onClick={() => setIsChatStatusDropdownOpen(!isChatStatusDropdownOpen)}>
@@ -422,8 +404,19 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
           <DropdownContent isOpen={isChatStatusDropdownOpen}>
               {Object.entries(chatStatusLabels).map(([value, label]) => (
                 <CheckboxLabel key={value}>
-                  <Checkbox type="checkbox" checked={selectedChatStatuses.includes(value)} onChange={() => handleChatStatusToggle(value)} /> 
-                  {label} ({chatStatusCounts[value] || 0})
+                  <Checkbox type="checkbox" checked={selectedChatStatuses.includes(value)} onChange={() => handleChatStatusToggle(value)} /> {label} ({chatStatusCounts[value] || 0})
+                </CheckboxLabel>
+              ))}
+          </DropdownContent>
+        </DropdownContainer>
+        <DropdownContainer ref={statusDropdownRef}>
+          <DropdownButton onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}>
+            {selectedStatuses.length > 0 ? `${selectedStatuses.length} Statuses Selected` : 'All Statuses'}
+          </DropdownButton>
+          <DropdownContent isOpen={isStatusDropdownOpen}>
+              {Object.entries(statusLabels).map(([value, label]) => (
+                <CheckboxLabel key={value}>
+                  <Checkbox type="checkbox" checked={selectedStatuses.includes(value)} onChange={() => handleStatusToggle(value)} /> {label} ({statusCounts[value] || 0})
                 </CheckboxLabel>
               ))}
           </DropdownContent>

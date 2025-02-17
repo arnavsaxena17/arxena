@@ -1,5 +1,5 @@
 import { DocSearch } from '@docsearch/react';
-import { StoredDocSearchHit } from '@docsearch/react/dist/esm/types';
+import { DocSearch, StoredDocSearchHit } from '@docsearch/react';
 
 interface AlgoliaHit extends StoredDocSearchHit {
   _snippetResult?: {
