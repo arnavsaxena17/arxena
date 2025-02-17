@@ -23,7 +23,6 @@ import AttachmentPanel from './AttachmentPanel';
 import { graphQltoUpdateOneCandidate, mutationToUpdateOnePerson } from '../graphql-queries-chat/chat-queries';
 
 import { useNavigate } from 'react-router-dom';
-
 import { recordStoreFamilyState } from '@/object-record/record-store/states/recordStoreFamilyState';
 // import { templates, getTemplatePreview } from './chatTemplates';
 
@@ -463,7 +462,7 @@ const StyledChatInputBox = styled.div<{ sidebarWidth: number }>`
   @media (max-width: 768px) {
     width: 100%;
     padding: 0.5rem;
-    bottom: 0;
+    bottom: 10vh;
     left: 0;
   }
 `;
@@ -1276,15 +1275,8 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
                     </SectionHeader>
                     <div>
                       <Select value={selectedTemplate} onChange={e => setSelectedTemplate(e.target.value)}>
-                        <option value="" disabled>
-                          {' '}
-                          Select a template{' '}
-                        </option>
-                        {templates.map(template => (
-                          <option key={template} value={template}>
-                            {template}
-                          </option>
-                        ))}
+                        <option value="" disabled> {' '} Select a template{' '} </option>
+                        {templates.map(template => ( <option key={template} value={template}> {template} </option> ))}
                       </Select>
                       <ActionButton onClick={() => handleTemplateSend(selectedTemplate)}>Send Template</ActionButton>
                     </div>
