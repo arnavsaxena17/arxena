@@ -244,7 +244,6 @@ const StyledSelect = styled.select`
   }
 `;
 
-
 const SeparatorDot = styled.span`
   margin: 0 4px;
 
@@ -771,6 +770,11 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
     });
   };
 
+  const sendMessage = async (messageText: string) => {
+    console.log('send message');
+    const response = await axios.post(process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/send-chat', { messageToSend: messageText, phoneNumberTo: currentIndividual?.phone }, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } }); 
+    };
+
   async function getlistOfMessages(currentCandidateId: string) {
     try {
       const response = await axios.post(process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/get-all-messages-by-candidate-id', { candidateId: currentCandidateId }, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } });
@@ -792,8 +796,6 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
       setMessageHistory(pendingMessage ? [pendingMessage] : []);
     }
   }
-
-  console.log('Current Individual::', currentIndividual);
   let currentMessageObject = currentIndividual?.candidates?.edges[0]?.node?.whatsappMessages?.edges[currentIndividual?.candidates?.edges[0]?.node?.whatsappMessages?.edges?.length - 1]?.node?.messageObj;
 
   // const handleInvokeChatAndRunToolCalls = async (
@@ -828,11 +830,7 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
     }
   };
 
-  const sendMessage = async (messageText: string) => {
-    console.log('send message');
-    const response = await axios.post(process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/send-chat', { messageToSend: messageText, phoneNumberTo: currentIndividual?.phone }, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } });
-  };
-
+  
   const handleSubmit = async () => {
     console.log('submit');
     //@ts-ignore
@@ -867,34 +865,18 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
     onMessageSent();
   };
 
-
-
-  
-  
   const handleShareJD = async () => {
     console.log('share JD');
     //@ts-ignore
-    const response = await axios.post(process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/send-jd-from-frontend', { phoneNumberTo: currentIndividual?.phone }, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } });
-  };
+    const response = await axios.post(process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/send-jd-from-frontend', 
+      { phoneNumberTo: currentIndividual?.phone }, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } }); };
 
   const handleStatusUpdate = async (newStatus: string) => {
     try {
       const response = await axios.post(
         process.env.REACT_APP_SERVER_BASE_URL + '/graphql',
-        {
-          query: graphQltoUpdateOneCandidate,
-          variables: {
-            idToUpdate: currentCandidateId,
-            input: { status: newStatus },
-          },
-        },
-        {
-          headers: {
-            authorization: `Bearer ${tokenPair?.accessToken?.token}`,
-            'content-type': 'application/json',
-            'x-schema-version': '66',
-          },
-        },
+        { query: graphQltoUpdateOneCandidate, variables: { idToUpdate: currentCandidateId, input: { status: newStatus }, }, },
+        { headers: { authorization: `Bearer ${tokenPair?.accessToken?.token}`, 'content-type': 'application/json', 'x-schema-version': '66', }, },
       );
       console.log('Status updated:', response.data);
       // You might want to refresh the candidate data here
@@ -1002,42 +984,39 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
   const closedToBeContacted = allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.candConversationStatus === 'CONVERSATION_CLOSED_TO_BE_CONTACTED').length;
   const closedToBeContactedPercent = ((closedToBeContacted / allIndividualsForCurrentJob.length) * 100).toFixed(1);
 
-
-  const undeliveredMessages = allIndividualsForCurrentJob?.filter(individual => 
-    individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges?.some( edge => edge?.node?.whatsappDeliveryStatus === 'failed' ) ).length;
+  const undeliveredMessages = allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges?.some(edge => edge?.node?.whatsappDeliveryStatus === 'failed')).length;
   const undeliveredPercent = ((undeliveredMessages / allIndividualsForCurrentJob.length) * 100).toFixed(1);
-  
+
   // Messages read but not responded
   const readNotResponded = allIndividualsForCurrentJob?.filter(individual => {
-    console.log("individual phone:", individual.phone.replace("+", ""));
+    console.log('individual phone:', individual?.phone?.replace('+', ''));
     const messages = individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges;
-    return messages?.some(edge => edge?.node?.whatsappDeliveryStatus === 'read' && !messages.some(m => m?.node?.phoneFrom.replace("+", "") === individual.phone.replace("+", "")) ); }).length;
+    return messages?.some(edge => edge?.node?.whatsappDeliveryStatus === 'read' && !messages.some(m => m?.node?.phoneFrom?.replace('+', '') === individual?.phone?.replace('+', '')));
+  }).length;
   const readNotRespondedPercent = ((readNotResponded / allIndividualsForCurrentJob.length) * 100).toFixed(1);
-  
+
   // Messages unread and not responded
   const unreadNotResponded = allIndividualsForCurrentJob?.filter(individual => {
     const messages = individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges;
-    return messages?.some(edge => edge?.node?.whatsappDeliveryStatus === 'delivered' && !messages.some(m => m?.node?.phoneFrom.replace("+", "") === individual.phone.replace("+", "")) ); }).length;
+    return messages?.some(edge => edge?.node?.whatsappDeliveryStatus === 'delivered' && !messages.some(m => m?.node?.phoneFrom?.replace('+', '') === individual?.phone?.replace('+', '')));
+  }).length;
   const unreadNotRespondedPercent = ((unreadNotResponded / allIndividualsForCurrentJob.length) * 100).toFixed(1);
-  
+
   // Total messages not responded
   const totalNotResponded = readNotResponded + unreadNotResponded;
   const totalNotRespondedPercent = ((totalNotResponded / allIndividualsForCurrentJob.length) * 100).toFixed(1);
-  
+
   // Total messages responded
-  const totalResponded = allIndividualsForCurrentJob?.filter(individual => 
-    individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges?.some( edge => edge?.node?.phoneFrom.replace("+", "") === individual.phone.replace("+", "") ) ).length;
+  const totalResponded = allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges?.some(edge => edge?.node?.phoneFrom.replace('+', '') === individual?.phone?.replace('+', ''))).length;
   const totalRespondedPercent = ((totalResponded / allIndividualsForCurrentJob.length) * 100).toFixed(1);
-  
+
   const messageStatisticsArray = [
     { label: 'Undelivered Messages', count: undeliveredMessages, percent: parseFloat(undeliveredPercent) },
     { label: 'Read Not Responded', count: readNotResponded, percent: parseFloat(readNotRespondedPercent) },
     { label: 'Unread Not Responded', count: unreadNotResponded, percent: parseFloat(unreadNotRespondedPercent) },
     { label: 'Total Not Responded', count: totalNotResponded, percent: parseFloat(totalNotRespondedPercent) },
-    { label: 'Total Responded', count: totalResponded, percent: parseFloat(totalRespondedPercent) }
+    { label: 'Total Responded', count: totalResponded, percent: parseFloat(totalRespondedPercent) },
   ];
-  
-
 
   const statisticsArray = [
     { label: 'No Conversation', count: onlyAddedNoConversation, percent: parseFloat(onlyAddedNoConversationPercent) },
@@ -1072,9 +1051,7 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
       console.log('currentIndividual?.phone:', currentIndividual?.phone);
       const response = await axios.post(
         process.env.REACT_APP_SERVER_BASE_URL + '/whatsapp-test/send-template-message',
-        { templateName: templateName, phoneNumberTo: currentIndividual?.phone.replace('+', '') },
-        { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } },
-      );
+        { templateName: templateName, phoneNumberTo: currentIndividual?.phone.replace('+', '') }, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } }, );
       console.log('This is reponse:', response);
       showSnackbar('Template sent successfully', 'success');
       setSelectedTemplate(''); // Reset selection after successful send
@@ -1111,19 +1088,10 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
       showSnackbar('Please select an interim chat first', 'error');
       return;
     }
-    
+
     try {
-      await axios.post(process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/start-interim-chat-prompt', 
-        { 
-          interimChat, 
-          phoneNumber: currentIndividual?.phone 
-        }, 
-        { 
-          headers: { 
-            Authorization: `Bearer ${tokenPair?.accessToken?.token}` 
-          } 
-        }
-      );
+      await axios.post( process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/start-interim-chat-prompt',
+        { interimChat, phoneNumber: currentIndividual?.phone, }, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}`, }, }, );
       showSnackbar('Interim Chat started successfully', 'success');
       setSelectedInterimChat(''); // Reset selection after successful start
     } catch (error) {
