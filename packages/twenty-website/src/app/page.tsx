@@ -1,7 +1,6 @@
 'use client';
 import styled from '@emotion/styled';
 import { ContentContainer } from './_components/ui/layout/ContentContainer';
-import { useEffect } from 'react';
 
 export const dynamic = 'force-dynamic';
 const IframeContainer = styled.div`

@@ -7,8 +7,8 @@ import {
 export const CallToAction = () => {
   return (
     <CallToActionContainer>
-      <LinkNextToCTA href="https://app.twenty.com">Sign in</LinkNextToCTA>
-      <a href="https://app.twenty.com">
+      <LinkNextToCTA href="https://app.arxena.com">Sign in</LinkNextToCTA>
+      <a href="https://app.arxena.com">
         <StyledButton>Get Started</StyledButton>
       </a>
     </CallToActionContainer>

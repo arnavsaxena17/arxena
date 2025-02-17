@@ -43,7 +43,7 @@ const TokenForm = ({
     (typeof window !== 'undefined' &&
       window.localStorage.getItem('baseUrl') &&
       JSON.parse(window.localStorage.getItem('baseUrl') ?? '')?.baseUrl) ??
-      'https://api.twenty.com',
+      'https://api.arxena.com',
   );
 
   const tokenLocal = (
@@ -70,9 +70,9 @@ const TokenForm = ({
   const updateBaseUrl = (baseUrl: string, locationSetting: string) => {
     let url: string;
     if (locationSetting === 'production') {
-      url = 'https://api.twenty.com';
+      url = 'https://api.arxena.com';
     } else if (locationSetting === 'demo') {
-      url = 'https://api-demo.twenty.com';
+      url = 'https://api-demo.arxena.com';
     } else if (locationSetting === 'localhost') {
       url = 'http://localhost:3000';
     } else {

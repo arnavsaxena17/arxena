@@ -55,7 +55,7 @@ interface ProfileProps {
 
 export const ProfileSharing = ({ username }: ProfileProps) => {
   const [loading, setLoading] = useState(false);
-  const baseUrl = 'https://twenty.com';
+  const baseUrl = 'https://arxena.com';
   const contributorUrl = `${baseUrl}/contributors/${username}`;
 
   const handleDownload = async () => {
