@@ -43,7 +43,7 @@ export class WhatsappTestAPI {
       companyName: personObj?.candidates?.edges[0]?.node?.jobs?.company?.name,
       descriptionOneliner:personObj?.candidates?.edges[0]?.node?.jobs?.company?.descriptionOneliner,
       jobCode: personObj?.candidates?.edges[0]?.node?.jobs?.jobCode,
-      jobLocation: personObj?.candidates?.edges[0]?.node?.jobs?.jobLocation,
+    jobLocation: personObj?.candidates?.edges[0]?.node?.jobs?.jobLocation,
       videoInterviewLink: process.env.SERVER_BASE_URL+personObj?.candidates?.edges[0]?.node?.videoInterview?.edges[0]?.node?.interviewLink?.url || "",
       candidateSource: "Apna",
       };
@@ -55,7 +55,7 @@ export class WhatsappTestAPI {
       const mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.messageObj;
       console.log("This is the mostRecentMessageArr:", mostRecentMessageArr)
       const chatControl = { chatControlType: personObj?.candidates?.edges[0]?.node?.lastEngagementChatControl };
-      mostRecentMessageArr.push({ role: 'user', content: utilityMessage});
+      mostRecentMessageArr.push({ role: 'user', content: requestBody.templateName});
       const whatappUpdateMessageObj = await new FilterCandidates(this.workspaceQueryService).updateChatHistoryObjCreateWhatsappMessageObj('success', personObj, personObj.candidates.edges[0].node, mostRecentMessageArr, chatControl);
       await new UpdateChat(this.workspaceQueryService).updateCandidateEngagementDataInTable(whatappUpdateMessageObj,apiToken);
       console.log("This is ther esponse:", response.data)
