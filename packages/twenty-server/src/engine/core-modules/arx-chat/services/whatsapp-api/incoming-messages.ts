@@ -6,6 +6,7 @@ import { axiosRequest } from 'src/engine/core-modules/arx-chat/utils/arx-chat-ag
 import { EntityManager } from 'typeorm';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { FilterCandidates } from '../candidate-engagement/filter-candidates';
+import { getRecruiterProfileByJob } from '../recruiter-profile';
 
 
 interface MessageResult {
@@ -382,7 +383,8 @@ export class IncomingWhatsappMessages {
     replyObject: { whatsappDeliveryStatus: string; chatReply: string;  phoneNumberFrom:string,whatsappMessageId: string; databaseFilePath?: string | null; type?: string; isFromMe?: boolean },
     candidateProfileDataNodeObj: allDataObjects.CandidateNode,candidateJob:allDataObjects.Jobs, apiToken: string
   ) {
-    const recruiterProfile = allDataObjects.recruiterProfile;
+
+    const recruiterProfile = await getRecruiterProfileByJob(candidateJob, apiToken) 
     const messagesList = candidateProfileDataNodeObj?.whatsappMessages?.edges;
     console.log('This is the chat reply in create And Update Incoming Candidate Chat Message:', replyObject.chatReply);
     let mostRecentMessageObj;
@@ -402,7 +404,7 @@ export class IncomingWhatsappMessages {
       whatsappMessageType: candidateProfileDataNodeObj?.whatsappProvider || '',
       candidateFirstName: candidateProfileDataNodeObj.name,
       phoneNumberFrom: candidateProfileDataNodeObj?.phoneNumber,
-      phoneNumberTo: recruiterProfile.phone,
+      phoneNumberTo: recruiterProfile.phoneNumber,
       messages: [{ content: replyObject.chatReply }],
       messageType: 'candidateMessage',
       messageObj: mostRecentMessageObj,

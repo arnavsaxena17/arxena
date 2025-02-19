@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useRecoilState } from 'recoil';
+import { useRecoilState, useRecoilValue } from 'recoil';
 import axios from 'axios';
 import styled from '@emotion/styled';
 import { tokenPairState } from '@/auth/states/tokenPairState';
@@ -9,6 +9,10 @@ import ChatSidebar from './ChatSidebar';
 import * as frontChatTypes from '../types/front-chat-types';
 import { Job } from '../types/front-chat-types';
 import { cacheUtils, CACHE_KEYS } from '../utils/cacheUtils';
+import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
+import { currentWorkspaceState } from '@/auth/states/currentWorkspaceState';
+import { currentUserState } from '@/auth/states/currentUserState';
+
 
 interface ChatMainProps {
   initialCandidateId?: string;
@@ -111,7 +115,37 @@ const LoadingStates = {
 };
 
 
+// export interface recruiterProfileType {
+//   job_title: any;
+//   job_company_name: any;
+//   company_description_oneliner: any;
+//   first_name: any;
+//   last_name: any;
+//   status: string;
+//   name: string;
+//   email: string;
+//   phone: string;
+//   input: string; // Add the 'input' property
+// }
+
+
 export default function ChatMain({ initialCandidateId }: ChatMainProps) {
+  const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
+  const currentWorkspace = useRecoilValue(currentWorkspaceState);
+    const currentUser = useRecoilValue(currentUserState);
+    // const userEmail = currentUser?.email;
+
+
+
+
+
+
+  
+
+  console.log("This is the currentWorkspaceMember:", currentWorkspaceMember);
+  console.log("This is the currentWorkspace:", currentWorkspace);
+  console.log("This is the currentUser:", currentUser);
+
 
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
@@ -138,7 +172,7 @@ export default function ChatMain({ initialCandidateId }: ChatMainProps) {
   const [isLoading, setIsLoading] = useState(individuals.length === 0);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [jobs, setJobs] = useState([]);
+  const [jobs, setJobs] = useState<Job[]>([]);
 
   const [unreadMessages, setUnreadMessages] = useState<frontChatTypes.UnreadMessageListManyCandidates>({
     listOfUnreadMessages: [],
@@ -369,8 +403,7 @@ export default function ChatMain({ initialCandidateId }: ChatMainProps) {
           unreadMessages={unreadMessages} 
           jobs={jobs}
           isRefreshing={isRefreshing} 
-          width={sidebarWidth}  // Add this
-
+          width={sidebarWidth}
         />
       </SidebarContainer>
       {!isMobile && <Resizer onMouseDown={startResizing} />}
@@ -385,3 +418,4 @@ export default function ChatMain({ initialCandidateId }: ChatMainProps) {
     </ChatContainer>
   );
 }
+

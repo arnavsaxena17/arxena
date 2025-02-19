@@ -919,24 +919,6 @@ export class GoogleSheetsService {
           requests: [ { updateSheetProperties: { properties: { sheetId: 0, gridProperties: { frozenRowCount: 1, }, }, fields: 'gridProperties.frozenRowCount', }, }, ],
         },
       });
-
-      
-
-      // Send email notification
-      // const emailData: GmailMessageData = {
-      //   sendEmailFrom: allDataObjects.recruiterProfile?.email,
-      //   sendEmailNameFrom: allDataObjects.recruiterProfile?.first_name + ' ' + allDataObjects.recruiterProfile?.last_name,
-      //   // sendEmailTo: allDataObjects.recruiterProfile?.email, // Send to self
-      //   // sendEmailTo: 'arnav@arxena.com', // Send to self
-      //   subject: `New Job Tracking Sheet Created - ${jobName}`,
-      //   message: `A new job tracking sheet has been created for ${jobName}.\n\nYou can access it here: https://docs.google.com/spreadsheets/d/${newSpreadsheet.data.spreadsheetId}`,
-      // };
-
-      // await new SendEmailFunctionality().sendEmailFunction(emailData, twentyToken);
-
-
-
-
       return { googleSheetId: newSpreadsheet.data.spreadsheetId, googleSheetUrl: `https://docs.google.com/spreadsheets/d/${newSpreadsheet.data.spreadsheetId}`, };
     } catch (error) {
       console.log('Error creating/finding spreadsheet:', error);

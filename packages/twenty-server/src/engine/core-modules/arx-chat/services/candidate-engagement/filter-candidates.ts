@@ -4,6 +4,7 @@ import * as allGraphQLQueries from '../../graphql-queries/graphql-queries-chatbo
 import { axiosRequest } from '../../utils/arx-chat-agent-utils';
 import { workspacesWithOlderSchema } from 'src/engine/core-modules/candidate-sourcing/graphql-queries';
 import axios from 'axios';
+import { getRecruiterProfileByJob } from '../recruiter-profile';
 
 export class FilterCandidates {
   constructor(private readonly workspaceQueryService: WorkspaceQueryService) {}
@@ -14,12 +15,20 @@ export class FilterCandidates {
     candidateNode: allDataObjects.CandidateNode,
     chatHistory: allDataObjects.ChatHistoryItem[],
     chatControl: allDataObjects.chatControls,
+    apiToken:string
   ): Promise<allDataObjects.whatappUpdateMessageObjType> {
+
+
+    const candidateJob:allDataObjects.Jobs = candidateNode?.jobs;
+    const recruiterProfile = await getRecruiterProfileByJob(candidateJob, apiToken) 
+
+
+
     const updatedChatHistoryObj: allDataObjects.whatappUpdateMessageObjType = {
       messageObj: chatHistory,
       candidateProfile: candidateNode,
       candidateFirstName: personNode.name?.firstName,
-      phoneNumberFrom: allDataObjects.recruiterProfile?.phone,
+      phoneNumberFrom: recruiterProfile?.phoneNumber,
       phoneNumberTo: personNode.phone,
       lastEngagementChatControl: chatControl.chatControlType,
       messages: chatHistory.slice(-1),

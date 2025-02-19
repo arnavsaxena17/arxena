@@ -84,10 +84,10 @@ export const objectCreationArr = [
         "object": {
             "description": "",
             "icon": "IconMoodCheck",
-            "labelPlural": "Workspace Member Types",
-            "labelSingular": "Workspace Member Type",
-            "nameSingular": "workspaceMemberType",
-            "namePlural": "workspaceMemberTypes"
+            "labelPlural": "Workspace Member Profiles",
+            "labelSingular": "Workspace Member Profile",
+            "nameSingular": "workspaceMemberProfile",
+            "namePlural": "workspaceMemberProfiles"
         }
     },
     {

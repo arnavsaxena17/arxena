@@ -16,7 +16,8 @@ import { TokenService } from 'src/engine/core-modules/auth/services/token.servic
 import { WorkspaceQueryService } from '../workspace-modifications/workspace-modifications.service';
 import { JwtAuthGuard } from 'src/engine/guards/jwt.auth.guard';
 
-interface GetInterviewDetailsResponse {
+interface GetInterviewDetailsResponse { 
+  recruiterProfile:any;
   responseFromInterviewRequests: any;
   videoInterviewAttachmentResponse: any;
   questionsAttachments: { id: string; fullPath: string; name: string }[];
@@ -462,12 +463,15 @@ export class VideoInterviewController {
           },
         },
       };
+
+
       const graphqlQueryObjForvideoInterviewQuestions = JSON.stringify({
         query: videoInterviewQueries.videoInterviewsQuery,
         variables: InterviewStatusesVariables,
       });
       let responseFromInterviewRequests;
       let videoInterviewId;
+      let recruiterProfile;
       let responseForVideoInterviewIntroductionAttachment;
       let responseForVideoInterviewQuestionAttachments: any[] = [];
       let questionsAttachmentsResponse :any[] = [];
@@ -478,10 +482,25 @@ export class VideoInterviewController {
         console.log("REhis response:", response?.data?.data);
         responseFromInterviewRequests = response?.data;
         videoInterviewId = responseFromInterviewRequests?.data?.videoInterviews?.edges[0]?.node?.videoInterviewTemplate?.id;
+
         console.log("responseFromInterviewRequests?.data?.videoInterviews?.edges[0]?.node", responseFromInterviewRequests?.data?.videoInterviews?.edges[0]?.node);
+        const recruiterId = responseFromInterviewRequests?.data?.videoInterviews?.edges[0]?.node?.candidate?.jobs?.recruiterId;
+
+        const findWorkspaceMemberProfilesQuery = JSON.stringify({
+          query: videoInterviewQueries.findWorkspaceMemberProfiles,
+          variables: { filter: { workspaceMemberId: { eq: recruiterId } } }
+        });
+        const workspaceMemberProfilesResponse = await axiosRequest(findWorkspaceMemberProfilesQuery, apiToken);
+        recruiterProfile = workspaceMemberProfilesResponse?.data?.workspaceMemberProfiles?.edges[0]?.node;
+        console.log("recruiterProrile:", recruiterProfile);
+
+
+
+
         console.log("Received videoInterviewId:", videoInterviewId);
       } catch (error) {
         console.log("There was an error:", error);
+        recruiterProfile =null;
         console.error('Error fetching interview data:', error);
         responseFromInterviewRequests = null;
       }
@@ -531,6 +550,7 @@ export class VideoInterviewController {
       }
 
       const result: GetInterviewDetailsResponse = {
+        recruiterProfile,
         responseFromInterviewRequests,
         videoInterviewAttachmentResponse: responseForVideoInterviewIntroductionAttachment?.data || null,
         questionsAttachments: questionsAttachmentsResponse
@@ -540,6 +560,7 @@ export class VideoInterviewController {
     } else {
       console.log('Invalid request method');
       return {
+        recruiterProfile:null,
         responseFromInterviewRequests: null,
         videoInterviewAttachmentResponse: null,
         questionsAttachments: []

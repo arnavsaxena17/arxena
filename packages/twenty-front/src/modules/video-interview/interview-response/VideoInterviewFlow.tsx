@@ -171,11 +171,13 @@ const VideoInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) 
       console.log('This is the response to fetch interview data:', response);
       const responseObj: InterviewResponseTypes.GetInterviewDetailsResponse = response.data;
       if (responseObj) {
-        // console.log('responseObj to fetch interview data:', responseObj);
-        // console.log('responseObj to fetch interview data:', responseObj);
+
+
+
         const fetchedData: any = response?.data?.responseFromInterviewRequests?.data;
         console.log('fetchedData to fetch interview data:', JSON.stringify(fetchedData));
         const formattedData: InterviewResponseTypes.InterviewData = {
+          recruiterProfile: fetchedData.recruiterProfile,
           name: fetchedData?.videoInterviews?.edges[0]?.node?.name || '',
           id: fetchedData?.videoInterviews?.edges[0]?.node?.id || '',
           candidate: {
@@ -196,6 +198,7 @@ const VideoInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) 
               phone: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.people?.phone || '',
             },
           },
+
           videoInterview: {
             id: fetchedData?.videoInterviews?.edges[0]?.node?.videoInterviewTemplate?.id || '',
             name: fetchedData?.videoInterviews?.edges[0]?.node?.videoInterviewTemplate?.name || '',

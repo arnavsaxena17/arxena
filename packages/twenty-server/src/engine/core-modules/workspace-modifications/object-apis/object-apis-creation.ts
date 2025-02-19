@@ -1,7 +1,7 @@
 import { createObjectMetadataItems } from './services/object-service';
 import { createRelations } from './services/relation-service';
 import { createFields } from './services/field-service';
-import { QueryResponse, ObjectMetadata } from './types/types.js';
+import { QueryResponse, ObjectMetadata, CurrentUserResponse } from './types/types.js';
 import axios from 'axios';
 import { WorkspaceQueryService } from '../workspace-modifications.service.js';
 import { executeQuery } from './utils/graphqlClient.js';
@@ -16,6 +16,8 @@ import { candidatesData } from './data/candidatesData';
 import { ApiKeyService } from './services/apiKeyCreation';
 import { GoogleSheetsService } from 'src/engine/core-modules/google-sheets/google-sheets.service';
 import { prompts } from './data/prompts';
+import { PhoneNumber } from 'libphonenumber-js';
+
 
 export class CreateMetaDataStructure {
   private readonly sheetsService: GoogleSheetsService;
@@ -33,6 +35,70 @@ export class CreateMetaDataStructure {
     });
     return response;
   }
+
+
+ 
+
+  async getCurrentUser(apiToken: string) {
+    const response = await executeQuery<CurrentUserResponse>(
+      `query GetCurrentUser {
+        currentUser {
+          id
+          firstName
+          lastName
+          email
+          canImpersonate
+          supportUserHash
+          onboardingStep
+          workspaceMember {
+            id
+            name {
+              firstName
+              lastName
+            }
+            colorScheme
+            avatarUrl
+            locale
+          }
+          defaultWorkspace {
+            id
+            displayName
+            logo
+            domainName
+            inviteHash
+            allowImpersonation
+            subscriptionStatus
+            activationStatus
+            featureFlags {
+              id
+              key
+              value
+              workspaceId
+            }
+            currentCacheVersion
+            currentBillingSubscription {
+              id
+              status
+              interval
+            }
+          }
+          workspaces {
+            workspace {
+              id
+              logo
+              displayName
+              domainName
+            }
+          }
+        }
+      }`,
+      {},
+      apiToken
+    );
+
+    return response.data?.currentUser;
+  }
+
 
   async fetchFieldsPage(objectId: string, cursor: string | null, apiToken: string) {
     try {
@@ -140,13 +206,42 @@ export class CreateMetaDataStructure {
           ) {
             edges {
               node {
-                id
+                __typename
                 name {
                   firstName
                   lastName
+                  __typename
                 }
+                avatarUrl
+                workspaceMemberProfile{
+                    edges{
+                        node{
+                            workspaceMemberId
+                            id
+                            personId
+                        }
+                    }
+                }
+                avatarUrl
+                id
+                userEmail
+                colorScheme
+                createdAt
+                locale
+                userId
+                updatedAt
               }
+              cursor
+              __typename
             }
+            pageInfo {
+              hasNextPage
+              startCursor
+              endCursor
+              __typename
+            }
+            totalCount
+            __typename
           }
         }`,
       }),
@@ -156,19 +251,25 @@ export class CreateMetaDataStructure {
     const currentWorkspaceMemberId = currentWorkspaceMemberResponse.data.data.workspaceMembers.edges[0].node.id;
     console.log('currentWorkspaceMemberId', currentWorkspaceMemberResponse.data.data.workspaceMembers.edges[0].node);
     const currentWorkspaceMemberName = currentWorkspaceMemberResponse.data.data.workspaceMembers.edges[0].node.name.firstName + ' ' + currentWorkspaceMemberResponse.data.data.workspaceMembers.edges[0].node.name.lastName;
+    const currentUser = await this.getCurrentUser(apiToken);
     const createResponse = await this.axiosRequest(
       JSON.stringify({
-        operationName: 'CreateOneWorkspaceMemberType',
         variables: {
           input: {
             typeWorkspaceMember: 'recruiterType',
             name: currentWorkspaceMemberName,
             workspaceMemberId: currentWorkspaceMemberId,
+            firstName : currentWorkspaceMemberResponse.data.data.workspaceMembers.edges[0].node.name.firstName,
+            lastName : currentWorkspaceMemberResponse.data.data.workspaceMembers.edges[0].node.name.lastName, 
+            email:currentWorkspaceMemberResponse.data.data.workspaceMembers.edges[0].node.userEmail,
+            phoneNumber: currentWorkspaceMemberResponse.data.data.workspaceMembers.edges[0].node.phoneNumber,
+            companyName: currentUser.workspaces[0].workspace.displayName,
+            companyDescription: 'A Global Recruitment Firm',
             position: 'first',
           },
         },
-        query: `mutation CreateOneWorkspaceMemberType($input: WorkspaceMemberTypeCreateInput!) {
-                createWorkspaceMemberType(data: $input) {
+        query: `mutation CreateOneWorkspaceMemberProfile($input: WorkspaceMemberProfileCreateInput!) {
+                createWorkspaceMemberProfile(data: $input) {
                   __typename
                   id
                   workspaceMember {
@@ -279,6 +380,9 @@ export class CreateMetaDataStructure {
       facebook_whatsapp_phone_number_id: process.env.FACEBOOK_WHATSAPP_PHONE_NUMBER_ID,
       facebook_whatsapp_app_id: process.env.FACEBOOK_WHATSAPP_APP_ID,
       facebook_whatsapp_asset_id: process.env.FACEBOOK_WHATSAPP_ASSET_ID,
+      // waba_phone_number: undefined,
+      // company_description_oneliner: 'A Global Recruitment Firm',
+      // company_name: 'Arxena Inc',
     });
     console.log('API keys updated successfully');
     return;

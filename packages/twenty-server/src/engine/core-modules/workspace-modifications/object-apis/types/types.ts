@@ -7,6 +7,61 @@ export interface SelectOption {
     value: string;
 }
 
+
+export interface CurrentUserResponse {
+    data: {
+      currentUser: {
+        id: string;
+        firstName: string;
+        lastName: string;
+        email: string;
+        canImpersonate: boolean;
+        supportUserHash: string;
+        onboardingStep: string;
+        workspaceMember: {
+          id: string;
+          name: {
+            firstName: string;
+            lastName: string;
+          };
+          colorScheme: string;
+          avatarUrl: string;
+          locale: string;
+        };
+        defaultWorkspace: {
+          id: string;
+          displayName: string;
+          logo: string;
+          domainName: string;
+          inviteHash: string;
+          allowImpersonation: boolean;
+          subscriptionStatus: string;
+          activationStatus: string;
+          featureFlags: Array<{
+            id: string;
+            key: string;
+            value: boolean;
+            workspaceId: string;
+          }>;
+          currentCacheVersion: number;
+          currentBillingSubscription: {
+            id: string;
+            status: string;
+            interval: string;
+          };
+        };
+        workspaces: Array<{
+          workspace: {
+            id: string;
+            logo: string;
+            displayName: string;
+            domainName: string;
+          };
+        }>;
+      };
+    };
+  }
+  
 export interface BaseField {
     description?: string;
     icon?: string;

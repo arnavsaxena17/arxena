@@ -224,7 +224,7 @@ const queryByvideoInterview = `query FindOneVideoInterview($objectRecordId: ID!)
           candidateEnrichmentId
           screeningId
           shortlistId
-          workspaceMemberTypeId
+          workspaceMemberProfileId
           candidateId
           promptId
           questionId

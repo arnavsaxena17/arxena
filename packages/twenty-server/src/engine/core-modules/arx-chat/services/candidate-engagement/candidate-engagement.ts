@@ -17,6 +17,7 @@ const rl = readline.createInterface({
 import { graphQltoUpdateOneCandidate } from 'src/engine/core-modules/candidate-sourcing/graphql-queries';
 import { TimeManagement } from '../time-management';
 import { GoogleSheetsService } from 'src/engine/core-modules/google-sheets/google-sheets.service';
+import { getRecruiterProfileByJob } from '../recruiter-profile';
 
 export default class CandidateEngagementArx {
   private chatFlowConfigBuilder: ChatFlowConfigBuilder;
@@ -63,7 +64,7 @@ export default class CandidateEngagementArx {
       candidateFirstName: candidatePersonNodeObj?.name?.firstName,
       phoneNumberFrom: candidatePersonNodeObj?.phone,
       whatsappMessageType: whatsappTemplate,
-      phoneNumberTo: recruiterProfile.phone,
+      phoneNumberTo: recruiterProfile.phoneNumber,
       messages: [{ content: chatReply }],
       lastEngagementChatControl: chatControl.chatControlType,
       messageType: 'candidateMessage',
@@ -84,7 +85,10 @@ export default class CandidateEngagementArx {
     chatFlowConfigObj,
   ) {
     const personNode = candidatePersonNodeObj;
-    const recruiterProfile = allDataObjects.recruiterProfile;
+
+    const recruiterProfile = await getRecruiterProfileByJob(candidateJob, apiToken) 
+
+    // const recruiterProfile = allDataObjects.recruiterProfile;
     const candidate = candidatePersonNodeObj?.candidates?.edges?.find(edge => edge.node.jobs.id === candidateJob.id)?.node;
     const candidateId = candidate?.id || '';
     console.log('Candidate ID to start chat::', candidateId);

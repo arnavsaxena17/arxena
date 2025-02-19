@@ -5,12 +5,12 @@ import { FilterCandidates } from '../candidate-engagement/filter-candidates';
 
 const commaSeparatedStatuses = allDataObjects.statusesArray.join(', ');
 
-const recruiterProfile = allDataObjects.recruiterProfile;
 // const candidateProfileObjAllData =  candidateProfile
 
 import * as allGraphQLQueries from '../../graphql-queries/graphql-queries-chatbot';
 import CandidateEngagementArx from '../candidate-engagement/candidate-engagement';
 import { axiosRequest } from '../../utils/arx-chat-agent-utils';
+import { getRecruiterProfileByJob } from '../recruiter-profile';
 export class PromptingAgents {
   constructor(private readonly workspaceQueryService: WorkspaceQueryService) {}
   currentConversationStage = z.object({
@@ -27,6 +27,8 @@ export class PromptingAgents {
 
   async getQuestionsToAsk(personNode: allDataObjects.PersonNode, candidateJob: allDataObjects.Jobs, apiToken: string) {
     console.log('This is the job::::%s', candidateJob);
+    let questions:string[] = [];
+    const location = candidateJob.jobLocation
     // const questions = ["What is your current & expected CTC?", "Who do you report to and which functions report to you?", "Are you okay to relocate to {location}?"];
     // const location = "Surat";
     // const formattedQuestions = questions.map((question, index) =>  `${index + 1}. ${question.replace("{location}", location)}`).join("\n");
@@ -35,15 +37,17 @@ export class PromptingAgents {
     console.log('Job Name:', personNode?.candidates?.edges[0]?.node?.jobs?.name);
     // console.log('This is the job Id:', jobId);
     const { questionArray, questionIdArray } = await new FilterCandidates(this.workspaceQueryService).fetchQuestionsByJobId(jobId, apiToken);
-
     // Hardcoded questions to ask if no questions are found in the database
+    const hardCodedQuestions = ['Are you okay to relocate to {location}?', 'What is your current & expected CTC?', 'What is your notice period?'];
     if (questionArray.length == 0) {
-      return ['Are you okay to relocate to {location}?', 'What is your current & expected CTC?', 'What is your notice period?'];
+      questions = hardCodedQuestions
     }
     if (candidateJob.name == 'Transcom') {
-      return ['What is your current and expected CTC?', "This is an in-office role - Are you okay to work in a shift based out of Transcom's Kharadi office?", 'What is your notice period/ How soon can you join?', 'What is your Aadhaar Number?'];
+      questions = ['What is your current and expected CTC?', "This is an in-office role - Are you okay to work in a shift based out of Transcom's Kharadi office?", 'What is your notice period/ How soon can you join?', 'What is your Aadhaar Number?'];
     }
-    return questionArray;
+    const formattedQuestions = questions.map((question, index) =>  `${index + 1}. ${question.replace("{location}", location)}`);
+
+    return formattedQuestions;
   }
 
   async getVideoInterviewPrompt(personNode: allDataObjects.PersonNode, apiToken: string) {
@@ -84,7 +88,7 @@ export class PromptingAgents {
   }
 
   replaceTemplateVariables(template: string, variables: Record<string, any>): string {
-    return template.replace(/\${([^}]+)}/g, (match, path) => {
+    const templateVariables = template.replace(/\${([^}]+)}/g, (match, path) => {
       try {
         const parts = path.split(/\??\./).filter(Boolean);
         let value = variables;
@@ -100,6 +104,10 @@ export class PromptingAgents {
         return match; // Return original placeholder on error
       }
     });
+    const cleanedTemplate = templateVariables.replace(/\\(?!\n)(?!t)(?!r)(?!b)(?!f)(?!v)/g, '');
+
+    console.log("cleanedTemplate replace Templates::", cleanedTemplate)
+    return cleanedTemplate;
   }
 
   async getStartChatPrompt(personNode: allDataObjects.PersonNode, candidateJob: allDataObjects.Jobs, apiToken: string) {
@@ -107,7 +115,6 @@ export class PromptingAgents {
     receiveCV = `If they have shared their interest after going through the JD, ask the candidate to share a copy of their updated CV prior to the meeting.
     If they say that you can take the CV from naukri, tell them that you would require a copy for records directly from them for candidate confirmation purposes.`;
     receiveCV = ``;
-    const jobProfile = personNode?.candidates?.edges[0]?.node?.jobs;
     const questionArray = await this.getQuestionsToAsk(personNode, candidateJob, apiToken);
     const filteredQuestionArray = questionArray.filter(question => !question.toLowerCase().includes('aadhaar'));
     const formattedQuestions = '\t' + filteredQuestionArray.map((question, index) => `${index + 1}. ${question}`).join('\n\t');
@@ -132,6 +139,8 @@ export class PromptingAgents {
     mannerOfAskingQuestions = 'Ask these questions in any order one by one and ensure a natural continuous conversation.';
     mannerOfAskingQuestions = 'Ask these questions in a single message and ask the candidate to answer each of them.';
 
+    const recruiterProfile:allDataObjects.recruiterProfileType = await getRecruiterProfileByJob(candidateJob, apiToken) 
+    console.log('recruiterProfile in getstartprompt::', recruiterProfile)
     const variables = {
       personNode,
       jobProfile: personNode?.candidates?.edges[0]?.node?.jobs,
@@ -141,6 +150,7 @@ export class PromptingAgents {
       mannerOfAskingQuestions: mannerOfAskingQuestions,
       workingConditions: workingConditions,
     };
+    console.log("variables::", variables)
     const SYSTEM_PROMPT_STRINGIFIED = await this.getPromptByJobIdAndName(candidateJob.id, 'START_CHAT_PROMPT', apiToken);
     const SYSTEM_PROMPT = this.replaceTemplateVariables(SYSTEM_PROMPT_STRINGIFIED, variables);
     console.log('Generated getStartChatPrompt prompt:', SYSTEM_PROMPT);

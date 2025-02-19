@@ -1,3 +1,47 @@
+
+
+
+
+
+export const findWorkspaceMemberProfiles =  `query FindManyWorkspaceMemberProfiles($filter: WorkspaceMemberProfileFilterInput, $orderBy: [WorkspaceMemberProfileOrderByInput], $lastCursor: String, $limit: Int) {
+  workspaceMemberProfiles(
+    filter: $filter
+    orderBy: $orderBy
+    first: $limit
+    after: $lastCursor
+  ) {
+    edges {
+      node {
+        __typename
+        id
+        email
+        phoneNumber
+        companyName
+        companyDescription
+        lastName
+        createdAt
+        phoneNumber
+        name
+        firstName
+        typeWorkspaceMember
+        email
+        companyName
+      }
+      cursor
+      __typename
+    }
+    pageInfo {
+      hasNextPage
+      startCursor
+      endCursor
+      __typename
+    }
+    totalCount
+    __typename
+  }
+}`
+
+
 export const videoInterviewsQuery = `query FindManyVideoInterviews($filter: VideoInterviewFilterInput, $orderBy: [VideoInterviewOrderByInput], $lastCursor: String, $limit: Int) {
           videoInterviews(
             filter: $filter

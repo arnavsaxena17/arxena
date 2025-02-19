@@ -9,6 +9,15 @@ export interface Question {
 }
 
 export const emptyInterviewData: InterviewData = {
+  recruiterProfile: {
+    companyName: '',
+    companyDescription: '',
+    firstName: '',
+    lastName: '',
+    name: '',
+    email: '',
+    phone: '',
+  },
   id: '',
   name: '',
   candidate: {
@@ -40,7 +49,21 @@ export const emptyInterviewData: InterviewData = {
   },
   };
 
+
+  export interface recruiterProfileType {
+    jobTitle?: string;
+    companyName: string;
+    companyDescription: string;
+    firstName: string;
+    lastName: string;
+    name: string;
+    email: string;
+    phone: string;
+  }
+  
+
 export interface InterviewData {
+  recruiterProfile:recruiterProfileType,
   id: string;
   name: string;
   candidate: {

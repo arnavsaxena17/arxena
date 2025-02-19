@@ -2,7 +2,7 @@ import React, { useState, useEffect,useRef } from 'react';
 import styled from '@emotion/styled';
 import * as InterviewResponseTypes from './types/interviewResponseTypes';
 import { VideoPlayer } from './utils/videoPlaybackUtils';
-import {recruiterProfile} from '../../activities/chats/types/front-chat-types';
+// import {recruiterProfile} from '../../activities/chats/types/front-chat-types';
 
 
 import {
@@ -20,6 +20,7 @@ import {
 
 } from './styled-components/StyledComponentsInterviewResponse';
 import { useStream } from '../StreamManager';
+import axios from 'axios';
 
 interface StartInterviewPageProps extends InterviewResponseTypes.StartInterviewPageProps {
   videoPlaybackState: { isPlaying: boolean; isMuted: boolean };
@@ -75,6 +76,73 @@ export const StartInterviewPage: React.FC<StartInterviewPageProps> = ({ onStart,
 
 
 
+
+
+    // const getRecruiterProfile = async () => {
+    //   const query = `query FindManyWorkspaceMemberProfiles($filter: WorkspaceMemberProfileFilterInput, $orderBy: [WorkspaceMemberProfileOrderByInput], $lastCursor: String, $limit: Int) {
+    //     workspaceMemberProfiles(
+    //       filter: $filter
+    //       orderBy: $orderBy
+    //       first: $limit
+    //       after: $lastCursor
+    //     ) {
+    //       edges {
+    //         node {
+    //           __typename
+    //           id
+    //           email
+    //           phoneNumber
+    //           companyName 
+    //           companyDescription
+    //           lastName
+    //           createdAt
+    //           phoneNumber
+    //           name
+    //           firstName
+    //           companyDescription
+    //           typeWorkspaceMember
+    //           email
+    //           companyName
+    //         }
+    //         cursor
+    //         __typename
+    //       }
+    //       pageInfo {
+    //         hasNextPage
+    //         startCursor
+    //         endCursor
+    //         __typename
+    //       }
+    //       totalCount
+    //       __typename
+    //     }
+    //   }`;
+  
+    //   const recruiterId = jobs[0]?.recruiterId;
+  
+    //   const findWorkspaceMemberProfilesQuery = JSON.stringify({
+    //     query: query,
+    //     variables: { filter: { workspaceMemberId: { eq: recruiterId } } }
+    //   });
+    //   const workspaceMemberProfilesResponse = await axios.post(
+    //     `${process.env.REACT_APP_SERVER_BASE_URL}/graphql`,
+    //     findWorkspaceMemberProfilesQuery,
+    //     {
+    //       headers: {
+    //         'Content-Type': 'application/json',
+    //         'Authorization': `Bearer ${apiToken}`
+    //       }
+    //     }
+    //   );
+    //   const recruiterProfile = workspaceMemberProfilesResponse?.data?.workspaceMemberProfiles?.edges[0]?.node;
+    //   console.log("recruiterProfile:", recruiterProfile);
+    //   return recruiterProfile;
+    // };
+  
+
+
+
+
   // useEffect(() => {
   //   checkMediaAccess();
   // }, []);
@@ -99,8 +167,10 @@ export const StartInterviewPage: React.FC<StartInterviewPageProps> = ({ onStart,
     }
   };
 
+  // const recruiterProfile = InterviewData?.candidate?.jobs?
+
   console.log("This is the intorduction interview data::", introductionVideoData)
-  console.log("This is the intorduction interview data::", introductionVideoData?.data?.attachments?.edges[0]?.node.fullPath)
+  // console.log("This is the intorduction interview data::", introductionVideoData?.data?.attachments?.edges[0]?.node.fullPath)
   const introductionVideoURL = process.env.REACT_APP_SERVER_BASE_URL+"/"+introductionVideoData?.data?.attachments?.edges[0]?.node.fullPath;
   console.log("THis is introductionVideoURL:", introductionVideoURL)
   return (
@@ -134,7 +204,7 @@ export const StartInterviewPage: React.FC<StartInterviewPageProps> = ({ onStart,
           <li>You have to answer {InterviewData?.videoInterview?.videoInterviewQuestions?.edges?.length} questions and have 4 minutes per question.</li>
           <li>Answer all {InterviewData?.videoInterview?.videoInterviewQuestions?.edges?.length} questions in one go. Do not click back, close or refresh the tab to prevent loss of progress.</li>
           <li>Please make sure you have a stable internet connection and use a fully charged device for giving the interview.</li>
-          <li>If you need assistance, write to me <a href={`mailto:${recruiterProfile.email}`}>{recruiterProfile.email}</a> or call/ whatsapp at <a href={`tel:${recruiterProfile.phone}`}>{recruiterProfile.phone}</a></li>
+          <li>If you need assistance, write to me <a href={`mailto:${InterviewData.recruiterProfile.email}`}>{InterviewData.recruiterProfile.email}</a> or call/ whatsapp at <a href={`tel:${InterviewData.recruiterProfile.phone}`}>{InterviewData.recruiterProfile.phone}</a></li>
         </InstructionList>
       </InstructionSection>
           <ButtonContainer>

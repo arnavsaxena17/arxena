@@ -48,6 +48,7 @@ export class JobCandidateUtils {
             }
             job {
               id
+              recruiterId
             }
             candidate {
               id

@@ -10,6 +10,7 @@ import moment from 'moment-timezone';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { EmailService } from 'src/engine/integrations/email/email.service';
 import { FilterCandidates } from '../services/candidate-engagement/filter-candidates';
+import { getRecruiterProfileByJob, getRecruiterProfileFromCurrentUser } from '../services/recruiter-profile';
 
 
 @Controller('google-mail-calendar-contacts')
@@ -92,10 +93,15 @@ async getCalendarEvents(@Req() request: any): Promise<object> {
     const apiToken = request.headers.authorization.split(' ')[1];
 
     const person: allDataObjects.PersonNode = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPhoneNumber(request.body.phoneNumber,apiToken);
-    console.log("allDataObjects.recruiterProfile?.email:", allDataObjects.recruiterProfile?.email)
+
+    const candidateNode = person.candidates.edges[0].node;
+    const candidateJob:allDataObjects.Jobs = candidateNode?.jobs;
+    const recruiterProfile = await getRecruiterProfileByJob(candidateJob, apiToken) 
+
+    console.log("recruiterProfile?.email:", recruiterProfile?.email)
     const emailData: GmailMessageData = {
-      sendEmailFrom: allDataObjects.recruiterProfile?.email,
-      sendEmailNameFrom: allDataObjects.recruiterProfile?.first_name + ' ' + allDataObjects.recruiterProfile?.last_name,
+      sendEmailFrom: recruiterProfile?.email,
+      sendEmailNameFrom: recruiterProfile?.firstName + ' ' + recruiterProfile?.lastName,
       sendEmailTo: person?.email,
       subject: request.body?.subject || 'Email from the recruiter',
       message: request.body?.message || 'This is a test email',
@@ -113,9 +119,14 @@ async getCalendarEvents(@Req() request: any): Promise<object> {
 
     const person: allDataObjects.PersonNode = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPhoneNumber(request.body.phoneNumber,apiToken);
     
+    const candidateNode = person.candidates.edges[0].node;
+    const candidateJob:allDataObjects.Jobs = candidateNode?.jobs;
+    const recruiterProfile = await getRecruiterProfileByJob(candidateJob, apiToken) 
+
+    
     const emailData: GmailMessageData = {
-      sendEmailFrom: allDataObjects.recruiterProfile?.email,
-      sendEmailNameFrom: allDataObjects.recruiterProfile?.first_name + ' ' + allDataObjects.recruiterProfile?.last_name,
+      sendEmailFrom: recruiterProfile?.email,
+      sendEmailNameFrom: recruiterProfile?.firstName + ' ' + recruiterProfile?.lastName,
       sendEmailTo: person?.email,
       subject: request.body?.subject || 'Email from the recruiter',
       message: request.body?.message || 'This is a test email',
@@ -131,9 +142,12 @@ async getCalendarEvents(@Req() request: any): Promise<object> {
   async saveDraftEmailWithAttachments (@Req() request: any): Promise<object> {
     const apiToken = request.headers.authorization.split(' ')[1];
     const person: allDataObjects.PersonNode = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPhoneNumber(request.body.phoneNumber,apiToken);
+    const candidateNode = person.candidates.edges[0].node;
+    const candidateJob:allDataObjects.Jobs = candidateNode?.jobs;
+    const recruiterProfile = await getRecruiterProfileByJob(candidateJob, apiToken) 
     const emailData: GmailMessageData = {
-      sendEmailFrom: allDataObjects.recruiterProfile?.email,
-      sendEmailNameFrom: allDataObjects.recruiterProfile?.first_name + ' ' + allDataObjects.recruiterProfile?.last_name,
+      sendEmailFrom: recruiterProfile?.email,
+      sendEmailNameFrom: recruiterProfile?.firstName + ' ' + recruiterProfile?.lastName,
       sendEmailTo: person?.email,
       subject: request.body?.subject || 'Email from the recruiter',
       message: request.body?.message || 'This is a test email',
@@ -148,10 +162,15 @@ async getCalendarEvents(@Req() request: any): Promise<object> {
   @UseGuards(JwtAuthGuard)
   async sendEmailToSelf(@Req() request: any): Promise<object> {
     const apiToken = request.headers.authorization.split(' ')[1];
+
+
+
+    const recruiterProfile = await getRecruiterProfileFromCurrentUser(apiToken)
+    // const candidateJob:allDataObjects.Jobs = candidateNode?.jobs;
     const emailData: GmailMessageData = {
-      sendEmailFrom: allDataObjects.recruiterProfile?.email,
-      sendEmailTo: allDataObjects.recruiterProfile?.email,
-      sendEmailNameFrom: allDataObjects.recruiterProfile?.first_name + ' ' + allDataObjects.recruiterProfile?.last_name,
+      sendEmailFrom: recruiterProfile?.email,
+      sendEmailTo: recruiterProfile?.email,
+      sendEmailNameFrom: recruiterProfile?.firstName + ' ' + recruiterProfile?.lastName,
       subject: request.body?.subject || 'Email from the recruiter',
       message: request.body?.message || 'This is a test email',
       attachments: request.body.attachments || [],
@@ -190,10 +209,15 @@ async getCalendarEvents(@Req() request: any): Promise<object> {
     console.log("This is the start time:", startTimeUTC)
     console.log("This is the endTimeUTC:", endTimeUTC)
 
+    const candidateNode = person.candidates.edges[0].node;
+    const candidateJob:allDataObjects.Jobs = candidateNode?.jobs;
+    const recruiterProfile = await getRecruiterProfileByJob(candidateJob, apiToken) 
+
+    // const recruiterProfile = await getRecruiterProfileFromCurrentUser(apiToken)
 
     console.log('Function Called: scheduleMeeting');
     const calendarEventObj: CalendarEventType = {
-      summary: person.name.firstName + ' ' + person.name.lastName + ' <> ' + allDataObjects.recruiterProfile.first_name + ' ' + allDataObjects.recruiterProfile.last_name ||  gptInputs?.summary,
+      summary: person.name.firstName + ' ' + person.name.lastName + ' <> ' + recruiterProfile.firstName + ' ' + recruiterProfile.lastName ||  gptInputs?.summary,
       typeOfMeeting: gptInputs?.typeOfMeeting || 'Virtual',
       location: gptInputs?.location || 'Google Meet',
       description: gptInputs?.description || 'This meeting is scheduled to discuss the role and the company.',
@@ -205,7 +229,7 @@ async getCalendarEvents(@Req() request: any): Promise<object> {
         dateTime: endTimeUTC,
         timeZone: timeZone
       },
-      attendees: [{ email: person.email }, { email: allDataObjects.recruiterProfile.email }],
+      attendees: [{ email: person.email }, { email: recruiterProfile.email }],
       reminders: {
         useDefault: false,
         overrides: [

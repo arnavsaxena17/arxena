@@ -9,6 +9,7 @@ import { SendEmailFunctionality, EmailTemplates } from '../utils/send-gmail';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { FilterCandidates } from '../services/candidate-engagement/filter-candidates';
 import { StartVideoInterviewChatProcesses } from '../services/candidate-engagement/chat-control-processes/start-video-interview-chat-processes';
+import { getRecruiterProfileByJob } from '../services/recruiter-profile';
 
 
 @Controller('video-interview-process')
@@ -45,13 +46,20 @@ export class VideoInterviewProcessController {
             .filter(edge => edge.node.id === candidateId)
             .map(edge => edge.node.jobs.company.name)[0];
     
+
+            const candidateNode = person.candidates.edges[0].node;
+            const candidateJob:allDataObjects.Jobs = candidateNode?.jobs;
+            const recruiterProfile:allDataObjects.recruiterProfileType = await getRecruiterProfileByJob(candidateJob, apiToken) 
+        
+
+
             if (videoInterviewUrl) {
                 console.log("Going to send email to person:", person);
                 const videoInterviewInviteTemplate = await new EmailTemplates().getInterviewInvitationTemplate(person, candidateId, videoInterviewUrl);
-                console.log("allDataObjects.recruiterProfile?.email:", allDataObjects.recruiterProfile?.email);
+                console.log("recruiterProfile?.email:", recruiterProfile?.email);
                 const emailData: GmailMessageData = {
-                    sendEmailNameFrom: allDataObjects.recruiterProfile?.first_name + ' ' + allDataObjects.recruiterProfile?.last_name,
-                    sendEmailFrom: allDataObjects.recruiterProfile?.email,
+                    sendEmailNameFrom: recruiterProfile?.firstName + ' ' + recruiterProfile?.lastName,
+                    sendEmailFrom: recruiterProfile?.email,
                     sendEmailTo: person?.email,
                     subject: 'Video Interview - ' + person?.name?.firstName + '<>' + companyName,
                     message: videoInterviewInviteTemplate,
@@ -86,13 +94,16 @@ export class VideoInterviewProcessController {
             const companyName = person?.candidates?.edges
             .filter(edge => edge.node.id === candidateId)
             .map(edge => edge.node.jobs.company.name)[0];
-    
+
+            const candidateNode = person.candidates.edges[0].node;
+            const candidateJob:allDataObjects.Jobs = candidateNode?.jobs;
+            const recruiterProfile:allDataObjects.recruiterProfileType = await getRecruiterProfileByJob(candidateJob, apiToken) 
             if (videoInterviewUrl) {
                 const videoInterviewInviteTemplate = await new EmailTemplates().getInterviewInvitationTemplate(person, candidateId, videoInterviewUrl);
-                console.log("allDataObjects.recruiterProfile?.email:", allDataObjects.recruiterProfile?.email);
+                console.log("recruiterProfile?.email:", recruiterProfile?.email);
                 const emailData: GmailMessageData = {
-                    sendEmailNameFrom: allDataObjects.recruiterProfile?.first_name + ' ' + allDataObjects.recruiterProfile?.last_name,
-                    sendEmailFrom: allDataObjects.recruiterProfile?.email,
+                    sendEmailNameFrom: recruiterProfile?.firstName + ' ' + recruiterProfile?.lastName,
+                    sendEmailFrom: recruiterProfile?.email,
                     sendEmailTo: person?.email,
                     subject: 'Video Interview - ' + person?.name?.firstName + '<>' + companyName,
                     message: videoInterviewInviteTemplate,

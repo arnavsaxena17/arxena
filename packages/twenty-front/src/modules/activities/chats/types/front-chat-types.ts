@@ -257,17 +257,6 @@ export interface Jobs {
   whatsappMessages: WhatsAppMessages;
 }
 
-export interface recruiterProfileType {
-  job_title: any;
-  job_company_name: any;
-  company_description_oneliner: any;
-  first_name: any;
-  status: string;
-  name: string;
-  email: string;
-  phone: string;
-  input: string; // Add the 'input' property
-}
 
 interface Entry {
   id: string;
@@ -279,30 +268,6 @@ export interface WhatsAppBusinessAccount {
   entry: Entry[];
 }
 
-export const jobProfile: jobProfileType = {
-  name: "Sales Manager",
-  id: "5643d1e6-0415-4327-b871-918e7cd699d5",
-  recruiterId: "20202020-0687-4c41-b707-ed1bfca972a7",
-  company: {
-    name: "Qonto",
-    companyId: "1234",
-    descriptionOneliner:
-      "one of the india's largest waste management companies",
-  },
-  jobLocation: "Mumbai",
-};
-
-export const recruiterProfile: recruiterProfileType = {
-  name: "Arnav Saxena",
-  first_name: "Arnav",
-  phone: "919326970534",
-  email: "arnav@arxena.com",
-  input: "",
-  status: "",
-  job_title: "Director",
-  job_company_name: "Arxena Inc",
-  company_description_oneliner: "a US Based Recruitment Company",
-};
 
 export const emptyCandidateProfileObj: CandidateNode = {
   name: "",
@@ -417,17 +382,6 @@ export interface Attachment {
   answerId: string | null;
 }
 
-export const candidateProfile: candidateProfileType = {
-  first_name: "Christoph",
-  id: "12d2232a-e79b-41c8-b56c-c186abb7fdea",
-  jobsId: "5643d1e6-0415-4327-b871-918e7cd699d5",
-  status: "string",
-  job: jobProfile,
-  phoneNumber: "+919820297156",
-  email: "christoph.calisto@linkedin.com",
-  responsibleWorkspaceMemberId: "20202020-0687-4c41-b707-ed1bfca972a7",
-  input: "string", // Add the 'input' property
-};
 
 export interface candidateProfileType {
   first_name: any;

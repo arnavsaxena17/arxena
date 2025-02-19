@@ -22,6 +22,7 @@ import { ChatControls } from '../services/candidate-engagement/chat-controls';
 import CandidateEngagementArx from '../services/candidate-engagement/candidate-engagement';
 import { consoleIntegration } from '@sentry/node';
 import { GoogleSheetsService } from '../../google-sheets/google-sheets.service';
+import { getRecruiterProfileByJob } from '../services/recruiter-profile';
 
 @Controller('arx-chat')
 export class ArxChatEndpoint {
@@ -156,16 +157,18 @@ export class ArxChatEndpoint {
     console.log('called interimChat:', interimChat);
     const personObj: allDataObjects.PersonNode = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPhoneNumber(phoneNumber, apiToken);
     const candidateId = personObj.candidates?.edges[0]?.node?.id;
+
+    const candidateJob:allDataObjects.Jobs = personObj.candidates?.edges[0]?.node?.jobs;
+    const recruiterProfile = await getRecruiterProfileByJob(candidateJob, apiToken) 
     const chatReply = interimChat;
-      const whatsappIncomingMessage: allDataObjects.chatMessageType = {
-        phoneNumberFrom: phoneNumber,
-        phoneNumberTo: allDataObjects.recruiterProfile.phone,
-        messages: [{ role: 'user', content: chatReply }],
-        messageType: 'string',
-      };
-      const candidateProfileData = await new FilterCandidates(this.workspaceQueryService).getCandidateInformation(whatsappIncomingMessage,apiToken);
-      const candidateJob:allDataObjects.Jobs = candidateProfileData.jobs
-      console.log('This is the candiate who has sent us the message., we have to update the database that this message has been recemivged::', chatReply);
+    const whatsappIncomingMessage: allDataObjects.chatMessageType = {
+      phoneNumberFrom: phoneNumber,
+      phoneNumberTo: recruiterProfile.phoneNumber,
+      messages: [{ role: 'user', content: chatReply }],
+      messageType: 'string',
+    };
+    const candidateProfileData = await new FilterCandidates(this.workspaceQueryService).getCandidateInformation(whatsappIncomingMessage,apiToken);
+    console.log('This is the candiate who has sent us the message., we have to update the database that this message has been recemivged::', chatReply);
       const replyObject = {
         chatReply: chatReply,
         whatsappDeliveryStatus: 'receivedFromCandidate',
@@ -186,7 +189,9 @@ export class ArxChatEndpoint {
 
     const personObj: allDataObjects.PersonNode = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPhoneNumber(phoneNumber, apiToken);
     console.log('This is the chat reply:', messageToSend);
-    const recruiterProfile = allDataObjects.recruiterProfile;
+    const candidateJob:allDataObjects.Jobs = personObj.candidates?.edges[0]?.node?.jobs;
+    const recruiterProfile = await getRecruiterProfileByJob(candidateJob, apiToken) 
+
     console.log('Recruiter profile', recruiterProfile);
     const chatMessages = personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges;
     let chatHistory = chatMessages[0]?.node?.messageObj || [];
@@ -195,7 +200,7 @@ export class ArxChatEndpoint {
     let whatappUpdateMessageObj: allDataObjects.whatappUpdateMessageObjType = {
       candidateProfile: personObj?.candidates?.edges[0]?.node,
       candidateFirstName: personObj?.name?.firstName,
-      phoneNumberFrom: recruiterProfile.phone,
+      phoneNumberFrom: recruiterProfile.phoneNumber,
       whatsappMessageType: personObj?.candidates?.edges[0]?.node.whatsappProvider || 'application03',
       phoneNumberTo: personObj?.phone,
       messages: [{ content: request?.body?.messageToSend }],
@@ -206,7 +211,7 @@ export class ArxChatEndpoint {
       whatsappMessageId: 'startChat',
     };
     let messageObj: allDataObjects.ChatRequestBody = {
-      phoneNumberFrom: recruiterProfile.phone,
+      phoneNumberFrom: recruiterProfile.phoneNumber,
       phoneNumberTo: personObj.phone,
       messages: messageToSend,
     };

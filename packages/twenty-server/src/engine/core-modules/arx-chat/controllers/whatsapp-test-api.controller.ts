@@ -9,6 +9,7 @@ import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modific
 import { FilterCandidates } from '../services/candidate-engagement/filter-candidates';
 import { Cron } from '@nestjs/schedule';
 import { TimeManagement } from '../services/time-management';
+import { getRecruiterProfileByJob } from '../services/recruiter-profile';
 
 @Controller('whatsapp-test')
 export class WhatsappTestAPI {
@@ -30,20 +31,29 @@ export class WhatsappTestAPI {
 
       const personObj: allDataObjects.PersonNode = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPhoneNumber(requestBody.phoneNumberTo,apiToken);
       console.log("This is the process.env.SERVER_BASE_URL:",process.env.SERVER_BASE_URL)
+
+      const candidateNode:allDataObjects.CandidateNode = personObj?.candidates?.edges[0]?.node;
+
+      const candidateJob:allDataObjects.Jobs = candidateNode?.jobs;
+      const recruiterProfile = await getRecruiterProfileByJob(candidateJob, apiToken) 
+  
+
+
+
       const sendTemplateMessageObj = {
       recipient: personObj.phone.replace('+', ''),
       template_name: requestBody.templateName,
       candidateFirstName: personObj.name.firstName,
-      recruiterName: allDataObjects.recruiterProfile.name,
-      recruiterFirstName: allDataObjects.recruiterProfile.name.split(' ')[0],
-      recruiterJobTitle: allDataObjects.recruiterProfile.job_title,
-      recruiterCompanyName: allDataObjects.recruiterProfile.job_company_name,
-      recruiterCompanyDescription: allDataObjects.recruiterProfile.company_description_oneliner,
+      recruiterName: recruiterProfile.name,
+      recruiterFirstName: recruiterProfile.name.split(' ')[0],
+      recruiterJobTitle: recruiterProfile.jobTitle || '',
+      recruiterCompanyName: recruiterProfile.companyName,
+      recruiterCompanyDescription: recruiterProfile.companyDescription,
       jobPositionName: personObj?.candidates?.edges[0]?.node?.jobs?.name,
       companyName: personObj?.candidates?.edges[0]?.node?.jobs?.company?.name,
       descriptionOneliner:personObj?.candidates?.edges[0]?.node?.jobs?.company?.descriptionOneliner,
       jobCode: personObj?.candidates?.edges[0]?.node?.jobs?.jobCode,
-    jobLocation: personObj?.candidates?.edges[0]?.node?.jobs?.jobLocation,
+      jobLocation: personObj?.candidates?.edges[0]?.node?.jobs?.jobLocation,
       videoInterviewLink: process.env.SERVER_BASE_URL+personObj?.candidates?.edges[0]?.node?.videoInterview?.edges[0]?.node?.interviewLink?.url || "",
       candidateSource: "Apna",
       };
@@ -56,7 +66,7 @@ export class WhatsappTestAPI {
       console.log("This is the mostRecentMessageArr:", mostRecentMessageArr)
       const chatControl = { chatControlType: personObj?.candidates?.edges[0]?.node?.lastEngagementChatControl };
       mostRecentMessageArr.push({ role: 'user', content: requestBody.templateName});
-      const whatappUpdateMessageObj = await new FilterCandidates(this.workspaceQueryService).updateChatHistoryObjCreateWhatsappMessageObj('success', personObj, personObj.candidates.edges[0].node, mostRecentMessageArr, chatControl);
+      const whatappUpdateMessageObj = await new FilterCandidates(this.workspaceQueryService).updateChatHistoryObjCreateWhatsappMessageObj('success', personObj, personObj.candidates.edges[0].node, mostRecentMessageArr, chatControl, apiToken);
       await new UpdateChat(this.workspaceQueryService).updateCandidateEngagementDataInTable(whatappUpdateMessageObj,apiToken);
       console.log("This is ther esponse:", response.data)
     } catch (error) {

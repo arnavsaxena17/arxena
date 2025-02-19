@@ -2,6 +2,7 @@ import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modific
 import * as allDataObjects from '../data-model-objects';
 import { FacebookWhatsappChatApi } from '../whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
 import { ToolCallingAgents } from '../llm-agents/tool-calling-agents';
+import { getRecruiterProfileByJob } from '../recruiter-profile';
 
 export class ChatControls {
   constructor(private readonly workspaceQueryService: WorkspaceQueryService) {}
@@ -14,12 +15,14 @@ export class ChatControls {
       return new ToolCallingAgents(this.workspaceQueryService).getStartMeetingSchedulingTools(candidateJob);
     }
   }
-  async runChatControlMessageSending(whatappUpdateMessageObj: allDataObjects.whatappUpdateMessageObjType, chatControl: allDataObjects.chatControls, personNode: allDataObjects.PersonNode, apiToken: string) {
+  async runChatControlMessageSending(whatappUpdateMessageObj: allDataObjects.whatappUpdateMessageObjType, candidateJob:allDataObjects.Jobs, chatControl: allDataObjects.chatControls, personNode: allDataObjects.PersonNode, apiToken: string) {
     let response;
     try {
+      const recruiterProfile:allDataObjects.recruiterProfileType = await getRecruiterProfileByJob(candidateJob, apiToken) 
       if (whatappUpdateMessageObj?.messages[0]?.content?.toLowerCase().includes('recruitment company') || whatappUpdateMessageObj?.messages[0]?.content?.toLowerCase().includes('video interview as part of the')) {
         console.log("USING TEMPLATE FOR startChat")
         let messageTemplate: string;
+
         if (whatappUpdateMessageObj?.messages[0]?.content?.toLowerCase().includes('recruitment company')) {
           if (chatControl.chatControlType === 'startChat') {
             const currentTimeInIndia = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
@@ -51,15 +54,17 @@ export class ChatControls {
         }
         const videoInterviewLink = process.env.FRONT_BASE_URL + personNode?.candidates?.edges[0]?.node?.videoInterview?.edges[0]?.node?.interviewLink?.url || '';
         console.log('videoInterviewLink::', videoInterviewLink);
+
+    
         const sendTemplateMessageObj: allDataObjects.sendWhatsappUtilityMessageObjectType = {
           recipient: whatappUpdateMessageObj.phoneNumberTo.replace('+', ''),
           template_name: messageTemplate,
-          recruiterFirstName: allDataObjects.recruiterProfile.name,
+          recruiterFirstName: recruiterProfile.name,
           candidateFirstName: whatappUpdateMessageObj.candidateFirstName,
-          recruiterName: allDataObjects.recruiterProfile.name,
-          recruiterJobTitle: allDataObjects.recruiterProfile.job_title,
-          recruiterCompanyName: allDataObjects.recruiterProfile.job_company_name,
-          recruiterCompanyDescription: allDataObjects.recruiterProfile.company_description_oneliner,
+          recruiterName: recruiterProfile.name,
+          recruiterJobTitle: recruiterProfile.jobTitle || '',
+          recruiterCompanyName: recruiterProfile.companyName,
+          recruiterCompanyDescription: recruiterProfile.companyDescription,
           jobPositionName: whatappUpdateMessageObj?.candidateProfile?.jobs?.name,
           companyName: whatappUpdateMessageObj?.candidateProfile?.jobs?.company?.name,
           descriptionOneliner: whatappUpdateMessageObj?.candidateProfile?.jobs?.company?.descriptionOneliner,
@@ -71,10 +76,10 @@ export class ChatControls {
         };
         response = await new FacebookWhatsappChatApi(this.workspaceQueryService).sendWhatsappUtilityMessage(sendTemplateMessageObj, apiToken);
       } else {
-        console.log('This is the standard message to send from', allDataObjects.recruiterProfile.phone);
+        console.log('This is the standard message to send from', recruiterProfile.phoneNumber);
         console.log('This is the standard message to send to phone:', whatappUpdateMessageObj.phoneNumberTo);
         const sendTextMessageObj: allDataObjects.ChatRequestBody = {
-          phoneNumberFrom: allDataObjects.recruiterProfile.phone,
+          phoneNumberFrom: recruiterProfile.phoneNumber,
           phoneNumberTo: whatappUpdateMessageObj.phoneNumberTo,
           messages: whatappUpdateMessageObj.messages[0].content,
         };

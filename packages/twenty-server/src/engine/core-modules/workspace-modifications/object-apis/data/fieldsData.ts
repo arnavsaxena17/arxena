@@ -285,7 +285,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
                     "value": "recruiterType"
                 },
             ],
-            "objectMetadataId": objectsNameIdMap.workspaceMemberType,
+            "objectMetadataId": objectsNameIdMap.workspaceMemberProfile,
             "type": "SELECT"
         }
 
@@ -393,6 +393,69 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
             "label": "From Phone",
             "name": "phoneFrom",
             "objectMetadataId": objectsNameIdMap.whatsappMessage,
+            "type": "TEXT"
+        }
+    },
+    {
+        "field": {
+            "description": "",
+            "label": "Email",
+            "name": "email",
+            "objectMetadataId": objectsNameIdMap.workspaceMemberProfile,
+            "type": "TEXT"
+        }
+    },
+    {
+        "field": {
+            "description": "",
+            "label": "Phone Number",
+            "name": "phoneNumber",
+            "objectMetadataId": objectsNameIdMap.workspaceMemberProfile,
+            "type": "TEXT"
+        }
+    },
+    {
+        "field": {
+            "description": "",
+            "label": "Company Name",
+            "name": "companyName",
+            "objectMetadataId": objectsNameIdMap.workspaceMemberProfile,
+            "type": "TEXT"
+        }
+    },
+    {
+        "field": {
+            "description": "",
+            "label": "Company Description",
+            "name": "companyDescription",
+            "objectMetadataId": objectsNameIdMap.workspaceMemberProfile,
+            "type": "TEXT"
+        }
+    },
+    {
+        "field": {
+            "description": "",
+            "label": "First Name",
+            "name": "firstName",
+            "objectMetadataId": objectsNameIdMap.workspaceMemberProfile,
+            "type": "TEXT"
+        }
+    },
+    {
+        "field": {
+            "description": "",
+            "label": "Job Title",
+            "name": "jobTitle",
+            "objectMetadataId": objectsNameIdMap.workspaceMemberProfile,
+            "type": "TEXT"
+        }
+    },
+    {
+        "field": {
+            "description": "",
+            "label": "Last Name",
+            "name": "lastName",
+            "objectMetadataId": objectsNameIdMap.workspaceMemberProfile,
             "type": "TEXT"
         }
     },

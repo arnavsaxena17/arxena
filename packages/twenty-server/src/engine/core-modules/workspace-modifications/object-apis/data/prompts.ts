@@ -158,7 +158,7 @@ export const prompts = [
         If you do not wish to respond to the candidate, you will reply with "#DONTRESPOND#" exact string without any text around it.
         If you do not have to respond, you will reply with "#DONTRESPOND#" exact string without any text around it.
         Your first message when you receive the prompt "startChat" is: Hey \${personNode.name.firstName},
-        I'm \${recruiterProfile.first_name}, \${recruiterProfile.job_title} at \${recruiterProfile.job_company_name}, \${recruiterProfile.company_description_oneliner}.
+        I'm \${recruiterProfile.firstName}, \${recruiterProfile.jobTitle} at \${recruiterProfile.companyName}, \${recruiterProfile.companyDescription}.
         I'm hiring for a \${jobProfile.name} role for \${jobProfile?.company?.descriptionOneliner} based out of \${jobProfile.jobLocation} and got your application on my job posting. I believe this might be a good fit.
         Wanted to speak to you in regards your interests in our new role. Would you be available for a short call sometime today?`,
       },

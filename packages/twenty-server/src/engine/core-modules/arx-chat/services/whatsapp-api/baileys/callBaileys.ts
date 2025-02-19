@@ -4,6 +4,7 @@ import { UpdateChat } from '../../candidate-engagement/update-chat';
 import * as allDataObjects from '../../data-model-objects';
 import axios from 'axios';
 import { FilterCandidates } from '../../candidate-engagement/filter-candidates';
+import { getRecruiterProfileByJob } from '../../recruiter-profile';
 
 const FormData = require('form-data');
 const fs = require('fs');
@@ -19,12 +20,15 @@ export class BaileysWhatsappAPI{
 async sendWhatsappMessageVIABaileysAPI(whatappUpdateMessageObj: allDataObjects.whatappUpdateMessageObjType, personNode: allDataObjects.PersonNode, candidateJob:allDataObjects.Jobs, mostRecentMessageArr: allDataObjects.ChatHistoryItem[], chatControl: allDataObjects.chatControls,  apiToken:string) {
   console.log('Sending message to whatsapp via baileys api');
 
+
+      const recruiterProfile = await getRecruiterProfileByJob(candidateJob, apiToken) 
+  
   console.log('whatappUpdateMessageObj.messageType', whatappUpdateMessageObj.messageType);
   if (whatappUpdateMessageObj.messageType === 'botMessage') {
-    console.log('This is the standard message to send fromL', allDataObjects.recruiterProfile.phone, "for name:",whatappUpdateMessageObj.candidateProfile.name );
+    console.log('This is the standard message to send fromL', recruiterProfile.phoneNumber, "for name:",whatappUpdateMessageObj.candidateProfile.name );
     console.log('This is the standard message to send to phone:', whatappUpdateMessageObj.phoneNumberTo, "for name :", whatappUpdateMessageObj.candidateProfile.name);
     const sendTextMessageObj: allDataObjects.ChatRequestBody = {
-      phoneNumberFrom: allDataObjects.recruiterProfile.phone,
+      phoneNumberFrom: recruiterProfile.phoneNumber,
       phoneNumberTo: whatappUpdateMessageObj.phoneNumberTo,
       messages: whatappUpdateMessageObj.messages[0].content,
     };
@@ -38,7 +42,7 @@ async sendWhatsappMessageVIABaileysAPI(whatappUpdateMessageObj: allDataObjects.w
       return;
     }
     
-    const whatappUpdateMessageObjAfterWAMidUpdate = await new FilterCandidates(this.workspaceQueryService).updateChatHistoryObjCreateWhatsappMessageObj( response?.messageId || 'placeholdermessageid', personNode, candidateNode, mostRecentMessageArr,chatControl);
+    const whatappUpdateMessageObjAfterWAMidUpdate = await new FilterCandidates(this.workspaceQueryService).updateChatHistoryObjCreateWhatsappMessageObj( response?.messageId || 'placeholdermessageid', personNode, candidateNode, mostRecentMessageArr,chatControl, apiToken);
     let candidateProfileObj = whatappUpdateMessageObj.messageType !== 'botMessage' ? await new FilterCandidates(this.workspaceQueryService).getCandidateInformation(whatappUpdateMessageObj,  apiToken) : whatappUpdateMessageObj.candidateProfile;
 
     await new UpdateChat(this.workspaceQueryService).updateCandidateEngagementDataInTable(whatappUpdateMessageObjAfterWAMidUpdate, apiToken, true);

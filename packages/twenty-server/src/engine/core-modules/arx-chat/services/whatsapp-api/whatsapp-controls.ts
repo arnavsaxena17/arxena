@@ -41,7 +41,7 @@ export class WhatsappControls {
         return;
       }
 
-      const whatappUpdateMessageObj = await new FilterCandidates(this.workspaceQueryService).updateChatHistoryObjCreateWhatsappMessageObj('sendWhatsappMessageToCandidateMulti', personNode, candidateNode, mostRecentMessageArr, chatControl);
+      const whatappUpdateMessageObj = await new FilterCandidates(this.workspaceQueryService).updateChatHistoryObjCreateWhatsappMessageObj('sendWhatsappMessageToCandidateMulti', personNode, candidateNode, mostRecentMessageArr, chatControl, apiToken);
       
       if (!whatappUpdateMessageObj || whatappUpdateMessageObj.messages[0].content?.includes('#DONTRESPOND#') || (whatappUpdateMessageObj.messages[0].content?.includes('DONTRESPOND') && whatappUpdateMessageObj.messages[0].content)) {
         console.log('Found a #DONTRESPOND# message, so not sending any message');

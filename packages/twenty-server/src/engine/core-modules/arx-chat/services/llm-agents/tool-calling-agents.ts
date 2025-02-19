@@ -10,11 +10,10 @@ import { addHoursInDate, axiosRequest, toIsoString } from '../../utils/arx-chat-
 import { z } from "zod";
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { FilterCandidates } from '../candidate-engagement/filter-candidates';
+import { getRecruiterProfileByJob } from '../recruiter-profile';
 
 const commaSeparatedStatuses = allDataObjects.statusesArray.join(', ');
 
-const recruiterProfile = allDataObjects.recruiterProfile;
-// const candidateProfileObjAllData =  candidateProfile
 const availableTimeSlots = '12PM-3PM, 4PM -6PM on the 24th and 25th August 2024.';
 
 
@@ -65,10 +64,12 @@ export class ToolCallingAgents {
       throw new Error('Video interview URL is undefined');
     }
     const videoInterviewInviteTemplate = await new EmailTemplates().getInterviewInvitationTemplate(personNode, candidateJob, videoInterviewUrl);
-    console.log("allDataObjects.recruiterProfile?.email:", allDataObjects.recruiterProfile?.email);
+    const recruiterProfile:allDataObjects.recruiterProfileType = await getRecruiterProfileByJob(candidateJob, twenty_token) 
+
+    console.log("recruiterProfile?.email:", recruiterProfile?.email);
     const emailData: GmailMessageData = {
-      sendEmailNameFrom: allDataObjects.recruiterProfile?.first_name + ' ' + allDataObjects.recruiterProfile?.last_name,
-      sendEmailFrom: allDataObjects.recruiterProfile?.email,
+      sendEmailNameFrom: recruiterProfile?.firstName + ' ' + recruiterProfile?.lastName,
+      sendEmailFrom: recruiterProfile?.email,
       sendEmailTo: personNode?.email,
       subject: 'Video Interview - ' + personNode?.name?.firstName + '<>' + companyName,
       message: videoInterviewInviteTemplate,
@@ -106,8 +107,11 @@ export class ToolCallingAgents {
   }
 
   async sendEmail(inputs: any, person: allDataObjects.PersonNode, candidateJob:allDataObjects.Jobs, apiToken:string) {
+    const recruiterProfile:allDataObjects.recruiterProfileType = await getRecruiterProfileByJob(candidateJob, apiToken) 
+
+
     const emailData: GmailMessageData = {
-      sendEmailNameFrom: allDataObjects.recruiterProfile?.first_name + ' ' + allDataObjects.recruiterProfile?.last_name,
+      sendEmailNameFrom: recruiterProfile?.firstName + ' ' + recruiterProfile?.lastName,
       sendEmailFrom: recruiterProfile?.email,
       sendEmailTo: person?.email,
       subject: inputs?.subject || 'Email from the recruiter',
