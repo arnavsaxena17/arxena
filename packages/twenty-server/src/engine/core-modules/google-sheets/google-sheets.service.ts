@@ -10,6 +10,9 @@ import { UpdateChat } from '../arx-chat/services/candidate-engagement/update-cha
 import { WorkspaceQueryService } from '../workspace-modifications/workspace-modifications.service';
 import uniq from 'lodash.uniq';
 import { formatChat } from '../arx-chat/utils/arx-chat-agent-utils';
+import { GmailMessageData } from '../gmail-sender/services/gmail-sender-objects-types';
+import * as allDataObjects from 'src/engine/core-modules/arx-chat/services/data-model-objects';
+import { SendEmailFunctionality } from '../arx-chat/utils/send-gmail';
 
 const rowDataValues = [
   ...CandidateSourcingTypes.columnDefinitions.map(col => ({
@@ -866,32 +869,23 @@ export class GoogleSheetsService {
     }
 
     try {
+
+
       const sheets = google.sheets({ version: 'v4', auth: auth as OAuth2Client });
       console.log("Got to sheets and This is the jobName:::", jobName);
       const spreadsheetTitle = `${jobName} - Job Tracking`;
       console.log("This is the spreadsheetTitle:::", spreadsheetTitle);
+
+      // Create new spreadsheet
+
+
+
+
       // Create new spreadsheet with initial structure
       const newSpreadsheet = await sheets.spreadsheets.create({
         requestBody: {
-          properties: {
-            title: spreadsheetTitle,
-          },
-          sheets: [
-            {
-              properties: {
-                sheetId: 0,
-                title: 'Sheet1',
-              },
-              data: [
-                {
-                  startRow: 0,
-                  startColumn: 0,
-                  rowData: [ { values: rowDataValues, },
-                  ],
-                },
-              ],
-            },
-          ],
+          properties: { title: spreadsheetTitle, },
+          sheets: [ { properties: { sheetId: 0, title: 'Sheet1', }, data: [ { startRow: 0, startColumn: 0, rowData: [ { values: rowDataValues, }, ], }, ], }, ],
         },
       });
       console.log("This is the new spreadsheet:::", newSpreadsheet);
@@ -914,18 +908,7 @@ export class GoogleSheetsService {
       await sheets.spreadsheets.batchUpdate({
         spreadsheetId: newSpreadsheet.data.spreadsheetId,
         requestBody: {
-          requests: [
-            {
-              autoResizeDimensions: {
-                dimensions: {
-                  sheetId: 0,
-                  dimension: 'COLUMNS',
-                  startIndex: 0,
-                  endIndex: CandidateSourcingTypes.columnDefinitions.length,
-                },
-              },
-            },
-          ],
+          requests: [ { autoResizeDimensions: { dimensions: { sheetId: 0, dimension: 'COLUMNS', startIndex: 0, endIndex: CandidateSourcingTypes.columnDefinitions.length, }, }, }, ],
         },
       });
 
@@ -933,26 +916,28 @@ export class GoogleSheetsService {
       await sheets.spreadsheets.batchUpdate({
         spreadsheetId: newSpreadsheet.data.spreadsheetId,
         requestBody: {
-          requests: [
-            {
-              updateSheetProperties: {
-                properties: {
-                  sheetId: 0,
-                  gridProperties: {
-                    frozenRowCount: 1,
-                  },
-                },
-                fields: 'gridProperties.frozenRowCount',
-              },
-            },
-          ],
+          requests: [ { updateSheetProperties: { properties: { sheetId: 0, gridProperties: { frozenRowCount: 1, }, }, fields: 'gridProperties.frozenRowCount', }, }, ],
         },
       });
 
-      return {
-        googleSheetId: newSpreadsheet.data.spreadsheetId,
-        googleSheetUrl: `https://docs.google.com/spreadsheets/d/${newSpreadsheet.data.spreadsheetId}`,
-      };
+      
+
+      // Send email notification
+      // const emailData: GmailMessageData = {
+      //   sendEmailFrom: allDataObjects.recruiterProfile?.email,
+      //   sendEmailNameFrom: allDataObjects.recruiterProfile?.first_name + ' ' + allDataObjects.recruiterProfile?.last_name,
+      //   // sendEmailTo: allDataObjects.recruiterProfile?.email, // Send to self
+      //   // sendEmailTo: 'arnav@arxena.com', // Send to self
+      //   subject: `New Job Tracking Sheet Created - ${jobName}`,
+      //   message: `A new job tracking sheet has been created for ${jobName}.\n\nYou can access it here: https://docs.google.com/spreadsheets/d/${newSpreadsheet.data.spreadsheetId}`,
+      // };
+
+      // await new SendEmailFunctionality().sendEmailFunction(emailData, twentyToken);
+
+
+
+
+      return { googleSheetId: newSpreadsheet.data.spreadsheetId, googleSheetUrl: `https://docs.google.com/spreadsheets/d/${newSpreadsheet.data.spreadsheetId}`, };
     } catch (error) {
       console.log('Error creating/finding spreadsheet:', error);
       throw error;
@@ -1018,6 +1003,7 @@ export class GoogleSheetsService {
     });
 
     if (connectedAccountsResponse?.data?.data?.connectedAccounts?.length > 0) {
+      // const connectedAccountToUse = connectedAccountsResponse.data.data.connectedAccounts.filter(x => x.handle === process.env.EMAIL_SMTP_USER)[0];
       const connectedAccountToUse = connectedAccountsResponse.data.data.connectedAccounts[0];
       const refreshToken = connectedAccountToUse?.refreshToken;
       console.log("This Connected account found", refreshToken);
@@ -1030,6 +1016,7 @@ export class GoogleSheetsService {
           client_id: process.env.AUTH_GOOGLE_CLIENT_ID,
           client_secret: process.env.AUTH_GOOGLE_CLIENT_SECRET,
           refresh_token: refreshToken,
+          // accountOwner: connectedAccountToUse?.accountOwner,
         };
         return google.auth.fromJSON(credentials);
       } catch (err) {

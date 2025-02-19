@@ -66,7 +66,6 @@ export class MailerService {
     });
     
     if (connectedAccountsResponse?.data?.data?.connectedAccounts?.length > 0) {
-      // const connectedAccountToUse = connectedAccountsResponse?.data?.data?.connectedAccounts.filter(x => x.handle === process.env.EMAIL_SMTP_USER)[0];
       const connectedAccountToUse = connectedAccountsResponse?.data?.data?.connectedAccounts[0];
       const refreshToken = connectedAccountToUse ?.refreshToken;
       if (!refreshToken) {
@@ -107,6 +106,7 @@ export class MailerService {
   }
   async authorize(twenty_token:string) {
     let client = await this.loadSavedCredentialsIfExist(twenty_token);
+
     if (client) {
       return client;
     }
@@ -127,12 +127,17 @@ export class MailerService {
    * @param {google.auth.OAuth2} auth An authorized OAuth2 client.
    */
   async sendMails(auth, gmailMessageData: gmailSenderTypes.GmailMessageData) {
+    console.log("This is the auth in the create draft with attachments, ", auth)
+
+    console.log("This is the gmail message data:", auth.credentials.refresh_token);
     const gmail = google.gmail({ version: "v1", auth });
     console.log("This is the gmail message data:", gmailMessageData);
     console.log("This is the process.env.EMAIL_SMTP_USER_NAME:", process.env.EMAIL_SMTP_USER_NAME);
     console.log("This is the process.env.EMAIL_SMTP_USER:", process.env.EMAIL_SMTP_USER);
+    console.log("This is the gmailMessageData.sendEmailFrom:", gmailMessageData.sendEmailFrom);
+    console.log("This is the gmailMessageData.sendEmailNameFrom:", gmailMessageData.sendEmailNameFrom);
     const emailLines = [
-      `From: "${process.env.EMAIL_SMTP_USER_NAME}" <${process.env.EMAIL_SMTP_USER}>`,
+      `From: "${gmailMessageData.sendEmailNameFrom}" <${gmailMessageData.sendEmailFrom}>`,
       `To: ${gmailMessageData.sendEmailTo}`,
       "Content-type: text/html;charset=iso-8859-1",
       "X-Mailer: Arxena-App",
@@ -173,11 +178,12 @@ export class MailerService {
  }
  
  async createDraftWithAttachments(auth, gmailMessageData: gmailSenderTypes.GmailMessageData) {
+  console.log("This is the auth in the create draft with attachments, ", auth)
   const gmail = google.gmail({ version: "v1", auth });
   const boundary = "boundary" + Date.now().toString();
   
   const emailHeaders = [
-    `From: "${process.env.EMAIL_SMTP_USER_NAME}" <${process.env.EMAIL_SMTP_USER}>`,
+    `From: "${gmailMessageData.sendEmailNameFrom}" <${gmailMessageData.sendEmailFrom}>`,
     `To: ${gmailMessageData.sendEmailTo}`,
     "MIME-Version: 1.0",
     `Subject: ${gmailMessageData.subject}`,
@@ -270,7 +276,7 @@ export class MailerService {
 
     // Construct email headers
     const emailHeaders = [
-      `From: "${process.env.EMAIL_SMTP_USER_NAME}" <${process.env.EMAIL_SMTP_USER}>`,
+      `From: "${gmailMessageData.sendEmailNameFrom}" <${gmailMessageData.sendEmailFrom}>`,
       `To: ${gmailMessageData.sendEmailTo}`,
       "MIME-Version: 1.0",
       `Subject: ${gmailMessageData.subject}`,

@@ -439,11 +439,11 @@ export const jobProfile: jobProfileType = {
 };
 
 export const recruiterProfile: recruiterProfileType = {
-  name: 'Arnav Saxena',
-  first_name: 'Arnav',
-  last_name: 'Saxena',
+  name: 'Krishna Varma',
+  first_name: 'Krishna',
+  last_name: 'Varma',
   phone: '919326970534',
-  email: 'arnav@arxena.com',
+  email: 'sai.varma@arxena.com',
   input: '',
   status: '',
   job_title: 'Director',

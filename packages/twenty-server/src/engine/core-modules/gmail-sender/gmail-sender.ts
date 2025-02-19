@@ -23,6 +23,7 @@ export class GmailSender {
     console.log("HIt there");
     try {
       const auth = await this.mailerService.authorize(twenty_token);
+      console.log("This is the auth in sendEmailWithAttachmentsController::", auth);
       await this.mailerService.sendMailsWithAttachments(auth, gmailMessageObject);
       return { status: "Email sent successfully" };
     } catch (error) {
@@ -37,6 +38,7 @@ export class GmailSender {
     console.log("Hit there");
     try {
       const auth = await this.mailerService.authorize(twenty_token);
+      console.log("This is the auth insaveDraftEmailWithAttachmentsController ::", auth);
       const draftData = await this.mailerService.createDraftWithAttachments(auth, gmailMessageObject);
       console.log("draftData:", draftData);
 

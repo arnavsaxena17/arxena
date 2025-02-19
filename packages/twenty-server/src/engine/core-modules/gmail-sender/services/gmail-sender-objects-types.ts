@@ -8,7 +8,9 @@
 
 export interface GmailMessageData {
   sendEmailFrom: string;
+  sendEmailNameFrom: string;
   sendEmailTo: string;
+  sendEmailNameTo?: string;
   subject: string;
   message: string;
   attachments?: Array<{

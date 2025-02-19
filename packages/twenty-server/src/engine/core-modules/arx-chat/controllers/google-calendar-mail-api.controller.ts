@@ -95,6 +95,7 @@ async getCalendarEvents(@Req() request: any): Promise<object> {
     console.log("allDataObjects.recruiterProfile?.email:", allDataObjects.recruiterProfile?.email)
     const emailData: GmailMessageData = {
       sendEmailFrom: allDataObjects.recruiterProfile?.email,
+      sendEmailNameFrom: allDataObjects.recruiterProfile?.first_name + ' ' + allDataObjects.recruiterProfile?.last_name,
       sendEmailTo: person?.email,
       subject: request.body?.subject || 'Email from the recruiter',
       message: request.body?.message || 'This is a test email',
@@ -114,6 +115,7 @@ async getCalendarEvents(@Req() request: any): Promise<object> {
     
     const emailData: GmailMessageData = {
       sendEmailFrom: allDataObjects.recruiterProfile?.email,
+      sendEmailNameFrom: allDataObjects.recruiterProfile?.first_name + ' ' + allDataObjects.recruiterProfile?.last_name,
       sendEmailTo: person?.email,
       subject: request.body?.subject || 'Email from the recruiter',
       message: request.body?.message || 'This is a test email',
@@ -131,6 +133,7 @@ async getCalendarEvents(@Req() request: any): Promise<object> {
     const person: allDataObjects.PersonNode = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPhoneNumber(request.body.phoneNumber,apiToken);
     const emailData: GmailMessageData = {
       sendEmailFrom: allDataObjects.recruiterProfile?.email,
+      sendEmailNameFrom: allDataObjects.recruiterProfile?.first_name + ' ' + allDataObjects.recruiterProfile?.last_name,
       sendEmailTo: person?.email,
       subject: request.body?.subject || 'Email from the recruiter',
       message: request.body?.message || 'This is a test email',
@@ -148,6 +151,7 @@ async getCalendarEvents(@Req() request: any): Promise<object> {
     const emailData: GmailMessageData = {
       sendEmailFrom: allDataObjects.recruiterProfile?.email,
       sendEmailTo: allDataObjects.recruiterProfile?.email,
+      sendEmailNameFrom: allDataObjects.recruiterProfile?.first_name + ' ' + allDataObjects.recruiterProfile?.last_name,
       subject: request.body?.subject || 'Email from the recruiter',
       message: request.body?.message || 'This is a test email',
       attachments: request.body.attachments || [],

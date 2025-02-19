@@ -50,6 +50,7 @@ export class VideoInterviewProcessController {
                 const videoInterviewInviteTemplate = await new EmailTemplates().getInterviewInvitationTemplate(person, candidateId, videoInterviewUrl);
                 console.log("allDataObjects.recruiterProfile?.email:", allDataObjects.recruiterProfile?.email);
                 const emailData: GmailMessageData = {
+                    sendEmailNameFrom: allDataObjects.recruiterProfile?.first_name + ' ' + allDataObjects.recruiterProfile?.last_name,
                     sendEmailFrom: allDataObjects.recruiterProfile?.email,
                     sendEmailTo: person?.email,
                     subject: 'Video Interview - ' + person?.name?.firstName + '<>' + companyName,
@@ -90,6 +91,7 @@ export class VideoInterviewProcessController {
                 const videoInterviewInviteTemplate = await new EmailTemplates().getInterviewInvitationTemplate(person, candidateId, videoInterviewUrl);
                 console.log("allDataObjects.recruiterProfile?.email:", allDataObjects.recruiterProfile?.email);
                 const emailData: GmailMessageData = {
+                    sendEmailNameFrom: allDataObjects.recruiterProfile?.first_name + ' ' + allDataObjects.recruiterProfile?.last_name,
                     sendEmailFrom: allDataObjects.recruiterProfile?.email,
                     sendEmailTo: person?.email,
                     subject: 'Video Interview - ' + person?.name?.firstName + '<>' + companyName,

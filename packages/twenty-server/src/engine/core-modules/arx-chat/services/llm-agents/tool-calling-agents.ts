@@ -67,6 +67,7 @@ export class ToolCallingAgents {
     const videoInterviewInviteTemplate = await new EmailTemplates().getInterviewInvitationTemplate(personNode, candidateJob, videoInterviewUrl);
     console.log("allDataObjects.recruiterProfile?.email:", allDataObjects.recruiterProfile?.email);
     const emailData: GmailMessageData = {
+      sendEmailNameFrom: allDataObjects.recruiterProfile?.first_name + ' ' + allDataObjects.recruiterProfile?.last_name,
       sendEmailFrom: allDataObjects.recruiterProfile?.email,
       sendEmailTo: personNode?.email,
       subject: 'Video Interview - ' + personNode?.name?.firstName + '<>' + companyName,
@@ -106,6 +107,7 @@ export class ToolCallingAgents {
 
   async sendEmail(inputs: any, person: allDataObjects.PersonNode, candidateJob:allDataObjects.Jobs, apiToken:string) {
     const emailData: GmailMessageData = {
+      sendEmailNameFrom: allDataObjects.recruiterProfile?.first_name + ' ' + allDataObjects.recruiterProfile?.last_name,
       sendEmailFrom: recruiterProfile?.email,
       sendEmailTo: person?.email,
       subject: inputs?.subject || 'Email from the recruiter',
