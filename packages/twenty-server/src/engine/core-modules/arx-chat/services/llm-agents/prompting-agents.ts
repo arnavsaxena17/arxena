@@ -198,10 +198,10 @@ export class PromptingAgents {
       const meeting_type = 'Online meeting';
       let secondarySlotsDate = new Date();
       secondarySlotsDate.setDate(secondarySlotsDate.getDate() + 3);
-      const secondary_available_slots = `12PM-3PM, 4PM -6PM on the ${secondarySlotsDate.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}`;
+      const secondary_available_slots = `Any 30 mins between 12PM-3PM, 4PM -6PM on the ${secondarySlotsDate.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}`;
       let primarySlotsDate = new Date();
       primarySlotsDate.setDate(primarySlotsDate.getDate() + 2);
-      const primary_available_slots = `12PM-3PM, 4PM -6PM on the ${primarySlotsDate.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}`;
+      const primary_available_slots = `Any 30 mins between 12PM-3PM, 4PM -6PM on the ${primarySlotsDate.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}`;
       const variables = {
         candidate_conversation_summary: candidate_conversation_summary,
         meeting_type: meeting_type,

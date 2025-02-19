@@ -90,7 +90,6 @@ export class ArxChatEndpoint {
     });
 
     const response = await axiosRequest(graphqlQueryObj, apiToken);
-    console.log('Response from create stopchat', response.data);
   }
 
   @Post('fetch-candidate-by-phone-number-start-chat')

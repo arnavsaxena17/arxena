@@ -83,6 +83,7 @@ import VideoInterviewFlow from '@/video-interview/interview-response/VideoInterv
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { HotPage } from '@/hot/hotCandidates';
 import OrgChart from '@/orgchart/OrgChart';
+import { ModalProvider } from '@/object-record/resumes-import/ModalContext';
 // const VideoInterviewFlow = lazy(() => import('@/ai-interview/interview-response/VideoInterviewFlow'));
 // const VideoInterviewResponseViewer = lazy(() => import('@/ai-interview/interview-response/VideoInterviewResponseViewer'));
 
@@ -118,6 +119,8 @@ const FullProviders: React.FC = () => {
                   <SnackBarProvider>
                     <DialogManagerScope dialogManagerScopeId="dialog-manager">
                       <DialogManager>
+                      <ModalProvider> {/* Add ModalProvider here */}
+
                         <StrictMode>
                           <PromiseRejectionEffect />
                           <CommandMenuEffect />
@@ -126,6 +129,8 @@ const FullProviders: React.FC = () => {
                           <Outlet />
                           <PageChangeEffect />
                         </StrictMode>
+                        </ModalProvider>
+
                       </DialogManager>
                     </DialogManagerScope>
                   </SnackBarProvider>

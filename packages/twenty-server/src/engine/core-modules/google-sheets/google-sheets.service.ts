@@ -619,6 +619,7 @@ export class GoogleSheetsService {
   }
 
   private async createAndInitializeSheet(auth: any, headers:string[], jobObject: CandidateSourcingTypes.Jobs, apiToken: string): Promise<string> {
+    console.log('Creating and initializing sheet');
     const newSheet = await this.createSpreadsheetForJob(jobObject.name, apiToken);
     const googleSheetId = newSheet.googleSheetId;
     const googleSheetUrl = `https://docs.google.com/spreadsheets/d/${googleSheetId}`;
@@ -866,8 +867,9 @@ export class GoogleSheetsService {
 
     try {
       const sheets = google.sheets({ version: 'v4', auth: auth as OAuth2Client });
+      console.log("Got to sheets and This is the jobName:::", jobName);
       const spreadsheetTitle = `${jobName} - Job Tracking`;
-
+      console.log("This is the spreadsheetTitle:::", spreadsheetTitle);
       // Create new spreadsheet with initial structure
       const newSpreadsheet = await sheets.spreadsheets.create({
         requestBody: {
@@ -892,7 +894,7 @@ export class GoogleSheetsService {
           ],
         },
       });
-
+      console.log("This is the new spreadsheet:::", newSpreadsheet);
       if (!newSpreadsheet.data.spreadsheetId) {
         throw new Error('Failed to create new spreadsheet');
       }
@@ -1016,9 +1018,10 @@ export class GoogleSheetsService {
     });
 
     if (connectedAccountsResponse?.data?.data?.connectedAccounts?.length > 0) {
-      const connectedAccountToUse = connectedAccountsResponse.data.data.connectedAccounts.filter(x => x.handle === process.env.EMAIL_SMTP_USER)[0];
+      const connectedAccountToUse = connectedAccountsResponse.data.data.connectedAccounts[0];
       const refreshToken = connectedAccountToUse?.refreshToken;
-
+      console.log("This Connected account found", refreshToken);
+      console.log("This Connected account connectedAccountToUse", connectedAccountToUse);
       if (!refreshToken) return null;
 
       try {
@@ -1032,6 +1035,9 @@ export class GoogleSheetsService {
       } catch (err) {
         console.log('Error loading credentials:', err);
       }
+    }
+    else{
+      console.log("No connected accounts found");
     }
   }
 

@@ -354,6 +354,7 @@ async updateCandidateSpreadsheet(@Req() request: any): Promise<object> {
     let googleSheetId: string | null = null;
     let googleSheetUrl: string | null = null;
     try {
+      console.log("Going to create spreadsheet for job:", jobName);
       const auth = await this.sheetsService.loadSavedCredentialsIfExist(apiToken);
       if (auth) {
         const spreadsheetTitle = `${jobName}`;

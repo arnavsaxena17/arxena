@@ -28,6 +28,9 @@ import { useCountChats } from '@/object-record/hooks/useCountChats';
 import { useProcessMessagesGetStatus } from '@/object-record/hooks/useProcessMessagesGetStatus';
 // import { useProcessJobCandidatesRefreshData } from '@/object-record/hooks/useProcessJobCandidatesRefreshData';
 import { IconAbacus, IconCactus } from '@tabler/icons-react';
+// import { useResumesRecordImport } from '@/object-record/resumes-import/useResumesRecordImport';
+import { useResumesRecordImport } from '@/object-record/resumes-import/useResumesRecordImport';
+
 
 type RecordIndexOptionsMenu = 'fields' | 'hiddenFields';
 
@@ -81,6 +84,8 @@ export const RecordIndexOptionsDropdownContent = ({ viewType, recordIndexId, obj
   const handleReorderFields = viewType === ViewType.Kanban ? handleReorderBoardFields : handleReorderColumns;
   const handleChangeFieldVisibility = viewType === ViewType.Kanban ? handleBoardFieldVisibilityChange : handleColumnVisibilityChange;
   const { openRecordSpreadsheetImport } = useSpreadsheetRecordImport(objectNameSingular);
+  // const { uploadResumes, openResumesUploadModal } = useResumesRecordImport(objectNameSingular);
+  const { openResumesUploadModal } = useResumesRecordImport(objectNameSingular);
 
   const { countChats } = useCountChats(objectNameSingular);
 
@@ -113,6 +118,13 @@ export const RecordIndexOptionsDropdownContent = ({ viewType, recordIndexId, obj
           {/* {objectNameSingular.endsWith('JobCandidate') && (
             <MenuItem onClick={() => processJobCandidatesRefreshData()} LeftIcon={IconAbacus} text="Refresh Data" />
           )} */}
+          {objectNameSingular === 'candidate' && (
+            <MenuItem 
+              onClick={() => openResumesUploadModal()} 
+              LeftIcon={IconFileImport} 
+              text="Import CVs" 
+            />
+          )}
           <MenuItem onClick={() => openRecordSpreadsheetImport()} LeftIcon={IconFileImport} text="Import" />
           <MenuItem onClick={() => openRecordSpreadsheetImportAll()} LeftIcon={IconFileImport} text="Import All" />
           <MenuItem onClick={download} LeftIcon={IconFileExport} text={displayedExportProgress(progress)} />

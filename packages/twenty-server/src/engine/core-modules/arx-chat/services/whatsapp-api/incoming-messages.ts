@@ -104,8 +104,11 @@ export class IncomingWhatsappMessages {
       let phoneNumber = requestBody?.entry[0]?.changes[0]?.value?.messages?.[0]?.from || 
                        requestBody?.entry[0]?.changes[0]?.value?.statuses[0].recipient_id;
       const phoneNumberId = requestBody?.entry[0]?.changes[0]?.value.metadata?.phone_number_id;
-  
-      console.log("This is the phone number to use:", phoneNumber);
+
+      // const waId = requestBody?.entry[0]?.changes[0]?.value?.contacts?.[0]?.wa_id;
+      
+
+      console.log("This is the phone number to use and search:", phoneNumber);
   
       const results = await this.workspaceQueryService.executeQueryAcrossWorkspaces(
         async (workspaceId, dataSourceSchema) => {
@@ -117,7 +120,6 @@ export class IncomingWhatsappMessages {
             workspaceId
           );
   
-          console.log("Workspace is ::", workspace)
           if (workspace.length === 0) {
             console.log('NO WORKSPACE FOUND FOR WHATSAPP INCOMING PHONE NUMBER');
             return null;
