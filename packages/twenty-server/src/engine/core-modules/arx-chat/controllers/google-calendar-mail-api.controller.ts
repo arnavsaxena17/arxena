@@ -175,7 +175,7 @@ async getCalendarEvents(@Req() request: any): Promise<object> {
       message: request.body?.message || 'This is a test email',
       attachments: request.body.attachments || [],
     };
-    console.log("This si the email data to send attachemnts:", emailData)
+    console.log("This si the email data to send attachemnts in the send email to self:", emailData)
     const response = await new SendEmailFunctionality().sendEmailWithAttachmentFunction(emailData, apiToken);
     return response || {};
   }

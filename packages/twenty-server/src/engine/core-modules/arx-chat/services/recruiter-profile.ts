@@ -54,7 +54,6 @@ export async function getRecruiterProfileByJob(candidateJob: Jobs, apiToken: str
   // console.log("workspaceMemberProfilesResponse:", workspaceMemberProfilesResponse.data.data.workspaceMemberProfiles.edges[0]);
   // console.log("workspaceMemberProfilesResponse:", workspaceMemberProfilesResponse.data.data.workspaceMemberProfiles.edges[0]);
   const recruiterProfile:recruiterProfileType = workspaceMemberProfilesResponse?.data?.data?.workspaceMemberProfiles?.edges[0]?.node;
-  console.log('recruiterProfile:', recruiterProfile);
   return recruiterProfile;
 }
 
@@ -66,7 +65,6 @@ export async function getRecruiterProfileByRecruiterId(recruiterId: string, apiT
   });
   const workspaceMemberProfilesResponse = await axiosRequest(findWorkspaceMemberProfilesQuery, apiToken);
   const recruiterProfile:recruiterProfileType = workspaceMemberProfilesResponse?.data?.workspaceMemberProfiles?.edges[0]?.node;
-  console.log('recruiterProfile:', recruiterProfile);
   return recruiterProfile;
 }
 
