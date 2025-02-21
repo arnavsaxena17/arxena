@@ -232,7 +232,7 @@ export class CreateMetaDataStructure {
                 namePlural
                 labelSingular
                 labelPlural
-                fields(paging: {first: 1000}, filter: $fieldFilter) {
+                fields(paging: {first: 1000}, filter: $fieldFilter) 
                   edges {
                     node {
                       name
@@ -324,6 +324,8 @@ export class CreateMetaDataStructure {
       apiToken,
     );
     console.log("This is the curent workspace member response:", currentWorkspaceMemberResponse.data.data)
+    console.log("This is the curent workspace member response:", currentWorkspaceMemberResponse.data)
+    console.log("This is the curent workspace member response:", currentWorkspaceMemberResponse.data.errors)
     const currentWorkspaceMemberId =
       currentWorkspaceMemberResponse.data.data.workspaceMembers.edges[0].node
         .id;
@@ -485,6 +487,7 @@ export class CreateMetaDataStructure {
 
       if (shouldCreateObjectMetadata) {
         try {
+          console.log("This is the object creation array:")
           await createObjectMetadataItems(apiToken, objectCreationArr);
           console.log('Object metadata items created successfully');
 
