@@ -38,8 +38,8 @@ export const MetadataStructureSection = () => {
   const { enqueueSnackBar } = useSnackBar();
 
   const handleCreateStructure = async () => {
-    if (isSubmitting) return;
-    // if (isSubmitting || hasBeenClicked) return;
+    // if (isSubmitting) return;
+    if (isSubmitting || hasBeenClicked) return;
     setIsSubmitting(true);
     setHasBeenClicked(true); // Set this to true and never change it back
 
