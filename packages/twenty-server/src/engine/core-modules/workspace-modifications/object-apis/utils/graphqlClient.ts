@@ -68,11 +68,10 @@ export async function executeQuery<T>(
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(process.env.APPLE_ORIGIN_URL && { Origin: process.env.APPLE_ORIGIN_URL }),
           'Authorization': `Bearer ${token}`,
         },
         body: data,
-        // Add timeout configuration
-        signal: AbortSignal.timeout(30000), // 30 second timeout
       });
 
       return await response.json();

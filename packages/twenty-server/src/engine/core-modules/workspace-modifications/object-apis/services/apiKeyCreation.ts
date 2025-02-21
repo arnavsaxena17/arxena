@@ -37,7 +37,6 @@ export class ApiKeyService {
         authorization: `Bearer ${authToken}`,
         'content-type': 'application/json',
         Origin: process.env.APPLE_ORIGIN_URL,
-
       },
       data: {
         query,
