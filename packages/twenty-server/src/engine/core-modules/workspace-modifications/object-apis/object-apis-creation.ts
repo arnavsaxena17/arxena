@@ -322,7 +322,7 @@ export class CreateMetaDataStructure {
       }),
       apiToken,
     );
-
+    console.log("This is the curent workspace member response:", currentWorkspaceMemberResponse.data.data)
     const currentWorkspaceMemberId =
       currentWorkspaceMemberResponse.data.data.workspaceMembers.edges[0].node
         .id;
@@ -477,9 +477,9 @@ export class CreateMetaDataStructure {
     try {
       console.log('Starting metadata structure creation...');
 
-      const shouldCreateObjectMetadata = false;
-      const shouldCreateVideoInterviews = false;
-      const shouldCreateArxEnrichments = false;
+      const shouldCreateObjectMetadata = true;
+      const shouldCreateVideoInterviews = true;
+      const shouldCreateArxEnrichments = true;
       const shouldCreateApiKeys = true;
 
       if (shouldCreateObjectMetadata) {
