@@ -40,7 +40,7 @@ export const SettingsProfile = () => {
         <Section>
           <H2Title
             title={t`Email`}
-            description={t`The email associated to your account`}
+            description={t`The email associated to your account in English langugage`}
           />
           <EmailField />
         </Section>
