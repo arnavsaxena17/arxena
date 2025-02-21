@@ -51,4 +51,3 @@
   },
   "jestrunner.codeLensSelector": "**/*.{test,spec,integration-spec}.{js,jsx,ts,tsx}"
   }
-}
