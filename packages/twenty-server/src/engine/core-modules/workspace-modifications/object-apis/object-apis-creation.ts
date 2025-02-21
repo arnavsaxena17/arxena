@@ -25,6 +25,7 @@ export class CreateMetaDataStructure {
       method: 'post',
       url: process.env.GRAPHQL_URL,
       headers: {
+        Origin: process.env.APPLE_ORIGIN_URL,
         authorization: 'Bearer ' + apiToken,
         'content-type': 'application/json',
       },

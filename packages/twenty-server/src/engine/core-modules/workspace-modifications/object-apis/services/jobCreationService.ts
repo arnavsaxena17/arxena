@@ -43,6 +43,8 @@ export class JobCreationService {
       headers: {
         'authorization': `Bearer ${this.apiToken}`,
         'content-type': 'application/json',
+        Origin: process.env.APPLE_ORIGIN_URL,
+
       },
       data: {
         operationName: "CreateOneJob",
@@ -76,7 +78,9 @@ export class JobCreationService {
       url: `${this.baseUrl}/candidate-sourcing/create-job-in-arxena-and-sheets`,
       headers: {
         'Authorization': `Bearer ${this.apiToken}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        Origin: process.env.APPLE_ORIGIN_URL,
+
       },
       data: {
         job_name: jobName,
@@ -94,6 +98,8 @@ export class JobCreationService {
       url: `${this.baseUrl}/candidate-sourcing/post-candidates`,
       headers: {
         'Content-Type': 'application/json',
+        Origin: process.env.APPLE_ORIGIN_URL,
+
         'Authorization': `Bearer ${this.apiToken}`
       },
       data: candidatesData
