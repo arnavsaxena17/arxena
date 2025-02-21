@@ -247,6 +247,8 @@ export class CreateMetaDataStructure {
       {},
       apiToken,
     );
+    console.log("Thesear the object:::", objectsResponse?.data)
+    console.log("Thesear the object:::", objectsResponse)
     return objectsResponse;
   };
 

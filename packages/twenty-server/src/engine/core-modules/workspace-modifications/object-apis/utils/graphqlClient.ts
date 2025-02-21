@@ -64,6 +64,9 @@ export async function executeQuery<T>(
         variables: variables,
       });
 
+      console.log("Going to fetch executeQuery using process.env.GRAPHQL_URL_METADATA::", process.env.GRAPHQL_URL_METADATA);
+      console.log("Going to fetch executeQuery using process.process.env.APPLE_ORIGIN_URL::", process.env.APPLE_ORIGIN_URL);
+
       const response = await fetch(process.env.GRAPHQL_URL_METADATA || '', {
         method: 'POST',
         headers: {
@@ -73,8 +76,9 @@ export async function executeQuery<T>(
         },
         body: data,
       });
-
-      return await response.json();
+      const responseObj = await response.json();
+      console.log("Relations responseObj:::", responseObj);
+      return responseObj;
     } catch (error) {
       if (attempt === maxRetries) throw error;
       
