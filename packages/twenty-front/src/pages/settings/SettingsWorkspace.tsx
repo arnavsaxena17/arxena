@@ -11,6 +11,8 @@ import { ToggleImpersonate } from '@/settings/workspace/components/ToggleImperso
 import { WorkspaceLogoUploader } from '@/settings/workspace/components/WorkspaceLogoUploader';
 import { SettingsPath } from '@/types/SettingsPath';
 import { SubMenuTopBarContainer } from '@/ui/layout/page/components/SubMenuTopBarContainer';
+import { ApiKeysForm } from '~/pages/settings/ApiKeysForm';
+import { MetadataStructureSection } from '~/pages/settings/MetaDataStructure';
 import { getSettingsPath } from '~/utils/navigation/getSettingsPath';
 
 export const SettingsWorkspace = () => {
@@ -51,6 +53,22 @@ export const SettingsWorkspace = () => {
                 />
               </UndecoratedLink>
             </Section>
+            <Section>
+              <H2Title
+                title="Metadata Structure"
+                description="Create and manage your workspace metadata structure"
+              />
+              <MetadataStructureSection />
+            </Section>
+
+            <Section>
+              <H2Title
+                title="API Keys"
+                description="Configure your integration keys"
+              />
+              <ApiKeysForm />
+            </Section>
+
             <Section>
               <H2Title
                 title={t`Support`}

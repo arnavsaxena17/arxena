@@ -47,6 +47,7 @@ import { WorkspaceModule } from 'src/engine/core-modules/workspace/workspace.mod
 import { RoleModule } from 'src/engine/metadata-modules/role/role.module';
 import { WorkspaceEventEmitterModule } from 'src/engine/workspace-event-emitter/workspace-event-emitter.module';
 
+import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { ClientConfigModule } from './client-config/client-config.module';
 import { FileModule } from './file/file.module';
@@ -74,6 +75,7 @@ import { FileModule } from './file/file.module';
     ActorModule,
     TelemetryModule,
     AdminPanelModule,
+    WorkspaceModificationsModule,
     LabModule,
     RoleModule,
     EnvironmentModule.forRoot({}),
@@ -127,6 +129,7 @@ import { FileModule } from './file/file.module';
     TimelineCalendarEventModule,
     UserModule,
     WorkspaceModule,
+    WorkspaceModificationsModule,
     WorkspaceInvitationModule,
     WorkspaceSSOModule,
   ],
