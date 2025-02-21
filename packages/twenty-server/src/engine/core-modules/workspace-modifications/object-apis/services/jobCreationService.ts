@@ -43,7 +43,6 @@ export class JobCreationService {
       headers: {
         'authorization': `Bearer ${this.apiToken}`,
         'content-type': 'application/json',
-        Origin: process.env.APPLE_ORIGIN_URL,
 
       },
       data: {
@@ -79,7 +78,6 @@ export class JobCreationService {
       headers: {
         'Authorization': `Bearer ${this.apiToken}`,
         'Content-Type': 'application/json',
-        Origin: process.env.APPLE_ORIGIN_URL,
 
       },
       data: {
@@ -98,7 +96,6 @@ export class JobCreationService {
       url: `${this.baseUrl}/candidate-sourcing/post-candidates`,
       headers: {
         'Content-Type': 'application/json',
-        Origin: process.env.APPLE_ORIGIN_URL,
 
         'Authorization': `Bearer ${this.apiToken}`
       },
