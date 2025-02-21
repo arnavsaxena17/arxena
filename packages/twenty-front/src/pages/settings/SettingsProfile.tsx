@@ -33,7 +33,7 @@ export const SettingsProfile = () => {
         <Section>
           <H2Title
             title={t`Full Name`}
-            description={t`Your name as it is`}
+            description={t`Your panda as it is`}
           />
           <NameFields />
         </Section>
