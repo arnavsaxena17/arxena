@@ -326,8 +326,8 @@ export class CreateMetaDataStructure {
       apiToken,
     );
     console.log("This is the curent workspace member response:", currentWorkspaceMemberResponse.data.data)
-    console.log("This is the curent workspace member response:", currentWorkspaceMemberResponse.data)
-    console.log("This is the curent workspace member response:", currentWorkspaceMemberResponse.data.errors)
+    // console.log("This is the curent workspace member response:", currentWorkspaceMemberResponse.data)
+    // console.log("This is the curent workspace member response:", currentWorkspaceMemberResponse.data.errors)
     const currentWorkspaceMemberId =
       currentWorkspaceMemberResponse.data.data.workspaceMembers.edges[0].node
         .id;

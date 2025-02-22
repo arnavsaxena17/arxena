@@ -12,16 +12,24 @@ const StyledButtonContainer = styled.div`
   margin-top: 16px;
 `;
 
-const StyledButton = styled.button<{ variant?: 'primary' | 'secondary' }>`
-  background-color: ${({ variant }) => variant === 'secondary' ? '#F5F5F5' : '#0000FF'};
-  color: ${({ variant }) => variant === 'secondary' ? '#000000' : 'white'};
+const StyledButton = styled.button<{ variant?: 'primary' | 'secondary'; submitted?: boolean }>`
+  background-color: ${({ variant, submitted }) => 
+    submitted ? '#CCCCCC' : 
+    variant === 'secondary' ? '#F5F5F5' : '#0000FF'};
+  color: ${({ variant, submitted }) => 
+    submitted ? '#666666' : 
+    variant === 'secondary' ? '#000000' : 'white'};
   padding: 8px 16px;
   border-radius: 4px;
-  border: 1px solid ${({ variant }) => variant === 'secondary' ? '#E0E0E0' : '#0000FF'};
-  cursor: pointer;
+  border: 1px solid ${({ variant, submitted }) => 
+    submitted ? '#CCCCCC' : 
+    variant === 'secondary' ? '#E0E0E0' : '#0000FF'};
+  cursor: ${({ submitted }) => submitted ? 'not-allowed' : 'pointer'};
 
   &:hover {
-    background-color: ${({ variant }) => variant === 'secondary' ? '#E0E0E0' : '#0000DD'};
+    background-color: ${({ variant, submitted }) => 
+      submitted ? '#CCCCCC' :
+      variant === 'secondary' ? '#E0E0E0' : '#0000DD'};
   }
 
   &:disabled {
@@ -81,8 +89,13 @@ export const MetadataStructureSection = () => {
       <StyledButton
         onClick={handleCreateStructure}
         disabled={isSubmitting}
+        submitted={hasBeenClicked && !isSubmitting}
       >
-        {isSubmitting ? 'Creating...' : 'Create Metadata Structure'}
+        {isSubmitting 
+          ? 'Creating...' 
+          : hasBeenClicked 
+            ? 'Creating Structure..' 
+            : 'Create Metadata Structure'}
       </StyledButton>
     </StyledButtonContainer>
   );
