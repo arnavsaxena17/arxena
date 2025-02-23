@@ -5,7 +5,7 @@ import { contextStoreTargetedRecordsRuleComponentState } from '@/context-store/s
 import { computeContextStoreFilters } from '@/context-store/utils/computeContextStoreFilters';
 import { BACKEND_BATCH_REQUEST_MAX_COUNT } from '@/object-record/constants/BackendBatchRequestMaxCount';
 import { DEFAULT_QUERY_PAGE_SIZE } from '@/object-record/constants/DefaultQueryPageSize';
-import { useExecuteDeleteCandidatesAndPeople } from '@/object-record/hooks/useExecuteDeleteCandidatesAndPeople';
+import { useCheckDataIntegrityOfJob } from '@/object-record/hooks/useCheckDataIntegrityOfJob';
 import { useLazyFetchAllRecords } from '@/object-record/hooks/useLazyFetchAllRecords';
 import { useFilterValueDependencies } from '@/object-record/record-filter/hooks/useFilterValueDependencies';
 import { ConfirmationModal } from '@/ui/layout/modal/components/ConfirmationModal';
@@ -13,29 +13,29 @@ import { useRecoilComponentValueV2 } from '@/ui/utilities/state/component-state/
 import { useCallback, useState } from 'react';
 import { isDefined } from 'twenty-shared';
 
-export const useDeleteCandidatesAndPeopleAction: ActionHookWithObjectMetadataItem = ({ objectMetadataItem }) => { 
-  
-  const contextStoreNumberOfSelectedRecords = useRecoilComponentValueV2(
-    contextStoreNumberOfSelectedRecordsComponentState,
-  );
-  
-  const contextStoreTargetedRecordsRule = useRecoilComponentValueV2(
+export const useCheckDataIntegrityOfJobAction: ActionHookWithObjectMetadataItem =
+  ({ objectMetadataItem }) => {
+    const contextStoreNumberOfSelectedRecords = useRecoilComponentValueV2(
+      contextStoreNumberOfSelectedRecordsComponentState,
+    );
+
+    const contextStoreTargetedRecordsRule = useRecoilComponentValueV2(
       contextStoreTargetedRecordsRuleComponentState,
     );
-    
+
     const contextStoreFilters = useRecoilComponentValueV2(
       contextStoreFiltersComponentState,
     );
-    
+
     const { filterValueDependencies } = useFilterValueDependencies();
-    
+
     const graphqlFilter = computeContextStoreFilters(
       contextStoreTargetedRecordsRule,
       contextStoreFilters,
       objectMetadataItem,
       filterValueDependencies,
     );
-    
+
     const { fetchAllRecords: fetchAllRecordIds } = useLazyFetchAllRecords({
       objectNameSingular: objectMetadataItem.nameSingular,
       filter: graphqlFilter,
@@ -45,44 +45,43 @@ export const useDeleteCandidatesAndPeopleAction: ActionHookWithObjectMetadataIte
 
     const isRemoteObject = objectMetadataItem.isRemote;
     const shouldBeRegistered =
-    !isRemoteObject &&
-    isDefined(contextStoreNumberOfSelectedRecords) &&
-    contextStoreNumberOfSelectedRecords < BACKEND_BATCH_REQUEST_MAX_COUNT &&
-    contextStoreNumberOfSelectedRecords > 0;
-    
-    const [isDeleteCandidatesAndPeopleModalOpen, setIsDeleteCandidatesAndPeopleModalOpen] = useState(false);
-    const { deleteCandidatesAndPeople } = useExecuteDeleteCandidatesAndPeople({
-      objectNameSingular: objectMetadataItem.nameSingular,
-    });
+      !isRemoteObject &&
+      isDefined(contextStoreNumberOfSelectedRecords) &&
+      contextStoreNumberOfSelectedRecords < BACKEND_BATCH_REQUEST_MAX_COUNT &&
+      contextStoreNumberOfSelectedRecords > 0;
+      const [isCheckDataIntegrityModalOpen, setIsCheckDataIntegrityModalOpen] =
+        useState(false);
 
-    const handleDeleteCandidatesAndPeopleClick = useCallback(async () => {
-      const recordsToDelete = await fetchAllRecordIds();
-      const recordIdsToDelete = recordsToDelete.map((record) => record.id);
-      await deleteCandidatesAndPeople(recordIdsToDelete);
-    }, [deleteCandidatesAndPeople, fetchAllRecordIds]);
+      const { checkDataIntegrityOfJob } = useCheckDataIntegrityOfJob({});
 
-    const onClick = () => {
-      if (!shouldBeRegistered) {
-      return;
-      }
-      setIsDeleteCandidatesAndPeopleModalOpen(true);
+      const handleCheckDataIntegrityClick = useCallback(async () => {
+        const recordsToCheck = await fetchAllRecordIds();
+        const recordIdsToCheck = recordsToCheck.map((record) => record.id);
+        await checkDataIntegrityOfJob(recordIdsToCheck);
+      }, [checkDataIntegrityOfJob, fetchAllRecordIds]);
+
+      const onClick = () => {
+        if (!shouldBeRegistered) {
+          return;
+        }
+        setIsCheckDataIntegrityModalOpen(true);
+      };
+
+      const confirmationModal = (
+        <ConfirmationModal
+          isOpen={isCheckDataIntegrityModalOpen}
+          setIsOpen={setIsCheckDataIntegrityModalOpen}
+          title={'Check Data Integrity'}
+          subtitle={`Are you sure you want to check data integrity of multiple records?`}
+          onConfirmClick={handleCheckDataIntegrityClick}
+          deleteButtonText={'Check Data Integrity'}
+          confirmButtonAccent="danger"
+        />
+      );
+
+      return {
+        shouldBeRegistered,
+        onClick,
+        ConfirmationModal: confirmationModal,
+      };
     };
-
-    const confirmationModal = (
-      <ConfirmationModal
-      isOpen={isDeleteCandidatesAndPeopleModalOpen}
-      setIsOpen={setIsDeleteCandidatesAndPeopleModalOpen}
-      title={'Delete Multiple Candidates and People'}
-      subtitle={`Are you sure you want to delete multiple candidates and people?`}
-      onConfirmClick={handleDeleteCandidatesAndPeopleClick}
-      deleteButtonText={'Delete Multiple Candidates and People'}
-      confirmButtonAccent='danger'
-      />
-    );
-
-    return {
-      shouldBeRegistered,
-      onClick,
-      ConfirmationModal: confirmationModal,
-    }
-  };

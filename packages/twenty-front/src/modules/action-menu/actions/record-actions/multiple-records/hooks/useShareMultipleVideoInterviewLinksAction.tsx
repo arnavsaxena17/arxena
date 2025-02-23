@@ -41,7 +41,9 @@ export const useShareMultipleVideoInterviewLinksAction: ActionHookWithObjectMeta
       objectNameSingular: objectMetadataItem.nameSingular,
       filter: graphqlFilter,
       limit: DEFAULT_QUERY_PAGE_SIZE,
-      recordGqlFields: { id: true },
+      recordGqlFields: objectMetadataItem.nameSingular === 'videoInterview' 
+      ? { id: true, candidateId: true }
+      : { id: true },
     });
 
     const isRemoteObject = objectMetadataItem.isRemote;
@@ -52,13 +54,15 @@ export const useShareMultipleVideoInterviewLinksAction: ActionHookWithObjectMeta
     contextStoreNumberOfSelectedRecords > 0;
     const [isShareMultipleVideoInterviewLinksModalOpen, setIsShareMultipleVideoInterviewLinksModalOpen] = useState(false);
     const { shareVideoInterviewLinks } = useShareManyVideoInterviewLinks();
-    console.log("The objectMetadataItem is::", objectMetadataItem);
+    
     const handleShareMultipleVideoInterviewLinksClick = useCallback(async () => {
       const recordsToShareVideoInterviewLinks = await fetchAllRecordIds();
-      const recordIdsToShareVideoInterviewLinks:string[] = recordsToShareVideoInterviewLinks.map((record) => record.id);
-      console.log("Records selected::", recordsToShareVideoInterviewLinks, "Record IDs selected::", recordIdsToShareVideoInterviewLinks);
-      await shareVideoInterviewLinks(recordIdsToShareVideoInterviewLinks );
-    }, [shareVideoInterviewLinks, fetchAllRecordIds]);
+      const recordIdsToShareVideoInterviewLinks = objectMetadataItem.nameSingular === 'videoInterview'
+      ? recordsToShareVideoInterviewLinks.map((record) => record.candidateId)
+      : recordsToShareVideoInterviewLinks.map((record) => record.id);
+
+      await shareVideoInterviewLinks(recordIdsToShareVideoInterviewLinks);
+    }, [shareVideoInterviewLinks, fetchAllRecordIds, objectMetadataItem.nameSingular]);
 
     const onClick = () => {
       if (!shouldBeRegistered) {

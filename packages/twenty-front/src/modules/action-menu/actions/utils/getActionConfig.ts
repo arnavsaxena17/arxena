@@ -1,6 +1,11 @@
 import { CANDIDATE_SPECIFIC_ACTIONS } from '@/action-menu/actions/record-actions/constants/CandidateActionsConfig';
 import { DEFAULT_ACTIONS_CONFIG_V1 } from '@/action-menu/actions/record-actions/constants/DefaultActionsConfigV1';
 import { DEFAULT_ACTIONS_CONFIG_V2 } from '@/action-menu/actions/record-actions/constants/DefaultActionsConfigV2';
+import { JOB_SPECIFIC_ACTIONS } from '@/action-menu/actions/record-actions/constants/JobActionsConfig';
+import { JOB_CANDIDATE_SPECIFIC_ACTIONS } from '@/action-menu/actions/record-actions/constants/JobCandidateActionsConfig';
+import { PEOPLE_SPECIFIC_ACTIONS } from '@/action-menu/actions/record-actions/constants/PeopleActionsConfig';
+import { PHONE_CALL_SPECIFIC_ACTIONS } from '@/action-menu/actions/record-actions/constants/PhoneCallActionsConfig';
+import { VIDEO_INTERVIEW_SPECIFIC_ACTIONS } from '@/action-menu/actions/record-actions/constants/VideoInterviewActionsConfig';
 import { WORKFLOW_ACTIONS_CONFIG } from '@/action-menu/actions/record-actions/constants/WorkflowActionsConfig';
 import { WORKFLOW_RUNS_ACTIONS_CONFIG } from '@/action-menu/actions/record-actions/constants/WorkflowRunsActionsConfig';
 import { WORKFLOW_VERSIONS_ACTIONS_CONFIG } from '@/action-menu/actions/record-actions/constants/WorkflowVersionsActionsConfig';
@@ -33,31 +38,33 @@ export const getActionConfig = (
         ? DEFAULT_ACTIONS_CONFIG_V1
         : DEFAULT_ACTIONS_CONFIG_V2;
 
+
+    console.log("Got here for actions. The object metadata item is::", objectMetadataItem)
     if (objectMetadataItem.nameSingular === 'candidate') {
-      // console.log("This is the objectMetadataItem:", objectMetadataItem, "This is the baseConfig:", baseConfig, "This is the CANDIDATE_SPECIFIC_ACTIONS:", CANDIDATE_SPECIFIC_ACTIONS);
-      const candidateSpecificActions = { ...baseConfig, ...CANDIDATE_SPECIFIC_ACTIONS };
-      console.log("This is the candidateSpecificActions:", candidateSpecificActions);
-      return candidateSpecificActions;
+      return { ...baseConfig, ...CANDIDATE_SPECIFIC_ACTIONS };
     }
 
-    // if (objectMetadataItem.nameSingular === 'job') {
-    //   return { ...baseConfig, ...JOB_SPECIFIC_ACTIONS };
-    // }
+    if (objectMetadataItem.nameSingular === 'job') {
+      return { ...baseConfig, ...JOB_SPECIFIC_ACTIONS };
+    }
+    if (objectMetadataItem.nameSingular === 'person') {
+      console.log("Got here for setting people specific zctions")
+      return { ...baseConfig, ...PEOPLE_SPECIFIC_ACTIONS };
+    }
     
-    // if (objectMetadataItem.nameSingular.toLowerCase().includes('jobcandidate')) {
-    //   return { ...baseConfig, ...JOB_CANDIDATE_SPECIFIC_ACTIONS };
-    // }
-    // if (objectMetadataItem.nameSingular.toLowerCase().includes('videoInterview')) {
-    //   return { ...baseConfig, ...VIDEO_INTERVIEW_SPECIFIC_ACTIONS };
-    // }
-    // if (objectMetadataItem.nameSingular.toLowerCase().includes('phoneCall')) {
-    //   return { ...baseConfig, ...PHONE_CALL_SPECIFIC_ACTIONS };
-    // }
+    if (objectMetadataItem.nameSingular.toLowerCase().includes('jobcandidate')) {
+      return { ...baseConfig, ...JOB_CANDIDATE_SPECIFIC_ACTIONS };
+    }
     
-    // if (objectMetadataItem.nameSingular.toLowerCase().includes('person')) {
-    //   return { ...baseConfig, ...PERSON_SPECIFIC_ACTIONS };
-    // }
-    
+    if (objectMetadataItem.nameSingular.toLowerCase().includes('videointerview')) {
+      console.log("Getting here for video interview or not")
+      return { ...baseConfig, ...VIDEO_INTERVIEW_SPECIFIC_ACTIONS };
+    }
+
+    if (objectMetadataItem.nameSingular.toLowerCase().includes('phonecall')) {
+      return { ...baseConfig, ...PHONE_CALL_SPECIFIC_ACTIONS };
+    }
+
     return baseConfig;
       
   }

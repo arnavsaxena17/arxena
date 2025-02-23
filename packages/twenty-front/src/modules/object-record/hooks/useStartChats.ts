@@ -21,8 +21,8 @@ export const useStartChats = ({
   const { enqueueSnackBar } = useSnackBar();
   //   let scopeId: string | undefined;
   // let currentViewWithCombinedFiltersAndSorts: any;
-  const sendStartChatRequest = async (jobCandidateIds: string[], objectNameSingular: string) => {
-    console.log("jobCandidateIds::", jobCandidateIds);
+  const sendStartChatRequest = async (candidateIds: string[], objectNameSingular: string) => {
+    console.log("jobCandidateIds::", candidateIds);
     console.log("objectNameSingular::", objectNameSingular);
     
     setLoading(true);
@@ -30,14 +30,14 @@ export const useStartChats = ({
 
     try {
       let apiEndpoint = 'start-chats';
-      if (objectNameSingular === 'candidate') {
+      if (objectNameSingular === 'candidate' || objectNameSingular.toLowerCase().includes('jobcandidate')) {
         apiEndpoint = 'start-chats-by-candidate-ids';
       }
       const url = `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/${apiEndpoint}`;
 
 
       // const url = `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/start-chats`
-      const results = await  axios.post( url, { jobCandidateIds, objectNameSingular }, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}`, 'Content-Type': 'application/json', }, } );
+      const results = await  axios.post( url, { candidateIds:candidateIds, objectNameSingular }, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}`, 'Content-Type': 'application/json', }, } );
       console.log("results::", results);
       return results;
     } catch (err) {

@@ -49,41 +49,39 @@ export const useCloneMultipleRecordsAction: ActionHookWithObjectMetadataItem =
       isDefined(contextStoreNumberOfSelectedRecords) &&
       contextStoreNumberOfSelectedRecords < BACKEND_BATCH_REQUEST_MAX_COUNT &&
       contextStoreNumberOfSelectedRecords > 0;
+      const [isCloneMultipleRecordsModalOpen, setIsCloneMultipleRecordsModalOpen] =
+        useState(false);
 
-    const [
-      isDeleteCandidatesAndPeopleModalOpen,
-      setIsDeleteCandidatesAndPeopleModalOpen,
-    ] = useState(false);
-    const { cloneMultipleRecords } = useCloneMultipleRecords({
-      objectNameSingular: objectMetadataItem.nameSingular,
-      recordGqlFields: { id: true },
-      skipPostOptimisticEffect: false,
-    });
+      const { cloneMultipleRecords } = useCloneMultipleRecords({
+        objectNameSingular: objectMetadataItem.nameSingular,
+        recordGqlFields: { id: true },
+        skipPostOptimisticEffect: false,
+      });
 
-    const handleCloneMultipleRecordsClick = useCallback(async () => {
-      const recordsToClone = await fetchAllRecordIds();
-      const recordIdsToClone = recordsToClone.map((record) => record.id);
-      await cloneMultipleRecords(recordIdsToClone);
-    }, [cloneMultipleRecords, fetchAllRecordIds]);
+      const handleCloneMultipleRecordsClick = useCallback(async () => {
+        const recordsToClone = await fetchAllRecordIds();
+        const recordIdsToClone = recordsToClone.map((record) => record.id);
+        await cloneMultipleRecords(recordIdsToClone);
+      }, [cloneMultipleRecords, fetchAllRecordIds]);
 
-    const onClick = () => {
-      if (!shouldBeRegistered) {
+      const onClick = () => {
+        if (!shouldBeRegistered) {
         return;
-      }
-      setIsDeleteCandidatesAndPeopleModalOpen(true);
-    };
+        }
+        setIsCloneMultipleRecordsModalOpen(true);
+      };
 
-    const confirmationModal = (
-      <ConfirmationModal
-        isOpen={isDeleteCandidatesAndPeopleModalOpen}
-        setIsOpen={setIsDeleteCandidatesAndPeopleModalOpen}
+      const confirmationModal = (
+        <ConfirmationModal
+        isOpen={isCloneMultipleRecordsModalOpen}
+        setIsOpen={setIsCloneMultipleRecordsModalOpen}
         title={'Clone Multiple Records'}
         subtitle={`Are you sure you want to clone multiple records?`}
         onConfirmClick={handleCloneMultipleRecordsClick}
         deleteButtonText={'Clone Multiple Records'}
         confirmButtonAccent="danger"
-      />
-    );
+        />
+      );
 
     return {
       shouldBeRegistered,

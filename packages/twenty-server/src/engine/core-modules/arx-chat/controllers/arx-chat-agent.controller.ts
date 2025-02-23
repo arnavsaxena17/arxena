@@ -32,7 +32,7 @@ export class ArxChatEndpoint {
     console.log('Response from create start-Chat api', response);
   }
 
-  // @Post('start-chats')
+  // @Post('start-chats-by-job-candidate-ids')
   // async startChatsByJobCandidateIds(@Req() request: any): Promise<object> {
   //   const apiToken = request.headers.authorization.split(' ')[1];
   //   const jobCandidateIds = request.body.jobCandidateIds;
@@ -55,10 +55,12 @@ export class ArxChatEndpoint {
   //   }
   //   return { status: 'Success' };
   // }
+
+
   @Post('start-chats-by-candidate-ids')
   async startChatsByCandidateIds(@Req() request: any): Promise<object> {
     const apiToken = request.headers.authorization.split(' ')[1];
-    const candidateIds = request.body.jobCandidateIds;
+    const candidateIds = request.body.candidateIds;
     for (const candidateId of candidateIds) {
       const chatControl: allDataObjects.chatControls = { chatControlType: 'startChat' };
       await await new CandidateEngagementArx(this.workspaceQueryService).createChatControl(candidateId, chatControl, apiToken);

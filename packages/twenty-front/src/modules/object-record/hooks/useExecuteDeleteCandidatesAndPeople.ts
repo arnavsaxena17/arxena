@@ -1,13 +1,13 @@
-import { useState } from 'react';
-import axios from 'axios';
 import { tokenPairState } from '@/auth/states/tokenPairState';
+import axios from 'axios';
+import { useState } from 'react';
 import { useRecoilState } from 'recoil';
 // import { useShowNotification } from '@/notification/hooks/useShowNotification'; 
-import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
+import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 
 type useExecuteDeleteCandidatesAndPeople = {
-  objectNameSingular?: string;
+  objectNameSingular: string;
   onSuccess?: () => void;
   onError?: (error: Error) => void;
 };
@@ -18,7 +18,7 @@ export const useExecuteDeleteCandidatesAndPeople = ({
   objectNameSingular,
   onSuccess,
   onError,
-}: useExecuteDeleteCandidatesAndPeople = {}) => {
+}: useExecuteDeleteCandidatesAndPeople) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [tokenPair] = useRecoilState(tokenPairState);

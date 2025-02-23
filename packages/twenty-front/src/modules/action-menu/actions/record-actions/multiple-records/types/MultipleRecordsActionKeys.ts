@@ -3,6 +3,7 @@ export enum MultipleRecordsActionKeys {
   EXPORT = 'export-multiple-records',
   DESTROY = 'destroy-multiple-records',
   DUPLICATE = 'duplicate-multiple-records',
+  CLONE = 'clone-multiple-records',
   VINT_LINK = 'create-vint-link',
   REFRESH_CHAT_STATUS = "refresh-chat-status",
   REFRESH_CHAT_COUNT = "refresh-chat-count",
@@ -14,4 +15,10 @@ export enum MultipleRecordsActionKeys {
   CREATE_CHAT_BASED_SHORTLIST = 'create-chat-based-shortlist',
   POPULATE_SHORTLIST = 'populate-shortlist',
   START_CHAT_WITH_CANDIDATES = 'start-chat-with-candidates',
+  CLONE_VINT = "CLONE_VINT",
+  CLONE_PEOPLE = "CLONE_PEOPLE",
+  CLONE_VINT_INTERVIEW = "CLONE_VINT_INTERVIEW",
+  CREATE_INTERVIEWER_AVATAR_VIDEOS = "CREATE_INTERVIEWER_AVATAR_VIDEOS",
+  CHECK_DATA_INTEGRITY_OF_JOB = "CHECK_DATA_INTEGRITY_OF_JOB",
+  TRANSCRIBE_CALL = "TRANSCRIBE_CALL",
 }

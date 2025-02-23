@@ -61,7 +61,10 @@ export const useStartChatWithCandidatesAction: ActionHookWithObjectMetadataItem 
     console.log("The objectMetadataItem is::", objectMetadataItem);
     const handleStartChatWithCandidatesClick = useCallback(async () => {
       const recordsToStartChat = await fetchAllRecordIds();
-      const recordIdsToStartChat:string[] = recordsToStartChat.map((record) => record.id);
+
+      const recordIdsToStartChat: string[] = objectMetadataItem.nameSingular.toLowerCase().includes('jobcandidate')
+        ? recordsToStartChat.map((record) => record.candidateId)
+        : recordsToStartChat.map((record) => record.id);
       console.log("Records selected::", recordsToStartChat, "Record IDs selected::", recordIdsToStartChat);
       await sendStartChatRequest(
       recordIdsToStartChat,

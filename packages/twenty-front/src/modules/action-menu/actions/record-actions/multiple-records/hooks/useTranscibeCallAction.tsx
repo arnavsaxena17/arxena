@@ -5,37 +5,37 @@ import { contextStoreTargetedRecordsRuleComponentState } from '@/context-store/s
 import { computeContextStoreFilters } from '@/context-store/utils/computeContextStoreFilters';
 import { BACKEND_BATCH_REQUEST_MAX_COUNT } from '@/object-record/constants/BackendBatchRequestMaxCount';
 import { DEFAULT_QUERY_PAGE_SIZE } from '@/object-record/constants/DefaultQueryPageSize';
-import { useExecuteDeleteCandidatesAndPeople } from '@/object-record/hooks/useExecuteDeleteCandidatesAndPeople';
 import { useLazyFetchAllRecords } from '@/object-record/hooks/useLazyFetchAllRecords';
+import { useTranscribeCall } from '@/object-record/hooks/useTranscribeCall';
 import { useFilterValueDependencies } from '@/object-record/record-filter/hooks/useFilterValueDependencies';
 import { ConfirmationModal } from '@/ui/layout/modal/components/ConfirmationModal';
 import { useRecoilComponentValueV2 } from '@/ui/utilities/state/component-state/hooks/useRecoilComponentValueV2';
 import { useCallback, useState } from 'react';
 import { isDefined } from 'twenty-shared';
 
-export const useDeleteCandidatesAndPeopleAction: ActionHookWithObjectMetadataItem = ({ objectMetadataItem }) => { 
-  
-  const contextStoreNumberOfSelectedRecords = useRecoilComponentValueV2(
-    contextStoreNumberOfSelectedRecordsComponentState,
-  );
-  
-  const contextStoreTargetedRecordsRule = useRecoilComponentValueV2(
+export const useTranscibeCallAction: ActionHookWithObjectMetadataItem =
+  ({ objectMetadataItem }) => {
+    const contextStoreNumberOfSelectedRecords = useRecoilComponentValueV2(
+      contextStoreNumberOfSelectedRecordsComponentState,
+    );
+
+    const contextStoreTargetedRecordsRule = useRecoilComponentValueV2(
       contextStoreTargetedRecordsRuleComponentState,
     );
-    
+
     const contextStoreFilters = useRecoilComponentValueV2(
       contextStoreFiltersComponentState,
     );
-    
+
     const { filterValueDependencies } = useFilterValueDependencies();
-    
+
     const graphqlFilter = computeContextStoreFilters(
       contextStoreTargetedRecordsRule,
       contextStoreFilters,
       objectMetadataItem,
       filterValueDependencies,
     );
-    
+
     const { fetchAllRecords: fetchAllRecordIds } = useLazyFetchAllRecords({
       objectNameSingular: objectMetadataItem.nameSingular,
       filter: graphqlFilter,
@@ -45,44 +45,44 @@ export const useDeleteCandidatesAndPeopleAction: ActionHookWithObjectMetadataIte
 
     const isRemoteObject = objectMetadataItem.isRemote;
     const shouldBeRegistered =
-    !isRemoteObject &&
-    isDefined(contextStoreNumberOfSelectedRecords) &&
-    contextStoreNumberOfSelectedRecords < BACKEND_BATCH_REQUEST_MAX_COUNT &&
-    contextStoreNumberOfSelectedRecords > 0;
-    
-    const [isDeleteCandidatesAndPeopleModalOpen, setIsDeleteCandidatesAndPeopleModalOpen] = useState(false);
-    const { deleteCandidatesAndPeople } = useExecuteDeleteCandidatesAndPeople({
-      objectNameSingular: objectMetadataItem.nameSingular,
-    });
+      !isRemoteObject &&
+      isDefined(contextStoreNumberOfSelectedRecords) &&
+      contextStoreNumberOfSelectedRecords < BACKEND_BATCH_REQUEST_MAX_COUNT &&
+      contextStoreNumberOfSelectedRecords > 0;
+      const [isTranscribeCallModalOpen, setIsTranscribeCallModalOpen] =
+      useState(false);
 
-    const handleDeleteCandidatesAndPeopleClick = useCallback(async () => {
-      const recordsToDelete = await fetchAllRecordIds();
-      const recordIdsToDelete = recordsToDelete.map((record) => record.id);
-      await deleteCandidatesAndPeople(recordIdsToDelete);
-    }, [deleteCandidatesAndPeople, fetchAllRecordIds]);
+      const { transcribeCall } = useTranscribeCall({
+      });
 
-    const onClick = () => {
+      const handleTranscribeCallClick = useCallback(async () => {
+      const recordsToTranscribe = await fetchAllRecordIds();
+      const recordIdsToTranscribe = recordsToTranscribe.map((record) => record.id);
+      await transcribeCall(recordIdsToTranscribe);
+      }, [transcribeCall, fetchAllRecordIds]);
+
+      const onClick = () => {
       if (!shouldBeRegistered) {
       return;
       }
-      setIsDeleteCandidatesAndPeopleModalOpen(true);
-    };
+      setIsTranscribeCallModalOpen(true);
+      };
 
-    const confirmationModal = (
+      const confirmationModal = (
       <ConfirmationModal
-      isOpen={isDeleteCandidatesAndPeopleModalOpen}
-      setIsOpen={setIsDeleteCandidatesAndPeopleModalOpen}
-      title={'Delete Multiple Candidates and People'}
-      subtitle={`Are you sure you want to delete multiple candidates and people?`}
-      onConfirmClick={handleDeleteCandidatesAndPeopleClick}
-      deleteButtonText={'Delete Multiple Candidates and People'}
-      confirmButtonAccent='danger'
+      isOpen={isTranscribeCallModalOpen}
+      setIsOpen={setIsTranscribeCallModalOpen}
+      title={'Transcribe Call'}
+      subtitle={`Are you sure you want to transcribe this call?`}
+      onConfirmClick={handleTranscribeCallClick}
+      deleteButtonText={'Transcribe Call'}
+      confirmButtonAccent="blue"
       />
-    );
+      );
 
     return {
       shouldBeRegistered,
       onClick,
       ConfirmationModal: confirmationModal,
-    }
-  };
+    };
+    };
