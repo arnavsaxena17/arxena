@@ -8,4 +8,10 @@ export enum MultipleRecordsActionKeys {
   REFRESH_CHAT_COUNT = "refresh-chat-count",
   CREATE_SHORTLIST = "create-shortlist",
   SHARE_VINT_LINK = "share-vint-link",
+  DELETE_CANDIDATES_AND_PEOPLE = 'delete-candidates-and-people',
+  SEND_TO_WHATSAPP = 'send-to-whatsapp',
+  CHAT_AND_VIDEO_INTERVIEW_SHORTLIST = 'chat-and-video-interview-shortlist',
+  CREATE_CHAT_BASED_SHORTLIST = 'create-chat-based-shortlist',
+  POPULATE_SHORTLIST = 'populate-shortlist',
+  START_CHAT_WITH_CANDIDATES = 'start-chat-with-candidates',
 }

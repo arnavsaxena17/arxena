@@ -27,8 +27,6 @@ export const useCreateManyVideoInterviewLinks = ({
     console.log('These are the record Ids:', candidateIds);
 
     try {
-      // console.log("Creating video interviews for candidates:", candidateIds);
-
       const results = await Promise.all(
         candidateIds.map((candidateId) =>
           axios.post(
