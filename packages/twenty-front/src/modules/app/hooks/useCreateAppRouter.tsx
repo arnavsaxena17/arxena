@@ -1,4 +1,7 @@
-import { AppRouterProviders } from '@/app/components/AppRouterProviders';
+import {
+  AppRouterProviders,
+  MinimalProviders,
+} from '@/app/components/AppRouterProviders';
 import { SettingsRoutes } from '@/app/components/SettingsRoutes';
 
 import { VerifyEffect } from '@/auth/components/VerifyEffect';
@@ -25,50 +28,110 @@ import { InviteTeam } from '~/pages/onboarding/InviteTeam';
 import { PaymentSuccess } from '~/pages/onboarding/PaymentSuccess';
 import { SyncEmails } from '~/pages/onboarding/SyncEmails';
 
+import GoogleSheet from '@/google-sheet/GoogleSheet';
+import { HotPage } from '@/hot/hotCandidates';
+import OrgChart from '@/orgchart/OrgChart';
+import VideoInterviewFlow from '@/video-interview/interview-response/VideoInterviewFlow';
+import VideoInterviewResponseViewer from '@/video-interview/interview-response/VideoInterviewResponseViewer';
+import { Chats } from '~/pages/chats/Chats';
+
+// const VideoInterviewWrapper = () => {
+//   const { candidateId } = useParams();
+//   return <VideoInterviewResponseViewer candidateId={candidateId} videoInterviewId={candidateId} />;
+// };
+
 export const useCreateAppRouter = (
   isFunctionSettingsEnabled?: boolean,
   isAdminPageEnabled?: boolean,
 ) =>
   createBrowserRouter(
     createRoutesFromElements(
-      <Route
-        element={<AppRouterProviders />}
-        // To switch state to `loading` temporarily to enable us
-        // to set scroll position before the page is rendered
-        loader={async () => Promise.resolve(null)}
-      >
-        <Route element={<DefaultLayout />}>
-          <Route path={AppPath.Verify} element={<VerifyEffect />} />
-          <Route path={AppPath.VerifyEmail} element={<VerifyEmailEffect />} />
-          <Route path={AppPath.SignInUp} element={<SignInUp />} />
-          <Route path={AppPath.Invite} element={<SignInUp />} />
-          <Route path={AppPath.ResetPassword} element={<PasswordReset />} />
-          <Route path={AppPath.CreateWorkspace} element={<CreateWorkspace />} />
-          <Route path={AppPath.CreateProfile} element={<CreateProfile />} />
-          <Route path={AppPath.SyncEmails} element={<SyncEmails />} />
-          <Route path={AppPath.InviteTeam} element={<InviteTeam />} />
-          <Route path={AppPath.PlanRequired} element={<ChooseYourPlan />} />
-          <Route
-            path={AppPath.PlanRequiredSuccess}
-            element={<PaymentSuccess />}
-          />
-          <Route path={indexAppPath.getIndexAppPath()} element={<></>} />
-          <Route path={AppPath.RecordIndexPage} element={<RecordIndexPage />} />
-          <Route path={AppPath.RecordShowPage} element={<RecordShowPage />} />
-          <Route
-            path={AppPath.SettingsCatchAll}
-            element={
-              <SettingsRoutes
-                isFunctionSettingsEnabled={isFunctionSettingsEnabled}
-                isAdminPageEnabled={isAdminPageEnabled}
-              />
-            }
-          />
-          <Route path={AppPath.NotFoundWildcard} element={<NotFound />} />
+      <>
+        {/* Special routes with MinimalProviders */}
+        <Route element={<MinimalProviders />}>
+          <Route element={<BlankLayout />}>
+            <Route
+              path={`${AppPath.VideoInterview}/*`}
+              element={
+                <VideoInterviewFlow interviewId={window.location.pathname} />
+              }
+            />
+            <Route
+              path={`${AppPath.GoogleSheet}/*`}
+              element={<GoogleSheet />}
+            />
+            <Route path={`${AppPath.OrgChart}/*`} element={<OrgChart />} />
+            <Route path={`${AppPath.Hot}/*`} element={<HotPage />} />
+            <Route
+              path={`${AppPath.VideoInterview}/:candidateId`}
+              element={
+                <VideoInterviewResponseViewer
+                  candidateId={window.location.pathname}
+                  videoInterviewId={window.location.pathname}
+                />
+              }
+            />
+          </Route>
         </Route>
-        <Route element={<BlankLayout />}>
-          <Route path={AppPath.Authorize} element={<Authorize />} />
+        <Route
+          element={<AppRouterProviders />}
+          // To switch state to `loading` temporarily to enable us
+          // to set scroll position before the page is rendered
+          loader={async () => Promise.resolve(null)}
+        >
+          <Route element={<DefaultLayout />}>
+            <Route path={AppPath.Verify} element={<VerifyEffect />} />
+            <Route path={AppPath.VerifyEmail} element={<VerifyEmailEffect />} />
+            <Route path={AppPath.SignInUp} element={<SignInUp />} />
+            <Route path={AppPath.Invite} element={<SignInUp />} />
+            <Route path={AppPath.ResetPassword} element={<PasswordReset />} />
+            <Route
+              path={AppPath.CreateWorkspace}
+              element={<CreateWorkspace />}
+            />
+            <Route path={AppPath.CreateProfile} element={<CreateProfile />} />
+            <Route path={AppPath.SyncEmails} element={<SyncEmails />} />
+            <Route path={AppPath.InviteTeam} element={<InviteTeam />} />
+            <Route path={AppPath.Chats} element={<Chats />} />
+
+            <Route path={`${AppPath.Chats}/:candidateId`} element={<Chats />} />
+            <Route
+              path={`${AppPath.VideoInterviewReview}/:candidateId`}
+              element={
+                <VideoInterviewResponseViewer
+                  candidateId={window.location.pathname}
+                  videoInterviewId={window.location.pathname}
+                />
+              }
+            />
+
+            <Route path={AppPath.PlanRequired} element={<ChooseYourPlan />} />
+            <Route
+              path={AppPath.PlanRequiredSuccess}
+              element={<PaymentSuccess />}
+            />
+            <Route path={indexAppPath.getIndexAppPath()} element={<></>} />
+            <Route
+              path={AppPath.RecordIndexPage}
+              element={<RecordIndexPage />}
+            />
+            <Route path={AppPath.RecordShowPage} element={<RecordShowPage />} />
+            <Route
+              path={AppPath.SettingsCatchAll}
+              element={
+                <SettingsRoutes
+                  isFunctionSettingsEnabled={isFunctionSettingsEnabled}
+                  isAdminPageEnabled={isAdminPageEnabled}
+                />
+              }
+            />
+            <Route path={AppPath.NotFoundWildcard} element={<NotFound />} />
+          </Route>
+          <Route element={<BlankLayout />}>
+            <Route path={AppPath.Authorize} element={<Authorize />} />
+          </Route>
         </Route>
-      </Route>,
+        ,
+      </>,
     ),
   );

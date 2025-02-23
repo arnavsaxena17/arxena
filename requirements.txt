@@ -1,0 +1,27 @@
+yarn add moment-timezone
+yarn add twilio
+yarn add @nestjs/schedule
+yarn add fuzzy
+yarn add fluent-ffmpeg
+yarn add ffmpeg-static
+yarn add multer/types
+yarn add @types/multer
+yarn add google-libphonenumber
+yarn add gojs gojs-react
+yarn add react-player
+yarn add react-webcam
+yarn add @ffmpeg/ffmpeg
+yarn add mammoth
+yarn add react-qr-code
+yarn add @ffmpeg/ffmpeg
+yarn add @ffmpeg/core
+yarn add @types/fluent-ffmpeg
+yarn add ffmpeg-static
+yarn add @ffmpeg/ffmpeg
+yarn add @ffmpeg/core@0.11.0 @ffmpeg/ffmpeg@0.11.6 @ffmpeg/util
+yarn add handsontable @handsontable/react-wrapper
+yarn add mixpanel-browser
+yarn add @types/mixpanel-browser
+yarn add @whiskeysockets/baileys
+yarn add @nestjs/websockets
+yarn add socket.io

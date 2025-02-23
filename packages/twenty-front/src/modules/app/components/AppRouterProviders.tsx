@@ -11,6 +11,7 @@ import { PromiseRejectionEffect } from '@/error-handler/components/PromiseReject
 import { ApolloMetadataClientProvider } from '@/object-metadata/components/ApolloMetadataClientProvider';
 import { ObjectMetadataItemsGater } from '@/object-metadata/components/ObjectMetadataItemsGater';
 import { ObjectMetadataItemsProvider } from '@/object-metadata/components/ObjectMetadataItemsProvider';
+import { ModalProvider } from '@/object-record/resumes-import/ModalContext';
 import { PrefetchDataProvider } from '@/prefetch/components/PrefetchDataProvider';
 import { DialogManager } from '@/ui/feedback/dialog-manager/components/DialogManager';
 import { DialogManagerScope } from '@/ui/feedback/dialog-manager/scopes/DialogManagerScope';
@@ -25,6 +26,18 @@ import { WorkspaceProviderEffect } from '@/workspace/components/WorkspaceProvide
 import { StrictMode } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { getPageTitleFromPath } from '~/utils/title-utils';
+
+
+
+export const MinimalProviders: React.FC = () => (
+  <ApolloProvider>
+    <BaseThemeProvider>
+      <Outlet />
+    </BaseThemeProvider>
+  </ApolloProvider>
+);
+
+
 
 export const AppRouterProviders = () => {
   const { pathname } = useLocation();
@@ -49,13 +62,15 @@ export const AppRouterProviders = () => {
                         <SnackBarProvider>
                           <DialogManagerScope dialogManagerScopeId="dialog-manager">
                             <DialogManager>
-                              <StrictMode>
-                                <PromiseRejectionEffect />
-                                <GotoHotkeysEffectsProvider />
-                                <PageTitle title={pageTitle} />
-                                <PageFavicon />
-                                <Outlet />
-                              </StrictMode>
+                            <ModalProvider> {/* Add ModalProvider here */}
+                                <StrictMode>
+                                  <PromiseRejectionEffect />
+                                  <GotoHotkeysEffectsProvider />
+                                  <PageTitle title={pageTitle} />
+                                  <PageFavicon />
+                                  <Outlet />
+                                </StrictMode>
+                              </ModalProvider>
                             </DialogManager>
                           </DialogManagerScope>
                         </SnackBarProvider>

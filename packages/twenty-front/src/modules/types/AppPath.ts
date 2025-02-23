@@ -32,4 +32,10 @@ export enum AppPath {
   // 404 page not found
   NotFoundWildcard = '*',
   NotFound = '/not-found',
+  VideoInterview = "VideoInterview",
+  GoogleSheet = "GoogleSheet",
+  OrgChart = "OrgChart",
+  Hot = "hot",
+  Chats = "chats",
+  VideoInterviewReview = "VideoInterviewReview",
 }

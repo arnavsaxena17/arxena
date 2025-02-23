@@ -25,4 +25,9 @@ export const RECORD_ACTIONS: Array<{
     type: 'FIND_RECORDS',
     icon: 'IconSearch',
   },
+  // {
+  //   label: 'Do Records',
+  //   type: 'DO_RECORDS',
+  //   icon: 'IconSearch',
+  // },
 ];

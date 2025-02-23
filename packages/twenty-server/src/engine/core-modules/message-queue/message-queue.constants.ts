@@ -15,8 +15,10 @@ export enum MessageQueue {
   workspaceQueue = 'workspace-queue',
   recordPositionBackfillQueue = 'record-position-backfill-queue',
   entityEventsToDbQueue = 'entity-events-to-db-queue',
-  testQueue = 'test-queue',
   workflowQueue = 'workflow-queue',
   serverlessFunctionQueue = 'serverless-function-queue',
   deleteCascadeQueue = 'delete-cascade-queue',
+  testQueue = 'test-queue',
+  candidateQueue = 'candidate-queue',
+
 }

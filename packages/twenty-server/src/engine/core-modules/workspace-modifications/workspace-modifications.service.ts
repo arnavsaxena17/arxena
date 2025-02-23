@@ -4,7 +4,6 @@ import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { DataSourceEntity } from 'src/engine/metadata-modules/data-source/data-source.entity';
 import { DataSource, EntityManager, In, Repository } from 'typeorm';
 // import { EnvironmentService } from 'src/engine/integrations/environment/environment.service';
-import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 
 import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
 // import { TokenService } from 'src/engine/core-modules/auth/services/token.service';
@@ -26,8 +25,6 @@ export class WorkspaceQueryService {
     private readonly metadataDataSource: DataSource,
 
     public readonly accessTokenService: AccessTokenService,
-
-    private readonly environmentService: EnvironmentService,
     public readonly workspaceDataSourceService: WorkspaceDataSourceService,
   ) {}
 

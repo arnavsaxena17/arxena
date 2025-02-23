@@ -47,10 +47,22 @@ import { WorkspaceModule } from 'src/engine/core-modules/workspace/workspace.mod
 import { RoleModule } from 'src/engine/metadata-modules/role/role.module';
 import { WorkspaceEventEmitterModule } from 'src/engine/workspace-event-emitter/workspace-event-emitter.module';
 
+import { GoogleCalendarModule } from 'src/engine/core-modules/calendar-events/google-calendar.module';
 import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.module';
 import { AnalyticsModule } from './analytics/analytics.module';
+import { ArxChatAgentModule } from './arx-chat/arx-chat-agent.module';
+import { CandidateSourcingModule } from './candidate-sourcing/candidate-sourcing.module';
 import { ClientConfigModule } from './client-config/client-config.module';
 import { FileModule } from './file/file.module';
+import { MailerModule } from './gmail-sender/gmail-sender.module';
+import { GoogleDriveModule } from './google-drive/google-drive.module';
+import { GoogleSheetsModule } from './google-sheets/google-sheets.module';
+// import { BaileysModule } from "./baileys/baileys.module";
+// import { RecruitmentAgentModule } from "src/engine/core-modules/recruitment-agent/recruitment-agent.module";
+import { GoogleContactsModule } from 'src/engine/core-modules/google-contacts/google-contacts.module';
+import { VideoInterviewModule } from 'src/engine/core-modules/video-interview/video-interview.module';
+
+
 
 @Module({
   imports: [
@@ -60,8 +72,17 @@ import { FileModule } from './file/file.module';
     BillingModule,
     ClientConfigModule,
     FeatureFlagModule,
+    ArxChatAgentModule,
+    CandidateSourcingModule,
+    GoogleSheetsModule,
+    GoogleDriveModule,
     FileModule,
     OpenApiModule,
+    ArxChatAgentModule,
+    GoogleCalendarModule,
+    GoogleContactsModule,
+    MailerModule,
+    VideoInterviewModule,
     AppTokenModule,
     TimelineMessagingModule,
     TimelineCalendarEventModule,
@@ -130,6 +151,15 @@ import { FileModule } from './file/file.module';
     UserModule,
     WorkspaceModule,
     WorkspaceModificationsModule,
+    ArxChatAgentModule,
+    GoogleCalendarModule,
+    GoogleContactsModule,
+    MailerModule,
+    VideoInterviewModule,
+    ArxChatAgentModule,
+    CandidateSourcingModule,
+    GoogleSheetsModule,
+    GoogleDriveModule,
     WorkspaceInvitationModule,
     WorkspaceSSOModule,
   ],

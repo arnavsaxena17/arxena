@@ -31,10 +31,14 @@ export const RecordIndexActionMenuBar = () => {
     actionMenuEntriesComponentSelector,
   );
 
+  console.log("actionMenuEntries::", actionMenuEntries)
+
   const pinnedEntries = actionMenuEntries.filter((entry) => entry.isPinned);
   if (contextStoreNumberOfSelectedRecords === 0) {
     return null;
   }
+
+  console.log("pinnedEntries::", pinnedEntries)
 
   return (
     <BottomBar

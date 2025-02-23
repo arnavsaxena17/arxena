@@ -2,7 +2,6 @@ import { Body, Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/comm
 import { Request } from 'express';
 
 import axios from 'axios';
-// import { JwtAuthGuard } from 'src/engine/guards/jwt.auth.guard';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 
 import { CreateMetaDataStructure } from './object-apis/object-apis-creation';
@@ -40,6 +39,7 @@ export class WorkspaceModificationsController {
     console.log("workspace:", workspace)
     return this.workspaceQueryService.getWorkspaceApiKeys(workspace.id);
   }
+
   @Get('fetch-all-current-objects')
   @UseGuards(JwtAuthGuard)
   async fetchAllCurrentObjects(@Req() req) {
@@ -59,8 +59,6 @@ export class WorkspaceModificationsController {
     return this.workspaceQueryService.getSpecificWorkspaceKey(workspace.id, keyName);
   }
 
-
-  // Backend controller modification
   @Post('api-keys')
   @UseGuards(JwtAuthGuard)
   async updateWorkspaceApiKeys(@Req() req:Request, @Body() keys: {
