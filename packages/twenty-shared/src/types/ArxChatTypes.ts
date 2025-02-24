@@ -546,9 +546,8 @@ interface Person {
     firstName: string;
     lastName: string;
   };
-  linkedinLink: {
-    url: string;
-  };
+  linkedinLink: 
+    { primaryLinkLabel: string; primaryLinkUrl: string }
   jobTitle: string;
 }
 
@@ -564,9 +563,9 @@ export interface ArxenaCandidateNode {
   startMeetingSchedulingChat: boolean;
   uniqueStringKey: string;
   stopChat: boolean;
-  hiringNaukriUrl?: { label: string; url: string };
-  resdexNaukriUrl?: { label: string; url: string };
-  displayPicture: { label: string; url: string };
+  hiringNaukriUrl?: { primaryLinkLabel: string; primaryLinkUrl: string };
+  resdexNaukriUrl?: { primaryLinkLabel: string; primaryLinkUrl: string };
+  displayPicture: { primaryLinkLabel: string; primaryLinkUrl: string };
   jobsId: string;
   jobSpecificFields: any;
   peopleId: string;
@@ -574,8 +573,8 @@ export interface ArxenaCandidateNode {
 
 export interface ArxenaJobCandidateNode {
   id?: string;
-  profileUrl: { label: string; url: string };
-  displayPicture: { label: string; url: string };
+  profileUrl: { primaryLinkLabel: string; primaryLinkUrl: string };
+  displayPicture: { primaryLinkLabel: string; primaryLinkUrl: string };
   educationUgYear?: number;
   educationUgSpecialization?: string;
   educationUgCourse?: string;
@@ -634,11 +633,8 @@ export interface ArxenaPersonNode {
     firstName: string;
     lastName: string;
   };
-  linkedinLink?: {
-    url: string;
-    label: string;
-  };
-  displayPicture?: { url: string; label: string };
+  linkedinLink?: { primaryLinkLabel: string; primaryLinkUrl: string }
+  displayPicture?: { primaryLinkLabel: string; primaryLinkUrl: string }
   email?: string | null;
   uniqueStringKey?: string | null;
   phone?: string | null;
@@ -898,7 +894,8 @@ export const emptyCandidateProfileObj: CandidateNode = {
         node: {
           id: '',
           interviewLink: {
-            url: '',
+            primaryLinkLabel: '',
+            primaryLinkUrl: ''
           },
           updatedAt: '',
           interviewCompleted: false,
@@ -1505,8 +1502,9 @@ export interface videoInterviewNode {
 }
 
 export interface InterviewLink {
-  url: string;
-}
+   primaryLinkLabel: string; primaryLinkUrl: string 
+  };
+
 
 
 

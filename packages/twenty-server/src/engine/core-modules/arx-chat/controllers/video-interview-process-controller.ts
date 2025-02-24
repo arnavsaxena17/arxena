@@ -94,7 +94,7 @@ export class VideoInterviewProcessController {
             const personObj = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByCandidateId(candidateId, apiToken);
             const person = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPersonId(personObj.id, apiToken);
             console.log("Got person:", person);
-            const videoInterviewUrl = person?.candidates?.edges[0]?.node?.videoInterview?.edges[0]?.node?.interviewLink?.url;
+            const videoInterviewUrl = person?.candidates?.edges[0]?.node?.videoInterview?.edges[0]?.node?.interviewLink?.primaryLinkUrl;
             console.log("This is the video interview in send-video-interview-to-candidate link:", videoInterviewUrl);
             const companyName = person?.candidates?.edges
             .filter(edge => edge.node.id === candidateId)

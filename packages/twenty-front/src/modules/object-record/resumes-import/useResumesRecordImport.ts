@@ -1,13 +1,12 @@
-import * as React from 'react';
-import { useState, FC, ReactNode, ComponentProps } from 'react';
-import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
-import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
-import { useCreateManyRecords } from '@/object-record/hooks/useCreateManyRecords';
-import { useRecoilState } from 'recoil';
 import { tokenPairState } from '@/auth/states/tokenPairState';
+import { useCreateManyRecords } from '@/object-record/hooks/useCreateManyRecords';
+import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
+import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
+import * as React from 'react';
+import { useRecoilState } from 'recoil';
 import { useModal } from './ModalContext';
 
-import {ResumeUploadModal} from './ResumeUploadModal';
+import { ResumeUploadModal } from './ResumeUploadModal';
 
 
 
@@ -56,8 +55,8 @@ export const useResumesRecordImport = (objectNameSingular: string) => {
             firstName: data.firstName,
             lastName: data.lastName,
           },
-          email: data.email,
-          phone: data.phone,
+          emails: {primaryEmail:data.email},
+          phone: {primaryPhoneNumber:data.phone},
         }))
       );
 

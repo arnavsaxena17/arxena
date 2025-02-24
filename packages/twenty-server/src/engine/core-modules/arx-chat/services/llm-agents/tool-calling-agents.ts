@@ -52,7 +52,7 @@ export class ToolCallingAgents {
     // const jobProfile = personNode?.candidates?.edges[0]?.node?.jobs;
     const candidate = personNode?.candidates?.edges?.find(edge => edge.node.jobs.id === candidateJob.id)?.node;
 
-    const videoInterviewUrl = candidate?.videoInterview.edges[0].node?.interviewLink?.url;
+    const videoInterviewUrl = candidate?.videoInterview.edges[0].node?.interviewLink?.primaryLinkUrl;
     // console.log("job Profile:", jobProfile);
 
     const companyName = personNode?.candidates?.edges

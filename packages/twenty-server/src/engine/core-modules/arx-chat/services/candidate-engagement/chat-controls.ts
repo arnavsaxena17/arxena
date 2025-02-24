@@ -52,7 +52,7 @@ export class ChatControls {
         } else {
           messageTemplate = 'application03';
         }
-        const videoInterviewLink = process.env.FRONT_BASE_URL + personNode?.candidates?.edges[0]?.node?.videoInterview?.edges[0]?.node?.interviewLink?.url || '';
+        const videoInterviewLink = process.env.FRONT_BASE_URL + personNode?.candidates?.edges[0]?.node?.videoInterview?.edges[0]?.node?.interviewLink?.primaryLinkUrl || '';
         console.log('videoInterviewLink::', videoInterviewLink);
 
     
