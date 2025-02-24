@@ -43,6 +43,7 @@ export const NavigationDrawerOpenedSection = () => {
       .map((item) => item.id)
       .includes(objectMetadataItem.id);
 
+
   if (loading) {
     return <NavigationDrawerSectionForObjectMetadataItemsSkeletonLoader />;
   }

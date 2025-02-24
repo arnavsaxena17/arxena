@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { CreateFieldsOnObject } from 'src/engine/core-modules/workspace-modifications/object-apis/data/createFields';
-import { CreateManyCandidates, CreateOneObjectMetadataItem, graphqlToFetchAllCandidateData, graphqlToFindManyJobByArxenaSiteId } from 'twenty-shared';
+import { CreateManyCandidates, CreateOneObjectMetadataItem, graphqlToFetchAllCandidateData, graphqlToFindManyJobs } from 'twenty-shared';
 import { FilterCandidates } from '../../arx-chat/services/candidate-engagement/filter-candidates';
 import * as allDataObjects from '../../arx-chat/services/data-model-objects';
 import { GoogleSheetsService } from '../../google-sheets/google-sheets.service';
@@ -364,7 +364,7 @@ private async processBatches(
     if (isValidUUIDv4(jobId)) {
       console.log("Choosing the jobID:", jobId);
       graphlQlQuery = JSON.stringify({
-        query: graphqlToFindManyJobByArxenaSiteId,
+        query: graphqlToFindManyJobs,
         variables: {
           filter: { id: { in: [jobId] } },
           limit: 30,
@@ -374,7 +374,7 @@ private async processBatches(
     } else if (isValidMongoDBId(jobId)) {
       console.log("Choosing the jobID:", jobId);
       graphlQlQuery = JSON.stringify({
-        query: graphqlToFindManyJobByArxenaSiteId,
+        query: graphqlToFindManyJobs,
         variables: {
           filter: { arxenaSiteId: { in: [jobId] } },
           limit: 30,
@@ -384,7 +384,7 @@ private async processBatches(
     } else {
       console.log("Choosing the jobName:", jobName);
       graphlQlQuery = JSON.stringify({
-        query: graphqlToFindManyJobByArxenaSiteId,
+        query: graphqlToFindManyJobs,
         variables: {
           filter: { name: { in: [jobName] } },
           limit: 30,

@@ -2,7 +2,7 @@ import { Controller, Post, Req, UseGuards } from '@nestjs/common';
 import axios from 'axios';
 import { workspacesWithOlderSchema } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/candidate-engagement';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
-import { CreateOneJob, createOneQuestion, graphqlToFindManyJobByArxenaSiteId, graphqlToFindManyJobByArxenaSiteIdOlderSchema, UpdateOneJob } from 'twenty-shared';
+import { CreateOneJob, createOneQuestion, graphqlToFindManyJobByArxenaSiteIdOlderSchema, graphqlToFindManyJobs, UpdateOneJob } from 'twenty-shared';
 import { GoogleSheetsService } from '../../google-sheets/google-sheets.service';
 import { Enrichment } from '../../workspace-modifications/object-apis/types/types';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
@@ -213,7 +213,7 @@ async updateCandidateSpreadsheet(@Req() request: any): Promise<object> {
       limit: 30,
       orderBy: [{ position: "AscNullsFirst" }],
     };
-    const query = graphqlToFindManyJobByArxenaSiteId;
+    const query = graphqlToFindManyJobs;
     const data = { query, variables };
     const response = await axiosRequest(JSON.stringify(data), apiToken);
     const job = response.data?.data?.jobs?.edges[0]?.node;
@@ -429,11 +429,11 @@ async updateCandidateSpreadsheet(@Req() request: any): Promise<object> {
       graphqlQueryObjToFetchAllCandidatesForChats = graphqlToFindManyJobByArxenaSiteIdOlderSchema;
     }
     else{
-      graphqlQueryObjToFetchAllCandidatesForChats = graphqlToFindManyJobByArxenaSiteId;
+      graphqlQueryObjToFetchAllCandidatesForChats = graphqlToFindManyJobs;
     }
     const responseFromGetAllJobs = await axiosRequest(
       JSON.stringify({
-        query: graphqlToFindManyJobByArxenaSiteId,
+        query: graphqlQueryObjToFetchAllCandidatesForChats,
         variables: {
           limit: 30,
           orderBy: [{ position: 'AscNullsFirst' }],

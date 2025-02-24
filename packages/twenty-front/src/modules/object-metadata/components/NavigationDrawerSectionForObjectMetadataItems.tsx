@@ -56,7 +56,13 @@ export const NavigationDrawerSectionForObjectMetadataItems = ({
   const objectMetadataItemsForNavigationItems = [
     ...sortedStandardObjectMetadataItems,
     ...sortedCustomObjectMetadataItems,
-  ];
+  ].sort;
+
+
+  const sortedObjectMetadataItemsForNavigationItems = [
+    ...sortedStandardObjectMetadataItems,
+    ...sortedCustomObjectMetadataItems,
+  ].sort((a, b) => a.nameSingular.localeCompare(b.nameSingular));
 
   return (
     objectMetadataItems.length > 0 && (
@@ -68,7 +74,7 @@ export const NavigationDrawerSectionForObjectMetadataItems = ({
           />
         </NavigationDrawerAnimatedCollapseWrapper>
         {isNavigationSectionOpen &&
-          objectMetadataItemsForNavigationItems.map((objectMetadataItem) => (
+          sortedObjectMetadataItemsForNavigationItems.map((objectMetadataItem) => (
             <NavigationDrawerItemForObjectMetadataItem
               key={`navigation-drawer-item-${objectMetadataItem.id}`}
               objectMetadataItem={objectMetadataItem}

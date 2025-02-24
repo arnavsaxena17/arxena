@@ -7,6 +7,7 @@ import { CurrentWorkspaceMemberFavoritesFolders } from '@/favorites/components/C
 import { WorkspaceFavorites } from '@/favorites/components/WorkspaceFavorites';
 import { NavigationDrawerOpenedSection } from '@/object-metadata/components/NavigationDrawerOpenedSection';
 import { RemoteNavigationDrawerSection } from '@/object-metadata/components/RemoteNavigationDrawerSection';
+import { AppPath } from '@/types/AppPath';
 import { SettingsPath } from '@/types/SettingsPath';
 import { NavigationDrawerItem } from '@/ui/navigation/navigation-drawer/components/NavigationDrawerItem';
 import { NavigationDrawerSection } from '@/ui/navigation/navigation-drawer/components/NavigationDrawerSection';
@@ -17,6 +18,7 @@ import { useIsMobile } from '@/ui/utilities/responsive/hooks/useIsMobile';
 import { ScrollWrapper } from '@/ui/utilities/scroll/components/ScrollWrapper';
 import styled from '@emotion/styled';
 import { useLingui } from '@lingui/react/macro';
+import { getAppPath } from '~/utils/navigation/getAppPath';
 import { getSettingsPath } from '~/utils/navigation/getSettingsPath';
 
 const StyledMainSection = styled(NavigationDrawerSection)`
@@ -56,6 +58,16 @@ export const MainNavigationDrawerItems = () => {
           <NavigationDrawerItem
             label={t`Settings`}
             to={getSettingsPath(SettingsPath.ProfilePage)}
+            onClick={() => {
+              setNavigationDrawerExpandedMemorized(isNavigationDrawerExpanded);
+              setIsNavigationDrawerExpanded(true);
+              setNavigationMemorizedUrl(location.pathname + location.search);
+            }}
+            Icon={IconSettings}
+          />
+          <NavigationDrawerItem
+            label={t`Chats`}
+            to={getAppPath(AppPath.Chats)}
             onClick={() => {
               setNavigationDrawerExpandedMemorized(isNavigationDrawerExpanded);
               setIsNavigationDrawerExpanded(true);

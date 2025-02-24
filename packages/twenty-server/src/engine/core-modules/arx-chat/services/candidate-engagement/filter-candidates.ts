@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { workspacesWithOlderSchema } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/candidate-engagement';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
-import { graphqlQueryToFindInterviewsByJobId, graphqlQueryToFindManyPeople, graphqlQueryToFindManyPeopleEngagedCandidatesOlderSchema, graphqlQueryToFindManyQuestionsByJobId, graphqlQueryToFindScheduledClientMeetings, graphqlToFetchAllCandidateData, graphQlToFetchWhatsappMessages, graphqlToFindManyJobByArxenaSiteId } from 'twenty-shared';
+import { graphqlQueryToFindInterviewsByJobId, graphqlQueryToFindManyPeople, graphqlQueryToFindManyPeopleEngagedCandidatesOlderSchema, graphqlQueryToFindManyQuestionsByJobId, graphqlQueryToFindScheduledClientMeetings, graphqlToFetchAllCandidateData, graphQlToFetchWhatsappMessages, graphqlToFindManyJobs } from 'twenty-shared';
 import * as allDataObjects from '../../services/data-model-objects';
 import { axiosRequest } from '../../utils/arx-chat-agent-utils';
 import { getRecruiterProfileByJob } from '../recruiter-profile';
@@ -46,7 +46,7 @@ export class FilterCandidates {
 
   async fetchJobById(jobId: string, apiToken: string): Promise<allDataObjects.Jobs | null> {
     const graphqlQueryObj = JSON.stringify({
-      query: graphqlToFindManyJobByArxenaSiteId,
+      query: graphqlToFindManyJobs,
       variables: { filter: { id: { eq: jobId } } },
     });
 
