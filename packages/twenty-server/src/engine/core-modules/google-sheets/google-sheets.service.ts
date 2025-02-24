@@ -530,7 +530,7 @@ export class GoogleSheetsService {
       variables: {
         idToUpdate: jobObject?.id,
         input: {
-          googleSheetUrl: { label: googleSheetUrl, url: googleSheetUrl },
+          googleSheetUrl: { primaryLinkLabel: googleSheetUrl, primaryLinkUrl: googleSheetUrl },
           ...(googleSheetId && { googleSheetId: googleSheetId }),
         },
       },

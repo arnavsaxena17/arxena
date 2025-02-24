@@ -309,8 +309,8 @@ export const UpdateOneJob = `mutation UpdateOneJob($idToUpdate: ID!, $input: Job
    arxenaSiteId
    pathPosition
    googleSheetUrl{
-   url
-   label
+   primaryLinkUrl
+   primaryLinkLabel
    }
    googleSheetId
 

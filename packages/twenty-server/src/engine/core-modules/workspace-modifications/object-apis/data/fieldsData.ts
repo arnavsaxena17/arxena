@@ -233,7 +233,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
     {
         "field": {
             "description": "",
-            "icon": "IconReload",
+            "icon": "IconVideoCall",
             "label": "Meeting Type",
             "name": "meetingType",
             "options": [{
@@ -258,12 +258,11 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
             "objectMetadataId": objectsNameIdMap.interviewSchedule,
             "type": "SELECT"
         }
-
     },
     {
         "field": {
             "description": "",
-            "icon": "IconReload",
+            "icon": "IconUserCircle",
             "label": "Workspace Member Type",
             "name": "typeWorkspaceMember",
             "options": [{
@@ -288,12 +287,11 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
             "objectMetadataId": objectsNameIdMap.workspaceMemberProfile,
             "type": "SELECT"
         }
-
     },
     {
         "field": {
             "description": "",
-            "icon": "IconReload",
+            "icon": "IconPhoneCall",
             "label": "Call Type",
             "name": "callType",
             "options": [{
@@ -324,12 +322,11 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
             "objectMetadataId": objectsNameIdMap.phoneCall,
             "type": "SELECT"
         }
-
     },
     {
         "field": {
             "description": "",
-            "icon": "IconReload",
+            "icon": "IconMessage",
             "label": "Text Message Type",
             "name": "textMessageType",
             "options": [{
@@ -348,12 +345,11 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
             "objectMetadataId": objectsNameIdMap.textMessage,
             "type": "SELECT"
         }
-
     },
-
     {
         "field": {
             "description": "",
+            "icon": "IconFileText",
             "label": "Transcription",
             "name": "transcription",
             "objectMetadataId": objectsNameIdMap.recruiterInterview,
@@ -363,6 +359,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
     {
         "field": {
             "description": "",
+            "icon": "IconChartBar",
             "label": "Analysis",
             "name": "analysis",
             "objectMetadataId": objectsNameIdMap.recruiterInterview,
@@ -372,6 +369,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
     {
         "field": {
             "description": "",
+            "icon": "IconCalendar",
             "label": "Date of Joining",
             "name": "dateofJoining",
             "objectMetadataId": objectsNameIdMap.offer,
@@ -381,6 +379,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
     {
         "field": {
             "description": "",
+            "icon": "IconNumber",
             "label": "Number of Days",
             "name": "numberofDays",
             "objectMetadataId": objectsNameIdMap.offer,
@@ -390,6 +389,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
     {
         "field": {
             "description": "",
+            "icon": "IconPhone",
             "label": "From Phone",
             "name": "phoneFrom",
             "objectMetadataId": objectsNameIdMap.whatsappMessage,
@@ -399,6 +399,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
     {
         "field": {
             "description": "",
+            "icon": "IconMail",
             "label": "Email",
             "name": "email",
             "objectMetadataId": objectsNameIdMap.workspaceMemberProfile,
@@ -408,6 +409,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
     {
         "field": {
             "description": "",
+            "icon": "IconPhone",
             "label": "Phone Number",
             "name": "phoneNumber",
             "objectMetadataId": objectsNameIdMap.workspaceMemberProfile,
@@ -417,6 +419,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
     {
         "field": {
             "description": "",
+            "icon": "IconBuilding",
             "label": "Company Name",
             "name": "companyName",
             "objectMetadataId": objectsNameIdMap.workspaceMemberProfile,
@@ -426,6 +429,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
     {
         "field": {
             "description": "",
+            "icon": "IconFileDescription",
             "label": "Company Description",
             "name": "companyDescription",
             "objectMetadataId": objectsNameIdMap.workspaceMemberProfile,
@@ -435,6 +439,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
     {
         "field": {
             "description": "",
+            "icon": "IconUser",
             "label": "First Name",
             "name": "firstName",
             "objectMetadataId": objectsNameIdMap.workspaceMemberProfile,
@@ -444,6 +449,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
     {
         "field": {
             "description": "",
+            "icon": "IconBriefcase",
             "label": "Job Title",
             "name": "jobTitle",
             "objectMetadataId": objectsNameIdMap.workspaceMemberProfile,
@@ -453,6 +459,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
     {
         "field": {
             "description": "",
+            "icon": "IconUser",
             "label": "Last Name",
             "name": "lastName",
             "objectMetadataId": objectsNameIdMap.workspaceMemberProfile,
@@ -462,6 +469,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
     {
         "field": {
             "description": "",
+            "icon": "IconCurrencyDollar",
             "label": "Salary",
             "name": "salary",
             "objectMetadataId": objectsNameIdMap.person,
@@ -471,26 +479,27 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
     {
         "field": {
             "description": "",
+            "icon": "IconPhone",
             "label": "To Phone",
             "name": "phoneTo",
             "objectMetadataId": objectsNameIdMap.whatsappMessage,
             "type": "TEXT"
         }
     },
-
     {
         "field": {
             "description": "",
+            "icon": "IconMessage",
             "label": "Message",
             "name": "message",
             "objectMetadataId": objectsNameIdMap.whatsappMessage,
             "type": "TEXT"
         }
     },
-
     {
         "field": {
             "description": "",
+            "icon": "IconMessage",
             "label": "Message",
             "name": "message",
             "objectMetadataId": objectsNameIdMap.textMessage,
@@ -500,6 +509,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
     {
         "field": {
             "description": "",
+            "icon": "IconClockHour3",
             "label": "Duration",
             "name": "duration",
             "objectMetadataId": objectsNameIdMap.phoneCall,
@@ -509,6 +519,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
     {
         "field": {
             "description": "",
+            "icon": "IconPhone",
             "label": "phoneNumber",
             "name": "phoneNumber",
             "objectMetadataId": objectsNameIdMap.phoneCall,
@@ -518,6 +529,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
     {
         "field": {
             "description": "",
+            "icon": "IconFileText",
             "label": "Transcript",
             "name": "transcript",
             "objectMetadataId": objectsNameIdMap.phoneCall,
@@ -527,6 +539,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
     {
         "field": {
             "description": "",
+            "icon": "IconPhone",
             "label": "phoneNumber",
             "name": "phoneNumber",
             "objectMetadataId": objectsNameIdMap.textMessage,
@@ -536,6 +549,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
     {
         "field": {
             "description": "",
+            "icon": "IconCalendar",
             "label": "TimeStamp",
             "name": "timestamp",
             "objectMetadataId": objectsNameIdMap.phoneCall,
@@ -545,6 +559,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
     {
         "field": {
             "description": "",
+            "icon": "IconCalendar",
             "label": "TimeStamp",
             "name": "timestamp",
             "objectMetadataId": objectsNameIdMap.textMessage,
@@ -554,24 +569,27 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
     {
         "field": {
             "description": "",
+            "icon": "IconJson",
             "label": "messageObj",
             "name": "messageObj",
             "objectMetadataId": objectsNameIdMap.whatsappMessage,
             "type": "RAW_JSON"
         }
     },
-      {
-        "field": {
-          "description": "",
-          "label": "messageObjWithTimeStamp",
-          "name": "messageObjWithTimeStamp",
-          "objectMetadataId": objectsNameIdMap.whatsappMessage,
-          "type": "RAW_JSON"
-        }
-      },
     {
         "field": {
             "description": "",
+            "icon": "IconJson",
+            "label": "messageObjWithTimeStamp",
+            "name": "messageObjWithTimeStamp",
+            "objectMetadataId": objectsNameIdMap.whatsappMessage,
+            "type": "RAW_JSON"
+        }
+    },
+    {
+        "field": {
+            "description": "",
+            "icon": "IconBrandWhatsapp",
             "label": "whatsappProvider",
             "name": "whatsappProvider",
             "objectMetadataId": objectsNameIdMap.whatsappMessage,
@@ -581,6 +599,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
     {
         "field": {
             "description": "",
+            "icon": "IconId",
             "label": "whatsappMessageId",
             "name": "whatsappMessageId",
             "objectMetadataId": objectsNameIdMap.whatsappMessage,
@@ -590,6 +609,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
     {
         "field": {
             "description": "",
+            "icon": "IconCheck",
             "label": "whatsappDeliveryStatus",
             "name": "whatsappDeliveryStatus",
             "objectMetadataId": objectsNameIdMap.whatsappMessage,
@@ -599,6 +619,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
     {
         "field": {
             "description": "",
+            "icon": "IconMessageCircle",
             "label": "typeOfMessage",
             "name": "typeOfMessage",
             "objectMetadataId": objectsNameIdMap.whatsappMessage,
@@ -608,6 +629,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
     {
         "field": {
             "description": "lastEngagementChatControl",
+            "icon": "IconMessageDots",
             "label": "lastEngagementChatControl",
             "name": "lastEngagementChatControl",
             "objectMetadataId": objectsNameIdMap.whatsappMessage,
@@ -617,6 +639,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
     {
         "field": {
             "description": "",
+            "icon": "IconAudio",
             "label": "audioFilePath",
             "name": "audioFilePath",
             "objectMetadataId": objectsNameIdMap.whatsappMessage,
@@ -626,6 +649,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
     {
         "field": {
             "description": "",
+            "icon": "IconToggleLeft",
             "label": "isActive",
             "name": "isActive",
             "objectMetadataId": objectsNameIdMap.job,
@@ -635,6 +659,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
     {
         "field": {
             "description": "",
+            "icon": "IconMapPin",
             "label": "jobLocation",
             "name": "jobLocation",
             "objectMetadataId": objectsNameIdMap.job,
@@ -644,16 +669,17 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
     {
         "field": {
             "description": "",
+            "icon": "IconTable",
             "label": "Google Sheet Id",
             "name": "googleSheetId",
             "objectMetadataId": objectsNameIdMap.job,
             "type": "TEXT"
         }
     },
-
     {
         "field": {
             "description": "",
+            "icon": "IconBarcode",
             "label": "jobCode",
             "name": "jobCode",
             "objectMetadataId": objectsNameIdMap.job,
@@ -663,6 +689,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
     {
         "field": {
             "description": "",
+            "icon": "IconSearch",
             "label": "Search Name",
             "name": "searchName",
             "objectMetadataId": objectsNameIdMap.job,
@@ -672,6 +699,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
     {
         "field": {
             "description": "",
+            "icon": "IconUserCircle",
             "label": "Reports To",
             "name": "reportsTo",
             "objectMetadataId": objectsNameIdMap.job,
@@ -681,6 +709,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
     {
         "field": {
             "description": "",
+            "icon": "IconUsers",
             "label": "Reportees",
             "name": "reportees",
             "objectMetadataId": objectsNameIdMap.job,
@@ -690,6 +719,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
     {
         "field": {
             "description": "",
+            "icon": "IconClock",
             "label": "Years of Experience",
             "name": "yearsOfExperience",
             "objectMetadataId": objectsNameIdMap.job,
@@ -699,6 +729,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
     {
         "field": {
             "description": "",
+            "icon": "IconCurrencyDollar",
             "label": "Salary Bracket",
             "name": "salaryBracket",
             "objectMetadataId": objectsNameIdMap.job,
@@ -708,6 +739,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
     {
         "field": {
             "description": "",
+            "icon": "IconBuilding",
             "label": "Company Details",
             "name": "companyDetails",
             "objectMetadataId": objectsNameIdMap.job,
@@ -717,6 +749,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
     {
         "field": {
             "description": "",
+            "icon": "IconUserSearch",
             "label": "Talent Considerations",
             "name": "talentConsiderations",
             "objectMetadataId": objectsNameIdMap.job,
@@ -726,6 +759,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
     {
         "field": {
             "description": "",
+            "icon": "IconList",
             "label": "Specific Criteria",
             "name": "specificCriteria",
             "objectMetadataId": objectsNameIdMap.job,
@@ -735,6 +769,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
     {
         "field": {
             "description": "",
+            "icon": "IconFileDescription",
             "label": "Description",
             "name": "description",
             "objectMetadataId": objectsNameIdMap.job,
@@ -744,6 +779,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
     {
         "field": {
             "description": "",
+            "icon": "IconRoute",
             "label": "pathPosition",
             "name": "pathPosition",
             "objectMetadataId": objectsNameIdMap.job,
@@ -753,84 +789,82 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
     {
         "field": {
             "description": "",
+            "icon": "IconShoppingCart",
             "label": "isProfilePurchased",
             "name": "isProfilePurchased",
             "objectMetadataId": objectsNameIdMap.candidate,
             "type": "BOOLEAN",
             "defaultValue": false
-
         }
     },
     {
         "field": {
             "description": "",
+            "icon": "IconMail",
             "label": "email",
             "name": "email",
             "objectMetadataId": objectsNameIdMap.candidate,
             "type": "EMAILS",
-
         }
     },
     {
         "field": {
             "description": "",
+            "icon": "IconPhone",
             "label": "phoneNumber",
             "name": "phoneNumber",
             "objectMetadataId": objectsNameIdMap.candidate,
             "type": "PHONES",
-
         }
     },
-
     {
         "field": {
             "description": "",
+            "icon": "IconUserCheck",
             "label": "engagementStatus",
             "name": "engagementStatus",
             "objectMetadataId": objectsNameIdMap.candidate,
             "type": "BOOLEAN",
             "defaultValue": false
-
         }
     },
-    
     {
         "field": {
             "description": "",
+            "icon": "IconMessageChatbot",
             "label": "startChat",
             "name": "startChat",
             "objectMetadataId": objectsNameIdMap.candidate,
             "type": "BOOLEAN",
             "defaultValue": false
-
         }
     },
     {
         "field": {
             "description": "",
+            "icon": "IconMessageCheck",
             "label": "startChatCompleted",
             "name": "startChatCompleted",
             "objectMetadataId": objectsNameIdMap.candidate,
             "type": "BOOLEAN",
             "defaultValue": false
-
         }
     },
     {
         "field": {
             "description": "",
+            "icon": "IconVideo",
             "label": "startVideoInterviewChat",
             "name": "startVideoInterviewChat",
             "objectMetadataId": objectsNameIdMap.candidate,
             "type": "BOOLEAN",
             "defaultValue": false
-
-
         }
     },
     {
         "field": {
             "description": "",
+            "icon": "IconMessageNumber",
             "label": "chatCount",
             "name": "chatCount",
             "objectMetadataId": objectsNameIdMap.candidate,
@@ -840,41 +874,42 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
     {
         "field": {
             "description": "",
+            "icon": "IconCalendarTime",
             "label": "startMeetingSchedulingChat",
             "name": "startMeetingSchedulingChat",
             "objectMetadataId": objectsNameIdMap.candidate,
             "type": "BOOLEAN",
             "defaultValue": false
-
         }
     },
     {
         "field": {
             "description": "",
+            "icon": "IconCalendarCheck",
             "label": "startMeetingSchedulingChatCompleted",
             "name": "startMeetingSchedulingChatCompleted",
             "objectMetadataId": objectsNameIdMap.candidate,
             "type": "BOOLEAN",
             "defaultValue": false
-
         }
     },
     {
         "field": {
             "description": "This will stop the chatbot from chatting with the candidates",
-            "defaultValue": false,
-            "label": "stopChat",
             "icon": "IconHandStop",
+            "label": "stopChat",
             "name": "stopChat",
             "objectMetadataId": objectsNameIdMap.candidate,
-            "type": "BOOLEAN"
+            "type": "BOOLEAN",
+            "defaultValue": false
         }
     },
     {
         "field": {
             "description": "",
+            "icon": "IconBrandWhatsapp",
             "label": "whatsappProvider",
-            "name": "whatsappProvider",
+            "name": "whatsappProvider", 
             "objectMetadataId": objectsNameIdMap.candidate,
             "type": "TEXT"
         }
@@ -882,6 +917,7 @@ export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldIn
     {
         "field": {
             "description": "",
+            "icon": "IconVideoCheck",
             "label": "startVideoInterviewChatCompleted",
             // "name": "isVideoInterviewCompleted",
             "name": "startVideoInterviewChatCompleted",

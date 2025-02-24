@@ -262,7 +262,7 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
 private async processBatches(
     data: UserProfile[],
     jobObject: Jobs,
-    // context: any,
+    context: any,
     tracking: any,
     apiToken: string,
     googleSheetId: string
@@ -293,15 +293,20 @@ private async processBatches(
       await googleSheetsService.processGoogleSheetBatch(batch, results, tracking, apiToken, googleSheetId, jobObject);
       await this.processPeopleBatch(batch, uniqueStringKeys, results, tracking, apiToken);
       await this.processCandidatesBatch(batch, jobObject, results, tracking, apiToken);  
+      await this.processJobCandidatesBatch(
+        batch,
+        jobObject,
+        context.jobCandidateInfo.path_position,
+        results,
+        tracking,
+        apiToken
+      );
 
 
       const auth = await googleSheetsService.loadSavedCredentialsIfExist(apiToken);
       if (auth) {
           await googleSheetsService.updateIdsInSheet(auth, googleSheetId, tracking, apiToken);
       }
-
-
-
       if (i + batchSize < data.length) {
         await delay(1000);
       }
@@ -417,9 +422,9 @@ private async processBatches(
   
       const tracking = { personIdMap: new Map<string, string>(), candidateIdMap: new Map<string, string>() };
   
-      // const { context, batchKey } = await this.setupProcessingContext(jobObject, timestamp, data, apiToken);
-      // const results = await this.processBatches(data, jobObject, context, tracking, apiToken);
-      const results = await this.processBatches(data, jobObject, tracking, apiToken, googleSheetId);
+      const { context, batchKey } = await this.setupProcessingContext(jobObject, timestamp, data, apiToken);
+      const results = await this.processBatches(data, jobObject, context, tracking, apiToken,googleSheetId);
+      // const results = await this.processBatches(data, jobObject, tracking, apiToken, googleSheetId);
   
       // Cleanup context after processing is complete
       // this.processingContexts.delete(batchKey);
@@ -555,7 +560,7 @@ private async processBatches(
   private async processJobCandidatesBatch(
     batch: UserProfile[],
     jobObject: Jobs,
-    // path_position: string,
+    path_position: string,
     results: any,
     tracking: any,
     apiToken: string

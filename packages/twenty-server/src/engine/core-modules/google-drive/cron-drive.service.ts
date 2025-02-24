@@ -52,7 +52,6 @@ export class CronDriveService {
      for (const workspaceId of filteredWorkspaceIds) {
       const schema = this.workspaceQueryService.workspaceDataSourceService.getSchemaName(workspaceId);
        const apiKeys = await this.workspaceQueryService.getApiKeys(workspaceId, schema);
-      console.log("API KEYS::", apiKeys);
        if (apiKeys.length > 0) {
          const apiKeyToken = await this.workspaceQueryService.accessTokenService.generateAccessToken(
            workspaceId, 

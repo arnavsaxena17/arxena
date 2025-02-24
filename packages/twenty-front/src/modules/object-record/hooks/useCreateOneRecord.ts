@@ -3,13 +3,11 @@ import { useState } from 'react';
 import { v4 } from 'uuid';
 
 import { triggerCreateRecordsOptimisticEffect } from '@/apollo/optimistic-effect/utils/triggerCreateRecordsOptimisticEffect';
-import { triggerDestroyRecordsOptimisticEffect } from '@/apollo/optimistic-effect/utils/triggerDestroyRecordsOptimisticEffect';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { useObjectMetadataItem } from '@/object-metadata/hooks/useObjectMetadataItem';
 import { useObjectMetadataItems } from '@/object-metadata/hooks/useObjectMetadataItems';
 import { checkObjectMetadataItemHasFieldCreatedBy } from '@/object-metadata/utils/checkObjectMetadataItemHasFieldCreatedBy';
 import { useCreateOneRecordInCache } from '@/object-record/cache/hooks/useCreateOneRecordInCache';
-import { deleteRecordFromCache } from '@/object-record/cache/utils/deleteRecordFromCache';
 import { getObjectTypename } from '@/object-record/cache/utils/getObjectTypename';
 import { getRecordNodeFromRecord } from '@/object-record/cache/utils/getRecordNodeFromRecord';
 import { RecordGqlOperationGqlRecordFields } from '@/object-record/graphql/types/RecordGqlOperationGqlRecordFields';
@@ -21,8 +19,13 @@ import { ObjectRecord } from '@/object-record/types/ObjectRecord';
 import { computeOptimisticRecordFromInput } from '@/object-record/utils/computeOptimisticRecordFromInput';
 import { getCreateOneRecordMutationResponseField } from '@/object-record/utils/getCreateOneRecordMutationResponseField';
 import { sanitizeRecordInput } from '@/object-record/utils/sanitizeRecordInput';
-import { useRecoilValue } from 'recoil';
+import axios from 'axios';
+import mongoose from 'mongoose';
+import { useRecoilState, useRecoilValue } from 'recoil';
 import { isDefined } from 'twenty-shared';
+
+import { tokenPairState } from '@/auth/states/tokenPairState';
+
 
 type useCreateOneRecordProps = {
   objectNameSingular: string;
@@ -41,10 +44,36 @@ export const useCreateOneRecord = <
 }: useCreateOneRecordProps) => {
   const apolloClient = useApolloClient();
   const [loading, setLoading] = useState(false);
+  const [jobApiError, setJobApiError] = useState<string | null>(null);
+  const [tokenPair] = useRecoilState(tokenPairState);
+
 
   const { objectMetadataItem } = useObjectMetadataItem({
     objectNameSingular,
   });
+
+
+  const sendJobToArxena = async (jobName: string, jobId:string) => {
+    console.log("process.env.NODE_ENV", process.env.NODE_ENV);
+    try {
+      const arxenaJobId = new mongoose.Types.ObjectId().toString();
+
+      console.log("This is the jobName", jobName);
+      const response = await axios.post(
+        process.env.NODE_ENV === 'production' ? 'https://app.arxena.com/app/candidate-sourcing/create-job-in-arxena-and-sheets' : 'http://localhost:3000/candidate-sourcing/create-job-in-arxena-and-sheets',
+        { job_name: jobName,new_job_id:arxenaJobId, id_to_update:jobId },
+        { headers: { 'Authorization': `Bearer ${tokenPair?.accessToken?.token}`, 'Content-Type': 'application/json', }, }
+      );
+
+      if (response.status !== 200) {
+        throw new Error(`Failed to create job on Arxena: ${response.statusText}`);
+      }
+      return response.data;
+    } catch (error) {
+      setJobApiError(error instanceof Error ? error.message : 'Failed to create job on Arxena');
+      throw error;
+    }
+  };
 
   const objectMetadataHasCreatedByField =
     checkObjectMetadataItemHasFieldCreatedBy(objectMetadataItem);
@@ -133,50 +162,43 @@ export const useCreateOneRecord = <
 
     const mutationResponseField =
       getCreateOneRecordMutationResponseField(objectNameSingular);
-
-    const createdObject = await apolloClient
-      .mutate({
+      const createdObject = await apolloClient.mutate({
         mutation: createOneRecordMutation,
         variables: {
-          input: sanitizedInput,
+        input: sanitizedInput,
         },
         update: (cache, { data }) => {
-          const record = data?.[mutationResponseField];
-          if (skipPostOptimisticEffect === false && isDefined(record)) {
-            triggerCreateRecordsOptimisticEffect({
-              cache,
-              objectMetadataItem,
-              recordsToCreate: [record],
-              objectMetadataItems,
-              shouldMatchRootQueryFilter,
-              checkForRecordInCache: true,
-            });
-          }
+        const record = data?.[mutationResponseField];
 
-          setLoading(false);
+        if (!record || skipPostOptimisticEffect) return;
+
+        triggerCreateRecordsOptimisticEffect({
+          cache,
+          objectMetadataItem,
+          recordsToCreate: [record],
+          objectMetadataItems,
+        });
+        setLoading(false);
         },
-      })
-      .catch((error: Error) => {
-        if (!recordCreatedInCache) {
-          throw error;
-        }
-
-        deleteRecordFromCache({
-          objectMetadataItems,
-          objectMetadataItem,
-          cache: apolloClient.cache,
-          recordToDestroy: recordCreatedInCache,
-        });
-
-        triggerDestroyRecordsOptimisticEffect({
-          cache: apolloClient.cache,
-          objectMetadataItem,
-          recordsToDestroy: [recordCreatedInCache],
-          objectMetadataItems,
-        });
-
-        throw error;
       });
+      try {
+        console.log("This is the input", recordInput);
+        if (objectNameSingular === 'job' && recordInput?.id) {
+        try {
+          await sendJobToArxena(recordInput?.name as string, recordInput.id as string);
+        }
+        catch {
+          console.log("Couldn't send job to arxena")
+        }
+        }
+      }
+      catch (error) {
+        console.log("Error sending job to Arxena", error);
+        return null;
+      }
+
+      await refetchAggregateQueries();
+      return createdObject.data?.[mutationResponseField] ?? null;
 
     await refetchAggregateQueries();
     return createdObject.data?.[mutationResponseField] ?? null;

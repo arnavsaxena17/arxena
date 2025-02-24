@@ -333,7 +333,7 @@ async updateCandidateSpreadsheet(@Req() request: any): Promise<object> {
           pathPosition: this.getJobCandidatePathPosition(jobName),
           arxenaSiteId: newJobId,
           isActive: true,
-          googleSheetUrl: { "label": googleSheetUrl, "url": googleSheetUrl },
+          googleSheetUrl: { "primaryLinkLabel": googleSheetUrl, "primaryLinkUrl": googleSheetUrl },
           ...(googleSheetId && { googleSheetId: googleSheetId }),
         },
       },

@@ -43,13 +43,8 @@ abstract class BaseCronService {
   private async getWorkspaceToken(workspaceId: string): Promise<string | null> {
     const schema = this.workspaceQueryService.workspaceDataSourceService.getSchemaName(workspaceId);
     const apiKeys = await this.workspaceQueryService.getApiKeys(workspaceId, schema);
-    console.log("API KEYS::", apiKeys);
-
-
     if (!apiKeys.length) return null;
-
     const token = await this.workspaceQueryService.apiKeyService.generateApiKeyToken(workspaceId, apiKeys[0].id);
-
     return token?.token || null;
   }
 }

@@ -92,7 +92,6 @@ export default class CandidateEngagementArx {
     }
     chatHistory.push({ role: 'user', content: messageSetup.userContent });
     const whatsappTemplate = candidatePersonNodeObj?.candidates?.edges[0]?.node?.whatsappProvider || config.defaultTemplate;
-    console.log("Setting whatsapp update mesasges ::", candidatePersonNodeObj);
     let whatappUpdateMessageObj: whatappUpdateMessageObjType = {
       candidateProfile: candidatePersonNodeObj?.candidates?.edges[0]?.node,
       candidateFirstName: candidatePersonNodeObj?.name?.firstName,
@@ -106,7 +105,6 @@ export default class CandidateEngagementArx {
       whatsappDeliveryStatus: 'startChatTriggered',
       whatsappMessageId: 'NA',
     };
-    console.log("Setting whatappUpdateMessageObj ::", whatappUpdateMessageObj);
     
     return whatappUpdateMessageObj;
   }
