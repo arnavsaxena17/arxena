@@ -1,11 +1,11 @@
 import { Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 import { UpdateChat } from '../services/candidate-engagement/update-chat';
-import * as allDataObjects from '../services/data-model-objects';
 import { FacebookWhatsappChatApi } from '../services/whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
 import { WhatsappTemplateMessages } from '../services/whatsapp-api/facebook-whatsapp/whatsapp-template-messages';
 // import {Transformations} from '../services/candidate-engagement/transformations';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
+import { CandidateNode, ChatHistoryItem, ChatRequestBody, Jobs, PersonNode, sendWhatsappTemplateMessageObjectType, SendWhatsappUtilityMessageObjectType } from 'twenty-shared';
 import { FilterCandidates } from '../services/candidate-engagement/filter-candidates';
 import { getRecruiterProfileByJob } from '../services/recruiter-profile';
 
@@ -27,19 +27,19 @@ export class WhatsappTestAPI {
       const requestBody = request.body as any;
       const apiToken = request.headers.authorization.split(' ')[1];
 
-      const personObj: allDataObjects.PersonNode = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPhoneNumber(requestBody.phoneNumberTo,apiToken);
+      const personObj: PersonNode = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPhoneNumber(requestBody.phoneNumberTo,apiToken);
       console.log("This is the process.env.SERVER_BASE_URL:",process.env.SERVER_BASE_URL)
 
-      const candidateNode:allDataObjects.CandidateNode = personObj?.candidates?.edges[0]?.node;
+      const candidateNode:CandidateNode = personObj?.candidates?.edges[0]?.node;
 
-      const candidateJob:allDataObjects.Jobs = candidateNode?.jobs;
+      const candidateJob:Jobs = candidateNode?.jobs;
       const recruiterProfile = await getRecruiterProfileByJob(candidateJob, apiToken) 
   
 
 
 
       const sendTemplateMessageObj = {
-      recipient: personObj.phone.replace('+', ''),
+      recipient: personObj.phones.primaryPhoneNumber.replace('+', ''),
       template_name: requestBody.templateName,
       candidateFirstName: personObj.name.firstName,
       recruiterName: recruiterProfile.name,
@@ -60,7 +60,7 @@ export class WhatsappTestAPI {
       const response = await new FacebookWhatsappChatApi(this.workspaceQueryService).sendWhatsappUtilityMessage(sendTemplateMessageObj,apiToken);
       let utilityMessage = await new WhatsappTemplateMessages().getUpdatedUtilityMessageObj(sendTemplateMessageObj);
       // const whatsappTemplateMessageSent = await new WhatsappTemplateMessages().generateMessage(requestBody.templateName, sendTemplateMessageObj);
-      const mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.messageObj;
+      const mostRecentMessageArr: ChatHistoryItem[] = personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.messageObj;
       console.log("This is the mostRecentMessageArr:", mostRecentMessageArr)
       const chatControl = { chatControlType: personObj?.candidates?.edges[0]?.node?.lastEngagementChatControl };
       mostRecentMessageArr.push({ role: 'user', content: requestBody.templateName});
@@ -79,7 +79,7 @@ export class WhatsappTestAPI {
   async create(@Req() request: any): Promise<object> {
     const apiToken = request.headers.authorization.split(' ')[1];
 
-    const sendMessageObj: allDataObjects.sendWhatsappTemplateMessageObjectType = request.body as unknown as allDataObjects.sendWhatsappTemplateMessageObjectType;
+    const sendMessageObj: sendWhatsappTemplateMessageObjectType = request.body as unknown as sendWhatsappTemplateMessageObjectType;
     new FacebookWhatsappChatApi(this.workspaceQueryService).sendWhatsappTemplateMessage(sendMessageObj,apiToken);
     return { status: 'success' };
   }
@@ -88,7 +88,7 @@ export class WhatsappTestAPI {
   async createUtilityMessage(@Req() request: any): Promise<object> {
     const apiToken = request.headers.authorization.split(' ')[1];
 
-    const sendMessageObj: allDataObjects.sendWhatsappUtilityMessageObjectType = request.body as unknown as allDataObjects.sendWhatsappUtilityMessageObjectType;
+    const sendMessageObj: SendWhatsappUtilityMessageObjectType = request.body as unknown as SendWhatsappUtilityMessageObjectType;
     new FacebookWhatsappChatApi(this.workspaceQueryService).sendWhatsappUtilityMessage(sendMessageObj,  apiToken);
     return { status: 'success' };
   }
@@ -98,7 +98,7 @@ export class WhatsappTestAPI {
   async createTextMessage(@Req() request: any): Promise<object> {
     const apiToken = request.headers.authorization.split(' ')[1];
 
-    const sendTextMessageObj: allDataObjects.ChatRequestBody = {
+    const sendTextMessageObj: ChatRequestBody = {
       phoneNumberTo: '918411937769',
       phoneNumberFrom: '918411937769',
       messages: 'This is the panda talking',
@@ -128,7 +128,7 @@ export class WhatsappTestAPI {
   // async uploadAndSendFileToFBWAAPIUser(@Req() request: any): Promise<object> {
   //   const apiToken = request.headers.authorization.split(' ')[1];
   //   const sendFileObj = request.body;
-  //   const chatControl:allDataObjects.chatControls = {chatControlType:"startChat"};
+  //   const chatControl:ChatControlsObjType = {chatControlType:"startChat"};
   //   // candidateJob = {id: "1234"};
 
   //   new FacebookWhatsappChatApi(this.workspaceQueryService).uploadAndSendFileToWhatsApp(sendFileObj, candidateJob, chatControl,  apiToken);

@@ -1,30 +1,30 @@
-import * as allDataObjects from '../data-model-objects';
-const modelName = 'gpt-4o';
-import { ToolCallingAgents } from './tool-calling-agents';
 import { ChatCompletionMessage } from 'openai/resources';
 import { WhatsappControls } from '../whatsapp-api/whatsapp-controls';
-import { HumanLikeLLM } from './human-or-bot-classification'
+import { HumanLikeLLM } from './human-or-bot-classification';
+import { ToolCallingAgents } from './tool-calling-agents';
+const modelName = 'gpt-4o';
 // import { Transformations } from '../candidate-engagement/transformations';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
-import { ChatControls } from '../candidate-engagement/chat-controls';
+import { ChatControlsObjType, ChatHistoryItem, Jobs, PersonNode } from 'twenty-shared';
 import CandidateEngagementArx from '../candidate-engagement/candidate-engagement';
+import { ChatControls } from '../candidate-engagement/chat-controls';
 import { FilterCandidates } from '../candidate-engagement/filter-candidates';
 
 export class OpenAIArxMultiStepClient {
-  private readonly personNode: allDataObjects.PersonNode;
+  private readonly personNode: PersonNode;
   private readonly workspaceQueryService: WorkspaceQueryService;
-  constructor(personNode: allDataObjects.PersonNode,  workspaceQueryService: WorkspaceQueryService) {
+  constructor(personNode: PersonNode,  workspaceQueryService: WorkspaceQueryService) {
     this.personNode = personNode;
     this.workspaceQueryService = workspaceQueryService;
   }
-  async createCompletion(mostRecentMessageArr: allDataObjects.ChatHistoryItem[],  candidateJob:allDataObjects.Jobs,chatControl:allDataObjects.chatControls,apiToken:string,  isChatEnabled: boolean = true ) {
+  async createCompletion(mostRecentMessageArr: ChatHistoryItem[],  candidateJob:Jobs,chatControl:ChatControlsObjType,apiToken:string,  isChatEnabled: boolean = true ) {
     try{
       const newSystemPrompt = await new CandidateEngagementArx(this.workspaceQueryService).getSystemPrompt(this.personNode,candidateJob, chatControl,apiToken);
       if (!newSystemPrompt) {
         console.log("New System Prompt is null, so returning as it is.FUCK FUCK")
         return
       };
-      const updatedMostRecentMessagesBasedOnNewSystemPrompt:allDataObjects.ChatHistoryItem[] = await new FilterCandidates(this.workspaceQueryService).updateMostRecentMessagesBasedOnNewSystemPrompt(mostRecentMessageArr, newSystemPrompt);
+      const updatedMostRecentMessagesBasedOnNewSystemPrompt:ChatHistoryItem[] = await new FilterCandidates(this.workspaceQueryService).updateMostRecentMessagesBasedOnNewSystemPrompt(mostRecentMessageArr, newSystemPrompt);
       const tools = await new ChatControls(this.workspaceQueryService).getTools(candidateJob, chatControl);
       const responseMessage = await this.getHumanLikeResponseMessageFromLLM(updatedMostRecentMessagesBasedOnNewSystemPrompt, tools, apiToken)
       console.log('BOT_MESSAGE in at::', new Date().toString(), ' ::: ' ,JSON.stringify(responseMessage));
@@ -49,7 +49,7 @@ export class OpenAIArxMultiStepClient {
     }
   }
 
-  async getHumanLikeResponseMessageFromLLM( mostRecentMessageArr: allDataObjects.ChatHistoryItem[], tools: any, apiToken:string ): Promise<ChatCompletionMessage | null> {
+  async getHumanLikeResponseMessageFromLLM( mostRecentMessageArr: ChatHistoryItem[], tools: any, apiToken:string ): Promise<ChatCompletionMessage | null> {
     try {
       console.log("Going to get human like response from llm");
       const MAX_ATTEMPTS = 3;
@@ -84,7 +84,7 @@ export class OpenAIArxMultiStepClient {
   }
 
  
-  async addResponseAndToolCallsToMessageHistory(responseMessage: ChatCompletionMessage, candidateJob:allDataObjects.Jobs,mostRecentMessageArr: allDataObjects.ChatHistoryItem[],  chatControl:allDataObjects.chatControls, apiToken:string,isChatEnabled: boolean = true): Promise<allDataObjects.ChatHistoryItem[]> {
+  async addResponseAndToolCallsToMessageHistory(responseMessage: ChatCompletionMessage, candidateJob:Jobs,mostRecentMessageArr: ChatHistoryItem[],  chatControl:ChatControlsObjType, apiToken:string,isChatEnabled: boolean = true): Promise<ChatHistoryItem[]> {
     try {
       const toolCalls = responseMessage?.tool_calls;
       console.log("We have made a total of ", toolCalls?.length, " tool calls in current chatResponseMessage")

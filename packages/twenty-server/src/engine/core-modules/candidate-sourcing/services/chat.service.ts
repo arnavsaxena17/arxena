@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { graphQltoUpdateOneCandidate } from 'twenty-shared';
+import { graphQltoUpdateOneCandidate, PersonNode } from 'twenty-shared';
 import { FilterCandidates } from '../../arx-chat/services/candidate-engagement/filter-candidates';
-import * as allDataObjects from '../../arx-chat/services/data-model-objects';
 import { GoogleSheetsService } from '../../google-sheets/google-sheets.service';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { axiosRequest } from '../utils/utils';
@@ -57,7 +56,7 @@ export class ChatService {
   async fetchCandidateByPhoneNumberAndStartChat(phoneNumber: string, apiToken: string): Promise<any> {
     console.log('Fetching candidate by phone number:', phoneNumber);
     
-    const personObj: allDataObjects.PersonNode = await new FilterCandidates(
+    const personObj: PersonNode = await new FilterCandidates(
       this.workspaceQueryService
     ).getPersonDetailsByPhoneNumber(phoneNumber, apiToken);
 

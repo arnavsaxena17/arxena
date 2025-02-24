@@ -1,23 +1,21 @@
-import * as allDataObjects from '../../../services/data-model-objects';
-import fs from 'fs';
+import fs, { createReadStream } from 'fs';
 import path from 'path';
-const FormData = require('form-data');
-import { createReadStream } from 'fs';
-import { getContentTypeFromFileName } from '../../../utils/arx-chat-agent-utils';
-import { AttachmentProcessingService } from '../../../utils/attachment-processes';
-const axios = require('axios');
-import { getTranscriptionFromWhisper } from '../../../utils/arx-chat-agent-utils';
-import { WhatsappTemplateMessages } from './whatsapp-template-messages';
-import { UpdateChat } from '../../candidate-engagement/update-chat';
-const { exec } = require('child_process');
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
-import { FilterCandidates } from '../../candidate-engagement/filter-candidates';
+import { AttachmentMessageObject, CandidateNode, ChatControlsObjType, ChatHistoryItem, ChatRequestBody, FacebookWhatsappAttachmentChatRequestBody, Jobs, PersonNode, sendWhatsappTemplateMessageObjectType, SendWhatsappUtilityMessageObjectType, whatappUpdateMessageObjType, WhatsappMessageType } from 'twenty-shared';
+import { getContentTypeFromFileName, getTranscriptionFromWhisper } from '../../../utils/arx-chat-agent-utils';
+import { AttachmentProcessingService } from '../../../utils/attachment-processes';
 import { ChatControls } from '../../candidate-engagement/chat-controls';
+import { FilterCandidates } from '../../candidate-engagement/filter-candidates';
+import { UpdateChat } from '../../candidate-engagement/update-chat';
+import { WhatsappTemplateMessages } from './whatsapp-template-messages';
+const FormData = require('form-data');
+const axios = require('axios');
+const { exec } = require('child_process');
 
 export class FacebookWhatsappChatApi {
   constructor(private readonly workspaceQueryService: WorkspaceQueryService) {}
 
-  async getWhatsappConfig(workspaceQueryService: WorkspaceQueryService, configType: allDataObjects.WhatsappMessageType, apiToken: string) {
+  async getWhatsappConfig(workspaceQueryService: WorkspaceQueryService, configType: WhatsappMessageType, apiToken: string) {
     const workspaceId = await workspaceQueryService.getWorkspaceIdFromToken(apiToken);
     const whatsappAPIToken = await workspaceQueryService.getWorkspaceApiKey(workspaceId, 'facebook_whatsapp_api_token');
     const phoneNumberId = await workspaceQueryService.getWorkspaceApiKey(workspaceId, 'facebook_whatsapp_phone_number_id');
@@ -55,7 +53,7 @@ export class FacebookWhatsappChatApi {
     };
   }
 
-  async uploadAndSendFileToWhatsApp(attachmentMessage: allDataObjects.AttachmentMessageObject, candidateJob: allDataObjects.Jobs, chatControl: allDataObjects.chatControls, apiToken: string) {
+  async uploadAndSendFileToWhatsApp(attachmentMessage: AttachmentMessageObject, candidateJob: Jobs, chatControl: ChatControlsObjType, apiToken: string) {
     console.log('Send file');
     console.log('sendFileObj::y::', attachmentMessage);
     const filePath = attachmentMessage?.fileData?.filePath;
@@ -72,14 +70,14 @@ export class FacebookWhatsappChatApi {
       mediaID: mediaID,
     };
     const personObj = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPhoneNumber(phoneNumberTo, apiToken);
-    const mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.messageObj;
+    const mostRecentMessageArr: ChatHistoryItem[] = personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.messageObj;
     mostRecentMessageArr.push({ role: 'user', content: 'Sharing the JD' });
     console.log('sednTextMessageObj::', sendTextMessageObj);
     this.sendWhatsappAttachmentMessage(sendTextMessageObj, personObj, candidateJob, mostRecentMessageArr, chatControl, filePath, apiToken);
   }
 
-  async sendWhatsappTextMessage(sendTextMessageObj: allDataObjects.ChatRequestBody, apiToken: string) {
-    const configType: allDataObjects.WhatsappMessageType = 'messages';
+  async sendWhatsappTextMessage(sendTextMessageObj: ChatRequestBody, apiToken: string) {
+    const configType: WhatsappMessageType = 'messages';
     const baseConfig = await this.getWhatsappConfig(this.workspaceQueryService, configType, apiToken);
     const config = {
       ...baseConfig,
@@ -96,7 +94,7 @@ export class FacebookWhatsappChatApi {
     return response;
   }
 
-  async uploadFileToWhatsApp(attachmentMessage: allDataObjects.AttachmentMessageObject, candidateJob: allDataObjects.Jobs, chatControl: allDataObjects.chatControls, apiToken: string) {
+  async uploadFileToWhatsApp(attachmentMessage: AttachmentMessageObject, candidateJob: Jobs, chatControl: ChatControlsObjType, apiToken: string) {
     console.log('This is the upload file to whatsapp in arx chat');
 
     try {
@@ -125,7 +123,7 @@ export class FacebookWhatsappChatApi {
             console.error('Failed to upload JD to WhatsApp the second time. Bad luck! :(');
             const phoneNumberTo = attachmentMessage?.phoneNumberTo;
             const personObj = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPhoneNumber(phoneNumberTo, apiToken);
-            const mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.messageObj;
+            const mostRecentMessageArr: ChatHistoryItem[] = personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.messageObj;
             mostRecentMessageArr.push({ role: 'user', content: 'Failed to send JD to the candidate.' });
             const candidateNode = personObj?.candidates?.edges?.find(edge => edge.node.jobs.id == candidateJob.id)?.node;
 
@@ -133,7 +131,7 @@ export class FacebookWhatsappChatApi {
               console.log('Candidate node not found, cannot proceed with sending the message');
               return;
             }
-            const whatappUpdateMessageObj: allDataObjects.whatappUpdateMessageObjType = await new FilterCandidates(this.workspaceQueryService).updateChatHistoryObjCreateWhatsappMessageObj('failed', personObj, candidateNode, mostRecentMessageArr, chatControl, apiToken);
+            const whatappUpdateMessageObj: whatappUpdateMessageObjType = await new FilterCandidates(this.workspaceQueryService).updateChatHistoryObjCreateWhatsappMessageObj('failed', personObj, candidateNode, mostRecentMessageArr, chatControl, apiToken);
 
             await new UpdateChat(this.workspaceQueryService).updateCandidateEngagementDataInTable(whatappUpdateMessageObj, apiToken);
           }
@@ -157,7 +155,7 @@ export class FacebookWhatsappChatApi {
   async uploadFileToWhatsAppUsingControllerApi(filePathArg: string, apiToken: string) {
     try {
       console.log('Upload file using controller api');
-      const configType: allDataObjects.WhatsappMessageType = 'media';
+      const configType: WhatsappMessageType = 'media';
 
       const filePath = filePathArg.slice();
       const baseConfig = await this.getGraphApiConfig(apiToken, filePath);
@@ -193,15 +191,15 @@ export class FacebookWhatsappChatApi {
     }
   }
   async sendWhatsappAttachmentMessage(
-    sendWhatsappAttachmentTextMessageObj: allDataObjects.FacebookWhatsappAttachmentChatRequestBody,
-    personObj: allDataObjects.PersonNode,
-    candidateJob: allDataObjects.Jobs,
-    mostRecentMessageArr: allDataObjects.ChatHistoryItem[],
-    chatControl: allDataObjects.chatControls,
+    sendWhatsappAttachmentTextMessageObj: FacebookWhatsappAttachmentChatRequestBody,
+    personObj: PersonNode,
+    candidateJob: Jobs,
+    mostRecentMessageArr: ChatHistoryItem[],
+    chatControl: ChatControlsObjType,
     filePath: string,
     apiToken: string,
   ) {
-    const configType: allDataObjects.WhatsappMessageType = 'messages'; // Changed from 'media' to 'messages'
+    const configType: WhatsappMessageType = 'messages'; // Changed from 'media' to 'messages'
 
     const baseConfig = await this.getWhatsappConfig(this.workspaceQueryService, configType, apiToken); // Use getWhatsappConfig instead
     const config = {
@@ -239,8 +237,8 @@ export class FacebookWhatsappChatApi {
     }
   }
 
-  async sendWhatsappTemplateMessage(sendTemplateMessageObj: allDataObjects.sendWhatsappTemplateMessageObjectType, apiToken: string) {
-    const configType: allDataObjects.WhatsappMessageType = 'messages';
+  async sendWhatsappTemplateMessage(sendTemplateMessageObj: sendWhatsappTemplateMessageObjectType, apiToken: string) {
+    const configType: WhatsappMessageType = 'messages';
     const baseConfig = await this.getWhatsappConfig(this.workspaceQueryService, configType, apiToken);
 
     const templateMessage = new WhatsappTemplateMessages().getTemplateMessageObj(sendTemplateMessageObj);
@@ -273,8 +271,8 @@ export class FacebookWhatsappChatApi {
     }
   }
 
-  async sendWhatsappUtilityMessage(sendUtilityMessageObj: allDataObjects.sendWhatsappUtilityMessageObjectType, apiToken: string) {
-    const configType: allDataObjects.WhatsappMessageType = 'messages';
+  async sendWhatsappUtilityMessage(sendUtilityMessageObj: SendWhatsappUtilityMessageObjectType, apiToken: string) {
+    const configType: WhatsappMessageType = 'messages';
 
     const baseConfig = await this.getWhatsappConfig(this.workspaceQueryService, configType, apiToken);
     const utilityMessage = new WhatsappTemplateMessages().getUpdatedUtilityMessageObj(sendUtilityMessageObj);
@@ -313,10 +311,10 @@ export class FacebookWhatsappChatApi {
       mime_type: string;
       documentId: string;
     },
-    candidateProfileData: allDataObjects.CandidateNode,
+    candidateProfileData: CandidateNode,
     apiToken: string,
   ) {
-    const configType: allDataObjects.WhatsappMessageType = 'media';
+    const configType: WhatsappMessageType = 'media';
 
     const baseConfig = await this.getWhatsappConfig(this.workspaceQueryService, configType, apiToken);
     const getDocumentConfig = {
@@ -409,11 +407,11 @@ export class FacebookWhatsappChatApi {
 
 
   async sendWhatsappMessageVIAFacebookAPI(
-    whatappUpdateMessageObj: allDataObjects.whatappUpdateMessageObjType,
-    personNode: allDataObjects.PersonNode,
-    candidateJob: allDataObjects.Jobs,
-    mostRecentMessageArr: allDataObjects.ChatHistoryItem[],
-    chatControl: allDataObjects.chatControls,
+    whatappUpdateMessageObj: whatappUpdateMessageObjType,
+    personNode: PersonNode,
+    candidateJob: Jobs,
+    mostRecentMessageArr: ChatHistoryItem[],
+    chatControl: ChatControlsObjType,
     apiToken: string,
   ) {
     try {
@@ -459,10 +457,10 @@ export class FacebookWhatsappChatApi {
       mime_type: string;
       audioId: string;
     },
-    candidateProfileData: allDataObjects.CandidateNode,
+    candidateProfileData: CandidateNode,
     apiToken: string,
   ) {
-    const configType: allDataObjects.WhatsappMessageType = 'media';
+    const configType: WhatsappMessageType = 'media';
 
     const baseConfig = await this.getWhatsappConfig(this.workspaceQueryService, configType, apiToken);
     const audioConfig = {

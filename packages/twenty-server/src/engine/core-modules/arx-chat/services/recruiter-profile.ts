@@ -1,5 +1,5 @@
+import { Jobs, RecruiterProfileType } from 'twenty-shared';
 import { axiosRequest } from '../utils/arx-chat-agent-utils';
-import { Jobs, recruiterProfileType } from './data-model-objects';
 
 
 const query = `query FindManyWorkspaceMemberProfiles($filter: WorkspaceMemberProfileFilterInput, $orderBy: [WorkspaceMemberProfileOrderByInput], $lastCursor: String, $limit: Int) {
@@ -53,7 +53,7 @@ export async function getRecruiterProfileByJob(candidateJob: Jobs, apiToken: str
   // console.log("workspaceMemberProfilesResponse:", workspaceMemberProfilesResponse);
   // console.log("workspaceMemberProfilesResponse:", workspaceMemberProfilesResponse.data.data.workspaceMemberProfiles.edges[0]);
   // console.log("workspaceMemberProfilesResponse:", workspaceMemberProfilesResponse.data.data.workspaceMemberProfiles.edges[0]);
-  const recruiterProfile:recruiterProfileType = workspaceMemberProfilesResponse?.data?.data?.workspaceMemberProfiles?.edges[0]?.node;
+  const recruiterProfile:RecruiterProfileType = workspaceMemberProfilesResponse?.data?.data?.workspaceMemberProfiles?.edges[0]?.node;
   return recruiterProfile;
 }
 
@@ -64,7 +64,7 @@ export async function getRecruiterProfileByRecruiterId(recruiterId: string, apiT
     variables: { filter: { workspaceMemberId: { eq: recruiterId } } },
   });
   const workspaceMemberProfilesResponse = await axiosRequest(findWorkspaceMemberProfilesQuery, apiToken);
-  const recruiterProfile:recruiterProfileType = workspaceMemberProfilesResponse?.data?.workspaceMemberProfiles?.edges[0]?.node;
+  const recruiterProfile:RecruiterProfileType = workspaceMemberProfilesResponse?.data?.workspaceMemberProfiles?.edges[0]?.node;
   return recruiterProfile;
 }
 
@@ -134,7 +134,7 @@ export async function getCurrentUser(apiToken: string) {
 export async function getRecruiterProfileFromCurrentUser(apiToken: string) {
   const currentUser = await getCurrentUser(apiToken);
   const recruiterId = currentUser?.workspaces[0].workspaceMember?.id;
-  const recruiterProfile:recruiterProfileType = await getRecruiterProfileByRecruiterId(recruiterId, apiToken);
+  const recruiterProfile:RecruiterProfileType = await getRecruiterProfileByRecruiterId(recruiterId, apiToken);
 
   return recruiterProfile
 }

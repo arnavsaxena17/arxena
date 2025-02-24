@@ -1,9 +1,8 @@
 import { axiosRequest } from 'src/engine/core-modules/arx-chat/utils/arx-chat-agent-utils';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
-import { graphqlQueryToCreateOneNewWhatsappMessage, graphqlToFetchWhatsappMessageByWhatsappId, graphQlToFetchWhatsappMessages, graphqlToUpdateWhatsappMessageId } from 'twenty-shared';
+import { BaileysIncomingMessage, CandidateNode, chatMessageType, emptyCandidateProfileObj, graphqlQueryToCreateOneNewWhatsappMessage, graphqlToFetchWhatsappMessageByWhatsappId, graphQlToFetchWhatsappMessages, graphqlToUpdateWhatsappMessageId, Jobs, whatappUpdateMessageObjType, WhatsAppBusinessAccount } from 'twenty-shared';
 import { EntityManager } from 'typeorm';
 import { UpdateChat } from '../../services/candidate-engagement/update-chat';
-import * as allDataObjects from '../../services/data-model-objects';
 import { FacebookWhatsappChatApi } from '../../services/whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
 import { FilterCandidates } from '../candidate-engagement/filter-candidates';
 import { getRecruiterProfileByJob } from '../recruiter-profile';
@@ -20,7 +19,7 @@ export class IncomingWhatsappMessages {
     private readonly workspaceQueryService: WorkspaceQueryService,
 
 ) {}
-  async receiveIncomingMessagesFromBaileys(requestBody: allDataObjects.BaileysIncomingMessage,apiToken: string) {
+  async receiveIncomingMessagesFromBaileys(requestBody: BaileysIncomingMessage,apiToken: string) {
     // console.log('This is requestBody::', requestBody);
     let savedMessage
     if (requestBody.message == ""){
@@ -31,7 +30,7 @@ export class IncomingWhatsappMessages {
     }
     console.log("Saved message is ::", savedMessage)
 
-    const whatsappIncomingMessage: allDataObjects.chatMessageType = {
+    const whatsappIncomingMessage: chatMessageType = {
       phoneNumberFrom: requestBody.phoneNumberFrom,
       phoneNumberTo: requestBody.phoneNumberTo,
       messages: [{ role: 'user', content: savedMessage }],
@@ -41,20 +40,20 @@ export class IncomingWhatsappMessages {
     const status = '';
     console.log('We will first go and get the candiate who sent us the message');
     const candidateProfileData = await new FilterCandidates(this.workspaceQueryService).getCandidateInformation(whatsappIncomingMessage, apiToken);
-    const candidateJob:allDataObjects.Jobs = candidateProfileData.jobs
+    const candidateJob:Jobs = candidateProfileData.jobs
 
     console.log('This is the candiate who has sent us the message fromBaileys., we have to update the database that this message has been recemivged::', chatReply);
-    if (candidateProfileData != allDataObjects.emptyCandidateProfileObj) {
+    if (candidateProfileData != emptyCandidateProfileObj) {
       // console.log('This is the candiate who has sent us candidateProfileData::', candidateProfileData);
       await this.createAndUpdateIncomingCandidateChatMessage({ chatReply: savedMessage, whatsappDeliveryStatus: 'delivered',phoneNumberFrom:requestBody.phoneNumberFrom, whatsappMessageId: requestBody.baileysMessageId }, candidateProfileData,candidateJob, apiToken);
     } else {
       console.log('Message has been received from a candidate however the candidate is not in the database');
     }
   }
-  async receiveIncomingMessagesFromSelfFromBaileys(requestBody: allDataObjects.BaileysIncomingMessage,apiToken: string) {
+  async receiveIncomingMessagesFromSelfFromBaileys(requestBody: BaileysIncomingMessage,apiToken: string) {
     // console.log('This is requestBody::', requestBody);
     console.log('-------This is the self message-------------');
-    const whatsappIncomingMessage: allDataObjects.chatMessageType = {
+    const whatsappIncomingMessage: chatMessageType = {
       phoneNumberFrom: requestBody.phoneNumberFrom,
       phoneNumberTo: requestBody.phoneNumberTo,
       messages: [{ role: 'assistant', content: requestBody.message }],
@@ -63,9 +62,9 @@ export class IncomingWhatsappMessages {
     const chatReply = requestBody.message;
     console.log('We will first go and get the candiate who sent us the message');
     const candidateProfileData = await new FilterCandidates(this.workspaceQueryService).getCandidateInformation(whatsappIncomingMessage,apiToken);
-    const candidateJob:allDataObjects.Jobs = candidateProfileData.jobs
+    const candidateJob:Jobs = candidateProfileData.jobs
     console.log('This is the SELF message., we have to update the database that this message has been received::', chatReply);
-    if (candidateProfileData != allDataObjects.emptyCandidateProfileObj) {
+    if (candidateProfileData != emptyCandidateProfileObj) {
       await this.createAndUpdateIncomingCandidateChatMessage({ chatReply: chatReply, whatsappDeliveryStatus: 'delivered',phoneNumberFrom:requestBody.phoneNumberFrom, whatsappMessageId: requestBody.baileysMessageId, isFromMe: true }, candidateProfileData,candidateJob, apiToken);
       new UpdateChat(this.workspaceQueryService).setCandidateEngagementStatusToFalse(candidateProfileData.id,apiToken);
     } else {
@@ -189,7 +188,7 @@ export class IncomingWhatsappMessages {
 
 
 
-  async receiveIncomingMessagesFromFacebook(requestBody: allDataObjects.WhatsAppBusinessAccount) {
+  async receiveIncomingMessagesFromFacebook(requestBody: WhatsAppBusinessAccount) {
     console.log('This is requestBody from Facebook::', JSON.stringify(requestBody));
     // to check if the incoming message is the status of the message
     // have to use system API Key and get the status updates of all the workspaces where the phone number resides. Then get the api keys of the workspaces and then update the messages
@@ -292,7 +291,7 @@ export class IncomingWhatsappMessages {
             console.log("This is a cron test to check if the connection exists or not")
             return
           }
-          const whatsappIncomingMessage: allDataObjects.chatMessageType = {
+          const whatsappIncomingMessage: chatMessageType = {
             phoneNumberFrom: userMessageBody.from,
             phoneNumberTo: phoneNumberTo,
             messages: [{ role: 'user', content: chatReply || "" }],
@@ -300,7 +299,7 @@ export class IncomingWhatsappMessages {
           };
           console.log('We will first go and get the candiate who sent us the message');
           const candidateProfileData = await new FilterCandidates(this.workspaceQueryService).getCandidateInformation(whatsappIncomingMessage,apiToken);
-          const candidateJob:allDataObjects.Jobs = candidateProfileData.jobs
+          const candidateJob:Jobs = candidateProfileData.jobs
           console.log('This is the candiate who has sent us the message., we have to update the database that this message has been recemivged::', chatReply);
           // console.log('This is the candiate who has sent us candidateProfileData::', candidateProfileData);
           const replyObject = {
@@ -327,7 +326,7 @@ export class IncomingWhatsappMessages {
           };
           const phoneNumberTo = requestBody?.entry[0]?.changes[0]?.value?.metadata?.display_phone_number;
 
-          const whatsappIncomingMessage: allDataObjects.chatMessageType = {
+          const whatsappIncomingMessage: chatMessageType = {
             phoneNumberFrom: userMessageBody.from,
             phoneNumberTo: phoneNumberTo,
             messages: [{ role: 'user', content: '' }],
@@ -336,7 +335,7 @@ export class IncomingWhatsappMessages {
 
           const replyObject = { chatReply: chatReply || 'Attachment Received', whatsappDeliveryStatus: 'receivedFromCandidate',phoneNumberFrom: whatsappIncomingMessage.phoneNumberFrom, whatsappMessageId: requestBody?.entry[0]?.changes[0]?.value?.messages[0].id };
           const candidateProfileData = await new FilterCandidates(this.workspaceQueryService).getCandidateInformation(whatsappIncomingMessage,apiToken);
-          const candidateJob:allDataObjects.Jobs = candidateProfileData.jobs
+          const candidateJob:Jobs = candidateProfileData.jobs
 
           await new FacebookWhatsappChatApi(this.workspaceQueryService).downloadWhatsappAttachmentMessage(sendTemplateMessageObj, candidateProfileData,apiToken);
           await this.createAndUpdateIncomingCandidateChatMessage(replyObject, candidateProfileData,candidateJob, apiToken );
@@ -350,7 +349,7 @@ export class IncomingWhatsappMessages {
           };
           const phoneNumberTo = requestBody?.entry[0]?.changes[0]?.value?.metadata?.display_phone_number;
 
-          const whatsappIncomingMessage: allDataObjects.chatMessageType = {
+          const whatsappIncomingMessage: chatMessageType = {
             phoneNumberFrom: userMessageBody.from,
             phoneNumberTo: phoneNumberTo,
             messages: [{ role: 'user', content: '' }],
@@ -370,7 +369,7 @@ export class IncomingWhatsappMessages {
             databaseFilePath: audioMessageDetails?.databaseFilePath,
             whatsappMessageId: requestBody?.entry[0]?.changes[0]?.value?.messages[0].id,
           };
-          const candidateJob:allDataObjects.Jobs = candidateProfileData.jobs
+          const candidateJob:Jobs = candidateProfileData.jobs
           await this.createAndUpdateIncomingCandidateChatMessage(replyObject, candidateProfileData,candidateJob, apiToken);
         }
       }
@@ -380,12 +379,13 @@ export class IncomingWhatsappMessages {
   }
   async createAndUpdateIncomingCandidateChatMessage(
     replyObject: { whatsappDeliveryStatus: string; chatReply: string;  phoneNumberFrom:string,whatsappMessageId: string; databaseFilePath?: string | null; type?: string; isFromMe?: boolean },
-    candidateProfileDataNodeObj: allDataObjects.CandidateNode,candidateJob:allDataObjects.Jobs, apiToken: string
+    candidateProfileDataNodeObj: CandidateNode,candidateJob:Jobs, apiToken: string
   ) {
 
     const recruiterProfile = await getRecruiterProfileByJob(candidateJob, apiToken) 
     const messagesList = candidateProfileDataNodeObj?.whatsappMessages?.edges;
     console.log('This is the chat reply in create And Update Incoming Candidate Chat Message:', replyObject.chatReply);
+    console.log('This is the candidateProfileDataNodeObj:', candidateProfileDataNodeObj.phoneNumber);
     let mostRecentMessageObj;
     if (messagesList) {
       messagesList.sort((a, b) => new Date(b.node.createdAt).getTime() - new Date(a.node.createdAt).getTime());
@@ -397,7 +397,7 @@ export class IncomingWhatsappMessages {
     console.log('These are message kwargs length:', mostRecentMessageObj?.length);
     console.log("replyObject?.phoneNumberFrom::", replyObject?.phoneNumberFrom)
     if (mostRecentMessageObj?.length > 0) mostRecentMessageObj.push({ role: replyObject.isFromMe ? 'assistant' : 'user', content: replyObject.chatReply });
-    let whatappUpdateMessageObj: allDataObjects.whatappUpdateMessageObjType = {
+    let whatappUpdateMessageObj: whatappUpdateMessageObjType = {
       // executorResultObj: {},
       candidateProfile: candidateProfileDataNodeObj,
       whatsappMessageType: candidateProfileDataNodeObj?.whatsappProvider || '',

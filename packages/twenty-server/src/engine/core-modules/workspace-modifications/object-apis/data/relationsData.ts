@@ -1,4 +1,4 @@
-import { RelationInput } from '../types/types.js';
+import { RelationInput } from "twenty-shared";
 
 export function getRelationsData(objectsNameIdMap: Record<string, string>): RelationInput[] {
   return [

@@ -9,7 +9,7 @@ import axios from 'axios';
 import dayjs from 'dayjs';
 import React, { useEffect, useState } from 'react';
 import { useRecoilState } from 'recoil';
-import * as frontChatTypes from '../types/front-chat-types';
+import { PersonNode } from 'twenty-shared';
 import ActionsBar from './ActionsBar'; // Add this import
 import AttachmentPanel from './AttachmentPanel';
 import { chatStatusLabels } from './ChatSidebar';
@@ -348,7 +348,7 @@ const NameCell = styled.div`
   }
 `;
 
-const shouldShowColumn = (key: string, data: frontChatTypes.PersonNode[]) => {
+const shouldShowColumn = (key: string, data: PersonNode[]) => {
   return data.some(individual => {
     switch (key) {
       case 'name':
@@ -371,12 +371,21 @@ const shouldShowColumn = (key: string, data: frontChatTypes.PersonNode[]) => {
   });
 };
 
-interface ChatTableProps extends frontChatTypes.ChatTableProps {
+interface ChatTableProps {
+  individuals: PersonNode[];
+  selectedIndividual: string | null;
+  unreadMessages: {
+    listOfUnreadMessages: Array<{
+      candidateId: string;
+      ManyUnreadMessages: any[];
+    }>;
+  };
+  onIndividualSelect: (id: string) => void;
   onSelectionChange?: (selectedIds: string[]) => void;
   onBulkMessage?: (selectedIds: string[]) => void;
   onBulkDelete?: (selectedIds: string[]) => void;
   onBulkAssign?: (selectedIds: string[]) => void;
-  onReorder?: (selectedIds: frontChatTypes.PersonNode[]) => void;
+  onReorder?: (selectedIds: PersonNode[]) => void;
 }
 
 interface SortConfig {
@@ -569,7 +578,7 @@ const ChatTable: React.FC<ChatTableProps> = ({ individuals, selectedIndividual, 
     setCurrentPersonIndex(prev => Math.min(selectedIds.length - 1, prev + 1));
   };
 
-  const filterData = (data: frontChatTypes.PersonNode[], term: string) => {
+  const filterData = (data: PersonNode[], term: string) => {
     if (!term) return data;
     return data.filter(individual => {
       const searchString = `
@@ -585,7 +594,7 @@ const ChatTable: React.FC<ChatTableProps> = ({ individuals, selectedIndividual, 
     });
   };
 
-  const sortData = (data: frontChatTypes.PersonNode[], key: string, direction: 'asc' | 'desc') => {
+  const sortData = (data: PersonNode[], key: string, direction: 'asc' | 'desc') => {
     return [...data].sort((a, b) => {
       let aValue: any, bValue: any;
       switch (key) {
@@ -656,7 +665,7 @@ const ChatTable: React.FC<ChatTableProps> = ({ individuals, selectedIndividual, 
     onIndividualSelect,
     getUnreadCount,
   }: {
-    individual: frontChatTypes.PersonNode;
+    individual: PersonNode;
     index: number;
     selectedIndividual: string | null;
     selectedIds: string[];

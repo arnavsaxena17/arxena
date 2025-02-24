@@ -1,4 +1,4 @@
-import { Enrichment } from "../types/types";
+import { Enrichment } from "twenty-shared";
 
 
 export const arxEnrichments: Enrichment[] = [

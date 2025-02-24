@@ -1,15 +1,14 @@
 import { v4 } from 'uuid';
-import * as allDataObjects from '../../data-model-objects';
 import { FilterCandidates } from '../filter-candidates';
 
-import { graphqlQueryToCreateVideoInterview } from 'twenty-shared';
+import { CandidateNode, ChatControlsObjType, graphqlQueryToCreateVideoInterview, Jobs, PersonNode } from 'twenty-shared';
 import { WorkspaceQueryService } from '../../../../workspace-modifications/workspace-modifications.service';
 import { axiosRequest } from '../../../utils/arx-chat-agent-utils';
 export class StartVideoInterviewChatProcesses {
   constructor(private readonly workspaceQueryService: WorkspaceQueryService) {}
 
 
-  async setupVideoInterviewLinks(peopleEngagementStartVideoInterviewChatArr: allDataObjects.PersonNode[], candidateJob: allDataObjects.Jobs, chatControl: allDataObjects.chatControls, apiToken: string) {
+  async setupVideoInterviewLinks(peopleEngagementStartVideoInterviewChatArr: PersonNode[], candidateJob: Jobs, chatControl: ChatControlsObjType, apiToken: string) {
     if (chatControl.chatControlType === 'startVideoInterviewChat') {
       let skippedCount = 0;
       let createdCount = 0;
@@ -31,7 +30,7 @@ export class StartVideoInterviewChatProcesses {
 
   async createVideoInterviewForCandidate(candidateId: string, apiToken: string) {
     try {
-      const candidateObj: allDataObjects.CandidateNode = await new FilterCandidates(this.workspaceQueryService).fetchCandidateByCandidateId(candidateId, apiToken);
+      const candidateObj: CandidateNode = await new FilterCandidates(this.workspaceQueryService).fetchCandidateByCandidateId(candidateId, apiToken);
       const jobId = candidateObj?.jobs?.id;
       console.log('jobId:', jobId);
       const interviewObj = await new FilterCandidates(this.workspaceQueryService).getInterviewByJobId(jobId, apiToken);

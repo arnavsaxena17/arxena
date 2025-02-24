@@ -3,8 +3,8 @@ import { Processor } from 'src/engine/core-modules/message-queue/decorators/proc
 import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
 
 
+import { ProcessCandidatesJobData } from 'twenty-shared';
 import { CandidateService } from '../services/candidate.service';
-import * as CandidateSourcingTypes from '../types/candidate-sourcing-types';
 
 @Processor(MessageQueue.candidateQueue)
 export class CandidateQueueProcessor {
@@ -15,7 +15,7 @@ export class CandidateQueueProcessor {
   }
 
   @Process(CandidateQueueProcessor.name) // Use a specific name for this job type
-  async handle(jobCandidateData:CandidateSourcingTypes.ProcessCandidatesJobData): Promise<void> {
+  async handle(jobCandidateData:ProcessCandidatesJobData): Promise<void> {
     console.log('CandidateQueueProcessor handling job. Processing. Number of candidates to be processed:', jobCandidateData.data.length);
     try {
       const { data, jobId, jobName, timestamp, apiToken, } = jobCandidateData;

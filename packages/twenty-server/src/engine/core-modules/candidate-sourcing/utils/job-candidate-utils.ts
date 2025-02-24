@@ -1,5 +1,4 @@
-import { CreateMetaDataStructure } from '../../workspace-modifications/object-apis/object-apis-creation';
-import * as CandidateSourcingTypes from '../types/candidate-sourcing-types';
+import { ArxenaPersonNode } from "twenty-shared";
 
 export class JobCandidateUtils {
     static getJobCandidatePathPosition(jobName: string, arxenaSiteId: string|undefined): string {
@@ -23,7 +22,7 @@ export class JobCandidateUtils {
         .replace(/[-_\s]+(.)?/g, (_, c) => (c ? c.toUpperCase() : ''));
     }
     
-    static extractKeysFromObjects = (objects: CandidateSourcingTypes.ArxenaPersonNode[]): string[] => {
+    static extractKeysFromObjects = (objects: ArxenaPersonNode[]): string[] => {
         console.log("number of onjects:", objects?.length);
         const keys = new Set<string>();
         objects.forEach(obj => {

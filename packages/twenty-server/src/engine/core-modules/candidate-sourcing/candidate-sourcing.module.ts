@@ -18,6 +18,7 @@ import { PersonService } from './services/person.service';
 // import { API } from 'src/engine/core-modules/auth/services/token.service';
 import { JwtService } from '@nestjs/jwt';
 import { AppToken } from 'src/engine/core-modules/app-token/app-token.entity';
+import { ApiKeyService } from 'src/engine/core-modules/auth/services/api-key.service';
 import { EmailService } from 'src/engine/core-modules/email/email.service';
 import { JwtModule } from 'src/engine/core-modules/jwt/jwt.module';
 import { UserWorkspace } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
@@ -46,6 +47,7 @@ import { ProcessCandidatesService } from './jobs/process-candidates.service';
     GoogleSheetsService,
     ProcessCandidatesService,
     CandidateService,
+    ApiKeyService,
     ChatService,
     WorkspaceQueryService,
     WorkspaceDataSourceService,

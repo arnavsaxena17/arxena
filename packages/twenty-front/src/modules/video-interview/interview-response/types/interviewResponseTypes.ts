@@ -50,7 +50,7 @@ export const emptyInterviewData: InterviewData = {
   };
 
 
-  export interface recruiterProfileType {
+  export interface RecruiterProfileType {
     jobTitle?: string;
     companyName: string;
     companyDescription: string;
@@ -63,7 +63,7 @@ export const emptyInterviewData: InterviewData = {
   
 
 export interface InterviewData {
-  recruiterProfile:recruiterProfileType,
+  recruiterProfile:RecruiterProfileType,
   id: string;
   name: string;
   candidate: {

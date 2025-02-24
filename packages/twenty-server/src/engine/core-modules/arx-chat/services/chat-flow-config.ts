@@ -1,7 +1,38 @@
 import { StartVideoInterviewChatProcesses } from './candidate-engagement/chat-control-processes/start-video-interview-chat-processes';
 import { TimeManagement } from './time-management';
-import * as allDataObjects from './data-model-objects';
+// import * as allDataObjects from './data-model-objects';
+import { CandidateNode, ChatControlsObjType, ChatHistoryItem, Jobs, MessageNode, PersonNode, chatControlType } from 'twenty-shared';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
+export interface ChatFlowConfig {
+  order: number;
+  type: chatControlType;
+  filterLogic: (candidate: CandidateNode) => boolean;
+  preProcessing?: (
+    candidates: PersonNode[],
+    candidateJob: Jobs,
+    chatControl: ChatControlsObjType,
+    apiToken: string,
+    workspaceQueryService: WorkspaceQueryService
+  ) => Promise<void>;
+  get chatFilters(): Array<Record<string, any>>;  // Changed to getter
+  isEligibleForEngagement: (candidate: CandidateNode) => boolean;
+  statusUpdate?: {
+    isWithinAllowedTime: () => boolean;
+    filter: Record<string, any>;
+    orderBy?: Array<Record<string, any>>;
+  };
+  filter: Record<string, any>;
+  orderBy: Array<Record<string, any>>;
+  templateConfig: {
+    defaultTemplate: string;
+    messageSetup: (isFirstMessage: boolean) => {
+      whatsappTemplate: string;
+      requiresSystemPrompt: boolean;
+      userContent: string;
+    };
+  };
+}
+
 
 export class ChatFlowConfigBuilder {
   constructor(private readonly workspaceQueryService: WorkspaceQueryService) {}
@@ -17,19 +48,19 @@ export class ChatFlowConfigBuilder {
 
   private baseFilters = { stopChat: { eq: false } };
 
-  private getOrderNumber(type: allDataObjects.chatControlType, chatFlowOrder: allDataObjects.chatControlType[]): number {
+  private getOrderNumber(type: chatControlType, chatFlowOrder: chatControlType[]): number {
     return chatFlowOrder.indexOf(type) + 1;
   }
 
 
-  private getStagesByOrder(currentOrder: number, direction: 'before' | 'after', chatFlowOrder: allDataObjects.chatControlType[]): string[] {
+  private getStagesByOrder(currentOrder: number, direction: 'before' | 'after', chatFlowOrder: chatControlType[]): string[] {
     const stages = [...chatFlowOrder];
     const currentIndex = currentOrder - 1;
 
     return direction === 'before' ? stages.slice(0, currentIndex) : stages.slice(currentIndex + 1);
   }
 
-  baseEngagementChecks = (candidate: allDataObjects.CandidateNode, chatControlType: allDataObjects.chatControlType, chatFlowOrder: allDataObjects.chatControlType[]) => {
+  baseEngagementChecks = (candidate: CandidateNode, chatControlType: chatControlType, chatFlowOrder: chatControlType[]) => {
     if (candidate.engagementStatus === false) {
       console.log(`Candidate ${candidate.name} is not eligible for engagement due to engagementStatus being false. Current time: ${new Date().toISOString()}, Candidate Last updated: ${candidate.updatedAt}`);
       return false;
@@ -60,8 +91,8 @@ export class ChatFlowConfigBuilder {
   };
 
 
-    getMostRecentMessageFromMessagesList(messagesList: allDataObjects.MessageNode[]) {
-      let mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = [];
+    getMostRecentMessageFromMessagesList(messagesList: MessageNode[]) {
+      let mostRecentMessageArr: ChatHistoryItem[] = [];
       if (messagesList) {
         messagesList.sort((a, b) => new Date(b?.createdAt).getTime() - new Date(a?.createdAt).getTime());
         mostRecentMessageArr = messagesList[0]?.messageObj;
@@ -70,7 +101,7 @@ export class ChatFlowConfigBuilder {
     }
 
   
-  createIsEligibleForEngagement = (candidate: allDataObjects.CandidateNode, chatControlType: allDataObjects.chatControlType, order: number, chatFlowOrder) => {
+  createIsEligibleForEngagement = (candidate: CandidateNode, chatControlType: chatControlType, order: number, chatFlowOrder) => {
     
     if (candidate.engagementStatus === false) {
       console.log(`Candidate ${candidate.name} is not eligible for engagement in ${chatControlType} due to engagementStatus being false. Current time: ${new Date().toISOString()}, Candidate Last updated: ${candidate.updatedAt}`);
@@ -126,8 +157,8 @@ export class ChatFlowConfigBuilder {
     return false;
   };
 
-  private createFilterLogic(currentOrder: number, chatFlowOrder: allDataObjects.chatControlType[]) {
-    return (candidate: allDataObjects.CandidateNode) => {
+  private createFilterLogic(currentOrder: number, chatFlowOrder: chatControlType[]) {
+    return (candidate: CandidateNode) => {
       if (currentOrder === 1) {
         return candidate.startChat && candidate.whatsappMessages?.edges.length === 0;
       }
@@ -142,10 +173,10 @@ export class ChatFlowConfigBuilder {
 
   private createChatFilters(
     config: {
-      type: allDataObjects.chatControlType;
+      type: chatControlType;
       filter: Record<string, any>;
     },
-    chatFlowOrder: allDataObjects.chatControlType[],
+    chatFlowOrder: chatControlType[],
   ) {
     const currentIndex = chatFlowOrder.indexOf(config.type);
     if (currentIndex > 0) {
@@ -178,7 +209,7 @@ export class ChatFlowConfigBuilder {
     ];
   }
 
-  createStatusUpdate = (order: number, type: allDataObjects.chatControlType, chatFlowOrder:allDataObjects.chatControlType[]): allDataObjects.ChatFlowConfig['statusUpdate'] => {
+  createStatusUpdate = (order: number, type: chatControlType, chatFlowOrder:chatControlType[]): ChatFlowConfig['statusUpdate'] => {
     const baseStatusUpdate = {
       isWithinAllowedTime: () => {
         const hours = new Date().getHours();
@@ -217,7 +248,7 @@ export class ChatFlowConfigBuilder {
     };
   };
 
-  private createBaseChatFlowConfig(type: allDataObjects.chatControlType, order: number, chatFlowOrder: allDataObjects.chatControlType[]): allDataObjects.ChatFlowConfig {
+  private createBaseChatFlowConfig(type: chatControlType, order: number, chatFlowOrder: chatControlType[]): ChatFlowConfig {
     const self = this;
     const filter = { ...this.baseFilters, [type]: { eq: true } };
     return {
@@ -233,8 +264,8 @@ export class ChatFlowConfigBuilder {
     };
   }
 
-  private applySpecificConfig(type: allDataObjects.chatControlType, baseConfig: allDataObjects.ChatFlowConfig): allDataObjects.ChatFlowConfig {
-    const specificConfigs: Record<allDataObjects.chatControlType, (baseConfig: allDataObjects.ChatFlowConfig) => allDataObjects.ChatFlowConfig> = {
+  private applySpecificConfig(type: chatControlType, baseConfig: ChatFlowConfig): ChatFlowConfig {
+    const specificConfigs: Record<chatControlType, (baseConfig: ChatFlowConfig) => ChatFlowConfig> = {
       startChat: config => ({ ...config }),
       startVideoInterviewChat: config => ({ ...config, preProcessing: async (candidates, candidateJob, chatControl, apiToken) => { await new StartVideoInterviewChatProcesses(this.workspaceQueryService).setupVideoInterviewLinks(candidates, candidateJob, chatControl, apiToken); }, }),
       startMeetingSchedulingChat: config => ({ ...config }),
@@ -244,11 +275,11 @@ export class ChatFlowConfigBuilder {
     return specificConfigs[type](baseConfig);
   }
 
-  public getDefaultChatFlowOrder(): allDataObjects.chatControlType[] {
+  public getDefaultChatFlowOrder(): chatControlType[] {
     return ['startChat', 'startVideoInterviewChat', 'startMeetingSchedulingChat'] as const;
   }
 
-  public buildChatFlowConfig(chatFlowOrder?: allDataObjects.chatControlType[]): Record<allDataObjects.chatControlType, allDataObjects.ChatFlowConfig> {
+  public buildChatFlowConfig(chatFlowOrder?: chatControlType[]): Record<chatControlType, ChatFlowConfig> {
     const order = chatFlowOrder || this.getDefaultChatFlowOrder();
     return Object.fromEntries(
       order.map(type => {
@@ -256,6 +287,6 @@ export class ChatFlowConfigBuilder {
         const baseConfig = this.createBaseChatFlowConfig(type, orderNum, order);
         return [type, this.applySpecificConfig(type, baseConfig)];
       }),
-    ) as Record<allDataObjects.chatControlType, allDataObjects.ChatFlowConfig>;
+    ) as Record<chatControlType, ChatFlowConfig>;
   }
 }

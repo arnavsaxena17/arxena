@@ -1,5 +1,5 @@
+import { FieldInput } from "twenty-shared";
 
-import { FieldInput } from '../types/types.js';
 export function getFieldsData(objectsNameIdMap: Record<string, string>): FieldInput[] {
     return [
     {

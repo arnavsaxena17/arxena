@@ -3,14 +3,13 @@ import { Injectable } from '@nestjs/common';
 import axios from 'axios';
 import { OAuth2Client } from 'google-auth-library';
 import { google } from 'googleapis';
-import * as CandidateSourcingTypes from 'src/engine/core-modules/candidate-sourcing/types/candidate-sourcing-types';
+import { columnDefinitions, Jobs, UpdateOneJob, UserProfile } from 'twenty-shared';
 import { formatChat } from '../arx-chat/utils/arx-chat-agent-utils';
 import { axiosRequest } from '../workspace-modifications/workspace-modifications.controller';
 import { WorkspaceQueryService } from '../workspace-modifications/workspace-modifications.service';
-import { UpdateOneJob } from 'twenty-shared';
 
 const rowDataValues = [
-  ...CandidateSourcingTypes.columnDefinitions.map(col => ({
+  ...columnDefinitions.map(col => ({
     userEnteredValue: { stringValue: col.header },
     userEnteredFormat: {
       textFormat: { bold: true },
@@ -435,16 +434,16 @@ export class GoogleSheetsService {
     }
   }
 
-  private getHeadersFromData(data: CandidateSourcingTypes.UserProfile[]): string[] {
+  private getHeadersFromData(data: UserProfile[]): string[] {
     if (!data || data.length === 0) {
-      return CandidateSourcingTypes.columnDefinitions.slice(0, 4).map(col => col.header);
+      return columnDefinitions.slice(0, 4).map(col => col.header);
     }
 
     const headers = new Set<string>();
 
     // Iterate through each candidate to collect all unique headers
     data.forEach(candidate => {
-      CandidateSourcingTypes.columnDefinitions.forEach(def => {
+      columnDefinitions.forEach(def => {
         if (def.key === 'status' || def.key === 'notes' || def.key === 'unique_key_string' || def.key === 'full_name' || def.key === 'email_address' || def.key === 'phone_numbers' || candidate[def.key] !== undefined) {
           headers.add(def.header);
         }
@@ -460,7 +459,7 @@ export class GoogleSheetsService {
     return Array.from(headers);
   }
 
-  private formatCandidateRow(candidate: CandidateSourcingTypes.UserProfile, headers: string[]): string[] {
+  private formatCandidateRow(candidate: UserProfile, headers: string[]): string[] {
     return headers.map(header => {
       if (header === 'personId' || header === 'candidateId') {
         return '';
@@ -476,7 +475,7 @@ export class GoogleSheetsService {
       if (header === 'candidateId') return candidate.candidateId || '';
 
       // Handle standard columns using columnDefinitions
-      const definition = CandidateSourcingTypes.columnDefinitions.find(col => col.header === header);
+      const definition = columnDefinitions.find(col => col.header === header);
       if (!definition) {
         return '';
       }
@@ -489,7 +488,7 @@ export class GoogleSheetsService {
     });
   }
 
-  private async appendNewCandidates(auth: any, googleSheetId: string, batch: CandidateSourcingTypes.UserProfile[], headers: string[], existingData: any, apiToken: string): Promise<void> {
+  private async appendNewCandidates(auth: any, googleSheetId: string, batch: UserProfile[], headers: string[], existingData: any, apiToken: string): Promise<void> {
     // Find index of unique key column
     const uniqueKeyIndex = headers.findIndex(header => header.toLowerCase().includes('unique') && header.toLowerCase().includes('key'));
 
@@ -522,7 +521,7 @@ export class GoogleSheetsService {
     console.log(`Successfully appended ${candidateRows.length} new candidates to Google Sheet`);
   }
 
-  private async updateJobWithSheetDetails(jobObject: CandidateSourcingTypes.Jobs, googleSheetUrl: string, googleSheetId: string, apiToken: string): Promise<void> {
+  private async updateJobWithSheetDetails(jobObject: Jobs, googleSheetUrl: string, googleSheetId: string, apiToken: string): Promise<void> {
     console.log('This is the jobObject:', jobObject);
     console.log('This Updating sheet with usrl:', googleSheetUrl);
     console.log('This Updating sheet with googleSheetId:', googleSheetId);
@@ -545,7 +544,7 @@ export class GoogleSheetsService {
     }
   }
 
-  async processGoogleSheetBatch(batch: CandidateSourcingTypes.UserProfile[], results: any, tracking: any, apiToken: string, googleSheetId: string, jobObject: CandidateSourcingTypes.Jobs): Promise<void> {
+  async processGoogleSheetBatch(batch: UserProfile[], results: any, tracking: any, apiToken: string, googleSheetId: string, jobObject: Jobs): Promise<void> {
     return this.retryWithBackoff(async () => {
       try {
         const auth = await this.loadSavedCredentialsIfExist(apiToken);
@@ -616,7 +615,7 @@ export class GoogleSheetsService {
     });
   }
 
-  private async createAndInitializeSheet(auth: any, headers:string[], jobObject: CandidateSourcingTypes.Jobs, apiToken: string): Promise<string> {
+  private async createAndInitializeSheet(auth: any, headers:string[], jobObject: Jobs, apiToken: string): Promise<string> {
     console.log('Creating and initializing sheet');
     const newSheet = await this.createSpreadsheetForJob(jobObject.name, apiToken);
     const googleSheetId = newSheet.googleSheetId;
@@ -625,7 +624,7 @@ export class GoogleSheetsService {
     return googleSheetId;
   }
 
-  private async appendNewCandidatesToSheet(auth: any, googleSheetId: string, batch: CandidateSourcingTypes.UserProfile[], headers: string[], existingData: any, apiToken: string): Promise<void> {
+  private async appendNewCandidatesToSheet(auth: any, googleSheetId: string, batch: UserProfile[], headers: string[], existingData: any, apiToken: string): Promise<void> {
     const updates: Array<{ range: string; values: any[][] }> = [];
     // console.log("existingData.values::", existingData.values);
     const uniqueKeyIndex = existingData?.values[0].indexOf('UniqueKey');
@@ -903,7 +902,7 @@ export class GoogleSheetsService {
       await sheets.spreadsheets.batchUpdate({
         spreadsheetId: newSpreadsheet.data.spreadsheetId,
         requestBody: {
-          requests: [ { autoResizeDimensions: { dimensions: { sheetId: 0, dimension: 'COLUMNS', startIndex: 0, endIndex: CandidateSourcingTypes.columnDefinitions.length, }, }, }, ],
+          requests: [ { autoResizeDimensions: { dimensions: { sheetId: 0, dimension: 'COLUMNS', startIndex: 0, endIndex: columnDefinitions.length, }, }, }, ],
         },
       });
 
@@ -921,7 +920,7 @@ export class GoogleSheetsService {
     }
   }
 
-  async updateCandidateInSheet(auth: any, spreadsheetId: string, candidate: CandidateSourcingTypes.UserProfile, apiToken: string) {
+  async updateCandidateInSheet(auth: any, spreadsheetId: string, candidate: UserProfile, apiToken: string) {
     try {
       // Get existing headers and data
       const sheets = google.sheets({ version: 'v4', auth });

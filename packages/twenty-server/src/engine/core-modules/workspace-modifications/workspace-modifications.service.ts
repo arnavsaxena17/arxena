@@ -12,6 +12,7 @@ import { AccessTokenService } from 'src/engine/core-modules/auth/token/services/
 import Anthropic from '@anthropic-ai/sdk';
 import OpenAI from 'openai';
 // import { WorkspaceQueryService } from '../workspace-query.service';
+import { ApiKeyService } from 'src/engine/core-modules/auth/services/api-key.service';
 
 @Injectable()
 export class WorkspaceQueryService {
@@ -23,6 +24,7 @@ export class WorkspaceQueryService {
     public readonly dataSourceRepository: Repository<DataSourceEntity>,
     @InjectDataSource('metadata')
     private readonly metadataDataSource: DataSource,
+    public readonly apiKeyService :ApiKeyService,
 
     public readonly accessTokenService: AccessTokenService,
     public readonly workspaceDataSourceService: WorkspaceDataSourceService,
@@ -151,6 +153,7 @@ export class WorkspaceQueryService {
         workspaceId,
         transactionManager,
       );
+      console.log("API KEYS::", apiKeys)
       return apiKeys;
     } catch (e) {
       console.log("Error in  ID", workspaceId, "for dataSourceSchema", dataSourceSchema);

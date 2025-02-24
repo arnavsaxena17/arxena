@@ -1,19 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { CreateFieldsOnObject } from 'src/engine/core-modules/workspace-modifications/object-apis/data/createFields';
-import { CreateManyCandidates, CreateOneObjectMetadataItem, graphqlToFetchAllCandidateData, graphqlToFindManyJobs } from 'twenty-shared';
+import { ArxenaCandidateNode, ArxenaJobCandidateNode, ArxenaPersonNode, CreateManyCandidates, CreateOneObjectMetadataItem, graphqlToFetchAllCandidateData, graphqlToFindManyJobs, Jobs, PersonNode, UserProfile } from 'twenty-shared';
 import { FilterCandidates } from '../../arx-chat/services/candidate-engagement/filter-candidates';
-import * as allDataObjects from '../../arx-chat/services/data-model-objects';
 import { GoogleSheetsService } from '../../google-sheets/google-sheets.service';
 import { CreateMetaDataStructure } from '../../workspace-modifications/object-apis/object-apis-creation';
 import { createFields } from '../../workspace-modifications/object-apis/services/field-service';
 import { createRelations } from '../../workspace-modifications/object-apis/services/relation-service';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
-import * as CandidateSourcingTypes from '../types/candidate-sourcing-types';
 import { processArxCandidate } from '../utils/data-transformation-utility';
 import { JobCandidateUtils } from '../utils/job-candidate-utils';
 import { axiosRequest, axiosRequestForMetadata } from '../utils/utils';
 import { PersonService } from './person.service';
-
 
 
 export const newFieldsToCreate = [ "name", "jobTitle", "currentOrganization", "age", "currentLocation", "inferredSalary", "email", "profileUrl", "phone", "uniqueStringKey", "profileTitle", "displayPicture", "preferredLocations", "birthDate", "inferredYearsExperience", "noticePeriod", "homeTown", "maritalStatus", "ugInstituteName", "ugGraduationYear", "pgGradudationDegree", "ugGraduationDegree", "pgGraduationYear", "resumeHeadline", "keySkills", "industry", "modifyDateLabel", "experienceYears", "experienceMonths",  ];
@@ -239,7 +236,7 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
         return new Map();
     }
 }
-  private async collectJobCandidateFields(data: CandidateSourcingTypes.UserProfile[], jobObject: CandidateSourcingTypes.Jobs): Promise<Set<string>> {
+  private async collectJobCandidateFields(data: UserProfile[], jobObject: Jobs): Promise<Set<string>> {
     const fields = new Set<string>();
     
     // Add predefined fields
@@ -263,24 +260,24 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
 
 
 private async processBatches(
-    data: CandidateSourcingTypes.UserProfile[],
-    jobObject: CandidateSourcingTypes.Jobs,
+    data: UserProfile[],
+    jobObject: Jobs,
     // context: any,
     tracking: any,
     apiToken: string,
     googleSheetId: string
 
   ): Promise<{
-    manyPersonObjects: CandidateSourcingTypes.ArxenaPersonNode[];
-    manyCandidateObjects: CandidateSourcingTypes.ArxenaCandidateNode[];
-    allPersonObjects: allDataObjects.PersonNode[];
-    manyJobCandidateObjects: CandidateSourcingTypes.ArxenaJobCandidateNode[];
+    manyPersonObjects: ArxenaPersonNode[];
+    manyCandidateObjects: ArxenaCandidateNode[];
+    allPersonObjects: PersonNode[];
+    manyJobCandidateObjects: ArxenaJobCandidateNode[];
   }> {
     const results = {
-      manyPersonObjects: [] as CandidateSourcingTypes.ArxenaPersonNode[],
-      allPersonObjects: [] as allDataObjects.PersonNode[],
-      manyCandidateObjects: [] as CandidateSourcingTypes.ArxenaCandidateNode[],
-      manyJobCandidateObjects: [] as CandidateSourcingTypes.ArxenaJobCandidateNode[]
+      manyPersonObjects: [] as ArxenaPersonNode[],
+      allPersonObjects: [] as PersonNode[],
+      manyCandidateObjects: [] as ArxenaCandidateNode[],
+      manyJobCandidateObjects: [] as ArxenaJobCandidateNode[]
     };
   
     console.log("This is the job object in processBatches:", jobObject);
@@ -313,9 +310,9 @@ private async processBatches(
   }
 
   private async setupProcessingContext (
-    jobObject: CandidateSourcingTypes.Jobs,
+    jobObject: Jobs,
     timestamp: string,
-    data: CandidateSourcingTypes.UserProfile[],
+    data: UserProfile[],
     apiToken: string
   ): Promise<{ context: any; batchKey: string }> {
     const batchKey = `${jobObject.id}-${timestamp}`;
@@ -344,7 +341,7 @@ private async processBatches(
     return { context, batchKey };
   }
 
-  async getJobDetails(jobId: string, jobName: string, apiToken: string): Promise<CandidateSourcingTypes.Jobs> {
+  async getJobDetails(jobId: string, jobName: string, apiToken: string): Promise<Jobs> {
     console.log("This is the jobID:", jobId);
     console.log("This is the jobName:", jobName);
     function isValidMongoDBId(str: string) {
@@ -397,16 +394,16 @@ private async processBatches(
     return response.data?.data?.jobs?.edges[0]?.node;
   }
   async processProfilesWithRateLimiting(
-    data: CandidateSourcingTypes.UserProfile[],
+    data: UserProfile[],
     jobId: string,
     jobName: string,
     timestamp: string,
     apiToken: string
   ): Promise<{
-    manyPersonObjects: CandidateSourcingTypes.ArxenaPersonNode[];
-    manyCandidateObjects: CandidateSourcingTypes.ArxenaCandidateNode[];
-    allPersonObjects: allDataObjects.PersonNode[];
-    manyJobCandidateObjects: CandidateSourcingTypes.ArxenaJobCandidateNode[];
+    manyPersonObjects: ArxenaPersonNode[];
+    manyCandidateObjects: ArxenaCandidateNode[];
+    allPersonObjects: PersonNode[];
+    manyJobCandidateObjects: ArxenaJobCandidateNode[];
     timestamp: string;
   }> {
     console.log("Queue has begun to be processed. ")
@@ -436,7 +433,7 @@ private async processBatches(
   
   // Helper methods to break down the logic:
   
-  private async setupJobCandidateStructure(jobObject: CandidateSourcingTypes.Jobs, apiToken: string) {
+  private async setupJobCandidateStructure(jobObject: Jobs, apiToken: string) {
     const path_position = JobCandidateUtils.getJobCandidatePathPosition(jobObject.name, jobObject?.arxenaSiteId);
     const jobCandidateObjectName = `${path_position}JobCandidate`;
     const objectsNameIdMap = await new CreateMetaDataStructure(this.workspaceQueryService).fetchObjectsNameIdMap(apiToken);
@@ -449,7 +446,7 @@ private async processBatches(
   }
   
   private async processPeopleBatch(
-    batch: CandidateSourcingTypes.UserProfile[],
+    batch: UserProfile[],
     uniqueStringKeys: string[],
     results: any,
     tracking: any,
@@ -460,7 +457,7 @@ private async processBatches(
 
       const personDetailsMap = await this.personService.batchGetPersonDetailsByStringKeys(uniqueStringKeys, apiToken);
       console.log("Person Details Map:", personDetailsMap);
-      const peopleToCreate:CandidateSourcingTypes.ArxenaPersonNode[] = [];
+      const peopleToCreate:ArxenaPersonNode[] = [];
       const peopleKeys:string[] = [];
     
       for (const profile of batch) {
@@ -497,8 +494,8 @@ private async processBatches(
     }
   }
   private async processCandidatesBatch(
-    batch: CandidateSourcingTypes.UserProfile[],
-    jobObject: CandidateSourcingTypes.Jobs,
+    batch: UserProfile[],
+    jobObject: Jobs,
     results: any,
     tracking: any,
     apiToken: string
@@ -511,7 +508,7 @@ private async processBatches(
       console.log("Checking candidates with keys:", uniqueStringKeys);
       const candidatesMap = await this.batchCheckExistingCandidates(uniqueStringKeys, jobObject.id, apiToken);
       console.log('Candidates map:', candidatesMap);
-      const candidatesToCreate:CandidateSourcingTypes.ArxenaCandidateNode[] = [];
+      const candidatesToCreate:ArxenaCandidateNode[] = [];
       const candidateKeys:string[] = [];
       
       
@@ -556,14 +553,14 @@ private async processBatches(
   }
   
   private async processJobCandidatesBatch(
-    batch: CandidateSourcingTypes.UserProfile[],
-    jobObject: CandidateSourcingTypes.Jobs,
+    batch: UserProfile[],
+    jobObject: Jobs,
     // path_position: string,
     results: any,
     tracking: any,
     apiToken: string
 ) {
-    const jobCandidatesToCreate: CandidateSourcingTypes.ArxenaJobCandidateNode[] = [];
+    const jobCandidatesToCreate: ArxenaJobCandidateNode[] = [];
     const processedKeys = new Set<string>();
     
     // Get array of personIds and candidateIds
@@ -647,7 +644,7 @@ private async processBatches(
         }
     }
 }
-  async createCandidates(manyCandidateObjects: CandidateSourcingTypes.ArxenaCandidateNode[], apiToken: string): Promise<any> {
+  async createCandidates(manyCandidateObjects: ArxenaCandidateNode[], apiToken: string): Promise<any> {
     console.log('Creating candidates, count:', manyCandidateObjects?.length);
     
     const graphqlVariables = { data: manyCandidateObjects };
@@ -696,7 +693,7 @@ private async processBatches(
 
     async getFieldMetadataFromId(fieldMetadataId: string, allDataObjects: any): Promise<{ objectType: string; fieldName: string } | null> {
       // Search through all objects and their fields to find the matching field metadata
-      for (const edge of allDataObjects.data.objects.edges) {
+      for (const edge of allDataObjects.objects.edges) {
         const fieldEdge = edge.node.fields.edges.find((fieldEdge: any) => 
           fieldEdge.node.id === fieldMetadataId
         );
@@ -803,11 +800,11 @@ private async processBatches(
       return Array.from(new Set(filteredCandidates.map((candidate: any) => candidate.candidate.id)));
     }
         
-    async findManyJobCandidatesWithCursor(path_position: string, apiToken: string): Promise<CandidateSourcingTypes.ArxenaJobCandidateNode[]> {
+    async findManyJobCandidatesWithCursor(path_position: string, apiToken: string): Promise<ArxenaJobCandidateNode[]> {
       const graphqlQueryStr = JobCandidateUtils.generateFindManyJobCandidatesQuery(path_position);
       let cursor = null;
       let hasNextPage = true;
-      const allJobCandidates: CandidateSourcingTypes.ArxenaJobCandidateNode[] = [];
+      const allJobCandidates: ArxenaJobCandidateNode[] = [];
       const MAX_ITERATIONS = 100;
       let iterations = 0;
     
@@ -866,7 +863,7 @@ private async processBatches(
       return allJobCandidates;
     }
     
-async createNewJobCandidateObject(newPositionObj: CandidateSourcingTypes.Jobs, apiToken: string): Promise<string> {
+async createNewJobCandidateObject(newPositionObj: Jobs, apiToken: string): Promise<string> {
   console.log("Creating new job candidate object structure::", newPositionObj);
   const path_position = JobCandidateUtils.getJobCandidatePathPosition(newPositionObj.name, newPositionObj?.arxenaSiteId);
   // First, check if the object already exists
@@ -1091,7 +1088,7 @@ private formatFieldLabel(fieldName: string): string {
     .trim();
 }
 
-  private extractKeysFromObjects(objects: CandidateSourcingTypes.ArxenaJobCandidateNode): string[] {
+  private extractKeysFromObjects(objects: ArxenaJobCandidateNode): string[] {
     const keys = new Set<string>();
     [objects].forEach(obj => {
       Object.keys(obj).forEach(key => keys.add(key));
@@ -1102,8 +1099,8 @@ private formatFieldLabel(fieldName: string): string {
   private async createObjectFieldsAndRelations(
     jobCandidateObjectId: string,
     jobCandidateObjectName: string,
-    data: CandidateSourcingTypes.UserProfile[],
-    jobObject: CandidateSourcingTypes.Jobs,
+    data: UserProfile[],
+    jobObject: Jobs,
     apiToken: string,
   ): Promise<void> {
     // Acquire semaphore for entire field creation process

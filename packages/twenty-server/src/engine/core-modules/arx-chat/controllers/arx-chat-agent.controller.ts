@@ -3,20 +3,27 @@ import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/ser
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 import {
+  ChatControlsObjType,
+  ChatHistoryItem,
+  chatMessageType,
+  ChatRequestBody,
   graphqlMutationToDeleteManyCandidates,
   graphqlMutationToDeleteManyPeople,
   graphqlQueryToFindManyPeople,
   graphqlToFetchAllCandidateData,
   graphQltoUpdateOneCandidate,
   graphqlToUpdateWhatsappMessageId,
+  Jobs,
+  MessageNode,
   mutations,
+  PersonNode,
   queries,
+  whatappUpdateMessageObjType
 } from 'twenty-shared';
 import { GoogleSheetsService } from '../../google-sheets/google-sheets.service';
 import CandidateEngagementArx from '../services/candidate-engagement/candidate-engagement';
 import { FilterCandidates } from '../services/candidate-engagement/filter-candidates';
 import { UpdateChat } from '../services/candidate-engagement/update-chat';
-import * as allDataObjects from '../services/data-model-objects';
 import { OpenAIArxMultiStepClient } from '../services/llm-agents/arx-multi-step-client';
 import { HumanLikeLLM } from '../services/llm-agents/human-or-bot-classification';
 import { getRecruiterProfileByJob } from '../services/recruiter-profile';
@@ -35,7 +42,7 @@ export class ArxChatEndpoint {
   @UseGuards(JwtAuthGuard)
   async startChat(@Req() request: any) {
     const apiToken = request.headers.authorization.split(' ')[1]; // Assuming Bearer token
-    const chatControl: allDataObjects.chatControls = {
+    const chatControl: ChatControlsObjType = {
       chatControlType: 'startChat',
     };
     const response = await new CandidateEngagementArx(
@@ -73,7 +80,7 @@ export class ArxChatEndpoint {
   //   console.log('Got a total of filteredCandidates length, ', filteredCandidateIds.length);
   //   console.log('Starting chat for , ', filteredCandidateIds.length, ' candidates');
   //   for (const candidateId of filteredCandidateIds) {
-  //     const chatControl: allDataObjects.chatControls = { chatControlType: 'startChat' };
+  //     const chatControl: ChatControlsObjType = { chatControlType: 'startChat' };
   //     await await new CandidateEngagementArx(this.workspaceQueryService).createChatControl(candidateId, chatControl, apiToken);
   //   }
   //   return { status: 'Success' };
@@ -84,7 +91,7 @@ export class ArxChatEndpoint {
     const apiToken = request.headers.authorization.split(' ')[1];
     const candidateIds = request.body.candidateIds;
     for (const candidateId of candidateIds) {
-      const chatControl: allDataObjects.chatControls = {
+      const chatControl: ChatControlsObjType = {
         chatControlType: 'startChat',
       };
       await await new CandidateEngagementArx(
@@ -119,7 +126,7 @@ export class ArxChatEndpoint {
     const apiToken = request.headers.authorization.split(' ')[1]; // Assuming Bearer token
     const phoneNumber = request.body.phoneNumber;
     console.log('called fetchCandidateByPhoneNumber for phone:', phoneNumber);
-    const personObj: allDataObjects.PersonNode = await new FilterCandidates(
+    const personObj: PersonNode = await new FilterCandidates(
       this.workspaceQueryService,
     ).getPersonDetailsByPhoneNumber(phoneNumber, apiToken);
     const candidateId = personObj.candidates?.edges[0]?.node?.id;
@@ -147,7 +154,7 @@ export class ArxChatEndpoint {
   async retrieve(@Req() request: any): Promise<object> {
     const apiToken = request.headers.authorization.split(' ')[1];
 
-    const personObj: allDataObjects.PersonNode = await new FilterCandidates(
+    const personObj: PersonNode = await new FilterCandidates(
       this.workspaceQueryService,
     ).getPersonDetailsByPhoneNumber(request.body.phoneNumberFrom, apiToken);
     // debugger;
@@ -156,11 +163,11 @@ export class ArxChatEndpoint {
       const personCandidateNode = personObj?.candidates?.edges[0]?.node;
       const candidateJob = personCandidateNode?.jobs;
       // const messagesList = personCandidateNode?.whatsappMessages?.edges;
-      const messagesList: allDataObjects.MessageNode[] =
+      const messagesList: MessageNode[] =
         await new FilterCandidates(
           this.workspaceQueryService,
         ).fetchAllWhatsappMessages(personCandidateNode.id, apiToken);
-      let mostRecentMessageArr: allDataObjects.ChatHistoryItem[] =
+      let mostRecentMessageArr: ChatHistoryItem[] =
         new FilterCandidates(
           this.workspaceQueryService,
         ).getMostRecentMessageFromMessagesList(messagesList);
@@ -171,7 +178,7 @@ export class ArxChatEndpoint {
           personObj,
           this.workspaceQueryService,
         );
-        const chatControl: allDataObjects.chatControls = {
+        const chatControl: ChatControlsObjType = {
           chatControlType: 'startChat',
         };
         mostRecentMessageArr =
@@ -197,19 +204,19 @@ export class ArxChatEndpoint {
     const interimChat = request.body.interimChat;
     const phoneNumber = request.body.phoneNumber;
     console.log('called interimChat:', interimChat);
-    const personObj: allDataObjects.PersonNode = await new FilterCandidates(
+    const personObj: PersonNode = await new FilterCandidates(
       this.workspaceQueryService,
     ).getPersonDetailsByPhoneNumber(phoneNumber, apiToken);
     const candidateId = personObj.candidates?.edges[0]?.node?.id;
 
-    const candidateJob: allDataObjects.Jobs =
+    const candidateJob: Jobs =
       personObj.candidates?.edges[0]?.node?.jobs;
     const recruiterProfile = await getRecruiterProfileByJob(
       candidateJob,
       apiToken,
     );
     const chatReply = interimChat;
-    const whatsappIncomingMessage: allDataObjects.chatMessageType = {
+    const whatsappIncomingMessage: chatMessageType = {
       phoneNumberFrom: phoneNumber,
       phoneNumberTo: recruiterProfile.phoneNumber,
       messages: [{ role: 'user', content: chatReply }],
@@ -247,11 +254,11 @@ export class ArxChatEndpoint {
     const messageToSend = request?.body?.messageToSend;
     const phoneNumber = request.body.phoneNumberTo;
 
-    const personObj: allDataObjects.PersonNode = await new FilterCandidates(
+    const personObj: PersonNode = await new FilterCandidates(
       this.workspaceQueryService,
     ).getPersonDetailsByPhoneNumber(phoneNumber, apiToken);
     console.log('This is the chat reply:', messageToSend);
-    const candidateJob: allDataObjects.Jobs =
+    const candidateJob: Jobs =
       personObj.candidates?.edges[0]?.node?.jobs;
     const recruiterProfile = await getRecruiterProfileByJob(
       candidateJob,
@@ -262,20 +269,20 @@ export class ArxChatEndpoint {
     const chatMessages =
       personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges;
     let chatHistory = chatMessages[0]?.node?.messageObj || [];
-    const chatControl: allDataObjects.chatControls = {
+    const chatControl: ChatControlsObjType = {
       chatControlType: 'startChat',
     };
     chatHistory =
       personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node
         ?.messageObj;
-    let whatappUpdateMessageObj: allDataObjects.whatappUpdateMessageObjType = {
+    let whatappUpdateMessageObj: whatappUpdateMessageObjType = {
       candidateProfile: personObj?.candidates?.edges[0]?.node,
-      candidateFirstName: personObj?.name?.firstName,
+      candidateFirstName: personObj?.name?.firstName || '',
       phoneNumberFrom: recruiterProfile.phoneNumber,
       whatsappMessageType:
         personObj?.candidates?.edges[0]?.node.whatsappProvider ||
         'application03',
-      phoneNumberTo: personObj?.phone,
+      phoneNumberTo: personObj?.phones.primaryPhoneNumber,
       messages: [{ content: request?.body?.messageToSend }],
       messageType: 'recruiterMessage',
       messageObj: chatHistory,
@@ -283,9 +290,9 @@ export class ArxChatEndpoint {
       whatsappDeliveryStatus: 'created',
       whatsappMessageId: 'startChat',
     };
-    let messageObj: allDataObjects.ChatRequestBody = {
+    let messageObj: ChatRequestBody = {
       phoneNumberFrom: recruiterProfile.phoneNumber,
-      phoneNumberTo: personObj.phone,
+      phoneNumberTo: personObj.phones.primaryPhoneNumber,
       messages: messageToSend,
     };
     const sendMessageResponse = await new FacebookWhatsappChatApi(
@@ -325,7 +332,7 @@ export class ArxChatEndpoint {
       'Going to get all messages by phone Number for :',
       request.body.phoneNumber,
     );
-    const personObj: allDataObjects.PersonNode = await new FilterCandidates(
+    const personObj: PersonNode = await new FilterCandidates(
       this.workspaceQueryService,
     ).getPersonDetailsByPhoneNumber(request.body.phoneNumber, apiToken);
     const candidateId = personObj?.candidates?.edges[0]?.node?.id;
@@ -351,7 +358,7 @@ export class ArxChatEndpoint {
       'Going to get candidate status by phone Number for :',
       request.body.phoneNumber,
     );
-    const personObj: allDataObjects.PersonNode = await new FilterCandidates(
+    const personObj: PersonNode = await new FilterCandidates(
       this.workspaceQueryService,
     ).getPersonDetailsByPhoneNumber(request.body.phoneNumber, apiToken);
     const candidateStatus =
@@ -373,7 +380,7 @@ export class ArxChatEndpoint {
       'Going to get candidate by phone Number for :',
       request.body.phoneNumber,
     );
-    const personObj: allDataObjects.PersonNode = await new FilterCandidates(
+    const personObj: PersonNode = await new FilterCandidates(
       this.workspaceQueryService,
     ).getPersonDetailsByPhoneNumber(request.body.phoneNumber, apiToken);
     const candidateId = personObj?.candidates?.edges[0]?.node?.id;
@@ -679,7 +686,7 @@ export class ArxChatEndpoint {
   async getCandidatesAndChats(@Req() request: any): Promise<object> {
     console.log('Going to get all candidates and chats');
     const apiToken = request?.headers?.authorization?.split(' ')[1];
-    const chatControl: allDataObjects.chatControls = {
+    const chatControl: ChatControlsObjType = {
       chatControlType: 'allStartedAndStoppedChats',
     };
     const { people, candidateJob } = await new CandidateEngagementArx(
@@ -697,7 +704,7 @@ export class ArxChatEndpoint {
     const person = await new FilterCandidates(
       this.workspaceQueryService,
     ).getPersonDetailsByCandidateId(candidateId, apiToken);
-    const chatControl: allDataObjects.chatControls = {
+    const chatControl: ChatControlsObjType = {
       chatControlType: 'allStartedAndStoppedChats',
     };
     const allPeople = await new FilterCandidates(
@@ -953,7 +960,7 @@ export class ArxChatEndpoint {
     try {
       const apiToken = request.headers.authorization.split(' ')[1];
 
-      const personObj: allDataObjects.PersonNode = await new FilterCandidates(
+      const personObj: PersonNode = await new FilterCandidates(
         this.workspaceQueryService,
       ).getPersonDetailsByPhoneNumber(request.body.phoneNumberFrom, apiToken);
       console.log('Person object receiveed::', personObj);

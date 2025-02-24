@@ -17,6 +17,7 @@ import { Workspace } from '../workspace/workspace.entity';
 // import { FeatureFlagEntity } from '../feature-flag/feature-flag.entity';
 import { FeatureFlag } from 'src/engine/core-modules/feature-flag/feature-flag.entity';
 
+import { ApiKeyService } from 'src/engine/core-modules/auth/services/api-key.service';
 import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/services/candidate.service';
 import { JwtModule } from 'src/engine/core-modules/jwt/jwt.module';
 import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.module'; // Add this import
@@ -31,7 +32,7 @@ import { VideoInterviewProcessController } from './controllers/video-interview-p
   imports: [AuthModule,JwtModule, WorkspaceModificationsModule,GoogleCalendarModule,DataSourceModule, TypeORMModule, TypeOrmModule.forFeature([Workspace, FeatureFlag], 'core'), TypeOrmModule.forFeature([DataSourceEntity], 'metadata') ],
   controllers: [ArxChatEndpoint,  WhatsappWebhook, WhatsappControllers,WhatsappTestAPI,TwilioControllers, GoogleControllers, VideoInterviewProcessController],
   // providers: [CandidateStatusClassificationCronService, WebhookTestCronService, PersonService,CandidateEngagementCronService, CandidateService, WorkspaceDataSourceService],
-  providers: [CandidateStatusClassificationCronService, PersonService,CandidateEngagementCronService, CandidateService, WorkspaceDataSourceService, WorkspaceCacheStorageService],
+  providers: [CandidateStatusClassificationCronService, PersonService,CandidateEngagementCronService, CandidateService, WorkspaceDataSourceService, WorkspaceCacheStorageService, ApiKeyService],
   exports: [],
 })
 export class ArxChatAgentModule {}

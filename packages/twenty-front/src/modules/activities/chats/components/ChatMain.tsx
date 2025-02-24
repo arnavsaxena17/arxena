@@ -1,17 +1,16 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { useRecoilState, useRecoilValue } from 'recoil';
-import axios from 'axios';
-import styled from '@emotion/styled';
-import { tokenPairState } from '@/auth/states/tokenPairState';
 import { currentUnreadChatMessagesState } from '@/activities/chats/states/currentUnreadChatMessagesState';
-import ChatWindow from './ChatWindow';
-import ChatSidebar from './ChatSidebar';
-import * as frontChatTypes from '../types/front-chat-types';
-import { Job } from '../types/front-chat-types';
-import { cacheUtils, CACHE_KEYS } from '../utils/cacheUtils';
+import { currentUserState } from '@/auth/states/currentUserState';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { currentWorkspaceState } from '@/auth/states/currentWorkspaceState';
-import { currentUserState } from '@/auth/states/currentUserState';
+import { tokenPairState } from '@/auth/states/tokenPairState';
+import styled from '@emotion/styled';
+import axios from 'axios';
+import React, { useEffect, useState } from 'react';
+import { useRecoilState, useRecoilValue } from 'recoil';
+import { CandidateNode, CandidatesEdge, Job, OneUnreadMessage, PersonNode, UnreadMessageListManyCandidates, UnreadMessagesPerOneCandidate } from 'twenty-shared';
+import { CACHE_KEYS, cacheUtils } from '../utils/cacheUtils';
+import ChatSidebar from './ChatSidebar';
+import ChatWindow from './ChatWindow';
 
 
 interface ChatMainProps {
@@ -161,7 +160,7 @@ export default function ChatMain({ initialCandidateId }: ChatMainProps) {
 
 
   // States
-  // const [individuals, setIndividuals] = useState<frontChatTypes.PersonNode[]>(() => 
+  // const [individuals, setIndividuals] = useState<PersonNode[]>(() => 
   //   cacheUtils.getCache(CACHE_KEYS.CHATS_DATA) || []
   // );
   const [individuals, setIndividuals] = useState([]);
@@ -174,7 +173,7 @@ export default function ChatMain({ initialCandidateId }: ChatMainProps) {
   const [error, setError] = useState<string | null>(null);
   const [jobs, setJobs] = useState<Job[]>([]);
 
-  const [unreadMessages, setUnreadMessages] = useState<frontChatTypes.UnreadMessageListManyCandidates>({
+  const [unreadMessages, setUnreadMessages] = useState<UnreadMessageListManyCandidates>({
     listOfUnreadMessages: [],
   });
 
@@ -238,14 +237,14 @@ export default function ChatMain({ initialCandidateId }: ChatMainProps) {
 
 
   // Functions
-  const getUnreadMessageListManyCandidates = (personNodes: frontChatTypes.PersonNode[]): frontChatTypes.UnreadMessageListManyCandidates => {
-    const listOfUnreadMessages: frontChatTypes.UnreadMessagesPerOneCandidate[] = [];
-    personNodes?.forEach((personNode: frontChatTypes.PersonNode) => {
-      personNode?.candidates?.edges?.forEach((candidateEdge: frontChatTypes.CandidatesEdge) => {
-        const candidateNode: frontChatTypes.CandidateNode = candidateEdge?.node;
-        const ManyUnreadMessages: frontChatTypes.OneUnreadMessage[] = candidateNode?.whatsappMessages?.edges
+  const getUnreadMessageListManyCandidates = (personNodes: PersonNode[]): UnreadMessageListManyCandidates => {
+    const listOfUnreadMessages: UnreadMessagesPerOneCandidate[] = [];
+    personNodes?.forEach((personNode: PersonNode) => {
+      personNode?.candidates?.edges?.forEach((candidateEdge: CandidatesEdge) => {
+        const candidateNode: CandidateNode = candidateEdge?.node;
+        const ManyUnreadMessages: OneUnreadMessage[] = candidateNode?.whatsappMessages?.edges
           ?.filter((edge) => edge?.node?.whatsappDeliveryStatus === 'receivedFromCandidate')
-          ?.map((edge): frontChatTypes.OneUnreadMessage => ({
+          ?.map((edge): OneUnreadMessage => ({
             message: edge?.node?.message,
             id: edge?.node?.id,
             whatsappDeliveryStatus: edge?.node?.whatsappDeliveryStatus,
@@ -280,7 +279,7 @@ export default function ChatMain({ initialCandidateId }: ChatMainProps) {
       ]);
 
       const availablePeople = peopleResponse.data.filter(
-        (person:frontChatTypes.PersonNode) => person?.candidates?.edges?.length > 0 && person?.candidates?.edges[0].node.startChat
+        (person:PersonNode) => person?.candidates?.edges?.length > 0 && person?.candidates?.edges[0].node.startChat
       );
 
       // Update cache before state to ensure smooth loading
@@ -334,7 +333,7 @@ export default function ChatMain({ initialCandidateId }: ChatMainProps) {
     const listOfMessagesIds = unreadMessages?.listOfUnreadMessages
       ?.find(unreadMessage => 
         unreadMessage?.candidateId === (individuals
-          ?.find((individual: frontChatTypes.PersonNode) => individual?.id === selectedIndividual) as unknown as frontChatTypes.PersonNode)
+          ?.find((individual: PersonNode) => individual?.id === selectedIndividual) as unknown as PersonNode)
           ?.candidates?.edges?.[0]?.node?.id
       )
       ?.ManyUnreadMessages?.map(message => message.id);
@@ -357,11 +356,11 @@ export default function ChatMain({ initialCandidateId }: ChatMainProps) {
 
   useEffect(() => {
     if (initialCandidateId && individuals.length > 0) {
-      const individual = individuals.find((ind: frontChatTypes.PersonNode) => 
+      const individual = individuals.find((ind: PersonNode) => 
         ind.candidates?.edges[0]?.node?.id === initialCandidateId
       );
       if (individual) {
-        setSelectedIndividual((individual as frontChatTypes.PersonNode).id);
+        setSelectedIndividual((individual as PersonNode).id);
       }
     }
   }, [initialCandidateId, individuals]);

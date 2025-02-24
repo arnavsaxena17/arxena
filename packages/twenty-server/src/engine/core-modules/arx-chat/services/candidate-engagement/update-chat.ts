@@ -1,8 +1,7 @@
 import axios from 'axios';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
-import { graphqlQueryToCreateOneAnswer, graphqlQueryToCreateOneNewWhatsappMessage, graphqlQueryToRemoveMessages, graphqlToFetchAllCandidateData, graphQltoUpdateOneCandidate } from 'twenty-shared';
+import { allStatuses, AnswerMessageObj, CandidateNode, graphqlQueryToCreateOneAnswer, graphqlQueryToCreateOneNewWhatsappMessage, graphqlQueryToRemoveMessages, graphqlToFetchAllCandidateData, graphQltoUpdateOneCandidate, PersonNode, whatappUpdateMessageObjType } from 'twenty-shared';
 import { v4 } from 'uuid';
-import * as allDataObjects from '../../services/data-model-objects';
 import { axiosRequest } from '../../utils/arx-chat-agent-utils';
 import { Semaphore } from '../../utils/semaphore';
 import { StageWiseClassification } from '../llm-agents/stage-classification';
@@ -149,7 +148,7 @@ export class UpdateChat {
           const whatsappMessages = await new FilterCandidates(this.workspaceQueryService).fetchAllWhatsappMessages(candidateId, apiToken);
           // Get the chat status and formatted chat in parallel
           const [candidateStatus] = await Promise.all([
-            new StageWiseClassification(this.workspaceQueryService).getChatStageFromChatHistory( whatsappMessages, candidateId, jobId, apiToken ) as Promise<allDataObjects.allStatuses>
+            new StageWiseClassification(this.workspaceQueryService).getChatStageFromChatHistory( whatsappMessages, candidateId, jobId, apiToken ) as Promise<allStatuses>
           ])
           console.log("This is the candidate status::", candidate, "for the candidate::", candidateId, "and the status is::", candidateStatus);
           return { candidateId, candidateStatus, googleSheetId: candidate?.jobs?.googleSheetId, whatsappMessages};
@@ -191,7 +190,7 @@ export class UpdateChat {
       return validResults;
   }
 
-  async createAndUpdateWhatsappMessage(candidateProfileObj: allDataObjects.CandidateNode, userMessage: allDataObjects.whatappUpdateMessageObjType, apiToken: string) {
+  async createAndUpdateWhatsappMessage(candidateProfileObj: CandidateNode, userMessage: whatappUpdateMessageObjType, apiToken: string) {
     console.log('This is the message being updated in the database ', userMessage?.messages[0]?.content || "");
     console.log("This is the user candidateProfileObj::", candidateProfileObj);
     const createNewWhatsappMessageUpdateVariables = {
@@ -226,7 +225,7 @@ export class UpdateChat {
     }
   }
 
-  async updateCandidateEngagementStatus(candidateProfileObj: allDataObjects.CandidateNode, whatappUpdateMessageObj: allDataObjects.whatappUpdateMessageObjType, apiToken: string) {
+  async updateCandidateEngagementStatus(candidateProfileObj: CandidateNode, whatappUpdateMessageObj: whatappUpdateMessageObjType, apiToken: string) {
     const candidateEngagementStatus = whatappUpdateMessageObj.messageType !== 'botMessage';
     console.log('Updating candidate engagement status to:', candidateEngagementStatus, "for candidate id::", candidateProfileObj.id, " at time :: ", new Date().toISOString());
     const updateCandidateObjectVariables = { idToUpdate: candidateProfileObj?.id, input: { engagementStatus: candidateEngagementStatus, lastEngagementChatControl: whatappUpdateMessageObj.lastEngagementChatControl } };
@@ -254,7 +253,7 @@ export class UpdateChat {
     }
   }
 
-  async updateCandidateAnswer(candidateProfileObj: allDataObjects.CandidateNode, AnswerMessageObj: allDataObjects.AnswerMessageObj, apiToken: string) {
+  async updateCandidateAnswer(candidateProfileObj: CandidateNode, AnswerMessageObj: AnswerMessageObj, apiToken: string) {
     const updateCandidateObjectVariables = { input: { ...AnswerMessageObj } };
     const graphqlQueryObj = JSON.stringify({ query: graphqlQueryToCreateOneAnswer, variables: updateCandidateObjectVariables });
     try {
@@ -264,7 +263,7 @@ export class UpdateChat {
       console.log(error);
     }
   }
-  async scheduleCandidateInterview(candidateProfileObj: allDataObjects.CandidateNode, scheduleInterviewObj: allDataObjects.whatappUpdateMessageObjType, apiToken: string) {
+  async scheduleCandidateInterview(candidateProfileObj: CandidateNode, scheduleInterviewObj: whatappUpdateMessageObjType, apiToken: string) {
     const updateCandidateObjectVariables = { idToUpdate: candidateProfileObj?.id, input: { scheduleInterviewObj: scheduleInterviewObj } };
     const graphqlQueryObj = JSON.stringify({ query: {}, variables: updateCandidateObjectVariables });
     try {
@@ -275,7 +274,8 @@ export class UpdateChat {
     }
   }
 
-  async updateCandidateEngagementDataInTable(whatappUpdateMessageObj: allDataObjects.whatappUpdateMessageObjType, apiToken:string, isAfterMessageSent: boolean = false) {
+  async updateCandidateEngagementDataInTable(whatappUpdateMessageObj: whatappUpdateMessageObjType, apiToken:string, isAfterMessageSent: boolean = false) {
+    console.log('Updating candidate engagement status in table');
     let candidateProfileObj = whatappUpdateMessageObj.messageType !== 'botMessage' ? await new FilterCandidates(this.workspaceQueryService).getCandidateInformation(whatappUpdateMessageObj,apiToken) : whatappUpdateMessageObj.candidateProfile;
     if (candidateProfileObj.name === '') return;
     console.log('Candidate information retrieved successfully');
@@ -290,7 +290,7 @@ export class UpdateChat {
   }
 
   async removeChatsByPhoneNumber(phoneNumberFrom: string, apiToken: string) {
-    const personObj: allDataObjects.PersonNode = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPhoneNumber(phoneNumberFrom, apiToken);
+    const personObj: PersonNode = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPhoneNumber(phoneNumberFrom, apiToken);
     const personCandidateNode = personObj?.candidates?.edges[0]?.node;
     const messagesList = personCandidateNode?.whatsappMessages?.edges;
     const messageIDs = messagesList?.map(message => message?.node?.id);
@@ -309,7 +309,7 @@ export class UpdateChat {
   }
 
 
-  async updateCandidateProfileStatus(candidateProfileObj: allDataObjects.CandidateNode, whatappUpdateMessageObj: allDataObjects.whatappUpdateMessageObjType, apiToken: string) {
+  async updateCandidateProfileStatus(candidateProfileObj: CandidateNode, whatappUpdateMessageObj: whatappUpdateMessageObjType, apiToken: string) {
     const candidateStatus = whatappUpdateMessageObj.messageType;
     console.log('Updating the candidate status::', candidateStatus);
     console.log('Updating the candidate api token::', apiToken);

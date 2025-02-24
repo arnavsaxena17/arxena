@@ -1,5 +1,5 @@
+import { CreateOneObjectInput } from 'twenty-shared';
 import { mutations } from '../mutations/mutations';
-import { CreateOneObjectInput } from '../types/types';
 import { executeQuery } from '../utils/graphqlClient';
 
 export async function createObjectMetadataItems(apiToken: string, objectCreationArr: CreateOneObjectInput[]) {

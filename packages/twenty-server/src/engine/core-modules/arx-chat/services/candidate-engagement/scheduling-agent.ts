@@ -30,6 +30,8 @@ abstract class BaseCronService {
       console.log('Ending cycle');
     }
   }
+
+  
   private async getFilteredWorkspaces(): Promise<string[]> {
     const workspaceIds = await this.workspaceQueryService.getWorkspaces();
     const dataSources = await this.workspaceQueryService.dataSourceRepository.find({
@@ -41,10 +43,12 @@ abstract class BaseCronService {
   private async getWorkspaceToken(workspaceId: string): Promise<string | null> {
     const schema = this.workspaceQueryService.workspaceDataSourceService.getSchemaName(workspaceId);
     const apiKeys = await this.workspaceQueryService.getApiKeys(workspaceId, schema);
+    console.log("API KEYS::", apiKeys);
+
 
     if (!apiKeys.length) return null;
 
-    const token = await this.workspaceQueryService.accessTokenService.generateAccessToken(workspaceId, apiKeys[0].id);
+    const token = await this.workspaceQueryService.apiKeyService.generateApiKeyToken(workspaceId, apiKeys[0].id);
 
     return token?.token || null;
   }
@@ -54,7 +58,7 @@ const CRON_DISABLED = false;
 
 @Injectable()
 export class CandidateEngagementCronService extends BaseCronService {
-  @Cron(TimeManagement.crontabs.crontTabToExecuteCandidateEngagement, { disabled: CRON_DISABLED })
+  @Cron(TimeManagement.crontabs.crontTabToExecuteCandidateEngagement, { name:'my-scheduled-task2', disabled: CRON_DISABLED })
   async handleCron() {
     if (CRON_DISABLED) return;
     await this.executeWorkspaceTask(async token => {
@@ -66,7 +70,7 @@ export class CandidateEngagementCronService extends BaseCronService {
 @Injectable()
 export class CandidateStatusClassificationCronService extends BaseCronService {
 
-  @Cron(TimeManagement.crontabs.crontTabToUpdateCandidatesChatControls, { disabled: CRON_DISABLED })
+  @Cron(TimeManagement.crontabs.crontTabToUpdateCandidatesChatControls, { name: 'my-scheduled-task1', disabled: CRON_DISABLED })
   async handleFiveHoursCron() {
     if (CRON_DISABLED) return;
     await this.executeWorkspaceTask(async token => {

@@ -1,12 +1,12 @@
-import { FacebookWhatsappChatApi } from './facebook-whatsapp/facebook-whatsapp-api';
-import { BaileysWhatsappAPI } from './baileys/callBaileys';
-import * as allDataObjects from '../data-model-objects';
-import fs from 'fs';
-import path from 'path';
-import mime from 'mime-types';
 import axios from 'axios';
+import fs from 'fs';
+import mime from 'mime-types';
+import path from 'path';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
+import { Attachment, AttachmentMessageObject, ChatControlsObjType, ChatHistoryItem, Jobs, PersonNode, whatappUpdateMessageObjType } from 'twenty-shared';
 import { FilterCandidates } from '../candidate-engagement/filter-candidates';
+import { BaileysWhatsappAPI } from './baileys/callBaileys';
+import { FacebookWhatsappChatApi } from './facebook-whatsapp/facebook-whatsapp-api';
 // import { Transformations } from '../candidate-engagement/transformations';
 
 const baseUrl = 'http://localhost:' + process.env.PORT; // Base URL of your GraphQL server
@@ -15,11 +15,11 @@ export class WhatsappControls {
 
   async sendWhatsappMessageToCandidate(
     messageText: string,
-    personNode: allDataObjects.PersonNode,
-    candidateJob: allDataObjects.Jobs,
-    mostRecentMessageArr: allDataObjects.ChatHistoryItem[],
+    personNode: PersonNode,
+    candidateJob: Jobs,
+    mostRecentMessageArr: ChatHistoryItem[],
     functionSource: string,
-    chatControl: allDataObjects.chatControls,
+    chatControl: ChatControlsObjType,
     apiToken: string,
     isChatEnabled?: boolean,
   ) {
@@ -68,11 +68,11 @@ export class WhatsappControls {
   }
 
   async sendWhatsappMessage(
-    whatappUpdateMessageObj: allDataObjects.whatappUpdateMessageObjType,
-    personNode: allDataObjects.PersonNode,
+    whatappUpdateMessageObj: whatappUpdateMessageObjType,
+    personNode: PersonNode,
     candidateJob,
-    mostRecentMessageArr: allDataObjects.ChatHistoryItem[],
-    chatControl: allDataObjects.chatControls,
+    mostRecentMessageArr: ChatHistoryItem[],
+    chatControl: ChatControlsObjType,
     apiToken: string,
   ) {
     try {
@@ -87,7 +87,7 @@ export class WhatsappControls {
       console.log('Error in sendWhatsappMessage:', error);
     }
   }
-  async sendAttachmentMessageOnWhatsapp(attachmentMessage: allDataObjects.AttachmentMessageObject, personNode: allDataObjects.PersonNode, candidateJob: allDataObjects.Jobs, chatControl: allDataObjects.chatControls, apiToken: string) {
+  async sendAttachmentMessageOnWhatsapp(attachmentMessage: AttachmentMessageObject, personNode: PersonNode, candidateJob: Jobs, chatControl: ChatControlsObjType, apiToken: string) {
     console.log('attachmentMessage received to send attachment:', attachmentMessage);
     if (process.env.WHATSAPP_API === 'facebook') {
       await new FacebookWhatsappChatApi(this.workspaceQueryService).uploadAndSendFileToWhatsApp(attachmentMessage, candidateJob, chatControl, apiToken);
@@ -96,7 +96,7 @@ export class WhatsappControls {
     }
   }
 
-  async sendJDViaWhatsapp(person: allDataObjects.PersonNode, candidateJob, attachment: allDataObjects.Attachment, chatControl: allDataObjects.chatControls, apiToken: string) {
+  async sendJDViaWhatsapp(person: PersonNode, candidateJob, attachment: Attachment, chatControl: ChatControlsObjType, apiToken: string) {
     const fullPath = attachment?.fullPath;
     const name = attachment?.name || 'attachment.pdf';
     console.log('This is attachment name:', name);
@@ -130,14 +130,15 @@ export class WhatsappControls {
     } catch (error) {
       console.log('Error in downloading the file:', error);
     }
-    const attachmentMessageObj: allDataObjects.AttachmentMessageObject = {
-      phoneNumberTo: person.phone,
+    const attachmentMessageObj: AttachmentMessageObject = {
+      phoneNumberTo: person.phones.primaryPhoneNumber,
       phoneNumberFrom: '918411937769',
       fullPath: fullPath,
       fileData: {
         fileName: name,
         filePath: localFilePath,
         mimetype: mime.lookup(name) || 'application/octet-stream',
+        fileBuffer: ''
       },
     };
     await new WhatsappControls(this.workspaceQueryService).sendAttachmentMessageOnWhatsapp(attachmentMessageObj, person, candidateJob, chatControl, apiToken);

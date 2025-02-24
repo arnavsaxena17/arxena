@@ -1,16 +1,16 @@
-import * as allDataObjects from '../../services/data-model-objects';
-import { AttachmentProcessingService } from '../../utils/attachment-processes';
-import { WhatsappControls } from '../whatsapp-api/whatsapp-controls';
-import { UpdateChat } from '../../services/candidate-engagement/update-chat';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
+import { ChatControlsObjType, Jobs, PersonNode, RecruiterProfileType, whatappUpdateMessageObjType } from 'twenty-shared';
+import { UpdateChat } from '../../services/candidate-engagement/update-chat';
+import { AttachmentProcessingService } from '../../utils/attachment-processes';
 import { getRecruiterProfileByJob } from '../recruiter-profile';
+import { WhatsappControls } from '../whatsapp-api/whatsapp-controls';
 // import { chat } from 'googleapis/build/src/apis/chat';
 
 export class ToolCallsProcessing{
     constructor(
       private readonly workspaceQueryService: WorkspaceQueryService
     ) {}
-  async shareJDtoCandidate(person: allDataObjects.PersonNode, candidateJob:allDataObjects.Jobs, chatControl: allDataObjects.chatControls,  apiToken:string) {
+  async shareJDtoCandidate(person: PersonNode, candidateJob:Jobs, chatControl: ChatControlsObjType,  apiToken:string) {
     console.log('This is the person for which we are trying to send the JD:', person);
     const candidateId = person?.candidates?.edges[0]?.node?.id;
     console.log('This is the candidateID for which we are trying to send the JD:', candidateId);
@@ -27,21 +27,21 @@ export class ToolCallsProcessing{
     await new WhatsappControls(this.workspaceQueryService).sendJDViaWhatsapp( person,candidateJob, attachment, chatControl, apiToken);
   }
   
-  async updateCandidateStatus(person: allDataObjects.PersonNode, status: string, apiToken: string) {
+  async updateCandidateStatus(person: PersonNode, status: string, apiToken: string) {
     console.log('Updating the candidate status::', status, "aipi token:", apiToken);
     const candidateId = person?.candidates?.edges[0]?.node?.id;
     console.log('This is the candidateID for which we are trying to update the status:', candidateId);
     const candidateNode = person.candidates.edges[0].node;
-    const candidateJob:allDataObjects.Jobs = candidateNode?.jobs;
-    const recruiterProfile:allDataObjects.recruiterProfileType = await getRecruiterProfileByJob(candidateJob, apiToken) 
+    const candidateJob:Jobs = candidateNode?.jobs;
+    const recruiterProfile:RecruiterProfileType = await getRecruiterProfileByJob(candidateJob, apiToken) 
 
-    let whatappUpdateMessageObj: allDataObjects.whatappUpdateMessageObjType = {
+    let whatappUpdateMessageObj: whatappUpdateMessageObjType = {
       // executorResultObj: {},
       whatsappMessageType: "",
       candidateProfile: person?.candidates?.edges[0]?.node,
       candidateFirstName: person?.name?.firstName,
       lastEngagementChatControl: person?.candidates?.edges[0]?.node?.lastEngagementChatControl,
-      phoneNumberFrom: person?.phone,
+      phoneNumberFrom: person?.phones.primaryPhoneNumber,
       phoneNumberTo: recruiterProfile?.phoneNumber,
       messages: [{ content: status }],
       messageType: status,
@@ -54,21 +54,21 @@ export class ToolCallsProcessing{
     return 'Updated the candidate profile with the status.';
   }
   
-  async scheduleCandidateInterview(person: allDataObjects.PersonNode, status: string,  apiToken:string) {
+  async scheduleCandidateInterview(person: PersonNode, status: string,  apiToken:string) {
     console.log('Updating the candidate interview schedule');
     const candidateId = person?.candidates?.edges[0]?.node?.id;
     console.log('This is the candidateID for which we are trying to update the status:', candidateId);
     const candidateNode = person.candidates.edges[0].node;
-    const candidateJob:allDataObjects.Jobs = candidateNode?.jobs;
-    const recruiterProfile:allDataObjects.recruiterProfileType = await getRecruiterProfileByJob(candidateJob, apiToken) 
+    const candidateJob:Jobs = candidateNode?.jobs;
+    const recruiterProfile:RecruiterProfileType = await getRecruiterProfileByJob(candidateJob, apiToken) 
 
     const candidateProfileObj = person?.candidates?.edges[0]?.node;
-    let whatappUpdateMessageObj: allDataObjects.whatappUpdateMessageObjType = {
+    let whatappUpdateMessageObj: whatappUpdateMessageObjType = {
       // executorResultObj: {},
       whatsappMessageType: "",
       candidateProfile: person?.candidates?.edges[0]?.node,
       candidateFirstName: person?.name?.firstName,
-      phoneNumberFrom: person?.phone,
+      phoneNumberFrom: person?.phones.primaryPhoneNumber,
       lastEngagementChatControl: person?.candidates?.edges[0]?.node?.lastEngagementChatControl,
       phoneNumberTo: recruiterProfile?.phoneNumber,
       messages: [{ content: status }],
@@ -81,7 +81,7 @@ export class ToolCallsProcessing{
     return 'Updated the candidate interview schedule.';
   }
   
-  async updateAnswerInDatabase(person: allDataObjects.PersonNode, AnswerMessageObj: any,  apiToken:string) {
+  async updateAnswerInDatabase(person: PersonNode, AnswerMessageObj: any,  apiToken:string) {
     console.log('Updating the candidate answer in database');
     const candidateId = person?.candidates?.edges[0]?.node?.id;
     console.log('This is the candidateID for which we are trying to update the status:', candidateId);

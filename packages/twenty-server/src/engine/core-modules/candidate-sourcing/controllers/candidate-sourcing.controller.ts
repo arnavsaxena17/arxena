@@ -2,15 +2,14 @@ import { Controller, Post, Req, UseGuards } from '@nestjs/common';
 import axios from 'axios';
 import { workspacesWithOlderSchema } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/candidate-engagement';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
-import { CreateOneJob, createOneQuestion, graphqlToFindManyJobByArxenaSiteIdOlderSchema, graphqlToFindManyJobs, UpdateOneJob } from 'twenty-shared';
+import { CreateOneJob, createOneQuestion, Enrichment, graphqlToFindManyJobByArxenaSiteIdOlderSchema, graphqlToFindManyJobs, Jobs, UpdateOneJob, UserProfile } from 'twenty-shared';
 import { GoogleSheetsService } from '../../google-sheets/google-sheets.service';
-import { Enrichment } from '../../workspace-modifications/object-apis/types/types';
+// import { Enrichment } from '../../workspace-modifications/object-apis/types/types';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { ProcessCandidatesService } from '../jobs/process-candidates.service';
 import { CandidateService } from '../services/candidate.service';
 import { ChatService } from '../services/chat.service';
 import { PersonService } from '../services/person.service';
-import * as CandidateSourcingTypes from '../types/candidate-sourcing-types';
 import { axiosRequest } from '../utils/utils';
 
 
@@ -389,7 +388,7 @@ async updateCandidateSpreadsheet(@Req() request: any): Promise<object> {
     const jobId = req.body?.job_id;
     const jobName = req.body?.job_name;
     console.log('arxenaJobId:', jobId);
-    const data: CandidateSourcingTypes.UserProfile[] = req.body?.data;
+    const data: UserProfile[] = req.body?.data;
     console.log("Data len:",data.length)
     console.log("First candidats:",data[0])
     await new Promise(resolve => setTimeout(resolve, Math.random() * 1000));
@@ -440,7 +439,7 @@ async updateCandidateSpreadsheet(@Req() request: any): Promise<object> {
         }
       }),apiToken
     );
-    const jobsObject: CandidateSourcingTypes.Jobs = responseFromGetAllJobs.data?.data?.jobs?.edges;
+    const jobsObject: Jobs = responseFromGetAllJobs.data?.data?.jobs?.edges;
     return { jobs: jobsObject };
   }
 
@@ -511,7 +510,7 @@ async updateCandidateSpreadsheet(@Req() request: any): Promise<object> {
       const data = request.body;
       const arxenaJobId = data?.job_id;
       const jobName = data?.job_name;
-      const jobObject:CandidateSourcingTypes.Jobs = await this.candidateService.getJobDetails(arxenaJobId,jobName, apiToken, );
+      const jobObject:Jobs = await this.candidateService.getJobDetails(arxenaJobId,jobName, apiToken, );
       // console.log("getJobDetails:", jobObject);
       const questions = data?.questions || [];
       console.log('Number Questions:', questions?.length);

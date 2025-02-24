@@ -1,9 +1,8 @@
-import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
-import CandidateEngagementArx from '../../candidate-engagement/candidate-engagement';
-import { UpdateChat } from '../../candidate-engagement/update-chat';
-import * as allDataObjects from '../../data-model-objects';
 import axios from 'axios';
+import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
+import { AttachmentMessageObject, ChatControlsObjType, ChatHistoryItem, ChatRequestBody, Jobs, PersonNode, whatappUpdateMessageObjType } from 'twenty-shared';
 import { FilterCandidates } from '../../candidate-engagement/filter-candidates';
+import { UpdateChat } from '../../candidate-engagement/update-chat';
 import { getRecruiterProfileByJob } from '../../recruiter-profile';
 
 const FormData = require('form-data');
@@ -17,7 +16,7 @@ export class BaileysWhatsappAPI{
   constructor( private readonly workspaceQueryService: WorkspaceQueryService ) {}
 
 
-async sendWhatsappMessageVIABaileysAPI(whatappUpdateMessageObj: allDataObjects.whatappUpdateMessageObjType, personNode: allDataObjects.PersonNode, candidateJob:allDataObjects.Jobs, mostRecentMessageArr: allDataObjects.ChatHistoryItem[], chatControl: allDataObjects.chatControls,  apiToken:string) {
+async sendWhatsappMessageVIABaileysAPI(whatappUpdateMessageObj: whatappUpdateMessageObjType, personNode: PersonNode, candidateJob:Jobs, mostRecentMessageArr: ChatHistoryItem[], chatControl: ChatControlsObjType,  apiToken:string) {
   console.log('Sending message to whatsapp via baileys api');
 
 
@@ -27,7 +26,7 @@ async sendWhatsappMessageVIABaileysAPI(whatappUpdateMessageObj: allDataObjects.w
   if (whatappUpdateMessageObj.messageType === 'botMessage') {
     console.log('This is the standard message to send fromL', recruiterProfile.phoneNumber, "for name:",whatappUpdateMessageObj.candidateProfile.name );
     console.log('This is the standard message to send to phone:', whatappUpdateMessageObj.phoneNumberTo, "for name :", whatappUpdateMessageObj.candidateProfile.name);
-    const sendTextMessageObj: allDataObjects.ChatRequestBody = {
+    const sendTextMessageObj: ChatRequestBody = {
       phoneNumberFrom: recruiterProfile.phoneNumber,
       phoneNumberTo: whatappUpdateMessageObj.phoneNumberTo,
       messages: whatappUpdateMessageObj.messages[0].content,
@@ -52,7 +51,7 @@ async sendWhatsappMessageVIABaileysAPI(whatappUpdateMessageObj: allDataObjects.w
   }
 }
 
-async sendWhatsappTextMessageViaBaileys(sendTextMessageObj: allDataObjects.ChatRequestBody, personNode: allDataObjects.PersonNode,  apiToken:string) {
+async sendWhatsappTextMessageViaBaileys(sendTextMessageObj: ChatRequestBody, personNode: PersonNode,  apiToken:string) {
   // console.log('This is the ssendTextMessageObj for baileys to be sent ::', sendTextMessageObj);
   const sendMessageUrl = `${baseUrl}/send`;
   const data = {
@@ -131,7 +130,7 @@ async sendWhatsappTextMessageViaBaileys(sendTextMessageObj: allDataObjects.ChatR
   }
 }
 
-async tryAgaintoSendWhatsappMessage(sendTextMessageObj: allDataObjects.ChatRequestBody, apiToken:string) {
+async tryAgaintoSendWhatsappMessage(sendTextMessageObj: ChatRequestBody, apiToken:string) {
   try {
     const sendMessageUrl = `${baseUrl}/send`;
     const data = {
@@ -174,7 +173,7 @@ async tryAgaintoSendWhatsappMessage(sendTextMessageObj: allDataObjects.ChatReque
   }
 }
 
-async sendAttachmentMessageViaBaileys(sendTextMessageObj: allDataObjects.AttachmentMessageObject, personNode: allDataObjects.PersonNode,  apiToken:string) {
+async sendAttachmentMessageViaBaileys(sendTextMessageObj: AttachmentMessageObject, personNode: PersonNode,  apiToken:string) {
   const jobProfile = personNode?.candidates?.edges[0]?.node?.jobs;
   const uploadFileUrl = `${baseUrl}/send-wa-message-file`;
   const data = {

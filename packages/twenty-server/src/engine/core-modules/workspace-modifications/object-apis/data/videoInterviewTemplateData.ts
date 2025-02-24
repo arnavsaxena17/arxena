@@ -1,4 +1,4 @@
-import { VideoInterviewTemplate } from '../types/types.js';
+import { VideoInterviewTemplate } from "twenty-shared";
 
 export function generateVideoInterviewTemplateData(videoInterviewModelIds: string[], jobIds: string[]): VideoInterviewTemplate[] {
     return Array.from({ length: 1 }, (_, i) => ({

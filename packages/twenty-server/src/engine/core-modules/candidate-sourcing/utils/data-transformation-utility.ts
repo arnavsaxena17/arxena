@@ -1,4 +1,4 @@
-import { ArxenaCandidateNode, ArxenaPersonNode, ArxenaJobCandidateNode } from '../types/candidate-sourcing-types';
+import { ArxenaCandidateNode, ArxenaJobCandidateNode, ArxenaPersonNode } from "twenty-shared";
 
 export const mapArxCandidateToPersonNode = candidate => {
   const personNode: ArxenaPersonNode = {

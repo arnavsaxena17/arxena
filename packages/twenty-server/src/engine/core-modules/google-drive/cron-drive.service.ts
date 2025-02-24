@@ -30,7 +30,7 @@ export class CronDriveService {
 
  }
 
- @Cron(CronExpression.EVERY_10_MINUTES)
+ @Cron(CronExpression.EVERY_10_MINUTES, { name: 'fetch-drive-files' })
  async fetchDriveFiles() {
     console.log("fetchDriveFiles()");
    if (this.isProcessing) {
@@ -52,7 +52,7 @@ export class CronDriveService {
      for (const workspaceId of filteredWorkspaceIds) {
       const schema = this.workspaceQueryService.workspaceDataSourceService.getSchemaName(workspaceId);
        const apiKeys = await this.workspaceQueryService.getApiKeys(workspaceId, schema);
-
+      console.log("API KEYS::", apiKeys);
        if (apiKeys.length > 0) {
          const apiKeyToken = await this.workspaceQueryService.accessTokenService.generateAccessToken(
            workspaceId, 

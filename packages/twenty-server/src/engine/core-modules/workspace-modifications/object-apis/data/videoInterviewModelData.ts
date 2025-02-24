@@ -1,4 +1,4 @@
-import { CountryNames, CountryLanguages, VideoInterviewModel } from '../types/types.js';
+import { CountryLanguages, CountryNames, VideoInterviewModel } from "twenty-shared";
 
 export const names: CountryNames = {
     US: ["John", "Richard", "Sarah"],

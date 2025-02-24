@@ -1,9 +1,9 @@
-import * as CandidateSourcingTypes from '../types/candidate-sourcing-types';
 // import { ProcessCandidatesJob } from '../jobs/process-candidates.job';
 import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
 import { QueueCronJobOptions } from 'src/engine/core-modules/message-queue/drivers/interfaces/job-options.interface';
 import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
 import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';
+import { ProcessCandidatesJobData, UserProfile } from 'twenty-shared';
 import { CandidateService } from '../services/candidate.service';
 import { CandidateQueueProcessor } from './process-candidates.job';
 
@@ -15,7 +15,7 @@ export class ProcessCandidatesService {
 ) {}
 
 
-  async send(data: CandidateSourcingTypes.UserProfile[],jobId:string, jobName: string, timestamp: string, apiToken: string): Promise<void> {
+  async send(data: UserProfile[],jobId:string, jobName: string, timestamp: string, apiToken: string): Promise<void> {
     try {
       console.log('Queueing candidate data:');
 
@@ -30,7 +30,7 @@ export class ProcessCandidatesService {
         repeat: { every: 1000 },
       };
 
-      await this.messageQueueService.add<CandidateSourcingTypes.ProcessCandidatesJobData>(
+      await this.messageQueueService.add<ProcessCandidatesJobData>(
         CandidateQueueProcessor.name,
         { data, jobId, jobName, timestamp, apiToken },
         queueJobOptions,

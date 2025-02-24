@@ -1,5 +1,5 @@
+import { RelationInput } from 'twenty-shared';
 import { mutations } from '../mutations/mutations';
-import { RelationInput } from '../types/types';
 import { executeQuery } from '../utils/graphqlClient';
 
 export async function createRelations(fieldRelations:RelationInput[] , apiToken: string) {

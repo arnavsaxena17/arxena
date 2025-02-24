@@ -13,9 +13,8 @@ import * as fs from 'fs';
 import NodeCache from 'node-cache';
 import * as path from 'path';
 import { SocksProxyAgent } from 'socks-proxy-agent';
-import { graphqlToFetchWhatsappMessageByWhatsappId, graphQlToFetchWhatsappMessages, graphqlToUpdateWhatsappMessageId } from 'twenty-shared';
+import { CandidateNode, chatMessageType, emptyCandidateProfileObj, graphqlToFetchWhatsappMessageByWhatsappId, graphQlToFetchWhatsappMessages, graphqlToUpdateWhatsappMessageId } from 'twenty-shared';
 import { FilterCandidates } from '../arx-chat/services/candidate-engagement/filter-candidates';
-import * as allDataObjects from '../arx-chat/services/data-model-objects';
 import { IncomingWhatsappMessages } from '../arx-chat/services/whatsapp-api/incoming-messages';
 import { axiosRequest } from '../arx-chat/utils/arx-chat-agent-utils';
 import { AttachmentProcessingService } from '../arx-chat/utils/attachment-processes';
@@ -158,7 +157,7 @@ export class WhatsappService {
 
               let event = 'message';
               console.log('replying to', msg.key.remoteJid);
-              const whatsappIncomingMessage: allDataObjects.chatMessageType = {
+              const whatsappIncomingMessage: chatMessageType = {
                 phoneNumberFrom: '+' + msg?.key?.remoteJid?.replace('@s.whatsapp.net', ''),
                 phoneNumberTo: phoneNumberTo,
                 messages: [],
@@ -172,7 +171,7 @@ export class WhatsappService {
                 continue;
               }
 
-              if (candidateProfileData == allDataObjects.emptyCandidateProfileObj) {
+              if (candidateProfileData == emptyCandidateProfileObj) {
                 continue;
               }
 
@@ -280,7 +279,7 @@ export class WhatsappService {
     }
   }
 
-  async handleDeleteForEveryoneMessage(msg, candidateProfile: allDataObjects.CandidateNode) {
+  async handleDeleteForEveryoneMessage(msg, candidateProfile: CandidateNode) {
     // console.log('This is the message:', msg);
     console.log('This is the candidateProfile:', candidateProfile);
     const whatsappMessageToGetDeleted = await this.fetchWhatsappMessageById(msg?.message?.protocolMessage?.key?.id);
@@ -338,7 +337,7 @@ export class WhatsappService {
     }
   }
 
-  async downloadAllMediaFiles(m: any, socket: any, folder: any, candidateProfileData: allDataObjects.CandidateNode) {
+  async downloadAllMediaFiles(m: any, socket: any, folder: any, candidateProfileData: CandidateNode) {
     let messageType = '';
     try {
       messageType = Object.keys(m.message)[0];
@@ -379,7 +378,7 @@ export class WhatsappService {
     console.log('This is the ogFileName message?.documentWithCaptionMessage message?.documentWithCaptionMessage?.message?.fileName:', message?.documentWithCaptionMessage?.message?.documentMessage?.fileName);
     // download the message
     try {
-      if (candidateProfileData != allDataObjects.emptyCandidateProfileObj) {
+      if (candidateProfileData != emptyCandidateProfileObj) {
         console.log("Candidate is in the database, seee")
         console.log("Candidate is in socket.updateMediaMessageseee", socket.updateMediaMessage)
         // console.log('This is the candiate who has sent us candidateProfileData::', candidateProfileData);

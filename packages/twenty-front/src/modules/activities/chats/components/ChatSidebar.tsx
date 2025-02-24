@@ -2,11 +2,12 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 
 import styled from "@emotion/styled";
 import { useNavigate } from 'react-router-dom';
-import * as frontChatTypes from "../types/front-chat-types";
+// import * as frontChatTypes from "../types/front-chat-types";
+import { Job, PersonNode, UnreadMessageListManyCandidates } from "twenty-shared";
 import ChatTable from "./ChatTable";
 import SearchBox from "./SearchBox";
 
-import { Job } from "../types/front-chat-types";
+// import { Job } from "../types/front-chat-types";
 
 
 const StyledSidebarContainer = styled.div<{ width: number }>`
@@ -113,10 +114,10 @@ const StyledSearchBox = styled(SearchBox)`
 
 
 interface ChatSidebarProps {
-  individuals: frontChatTypes.PersonNode[];
+  individuals: PersonNode[];
   selectedIndividual: string;
   setSelectedIndividual: (id: string) => void;
-  unreadMessages: frontChatTypes.UnreadMessageListManyCandidates;
+  unreadMessages: UnreadMessageListManyCandidates;
   jobs: Job[];
   isRefreshing?: boolean;
     width: number; // Add this
@@ -243,7 +244,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
       (individual?.name?.firstName?.toLowerCase() + " " + individual?.name?.lastName?.toLowerCase()).includes(searchQuery.toLowerCase()) ||
       individual?.name?.lastName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       individual?.candidates?.edges[0]?.node?.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      individual?.phone?.toLowerCase()?.includes(searchQuery?.toLowerCase()) ||
+      individual?.phones.primaryPhoneNumber?.toLowerCase()?.includes(searchQuery?.toLowerCase()) ||
       individual?.candidates?.edges[0]?.node?.id?.toLowerCase()?.includes(searchQuery.toLowerCase()) ||
       individual?.candidates?.edges[0]?.node?.status?.toLowerCase()?.includes(searchQuery.toLowerCase()) ||
       individual?.id?.toLowerCase()?.includes(searchQuery.toLowerCase()) ||
@@ -283,7 +284,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
       }
 
       // If no manual order or same order, fall back to timestamp sorting
-      const getLastMessageTimestamp = (individual: frontChatTypes.PersonNode) => {
+      const getLastMessageTimestamp = (individual: PersonNode) => {
         const messagesEdges = individual.candidates?.edges[0]?.node?.whatsappMessages?.edges || [];
         
         const latestMessage = messagesEdges.reduce((latest, edge) => {
@@ -309,7 +310,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     );
   };
 
-  const handleReorder = (reorderedIndividuals: frontChatTypes.PersonNode[]) => {
+  const handleReorder = (reorderedIndividuals: PersonNode[]) => {
     console.log("Reordered Individuals:", reorderedIndividuals);
     // Create new order map
     const newOrder = reorderedIndividuals.reduce((acc, individual, index) => {

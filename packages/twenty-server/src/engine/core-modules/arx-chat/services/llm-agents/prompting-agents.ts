@@ -1,19 +1,18 @@
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { z } from 'zod';
 import { FilterCandidates } from '../candidate-engagement/filter-candidates';
-import * as allDataObjects from '../data-model-objects';
 
-const commaSeparatedStatuses = allDataObjects.statusesArray.join(', ');
+const commaSeparatedStatuses = statusesArray.join(', ');
 
 // const candidateProfileObjAllData =  candidateProfile
 
-import { graphqlQueryToFetchPrompts } from 'twenty-shared';
+import { allStatusesArray, graphqlQueryToFetchPrompts, Jobs, PersonNode, RecruiterProfileType, statusesArray } from 'twenty-shared';
 import { axiosRequest } from '../../utils/arx-chat-agent-utils';
 import { getRecruiterProfileByJob } from '../recruiter-profile';
 export class PromptingAgents {
   constructor(private readonly workspaceQueryService: WorkspaceQueryService) {}
   currentConversationStage = z.object({
-    stageOfTheConversation: z.enum(allDataObjects.allStatusesArray),
+    stageOfTheConversation: z.enum(allStatusesArray),
   });
 
   async convertToBulletPoints(steps: { [x: string]: any; 1?: string; 2?: string; 3?: string; 4?: string }) {
@@ -24,7 +23,7 @@ export class PromptingAgents {
     return result;
   }
 
-  async getQuestionsToAsk(personNode: allDataObjects.PersonNode, candidateJob: allDataObjects.Jobs, apiToken: string) {
+  async getQuestionsToAsk(personNode: PersonNode, candidateJob: Jobs, apiToken: string) {
     console.log('This is the job::::%s', candidateJob);
     let questions:string[] = [];
     const location = candidateJob.jobLocation
@@ -49,7 +48,7 @@ export class PromptingAgents {
     return formattedQuestions;
   }
 
-  async getVideoInterviewPrompt(personNode: allDataObjects.PersonNode, apiToken: string) {
+  async getVideoInterviewPrompt(personNode: PersonNode, apiToken: string) {
     const jobProfile = personNode?.candidates?.edges[0]?.node?.jobs;
     const current_job_position = jobProfile.name;
     const candidate_conversation_summary = 'The candidate has mentioned that he/ she is interested in the role. They are okay to relocate and their salary falls in the bracket that the client is hiring for';
@@ -109,7 +108,7 @@ export class PromptingAgents {
     return cleanedTemplate;
   }
 
-  async getStartChatPrompt(personNode: allDataObjects.PersonNode, candidateJob: allDataObjects.Jobs, apiToken: string) {
+  async getStartChatPrompt(personNode: PersonNode, candidateJob: Jobs, apiToken: string) {
     let receiveCV;
     receiveCV = `If they have shared their interest after going through the JD, ask the candidate to share a copy of their updated CV prior to the meeting.
     If they say that you can take the CV from naukri, tell them that you would require a copy for records directly from them for candidate confirmation purposes.`;
@@ -138,7 +137,7 @@ export class PromptingAgents {
     mannerOfAskingQuestions = 'Ask these questions in any order one by one and ensure a natural continuous conversation.';
     mannerOfAskingQuestions = 'Ask these questions in a single message and ask the candidate to answer each of them.';
 
-    const recruiterProfile:allDataObjects.recruiterProfileType = await getRecruiterProfileByJob(candidateJob, apiToken) 
+    const recruiterProfile:RecruiterProfileType = await getRecruiterProfileByJob(candidateJob, apiToken) 
     console.log('recruiterProfile in getstartprompt::', recruiterProfile)
     const variables = {
       personNode,
@@ -156,7 +155,7 @@ export class PromptingAgents {
     return SYSTEM_PROMPT;
   }
 
-  async getStartMeetingSchedulingPrompt(personNode: allDataObjects.PersonNode, candidateJob: allDataObjects.Jobs, apiToken: string) {
+  async getStartMeetingSchedulingPrompt(personNode: PersonNode, candidateJob: Jobs, apiToken: string) {
     try {
       console.log('candidateJob::', candidateJob);
       console.log('candidateJob interviewSchedule::', candidateJob.interviewSchedule.edges[0].node);
@@ -269,7 +268,7 @@ export class PromptingAgents {
     }
   }
 
-  async getTimeManagementPrompt(personNode: allDataObjects.PersonNode) {
+  async getTimeManagementPrompt(personNode: PersonNode) {
     // const TIME_MANAGEMENT_PROMPT = `
     //   The current time is `+ new Date() +`. Calculate the amount of time that has passed from the last message. If the time elapsed has gone beyond 1 minute and less than 5 minutes and the user has not been sent the first reminder, Return the stage as "reminder_necessary" else return "reminder_unnecessary". Do not return any other text.
     // `;

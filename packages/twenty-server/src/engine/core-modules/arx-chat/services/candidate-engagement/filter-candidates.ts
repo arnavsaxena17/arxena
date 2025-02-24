@@ -1,8 +1,7 @@
 import axios from 'axios';
 import { workspacesWithOlderSchema } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/candidate-engagement';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
-import { graphqlQueryToFindInterviewsByJobId, graphqlQueryToFindManyPeople, graphqlQueryToFindManyPeopleEngagedCandidatesOlderSchema, graphqlQueryToFindManyQuestionsByJobId, graphqlQueryToFindScheduledClientMeetings, graphqlToFetchAllCandidateData, graphQlToFetchWhatsappMessages, graphqlToFindManyJobs } from 'twenty-shared';
-import * as allDataObjects from '../../services/data-model-objects';
+import { CandidateNode, CandidatesEdge, ChatControlsObjType, ChatHistoryItem, chatMessageType, emptyCandidateProfileObj, graphqlQueryToFindInterviewsByJobId, graphqlQueryToFindManyPeople, graphqlQueryToFindManyPeopleEngagedCandidatesOlderSchema, graphqlQueryToFindManyQuestionsByJobId, graphqlQueryToFindScheduledClientMeetings, graphqlToFetchAllCandidateData, graphQlToFetchWhatsappMessages, graphqlToFindManyJobs, Jobs, MessageNode, PersonEdge, PersonNode, whatappUpdateMessageObjType } from 'twenty-shared';
 import { axiosRequest } from '../../utils/arx-chat-agent-utils';
 import { getRecruiterProfileByJob } from '../recruiter-profile';
 
@@ -11,25 +10,25 @@ export class FilterCandidates {
 
   async updateChatHistoryObjCreateWhatsappMessageObj(
     wamId: string,
-    personNode: allDataObjects.PersonNode,
-    candidateNode: allDataObjects.CandidateNode,
-    chatHistory: allDataObjects.ChatHistoryItem[],
-    chatControl: allDataObjects.chatControls,
+    personNode: PersonNode,
+    candidateNode: CandidateNode,
+    chatHistory: ChatHistoryItem[],
+    chatControl: ChatControlsObjType,
     apiToken:string
-  ): Promise<allDataObjects.whatappUpdateMessageObjType> {
+  ): Promise<whatappUpdateMessageObjType> {
 
 
-    const candidateJob:allDataObjects.Jobs = candidateNode?.jobs;
+    const candidateJob:Jobs = candidateNode?.jobs;
     const recruiterProfile = await getRecruiterProfileByJob(candidateJob, apiToken) 
 
 
 
-    const updatedChatHistoryObj: allDataObjects.whatappUpdateMessageObjType = {
+    const updatedChatHistoryObj: whatappUpdateMessageObjType = {
       messageObj: chatHistory,
       candidateProfile: candidateNode,
       candidateFirstName: personNode.name?.firstName,
       phoneNumberFrom: recruiterProfile?.phoneNumber,
-      phoneNumberTo: personNode.phone,
+      phoneNumberTo: personNode.phones.primaryPhoneNumber,
       lastEngagementChatControl: chatControl.chatControlType,
       messages: chatHistory.slice(-1),
       messageType: 'botMessage',
@@ -39,12 +38,12 @@ export class FilterCandidates {
     };
     return updatedChatHistoryObj;
   }
-  async updateMostRecentMessagesBasedOnNewSystemPrompt(mostRecentMessageArr: allDataObjects.ChatHistoryItem[], newSystemPrompt: string): Promise<allDataObjects.ChatHistoryItem[]> {
+  async updateMostRecentMessagesBasedOnNewSystemPrompt(mostRecentMessageArr: ChatHistoryItem[], newSystemPrompt: string): Promise<ChatHistoryItem[]> {
     mostRecentMessageArr[0] = { role: 'system', content: newSystemPrompt };
     return mostRecentMessageArr;
   }
 
-  async fetchJobById(jobId: string, apiToken: string): Promise<allDataObjects.Jobs | null> {
+  async fetchJobById(jobId: string, apiToken: string): Promise<Jobs | null> {
     const graphqlQueryObj = JSON.stringify({
       query: graphqlToFindManyJobs,
       variables: { filter: { id: { eq: jobId } } },
@@ -54,8 +53,8 @@ export class FilterCandidates {
     return response?.data?.data?.jobs.edges[0].node || null;
   }
 
-  getMostRecentMessageFromMessagesList(messagesList: allDataObjects.MessageNode[]) {
-    let mostRecentMessageArr: allDataObjects.ChatHistoryItem[] = [];
+  getMostRecentMessageFromMessagesList(messagesList: MessageNode[]) {
+    let mostRecentMessageArr: ChatHistoryItem[] = [];
     if (messagesList) {
       messagesList.sort((a, b) => new Date(b?.createdAt).getTime() - new Date(a?.createdAt).getTime());
       mostRecentMessageArr = messagesList[0]?.messageObj;
@@ -88,7 +87,7 @@ export class FilterCandidates {
     return response.data.data;
   }
 
-  async fetchCandidateByCandidateId(candidateId: string, apiToken: string): Promise<allDataObjects.CandidateNode> {
+  async fetchCandidateByCandidateId(candidateId: string, apiToken: string): Promise<CandidateNode> {
     try {
       const graphqlQueryObj = JSON.stringify({ query: graphqlToFetchAllCandidateData, variables: { filter: { id: { eq: candidateId } } } });
       const response = await axiosRequest(graphqlQueryObj, apiToken);
@@ -98,11 +97,11 @@ export class FilterCandidates {
       return candidateObj;
     } catch (error) {
       console.log('Error in fetching candidate by candidate ID:', error);
-      return allDataObjects.emptyCandidateProfileObj;
+      return emptyCandidateProfileObj;
     }
   }
-  async fetchAllPeopleByCandidatePeopleIds(candidatePeopleIds: string[], apiToken: string): Promise<allDataObjects.PersonNode[]> {
-    let allPeople: allDataObjects.PersonNode[] = [];
+  async fetchAllPeopleByCandidatePeopleIds(candidatePeopleIds: string[], apiToken: string): Promise<PersonNode[]> {
+    let allPeople: PersonNode[] = [];
     let lastCursor: string | null = null;
     const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
     let graphqlQueryObjToFetchAllPeopleForChats = '';
@@ -125,8 +124,8 @@ export class FilterCandidates {
     return allPeople;
   }
 
-  async fetchAllWhatsappMessages(candidateId: string, apiToken: string): Promise<allDataObjects.MessageNode[]> {
-    let allWhatsappMessages: allDataObjects.MessageNode[] = [];
+  async fetchAllWhatsappMessages(candidateId: string, apiToken: string): Promise<MessageNode[]> {
+    let allWhatsappMessages: MessageNode[] = [];
     let lastCursor = null;
     while (true) {
       try {
@@ -171,8 +170,8 @@ export class FilterCandidates {
     }
   }
 
-  async getCandidateDetailsByPhoneNumber(phoneNumber: string, apiToken: string): Promise<allDataObjects.CandidateNode> {
-    const graphVariables = { filter: { phone: { ilike: '%' + phoneNumber + '%' } }, orderBy: { position: 'AscNullsFirst' } };
+  async getCandidateDetailsByPhoneNumber(phoneNumber: string, apiToken: string): Promise<CandidateNode> {
+    const graphVariables = { filter: { phones: { primaryPhoneNumber: { ilike: '%' + phoneNumber + '%' } } }, orderBy: { position: 'AscNullsFirst' } };
     try {
       const graphqlQueryObj = JSON.stringify({ query: graphqlQueryToFindManyPeople, variables: graphVariables });
       const response = await axiosRequest(graphqlQueryObj, apiToken);
@@ -181,7 +180,7 @@ export class FilterCandidates {
       return candidateDataObjs;
     } catch (error) {
       console.log('Getting an error and returning empty candidate profile objeect:', error);
-      return allDataObjects.emptyCandidateProfileObj;
+      return emptyCandidateProfileObj;
     }
   }
 
@@ -190,9 +189,9 @@ export class FilterCandidates {
 
     if (!phoneNumber || phoneNumber === '') {
       console.log('Phone number is empty and no candidate found');
-      return allDataObjects.emptyCandidateProfileObj;
+      return emptyCandidateProfileObj;
     }
-    const graphVariables = { filter: { phone: { ilike: '%' + phoneNumber + '%' } }, orderBy: { position: 'AscNullsFirst' } };
+    const graphVariables = { filter: { phones: { primaryPhoneNumber: { ilike: '%' + phoneNumber + '%' } } }, orderBy: { position: 'AscNullsFirst' } };
     try {
       const graphqlQueryObj = JSON.stringify({ query: graphqlQueryToFindManyPeople, variables: graphVariables });
       const response = await axiosRequest(graphqlQueryObj, apiToken);
@@ -202,16 +201,16 @@ export class FilterCandidates {
         return personObj;
       } else {
         console.log('Person not found');
-        return allDataObjects.emptyCandidateProfileObj;
+        return emptyCandidateProfileObj;
       }
     } catch (error) {
       console.log('Getting an error and returning empty candidate person profile objeect:', error);
-      return allDataObjects.emptyCandidateProfileObj;
+      return emptyCandidateProfileObj;
     }
   }
 
-  async getCandidateInformation(userMessage: allDataObjects.chatMessageType, apiToken: string) {
-    console.log('This is the phoneNumberFrom', userMessage.phoneNumberFrom);
+  async getCandidateInformation(userMessage: chatMessageType, apiToken: string) {
+    console.log('This is the phoneNumberFrom', userMessage?.phoneNumberFrom);
     let phoneNumberToSearch: string;
     if (userMessage.messageType === 'messageFromSelf') {
       phoneNumberToSearch = userMessage.phoneNumberTo.replace('+', '');
@@ -222,27 +221,27 @@ export class FilterCandidates {
     // Ignore if phoneNumberToSearch is not a valid number
     if (isNaN(Number(phoneNumberToSearch))) {
       console.log('Phone number is not valid, ignoring:', phoneNumberToSearch);
-      return allDataObjects.emptyCandidateProfileObj;
+      return emptyCandidateProfileObj;
     }
 
     console.log('Phone number to search is :', phoneNumberToSearch);
-    const graphVariables = { filter: { phone: { ilike: '%' + phoneNumberToSearch + '%' } }, orderBy: { position: 'AscNullsFirst' } };
+    const graphVariables = { filter: { phones: { primaryPhoneNumber: { ilike: '%' + phoneNumberToSearch + '%' } } }, orderBy: { position: 'AscNullsFirst' } };
     try {
       console.log('going to get candidate information');
       const graphqlQueryObj = JSON.stringify({ query: graphqlQueryToFindManyPeople, variables: graphVariables });
       const response = await axiosRequest(graphqlQueryObj, apiToken);
       const candidateDataObjs = response.data?.data?.people?.edges[0]?.node?.candidates?.edges;
       const maxCreatedAt = candidateDataObjs.length > 0 ? Math.max(...candidateDataObjs.map(e => new Date(e.node.jobs.createdAt).getTime())) : 0;
-      const activeJobCandidateObj = candidateDataObjs?.find((edge: allDataObjects.CandidatesEdge) => edge?.node?.jobs?.isActive && edge?.node?.jobs?.createdAt && new Date(edge?.node?.jobs?.createdAt).getTime() === maxCreatedAt);
+      const activeJobCandidateObj = candidateDataObjs?.find((edge: CandidatesEdge) => edge?.node?.jobs?.isActive && edge?.node?.jobs?.createdAt && new Date(edge?.node?.jobs?.createdAt).getTime() === maxCreatedAt);
       console.log('This is the number of candidates', candidateDataObjs?.length);
       // console.log('This is the number of most recent active candidate for whom we can do active job', candidateDataObjs);
       console.log('This is the activeJobCandidateObj who got called', activeJobCandidateObj?.node?.name || '');
       if (activeJobCandidateObj) {
-        const personWithActiveJob = response?.data?.data?.people?.edges?.find((person: allDataObjects.PersonEdge) => person?.node?.candidates?.edges?.some(candidate => candidate?.node?.jobs?.isActive));
-        const activeJobCandidate: allDataObjects.CandidateNode = activeJobCandidateObj?.node;
-        const activeJob: allDataObjects.Jobs = activeJobCandidate?.jobs;
+        const personWithActiveJob = response?.data?.data?.people?.edges?.find((person: PersonEdge) => person?.node?.candidates?.edges?.some(candidate => candidate?.node?.jobs?.isActive));
+        const activeJobCandidate: CandidateNode = activeJobCandidateObj?.node;
+        const activeJob: Jobs = activeJobCandidate?.jobs;
         const activeCompany = activeJob?.company;
-        const candidateProfileObj: allDataObjects.CandidateNode = {
+        const candidateProfileObj: CandidateNode = {
           name: personWithActiveJob?.node?.name?.firstName || '',
           id: activeJobCandidate?.id,
           whatsappProvider: activeJobCandidate?.whatsappProvider,
@@ -278,15 +277,16 @@ export class FilterCandidates {
             edges: activeJobCandidate?.candidateReminders?.edges,
           },
           updatedAt: activeJobCandidate.updatedAt,
+          person: personWithActiveJob?.node,
         };
         return candidateProfileObj;
       } else {
         console.log('No active candidate found.');
-        return allDataObjects.emptyCandidateProfileObj;
+        return emptyCandidateProfileObj;
       }
     } catch (error) {
       console.log('Getting an error and returning empty get Candidate Information candidate profile objeect:', error);
-      return allDataObjects.emptyCandidateProfileObj;
+      return emptyCandidateProfileObj;
     }
   }
 
@@ -311,7 +311,7 @@ export class FilterCandidates {
     console.log('Trying to get person details by candidateId:', candidateId);
     if (!candidateId || candidateId === '') {
       console.log('Phone number is empty and no candidate found');
-      return allDataObjects.emptyCandidateProfileObj;
+      return emptyCandidateProfileObj;
     }
     const graphVariables = { filter: { id: { eq: candidateId } }, orderBy: { position: 'AscNullsFirst' } };
     try {
@@ -337,15 +337,15 @@ export class FilterCandidates {
         return person;
       } else {
         console.log('Person not found');
-        return allDataObjects.emptyCandidateProfileObj;
+        return emptyCandidateProfileObj;
       }
     } catch (error) {
       console.log('Getting an error and returning empty candidate person profile objeect:', error);
-      return allDataObjects.emptyCandidateProfileObj;
+      return emptyCandidateProfileObj;
     }
   }
 
-  async getPersonDetailsByPersonId(personID: string, apiToken: string): Promise<allDataObjects.PersonNode> {
+  async getPersonDetailsByPersonId(personID: string, apiToken: string): Promise<PersonNode> {
     const graphVariables = { filter: { id: { eq: personID } }, orderBy: { position: 'AscNullsFirst' } };
     const graphqlQueryObj = JSON.stringify({ query: graphqlQueryToFindManyPeople, variables: graphVariables });
     const response = await axiosRequest(graphqlQueryObj, apiToken);

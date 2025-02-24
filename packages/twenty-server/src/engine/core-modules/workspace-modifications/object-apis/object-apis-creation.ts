@@ -14,7 +14,8 @@ import {
   createVideoInterviewTemplates,
   getJobIds,
 } from './services/videoInterviewTemplateService';
-import { ObjectMetadata, QueryResponse } from './types/types.js';
+// import { ObjectMetadata, QueryResponse } from './types/types.js';
+import { ObjectMetadata, QueryResponse } from 'twenty-shared';
 import { executeQuery } from './utils/graphqlClient.js';
 
 export class CreateMetaDataStructure {

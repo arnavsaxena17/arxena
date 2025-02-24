@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { TypeORMModule } from 'src/database/typeorm/typeorm.module';
+import { ApiKeyService } from 'src/engine/core-modules/auth/services/api-key.service';
 import { AccessTokenService } from 'src/engine/core-modules/auth/token/services/access-token.service';
 import { EmailService } from 'src/engine/core-modules/email/email.service';
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
@@ -37,6 +38,7 @@ import { GoogleSheetsService } from './google-sheets.service';
     WorkspaceQueryService,
     WorkspaceDataSourceService,
     EnvironmentService,
+    ApiKeyService,
     CandidateQueueProcessor,
     JwtAuthStrategy,
     EmailService,

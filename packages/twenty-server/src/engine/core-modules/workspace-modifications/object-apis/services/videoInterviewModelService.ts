@@ -1,7 +1,6 @@
-import { executeQuery, executeGraphQLQuery } from '../utils/graphqlClient';
-import { mutations } from '../mutations/mutations';
 import { generateVideoInterviewModelData } from '../data/videoInterviewModelData';
-import { VideoInterviewModel } from '../types/types.js';
+import { mutations } from '../mutations/mutations';
+import { executeGraphQLQuery } from '../utils/graphqlClient';
 
 export async function createVideoInterviewModels(token:string): Promise<string[]> {
     const createVideoInterviewModels = generateVideoInterviewModelData();

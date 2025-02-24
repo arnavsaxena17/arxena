@@ -1,9 +1,8 @@
-import * as allDataObjects from '../../data-model-objects';
-import { MessageGenerator } from './template-message-generator';
+import { sendWhatsappTemplateMessageObjectType, SendWhatsappUtilityMessageObjectType } from "twenty-shared";
 
 export class WhatsappTemplateMessages{
 
-    getTemplateMessageObj(sendTemplateMessageObj: allDataObjects.sendWhatsappTemplateMessageObjectType) {
+    getTemplateMessageObj(sendTemplateMessageObj: sendWhatsappTemplateMessageObjectType) {
         const templateMessageObj = JSON.stringify({
           messaging_product: 'whatsapp',
           to: sendTemplateMessageObj.recipient,
@@ -32,7 +31,7 @@ export class WhatsappTemplateMessages{
         // console.log("This is the template message object created:", templateMessageObj)
         return templateMessageObj;
       }
-      getUpdatedUtilityMessageObj(sendTemplateMessageObj: allDataObjects.sendWhatsappUtilityMessageObjectType) {
+      getUpdatedUtilityMessageObj(sendTemplateMessageObj: SendWhatsappUtilityMessageObjectType) {
         let templateMessageObj;
         let meetingDate = new Date();
         meetingDate.setDate(meetingDate.getDate() + 2);
@@ -499,7 +498,7 @@ export class WhatsappTemplateMessages{
     
 
 
-        // generateMessage(templateName: string, data: allDataObjects.sendWhatsappUtilityMessageObjectType): string {
+        // generateMessage(templateName: string, data: SendWhatsappUtilityMessageObjectType): string {
         //   try {
         //     const messageGenerator = new MessageGenerator(templatesJson);
         //     return this.messageGenerator.generateMessage(templateName, this.transformData(data));
@@ -510,7 +509,7 @@ export class WhatsappTemplateMessages{
         // }
 
 
-        private transformData(data: allDataObjects.sendWhatsappUtilityMessageObjectType): Record<string, any> {
+        private transformData(data: SendWhatsappUtilityMessageObjectType): Record<string, any> {
           const currentISTTime = new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
           const currentHour = new Date(currentISTTime).getHours();
           const dayText = currentHour < 17 ? "today" : "tomorrow";
@@ -561,7 +560,7 @@ export class WhatsappTemplateMessages{
 
         
 
-        // generateMessage(templateName: string, data: allDataObjects.sendWhatsappUtilityMessageObjectType): string {
+        // generateMessage(templateName: string, data: SendWhatsappUtilityMessageObjectType): string {
           
         //   switch (templateName) {
         //     case 'recruitment':
@@ -576,25 +575,25 @@ export class WhatsappTemplateMessages{
         //       return 'Invalid template name';
         //   }
         // }    
-        // generateRecruitmentMessage(data: allDataObjects.sendWhatsappUtilityMessageObjectType): string {
+        // generateRecruitmentMessage(data: SendWhatsappUtilityMessageObjectType): string {
         //   return `Dear ${data.candidateFirstName},\n\n` +
         //     `My name is ${data.recruiterName}, ${data.recruiterJobTitle} at ${data.recruiterCompanyName}, ${data.recruiterCompanyDescription}. ` +
         //     `I am reaching out to you regarding the ${data.jobPositionName} position for ${data.jobLocation}. ` +
         //     `Job Code: ${data.jobCode}\n${data.descriptionOneliner}\n`;
         // }
       
-        // generateApplicationMessage(data: allDataObjects.sendWhatsappUtilityMessageObjectType): string {
+        // generateApplicationMessage(data: SendWhatsappUtilityMessageObjectType): string {
         //   return `Dear ${data.candidateFirstName},\n\n` +
         //     `Thank you for your time earlier on ${data.discussionDate}. ` +
         //     `Please let me know your availability for the next steps ${data.nextStep}.\n`;
         // }
       
-        // generateApplication02Message(data: allDataObjects.sendWhatsappUtilityMessageObjectType): string {
+        // generateApplication02Message(data: SendWhatsappUtilityMessageObjectType): string {
         //   return `Dear ${data.candidateFirstName},\n\n` +
         //     `I hope this message finds you well. I am following up to check on your availability for the next steps regarding the ` +
         //     `${data.jobPositionName} position in ${data.jobLocation}. Kindly update me when you get a chance.\n`;
         // }
-        // generateRejectionMessage(data: allDataObjects.sendWhatsappUtilityMessageObjectType): string {
+        // generateRejectionMessage(data: SendWhatsappUtilityMessageObjectType): string {
         //   console.log("This is the data for rejection message", data)
         //   return `Hi  ${data.candidateFirstName},
         //     Further to your profile discussed last week, we discussed internally and believe that your profile won't be a good fit.
@@ -605,7 +604,7 @@ export class WhatsappTemplateMessages{
         // { type: 'text', text: "internally", },
         // { type: 'text', text: "believe that your profile won't be a good fit", },
 
-        getUtilityMessageObj(sendTemplateMessageObj: allDataObjects.sendWhatsappUtilityMessageObjectType) {
+        getUtilityMessageObj(sendTemplateMessageObj: SendWhatsappUtilityMessageObjectType) {
         const templateMessageObj = JSON.stringify({
           messaging_product: 'whatsapp',
           to: sendTemplateMessageObj.recipient,

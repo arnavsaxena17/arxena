@@ -1,12 +1,10 @@
 import axios from "axios";
-import * as allDataObjects from "../services/data-model-objects";
 import fs from "fs";
 import OpenAI from "openai";
 
 import ffmpeg from "fluent-ffmpeg";
-import ffmpegPath from "ffmpeg-static";
 import path from "path";
-import { WorkspaceQueryService } from "../../workspace-modifications/workspace-modifications.service";
+import { PersonNode } from "twenty-shared";
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 // Set the path for the ffmpeg binary
@@ -15,10 +13,10 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 
 
-export function sortWhatsAppMessages(candidateResponseEngagementArr: allDataObjects.PersonNode[]) {
+export function sortWhatsAppMessages(candidateResponseEngagementArr: PersonNode[]) {
   // console.log("Number of candidates being sorted:", candidateResponseEngagementArr.length)
   // console.log("This is the people data:", JSON.stringify(peopleData));
-  const sortedPeopleData:allDataObjects.PersonNode[] = candidateResponseEngagementArr; // Deep copy to avoid mutating the original data
+  const sortedPeopleData:PersonNode[] = candidateResponseEngagementArr; // Deep copy to avoid mutating the original data
   candidateResponseEngagementArr?.forEach((personEdge) => {
     personEdge?.candidates?.edges.forEach((candidateEdge) => {
       candidateEdge?.node?.whatsappMessages?.edges.sort((a, b) => {

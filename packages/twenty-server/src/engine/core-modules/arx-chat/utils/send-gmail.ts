@@ -1,7 +1,7 @@
-import { GmailMessageData } from "../../gmail-sender/services/gmail-sender-objects-types";
-import { GmailSender } from "../../gmail-sender/gmail-sender"
+import { Jobs, PersonNode } from "twenty-shared";
+import { GmailSender } from "../../gmail-sender/gmail-sender";
 import { MailerService } from "../../gmail-sender/gmail-sender.service";
-import * as allDataObjects from '../services/data-model-objects';
+import { GmailMessageData } from "../../gmail-sender/services/gmail-sender-objects-types";
 
 export class SendEmailFunctionality {
   async sendEmailFunction(gmailMessageData: GmailMessageData, twenty_token: string) {
@@ -29,7 +29,7 @@ export class SendEmailFunctionality {
 
 export class EmailTemplates{
 
-  async getInterviewInvitationTemplate(person: allDataObjects.PersonNode,candidateJob:allDataObjects.Jobs, interviewLink: string) {
+  async getInterviewInvitationTemplate(person: PersonNode,candidateJob:Jobs, interviewLink: string) {
     console.log("Goign to try and create template")
     const candidate = person?.candidates?.edges?.find(edge => edge.node.jobs.id === candidateJob.id)?.node;
     const jobName = candidate?.jobs.name;

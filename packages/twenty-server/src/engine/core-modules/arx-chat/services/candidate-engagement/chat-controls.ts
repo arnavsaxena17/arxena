@@ -1,12 +1,12 @@
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
-import * as allDataObjects from '../data-model-objects';
-import { FacebookWhatsappChatApi } from '../whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
+import { ChatControlsObjType, ChatRequestBody, Jobs, PersonNode, RecruiterProfileType, SendWhatsappUtilityMessageObjectType, whatappUpdateMessageObjType } from 'twenty-shared';
 import { ToolCallingAgents } from '../llm-agents/tool-calling-agents';
 import { getRecruiterProfileByJob } from '../recruiter-profile';
+import { FacebookWhatsappChatApi } from '../whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
 
 export class ChatControls {
   constructor(private readonly workspaceQueryService: WorkspaceQueryService) {}
-  async getTools(candidateJob: allDataObjects.Jobs, chatControl: allDataObjects.chatControls) {
+  async getTools(candidateJob: Jobs, chatControl: ChatControlsObjType) {
     if (chatControl.chatControlType === 'startChat') {
       return new ToolCallingAgents(this.workspaceQueryService).getStartChatTools(candidateJob);
     } else if (chatControl.chatControlType === 'startVideoInterviewChat') {
@@ -15,10 +15,10 @@ export class ChatControls {
       return new ToolCallingAgents(this.workspaceQueryService).getStartMeetingSchedulingTools(candidateJob);
     }
   }
-  async runChatControlMessageSending(whatappUpdateMessageObj: allDataObjects.whatappUpdateMessageObjType, candidateJob:allDataObjects.Jobs, chatControl: allDataObjects.chatControls, personNode: allDataObjects.PersonNode, apiToken: string) {
+  async runChatControlMessageSending(whatappUpdateMessageObj: whatappUpdateMessageObjType, candidateJob:Jobs, chatControl: ChatControlsObjType, personNode: PersonNode, apiToken: string) {
     let response;
     try {
-      const recruiterProfile:allDataObjects.recruiterProfileType = await getRecruiterProfileByJob(candidateJob, apiToken) 
+      const recruiterProfile:RecruiterProfileType = await getRecruiterProfileByJob(candidateJob, apiToken) 
       if (whatappUpdateMessageObj?.messages[0]?.content?.toLowerCase().includes('recruitment company') || whatappUpdateMessageObj?.messages[0]?.content?.toLowerCase().includes('video interview as part of the')) {
         console.log("USING TEMPLATE FOR startChat")
         let messageTemplate: string;
@@ -56,7 +56,7 @@ export class ChatControls {
         console.log('videoInterviewLink::', videoInterviewLink);
 
     
-        const sendTemplateMessageObj: allDataObjects.sendWhatsappUtilityMessageObjectType = {
+        const sendTemplateMessageObj: SendWhatsappUtilityMessageObjectType = {
           recipient: whatappUpdateMessageObj.phoneNumberTo.replace('+', ''),
           template_name: messageTemplate,
           recruiterFirstName: recruiterProfile.name,
@@ -78,7 +78,7 @@ export class ChatControls {
       } else {
         console.log('This is the standard message to send from', recruiterProfile.phoneNumber);
         console.log('This is the standard message to send to phone:', whatappUpdateMessageObj.phoneNumberTo);
-        const sendTextMessageObj: allDataObjects.ChatRequestBody = {
+        const sendTextMessageObj: ChatRequestBody = {
           phoneNumberFrom: recruiterProfile.phoneNumber,
           phoneNumberTo: whatappUpdateMessageObj.phoneNumberTo,
           messages: whatappUpdateMessageObj.messages[0].content,

@@ -1,12 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { useRecoilState } from 'recoil';
-import axios from 'axios';
-import dayjs from 'dayjs';
-import styled from '@emotion/styled';
-import { tokenPairState } from '@/auth/states/tokenPairState';
-import * as frontChatTypes from '@/activities/chats/types/front-chat-types';
-import { chatPanelState } from '@/activities/chats/states/chatPanelState';
 import AttachmentPanel from '@/activities/chats/components/AttachmentPanel';
+import { chatPanelState } from '@/activities/chats/states/chatPanelState';
+import { tokenPairState } from '@/auth/states/tokenPairState';
+import styled from '@emotion/styled';
+import axios from 'axios';
+import { useEffect, useState } from 'react';
+import { useRecoilState } from 'recoil';
+import { graphqlToFetchAllCandidateData, MessageNode } from 'twenty-shared';
 
 // const StyledContainer = styled.div`
 //   display: flex;
@@ -57,7 +56,7 @@ const EmptyState = styled.div`
 export const RightDrawerCVThread = () => {
   const [tokenPair] = useRecoilState(tokenPairState);
   const [chatPanel] = useRecoilState(chatPanelState);
-  const [messageHistory, setMessageHistory] = useState<frontChatTypes.MessageNode[]>([]);
+  const [messageHistory, setMessageHistory] = useState<MessageNode[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [candidateData, setCandidateData] = useState<{ id: string; name: string } | null>(null);
   const [isAttachmentPanelOpen, setIsAttachmentPanelOpen] = useState(true);
@@ -78,23 +77,7 @@ export const RightDrawerCVThread = () => {
               limit: 1,
               filter: { id: { eq: candidateId } },
             },
-            query: `
-              query FindManyCandidates($lastCursor: String, $limit: Int, $filter: CandidateFilterInput) {
-          candidates(after: $lastCursor, first: $limit, filter: $filter) {
-            edges {
-              node {
-                id
-                people {
-                  name {
-                    firstName
-                    lastName
-                  }
-                      }
-                    }
-                  }
-                }
-              }
-            `,
+            query: graphqlToFetchAllCandidateData,
           },
           {
             headers: {
