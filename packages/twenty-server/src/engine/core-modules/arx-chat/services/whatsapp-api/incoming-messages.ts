@@ -1,7 +1,7 @@
 import { axiosRequest } from 'src/engine/core-modules/arx-chat/utils/arx-chat-agent-utils';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
+import { graphqlQueryToCreateOneNewWhatsappMessage, graphqlToFetchWhatsappMessageByWhatsappId, graphQlToFetchWhatsappMessages, graphqlToUpdateWhatsappMessageId } from 'twenty-shared';
 import { EntityManager } from 'typeorm';
-import * as allGraphQLQueries from '../../graphql-queries/graphql-queries-chatbot';
 import { UpdateChat } from '../../services/candidate-engagement/update-chat';
 import * as allDataObjects from '../../services/data-model-objects';
 import { FacebookWhatsappChatApi } from '../../services/whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
@@ -88,7 +88,7 @@ export class IncomingWhatsappMessages {
       };
       const response = await axiosRequest(
         JSON.stringify({
-          query: allGraphQLQueries.graphqlToFetchOneWhatsappMessageByWhatsappId,
+          query: graphqlToFetchWhatsappMessageByWhatsappId,
           variables: whatsappMessageVariable,
         }),apiToken
       );
@@ -208,7 +208,7 @@ export class IncomingWhatsappMessages {
       const messageStatus = requestBody?.entry[0]?.changes[0]?.value?.statuses[0]?.status;
       console.log("This is the message statuse:", messageStatus)
       const variables = { filter: { whatsappMessageId: { ilike: `%${messageId}%` } }, orderBy: { position: 'AscNullsFirst' } };
-      const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindMessageByWAMId, variables: variables });
+      const graphqlQueryObj = JSON.stringify({ query: graphQlToFetchWhatsappMessages, variables: variables });
       const response = await axiosRequest(graphqlQueryObj,apiToken);
       console.log('-----------------This is the response from the query to find the message by WAMID::-------------------');
       // debugger
@@ -226,7 +226,7 @@ export class IncomingWhatsappMessages {
       console.log("Will try and do a delivery status update now:: ", response?.data?.data?.whatsappMessages?.edges[0]?.node?.id, "with delivery satatus::", messageStatus)
       const variablesToUpdateDeliveryStatus = { idToUpdate: response?.data?.data?.whatsappMessages?.edges[0]?.node?.id, input: { whatsappDeliveryStatus: messageStatus } };
       // debugger
-      const graphqlQueryObjForUpdationForDeliveryStatus = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToUpdateMessageDeliveryStatus, variables: variablesToUpdateDeliveryStatus });
+      const graphqlQueryObjForUpdationForDeliveryStatus = JSON.stringify({ query: graphqlToUpdateWhatsappMessageId, variables: variablesToUpdateDeliveryStatus });
       const responseOfDeliveryStatus = await axiosRequest(graphqlQueryObjForUpdationForDeliveryStatus,apiToken);
       // console.log("This is the response of the delivery status update::", responseOfDeliveryStatus);
 
@@ -315,7 +315,7 @@ export class IncomingWhatsappMessages {
             console.log("Candidate reminder found, updating the reminder status to false")
             const listOfReminders = candidateProfileData?.candidateReminders?.edges;
             const updateOneReminderVariables = { idToUpdate: listOfReminders[0]?.node?.id, input: { isReminderActive: false } };
-            const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToCreateOneNewWhatsappMessage, variables: updateOneReminderVariables });
+            const graphqlQueryObj = JSON.stringify({ query: graphqlQueryToCreateOneNewWhatsappMessage, variables: updateOneReminderVariables });
           }
 
           console.log("Graphqlreqsponse after message update",responseAfterMessageUpdate);

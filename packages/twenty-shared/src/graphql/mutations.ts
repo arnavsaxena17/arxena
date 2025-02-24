@@ -24,24 +24,20 @@ export const graphqlQueryToCreateVideoInterview = `mutation CreateOneVideoInterv
   }
 }`;
 
-export const graphQltoUpdateOneCandidate = `mutation UpdateOneCandidate($idToUpdate: ID!, $input: CandidateUpdateInput!) {
-  updateCandidate(id: $idToUpdate, data: $input) {
-    __typename
-    engagementStatus
-    whatsappProvider
-    jobsId
-    updatedAt
-    startChat
-    stopChat
-    chatCount
-    startChatCompleted
-    startMeetingSchedulingChat
-    startMeetingSchedulingChatCompleted
-    startVideoInterviewChat
-    startVideoInterviewChatCompleted
-    position
+
+export const createResponseMutation = `mutation CreateOneVideoInterviewResponse($input: VideoInterviewResponseCreateInput!) {
+  createVideoInterviewResponse(data: $input) {
+    id
+    videoInterviewId
+    videoInterviewQuestionId
+    transcript
+    completedResponse
+    createdAt
   }
 }`;
+
+
+
 
 
 
@@ -86,6 +82,19 @@ mutation DeleteManyPeople($filter: PersonFilterInput!) {
 `;
 
 
+
+export const graphqlToUpdateWhatsappMessageId = `
+mutation UpdateOneWhatsappMessage($idToUpdate: ID!, $input: WhatsappMessageUpdateInput!) {
+  updateWhatsappMessage(id: $idToUpdate, data: $input) {
+   id
+   createdAt
+   updatedAt
+  }
+}
+`;
+
+
+
 export const graphqlQueryToRemoveMessages = `mutation DeleteManyWhatsappMessages($filter: WhatsappMessageFilterInput!) {
   deleteWhatsappMessages(filter: $filter) {
     id
@@ -120,75 +129,47 @@ export const graphqlToUpdateOneClientInterview =  `mutation UpdateOneClientInter
 }`
 
 
-
-export const graphQlToUpdateCandidate = `mutation UpdateOneCandidate($idToUpdate: ID!, $input: CandidateUpdateInput!) {
-  updateCandidate(id: $idToUpdate, data: $input) {
-      __typename
-  }
-}`;
-
-export const mutationToUpdateOnePerson = `mutation UpdateOnePerson($idToUpdate: ID!, $input: PersonUpdateInput!) {
-  updatePerson(id: $idToUpdate, data: $input) {
+export const graphQLtoCreateOneAttachmentFromFilePath = `mutation CreateOneAttachment($input: AttachmentCreateInput!) {
+  createAttachment(data: $input) {
     __typename
-    city
-  }
+  } 
 }`;
 
-export const graphqlQueryToCreateOneNewWhatsappMessage = `mutation CreateOneWhatsappMessage($input: WhatsappMessageCreateInput!) {
-  createWhatsappMessage(data: $input) {
-    recruiterId
-    message
-    phoneFrom
-    phoneTo
-    jobsId
-    candidateId
-    name
-    messageObj
-    lastEngagementChatControl
-    whatsappDeliveryStatus
-    whatsappMessageId
-    typeOfMessage
-    audioFilePath
-  }
-}`;
 
-export const graphqlQueryToUpdateCandidateEngagementStatus = `mutation UpdateOneCandidate($idToUpdate: ID!, $input: CandidateUpdateInput!) {
-  updateCandidate(id: $idToUpdate, data: $input) {
-    updatedAt
-    id
-  }
-}`;
-export const graphqlQueryToUpdateCandidateChatCount = `mutation UpdateOneCandidate($idToUpdate: ID!, $input: CandidateUpdateInput!) {
-  updateCandidate(id: $idToUpdate, data: $input) {
-    updatedAt
-    id
-  }
-}`;
 
-export const graphqlQueryToUpdateCandidateStatus = `mutation UpdateOneCandidate($idToUpdate: ID!, $input: CandidateUpdateInput!) {
-updateCandidate(id: $idToUpdate, data: $input) {
-  __typename
-  status
-  }
-}`;
 
-export const graphqlQueryToUpdateReminderStatus = `mutation UpdateOneReminder($idToUpdate: ID!, $input: ReminderUpdateInput!) {
-  updateReminder(id: $idToUpdate, data: $input) {
-    updatedAt
-    id
-  }
-}`;
 
-export const graphqlQueryToUpdateMessageDeliveryStatus = `
-  mutation UpdateOneWhatsappMessage($idToUpdate: ID!, $input: WhatsappMessageUpdateInput!) {
-    updateWhatsappMessage(id: $idToUpdate, data: $input) {
-      __typename
-      whatsappDeliveryStatus
-      whatsappMessageId
-    }
+
+export const updateOneVideoInterviewMutation = `mutation UpdateOneVideoInterview($idToUpdate: ID!, $input: VideoInterviewUpdateInput!) {
+  updateVideoInterview(id: $idToUpdate, data: $input) {
+      id
+      interviewStarted
+      interviewCompleted
+      updatedAt
+      createdAt
+  }
   }`;
 
-export const graphqlToCreateOneMetatDataObjectItems = `
+
+
+  export const CreateManyCandidates = `mutation CreateCandidates($data: [CandidateCreateInput!]!) {
+    createCandidates(data: $data) {
+      __typename
+      id
+    }
+  }`;
+  
+  export const CreateOneCompany = `
+  mutation CreateOneCompany($input: CompanyCreateInput!) {
+    createCompany(data: $input) {
+      __typename
+    }
+  }
+  `;
+  
+
+
+  export const CreateOneObjectMetadataItem = `
   mutation CreateOneObjectMetadataItem($input: CreateOneObjectInput!) {
     createOneObject(input: $input) {
       id
@@ -207,10 +188,300 @@ export const graphqlToCreateOneMetatDataObjectItems = `
       imageIdentifierFieldMetadataId
     }
   }
+`
+
+
+
+
+
+
+  export const CreateOneRelationMetadata = ` mutation CreateOneRelationMetadata($input: CreateOneRelationInput!) {
+    createOneRelation(input: $input) {
+      id
+      relationType
+      fromObjectMetadataId
+      toObjectMetadataId
+      fromFieldMetadataId
+      toFieldMetadataId
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+    `;
+  
+  
+  
+  export const CreateOneFieldMetadataItem = `mutation CreateOneFieldMetadataItem($input: CreateOneFieldMetadataInput!) {
+        createOneField(input: $input) {
+            id
+            type
+            name
+            label
+            description
+            icon
+            isCustom
+            isActive
+            isNullable
+            createdAt
+            updatedAt
+            defaultValue
+            options
+        }
+    }
+    `;
+
+
+
+  
+  export const CreateManyCustomMetadataObject = (objName: string) => {
+    return `
+      mutation Create${objName}($data: [${objName}CreateInput!]!) {
+        createMany${objName}(input: $data) {
+          id
+        }
+      }
+      `;
+  };
+  
+
+  
+
+
+export const graphqlMutationToCreatePhoneCall = `
+mutation CreatePhoneCall($input: CreatePhoneCallInput!) {
+    createPhoneCall(data: $input) {
+        id
+        personId
+        phoneNumber
+        callType
+        duration
+        datetime
+    }
+}`;
+
+export const graphqlMutationToCreateSMS = `
+mutation CreateSMS($input: CreateSMSInput!) {
+    createSMS(data: $input) {
+        id
+        personId 
+        phoneNumber
+        messageType
+        message
+        timestamp
+    }
+}`;
+
+
+
+export const graphqlMutationToUpdateSMS = `
+mutation UpdateSMS($id: ID!, $input: UpdateSMSInput!) {
+    updateSMS(id: $id, data: $input) {
+        id
+        personId
+        phoneNumber
+        messageType
+        message
+        timestamp
+    }
+}`;
+
+
+
+
+
+
+export const CreateOneJob = `
+mutation CreateOneJob($input: JobCreateInput!) {
+  createJob(data: $input) {
+    __typename
+    id
+  }
+}`;
+
+export const UpdateOneJob = `mutation UpdateOneJob($idToUpdate: ID!, $input: JobUpdateInput!) {
+ updateJob(id: $idToUpdate, data: $input) {
+   __typename
+   recruiterId
+   id
+   specificCriteria
+   createdAt
+   arxenaSiteId
+   pathPosition
+   googleSheetUrl{
+   url
+   label
+   }
+   googleSheetId
+
+ }}
 `;
 
-export const graphQLtoCreateOneAttachmentFromFilePath = `mutation CreateOneAttachment($input: AttachmentCreateInput!) {
-  createAttachment(data: $input) {
+
+export const createOneQuestion = `
+mutation CreateOneQuestion($input: QuestionCreateInput!) {
+  createQuestion(data: $input) {
     __typename
-  } 
+  }
+}`
+
+
+export const CreateManyPeople = `
+mutation CreatePeople($data: [PersonCreateInput!]!) {
+  createPeople(data: $data) {
+    __typename
+    uniqueStringKey
+    id
+  }
 }`;
+
+
+
+export const mutationToUpdateOnePerson = `mutation UpdateOnePerson($idToUpdate: ID!, $input: PersonUpdateInput!) {
+  updatePerson(id: $idToUpdate, data: $input) {
+    __typename
+    city
+  }
+}`
+
+
+
+
+
+
+export const graphqlQueryToCreateOneNewWhatsappMessage = `mutation CreateOneWhatsappMessage($input: WhatsappMessageCreateInput!) {
+    createWhatsappMessage(data: $input) {
+      recruiterId
+      message
+      phoneFrom
+      phoneTo
+      jobsId
+      candidateId
+      name
+      messageObj
+      lastEngagementChatControl
+      whatsappDeliveryStatus
+      whatsappMessageId
+      typeOfMessage
+      audioFilePath
+    }
+  }`;
+
+
+
+
+  
+  export const graphQltoUpdateOneCandidate = `mutation UpdateOneCandidate($idToUpdate: ID!, $input: CandidateUpdateInput!) {
+    updateCandidate(id: $idToUpdate, data: $input) {
+      __typename
+      engagementStatus
+      whatsappProvider
+      jobsId
+      updatedAt
+      startChat
+      stopChat
+      chatCount
+      startChatCompleted
+      startMeetingSchedulingChat
+      startMeetingSchedulingChatCompleted
+      startVideoInterviewChat
+      startVideoInterviewChatCompleted
+      position
+    }
+  }`;
+  
+
+
+
+
+export const graphqlQueryToUpdateReminderStatus = `mutation UpdateOneReminder($idToUpdate: ID!, $input: ReminderUpdateInput!) {
+    updateReminder(id: $idToUpdate, data: $input) {
+      updatedAt
+      id
+    }
+  }`;
+
+
+
+
+export const graphqlToAddNewPerson = `mutation CreateOnePerson($input: PersonCreateInput!) {
+  createPerson(data: $input) {
+    __typename
+    }
+}
+`
+
+export const graphqlToAddNewJob = `mutation CreateOneJob($input: JobCreateInput!) {
+  createJob(data: $input) {
+    __typename
+  }
+}
+`
+
+
+export const createCvsentMutation = `mutation CreateOneCvSent($input: CvSentCreateInput!) {
+  createCvSent(data: $input) {
+    __typename
+    id
+  }
+}
+`
+
+
+
+export const graphqlToAddNewContact = `mutation CreateOneContact($input: ContactCreateInput!) {
+  createContact(data: $input) {
+    __typename
+  }
+}
+`
+
+
+
+export const graphqlToAddNewCandidate = `mutation CreateOneCandidate($input: CandidateCreateInput!) {
+  createCandidate(data: $input) {
+    __typename
+  }
+}
+`
+
+
+
+export const mutationToUpdateOnePhoneCall = `
+mutation UpdatePhoneCall($id: ID!, $input: UpdatePhoneCallInput!) {
+    updatePhoneCall(id: $id, data: $input) {
+        id
+        personId
+        phoneNumber
+        callType
+        duration
+        transcript
+        name
+        createdAt
+        timestamp
+        recordingAttachmentId
+    }
+}`;
+
+
+export const createShortlistMutation = `
+    mutation CreateOneShortlist($input: ShortlistCreateInput!) {
+        createShortlist(data: $input) {
+            id
+            name
+            currentJobTitle
+            yearsOfExperience
+            currentCompany
+            universityCollege
+            reasonForLeaving
+            currentSalary
+            functionsReportingTo
+            educationalQualifications
+            reportsTo
+            age
+            currentLocation
+            noticePeriod
+            expectedSalary
+        }
+    }
+`

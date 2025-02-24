@@ -1,11 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { axiosRequest } from '../utils/utils';
-import { graphQltoUpdateOneCandidate, graphqlQueryToFindManyPeople } from '../graphql-queries';
-import { UpdateChat } from '../../arx-chat/services/candidate-engagement/update-chat';
-import * as allDataObjects from '../../arx-chat/services/data-model-objects';
-import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
-import { GoogleSheetsService } from '../../google-sheets/google-sheets.service';
+import { graphQltoUpdateOneCandidate } from 'twenty-shared';
 import { FilterCandidates } from '../../arx-chat/services/candidate-engagement/filter-candidates';
+import * as allDataObjects from '../../arx-chat/services/data-model-objects';
+import { GoogleSheetsService } from '../../google-sheets/google-sheets.service';
+import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
+import { axiosRequest } from '../utils/utils';
 import { CandidateService } from './candidate.service';
 
 @Injectable()

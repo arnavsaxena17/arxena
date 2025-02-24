@@ -1,11 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { axiosRequest } from '../utils/utils';
-import { CreateManyPeople } from '../graphql-queries';
 import * as allDataObjects from '../../arx-chat/services/data-model-objects';
+import { axiosRequest } from '../utils/utils';
 
-import * as CandidateSourcingTypes from '../types/candidate-sourcing-types';
-import * as allGraphQLQueries from '../graphql-queries';
 import axios from 'axios';
+import { CreateManyPeople, graphqlQueryToFindManyPeople } from 'twenty-shared';
+import * as CandidateSourcingTypes from '../types/candidate-sourcing-types';
 
 @Injectable()
 export class PersonService {
@@ -59,7 +58,7 @@ export class PersonService {
     };
 
     const graphqlQuery = JSON.stringify({
-      query: allGraphQLQueries.graphqlQueryToFindManyPeople,
+      query: graphqlQueryToFindManyPeople,
       variables: graphqlVariables,
     });
 

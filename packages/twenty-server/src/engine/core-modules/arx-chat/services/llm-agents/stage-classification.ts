@@ -3,11 +3,11 @@ import { ToolCallingAgents } from './tool-calling-agents';
 
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
-import * as allGraphQLQueries from '../../graphql-queries/graphql-queries-chatbot';
 import { zodResponseFormat } from 'openai/helpers/zod';
+import { FindManyWorkspaceMembers } from 'twenty-shared';
 import { axiosRequest } from '../../utils/arx-chat-agent-utils';
-import { PromptingAgents } from './prompting-agents';
 import { FilterCandidates } from '../candidate-engagement/filter-candidates';
+import { PromptingAgents } from './prompting-agents';
 
 const modelName = 'gpt-4o';
 
@@ -19,7 +19,7 @@ export class StageWiseClassification{
 
     async getChatPromptFromWorksPageMember(currentWorkspaceMemberId: any, apiToken: string) {
       let data = JSON.stringify({
-        query: allGraphQLQueries.graphqlQueryToFetchWorksPaceMembers,
+        query: FindManyWorkspaceMembers,
         variables: { filter: { id: { eq: currentWorkspaceMemberId } } },
       });
       try {

@@ -1,14 +1,13 @@
-import * as allDataObjects from '../data-model-objects';
-import { z } from 'zod';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
+import { z } from 'zod';
 import { FilterCandidates } from '../candidate-engagement/filter-candidates';
+import * as allDataObjects from '../data-model-objects';
 
 const commaSeparatedStatuses = allDataObjects.statusesArray.join(', ');
 
 // const candidateProfileObjAllData =  candidateProfile
 
-import * as allGraphQLQueries from '../../graphql-queries/graphql-queries-chatbot';
-import CandidateEngagementArx from '../candidate-engagement/candidate-engagement';
+import { graphqlQueryToFetchPrompts } from 'twenty-shared';
 import { axiosRequest } from '../../utils/arx-chat-agent-utils';
 import { getRecruiterProfileByJob } from '../recruiter-profile';
 export class PromptingAgents {
@@ -70,7 +69,7 @@ export class PromptingAgents {
 
   async getPromptByJobIdAndName(jobId: string, promptName: string, apiToken: string) {
     let data = JSON.stringify({
-      query: allGraphQLQueries.graphqlQueryToFetchPrompts,
+      query: graphqlQueryToFetchPrompts,
       variables: { filter: { jobId: { eq: jobId }, name: { ilike: `%${promptName}%` } }, limit: 1, orderBy: [{ position: 'AscNullsFirst' }] },
     });
     try {

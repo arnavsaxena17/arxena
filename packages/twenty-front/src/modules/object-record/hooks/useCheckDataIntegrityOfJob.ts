@@ -1,11 +1,11 @@
-import { useCallback, useState } from 'react';
 import { tokenPairState } from '@/auth/states/tokenPairState';
-import { useRecoilState, useRecoilValue } from 'recoil';
+import { useCallback } from 'react';
+import { useRecoilState } from 'recoil';
 // import { useShowNotification } from '@/notification/hooks/useShowNotification'; 
-import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
-import { gql, useQuery , useLazyQuery} from '@apollo/client';
-import { FIND_MANY_JOBS_QUERY } from '../graphql/queries/findManyJobsForDataIntegrity';
+import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
+import { useLazyQuery } from '@apollo/client';
+import { graphqlToFindManyJobs } from 'twenty-shared';
 
 
 
@@ -23,7 +23,7 @@ export const useCheckDataIntegrityOfJob = ({
   const [tokenPair] = useRecoilState(tokenPairState);
   const { enqueueSnackBar } = useSnackBar();
 
-  const [executeQuery, { error, data }] = useLazyQuery(FIND_MANY_JOBS_QUERY);
+  const [executeQuery, { error, data }] = useLazyQuery(graphqlToFindManyJobs);
 
   const checkDataIntegrityOfJob = useCallback(async (recordIds: string[]) => {
     try {

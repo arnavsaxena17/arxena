@@ -1,10 +1,11 @@
 import { Controller, Post, Req, UseGuards } from '@nestjs/common';
 import axios from 'axios';
+import { workspacesWithOlderSchema } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/candidate-engagement';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
+import { CreateOneJob, createOneQuestion, graphqlToFindManyJobByArxenaSiteId, graphqlToFindManyJobByArxenaSiteIdOlderSchema, UpdateOneJob } from 'twenty-shared';
 import { GoogleSheetsService } from '../../google-sheets/google-sheets.service';
 import { Enrichment } from '../../workspace-modifications/object-apis/types/types';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
-import { CreateOneJob, createOneQuestion, graphqlToFindManyJobByArxenaSiteId, graphqlToFindManyJobByArxenaSiteIdOlderSchema, UpdateOneJob, workspacesWithOlderSchema } from '../graphql-queries';
 import { ProcessCandidatesService } from '../jobs/process-candidates.service';
 import { CandidateService } from '../services/candidate.service';
 import { ChatService } from '../services/chat.service';

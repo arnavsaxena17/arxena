@@ -3,6 +3,7 @@ import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
 import React, { useEffect, useState } from 'react';
 import { useRecoilState } from 'recoil';
+import { graphqlToFetchAllCandidateData } from 'twenty-shared';
 import VideoDownloaderPlayer from './VideoDownloaderPlayer';
 
 const StyledContainer = styled.div<{ theme: any }>`
@@ -110,68 +111,6 @@ interface InterviewData {
   };
 }
 
-const findManyCandidatesQuery = `query FindManyCandidates($filter: CandidateFilterInput) {
-    candidates(filter: $filter) {
-      edges {
-        node {
-          id
-          people {
-            name {
-              firstName
-              lastName
-            }
-          }
-          jobs {
-            id
-            name
-            chatFlowOrder
-            isActive
-            company {
-              name
-            }
-            videoInterviewTemplate {
-              edges {
-                node {
-                  id
-                  name
-                  videoInterviewQuestions {
-                    edges {
-                      node {
-                        id
-                        questionValue
-                        timeLimit
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-          videoInterviewResponse {
-            edges {
-              node {
-                id
-                transcript
-                videoInterviewQuestionId
-                attachments {
-                  edges {
-                    node {
-                      id
-                      type
-                      fullPath
-                      name
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-`;
-
 interface VideoInterviewResponseViewerProps {
   candidateId?: string;
   videoInterviewId?: string;
@@ -196,102 +135,6 @@ const VideoContainer = styled.div`
   margin: 10px 0;
 `;
 
-const queryByvideoInterview = `query FindOneVideoInterview($objectRecordId: ID!) {
-  videoInterview(filter: {id: {eq: $objectRecordId}}) {
-    attachments {
-      edges {
-        node {
-          clientInterviewId
-          phoneCallId
-          activityId
-          whatsappMessageId
-          candidateReminderId
-          opportunityId
-          videoInterviewModelId
-          name
-          videoInterviewId
-          updatedAt
-          authorId
-          clientContactId
-          jobId
-          type
-          id
-          createdAt
-          textMessageId
-          fullPath
-          videoInterviewQuestionId
-          interviewScheduleId
-          candidateEnrichmentId
-          screeningId
-          shortlistId
-          workspaceMemberProfileId
-          candidateId
-          promptId
-          questionId
-          personId
-          videoInterviewTemplateId
-          offerId
-          cvSentId
-          companyId
-          videoInterviewResponseId
-          answerId
-          recruiterInterviewId
-        }
-      }
-    }
-    id
-    videoInterviewTemplateId
-    interviewReviewLink {
-      label
-      url
-    }
-    videoInterviewResponse {
-      edges {
-        node {
-          videoInterviewId
-          createdAt
-          timeLimitAdherence
-          name
-          feedback
-          candidateId
-          jobId
-          position
-          personId
-          updatedAt
-          timer
-          id
-          transcript
-          completedResponse
-          videoInterviewQuestionId
-          startedResponding
-        }
-      }
-    }
-    candidateId
-    position
-    videoInterviewTemplate {
-      jobId
-      id
-      name
-      updatedAt
-      instructions
-      createdAt
-      videoInterviewModelId
-      position
-      introduction
-    }
-    interviewStarted
-    name
-    updatedAt
-    interviewLink {
-      label
-      url
-    }
-    interviewCompleted
-    createdAt
-  }
-  }
-`;
 
 interface CandidateAPIResponse {
   id: string;
@@ -398,7 +241,7 @@ const VideoInterviewResponseViewer: React.FC<VideoInterviewResponseViewerProps> 
             Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
           },
           body: JSON.stringify({
-            query:findManyCandidatesQuery,
+            query:graphqlToFetchAllCandidateData,
             variables: {
               filter: {
                 id: { eq: cleanId(candidateId) },

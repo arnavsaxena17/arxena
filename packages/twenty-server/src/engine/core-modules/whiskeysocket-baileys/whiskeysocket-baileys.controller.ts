@@ -1,8 +1,8 @@
-import { Controller, Post, Body } from '@nestjs/common';
-import { WhatsappService } from './whiskeysocket-baileys.service';
+import { Body, Controller, Post } from '@nestjs/common';
+import { WorkspaceQueryService } from '../workspace-modifications/workspace-modifications.service';
 import { EventsGateway } from './events-gateway-module/events-gateway';
 import { MessageDto } from './types/baileys-types';
-import { WorkspaceQueryService } from '../workspace-modifications/workspace-modifications.service';
+import { WhatsappService } from './whiskeysocket-baileys.service';
 
 @Controller('whatsapp')
 export class WhatsappController {

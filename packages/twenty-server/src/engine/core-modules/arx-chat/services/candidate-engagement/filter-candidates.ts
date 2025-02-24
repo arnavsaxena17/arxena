@@ -1,9 +1,9 @@
-import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
-import * as allDataObjects from '../../services/data-model-objects';
-import * as allGraphQLQueries from '../../graphql-queries/graphql-queries-chatbot';
-import { axiosRequest } from '../../utils/arx-chat-agent-utils';
-import { workspacesWithOlderSchema } from 'src/engine/core-modules/candidate-sourcing/graphql-queries';
 import axios from 'axios';
+import { workspacesWithOlderSchema } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/candidate-engagement';
+import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
+import { graphqlQueryToFindInterviewsByJobId, graphqlQueryToFindManyPeople, graphqlQueryToFindManyPeopleEngagedCandidatesOlderSchema, graphqlQueryToFindManyQuestionsByJobId, graphqlQueryToFindScheduledClientMeetings, graphqlToFetchAllCandidateData, graphQlToFetchWhatsappMessages, graphqlToFindManyJobByArxenaSiteId } from 'twenty-shared';
+import * as allDataObjects from '../../services/data-model-objects';
+import { axiosRequest } from '../../utils/arx-chat-agent-utils';
 import { getRecruiterProfileByJob } from '../recruiter-profile';
 
 export class FilterCandidates {
@@ -46,7 +46,7 @@ export class FilterCandidates {
 
   async fetchJobById(jobId: string, apiToken: string): Promise<allDataObjects.Jobs | null> {
     const graphqlQueryObj = JSON.stringify({
-      query: allGraphQLQueries.graphqlToFetchActiveJob,
+      query: graphqlToFindManyJobByArxenaSiteId,
       variables: { filter: { id: { eq: jobId } } },
     });
 
@@ -71,7 +71,7 @@ export class FilterCandidates {
   // private async getJobIdsFromCandidateIds(candidateIds: string[], apiToken: string) {
   //   console.log("Fetching job IDs for candidate IDs:", candidateIds);
   //   const graphqlQuery = JSON.stringify({
-  //     query: allGraphQLQueries.graphqlQueryToManyCandidateById,
+  //     query: graphqlToFetchAllCandidateData,
   //     variables: { filter: { id: { in: candidateIds } } }
   //   });
 
@@ -82,7 +82,7 @@ export class FilterCandidates {
   // }
 
   async fetchScheduledClientMeetings(job_id: string, apiToken: string) {
-    const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindScheduledClientMeetings, variables: { filter: { jobId: { in: [job_id] } } } });
+    const graphqlQueryObj = JSON.stringify({ query: graphqlQueryToFindScheduledClientMeetings, variables: { filter: { jobId: { in: [job_id] } } } });
     const response = await axiosRequest(graphqlQueryObj, apiToken);
     console.log('This is the response from fetchScheduledClientMeetings:', response.data.data);
     return response.data.data;
@@ -90,7 +90,7 @@ export class FilterCandidates {
 
   async fetchCandidateByCandidateId(candidateId: string, apiToken: string): Promise<allDataObjects.CandidateNode> {
     try {
-      const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToManyCandidateById, variables: { filter: { id: { eq: candidateId } } } });
+      const graphqlQueryObj = JSON.stringify({ query: graphqlToFetchAllCandidateData, variables: { filter: { id: { eq: candidateId } } } });
       const response = await axiosRequest(graphqlQueryObj, apiToken);
       console.log('Fetched candidate by candidate ID:', response?.data);
       console.log('Number of candidates with candidate ID:', response?.data?.data?.candidates?.edges?.length);
@@ -107,9 +107,9 @@ export class FilterCandidates {
     const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
     let graphqlQueryObjToFetchAllPeopleForChats = '';
     if (workspacesWithOlderSchema.includes(workspaceId)) {
-      graphqlQueryObjToFetchAllPeopleForChats = allGraphQLQueries.graphqlQueryToFindManyPeopleEngagedCandidatesOlderSchema;
+      graphqlQueryObjToFetchAllPeopleForChats = graphqlQueryToFindManyPeopleEngagedCandidatesOlderSchema;
     } else {
-      graphqlQueryObjToFetchAllPeopleForChats = allGraphQLQueries.graphqlQueryToFindManyPeopleEngagedCandidates;
+      graphqlQueryObjToFetchAllPeopleForChats = graphqlQueryToFindManyPeople;
     }
 
     while (true) {
@@ -130,7 +130,7 @@ export class FilterCandidates {
     while (true) {
       try {
         const graphqlQueryObj = JSON.stringify({
-          query: allGraphQLQueries.graphQlToFetchWhatsappMessages,
+          query: graphQlToFetchWhatsappMessages,
           variables: { limit: 30, lastCursor: lastCursor, filter: { candidateId: { in: [candidateId] } }, orderBy: [{ position: 'DescNullsFirst' }] },
         });
         const response = await axiosRequest(graphqlQueryObj, apiToken);
@@ -158,7 +158,7 @@ export class FilterCandidates {
   async getInterviewByJobId(jobId: string, apiToken: string) {
     try {
       console.log('jobId::', jobId);
-      const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindInterviewsByJobId, variables: { filter: { jobId: { in: [jobId] } }, orderBy: [{ position: 'AscNullsFirst' }] } });
+      const graphqlQueryObj = JSON.stringify({ query: graphqlQueryToFindInterviewsByJobId, variables: { filter: { jobId: { in: [jobId] } }, orderBy: [{ position: 'AscNullsFirst' }] } });
       const response = await axiosRequest(graphqlQueryObj, apiToken);
       console.log('This is the response data:', response.data);
       console.log('This is the responsedata.data:', response.data.data);
@@ -173,7 +173,7 @@ export class FilterCandidates {
   async getCandidateDetailsByPhoneNumber(phoneNumber: string, apiToken: string): Promise<allDataObjects.CandidateNode> {
     const graphVariables = { filter: { phone: { ilike: '%' + phoneNumber + '%' } }, orderBy: { position: 'AscNullsFirst' } };
     try {
-      const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindManyPeople, variables: graphVariables });
+      const graphqlQueryObj = JSON.stringify({ query: graphqlQueryToFindManyPeople, variables: graphVariables });
       const response = await axiosRequest(graphqlQueryObj, apiToken);
       console.log('This is the response from getCandidate Information FROM PHONENUMBER in getPersonDetailsByPhoneNumber', response.data.data);
       const candidateDataObjs = response.data?.data?.people?.edges[0]?.node?.candidates?.edges;
@@ -193,7 +193,7 @@ export class FilterCandidates {
     }
     const graphVariables = { filter: { phone: { ilike: '%' + phoneNumber + '%' } }, orderBy: { position: 'AscNullsFirst' } };
     try {
-      const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindManyPeople, variables: graphVariables });
+      const graphqlQueryObj = JSON.stringify({ query: graphqlQueryToFindManyPeople, variables: graphVariables });
       const response = await axiosRequest(graphqlQueryObj, apiToken);
       const personObj = response.data?.data?.people?.edges[0]?.node;
       if (personObj) {
@@ -228,7 +228,7 @@ export class FilterCandidates {
     const graphVariables = { filter: { phone: { ilike: '%' + phoneNumberToSearch + '%' } }, orderBy: { position: 'AscNullsFirst' } };
     try {
       console.log('going to get candidate information');
-      const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindManyPeople, variables: graphVariables });
+      const graphqlQueryObj = JSON.stringify({ query: graphqlQueryToFindManyPeople, variables: graphVariables });
       const response = await axiosRequest(graphqlQueryObj, apiToken);
       const candidateDataObjs = response.data?.data?.people?.edges[0]?.node?.candidates?.edges;
       const maxCreatedAt = candidateDataObjs.length > 0 ? Math.max(...candidateDataObjs.map(e => new Date(e.node.jobs.createdAt).getTime())) : 0;
@@ -291,7 +291,7 @@ export class FilterCandidates {
 
   async fetchQuestionsByJobId(jobId: string, apiToken: string): Promise<{ questionIdArray: { questionId: string; question: string }[]; questionArray: string[] }> {
     console.log('Going to fetch questions for job id:', jobId);
-    const data = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindManyQuestionsByJobId, variables: { filter: { jobsId: { in: [`${jobId}`] } }, orderBy: { position: 'DescNullsFirst' } } });
+    const data = JSON.stringify({ query: graphqlQueryToFindManyQuestionsByJobId, variables: { filter: { jobsId: { in: [`${jobId}`] } }, orderBy: { position: 'DescNullsFirst' } } });
     const response = await axios.request({
       method: 'post',
       url: process.env.GRAPHQL_URL,
@@ -314,7 +314,7 @@ export class FilterCandidates {
     }
     const graphVariables = { filter: { id: { eq: candidateId } }, orderBy: { position: 'AscNullsFirst' } };
     try {
-      const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToManyCandidateById, variables: graphVariables });
+      const graphqlQueryObj = JSON.stringify({ query: graphqlToFetchAllCandidateData, variables: graphVariables });
       const candidateObjresponse = await axiosRequest(graphqlQueryObj, apiToken);
       const candidateObj = candidateObjresponse?.data?.data;
       console.log('candidate objk1:', candidateObj);
@@ -346,7 +346,7 @@ export class FilterCandidates {
 
   async getPersonDetailsByPersonId(personID: string, apiToken: string): Promise<allDataObjects.PersonNode> {
     const graphVariables = { filter: { id: { eq: personID } }, orderBy: { position: 'AscNullsFirst' } };
-    const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToFindManyPeople, variables: graphVariables });
+    const graphqlQueryObj = JSON.stringify({ query: graphqlQueryToFindManyPeople, variables: graphVariables });
     const response = await axiosRequest(graphqlQueryObj, apiToken);
     console.log('This is the response from getCandidate Information FROM personID in getPersoneDetailsByPhoneNumber', response.data.data);
     const personDataObjs = response.data?.data.people.edges[0]?.node;

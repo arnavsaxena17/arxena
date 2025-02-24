@@ -1,18 +1,13 @@
 // google-sheets.service.ts
-import { ConsoleLogger, Injectable } from '@nestjs/common';
-import { google } from 'googleapis';
-import axios, { all } from 'axios';
-import * as CandidateSourcingTypes from 'src/engine/core-modules/candidate-sourcing/types/candidate-sourcing-types';
+import { Injectable } from '@nestjs/common';
+import axios from 'axios';
 import { OAuth2Client } from 'google-auth-library';
-import { UpdateOneJob } from '../candidate-sourcing/graphql-queries';
-import { axiosRequest } from '../workspace-modifications/workspace-modifications.controller';
-import { UpdateChat } from '../arx-chat/services/candidate-engagement/update-chat';
-import { WorkspaceQueryService } from '../workspace-modifications/workspace-modifications.service';
-import uniq from 'lodash.uniq';
+import { google } from 'googleapis';
+import * as CandidateSourcingTypes from 'src/engine/core-modules/candidate-sourcing/types/candidate-sourcing-types';
 import { formatChat } from '../arx-chat/utils/arx-chat-agent-utils';
-import { GmailMessageData } from '../gmail-sender/services/gmail-sender-objects-types';
-import * as allDataObjects from 'src/engine/core-modules/arx-chat/services/data-model-objects';
-import { SendEmailFunctionality } from '../arx-chat/utils/send-gmail';
+import { axiosRequest } from '../workspace-modifications/workspace-modifications.controller';
+import { WorkspaceQueryService } from '../workspace-modifications/workspace-modifications.service';
+import { UpdateOneJob } from 'twenty-shared';
 
 const rowDataValues = [
   ...CandidateSourcingTypes.columnDefinitions.map(col => ({

@@ -1,10 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
-import { workspacesWithOlderSchema } from 'src/engine/core-modules/candidate-sourcing/graphql-queries';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { In } from 'typeorm';
 import { TimeManagement } from '../time-management';
-import CandidateEngagementArx from './candidate-engagement';
+import CandidateEngagementArx, { workspacesWithOlderSchema } from './candidate-engagement';
 
 
 @Injectable()

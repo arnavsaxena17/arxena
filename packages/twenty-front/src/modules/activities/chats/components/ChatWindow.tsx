@@ -1,29 +1,27 @@
-import * as frontChatTypes from '../types/front-chat-types';
-import axios from 'axios';
-import { useRecoilCallback, useRecoilState, useRecoilValue } from 'recoil';
 import { tokenPairState } from '@/auth/states/tokenPairState';
-import FileUpload from './FileUpload';
-import SingleChatContainer from './SingleChatContainer';
-import dayjs from 'dayjs';
-import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
+import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
+import axios from 'axios';
+import dayjs from 'dayjs';
+import { useRecoilCallback, useRecoilState, useRecoilValue } from 'recoil';
+import * as frontChatTypes from '../types/front-chat-types';
+import SingleChatContainer from './SingleChatContainer';
 
-import React, { useEffect, useRef, useState } from 'react';
 import styled from '@emotion/styled';
+import React, { useEffect, useRef, useState } from 'react';
 
 // import { Server } from 'socket.io';
 // import { io } from 'socket.io-client';
-import QRCode from 'react-qr-code';
 // import { p } from 'node_modules/msw/lib/core/GraphQLHandler-907fc607';
-import { css } from '@emotion/react';
 import { Notes } from '@/activities/notes/components/Notes';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
+import { css } from '@emotion/react';
 
 import AttachmentPanel from './AttachmentPanel';
-import { graphQltoUpdateOneCandidate, mutationToUpdateOnePerson } from '../graphql-queries-chat/chat-queries';
 
-import { useNavigate } from 'react-router-dom';
 import { recordStoreFamilyState } from '@/object-record/record-store/states/recordStoreFamilyState';
+import { useNavigate } from 'react-router-dom';
+import { graphQltoUpdateOneCandidate, mutationToUpdateOnePerson } from 'twenty-shared';
 // import { templates, getTemplatePreview } from './chatTemplates';
 
 const statusLabels: { [key: string]: string } = {

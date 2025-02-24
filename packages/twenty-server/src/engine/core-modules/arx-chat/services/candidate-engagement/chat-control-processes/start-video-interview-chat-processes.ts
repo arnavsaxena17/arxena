@@ -2,7 +2,7 @@ import { v4 } from 'uuid';
 import * as allDataObjects from '../../data-model-objects';
 import { FilterCandidates } from '../filter-candidates';
 
-import * as allGraphQLQueries from '../../../graphql-queries/graphql-queries-chatbot';
+import { graphqlQueryToCreateVideoInterview } from 'twenty-shared';
 import { WorkspaceQueryService } from '../../../../workspace-modifications/workspace-modifications.service';
 import { axiosRequest } from '../../../utils/arx-chat-agent-utils';
 export class StartVideoInterviewChatProcesses {
@@ -38,7 +38,7 @@ export class StartVideoInterviewChatProcesses {
       console.log('interviewObj:::', interviewObj);
       const videoInterviewId = v4();
       const graphqlQueryObj = JSON.stringify({
-        query: allGraphQLQueries.graphqlQueryToCreateVideoInterview,
+        query: graphqlQueryToCreateVideoInterview,
         variables: {
           input: {
             id: videoInterviewId,

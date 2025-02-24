@@ -1,13 +1,12 @@
-import { WebSocketGateway, WebSocketServer, OnGatewayConnection, OnGatewayDisconnect } from '@nestjs/websockets';
-import { Server, Socket } from 'socket.io';
+import { OnGatewayConnection, OnGatewayDisconnect, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
 import axios from 'axios';
 import * as fs from 'fs';
-import { WhatsappService } from '../whiskeysocket-baileys.service';
+import { Server, Socket } from 'socket.io';
 import { axiosRequest } from '../../arx-chat/utils/arx-chat-agent-utils';
-import { FindManyWorkspaceMembers } from '../graphql-queries';
-import { MessageDto } from '../types/baileys-types';
-import { Workspace } from '../../workspace/workspace.entity';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
+import { MessageDto } from '../types/baileys-types';
+import { WhatsappService } from '../whiskeysocket-baileys.service';
+import { FindManyWorkspaceMembers } from 'twenty-shared';
 
 const apiToken = process.env.TWENTY_JWT_SECRET || '';
 

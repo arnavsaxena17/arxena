@@ -1,17 +1,10 @@
-import { parseStringPromise } from 'xml2js';
 import * as fs from 'fs';
 import { AttachmentProcessingService } from 'src/engine/core-modules/arx-chat/utils/attachment-processes';
-import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/update-chat';
-import { axiosRequest } from '../workspace-modifications/workspace-modifications.controller';
 import { CleanPhoneNumbers } from 'src/engine/core-modules/candidate-sourcing/utils/clean-phone-numbers';
-import {
-    graphqlQueryToFindPhoneCalls,
-    graphqlQueryToFindSMS,
-    graphqlMutationToCreatePhoneCall,
-    graphqlMutationToCreateSMS,
-    graphqlMutationToUpdatePhoneCall,
-    graphqlMutationToUpdateSMS
-} from './graphql-queries';
+import { parseStringPromise } from 'xml2js';
+import { axiosRequest } from '../workspace-modifications/workspace-modifications.controller';
+
+import { findManyPhoneCalls, graphqlMutationToCreatePhoneCall, graphqlMutationToCreateSMS, graphqlMutationToUpdateSMS, graphqlQueryToFindSMS, mutationToUpdateOnePhoneCall } from 'twenty-shared';
 import { FilterCandidates } from '../arx-chat/services/candidate-engagement/filter-candidates';
 
 
@@ -162,7 +155,7 @@ export class CallAndSMSProcessingService {
   // Add GraphQL mutation implementations for PhoneCall and SMS objects
   async createOrUpdatePhoneCall({personId, phoneNumber, callType, duration, timestamp, recordingAttachmentId, apiToken}) {
     const query = JSON.stringify({
-      query: graphqlQueryToFindPhoneCalls,
+      query: findManyPhoneCalls,
       variables: {
         filter: { 
           personId: { eq: personId },
@@ -176,7 +169,7 @@ export class CallAndSMSProcessingService {
     if (existingCalls?.data?.data?.phoneCalls?.edges?.length) {
       const call = existingCalls.data.data.phoneCalls.edges[0].node;
       const updateQuery = JSON.stringify({
-        query: graphqlMutationToUpdatePhoneCall,
+        query: mutationToUpdateOnePhoneCall,
         variables: {
           id: call.id,
           input: { callType, duration, recordingAttachmentId }

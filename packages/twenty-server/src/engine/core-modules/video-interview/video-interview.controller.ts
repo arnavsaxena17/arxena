@@ -1,15 +1,15 @@
 import { BadRequestException, Body, Controller, HttpException, InternalServerErrorException, Post, Req, UnauthorizedException, UploadedFiles, UseInterceptors } from '@nestjs/common';
-import * as videoInterviewQueries from './graphqlQueries';
-
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import axios from 'axios';
 import ffmpeg from 'fluent-ffmpeg';
 import * as fs from 'fs';
 import * as multer from 'multer';
 import * as path from 'path';
+import { createResponseMutation, findManyAttachmentsQuery, findWorkspaceMemberProfiles, graphQueryToFindManyvideoInterviews, questionsQuery, updateOneVideoInterviewMutation } from 'twenty-shared';
 import { AttachmentProcessingService } from '../arx-chat/utils/attachment-processes';
 import { TranscriptionService } from './transcription.service';
 
+import { graphQltoUpdateOneCandidate } from 'twenty-shared';
 import { WorkspaceQueryService } from '../workspace-modifications/workspace-modifications.service';
 
 interface GetInterviewDetailsResponse { 
@@ -205,7 +205,7 @@ export class VideoInterviewController {
         },
       };
       const graphqlQueryObjForCreationOfResponse = JSON.stringify({
-        query: videoInterviewQueries.createResponseMutation,
+        query: createResponseMutation,
         variables: createResponseVariables,
       });
 
@@ -255,7 +255,7 @@ export class VideoInterviewController {
       };
 
       const graphqlQueryObjForUpdationForCandidateStatus = JSON.stringify({
-        query: videoInterviewQueries.graphQltoUpdateOneCandidate,
+        query: graphQltoUpdateOneCandidate,
         variables: updateCandidateVariables,
       });
 
@@ -276,7 +276,7 @@ export class VideoInterviewController {
         },
       };
       const graphqlQueryObjForUpdationForStatus = JSON.stringify({
-        query: videoInterviewQueries.updateStatusMutation,
+        query: updateOneVideoInterviewMutation,
         variables: updateStatusVariables,
       });
       console.log('graphqlQueryObjForUpdationForStatus::', graphqlQueryObjForUpdationForStatus);
@@ -383,7 +383,7 @@ export class VideoInterviewController {
     };
 
     const graphqlQueryObjForVideoInterviewQuestions = JSON.stringify({
-      query: videoInterviewQueries.questionsQuery,
+      query: questionsQuery,
       variables: questionsVariables,
     });
 
@@ -405,7 +405,7 @@ export class VideoInterviewController {
     };
     
     const graphqlQueryObjForUpdationForStatus = JSON.stringify({
-      query: videoInterviewQueries.updateOneVideoInterviewMutation,
+      query: updateOneVideoInterviewMutation,
       variables: updateStatusVariables,
     });
   
@@ -460,7 +460,7 @@ export class VideoInterviewController {
 
 
       const graphqlQueryObjForvideoInterviewQuestions = JSON.stringify({
-        query: videoInterviewQueries.videoInterviewsQuery,
+        query: graphQueryToFindManyvideoInterviews,
         variables: InterviewStatusesVariables,
       });
       let responseFromInterviewRequests;
@@ -481,7 +481,7 @@ export class VideoInterviewController {
         const recruiterId = responseFromInterviewRequests?.data?.videoInterviews?.edges[0]?.node?.candidate?.jobs?.recruiterId;
 
         const findWorkspaceMemberProfilesQuery = JSON.stringify({
-          query: videoInterviewQueries.findWorkspaceMemberProfiles,
+          query: findWorkspaceMemberProfiles,
           variables: { filter: { workspaceMemberId: { eq: recruiterId } } }
         });
         const workspaceMemberProfilesResponse = await axiosRequest(findWorkspaceMemberProfilesQuery, apiToken);
@@ -501,7 +501,7 @@ export class VideoInterviewController {
 
       if (videoInterviewId) {
         const videoInterviewIntroductionAttachmentDataQuery = JSON.stringify({
-          query: videoInterviewQueries.findManyAttachmentsForVideoIntroduction,
+          query: findManyAttachmentsQuery,
           variables: { filter: { videoInterviewTemplateId: { eq: videoInterviewId } }, orderBy: { createdAt: 'DescNullsFirst' } }
         });
 
@@ -517,7 +517,7 @@ export class VideoInterviewController {
         }
 
         const questionsAttachmentDataQueries = allQuestionIds.map(id => JSON.stringify({
-          query: videoInterviewQueries.findManyAttachmentsForVideoQuestions,
+          query: findManyAttachmentsQuery,
           variables: { filter: { videoInterviewQuestionId: { eq: id } }, orderBy: { createdAt: 'DescNullsFirst' } }
         }));
 

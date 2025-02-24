@@ -1,13 +1,13 @@
-import * as allDataObjects from '../../services/data-model-objects';
-import * as allGraphQLQueries from '../../graphql-queries/graphql-queries-chatbot';
-import { v4 } from 'uuid';
-import { axiosRequest } from '../../utils/arx-chat-agent-utils';
 import axios from 'axios';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
-import { FilterCandidates } from './filter-candidates';
+import { graphqlQueryToCreateOneAnswer, graphqlQueryToCreateOneNewWhatsappMessage, graphqlQueryToRemoveMessages, graphqlToFetchAllCandidateData, graphQltoUpdateOneCandidate } from 'twenty-shared';
+import { v4 } from 'uuid';
+import * as allDataObjects from '../../services/data-model-objects';
+import { axiosRequest } from '../../utils/arx-chat-agent-utils';
+import { Semaphore } from '../../utils/semaphore';
 import { StageWiseClassification } from '../llm-agents/stage-classification';
-import {Semaphore} from '../../utils/semaphore';
 import CandidateEngagementArx from './candidate-engagement';
+import { FilterCandidates } from './filter-candidates';
 
 export class UpdateChat {
   constructor(private readonly workspaceQueryService: WorkspaceQueryService) { }
@@ -89,7 +89,7 @@ export class UpdateChat {
 
   async updateCandidatesWithChatCount(candidateIds: string[], apiToken: string) {
     try {
-      const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlToFetchAllCandidateData, variables: { filter: { id: { in: candidateIds } } } });
+      const graphqlQueryObj = JSON.stringify({ query: graphqlToFetchAllCandidateData, variables: { filter: { id: { in: candidateIds } } } });
       const response = await axiosRequest(graphqlQueryObj, apiToken);
       const currentCandidates = response?.data?.data?.candidates?.edges || [];
       console.log("Number of current Candidates:", currentCandidates.length);
@@ -101,7 +101,7 @@ export class UpdateChat {
         console.log("New chat count::", newCount);
         if (newCount !== currentCount) {
           const graphqlVariables = { idToUpdate: candidate.node.id, input: { chatCount: newCount } };
-          const updateGraphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphQltoUpdateOneCandidate, variables: graphqlVariables });
+          const updateGraphqlQueryObj = JSON.stringify({ query: graphQltoUpdateOneCandidate, variables: graphqlVariables });
           const updateResponse = await axiosRequest(updateGraphqlQueryObj, apiToken);
           if (updateResponse.data.errors) {
             console.log('Error updating chat count:', updateResponse.data.errors);
@@ -166,11 +166,11 @@ export class UpdateChat {
       const updatePromises = validResults.map(async result => {
         if (!result) return;
         const updateCandidateObjectVariables = { idToUpdate: result.candidateId, input: { candConversationStatus: result.candidateStatus } };
-        const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToUpdateCandidateChatCount, variables: updateCandidateObjectVariables, });
+        const graphqlQueryObj = JSON.stringify({ query: graphQltoUpdateOneCandidate, variables: updateCandidateObjectVariables, });
         // if (['CONVERSATION_CLOSED_TO_BE_CONTACTED', 'CANDIDATE_IS_KEEN_TO_CHAT'].includes(result.candidateStatus)){
         if (['CONVERSATION_CLOSED_TO_BE_CONTACTED'].includes(result.candidateStatus)){
           const updateCandidateVariables = { idToUpdate: result.candidateId, input: { startChatCompleted: true } };
-          const graphqlQueryObjForUpdationForCandidateStatus = JSON.stringify({ query: allGraphQLQueries.graphQltoUpdateOneCandidate, variables: updateCandidateVariables, });
+          const graphqlQueryObjForUpdationForCandidateStatus = JSON.stringify({ query: graphQltoUpdateOneCandidate, variables: updateCandidateVariables, });
           console.log('graphqlQueryObjForUpdationForCandidateStatus::', graphqlQueryObjForUpdationForCandidateStatus);
           try{
             await axiosRequest(graphqlQueryObjForUpdationForCandidateStatus,apiToken)
@@ -215,7 +215,7 @@ export class UpdateChat {
       },
     };
     console.log("This si the create update whatsapp message::", createNewWhatsappMessageUpdateVariables);
-    const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToCreateOneNewWhatsappMessage, variables: createNewWhatsappMessageUpdateVariables });
+    const graphqlQueryObj = JSON.stringify({ query: graphqlQueryToCreateOneNewWhatsappMessage, variables: createNewWhatsappMessageUpdateVariables });
     try {
       console.log('GRAPHQL WITH WHATSAPP MESSAGE:', createNewWhatsappMessageUpdateVariables?.input?.message);
       const response = await axiosRequest(graphqlQueryObj, apiToken);
@@ -230,7 +230,7 @@ export class UpdateChat {
     const candidateEngagementStatus = whatappUpdateMessageObj.messageType !== 'botMessage';
     console.log('Updating candidate engagement status to:', candidateEngagementStatus, "for candidate id::", candidateProfileObj.id, " at time :: ", new Date().toISOString());
     const updateCandidateObjectVariables = { idToUpdate: candidateProfileObj?.id, input: { engagementStatus: candidateEngagementStatus, lastEngagementChatControl: whatappUpdateMessageObj.lastEngagementChatControl } };
-    const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToUpdateCandidateEngagementStatus, variables: updateCandidateObjectVariables });
+    const graphqlQueryObj = JSON.stringify({ query: graphQltoUpdateOneCandidate, variables: updateCandidateObjectVariables });
     try {
       const response = await axiosRequest(graphqlQueryObj, apiToken);
       console.log('Candidate engagement status updated successfully to ::',candidateEngagementStatus, " at time :: ", new Date().toISOString() );
@@ -244,7 +244,7 @@ export class UpdateChat {
   async setCandidateEngagementStatusToFalse(candidateId: string, apiToken: string) {
     console.log("Setting candidate engagement status to false::", candidateId, " at time :: ", new Date().toISOString());
     const updateCandidateObjectVariables = { idToUpdate: candidateId, input: { engagementStatus: false } };
-    const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToUpdateCandidateEngagementStatus, variables: updateCandidateObjectVariables });
+    const graphqlQueryObj = JSON.stringify({ query: graphQltoUpdateOneCandidate, variables: updateCandidateObjectVariables });
     try {
       const response = await axiosRequest(graphqlQueryObj, apiToken);
       console.log('Candidate engagement status updated successfully to false ::',false, " at time :: ", new Date().toISOString() );
@@ -256,7 +256,7 @@ export class UpdateChat {
 
   async updateCandidateAnswer(candidateProfileObj: allDataObjects.CandidateNode, AnswerMessageObj: allDataObjects.AnswerMessageObj, apiToken: string) {
     const updateCandidateObjectVariables = { input: { ...AnswerMessageObj } };
-    const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToCreateOneAnswer, variables: updateCandidateObjectVariables });
+    const graphqlQueryObj = JSON.stringify({ query: graphqlQueryToCreateOneAnswer, variables: updateCandidateObjectVariables });
     try {
       const response = await axiosRequest(graphqlQueryObj, apiToken);
       return response.data;
@@ -300,7 +300,7 @@ export class UpdateChat {
   async removeChatsByMessageIDs(messageIDs: string[], apiToken: string) {
     const graphQLVariables = { filter: { id: { in: messageIDs } } };
     const graphqlQueryObj = JSON.stringify({
-      query: allGraphQLQueries.graphqlQueryToRemoveMessages,
+      query: graphqlQueryToRemoveMessages,
       variables: graphQLVariables,
     });
     const response = await axiosRequest(graphqlQueryObj, apiToken);
@@ -316,7 +316,7 @@ export class UpdateChat {
     const candidateId = candidateProfileObj?.id;
     console.log('This is the candidateID for which we are trying to update the status:', candidateId);
     const updateCandidateObjectVariables = { idToUpdate: candidateId, input: { status: candidateStatus } };
-    const graphqlQueryObj = JSON.stringify({ query: allGraphQLQueries.graphqlQueryToUpdateCandidateStatus, variables: updateCandidateObjectVariables });
+    const graphqlQueryObj = JSON.stringify({ query: graphQltoUpdateOneCandidate, variables: updateCandidateObjectVariables });
     console.log('GraphQL query to update candidate status:', graphqlQueryObj);
     try {
       const response = await axiosRequest(graphqlQueryObj, apiToken);

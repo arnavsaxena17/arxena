@@ -1,16 +1,16 @@
-import { ToolCallsProcessing } from './tool-calls-processing';
-import * as allDataObjects from '../data-model-objects';
 import fuzzy from 'fuzzy';
+import { GmailMessageData } from 'src/engine/core-modules/gmail-sender/services/gmail-sender-objects-types';
+import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
+import { graphqlQueryToCreateOneReminder, graphqlToUpdateOneClientInterview } from 'twenty-shared';
+import { z } from "zod";
 import { CalendarEventType } from '../../../calendar-events/services/calendar-data-objects-types';
+import { addHoursInDate, axiosRequest, toIsoString } from '../../utils/arx-chat-agent-utils';
 import { CalendarEmailService } from '../../utils/calendar-email';
 import { EmailTemplates, SendEmailFunctionality } from '../../utils/send-gmail';
-import { GmailMessageData } from 'src/engine/core-modules/gmail-sender/services/gmail-sender-objects-types';
-import * as allGraphQLQueries from '../../graphql-queries/graphql-queries-chatbot';
-import { addHoursInDate, axiosRequest, toIsoString } from '../../utils/arx-chat-agent-utils';
-import { z } from "zod";
-import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { FilterCandidates } from '../candidate-engagement/filter-candidates';
+import * as allDataObjects from '../data-model-objects';
 import { getRecruiterProfileByJob } from '../recruiter-profile';
+import { ToolCallsProcessing } from './tool-calls-processing';
 
 const commaSeparatedStatuses = allDataObjects.statusesArray.join(', ');
 
@@ -97,7 +97,7 @@ export class ToolCallingAgents {
     };
     console.log('Function Called: createReminder');
     const graphqlQueryObj = JSON.stringify({
-      query: allGraphQLQueries.graphqlQueryToCreateOneReminder,
+      query:  graphqlQueryToCreateOneReminder,
       variables: createOneReminderVariables,
     });
 
@@ -217,7 +217,7 @@ export class ToolCallingAgents {
       },
     };
     const graphqlQueryObj = JSON.stringify({
-      query:allGraphQLQueries.graphqlToUpdateOneClientInterview,
+      query: graphqlToUpdateOneClientInterview,
       variables: updateClientInterviewVariables,
     });
 

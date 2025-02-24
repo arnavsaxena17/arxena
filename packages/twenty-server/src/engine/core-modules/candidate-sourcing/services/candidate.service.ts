@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { CreateFieldsOnObject } from 'src/engine/core-modules/workspace-modifications/object-apis/data/createFields';
-import * as allGraphQLQueries from '../../arx-chat/graphql-queries/graphql-queries-chatbot';
+import { CreateManyCandidates, CreateOneObjectMetadataItem, graphqlToFetchAllCandidateData, graphqlToFindManyJobByArxenaSiteId } from 'twenty-shared';
 import { FilterCandidates } from '../../arx-chat/services/candidate-engagement/filter-candidates';
 import * as allDataObjects from '../../arx-chat/services/data-model-objects';
 import { GoogleSheetsService } from '../../google-sheets/google-sheets.service';
@@ -8,7 +8,6 @@ import { CreateMetaDataStructure } from '../../workspace-modifications/object-ap
 import { createFields } from '../../workspace-modifications/object-apis/services/field-service';
 import { createRelations } from '../../workspace-modifications/object-apis/services/relation-service';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
-import { CreateManyCandidates, graphqlToFindManyJobByArxenaSiteId } from '../graphql-queries';
 import * as CandidateSourcingTypes from '../types/candidate-sourcing-types';
 import { processArxCandidate } from '../utils/data-transformation-utility';
 import { JobCandidateUtils } from '../utils/job-candidate-utils';
@@ -148,7 +147,7 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
 
   async batchCheckExistingCandidates(uniqueStringKeys: string[], jobId: string, apiToken: string): Promise<Map<string, any>> {
     const graphqlQuery = JSON.stringify({
-      query: allGraphQLQueries.graphqlQueryToFindCandidateByUniqueKey,
+      query: graphqlToFetchAllCandidateData,
       variables: {
         filter: { 
           uniqueStringKey: { in: uniqueStringKeys },
@@ -889,7 +888,7 @@ async createNewJobCandidateObject(newPositionObj: CandidateSourcingTypes.Jobs, a
   };
 
   const mutation = {
-    query: allGraphQLQueries.graphqlToCreateOneMetatDataObjectItems,
+    query: CreateOneObjectMetadataItem,
     variables: { input }
   };
   let jobCandidateObjectId = '';

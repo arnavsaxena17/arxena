@@ -3,17 +3,12 @@
 import { Injectable } from "@nestjs/common";
 import moment from "moment";
 
-import { promises as fs } from "fs";
-import path from "path";
-import process from "process";
 import { authenticate } from "@google-cloud/local-auth";
-import { google } from "googleapis";
-import { env } from "process";
 import axios from "axios";
+import { promises as fs } from "fs";
+import { google } from "googleapis";
+import process from "process";
 import { CalendarEventType } from "src/engine/core-modules/calendar-events/services/calendar-data-objects-types";
-import { graphqlQueryToGetCurrentUser } from "./services/graphql-queries-calendar";
-import { axiosRequest } from "./utils/calendar-utils";
-import { response } from "express";
 
 // If modifying these scopes, delete token.json.
 const SCOPES = ["https://www.googleapis.com/auth/calendar","https://www.googleapis.com/auth/contacts"];

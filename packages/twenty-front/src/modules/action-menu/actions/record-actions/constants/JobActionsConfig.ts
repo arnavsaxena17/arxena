@@ -9,9 +9,8 @@ import {
 import { msg } from '@lingui/core/macro';
 import { IconCopy } from 'twenty-ui';
 
-import { useCloneMultipleRecordsAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useCloneMultipleRecordsAction';
-
 import { useCheckDataIntegrityOfJobAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useCheckDataIntegrityOfJobAction';
+import { useCloneMultipleRecordsAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useCloneMultipleRecordsAction';
 import { useCreateInterviewVideosAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useCreateInterviewVideosAction';
 import { IconList } from '@tabler/icons-react';
 import { graphQltoUpdateOneCandidate } from 'twenty-shared';

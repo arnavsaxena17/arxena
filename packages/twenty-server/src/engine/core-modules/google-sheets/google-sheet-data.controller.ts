@@ -1,6 +1,6 @@
 import { Body, Controller, Get, InternalServerErrorException, NotFoundException, Post } from '@nestjs/common';
 import moment from 'moment-timezone';
-import { graphqlToFetchAllCandidateData, graphQlToUpdateCandidate, mutationToUpdateOnePerson } from '../arx-chat/graphql-queries/graphql-queries-chatbot';
+import { graphqlToFetchAllCandidateData, graphQltoUpdateOneCandidate, mutationToUpdateOnePerson } from 'twenty-shared';
 import { CandidateSourcingController } from '../candidate-sourcing/controllers/candidate-sourcing.controller';
 import { ProcessCandidatesService } from '../candidate-sourcing/jobs/process-candidates.service';
 import { CandidateService } from '../candidate-sourcing/services/candidate.service';
@@ -216,7 +216,7 @@ export class GoogleSheetsDataController {
                   // Update candidate if there are candidate fields
                   if (Object.keys(updateData.candidateUpdates).length > 0) {
                       const candidateUpdateMutation = {
-                          query: graphQlToUpdateCandidate,
+                          query: graphQltoUpdateOneCandidate,
                           variables: {
                               idToUpdate: candidateId,
                               input: updateData.candidateUpdates
@@ -300,7 +300,7 @@ export class GoogleSheetsDataController {
     }
     
     const updateMutation = {
-      query: graphQlToUpdateCandidate,
+      query: graphQltoUpdateOneCandidate,
       variables: {
       idToUpdate: candidate.id,
       input: data

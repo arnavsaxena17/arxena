@@ -1,23 +1,24 @@
-import * as allDataObjects from '../data-model-objects';
-import { UpdateChat } from './update-chat';
-import { axiosRequest, sortWhatsAppMessages } from '../../utils/arx-chat-agent-utils';
-import { OpenAIArxMultiStepClient } from '../llm-agents/arx-multi-step-client';
+import { GoogleSheetsService } from 'src/engine/core-modules/google-sheets/google-sheets.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
-import { FilterCandidates } from './filter-candidates';
+import { graphqlToFetchAllCandidateData, graphqlToFetchManyCandidatesOlderSchema, graphQlToFetchWhatsappMessages, graphQltoUpdateOneCandidate } from 'twenty-shared';
+import { axiosRequest, sortWhatsAppMessages } from '../../utils/arx-chat-agent-utils';
 import { ChatFlowConfigBuilder } from '../chat-flow-config';
-import * as allGraphQLQueries from '../../graphql-queries/graphql-queries-chatbot';
-import { workspacesWithOlderSchema } from 'src/engine/core-modules/candidate-sourcing/graphql-queries';
+import * as allDataObjects from '../data-model-objects';
+import { OpenAIArxMultiStepClient } from '../llm-agents/arx-multi-step-client';
 import { PromptingAgents } from '../llm-agents/prompting-agents';
+import { getRecruiterProfileByJob } from '../recruiter-profile';
+import { TimeManagement } from '../time-management';
+import { FilterCandidates } from './filter-candidates';
+import { UpdateChat } from './update-chat';
+
+export const workspacesWithOlderSchema = ["20202020-1c25-4d02-bf25-6aeccf7ea419","3b8e6458-5fc1-4e63-8563-008ccddaa6db"];
+
 
 const readline = require('node:readline');
 const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout,
 });
-import { graphQltoUpdateOneCandidate } from 'src/engine/core-modules/candidate-sourcing/graphql-queries';
-import { TimeManagement } from '../time-management';
-import { GoogleSheetsService } from 'src/engine/core-modules/google-sheets/google-sheets.service';
-import { getRecruiterProfileByJob } from '../recruiter-profile';
 
 export default class CandidateEngagementArx {
   private chatFlowConfigBuilder: ChatFlowConfigBuilder;
@@ -135,7 +136,7 @@ export default class CandidateEngagementArx {
   }
   private async fetchCandidateById(candidateId: string, apiToken: string): Promise<any> {
     const graphqlQueryObj = JSON.stringify({
-      query: allGraphQLQueries.graphqlToFetchAllCandidateData,
+      query: graphqlToFetchAllCandidateData,
       variables: { filter: { id: { eq: candidateId } } },
     });
 
@@ -146,7 +147,7 @@ export default class CandidateEngagementArx {
   private async fetchRecentMessages(startTime: Date, endTime: Date, apiToken: string) {
     console.log("Fetching recent messages from startTime to endTime");
     const graphqlQueryObj = JSON.stringify({
-      query: allGraphQLQueries.graphQlToFetchWhatsappMessages,
+      query: graphQlToFetchWhatsappMessages,
       variables: {
         filter: {
           createdAt: {
@@ -253,7 +254,7 @@ export default class CandidateEngagementArx {
   // Helper methods for grouping candidates by job
   private async groupCandidatesByJob(candidateIds: string[], apiToken: string): Promise<Record<string, string[]>> {
     const graphqlQueryObj = JSON.stringify({
-      query: allGraphQLQueries.graphqlToFetchAllCandidateData,
+      query: graphqlToFetchAllCandidateData,
       variables: { filter: { id: { in: candidateIds } } },
     });
 
@@ -407,7 +408,7 @@ export default class CandidateEngagementArx {
 
     try {
       const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-      graphqlQueryObjToFetchAllCandidatesForChats = workspacesWithOlderSchema.includes(workspaceId) ? allGraphQLQueries.graphqlToFetchManyCandidatesOlderSchema : allGraphQLQueries.graphqlToFetchAllCandidateData;
+      graphqlQueryObjToFetchAllCandidatesForChats = workspacesWithOlderSchema.includes(workspaceId) ? graphqlToFetchManyCandidatesOlderSchema : graphqlToFetchAllCandidateData;
 
       // Add timestamp to ensure fresh data
       const timestamp = new Date().toISOString();
@@ -477,7 +478,7 @@ export default class CandidateEngagementArx {
     let graphqlQueryObjToFetchAllCandidatesForChats = '';
     try {
       const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-      graphqlQueryObjToFetchAllCandidatesForChats = workspacesWithOlderSchema.includes(workspaceId) ? allGraphQLQueries.graphqlToFetchManyCandidatesOlderSchema : allGraphQLQueries.graphqlToFetchAllCandidateData;
+      graphqlQueryObjToFetchAllCandidatesForChats = workspacesWithOlderSchema.includes(workspaceId) ? graphqlToFetchManyCandidatesOlderSchema : graphqlToFetchAllCandidateData;
       const timestamp = new Date().toISOString();
       for (const filter of filters) {
         // console.log(`Trying filter condition:`, filter);

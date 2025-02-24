@@ -1,37 +1,28 @@
-import { Injectable } from '@nestjs/common';
 import { Boom } from '@hapi/boom';
-import NodeCache from 'node-cache';
-import readline from 'readline';
+import { Injectable } from '@nestjs/common';
 import makeWASocket, {
-  AnyMessageContent,
   delay,
   DisconnectReason,
+  downloadMediaMessage,
   fetchLatestBaileysVersion,
   makeCacheableSignalKeyStore,
-  makeInMemoryStore,
-  proto,
-  useMultiFileAuthState,
-  WAMessageContent,
-  WAMessageKey,
-  downloadMediaMessage,
+  useMultiFileAuthState
 } from '@whiskeysockets/baileys';
-import * as fs from 'fs';
-import * as path from 'path';
-import { question } from './helpers/auth';
-import { makeStore } from './helpers/store';
 import MAIN_LOGGER from '@whiskeysockets/baileys/lib/Utils/logger';
-import { IncomingWhatsappMessages } from '../arx-chat/services/whatsapp-api/incoming-messages';
-import { BaileysIncomingMessage } from '../arx-chat/services/data-model-objects';
-import { FileDataDto, MessageDto } from './types/baileys-types';
+import * as fs from 'fs';
+import NodeCache from 'node-cache';
+import * as path from 'path';
 import { SocksProxyAgent } from 'socks-proxy-agent';
-import { EventsGateway } from './events-gateway-module/events-gateway';
-import { AttachmentProcessingService } from '../arx-chat/utils/attachment-processes';
-import * as allDataObjects from '../arx-chat/services/data-model-objects';
-import { UpdateChat } from '../arx-chat/services/candidate-engagement/update-chat';
-import { axiosRequest } from '../arx-chat/utils/arx-chat-agent-utils';
-import { graphqlToFetchWhatsappMessageByCandidateId, graphqlToFetchWhatsappMessageByWhatsappId, graphqlToUpdateWhatsappMessageId } from './graphql-queries';
-import {WorkspaceQueryService} from '../workspace-modifications/workspace-modifications.service';
+import { graphqlToFetchWhatsappMessageByWhatsappId, graphQlToFetchWhatsappMessages, graphqlToUpdateWhatsappMessageId } from 'twenty-shared';
 import { FilterCandidates } from '../arx-chat/services/candidate-engagement/filter-candidates';
+import * as allDataObjects from '../arx-chat/services/data-model-objects';
+import { IncomingWhatsappMessages } from '../arx-chat/services/whatsapp-api/incoming-messages';
+import { axiosRequest } from '../arx-chat/utils/arx-chat-agent-utils';
+import { AttachmentProcessingService } from '../arx-chat/utils/attachment-processes';
+import { WorkspaceQueryService } from '../workspace-modifications/workspace-modifications.service';
+import { EventsGateway } from './events-gateway-module/events-gateway';
+import { makeStore } from './helpers/store';
+import { FileDataDto, MessageDto } from './types/baileys-types';
 
 const nodeCache = new NodeCache();
 
@@ -315,7 +306,7 @@ export class WhatsappService {
       };
       const responseAfterFetchingAllMessagesByCandidateId = await axiosRequest(
         JSON.stringify({
-          query: graphqlToFetchWhatsappMessageByCandidateId,
+          query: graphQlToFetchWhatsappMessages,
           variables: variables,
         }),apiToken
       );

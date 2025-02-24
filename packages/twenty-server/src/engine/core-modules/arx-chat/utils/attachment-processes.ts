@@ -1,8 +1,8 @@
 // sendRequestsSequentially();
 
 import axios from "axios";
+import { findManyAttachmentsQuery, graphQLtoCreateOneAttachmentFromFilePath } from "twenty-shared";
 import { axiosRequest } from "./arx-chat-agent-utils";
-import * as allGraphQLQueries from "../graphql-queries/graphql-queries-chatbot";
 const FormData = require("form-data");
 const fs = require("fs");
 
@@ -35,7 +35,7 @@ export class AttachmentProcessingService {
   async createOneAttachmentFromFilePath(documentObj: { input: { authorId: string; name: string; fullPath: string; type: string; candidateId?: string; responseId?: string;};
   },apiToken:string) {
     const graphqlQueryObj = JSON.stringify({
-      query: allGraphQLQueries.graphQLtoCreateOneAttachmentFromFilePath,
+      query: graphQLtoCreateOneAttachmentFromFilePath,
       variables: documentObj,
     });
     const response = await axiosRequest(graphqlQueryObj,  apiToken);
@@ -45,7 +45,7 @@ export class AttachmentProcessingService {
   async fetchAllAttachmentsByJobId(jobId: string,  apiToken:string) {
     console.log("Received Job ID:", jobId);
     let graphqlQueryObj = JSON.stringify({
-      query: allGraphQLQueries.graphqlQueryTofindManyAttachmentsByJobId,
+      query: findManyAttachmentsQuery,
       variables: {
         filter: { jobId: { eq: jobId } },
         orderBy: { createdAt: "DescNullsFirst" },
