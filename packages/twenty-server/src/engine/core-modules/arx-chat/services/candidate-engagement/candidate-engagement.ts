@@ -516,10 +516,11 @@ export default class CandidateEngagementArx {
     let graphqlQueryObjToFetchAllCandidatesForChats = '';
     try {
       const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+      console.log("workspacesWithOlderSchema.includes(workspaceId)::", workspacesWithOlderSchema.includes(workspaceId))
       graphqlQueryObjToFetchAllCandidatesForChats = workspacesWithOlderSchema.includes(workspaceId) ? graphqlToFetchManyCandidatesOlderSchema : graphqlToFetchAllCandidateData;
       const timestamp = new Date().toISOString();
       for (const filter of filters) {
-        // console.log(`Trying filter condition:`, filter);
+        console.log(`Trying filter condition:`, filter);
         let lastCursor: string | null = null;
         const timestampedFilter = {
           ...filter,

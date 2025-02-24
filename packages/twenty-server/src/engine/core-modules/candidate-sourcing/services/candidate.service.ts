@@ -1045,9 +1045,11 @@ private async fetchAllFieldsForObject(objectId: string, apiToken: string): Promi
   const fields: string[] = [];
   let hasNextPage = true;
   let cursor: string | null = null;
-
+  console.log("This is the fetchAllFieldsForObject for :", objectId);
+  console.log("This is the objectID:", objectId);
   while (hasNextPage) {
     try {
+
       const response = await new CreateMetaDataStructure(this.workspaceQueryService).fetchFieldsPage(objectId, cursor, apiToken);
       console.log("This is the resposne data objects:", response?.data?.objects);
       

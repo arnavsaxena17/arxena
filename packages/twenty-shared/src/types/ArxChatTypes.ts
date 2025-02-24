@@ -555,8 +555,8 @@ export interface ArxenaCandidateNode {
   name: string;
   engagementStatus: boolean;
   startChat: boolean;
-  phoneNumber:string
-  email:string
+  phoneNumber:{ primaryPhoneNumber: string; }
+  email:{ primaryEmail: any; }
   campaign:string
   source:string
   startVideoInterviewChat: boolean;
@@ -598,9 +598,9 @@ export interface ArxenaJobCandidateNode {
   profileTitle: string;
   name?: string;
   linkedinLink?: string;
-  email?: string;
+  emails : { primaryEmail: string };
   uniqueStringKey?: string;
-  phone?: string;
+  phones?: { primaryPhoneNumber: string };
   jobTitle?: string;
   jsUserName?: string;
   keySkills?: string;
@@ -635,9 +635,9 @@ export interface ArxenaPersonNode {
   };
   linkedinLink?: { primaryLinkLabel: string; primaryLinkUrl: string }
   displayPicture?: { primaryLinkLabel: string; primaryLinkUrl: string }
-  email?: string | null;
+  emails?: { primaryEmail: string };
+  phones?: { primaryPhoneNumber: string };
   uniqueStringKey?: string | null;
-  phone?: string | null;
   jobTitle?: string | null;
   jsUserName?: string;
   keySkills?: string;

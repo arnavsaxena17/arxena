@@ -4,9 +4,9 @@ export const mapArxCandidateToPersonNode = candidate => {
   const personNode: ArxenaPersonNode = {
     name: { firstName: candidate?.first_name || "", lastName: candidate?.last_name || ""},
     displayPicture: {"primaryLinkLabel":"Display Picture", "primaryLinkUrl":candidate?.display_picture || ''},
-    email: Array.isArray(candidate?.email_address) ? candidate?.email_address[0] : candidate?.email_address || "",
+    emails: Array.isArray(candidate?.email_address) ? {primaryEmail:candidate?.email_address[0]} : {primaryEmail:candidate?.email_address || ""},
     linkedinLink: candidate?.linkedin_url ? { primaryLinkUrl: candidate?.linkedin_url, primaryLinkLabel: candidate?.linkedin_url } : { primaryLinkUrl: '', primaryLinkLabel: '' },
-    phone: candidate?.phone_numbers && candidate?.phone_numbers?.length > 0 ? (typeof candidate?.phone_numbers[0] === 'string' ? candidate?.phone_numbers[0] : candidate?.phone_numbers[0]?.number) || "" : "",
+    phones: { primaryPhoneNumber: candidate?.phone_numbers && candidate?.phone_numbers?.length > 0 ? (typeof candidate?.phone_numbers[0] === 'string' ? candidate?.phone_numbers[0] : candidate?.phone_numbers[0]?.number) || "" : "" },
     uniqueStringKey:candidate?.unique_key_string,
     jobTitle: candidate?.job_title || '',
   };
@@ -23,9 +23,9 @@ export const mapArxCandidateToJobCandidateNode = candidate => {
 
   const jobCandidateNode: ArxenaJobCandidateNode = {
     name:  candidate.full_name,
-    email: Array.isArray(candidate?.email_address) ? candidate?.email_address[0] : candidate?.email_address || "",
+    emails: Array.isArray(candidate?.email_address) ? candidate?.email_address[0] : candidate?.email_address || "",
     profileUrl: {"primaryLinkLabel":candidate?.profile_url || "", "primaryLinkUrl":candidate?.profile_url || ""},
-    phone: candidate?.phone_numbers && candidate?.phone_numbers?.length > 0 ? (typeof candidate?.phone_numbers[0] === 'string' ? candidate?.phone_numbers[0] : candidate?.phone_numbers[0]?.number) || "" : "",
+    phones:candidate?.phone_numbers && candidate?.phone_numbers?.length > 0 ? (typeof candidate?.phone_numbers[0] === 'string' ? candidate?.phone_numbers[0] : candidate?.phone_numbers[0]?.number) || "" : "",
     uniqueStringKey:candidate?.unique_key_string,
     jobTitle: candidate?.job_title || '',
     profileTitle: candidate?.profile_title || '',
@@ -66,8 +66,8 @@ export const mapArxCandidateToCandidateNode = (candidate: {
     jobsId: jobNode?.id,
     engagementStatus: false,
     startChat: false,
-    phoneNumber: candidate?.phone_numbers && candidate?.phone_numbers?.length > 0 ? (typeof candidate?.phone_numbers[0] === 'string' ? candidate?.phone_numbers[0] : candidate?.phone_numbers[0]?.number) || "" : "",
-    email: Array.isArray(candidate?.email_address) ? candidate?.email_address[0] : candidate?.email_address || "",
+    phoneNumber: {primaryPhoneNumber: candidate?.phone_numbers && candidate?.phone_numbers?.length > 0 ? (typeof candidate?.phone_numbers[0] === 'string' ? candidate?.phone_numbers[0] : candidate?.phone_numbers[0]?.number) || "" : ""},
+    email:{primaryEmail: Array.isArray(candidate?.email_address) ? candidate?.email_address[0] : candidate?.email_address || ""},
     stopChat: false,
     startVideoInterviewChat: false,
     startMeetingSchedulingChat: false,
