@@ -111,16 +111,17 @@ export class FilterCandidates {
     } else {
       graphqlQueryObjToFetchAllPeopleForChats = graphqlQueryToFindManyPeople;
     }
-
-    while (true) {
+    if (candidatePeopleIds.length > 0) {
+      while (true) {
       const graphqlQueryObj = JSON.stringify({ query: graphqlQueryObjToFetchAllPeopleForChats, variables: { filter: { id: { in: candidatePeopleIds } }, lastCursor } });
       const response = await axiosRequest(graphqlQueryObj, apiToken);
       const edges = response?.data?.data?.people?.edges;
       if (!edges || edges?.length === 0) break;
       allPeople = allPeople.concat(edges.map((edge: any) => edge?.node));
       lastCursor = edges[edges.length - 1].cursor;
+      }
+      console.log('Number of people fetched in fetchAllPeopleByCandidatePeopleIds:', allPeople?.length);
     }
-    console.log('Number of people fetched in fetchAllPeopleByCandidatePeopleIds:', allPeople?.length);
     return allPeople;
   }
 

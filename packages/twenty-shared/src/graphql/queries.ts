@@ -394,13 +394,11 @@ export const findWorkspaceMemberProfiles =  `query FindManyWorkspaceMemberProfil
       node {
         __typename
         id
-        email
         phoneNumber
         companyName
         companyDescription
         lastName
         createdAt
-        phoneNumber
         name
         firstName
         typeWorkspaceMember
@@ -493,8 +491,8 @@ query FindManyVideoInterviews($filter: VideoInterviewFilterInput, $orderBy: [Vid
           updatedAt
         }
         interviewLink {
-          label
-          url
+            primaryLinkLabel
+            primaryLinkUrl
           __typename
         }
         candidate {
@@ -522,13 +520,13 @@ query FindManyVideoInterviews($filter: VideoInterviewFilterInput, $orderBy: [Vid
           uniqueStringKey
           whatsappProvider
           hiringNaukriUrl {
-            label
-            url
+            primaryLinkLabel
+            primaryLinkUrl
             __typename
           }
           resdexNaukriUrl {
-            label
-            url
+            primaryLinkLabel
+            primaryLinkUrl
             __typename
           }
           jobs {
@@ -545,8 +543,12 @@ query FindManyVideoInterviews($filter: VideoInterviewFilterInput, $orderBy: [Vid
               firstName
               lastName
             }
-            email
-            phone
+            emails{
+              primaryEmail
+            }            
+            phones{
+              primaryPhoneNumber
+            }
           }
         }
       }
@@ -655,7 +657,9 @@ export const graphqlQueryToFindManyPeople = `query FindManyPeople($filter: Perso
                        company{
                         name
                         id
-                        domainName
+                        domainName{
+                          primaryLinkUrl
+                        }
                         descriptionOneliner
                       }
                     }
@@ -666,7 +670,7 @@ export const graphqlQueryToFindManyPeople = `query FindManyPeople($filter: Perso
                               createdAt
                               updatedAt
                               interviewLink{
-                                url
+                                primaryLinkUrl
                               }
                           }
                       }
@@ -682,7 +686,9 @@ export const graphqlQueryToFindManyPeople = `query FindManyPeople($filter: Perso
                       company {
                           name
                           id
-                          domainName
+                          domainName{
+                            primaryLinkUrl
+                          }
                           descriptionOneliner
                       }
 
@@ -715,7 +721,7 @@ export const graphqlQueryToFindManyPeople = `query FindManyPeople($filter: Perso
                             node{
                                 id
                                 interviewLink{
-                                  url
+                                  primaryLinkUrl
                                 }
                             }
                         }
@@ -742,12 +748,16 @@ export const graphqlQueryToFindManyPeople = `query FindManyPeople($filter: Perso
                 }
             }
         }
-        phone
         name {
           firstName
           lastName
         }
-        email
+        phones{
+          primaryPhoneNumber
+        }
+        emails{
+            primaryEmail
+        }
         salary
         city
         jobTitle
@@ -1148,8 +1158,8 @@ export const graphqlQueryToFindManyReminders = `query FindManyCandidateReminders
       id
       videoInterviewTemplateId
       interviewReviewLink {
-        label
-        url
+        primaryLinkLabel
+        primaryLinkUrl
       }
       videoInterviewResponse {
         edges {
@@ -1190,8 +1200,8 @@ export const graphqlQueryToFindManyReminders = `query FindManyCandidateReminders
       name
       updatedAt
       interviewLink {
-        label
-        url
+        primaryLinkUrl
+        primaryLinkLabel
       }
       interviewCompleted
       createdAt
@@ -1212,6 +1222,69 @@ export const graphqlQueryToFindManyReminders = `query FindManyCandidateReminders
           name
           updatedAt
           whatsappProvider
+        candConversationStatus
+        startVideoInterviewChat
+
+        lastEngagementChatControl
+        startVideoInterviewChat
+        startMeetingSchedulingChat
+        stopChat
+        uniqueStringKey
+        hiringNaukriUrl{
+          primaryLinkUrl
+          primaryLinkLabel
+        }
+        resdexNaukriUrl{
+          primaryLinkUrl
+          primaryLinkLabel
+        }
+        videoInterviewResponse {
+          edges {
+            node {
+              id
+              transcript
+              videoInterviewQuestionId
+              attachments {
+                edges {
+                  node {
+                    id
+                    type
+                    fullPath
+                    name
+                  }
+                }
+              }
+            }
+          }
+        }
+  
+        videoInterview{
+            edges{
+                node{
+                id
+                interviewLink{
+                  primaryLinkUrl
+                }
+                createdAt
+                updatedAt
+                interviewStarted
+                interviewCompleted
+                videoInterviewTemplate {
+                id
+                name
+                videoInterviewQuestions {
+                edges {
+                    node {
+                    id
+                    questionValue
+                    timeLimit
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
           answers{
             edges{
               node{
@@ -1224,15 +1297,18 @@ export const graphqlQueryToFindManyReminders = `query FindManyCandidateReminders
               }
             }
           }
-
           people {
             id
             name {
               firstName
               lastName
             }
-            phone
-            email
+            phones{
+                primaryPhoneNumber
+            }
+            emails{
+                primaryEmail
+            }
             jobTitle
             uniqueStringKey  
             phoneCall{
@@ -1296,82 +1372,19 @@ export const graphqlQueryToFindManyReminders = `query FindManyCandidateReminders
             company{
               name
               id
-              domainName
+              domainName{
+                primaryLinkUrl
+              }
               descriptionOneliner
             }
           }
-          videoInterviewTemplate {
-            edges {
-              node {
-                id
-                name
-                videoInterviewQuestions {
-                  edges {
-                    node {
-                      id
-                      questionValue
-                      timeLimit
-                    }
-                  }
-                }
-              }
-            }
-          }
+
         }
-        videoInterviewResponse {
-          edges {
-            node {
-              id
-              transcript
-              videoInterviewQuestionId
-              attachments {
-                edges {
-                  node {
-                    id
-                    type
-                    fullPath
-                    name
-                  }
-                }
-              }
-            }
-          }
-        }
-  
-        candConversationStatus
-        startVideoInterviewChat
-        videoInterview{
-            edges{
-                node{
-                    id
-                    interviewLink{
-                      url
-                    }
-                    createdAt
-                    updatedAt
-                    interviewStarted
-                    interviewCompleted
-                }
-            }
-        }
-        lastEngagementChatControl
-        startVideoInterviewChat
-        startMeetingSchedulingChat
-        stopChat
-        uniqueStringKey
-        hiringNaukriUrl{
-          url
-          label
-        }
-        resdexNaukriUrl{
-          url
-          label
-        }
+
+
       }
     }
-  }
-}
-`
+  }`
   
 
 
@@ -1478,8 +1491,12 @@ candidate(filter: {id: {eq: $objectRecordId}}) {
       lastName
     }
     companyId
-    phone
-    id
+    phones{
+        primaryPhoneNumber
+    }
+    emails{
+        primaryEmail
+    }    id
     phoneCall {
           edges{
               node{
@@ -1521,22 +1538,26 @@ export const findOnePersonQuery = `
   query FindOnePerson($objectRecordId: ID!) {
     person(filter: { id: { eq: $objectRecordId } }) {
       xLink {
-        label
-        url
+        primaryLinkLabel
+        primaryLinkUrl
       }
       id
       createdAt
       city
-      email
       jobTitle
       name {
         firstName
         lastName
       }
-      phone
-      linkedinLink {
-        label
-        url
+        phones{
+            primaryPhoneNumber
+        }
+        emails{
+            primaryEmail
+        }      
+        linkedinLink {
+            primaryLinkLabel
+            primaryLinkUrl
       }
       updatedAt
       avatarUrl
