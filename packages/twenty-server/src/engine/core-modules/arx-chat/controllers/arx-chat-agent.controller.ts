@@ -560,7 +560,7 @@ export class ArxChatEndpoint {
       return { status: 'Failed', error: err };
     }
   }
-  @Post('create-shortlist-document')
+  @Post('test-arxena-connection')
   @UseGuards(JwtAuthGuard)
   async testArxenaConnection(@Req() request: any): Promise<object> {
     try {
