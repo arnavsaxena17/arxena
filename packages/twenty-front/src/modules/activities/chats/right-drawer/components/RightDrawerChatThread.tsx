@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { useRecoilState } from 'recoil';
+import { chatPanelState } from '@/activities/chats/states/chatPanelState';
+import { tokenPairState } from '@/auth/states/tokenPairState';
+import styled from '@emotion/styled';
 import axios from 'axios';
 import dayjs from 'dayjs';
-import styled from '@emotion/styled';
-import { tokenPairState } from '@/auth/states/tokenPairState';
-import * as frontChatTypes from '@/activities/chats/types/front-chat-types';
-import {chatPanelState} from '@/activities/chats/states/chatPanelState';
+import React, { useEffect, useState } from 'react';
+import { useRecoilState } from 'recoil';
+import { MessageNode } from 'twenty-shared';
 
 
 const StyledContainer = styled.div`
@@ -51,7 +51,7 @@ const EmptyState = styled.div`
 export const RightDrawerChatThread = () => {
   const [tokenPair] = useRecoilState(tokenPairState);
   const [chatPanel] = useRecoilState(chatPanelState);
-  const [messageHistory, setMessageHistory] = useState<frontChatTypes.MessageNode[]>([]);
+  const [messageHistory, setMessageHistory] = useState<MessageNode[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -79,7 +79,7 @@ export const RightDrawerChatThread = () => {
         );
 
         const sortedMessages = response.data.sort(
-          (a: frontChatTypes.MessageNode, b: frontChatTypes.MessageNode) => 
+          (a: MessageNode, b: MessageNode) => 
             dayjs(a.createdAt).valueOf() - dayjs(b.createdAt).valueOf()
         );
 

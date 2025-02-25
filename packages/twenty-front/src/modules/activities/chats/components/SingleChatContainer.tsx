@@ -1,10 +1,8 @@
-import React, { useState, ReactElement } from "react";
 import styled from "@emotion/styled";
-import * as frontChatTypes from "../types/front-chat-types";
+import { IconAlertCircle, IconCheck, IconChecks } from "@tabler/icons-react";
 import dayjs from "dayjs";
-import axios from "axios";
-import { set } from "date-fns";
-import { IconChecks,IconCheck,  IconAlertCircle } from "@tabler/icons-react";
+import { ReactElement } from "react";
+import { MessageNode } from "twenty-shared";
 
 const IconChecksBlue = () => {
   return (
@@ -80,7 +78,7 @@ const ChatMessageInfo = (props: {
 };
 
 export default function SingleChatContainer(props: {
-  message: frontChatTypes.MessageNode;
+  message: MessageNode;
   messageName: string | undefined;
   phoneNumber: string | undefined;
 }) {

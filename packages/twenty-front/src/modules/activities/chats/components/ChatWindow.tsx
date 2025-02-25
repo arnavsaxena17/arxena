@@ -4,7 +4,6 @@ import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import axios from 'axios';
 import dayjs from 'dayjs';
 import { useRecoilCallback, useRecoilState, useRecoilValue } from 'recoil';
-import * as frontChatTypes from '../types/front-chat-types';
 import SingleChatContainer from './SingleChatContainer';
 
 import styled from '@emotion/styled';
@@ -21,7 +20,7 @@ import AttachmentPanel from './AttachmentPanel';
 
 import { recordStoreFamilyState } from '@/object-record/record-store/states/recordStoreFamilyState';
 import { useNavigate } from 'react-router-dom';
-import { graphQltoUpdateOneCandidate, mutationToUpdateOnePerson } from 'twenty-shared';
+import { graphQltoUpdateOneCandidate, MessageNode, mutationToUpdateOnePerson, PersonNode } from 'twenty-shared';
 // import { templates, getTemplatePreview } from './chatTemplates';
 
 const statusLabels: { [key: string]: string } = {
@@ -567,7 +566,7 @@ const formatDate = (date: string) => dayjs(date).format('YYYY-MM-DD');
 
 interface ChatWindowProps {
   selectedIndividual: string;
-  individuals: frontChatTypes.PersonNode[];
+  individuals: PersonNode[];
   onMessageSent: () => void;
   sidebarWidth: number;
 }
@@ -580,7 +579,7 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
 
   const navigate = useNavigate();
 
-  const [messageHistory, setMessageHistory] = useState<frontChatTypes.MessageNode[]>([]);
+  const [messageHistory, setMessageHistory] = useState<MessageNode[]>([]);
   const [latestResponseGenerated, setLatestResponseGenerated] = useState('');
   const [listOfToolCalls, setListOfToolCalls] = useState<string[]>([]);
   const [isAttachmentPanelOpen, setIsAttachmentPanelOpen] = useState(false);
@@ -600,7 +599,7 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
   const [city, setCity] = useState(currentIndividual?.city || '');
   const [candidateStatus, setCandidateStatus] = useState(currentIndividual?.candidates?.edges[0].node?.candConversationStatus || '');
   const [isMessagePending, setIsMessagePending] = useState(false);
-  const [pendingMessage, setPendingMessage] = useState<frontChatTypes.MessageNode | null>(null);
+  const [pendingMessage, setPendingMessage] = useState<MessageNode | null>(null);
   const [shouldScrollToBottom, setShouldScrollToBottom] = useState(true);
   const [userHasScrolled, setUserHasScrolled] = useState(false);
   const [previousMessageCount, setPreviousMessageCount] = useState(0);
@@ -782,18 +781,18 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
 
   const sendMessage = async (messageText: string) => {
     console.log('send message');
-    const response = await axios.post(process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/send-chat', { messageToSend: messageText, phoneNumberTo: currentIndividual?.phone }, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } }); 
+    const response = await axios.post(process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/send-chat', { messageToSend: messageText, phoneNumberTo: currentIndividual?.phones.primaryPhoneNumber }, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } }); 
     };
 
   async function getlistOfMessages(currentCandidateId: string) {
     try {
       const response = await axios.post(process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/get-all-messages-by-candidate-id', { candidateId: currentCandidateId }, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } });
-      const sortedMessages = response.data.sort((a: frontChatTypes.MessageNode, b: frontChatTypes.MessageNode) => {
+      const sortedMessages = response.data.sort((a: MessageNode, b: MessageNode) => {
         return dayjs(a.createdAt).valueOf() - dayjs(b.createdAt).valueOf();
       });
 
       // Merge with pending message if it exists and hasn't appeared in the response
-      if (pendingMessage && !sortedMessages.some((msg: frontChatTypes.MessageNode) => msg.message === pendingMessage.message && Math.abs(dayjs(msg.createdAt).diff(dayjs(pendingMessage.createdAt), 'second')) < 30)) {
+      if (pendingMessage && !sortedMessages.some((msg: MessageNode) => msg.message === pendingMessage.message && Math.abs(dayjs(msg.createdAt).diff(dayjs(pendingMessage.createdAt), 'second')) < 30)) {
         setMessageHistory([...sortedMessages, pendingMessage]);
       } else {
         setMessageHistory(sortedMessages);
@@ -810,7 +809,7 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
     console.log('share JD');
     //@ts-ignore
     const response = await axios.post(process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/send-jd-from-frontend', 
-      { phoneNumberTo: currentIndividual?.phone }, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } }); };
+      { phoneNumberTo: currentIndividual?.phones.primaryPhoneNumber }, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } }); };
 
   const handleStatusUpdate = async (newStatus: string) => {
     try {
@@ -874,14 +873,14 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
       inputRef.current.value = '';
     }
 
-    const newMessage: frontChatTypes.MessageNode = {
+    const newMessage: MessageNode = {
       recruiterId: currentWorkspaceMember?.id || '',
       message: messageSent || '',
       candidateId: currentCandidateId || '',
       jobsId: currentIndividual?.candidates?.edges[0]?.node?.jobs?.id || '',
       position: messageHistory.length + 1,
       messageType: 'template',
-      phoneTo: currentIndividual?.phone || '',
+      phoneTo: currentIndividual?.phones.primaryPhoneNumber || '',
       updatedAt: new Date().toISOString(),
       createdAt: new Date().toISOString(),
       id: Date.now().toString(),
@@ -906,8 +905,8 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
   //   setLatestResponseGenerated: React.Dispatch<React.SetStateAction<string>>,
   //   listOfToolCalls: string[],
   //   setListOfToolCalls: React.Dispatch<React.SetStateAction<string[]>>,
-  //   messageHistory: frontChatTypes.MessageNode[],
-  //   setMessageHistory: React.Dispatch<React.SetStateAction<frontChatTypes.MessageNode[]>>,
+  //   messageHistory: MessageNode[],
+  //   setMessageHistory: React.Dispatch<React.SetStateAction<MessageNode[]>>,
   // ) => {
   //   console.log('Retrieve Bot Message');
   //   const oldLength = currentMessageObject.length;
@@ -1096,21 +1095,21 @@ const UploadCV: React.FC<{
   const closedToBeContacted = allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.candConversationStatus === 'CONVERSATION_CLOSED_TO_BE_CONTACTED').length;
   const closedToBeContactedPercent = ((closedToBeContacted / allIndividualsForCurrentJob.length) * 100).toFixed(1);
 
-  const undeliveredMessages = allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges?.some(edge => edge?.node?.whatsappDeliveryStatus === 'failed')).length;
+  const undeliveredMessages = allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges?.some((edge: { node: { whatsappDeliveryStatus: string; }; }) => edge?.node?.whatsappDeliveryStatus === 'failed')).length;
   const undeliveredPercent = ((undeliveredMessages / allIndividualsForCurrentJob.length) * 100).toFixed(1);
 
   // Messages read but not responded
   const readNotResponded = allIndividualsForCurrentJob?.filter(individual => {
-    const phone = individual?.phone || '';
+    const phone = individual?.phones.primaryPhoneNumber || '';
     console.log('individual phone:', phone?.replace('+', ''));
     const messages = individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges;
-    return messages?.some(edge => edge?.node?.whatsappDeliveryStatus === 'read' && !messages.some(m => m?.node?.phoneFrom?.replace('+', '') === phone?.replace('+', '')));
+    return messages?.some((edge: { node: { whatsappDeliveryStatus: string; }; }) => edge?.node?.whatsappDeliveryStatus === 'read' && !messages.some(m => m?.node?.phoneFrom?.replace('+', '') === phone?.replace('+', '')));
   }).length;
   const readNotRespondedPercent = ((readNotResponded / allIndividualsForCurrentJob.length) * 100).toFixed(1);
 
   // Messages unread and not responded
   const unreadNotResponded = allIndividualsForCurrentJob?.filter(individual => {
-    const messages = individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges; return messages?.some(edge => edge?.node?.whatsappDeliveryStatus === 'delivered' && !messages.some(m => m?.node?.phoneFrom?.replace('+', '') === individual?.phone?.replace('+', ''))); }).length;
+    const messages = individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges; return messages?.some((edge: { node: { whatsappDeliveryStatus: string; }; }) => edge?.node?.whatsappDeliveryStatus === 'delivered' && !messages.some(m => m?.node?.phoneFrom?.replace('+', '') === individual?.phones.primaryPhoneNumber?.replace('+', ''))); }).length;
   const unreadNotRespondedPercent = ((unreadNotResponded / allIndividualsForCurrentJob.length) * 100).toFixed(1);
 
   // Total messages not responded
@@ -1118,7 +1117,7 @@ const UploadCV: React.FC<{
   const totalNotRespondedPercent = ((totalNotResponded / allIndividualsForCurrentJob.length) * 100).toFixed(1);
 
   // Total messages responded
-  const totalResponded = allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges?.some(edge => edge?.node?.phoneFrom?.replace('+', '') === individual?.phone?.replace('+', ''))).length;
+  const totalResponded = allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges?.some((edge: { node: { phoneFrom: string; }; }) => edge?.node?.phoneFrom?.replace('+', '') === individual?.phones.primaryPhoneNumber?.replace('+', ''))).length;
   const totalRespondedPercent = ((totalResponded / allIndividualsForCurrentJob.length) * 100).toFixed(1);
 
   const messageStatisticsArray = [
@@ -1161,19 +1160,19 @@ const UploadCV: React.FC<{
     try {
       const response = await axios.post(
         process.env.REACT_APP_SERVER_BASE_URL + '/whatsapp-test/send-template-message',
-        { templateName: templateName, phoneNumberTo: currentIndividual?.phone?.replace('+', '') }, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } }, );
+        { templateName: templateName, phoneNumberTo: currentIndividual?.phones.primaryPhoneNumber?.replace('+', '') }, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } }, );
       console.log('This is reponse:', response);
       showSnackbar('Template sent successfully', 'success');
       setSelectedTemplate(''); // Reset selection after successful send
       onMessageSent();
-      const newMessage: frontChatTypes.MessageNode = {
+      const newMessage: MessageNode = {
         recruiterId: currentWorkspaceMember?.id || '',
         message: templateName,
         candidateId: currentCandidateId || '',
         jobsId: currentIndividual?.candidates?.edges[0]?.node?.jobs?.id || '',
         position: messageHistory.length + 1,
         messageType: 'template',
-        phoneTo: currentIndividual?.phone || '',
+        phoneTo: currentIndividual?.phones.primaryPhoneNumber || '',
         updatedAt: new Date().toISOString(),
         createdAt: new Date().toISOString(),
         id: Date.now().toString(),
@@ -1200,7 +1199,7 @@ const UploadCV: React.FC<{
 
     try {
       await axios.post( process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/start-interim-chat-prompt',
-        { interimChat, phoneNumber: currentIndividual?.phone, }, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}`, }, }, );
+        { interimChat, phoneNumber: currentIndividual?.phones.primaryPhoneNumber, }, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}`, }, }, );
       showSnackbar('Interim Chat started successfully', 'success');
       setSelectedInterimChat(''); // Reset selection after successful start
     } catch (error) {
@@ -1250,7 +1249,7 @@ const UploadCV: React.FC<{
                 <MainInfo>
                   <FieldsContainer>
                     <CopyableFieldComponent label="Name" value={`${currentIndividual?.name.firstName} ${currentIndividual?.name.lastName}`} field="name" alwaysShowFull={true} />
-                    <CopyableFieldComponent label="Phone" value={currentIndividual?.phone || ''} field="phone" />
+                    <CopyableFieldComponent label="Phone" value={currentIndividual?.phones.primaryPhoneNumber || ''} field="phone" />
                     <CopyableFieldComponent label="Person ID" value={currentIndividual?.id || ''} field="personId" />
                     <CopyableFieldComponent label="Candidate ID" value={currentIndividual?.candidates.edges[0].node.id || ''} field="candidateId" />
                   </FieldsContainer>
@@ -1353,7 +1352,7 @@ const UploadCV: React.FC<{
                             <StyledDateComponent>{dayjs(message?.createdAt).format("ddd DD MMM, 'YY")}</StyledDateComponent>{' '}
                           </p>
                         )}
-                        <SingleChatContainer phoneNumber={currentIndividual?.phone} message={message} messageName={`${currentIndividual?.name.firstName} ${currentIndividual?.name.lastName}`} />
+                        <SingleChatContainer phoneNumber={currentIndividual?.phones.primaryPhoneNumber} message={message} messageName={`${currentIndividual?.name.firstName} ${currentIndividual?.name.lastName}`} />
                       </React.Fragment>
                     );
                   })}

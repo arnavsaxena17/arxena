@@ -1,4 +1,3 @@
-import * as frontChatTypes from '@/activities/chats/types/front-chat-types';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import styled from '@emotion/styled';
 import { IconChevronLeft, IconChevronRight, IconX } from '@tabler/icons-react';
@@ -6,6 +5,7 @@ import axios from 'axios';
 import dayjs from 'dayjs';
 import React, { useEffect, useState } from 'react';
 import { useRecoilState } from 'recoil';
+import { MessageNode, PersonNode } from 'twenty-shared';
 
 
 
@@ -222,8 +222,8 @@ const formatTime = (date: string) => {
   return dayjs(date).format('HH:mm');
 };
 
-const groupMessagesByDate = (messages: frontChatTypes.MessageNode[]) => {
-  const groups: { [key: string]: frontChatTypes.MessageNode[] } = {};
+const groupMessagesByDate = (messages: MessageNode[]) => {
+  const groups: { [key: string]: MessageNode[] } = {};
   
   messages.forEach(message => {
     const date = formatDate(message.createdAt);
@@ -240,7 +240,7 @@ const groupMessagesByDate = (messages: frontChatTypes.MessageNode[]) => {
 interface MultiCandidateChatProps {
   isOpen: boolean;
   onClose: () => void;
-  selectedPeople: frontChatTypes.PersonNode[];
+  selectedPeople: PersonNode[];
 }
 
 export const MultiCandidateChat: React.FC<MultiCandidateChatProps> = ({
@@ -252,7 +252,7 @@ export const MultiCandidateChat: React.FC<MultiCandidateChatProps> = ({
   console.log("selectedPeople::", selectedPeople);
   const [tokenPair] = useRecoilState(tokenPairState);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [messageHistory, setMessageHistory] = useState<frontChatTypes.MessageNode[]>([]);
+  const [messageHistory, setMessageHistory] = useState<MessageNode[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 

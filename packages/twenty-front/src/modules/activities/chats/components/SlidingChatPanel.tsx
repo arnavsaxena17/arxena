@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import styled from '@emotion/styled';
+import { tokenPairState } from '@/auth/states/tokenPairState';
 import { keyframes } from '@emotion/react';
+import styled from '@emotion/styled';
 import axios from 'axios';
 import dayjs from 'dayjs';
+import React, { useEffect, useState } from 'react';
 import { useRecoilState } from 'recoil';
-import { tokenPairState } from '@/auth/states/tokenPairState';
-import * as frontChatTypes from '@/activities/chats/types/front-chat-types';
+import { MessageNode } from 'twenty-shared';
 import { chatPanelState } from '../states/chatPanelState';
 
 // Animations
@@ -128,8 +128,8 @@ const SlidingChatPanel: React.FC<SlidingChatPanelProps> = ({ isOpen, onClose, se
   const [chatPanel] = useRecoilState(chatPanelState);
   const [isVisible, setIsVisible] = useState(isOpen);
   const [tokenPair] = useRecoilState(tokenPairState);
-  const [messageHistory, setMessageHistory] = useState<frontChatTypes.MessageNode[]>([]);
-  const [pendingMessage, setPendingMessage] = useState<frontChatTypes.MessageNode | null>(null);
+  const [messageHistory, setMessageHistory] = useState<MessageNode[]>([]);
+  const [pendingMessage, setPendingMessage] = useState<MessageNode | null>(null);
 
   console.log('🔍 SlidingChatPanel Render', {
     isOpen,
@@ -151,7 +151,7 @@ const SlidingChatPanel: React.FC<SlidingChatPanelProps> = ({ isOpen, onClose, se
         console.log('📡 Fetching messages for:', selectedRecordIds[0]);
         const response = await axios.post(`${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/get-all-messages-by-candidate-id`, { candidateId: selectedRecordIds[0] }, { headers: { Authorization: `Bearer ${tokenPair.accessToken.token}` } });
 
-        const sortedMessages = response.data.sort((a: frontChatTypes.MessageNode, b: frontChatTypes.MessageNode) => dayjs(a.createdAt).valueOf() - dayjs(b.createdAt).valueOf());
+        const sortedMessages = response.data.sort((a: MessageNode, b: MessageNode) => dayjs(a.createdAt).valueOf() - dayjs(b.createdAt).valueOf());
 
         console.log('✅ Messages fetched:', sortedMessages.length);
         setMessageHistory(sortedMessages);

@@ -1,7 +1,7 @@
-import React from "react";
-import * as frontChatTypes from "../types/front-chat-types";
 import styled from "@emotion/styled";
 import dayjs from "dayjs";
+import React from "react";
+import { PersonNode } from "twenty-shared";
 
 const StyledChatTile = styled.div<{ $selected: boolean }>`
   padding: 1rem;
@@ -78,7 +78,7 @@ const TimestampContainer = styled.div`
 `;
 
 interface ChatTileProps {
-  individual: frontChatTypes.PersonNode;
+  individual: PersonNode;
   setSelectedIndividual: (id: string) => void;
   selectedIndividual: string;
   unreadMessagesCount: number;
@@ -124,7 +124,7 @@ const ChatTile: React.FC<ChatTileProps> = ({
   // const lastMessageTimestamp = lastMessage?.createdAt;
 
 
-  const getLastMessageTimestamp = (individual: frontChatTypes.PersonNode): string => {
+  const getLastMessageTimestamp = (individual: PersonNode): string => {
     const messages = individual.candidates?.edges[0]?.node?.whatsappMessages?.edges || [];
     let lastMessageTimestamp = '';
   
@@ -140,7 +140,7 @@ const ChatTile: React.FC<ChatTileProps> = ({
   // Usage:
   const lastMessageTimestamp = getLastMessageTimestamp(individual);
   const chatCount = individual.candidates.edges[0].node.whatsappMessages.edges.length;
-  const getCandidateDescription = (individual: frontChatTypes.PersonNode): string => {
+  const getCandidateDescription = (individual: PersonNode): string => {
     // This is a placeholder. Replace with actual logic to get the description from your data.
     const descriptions = [
       "Strong fit for the role, 5 years relevant experience",
