@@ -118,7 +118,7 @@ export const CreateProfile = () => {
         },
         body: requestParams,
       });
-      console.log('signupUserOnArxena response:', response);
+      console.log('signupUserO nArxena response:', response);
 
       const data = await response.json();
       return data;
@@ -145,12 +145,14 @@ export const CreateProfile = () => {
   const onSubmit: SubmitHandler<Form> = useCallback(
     async (data) => {
       try {
+        console.log("Submit has been clicked so somet stuff")
         if (!currentWorkspaceMember?.id) {
           throw new Error('User is not logged in');
         }
         if (!data.firstName || !data.lastName) {
           throw new Error('First name or last name is missing');
         }
+        console.log("Some update records")
 
         await updateOneRecord({
           idToUpdate: currentWorkspaceMember?.id,
@@ -163,6 +165,7 @@ export const CreateProfile = () => {
           },
         });
 
+        console.log("Som etting")
         setCurrentWorkspaceMember((current) => {
           if (isDefined(current)) {
             return {
@@ -177,7 +180,7 @@ export const CreateProfile = () => {
           return current;
         });
         setNextOnboardingStatus();
-
+        console.log("Some email and user data")
         const userData = {
           fullName:
             data?.firstName !== '' && data?.lastName !== ''
