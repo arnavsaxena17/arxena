@@ -1,10 +1,5 @@
 module.exports = {
     apps: [
-    {
-        name: "twenty-shared",
-        script: "./pm2_start_shared.sh",
-        watch: false,
-    },
       {
         name: "twenty-server",
         script: "./pm2_start.sh",
