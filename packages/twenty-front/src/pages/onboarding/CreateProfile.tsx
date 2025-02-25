@@ -73,20 +73,29 @@ export const CreateProfile = () => {
     objectNameSingular: CoreObjectNameSingular.WorkspaceMember,
   });
 
-
-
   async function signupUserOnArxena(userData: any) {
-    console.log("Going to create user on Arxena using user data:", userData);
+    console.log('Going to create user on Arxena using user data:', userData);
     try {
-      console.log('process.env.REACT_APP_ARXENA_SITE_BASE_URL:', process.env.REACT_APP_ARXENA_SITE_BASE_URL);
+      console.log(
+        'process.env.REACT_APP_ARXENA_SITE_BASE_URL:',
+        process.env.REACT_APP_ARXENA_SITE_BASE_URL,
+      );
       console.log('process.env.NODE_ENV:', process.env.NODE_ENV);
-      console.log('process.env.ARXENA_SITE_BASE_URL:', process.env.ARXENA_SITE_BASE_URL);
-      console.log('process.env.ARXENA_SITE_BASE_URL:', process.env.ARXENA_SITE_BASE_URL);
+      console.log(
+        'process.env.ARXENA_SITE_BASE_URL:',
+        process.env.ARXENA_SITE_BASE_URL,
+      );
+      console.log(
+        'process.env.ARXENA_SITE_BASE_URL:',
+        process.env.ARXENA_SITE_BASE_URL,
+      );
       let arxenaSiteBaseUrl: string = '';
       if (process.env.NODE_ENV === 'development') {
-        arxenaSiteBaseUrl = process.env.REACT_APP_ARXENA_SITE_BASE_URL || 'http://localhost:5050';
+        arxenaSiteBaseUrl =
+          process.env.REACT_APP_ARXENA_SITE_BASE_URL || 'http://localhost:5050';
       } else {
-        arxenaSiteBaseUrl = process.env.REACT_APP_ARXENA_SITE_BASE_URL || 'https://arxena.com';
+        arxenaSiteBaseUrl =
+          process.env.REACT_APP_ARXENA_SITE_BASE_URL || 'https://arxena.com';
       }
       console.log('Final Arxena Site Base URL', arxenaSiteBaseUrl);
       const requestParams = new URLSearchParams({
@@ -99,8 +108,8 @@ export const CreateProfile = () => {
         currentWorkspaceMemberId: userData?.currentWorkspaceMemberId || '',
         twentyId: userData?.twentyId || '',
         currentWorkspaceId: userData?.currentWorkspaceId || '',
-      })
-      console.log("This is ther requst params:", requestParams);
+      });
+      console.log('This is ther requst params:', requestParams);
       const response = await fetch(arxenaSiteBaseUrl + '/auth/signup', {
         method: 'POST',
         headers: {
@@ -169,35 +178,27 @@ export const CreateProfile = () => {
         });
         setNextOnboardingStatus();
 
-
-
-
-
-
         const userData = {
-          fullName: (data?.firstName !== '' && data?.lastName !== '') 
-            ? data?.firstName + ' ' + data?.lastName 
-            : currentUser?.email.toLowerCase().trim(),
-            email: currentUser?.email.toLowerCase().trim(), // Note: gmail/hotmail/yahoo emails are rejected by the backend
-            phone: '+1234567890',
-            password: 'password',
-            visitorFp: 'some-fingerprint-value',
-            token: 'some' ,
-            currentWorkspaceMemberId:currentWorkspaceMember.id,
-            currentWorkspaceId: currentWorkspace?.id,
-            twentyId:currentUser?.id,
-          };
-      
-          try {
-            console.log("signup with user on arxena")
-            await signupUserOnArxena(userData);
-          } catch (err) {
-            console.log('Error while signing up on Arxena:', err);
-          }
+          fullName:
+            data?.firstName !== '' && data?.lastName !== ''
+              ? data?.firstName + ' ' + data?.lastName
+              : currentUser?.email.toLowerCase().trim(),
+          email: currentUser?.email.toLowerCase().trim(), // Note: gmail/hotmail/yahoo emails are rejected by the backend
+          phone: '+1234567890',
+          password: 'password',
+          visitorFp: 'some-fingerprint-value',
+          token: 'some',
+          currentWorkspaceMemberId: currentWorkspaceMember.id,
+          currentWorkspaceId: currentWorkspace?.id,
+          twentyId: currentUser?.id,
+        };
 
-
-
-
+        try {
+          console.log('signup with user on arxena');
+          await signupUserOnArxena(userData);
+        } catch (err) {
+          console.log('Error while signing up on Arxena:', err);
+        }
       } catch (error: any) {
         enqueueSnackBar(error?.message, {
           variant: SnackBarVariant.Error,
