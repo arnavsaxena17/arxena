@@ -4,22 +4,23 @@ import { NavigationDrawerSectionForObjectMetadataItemsSkeletonLoader } from '@/o
 import { useIsPrefetchLoading } from '@/prefetch/hooks/useIsPrefetchLoading';
 import { useLingui } from '@lingui/react/macro';
 
-export const WorkspaceFavorites = () => {
+export const WorkspaceJobCandidatesFavorites = () => {
   const { workspaceFavoritesObjectMetadataItems } = useWorkspaceFavorites();
 
   const loading = useIsPrefetchLoading();
   const { t } = useLingui();
 
+  console.log("workspaceFavoritesObjectMetadataItems", workspaceFavoritesObjectMetadataItems.filter(x=> x.labelSingular.toLowerCase().includes( "jobcandidate")));
+  const jobCandidates = workspaceFavoritesObjectMetadataItems.filter(x=> x.labelSingular.toLowerCase().includes( "jobcandidate"));
+
   if (loading) {
     return <NavigationDrawerSectionForObjectMetadataItemsSkeletonLoader />;
   }
 
-  const nonJobCandidates = workspaceFavoritesObjectMetadataItems.filter(x=> !x.labelSingular.toLowerCase().includes( "jobcandidate"));
-
   return (
     <NavigationDrawerSectionForObjectMetadataItems
-      sectionTitle={t`Workspace`}
-      objectMetadataItems={nonJobCandidates}
+      sectionTitle={t`Job Candidates`}
+      objectMetadataItems={jobCandidates}
       isRemote={false}
     />
   );

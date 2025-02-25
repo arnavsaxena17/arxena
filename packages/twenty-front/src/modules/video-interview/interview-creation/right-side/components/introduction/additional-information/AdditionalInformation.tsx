@@ -1,6 +1,6 @@
 import styled from '@emotion/styled';
 
-import { H2Title } from '@/ui/display/typography/components/H2Title';
+import { H2Title } from 'twenty-ui';
 
 const StyledContainer = styled.div`
   display: flex;

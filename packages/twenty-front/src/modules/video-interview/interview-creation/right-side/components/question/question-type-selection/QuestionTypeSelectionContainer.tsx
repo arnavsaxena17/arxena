@@ -2,7 +2,8 @@ import styled from '@emotion/styled';
 
 import { QuestionTextArea } from '@/video-interview/interview-creation/right-side/components/question/question-type-selection/QuestionTextArea';
 import { QuestionTypeSelect } from '@/video-interview/interview-creation/right-side/components/question/question-type-selection/QuestionTypeSelect';
-import { H2Title } from '@/ui/display/typography/components/H2Title';
+import { H2Title } from 'twenty-ui';
+
 
 const StyledContainer = styled.div`
   display: flex;

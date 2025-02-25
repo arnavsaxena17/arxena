@@ -14,10 +14,14 @@ import { RecordFieldValueSelectorContextProvider } from '@/object-record/record-
 import { PageBody } from '@/ui/layout/page/components/PageBody';
 import { PageContainer } from '@/ui/layout/page/components/PageContainer';
 import { PageTitle } from '@/ui/utilities/page-title/components/PageTitle';
+import { isVideoInterviewModalOpenState } from '@/video-interview/interview-creation/states/videoInterviewModalState';
 import { RecordShowPageWorkflowHeader } from '@/workflow/components/RecordShowPageWorkflowHeader';
 import { RecordShowPageWorkflowVersionHeader } from '@/workflow/components/RecordShowPageWorkflowVersionHeader';
 import { useIsFeatureEnabled } from '@/workspace/hooks/useIsFeatureEnabled';
 import { FeatureFlagKey } from '~/generated/graphql';
+
+import { InterviewCreationModal } from '@/video-interview/interview-creation/InterviewCreationModal';
+import { useRecoilValue } from 'recoil';
 import { RecordShowPageHeader } from '~/pages/object-record/RecordShowPageHeader';
 
 export const RecordShowPage = () => {
@@ -44,6 +48,10 @@ export const RecordShowPage = () => {
 
   const isCommandMenuV2Enabled = useIsFeatureEnabled(
     FeatureFlagKey.IsCommandMenuV2Enabled,
+  );
+
+  const isVideoInterviewModalOpen = useRecoilValue(
+    isVideoInterviewModalOpenState,
   );
 
   return (
@@ -110,6 +118,14 @@ export const RecordShowPage = () => {
                     />
                   </TimelineActivityContext.Provider>
                 </PageBody>
+                {isVideoInterviewModalOpen ? (
+                  <InterviewCreationModal
+                    objectNameSingular={objectNameSingular}
+                    objectRecordId={objectRecordId}
+                  />
+                ) : (
+                  <></>
+                )}
               </PageContainer>
             </ActionMenuComponentInstanceContext.Provider>
           </ContextStoreComponentInstanceContext.Provider>

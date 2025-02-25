@@ -11,9 +11,7 @@ import { useCloneMultipleRecordsAction } from '@/action-menu/actions/record-acti
 
 import { useTranscibeCallAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useTranscibeCallAction';
 import { IconList } from '@tabler/icons-react';
-import { graphQltoUpdateOneCandidate } from 'twenty-shared';
 
-console.log("This is the qurey:", graphQltoUpdateOneCandidate); 
 
 export const PHONE_CALL_SPECIFIC_ACTIONS: Record<
   string,

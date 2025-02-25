@@ -11,9 +11,7 @@ import { useCloneMultipleRecordsAction } from '@/action-menu/actions/record-acti
 
 import { useStartChatWithCandidatesAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useStartChatWithCandidatesAction';
 import { IconList } from '@tabler/icons-react';
-import { graphQltoUpdateOneCandidate } from 'twenty-shared';
 
-console.log("This is the qurey:", graphQltoUpdateOneCandidate); 
 
 export const JOB_CANDIDATE_SPECIFIC_ACTIONS: Record<
   string,

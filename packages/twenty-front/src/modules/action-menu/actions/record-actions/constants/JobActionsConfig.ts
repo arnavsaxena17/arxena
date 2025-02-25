@@ -13,9 +13,7 @@ import { useCheckDataIntegrityOfJobAction } from '@/action-menu/actions/record-a
 import { useCloneMultipleRecordsAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useCloneMultipleRecordsAction';
 import { useCreateInterviewVideosAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useCreateInterviewVideosAction';
 import { IconList } from '@tabler/icons-react';
-import { graphQltoUpdateOneCandidate } from 'twenty-shared';
 
-console.log('This is the qurey:', graphQltoUpdateOneCandidate);
 
 export const JOB_SPECIFIC_ACTIONS: Record<
   string,

@@ -8,6 +8,7 @@ export const useInterviewCreationModal = () => {
   );
 
   const openModal = () => {
+    console.log("openModal");
     setIsVideoInterviewModalOpen(true);
   };
 

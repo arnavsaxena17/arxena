@@ -11,9 +11,7 @@ import { useCloneMultipleRecordsAction } from '@/action-menu/actions/record-acti
 import { useDeleteCandidatesAndPeopleAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useDeleteCandidatesAndPeopleAction';
 
 import { IconList } from '@tabler/icons-react';
-import { graphQltoUpdateOneCandidate } from 'twenty-shared';
 
-console.log("This is the qurey:", graphQltoUpdateOneCandidate); 
 
 export const PEOPLE_SPECIFIC_ACTIONS: Record<
   string,

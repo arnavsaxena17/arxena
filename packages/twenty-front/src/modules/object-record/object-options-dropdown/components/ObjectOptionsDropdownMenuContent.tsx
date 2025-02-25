@@ -1,6 +1,7 @@
 import { Key } from 'ts-key-enum';
 import {
   AppTooltip,
+  Icon24Hours,
   IconFileExport,
   IconFileImport,
   IconLayout,
@@ -15,6 +16,7 @@ import {
 import { useObjectNamePluralFromSingular } from '@/object-metadata/hooks/useObjectNamePluralFromSingular';
 import { useHandleToggleTrashColumnFilter } from '@/object-record/record-index/hooks/useHandleToggleTrashColumnFilter';
 
+import { useArxEnrichCreationModal } from '@/arx-enrich/hooks/useArxEnrichCreationModal';
 import { CoreObjectNameSingular } from '@/object-metadata/types/CoreObjectNameSingular';
 import { useObjectOptionsForBoard } from '@/object-record/object-options-dropdown/hooks/useObjectOptionsForBoard';
 import { useOptionsDropdown } from '@/object-record/object-options-dropdown/hooks/useOptionsDropdown';
@@ -32,6 +34,7 @@ import { useScopedHotkeys } from '@/ui/utilities/hotkey/hooks/useScopedHotkeys';
 import { useRecoilComponentValueV2 } from '@/ui/utilities/state/component-state/hooks/useRecoilComponentValueV2';
 import { useGetCurrentView } from '@/views/hooks/useGetCurrentView';
 import { ViewType } from '@/views/types/ViewType';
+import { useLocation } from 'react-router-dom';
 import { isDefined } from 'twenty-shared';
 
 export const ObjectOptionsDropdownMenuContent = () => {
@@ -85,6 +88,16 @@ export const ObjectOptionsDropdownMenuContent = () => {
     useOpenObjectRecordsSpreadsheetImportDialog(
       objectMetadataItem.nameSingular,
     );
+
+    const { openModal } = useArxEnrichCreationModal();
+
+    const handleModal = () => {
+      openModal();
+      // closeDropdown();
+    };
+  
+    const locationName = useLocation().pathname
+
 
   const { progress, download } = useExportRecords({
     delayMs: 100,
@@ -184,6 +197,29 @@ export const ObjectOptionsDropdownMenuContent = () => {
           text={`Deleted ${objectNamePlural}`}
         />
       </DropdownMenuItemsContainer>
+      <DropdownMenuSeparator />
+      <DropdownMenuItemsContainer>
+        {/* {canImportOrExport && (
+          <>
+            <MenuItem
+              onClick={download}
+              LeftIcon={IconFileExport}
+              text={displayedExportProgress(progress)}
+            />
+            <MenuItem
+              onClick={() => {
+                closeDropdown();
+                openObjectRecordsSpreasheetImportDialog();
+              }}
+              LeftIcon={IconFileImport}
+              text="Import"
+            />
+          </>
+        )} */}
+      { objectMetadataItem.nameSingular.toLowerCase().includes('candidate') && locationName.includes("objects") ? <MenuItem onClick={handleModal} accent="default" LeftIcon={Icon24Hours} text="Enrich" /> : null }
+
+      </DropdownMenuItemsContainer>
+
     </>
   );
 };

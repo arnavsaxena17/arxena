@@ -1,11 +1,11 @@
-import { useMemo, useState } from 'react';
 import styled from '@emotion/styled';
+import { useMemo, useState } from 'react';
 
+import { Select, SelectOption } from '@/ui/input/components/Select';
 import { AllowedRetakes } from '@/video-interview/interview-creation/right-side/components/question/answer-type-selection/AllowedRetakes';
 import { SetAnswerTimeLimit } from '@/video-interview/interview-creation/right-side/components/question/answer-type-selection/SetAnswerTimeLimit';
 import { questionOrAnswerOptions } from '@/video-interview/interview-creation/right-side/components/question/questionOrAnswerOptions';
-import { H2Title } from '@/ui/display/typography/components/H2Title';
-import { Select, SelectOption } from '@/ui/input/components/Select';
+import { H2Title } from 'twenty-ui';
 
 const StyledSelectContainer = styled.div`
   display: flex;

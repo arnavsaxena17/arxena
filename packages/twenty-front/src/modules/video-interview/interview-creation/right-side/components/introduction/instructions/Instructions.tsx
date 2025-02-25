@@ -1,10 +1,11 @@
-import { useState } from 'react';
 import styled from '@emotion/styled';
+import { useState } from 'react';
 import { v4 as uid } from 'uuid';
 
 import { InstructionsTextArea } from '@/video-interview/interview-creation/right-side/components/introduction/instructions/InstructionsTextArea';
 import { Instruction } from '@/video-interview/interview-creation/right-side/components/introduction/instructions/types/instruction';
-import { H2Title } from '@/ui/display/typography/components/H2Title';
+import { H2Title } from 'twenty-ui';
+
 
 const StyledContainer = styled.div`
   display: flex;

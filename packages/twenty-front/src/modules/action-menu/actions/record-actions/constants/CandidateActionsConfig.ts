@@ -20,9 +20,7 @@ import { useShareChatBasedShortlistAction } from '@/action-menu/actions/record-a
 import { useShareMultipleVideoInterviewLinksAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useShareMultipleVideoInterviewLinksAction';
 import { useStartChatWithCandidatesAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useStartChatWithCandidatesAction';
 import { IconList, IconMessageCircle, IconRefresh, IconShare, IconVideo } from '@tabler/icons-react';
-import { graphQltoUpdateOneCandidate } from 'twenty-shared';
 
-console.log("This is the qurey:", graphQltoUpdateOneCandidate); 
 
 export const CANDIDATE_SPECIFIC_ACTIONS: Record<
   string,

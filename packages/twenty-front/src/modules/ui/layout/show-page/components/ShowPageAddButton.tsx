@@ -5,6 +5,7 @@ import {
   IconCheckbox,
   IconNotes,
   IconPlus,
+  IconVideo,
   MenuItem,
 } from 'twenty-ui';
 
@@ -17,7 +18,10 @@ import { SHOW_PAGE_ADD_BUTTON_DROPDOWN_ID } from '@/ui/layout/show-page/constant
 
 import { CoreObjectNameSingular } from '@/object-metadata/types/CoreObjectNameSingular';
 import { isWorkflowSubObjectMetadata } from '@/object-metadata/utils/isWorkflowSubObjectMetadata';
+import { useCheckDataIntegrityOfJob } from '@/object-record/hooks/useCheckDataIntegrityOfJob';
+import { useInterviewCreationModal } from '@/video-interview/interview-creation/hooks/useInterviewCreationModal';
 import { useIsFeatureEnabled } from '@/workspace/hooks/useIsFeatureEnabled';
+import { IconClipboardCheck } from '@tabler/icons-react';
 import { FeatureFlagKey } from '~/generated/graphql';
 import { Dropdown } from '../../dropdown/components/Dropdown';
 
@@ -52,6 +56,30 @@ export const ShowPageAddButton = ({
 
     closeDropdown();
   };
+
+  const { openModal } = useInterviewCreationModal();
+  const isVideoInterviewEnabled = [
+    CoreObjectNameSingular.Job,
+    CoreObjectNameSingular.Candidate,
+    CoreObjectNameSingular.Person,
+  ].includes(
+    activityTargetObject.targetObjectNameSingular as CoreObjectNameSingular,
+  );
+  const handleModal = () => {
+    console.log("handleModal");
+    openModal();
+    closeDropdown();
+  };
+
+  console.log('activityTargetObject', activityTargetObject);
+  console.log('isVideoInterviewEnabled', isVideoInterviewEnabled);
+
+  const { checkDataIntegrityOfJob } = useCheckDataIntegrityOfJob({
+    onSuccess: () => {},
+    onError: (error: any) => {
+      console.error('Failed to check data integrity:', error);
+    },
+  });
 
   const isCommandMenuV2Enabled = useIsFeatureEnabled(
     FeatureFlagKey.IsCommandMenuV2Enabled,
@@ -106,6 +134,26 @@ export const ShowPageAddButton = ({
               LeftIcon={IconCheckbox}
               text="Task"
             />
+            {isVideoInterviewEnabled && (
+              <>
+                <MenuItem
+                  onClick={() => {
+                    handleModal();
+                  }}
+                  accent="default"
+                  LeftIcon={IconVideo}
+                  text="Video Interview"
+                />
+                <MenuItem
+                  onClick={() => {
+                    checkDataIntegrityOfJob([activityTargetObject.id]);
+                  }}
+                  accent="default"
+                  LeftIcon={IconClipboardCheck}
+                  text="Check Integrity of Job"
+                />
+              </>
+            )}
           </DropdownMenuItemsContainer>
         }
         dropdownHotkeyScope={{ scope: PageHotkeyScope.ShowPage }}

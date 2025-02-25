@@ -1,13 +1,14 @@
-import { useMemo, useState } from 'react';
 import styled from '@emotion/styled';
+import { useMemo, useState } from 'react';
 
+import { useCountries } from '@/ui/input/components/internal/hooks/useCountries';
+import { Country } from '@/ui/input/components/internal/types/Country';
 import { EthnicityCountryPickerDropdownButton } from '@/video-interview/interview-creation/right-side/components/introduction/ai-model-selection/ethnicity-selection/ethnicity-country-selection/EthnicityCountryPickerDropdownButton';
 import { EthnicityLanguageSelect } from '@/video-interview/interview-creation/right-side/components/introduction/ai-model-selection/ethnicity-selection/ethnicity-language-selection/EthnicityLanguageSelect';
 import { EthnicityModelSelect } from '@/video-interview/interview-creation/right-side/components/introduction/ai-model-selection/ethnicity-selection/ethnicity-model-selection/EthnicityModelSelect';
-import { H2Title } from '@/ui/display/typography/components/H2Title';
-import { useCountries } from '@/ui/input/components/internal/hooks/useCountries';
-import { Country } from '@/ui/input/components/internal/types/Country';
-import { isDefined } from '~/utils/isDefined';
+import { H2Title } from 'twenty-ui';
+
+import { isDefined } from 'twenty-shared';
 
 const StyledEthnicitySelectionContainer = styled.div`
   display: flex;

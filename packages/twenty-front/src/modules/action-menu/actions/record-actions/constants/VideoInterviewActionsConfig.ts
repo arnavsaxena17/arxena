@@ -11,9 +11,7 @@ import { useCloneMultipleRecordsAction } from '@/action-menu/actions/record-acti
 
 import { useShareMultipleVideoInterviewLinksAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useShareMultipleVideoInterviewLinksAction';
 import { IconList } from '@tabler/icons-react';
-import { graphQltoUpdateOneCandidate } from 'twenty-shared';
 
-console.log("This is the qurey:", graphQltoUpdateOneCandidate); 
 
 export const VIDEO_INTERVIEW_SPECIFIC_ACTIONS: Record<
   string,

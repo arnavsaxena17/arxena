@@ -21,6 +21,11 @@ import styled from '@emotion/styled';
 import { useRecoilCallback, useRecoilValue } from 'recoil';
 import { capitalize } from 'twenty-shared';
 
+import { isArxEnrichModalOpenState } from '@/arx-enrich/states/arxEnrichModalOpenState';
+// import { InterviewCreationModal } from '@/ai-interview/interview-creation/InterviewCreationModal';
+import { ArxEnrichmentModal } from '@/arx-enrich/arxEnrichmentModal';
+
+
 const StyledIndexContainer = styled.div`
   display: flex;
   height: 100%;
@@ -40,6 +45,7 @@ export const RecordIndexContainerGater = () => {
   const { objectMetadataItem } = useContextStoreObjectMetadataItemOrThrow();
 
   const recordIndexId = `${objectMetadataItem.namePlural}-${contextStoreCurrentViewId}`;
+  const isArxEnrichModalOpen = useRecoilValue(isArxEnrichModalOpenState);
 
   const handleIndexRecordsLoaded = useRecoilCallback(
     ({ set }) =>
@@ -89,6 +95,20 @@ export const RecordIndexContainerGater = () => {
                   <StyledIndexContainer>
                     <RecordIndexContainerContextStoreNumberOfSelectedRecordsEffect />
                     <RecordIndexContainer />
+
+
+
+                    {isArxEnrichModalOpen ? (
+                      <ArxEnrichmentModal
+                        objectNameSingular={objectMetadataItem.namePlural === 'companies' ? 'company' : objectMetadataItem.namePlural.slice(0, -1)}
+                        objectRecordId={'0'}
+
+                      />
+                    ) : (
+                      <></>)}
+
+
+
                   </StyledIndexContainer>
                 </PageBody>
               </ActionMenuComponentInstanceContext.Provider>
