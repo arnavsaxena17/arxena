@@ -2,7 +2,7 @@ module.exports = {
     apps: [
       {
         name: "twenty-server",
-        script: "./pm2_start.sh",
+        script: "./pm2_start_server.sh",
         watch: false,
         env: {
           PORT: 3000,
