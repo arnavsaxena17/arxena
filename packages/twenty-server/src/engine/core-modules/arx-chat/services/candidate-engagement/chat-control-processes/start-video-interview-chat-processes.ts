@@ -6,8 +6,6 @@ import { WorkspaceQueryService } from '../../../../workspace-modifications/works
 import { axiosRequest } from '../../../utils/arx-chat-agent-utils';
 export class StartVideoInterviewChatProcesses {
   constructor(private readonly workspaceQueryService: WorkspaceQueryService) {}
-
-
   async setupVideoInterviewLinks(peopleEngagementStartVideoInterviewChatArr: PersonNode[], candidateJob: Jobs, chatControl: ChatControlsObjType, apiToken: string) {
     if (chatControl.chatControlType === 'startVideoInterviewChat') {
       let skippedCount = 0;
@@ -26,8 +24,6 @@ export class StartVideoInterviewChatProcesses {
       console.log(`Total video interviews created: ${createdCount}`);
     }
   }
-
-
   async createVideoInterviewForCandidate(candidateId: string, apiToken: string) {
     try {
       const candidateObj: CandidateNode = await new FilterCandidates(this.workspaceQueryService).fetchCandidateByCandidateId(candidateId, apiToken);

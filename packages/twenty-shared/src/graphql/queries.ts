@@ -11,6 +11,7 @@ export const graphqlToFetchWhatsappMessageByWhatsappId = `query FindOneWhatsappM
 
 
 
+
 export const graphqlToFetchCandidatesWithRecentUpdates = `
   query getCandidatesWithRecentUpdates($filter: CandidateFilter) {
     candidates(filter: $filter) {
@@ -382,7 +383,6 @@ fragment ParticipantFragment on TimelineThreadParticipant {
 
 
 
-
 export const findWorkspaceMemberProfiles =  `query FindManyWorkspaceMemberProfiles($filter: WorkspaceMemberProfileFilterInput, $orderBy: [WorkspaceMemberProfileOrderByInput], $lastCursor: String, $limit: Int) {
   workspaceMemberProfiles(
     filter: $filter
@@ -589,6 +589,27 @@ export const questionsQuery = `
 `;
 
 
+export const queryObjectMetadataItems =       `query ObjectMetadataItems($objectFilter: ObjectFilter, $fieldFilter: FieldFilter) {
+  objects(paging: {first: 1000}, filter: $objectFilter) {
+    edges {
+      node {
+        id
+        nameSingular
+        namePlural
+        labelSingular
+        labelPlural
+        fields(paging: {first: 1000}, filter: $fieldFilter) {
+          edges {
+            node {
+              name
+              id
+            }
+          }
+        }
+      }
+    }
+  }
+}`;
 
 
 
@@ -887,13 +908,12 @@ export const graphQlToFetchWhatsappMessages = `query FindManyWhatsappMessages($f
 `
 
 
-export const graphqlQueryToGetCurrentUser = `
-query GetCurrentUser {
+export const graphqlQueryToGetCurrentUser = `query GetCurrentUser {
   currentUser {
     ...UserQueryFragment
     __typename
   }
-}
+  }
 
 fragment UserQueryFragment on User {
   id
@@ -902,28 +922,48 @@ fragment UserQueryFragment on User {
   email
   canImpersonate
   supportUserHash
-  onboardingStep
-  workspaceMember {
-    id
-    name {
-      firstName
-      lastName
-      __typename
-    }
-    colorScheme
-    avatarUrl
-    locale
+  analyticsTinybirdJwts {
+    getWebhookAnalytics
+    getPageviewsAnalytics
+    getUsersAnalytics
+    getServerlessFunctionDuration
+    getServerlessFunctionSuccessRate
+    getServerlessFunctionErrorCount
     __typename
   }
-  defaultWorkspace {
+  onboardingStatus
+  workspaceMember {
+    ...WorkspaceMemberQueryFragment
+    __typename
+  }
+  workspaceMembers {
+    ...WorkspaceMemberQueryFragment
+    __typename
+  }
+  currentUserWorkspace {
+    settingsPermissions
+    objectRecordsPermissions
+    __typename
+  }
+  currentWorkspace {
     id
     displayName
     logo
-    domainName
     inviteHash
     allowImpersonation
-    subscriptionStatus
     activationStatus
+    isPublicInviteLinkEnabled
+    isGoogleAuthEnabled
+    isMicrosoftAuthEnabled
+    isPasswordAuthEnabled
+    subdomain
+    hasValidEnterpriseKey
+    customDomain
+    workspaceUrls {
+      subdomainUrl
+      customUrl
+      __typename
+    }
     featureFlags {
       id
       key
@@ -931,13 +971,19 @@ fragment UserQueryFragment on User {
       workspaceId
       __typename
     }
-    currentCacheVersion
+    metadataVersion
     currentBillingSubscription {
       id
       status
       interval
       __typename
     }
+    billingSubscriptions {
+      id
+      status
+      __typename
+    }
+    workspaceMembersCount
     __typename
   }
   workspaces {
@@ -945,14 +991,39 @@ fragment UserQueryFragment on User {
       id
       logo
       displayName
-      domainName
+      subdomain
+      customDomain
+      workspaceUrls {
+        subdomainUrl
+        customUrl
+        __typename
+      }
       __typename
     }
     __typename
   }
+  userVars
   __typename
-}
-`;
+  }
+
+fragment WorkspaceMemberQueryFragment on WorkspaceMember {
+  id
+  name {
+    firstName
+    lastName
+    __typename
+  }
+  colorScheme
+  avatarUrl
+  locale
+  userEmail
+  timeZone
+  dateFormat
+  timeFormat
+  __typename
+  }`
+
+
 
 export const graphqlQueryToFindOneWorkspaceMember = `
 query FindOneWorkspaceMember($objectRecordId: ID!) {

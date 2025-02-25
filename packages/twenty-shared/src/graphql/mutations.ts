@@ -150,6 +150,71 @@ export const updateOneVideoInterviewMutation = `mutation UpdateOneVideoInterview
   }
   }`;
 
+  export const graphqlToCreateOnePrompt = `mutation CreateOnePrompt($input: PromptCreateInput!) {
+            createPrompt(data: $input) {
+              name
+              recruiter {
+                colorScheme
+                name {
+                  firstName
+                  lastName
+                }
+                avatarUrl
+                updatedAt
+                createdAt
+                locale
+                userEmail
+                id
+                userId
+              }
+              position
+              id
+              jobId
+              job {
+                yearsOfExperience
+                id
+                updatedAt
+                recruiterId
+                reportees
+                description
+                position
+                specificCriteria
+                arxenaSiteId
+                isActive
+                salaryBracket
+                googleSheetUrl {
+                  primaryLinkLabel
+                  primaryLinkUrl
+                }
+                createdAt
+                name
+                googleSheetId
+                reportsTo
+                companyId
+                searchName
+                jobLocation
+                jobCode
+                talentConsiderations
+                companyDetails
+                pathPosition
+              }
+              updatedAt
+              prompt
+              createdAt
+              recruiterId
+            }
+          }`
+
+  export const graphQLToCreateOneWorkspaceMemberProfile  = `mutation CreateOneWorkspaceMemberProfile($input: WorkspaceMemberProfileCreateInput!) {
+    createWorkspaceMemberProfile(data: $input) {
+      id
+      workspaceMember {
+        id
+      }
+    }
+  }`;
+  
+  
 
 
   export const CreateManyCandidates = `mutation CreateCandidates($data: [CandidateCreateInput!]!) {

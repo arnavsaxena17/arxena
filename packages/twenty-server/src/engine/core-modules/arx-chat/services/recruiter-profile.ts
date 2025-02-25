@@ -1,52 +1,14 @@
-import { Jobs, RecruiterProfileType } from 'twenty-shared';
+import { findWorkspaceMemberProfiles, Jobs, RecruiterProfileType } from 'twenty-shared';
 import { axiosRequest } from '../utils/arx-chat-agent-utils';
 
 
-const query = `query FindManyWorkspaceMemberProfiles($filter: WorkspaceMemberProfileFilterInput, $orderBy: [WorkspaceMemberProfileOrderByInput], $lastCursor: String, $limit: Int) {
-  workspaceMemberProfiles(
-    filter: $filter
-    orderBy: $orderBy
-    first: $limit
-    after: $lastCursor
-  ) {
-    edges {
-      node {
-        __typename
-        id
-        email
-        phoneNumber
-        companyName 
-        companyDescription
-        lastName
-        jobTitle
-        createdAt
-        phoneNumber
-        name
-        firstName
-        typeWorkspaceMember
-        email
-        companyName
-      }
-      cursor
-      __typename
-    }
-    pageInfo {
-      hasNextPage
-      startCursor
-      endCursor
-      __typename
-    }
-    totalCount
-    __typename
-  }
-}`;
 export async function getRecruiterProfileByJob(candidateJob: Jobs, apiToken: string) {
 
   const recruiterId = candidateJob?.recruiterId;
 
   console.log("recruiterId:", recruiterId);
   const findWorkspaceMemberProfilesQuery = JSON.stringify({
-    query: query,
+    query: findWorkspaceMemberProfiles,
     variables: { filter: { workspaceMemberId: { eq: recruiterId } } },
   });
   const workspaceMemberProfilesResponse = await axiosRequest(findWorkspaceMemberProfilesQuery, apiToken);
@@ -60,7 +22,7 @@ export async function getRecruiterProfileByJob(candidateJob: Jobs, apiToken: str
 
 export async function getRecruiterProfileByRecruiterId(recruiterId: string, apiToken: string) {
   const findWorkspaceMemberProfilesQuery = JSON.stringify({
-    query: query,
+    query: findWorkspaceMemberProfiles,
     variables: { filter: { workspaceMemberId: { eq: recruiterId } } },
   });
   const workspaceMemberProfilesResponse = await axiosRequest(findWorkspaceMemberProfilesQuery, apiToken);

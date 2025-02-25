@@ -15,7 +15,7 @@ import {
   getJobIds,
 } from './services/videoInterviewTemplateService';
 // import { ObjectMetadata, QueryResponse } from './types/types.js';
-import { ObjectMetadata, QueryResponse } from 'twenty-shared';
+import { graphqlQueryToGetCurrentUser, graphqlToCreateOnePrompt, graphQLToCreateOneWorkspaceMemberProfile, ObjectMetadata, queryObjectMetadataItems, QueryResponse } from 'twenty-shared';
 import { executeQuery } from './utils/graphqlClient.js';
 
 export class CreateMetaDataStructure {
@@ -37,120 +37,7 @@ export class CreateMetaDataStructure {
 
   async getCurrentUser(apiToken: string) {
     let data = JSON.stringify({
-      query: `query GetCurrentUser {
-      currentUser {
-        ...UserQueryFragment
-        __typename
-      }
-    }
-    
-    fragment UserQueryFragment on User {
-      id
-      firstName
-      lastName
-      email
-      canImpersonate
-      supportUserHash
-      analyticsTinybirdJwts {
-        getWebhookAnalytics
-        getPageviewsAnalytics
-        getUsersAnalytics
-        getServerlessFunctionDuration
-        getServerlessFunctionSuccessRate
-        getServerlessFunctionErrorCount
-        __typename
-      }
-      onboardingStatus
-      workspaceMember {
-        ...WorkspaceMemberQueryFragment
-        __typename
-      }
-      workspaceMembers {
-        ...WorkspaceMemberQueryFragment
-        __typename
-      }
-      currentUserWorkspace {
-        settingsPermissions
-        objectRecordsPermissions
-        __typename
-      }
-      currentWorkspace {
-        id
-        displayName
-        logo
-        inviteHash
-        allowImpersonation
-        activationStatus
-        isPublicInviteLinkEnabled
-        isGoogleAuthEnabled
-        isMicrosoftAuthEnabled
-        isPasswordAuthEnabled
-        subdomain
-        hasValidEnterpriseKey
-        customDomain
-        workspaceUrls {
-          subdomainUrl
-          customUrl
-          __typename
-        }
-        featureFlags {
-          id
-          key
-          value
-          workspaceId
-          __typename
-        }
-        metadataVersion
-        currentBillingSubscription {
-          id
-          status
-          interval
-          __typename
-        }
-        billingSubscriptions {
-          id
-          status
-          __typename
-        }
-        workspaceMembersCount
-        __typename
-      }
-      workspaces {
-        workspace {
-          id
-          logo
-          displayName
-          subdomain
-          customDomain
-          workspaceUrls {
-            subdomainUrl
-            customUrl
-            __typename
-          }
-          __typename
-        }
-        __typename
-      }
-      userVars
-      __typename
-    }
-    
-    fragment WorkspaceMemberQueryFragment on WorkspaceMember {
-      id
-      name {
-        firstName
-        lastName
-        __typename
-      }
-      colorScheme
-      avatarUrl
-      locale
-      userEmail
-      timeZone
-      dateFormat
-      timeFormat
-      __typename
-    }`,
+      query: graphqlQueryToGetCurrentUser,
       variables: {},
     });
 
@@ -181,31 +68,7 @@ export class CreateMetaDataStructure {
   ) {
     try {
       const response = await executeQuery<any>(
-        `
-        query ObjectMetadataItems($after: ConnectionCursor, $objectFilter: ObjectFilter) {
-          objects(paging: {first: 100, after: $after}, filter: $objectFilter) {
-            edges {
-              node {
-                id
-                nameSingular
-                namePlural
-                fields(paging: {first: 1000}) {
-                  edges {
-                    node {
-                      name
-                      id
-                    }
-                  }
-                }
-              }
-            }
-            pageInfo {
-              hasNextPage
-              endCursor
-            }
-          }
-        }
-        `,
+      queryObjectMetadataItems,
         {
           after: cursor || undefined,
           objectFilter: {
@@ -224,27 +87,7 @@ export class CreateMetaDataStructure {
   }
   fetchAllObjects = async (apiToken: string) => {
     const objectsResponse = await executeQuery<QueryResponse<ObjectMetadata>>(
-      `query ObjectMetadataItems($objectFilter: ObjectFilter, $fieldFilter: FieldFilter) {
-        objects(paging: {first: 1000}, filter: $objectFilter) {
-          edges {
-            node {
-              id
-              nameSingular
-              namePlural
-              labelSingular
-              labelPlural
-              fields(paging: {first: 1000}, filter: $fieldFilter) {
-                edges {
-                  node {
-                    name
-                    id
-                  }
-                }
-              }
-            }
-          }
-        }
-      }`,
+      queryObjectMetadataItems,
       {},
       apiToken,
     );
@@ -281,48 +124,7 @@ export class CreateMetaDataStructure {
           orderBy: [{ createdAt: 'AscNullsLast' }],
         },
         query: `
-        query FindManyWorkspaceMembers($filter: WorkspaceMemberFilterInput, $orderBy: [WorkspaceMemberOrderByInput], $lastCursor: String, $limit: Int) {
-          workspaceMembers(
-            filter: $filter
-            orderBy: $orderBy
-            first: $limit
-            after: $lastCursor
-          ) {
-            edges {
-              node {
-                name {
-                  firstName
-                  lastName
-                }
-                avatarUrl
-                workspaceMemberProfile{
-                    edges{
-                        node{
-                            workspaceMemberId
-                            id
-                            personId
-                        }
-                    }
-                }
-                avatarUrl
-                id
-                userEmail
-                colorScheme
-                createdAt
-                locale
-                userId
-                updatedAt
-              }
-              cursor
-            }
-            pageInfo {
-              hasNextPage
-              startCursor
-              endCursor
-            }
-            totalCount
-          }
-        }`,
+`,
       }),
       apiToken,
     );
@@ -332,10 +134,7 @@ export class CreateMetaDataStructure {
     const currentWorkspaceMemberId =
       currentWorkspaceMemberResponse.data.data.workspaceMembers.edges[0].node
         .id;
-    console.log(
-      'currentWorkspaceMemberId',
-      currentWorkspaceMemberResponse.data.data.workspaceMembers.edges[0].node,
-    );
+    console.log( 'currentWorkspaceMemberId', currentWorkspaceMemberResponse.data.data.workspaceMembers.edges[0].node, );
     const currentWorkspaceMemberName =
       currentWorkspaceMemberResponse.data.data.workspaceMembers.edges[0].node
         .name.firstName +
@@ -368,14 +167,7 @@ export class CreateMetaDataStructure {
             position: 'first',
           },
         },
-        query: `mutation CreateOneWorkspaceMemberProfile($input: WorkspaceMemberProfileCreateInput!) {
-                createWorkspaceMemberProfile(data: $input) {
-                  id
-                  workspaceMember {
-                    id
-                  }
-                }
-            }`,
+        query: graphQLToCreateOneWorkspaceMemberProfile,
       }),
       apiToken,
     );
@@ -394,60 +186,7 @@ export class CreateMetaDataStructure {
               position: 'first',
             },
           },
-          query: `mutation CreateOnePrompt($input: PromptCreateInput!) {
-            createPrompt(data: $input) {
-              name
-              recruiter {
-                colorScheme
-                name {
-                  firstName
-                  lastName
-                }
-                avatarUrl
-                updatedAt
-                createdAt
-                locale
-                userEmail
-                id
-                userId
-              }
-              position
-              id
-              jobId
-              job {
-                yearsOfExperience
-                id
-                updatedAt
-                recruiterId
-                reportees
-                description
-                position
-                specificCriteria
-                arxenaSiteId
-                isActive
-                salaryBracket
-                googleSheetUrl {
-                  primaryLinkLabel
-                  primaryLinkUrl
-                }
-                createdAt
-                name
-                googleSheetId
-                reportsTo
-                companyId
-                searchName
-                jobLocation
-                jobCode
-                talentConsiderations
-                companyDetails
-                pathPosition
-              }
-              updatedAt
-              prompt
-              createdAt
-              recruiterId
-            }
-          }`,
+          query: graphqlToCreateOnePrompt,
         }),
         apiToken,
       );

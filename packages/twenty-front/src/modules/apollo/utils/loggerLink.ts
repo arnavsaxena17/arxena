@@ -42,10 +42,10 @@ export const loggerLink = (getSchemaName: (operation: Operation) => string) =>
       console.groupCollapsed(...titleArgs);
 
       if (variables && Object.keys(variables).length !== 0) {
-        logDebug('VARIABLES', variables);
+        // logDebug('VARIABLES', variables);
       }
 
-      logDebug('QUERY', query);
+      // logDebug('QUERY', query);
 
       console.groupEnd();
 
@@ -83,7 +83,7 @@ export const loggerLink = (getSchemaName: (operation: Operation) => string) =>
           logDebug('VARIABLES', variables);
         }
 
-        logDebug('QUERY', query);
+        // logDebug('QUERY', query);
 
         if (isDefined(result.data)) {
           logDebug('RESULT', result.data);

@@ -198,11 +198,6 @@ export default class CandidateEngagementArx {
     console.log("Number of messages in fetchRe centMessages::", response?.data?.data?.whatsappMessages?.edges.length);
     // console.log("This is the response from cre atedAt::", response?.data?.data?.whatsappMessages?.edges.map((message) => message.node.createdAt));
     return response?.data?.data?.whatsappMessages?.edges || [];
-
-
-    // The value of startTime.toISOString(): 2025-02-12T10:38:00.018Z
-    // The value of endTime.toISOString()(): 2025-02-12T11:38:00.018Z
-    // This is the response from createdAt:: [ '2025-02-12T11:37:28.989Z', '2025-02-12T11:37:53.282Z' ]
   }
 
   private groupMessagesByJob(messages: any[]): Map<string, any[]> {
@@ -520,7 +515,7 @@ export default class CandidateEngagementArx {
       graphqlQueryObjToFetchAllCandidatesForChats = workspacesWithOlderSchema.includes(workspaceId) ? graphqlToFetchManyCandidatesOlderSchema : graphqlToFetchAllCandidateData;
       const timestamp = new Date().toISOString();
       for (const filter of filters) {
-        console.log(`Trying filter condition:`, filter);
+        console.log(`Fetching candidates for filter condition:`, filter, "to get for chat control type::", chatControlType);
         let lastCursor: string | null = null;
         const timestampedFilter = {
           ...filter,

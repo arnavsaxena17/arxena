@@ -117,21 +117,16 @@ export class WorkspaceDatasourceFactory {
                     ),
                 ),
               );
-
               await this.workspaceCacheStorageService.setORMEntitySchema(
                 workspaceId,
                 cachedWorkspaceMetadataVersion,
                 entitySchemas.map((entitySchema) => entitySchema.options),
               );
-
               cachedEntitySchemas = entitySchemas;
             }
 
             const workspaceDataSource = new WorkspaceDataSource(
-              {
-                workspaceId,
-                objectMetadataMaps: cachedObjectMetadataMaps,
-              },
+              { workspaceId, objectMetadataMaps: cachedObjectMetadataMaps, },
               {
                 url:
                   dataSourceMetadata.url ??
@@ -140,7 +135,8 @@ export class WorkspaceDatasourceFactory {
                 logging:
                   this.environmentService.get('NODE_ENV') ===
                   NodeEnvironment.development
-                    ? ['query', 'error']
+                    // ? ['query', 'error'] // Uncomment this line to enable query logging
+                    ? ['error']
                     : ['error'],
                 schema: dataSourceMetadata.schema,
                 entities: cachedEntitySchemas,
