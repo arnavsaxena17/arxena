@@ -1,5 +1,5 @@
 import styled from '@emotion/styled';
-import { useRecoilState } from 'recoil';
+import { useRecoilState, useRecoilValue } from 'recoil';
 
 import { ObjectOptionsDropdown } from '@/object-record/object-options-dropdown/components/ObjectOptionsDropdown';
 import { RecordIndexBoardContainer } from '@/object-record/record-index/components/RecordIndexBoardContainer';
@@ -17,10 +17,12 @@ import { SpreadsheetImportProvider } from '@/spreadsheet-import/provider/compone
 import { RecordIndexActionMenu } from '@/action-menu/components/RecordIndexActionMenu';
 import { RecordIndexFiltersToContextStoreEffect } from '@/object-record/record-index/components/RecordIndexFiltersToContextStoreEffect';
 import { RecordIndexTableContainerEffect } from '@/object-record/record-index/components/RecordIndexTableContainerEffect';
+import { refetchFunctionAtom } from '@/object-record/record-table/states/refetchFunctionAtom';
 import { ViewBar } from '@/views/components/ViewBar';
 import { ViewType } from '@/views/types/ViewType';
 import { useIsFeatureEnabled } from '@/workspace/hooks/useIsFeatureEnabled';
 import { FeatureFlagKey } from '~/generated/graphql';
+
 
 const StyledContainer = styled.div`
   display: flex;
@@ -51,6 +53,18 @@ export const RecordIndexContainer = () => {
     FeatureFlagKey.IsCommandMenuV2Enabled,
   );
 
+
+
+
+  let refetchFunction = useRecoilValue(refetchFunctionAtom);
+
+
+  const handleRefresh = () => {
+    //@ts-ignore
+    refetchFunction();
+  };
+
+
   return (
     <>
       <StyledContainer>
@@ -58,6 +72,8 @@ export const RecordIndexContainer = () => {
         <RecordFieldValueSelectorContextProvider>
           <SpreadsheetImportProvider>
             <ViewBar
+              handleRefresh={handleRefresh}
+
               viewBarId={recordIndexId}
               optionsDropdownButton={
                 <ObjectOptionsDropdown

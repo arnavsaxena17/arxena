@@ -27,12 +27,15 @@ export type ViewBarProps = {
   viewBarId: string;
   className?: string;
   optionsDropdownButton: ReactNode;
+  handleRefresh?: () => void;
+
 };
 
 export const ViewBar = ({
   viewBarId,
   className,
   optionsDropdownButton,
+  handleRefresh,
 }: ViewBarProps) => {
   const { objectNamePlural } = useParams();
 
@@ -56,6 +59,8 @@ export const ViewBar = ({
 
       <ViewBarPageTitle viewBarId={viewBarId} />
       <TopBar
+        handleRefresh={handleRefresh}
+
         className={className}
         leftComponent={
           loading ? <ViewBarSkeletonLoader /> : <ViewPickerDropdown />

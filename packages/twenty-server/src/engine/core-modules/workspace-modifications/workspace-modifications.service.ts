@@ -131,6 +131,7 @@ export class WorkspaceQueryService {
   }
 
   async executeRawQuery(query: string, params: any[], workspaceId: string, transactionManager?: EntityManager) {
+    console.log("Executing raw query to run update api key")
     return this.workspaceDataSourceService.executeRawQuery(query, params, workspaceId, transactionManager);
   }
 
@@ -145,7 +146,7 @@ export class WorkspaceQueryService {
 
   // Add this method to the service
   async getApiKeys(workspaceId: string, dataSourceSchema: string, transactionManager?: EntityManager) {
-    // console.log("This is the workspace Id:", workspaceId)
+    console.log("Getting API keys for workspace:", workspaceId);
     try {
       const apiKeys = await this.workspaceDataSourceService.executeRawQuery(
         `SELECT * FROM ${dataSourceSchema}."apiKey" where "apiKey"."revokedAt" IS NULL ORDER BY "apiKey"."createdAt" ASC`,
@@ -174,6 +175,7 @@ async getWorkspaceApiKeys(workspaceId: string): Promise<{
   facebook_whatsapp_asset_id?: string;
 }> {
   try {
+    console.log("Getting workspace api keys for workspace:", workspaceId);
     // First, ensure all necessary columns exist
     const alterTableQuery = `
       ALTER TABLE core.workspace
@@ -190,7 +192,7 @@ async getWorkspaceApiKeys(workspaceId: string): Promise<{
     `;
 
     await this.executeRawQuery(alterTableQuery, [], workspaceId);
-
+    console.log("Ensured that the columns exist")
     // Then proceed with the select query
     const selectQuery = `
       SELECT 
@@ -209,6 +211,7 @@ async getWorkspaceApiKeys(workspaceId: string): Promise<{
     `;
 
     const result = await this.executeRawQuery(selectQuery, [workspaceId], workspaceId);
+    console.log("Now getting api keys for the raw query", result)
 
     if (result && result[0]) {
       return {
@@ -276,6 +279,7 @@ async getWorkspaceApiKeys(workspaceId: string): Promise<{
       }
   ): Promise<boolean> {
     try {
+      console.log("Going to try and update workspace api keys::", keys)
       const updates: string[] = [];
       const params: any[] = [];
       let paramCounter = 1;
@@ -288,10 +292,11 @@ async getWorkspaceApiKeys(workspaceId: string): Promise<{
           paramCounter++;
         }
       });
-
+      console.log("These are the updates::", updates)
       if (updates.length === 0) {
         return true;
       }
+      console.log("This is the workspace Id:", workspaceId)
 
       params.push(workspaceId);
       const query = `
@@ -299,17 +304,12 @@ async getWorkspaceApiKeys(workspaceId: string): Promise<{
         SET ${updates.join(', ')}
         WHERE id = $${paramCounter}
       `;
-
+      console.log("This si the raw query:", query)
       await this.executeRawQuery(query, params, workspaceId);
       return true;
     } catch (error) {
       console.error(`Error updating API keys for workspace ${workspaceId}:`, error);
       throw new Error('Failed to update workspace API keys');
     }
-  }
-
-
-
-
-  
+  } 
 }

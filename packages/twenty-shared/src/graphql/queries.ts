@@ -624,7 +624,7 @@ query FindManyWorkspaceMembers($filter: WorkspaceMemberFilterInput, $orderBy: [W
     edges {
       node {
         __typename
-        prompts {
+        prompt {
             edges {
                 node {
                     prompt
@@ -641,7 +641,6 @@ query FindManyWorkspaceMembers($filter: WorkspaceMemberFilterInput, $orderBy: [W
         userEmail
         colorScheme
         createdAt
-        phoneNumber
         locale
         userId
         updatedAt

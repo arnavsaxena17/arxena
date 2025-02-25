@@ -8,7 +8,6 @@ import { formatChat } from '../arx-chat/utils/arx-chat-agent-utils';
 import { axiosRequest } from '../workspace-modifications/workspace-modifications.controller';
 import { WorkspaceQueryService } from '../workspace-modifications/workspace-modifications.service';
 
-console.log("columnDefinitions::", columnDefinitions)
 const rowDataValues = [
   ...columnDefinitions?.map(col => ({
     userEnteredValue: { stringValue: col.header },

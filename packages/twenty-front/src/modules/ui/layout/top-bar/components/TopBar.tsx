@@ -1,5 +1,6 @@
 import styled from '@emotion/styled';
 import { ReactNode } from 'react';
+import { Button, IconRefresh } from 'twenty-ui';
 
 type TopBarProps = {
   className?: string;
@@ -7,6 +8,8 @@ type TopBarProps = {
   rightComponent?: ReactNode;
   bottomComponent?: ReactNode;
   displayBottomBorder?: boolean;
+  showRefetch?:boolean;
+  handleRefresh?: () => void;
 };
 
 const StyledContainer = styled.div`
@@ -47,10 +50,22 @@ export const TopBar = ({
   leftComponent,
   rightComponent,
   bottomComponent,
+  handleRefresh,
+  showRefetch=true
 }: TopBarProps) => (
   <StyledContainer className={className}>
     <StyledTopBar>
       <StyledLeftSection>{leftComponent}</StyledLeftSection>
+      {showRefetch && (
+        <Button
+          Icon={IconRefresh}
+          title="Refetch"
+          variant="secondary"
+          accent="default"
+          onClick={handleRefresh}
+        />
+      )}
+
       <StyledRightSection>{rightComponent}</StyledRightSection>
     </StyledTopBar>
     {bottomComponent}

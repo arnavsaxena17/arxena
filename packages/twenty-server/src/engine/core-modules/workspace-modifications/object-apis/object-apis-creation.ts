@@ -15,7 +15,7 @@ import {
   getJobIds,
 } from './services/videoInterviewTemplateService';
 // import { ObjectMetadata, QueryResponse } from './types/types.js';
-import { graphqlQueryToGetCurrentUser, graphqlToCreateOnePrompt, graphQLToCreateOneWorkspaceMemberProfile, ObjectMetadata, queryObjectMetadataItems, QueryResponse } from 'twenty-shared';
+import { FindManyWorkspaceMembers, graphqlQueryToGetCurrentUser, graphqlToCreateOnePrompt, graphQLToCreateOneWorkspaceMemberProfile, ObjectMetadata, queryObjectMetadataItems, QueryResponse } from 'twenty-shared';
 import { executeQuery } from './utils/graphqlClient.js';
 
 export class CreateMetaDataStructure {
@@ -123,11 +123,12 @@ export class CreateMetaDataStructure {
           limit: 60,
           orderBy: [{ createdAt: 'AscNullsLast' }],
         },
-        query: `
-`,
+        query: FindManyWorkspaceMembers,
       }),
       apiToken,
     );
+    console.log("This is the curent workspace member response:", currentWorkspaceMemberResponse.data)
+    console.log("This is the curent workspace member response:", currentWorkspaceMemberResponse.data.errors)
     console.log("This is the curent workspace member response:", currentWorkspaceMemberResponse.data.data)
     // console.log("This is the curent workspace member response:", currentWorkspaceMemberResponse.data)
     // console.log("This is the curent workspace member response:", currentWorkspaceMemberResponse.data.errors)
@@ -206,8 +207,7 @@ export class CreateMetaDataStructure {
       whatsapp_key: undefined,
       anthropic_key: process.env.ANTHROPIC_API_KEY,
       facebook_whatsapp_api_token: process.env.FACEBOOK_WHATSAPP_API_TOKEN,
-      facebook_whatsapp_phone_number_id:
-        process.env.FACEBOOK_WHATSAPP_PHONE_NUMBER_ID,
+      facebook_whatsapp_phone_number_id: process.env.FACEBOOK_WHATSAPP_PHONE_NUMBER_ID,
       facebook_whatsapp_app_id: process.env.FACEBOOK_WHATSAPP_APP_ID,
       facebook_whatsapp_asset_id: process.env.FACEBOOK_WHATSAPP_ASSET_ID,
       // waba_phone_number: undefined,
