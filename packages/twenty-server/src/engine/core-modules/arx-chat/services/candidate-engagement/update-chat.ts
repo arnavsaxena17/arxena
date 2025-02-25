@@ -85,6 +85,18 @@ export class UpdateChat {
     return response.data;
   }
 
+  async testArxenaConnection( apiToken: string) {
+    const url = process.env.ENV_NODE === 'production' ? 'https://arxena.com/test_arxena_connection' : 'http://127.0.0.1:5050/test_arxena_connection';
+    console.log("This is the url:", url);
+    const response = await axios.post(url, { candidateIds: "candidateIds" }, {
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer ' + apiToken }
+    });
+  return response.data;
+  }
+
+
+
+
 
   async updateCandidatesWithChatCount(candidateIds: string[], apiToken: string) {
     try {

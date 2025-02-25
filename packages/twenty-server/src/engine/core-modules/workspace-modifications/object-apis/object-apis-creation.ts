@@ -15,7 +15,15 @@ import {
   getJobIds,
 } from './services/videoInterviewTemplateService';
 // import { ObjectMetadata, QueryResponse } from './types/types.js';
-import { FindManyWorkspaceMembers, graphqlQueryToGetCurrentUser, graphqlToCreateOnePrompt, graphQLToCreateOneWorkspaceMemberProfile, ObjectMetadata, queryObjectMetadataItems, QueryResponse } from 'twenty-shared';
+import {
+  FindManyWorkspaceMembers,
+  graphqlQueryToGetCurrentUser,
+  graphqlToCreateOnePrompt,
+  graphQLToCreateOneWorkspaceMemberProfile,
+  ObjectMetadata,
+  queryObjectMetadataItems,
+  QueryResponse,
+} from 'twenty-shared';
 import { executeQuery } from './utils/graphqlClient.js';
 
 export class CreateMetaDataStructure {
@@ -68,7 +76,7 @@ export class CreateMetaDataStructure {
   ) {
     try {
       const response = await executeQuery<any>(
-      queryObjectMetadataItems,
+        queryObjectMetadataItems,
         {
           after: cursor || undefined,
           objectFilter: {
@@ -91,8 +99,8 @@ export class CreateMetaDataStructure {
       {},
       apiToken,
     );
-    console.log("Thesear the object:::", objectsResponse?.data)
-    console.log("Thesear the object:::", objectsResponse)
+    console.log('Thesear the object:::', objectsResponse?.data);
+    console.log('Thesear the object:::', objectsResponse);
     return objectsResponse;
   };
 
@@ -127,15 +135,27 @@ export class CreateMetaDataStructure {
       }),
       apiToken,
     );
-    console.log("This is the curent workspace member response:", currentWorkspaceMemberResponse.data)
-    console.log("This is the curent workspace member response:", currentWorkspaceMemberResponse.data.errors)
-    console.log("This is the curent workspace member response:", currentWorkspaceMemberResponse.data.data)
+    console.log(
+      'This is the curent workspace member response:',
+      currentWorkspaceMemberResponse.data,
+    );
+    console.log(
+      'This is the curent workspace member response:',
+      currentWorkspaceMemberResponse.data.errors,
+    );
+    console.log(
+      'This is the curent workspace member response:',
+      currentWorkspaceMemberResponse.data.data,
+    );
     // console.log("This is the curent workspace member response:", currentWorkspaceMemberResponse.data)
     // console.log("This is the curent workspace member response:", currentWorkspaceMemberResponse.data.errors)
     const currentWorkspaceMemberId =
       currentWorkspaceMemberResponse.data.data.workspaceMembers.edges[0].node
         .id;
-    console.log( 'currentWorkspaceMemberId', currentWorkspaceMemberResponse.data.data.workspaceMembers.edges[0].node, );
+    console.log(
+      'currentWorkspaceMemberId',
+      currentWorkspaceMemberResponse.data.data.workspaceMembers.edges[0].node,
+    );
     const currentWorkspaceMemberName =
       currentWorkspaceMemberResponse.data.data.workspaceMembers.edges[0].node
         .name.firstName +
@@ -198,7 +218,6 @@ export class CreateMetaDataStructure {
   async addAPIKeys(apiToken: string) {
     const workspaceId =
       await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-    // Update API keys using the service method
     await this.workspaceQueryService.updateWorkspaceApiKeys(workspaceId, {
       openaikey: process.env.OPENAI_KEY,
       twilio_account_sid: undefined,
@@ -207,7 +226,8 @@ export class CreateMetaDataStructure {
       whatsapp_key: undefined,
       anthropic_key: process.env.ANTHROPIC_API_KEY,
       facebook_whatsapp_api_token: process.env.FACEBOOK_WHATSAPP_API_TOKEN,
-      facebook_whatsapp_phone_number_id: process.env.FACEBOOK_WHATSAPP_PHONE_NUMBER_ID,
+      facebook_whatsapp_phone_number_id:
+        process.env.FACEBOOK_WHATSAPP_PHONE_NUMBER_ID,
       facebook_whatsapp_app_id: process.env.FACEBOOK_WHATSAPP_APP_ID,
       facebook_whatsapp_asset_id: process.env.FACEBOOK_WHATSAPP_ASSET_ID,
       // waba_phone_number: undefined,
@@ -229,7 +249,7 @@ export class CreateMetaDataStructure {
 
       if (shouldCreateObjectMetadata) {
         try {
-          console.log("This is the object creation array:")
+          console.log('This is the object creation array:');
           await createObjectMetadataItems(apiToken, objectCreationArr);
           console.log('Object metadata items created successfully');
 
@@ -281,8 +301,7 @@ export class CreateMetaDataStructure {
       if (shouldCreateApiKeys) {
         try {
           const apiKeyService = new ApiKeyService();
-          const workspaceMemberId =
-            await this.createAndUpdateWorkspaceMember(apiToken);
+          const workspaceMemberId = await this.createAndUpdateWorkspaceMember(apiToken);
           await this.createStartChatPrompt(apiToken);
           const apiKey = await apiKeyService.createApiKey(apiToken);
           console.log('API key created successfully:', apiKey);

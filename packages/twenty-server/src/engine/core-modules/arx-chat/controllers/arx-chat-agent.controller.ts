@@ -560,6 +560,26 @@ export class ArxChatEndpoint {
       return { status: 'Failed', error: err };
     }
   }
+  @Post('create-shortlist-document')
+  @UseGuards(JwtAuthGuard)
+  async testArxenaConnection(@Req() request: any): Promise<object> {
+    try {
+      const apiToken = request.headers.authorization.split(' ')[1];
+      console.log(
+        'going to test arxena connection',
+      );
+      await new UpdateChat(this.workspaceQueryService).testArxenaConnection(
+        apiToken,
+      );
+      console.log(
+        'This is the response in create testArxenaConnection testArxenaConnection',
+      );
+      return { status: 'Success' };
+    } catch (err) {
+      console.error('Error in testArxenaConnection chats:', err);
+      return { status: 'Failed', error: err };
+    }
+  }
 
   @Post('chat-based-shortlist-delivery')
   @UseGuards(JwtAuthGuard)
