@@ -13,23 +13,21 @@ import { UserModule } from 'src/engine/core-modules/user/user.module';
 import { HandleWorkspaceMemberDeletedJob } from 'src/engine/core-modules/workspace/handle-workspace-member-deleted.job';
 import { EmailSenderJob } from 'src/engine/integrations/email/email-sender.job';
 // import { CandidateEmailSenderJob } from 'src/engine/core-modules/candidate-sourcing/jobs/process-candidates.job';
+import { CandidateSourcingModule } from 'src/engine/core-modules/candidate-sourcing/candidate-sourcing.module';
+import { WorkspaceModule } from 'src/engine/core-modules/workspace/workspace.module';
 import { EmailModule } from 'src/engine/integrations/email/email.module';
 import { DataSourceModule } from 'src/engine/metadata-modules/data-source/data-source.module';
 import { ObjectMetadataModule } from 'src/engine/metadata-modules/object-metadata/object-metadata.module';
 import { CleanInactiveWorkspaceJob } from 'src/engine/workspace-manager/workspace-cleaner/crons/clean-inactive-workspace.job';
-import { CalendarEventParticipantModule } from 'src/modules/calendar/services/calendar-event-participant/calendar-event-participant.module';
-import { TimelineActivityModule } from 'src/modules/timeline/timeline-activity.module';
-import { WorkspaceModule } from 'src/engine/core-modules/workspace/workspace.module';
 import { CalendarMessagingParticipantJobModule } from 'src/modules/calendar-messaging-participant/jobs/calendar-messaging-participant-job.module';
+import { CalendarModule } from 'src/modules/calendar/calendar.module';
 import { CalendarCronJobModule } from 'src/modules/calendar/crons/jobs/calendar-cron-job.module';
 import { CalendarJobModule } from 'src/modules/calendar/jobs/calendar-job.module';
+import { CalendarEventParticipantModule } from 'src/modules/calendar/services/calendar-event-participant/calendar-event-participant.module';
 import { AutoCompaniesAndContactsCreationJobModule } from 'src/modules/connected-account/auto-companies-and-contacts-creation/jobs/auto-companies-and-contacts-creation-job.module';
 import { MessagingModule } from 'src/modules/messaging/messaging.module';
 import { TimelineJobModule } from 'src/modules/timeline/jobs/timeline-job.module';
-import { CalendarModule } from 'src/modules/calendar/calendar.module';
-import { CandidateQueueProcessor } from 'src/engine/core-modules/candidate-sourcing/jobs/process-candidates.job';
-import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/services/candidate.service';
-import { CandidateSourcingModule } from 'src/engine/core-modules/candidate-sourcing/candidate-sourcing.module';
+import { TimelineActivityModule } from 'src/modules/timeline/timeline-activity.module';
 // import { JobService } from 'src/engine/core-modules/candidate-sourcing/services/job.service';
 
 @Module({

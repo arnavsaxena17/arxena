@@ -1,7 +1,7 @@
-import { useCallback, useMemo } from 'react';
 import { useQuery, WatchQueryFetchPolicy } from '@apollo/client';
 import { isNonEmptyArray } from '@apollo/client/utilities';
 import { isNonEmptyString } from '@sniptt/guards';
+import { useCallback, useMemo } from 'react';
 import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';

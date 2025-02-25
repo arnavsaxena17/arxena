@@ -1,46 +1,45 @@
-import { useCallback,  useEffect,  useMemo, useState } from 'react';
 import { isNonEmptyString } from '@sniptt/guards';
-import { RecoilState, useRecoilCallback, useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useRecoilCallback, useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 import { IconClick, IconFileExport, IconHeart, IconHeartOff, IconTrash } from 'twenty-ui';
 import { selectedRecordsForModalState } from '../../states/selectedRecordsState';
 
+import { chatPanelState } from '@/activities/chats/states/chatPanelState';
+import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { useFavorites } from '@/favorites/hooks/useFavorites';
 import { ObjectMetadataItem } from '@/object-metadata/types/ObjectMetadataItem';
-import { useDeleteManyRecords } from '@/object-record/hooks/useDeleteManyRecords';
-import { useExecuteQuickActionOnOneRecord } from '@/object-record/hooks/useExecuteQuickActionOnOneRecord';
 import { useCloneOneRecord } from '@/object-record/hooks/useCloneOneRecord'; // Import the new hook
+import { useCreateVideoInterview } from '@/object-record/hooks/useCreateInterview';
 import { useCreateInterviewVideos } from '@/object-record/hooks/useCreateInterviewVideos'; // Import the new hook
+import { useDeleteManyRecords } from '@/object-record/hooks/useDeleteManyRecords';
+import { useExecuteDeleteCandidatesAndPeople } from '@/object-record/hooks/useExecuteDeleteCandidatesAndPeople';
+import { useExecuteQuickActionOnOneRecord } from '@/object-record/hooks/useExecuteQuickActionOnOneRecord';
+import { useRefreshChatCounts } from '@/object-record/hooks/useRefreshChatCounts';
+import { useRefreshChatStatus } from '@/object-record/hooks/useRefreshChatStatus';
+import { useSendCVsToClient } from '@/object-record/hooks/useSendCVsToClient';
+import { useSendVideoInterview } from '@/object-record/hooks/useSendInterview';
+import { useSendToWhatsapp } from '@/object-record/hooks/useSendToWhatsapp';
+import { useStartChats } from '@/object-record/hooks/useStartChats';
 import { displayedExportProgress, useExportTableData } from '@/object-record/record-index/options/hooks/useExportTableData';
 import { recordStoreFamilyState } from '@/object-record/record-store/states/recordStoreFamilyState';
 import { ConfirmationModal } from '@/ui/layout/modal/components/ConfirmationModal';
+import { useRightDrawer } from '@/ui/layout/right-drawer/hooks/useRightDrawer';
+import { RightDrawerPages } from '@/ui/layout/right-drawer/types/RightDrawerPages';
 import { actionBarEntriesState } from '@/ui/navigation/action-bar/states/actionBarEntriesState';
 import { contextMenuEntriesState } from '@/ui/navigation/context-menu/states/contextMenuEntriesState';
 import { ContextMenuEntry } from '@/ui/navigation/context-menu/types/ContextMenuEntry';
-import { isDefined } from '~/utils/isDefined';
-import { IconCopy, IconMessage, IconPaperclip, IconRefresh, IconBrandWhatsapp, IconRefreshDot, IconSend2, IconUsersPlus, IconVideo, IconDatabase, IconDashboard } from '@tabler/icons-react';
-import { useCreateVideoInterview } from '@/object-record/hooks/useCreateInterview';
-import { useSendVideoInterview } from '@/object-record/hooks/useSendInterview';
-import { useRefreshChatStatus } from '@/object-record/hooks/useRefreshChatStatus';
-import { useRefreshChatCounts } from '@/object-record/hooks/useRefreshChatCounts';
-import { useSendCVsToClient } from '@/object-record/hooks/useSendCVsToClient';
-import { useSendToWhatsapp } from '@/object-record/hooks/useSendToWhatsapp';
-import { useExecuteDeleteCandidatesAndPeople } from '@/object-record/hooks/useExecuteDeleteCandidatesAndPeople';
-import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { WorkspaceMember } from '@/workspace-member/types/WorkspaceMember';
-import { useRightDrawer } from '@/ui/layout/right-drawer/hooks/useRightDrawer';
-import { RightDrawerPages } from '@/ui/layout/right-drawer/types/RightDrawerPages';
-import { chatPanelState } from '@/activities/chats/states/chatPanelState';
-import { useStartChats } from '@/object-record/hooks/useStartChats';
+import { IconBrandWhatsapp, IconCopy, IconDashboard, IconDatabase, IconMessage, IconPaperclip, IconRefresh, IconRefreshDot, IconSend2, IconUsersPlus, IconVideo } from '@tabler/icons-react';
+import { isDefined } from '~/utils/isDefined';
 // import { useGetCurrentView } from '@/views/hooks/useGetCurrentView';
 // import { useHandleViews } from '@/views/hooks/useHandleViews';
 // import { ViewScope } from '@/views/scopes/ViewScope';
 // import { useAvailableScopeIdOrThrow } from '@/ui/utilities/recoil-scope/scopes-internal/hooks/useAvailableScopeId';
 // import { ViewScopeInternalContext } from '@/views/scopes/scope-internal-context/ViewScopeInternalContext';
-import { currentViewWithFiltersState } from '@/views/states/currentViewState';
-import { useTranscribeCall } from '@/object-record/hooks/useTranscribeCall';
 import { useCheckDataIntegrityOfJob } from '@/object-record/hooks/useCheckDataIntegrityOfJob';
 import { useCloneMultipleRecords } from '@/object-record/hooks/useCloneMultipleRecords';
-
+import { useTranscribeCall } from '@/object-record/hooks/useTranscribeCall';
+import { currentViewWithFiltersState } from '@/views/states/currentViewState';
 
 type useRecordActionBarProps = {
   objectMetadataItem: ObjectMetadataItem;
@@ -48,11 +47,7 @@ type useRecordActionBarProps = {
   callback?: () => void;
 };
 
-
-
 export const useRecordActionBar = ({ objectMetadataItem, selectedRecordIds, callback }: useRecordActionBarProps) => {
-
-
   const setContextMenuEntries = useSetRecoilState(contextMenuEntriesState);
   const setActionBarEntriesState = useSetRecoilState(actionBarEntriesState);
   const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState) as WorkspaceMember | null;
@@ -61,16 +56,13 @@ export const useRecordActionBar = ({ objectMetadataItem, selectedRecordIds, call
   const { openRightDrawer } = useRightDrawer();
   const [_, setChatPanel] = useRecoilState(chatPanelState);
 
-                              
   const currentViewWithCombinedFiltersAndSorts = useRecoilValue(currentViewWithFiltersState);
-  
 
   const setSelectedRecordsForModal = useSetRecoilState(selectedRecordsForModalState);
   useEffect(() => {
     setSelectedRecordsForModal(selectedRecordIds);
   }, [selectedRecordIds, setSelectedRecordsForModal]);
-  
-  
+
   const { createFavorite, favorites, deleteFavorite } = useFavorites();
 
   const { deleteManyRecords } = useDeleteManyRecords({
@@ -113,7 +105,6 @@ export const useRecordActionBar = ({ objectMetadataItem, selectedRecordIds, call
     },
   });
 
-
   const { checkDataIntegrityOfJob } = useCheckDataIntegrityOfJob({
     onSuccess: () => {},
     onError: (error: any) => {
@@ -121,20 +112,19 @@ export const useRecordActionBar = ({ objectMetadataItem, selectedRecordIds, call
     },
   });
 
-  
   const { sendVideoInterviewLink } = useSendVideoInterview({
     createVideoInterviewLink: false,
     onSuccess: () => {},
     onError: (error: any) => {
       console.error('Failed to send video interview:', error);
     },
-  });  
+  });
   const { sendStartChatRequest } = useStartChats({
     onSuccess: () => {},
     onError: (error: any) => {
       console.error('Failed to send start chat:', error);
     },
-  });  
+  });
 
   const { refreshChatStatus } = useRefreshChatStatus({
     onSuccess: () => {},
@@ -168,7 +158,7 @@ export const useRecordActionBar = ({ objectMetadataItem, selectedRecordIds, call
     },
   });
 
-  const { deleteCandidatesAndPeople, loading: executingDeleteCandidatesAndPeople } = useExecuteDeleteCandidatesAndPeople({
+  const { deleteCandidatesAndPeople } = useExecuteDeleteCandidatesAndPeople({
     objectNameSingular: objectMetadataItem.nameSingular,
     onSuccess: () => {
       // Additional success handling if needed
@@ -178,39 +168,36 @@ export const useRecordActionBar = ({ objectMetadataItem, selectedRecordIds, call
       console.error('Failed to create video interview:', error);
     },
   });
-  console.log("These are the selectred IDz:", selectedRecordIds)
+  console.log('These are the selectred IDz:', selectedRecordIds);
 
   // Then in useRecordActionBar:
-const { cloneMultipleRecords } = useCloneMultipleRecords({
-  objectNameSingular: objectMetadataItem.nameSingular,
-});
+  const { cloneMultipleRecords } = useCloneMultipleRecords({
+    objectNameSingular: objectMetadataItem.nameSingular,
+  });
 
+  const handleClone = useCallback(async () => {
+    callback?.();
+    console.log('Going to try and clone:', selectedRecordIds);
 
-const handleClone = useCallback(async () => {
-  callback?.();
-  console.log('Going to try and clone:', selectedRecordIds);
-  
-  try {
-    const clonedRecords = await cloneMultipleRecords(selectedRecordIds);
-    console.log('Successfully cloned records:', clonedRecords);
-  } catch (error) {
-    console.error('Error cloning records:', error);
-  }
-}, [callback, cloneMultipleRecords, selectedRecordIds]);
+    try {
+      const clonedRecords = await cloneMultipleRecords(selectedRecordIds);
+      console.log('Successfully cloned records:', clonedRecords);
+    } catch (error) {
+      console.error('Error cloning records:', error);
+    }
+  }, [callback, cloneMultipleRecords, selectedRecordIds]);
 
-
-
-const sendVideoInterviewLinkSelectRecord = useRecoilCallback(
-  ({ snapshot }) =>
-    async (selectedRecordIds: string[]) => {
-      const selectedRecordId = selectedRecordIds[0];
-      const selectedRecord = snapshot.getLoadable(recordStoreFamilyState(selectedRecordId)).getValue();
-      console.log("selected record", selectedRecord);
-      const candidateId = selectedRecord?.candidate?.id;
-      sendVideoInterviewLink([candidateId]);
-    },
-  [sendVideoInterviewLink]
-);
+  const sendVideoInterviewLinkSelectRecord = useRecoilCallback(
+    ({ snapshot }) =>
+      async (selectedRecordIds: string[]) => {
+        const selectedRecordId = selectedRecordIds[0];
+        const selectedRecord = snapshot.getLoadable(recordStoreFamilyState(selectedRecordId)).getValue();
+        console.log('selected record', selectedRecord);
+        const candidateId = selectedRecord?.candidate?.id;
+        sendVideoInterviewLink([candidateId]);
+      },
+    [sendVideoInterviewLink],
+  );
 
   const handleFavoriteButtonClick = useRecoilCallback(
     ({ snapshot }) =>
@@ -263,16 +250,15 @@ const sendVideoInterviewLinkSelectRecord = useRecoilCallback(
     recordIndexId: objectMetadataItem.namePlural,
   });
 
-    function callViewChatRightDrawer() {
-      console.log('View Chat Right Drawer for:', selectedRecordIds);
-      setChatPanel({
-        selectedRecordIds: selectedRecordIds
-      });
-    
-      openRightDrawer(RightDrawerPages.ViewChat);
-    }
+  function callViewChatRightDrawer() {
+    console.log('View Chat Right Drawer for:', selectedRecordIds);
+    setChatPanel({
+      selectedRecordIds: selectedRecordIds,
+    });
 
-    
+    openRightDrawer(RightDrawerPages.ViewChat);
+  }
+
   function callViewCVRightDrawer() {
     console.log('View Right CV Drawer');
     openRightDrawer(RightDrawerPages.ViewCV);
@@ -320,7 +306,6 @@ const sendVideoInterviewLinkSelectRecord = useRecoilCallback(
   const hasOnlyOneRecordSelected = selectedRecordIds.length === 1;
 
   const isFavorite = isNonEmptyString(selectedRecordIds[0]) && !!favorites?.find(favorite => favorite.recordId === selectedRecordIds[0]);
-
 
   return {
     setContextMenuEntries: useCallback(() => {
@@ -414,68 +399,68 @@ const sendVideoInterviewLinkSelectRecord = useRecoilCallback(
                         },
                       ]
                     : []),
-                    ...(objectMetadataItem.nameSingular.toLowerCase().includes( 'jobcandidate')
-                      ? [
+                  ...(objectMetadataItem.nameSingular.toLowerCase().includes('jobcandidate')
+                    ? [
                         {
                           label: 'Start Chat with Candidates',
                           Icon: IconBrandWhatsapp,
                           onClick: async () => {
                             try {
-                              console.log("Current FcurrentViewWithCombinedFiltersAndSorts:", currentViewWithCombinedFiltersAndSorts);  
-                              console.log("Current selectedRecordIds:", selectedRecordIds);  
+                              console.log('Current FcurrentViewWithCombinedFiltersAndSorts:', currentViewWithCombinedFiltersAndSorts);
+                              console.log('Current selectedRecordIds:', selectedRecordIds);
                               await sendStartChatRequest(selectedRecordIds, currentViewWithCombinedFiltersAndSorts, objectMetadataItem.nameSingular);
                             } catch (error) {
                               console.error('Error creating start chat:', error);
                             }
                           },
                         },
-                        ]
-                      : []),
-                    ...(objectMetadataItem.nameSingular.toLowerCase().includes( 'candidate')
-                      ? [
+                      ]
+                    : []),
+                  ...(objectMetadataItem.nameSingular.toLowerCase().includes('candidate')
+                    ? [
                         {
                           label: 'Start Chat with Candidates',
                           Icon: IconBrandWhatsapp,
                           onClick: async () => {
                             try {
-                              console.log("Current FcurrentViewWithCombinedFiltersAndSorts:", currentViewWithCombinedFiltersAndSorts);  
-                              console.log("Current selectedRecordIds:", selectedRecordIds);  
+                              console.log('Current FcurrentViewWithCombinedFiltersAndSorts:', currentViewWithCombinedFiltersAndSorts);
+                              console.log('Current selectedRecordIds:', selectedRecordIds);
                               await sendStartChatRequest(selectedRecordIds, currentViewWithCombinedFiltersAndSorts, objectMetadataItem.nameSingular);
                             } catch (error) {
                               console.error('Error creating start chat:', error);
                             }
                           },
                         },
-                        ]
-                      : []),
+                      ]
+                    : []),
                   ...(objectMetadataItem.nameSingular === 'videoInterview'
                     ? [
-                      {
-                        label: 'Send Video Interview ',
-                        Icon: IconVideo,
-                        onClick: async () => {
-                          try {
-                            await sendVideoInterviewLinkSelectRecord(selectedRecordIds);
-                          } catch (error) {
-                            console.error('Error creating videos:', error);
-                          }
+                        {
+                          label: 'Send Video Interview ',
+                          Icon: IconVideo,
+                          onClick: async () => {
+                            try {
+                              await sendVideoInterviewLinkSelectRecord(selectedRecordIds);
+                            } catch (error) {
+                              console.error('Error creating videos:', error);
+                            }
+                          },
                         },
-                      },
                       ]
                     : []),
                   ...(objectMetadataItem.nameSingular === 'phoneCall'
                     ? [
-                      {
-                        label: 'Transcribe Call ',
-                        Icon: IconVideo,
-                        onClick: async () => {
-                          try {
-                            await transcribeCall(selectedRecordIds);
-                          } catch (error) {
-                            console.error('Error creating videos:', error);
-                          }
+                        {
+                          label: 'Transcribe Call ',
+                          Icon: IconVideo,
+                          onClick: async () => {
+                            try {
+                              await transcribeCall(selectedRecordIds);
+                            } catch (error) {
+                              console.error('Error creating videos:', error);
+                            }
+                          },
                         },
-                      },
                       ]
                     : []),
 

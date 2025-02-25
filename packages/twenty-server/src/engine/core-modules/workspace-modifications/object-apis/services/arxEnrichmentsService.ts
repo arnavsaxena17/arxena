@@ -1,6 +1,6 @@
-import { executeQuery,executeGraphQLQuery } from '../utils/graphqlClient';
-import { mutations } from '../mutations/mutations';
 import { arxEnrichments } from '../data/arxEnrichments';
+import { mutations } from '../mutations/mutations';
+import { executeGraphQLQuery } from '../utils/graphqlClient';
 
 export async function createArxEnrichments(apiToken:string): Promise<void> {
 

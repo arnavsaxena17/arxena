@@ -19,6 +19,7 @@ import { recordIndexSortsState } from '@/object-record/record-index/states/recor
 import { recordIndexViewTypeState } from '@/object-record/record-index/states/recordIndexViewTypeState';
 import { RecordFieldValueSelectorContextProvider } from '@/object-record/record-store/contexts/RecordFieldValueSelectorContext';
 import { useRecordTable } from '@/object-record/record-table/hooks/useRecordTable';
+import { refetchFunctionAtom } from '@/object-record/record-table/states/refetchFunctionAtom';
 import { SpreadsheetImportProvider } from '@/spreadsheet-import/provider/components/SpreadsheetImportProvider';
 import { ViewBar } from '@/views/components/ViewBar';
 import { ViewField } from '@/views/types/ViewField';
@@ -26,11 +27,8 @@ import { ViewType } from '@/views/types/ViewType';
 import { mapViewFieldsToColumnDefinitions } from '@/views/utils/mapViewFieldsToColumnDefinitions';
 import { mapViewFiltersToFilters } from '@/views/utils/mapViewFiltersToFilters';
 import { mapViewSortsToSorts } from '@/views/utils/mapViewSortsToSorts';
+import { useTransition } from 'react';
 import { isDeeplyEqual } from '~/utils/isDeeplyEqual';
-import { useEffect, useState, useTransition } from 'react';
-import { useLoadRecordIndexTable } from '../hooks/useLoadRecordIndexTable';
-import { getRefetchFunctionSelector } from '@/object-record/record-table/components/RecordTableBodyEffect';
-import { refetchFunctionAtom } from '@/object-record/record-table/states/refetchFunctionAtom';
 
 const StyledContainer = styled.div`
   display: flex;

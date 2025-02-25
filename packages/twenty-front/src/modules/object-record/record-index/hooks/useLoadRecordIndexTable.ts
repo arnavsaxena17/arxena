@@ -8,9 +8,9 @@ import { turnObjectDropdownFilterIntoQueryFilter } from '@/object-record/record-
 import { useRecordTableRecordGqlFields } from '@/object-record/record-index/hooks/useRecordTableRecordGqlFields';
 import { useRecordTableStates } from '@/object-record/record-table/hooks/internal/useRecordTableStates';
 import { useRecordTable } from '@/object-record/record-table/hooks/useRecordTable';
+import { refetchFunctionAtom } from '@/object-record/record-table/states/refetchFunctionAtom';
 import { SIGN_IN_BACKGROUND_MOCK_COMPANIES } from '@/sign-in-background-mock/constants/SignInBackgroundMockCompanies';
 import { useEffect } from 'react';
-import { refetchFunctionAtom } from '@/object-record/record-table/states/refetchFunctionAtom';
 
 export const useFindManyParams = (objectNameSingular: string, recordTableId?: string) => {
   const { objectMetadataItem } = useObjectMetadataItem({

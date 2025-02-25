@@ -1,10 +1,10 @@
-import { useState } from 'react';
-import axios from 'axios';
 import { tokenPairState } from '@/auth/states/tokenPairState';
+import axios from 'axios';
+import { useState } from 'react';
 import { useRecoilState } from 'recoil';
 // import { useShowNotification } from '@/notification/hooks/useShowNotification'; 
-import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
+import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 
 type UseCreateVideoInterviewProps = {
   onSuccess?: () => void;
@@ -31,17 +31,7 @@ export const useCreateVideoInterview = ({
       
       const results = await Promise.all(
         candidateIds.map((candidateId) =>
-          axios.post(
-            `${process.env.REACT_APP_SERVER_BASE_URL}/video-interview-process/create-video-interview`,
-            { candidateId },
-            {
-              headers: {
-                Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
-                'Content-Type': 'application/json',
-              },
-            }
-          )
-        )
+          axios.post( `${process.env.REACT_APP_SERVER_BASE_URL}/video-interview-process/create-video-interview`, { candidateId }, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}`, 'Content-Type': 'application/json', }, } ) )
       );
       console.log("results:", results);
     const successfulCandidates = results.filter(

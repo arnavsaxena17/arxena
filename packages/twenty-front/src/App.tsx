@@ -1,11 +1,5 @@
-import React, { StrictMode, lazy, Suspense } from 'react';
-import { createBrowserRouter, createRoutesFromElements, Outlet, redirect, Route, RouterProvider, Routes, useLocation } from 'react-router-dom';
-import { useRecoilValue } from 'recoil';
-import { Mixpanel } from './mixpanel';
 import { ApolloProvider } from '@/apollo/components/ApolloProvider';
 import { VerifyEffect } from '@/auth/components/VerifyEffect';
-import { ChromeExtensionSidecarEffect } from '@/chrome-extension-sidecar/components/ChromeExtensionSidecarEffect';
-import { ChromeExtensionSidecarProvider } from '@/chrome-extension-sidecar/components/ChromeExtensionSidecarProvider';
 import { ClientConfigProvider } from '@/client-config/components/ClientConfigProvider';
 import { ClientConfigProviderEffect } from '@/client-config/components/ClientConfigProviderEffect';
 import { billingState } from '@/client-config/states/billingState';
@@ -25,13 +19,24 @@ import { AppThemeProvider } from '@/ui/theme/components/AppThemeProvider';
 import { PageTitle } from '@/ui/utilities/page-title/PageTitle';
 import { UserProvider } from '@/users/components/UserProvider';
 import { UserProviderEffect } from '@/users/components/UserProviderEffect';
+import React, { StrictMode } from 'react';
+import { createBrowserRouter, createRoutesFromElements, Outlet, redirect, Route, RouterProvider, Routes, useLocation } from 'react-router-dom';
+import { useRecoilValue } from 'recoil';
 import { CommandMenuEffect } from '~/effect-components/CommandMenuEffect';
 // import { GotoHotkeysEffect } from '~/effect-components/GotoHotkeysEffect';
+import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
+import GoogleSheet from '@/google-sheet/GoogleSheet';
+import { HotPage } from '@/hot/hotCandidates';
+import { ModalProvider } from '@/object-record/resumes-import/ModalContext';
+import OrgChart from '@/orgchart/OrgChart';
+import VideoInterviewFlow from '@/video-interview/interview-response/VideoInterviewFlow';
+import VideoInterviewResponseViewer from '@/video-interview/interview-response/VideoInterviewResponseViewer';
 import { PageChangeEffect } from '~/effect-components/PageChangeEffect';
 import { Authorize } from '~/pages/auth/Authorize';
 import { Invite } from '~/pages/auth/Invite';
 import { PasswordReset } from '~/pages/auth/PasswordReset';
 import { SignInUp } from '~/pages/auth/SignInUp';
+import { Chats } from '~/pages/chats/Chats';
 import { ImpersonateEffect } from '~/pages/impersonate/ImpersonateEffect';
 import { NotFound } from '~/pages/not-found/NotFound';
 import { RecordIndexPage } from '~/pages/object-record/RecordIndexPage';
@@ -43,8 +48,6 @@ import { InviteTeam } from '~/pages/onboarding/InviteTeam';
 import { PaymentSuccess } from '~/pages/onboarding/PaymentSuccess';
 import { SyncEmails } from '~/pages/onboarding/SyncEmails';
 import { SettingsAccounts } from '~/pages/settings/accounts/SettingsAccounts';
-import { WhatsappAccounts } from '~/pages/settings/whatsapp/WhatsappsAccounts';
-import  WhatsAppTemplateManager from '~/pages/settings/whatsapp/WhatsappAccountsTemplates';
 import { SettingsAccountsCalendars } from '~/pages/settings/accounts/SettingsAccountsCalendars';
 import { SettingsAccountsCalendarsSettings } from '~/pages/settings/accounts/SettingsAccountsCalendarsSettings';
 import { SettingsAccountsEmails } from '~/pages/settings/accounts/SettingsAccountsEmails';
@@ -74,16 +77,10 @@ import { SettingsBilling } from '~/pages/settings/SettingsBilling';
 import { SettingsProfile } from '~/pages/settings/SettingsProfile';
 import { SettingsWorkspace } from '~/pages/settings/SettingsWorkspace';
 import { SettingsWorkspaceMembers } from '~/pages/settings/SettingsWorkspaceMembers';
+import WhatsAppTemplateManager from '~/pages/settings/whatsapp/WhatsappAccountsTemplates';
+import { WhatsappAccounts } from '~/pages/settings/whatsapp/WhatsappsAccounts';
 import { Tasks } from '~/pages/tasks/Tasks';
-import { Chats } from '~/pages/chats/Chats';
 import { getPageTitleFromPath } from '~/utils/title-utils';
-import VideoInterviewResponseViewer  from '@/video-interview/interview-response/VideoInterviewResponseViewer';
-import GoogleSheet  from '@/google-sheet/GoogleSheet';
-import VideoInterviewFlow from '@/video-interview/interview-response/VideoInterviewFlow';
-import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
-import { HotPage } from '@/hot/hotCandidates';
-import OrgChart from '@/orgchart/OrgChart';
-import { ModalProvider } from '@/object-record/resumes-import/ModalContext';
 // const VideoInterviewFlow = lazy(() => import('@/ai-interview/interview-response/VideoInterviewFlow'));
 // const VideoInterviewResponseViewer = lazy(() => import('@/ai-interview/interview-response/VideoInterviewResponseViewer'));
 
@@ -96,9 +93,6 @@ const MinimalProviders: React.FC = () => (
     </AppThemeProvider>
   </ApolloProvider>
 );
-
-
-
 const FullProviders: React.FC = () => {
   const { pathname } = useLocation();
   const pageTitle = getPageTitleFromPath(pathname);
@@ -120,7 +114,6 @@ const FullProviders: React.FC = () => {
                     <DialogManagerScope dialogManagerScopeId="dialog-manager">
                       <DialogManager>
                       <ModalProvider> {/* Add ModalProvider here */}
-
                         <StrictMode>
                           <PromiseRejectionEffect />
                           <CommandMenuEffect />
@@ -130,7 +123,6 @@ const FullProviders: React.FC = () => {
                           <PageChangeEffect />
                         </StrictMode>
                         </ModalProvider>
-
                       </DialogManager>
                     </DialogManagerScope>
                   </SnackBarProvider>
@@ -151,34 +143,17 @@ const createRouter = (isBillingEnabled?: boolean) =>
       <Route>
         <Route element={<MinimalProviders />}>
           <Route element={<BlankLayout />}>
-            <Route
-              path={`${AppPath.VideoInterview}/*`}
-              element={<VideoInterviewFlow interviewId={window.location.pathname} />}
-            />
-            <Route
-              path={`${AppPath.GoogleSheet}/*`}
-              element={<GoogleSheet />}
-            />
-            <Route
-              path={`${AppPath.OrgChart}/*`}
-              element={<OrgChart />}
-            />
-            <Route
-              path={`${AppPath.hot}/*`}
-              element={<HotPage />}
-            />
-            <Route
-              path={`${AppPath.VideoInterview}/:candidateId`}
-              element={<VideoInterviewResponseViewer candidateId={window.location.pathname} videoInterviewId = {window.location.pathname} />}
-            />
+            <Route path={`${AppPath.VideoInterview}/*`} element={<VideoInterviewFlow interviewId={window.location.pathname} />} />
+            <Route path={`${AppPath.GoogleSheet}/*`} element={<GoogleSheet />} />
+            <Route path={`${AppPath.OrgChart}/*`} element={<OrgChart />} />
+            <Route path={`${AppPath.hot}/*`} element={<HotPage />} />
+            <Route path={`${AppPath.VideoInterview}/:candidateId`} element={<VideoInterviewResponseViewer candidateId={window.location.pathname} videoInterviewId = {window.location.pathname} />} />
           </Route>
         </Route>
 
         <Route element={<FullProviders />}>
           <Route element={<DefaultLayout />}>
-            <Route path={AppPath.Verify} element={<VerifyEffect />} />
-
-
+             <Route path={AppPath.Verify} element={<VerifyEffect />} />
              <Route path={AppPath.SignInUp} element={<SignInUp />} />
              <Route path={AppPath.Invite} element={<Invite />} />
              <Route path={AppPath.ResetPassword} element={<PasswordReset />} />
@@ -197,152 +172,51 @@ const createRouter = (isBillingEnabled?: boolean) =>
              <Route path={AppPath.Impersonate} element={<ImpersonateEffect />} />
              <Route path={AppPath.RecordIndexPage} element={<RecordIndexPage />} />
              <Route path={AppPath.RecordShowPage} element={<RecordShowPage />} />
-            
              <Route path={AppPath.SettingsCatchAll} element={
               <Routes>
-                <Route
-                  path={SettingsPath.ProfilePage}
-                  element={<SettingsProfile />}
-                />
-                <Route
-                  path={SettingsPath.Appearance}
-                  element={<SettingsAppearance />}
-                />
-
-                <Route
-                  path={SettingsPath.Accounts}
-                  element={<SettingsAccounts />}
-                />
-
-                <Route
-                  path={SettingsPath.NewAccount}
-                  element={<SettingsNewAccount />}
-                />
+                <Route path={SettingsPath.ProfilePage} element={<SettingsProfile />} />
+                <Route path={SettingsPath.Appearance} element={<SettingsAppearance />} />
+                <Route path={SettingsPath.Accounts} element={<SettingsAccounts />} />
+                <Route path={SettingsPath.NewAccount} element={<SettingsNewAccount />} />
                 <Route path={SettingsPath.AccountsCalendars} element={<SettingsAccountsCalendars />} />
-
-
-                <Route
-                  path={SettingsPath.AccountsWhatsapp}
-                  element={<WhatsappAccounts />}
-                />
-                <Route
-                  path={SettingsPath.AccountsWhatsappTemplates}
-                  element={<WhatsAppTemplateManager />}
-                />
-                <Route
-                  path={SettingsPath.AccountsCalendarsSettings}
-                  element={<SettingsAccountsCalendarsSettings />}
-                />
-                <Route
-                  path={SettingsPath.AccountsEmails}
-                  element={<SettingsAccountsEmails />}
-                />
-                <Route
-                  path={SettingsPath.AccountsEmailsInboxSettings}
-                  element={<SettingsAccountsEmailsInboxSettings />}
-                />
-                <Route
-                  path={SettingsPath.Billing}
-                  element={<SettingsBilling />}
-                  loader={() => {
-                    if (!isBillingEnabled) return redirect(AppPath.Index);
-                    return null;
-                  }}
-                />
-                <Route
-                  path={SettingsPath.WorkspaceMembersPage}
-                  element={<SettingsWorkspaceMembers />}
-                />
-                <Route
-                  path={SettingsPath.Workspace}
-                  element={<SettingsWorkspace />}
-                />
-                <Route
-                  path={SettingsPath.Objects}
-                  element={<SettingsObjects />}
-                />
-                <Route
-                  path={SettingsPath.ObjectOverview}
-                  element={<SettingsObjectOverview />}
-                />
-                <Route
-                  path={SettingsPath.ObjectDetail}
-                  element={<SettingsObjectDetail />}
-                />
-                <Route
-                  path={SettingsPath.ObjectEdit}
-                  element={<SettingsObjectEdit />}
-                />
-                <Route
-                  path={SettingsPath.NewObject}
-                  element={<SettingsNewObject />}
-                />
-                <Route
-                  path={SettingsPath.Developers}
-                  element={<SettingsDevelopers />}
-                />
+                <Route path={SettingsPath.AccountsWhatsapp} element={<WhatsappAccounts />} />
+                <Route path={SettingsPath.AccountsWhatsappTemplates} element={<WhatsAppTemplateManager />} />
+                <Route path={SettingsPath.AccountsCalendarsSettings} element={<SettingsAccountsCalendarsSettings />} />
+                <Route path={SettingsPath.AccountsEmails} element={<SettingsAccountsEmails />} />
+                <Route path={SettingsPath.AccountsEmailsInboxSettings} element={<SettingsAccountsEmailsInboxSettings />} />
+                <Route path={SettingsPath.Billing} element={<SettingsBilling />} loader={() => { if (!isBillingEnabled) return redirect(AppPath.Index); return null; }} />
+                <Route path={SettingsPath.WorkspaceMembersPage} element={<SettingsWorkspaceMembers />} />
+                <Route path={SettingsPath.Workspace} element={<SettingsWorkspace />} />
+                <Route path={SettingsPath.Objects} element={<SettingsObjects />} />
+                <Route path={SettingsPath.ObjectOverview} element={<SettingsObjectOverview />} />
+                <Route path={SettingsPath.ObjectDetail} element={<SettingsObjectDetail />} />
+                <Route path={SettingsPath.ObjectEdit} element={<SettingsObjectEdit />} />
+                <Route path={SettingsPath.NewObject} element={<SettingsNewObject />} />
+                <Route path={SettingsPath.Developers} element={<SettingsDevelopers />} />
                 <Route
                   path={AppPath.DevelopersCatchAll}
                   element={
                     <Routes>
-                      <Route
-                        path={SettingsPath.DevelopersNewApiKey}
-                        element={<SettingsDevelopersApiKeysNew />}
-                      />
-                      <Route
-                        path={SettingsPath.DevelopersApiKeyDetail}
-                        element={<SettingsDevelopersApiKeyDetail />}
-                      />
-                      <Route
-                        path={SettingsPath.DevelopersNewWebhook}
-                        element={<SettingsDevelopersWebhooksNew />}
-                      />
-                      <Route
-                        path={SettingsPath.DevelopersNewWebhookDetail}
-                        element={<SettingsDevelopersWebhooksDetail />}
-                      />
+                      <Route path={SettingsPath.DevelopersNewApiKey} element={<SettingsDevelopersApiKeysNew />} />
+                      <Route path={SettingsPath.DevelopersApiKeyDetail} element={<SettingsDevelopersApiKeyDetail />} />
+                      <Route path={SettingsPath.DevelopersNewWebhook} element={<SettingsDevelopersWebhooksNew />} />
+                      <Route path={SettingsPath.DevelopersNewWebhookDetail} element={<SettingsDevelopersWebhooksDetail />} />
                     </Routes>
                   }
                 />
-                <Route
-                  path={SettingsPath.Integrations}
-                  element={<SettingsIntegrations />}
-                />
-                <Route
-                  path={SettingsPath.IntegrationDatabase}
-                  element={<SettingsIntegrationDatabase />}
-                />
-                <Route
-                  path={SettingsPath.IntegrationNewDatabaseConnection}
-                  element={<SettingsIntegrationNewDatabaseConnection />}
-                />
-                <Route
-                  path={SettingsPath.IntegrationEditDatabaseConnection}
-                  element={<SettingsIntegrationEditDatabaseConnection />}
-                />
-                <Route
-                  path={SettingsPath.IntegrationDatabaseConnection}
-                  element={<SettingsIntegrationShowDatabaseConnection />}
-                />
-                <Route
-                  path={SettingsPath.ObjectNewFieldStep1}
-                  element={<SettingsObjectNewFieldStep1 />}
-                />
-                <Route
-                  path={SettingsPath.ObjectNewFieldStep2}
-                  element={<SettingsObjectNewFieldStep2 />}
-                />
-                <Route
-                  path={SettingsPath.ObjectFieldEdit}
-                  element={<SettingsObjectFieldEdit />}
-                />
+                <Route path={SettingsPath.Integrations} element={<SettingsIntegrations />} />
+                <Route path={SettingsPath.IntegrationDatabase} element={<SettingsIntegrationDatabase />} />
+                <Route path={SettingsPath.IntegrationNewDatabaseConnection} element={<SettingsIntegrationNewDatabaseConnection />} />
+                <Route path={SettingsPath.IntegrationEditDatabaseConnection} element={<SettingsIntegrationEditDatabaseConnection />} />
+                <Route path={SettingsPath.IntegrationDatabaseConnection} element={<SettingsIntegrationShowDatabaseConnection />} />
+                <Route path={SettingsPath.ObjectNewFieldStep1} element={<SettingsObjectNewFieldStep1 />} />
+                <Route path={SettingsPath.ObjectNewFieldStep2} element={<SettingsObjectNewFieldStep2 />} />
+                <Route path={SettingsPath.ObjectFieldEdit} element={<SettingsObjectFieldEdit />} />
                 <Route path={SettingsPath.Releases} element={<Releases />} />
               </Routes>
             } />
-            
             <Route path={AppPath.NotFoundWildcard} element={<NotFound />} />
           </Route>
-
           <Route element={<BlankLayout />}>
             <Route path={AppPath.Authorize} element={<Authorize />} />
           </Route>
