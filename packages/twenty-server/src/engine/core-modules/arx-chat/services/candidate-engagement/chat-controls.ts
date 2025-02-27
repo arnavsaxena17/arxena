@@ -19,11 +19,11 @@ export class ChatControls {
     let response;
     try {
       const recruiterProfile:RecruiterProfileType = await getRecruiterProfileByJob(candidateJob, apiToken) 
-      if (whatappUpdateMessageObj?.messages[0]?.content?.toLowerCase().includes('recruitment company') || whatappUpdateMessageObj?.messages[0]?.content?.toLowerCase().includes('video interview as part of the')) {
+      console.log("This is the recruiterProfile::", recruiterProfile)
+      if (whatappUpdateMessageObj?.messages[0]?.content?.toLowerCase().includes('recruitment firm') || whatappUpdateMessageObj?.messages[0]?.content?.toLowerCase().includes('video interview as part of the')) {
         console.log("USING TEMPLATE FOR startChat")
         let messageTemplate: string;
-
-        if (whatappUpdateMessageObj?.messages[0]?.content?.toLowerCase().includes('recruitment company')) {
+        if (whatappUpdateMessageObj?.messages[0]?.content?.toLowerCase().includes('recruitment firm')) {
           if (chatControl.chatControlType === 'startChat') {
             const currentTimeInIndia = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
             const currentHourInIndia = new Date(currentTimeInIndia).getHours();
@@ -54,8 +54,6 @@ export class ChatControls {
         }
         const videoInterviewLink = process.env.FRONT_BASE_URL + personNode?.candidates?.edges[0]?.node?.videoInterview?.edges[0]?.node?.interviewLink?.primaryLinkUrl || '';
         console.log('videoInterviewLink::', videoInterviewLink);
-
-    
         const sendTemplateMessageObj: SendWhatsappUtilityMessageObjectType = {
           recipient: whatappUpdateMessageObj.phoneNumberTo.replace('+', ''),
           template_name: messageTemplate,

@@ -154,7 +154,6 @@ export class WorkspaceQueryService {
         workspaceId,
         transactionManager,
       );
-      console.log("API KEYS::", apiKeys)
       return apiKeys;
     } catch (e) {
       console.log("Error in  ID", workspaceId, "for dataSourceSchema", dataSourceSchema);

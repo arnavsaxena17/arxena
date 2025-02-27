@@ -13,10 +13,6 @@ export const graphqlQueryToCreateVideoInterview = `mutation CreateOneVideoInterv
     candidateId
     interviewCompleted
     updatedAt
-    interviewLink {
-      label
-      url
-    }
     createdAt
     id
     name
@@ -41,17 +37,7 @@ export const createResponseMutation = `mutation CreateOneVideoInterviewResponse(
 
 
 
-export const graphqlQueryToCreateOneAnswer = `mutation CreateOneAnswer($input: AnswerCreateInput!) {
-  createAnswer(data: $input) {
-    position
-    candidateId
-    createdAt
-    name
-    updatedAt
-    questionsId
-    id
-  }
-}`;
+
 
 export const graphqlQueryToCreateOneReminder = `
   mutation CreateOneCandidateReminder($input: CandidateReminderCreateInput!) {
@@ -104,6 +90,25 @@ export const graphqlQueryToRemoveMessages = `mutation DeleteManyWhatsappMessages
 
 
 
+export const graphqlQueryToCreateOneAnswer = `mutation CreateOneAnswer($input: AnswerCreateInput!) {
+  createAnswer(data: $input) {
+    position
+    candidateId
+    createdAt
+    name
+    updatedAt
+    questionsId
+    id
+  }
+}`;
+
+
+export const graphqlQueryToCreateOneClientInterview = `mutation CreateOneClientInterview($input: ClientInterviewCreateInput!) {
+  createClientInterview(data: $input) {
+    __typename
+  }
+}`;
+
 export const graphqlToUpdateOneClientInterview =  `mutation UpdateOneClientInterview($idToUpdate: ID!, $input: ClientInterviewUpdateInput!) {
   updateClientInterview(id: $idToUpdate, data: $input) {
     __typename
@@ -115,7 +120,7 @@ export const graphqlToUpdateOneClientInterview =  `mutation UpdateOneClientInter
       name
       slotsAvailable
       id
-      jobId
+      jobsId
       updatedAt
       createdAt
     }

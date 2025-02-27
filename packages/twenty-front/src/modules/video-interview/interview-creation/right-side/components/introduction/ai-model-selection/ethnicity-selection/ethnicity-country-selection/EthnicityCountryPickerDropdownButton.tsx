@@ -70,6 +70,9 @@ export const EthnicityCountryPickerDropdownButton = ({
     onChange(code);
   };
 
+  console.log("countries::", countries)
+  console.log("selectedCountry::", selectedCountry)
+
   return (
     <Dropdown
       dropdownMenuWidth={200}

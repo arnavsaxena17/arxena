@@ -63,7 +63,7 @@ export const useCreateAppRouter = (
             <Route path={`${AppPath.OrgChart}/*`} element={<OrgChart />} />
             <Route path={`${AppPath.Hot}/*`} element={<HotPage />} />
             <Route
-              path={`${AppPath.VideoInterview}/:candidateId`}
+              path={`${AppPath.VideoInterviewReview}/:candidateId`}
               element={
                 <VideoInterviewResponseViewer
                   candidateId={window.location.pathname}

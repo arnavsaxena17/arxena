@@ -17,11 +17,11 @@ import {
   StyledTextLeftPaneldisplay,
   StyledTimer
 } from './styled-components/StyledComponentsInterviewResponse';
-import * as InterviewResponseTypes from './types/interviewResponseTypes';
 import { VideoPlayer } from './utils/videoPlaybackUtils';
 import VideoContainer from './VideoContainer';
 
 import { IconCommand, IconRewindBackward5 } from '@tabler/icons-react';
+import { InterviewPageProps } from 'twenty-shared';
 import { Mixpanel } from '~/mixpanel';
 
 const ffmpeg = createFFmpeg({
@@ -74,12 +74,12 @@ const PreviewVideo = styled.video`
 
 const PreloadVideo: React.FC<{ src: string }> = ({ src }) => <link rel="preload" as="video" href={src} />;
 
-interface InterviewPageProps extends InterviewResponseTypes.InterviewPageProps {
+export interface VideoInterviewPageProps extends InterviewPageProps {
   videoPlaybackState: { isPlaying: boolean; isMuted: boolean };
   onVideoStateChange: (state: { isPlaying: boolean; isMuted: boolean }) => void;
 }
 
-export const InterviewPage: React.FC<InterviewPageProps> = ({ InterviewData, questions, introductionVideoAttachment, questionsVideoAttachment, currentQuestionIndex, onNextQuestion, onFinish, videoPlaybackState, onVideoStateChange }) => {
+export const InterviewPage: React.FC<VideoInterviewPageProps> = ({ InterviewData, questions, introductionVideoAttachment, questionsVideoAttachment, currentQuestionIndex, onNextQuestion, onFinish, videoPlaybackState, onVideoStateChange }) => {
   console.log('These are questions::', questions);
   const [isPlaying, setIsPlaying] = useState(false);
   const [recording, setRecording] = useState(false);

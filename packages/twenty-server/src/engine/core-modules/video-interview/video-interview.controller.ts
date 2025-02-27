@@ -324,20 +324,25 @@ export class VideoInterviewController {
           transactionManager
         );
         
+        console.log("Workspace token for video interview:", videoInterview)
         if (videoInterview.length > 0) {
+          console.log("Workspace token for video interview where videointerview length is more than 0:", videoInterview)
           // Get API keys for the workspace
+          console.log("workspaceId::", workspaceId)
           const apiKeys = await this.workspaceQueryService.getApiKeys(
             workspaceId, 
             dataSourceSchema, 
             transactionManager
           );
+          console.log("API Keys foud::", apiKeys)
   
           if (apiKeys.length > 0) {
-            const apiKeyToken = await this.workspaceQueryService.accessTokenService.generateAccessToken(
+            const apiKeyToken = await this.workspaceQueryService.apiKeyService.generateApiKeyToken(
               workspaceId,
               apiKeys[0].id,
             );
   
+            console.log("API Key Token::", apiKeyToken)   
             if (apiKeyToken) {
               return apiKeyToken.token;
             }
@@ -346,9 +351,10 @@ export class VideoInterviewController {
         return null;
       }
     );
-  
+    const result = results.find(result => result !== null)
+    console.log("Result found::", result)
     // Return first non-null result
-    return results.find(result => result !== null);
+    return result;
   }
 
   private async convertToWebM(inputPath: string): Promise<string> {
@@ -432,6 +438,8 @@ export class VideoInterviewController {
   @Post('get-interview-details')
   async getInterViewDetails(@Req() req: any): Promise<GetInterviewDetailsResponse> {
     console.log("Got a request in get interview details")
+
+    
     console.log("This is the request body in get interview details:", req?.body)
     // const apiToken = req.headers.authorization.split(' ')[1]; // Assuming Bearer token
     const { interviewId } = req.body;
@@ -451,7 +459,7 @@ export class VideoInterviewController {
       const InterviewStatusesVariables = {
         filter: {
           interviewLink: {
-            url: {
+            primaryLinkUrl: {
               ilike: `%${interviewId}%`,
             },
           },
@@ -463,6 +471,7 @@ export class VideoInterviewController {
         query: graphQueryToFindManyvideoInterviews,
         variables: InterviewStatusesVariables,
       });
+
       let responseFromInterviewRequests;
       let videoInterviewId;
       let recruiterProfile;
@@ -485,7 +494,8 @@ export class VideoInterviewController {
           variables: { filter: { workspaceMemberId: { eq: recruiterId } } }
         });
         const workspaceMemberProfilesResponse = await axiosRequest(findWorkspaceMemberProfilesQuery, apiToken);
-        recruiterProfile = workspaceMemberProfilesResponse?.data?.workspaceMemberProfiles?.edges[0]?.node;
+        console.log("This si the workspace member profile:", workspaceMemberProfilesResponse.data.data.workspaceMemberProfiles);
+        recruiterProfile = workspaceMemberProfilesResponse?.data?.data?.workspaceMemberProfiles?.edges[0]?.node;
         console.log("recruiterProrile:", recruiterProfile);
 
 

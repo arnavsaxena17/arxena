@@ -36,15 +36,19 @@ export class PromptingAgents {
     // console.log('This is the job Id:', jobId);
     const { questionArray, questionIdArray } = await new FilterCandidates(this.workspaceQueryService).fetchQuestionsByJobId(jobId, apiToken);
     // Hardcoded questions to ask if no questions are found in the database
+
     const hardCodedQuestions = ['Are you okay to relocate to {location}?', 'What is your current & expected CTC?', 'What is your notice period?'];
     if (questionArray.length == 0) {
       questions = hardCodedQuestions
+    }
+    else{
+      questions = questionArray;
     }
     if (candidateJob.name == 'Transcom') {
       questions = ['What is your current and expected CTC?', "This is an in-office role - Are you okay to work in a shift based out of Transcom's Kharadi office?", 'What is your notice period/ How soon can you join?', 'What is your Aadhaar Number?'];
     }
     const formattedQuestions = questions.map((question, index) =>  `${index + 1}. ${question.replace("{location}", location)}`);
-
+    console.log("Final Formatted questions::", formattedQuestions)
     return formattedQuestions;
   }
 
@@ -115,7 +119,9 @@ export class PromptingAgents {
     receiveCV = ``;
     const questionArray = await this.getQuestionsToAsk(personNode, candidateJob, apiToken);
     const filteredQuestionArray = questionArray.filter(question => !question.toLowerCase().includes('aadhaar'));
+    console.log("filteredQuestionArray::", filteredQuestionArray)
     const formattedQuestions = '\t' + filteredQuestionArray.map((question, index) => `${index + 1}. ${question}`).join('\n\t');
+    console.log("formattedQuestions::", formattedQuestions)
     let workingConditions = ``;
     if (candidateJob.name.includes('customer')) {
       workingConditions = `
@@ -158,13 +164,19 @@ export class PromptingAgents {
   async getStartMeetingSchedulingPrompt(personNode: PersonNode, candidateJob: Jobs, apiToken: string) {
     try {
       console.log('candidateJob::', candidateJob);
-      console.log('candidateJob interviewSchedule::', candidateJob.interviewSchedule.edges[0].node);
-      if (candidateJob.interviewSchedule.edges[0].node.meetingType == 'online') {
-        return this.getOnlineStartMeetingSchedulingPrompt(personNode, candidateJob, apiToken);
-      } else if (candidateJob.interviewSchedule.edges[0].node.meetingType == 'inPerson') {
-        return this.getInPersonMeetingSchedulingPrompt(personNode, candidateJob, apiToken);
-      } else if (candidateJob.interviewSchedule.edges[0].node.meetingType == 'walkIn') {
-        return this.getWalkinMeetingSchedulingPrompt(personNode, candidateJob, apiToken);
+      const meetingType = candidateJob?.interviewSchedule?.edges[0]?.node?.meetingType;
+      console.log('candidateJob interviewSchedule::', meetingType);
+      if (!meetingType) {
+        return;
+      }
+
+      switch (meetingType) {
+        case 'online':
+          return this.getOnlineStartMeetingSchedulingPrompt(personNode, candidateJob, apiToken);
+        case 'inPerson':
+          return this.getInPersonMeetingSchedulingPrompt(personNode, candidateJob, apiToken);
+        case 'walkIn':
+          return this.getWalkinMeetingSchedulingPrompt(personNode, candidateJob, apiToken);
       }
     } catch (error) {
       console.log('Error in getStartMeetingSchedulingPrompt:', error, 'FUCK FUCK');
@@ -234,6 +246,8 @@ export class PromptingAgents {
       const interviewLocation = 'Kharadi, Pune';
       const interviewAddress = 'Transcom India, Office No 1501, 1508, Nayati Enthral, Sr No 12/1A, Mundhwa - Kharadi Bypass, Kharadi South Main Road, Kharadi, Pune, Maharashtra - 411014';
       const googleMapsLocation = 'https://maps.app.goo.gl/nAtTbrQDqcjaCcmm8';
+      const clientCompanyNameShort = 'Transcom';
+      const contactPerson = 'Gayatri Soni';
       const whatHappensAtTheMeeting = 'the meeting would be to discuss their experience, motivations and interests. There will also be a versant test at the office.';
       const meetingTime = '11AM';
       let meetingDate = new Date();
@@ -251,7 +265,9 @@ export class PromptingAgents {
         interviewLocation: interviewLocation,
         interviewAddress: interviewAddress,
         googleMapsLocation: googleMapsLocation,
+        contactPerson: contactPerson,
         whatHappensAtTheMeeting: whatHappensAtTheMeeting,
+        clientCompanyNameShort:clientCompanyNameShort,
         meetingTime: meetingTime,
         formattedMeetingWeekdayDate: formattedMeetingWeekdayDate,
         formattedMeetingWeekday: formattedMeetingWeekday,

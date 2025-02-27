@@ -63,12 +63,7 @@ export const ObjectOptionsDropdownHiddenFieldsContent = () => {
 
   return (
     <>
-      <DropdownMenuHeader
-        StartIcon={IconChevronLeft}
-        onClick={() => onContentChange('fields')}
-      >
-        Hidden Fields
-      </DropdownMenuHeader>
+      <DropdownMenuHeader StartIcon={IconChevronLeft} onClick={() => onContentChange('fields')} > Hidden Fields </DropdownMenuHeader>
       {hiddenRecordFields.length > 0 && (
         <ViewFieldsVisibilityDropdownSection
           title="Hidden"

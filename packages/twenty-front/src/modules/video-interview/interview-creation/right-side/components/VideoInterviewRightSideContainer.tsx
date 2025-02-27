@@ -5,8 +5,8 @@ import { useAddRemoveVideoInterviewQuestion } from '@/video-interview/interview-
 import { useCreateOneVideoInterviewQuery } from '@/video-interview/interview-creation/hooks/useCreateOneVideoInterviewQuery';
 import { useCreateOneVideoInterviewQuestionQuery } from '@/video-interview/interview-creation/hooks/useCreateOneVideoInterviewQuestionQuery';
 import { useFormDataConversion } from '@/video-interview/interview-creation/hooks/useFormDataConversion';
-import { VideoInterviewName } from '@/video-interview/interview-creation/right-side/components/video-interview-name/VideoInterviewName';
 import { VideoInterviewIntroduction } from '@/video-interview/interview-creation/right-side/components/introduction/VideoInterviewIntroduction';
+import { VideoInterviewName } from '@/video-interview/interview-creation/right-side/components/video-interview-name/VideoInterviewName';
 
 const StyledAllContainer = styled.div`
   background-color: ${({ theme }) => theme.background.primary};

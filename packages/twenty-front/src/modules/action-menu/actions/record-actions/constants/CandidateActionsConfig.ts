@@ -38,7 +38,7 @@ export const CANDIDATE_SPECIFIC_ACTIONS: Record<
     Icon: IconCopy,
     accent: 'danger',
     isPinned: true,
-    availableOn: [ActionViewType.INDEX_PAGE_BULK_SELECTION],
+    availableOn: [ActionViewType.INDEX_PAGE_BULK_SELECTION,ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION],
     useAction: useCloneMultipleRecordsAction,
   },
   createVideoInterviewLink: {
@@ -51,7 +51,7 @@ export const CANDIDATE_SPECIFIC_ACTIONS: Record<
     Icon: IconVideo,
     accent:'placeholder',
     isPinned: false,
-    availableOn: [ActionViewType.INDEX_PAGE_BULK_SELECTION],
+    availableOn: [ActionViewType.INDEX_PAGE_BULK_SELECTION, ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION],
     useAction: useCreateMultipleVideoInterviewLinksAction,
   },
   shareMultipleVideoInterviewLinks: {
@@ -64,7 +64,7 @@ export const CANDIDATE_SPECIFIC_ACTIONS: Record<
     Icon: IconVideo,
     accent: 'placeholder',
     isPinned: false,
-    availableOn: [ActionViewType.INDEX_PAGE_BULK_SELECTION],
+    availableOn: [ActionViewType.INDEX_PAGE_BULK_SELECTION,ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION],
     useAction: useShareMultipleVideoInterviewLinksAction,
   },
   startChatWithCandidates: {
@@ -77,7 +77,7 @@ export const CANDIDATE_SPECIFIC_ACTIONS: Record<
     Icon: IconMessageCircle,
     accent: 'placeholder',
     isPinned: false,
-    availableOn: [ActionViewType.INDEX_PAGE_BULK_SELECTION],
+    availableOn: [ActionViewType.INDEX_PAGE_BULK_SELECTION,ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION],
     useAction: useStartChatWithCandidatesAction,
   },
   refreshChatStatus: {
@@ -90,7 +90,7 @@ export const CANDIDATE_SPECIFIC_ACTIONS: Record<
     Icon: IconRefresh,
     accent: 'placeholder',
     isPinned: false,
-    availableOn: [ActionViewType.INDEX_PAGE_BULK_SELECTION],
+    availableOn: [ActionViewType.INDEX_PAGE_BULK_SELECTION,ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION],
     useAction: useRefreshChatStatusesAction,
   },
   refreshChatCount: {
@@ -103,7 +103,7 @@ export const CANDIDATE_SPECIFIC_ACTIONS: Record<
     Icon: IconMessageCircle,
     accent: 'placeholder',
     isPinned: false,
-    availableOn: [ActionViewType.INDEX_PAGE_BULK_SELECTION],
+    availableOn: [ActionViewType.INDEX_PAGE_BULK_SELECTION,ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION],
     useAction: useRefreshChatCountsAction,
   },
   createShortlist: {
@@ -116,7 +116,7 @@ export const CANDIDATE_SPECIFIC_ACTIONS: Record<
     Icon: IconList,
     accent: 'placeholder',
     isPinned: false,
-    availableOn: [ActionViewType.INDEX_PAGE_BULK_SELECTION],
+    availableOn: [ActionViewType.INDEX_PAGE_BULK_SELECTION,ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION],
     useAction: usePopulateShortlistAction,
   },
   shareChatBasedShortlist: {
@@ -129,7 +129,7 @@ export const CANDIDATE_SPECIFIC_ACTIONS: Record<
     Icon: IconShare,
     accent: 'placeholder',
     isPinned: false,
-    availableOn: [ActionViewType.INDEX_PAGE_BULK_SELECTION],
+    availableOn: [ActionViewType.INDEX_PAGE_BULK_SELECTION,ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION],
     useAction: useShareChatBasedShortlistAction,
   },
   shareChatAndVideoInterviewBasedShortlist: {
@@ -142,7 +142,7 @@ export const CANDIDATE_SPECIFIC_ACTIONS: Record<
     Icon: IconShare,
     accent: 'placeholder',
     isPinned: false,
-    availableOn: [ActionViewType.INDEX_PAGE_BULK_SELECTION],
+    availableOn: [ActionViewType.INDEX_PAGE_BULK_SELECTION,ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION],
     useAction: useShareChatAndVideoInterviewBasedShortlistAction,
   },
   sendToWhatsapp: {
@@ -155,7 +155,7 @@ export const CANDIDATE_SPECIFIC_ACTIONS: Record<
     Icon: IconMessageCircle,
     accent: 'placeholder',
     isPinned: false,
-    availableOn: [ActionViewType.INDEX_PAGE_BULK_SELECTION],
+    availableOn: [ActionViewType.INDEX_PAGE_BULK_SELECTION,ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION],
     useAction: useSendToWhatsappAction,
   },
   deleteCandidatesAndPeople: {
@@ -168,7 +168,7 @@ export const CANDIDATE_SPECIFIC_ACTIONS: Record<
     Icon: IconList,
     accent: 'placeholder',
     isPinned: false,
-    availableOn: [ActionViewType.INDEX_PAGE_BULK_SELECTION],
+    availableOn: [ActionViewType.INDEX_PAGE_BULK_SELECTION,ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION],
     useAction: useDeleteCandidatesAndPeopleAction,
   },
 };

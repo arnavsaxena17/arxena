@@ -17,7 +17,8 @@ const StyledContainer = styled.div`
 
 export const VideoInterviewIntroduction = ({ id, videoInterviewModelsArr }: { id: string; videoInterviewModelsArr: any }) => {
   const { questionToDisplay } = useQuestionToDisplay();
-
+  console.log("::: VideoInterviewIntroduction -> questionToDisplay", questionToDisplay);
+  console.log("::: VideoInterviewIntroduction -> videoInterviewModelsArr", videoInterviewModelsArr);
   return (
     <StyledContainer id={id} style={{ display: id === questionToDisplay ? 'flex' : 'none' }}>
       <EthnicityAndModelSelectionContainer videoInterviewModelsArr={videoInterviewModelsArr} />

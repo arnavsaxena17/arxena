@@ -102,12 +102,10 @@ export class ChatFlowConfigBuilder {
 
   
   createIsEligibleForEngagement = (candidate: CandidateNode, chatControlType: chatControlType, order: number, chatFlowOrder) => {
-    
     if (candidate.engagementStatus === false) {
       console.log(`Candidate ${candidate.name} is not eligible for engagement in ${chatControlType} due to engagementStatus being false. Current time: ${new Date().toISOString()}, Candidate Last updated: ${candidate.updatedAt}`);
       return false;
     }
-
     const currentIndex = chatFlowOrder.indexOf(chatControlType);
     if (currentIndex === 0) {
       const currentStageStarted = candidate[chatControlType];

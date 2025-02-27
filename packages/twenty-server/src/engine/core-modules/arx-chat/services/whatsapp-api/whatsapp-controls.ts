@@ -98,6 +98,7 @@ export class WhatsappControls {
 
   async sendJDViaWhatsapp(person: PersonNode, candidateJob, attachment: Attachment, chatControl: ChatControlsObjType, apiToken: string) {
     const fullPath = attachment?.fullPath;
+    console.log("Full Path::", fullPath)
     const name = attachment?.name || 'attachment.pdf';
     console.log('This is attachment name:', name);
     const localFilePath = process.cwd() + '/.attachments' + `/${attachment?.jobId}/` + name;
@@ -111,7 +112,7 @@ export class WhatsappControls {
       console.log('path:', fullPath, 'name:', name, 'fileUrl:', fileUrl);
       console.log('localFilePath:', localFilePath);
       // Download and save the file locally
-      fileData = await axios({ url: fileUrl, method: 'GET', responseType: 'arraybuffer' });
+      fileData = await axios({ url: fullPath, method: 'GET', responseType: 'arraybuffer' });
       if (!fileData?.data) {
         throw new Error('No data found in the file');
       }

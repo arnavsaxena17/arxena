@@ -28,6 +28,7 @@ export class StartVideoInterviewChatProcesses {
     try {
       const candidateObj: CandidateNode = await new FilterCandidates(this.workspaceQueryService).fetchCandidateByCandidateId(candidateId, apiToken);
       const jobId = candidateObj?.jobs?.id;
+      
       console.log('jobId:', jobId);
       const interviewObj = await new FilterCandidates(this.workspaceQueryService).getInterviewByJobId(jobId, apiToken);
       console.log('interviewObj:::', interviewObj);
@@ -43,12 +44,12 @@ export class StartVideoInterviewChatProcesses {
             interviewStarted: false,
             interviewCompleted: false,
             interviewLink: {
-              url: '/video-interview/' + videoInterviewId,
-              label: '/video-interview/' + videoInterviewId,
+              primaryLinkUrl: '/video-interview/' + videoInterviewId,
+              primaryLinkLabel: '/video-interview/' + videoInterviewId,
             },
             interviewReviewLink: {
-              url: '/video-interview-review/' + candidateObj?.id,
-              label: '/video-interview-review/' + candidateObj?.id,
+              primaryLinkUrl: '/video-interview-review/' + candidateObj?.id,
+              primaryLinkLabel: '/video-interview-review/' + candidateObj?.id,
             },
             position: 'first',
           },

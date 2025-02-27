@@ -46,6 +46,8 @@ export const EthnicityCountryPickerDropdownSelect = ({
       ),
     [countries, searchFilter],
   );
+  console.log("filteredCountries::", filteredCountries)
+  console.log("searchFilter::", searchFilter)
 
   return (
     <DropdownMenu width="200px">

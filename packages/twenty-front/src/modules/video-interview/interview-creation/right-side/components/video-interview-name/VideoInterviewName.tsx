@@ -1,5 +1,7 @@
 import styled from '@emotion/styled';
 
+import { InputHotkeyScope } from '@/ui/input/types/InputHotkeyScope';
+import { usePreviousHotkeyScope } from '@/ui/utilities/hotkey/hooks/usePreviousHotkeyScope';
 import { VideoInterviewCreateButton } from '@/video-interview/interview-creation/right-side/components/video-interview-name/VideoInterviewCreateButton';
 import { VideoInterviewModalCloseButton } from '@/video-interview/interview-creation/right-side/components/video-interview-name/VideoInterviewModalCloseButton';
 
@@ -36,6 +38,11 @@ const StyledButtonsContainer = styled.div`
 `;
 
 export const VideoInterviewName = ({ closeModal }: { closeModal: () => void }) => {
+  const { goBackToPreviousHotkeyScope, setHotkeyScopeAndMemorizePreviousScope, } = usePreviousHotkeyScope();
+  const handleFocus = () => { setHotkeyScopeAndMemorizePreviousScope(InputHotkeyScope.TextInput); };
+  const handleBlur = () => { goBackToPreviousHotkeyScope(); };
+
+
   return (
     <StyledVideoInterviewNameContainer>
       <StyledInput
@@ -43,6 +50,9 @@ export const VideoInterviewName = ({ closeModal }: { closeModal: () => void }) =
         placeholder="Interview Name..."
         name="newVideoInterviewTemplate[0][VideoInterviewTemplateName]"
         required
+        onFocus={handleFocus}
+        onBlur={handleBlur}
+
       />
       <StyledButtonsContainer>
         <VideoInterviewModalCloseButton closeModal={closeModal} />

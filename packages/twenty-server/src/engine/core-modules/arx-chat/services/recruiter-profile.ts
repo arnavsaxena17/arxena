@@ -1,4 +1,4 @@
-import { findWorkspaceMemberProfiles, Jobs, RecruiterProfileType } from 'twenty-shared';
+import { findWorkspaceMemberProfiles, graphqlQueryToGetCurrentUser, Jobs, RecruiterProfileType } from 'twenty-shared';
 import { axiosRequest } from '../utils/arx-chat-agent-utils';
 
 
@@ -16,6 +16,7 @@ export async function getRecruiterProfileByJob(candidateJob: Jobs, apiToken: str
   // console.log("workspaceMemberProfilesResponse:", workspaceMemberProfilesResponse.data.data.workspaceMemberProfiles.edges[0]);
   // console.log("workspaceMemberProfilesResponse:", workspaceMemberProfilesResponse.data.data.workspaceMemberProfiles.edges[0]);
   const recruiterProfile:RecruiterProfileType = workspaceMemberProfilesResponse?.data?.data?.workspaceMemberProfiles?.edges[0]?.node;
+  console.log("Got this recruiterProfile:", recruiterProfile);
   return recruiterProfile;
 }
 
@@ -31,60 +32,9 @@ export async function getRecruiterProfileByRecruiterId(recruiterId: string, apiT
 }
 
 export async function getCurrentUser(apiToken: string) {
-  const query = `query GetCurrentUser {
-    currentUser {
-      id
-      firstName
-      lastName
-      email
-      canImpersonate
-      supportUserHash
-      onboardingStep
-      workspaceMember {
-        id
-        name {
-          firstName
-          lastName
-        }
-        colorScheme
-        avatarUrl
-        locale
-      }
-      defaultWorkspace {
-        id
-        displayName
-        logo
-        domainName
-        inviteHash
-        allowImpersonation
-        subscriptionStatus
-        activationStatus
-        featureFlags {
-          id
-          key
-          value
-          workspaceId
-        }
-        currentCacheVersion
-        currentBillingSubscription {
-          id
-          status
-          interval
-        }
-      }
-      workspaces {
-        workspace {
-          id
-          logo
-          displayName
-          domainName
-        }
-      }
-    }
-  }`;
 
   const getCurrentUserQuery = JSON.stringify({
-    query: query,
+    query: graphqlQueryToGetCurrentUser,
     variables: {}
   });
 

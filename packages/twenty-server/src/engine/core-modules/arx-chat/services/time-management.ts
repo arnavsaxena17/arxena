@@ -6,9 +6,9 @@ const TimeManagementLocal = {
     crontTabToUpdateCandidatesChatControls: CronExpression.EVERY_MINUTE,
   },
   timeDifferentials: {
-    timeDifferentialinMinutesToCheckTimeDifferentialBetweenlastMessage: 0.33,
+    timeDifferentialinMinutesToCheckTimeDifferentialBetweenlastMessage: 0.1,
     timeDifferentialinMinutesForCheckingCandidateIdsForLastHowManyHoursOfMessagesToFetchForToMakingUpdatesOnChatsForNextChatControls: 60,
-    timeDifferentialInMinutesBeforeStartingNextStageMessaging: 5,
+    timeDifferentialInMinutesBeforeStartingNextStageMessaging: 1,
   },
 };
 
@@ -20,7 +20,7 @@ const TimeManagementProd = {
   timeDifferentials: {
     timeDifferentialinMinutesToCheckTimeDifferentialBetweenlastMessage: 3,
     timeDifferentialinMinutesForCheckingCandidateIdsForLastHowManyHoursOfMessagesToFetchForToMakingUpdatesOnChatsForNextChatControls: 120,
-    timeDifferentialInMinutesBeforeStartingNextStageMessaging: 360, // 6 hours for prod
+    timeDifferentialInMinutesBeforeStartingNextStageMessaging: 180, // 6 hours for prod
   },
 };
 

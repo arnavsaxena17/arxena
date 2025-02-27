@@ -774,9 +774,34 @@ export interface WhatsAppMessages {
 
 
 
+export interface ClientInterviews {
+
+  edges: ClientInterviewEdge[];
+}
+
+
+
 export interface CandidatesEdge {
   node: CandidateNode;
 }
+
+export interface ClientInterviewEdge {
+  node: ClientInterviewNode;
+}
+
+
+export interface ClientInterviewNode{
+  id: string;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
+  clientInterviewCompleted:boolean
+  jobId: boolean;
+  candidateId: boolean;
+
+}
+
+
 
 export interface Candidates {
   edges: CandidatesEdge[];
@@ -1530,6 +1555,7 @@ export interface CandidateNode {
   emailMessages: EmailMessages;
   jobs: Jobs;
   candidateReminders: Reminders;
+  clientInterview?: ClientInterviews;
   person : PersonNode
 }
 
@@ -1577,6 +1603,7 @@ export interface EmailMessageNode {
   // messageType: string;
   messageThreadId: string;
   receivedAt: string;
+  
   updatedAt: string;
   createdAt: string;
 }
@@ -1636,21 +1663,30 @@ export interface Jobs {
   jobCode:string;
   company: company;
   createdAt?: string;
-  interviewSchedule?: any;
+  interviewSchedule?: InterviewSchedules;
   isActive: boolean;
   whatsappMessages: WhatsAppMessages;
 }
 
-export interface RecruiterProfileType {
-  jobTitle: string;
-  companyName: string;
-  companyDescription: string;
-  firstName: string;
-  lastName: string;
-  name: string;
-  email: string;
-  phoneNumber: string;
+export interface InterviewSchedules {
+  edges: InterviewScheduleEdge[];
 }
+
+export interface InterviewScheduleEdge {
+  node: InterviewSchedule;
+}
+
+
+export interface InterviewSchedule{
+  meetingType:string;
+  jobId:string;
+  id:string;
+  slotsAvailable:any;
+  interviewTime:any;
+
+}
+
+
 
 
 interface Entry {
@@ -1688,5 +1724,149 @@ export interface Attachment {
   offerId: string | null;
   questionId: string | null;
   answerId: string | null;
+}
+
+
+
+
+
+
+export interface Question {
+  attachments: any;
+  id: string;
+  name: string;
+  timeLimit: number;
+  questionType: string;
+  createdAt: string;
+  questionValue: string;
+}
+
+export const emptyInterviewData: InterviewData = {
+  recruiterProfile: {
+    companyName: '',
+    companyDescription: '',
+    firstName: '',
+    lastName: '',
+    name: '',
+    email: '',
+    phoneNumber: '',
+    jobTitle: ''
+  },
+  id: '',
+  name: '',
+  candidate: {
+    id: '',
+    jobs: {
+    jobId: '',
+    name: '',
+    recruiterId: '',
+    companyName: '',
+    },
+    people: {
+      id: '',
+    name: {
+      firstName: '',
+      lastName: '',
+    },
+    email: '',
+    phone: '',
+    },
+  },
+  videoInterview: {
+    id: '',
+    name: '',
+    introduction: '',
+    instructions: '',
+    videoInterviewQuestions: {
+    edges: [],
+    },
+  },
+  };
+
+
+  export interface RecruiterProfileType {
+    jobTitle: string;
+    companyName: string;
+    companyDescription: string;
+    firstName: string;
+    lastName: string;
+    name: string;
+    email: string;
+    phoneNumber: string;
+  }
+  
+
+
+
+export interface InterviewData {
+  recruiterProfile:RecruiterProfileType,
+  id: string;
+  name: string;
+  candidate: {
+    id: string;
+    jobs: {
+      jobId: string;
+      recruiterId: string;
+      name: string;
+      companyName: string;
+    };
+    people: {
+      id: string;
+      name: {
+        firstName: string;
+        lastName: string;
+      };
+      email: string;
+      phone: string;
+    };
+  };
+  videoInterview: {
+    id: string;
+    name: string;
+    introduction: string;
+    instructions: string;
+    videoInterviewQuestions: {
+      edges: Array<{
+        node: Question;
+      }>;
+    };
+  };
+}
+
+export interface Question {
+  id: string;
+  name: string;
+  questionValue: string;
+  timeLimit: number;
+}
+
+export interface VideoInterviewAttachment {
+  data: any;
+  id: string;
+  fullPath: string;
+  name: string;
+}
+
+
+export interface GetInterviewDetailsResponse {
+  responseFromInterviewRequests: InterviewData;
+  videoInterviewAttachmentResponse: VideoInterviewAttachment;
+  questionsAttachments: VideoInterviewAttachment[];
+}
+
+export interface InterviewPageProps {
+  InterviewData: InterviewData;
+  questions: Question[];
+  introductionVideoAttachment: VideoInterviewAttachment;
+  questionsVideoAttachment: VideoInterviewAttachment[];
+  currentQuestionIndex: number;
+  onNextQuestion: (responseData: FormData) => void;
+  onFinish: () => void;
+}
+
+export interface StartInterviewPageProps {
+  onStart: () => void;
+  InterviewData: InterviewData;
+  introductionVideoData: VideoInterviewAttachment;
 }
 

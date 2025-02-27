@@ -1,5 +1,5 @@
-import React from "react";
 import styled from "@emotion/styled";
+import React from "react";
 
 const SearchBoxContainer = styled.div`
   display: flex;
@@ -7,6 +7,7 @@ const SearchBoxContainer = styled.div`
   align-items: center;
   border-bottom: 1px solid #ccc;
   padding: 1rem 0.5rem;
+  background-color: #f9f9f9;
   width: auto;
   max-width: 400px;
 `;
@@ -25,13 +26,18 @@ const SearchIcon = styled.span`
   color: #888;
 `;
 
+
 const SearchInput = styled.input`
   border: none;
   outline: none;
   width: 100%;
 `;
 
+
+
 const SearchBox: React.FC<SearchBoxProps> = ({ placeholder, value, onChange }) => {
+
+  
   return (
     <SearchBoxContainer>
       <SearchIcon>🔍</SearchIcon>

@@ -47,7 +47,7 @@ export const SelectControl = ({
   selectSizeVariant,
 }: SelectControlProps) => {
   const theme = useTheme();
-  console.log("selectedOption::", selectedOption)
+  console.log("selectedOption in selkect control::", selectedOption)
   return (
     <StyledControlContainer
       disabled={isDisabled}

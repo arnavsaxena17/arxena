@@ -44,12 +44,16 @@ export const RecordActionMenuEntriesSetter = () => {
     contextStoreCurrentObjectMetadataItem,
     isCommandMenuV2Enabled,
   );
+  console.log("This si the action config:"  , actionConfig)
+  console.log("This si the viewType:"  , viewType)
 
   const actionsToRegister = isDefined(viewType)
     ? Object.values(actionConfig ?? {}).filter((action) =>
         action.availableOn?.includes(viewType),
       )
     : [];
+
+    console.log("The actions to register are::", actionsToRegister)
 
   return (
     <>

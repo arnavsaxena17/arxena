@@ -29,7 +29,7 @@ export const VIDEO_INTERVIEW_SPECIFIC_ACTIONS: Record<
     Icon: IconCopy,
     accent: 'danger',
     isPinned: true,
-    availableOn: [ActionViewType.INDEX_PAGE_BULK_SELECTION],
+    availableOn: [ActionViewType.INDEX_PAGE_BULK_SELECTION, ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION ],
     useAction: useCloneMultipleRecordsAction,
   },
   useSendVideoInterviewLinks: {
@@ -42,7 +42,7 @@ export const VIDEO_INTERVIEW_SPECIFIC_ACTIONS: Record<
     Icon: IconList,
     accent: 'placeholder',
     isPinned: false,
-    availableOn: [ActionViewType.INDEX_PAGE_BULK_SELECTION],
+    availableOn: [ActionViewType.INDEX_PAGE_BULK_SELECTION, ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION ],
     useAction: useShareMultipleVideoInterviewLinksAction,
   },
 };

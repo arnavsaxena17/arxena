@@ -75,7 +75,7 @@ export const useCheckDataIntegrityOfJobAction: ActionHookWithObjectMetadataItem 
           subtitle={`Are you sure you want to check data integrity of multiple records?`}
           onConfirmClick={handleCheckDataIntegrityClick}
           deleteButtonText={'Check Data Integrity'}
-          confirmButtonAccent="danger"
+          confirmButtonAccent="blue"
         />
       );
 

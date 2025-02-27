@@ -54,8 +54,6 @@ export class VideoInterviewProcessController {
             const candidateNode = person.candidates.edges[0].node;
             const candidateJob:Jobs = candidateNode?.jobs;
             const recruiterProfile:RecruiterProfileType = await getRecruiterProfileByJob(candidateJob, apiToken) 
-        
-
 
             if (videoInterviewUrl) {
                 console.log("Going to send email to person:", person);
@@ -91,26 +89,40 @@ export class VideoInterviewProcessController {
         try {
             let sendVideoInterviewLinkResponse;
             const candidateId = request?.body?.candidateId;
-            const personObj = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByCandidateId(candidateId, apiToken);
-            const person = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPersonId(personObj.id, apiToken);
-            console.log("Got person:", person);
-            const videoInterviewUrl = person?.candidates?.edges[0]?.node?.videoInterview?.edges[0]?.node?.interviewLink?.primaryLinkUrl;
+            let personObj;
+            let videoInterviewUrl;
+            personObj = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByCandidateId(candidateId, apiToken);
+            // const person = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPersonId(personObj.id, apiToken);
+            console.log("Got person:", personObj);
+            videoInterviewUrl = personObj?.candidates?.edges[0]?.node?.videoInterview?.edges[0]?.node?.interviewLink?.primaryLinkUrl;
+            if (!videoInterviewUrl) {
+                const candidateId = request.body.candidateId;
+                console.log('candidateId to create video-interview:', candidateId);
+                await new StartVideoInterviewChatProcesses(this.workspaceQueryService).createVideoInterviewForCandidate(candidateId, apiToken);
+                
+            }
+            const personId = personObj.id
+            personObj = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPersonId(personId, apiToken);
+            console.log("personObj::", personObj)
+            videoInterviewUrl = personObj?.candidates?.edges[0]?.node?.videoInterview?.edges[0]?.node?.interviewLink?.primaryLinkUrl;
+            // const personObj = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByCandidateId(candidateId, apiToken);
+            console.log("This is the video interview in send-video-interview-to-candidate link:", personObj?.candidates);
             console.log("This is the video interview in send-video-interview-to-candidate link:", videoInterviewUrl);
-            const companyName = person?.candidates?.edges
+            const companyName = personObj?.candidates?.edges
             .filter(edge => edge.node.id === candidateId)
             .map(edge => edge.node.jobs.company.name)[0];
 
-            const candidateNode = person.candidates.edges[0].node;
+            const candidateNode = personObj.candidates.edges[0].node;
             const candidateJob:Jobs = candidateNode?.jobs;
             const recruiterProfile:RecruiterProfileType = await getRecruiterProfileByJob(candidateJob, apiToken) 
             if (videoInterviewUrl) {
-                const videoInterviewInviteTemplate = await new EmailTemplates().getInterviewInvitationTemplate(person, candidateId, videoInterviewUrl);
+                const videoInterviewInviteTemplate = await new EmailTemplates().getInterviewInvitationTemplate(personObj, candidateId, videoInterviewUrl);
                 console.log("recruiterProfile?.email:", recruiterProfile?.email);
                 const emailData: GmailMessageData = {
                     sendEmailNameFrom: recruiterProfile?.firstName + ' ' + recruiterProfile?.lastName,
                     sendEmailFrom: recruiterProfile?.email,
-                    sendEmailTo: person?.emails.primaryEmail,
-                    subject: 'Video Interview - ' + person?.name?.firstName + '<>' + companyName,
+                    sendEmailTo: personObj?.emails.primaryEmail,
+                    subject: 'Video Interview - ' + personObj?.name?.firstName + '<>' + companyName,
                     message: videoInterviewInviteTemplate,
                 };
                 console.log("This is the email Data sendVideoInterviewSendToCandidate:", emailData);

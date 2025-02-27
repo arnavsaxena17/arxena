@@ -5,7 +5,6 @@ import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 import {
   ChatControlsObjType,
   ChatHistoryItem,
-  chatMessageType,
   ChatRequestBody,
   graphqlMutationToDeleteManyCandidates,
   graphqlMutationToDeleteManyPeople,
@@ -28,7 +27,6 @@ import { OpenAIArxMultiStepClient } from '../services/llm-agents/arx-multi-step-
 import { HumanLikeLLM } from '../services/llm-agents/human-or-bot-classification';
 import { getRecruiterProfileByJob } from '../services/recruiter-profile';
 import { FacebookWhatsappChatApi } from '../services/whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
-import { IncomingWhatsappMessages } from '../services/whatsapp-api/incoming-messages';
 import { axiosRequest, formatChat } from '../utils/arx-chat-agent-utils';
 
 @Controller('arx-chat')
@@ -157,7 +155,6 @@ export class ArxChatEndpoint {
     const personObj: PersonNode = await new FilterCandidates(
       this.workspaceQueryService,
     ).getPersonDetailsByPhoneNumber(request.body.phoneNumberFrom, apiToken);
-    // debugger;
 
     try {
       const personCandidateNode = personObj?.candidates?.edges[0]?.node;
@@ -199,50 +196,14 @@ export class ArxChatEndpoint {
 
   @Post('start-interim-chat-prompt')
   @UseGuards(JwtAuthGuard)
-  async startChatPrompt(@Req() request: any) {
+  async startInterimChat(@Req() request: any) {
     const apiToken = request.headers.authorization.split(' ')[1]; // Assuming Bearer token
     const interimChat = request.body.interimChat;
     const phoneNumber = request.body.phoneNumber;
     console.log('called interimChat:', interimChat);
-    const personObj: PersonNode = await new FilterCandidates(
-      this.workspaceQueryService,
-    ).getPersonDetailsByPhoneNumber(phoneNumber, apiToken);
-    const candidateId = personObj.candidates?.edges[0]?.node?.id;
+    await new UpdateChat(this.workspaceQueryService).createInterimChat(interimChat, phoneNumber, apiToken);
 
-    const candidateJob: Jobs =
-      personObj.candidates?.edges[0]?.node?.jobs;
-    const recruiterProfile = await getRecruiterProfileByJob(
-      candidateJob,
-      apiToken,
-    );
-    const chatReply = interimChat;
-    const whatsappIncomingMessage: chatMessageType = {
-      phoneNumberFrom: phoneNumber,
-      phoneNumberTo: recruiterProfile.phoneNumber,
-      messages: [{ role: 'user', content: chatReply }],
-      messageType: 'string',
-    };
-    const candidateProfileData = await new FilterCandidates(
-      this.workspaceQueryService,
-    ).getCandidateInformation(whatsappIncomingMessage, apiToken);
-    console.log(
-      'This is the candiate who has sent us the message., we have to update the database that this message has been recemivged::',
-      chatReply,
-    );
-    const replyObject = {
-      chatReply: chatReply,
-      whatsappDeliveryStatus: 'receivedFromCandidate',
-      phoneNumberFrom: phoneNumber,
-      whatsappMessageId: 'NA',
-    };
-    const responseAfterMessageUpdate = await new IncomingWhatsappMessages(
-      this.workspaceQueryService,
-    ).createAndUpdateIncomingCandidateChatMessage(
-      replyObject,
-      candidateProfileData,
-      candidateJob,
-      apiToken,
-    );
+
     return;
   }
 
@@ -254,16 +215,8 @@ export class ArxChatEndpoint {
     const messageToSend = request?.body?.messageToSend;
     const phoneNumber = request.body.phoneNumberTo;
 
-    const personObj: PersonNode = await new FilterCandidates(
-      this.workspaceQueryService,
-    ).getPersonDetailsByPhoneNumber(phoneNumber, apiToken);
-    console.log('This is the chat reply:', messageToSend);
-    const candidateJob: Jobs =
-      personObj.candidates?.edges[0]?.node?.jobs;
-    const recruiterProfile = await getRecruiterProfileByJob(
-      candidateJob,
-      apiToken,
-    );
+    const personObj: PersonNode = await new FilterCandidates( this.workspaceQueryService, ).getPersonDetailsByPhoneNumber(phoneNumber, apiToken); console.log('This is the chat reply:', messageToSend);
+    const candidateJob: Jobs = personObj.candidates?.edges[0]?.node?.jobs; const recruiterProfile = await getRecruiterProfileByJob( candidateJob, apiToken, );
 
     console.log('Recruiter profile', recruiterProfile);
     const chatMessages =
@@ -282,7 +235,7 @@ export class ArxChatEndpoint {
       whatsappMessageType:
         personObj?.candidates?.edges[0]?.node.whatsappProvider ||
         'application03',
-      phoneNumberTo: personObj?.phones.primaryPhoneNumber,
+      phoneNumberTo: personObj.phones.primaryPhoneNumber.length==10 ? '91'+personObj.phones.primaryPhoneNumber : personObj.phones.primaryPhoneNumber,
       messages: [{ content: request?.body?.messageToSend }],
       messageType: 'recruiterMessage',
       messageObj: chatHistory,
@@ -292,7 +245,7 @@ export class ArxChatEndpoint {
     };
     let messageObj: ChatRequestBody = {
       phoneNumberFrom: recruiterProfile.phoneNumber,
-      phoneNumberTo: personObj.phones.primaryPhoneNumber,
+      phoneNumberTo: personObj.phones.primaryPhoneNumber.length==10 ? '91'+personObj.phones.primaryPhoneNumber : personObj.phones.primaryPhoneNumber,
       messages: messageToSend,
     };
     const sendMessageResponse = await new FacebookWhatsappChatApi(

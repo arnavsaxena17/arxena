@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
-import * as InterviewResponseTypes from './types/interviewResponseTypes';
 import { VideoPlayer } from './utils/videoPlaybackUtils';
 // import {recruiterProfile} from '../../activities/chats/types/front-chat-types';
 
 
+import { StartInterviewPageProps } from 'twenty-shared';
 import { useStream } from '../StreamManager';
 import {
   AccessMessage,
@@ -19,12 +19,12 @@ import {
   StyledTextLeftPaneldisplay,
 } from './styled-components/StyledComponentsInterviewResponse';
 
-interface StartInterviewPageProps extends InterviewResponseTypes.StartInterviewPageProps {
+interface InterviewPageProps extends StartInterviewPageProps {
   videoPlaybackState: { isPlaying: boolean; isMuted: boolean };
   onVideoStateChange: (state: { isPlaying: boolean; isMuted: boolean }) => void;
 }
 
-export const StartInterviewPage: React.FC<StartInterviewPageProps> = ({ onStart, InterviewData, introductionVideoData, videoPlaybackState,  onVideoStateChange }) => {
+export const StartInterviewPage: React.FC<InterviewPageProps> = ({ onStart, InterviewData, introductionVideoData, videoPlaybackState,  onVideoStateChange }) => {
 
 
   const { isStreamReady, error } = useStream();
@@ -103,7 +103,7 @@ export const StartInterviewPage: React.FC<StartInterviewPageProps> = ({ onStart,
 
   console.log("This is the intorduction interview data::", introductionVideoData)
   // console.log("This is the intorduction interview data::", introductionVideoData?.data?.attachments?.edges[0]?.node.fullPath)
-  const introductionVideoURL = process.env.REACT_APP_SERVER_BASE_URL+"/"+introductionVideoData?.data?.attachments?.edges[0]?.node.fullPath;
+  const introductionVideoURL = introductionVideoData?.data?.attachments?.edges[0]?.node.fullPath;
   console.log("THis is introductionVideoURL:", introductionVideoURL)
   return (
     <StyledContainer>
@@ -112,7 +112,7 @@ export const StartInterviewPage: React.FC<StartInterviewPageProps> = ({ onStart,
       <StyledLeftPanelContentBox>
         <StyledTextLeftPanelTextHeadline>Introduction</StyledTextLeftPanelTextHeadline>
         <VideoPlayer 
-          src={`${process.env.REACT_APP_SERVER_BASE_URL}/files/${introductionVideoData?.data?.attachments?.edges[0]?.node?.fullPath}`}
+          src={`${introductionVideoData?.data?.attachments?.edges[0]?.node?.fullPath}`}
           videoRef={videoRef}
           isPlaying={videoPlaybackState.isPlaying}
           setIsPlaying={handlePlaybackChange}
@@ -136,7 +136,7 @@ export const StartInterviewPage: React.FC<StartInterviewPageProps> = ({ onStart,
           <li>You have to answer {InterviewData?.videoInterview?.videoInterviewQuestions?.edges?.length} questions and have 4 minutes per question.</li>
           <li>Answer all {InterviewData?.videoInterview?.videoInterviewQuestions?.edges?.length} questions in one go. Do not click back, close or refresh the tab to prevent loss of progress.</li>
           <li>Please make sure you have a stable internet connection and use a fully charged device for giving the interview.</li>
-          <li>If you need assistance, write to me <a href={`mailto:${InterviewData.recruiterProfile.email}`}>{InterviewData.recruiterProfile.email}</a> or call/ whatsapp at <a href={`tel:${InterviewData.recruiterProfile.phone}`}>{InterviewData.recruiterProfile.phone}</a></li>
+          <li>If you need assistance, write to me <a href={`mailto:${InterviewData?.recruiterProfile?.email}`}>{InterviewData?.recruiterProfile?.email}</a> or call/ whatsapp at <a href={`tel:${InterviewData?.recruiterProfile?.phoneNumber}`}>{InterviewData?.recruiterProfile?.phoneNumber}</a></li>
         </InstructionList>
       </InstructionSection>
           <ButtonContainer>

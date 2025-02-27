@@ -8,11 +8,11 @@ import {
   ChatHistoryItem,
   chatMessageType,
   emptyCandidateProfileObj,
-  graphqlQueryToFindInterviewsByJobId,
   graphqlQueryToFindManyPeople,
   graphqlQueryToFindManyPeopleEngagedCandidatesOlderSchema,
   graphqlQueryToFindManyQuestionsByJobId,
   graphqlQueryToFindScheduledClientMeetings,
+  graphqlQueryToFindVideoInterviewTemplatesByJobId,
   graphqlToFetchAllCandidateData,
   graphQlToFetchWhatsappMessages,
   graphqlToFindManyJobs,
@@ -47,7 +47,7 @@ export class FilterCandidates {
       candidateProfile: candidateNode,
       candidateFirstName: personNode.name?.firstName,
       phoneNumberFrom: recruiterProfile?.phoneNumber,
-      phoneNumberTo: personNode.phones.primaryPhoneNumber,
+      phoneNumberTo: personNode.phones.primaryPhoneNumber.length==10 ? '91'+personNode.phones.primaryPhoneNumber : personNode.phones.primaryPhoneNumber,
       lastEngagementChatControl: chatControl.chatControlType,
       messages: chatHistory.slice(-1),
       messageType: 'botMessage',
@@ -222,7 +222,7 @@ export class FilterCandidates {
     try {
       console.log('jobId::', jobId);
       const graphqlQueryObj = JSON.stringify({
-        query: graphqlQueryToFindInterviewsByJobId,
+        query: graphqlQueryToFindVideoInterviewTemplatesByJobId,
         variables: {
           filter: { jobId: { in: [jobId] } },
           orderBy: [{ position: 'AscNullsFirst' }],
@@ -253,6 +253,11 @@ export class FilterCandidates {
       },
       orderBy: { position: 'AscNullsFirst' },
     };
+    if (phoneNumber.length>10) {
+      console.log('Phone number is more than 10 digits will slice:', phoneNumber);
+      phoneNumber = phoneNumber.slice(-10);
+    }
+    console.log('Phone number to search is :', phoneNumber);
     try {
       const graphqlQueryObj = JSON.stringify({
         query: graphqlQueryToFindManyPeople,
@@ -282,6 +287,11 @@ export class FilterCandidates {
       console.log('Phone number is empty and no candidate found');
       return emptyCandidateProfileObj;
     }
+    if (phoneNumber.length>10) {
+      console.log('Phone number is more than 10 digits will slice:', phoneNumber);
+      phoneNumber = phoneNumber.slice(-10);
+    }
+    console.log('Phone number to search is :', phoneNumber);
     const graphVariables = {
       filter: {
         phones: { primaryPhoneNumber: { ilike: '%' + phoneNumber + '%' } },
@@ -326,6 +336,11 @@ export class FilterCandidates {
       phoneNumberToSearch = userMessage.phoneNumberFrom.replace('+', '');
     }
 
+    if (phoneNumberToSearch.length>10) {
+      console.log('Phone number is more than 10 digits will slice:', phoneNumberToSearch);
+      phoneNumberToSearch = phoneNumberToSearch.slice(-10);
+    }
+    console.log("phoneNumberToSearch::", phoneNumberToSearch);
     // Ignore if phoneNumberToSearch is not a valid number
     if (isNaN(Number(phoneNumberToSearch))) {
       console.log('Phone number is not valid, ignoring:', phoneNumberToSearch);
@@ -348,16 +363,19 @@ export class FilterCandidates {
         variables: graphVariables,
       });
       const response = await axiosRequest(graphqlQueryObj, apiToken);
+      console.log("Number of candidates fetched::", response.data?.data?.people?.edges[0]?.node?.candidates?.edges.length, "for phone number:", phoneNumberToSearch);
       const candidateDataObjs =
-        response.data?.data?.people?.edges[0]?.node?.candidates?.edges;
-      const maxCreatedAt =
-        candidateDataObjs.length > 0
+      response.data?.data?.people?.edges[0]?.node?.candidates?.edges || [];
+              const maxCreatedAt =
+        candidateDataObjs?.length > 0
           ? Math.max(
               ...candidateDataObjs.map((e) =>
                 new Date(e.node.jobs.createdAt).getTime(),
               ),
             )
           : 0;
+
+        
       const activeJobCandidateObj = candidateDataObjs?.find(
         (edge: CandidatesEdge) =>
           edge?.node?.jobs?.isActive &&
@@ -369,10 +387,7 @@ export class FilterCandidates {
         candidateDataObjs?.length,
       );
       // console.log('This is the number of most recent active candidate for whom we can do active job', candidateDataObjs);
-      console.log(
-        'This is the activeJobCandidateObj who got called',
-        activeJobCandidateObj?.node?.name || '',
-      );
+      console.log( 'This is the activeJobCandidateObj who got called', activeJobCandidateObj?.node?.name || '', );
       if (activeJobCandidateObj) {
         const personWithActiveJob = response?.data?.data?.people?.edges?.find(
           (person: PersonEdge) =>
@@ -380,7 +395,9 @@ export class FilterCandidates {
               (candidate) => candidate?.node?.jobs?.isActive,
             ),
         );
+        console.log("personWithActiveJob::", personWithActiveJob);
         const activeJobCandidate: CandidateNode = activeJobCandidateObj?.node;
+        console.log("This isthe activeJobCandidate::", activeJobCandidate);
         const activeJob: Jobs = activeJobCandidate?.jobs;
         const activeCompany = activeJob?.company;
         const candidateProfileObj: CandidateNode = {
@@ -406,8 +423,8 @@ export class FilterCandidates {
           engagementStatus: activeJobCandidate?.engagementStatus,
           lastEngagementChatControl:
             activeJobCandidate?.lastEngagementChatControl,
-          phoneNumber: personWithActiveJob?.node?.phone,
-          email: personWithActiveJob?.node?.email,
+          phoneNumber: personWithActiveJob?.node?.phones.primaryPhoneNumber.length==10 ? '91'+personWithActiveJob?.node?.phones.primaryPhoneNumber : personWithActiveJob?.node?.phones.primaryPhoneNumber,
+          email: personWithActiveJob?.node?.emails.primaryEmail,
           input: userMessage?.messages[0]?.content,
           startChat: activeJobCandidate?.startChat,
           startMeetingSchedulingChat:
@@ -424,6 +441,7 @@ export class FilterCandidates {
           person: personWithActiveJob?.node,
         };
         return candidateProfileObj;
+        // return activeJobCandidate;
       } else {
         console.log('No active candidate found.');
         return emptyCandidateProfileObj;
@@ -509,10 +527,7 @@ export class FilterCandidates {
       }
 
       if (person) {
-        console.log(
-          'Personobj:',
-          person?.name?.firstName || '' + ' ' + person?.name?.lastName,
-        ) + '';
+        console.log( 'Personobj:', person?.name?.firstName || '' + ' ' + person?.name?.lastName, ) + '';
         return person;
       } else {
         console.log('Person not found');

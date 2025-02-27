@@ -43,9 +43,12 @@ export const getActionConfig = (
     if (objectMetadataItem.nameSingular === 'candidate') {
       return { ...baseConfig, ...CANDIDATE_SPECIFIC_ACTIONS };
     }
+    console.log("Current objectMetadataItem.nameSingular::", objectMetadataItem.nameSingular)
 
     if (objectMetadataItem.nameSingular === 'job') {
-      return { ...baseConfig, ...JOB_SPECIFIC_ACTIONS };
+      const jobSpecificActions = { ...baseConfig, ...JOB_SPECIFIC_ACTIONS };
+      console.log("The job specific actions are::", jobSpecificActions)
+      return jobSpecificActions;  
     }
     if (objectMetadataItem.nameSingular === 'person') {
       console.log("Got here for setting people specific zctions")

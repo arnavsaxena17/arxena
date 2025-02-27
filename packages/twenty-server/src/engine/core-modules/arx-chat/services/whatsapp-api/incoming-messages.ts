@@ -113,18 +113,19 @@ export class IncomingWhatsappMessages {
       const results = await this.workspaceQueryService.executeQueryAcrossWorkspaces(
         async (workspaceId, dataSourceSchema) => {
           console.log("Data source schema is::", dataSourceSchema)
+          console.log("id:", workspaceId)
           // First check if this workspace is valid for the phone number ID
-          const workspace = await this.workspaceQueryService.executeRawQuery(
-            `SELECT * FROM core.workspace WHERE id = $1 AND facebook_whatsapp_phone_number_id = $2`,
-            [workspaceId, phoneNumberId],
-            workspaceId
-          );
+          const rawQuery = `SELECT * FROM core.workspace WHERE id = $1 AND facebook_whatsapp_phone_number_id ILIKE '%${phoneNumberId}%'`
+          console.log("This si rawQuery:", rawQuery)
+            const workspace = await this.workspaceQueryService.executeRawQuery( rawQuery, [workspaceId], workspaceId );
   
           if (workspace.length === 0) {
             console.log('NO WORKSPACE FOUND FOR WHATSAPP INCOMING PHONE NUMBER');
             return null;
           }
   
+          console.log("Whatsapp incoming phone number workspace found for worksapce::::", workspace);
+          console.log("Whatsapp incoming phoneNumber::::", phoneNumber);
           // Get the most recent message for this phone number in this workspace
           const recentMessage = await this.workspaceQueryService.executeRawQuery(
             `SELECT * FROM ${dataSourceSchema}."_whatsappMessage" 
@@ -140,25 +141,29 @@ export class IncomingWhatsappMessages {
             console.log("No messages found for this phone number in workspace:", workspaceId);
             return null;
           }
+
+          if (phoneNumber.length>10){
+            console.log("Removing ISD code to enable the search")
+            phoneNumber = phoneNumber.slice(-10)
+          }
   
           // Get the person associated with this phone number
           const person = await this.workspaceQueryService.executeRawQuery(
-            `SELECT * FROM ${dataSourceSchema}.person WHERE "person"."phone" ILIKE '%${phoneNumber}%'`,
+            `SELECT * FROM ${dataSourceSchema}.person WHERE "person"."phonesPrimaryPhoneNumber" ILIKE '%${phoneNumber}%'`,
             [],
             workspaceId
           );
-  
-
-          console.log("person i s::", person);
-          if (person.length > 0) {
+            if (person.length > 0) {
             const apiKeys = await this.workspaceQueryService.getApiKeys(workspaceId, dataSourceSchema, transactionManager);
             if (apiKeys.length > 0) {
-              const apiKeyToken = await this.workspaceQueryService.accessTokenService.generateAccessToken(
+              const apiKeyToken = await this.workspaceQueryService.apiKeyService.generateApiKeyToken(
                 workspaceId,
                 apiKeys[0].id,
               );
+              // console.log("This is the api key token::", apiKeyToken)
               
               if (apiKeyToken) {
+
                 return {
                   token: apiKeyToken.token,
                   lastMessageTime: recentMessage[0].updatedAt,
@@ -171,7 +176,7 @@ export class IncomingWhatsappMessages {
         }
       );
       
-      console.log("All results:", results);
+      // console.log("All results:", results);
   
       // Filter out null results and find the workspace with the most recent message
       const validResults = results.filter((result): result is MessageResult => result !== null);
@@ -301,7 +306,7 @@ export class IncomingWhatsappMessages {
           const candidateProfileData = await new FilterCandidates(this.workspaceQueryService).getCandidateInformation(whatsappIncomingMessage,apiToken);
           const candidateJob:Jobs = candidateProfileData.jobs
           console.log('This is the candiate who has sent us the message., we have to update the database that this message has been recemivged::', chatReply);
-          // console.log('This is the candiate who has sent us candidateProfileData::', candidateProfileData);
+          console.log('This is the candiate who has sent us candidateProfileData::', candidateProfileData);
           const replyObject = {
             chatReply: chatReply,
             whatsappDeliveryStatus: 'receivedFromCandidate',
@@ -385,7 +390,8 @@ export class IncomingWhatsappMessages {
     const recruiterProfile = await getRecruiterProfileByJob(candidateJob, apiToken) 
     const messagesList = candidateProfileDataNodeObj?.whatsappMessages?.edges;
     console.log('This is the chat reply in create And Update Incoming Candidate Chat Message:', replyObject.chatReply);
-    console.log('This is the candidateProfileDataNodeObj:', candidateProfileDataNodeObj.phoneNumber);
+    console.log('This is the chat reply in create And Update candidateProfileDataNodeObj:', candidateProfileDataNodeObj);
+    console.log('This is the chat replycandidateProfileDataNodeObj?.whatsappMessages.edges', candidateProfileDataNodeObj?.whatsappMessages.edges);
     let mostRecentMessageObj;
     if (messagesList) {
       messagesList.sort((a, b) => new Date(b.node.createdAt).getTime() - new Date(a.node.createdAt).getTime());
@@ -416,6 +422,6 @@ export class IncomingWhatsappMessages {
 
 
     await new UpdateChat(this.workspaceQueryService).updateCandidateEngagementDataInTable(whatappUpdateMessageObj, apiToken);
-    // return whatappUpdateMessageObj;
+    return whatappUpdateMessageObj;
   }
 }

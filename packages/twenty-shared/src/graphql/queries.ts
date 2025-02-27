@@ -88,7 +88,7 @@ export const graphqlQueryToFetchPrompts = `
 
 
 
-export const graphqlQueryToFindInterviewsByJobId = `query FindManyVideoInterviewTemplates($filter: VideoInterviewTemplateFilterInput, $orderBy: [VideoInterviewTemplateOrderByInput], $lastCursor: String, $limit: Int) {
+export const graphqlQueryToFindVideoInterviewTemplatesByJobId = `query FindManyVideoInterviewTemplates($filter: VideoInterviewTemplateFilterInput, $orderBy: [VideoInterviewTemplateOrderByInput], $lastCursor: String, $limit: Int) {
   videoInterviewTemplates(
     filter: $filter
     orderBy: $orderBy
@@ -162,7 +162,6 @@ export const graphqlToFindManyJobs = `query FindManyJobs($filter: JobFilterInput
         pathPosition
         talentConsiderations
         specificCriteria
-
         companyId
         position
         description
@@ -238,8 +237,23 @@ export const graphqlToFindManyJobs = `query FindManyJobs($filter: JobFilterInput
             node {
               id
               whatsappProvider
+              
             }
           }
+        }
+        recruiter{
+            id
+            workspaceMemberProfile{
+                edges{
+                    node{
+                        id
+                        name
+                        phoneNumber
+                        companyDescription
+                        jobTitle
+                    }
+                }
+            }
         }
         interviewSchedule{
             edges{
@@ -251,6 +265,7 @@ export const graphqlToFindManyJobs = `query FindManyJobs($filter: JobFilterInput
                 }
             }
         }
+        
         jobCode
         jobLocation
         attachments{
@@ -309,7 +324,6 @@ export const findManyAttachmentsQuery = `query FindManyAttachments($filter: Atta
           clientInterviewId
           id
           recruiterInterviewId
-          activityId
           offerId
           questionId
           answerId
@@ -400,6 +414,8 @@ export const findWorkspaceMemberProfiles =  `query FindManyWorkspaceMemberProfil
         lastName
         createdAt
         name
+        jobTitle
+        updatedAt
         firstName
         typeWorkspaceMember
         email
@@ -446,18 +462,6 @@ query FindManyVideoInterviews($filter: VideoInterviewFilterInput, $orderBy: [Vid
             }
           }
         }
-        videoInterview {
-          __typename
-          introduction
-          createdAt
-          id
-          jobId
-          instructions
-          videoInterviewModelId
-          name
-          position
-          updatedAt
-        }
         videoInterviewTemplate {
           position
           introduction
@@ -501,7 +505,7 @@ query FindManyVideoInterviews($filter: VideoInterviewFilterInput, $orderBy: [Vid
           name
           position
           stopChat
-          personId
+          peopleId
           startChat
           chatCount
           status
@@ -664,6 +668,19 @@ export const graphqlQueryToFindManyPeople = `query FindManyPeople($filter: Perso
                 node{
                     id
                     name
+                    clientInterview{
+                        edges{
+                            node{
+                                id
+                                name
+                                jobId
+                                createdAt
+                                updatedAt
+                                candidateId
+                                clientInterviewCompleted
+                            }
+                        }
+                    }
                     whatsappProvider
                     lastEngagementChatControl
                     candConversationStatus
@@ -672,6 +689,8 @@ export const graphqlQueryToFindManyPeople = `query FindManyPeople($filter: Perso
                        id
                        isActive
                        jobLocation
+                       createdAt
+                       updatedAt
                        jobCode
                        recruiterId
                        company{
@@ -695,24 +714,6 @@ export const graphqlQueryToFindManyPeople = `query FindManyPeople($filter: Perso
                           }
                       }
                     }
-                    jobs{
-                      id
-                      name
-                      isActive
-                      recruiterId
-                      jobLocation
-                      jobCode
-                      createdAt
-                      company {
-                          name
-                          id
-                          domainName{
-                            primaryLinkUrl
-                          }
-                          descriptionOneliner
-                      }
-
-                    }
                     engagementStatus
                     startVideoInterviewChat
                     engagementStatus
@@ -722,6 +723,9 @@ export const graphqlQueryToFindManyPeople = `query FindManyPeople($filter: Perso
                     startMeetingSchedulingChatCompleted
                     startVideoInterviewChat
                     startVideoInterviewChatCompleted
+                    phoneNumber{
+                      primaryPhoneNumber
+                    }
                     startChat
                     status
                     updatedAt
@@ -755,6 +759,7 @@ export const graphqlQueryToFindManyPeople = `query FindManyPeople($filter: Perso
                           jobsId
                           position
                           phoneTo
+                          messageObj
                           updatedAt
                           createdAt
                           lastEngagementChatControl
@@ -828,7 +833,10 @@ query FindManySMS($filter: SMSFilterInput, $orderBy: [SMSOrderByInput], $lastCur
             node {
                 id
                 personId
-                phoneNumber
+                phoneNumber{
+                  primaryPhoneNumber
+
+                }
                 messageType
                 message
                 timestamp
@@ -1294,7 +1302,19 @@ export const graphqlQueryToFindManyReminders = `query FindManyCandidateReminders
           whatsappProvider
         candConversationStatus
         startVideoInterviewChat
-
+        clientInterview {
+          edges{
+            node{
+              id
+              name
+              jobId
+              createdAt
+              updatedAt
+              clientInterviewCompleted
+              candidateId
+            }
+          }
+        }
         lastEngagementChatControl
         startVideoInterviewChat
         startMeetingSchedulingChat
@@ -1411,6 +1431,7 @@ export const graphqlQueryToFindManyReminders = `query FindManyCandidateReminders
             edges {
               node {
                 updatedAt
+                messageObj
                 createdAt
                 id
                 name
@@ -1428,6 +1449,7 @@ export const graphqlQueryToFindManyReminders = `query FindManyCandidateReminders
             chatFlowOrder
             pathPosition
             createdAt
+            updatedAt
             interviewSchedule{
               edges{
                   node{
@@ -1706,6 +1728,7 @@ export const graphqlQueryToFindManyPeopleEngagedCandidatesOlderSchema = `query F
                           message
                           candidateId
                           jobsId
+                          messageObj
                           position
                           phoneTo
                           updatedAt

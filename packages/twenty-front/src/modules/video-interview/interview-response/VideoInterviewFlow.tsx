@@ -6,8 +6,8 @@ import { ErrorBoundary } from './ErrorBoundary'; // Import the ErrorBoundary com
 import { InterviewPage } from './InterviewPage';
 import { StartInterviewPage } from './StartInterviewPage';
 
+import { GetInterviewDetailsResponse, InterviewData, VideoInterviewAttachment, emptyInterviewData } from 'twenty-shared';
 import { StreamProvider, useStream } from '../StreamManager';
-import * as InterviewResponseTypes from './types/interviewResponseTypes';
 
 const LoaderOverlay = styled.div`
   position: fixed;
@@ -77,9 +77,9 @@ const InterviewLoader = () => (
 const VideoInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) => {
   const [stage, setStage] = useState<'start' | 'interview' | 'end'>('start');
   const [loading, setLoading] = useState(false);
-  const [interviewData, setInterviewData] = useState<InterviewResponseTypes.InterviewData | null>(null);
-  const [introductionVideoData, setintroductionVideoData] = useState<InterviewResponseTypes.VideoInterviewAttachment | null>(null);
-  const [questionsVideoData, setquestionsVideoData] = useState<InterviewResponseTypes.VideoInterviewAttachment[]>([]);
+  const [interviewData, setInterviewData] = useState<InterviewData | null>(null);
+  const [introductionVideoData, setintroductionVideoData] = useState<VideoInterviewAttachment | null>(null);
+  const [questionsVideoData, setquestionsVideoData] = useState<VideoInterviewAttachment[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [videoLoadingStatus, setVideoLoadingStatus] = useState<Record<string, boolean>>({});
   const [finalSubmissionComplete, setFinalSubmissionComplete] = useState(false);
@@ -169,14 +169,14 @@ const VideoInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) 
     try {
       const response = await axios.post(`${process.env.REACT_APP_SERVER_BASE_URL}/video-interview/get-interview-details`, { interviewId });
       console.log('This is the response to fetch interview data:', response);
-      const responseObj: InterviewResponseTypes.GetInterviewDetailsResponse = response.data;
+      const responseObj: GetInterviewDetailsResponse = response.data;
       if (responseObj) {
 
 
 
         const fetchedData: any = response?.data?.responseFromInterviewRequests?.data;
         console.log('fetchedData to fetch interview data:', JSON.stringify(fetchedData));
-        const formattedData: InterviewResponseTypes.InterviewData = {
+        const formattedData: InterviewData = {
           recruiterProfile: fetchedData.recruiterProfile,
           name: fetchedData?.videoInterviews?.edges[0]?.node?.name || '',
           id: fetchedData?.videoInterviews?.edges[0]?.node?.id || '',
@@ -194,8 +194,8 @@ const VideoInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) 
                 firstName: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.people?.name?.firstName || '',
                 lastName: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.people?.name?.lastName || '',
               },
-              email: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.people?.email || '',
-              phone: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.people?.phone || '',
+              email: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.people?.emails.primaryEmail || '',
+              phone: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.people?.phones.primaryPhoneNumber || '',
             },
           },
 
@@ -279,7 +279,7 @@ const VideoInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) 
       return (
       <StartInterviewPage
         onStart={handleStart}
-        InterviewData={InterviewResponseTypes.emptyInterviewData}
+        InterviewData={emptyInterviewData}
         introductionVideoData={introductionVideoData!}
         videoPlaybackState={globalVideoPlaybackState}
         onVideoStateChange={handleVideoStateChange}

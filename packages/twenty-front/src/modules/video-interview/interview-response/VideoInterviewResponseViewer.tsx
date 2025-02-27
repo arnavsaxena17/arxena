@@ -3,7 +3,7 @@ import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
 import React, { useEffect, useState } from 'react';
 import { useRecoilState } from 'recoil';
-import { graphqlToFetchAllCandidateData } from 'twenty-shared';
+import { graphqlToFetchAllCandidateData, queryByvideoInterview } from 'twenty-shared';
 import VideoDownloaderPlayer from './VideoDownloaderPlayer';
 
 const StyledContainer = styled.div<{ theme: any }>`

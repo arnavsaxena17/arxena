@@ -781,7 +781,7 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
 
   const sendMessage = async (messageText: string) => {
     console.log('send message');
-    const response = await axios.post(process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/send-chat', { messageToSend: messageText, phoneNumberTo: currentIndividual?.phones.primaryPhoneNumber }, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } }); 
+    const response = await axios.post(process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/send-chat', { messageToSend: messageText, phoneNumberTo: currentIndividual?.phones?.primaryPhoneNumber }, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } }); 
     };
 
   async function getlistOfMessages(currentCandidateId: string) {
@@ -809,7 +809,7 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
     console.log('share JD');
     //@ts-ignore
     const response = await axios.post(process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/send-jd-from-frontend', 
-      { phoneNumberTo: currentIndividual?.phones.primaryPhoneNumber }, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } }); };
+      { phoneNumberTo: currentIndividual?.phones?.primaryPhoneNumber }, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } }); };
 
   const handleStatusUpdate = async (newStatus: string) => {
     try {
@@ -880,7 +880,7 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
       jobsId: currentIndividual?.candidates?.edges[0]?.node?.jobs?.id || '',
       position: messageHistory.length + 1,
       messageType: 'template',
-      phoneTo: currentIndividual?.phones.primaryPhoneNumber || '',
+      phoneTo: '91' + currentIndividual?.phones?.primaryPhoneNumber  || '',
       updatedAt: new Date().toISOString(),
       createdAt: new Date().toISOString(),
       id: Date.now().toString(),
@@ -1058,6 +1058,7 @@ const UploadCV: React.FC<{
 
   const allIndividualsForCurrentJob = allIndividuals?.filter(individual => individual?.candidates?.edges[0]?.node?.jobs?.id === currentIndividual?.candidates?.edges[0]?.node?.jobs?.id);
   console.log('allIndividualsForCurrentJob:', allIndividualsForCurrentJob);
+  console.log('allIndividualsForCurrentJob:', JSON.stringify(allIndividualsForCurrentJob));
 
   const lastStatus = currentIndividual?.candidates?.edges[0]?.node?.status;
   const totalCandidates = allIndividualsForCurrentJob?.length;
@@ -1100,7 +1101,7 @@ const UploadCV: React.FC<{
 
   // Messages read but not responded
   const readNotResponded = allIndividualsForCurrentJob?.filter(individual => {
-    const phone = individual?.phones.primaryPhoneNumber || '';
+    const phone = individual?.phones?.primaryPhoneNumber || '';
     console.log('individual phone:', phone?.replace('+', ''));
     const messages = individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges;
     return messages?.some((edge: { node: { whatsappDeliveryStatus: string; }; }) => edge?.node?.whatsappDeliveryStatus === 'read' && !messages.some(m => m?.node?.phoneFrom?.replace('+', '') === phone?.replace('+', '')));
@@ -1109,7 +1110,7 @@ const UploadCV: React.FC<{
 
   // Messages unread and not responded
   const unreadNotResponded = allIndividualsForCurrentJob?.filter(individual => {
-    const messages = individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges; return messages?.some((edge: { node: { whatsappDeliveryStatus: string; }; }) => edge?.node?.whatsappDeliveryStatus === 'delivered' && !messages.some(m => m?.node?.phoneFrom?.replace('+', '') === individual?.phones.primaryPhoneNumber?.replace('+', ''))); }).length;
+    const messages = individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges; return messages?.some((edge: { node: { whatsappDeliveryStatus: string; }; }) => edge?.node?.whatsappDeliveryStatus === 'delivered' && !messages.some(m => m?.node?.phoneFrom?.replace('+', '') === individual?.phones?.primaryPhoneNumber?.replace('+', ''))); }).length;
   const unreadNotRespondedPercent = ((unreadNotResponded / allIndividualsForCurrentJob.length) * 100).toFixed(1);
 
   // Total messages not responded
@@ -1117,7 +1118,7 @@ const UploadCV: React.FC<{
   const totalNotRespondedPercent = ((totalNotResponded / allIndividualsForCurrentJob.length) * 100).toFixed(1);
 
   // Total messages responded
-  const totalResponded = allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges?.some((edge: { node: { phoneFrom: string; }; }) => edge?.node?.phoneFrom?.replace('+', '') === individual?.phones.primaryPhoneNumber?.replace('+', ''))).length;
+  const totalResponded = allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges?.some((edge: { node: { phoneFrom: string; }; }) => edge?.node?.phoneFrom?.replace('+', '') === individual?.phones?.primaryPhoneNumber?.replace('+', ''))).length;
   const totalRespondedPercent = ((totalResponded / allIndividualsForCurrentJob.length) * 100).toFixed(1);
 
   const messageStatisticsArray = [
@@ -1160,7 +1161,7 @@ const UploadCV: React.FC<{
     try {
       const response = await axios.post(
         process.env.REACT_APP_SERVER_BASE_URL + '/whatsapp-test/send-template-message',
-        { templateName: templateName, phoneNumberTo: currentIndividual?.phones.primaryPhoneNumber?.replace('+', '') }, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } }, );
+        { templateName: templateName, phoneNumberTo: currentIndividual?.phones?.primaryPhoneNumber?.replace('+', '') }, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } }, );
       console.log('This is reponse:', response);
       showSnackbar('Template sent successfully', 'success');
       setSelectedTemplate(''); // Reset selection after successful send
@@ -1172,7 +1173,7 @@ const UploadCV: React.FC<{
         jobsId: currentIndividual?.candidates?.edges[0]?.node?.jobs?.id || '',
         position: messageHistory.length + 1,
         messageType: 'template',
-        phoneTo: currentIndividual?.phones.primaryPhoneNumber || '',
+        phoneTo: currentIndividual?.phones?.primaryPhoneNumber || '',
         updatedAt: new Date().toISOString(),
         createdAt: new Date().toISOString(),
         id: Date.now().toString(),
@@ -1199,9 +1200,9 @@ const UploadCV: React.FC<{
 
     try {
       await axios.post( process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/start-interim-chat-prompt',
-        { interimChat, phoneNumber: currentIndividual?.phones.primaryPhoneNumber, }, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}`, }, }, );
+        { interimChat, phoneNumber: currentIndividual?.phones?.primaryPhoneNumber, }, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}`, }, }, );
       showSnackbar('Interim Chat started successfully', 'success');
-      setSelectedInterimChat(''); // Reset selection after successful start
+      setSelectedInterimChat('');
     } catch (error) {
       showSnackbar('Failed to start interim chat', 'error');
       console.error('Error starting interim chat:', error);
@@ -1249,7 +1250,7 @@ const UploadCV: React.FC<{
                 <MainInfo>
                   <FieldsContainer>
                     <CopyableFieldComponent label="Name" value={`${currentIndividual?.name.firstName} ${currentIndividual?.name.lastName}`} field="name" alwaysShowFull={true} />
-                    <CopyableFieldComponent label="Phone" value={currentIndividual?.phones.primaryPhoneNumber || ''} field="phone" />
+                    <CopyableFieldComponent label="Phone" value={currentIndividual?.phones?.primaryPhoneNumber || ''} field="phone" />
                     <CopyableFieldComponent label="Person ID" value={currentIndividual?.id || ''} field="personId" />
                     <CopyableFieldComponent label="Candidate ID" value={currentIndividual?.candidates.edges[0].node.id || ''} field="candidateId" />
                   </FieldsContainer>
@@ -1352,7 +1353,7 @@ const UploadCV: React.FC<{
                             <StyledDateComponent>{dayjs(message?.createdAt).format("ddd DD MMM, 'YY")}</StyledDateComponent>{' '}
                           </p>
                         )}
-                        <SingleChatContainer phoneNumber={currentIndividual?.phones.primaryPhoneNumber} message={message} messageName={`${currentIndividual?.name.firstName} ${currentIndividual?.name.lastName}`} />
+                        <SingleChatContainer phoneNumber={currentIndividual?.phones?.primaryPhoneNumber} message={message} messageName={`${currentIndividual?.name.firstName} ${currentIndividual?.name.lastName}`} />
                       </React.Fragment>
                     );
                   })}

@@ -17,6 +17,7 @@ import { useObjectNamePluralFromSingular } from '@/object-metadata/hooks/useObje
 import { useHandleToggleTrashColumnFilter } from '@/object-record/record-index/hooks/useHandleToggleTrashColumnFilter';
 
 import { useArxEnrichCreationModal } from '@/arx-enrich/hooks/useArxEnrichCreationModal';
+import { useArxUploadJDCreationModal } from '@/arx-jd-upload/hooks/useArxUploadJDCreationModal';
 import { CoreObjectNameSingular } from '@/object-metadata/types/CoreObjectNameSingular';
 import { useObjectOptionsForBoard } from '@/object-record/object-options-dropdown/hooks/useObjectOptionsForBoard';
 import { useOptionsDropdown } from '@/object-record/object-options-dropdown/hooks/useOptionsDropdown';
@@ -90,9 +91,15 @@ export const ObjectOptionsDropdownMenuContent = () => {
     );
 
     const { openModal } = useArxEnrichCreationModal();
+    const { openJDCreationModal } = useArxUploadJDCreationModal();
 
     const handleModal = () => {
       openModal();
+      // closeDropdown();
+    };
+
+    const handleUploadJDModal = () => {
+      openJDCreationModal();
       // closeDropdown();
     };
   
@@ -217,6 +224,7 @@ export const ObjectOptionsDropdownMenuContent = () => {
           </>
         )} */}
       { objectMetadataItem.nameSingular.toLowerCase().includes('candidate') && locationName.includes("objects") ? <MenuItem onClick={handleModal} accent="default" LeftIcon={Icon24Hours} text="Enrich" /> : null }
+      { objectMetadataItem.nameSingular.toLowerCase().includes('job') && locationName.includes("objects") ? <MenuItem onClick={handleUploadJDModal} accent="default" LeftIcon={Icon24Hours} text="Upload JD" /> : null }
 
       </DropdownMenuItemsContainer>
 

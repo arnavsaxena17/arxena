@@ -1,3 +1,5 @@
+import { InputHotkeyScope } from '@/ui/input/types/InputHotkeyScope';
+import { usePreviousHotkeyScope } from '@/ui/utilities/hotkey/hooks/usePreviousHotkeyScope';
 import styled from '@emotion/styled';
 
 import { H2Title } from 'twenty-ui';
@@ -40,12 +42,20 @@ const StyledTextArea = styled.textarea`
 `;
 
 export const AdditionalInformation = () => {
+
+
+  const { goBackToPreviousHotkeyScope, setHotkeyScopeAndMemorizePreviousScope, } = usePreviousHotkeyScope();
+  const handleFocus = () => { setHotkeyScopeAndMemorizePreviousScope(InputHotkeyScope.TextInput); };
+  const handleBlur = () => { goBackToPreviousHotkeyScope(); };
+
   return (
     <StyledContainer>
       <H2Title title="Introduction" />
       <StyledTextArea
         placeholder={'Additional Information...'}
         rows={4}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
         name="newVideoInterviewTemplate[0][introduction]"
       />
     </StyledContainer>
