@@ -234,11 +234,7 @@ const VideoInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) 
       });
       console.log('This is process.env.REACT_APP_SERVER_BASE_URL:', process.env.REACT_APP_SERVER_BASE_URL);
       const isLastQuestion = currentQuestionIndex === (interviewData?.videoInterview?.videoInterviewQuestions?.edges?.length ?? 0) - 1;
-
-      responseData.append('responseData', JSON.stringify({
-        isLastQuestion,
-        timeLimitAdherence: responseData.get('timeLimitAdherence') // preserve any existing data
-      }));
+      responseData.append('responseData', JSON.stringify({ isLastQuestion, timeLimitAdherence: responseData.get('timeLimitAdherence') }));
 
 
       // console.log('This is the appending of the rinterview dat:', interviewData);
@@ -277,13 +273,7 @@ const VideoInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) 
   const renderCurrentStage = () => {
     if (!interviewData) {
       return (
-      <StartInterviewPage
-        onStart={handleStart}
-        InterviewData={emptyInterviewData}
-        introductionVideoData={introductionVideoData!}
-        videoPlaybackState={globalVideoPlaybackState}
-        onVideoStateChange={handleVideoStateChange}
-    />
+      <StartInterviewPage onStart={handleStart} InterviewData={emptyInterviewData} introductionVideoData={introductionVideoData!} videoPlaybackState={globalVideoPlaybackState} onVideoStateChange={handleVideoStateChange} />
       );
     }
     switch (stage) {
