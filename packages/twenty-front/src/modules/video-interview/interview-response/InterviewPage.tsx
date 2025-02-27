@@ -118,7 +118,7 @@ export const InterviewPage: React.FC<VideoInterviewPageProps> = ({ InterviewData
   // Function to get video URL for a specific question index
   const getQuestionVideoURL = (index: number) => {
     const attachment = questionsVideoAttachment.find(attachment => attachment?.id === questions[index]?.attachments?.edges[0]?.node?.id)?.fullPath;
-    return attachment ? `${process.env.REACT_APP_SERVER_BASE_URL}/files/${attachment}` : null;
+    return attachment ? `${attachment}` : null;
   };
 
   // Preload next question's video
