@@ -235,14 +235,10 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
         console.error('Query that failed:', graphqlQuery);
         return new Map();
     }
-}
+  }
   private async collectJobCandidateFields(data: UserProfile[], jobObject: Jobs): Promise<Set<string>> {
     const fields = new Set<string>();
-    
-    // Add predefined fields
     newFieldsToCreate.forEach(field => fields.add(field));
-    
-    // Process each profile to get actual jobCandidateNode fields
     for (const profile of data) {
       if (profile) {
         try {
@@ -279,18 +275,20 @@ private async processBatches(
       manyCandidateObjects: [] as ArxenaCandidateNode[],
       manyJobCandidateObjects: [] as ArxenaJobCandidateNode[]
     };
-  
     console.log("This is the job object in processBatches:", jobObject);
     const batchSize = 15;
     const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
     const googleSheetsService = new GoogleSheetsService();
-  
     console.log("Google SheetID:", googleSheetId);
     for (let i = 0; i < data.length; i += batchSize) {
       const batch = data.slice(i, i + batchSize);
       const uniqueStringKeys = batch.map(p => p?.unique_key_string).filter(Boolean);
       if (uniqueStringKeys.length === 0) continue;
-      await googleSheetsService.processGoogleSheetBatch(batch, results, tracking, apiToken, googleSheetId, jobObject);
+
+      // disabling google sheet batch processing for now
+      // await googleSheetsService.processGoogleSheetBatch(batch, results, tracking, apiToken, googleSheetId, jobObject);
+
+
       await this.processPeopleBatch(batch, uniqueStringKeys, results, tracking, apiToken);
       await this.processCandidatesBatch(batch, jobObject, results, tracking, apiToken);  
       await this.processJobCandidatesBatch(
@@ -1093,7 +1091,7 @@ private formatFieldLabel(fieldName: string): string {
     .replace(/([A-Z])/g, ' $1')
     .replace(/\b\w/g, l => l.toUpperCase())
     .trim();
-}
+  }
 
   private extractKeysFromObjects(objects: ArxenaJobCandidateNode): string[] {
     const keys = new Set<string>();

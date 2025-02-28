@@ -16,9 +16,24 @@ const StyledModalContainer = styled.div`
   height: 60vh;
   width: 80vw;
   z-index: 1000;
-  
-
+  pointer-events: none; /* This ensures clicks pass through to the backdrop */
 `;
+
+
+
+
+const StyledModalBackdrop = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
+  z-index: 999; /* Just below your modal container */
+  pointer-events: all; /* Ensures clicks are captured by this element */
+`;
+
+
 
 const StyledAdjuster = styled.div`
   display: flex;
@@ -138,17 +153,20 @@ export const ArxEnrichmentModal = ({
   }
 
   return (
-    <StyledModalContainer onClick={closeModal}>
-      <StyledAdjuster>
-        <StyledModal onClick={(e) => e.stopPropagation()}>
-          <ArxEnrichLeftSideContainer />
-          <ArxEnrichRightSideContainer
-            closeModal={closeModal}
-            objectNameSingular={objectNameSingular}
-            objectRecordId={objectRecordId}
-          />
-        </StyledModal>
-      </StyledAdjuster>
-    </StyledModalContainer>
+    <>
+      <StyledModalBackdrop onClick={closeModal} />
+      <StyledModalContainer>
+        <StyledAdjuster>
+          <StyledModal onClick={(e) => e.stopPropagation()}>
+            <ArxEnrichLeftSideContainer />
+            <ArxEnrichRightSideContainer
+              closeModal={closeModal}
+              objectNameSingular={objectNameSingular}
+              objectRecordId={objectRecordId}
+            />
+          </StyledModal>
+        </StyledAdjuster>
+      </StyledModalContainer>
+    </>
   );
 };

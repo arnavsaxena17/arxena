@@ -55,10 +55,8 @@ export class GoogleSheetsDataController {
     const candidateSourcingController = new CandidateSourcingController(
       this.sheetsService,
       this.workspaceQueryService,
-      this.personService, 
       this.candidateService,
       this.processCandidatesService,
-      this.chatService
     );
     console.log("candidateSourcingController:", candidateSourcingController);
 

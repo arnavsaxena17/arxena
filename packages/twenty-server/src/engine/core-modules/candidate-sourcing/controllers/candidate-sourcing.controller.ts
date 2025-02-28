@@ -13,12 +13,9 @@ import {
   UserProfile,
 } from 'twenty-shared';
 import { GoogleSheetsService } from '../../google-sheets/google-sheets.service';
-// import { Enrichment } from '../../workspace-modifications/object-apis/types/types';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { ProcessCandidatesService } from '../jobs/process-candidates.service';
 import { CandidateService } from '../services/candidate.service';
-import { ChatService } from '../services/chat.service';
-import { PersonService } from '../services/person.service';
 import { axiosRequest } from '../utils/utils';
 
 @Controller('candidate-sourcing')
@@ -26,10 +23,8 @@ export class CandidateSourcingController {
   constructor(
     private readonly sheetsService: GoogleSheetsService,
     private readonly workspaceQueryService: WorkspaceQueryService,
-    private readonly personService: PersonService,
     private readonly candidateService: CandidateService,
     private readonly processCandidatesService: ProcessCandidatesService,
-    private readonly chatService: ChatService,
   ) {}
 
   @Post('update-candidate')

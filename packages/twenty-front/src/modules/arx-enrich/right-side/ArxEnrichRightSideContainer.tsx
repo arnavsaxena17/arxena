@@ -1,4 +1,4 @@
-import { activeEnrichmentState, enrichmentsState } from '@/arx-enrich/states/arxEnrichModalOpenState';
+import { activeEnrichmentState, enrichmentsState, recordsToEnrichState } from '@/arx-enrich/states/arxEnrichModalOpenState';
 import styled from '@emotion/styled';
 import axios from 'axios';
 import { useRecoilState, useRecoilValue } from 'recoil';
@@ -91,6 +91,7 @@ const LoadingOverlay = styled.div`
   z-index: 1000;
 `;
 
+
 export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerProps> = ({ 
   closeModal, 
   objectNameSingular, 
@@ -113,7 +114,8 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
       formElement?.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
-  
+  const recordsToEnrich = useRecoilValue(recordsToEnrichState);
+
 
 
   const currentViewId = location.href.split("view=")[1];
@@ -134,7 +136,8 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
   // );
 
   // const currentViewWithCombinedFiltersAndSorts = useRecoilValue(currentViewWithFiltersState);
-  const selectedRecordIds = useRecoilValue(selectedRecordsForModalState);
+  const selectedRecords = useRecoilValue(selectedRecordsForModalState);
+  console.log("These are the selected record ids", selectedRecords, "from selectedRecordsForModalState")
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -175,7 +178,11 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
       return;
     }
     console.log("All Enrichmetns", enrichments)
-    
+
+    let selectedRecordIds = (recordsToEnrich?.length || 0) > 0 ? recordsToEnrich : selectedRecords;
+    console.log("Selected Record Ids::selectedRecordIds", selectedRecordIds)
+    console.log("Selected Record Ids:::recordsToEnrich", recordsToEnrich)
+    console.log("Selected Record Ids:::selectedRecords", selectedRecords)
     try {
       const response = await axios.post(process.env.REACT_APP_SERVER_BASE_URL+'/candidate-sourcing/create-enrichments', {
         enrichments,
@@ -183,6 +190,7 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
         // availableSortDefinitions,
         // availableFilterDefinitions,
         objectRecordId,
+        // selectedRecordIds,
         selectedRecordIds
       }, {
         headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` }

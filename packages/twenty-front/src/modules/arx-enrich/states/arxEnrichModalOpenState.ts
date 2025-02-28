@@ -20,3 +20,10 @@ export const activeEnrichmentState = createState<number | null>({
   key: 'activeEnrichmentState',
   defaultValue: null,
 });
+
+
+export const recordsToEnrichState = createState<any[]>({
+  key: 'recordsToEnrichState',
+  defaultValue: [],
+});
+

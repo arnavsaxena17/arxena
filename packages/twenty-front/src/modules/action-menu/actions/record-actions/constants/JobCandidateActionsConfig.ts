@@ -9,8 +9,9 @@ import {
 
 import { useCloneMultipleRecordsAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useCloneMultipleRecordsAction';
 
+import { useCandidateEnrichmentAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useCandidateEnrichmentAction';
 import { useStartChatWithCandidatesAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useStartChatWithCandidatesAction';
-import { IconList } from '@tabler/icons-react';
+import { IconEngine, IconList } from '@tabler/icons-react';
 
 
 export const JOB_CANDIDATE_SPECIFIC_ACTIONS: Record<
@@ -25,7 +26,7 @@ export const JOB_CANDIDATE_SPECIFIC_ACTIONS: Record<
     key: MultipleRecordsActionKeys.CLONE,
     label: msg`Clone multiple`,
     shortLabel: msg`Clone`,
-    position: 6,
+    position: 4,
     Icon: IconCopy,
     accent: 'danger',
     isPinned: true,
@@ -44,5 +45,18 @@ export const JOB_CANDIDATE_SPECIFIC_ACTIONS: Record<
     isPinned: false,
     availableOn: [ActionViewType.INDEX_PAGE_BULK_SELECTION,ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION  ],
     useAction: useStartChatWithCandidatesAction,
+  },
+    enrichCandidates: {
+    type: ActionMenuEntryType.Standard,
+    scope: ActionMenuEntryScope.RecordSelection,
+    key: MultipleRecordsActionKeys.ENRICH_CANDIDATES,
+    shortLabel: msg`Enrich Candidates`,
+    label: msg`Enrich Candidates`,
+    position:7,
+    Icon: IconEngine,
+    accent: 'placeholder',
+    isPinned: false,
+    availableOn: [ActionViewType.INDEX_PAGE_BULK_SELECTION,ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION  ],
+    useAction: useCandidateEnrichmentAction,
   },
 };

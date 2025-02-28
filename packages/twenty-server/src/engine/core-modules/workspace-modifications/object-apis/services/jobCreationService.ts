@@ -19,17 +19,11 @@ console.log("This is the process.env.SERVER_BASE_URL::", process.env.SERVER_BASE
 export class JobCreationService {
   private apiToken: string;
   private baseUrl: string;
-  
-  // private sheetsService: GoogleSheetsService;
-
-
   constructor(apiToken: string,    
-    // sheetsService: GoogleSheetsService,
     baseUrl: string = process.env.SERVER_BASE_URL || 'http://app.arxena.com') 
   {
     this.apiToken = apiToken;
     this.baseUrl = baseUrl;
-    // this.sheetsService = sheetsService;
   }
 
 

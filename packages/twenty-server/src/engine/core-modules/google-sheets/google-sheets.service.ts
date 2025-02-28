@@ -6,14 +6,11 @@ import { google } from 'googleapis';
 import { columnDefinitions, Jobs, UpdateOneJob, UserProfile } from 'twenty-shared';
 import { formatChat } from '../arx-chat/utils/arx-chat-agent-utils';
 import { axiosRequest } from '../workspace-modifications/workspace-modifications.controller';
-import { WorkspaceQueryService } from '../workspace-modifications/workspace-modifications.service';
 
 const rowDataValues = [
   ...columnDefinitions?.map(col => ({
     userEnteredValue: { stringValue: col.header },
-    userEnteredFormat: {
-      textFormat: { bold: true },
-    },
+    userEnteredFormat: { textFormat: { bold: true }, },
   })),
   { userEnteredValue: { stringValue: 'engagementStatus' }, userEnteredFormat: { textFormat: { bold: true } } },
   { userEnteredValue: { stringValue: 'startChat' }, userEnteredFormat: { textFormat: { bold: true } } },
@@ -23,8 +20,6 @@ const rowDataValues = [
   { userEnteredValue: { stringValue: 'candConversationStatus' }, userEnteredFormat: { textFormat: { bold: true } } },
   { userEnteredValue: { stringValue: 'chatCount' }, userEnteredFormat: { textFormat: { bold: true } } },
   { userEnteredValue: { stringValue: 'chatMessages' }, userEnteredFormat: { textFormat: { bold: true } } },
-
-
   { userEnteredValue: { stringValue: 'personId' }, userEnteredFormat: { textFormat: { bold: true } } },
   { userEnteredValue: { stringValue: 'candidateId' }, userEnteredFormat: { textFormat: { bold: true } } },
 ]
@@ -33,8 +28,6 @@ const rowDataValues = [
 @Injectable()
 export class GoogleSheetsService {
   private oauth2Client;
-
-  private readonly workspaceQueryService: WorkspaceQueryService;
   constructor() {
     this.oauth2Client = new google.auth.OAuth2(process.env.AUTH_GOOGLE_CLIENT_ID, process.env.AUTH_GOOGLE_CLIENT_SECRET, process.env.AUTH_GOOGLE_CALLBACK_URL);
   }

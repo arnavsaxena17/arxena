@@ -1,9 +1,9 @@
-import styled from '@emotion/styled';
-import { useRecoilState } from 'recoil';
-import { enrichmentsState, activeEnrichmentState } from '@/arx-enrich/states/arxEnrichModalOpenState';
-import { useEffect, useState } from 'react';
-import {  IconTrash } from 'twenty-ui';
 import { Enrichment } from '@/arx-enrich/arxEnrichmentModal';
+import { activeEnrichmentState, enrichmentsState } from '@/arx-enrich/states/arxEnrichModalOpenState';
+import styled from '@emotion/styled';
+import { useEffect } from 'react';
+import { useRecoilState } from 'recoil';
+import { IconTrash } from 'twenty-ui';
 import { SampleEnrichments } from './SampleEnrichments';
 
 
@@ -197,7 +197,7 @@ export const ModalNavElementContainer = () => {
 export const ArxEnrichLeftSideContainer = () => {
   return (
     <StyledContainer>
-      <div>New ARX Enrich</div>
+      <div>New ARX JD Upload</div>
       <ScrollableContent>
         <ModalNavElementContainer />
         <SampleEnrichments />

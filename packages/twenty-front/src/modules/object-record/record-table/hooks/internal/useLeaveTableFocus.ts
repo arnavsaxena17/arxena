@@ -34,7 +34,7 @@ export const useLeaveTableFocus = (recordTableId?: string) => {
           isSoftFocusActiveState,
         );
 
-        resetTableRowSelection();
+        // resetTableRowSelection();
 
         if (!isSoftFocusActive) {
           return;

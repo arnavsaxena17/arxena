@@ -1,19 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { graphQltoUpdateOneCandidate, PersonNode } from 'twenty-shared';
 import { FilterCandidates } from '../../arx-chat/services/candidate-engagement/filter-candidates';
-import { GoogleSheetsService } from '../../google-sheets/google-sheets.service';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { axiosRequest } from '../utils/utils';
-import { CandidateService } from './candidate.service';
 
 @Injectable()
 export class ChatService {
   constructor(
-
-    private readonly candidateService: CandidateService,
     private readonly workspaceQueryService: WorkspaceQueryService,
-    private readonly googleSheetsService: GoogleSheetsService
-
   ) {}
 
 
