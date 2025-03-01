@@ -78,6 +78,7 @@ export interface ProcessCandidatesJobData {
   data: UserProfile[];
   jobId: string;
   jobName: any;
+  batchName?: string;
   timestamp: any;
   apiToken: any;
 }
