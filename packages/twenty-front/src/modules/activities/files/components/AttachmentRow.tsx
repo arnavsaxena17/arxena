@@ -183,13 +183,13 @@ export const AttachmentRow = ({
               {isPreviewable ? (
                 <StyledLink
                   onClick={handleOpenDocument}
-                  href={attachment.fullPath}
+                  href={fullPath}
                 >
                   <OverflowingTextWithTooltip text={attachment.name} />
                 </StyledLink>
               ) : (
                 <StyledLink
-                  href={attachment.fullPath}
+                  href={fullPath}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
