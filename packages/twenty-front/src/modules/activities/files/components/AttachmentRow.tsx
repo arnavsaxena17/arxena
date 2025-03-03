@@ -147,7 +147,7 @@ export const AttachmentRow = ({
 
   const handleDownload = () => {
     downloadFile(
-      attachment.fullPath,
+      fullPath,
       `${attachmentFileName}${attachmentFileExtension}`,
     );
   };
