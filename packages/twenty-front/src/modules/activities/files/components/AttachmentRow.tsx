@@ -137,6 +137,13 @@ export const AttachmentRow = ({
   };
 
   console.log("attachment.fullPath::", attachment.fullPath)
+  console.log("process.env.NODE_ENV::", process.env.NODE_ENV)
+
+  const fullPath = process.env.NODE_ENV === 'production'
+    ? attachment.fullPath.replace('http://localhost:3000/', 'https://app.arxena.com/')
+    : attachment.fullPath;
+
+    console.log("This is the final full path of the attachment::", fullPath)
 
   const handleDownload = () => {
     downloadFile(
