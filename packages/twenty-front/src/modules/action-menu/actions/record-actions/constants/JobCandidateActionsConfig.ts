@@ -12,6 +12,7 @@ import { useCloneMultipleRecordsAction } from '@/action-menu/actions/record-acti
 import { useCandidateEnrichmentAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useCandidateEnrichmentAction';
 import { useStartChatWithCandidatesAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useStartChatWithCandidatesAction';
 import { IconEngine, IconList } from '@tabler/icons-react';
+import { useUpdateSnapshotProfilesFromJobBoardsAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useUpdateSnapshotProfilesFromJobBoardsAction';
 
 
 export const JOB_CANDIDATE_SPECIFIC_ACTIONS: Record<
@@ -45,6 +46,19 @@ export const JOB_CANDIDATE_SPECIFIC_ACTIONS: Record<
     isPinned: false,
     availableOn: [ActionViewType.INDEX_PAGE_BULK_SELECTION,ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION  ],
     useAction: useStartChatWithCandidatesAction,
+  },
+    updateProfiles: {
+    type: ActionMenuEntryType.Standard,
+    scope: ActionMenuEntryScope.RecordSelection,
+    key: MultipleRecordsActionKeys.UPDATE_SNAPSHOT_PROFILES_FROM_JOB_BOARDS,
+    shortLabel: msg`Update Snapshot Profiles From Job Boards`,
+    label: msg`Update Snapshot Profiles From Job Boards`,
+    position: 5,
+    Icon: IconList,
+    accent: 'placeholder',
+    isPinned: false,
+    availableOn: [ActionViewType.INDEX_PAGE_BULK_SELECTION,ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION  ],
+    useAction: useUpdateSnapshotProfilesFromJobBoardsAction,
   },
     enrichCandidates: {
     type: ActionMenuEntryType.Standard,

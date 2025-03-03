@@ -57,6 +57,7 @@ export class GoogleSheetsDataController {
       this.workspaceQueryService,
       this.candidateService,
       this.processCandidatesService,
+      this.personService
     );
     console.log("candidateSourcingController:", candidateSourcingController);
 

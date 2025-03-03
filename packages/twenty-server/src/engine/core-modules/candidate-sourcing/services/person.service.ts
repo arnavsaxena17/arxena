@@ -28,20 +28,9 @@ export class PersonService {
     const url = process.env.ENV_NODE === 'production' ? 'https://arxena.com/fetch_and_update_apna_profile' : 'http://127.0.0.1:5050/fetch_and_update_apna_profile';
     console.log("REceived:::", field, value, candidateId, personId, unique_key_string, apiToken);
     try {
-      const response = await axios.post(
-      url,
-      {
-        field,
-        value,
-        candidateId,
-        personId,
-        unique_key_string,
-        apiToken,
-        spreadsheetId
-      },
-
-      { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiToken}` } },
-      );
+      const response = await axios.post( url,
+      { field, value, candidateId, personId, unique_key_string, apiToken, spreadsheetId },
+      { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiToken}` } } );
 
       return response.data;
     } catch (error) {

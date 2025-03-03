@@ -1,6 +1,7 @@
 import { Controller, Post, Req, UseGuards } from '@nestjs/common';
 import axios from 'axios';
 import { workspacesWithOlderSchema } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/candidate-engagement';
+import { PersonService } from 'src/engine/core-modules/candidate-sourcing/services/person.service';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 import {
   CreateOneJob,
@@ -27,6 +28,7 @@ export class CandidateSourcingController {
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly candidateService: CandidateService,
     private readonly processCandidatesService: ProcessCandidatesService,
+    private readonly personService: PersonService,
   ) {}
 
   @Post('update-candidate')
@@ -114,6 +116,47 @@ export class CandidateSourcingController {
 
     const response = await axiosRequest(graphqlQueryObj, apiToken);
     return response.data;
+  }
+
+  @Post('update-snapshot-profiles')
+  @UseGuards(JwtAuthGuard)
+  async updateProfiles(@Req() request: any) {
+    const apiToken = request.headers.authorization.split(' ')[1];
+    const { candidateIds, uniqueStringKeys, personIds, objectNameSingular } = request.body as {
+      candidateIds: string[];
+      uniqueStringKeys: string[];
+      personIds: string[];
+      objectNameSingular: string;
+    };
+    
+    console.log('jobCandidateIds::', candidateIds);
+    console.log('objectNameSingular::', objectNameSingular); 
+    console.log('uniqueStringKeys::', uniqueStringKeys);
+    console.log('personIds::', personIds);
+
+    try {
+      for (let i = 0; i < candidateIds.length; i++) {
+        const candidateId = candidateIds[i] || '';
+        const personId = personIds[i] || '';
+        const uniqueStringKey = uniqueStringKeys[i] || '';
+        
+        await this.personService.purchaseAndUpdateApnaProfile(
+          'update-snapshot-profiles',
+          'update-snapshot-profiles',
+          candidateId, // Pass individual ID instead of array
+          personId,    // Pass individual ID instead of array
+          uniqueStringKey, // Pass individual key instead of array
+          apiToken,
+          ''
+        );
+      }
+  
+          
+      return { status: 'Success' };
+    } catch (error) {
+      console.log('Error in updateProfiles:', error);
+      return { status: 'Failed', error: error.message };
+    }
   }
 
   @Post('create-enrichments')
@@ -214,12 +257,21 @@ export class CandidateSourcingController {
       // const { candidateIds } = body;
       const objectNameSingular = request.body.objectNameSingular;
       console.log('thisi s objectNameSingular:', objectNameSingular);
-      const url = process.env.ENV_NODE === 'production' ? 'https://arxena.com/sync_job_candidate' : 'http://127.0.0.1:5050/sync_job_candidate';
+      const url =
+        process.env.ENV_NODE === 'production'
+          ? 'https://arxena.com/sync_job_candidate'
+          : 'http://127.0.0.1:5050/sync_job_candidate';
 
       console.log('url:', url);
       const response = await axios.post(
-        url, { objectNameSingular: objectNameSingular },
-        { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiToken}`, }, },
+        url,
+        { objectNameSingular: objectNameSingular },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${apiToken}`,
+          },
+        },
       );
 
       return { status: 'Success' };
@@ -237,13 +289,21 @@ export class CandidateSourcingController {
     try {
       // const { candidateIds } = body;
       const phoneCallIds = request.body.phoneCallIds;
-      const url = process.env.ENV_NODE === 'production' ? 'https://arxena.com/transcribe_call' : 'http://127.0.0.1:5050/transcribe_call';
+      const url =
+        process.env.ENV_NODE === 'production'
+          ? 'https://arxena.com/transcribe_call'
+          : 'http://127.0.0.1:5050/transcribe_call';
 
       console.log('url:', url);
       const response = await axios.post(
         url,
         { phoneCallIds: phoneCallIds },
-        { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiToken}`, }, },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${apiToken}`,
+          },
+        },
       );
       console.log('Received this response:', response.data);
 
@@ -335,7 +395,10 @@ export class CandidateSourcingController {
           pathPosition: this.getJobCandidatePathPosition(jobName),
           arxenaSiteId: newJobId,
           isActive: true,
-          googleSheetUrl: { primaryLinkLabel: googleSheetUrl, primaryLinkUrl: googleSheetUrl, },
+          googleSheetUrl: {
+            primaryLinkLabel: googleSheetUrl,
+            primaryLinkUrl: googleSheetUrl,
+          },
           ...(googleSheetId && { googleSheetId: googleSheetId }),
         },
       },
@@ -392,7 +455,10 @@ export class CandidateSourcingController {
     googleSheetUrl: string | null,
     apiToken: string,
   ): Promise<any> {
-    const url = process.env.ENV_NODE === 'production' ? 'https://arxena.com/create_new_job' : 'http://127.0.0.1:5050/create_new_job';
+    const url =
+      process.env.ENV_NODE === 'production'
+        ? 'https://arxena.com/create_new_job'
+        : 'http://127.0.0.1:5050/create_new_job';
     const response = await axios.post(
       url,
       {
@@ -427,8 +493,18 @@ export class CandidateSourcingController {
 
     try {
       // Process profiles and get all the necessary data
-      const jobIdProcesed = await this.processCandidatesService.send( data, jobId, jobName, timestamp, apiToken, );
-      return { status: 'success', message: 'Candidate processing queued successfully', jobId: jobId, };
+      const jobIdProcesed = await this.processCandidatesService.send(
+        data,
+        jobId,
+        jobName,
+        timestamp,
+        apiToken,
+      );
+      return {
+        status: 'success',
+        message: 'Candidate processing queued successfully',
+        jobId: jobId,
+      };
     } catch (error) {
       console.error('Error in sourceCandidates:', error);
       return {
@@ -451,14 +527,15 @@ export class CandidateSourcingController {
       await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
     let graphqlQueryObjToFetchAllCandidatesForChats = '';
     if (workspacesWithOlderSchema.includes(workspaceId)) {
-      graphqlQueryObjToFetchAllCandidatesForChats = graphqlToFindManyJobByArxenaSiteIdOlderSchema;
+      graphqlQueryObjToFetchAllCandidatesForChats =
+        graphqlToFindManyJobByArxenaSiteIdOlderSchema;
     } else {
       graphqlQueryObjToFetchAllCandidatesForChats = graphqlToFindManyJobs;
     }
     const responseFromGetAllJobs = await axiosRequest(
       JSON.stringify({
         query: graphqlQueryObjToFetchAllCandidatesForChats,
-        variables: { limit: 30, orderBy: [{ position: 'AscNullsFirst' }], },
+        variables: { limit: 30, orderBy: [{ position: 'AscNullsFirst' }] },
       }),
       apiToken,
     );
@@ -476,7 +553,10 @@ export class CandidateSourcingController {
     try {
       let arxenaSiteBaseUrl: string = '';
       if (process.env.NODE_ENV === 'development') {
-        console.log( 'process.env.ARXENA_SITE_BASE_URL', process.env.ARXENA_SITE_BASE_URL, );
+        console.log(
+          'process.env.ARXENA_SITE_BASE_URL',
+          process.env.ARXENA_SITE_BASE_URL,
+        );
         arxenaSiteBaseUrl =
           process.env.ARXENA_SITE_BASE_URL || 'http://localhost:5050';
       } else {
@@ -488,7 +568,12 @@ export class CandidateSourcingController {
       const response = await axios.post(
         arxenaSiteBaseUrl + '/test-connection-from-arx-twenty',
         { jobId: 'some-id' },
-        { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiToken}`, }, }
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${apiToken}`,
+          },
+        },
       );
       console.log('Response from localhost:5050', response.data);
       return { jobs: response.data };
@@ -516,7 +601,10 @@ export class CandidateSourcingController {
           companyId: data?.companyId,
         },
       };
-      const graphqlQueryObj = JSON.stringify({ query: CreateOneJob, variables: graphqlVariables, });
+      const graphqlQueryObj = JSON.stringify({
+        query: CreateOneJob,
+        variables: graphqlVariables,
+      });
       const responseNew = await axiosRequest(graphqlQueryObj, apiToken);
       console.log('Response from create job', responseNew.data);
       uuid = responseNew.data.data.createJob.id;
@@ -536,12 +624,21 @@ export class CandidateSourcingController {
       const data = request.body;
       const arxenaJobId = data?.job_id;
       const jobName = data?.job_name;
-      const jobObject: Jobs = await this.candidateService.getJobDetails( arxenaJobId, jobName, apiToken );
+      const jobObject: Jobs = await this.candidateService.getJobDetails(
+        arxenaJobId,
+        jobName,
+        apiToken,
+      );
       const questions = data?.questions || [];
       console.log('Number Questions:', questions?.length);
       for (const question of questions) {
-        const graphqlVariables = { input: { name: question, jobsId: jobObject?.id } };
-        const graphqlQueryObj = JSON.stringify({ query: createOneQuestion, variables: graphqlVariables });
+        const graphqlVariables = {
+          input: { name: question, jobsId: jobObject?.id },
+        };
+        const graphqlQueryObj = JSON.stringify({
+          query: createOneQuestion,
+          variables: graphqlVariables,
+        });
         const response = await axiosRequest(graphqlQueryObj, apiToken);
       }
       return { status: 'success' };
