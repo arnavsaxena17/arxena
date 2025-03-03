@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { tokenPairState } from '@/auth/states/tokenPairState';
 import styled from '@emotion/styled';
 import axios from 'axios';
-import { useRecoilState } from 'recoil';
-import { tokenPairState } from '@/auth/states/tokenPairState';
 import mammoth from 'mammoth';
-import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
+import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
+import { useRecoilState } from 'recoil';
 // import { extractRawText } from 'docx2html';
 
 // Add a type declaration for the handleDocFile function
@@ -323,6 +323,9 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({ isOpen, onClose, cand
         setError(null);
         setFileContent(null);
         setDownloadUrl(null);
+        console.log("This si the attachment.fullPath REACT_APP_SERVER_BASE_URL::", process.env.REACT_APP_SERVER_BASE_URL);
+        console.log("This si the fullPath::", attachment.fullPath);
+
 
         const response = await axios.get(`${process.env.REACT_APP_SERVER_BASE_URL}/files/${attachment.fullPath}`, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` }, responseType: 'arraybuffer' });
 
