@@ -715,7 +715,22 @@ export const queryObjectMetadataItems =       `query ObjectMetadataItems($object
   }
 }`;
 
-
+export const getExistingRelationsQuery =  `query GetExistingRelations($objectMetadataId: ID!) {
+  relations(filter: { 
+    or: [
+      { fromObjectMetadataId: { eq: $objectMetadataId } },
+      { toObjectMetadataId: { eq: $objectMetadataId } }
+    ]
+  }) {
+    edges {
+      node {
+        fromObjectMetadataId
+        toObjectMetadataId
+      }
+    }
+  }
+}
+`
 
 export const FindManyWorkspaceMembers = `
 query FindManyWorkspaceMembers($filter: WorkspaceMemberFilterInput, $orderBy: [WorkspaceMemberOrderByInput], $lastCursor: String, $limit: Int) {

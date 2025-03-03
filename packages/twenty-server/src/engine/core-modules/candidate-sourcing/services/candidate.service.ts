@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { CreateFieldsOnObject } from 'src/engine/core-modules/workspace-modifications/object-apis/data/createFields';
-import { ArxenaCandidateNode, ArxenaJobCandidateNode, ArxenaPersonNode, CreateManyCandidates, CreateOneObjectMetadataItem, graphqlToFetchAllCandidateData, graphqlToFindManyJobs, Jobs, PersonNode, UserProfile } from 'twenty-shared';
+import { ArxenaCandidateNode, ArxenaJobCandidateNode, ArxenaPersonNode, CreateManyCandidates, CreateOneObjectMetadataItem, getExistingRelationsQuery, graphqlToFetchAllCandidateData, graphqlToFindManyJobs, Jobs, PersonNode, UserProfile } from 'twenty-shared';
 import { FilterCandidates } from '../../arx-chat/services/candidate-engagement/filter-candidates';
 import { GoogleSheetsService } from '../../google-sheets/google-sheets.service';
 import { CreateMetaDataStructure } from '../../workspace-modifications/object-apis/object-apis-creation';
@@ -11,8 +11,7 @@ import { processArxCandidate } from '../utils/data-transformation-utility';
 import { JobCandidateUtils } from '../utils/job-candidate-utils';
 import { axiosRequest, axiosRequestForMetadata } from '../utils/utils';
 import { PersonService } from './person.service';
-
-const BATCH_SIZE = 25;
+const BATCH_SIZE = 30;
 export const newFieldsToCreate = [ "name", "jobTitle", "currentOrganization", "age", "currentLocation", "inferredSalary", "email", "profileUrl", "phone", "uniqueStringKey", "profileTitle", "displayPicture", "preferredLocations", "birthDate", "inferredYearsExperience", "noticePeriod", "homeTown", "maritalStatus", "ugInstituteName", "ugGraduationYear", "pgGradudationDegree", "ugGraduationDegree", "pgGraduationYear", "resumeHeadline", "keySkills", "industry", "modifyDateLabel", "experienceYears", "experienceMonths",  ];
 interface ProcessingContext {
   jobCandidateInfo: {
@@ -23,38 +22,17 @@ interface ProcessingContext {
   timestamp: string;
 }
 
-
-
 @Injectable()
 export class CandidateService {
-
   constructor(
     private readonly personService: PersonService,
     private readonly workspaceQueryService: WorkspaceQueryService,
 
 ) {}
-
 private processingContexts = new Map<string, ProcessingContext>();
-
 private async checkExistingRelations(objectMetadataId: string, apiToken: string): Promise<any[]> {
   try {
-    const query = `
-      query GetExistingRelations($objectMetadataId: ID!) {
-        relations(filter: { 
-          or: [
-            { fromObjectMetadataId: { eq: $objectMetadataId } },
-            { toObjectMetadataId: { eq: $objectMetadataId } }
-          ]
-        }) {
-          edges {
-            node {
-              fromObjectMetadataId
-              toObjectMetadataId
-            }
-          }
-        }
-      }
-    `;
+    const query = getExistingRelationsQuery;
 
     const response = await axiosRequest(JSON.stringify({
       query,

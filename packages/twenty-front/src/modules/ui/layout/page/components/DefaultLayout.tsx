@@ -95,7 +95,7 @@ export const DefaultLayout = () => {
                     (OBJECT_SETTINGS_WIDTH +
                       NAV_DRAWER_WIDTHS.menu.desktop.expanded +
                       64)) /
-                  2
+                  50
                 : 0,
           }}
           transition={{ duration: theme.animation.duration.normal }}
