@@ -77,12 +77,7 @@ export class CreateMetaDataStructure {
     try {
       const response = await executeQuery<any>(
         queryObjectMetadataItems,
-        {
-          after: cursor || undefined,
-          objectFilter: {
-            id: { eq: objectId },
-          },
-        },
+        { after: cursor || undefined, objectFilter: { id: { eq: objectId }, }, },
         apiToken,
       );
 

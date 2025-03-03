@@ -715,22 +715,38 @@ export const queryObjectMetadataItems =       `query ObjectMetadataItems($object
   }
 }`;
 
-export const getExistingRelationsQuery =  `query GetExistingRelations($objectMetadataId: ID!) {
-  relations(filter: { 
-    or: [
-      { fromObjectMetadataId: { eq: $objectMetadataId } },
-      { toObjectMetadataId: { eq: $objectMetadataId } }
-    ]
-  }) {
-    edges {
-      node {
-        fromObjectMetadataId
-        toObjectMetadataId
-      }
-    }
-  }
-}
-`
+export const graphQlTofindManyCandidateEnrichments = `query FindManyCandidateEnrichments($filter: CandidateEnrichmentFilterInput, $orderBy: [CandidateEnrichmentOrderByInput], $lastCursor: String, $limit: Int) {
+          candidateEnrichments(
+            filter: $filter
+            orderBy: $orderBy
+            first: $limit
+            after: $lastCursor
+          ) {
+            edges {
+              node {
+                prompt
+                modelName
+                createdAt
+                fields
+                id
+                name
+                selectedModel
+                selectedMetadataFields
+              }
+              cursor
+              __typename
+            }
+            pageInfo {
+              hasNextPage
+              startCursor
+              endCursor
+              __typename
+            }
+            totalCount
+            __typename
+          }
+        }`
+
 
 export const FindManyWorkspaceMembers = `
 query FindManyWorkspaceMembers($filter: WorkspaceMemberFilterInput, $orderBy: [WorkspaceMemberOrderByInput], $lastCursor: String, $limit: Int) {

@@ -359,7 +359,15 @@ mutation UpdateSMS($id: ID!, $input: UpdateSMSInput!) {
 
 
 
-
+export const mutationToCreateOneCandidateEnrichment = `mutation CreateOneCandidateEnrichment($input: CandidateEnrichmentCreateInput!) {
+        createCandidateEnrichment(data: $input) {
+          id
+          name
+          position
+          createdAt
+          updatedAt
+        }
+      }`
 
 export const CreateOneJob = `
 mutation CreateOneJob($input: JobCreateInput!) {

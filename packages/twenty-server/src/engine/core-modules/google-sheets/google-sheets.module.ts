@@ -14,7 +14,6 @@ import { DataSourceService } from 'src/engine/metadata-modules/data-source/data-
 import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
 import { AppToken } from '../app-token/app-token.entity';
 import { JwtAuthStrategy } from '../auth/strategies/jwt.auth.strategy';
-import { CandidateQueueProcessor } from '../candidate-sourcing/jobs/process-candidates.job';
 import { ProcessCandidatesService } from '../candidate-sourcing/jobs/process-candidates.service';
 import { CandidateService } from '../candidate-sourcing/services/candidate.service';
 import { ChatService } from '../candidate-sourcing/services/chat.service';
@@ -39,7 +38,6 @@ import { GoogleSheetsService } from './google-sheets.service';
     WorkspaceDataSourceService,
     EnvironmentService,
     ApiKeyService,
-    CandidateQueueProcessor,
     JwtAuthStrategy,
     EmailService,
     AccessTokenService,

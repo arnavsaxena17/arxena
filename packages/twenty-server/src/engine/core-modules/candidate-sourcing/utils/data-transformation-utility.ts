@@ -52,6 +52,9 @@ export const mapArxCandidateToJobCandidateNode = candidate => {
     experienceYears: candidate?.experience_years || 0,
     experienceMonths: candidate?.experienceMonths || 0,
     currentOrganization: candidate?.job_company_name || '',
+    lastActive: candidate?.last_active || null,
+    lastUpdated: candidate?.last_updated || null,
+    campaignName: candidate?.campaign_name || '',
     ...ansFields
   };
   return jobCandidateNode;
@@ -153,6 +156,10 @@ export function transformFieldName(field: string): string {
       'experience_years': 'experienceYears',
       'experience_months': 'experienceMonths',
       'job_company_name': 'currentOrganization',
+      'last_active': 'lastActive',
+      'last_updated': 'lastUpdated',
+      'campaign_name': 'campaignName',
+
 
       // From candidateNode mappings
       'jobs_id': 'jobsId',

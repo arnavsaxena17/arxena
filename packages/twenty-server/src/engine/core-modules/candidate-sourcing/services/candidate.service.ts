@@ -1,8 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { CreateFieldsOnObject } from 'src/engine/core-modules/workspace-modifications/object-apis/data/createFields';
-import { ArxenaCandidateNode, ArxenaJobCandidateNode, ArxenaPersonNode, CreateManyCandidates, CreateOneObjectMetadataItem, getExistingRelationsQuery, graphqlToFetchAllCandidateData, graphqlToFindManyJobs, Jobs, PersonNode, UserProfile } from 'twenty-shared';
-import { FilterCandidates } from '../../arx-chat/services/candidate-engagement/filter-candidates';
-import { GoogleSheetsService } from '../../google-sheets/google-sheets.service';
+import { ArxenaCandidateNode, ArxenaJobCandidateNode, ArxenaPersonNode, CreateManyCandidates, CreateOneObjectMetadataItem, graphqlToFetchAllCandidateData, graphqlToFindManyJobs, Jobs, PersonNode, UserProfile } from 'twenty-shared';
 import { CreateMetaDataStructure } from '../../workspace-modifications/object-apis/object-apis-creation';
 import { createFields } from '../../workspace-modifications/object-apis/services/field-service';
 import { createRelations } from '../../workspace-modifications/object-apis/services/relation-service';
@@ -32,6 +30,24 @@ export class CandidateService {
 private processingContexts = new Map<string, ProcessingContext>();
 private async checkExistingRelations(objectMetadataId: string, apiToken: string): Promise<any[]> {
   try {
+
+
+  const getExistingRelationsQuery =  `query GetExistingRelations($objectMetadataId: ID!) {
+    relations(filter: { 
+      or: [
+        { fromObjectMetadataId: { eq: $objectMetadataId } },
+        { toObjectMetadataId: { eq: $objectMetadataId } }
+      ]
+    }) {
+      edges {
+        node {
+          fromObjectMetadataId
+          toObjectMetadataId
+        }
+      }
+    }
+  }
+  `;
     const query = getExistingRelationsQuery;
 
     const response = await axiosRequest(JSON.stringify({
@@ -115,21 +131,21 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
   }
   }
 
-  async getJobIdsFromCandidateIds(candidateIds: string[], apiToken: string): Promise<string[]> { 
-    const jobids = await new FilterCandidates(this.workspaceQueryService).getJobIdsFromCandidateIds(candidateIds, apiToken)
-    return jobids;
-  }
+  // async getJobIdsFromCandidateIds(candidateIds: string[], apiToken: string): Promise<string[]> { 
+  //   const jobids = await new FilterCandidates(this.workspaceQueryService).getJobIdsFromCandidateIds(candidateIds, apiToken)
+  //   return jobids;
+  // }
 
-  async processSingleProfile( profile: UserProfile, jobId: string, jobName: string, timestamp: string, apiToken: string ): Promise<void> {
+  // async processSingleProfile( profile: UserProfile, jobId: string, jobName: string, timestamp: string, apiToken: string ): Promise<void> {
     
-    const jobObject = await this.getJobDetails(jobId, jobName, apiToken);
-    const tracking = { personIdMap: new Map<string, string>(), candidateIdMap: new Map<string, string>() };
-    const { context } = await this.setupProcessingContext(jobObject, timestamp, [profile], apiToken);
+  //   const jobObject = await this.getJobDetails(jobId, jobName, apiToken);
+  //   const tracking = { personIdMap: new Map<string, string>(), candidateIdMap: new Map<string, string>() };
+  //   const { context } = await this.setupProcessingContext(jobObject, timestamp, [profile], apiToken);
 
-    await this.processPeopleBatch([profile], [profile.unique_key_string], { manyPersonObjects: [], allPersonObjects: [] }, tracking, apiToken);
-    await this.processCandidatesBatch([profile], jobObject, { manyCandidateObjects: [] }, tracking, apiToken);
-    await this.processJobCandidatesBatch([profile], jobObject, context.jobCandidateInfo.path_position, { manyJobCandidateObjects: [] }, tracking, apiToken);
-  }
+  //   await this.processPeopleBatch([profile], [profile.unique_key_string], { manyPersonObjects: [], allPersonObjects: [] }, tracking, apiToken);
+  //   await this.processCandidatesBatch([profile], jobObject, { manyCandidateObjects: [] }, tracking, apiToken);
+  //   await this.processJobCandidatesBatch([profile], jobObject, context.jobCandidateInfo.path_position, { manyJobCandidateObjects: [] }, tracking, apiToken);
+  // }
   
 
   async batchCheckExistingCandidates(uniqueStringKeys: string[], jobId: string, apiToken: string): Promise<Map<string, any>> {
@@ -227,7 +243,6 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
       if (profile) {
         try {
           const { jobCandidateNode } = await processArxCandidate(profile, jobObject);
-          // Add all keys from the jobCandidateNode
           Object.keys(jobCandidateNode).forEach(key => fields.add(key));
         } catch (error) {
           console.log(`Error processing profile for fields collection: ${error}`);
@@ -235,6 +250,7 @@ async createRelationsBasedonObjectMap(jobCandidateObjectId: string, jobCandidate
         }
       }
     }
+    console.log("Fields collected:", fields);
     return fields;
   }
 
@@ -260,39 +276,32 @@ private async processBatches(
       manyJobCandidateObjects: [] as ArxenaJobCandidateNode[]
     };
     console.log("This is the job object in processBatches:", jobObject);
-    const batchSize = BATCH_SIZE;
-    const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-    const googleSheetsService = new GoogleSheetsService();
-    console.log("Google SheetID:", googleSheetId);
-    for (let i = 0; i < data.length; i += batchSize) {
-      const batch = data.slice(i, i + batchSize);
-      const uniqueStringKeys = batch.map(p => p?.unique_key_string).filter(Boolean);
-      if (uniqueStringKeys.length === 0) continue;
+    // const batchSize = BATCH_SIZE;
+    // const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+    // const googleSheetsService = new GoogleSheetsService();
+    // console.log("Google SheetID:", googleSheetId);
+    // for (let i = 0; i < data.length; i += batchSize) {
+    //   const batch = data.slice(i, i + batchSize);
+      const uniqueStringKeys = data.map(p => p?.unique_key_string).filter(Boolean);
+    //   if (uniqueStringKeys.length === 0) continue;
 
       // disabling google sheet batch processing for now
       // await googleSheetsService.processGoogleSheetBatch(batch, results, tracking, apiToken, googleSheetId, jobObject);
+      console.log("These are the uniqye string keys that are received::", uniqueStringKeys);
 
-
-      await this.processPeopleBatch(batch, uniqueStringKeys, results, tracking, apiToken);
-      await this.processCandidatesBatch(batch, jobObject, results, tracking, apiToken);  
-      await this.processJobCandidatesBatch(
-        batch,
-        jobObject,
-        context.jobCandidateInfo.path_position,
-        results,
-        tracking,
-        apiToken
-      );
+      await this.processPeopleBatch(data, uniqueStringKeys, results, tracking, apiToken);
+      await this.processCandidatesBatch(data, jobObject, results, tracking, apiToken);  
+      await this.processJobCandidatesBatch( data, jobObject, context.jobCandidateInfo.path_position, results, tracking, apiToken );
 
       // const auth = await googleSheetsService.loadSavedCredentialsIfExist(apiToken);
       // if (auth) {
       //     await googleSheetsService.updateIdsInSheet(auth, googleSheetId, tracking, apiToken);
       // }
 
-      if (i + batchSize < data.length) {
-        await delay(1000);
-      }
-    }
+      // if (i + batchSize < data.length) {
+      //   await delay(1000);
+      // }
+    // }
     return results;
   }
 
@@ -307,21 +316,12 @@ private async processBatches(
     
     if (!context) {
       const jobCandidateInfo = await this.setupJobCandidateStructure(jobObject, apiToken);
-      if (!jobCandidateInfo.jobCandidateObjectId) {
-        console.log('Failed to create/get job candidate object structure');
-      }
-  
+      if (!jobCandidateInfo.jobCandidateObjectId) { console.log('Failed to create/get job candidate object structure'); }
       context = { jobCandidateInfo, timestamp };
       this.processingContexts.set(batchKey, context);
 
       if (jobCandidateInfo.jobCandidateObjectId && data.length > 0) {
-        await this.createObjectFieldsAndRelations(
-          jobCandidateInfo.jobCandidateObjectId,
-          jobCandidateInfo.jobCandidateObjectName,
-          data,
-          jobObject,
-          apiToken
-        );
+        await this.createObjectFieldsAndRelations( jobCandidateInfo.jobCandidateObjectId, jobCandidateInfo.jobCandidateObjectName, data, jobObject, apiToken );
       }
     }
   
@@ -349,31 +349,19 @@ private async processBatches(
       console.log("Choosing the jobID:", jobId);
       graphlQlQuery = JSON.stringify({
         query: graphqlToFindManyJobs,
-        variables: {
-          filter: { id: { in: [jobId] } },
-          limit: 30,
-          orderBy: [{ position: 'AscNullsFirst' }],
-        },
+        variables: { filter: { id: { in: [jobId] } }, limit: 30, orderBy: [{ position: 'AscNullsFirst' }], },
       });
     } else if (isValidMongoDBId(jobId)) {
       console.log("Choosing the jobID:", jobId);
       graphlQlQuery = JSON.stringify({
         query: graphqlToFindManyJobs,
-        variables: {
-          filter: { arxenaSiteId: { in: [jobId] } },
-          limit: 30,
-          orderBy: [{ position: 'AscNullsFirst' }],
-        },
+        variables: { filter: { arxenaSiteId: { in: [jobId] } }, limit: 30, orderBy: [{ position: 'AscNullsFirst' }], },
       });
     } else {
       console.log("Choosing the jobName:", jobName);
       graphlQlQuery = JSON.stringify({
         query: graphqlToFindManyJobs,
-        variables: {
-          filter: { name: { in: [jobName] } },
-          limit: 30,
-          orderBy: [{ position: 'AscNullsFirst' }],
-        },
+        variables: { filter: { name: { in: [jobName] } }, limit: 30, orderBy: [{ position: 'AscNullsFirst' }], },
       });
     }
 
@@ -415,57 +403,47 @@ private async processBatches(
   // }
   
   // Helper method to process a chunk of candidates
-   async processChunk(
-    candidates: UserProfile[],
-    jobId: string,
-    jobName: any,
-    timestamp: any,
-    apiToken: any,
-    chunkNumber: number,
-    totalChunks: any
-  ): Promise<void> {
+   async processChunk( candidates: UserProfile[], jobId: string, jobName: any, timestamp: any, apiToken: any, chunkNumber: number, totalChunks: any ): Promise<void> {
     console.log(`Processing chunk ${chunkNumber}/${totalChunks} with ${candidates.length} candidates`);
-    
     // Process in even smaller chunks for the GraphQL requests to avoid timeouts
-    const graphqlBatchSize = BATCH_SIZE;
+    // const graphqlBatchSize = BATCH_SIZE;
+    // console.log("This is the graphqlBatchSize:", graphqlBatchSize);
     
-    for (let i = 0; i < candidates.length; i += graphqlBatchSize) {
-      const miniChunk = candidates.slice(i, i + graphqlBatchSize);
+    // for (let i = 0; i < candidates.length; i += graphqlBatchSize) {
+    //   const miniChunk = candidates.slice(i, i + graphqlBatchSize);
       
       try {
-        console.log(`Processing mini-chunk of ${miniChunk.length} candidates (${i+1}-${Math.min(i+graphqlBatchSize, candidates.length)} of ${candidates.length})`);
+        console.log(`Processing mini-chunk of ${candidates.length}  of ${candidates.length})`);
+        console.log(`Processing mini-chunk unique_key_string of ${candidates.map(x=> x.unique_key_string)})`);
         
         // Try up to 3 times with exponential backoff
         let success = false;
         let attempt = 0;
-        const MAX_ATTEMPTS = 4;
+        const MAX_ATTEMPTS = 2;
         
         while (!success && attempt < MAX_ATTEMPTS) {
           try {
             attempt++;
-            await this.processProfilesWithRateLimiting(
-              miniChunk, jobId, jobName, timestamp, apiToken
-            );
+            await this.processProfilesWithRateLimiting( candidates, jobId, jobName, timestamp, apiToken );
             success = true;
           } catch (error) {
+            console.log("error has been trhorn and will do this in another shot")
             if (attempt >= MAX_ATTEMPTS) {
               throw error; // Re-throw on final attempt
-            }
-            
+            }   
             // Exponential backoff delay
             const delay = Math.pow(2, attempt) * 1000;
             console.log(`Attempt ${attempt} failed, retrying in ${delay}ms...`);
             await new Promise(resolve => setTimeout(resolve, delay));
           }
         }
-        
         // Add delay between GraphQL requests to avoid overloading the API
         await new Promise(resolve => setTimeout(resolve, 1000));
       } catch (error) {
         console.error(`Error processing mini-chunk in chunk ${chunkNumber}:`, error);
         // Continue processing other mini-chunks
       }
-    }
+    // }
   }
 
 
@@ -490,8 +468,9 @@ private async processBatches(
         console.log('Job not found');
       }
       const googleSheetId = jobObject?.googleSheetId || '';
-  
+      
       const tracking = { personIdMap: new Map<string, string>(), candidateIdMap: new Map<string, string>() };
+      console.log("This is tracking of unique_key_string in processProfilesWithRateLimiting:", data.map(x=> x.unique_key_string));
   
       const { context, batchKey } = await this.setupProcessingContext(jobObject, timestamp, data, apiToken);
       const results = await this.processBatches(data, jobObject, context, tracking, apiToken,googleSheetId);
@@ -646,12 +625,8 @@ private async processBatches(
         return personId && candidateId;
     });
 
-    const personIds = validProfiles.map(profile => 
-        tracking.personIdMap.get(profile?.unique_key_string)
-    );
-    const candidateIds = validProfiles.map(profile => 
-        tracking.candidateIdMap.get(profile?.unique_key_string)
-    );
+    const personIds = validProfiles.map(profile => tracking.personIdMap.get(profile?.unique_key_string) );
+    const candidateIds = validProfiles.map(profile => tracking.candidateIdMap.get(profile?.unique_key_string) );
 
     console.log("Checking job candidates with the following IDs:");
   console.log("Person IDs:", personIds);
@@ -668,6 +643,8 @@ private async processBatches(
         apiToken
     );
 
+    console.log("Existing job candidates unique:", batch.map(x=> x.unique_key_string));
+
     for (const profile of batch) {
         const personId = tracking.personIdMap.get(profile?.unique_key_string);
         const candidateId = tracking.candidateIdMap.get(profile?.unique_key_string);
@@ -682,17 +659,20 @@ private async processBatches(
         }
 
         processedKeys.add(compositeKey);
-        
+        console.log("Processing job candidate for profile:", profile?.unique_key_string);
         try {
+            console.log("Trying:", profile?.unique_key_string);
             const { jobCandidateNode } = await processArxCandidate(profile, jobObject);
             jobCandidateNode.personId = personId;
             jobCandidateNode.candidateId = candidateId;
             jobCandidateNode.jobId = jobObject.id;
             
+            console.log("job cadidate to create:", jobCandidateNode);
             // Additional validation
             if (!jobCandidateNode.personId || !jobCandidateNode.candidateId || !jobCandidateNode.jobId) {
                 continue;
             }
+            console.log("Adding cjob candidate with name :", jobCandidateNode.name);
 
             jobCandidatesToCreate.push(jobCandidateNode);
             results.manyJobCandidateObjects.push(jobCandidateNode);
@@ -710,6 +690,7 @@ private async processBatches(
             query,
             variables: { data: jobCandidatesToCreate }
         });
+        console.log("Job candidates to create:", jobCandidatesToCreate);
 
         try {
             const response = await axiosRequest(graphqlInput, apiToken);
@@ -905,13 +886,10 @@ private async processBatches(
             console.error(`No data found for key: ${queryKey}`);
             break;
           }
-    
           const jobCandidates = jobCandidatesData.edges || [];
-          
           if (jobCandidates.length === 0) {
             break;
           }
-    
           allJobCandidates.push(...jobCandidates.map(edge => edge.node));
           
           hasNextPage = jobCandidatesData.pageInfo?.hasNextPage || false;
@@ -1058,55 +1036,70 @@ private determineFieldType(fieldName: string): string {
       fieldName.includes('pgGraduationYear') ||
       fieldName.includes('age') ||
       fieldName.includes('inferredSalary')) {
-    return 'NumberField'; // Instead of 'NumberField'
+    return 'NumberField';
   }
   
   if (fieldName.includes('link') || 
       fieldName.includes('profileUrl') || 
       fieldName.includes('displayPicture')) {
-    return 'LinkField';  // Instead of 'LinkField'
+    return 'LinkField';  
+  }
+  
+  if (fieldName.includes('lastUpdated') || 
+      fieldName.includes('lastActive') ) {
+    return 'DateTimeField'
   }
   
   if (fieldName.includes('multi') || 
       fieldName.includes('skills') ||
       fieldName.includes('locations')) {
-    return 'SelectField';  // Instead of 'MultiField'
+    return 'SelectField'; 
   }
   
-  return 'TextField'; // Instead of 'TextField'
+  return 'TextField';
 }
 
 private async createFieldsWithRetry(fields: { field: any }[], apiToken: string): Promise<void> {
   const maxRetries = 3;
-  const batchSize = 50; // Adjust based on your API limits
+  const batchSize = 50;
+  const maxConcurrent = 3; // Process 3 batches at a time
   
   // Split fields into batches
+  const batches: { field: any }[][] = [];
   for (let i = 0; i < fields.length; i += batchSize) {
-    const batch = fields.slice(i, i + batchSize);
-    let retryCount = 0;
+    batches.push(fields.slice(i, i + batchSize));
+  }
 
-    while (retryCount < maxRetries) {
-      try {
-        await createFields(batch, apiToken);
-        console.log(`Successfully created batch of ${batch.length} fields`);
-        break;
-      } catch (error) {
-        if (error.message?.includes('duplicate key value')) {
-          console.log('Duplicate key detected, skipping batch');
+  // Process batches with controlled concurrency
+  for (let i = 0; i < batches.length; i += maxConcurrent) {
+    const currentBatches = batches.slice(i, i + maxConcurrent);
+    
+    await Promise.all(currentBatches.map(async (batch) => {
+      let retryCount = 0;
+      
+      while (retryCount < maxRetries) {
+        try {
+          await createFields(batch, apiToken);
+          console.log(`Successfully created batch of ${batch.length} fields`);
           break;
-        }
+        } catch (error) {
+          if (error.message?.includes('duplicate key value')) {
+            console.log('Duplicate key detected, skipping batch');
+            break;
+          }
 
-        retryCount++;
-        if (retryCount === maxRetries) {
-          console.error('Failed to create fields batch after max retries:', error);
-          throw error;
-        }
+          retryCount++;
+          if (retryCount === maxRetries) {
+            console.error('Failed to create fields batch after max retries:', error);
+            throw error;
+          }
 
-        const delay = Math.pow(2, retryCount) * 1000;
-        console.log(`Retry ${retryCount} after ${delay}ms`);
-        await new Promise(resolve => setTimeout(resolve, delay));
+          const delay = Math.pow(2, retryCount) * 1000;
+          console.log(`Retry ${retryCount} after ${delay}ms`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
       }
-    }
+    }));
   }
 }
 
@@ -1115,7 +1108,7 @@ private async fetchAllFieldsForObject(objectId: string, apiToken: string): Promi
   const fields: string[] = [];
   let hasNextPage = true;
   let cursor: string | null = null;
-  console.log("This is the fetchAllFieldsForObject for :", objectId);
+  console.log("This is the fetchAllFields ForObject for :", objectId);
   console.log("This is the objectID:", objectId);
   while (hasNextPage) {
     try {

@@ -574,6 +574,9 @@ export interface ArxenaCandidateNode {
 
 export interface ArxenaJobCandidateNode {
   id?: string;
+  lastActive?: DateTimeField;
+  lastUpdated?: DateTimeField;
+  campaignName?: string;
   profileUrl: { primaryLinkLabel: string; primaryLinkUrl: string };
   displayPicture: { primaryLinkLabel: string; primaryLinkUrl: string };
   educationUgYear?: number;

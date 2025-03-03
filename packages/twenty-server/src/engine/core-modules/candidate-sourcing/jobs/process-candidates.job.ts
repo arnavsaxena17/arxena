@@ -56,10 +56,10 @@ export class CandidateQueueProcessor {
 
 
 
-  @Process('CandidateQueueProcessor_batch')
+  @Process(CandidateQueueProcessor.name)
   async handle(jobData :ProcessCandidatesJobData): Promise<void> {
     console.log("job.data.jobName::",jobData?.jobName);
-    console.log("job.data.jobName::",jobData);
+    console.log("job.data.jobName::",JSON.stringify(jobData));
 
     const batchInfo = jobData?.batchName?.includes('Batch') 
       ? jobData.batchName.match(/Batch (\d+)\/(\d+)/)
@@ -70,6 +70,8 @@ export class CandidateQueueProcessor {
     const totalBatches = batchInfo ? parseInt(batchInfo[2]) : '?';    
     console.log(`Processing batch ${batchNumber}/${totalBatches} with ${jobData.data.length} candidates`);
     try {
+
+      console.log("Reveived in CandidateQueueProcessor_batch process chunk ::", jobData.data.map((c) => c.unique_key_string));
       await this.candidateService.processChunk(
         jobData.data,
         jobData.jobId,
