@@ -52,7 +52,8 @@ export const StartInterviewPage: React.FC<InterviewPageProps> = ({ onStart, Inte
     // Preload the introduction video when component mounts
     useEffect(() => {
       if (introductionVideoData?.data?.attachments?.edges[0]?.node?.fullPath) {
-        const videoUrl = `${process.env.REACT_APP_SERVER_BASE_URL}/files/${introductionVideoData.data.attachments.edges[0].node.fullPath}`;
+        // const videoUrl = `${process.env.REACT_APP_SERVER_BASE_URL}/files/${introductionVideoData.data.attachments.edges[0].node.fullPath}`;
+        const videoUrl = `${introductionVideoData.data.attachments.edges[0].node.fullPath}`;
         // Create a new video element for preloading
         const preloadVideo = document.createElement('video');
         preloadVideo.src = videoUrl;

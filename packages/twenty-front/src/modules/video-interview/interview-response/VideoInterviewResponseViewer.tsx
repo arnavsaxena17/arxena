@@ -437,7 +437,8 @@ const VideoInterviewResponseViewer: React.FC<VideoInterviewResponseViewerProps> 
               return videoAttachment ? (
                 <VideoContainer key={response.id}>
                   <VideoDownloaderPlayer 
-                    videoUrl={`${process.env.REACT_APP_SERVER_BASE_URL}/files/${videoAttachment.node.fullPath}`} 
+                    // videoUrl={`${process.env.REACT_APP_SERVER_BASE_URL}/files/${videoAttachment.node.fullPath}`} 
+                    videoUrl={`${videoAttachment.node.fullPath}`} 
                   />
                   {response.transcript && (
                     <TranscriptContainer>

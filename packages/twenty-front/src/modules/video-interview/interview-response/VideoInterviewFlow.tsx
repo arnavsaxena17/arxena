@@ -140,7 +140,8 @@ const VideoInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) 
   useEffect(() => {
     const preloadAllVideos = async () => {
       if (introductionVideoData?.data?.attachments?.edges[0]?.node?.fullPath) {
-        const introUrl = `${process.env.REACT_APP_SERVER_BASE_URL}/files/${introductionVideoData.data.attachments.edges[0].node.fullPath}`;
+        // const introUrl = `${process.env.REACT_APP_SERVER_BASE_URL}/files/${introductionVideoData.data.attachments.edges[0].node.fullPath}`;
+        const introUrl = `${introductionVideoData.data.attachments.edges[0].node.fullPath}`;
         preloadVideo(introUrl);
       }
 
@@ -148,7 +149,8 @@ const VideoInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) 
       if (questionsVideoData?.length > 0) {
         questionsVideoData.forEach(attachment => {
           if (attachment?.fullPath) {
-            const videoUrl = `${process.env.REACT_APP_SERVER_BASE_URL}/files/${attachment.fullPath}`;
+            // const videoUrl = `${process.env.REACT_APP_SERVER_BASE_URL}/files/${attachment.fullPath}`;
+            const videoUrl = `${attachment.fullPath}`;
             preloadVideo(videoUrl);
           }
         });

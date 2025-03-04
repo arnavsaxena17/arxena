@@ -103,7 +103,8 @@ export class WhatsappControls {
     console.log('This is attachment name:', name);
     const localFilePath = process.cwd() + '/.attachments' + `/${attachment?.jobId}/` + name;
     console.log('This is localFile Path:', localFilePath);
-    const fileUrl = `${baseUrl}` + '/files/' + fullPath;
+    // const fileUrl = `${baseUrl}` + '/files/' + fullPath;
+    const fileUrl =  fullPath;
     let fileData;
     try {
       if (!attachment) {

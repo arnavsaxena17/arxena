@@ -1,16 +1,14 @@
 import { Injectable } from "@nestjs/common";
 import moment from "moment";
 
-import { promises as fs } from "fs";
-import path from "path";
-import process from "process";
 import { authenticate } from "@google-cloud/local-auth";
-import { google } from "googleapis";
-import { env } from "process";
-import * as gmailSenderTypes from "./services/gmail-sender-objects-types";
 import axios from "axios";
+import { promises as fs } from "fs";
+import { google } from "googleapis";
+import JSZip from 'jszip'; // If using TypeScript
 import * as mime from "mime-types";
-import JSZip from 'jszip';  // If using TypeScript
+import process from "process";
+import * as gmailSenderTypes from "./services/gmail-sender-objects-types";
 
 // If modifying these scopes, delete token.json.
 const SCOPES = [
@@ -203,8 +201,10 @@ export class MailerService {
     console.log("This is the gmailMessageData.attachments:", gmailMessageData.attachments);
     for (const attachment of gmailMessageData.attachments) {
       try {
+        // const url = process.env.SERVER_BASE_URL + '/files/' + attachment.path
+        const url =  attachment.path
         const fileContent = attachment.path.includes('attachment')
-          ? await axios.get(process.env.SERVER_BASE_URL + '/files/' + attachment.path, { responseType: 'arraybuffer' })
+          ? await axios.get(url, { responseType: 'arraybuffer' })
             .then(res => Buffer.from(res.data))
           : await fs.readFile(attachment.path);
 
@@ -292,8 +292,10 @@ export class MailerService {
     if (gmailMessageData.attachments && gmailMessageData.attachments.length > 0) {
       for (const attachment of gmailMessageData.attachments) {
         try {
+          // const url = process.env.SERVER_BASE_URL +'/files/'+attachment.path
+          const url = attachment.path
           const fileContent = attachment.path.includes('attachment')
-            ? await axios.get(process.env.SERVER_BASE_URL +'/files/'+attachment.path, { responseType: 'arraybuffer' }).then(res => Buffer.from(res.data))
+            ? await axios.get(url, { responseType: 'arraybuffer' }).then(res => Buffer.from(res.data))
             : await fs.readFile(attachment.path);
           const mimeType = mime.lookup(attachment.path) || 'application/octet-stream';
           

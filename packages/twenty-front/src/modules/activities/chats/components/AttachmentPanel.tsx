@@ -6,6 +6,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
 import { useRecoilState } from 'recoil';
+import { findManyAttachmentsQuery } from 'twenty-shared';
 // import { extractRawText } from 'docx2html';
 
 // Add a type declaration for the handleDocFile function
@@ -267,17 +268,7 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({ isOpen, onClose, cand
             filter: { candidateId: { eq: candidateId } },
             orderBy: [{ createdAt: 'DescNullsFirst' }],
           },
-          query: `query FindManyAttachments($filter: AttachmentFilterInput, $orderBy: [AttachmentOrderByInput]) {
-              attachments(filter: $filter, orderBy: $orderBy) {
-                edges {
-                  node {
-                    id
-                    name
-                    fullPath
-                  }
-                }
-              }
-            }`,
+          query: findManyAttachmentsQuery,
         },
         {
           headers: {
@@ -327,7 +318,8 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({ isOpen, onClose, cand
         console.log("This si the fullPath::", attachment.fullPath);
 
 
-        const response = await axios.get(`${process.env.REACT_APP_SERVER_BASE_URL}/files/${attachment.fullPath}`, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` }, responseType: 'arraybuffer' });
+        // const response = await axios.get(`${process.env.REACT_APP_SERVER_BASE_URL}/files/${attachment.fullPath}`, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` }, responseType: 'arraybuffer' });
+        const response = await axios.get(`${attachment.fullPath}`, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` }, responseType: 'arraybuffer' });
 
         let contentType = response.headers['content-type'] || attachment?.fullPath?.split('?')[0]?.split('.').pop()?.toLowerCase() || 'application/octet-stream';
         contentType = contentType.split(';')[0];
