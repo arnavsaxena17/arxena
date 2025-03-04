@@ -14,7 +14,7 @@ import { FilterCandidates } from '../services/candidate-engagement/filter-candid
 import { getRecruiterProfileByJob, getRecruiterProfileFromCurrentUser } from '../services/recruiter-profile';
 
 
-@Controller('google-mail-calendar-contacts')
+@Controller('gmmail-calendar-contacts')
 export class GoogleControllers {
 
   constructor(

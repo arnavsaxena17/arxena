@@ -202,7 +202,11 @@ export class MailerService {
     for (const attachment of gmailMessageData.attachments) {
       try {
         // const url = process.env.SERVER_BASE_URL + '/files/' + attachment.path
-        const url =  attachment.path
+        // const url =  attachment.path
+        console.log("This is the attachment.path:", attachment.path);
+        const url = attachment.path.replace(/\?token=([^?]+)\?token=/, '?token=');
+        console.log("This is the url:", url);
+
         const fileContent = attachment.path.includes('attachment')
           ? await axios.get(url, { responseType: 'arraybuffer' })
             .then(res => Buffer.from(res.data))
@@ -293,8 +297,12 @@ export class MailerService {
       for (const attachment of gmailMessageData.attachments) {
         try {
           // const url = process.env.SERVER_BASE_URL +'/files/'+attachment.path
-          const url = attachment.path
+
+          console.log("This is the attachment.path:", attachment.path);          
+          const url = attachment.path.replace(/\?token=([^?]+)\?token=/, '?token=');
+          console.log("This is the url:", url);
           const fileContent = attachment.path.includes('attachment')
+          
             ? await axios.get(url, { responseType: 'arraybuffer' }).then(res => Buffer.from(res.data))
             : await fs.readFile(attachment.path);
           const mimeType = mime.lookup(attachment.path) || 'application/octet-stream';
