@@ -137,11 +137,24 @@ export const graphqlToUpdateOneClientInterview =  `mutation UpdateOneClientInter
 export const graphQLtoCreateOneAttachmentFromFilePath = `mutation CreateOneAttachment($input: AttachmentCreateInput!) {
   createAttachment(data: $input) {
     __typename
+    id
+    fullPath
+    name
+    cvSentId
   } 
 }`;
 
 
 
+export const mutationToCreateOnePhoneCall = `mutation CreateOnePhoneCall($input: PhoneCallCreateInput!) {
+  createPhoneCall(data: $input) {
+      __typename
+      id
+      callType
+      phoneNumber
+      createdAt
+  }
+}`
 
 
 

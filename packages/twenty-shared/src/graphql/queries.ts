@@ -296,7 +296,6 @@ export const graphqlToFindManyJobs = `query FindManyJobs($filter: JobFilterInput
 
 
 
-
 export const findManyAttachmentsQuery = `query FindManyAttachments($filter: AttachmentFilterInput, $orderBy: [AttachmentOrderByInput], $lastCursor: String, $limit: Int) {
     attachments(
       filter: $filter
