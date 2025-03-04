@@ -191,7 +191,6 @@ async getWorkspaceApiKeys(workspaceId: string): Promise<{
     `;
 
     await this.executeRawQuery(alterTableQuery, [], workspaceId);
-    console.log("Ensured that the columns exist")
     // Then proceed with the select query
     const selectQuery = `
       SELECT 
@@ -210,7 +209,6 @@ async getWorkspaceApiKeys(workspaceId: string): Promise<{
     `;
 
     const result = await this.executeRawQuery(selectQuery, [workspaceId], workspaceId);
-    console.log("Now getting api keys for the raw query", result)
 
     if (result && result[0]) {
       return {

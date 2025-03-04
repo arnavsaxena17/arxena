@@ -55,6 +55,7 @@ export class GoogleAPIsAuthController {
     @Res() res: Response,
   ) {
     let workspace: Workspace | null = null;
+    console.log("Called googleAuthGetAccessToken")
 
     try {
       const { user } = req;
