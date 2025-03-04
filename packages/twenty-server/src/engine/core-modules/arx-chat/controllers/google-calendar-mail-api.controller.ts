@@ -141,11 +141,14 @@ async getCalendarEvents(@Req() request: any): Promise<object> {
   @Post('save-draft-mail-with-attachment')
   @UseGuards(JwtAuthGuard)
   async saveDraftEmailWithAttachments (@Req() request: any): Promise<object> {
+    console.log("saveDraftEmailWithAttachments")
     const apiToken = request.headers.authorization.split(' ')[1];
     const person:  PersonNode = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPhoneNumber(request.body.phoneNumber,apiToken);
     const candidateNode = person.candidates.edges[0].node;
     const candidateJob: Jobs = candidateNode?.jobs;
+    console.log("This is the candidate job:", candidateJob)
     const recruiterProfile = await getRecruiterProfileByJob(candidateJob, apiToken) 
+    console.log("This is the recruiter profile:", recruiterProfile)
     const emailData: GmailMessageData = {
       sendEmailFrom: recruiterProfile?.email,
       sendEmailNameFrom: recruiterProfile?.firstName + ' ' + recruiterProfile?.lastName,
@@ -154,6 +157,8 @@ async getCalendarEvents(@Req() request: any): Promise<object> {
       message: request.body?.message || 'This is a test email',
       attachments: request.body.attachments || [],
     };
+    
+
     console.log("This si the email data to save drafts:", emailData)
     const response = await new SendEmailFunctionality().saveDraftEmailWithAttachmentsFunction(emailData, apiToken);
     return response || {};
