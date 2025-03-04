@@ -202,9 +202,9 @@ export class MailerService {
     for (const attachment of gmailMessageData.attachments) {
       try {
         // const url = process.env.SERVER_BASE_URL + '/files/' + attachment.path
-        const url =  attachment.path
+        // const url =  attachment.path
         console.log("This is the attachment.path:", attachment.path);
-        // const url = attachment.path.replace(/\?token=([^?]+)\?token=/, '?token=');
+        const url = this.fixUrl(attachment.path)
         console.log("This is the url:", url);
 
         const fileContent = attachment.path.includes('attachment')
@@ -272,6 +272,20 @@ export class MailerService {
   return draft.data;
 }
 
+ fixUrl(url) {
+  const tokenIndex = url.indexOf('?token=');
+  if (tokenIndex !== -1) {
+    const secondTokenIndex = url.indexOf('?token=', tokenIndex + 7);
+    if (secondTokenIndex !== -1) {
+      return url.substring(0, secondTokenIndex);
+    }
+  }
+  return url;
+}
+
+
+
+
   async sendMailsWithAttachments(auth, gmailMessageData: gmailSenderTypes.GmailMessageData) {
     const gmail = google.gmail({ version: "v1", auth });
 
@@ -297,9 +311,11 @@ export class MailerService {
       for (const attachment of gmailMessageData.attachments) {
         try {
           // const url = process.env.SERVER_BASE_URL +'/files/'+attachment.path
-          const url =  attachment.path
+          // const url =  attachment.path
 
           console.log("This is the attachment.path:", attachment.path);          
+          const url = this.fixUrl(attachment.path)
+
           // const url = attachment.path.replace(/\?token=([^?]+)\?token=/, '?token=');
           console.log("This is the url:", url);
           const fileContent = attachment.path.includes('attachment')
