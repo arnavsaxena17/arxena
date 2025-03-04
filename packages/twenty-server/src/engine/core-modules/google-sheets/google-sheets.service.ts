@@ -1060,6 +1060,10 @@ export class GoogleSheetsService {
   async getValues(auth, spreadsheetId: string, range: string) {
     const sheets = google.sheets({ version: 'v4', auth });
     console.log('spreadsheetId::', spreadsheetId);
+    if (!spreadsheetId) {
+      console.log('No spreadsheet ID provided');
+      return;
+    }
 
     try {
       const response = await sheets.spreadsheets.values.get({

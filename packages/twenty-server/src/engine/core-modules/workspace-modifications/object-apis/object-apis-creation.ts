@@ -132,15 +132,15 @@ export class CreateMetaDataStructure {
     );
     console.log(
       'This is the curent workspace member response:',
-      currentWorkspaceMemberResponse.data,
+      currentWorkspaceMemberResponse?.data,
     );
     console.log(
       'This is the curent workspace member response:',
-      currentWorkspaceMemberResponse.data.errors,
+      currentWorkspaceMemberResponse?.data?.errors,
     );
     console.log(
       'This is the curent workspace member response:',
-      currentWorkspaceMemberResponse.data.data,
+      currentWorkspaceMemberResponse?.data?.data,
     );
     // console.log("This is the curent workspace member response:", currentWorkspaceMemberResponse.data)
     // console.log("This is the curent workspace member response:", currentWorkspaceMemberResponse.data.errors)
