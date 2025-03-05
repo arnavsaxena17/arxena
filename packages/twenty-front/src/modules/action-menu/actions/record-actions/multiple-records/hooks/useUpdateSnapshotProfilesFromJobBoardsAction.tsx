@@ -36,12 +36,17 @@ export const useUpdateSnapshotProfilesFromJobBoardsAction: ActionHookWithObjectM
       objectMetadataItem,
       filterValueDependencies,
     );
+
+    const gqlFields = objectMetadataItem.nameSingular.toLowerCase().includes('candidate') && 
+      !objectMetadataItem.nameSingular.toLowerCase().includes('jobcandidate')
+        ? { id: true, peopleId: true, uniqueStringKey: true }
+        : { id: true, candidateId: true, personId: true, uniqueStringKey: true };
     
     const { fetchAllRecords: fetchAllRecordIds } = useLazyFetchAllRecords({
       objectNameSingular: objectMetadataItem.nameSingular,
       filter: graphqlFilter,
       limit: DEFAULT_QUERY_PAGE_SIZE,
-      recordGqlFields: { id: true, candidateId:true, personId:true, uniqueStringKey:true },
+      recordGqlFields:gqlFields,
     });
 
     const isRemoteObject = objectMetadataItem.isRemote;
@@ -78,7 +83,7 @@ export const useUpdateSnapshotProfilesFromJobBoardsAction: ActionHookWithObjectM
 
           personIdsToUpdate = objectMetadataItem.nameSingular.toLowerCase().includes('candidate') && 
         !objectMetadataItem.nameSingular.toLowerCase().includes('jobcandidate')
-        ? recordsToUpdate.map((record) => record.personId)
+        ? recordsToUpdate.map((record) => record.peopleId)
         : objectMetadataItem.nameSingular.toLowerCase().includes('jobcandidate')
           ? recordsToUpdate.map((record) => record.personId)
           : [];
