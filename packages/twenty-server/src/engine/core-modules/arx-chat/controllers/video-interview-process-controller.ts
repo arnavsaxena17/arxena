@@ -101,16 +101,22 @@ export class VideoInterviewProcessController {
                 await new StartVideoInterviewChatProcesses(this.workspaceQueryService).createVideoInterviewForCandidate(candidateId, apiToken);
                 
             }
+
             const personId = personObj.id
-            personObj = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPersonId(personId, apiToken);
+            console.log("phoen number:", personObj?.phones?.primaryPhoneNumber);
+            personObj = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPhoneNumber(personObj?.phones?.primaryPhoneNumber, apiToken);
             console.log("personObj::", personObj)
-            videoInterviewUrl = personObj?.candidates?.edges[0]?.node?.videoInterview?.edges[0]?.node?.interviewLink?.primaryLinkUrl;
-            // const personObj = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByCandidateId(candidateId, apiToken);
-            console.log("This is the video interview in send-video-interview-to-candidate link:", personObj?.candidates);
+            videoInterviewUrl = personObj?.candidates?.edges
+                .find(edge => edge.node.id === candidateId)
+                ?.node?.videoInterview?.edges[0]?.node?.interviewLink?.primaryLinkUrl;  // const personObj = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByCandidateId(candidateId, apiToken);
+            console.log("This is the video interview in send-video-interview-to-candidate link candidates:", personObj?.candidates);
+            console.log("This is the video interview in send-video-interview-to-candidate link stringufy:", JSON.stringify(personObj?.candidates));
             console.log("This is the video interview in send-video-interview-to-candidate link:", videoInterviewUrl);
-            const companyName = personObj?.candidates?.edges
-            .filter(edge => edge.node.id === candidateId)
-            .map(edge => edge.node.jobs.company.name)[0];
+            const companyName = personObj?.candidates?.edges?.length > 0 ? 
+                personObj?.candidates?.edges
+                    .filter(edge => edge.node.id === candidateId)
+                    .map(edge => edge?.node?.jobs?.company?.name)[0] 
+                : '';
 
             const candidateNode = personObj.candidates.edges[0].node;
             const candidateJob:Jobs = candidateNode?.jobs;
