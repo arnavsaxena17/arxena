@@ -20,6 +20,7 @@ import { useShareChatBasedShortlistAction } from '@/action-menu/actions/record-a
 import { useShareMultipleVideoInterviewLinksAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useShareMultipleVideoInterviewLinksAction';
 import { useStartChatWithCandidatesAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useStartChatWithCandidatesAction';
 import { IconList, IconMessageCircle, IconRefresh, IconShare, IconVideo } from '@tabler/icons-react';
+import { useUpdateSnapshotProfilesFromJobBoardsAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useUpdateSnapshotProfilesFromJobBoardsAction';
 
 
 export const CANDIDATE_SPECIFIC_ACTIONS: Record<
@@ -131,6 +132,19 @@ export const CANDIDATE_SPECIFIC_ACTIONS: Record<
     isPinned: false,
     availableOn: [ActionViewType.INDEX_PAGE_BULK_SELECTION,ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION],
     useAction: useShareChatBasedShortlistAction,
+  },
+  updateProfiles: {
+    type: ActionMenuEntryType.Standard,
+    scope: ActionMenuEntryScope.RecordSelection,
+    key: MultipleRecordsActionKeys.UPDATE_SNAPSHOT_PROFILES_FROM_JOB_BOARDS,
+    shortLabel: msg`Update Snapshot Profiles From Job Boards`,
+    label: msg`Update Snapshot Profiles From Job Boards`,
+    position: 5,
+    Icon: IconList,
+    accent: 'placeholder',
+    isPinned: false,
+    availableOn: [ActionViewType.INDEX_PAGE_BULK_SELECTION,ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION  ],
+    useAction: useUpdateSnapshotProfilesFromJobBoardsAction,
   },
   shareChatAndVideoInterviewBasedShortlist: {
     type: ActionMenuEntryType.Standard,

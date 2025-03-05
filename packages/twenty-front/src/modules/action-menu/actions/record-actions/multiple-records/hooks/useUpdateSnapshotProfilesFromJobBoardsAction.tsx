@@ -62,18 +62,42 @@ export const useUpdateSnapshotProfilesFromJobBoardsAction: ActionHookWithObjectM
     const handleUpdateSnapshotProfilesClick = useCallback(async () => {
       const recordsToUpdate = await fetchAllRecordIds();
       console.log("recordsToUpdate::", recordsToUpdate);
-      const candidateIdsToUpdate: string[] = objectMetadataItem.nameSingular.toLowerCase().includes('jobcandidate')
-      ? recordsToUpdate.map((record) => record.candidateId)
-      : recordsToUpdate.map((record) => record.id);
+      let candidateIdsToUpdate: string[] = [];
+      let personIdsToUpdate: string[] = [];
+      let uniqueStringKeysToUpdate: string[] = [];
+      // candidateIdsToUpdate = objectMetadataItem.nameSingular.toLowerCase().includes('jobcandidate')
+      // ? recordsToUpdate.map((record) => record.candidateId)
+      // : recordsToUpdate.map((record) => record.id);
+
+      candidateIdsToUpdate = objectMetadataItem.nameSingular.toLowerCase().includes('candidate') && 
+        !objectMetadataItem.nameSingular.toLowerCase().includes('jobcandidate')
+        ? recordsToUpdate.map((record) => record.id)
+        : objectMetadataItem.nameSingular.toLowerCase().includes('jobcandidate')
+          ? recordsToUpdate.map((record) => record.candidateId)
+          : [];
+
+          personIdsToUpdate = objectMetadataItem.nameSingular.toLowerCase().includes('candidate') && 
+        !objectMetadataItem.nameSingular.toLowerCase().includes('jobcandidate')
+        ? recordsToUpdate.map((record) => record.personId)
+        : objectMetadataItem.nameSingular.toLowerCase().includes('jobcandidate')
+          ? recordsToUpdate.map((record) => record.personId)
+          : [];
+
+          uniqueStringKeysToUpdate = objectMetadataItem.nameSingular.toLowerCase().includes('candidate') && 
+        !objectMetadataItem.nameSingular.toLowerCase().includes('jobcandidate')
+        ? recordsToUpdate.map((record) => record.uniqueStringKey)
+        : objectMetadataItem.nameSingular.toLowerCase().includes('jobcandidate')
+          ? recordsToUpdate.map((record) => record.uniqueStringKey)
+          : [];
 
 
-      const personIdsToUpdate: string[] = objectMetadataItem.nameSingular.toLowerCase().includes('jobcandidate')
-      ? recordsToUpdate.map((record) => record.personId)
-      : recordsToUpdate.map((record) => record.id);
+      // const personIdsToUpdate: string[] = objectMetadataItem.nameSingular.toLowerCase().includes('jobcandidate')
+      // ? recordsToUpdate.map((record) => record.personId)
+      // : recordsToUpdate.map((record) => record.id);
 
-      const uniqueStringKeysToUpdate: string[] = objectMetadataItem.nameSingular.toLowerCase().includes('jobcandidate')
-      ? recordsToUpdate.map((record) => record.uniqueStringKey)
-      : recordsToUpdate.map((record) => record.id);
+      // const uniqueStringKeysToUpdate: string[] = objectMetadataItem.nameSingular.toLowerCase().includes('jobcandidate')
+      // ? recordsToUpdate.map((record) => record.uniqueStringKey)
+      // : recordsToUpdate.map((record) => record.id);
 
       console.log("candidateIdsToUpdate::", candidateIdsToUpdate);
       console.log("personIdsToUpdate::", personIdsToUpdate);

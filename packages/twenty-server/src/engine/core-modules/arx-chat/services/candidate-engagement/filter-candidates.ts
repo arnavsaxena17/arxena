@@ -299,6 +299,8 @@ export class FilterCandidates {
       orderBy: { position: 'AscNullsFirst' },
     };
     try {
+      console.log("Going to get person details by phone number");
+      console.log("Going to get person details by phone numbergraphqlQueryToFindManyPeople::",graphqlQueryToFindManyPeople);
       const graphqlQueryObj = JSON.stringify({
         query: graphqlQueryToFindManyPeople,
         variables: graphVariables,
