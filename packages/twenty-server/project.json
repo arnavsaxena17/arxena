@@ -9,7 +9,10 @@
       "cache": true,
       "options": {
         "cwd": "packages/twenty-server",
-        "commands": ["rimraf dist", "nest build --path ./tsconfig.build.json"]
+        "commands": [
+          "NODE_OPTIONS=\"--max-old-space-size=8192\" rimraf dist",
+          "NODE_OPTIONS=\"--max-old-space-size=8192\" nest build --path ./tsconfig.build.json"
+        ]
       },
       "dependsOn": ["^build"]
     },
@@ -40,13 +43,20 @@
         "updateBuildableProjectDepsInPackageJson": true
       }
     },
-    "typecheck": {},
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "cache": true,
+      "options": {
+        "cwd": "{projectRoot}",
+        "command": "NODE_OPTIONS=\"--max-old-space-size=8192\" tsc -b tsconfig.json --incremental"
+      }
+    },
     "start": {
       "executor": "nx:run-commands",
       "dependsOn": ["typecheck", "build"],
       "options": {
         "cwd": "packages/twenty-server",
-        "command": "NODE_ENV=development && nest start --watch"
+        "command": "NODE_OPTIONS=\"--max-old-space-size=8192\" NODE_ENV=development && nest start --watch"
       }
     },
     "start:debug": {
