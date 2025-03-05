@@ -42,7 +42,7 @@ export class EmailTemplates{
         <p>We have reviewed your profile and would like to invite you for a video interview for the position of <b>${jobName}</b> at <b>${companyName}</b>.</p>
 
         <p><strong>Interview Details:</strong></p>
-        <p>Interview Link: ${process.env.FRONTEND_URL+ interviewLink}</p>
+        <p>Interview Link: ${process.env.FRONT_BASE_URL+ interviewLink}</p>
         <p>Note: Link expires in 48 hours</p>
         
         <p><strong>Instructions:</strong></p>

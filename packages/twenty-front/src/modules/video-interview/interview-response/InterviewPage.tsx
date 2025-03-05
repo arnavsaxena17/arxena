@@ -349,7 +349,7 @@ export const InterviewPage: React.FC<VideoInterviewPageProps> = ({ InterviewData
   //     handleSubmit();
   //   }
   // }, [recorded, recordedChunks]);
-  const MAX_CHUNK_SIZE = 2 * 1024 * 1024; // 2MB chunks
+  const MAX_CHUNK_SIZE = 1 * 1024 * 1024; // 2MB chunks
 
 
   const uploadInChunks = async (blob: { size: number; slice: (arg0: number, arg1: number) => any; }, filename: any, type: string | Blob) => {
