@@ -246,20 +246,35 @@ export const CreateOneObjectMetadataItem = `
   }
 `;
 
-export const CreateOneRelationMetadata = ` mutation CreateOneRelationMetadata($input: CreateOneRelationInput!) {
-    createOneRelation(input: $input) {
-      id
-      relationType
-      fromObjectMetadataId
-      toObjectMetadataId
-      fromFieldMetadataId
-      toFieldMetadataId
-      createdAt
-      updatedAt
-      __typename
+
+export const CreateOneRelationMetadata = `mutation CreateOneRelationMetadata($input: CreateOneRelationMetadataInput!) {
+    createOneRelationMetadata(input: $input) {
+        id
+        relationType
+        fromObjectMetadataId
+        toObjectMetadataId
+        fromFieldMetadataId
+        toFieldMetadataId
+        createdAt
+        updatedAt
     }
   }
-    `;
+`;
+
+
+export const CreateOneRelationMetadataItem =  `mutation CreateOneRelationMetadataItem($input: CreateOneRelationMetadataInput!) {
+  createOneRelationMetadata(input: $input) {
+    id
+    relationType
+    fromObjectMetadataId
+    toObjectMetadataId
+    fromFieldMetadataId
+    toFieldMetadataId
+    createdAt
+    updatedAt
+    __typename
+  }
+  }`
 
 export const CreateOneVideoInterviewTemplate = `
     mutation CreateOneVideoInterviewTemplate($input: VideoInterviewTemplateCreateInput!) {
