@@ -185,7 +185,7 @@ const VideoInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) 
         const fetchedData: any = response?.data?.responseFromInterviewRequests?.data;
         console.log('fetchedData to fetch interview data:', JSON.stringify(fetchedData));
         const formattedData: InterviewData = {
-          recruiterProfile: fetchedData.recruiterProfile,
+          recruiterProfile: response?.data?.recruiterProfile,
           name: fetchedData?.videoInterviews?.edges[0]?.node?.name || '',
           id: fetchedData?.videoInterviews?.edges[0]?.node?.id || '',
           candidate: {
