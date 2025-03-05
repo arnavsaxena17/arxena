@@ -1,5 +1,4 @@
-import { RelationInput } from 'twenty-shared';
-import { mutations } from '../mutations/mutations';
+import { CreateOneRelationMetadata, RelationInput } from 'twenty-shared';
 import { executeQuery } from '../utils/graphqlClient';
 
 export async function createRelations(fieldRelations:RelationInput[] , apiToken: string) {
@@ -22,7 +21,7 @@ export async function createRelations(fieldRelations:RelationInput[] , apiToken:
         };
 
         const mutation = {
-            query: mutations.createRelation,
+            query: CreateOneRelationMetadata,
             variables: { input }
         };
 

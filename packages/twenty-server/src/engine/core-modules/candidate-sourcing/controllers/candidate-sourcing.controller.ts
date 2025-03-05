@@ -1,11 +1,13 @@
 import { Controller, Post, Req, UseGuards } from '@nestjs/common';
 import axios from 'axios';
 import { workspacesWithOlderSchema } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/candidate-engagement';
+import { getCurrentUser } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import { PersonService } from 'src/engine/core-modules/candidate-sourcing/services/person.service';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 import {
   CreateOneJob,
   createOneQuestion,
+  CreateOneVideoInterviewTemplate,
   Enrichment,
   graphQlTofindManyCandidateEnrichments,
   graphqlToFindManyJobByArxenaSiteIdOlderSchema,
@@ -20,6 +22,7 @@ import { WorkspaceQueryService } from '../../workspace-modifications/workspace-m
 import { ProcessCandidatesService } from '../jobs/process-candidates.service';
 import { CandidateService } from '../services/candidate.service';
 import { axiosRequest } from '../utils/utils';
+
 
 @Controller('candidate-sourcing')
 export class CandidateSourcingController {
@@ -342,16 +345,23 @@ export class CandidateSourcingController {
       if (!req?.body?.job_name || !req?.body?.new_job_id) {
         throw new Error('Missing required fields: job_name or new_job_id');
       }
+      const jobId = req?.body?.id_to_update
 
+      console.log("this is the job name:", req.body.job_name);
+      console.log("this is the job name:", req.body.new_job_id);
       await new Promise((resolve) => setTimeout(resolve, 500));
 
       // let googleSheetUrl = '';
       // let googleSheetId = '';
+
+
+      await this.createVideoInterviewTemplate(req.body.job_name, jobId, apiToken);
+
+      // const { googleSheetId: googleSheetIdFromRequest, googleSheetUrl: googleSheetUrlFromRequest } = req.body;
       let { googleSheetId, googleSheetUrl } = await this.createSpreadsheet(
         req.body.job_name,
         apiToken,
       );
-      // const { googleSheetId: googleSheetIdFromRequest, googleSheetUrl: googleSheetUrlFromRequest } = req.body;
       await this.updateTwentyJob(
         req.body.job_name,
         req.body.new_job_id,
@@ -360,6 +370,7 @@ export class CandidateSourcingController {
         apiToken,
         req.body.id_to_update,
       );
+      
       const response = await this.callCreateNewJobInArxena(
         req.body.job_name,
         req.body.new_job_id,
@@ -368,8 +379,9 @@ export class CandidateSourcingController {
         apiToken,
       );
 
+
       return {
-        ...response.data.data.createJob,
+        ...response?.data?.data?.createJob,
         googleSheetId,
         googleSheetUrl,
       };
@@ -379,6 +391,46 @@ export class CandidateSourcingController {
     }
   }
 
+  async createVideoInterviewTemplate(jobName: string, jobId: string, apiToken: string) {
+    try{
+      console.log("Going to create video interview templates");
+      console.log("Going to create video interview templates for ob ide:", jobId);
+      const videoInterviewModels = await this.candidateService.getVideoInterviewModels(apiToken);
+      console.log('videoInterviewModels:', videoInterviewModels);
+      const videoInterviewModelId = videoInterviewModels[0]?.node?.id;
+      console.log('videoInterviewModelId:', videoInterviewModelId);
+      const variables = {
+        input: {
+          name: jobName + ' Interview Template',
+          jobId: jobId,
+          introduction : `Hi, I am Arnav Saxena. I am a Director at Arxena, a US based recruitment firm. 
+          Thanks so much for your application for the role of a ${jobName}. 
+          We are excited to get to know you a little better!
+          So we have 3 questions in the steps ahead!
+          You'll need about 10 to 15 minutes and a strong signal to complete this.
+          When you click the I'm ready lets go button, you'll be taken to the first question, you'll have 4 minutes to record your answer. 
+          If this is your first time doing this interview this way, please don't stress about getting the perfect video. We are more interested in getting to know you and not getting the perfect video. 
+          So relax, take a breath and get started!`,
+          instructions: `Before you begin the interview:
+          1. Find a quiet place with good internet connectivity
+          2. Ensure you are in a well-lit area where your face is clearly visible
+          3. Dress professionally for the interview
+          4. Look directly at the camera while speaking
+          5. Speak clearly at a moderate pace
+          You will have 4 minutes to answer each question. Good luck!`,
+          videoInterviewModelId: videoInterviewModelId,
+        },
+      };
+      console.log("Thesea are the variables:",variables)
+      const query = CreateOneVideoInterviewTemplate;
+      const data = { query, variables };
+      const response = await axiosRequest(JSON.stringify(data), apiToken);
+      console.log('response:', response.data);
+    }
+    catch{
+      console.log('Error in creating video interview template ');
+    }
+  }
   async updateTwentyJob(
     jobName: string,
     newJobId: string,
@@ -387,31 +439,44 @@ export class CandidateSourcingController {
     apiToken: string,
     idToUpdate: string,
   ) {
-    const graphqlToUpdateJob = JSON.stringify({
+    try {
+
+
+      const currentUser = await getCurrentUser(apiToken);
+      const recruiterId = currentUser?.workspaceMember?.id;
+      console.log("This is the currentUser?.workspaces:", JSON.stringify(currentUser?.workspaces));
+      console.log("This is the current user:", currentUser);
+      console.log("This is the recruiter id:", recruiterId);
+
+      const graphqlToUpdateJob = JSON.stringify({
       query: UpdateOneJob,
       variables: {
         idToUpdate: idToUpdate,
         input: {
-          pathPosition: this.getJobCandidatePathPosition(jobName),
-          arxenaSiteId: newJobId,
-          isActive: true,
-          googleSheetUrl: {
-            primaryLinkLabel: googleSheetUrl,
-            primaryLinkUrl: googleSheetUrl,
-          },
-          ...(googleSheetId && { googleSheetId: googleSheetId }),
+        pathPosition: this.getJobCandidatePathPosition(jobName),
+        recruiterId : recruiterId,
+        arxenaSiteId: newJobId,
+        isActive: true,
+        googleSheetUrl: {
+          primaryLinkLabel: googleSheetUrl,
+          primaryLinkUrl: googleSheetUrl,
+        },
+        ...(googleSheetId && { googleSheetId: googleSheetId }),
         },
       },
-    });
+      });
 
-    const responseToUpdateJob = await axiosRequest(
+      const responseToUpdateJob = await axiosRequest(
       graphqlToUpdateJob,
       apiToken,
-    );
-    console.log(
+      );
+      console.log(
       'Response from update job in create Job IN Arxena:',
       responseToUpdateJob.data.data,
-    );
+      );
+    } catch (error) {
+      console.error('Error updating Twenty job:', error);
+    }
   }
 
   private async createSpreadsheet(
@@ -455,26 +520,31 @@ export class CandidateSourcingController {
     googleSheetUrl: string | null,
     apiToken: string,
   ): Promise<any> {
-    const url =
-      process.env.ENV_NODE === 'production'
+    try {
+      const url =
+        process.env.ENV_NODE === 'production'
         ? 'https://arxena.com/create_new_job'
         : 'http://127.0.0.1:5050/create_new_job';
-    const response = await axios.post(
-      url,
-      {
+      const response = await axios.post(
+        url,
+        {
         job_name: jobName,
         new_job_id: newJobId,
         googleSheetId,
         googleSheetUrl,
-      },
-      {
+        },
+        {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${apiToken}`,
         },
-      },
-    );
-    return response;
+        },
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error calling create new job in Arxena:', error);
+      return { data: error.message };
+    }
   }
 
   @Post('post-candidates')
@@ -607,7 +677,7 @@ export class CandidateSourcingController {
       });
       const responseNew = await axiosRequest(graphqlQueryObj, apiToken);
       console.log('Response from create job', responseNew.data);
-      uuid = responseNew.data.data.createJob.id;
+      uuid = responseNew?.data?.data?.createJob?.id;
       return { status: 'success', job_uuid: uuid };
     } catch (error) {
       console.log('Error in postJob', error);

@@ -545,11 +545,11 @@ export class FilterCandidates {
   }
 
   async getPersonDetailsByPersonId(
-    personID: string,
+    personId: string,
     apiToken: string,
   ): Promise<PersonNode> {
     const graphVariables = {
-      filter: { id: { eq: personID } },
+      filter: { id: { eq: personId } },
       orderBy: { position: 'AscNullsFirst' },
     };
     const graphqlQueryObj = JSON.stringify({

@@ -1,5 +1,4 @@
-import { FieldInput } from 'twenty-shared';
-import { mutations } from '../mutations/mutations';
+import { CreateOneFieldMetadataItem, FieldInput } from 'twenty-shared';
 import { executeQuery } from '../utils/graphqlClient';
 export async function createFields(fieldsData:FieldInput[], apiToken: string) {
     console.log("Number of fields to be crated", fieldsData.length);
@@ -23,7 +22,7 @@ export async function createFields(fieldsData:FieldInput[], apiToken: string) {
             }
         };
         const mutation = {
-            query: mutations.createField,
+            query: CreateOneFieldMetadataItem,
             variables: { input }
         };
         try {

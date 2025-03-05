@@ -49,17 +49,21 @@ export const FieldsCard = ({
     .filter(
       (fieldMetadataItem) =>
         isFieldCellSupported(fieldMetadataItem, objectMetadataItems) &&
-        fieldMetadataItem.id !== labelIdentifierFieldMetadataItem?.id,
+        fieldMetadataItem.id !== labelIdentifierFieldMetadataItem?.id &&
+        fieldMetadataItem.label.toLowerCase() !== 'job candidate',
     )
     .sort((fieldMetadataItemA, fieldMetadataItemB) =>
       fieldMetadataItemA.name.localeCompare(fieldMetadataItemB.name),
     );
 
+    console.log("availableFieldMetadataItems::", availableFieldMetadataItems)
+
   const { inlineFieldMetadataItems, relationFieldMetadataItems } = groupBy(
     availableFieldMetadataItems.filter(
       (fieldMetadataItem) =>
         fieldMetadataItem.name !== 'createdAt' &&
-        fieldMetadataItem.name !== 'deletedAt',
+        fieldMetadataItem.name !== 'deletedAt'
+
     ),
     (fieldMetadataItem) =>
       fieldMetadataItem.type === FieldMetadataType.RELATION
@@ -82,6 +86,7 @@ export const FieldsCard = ({
           fieldMetadataItem.name === 'noteTargets') ||
         (objectNameSingular === CoreObjectNameSingular.Task &&
           fieldMetadataItem.name === 'taskTargets')
+          
       ),
   );
 

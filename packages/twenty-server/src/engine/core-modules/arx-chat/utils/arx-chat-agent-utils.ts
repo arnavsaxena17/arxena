@@ -83,6 +83,7 @@ export async function axiosRequest(data: string, apiToken: string) {
     url: process.env.GRAPHQL_URL,
     headers: {
       authorization: "Bearer " + apiToken,
+      Origin: process.env.APPLE_ORIGIN_URL,
       "content-type": "application/json",
     },
     data: data,

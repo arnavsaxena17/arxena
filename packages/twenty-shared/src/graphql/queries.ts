@@ -292,7 +292,45 @@ export const graphqlToFindManyJobs = `query FindManyJobs($filter: JobFilterInput
   }
 }`;
 
-
+export const FindManyVideoInterviewModels = `query FindManyVideoInterviewModels($filter: VideoInterviewModelFilterInput, $orderBy: [VideoInterviewModelOrderByInput], $lastCursor: String, $limit: Int) {
+  videoInterviewModels(
+    filter: $filter
+    orderBy: $orderBy
+    first: $limit
+    after: $lastCursor
+  ) {
+    edges {
+      node {
+        __typename
+        country
+        createdAt
+        createdBy {
+          source
+          workspaceMemberId
+          name
+          context
+          __typename
+        }
+        deletedAt
+        id
+        language
+        name
+        updatedAt
+      }
+      cursor
+      __typename
+    }
+    pageInfo {
+      hasNextPage
+      hasPreviousPage
+      startCursor
+      endCursor
+      __typename
+    }
+    totalCount
+    __typename
+  }
+  }`
 
 
 

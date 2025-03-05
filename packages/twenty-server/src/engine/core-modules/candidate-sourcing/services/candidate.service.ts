@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { CreateFieldsOnObject } from 'src/engine/core-modules/workspace-modifications/object-apis/data/createFields';
-import { ArxenaCandidateNode, ArxenaJobCandidateNode, ArxenaPersonNode, CreateManyCandidates, CreateOneObjectMetadataItem, graphqlToFetchAllCandidateData, graphqlToFindManyJobs, Jobs, PersonNode, UserProfile } from 'twenty-shared';
+import { ArxenaCandidateNode, ArxenaJobCandidateNode, ArxenaPersonNode, CreateManyCandidates, CreateOneObjectMetadataItem, FindManyVideoInterviewModels, graphqlToFetchAllCandidateData, graphqlToFindManyJobs, Jobs, PersonNode, UserProfile } from 'twenty-shared';
 import { CreateMetaDataStructure } from '../../workspace-modifications/object-apis/object-apis-creation';
 import { createFields } from '../../workspace-modifications/object-apis/services/field-service';
 import { createRelations } from '../../workspace-modifications/object-apis/services/relation-service';
@@ -58,6 +58,23 @@ private async checkExistingRelations(objectMetadataId: string, apiToken: string)
     return response.data?.data?.relations?.edges?.map((edge: any) => edge.node) || [];
   } catch (error) {
     console.error('Error checking existing relations:', error);
+    return [];
+  }
+}
+
+
+async getVideoInterviewModels(apiToken){
+  try {
+    const query = FindManyVideoInterviewModels;
+    const variables = {
+      filter: {},
+      orderBy: [{ position: 'AscNullsFirst' }],
+    }
+
+    const response = await axiosRequest(JSON.stringify({ query, variables }), apiToken);
+    return response.data?.data?.videoInterviewModels?.edges;
+  } catch (error) {
+    console.error('Error fetching video interview models:', error);
     return [];
   }
 }

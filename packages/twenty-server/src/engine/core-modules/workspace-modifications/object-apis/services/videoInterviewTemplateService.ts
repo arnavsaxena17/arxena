@@ -1,13 +1,13 @@
-import { executeQuery,executeGraphQLQuery } from '../utils/graphqlClient';
-import { mutations } from '../mutations/mutations';
+import { CreateOneVideoInterviewTemplate } from 'twenty-shared';
 import { generateVideoInterviewTemplateData } from '../data/videoInterviewTemplateData';
+import { executeGraphQLQuery } from '../utils/graphqlClient';
 
 export async function createVideoInterviewTemplates(videoInterviewModelIds: string[], jobIds: string[], apiToken:string): Promise<void> {
     const videoInterviewTemplates = generateVideoInterviewTemplateData(videoInterviewModelIds, jobIds);
 
     for (const interview of videoInterviewTemplates) {
         try {
-            await executeGraphQLQuery(mutations.createVideoInterviewTemplate, { 
+            await executeGraphQLQuery(CreateOneVideoInterviewTemplate, { 
                 input: interview 
             },apiToken);
             console.log(`Created Video Interview: ${interview.name}`);

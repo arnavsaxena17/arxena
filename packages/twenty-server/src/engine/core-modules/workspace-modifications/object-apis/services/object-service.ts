@@ -1,5 +1,4 @@
-import { CreateOneObjectInput } from 'twenty-shared';
-import { mutations } from '../mutations/mutations';
+import { CreateOneObjectInput, CreateOneObjectMetadataItem } from 'twenty-shared';
 import { executeQuery } from '../utils/graphqlClient';
 
 export async function createObjectMetadataItems(apiToken: string, objectCreationArr: CreateOneObjectInput[]) {
@@ -19,7 +18,7 @@ export async function createObjectMetadataItems(apiToken: string, objectCreation
         };
 
         const mutation = {
-            query: mutations.createObject,
+            query: CreateOneObjectMetadataItem,
             variables: { input }
         };
 

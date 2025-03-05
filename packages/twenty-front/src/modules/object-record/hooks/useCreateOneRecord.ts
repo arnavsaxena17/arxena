@@ -200,8 +200,6 @@ export const useCreateOneRecord = <
       await refetchAggregateQueries();
       return createdObject.data?.[mutationResponseField] ?? null;
 
-    await refetchAggregateQueries();
-    return createdObject.data?.[mutationResponseField] ?? null;
   };
 
   return {
