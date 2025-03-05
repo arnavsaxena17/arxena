@@ -170,7 +170,7 @@ const VideoInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) 
     setLoading(true);
     console.log("Going to fetch interview id:", interviewId);
     try {
-      const response = await axios.post(`${process.env.REACT_APP_SERVER_BASE_URL}/video-interview/get-interview-details`, { interviewId });
+      const response = await axios.post(`${process.env.REACT_APP_SERVER_BASE_URL}/video-interview-controller/get-interview-details`, { interviewId });
       console.log('This is the response to fetch interview data:', response);
       const responseObj: GetInterviewDetailsResponse = response.data;
       if (responseObj) {
@@ -247,7 +247,7 @@ const VideoInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) 
         console.log('key for response data:', key, '::', value);
       });
       // console.log("Final resposne data being setnt:", responseData)
-      const response = await axios.post(process.env.REACT_APP_SERVER_BASE_URL + '/video-interview/submit-response', responseData, {
+      const response = await axios.post(process.env.REACT_APP_SERVER_BASE_URL + '/video-interview-controller/submit-response', responseData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       console.log('This isreht ersponse:', response);
@@ -261,7 +261,7 @@ const VideoInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) 
 
   const handleSubmitFeedback = async (feedback: string) => {
     try {
-      const response = await axios.post(`${process.env.REACT_APP_SERVER_BASE_URL}/video-interview/update-feedback`, { interviewId, feedback });
+      const response = await axios.post(`${process.env.REACT_APP_SERVER_BASE_URL}/video-interview-controller/update-feedback`, { interviewId, feedback });
       console.log('Interview completed, feedback submitted:', response.status);
     } catch (error) {
       console.error('Error submitting feedback:', error);
