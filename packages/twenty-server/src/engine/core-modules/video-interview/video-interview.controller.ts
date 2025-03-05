@@ -96,8 +96,29 @@ async initChunkedUpload(@Body() data: { uploadId: string; filename: string; tota
     ],
     {
       storage: multer.diskStorage({
-        destination: './uploads',
-
+        destination: (req, file, callback) => {
+          try {
+            console.log('Received chunk upload request');
+            const uploadId = req.body.uploadId;
+            const dir = path.join('./uploads', 'chunks', uploadId);
+            
+            // Ensure directories exist
+            if (!fs.existsSync('./uploads')) {
+              fs.mkdirSync('./uploads', { recursive: true });
+            }
+            if (!fs.existsSync(path.join('./uploads', 'chunks'))) {
+              fs.mkdirSync(path.join('./uploads', 'chunks'), { recursive: true });
+            }
+            if (!fs.existsSync(dir)) {
+              fs.mkdirSync(dir, { recursive: true });
+            }
+            
+            callback(null, dir);
+          } catch (error) {
+            console.error('Error in chunk destination callback:', error);
+            callback(error, "");
+          }
+        },
         filename: (req, file, callback) => {
           console.log("Received chunk filename callback");
           try {
