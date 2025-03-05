@@ -21,6 +21,7 @@ import { VideoPlayer } from './utils/videoPlaybackUtils';
 import VideoContainer from './VideoContainer';
 
 import { IconCommand, IconRewindBackward5 } from '@tabler/icons-react';
+import axios from 'axios';
 import { InterviewPageProps } from 'twenty-shared';
 import { Mixpanel } from '~/mixpanel';
 
@@ -275,6 +276,9 @@ export const InterviewPage: React.FC<VideoInterviewPageProps> = ({ InterviewData
     }
   };
   
+
+
+  
   
   useEffect(() => {
     if (videoRef.current) {
@@ -345,19 +349,80 @@ export const InterviewPage: React.FC<VideoInterviewPageProps> = ({ InterviewData
   //     handleSubmit();
   //   }
   // }, [recorded, recordedChunks]);
+  const MAX_CHUNK_SIZE = 2 * 1024 * 1024; // 2MB chunks
 
+
+  const uploadInChunks = async (blob: { size: number; slice: (arg0: number, arg1: number) => any; }, filename: any, type: string | Blob) => {
+    const chunkSize = MAX_CHUNK_SIZE;
+    const chunks = Math.ceil(blob.size / chunkSize);
+    const uploadId = uuid();
+    let uploadSuccessful = true;
+    
+    // First, initialize the chunked upload on server
+    try {
+      await axios.post(`${process.env.REACT_APP_SERVER_BASE_URL}/video-interview-controller/init-chunked-upload`, {
+        uploadId,
+        filename,
+        totalChunks: chunks,
+        fileType: type
+      });
+      
+      // Upload each chunk
+      for (let i = 0; i < chunks; i++) {
+        const start = i * chunkSize;
+        const end = Math.min(blob.size, start + chunkSize);
+        const chunk = blob.slice(start, end);
+        
+        const chunkFormData = new FormData();
+        chunkFormData.append('chunk', chunk);
+        chunkFormData.append('uploadId', uploadId);
+        chunkFormData.append('chunkIndex', i.toString());
+        chunkFormData.append('fileType', type);
+        
+        const response = await axios.post(
+          `${process.env.REACT_APP_SERVER_BASE_URL}/video-interview-controller/upload-chunk`, 
+          chunkFormData,
+          { headers: { 'Content-Type': 'multipart/form-data' } }
+        );
+        
+        if (response.status !== 200) {
+          uploadSuccessful = false;
+          break;
+        }
+      }
+      
+      // Finalize upload
+      if (uploadSuccessful) {
+        const response = await axios.post(
+          `${process.env.REACT_APP_SERVER_BASE_URL}/video-interview-controller/complete-chunked-upload`,
+          { uploadId, filename, fileType: type }
+        );
+        
+        return response.data.filePath;
+      }
+    } catch (error) {
+      console.error('Error in chunked upload:', error);
+
+      throw error;
+    }
+    
+    return null;
+  };
+  
+
+  
   const handleSubmit = async () => {
     if (recordedChunks.length) {
       setError(null);
       setSubmitting(true);
   
-      const file = new Blob(recordedChunks, {
-        type: `video/webm`,
-      });
-  
       try {
+        const file = new Blob(recordedChunks, {
+          type: 'video/webm',
+        });
+  
         const unique_id = uuid();
-        let audioBlob: Blob | null = null;
+        let audioBlob = null;
   
         // Try to convert audio, but continue if it fails
         try {
@@ -376,21 +441,50 @@ export const InterviewPage: React.FC<VideoInterviewPageProps> = ({ InterviewData
           // Continue without audio conversion
         }
   
+        // Upload video in chunks
+        const videoFilePath = await uploadInChunks(
+          file,
+          `${InterviewData.id}-video-${unique_id}.webm`,
+          'video'
+        );
+        
+        // Upload audio in chunks if available
+        let audioFilePath = null;
+        if (audioBlob) {
+          audioFilePath = await uploadInChunks(
+            audioBlob,
+            `${InterviewData.id}-audio-${unique_id}.wav`,
+            'audio'
+          );
+        }
+  
+        // Create response data
         const formData = new FormData();
         formData.append('operations', '{}');
         formData.append('map', '{}');
         formData.append('model', 'whisper-12');
-        formData.append('video', file, `${InterviewData.id}-video-${unique_id}.webm`);
-        formData.append('video', file, `${InterviewData.id}-video-${unique_id}.webm`);
+        formData.append('videoPath', videoFilePath);
         
-        // Only append audio if conversion was successful
-        if (audioBlob) {
-          formData.append('audio', audioBlob, `${InterviewData.id}-audio-${unique_id}.wav`);
+        if (audioFilePath) {
+          formData.append('audioPath', audioFilePath);
         }
         
         formData.append('isSelectedResponse', 'true');
+        formData.append('interviewData', JSON.stringify(InterviewData));
+        formData.append('currentQuestionIndex', currentQuestionIndex.toString());
+        formData.append('responseData', JSON.stringify({
+          isLastQuestion: currentQuestionIndex === (InterviewData?.videoInterview?.videoInterviewQuestions?.edges?.length ?? 0) - 1,
+          timeLimitAdherence: true
+        }));
   
-        onNextQuestion(formData);
+        // Submit response
+        const response = await axios.post(
+          `${process.env.REACT_APP_SERVER_BASE_URL}/video-interview-controller/submit-response`, 
+          formData,
+          { headers: { 'Content-Type': 'multipart/form-data' } }
+        );
+  
+        console.log('Response submitted successfully:', response.data);
         setSubmitting(false);
         setResponseSubmitted(true);
   
@@ -398,14 +492,16 @@ export const InterviewPage: React.FC<VideoInterviewPageProps> = ({ InterviewData
           setFinalSubmissionComplete(true);
           onFinish();
         }
+  
+        return true;
       } catch (error) {
-        console.log('Error submitting response in handle submit:', error);
+        console.log('Error submitting response:', error);
         setSubmitting(false);
         setError('Failed to submit response. Please try again.');
+        return false;
       }
     }
   };
-
 
   if (!hasCamera) {
     return <StyledError>{error}</StyledError>;

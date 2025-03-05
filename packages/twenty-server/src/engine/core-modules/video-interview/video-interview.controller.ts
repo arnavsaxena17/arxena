@@ -1,5 +1,4 @@
 import { BadRequestException, Body, Controller, HttpException, InternalServerErrorException, Post, Req, UnauthorizedException, UploadedFiles, UseInterceptors } from '@nestjs/common';
-import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import axios from 'axios';
 import ffmpeg from 'fluent-ffmpeg';
 import * as fs from 'fs';
@@ -9,6 +8,7 @@ import { createResponseMutation, findManyAttachmentsQuery, findWorkspaceMemberPr
 import { AttachmentProcessingService } from '../arx-chat/utils/attachment-processes';
 import { TranscriptionService } from './transcription.service';
 
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { graphQltoUpdateOneCandidate } from 'twenty-shared';
 import { WorkspaceQueryService } from '../workspace-modifications/workspace-modifications.service';
 
@@ -18,6 +18,8 @@ interface GetInterviewDetailsResponse {
   videoInterviewAttachmentResponse: any;
   questionsAttachments: { id: string; fullPath: string; name: string }[];
 }
+
+
 
 export async function axiosRequest(data: string, apiToken: string) {
   const response = await axios.request({
@@ -47,270 +49,422 @@ export class VideoInterviewController {
     console.log('JWT Secret present:', !!process.env.TWENTY_JWT_SECRET);
 
   }
+
+  private chunkUploads = new Map<string, {
+    filename: string;
+    totalChunks: number;
+    receivedChunks: number[];
+    chunkFiles: string[];
+    fileType: string;
+  }>();
   
-  @Post('submit-response')
-  @UseInterceptors(
-    FileFieldsInterceptor(
-      [
-        { name: 'video', maxCount: 1 },
-        { name: 'audio', maxCount: 1 },
-      ],
-      {
-        storage: multer.diskStorage({
-          destination: './uploads',
-          filename: (req, file, callback) => {
-            try {
-              console.log(`Received file in the uploads multer disk storage: ${file.originalname}`);
-              // Ensure uploads directory exists
-              if (!fs.existsSync('./uploads')) {
-                fs.mkdirSync('./uploads', { recursive: true });
-              }
-              callback(null, file.originalname);
-            } catch (error) {
-              console.error('Error in multer filename callback:', error);
-              callback(error, "");
-            }
-          },
-        }),
-        limits: { fileSize: 100 * 1024 * 1024 },
-        fileFilter: (req, file, callback) => {
+
+  @Post('init-chunked-upload')
+async initChunkedUpload(@Body() data: { uploadId: string; filename: string; totalChunks: number; fileType: string }) {
+  console.log(`Initializing chunked upload: ${data.uploadId}, ${data.totalChunks} chunks`);
+  
+  const uploadDir = path.join('./uploads', 'chunks', data.uploadId);
+  
+  // Create directories if they don't exist
+  if (!fs.existsSync('./uploads')) {
+    fs.mkdirSync('./uploads', { recursive: true });
+  }
+  if (!fs.existsSync(path.join('./uploads', 'chunks'))) {
+    fs.mkdirSync(path.join('./uploads', 'chunks'), { recursive: true });
+  }
+  if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+  }
+  
+  this.chunkUploads.set(data.uploadId, {
+    filename: data.filename,
+    totalChunks: data.totalChunks,
+    receivedChunks: [],
+    chunkFiles: [],
+    fileType: data.fileType
+  });
+  
+  return { status: 'initialized' };
+}
+
+// Handle each chunk upload
+@Post('upload-chunk')
+@UseInterceptors(
+  FileFieldsInterceptor(
+    [
+      { name: 'chunk', maxCount: 1 }
+    ],
+    {
+      storage: multer.diskStorage({
+        destination: './uploads',
+
+        filename: (req, file, callback) => {
+          console.log("Received chunk filename callback");
           try {
-            console.log(`Received file: ${file.fieldname}, mimetype: ${file.mimetype}`);
-            
-            if (!file.mimetype) {
-              return callback(new BadRequestException('Missing mimetype'), false);
-            }
-
-            if (file.fieldname === 'video' && !['video/webm', 'video/mp4'].includes(file.mimetype)) {
-              return callback(new BadRequestException(`Invalid video format: ${file.mimetype}. Only webm or mp4 files are allowed.`), false);
-            }
-            
-            if (file.fieldname === 'audio' && file.mimetype !== 'audio/wav') {
-              return callback(new BadRequestException(`Invalid audio format: ${file.mimetype}. Only WAV files are allowed.`), false);
-            }
-            
-            callback(null, true);
+            const chunkIndex = req.body.chunkIndex;
+            callback(null, `chunk-${chunkIndex}`);
           } catch (error) {
-            console.error('Error in multer fileFilter:', error);
-            callback(error, false);
+            console.error('Error in chunk filename callback:', error);
+            callback(error, "");
           }
-        },
-      },
-    ),
-  )
-
-  async submitResponse(@Req() req, @UploadedFiles() files: { video?: Express.Multer.File[]; audio?: Express.Multer.File[] }) {
-
-    console.log("Received request data:: will start download")
-    try {
-      console.log("Step 1: Starting submission process");
-      console.log("Response data:", req.body.responseData);
-      // const { workspace } = await this.tokenService.validateToken(req);
-      // console.log("REceived response data::", workspace)
-      console.log("REceived response data::", req.body.responseData)
-      // console.log('Received files:', JSON.stringify(files, null, 2));
-      // console.log('Received response data:', JSON.stringify(responseData, null, 2));
-      const interviewData = JSON.parse(req?.body?.interviewData);
-      const workspaceToken = await this.getWorkspaceTokenForInterview(interviewData.id);
-      if (!workspaceToken) {
-        throw new UnauthorizedException('Could not find valid workspace token');
+        }
+      }),
+      limits: { fileSize: 100 * 1024 * 1024 },
+      fileFilter: (req, file, callback) => {
+        console.log("Received chunk fileFilter callback");
+        try {
+          console.log(`Received chunk file: ${file.fieldname}, mimetype: ${file.mimetype}`);
+          
+          if (!file.mimetype) {
+            return callback(new BadRequestException('Missing mimetype'), false);
+          }
+          
+          // For chunks, accept any binary data
+          callback(null, true);
+        } catch (error) {
+          console.error('Error in chunk fileFilter:', error);
+          callback(error, false);
+        }
       }
-      const apiToken = workspaceToken;
-  
-      const currentQuestionIndex = JSON.parse(req?.body?.currentQuestionIndex);
-      console.log("REceived interviewData:", interviewData)
-      console.log("REceived currentQuestionIndex:", currentQuestionIndex)
-      const questionId = interviewData.videoInterview.videoInterviewQuestions.edges[currentQuestionIndex].node.id;
-      if (!files.audio || !files.video) {
-        throw new BadRequestException('Both video and audio files are required');
-        // console.log("Neither audio nor video files peresetn")
-
-      }
-      else{
-        console.log("Both files received")
-      }
-
-      const audioFile = files.audio[0];
-      const videoFile = files.video[0];
-
-      console.log("audio file received:", audioFile)
-      console.log("video file received:", videoFile)
-      // Upload video file to Twenty
-      let videoFilePath = `uploads/${videoFile.originalname}`;
-
-      if (videoFile.mimetype !== 'video/webm') {
-        videoFilePath = await this.convertToWebM(videoFilePath);
-      }
-
-      const videoAttachmentObj = await new AttachmentProcessingService().uploadAttachmentToTwenty(videoFilePath,apiToken);
-      // Upload audio file to Twenty
-      const audioFilePath = `uploads/${audioFile.originalname}`;
-
-      const audioAttachmentObj = await new AttachmentProcessingService().uploadAttachmentToTwenty(audioFilePath,apiToken);
-      console.log('Audio attachment upload response:', audioAttachmentObj);
-      console.log('interviewData::', interviewData);
-      // Prepare data for attachment table
-      const videoDataToUploadInAttachmentTable = {
-        input: {
-          authorId: interviewData.candidate.jobs.recruiterId,
-          name: videoFilePath.replace(`${process.cwd()}/`, ''),
-          fullPath: videoAttachmentObj?.data?.uploadFile,
-          type: 'Video',
-          candidateId: interviewData.candidate.id,
-        },
-      };
-      console.log('This is the video. Data to Uplaod in Attachment Table::', videoDataToUploadInAttachmentTable);
-      const videoAttachment = await new AttachmentProcessingService().createOneAttachmentFromFilePath(videoDataToUploadInAttachmentTable,apiToken);
-      console.log("videoAttachment:"  , videoAttachment)
-
-      const audioDataToUploadInAttachmentTable = {
-        input: {
-          authorId: interviewData.candidate.jobs.recruiterId,
-          name: audioFilePath.replace(`${process.cwd()}/`, ''),
-          fullPath: audioAttachmentObj?.data?.uploadFile,
-          type: 'Audio',
-          candidateId: interviewData.candidate.id,
-        },
-      };
-      console.log('This is the audio. Data to Uplaod in Attachment Table::', audioDataToUploadInAttachmentTable);
-      const audioAttachment = await new AttachmentProcessingService().createOneAttachmentFromFilePath(audioDataToUploadInAttachmentTable,apiToken);
-      console.log("audioAttachment:"  , audioAttachment)
-      // console.log('Audio file:', JSON.stringify(audioFile, null, 2));
-      // console.log('Video file:', JSON.stringify(videoFile, null, 2));
-
-      console.log('Starting audio transcription');
-      const transcript = await this.transcriptionService.transcribeAudio(audioFile.path);
-      console.log('Transcription completed::', transcript);
-      const token = req.user?.accessToken;
-      console.log('User token:', token ? 'Present' : 'Missing');
-      // Create response mutation
-      console.log('Preparing GraphQL mutation for response creation');
-      console.log("req.body?.responseDatareq.body?.responseData:", req.body?.responseData)
-      console.log("req.body?.responseDatareq.body?.req.body?.responseData:", req.body)
-      console.log("This is the responseData:", interviewData?.name)
-      console.log("This is the responseData in questionsId:", req.body?.responseData?.videoInterviewQuestionId)
-      console.log("This is the timeLimitAdherence:", req.body?.responseData?.timeLimitAdherence)
-
-      const createResponseVariables = {
-        input: {
-          name: `Response for ${interviewData?.name}`,
-          videoInterviewId: interviewData.id.replace("/video-interview/", ""),
-          videoInterviewQuestionId: questionId,
-          transcript: transcript,
-          completedResponse: true,
-          candidateId:interviewData.candidate.id,
-          jobId: interviewData.candidate.jobs.id,
-          personId: interviewData.candidate.people.id,
-          timeLimitAdherence: req.body.responseData?.timeLimitAdherence || true,
-        },
-      };
-      const graphqlQueryObjForCreationOfResponse = JSON.stringify({
-        query: createResponseMutation,
-        variables: createResponseVariables,
-      });
-
-      console.log('Sending GraphQL mutation for response creation::', graphqlQueryObjForCreationOfResponse);
-      const responseResult = (await axiosRequest(graphqlQueryObjForCreationOfResponse,apiToken)).data;
-      console.log('Response creation result:', JSON.stringify(responseResult, null, 2));
-      console.log("ResponseResult data:", responseResult.data);
-      console.log("ResponseResult ID:", responseResult?.data?.createVideoInterviewResponse.id);
-
-      const responseId = responseResult.data.createVideoInterviewResponse.id;
-      const videoDataToUploadInAttachmentResponseTable = {
-        input: {
-          authorId: interviewData.candidate.jobs.recruiterId,
-          name: videoFilePath.replace(`${process.cwd()}/`, ''),
-          fullPath: videoAttachmentObj?.data?.uploadFile,
-          type: 'Video',
-          videoInterviewResponseId: responseId,
-        },
-      };
-      console.log('This is the video. Data to Uplaod in Attachment Table::', videoDataToUploadInAttachmentResponseTable);
-      const videoAttachmentResponseUpload = await new AttachmentProcessingService().createOneAttachmentFromFilePath(videoDataToUploadInAttachmentResponseTable,apiToken);
-      console.log("videoAttachmentResponseUpload:"  , videoAttachmentResponseUpload);
-      const audioDataToUploadInAttachmentResponseTable = {
-        input: {
-          authorId: interviewData.candidate.jobs.recruiterId,
-          name: audioFilePath.replace(`${process.cwd()}/`, ''),
-          fullPath: audioAttachmentObj?.data?.uploadFile,
-          type: 'Audio',
-          videoInterviewResponseId: responseId,
-        },
-      };
-      console.log('This is the audio. Data to Uplaod in Attachment Table::', audioDataToUploadInAttachmentTable);
-      const audioAttachmentResponseUpload = await new AttachmentProcessingService().createOneAttachmentFromFilePath(audioDataToUploadInAttachmentResponseTable,apiToken);
-      console.log("audioAttachmentResponseUpload:"  , audioAttachmentResponseUpload);
-
-
-
-
-      // Update Video Interview Status mutation
-      console.log('Preparing GraphQL mutation for status update');
-
-      const updateCandidateVariables = {
-        idToUpdate: interviewData.candidate.id,
-        input: {
-          startVideoInterviewChatCompleted: true,
-        },
-      };
-
-      const graphqlQueryObjForUpdationForCandidateStatus = JSON.stringify({
-        query: graphQltoUpdateOneCandidate,
-        variables: updateCandidateVariables,
-      });
-
-      console.log('graphqlQueryObjForUpdationForCandidateStatus::', graphqlQueryObjForUpdationForCandidateStatus);
-      try{
-
-        const statusCandidateUpdateResult = (await axiosRequest(graphqlQueryObjForUpdationForCandidateStatus,apiToken)).data;
-      }
-      catch(e){
-        console.log("Error in candidate status update::", e)
-      }
-
-      const updateStatusVariables = {
-        idToUpdate: interviewData.id.replace("/video-interview/", ""),
-        input: {
-          interviewStarted: true,
-          interviewCompleted: req.body.responseData.isLastQuestion,
-        },
-      };
-      const graphqlQueryObjForUpdationForStatus = JSON.stringify({
-        query: updateOneVideoInterviewMutation,
-        variables: updateStatusVariables,
-      });
-      console.log('graphqlQueryObjForUpdationForStatus::', graphqlQueryObjForUpdationForStatus);
-      // console.log('Sending GraphQL mutation for status update');
-      let statusResult;
-      try{
-
-        statusResult = (await axiosRequest(graphqlQueryObjForUpdationForStatus,apiToken)).data;
-      }
-      catch(e){
-        console.log("Error in UpdateOneVideoInterview status update::", e)
-      }
-
-      // console.log('Status update result:', JSON.stringify(statusResult, null, 2));
-
-      console.log('Preparing response');
-      const response = {
-        response: responseResult?.createVideoInterviewResponse,
-        status: statusResult?.updateVideoInterview,
-        videoFile: videoFile?.filename,
-        audioFile: audioFile?.filename,
-      };
-      console.log('Final response:', JSON.stringify(response, null, 2));
-
-      return response;
-    } catch (error) {
-      console.error('Error in submitResponse:', error);
-      if (error instanceof BadRequestException) {
-        throw error;
-      }
-      throw new InternalServerErrorException(error.message);
+    })
+)
+async uploadChunk(@Req() req, @UploadedFiles() files: { chunk?: Express.Multer.File[] }) {
+  try {
+    console.log('Upload chunk endpoint reached');
+    
+    if (!files.chunk || !files.chunk[0]) {
+      throw new BadRequestException('No chunk file received');
     }
+    
+    const chunkFile = files.chunk[0];
+    const uploadId = req.body.uploadId;
+    const chunkIndex = parseInt(req.body.chunkIndex);
+    
+    console.log(`Processing chunk ${chunkIndex} for upload ${uploadId}`);
+    
+    const uploadData = this.chunkUploads.get(uploadId);
+    if (!uploadData) {
+      throw new BadRequestException('Upload not initialized');
+    }
+    
+    // Update received chunks
+    uploadData.receivedChunks.push(chunkIndex);
+    uploadData.chunkFiles.push(chunkFile.path);
+    
+    console.log(`Updated upload data: ${uploadData.receivedChunks.length}/${uploadData.totalChunks} chunks received`);
+    
+    return {
+      status: 'chunk-received',
+      progress: uploadData.receivedChunks.length / uploadData.totalChunks
+    };
+  } catch (error) {
+    console.error('Error in uploadChunk:', error);
+    if (error instanceof BadRequestException) {
+      throw error;
+    }
+    throw new InternalServerErrorException(`Failed to process chunk: ${error.message}`);
+  }
+}
+
+
+
+@Post('complete-chunked-upload')
+async completeChunkedUpload(@Body() data: { uploadId: string; filename: string; fileType: string }) {
+  const uploadData = this.chunkUploads.get(data.uploadId);
+  
+  if (!uploadData) {
+    throw new BadRequestException('Upload not initialized');
+  }
+  
+  if (uploadData.receivedChunks.length !== uploadData.totalChunks) {
+    throw new BadRequestException('Not all chunks received');
   }
 
+  
+  
+  // Sort chunks by index to ensure correct order
+  const sortedChunks = [...uploadData.receivedChunks]
+    .sort((a, b) => a - b)
+    .map(index => uploadData.chunkFiles[uploadData.receivedChunks.indexOf(index)]);
+  
+  // Combine all chunks
+  const finalFilePath = path.join('./uploads', data.filename);
+  const writeStream = fs.createWriteStream(finalFilePath);
+  
+  for (const chunkPath of sortedChunks) {
+    const chunkData = fs.readFileSync(chunkPath);
+    writeStream.write(chunkData);
+  }
+  
+  writeStream.end();
+  
+  // Wait for file to be fully written
+  await new Promise<void>((resolve) => {
+    writeStream.on('finish', () => {
+      resolve();
+    });
+  });
+  
+  console.log(`Completed chunked upload: ${data.uploadId}, final file: ${finalFilePath}`);
+  
+  // Clean up chunk files
+  for (const chunkPath of sortedChunks) {
+    fs.unlinkSync(chunkPath);
+  }
+  
+  // Remove upload directory
+  fs.rmdirSync(path.join('./uploads', 'chunks', data.uploadId));
+  
+  // Clean up tracking
+  this.chunkUploads.delete(data.uploadId);
+  
+  return { status: 'completed', filePath: finalFilePath };
+}
+
+  
+@Post('submit-response')
+async submitResponse(@Req() req, @Body() data: any) {
+  console.log("Received request with paths instead of files");
+  
+  try {
+    console.log("Step 1: Starting submission process");
+    
+    const interviewData = JSON.parse(req?.body?.interviewData);
+    const workspaceToken = await this.getWorkspaceTokenForInterview(interviewData.id);
+    if (!workspaceToken) {
+      throw new UnauthorizedException('Could not find valid workspace token');
+    }
+    const apiToken = workspaceToken;
+
+    const currentQuestionIndex = JSON.parse(req?.body?.currentQuestionIndex);
+    console.log("Received interviewData:", interviewData);
+    console.log("Received currentQuestionIndex:", currentQuestionIndex);
+    const questionId = interviewData.videoInterview.videoInterviewQuestions.edges[currentQuestionIndex].node.id;
+    
+    // Get file paths from request instead of direct file uploads
+    const videoFilePath = req.body.videoPath;
+    const audioFilePath = req.body.audioPath || null;
+    
+    if (!videoFilePath) {
+      throw new BadRequestException('Video file path is required');
+    }
+    
+    console.log("Video file path:", videoFilePath);
+    if (audioFilePath) console.log("Audio file path:", audioFilePath);
+    
+    // Process the video file - now using the path from chunked upload
+    const videoAttachmentObj = await new AttachmentProcessingService().uploadAttachmentToTwenty(videoFilePath, apiToken);
+    console.log('Video attachment upload response:', videoAttachmentObj);
+    
+    // Process audio if available, or extract it from video
+    let audioAttachmentObj;
+    let transcript = '';
+    let audioPath = audioFilePath;
+    
+    if (!audioPath) {
+      // Extract audio from video if not provided separately
+      console.log('No audio file provided, extracting from video');
+      audioPath = await this.extractAudioFromVideo(videoFilePath);
+      console.log('Extracted audio path:', audioPath);
+    }
+    
+    // Upload audio and get transcript
+    audioAttachmentObj = await new AttachmentProcessingService().uploadAttachmentToTwenty(audioPath, apiToken);
+    console.log('Audio attachment upload response:', audioAttachmentObj);
+    transcript = await this.transcriptionService.transcribeAudio(audioPath);
+    console.log('Transcription completed:', transcript);
+    
+    // Prepare data for attachment table for video
+    const videoDataToUploadInAttachmentTable = {
+      input: {
+        authorId: interviewData.candidate.jobs.recruiterId,
+        name: path.basename(videoFilePath),
+        fullPath: videoAttachmentObj?.data?.uploadFile,
+        type: 'Video',
+        candidateId: interviewData.candidate.id,
+      },
+    };
+    console.log('Video data to upload in Attachment Table:', videoDataToUploadInAttachmentTable);
+    const videoAttachment = await new AttachmentProcessingService().createOneAttachmentFromFilePath(videoDataToUploadInAttachmentTable, apiToken);
+    console.log("Video attachment:", videoAttachment);
+
+    // Prepare data for attachment table for audio
+    const audioDataToUploadInAttachmentTable = {
+      input: {
+        authorId: interviewData.candidate.jobs.recruiterId,
+        name: path.basename(audioPath),
+        fullPath: audioAttachmentObj?.data?.uploadFile,
+        type: 'Audio',
+        candidateId: interviewData.candidate.id,
+      },
+    };
+    console.log('Audio data to upload in Attachment Table:', audioDataToUploadInAttachmentTable);
+    const audioAttachment = await new AttachmentProcessingService().createOneAttachmentFromFilePath(audioDataToUploadInAttachmentTable, apiToken);
+    console.log("Audio attachment:", audioAttachment);
+
+    // Create response mutation
+    console.log('Preparing GraphQL mutation for response creation');
+    const responseData = JSON.parse(req?.body?.responseData || '{}');
+    
+    const createResponseVariables = {
+      input: {
+        name: `Response for ${interviewData?.name}`,
+        videoInterviewId: interviewData.id.replace("/video-interview/", ""),
+        videoInterviewQuestionId: questionId,
+        transcript: transcript,
+        completedResponse: true,
+        candidateId: interviewData.candidate.id,
+        jobId: interviewData.candidate.jobs.id,
+        personId: interviewData.candidate.people.id,
+        timeLimitAdherence: responseData?.timeLimitAdherence || true,
+      },
+    };
+    const graphqlQueryObjForCreationOfResponse = JSON.stringify({
+      query: createResponseMutation,
+      variables: createResponseVariables,
+    });
+
+    console.log('Sending GraphQL mutation for response creation:', graphqlQueryObjForCreationOfResponse);
+    const responseResult = (await axiosRequest(graphqlQueryObjForCreationOfResponse, apiToken)).data;
+    console.log('Response creation result:', JSON.stringify(responseResult, null, 2));
+    
+    if (!responseResult?.data?.createVideoInterviewResponse?.id) {
+      throw new Error('Failed to create video interview response');
+    }
+    
+    const responseId = responseResult.data.createVideoInterviewResponse.id;
+    
+    // Link video attachment to response
+    const videoDataToUploadInAttachmentResponseTable = {
+      input: {
+        authorId: interviewData.candidate.jobs.recruiterId,
+        name: path.basename(videoFilePath),
+        fullPath: videoAttachmentObj?.data?.uploadFile,
+        type: 'Video',
+        videoInterviewResponseId: responseId,
+      },
+    };
+    console.log('Video data to upload in Attachment Response Table:', videoDataToUploadInAttachmentResponseTable);
+    const videoAttachmentResponseUpload = await new AttachmentProcessingService().createOneAttachmentFromFilePath(videoDataToUploadInAttachmentResponseTable, apiToken);
+    console.log("Video attachment response upload:", videoAttachmentResponseUpload);
+    
+    // Link audio attachment to response
+    const audioDataToUploadInAttachmentResponseTable = {
+      input: {
+        authorId: interviewData.candidate.jobs.recruiterId,
+        name: path.basename(audioPath),
+        fullPath: audioAttachmentObj?.data?.uploadFile,
+        type: 'Audio',
+        videoInterviewResponseId: responseId,
+      },
+    };
+    console.log('Audio data to upload in Attachment Response Table:', audioDataToUploadInAttachmentResponseTable);
+    const audioAttachmentResponseUpload = await new AttachmentProcessingService().createOneAttachmentFromFilePath(audioDataToUploadInAttachmentResponseTable, apiToken);
+    console.log("Audio attachment response upload:", audioAttachmentResponseUpload);
+
+    // Update Candidate Status
+    console.log('Preparing GraphQL mutation for candidate status update');
+    const updateCandidateVariables = {
+      idToUpdate: interviewData.candidate.id,
+      input: {
+        startVideoInterviewChatCompleted: true,
+      },
+    };
+    const graphqlQueryObjForUpdationForCandidateStatus = JSON.stringify({
+      query: graphQltoUpdateOneCandidate,
+      variables: updateCandidateVariables,
+    });
+    console.log('Candidate status update query:', graphqlQueryObjForUpdationForCandidateStatus);
+    
+    try {
+      const statusCandidateUpdateResult = (await axiosRequest(graphqlQueryObjForUpdationForCandidateStatus, apiToken)).data;
+      console.log('Candidate status update result:', statusCandidateUpdateResult);
+    } catch (e) {
+      console.log("Error in candidate status update:", e);
+      // Continue despite this error
+    }
+
+    // Update Interview Status
+    const isLastQuestion = responseData?.isLastQuestion || false;
+    const updateStatusVariables = {
+      idToUpdate: interviewData.id.replace("/video-interview/", ""),
+      input: {
+        interviewStarted: true,
+        interviewCompleted: isLastQuestion,
+      },
+    };
+    const graphqlQueryObjForUpdationForStatus = JSON.stringify({
+      query: updateOneVideoInterviewMutation,
+      variables: updateStatusVariables,
+    });
+    console.log('Interview status update query:', graphqlQueryObjForUpdationForStatus);
+    
+    let statusResult;
+    try {
+      statusResult = (await axiosRequest(graphqlQueryObjForUpdationForStatus, apiToken)).data;
+      console.log('Interview status update result:', statusResult);
+    } catch (e) {
+      console.log("Error in UpdateOneVideoInterview status update:", e);
+      // Continue despite this error
+    }
+
+    // Clean up temporary files
+    try {
+      if (fs.existsSync(videoFilePath)) {
+        fs.unlinkSync(videoFilePath);
+      }
+      if (audioFilePath && fs.existsSync(audioFilePath)) {
+        fs.unlinkSync(audioFilePath);
+      }
+      // If we generated the audio file, clean it up too
+      if (!audioFilePath && audioPath && fs.existsSync(audioPath)) {
+        fs.unlinkSync(audioPath);
+      }
+    } catch (cleanupError) {
+      console.log("Warning: Error cleaning up temporary files:", cleanupError);
+      // Non-fatal error, continue
+    }
+
+    // Prepare final response
+    const response = {
+      response: responseResult?.data?.createVideoInterviewResponse,
+      status: statusResult?.data?.updateVideoInterview,
+      videoFile: path.basename(videoFilePath),
+      audioFile: path.basename(audioPath),
+    };
+    console.log('Final response:', JSON.stringify(response, null, 2));
+
+    return response;
+    
+  } catch (error) {
+    console.error('Error in submitResponse:', error);
+    if (error instanceof BadRequestException || error instanceof UnauthorizedException) {
+      throw error;
+    }
+    throw new InternalServerErrorException(error.message || 'An unknown error occurred');
+  }
+}
+
+// Helper method to extract audio from video
+private async extractAudioFromVideo(videoPath: string): Promise<string> {
+  const audioPath = videoPath.replace(path.extname(videoPath), '.wav');
+  
+  return new Promise((resolve, reject) => {
+    ffmpeg(videoPath)
+      .output(audioPath)
+      .noVideo()
+      .audioCodec('pcm_s16le')
+      .audioChannels(1)
+      .audioFrequency(16000)
+      .on('end', () => {
+        resolve(audioPath);
+      })
+      .on('error', (err) => {
+        reject(new Error(`Error extracting audio: ${err.message}`));
+      })
+      .run();
+  });
+}
 
   private async getWorkspaceTokenForInterview(interviewId: string) {
     const results = await this.workspaceQueryService.executeQueryAcrossWorkspaces(
