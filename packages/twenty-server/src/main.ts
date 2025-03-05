@@ -16,8 +16,10 @@ import { LoggerService } from 'src/engine/core-modules/logger/logger.service';
 import { getSessionStorageOptions } from 'src/engine/core-modules/session-storage/session-storage.module-factory';
 import { UnhandledExceptionFilter } from 'src/filters/unhandled-exception.filter';
 
+import * as bodyParser from 'body-parser';
 import { AppModule } from './app.module';
 import './instrument';
+
 
 import { settings } from './engine/constants/settings';
 import { generateFrontConfig } from './utils/generate-front-config';
@@ -48,6 +50,8 @@ const bootstrap = async () => {
 
   // Apply class-validator container so that we can use injection in validators
   useContainer(app.select(AppModule), { fallbackOnErrors: true });
+  app.use(bodyParser.json({ limit: '50mb' }));
+  app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 
   // Use our logger
   app.useLogger(logger);
