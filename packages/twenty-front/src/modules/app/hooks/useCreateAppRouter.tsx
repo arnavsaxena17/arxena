@@ -14,6 +14,7 @@ import {
   createBrowserRouter,
   createRoutesFromElements,
   Route,
+  useParams,
 } from 'react-router-dom';
 import { Authorize } from '~/pages/auth/Authorize';
 import { PasswordReset } from '~/pages/auth/PasswordReset';
@@ -51,9 +52,9 @@ export const useCreateAppRouter = (
         <Route element={<MinimalProviders />}>
           <Route element={<BlankLayout />}>
             <Route
-              path={`${AppPath.VideoInterview}/*`}
+              path={`${AppPath.VideoInterview}/:interviewId`}
               element={
-                <VideoInterviewFlow interviewId={window.location.pathname} />
+                <VideoInterviewFlow interviewId={useParams().interviewId ?? ''} />
               }
             />
             <Route

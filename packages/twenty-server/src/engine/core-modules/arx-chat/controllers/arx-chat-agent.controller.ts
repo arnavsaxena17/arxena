@@ -505,7 +505,7 @@ export class ArxChatEndpoint {
         apiToken,
       );
       console.log(
-        'This is the response in create chatBasedShortlistDelivery shortlist',
+        'This is the response in create createShortlistDocument shortlist',
       );
       return { status: 'Success' };
     } catch (err) {
@@ -571,7 +571,7 @@ export class ArxChatEndpoint {
         this.workspaceQueryService,
       ).createGmailDraftShortlist(candidateIds, apiToken);
       console.log(
-        'This is the response in create chatBasedShortlistDelivery shortlist',
+        'This is the response in create chatGmailDraftShortlist shortlist',
       );
       return { status: 'Success' };
     } catch (err) {
@@ -769,7 +769,7 @@ export class ArxChatEndpoint {
     console.log('personresponse objk1:', personObj);
     const personNode = personresponse?.data?.data?.people?.edges[0]?.node;
     if (!personNode) {
-      console.log('Person not found');
+      console.log('Person not found so cant do things in dlete peopel from person ids');
       return { status: 'Failed', message: 'Candidate not found' };
     }
     const candidateId = personNode?.candidates?.edges[0].node.id;

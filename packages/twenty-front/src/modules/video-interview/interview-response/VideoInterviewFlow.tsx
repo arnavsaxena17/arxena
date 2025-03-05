@@ -75,6 +75,7 @@ const InterviewLoader = () => (
 );
 
 const VideoInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) => {
+  console.log("This si the interview id:", interviewId);
   const [stage, setStage] = useState<'start' | 'interview' | 'end'>('start');
   const [loading, setLoading] = useState(false);
   const [interviewData, setInterviewData] = useState<InterviewData | null>(null);

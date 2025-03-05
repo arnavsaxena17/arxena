@@ -441,7 +441,7 @@ export class CandidateSourcingController {
   ) {
     try {
 
-
+      const jobCode = `${String.fromCharCode(65 + Math.floor(Math.random() * 10))}${String.fromCharCode(65 + Math.floor(Math.random() * 10))} ${Math.floor(Math.random() * 100).toString().padStart(2, '0')}`;
       const currentUser = await getCurrentUser(apiToken);
       const recruiterId = currentUser?.workspaceMember?.id;
       console.log("This is the currentUser?.workspaces:", JSON.stringify(currentUser?.workspaces));
@@ -456,7 +456,9 @@ export class CandidateSourcingController {
         pathPosition: this.getJobCandidatePathPosition(jobName),
         recruiterId : recruiterId,
         arxenaSiteId: newJobId,
+        jobCode: jobCode,
         isActive: true,
+        jobLocation: 'India',
         googleSheetUrl: {
           primaryLinkLabel: googleSheetUrl,
           primaryLinkUrl: googleSheetUrl,

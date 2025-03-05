@@ -36,7 +36,7 @@ export async function axiosRequest(data: string, apiToken: string) {
   return response;
 }
 
-@Controller('video-interview')
+@Controller('video-interview-controller')
 export class VideoInterviewController {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
