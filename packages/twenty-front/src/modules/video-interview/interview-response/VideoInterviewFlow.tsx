@@ -170,8 +170,13 @@ const VideoInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) 
     setLoading(true);
     console.log("Going to fetch interview id:", interviewId);
     try {
-      const response = await axios.post(`${process.env.REACT_APP_SERVER_BASE_URL}/video-interview-controller/get-interview-details`, { interviewId });
+      const url = `${process.env.REACT_APP_SERVER_BASE_URL}/video-interview-controller/get-interview-details`;
+
+      const response = await axios.post(url, { interviewId });
       console.log('This is the response to fetch interview data:', response);
+      console.log("Making request to:", url, "with payload:", { interviewId });
+      console.log('Full response data:', JSON.stringify(response.data, null, 2));
+
       const responseObj: GetInterviewDetailsResponse = response.data;
       if (responseObj) {
 

@@ -14,6 +14,7 @@ import {
   createBrowserRouter,
   createRoutesFromElements,
   Route,
+  useParams,
 } from 'react-router-dom';
 import { Authorize } from '~/pages/auth/Authorize';
 import { PasswordReset } from '~/pages/auth/PasswordReset';
@@ -35,10 +36,43 @@ import VideoInterviewFlow from '@/video-interview/interview-response/VideoInterv
 import VideoInterviewResponseViewer from '@/video-interview/interview-response/VideoInterviewResponseViewer';
 import { Chats } from '~/pages/chats/Chats';
 
-// const VideoInterviewWrapper = () => {
-//   const { candidateId } = useParams();
-//   return <VideoInterviewResponseViewer candidateId={candidateId} videoInterviewId={candidateId} />;
-// };
+
+// VideoInterviewWrapper()
+
+const VideoInterviewWrapper = () => {
+  console.log("VideoInterviewWrapper rendering");
+  const params = useParams();
+  console.log("Raw params object:", params);
+  const { interviewId } = params;
+  console.log("Extracted interviewId:", interviewId);
+  
+  // Check browser URL directly
+  console.log("Current URL path:", window.location.pathname);
+  
+  // Extract ID manually as fallback
+  const pathParts = window.location.pathname.split('/');
+  const manuallyExtractedId = pathParts[pathParts.length - 1];
+  console.log("Manually extracted ID:", manuallyExtractedId);
+  
+  return <VideoInterviewFlow interviewId={interviewId || manuallyExtractedId || ''} />;
+};
+
+const TestParamRoute = () => {
+  const { interviewId } = useParams();
+  return <div>Parameter value: {interviewId || 'No parameter found'}</div>;
+};
+
+
+const VideoInterviewResponseViewerWrapper = () => {
+  const { candidateId } = useParams();
+  return (
+    <VideoInterviewResponseViewer
+      candidateId={candidateId}
+      videoInterviewId={candidateId}
+    />
+  );
+};
+
 
 export const useCreateAppRouter = (
   isFunctionSettingsEnabled?: boolean,
@@ -46,31 +80,28 @@ export const useCreateAppRouter = (
 ) =>
   createBrowserRouter(
     createRoutesFromElements(
+
       <>
         {/* Special routes with MinimalProviders */}
         <Route element={<MinimalProviders />}>
           <Route element={<BlankLayout />}>
             <Route
-              path={`${AppPath.VideoInterview}/*`}
-              element={
-                <VideoInterviewFlow interviewId={window.location.pathname} />
-              }
+                path={`${AppPath.VideoInterview}/:interviewId`}
+                element={<VideoInterviewWrapper />}
             />
+            <Route
+              path="/test-param/:interviewId"
+              element={<TestParamRoute />}
+            />
+
+
             <Route
               path={`${AppPath.GoogleSheet}/*`}
               element={<GoogleSheet />}
             />
             <Route path={`${AppPath.OrgChart}/*`} element={<OrgChart />} />
             <Route path={`${AppPath.Hot}/*`} element={<HotPage />} />
-            <Route
-              path={`${AppPath.VideoInterviewReview}/:candidateId`}
-              element={
-                <VideoInterviewResponseViewer
-                  candidateId={window.location.pathname}
-                  videoInterviewId={window.location.pathname}
-                />
-              }
-            />
+
           </Route>
         </Route>
         <Route
@@ -95,14 +126,10 @@ export const useCreateAppRouter = (
             <Route path={AppPath.Chats} element={<Chats />} />
 
             <Route path={`${AppPath.Chats}/:candidateId`} element={<Chats />} />
+  
             <Route
               path={`${AppPath.VideoInterviewReview}/:candidateId`}
-              element={
-                <VideoInterviewResponseViewer
-                  candidateId={window.location.pathname}
-                  videoInterviewId={window.location.pathname}
-                />
-              }
+              element={<VideoInterviewResponseViewerWrapper />}
             />
 
             <Route path={AppPath.PlanRequired} element={<ChooseYourPlan />} />

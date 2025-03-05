@@ -472,8 +472,7 @@ export const findWorkspaceMemberProfiles =  `query FindManyWorkspaceMemberProfil
 }`
 
 
-export const graphQueryToFindManyvideoInterviews = `
-query FindManyVideoInterviews($filter: VideoInterviewFilterInput, $orderBy: [VideoInterviewOrderByInput], $lastCursor: String, $limit: Int) {
+export const graphQueryToFindManyvideoInterviews = `query FindManyVideoInterviews($filter: VideoInterviewFilterInput, $orderBy: [VideoInterviewOrderByInput], $lastCursor: String, $limit: Int) {
   videoInterviews(
     filter: $filter
     orderBy: $orderBy
