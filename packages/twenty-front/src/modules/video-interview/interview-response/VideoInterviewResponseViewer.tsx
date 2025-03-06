@@ -3,7 +3,7 @@ import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
 import React, { useEffect, useState } from 'react';
 import { useRecoilState } from 'recoil';
-import { queryByvideoInterview } from 'twenty-shared';
+import { InterviewDataJobTemplate, queryByvideoInterview, VideoInterviewResponseViewerProps } from 'twenty-shared';
 import VideoDownloaderPlayer from './VideoDownloaderPlayer';
 
 const StyledContainer = styled.div<{ theme: any }>`
@@ -14,20 +14,6 @@ const StyledContainer = styled.div<{ theme: any }>`
   overflow-y: auto; // Enable vertical scrolling
 `;
 
-const StyledVideoContainer = styled.div`
-  background-color: black;
-  height: 50%;
-  width: 50%;
-`;
-
-const DebugInfo = styled.div`
-  background-color: rgba(0, 0, 0, 0.7);
-  color: white;
-  padding: 10px;
-  margin-top: 10px;
-  border-radius: 5px;
-  font-family: monospace;
-`;
 
 const TranscriptContainer = styled.div`
   background-color: #f5f5f5;
@@ -51,70 +37,6 @@ const TranscriptText = styled.p`
   white-space: pre-wrap;
 `;
 
-// Types
-interface Name {
-  firstName: string;
-  lastName: string;
-}
-
-interface Person {
-  name: Name;
-}
-
-interface company {
-  name: string;
-}
-
-interface Attachment {
-  id: string;
-  type: string;
-  fullPath: string;
-  name: string;
-}
-
-interface videoInterviewResponse {
-  id: string;
-  transcript: string | null;
-  videoInterviewQuestionId: string;
-  attachments: {
-    edges: Array<{
-      node: Attachment;
-    }>;
-  };
-}
-
-interface videoInterviewQuestion {
-  id: string;
-  questionValue: string;
-  timeLimit: number | null;
-  videoInterviewResponses: {
-    edges: Array<{
-      node: videoInterviewResponse;
-    }>;
-  };
-}
-
-interface Job {
-  id: string;
-  name: string;
-  company: company;
-}
-
-interface InterviewData {
-  job: Job;
-  videoInterviewTemplate: {
-    videoInterviewQuestions: {
-      edges: Array<{
-        node: videoInterviewQuestion;
-      }>;
-    };
-  };
-}
-
-interface VideoInterviewResponseViewerProps {
-  candidateId?: string;
-  videoInterviewId?: string;
-}
 
 const CompanyInfo = styled.div`
   margin-bottom: 20px;
@@ -136,70 +58,15 @@ const VideoContainer = styled.div`
 `;
 
 
-interface CandidateAPIResponse {
-  id: string;
-  people: {
-    name: {
-      firstName: string;
-      lastName: string;
-    };
-  };
-  jobs: {
-    id: string;
-    name: string;
-    company: {
-      name: string;
-    };
-    videoInterviewTemplate: {
-      edges: Array<{
-        node: {
-          id: string;
-          name: string;
-          videoInterviewQuestions: {
-            edges: Array<{
-              node: {
-                id: string;
-                questionValue: string;
-                timeLimit: number | null;
-              };
-            }>;
-          };
-        };
-      }>;
-    };
-  };
-  videoInterviewResponse: {
-    edges: Array<{
-      node: {
-        id: string;
-        transcript: string | null;
-        videoInterviewQuestionId: string;
-        attachments: {
-          edges: Array<{
-            node: {
-              id: string;
-              type: string;
-              fullPath: string;
-              name: string;
-            };
-          }>;
-        };
-      };
-    }>;
-  };
-}
 
-const VideoInterviewResponseViewer: React.FC<VideoInterviewResponseViewerProps> = ({ candidateId, videoInterviewId }) => {
-  const [interviewData, setInterviewData] = useState<InterviewData | null>(null);
+const VideoInterviewResponseViewer: React.FC<VideoInterviewResponseViewerProps> = ({ videoInterviewId }) => {
+  const [interviewData, setInterviewData] = useState<InterviewDataJobTemplate | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const theme = useTheme();
   const [tokenPair] = useRecoilState(tokenPairState);
   // Clean up IDs from paths
   const cleanId = (id: string) => (id.includes('/') ? id.split('/').pop() : id);
-  console.log('candidateId in the viedeo response viewer::', candidateId);
-  if (candidateId)
-  console.log('candidateId in the viedeo response viewer::', cleanId(candidateId));
 
   const fetchInterviewData = async () => {
     try {
@@ -233,37 +100,6 @@ const VideoInterviewResponseViewer: React.FC<VideoInterviewResponseViewerProps> 
         }
       }
 
-      // if (candidateId) {
-      //   console.log("candidateId in response viewer::", candidateId);
-      //   const response = await fetch(`${process.env.REACT_APP_SERVER_BASE_URL}/graphql`, {
-      //     method: 'POST',
-      //     headers: {
-      //       'Content-Type': 'application/json',
-      //       Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
-      //     },
-      //     body: JSON.stringify({
-      //       query:graphqlToFetchAllCandidateData,
-      //       variables: {
-      //         filter: {
-      //           id: { eq: cleanId(candidateId) },
-      //         },
-      //       },
-      //     }),
-      //   });
-
-      //   const responseData = await response.json();
-      //   console.log("Resopiodse the dataL:", responseData);
-      //   if (responseData?.data?.candidates?.edges?.[0]?.node) {
-      //     console.log('WE got valid data in candiate data');
-      //     const candidate = responseData.data.candidates.edges[0].node;
-      //     console.log("This is the candidate data::", responseData.data.candidates.edges[0].node);
-      //     const transformedData = transformCandidateData(candidate);
-      //     console.log("This is the transformed data::", transformedData);
-      //     setInterviewData(transformedData);
-      //     setLoading(false);
-      //     return;
-      //   }
-      // }
 
       throw new Error('No valid data found with provided IDs');
     } catch (err) {
@@ -275,13 +111,13 @@ const VideoInterviewResponseViewer: React.FC<VideoInterviewResponseViewerProps> 
   };
 
   // Separate transformation functions for cleaner code
-  const transformvideoInterviewStatusData = (responseData: any): InterviewData => {
+  const transformvideoInterviewStatusData = (responseData: any): InterviewDataJobTemplate => {
     console.log("Going to try and transform the data::", responseData);
     const videoInterview = responseData.data.videoInterview;
     const candidate = videoInterview.candidate;
     const responses = videoInterview.videoInterviewResponse.edges || [];
     console.log("videoInterview.videoInterviewQuestions:videoInterview.videoInterviewQuestions", videoInterview.videoInterviewTemplate.videoInterviewQuestions);
-    const transformedData: InterviewData =  {
+    const transformedData: InterviewDataJobTemplate =  {
       job: {
         id: candidate.jobs.id,
         company: {
@@ -321,59 +157,17 @@ const VideoInterviewResponseViewer: React.FC<VideoInterviewResponseViewerProps> 
   }
   
 
-  // const transformCandidateData = (candidate: CandidateAPIResponse): InterviewData => {
-  //   console.log("candidate in transformCandidateData::", candidate);
-  //   const transformedData: InterviewData =   {
-  //       job: {
-  //         id: candidate.jobs.id,
-  //         company: candidate.jobs.company,
-  //         name: candidate.jobs.name,
-  //       },
-  //       videoInterviewTemplate: {
-  //         videoInterviewQuestions: {
-  //           edges: candidate?.jobs?.videoInterviewTemplate?.edges[0]?.node?.videoInterviewQuestions?.edges.map(
-  //             ({ node: question }) => {
-  //               // Filter responses for this specific question
-  //               const questionResponses = candidate?.videoInterviewResponse?.edges.filter(
-  //                 response => response?.node?.videoInterviewQuestionId === question.id
-  //               );
-  //               console.log("questionResponses in transformCandidateData::", questionResponses);
-  //               return {
-  //                 node: {
-  //                   id: question?.id,
-  //                   questionValue: question?.questionValue,
-  //                   timeLimit: question?.timeLimit,
-  //                   videoInterviewResponses: {
-  //                     edges: questionResponses?.map(response => ({
-  //                       node: {
-  //                         id: response.node?.id,
-  //                         transcript: response?.node?.transcript,
-  //                         videoInterviewQuestionId: response?.node?.videoInterviewQuestionId,
-  //                         attachments: response?.node?.attachments,
-  //                       },
-  //                     })),
-  //                   },
-  //                 },
-  //               };
-  //             }
-  //           ),
-  //         },
-  //       },
-  //     };
-  //   return transformedData
-  // };
-
-
+ 
 
 
   useEffect(() => {
-    if (!candidateId && !videoInterviewId) {
-      setError('Either candidateId or videoInterview must be provided');
+    if ( !videoInterviewId) {
+      setError('VideoInterview id must be provided');
       setLoading(false);
       return;
     }
     fetchInterviewData();
-  }, [candidateId, videoInterviewId, tokenPair?.accessToken?.token]);
+  }, [videoInterviewId, tokenPair?.accessToken?.token]);
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
@@ -490,7 +284,6 @@ const VideoInterviewResponseViewer: React.FC<VideoInterviewResponseViewerProps> 
       })}
     </StyledContainer>
   );
-
 }
   
   

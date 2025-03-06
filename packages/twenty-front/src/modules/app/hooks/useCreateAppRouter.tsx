@@ -64,11 +64,10 @@ const TestParamRoute = () => {
 
 
 const VideoInterviewResponseViewerWrapper = () => {
-  const { candidateId } = useParams();
+  const { videoInterviewId } = useParams();
   return (
     <VideoInterviewResponseViewer
-      candidateId={candidateId}
-      videoInterviewId={candidateId}
+      videoInterviewId={videoInterviewId}
     />
   );
 };

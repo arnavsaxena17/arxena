@@ -28,6 +28,22 @@ export class StartVideoInterviewChatProcesses {
     try {
       const candidateObj: CandidateNode = await new FilterCandidates(this.workspaceQueryService).fetchCandidateByCandidateId(candidateId, apiToken);
       const jobId = candidateObj?.jobs?.id;
+
+
+      // Get workspace details
+      const publicWorkspaceDataResponse = await axiosRequest(JSON.stringify({
+        operationName: 'GetPublicWorkspaceDataByDomain',
+        variables: {},
+        query: `query GetPublicWorkspaceDataByDomain {
+          getPublicWorkspaceDataByDomain {
+            workspaceUrls {
+              subdomainUrl
+            }
+          }
+        }`
+      }), apiToken);
+
+      const subdomainUrl = publicWorkspaceDataResponse?.data?.data?.getPublicWorkspaceDataByDomain?.workspaceUrls?.subdomainUrl || 'https://app.arxena.com/';
       
       console.log('jobId:', jobId);
       const interviewObj = await new FilterCandidates(this.workspaceQueryService).getInterviewByJobId(jobId, apiToken);
@@ -44,12 +60,12 @@ export class StartVideoInterviewChatProcesses {
             interviewStarted: false,
             interviewCompleted: false,
             interviewLink: {
-              primaryLinkUrl: '/video-interview/' + videoInterviewId,
-              primaryLinkLabel: '/video-interview/' + videoInterviewId,
+              primaryLinkUrl: subdomainUrl+ 'video-interview/' + videoInterviewId,
+              primaryLinkLabel: subdomainUrl + 'video-interview/' + videoInterviewId,
             },
             interviewReviewLink: {
-              primaryLinkUrl: '/video-interview-review/' + candidateObj?.id,
-              primaryLinkLabel: '/video-interview-review/' + candidateObj?.id,
+              primaryLinkUrl: subdomainUrl+ 'video-interview-review/' + videoInterviewId,
+              primaryLinkLabel: subdomainUrl+ 'video-interview-review/' + videoInterviewId,
             },
             position: 'first',
           },

@@ -65,7 +65,7 @@ export class ChatControls {
           recruiterCompanyDescription: recruiterProfile.companyDescription,
           jobPositionName: whatappUpdateMessageObj?.candidateProfile?.jobs?.name,
           companyName: whatappUpdateMessageObj?.candidateProfile?.jobs?.company?.name,
-          descriptionOneliner: whatappUpdateMessageObj?.candidateProfile?.jobs?.company?.descriptionOneliner,
+          descriptionOneliner: whatappUpdateMessageObj?.candidateProfile?.jobs?.company?.descriptionOneliner || '',
           jobCode: whatappUpdateMessageObj?.candidateProfile?.jobs?.jobCode,
           jobLocation: whatappUpdateMessageObj?.candidateProfile?.jobs?.jobLocation,
           videoInterviewLink: videoInterviewLink,

@@ -53,7 +53,7 @@ export class WhatsappTestAPI {
         companyName: personObj?.candidates?.edges[0]?.node?.jobs?.company?.name,
         descriptionOneliner:
           personObj?.candidates?.edges[0]?.node?.jobs?.company
-            ?.descriptionOneliner,
+            ?.descriptionOneliner || '',
         jobCode: personObj?.candidates?.edges[0]?.node?.jobs?.jobCode,
         jobLocation: personObj?.candidates?.edges[0]?.node?.jobs?.jobLocation,
         videoInterviewLink:

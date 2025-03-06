@@ -24,13 +24,7 @@ export interface JobDropdownProps {
 }
 
 
-export interface Job {
-  node:{
 
-    id: string;
-    name: string;
-  }
-}
 
 export interface Name {
   firstName: string | '',
@@ -1645,10 +1639,10 @@ export interface companyInfoType {
 }
 
 export interface company {
-  domainName: any;
+  domainName?: any;
   name: string;
-  companyId: string;
-  descriptionOneliner: string;
+  companyId?: string;
+  descriptionOneliner?: string;
 }
 
 export interface jobProfileType {
@@ -1800,7 +1794,16 @@ export const emptyInterviewData: InterviewData = {
   }
   
 
-
+  export interface InterviewDataJobTemplate {
+    job: Job;
+    videoInterviewTemplate: {
+      videoInterviewQuestions: {
+        edges: Array<{
+          node: videoInterviewQuestion;
+        }>;
+      };
+    };
+  }
 
 export interface InterviewData {
   recruiterProfile:RecruiterProfileType,
@@ -1874,3 +1877,51 @@ export interface StartInterviewPageProps {
   introductionVideoData: VideoInterviewAttachment;
 }
 
+
+
+
+
+
+
+
+interface videoInterviewResponse {
+  id: string;
+  transcript: string | null;
+  videoInterviewQuestionId: string;
+  attachments: {
+    edges: Array<{
+      node: Attachment;
+    }>;
+  };
+}
+
+interface videoInterviewQuestion {
+  id: string;
+  questionValue: string;
+  timeLimit: number | null;
+  videoInterviewResponses: {
+    edges: Array<{
+      node: videoInterviewResponse;
+    }>;
+  };
+}
+
+interface Job {
+  id: string;
+  name: string;
+  company: company;
+}
+
+export interface JobNode {
+  node:{
+
+    id: string;
+    name: string;
+  }
+}
+
+
+export interface VideoInterviewResponseViewerProps {
+  candidateId?: string;
+  videoInterviewId?: string;
+}
