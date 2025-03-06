@@ -6,8 +6,9 @@ import {
   InternalServerErrorException,
   Post,
   Req,
-  Res,
-  UnauthorizedException
+  UnauthorizedException,
+  UploadedFiles,
+  UseInterceptors
 } from '@nestjs/common';
 import axios from 'axios';
 import ffmpeg from 'fluent-ffmpeg';
@@ -25,6 +26,7 @@ import {
 import { AttachmentProcessingService } from '../arx-chat/utils/attachment-processes';
 import { TranscriptionService } from './transcription.service';
 
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { graphQltoUpdateOneCandidate } from 'twenty-shared';
 import { WorkspaceQueryService } from '../workspace-modifications/workspace-modifications.service';
 
@@ -34,6 +36,13 @@ interface GetInterviewDetailsResponse {
   videoInterviewAttachmentResponse: any;
   questionsAttachments: { id: string; fullPath: string; name: string }[];
 }
+
+
+// curl -X POST http://ec2-23-20-11-116.compute-1.amazonaws.com/video-interview-controller/upload-chunk \
+//   -F "chunk=@test.bin" \
+//   -F "uploadId=test123" \
+//   -F "chunkIndex=0"
+
 
 export async function axiosRequest(data: string, apiToken: string) {
   const response = await axios.request({
@@ -150,7 +159,7 @@ export class VideoInterviewController {
     return { status: 'initialized' };
   }
 
-  // Handle each chunk upload
+  // Handle each chunk upload but not working
   // @Post('upload-chunk')
   // @UseInterceptors(
   //   FileFieldsInterceptor([{ name: 'chunk', maxCount: 1 }], {
@@ -258,60 +267,132 @@ export class VideoInterviewController {
   // }
 
 
-  @Post('upload-chunk')
-async uploadChunk(@Req() req, @Res() res) {
-  try {
-    console.log('Upload chunk endpoint reached');
+
+// simplest way to handle file upload but not working
+//   @Post('upload-chunk')
+// async uploadChunk(@Req() req, @Res() res) {
+//   try {
+//     console.log('Upload chunk endpoint reached');
     
-    // Create a simple multer instance just for this request
-    const storage = multer.diskStorage({
-      destination: (req, file, cb) => {
-        const uploadId = req.body.uploadId;
-        const dir = path.join('./uploads', 'chunks', uploadId);
-        cb(null, dir);
-      },
-      filename: (req, file, cb) => {
-        const chunkIndex = req.body.chunkIndex;
-        cb(null, `chunk-${chunkIndex}`);
-      }
-    });
+//     // Create a simple multer instance just for this request
+//     const storage = multer.diskStorage({
+//       destination: (req, file, cb) => {
+//         const uploadId = req.body.uploadId;
+//         const dir = path.join('./uploads', 'chunks', uploadId);
+//         cb(null, dir);
+//       },
+//       filename: (req, file, cb) => {
+//         const chunkIndex = req.body.chunkIndex;
+//         cb(null, `chunk-${chunkIndex}`);
+//       }
+//     });
     
-    const upload = multer({ storage }).single('chunk');
+//     const upload = multer({ storage }).single('chunk');
     
-    // Handle the upload directly
-    upload(req, res, (err) => {
-      if (err) {
-        console.error('Error in multer upload:', err);
-        return res.status(500).json({ error: err.message });
-      }
+//     // Handle the upload directly
+//     upload(req, res, (err) => {
+//       if (err) {
+//         console.error('Error in multer upload:', err);
+//         return res.status(500).json({ error: err.message });
+//       }
       
-      try {
-        const { uploadId, chunkIndex } = req.body;
-        console.log(`Successfully received chunk ${chunkIndex} for upload ${uploadId}`);
+//       try {
+//         const { uploadId, chunkIndex } = req.body;
+//         console.log(`Successfully received chunk ${chunkIndex} for upload ${uploadId}`);
         
-        // Update upload tracking
-        const uploadData = this.chunkUploads.get(uploadId);
-        if (!uploadData) {
-          return res.status(400).json({ error: 'Upload not initialized' });
+//         // Update upload tracking
+//         const uploadData = this.chunkUploads.get(uploadId);
+//         if (!uploadData) {
+//           return res.status(400).json({ error: 'Upload not initialized' });
+//         }
+        
+//         uploadData.receivedChunks.push(parseInt(chunkIndex));
+//         uploadData.chunkFiles.push(req.file.path);
+        
+//         return res.status(200).json({
+//           status: 'chunk-received',
+//           progress: uploadData.receivedChunks.length / uploadData.totalChunks
+//         });
+//       } catch (error) {
+//         console.error('Error processing chunk after upload:', error);
+//         return res.status(500).json({ error: error.message });
+//       }
+//     });
+//   } catch (error) {
+//     console.error('Unhandled error in upload chunk:', error);
+//     return res.status(500).json({ error: error.message });
+//   }
+// }
+
+
+@Post('upload-chunk')
+@UseInterceptors(
+  FileFieldsInterceptor(
+    [{ name: 'chunk', maxCount: 1 }],
+    {
+      storage: multer.diskStorage({
+        destination: './uploads', // Use flat directory like working example
+        filename: (req, file, callback) => {
+          try {
+            console.log('Received chunk for storage');
+            // Generate a unique filename that encodes the chunk info
+            const uploadId = req.body.uploadId;
+            const chunkIndex = req.body.chunkIndex;
+            const filename = `chunk-${uploadId}-${chunkIndex}`;
+            
+            // Ensure directory exists
+            if (!fs.existsSync('./uploads')) {
+              fs.mkdirSync('./uploads', { recursive: true });
+            }
+            
+            callback(null, filename);
+          } catch (error) {
+            console.error('Error in filename callback:', error);
+            callback(error, "");
+          }
         }
-        
-        uploadData.receivedChunks.push(parseInt(chunkIndex));
-        uploadData.chunkFiles.push(req.file.path);
-        
-        return res.status(200).json({
-          status: 'chunk-received',
-          progress: uploadData.receivedChunks.length / uploadData.totalChunks
-        });
-      } catch (error) {
-        console.error('Error processing chunk after upload:', error);
-        return res.status(500).json({ error: error.message });
+      }),
+      limits: { fileSize: 100 * 1024 * 1024 }, // Same as working example
+      fileFilter: (req, file, callback) => {
+        console.log(`Received chunk file: ${file.fieldname}`);
+        callback(null, true); // Accept all files, like your working impl
       }
-    });
+    })
+)
+async uploadChunk(@Req() req, @UploadedFiles() files: { chunk?: Express.Multer.File[] }) {
+  try {
+    if (!files.chunk || !files.chunk[0]) {
+      throw new BadRequestException('No chunk file received');
+    }
+    
+    const chunkFile = files.chunk[0];
+    const uploadId = req.body.uploadId;
+    const chunkIndex = parseInt(req.body.chunkIndex);
+    
+    console.log(`Received chunk ${chunkIndex} for upload ${uploadId}: ${chunkFile.path}`);
+    
+    // Update in-memory tracking
+    const uploadData = this.chunkUploads.get(uploadId);
+    if (!uploadData) {
+      throw new BadRequestException('Upload not initialized');
+    }
+    
+    uploadData.receivedChunks.push(chunkIndex);
+    uploadData.chunkFiles.push(chunkFile.path);
+    
+    return {
+      status: 'chunk-received',
+      progress: uploadData.receivedChunks.length / uploadData.totalChunks
+    };
   } catch (error) {
-    console.error('Unhandled error in upload chunk:', error);
-    return res.status(500).json({ error: error.message });
+    console.error('Error in uploadChunk:', error);
+    throw new InternalServerErrorException(`Failed to process chunk: ${error.message}`);
   }
 }
+
+
+
+
 
   @Post('complete-chunked-upload')
   async completeChunkedUpload(
