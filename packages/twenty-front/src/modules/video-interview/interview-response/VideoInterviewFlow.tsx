@@ -75,7 +75,6 @@ const InterviewLoader = () => (
 );
 
 const VideoInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) => {
-  console.log("This si the interview id:", interviewId);
   const [stage, setStage] = useState<'start' | 'interview' | 'end'>('start');
   const [loading, setLoading] = useState(false);
   const [interviewData, setInterviewData] = useState<InterviewData | null>(null);
@@ -141,8 +140,7 @@ const VideoInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) 
   useEffect(() => {
     const preloadAllVideos = async () => {
       if (introductionVideoData?.data?.attachments?.edges[0]?.node?.fullPath) {
-        // const introUrl = `${process.env.REACT_APP_SERVER_BASE_URL}/files/${introductionVideoData.data.attachments.edges[0].node.fullPath}`;
-        const introUrl = `${introductionVideoData.data.attachments.edges[0].node.fullPath}`;
+        const introUrl = `${process.env.REACT_APP_SERVER_BASE_URL}/files/${introductionVideoData.data.attachments.edges[0].node.fullPath}`;
         preloadVideo(introUrl);
       }
 
@@ -150,8 +148,7 @@ const VideoInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) 
       if (questionsVideoData?.length > 0) {
         questionsVideoData.forEach(attachment => {
           if (attachment?.fullPath) {
-            // const videoUrl = `${process.env.REACT_APP_SERVER_BASE_URL}/files/${attachment.fullPath}`;
-            const videoUrl = `${attachment.fullPath}`;
+            const videoUrl = `${process.env.REACT_APP_SERVER_BASE_URL}/files/${attachment.fullPath}`;
             preloadVideo(videoUrl);
           }
         });
@@ -170,13 +167,8 @@ const VideoInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) 
     setLoading(true);
     console.log("Going to fetch interview id:", interviewId);
     try {
-      const url = `${process.env.REACT_APP_SERVER_BASE_URL}/video-interview-controller/get-interview-details`;
-
-      const response = await axios.post(url, { interviewId });
+      const response = await axios.post(`${process.env.REACT_APP_SERVER_BASE_URL}/video-interview-controller/get-interview-details`, { interviewId });
       console.log('This is the response to fetch interview data:', response);
-      console.log("Making request to:", url, "with payload:", { interviewId });
-      console.log('Full response data:', JSON.stringify(response.data, null, 2));
-
       const responseObj: GetInterviewDetailsResponse = response.data;
       if (responseObj) {
 
@@ -185,7 +177,7 @@ const VideoInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) 
         const fetchedData: any = response?.data?.responseFromInterviewRequests?.data;
         console.log('fetchedData to fetch interview data:', JSON.stringify(fetchedData));
         const formattedData: InterviewData = {
-          recruiterProfile: response?.data?.recruiterProfile,
+          recruiterProfile: fetchedData.recruiterProfile,
           name: fetchedData?.videoInterviews?.edges[0]?.node?.name || '',
           id: fetchedData?.videoInterviews?.edges[0]?.node?.id || '',
           candidate: {
@@ -242,7 +234,11 @@ const VideoInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) 
       });
       console.log('This is process.env.REACT_APP_SERVER_BASE_URL:', process.env.REACT_APP_SERVER_BASE_URL);
       const isLastQuestion = currentQuestionIndex === (interviewData?.videoInterview?.videoInterviewQuestions?.edges?.length ?? 0) - 1;
-      responseData.append('responseData', JSON.stringify({ isLastQuestion, timeLimitAdherence: responseData.get('timeLimitAdherence') }));
+
+      responseData.append('responseData', JSON.stringify({
+        isLastQuestion,
+        timeLimitAdherence: responseData.get('timeLimitAdherence') // preserve any existing data
+      }));
 
 
       // console.log('This is the appending of the rinterview dat:', interviewData);
@@ -281,7 +277,13 @@ const VideoInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) 
   const renderCurrentStage = () => {
     if (!interviewData) {
       return (
-      <StartInterviewPage onStart={handleStart} InterviewData={emptyInterviewData} introductionVideoData={introductionVideoData!} videoPlaybackState={globalVideoPlaybackState} onVideoStateChange={handleVideoStateChange} />
+      <StartInterviewPage
+        onStart={handleStart}
+        InterviewData={emptyInterviewData}
+        introductionVideoData={introductionVideoData!}
+        videoPlaybackState={globalVideoPlaybackState}
+        onVideoStateChange={handleVideoStateChange}
+    />
       );
     }
     switch (stage) {

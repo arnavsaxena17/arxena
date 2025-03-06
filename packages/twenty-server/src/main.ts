@@ -1,7 +1,6 @@
-import { ArgumentsHost, ExceptionFilter, ValidationPipe } from '@nestjs/common';
+import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { Request, Response } from 'express';
 
 import fs from 'fs';
 
@@ -17,37 +16,11 @@ import { LoggerService } from 'src/engine/core-modules/logger/logger.service';
 import { getSessionStorageOptions } from 'src/engine/core-modules/session-storage/session-storage.module-factory';
 import { UnhandledExceptionFilter } from 'src/filters/unhandled-exception.filter';
 
-import * as bodyParser from 'body-parser';
 import { AppModule } from './app.module';
 import './instrument';
 
-
 import { settings } from './engine/constants/settings';
 import { generateFrontConfig } from './utils/generate-front-config';
-
-export class ErrorsFilter implements ExceptionFilter {
-  catch(exception: any, host: ArgumentsHost) {
-    const ctx = host.switchToHttp();
-    const response = ctx.getResponse<Response>();
-    const request = ctx.getRequest<Request>();
-
-    console.error('CRITICAL ERROR IN REQUEST:', {
-      path: request.url,
-      method: request.method,
-      body: request.body,
-      error: exception.stack || exception
-    });
-
-    response.status(500).json({
-      statusCode: 500,
-      timestamp: new Date().toISOString(),
-      path: request.url,
-      message: exception.message || 'Internal server error',
-      stack: process.env.NODE_ENV === 'production' ? undefined : exception.stack
-    });
-  }
-}
-
 
 const bootstrap = async () => {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
@@ -75,24 +48,11 @@ const bootstrap = async () => {
 
   // Apply class-validator container so that we can use injection in validators
   useContainer(app.select(AppModule), { fallbackOnErrors: true });
-  app.use(bodyParser.json({ limit: '50mb' }));
-  app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
-
-
-
-
-
-
-  app.useGlobalFilters(new ErrorsFilter());
-  app.useGlobalFilters(new UnhandledExceptionFilter());
-
-
-
-
 
   // Use our logger
   app.useLogger(logger);
 
+  app.useGlobalFilters(new UnhandledExceptionFilter());
 
   // Apply validation pipes globally
   app.useGlobalPipes(
