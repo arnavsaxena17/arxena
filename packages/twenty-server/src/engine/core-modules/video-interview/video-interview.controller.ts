@@ -9,6 +9,7 @@ import { createResponseMutation, findManyAttachmentsQuery, findWorkspaceMemberPr
 import { AttachmentProcessingService } from '../arx-chat/utils/attachment-processes';
 import { TranscriptionService } from './transcription.service';
 
+import { spawn } from 'child_process';
 import { graphQltoUpdateOneCandidate } from 'twenty-shared';
 import { WorkspaceQueryService } from '../workspace-modifications/workspace-modifications.service';
 
@@ -121,17 +122,84 @@ export class VideoInterviewController {
       console.log("REceived interviewData:", interviewData)
       console.log("REceived currentQuestionIndex:", currentQuestionIndex)
       const questionId = interviewData.videoInterview.videoInterviewQuestions.edges[currentQuestionIndex].node.id;
-      if (!files.audio || !files.video) {
-        throw new BadRequestException('Both video and audio files are required');
-        // console.log("Neither audio nor video files peresetn")
-
-      }
-      else{
-        console.log("Both files received")
+      if (!files.video) {
+        throw new BadRequestException('Video file is required');
       }
 
-      const audioFile = files.audio[0];
       const videoFile = files.video[0];
+      console.log("Video file received:", videoFile);
+  
+      let audioFile;
+      let audioFilePath;
+        if (files.audio && files.audio.length > 0) {
+        // Audio file was provided
+        audioFile = files.audio[0];
+        audioFilePath = `uploads/${audioFile.originalname}`;
+        console.log("Audio file received:", audioFile);
+      } else {
+        console.log("No audio file received, will extract from video");
+        
+        // Ensure uploads directory exists
+        if (!fs.existsSync('./uploads')) {
+          fs.mkdirSync('./uploads', { recursive: true });
+        }
+        
+        // Extract audio from video using ffmpeg
+        const videoFilePath = `uploads/${videoFile.originalname}`;
+        const extractedAudioFilename = `${path.parse(videoFile.originalname).name}_extracted_audio.wav`;
+        audioFilePath = `uploads/${extractedAudioFilename}`;
+        
+        try {
+          // Execute ffmpeg command to extract audio
+          await new Promise((resolve, reject) => {
+            const ffmpeg = spawn('ffmpeg', [
+              '-i', videoFilePath,
+              '-vn',                 // Disable video
+              '-acodec', 'pcm_s16le', // Use PCM 16-bit encoder
+              '-ar', '16000',       // Set sample rate to 16kHz
+              '-ac', '1',           // Set to mono
+              audioFilePath
+            ]);
+            
+            ffmpeg.on('close', (code) => {
+              if (code === 0) {
+                console.log(`Successfully extracted audio to ${audioFilePath}`);
+                resolve(null);
+              } else {
+                console.error(`ffmpeg process exited with code ${code}`);
+                reject(new Error(`ffmpeg process exited with code ${code}`));
+              }
+            });
+            
+            ffmpeg.stderr.on('data', (data) => {
+              console.log(`ffmpeg stderr: ${data}`);
+            });
+          });
+
+          
+          
+          // Create a synthetic file object for the extracted audio
+          audioFile = {
+            fieldname: 'audio',
+            originalname: extractedAudioFilename,
+            encoding: '7bit',
+            mimetype: 'audio/wav',
+            destination: './uploads',
+            filename: extractedAudioFilename,
+            path: audioFilePath,
+            size: fs.statSync(audioFilePath).size
+          };
+          
+        } catch (error) {
+          console.error("Error extracting audio from video:", error);
+          // Continue without audio if extraction fails
+        }
+      }
+  
+
+
+
+      // const audioFile = files.audio[0];
 
       console.log("audio file received:", audioFile)
       console.log("video file received:", videoFile)
@@ -144,7 +212,6 @@ export class VideoInterviewController {
 
       const videoAttachmentObj = await new AttachmentProcessingService().uploadAttachmentToTwenty(videoFilePath,apiToken);
       // Upload audio file to Twenty
-      const audioFilePath = `uploads/${audioFile.originalname}`;
 
       const audioAttachmentObj = await new AttachmentProcessingService().uploadAttachmentToTwenty(audioFilePath,apiToken);
       console.log('Audio attachment upload response:', audioAttachmentObj);

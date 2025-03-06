@@ -17,6 +17,8 @@ import { getSessionStorageOptions } from 'src/engine/core-modules/session-storag
 import { UnhandledExceptionFilter } from 'src/filters/unhandled-exception.filter';
 
 import { AppModule } from './app.module';
+
+
 import './instrument';
 
 import { settings } from './engine/constants/settings';
@@ -52,6 +54,7 @@ const bootstrap = async () => {
   // Use our logger
   app.useLogger(logger);
 
+  console.log("Using logger")
   app.useGlobalFilters(new UnhandledExceptionFilter());
 
   // Apply validation pipes globally

@@ -12,13 +12,14 @@ const VideoDownloaderPlayer: React.FC<VideoDownloaderPlayerProps> = ({ videoUrl 
   useEffect(() => {
     const downloadVideo = async () => {
       try {
+        console.log("going to doenload video usrl:", videoUrl);
         const response = await fetch(videoUrl);
         if (!response.ok) throw new Error('Network response was not ok');
         const blob = await response.blob();
         const localUrl = URL.createObjectURL(blob);
         setLocalVideoUrl(localUrl);
       } catch (err) {
-        console.error('Error downloading video:', err);
+        console.error('Error downloading video in download video:', err);
         setError('Failed to download video. Please try again.');
       }
     };

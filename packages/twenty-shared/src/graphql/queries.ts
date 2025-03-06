@@ -1357,99 +1357,180 @@ export const graphqlQueryToFindManyReminders = `query FindManyCandidateReminders
 
 
   export const queryByvideoInterview = `query FindOneVideoInterview($objectRecordId: ID!) {
-    videoInterview(filter: {id: {eq: $objectRecordId}}) {
-      attachments {
-        edges {
-          node {
-            clientInterviewId
-            phoneCallId
-            whatsappMessageId
-            candidateReminderId
-            opportunityId
-            videoInterviewModelId
+  videoInterview(filter: {id: {eq: $objectRecordId}}) {
+    attachments {
+      edges {
+        node {
+          clientInterviewId
+          phoneCallId
+          
+          whatsappMessageId
+          candidateReminderId
+          opportunityId
+          videoInterviewModelId
+          name
+          videoInterviewId
+          updatedAt
+          authorId
+          clientContactId
+          jobId
+
+          type
+          id
+          createdAt
+          textMessageId
+          fullPath
+          videoInterviewQuestionId
+          interviewScheduleId
+          candidateEnrichmentId
+          screeningId
+          shortlistId
+          workspaceMemberProfileId
+          candidateId
+          promptId
+          questionId
+          personId
+          videoInterviewTemplateId
+          offerId
+          cvSentId
+          companyId
+          videoInterviewResponseId
+          answerId
+          recruiterInterviewId
+        }
+      }
+    }
+    id
+  
+    videoInterviewTemplateId
+    interviewReviewLink {
+      primaryLinkLabel
+      primaryLinkUrl
+    }
+    
+        candidate {
+          __typename
+          id
+          name
+          position
+          stopChat
+          peopleId
+          startChat
+          chatCount
+          status
+          jobSpecificFields
+          jobsId
+          createdAt
+          updatedAt
+          engagementStatus
+          candConversationStatus
+          startChatCompleted
+          startVideoInterviewChat
+          startVideoInterviewChatCompleted
+          startMeetingSchedulingChat
+          startMeetingSchedulingChatCompleted
+          lastEngagementChatControl
+          uniqueStringKey
+          whatsappProvider
+          hiringNaukriUrl {
+            primaryLinkLabel
+            primaryLinkUrl
+            __typename
+          }
+          resdexNaukriUrl {
+            primaryLinkLabel
+            primaryLinkUrl
+            __typename
+          }
+          jobs {
             name
-            videoInterviewId
-            updatedAt
-            authorId
-            clientContactId
-            jobId
-            type
             id
-            createdAt
-            textMessageId
-            fullPath
-            videoInterviewQuestionId
-            interviewScheduleId
-            candidateEnrichmentId
-            screeningId
-            shortlistId
-            workspaceMemberProfileId
-            candidateId
-            promptId
-            questionId
-            personId
-            videoInterviewTemplateId
-            offerId
-            cvSentId
-            companyId
-            videoInterviewResponseId
-            answerId
-            recruiterInterviewId
+            recruiterId
+            company {
+              name
+            }
+          }
+          people {
+            id
+            name {
+              firstName
+              lastName
+            }
+            emails{
+              primaryEmail
+            }            
+            phones{
+              primaryPhoneNumber
+            }
+          }
+        }
+        
+    videoInterviewResponse {
+      edges {
+        node {
+
+          videoInterviewId
+          createdAt
+          timeLimitAdherence
+          name
+          feedback
+          candidateId
+          jobId
+          position
+          personId
+          updatedAt
+          timer
+          id
+          transcript
+          completedResponse
+          videoInterviewQuestionId
+          startedResponding
+          attachments {
+            edges {
+              node {
+                id
+                type
+                fullPath
+                name
+              }
+            }
           }
         }
       }
+    }
+    candidateId
+    position
+    videoInterviewTemplate {
+      jobId
       id
-      videoInterviewTemplateId
-      interviewReviewLink {
-        primaryLinkLabel
-        primaryLinkUrl
-      }
-      videoInterviewResponse {
-        edges {
-          node {
-            videoInterviewId
-            createdAt
-            timeLimitAdherence
-            name
-            feedback
-            candidateId
-            jobId
-            position
-            personId
-            updatedAt
-            timer
-            id
-            transcript
-            completedResponse
-            videoInterviewQuestionId
-            startedResponding
-          }
-        }
-      }
-      candidateId
-      position
-      videoInterviewTemplate {
-        jobId
-        id
-        name
-        updatedAt
-        instructions
-        createdAt
-        videoInterviewModelId
-        position
-        introduction
-      }
-      interviewStarted
       name
       updatedAt
-      interviewLink {
-        primaryLinkUrl
-        primaryLinkLabel
-      }
-      interviewCompleted
+      instructions
       createdAt
+      videoInterviewModelId
+      position
+      introduction
+        videoInterviewQuestions {
+              edges {
+                  node {
+                  id
+                  questionValue
+                  timeLimit
+                  }
+                }
+              }
     }
+    interviewStarted
+    name
+    updatedAt
+    interviewLink {
+      primaryLinkLabel
+      primaryLinkUrl
     }
+    interviewCompleted
+    createdAt
+  }
+  }
   `;
   
 

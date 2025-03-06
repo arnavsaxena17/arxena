@@ -3,7 +3,7 @@ import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
 import React, { useEffect, useState } from 'react';
 import { useRecoilState } from 'recoil';
-import { graphqlToFetchAllCandidateData, queryByvideoInterview } from 'twenty-shared';
+import { queryByvideoInterview } from 'twenty-shared';
 import VideoDownloaderPlayer from './VideoDownloaderPlayer';
 
 const StyledContainer = styled.div<{ theme: any }>`
@@ -223,7 +223,8 @@ const VideoInterviewResponseViewer: React.FC<VideoInterviewResponseViewerProps> 
         console.log('REsoinse::', responseData);
 
         // If we got valid data, transform and use it
-        if (responseData?.data?.videoInterviewStatus?.candidate) {
+        if (responseData?.data?.videoInterview?.candidate) {
+          console.log("We got valid data in videoInterviewStatus");
           const transformedData = transformvideoInterviewStatusData(responseData);
           console.log("transformedData::", transformedData);
           setInterviewData(transformedData);
@@ -232,37 +233,37 @@ const VideoInterviewResponseViewer: React.FC<VideoInterviewResponseViewerProps> 
         }
       }
 
-      if (candidateId) {
-        console.log("candidateId in response viewer::", candidateId);
-        const response = await fetch(`${process.env.REACT_APP_SERVER_BASE_URL}/graphql`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
-          },
-          body: JSON.stringify({
-            query:graphqlToFetchAllCandidateData,
-            variables: {
-              filter: {
-                id: { eq: cleanId(candidateId) },
-              },
-            },
-          }),
-        });
+      // if (candidateId) {
+      //   console.log("candidateId in response viewer::", candidateId);
+      //   const response = await fetch(`${process.env.REACT_APP_SERVER_BASE_URL}/graphql`, {
+      //     method: 'POST',
+      //     headers: {
+      //       'Content-Type': 'application/json',
+      //       Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
+      //     },
+      //     body: JSON.stringify({
+      //       query:graphqlToFetchAllCandidateData,
+      //       variables: {
+      //         filter: {
+      //           id: { eq: cleanId(candidateId) },
+      //         },
+      //       },
+      //     }),
+      //   });
 
-        const responseData = await response.json();
-        console.log("Resopiodse the dataL:", responseData);
-        if (responseData?.data?.candidates?.edges?.[0]?.node) {
-          console.log('WE got valid data in candiate data');
-          const candidate = responseData.data.candidates.edges[0].node;
-          console.log("This is the candidate data::", responseData.data.candidates.edges[0].node);
-          const transformedData = transformCandidateData(candidate);
-          console.log("This is the transformed data::", transformedData);
-          setInterviewData(transformedData);
-          setLoading(false);
-          return;
-        }
-      }
+      //   const responseData = await response.json();
+      //   console.log("Resopiodse the dataL:", responseData);
+      //   if (responseData?.data?.candidates?.edges?.[0]?.node) {
+      //     console.log('WE got valid data in candiate data');
+      //     const candidate = responseData.data.candidates.edges[0].node;
+      //     console.log("This is the candidate data::", responseData.data.candidates.edges[0].node);
+      //     const transformedData = transformCandidateData(candidate);
+      //     console.log("This is the transformed data::", transformedData);
+      //     setInterviewData(transformedData);
+      //     setLoading(false);
+      //     return;
+      //   }
+      // }
 
       throw new Error('No valid data found with provided IDs');
     } catch (err) {
@@ -276,11 +277,10 @@ const VideoInterviewResponseViewer: React.FC<VideoInterviewResponseViewerProps> 
   // Separate transformation functions for cleaner code
   const transformvideoInterviewStatusData = (responseData: any): InterviewData => {
     console.log("Going to try and transform the data::", responseData);
-    const videoInterviewStatus = responseData.data.videoInterviewStatus;
-    const candidate = videoInterviewStatus.candidate;
-    const responses = videoInterviewStatus.videoInterviewResponse.edges || [];
-    const videoInterview = videoInterviewStatus.videoInterview;
-    console.log("videoInterview.videoInterviewQuestions:videoInterview.videoInterviewQuestions", videoInterview.videoInterviewQuestions)
+    const videoInterview = responseData.data.videoInterview;
+    const candidate = videoInterview.candidate;
+    const responses = videoInterview.videoInterviewResponse.edges || [];
+    console.log("videoInterview.videoInterviewQuestions:videoInterview.videoInterviewQuestions", videoInterview.videoInterviewTemplate.videoInterviewQuestions);
     const transformedData: InterviewData =  {
       job: {
         id: candidate.jobs.id,
@@ -291,13 +291,11 @@ const VideoInterviewResponseViewer: React.FC<VideoInterviewResponseViewerProps> 
       },
       videoInterviewTemplate: {
         videoInterviewQuestions: {
-          edges: videoInterview.videoInterviewQuestions.edges.map((questionEdge: { node: any }) => {
-            // Filter responses for this specific question
+          edges: videoInterview.videoInterviewTemplate.videoInterviewQuestions.edges.map((questionEdge: { node: any }) => {
             const questionResponses = responses.filter(
               (responseEdge: { node: any }) => 
                 responseEdge.node.videoInterviewQuestionId === questionEdge.node.id
             );
-  
             return {
               node: {
                 id: questionEdge.node.id,
@@ -323,54 +321,54 @@ const VideoInterviewResponseViewer: React.FC<VideoInterviewResponseViewerProps> 
   }
   
 
-  const transformCandidateData = (candidate: CandidateAPIResponse): InterviewData => {
-    console.log("candidate in transformCandidateData::", candidate);
-    const transformedData: InterviewData =   {
-        job: {
-          id: candidate.jobs.id,
-          company: candidate.jobs.company,
-          name: candidate.jobs.name,
-        },
-        videoInterviewTemplate: {
-          videoInterviewQuestions: {
-            edges: candidate?.jobs?.videoInterviewTemplate?.edges[0]?.node?.videoInterviewQuestions?.edges.map(
-              ({ node: question }) => {
-                // Filter responses for this specific question
-                const questionResponses = candidate?.videoInterviewResponse?.edges.filter(
-                  response => response?.node?.videoInterviewQuestionId === question.id
-                );
-                console.log("questionResponses in transformCandidateData::", questionResponses);
-                return {
-                  node: {
-                    id: question?.id,
-                    questionValue: question?.questionValue,
-                    timeLimit: question?.timeLimit,
-                    videoInterviewResponses: {
-                      edges: questionResponses?.map(response => ({
-                        node: {
-                          id: response.node?.id,
-                          transcript: response?.node?.transcript,
-                          videoInterviewQuestionId: response?.node?.videoInterviewQuestionId,
-                          attachments: response?.node?.attachments,
-                        },
-                      })),
-                    },
-                  },
-                };
-              }
-            ),
-          },
-        },
-      };
-    return transformedData
-  };
+  // const transformCandidateData = (candidate: CandidateAPIResponse): InterviewData => {
+  //   console.log("candidate in transformCandidateData::", candidate);
+  //   const transformedData: InterviewData =   {
+  //       job: {
+  //         id: candidate.jobs.id,
+  //         company: candidate.jobs.company,
+  //         name: candidate.jobs.name,
+  //       },
+  //       videoInterviewTemplate: {
+  //         videoInterviewQuestions: {
+  //           edges: candidate?.jobs?.videoInterviewTemplate?.edges[0]?.node?.videoInterviewQuestions?.edges.map(
+  //             ({ node: question }) => {
+  //               // Filter responses for this specific question
+  //               const questionResponses = candidate?.videoInterviewResponse?.edges.filter(
+  //                 response => response?.node?.videoInterviewQuestionId === question.id
+  //               );
+  //               console.log("questionResponses in transformCandidateData::", questionResponses);
+  //               return {
+  //                 node: {
+  //                   id: question?.id,
+  //                   questionValue: question?.questionValue,
+  //                   timeLimit: question?.timeLimit,
+  //                   videoInterviewResponses: {
+  //                     edges: questionResponses?.map(response => ({
+  //                       node: {
+  //                         id: response.node?.id,
+  //                         transcript: response?.node?.transcript,
+  //                         videoInterviewQuestionId: response?.node?.videoInterviewQuestionId,
+  //                         attachments: response?.node?.attachments,
+  //                       },
+  //                     })),
+  //                   },
+  //                 },
+  //               };
+  //             }
+  //           ),
+  //         },
+  //       },
+  //     };
+  //   return transformedData
+  // };
 
 
 
 
   useEffect(() => {
     if (!candidateId && !videoInterviewId) {
-      setError('Either candidateId or videoInterviewStatusId must be provided');
+      setError('Either candidateId or videoInterview must be provided');
       setLoading(false);
       return;
     }
@@ -388,20 +386,38 @@ const VideoInterviewResponseViewer: React.FC<VideoInterviewResponseViewerProps> 
   if (interviewData.videoInterviewTemplate.videoInterviewQuestions.edges.length === 0) {
     console.log('No video interview questions available');
   } else {
+    console.log('Video interview questions available');
     interviewData.videoInterviewTemplate.videoInterviewQuestions.edges.forEach(({ node: question }) => {
       const matchingResponses = question.videoInterviewResponses.edges.filter(
         ({ node: response }) => response.videoInterviewQuestionId === question.id
       );
-
+      console.log("matchingResponses::", matchingResponses);
+      console.log(`Question: ${question.questionValue}`);
       if (matchingResponses.length === 0) {
         console.log(`No responses available for question ID: ${question.id}`);
       } else {
+        console.log(`Responses available for question ID: ${question.id}`);
+        console.log(`Responses matching for question ID: matchingResponses`, matchingResponses);
         matchingResponses.forEach(({ node: response }) => {
-            const videoAttachment = response.attachments.edges.find(
-            edge => edge.node.type === 'Video' || 
-            ['mp4', 'webm', 'avi'].some(ext => edge.node.fullPath.endsWith(ext))
+          console.log("response::", response);
+          console.log("response::", response?.attachments?.edges);
+          console.log("response::", response?.attachments);
+          console.log(`Response ID: ${response.id}`);
+            const videoAttachment = response?.attachments?.edges.find(
+              edge => edge?.node?.type === 'Video' || 
+              ['mp4', 'webm', 'avi'].some(ext => edge?.node?.fullPath.endsWith(ext))
             );
 
+            // Clean up duplicate tokens if found
+            if (videoAttachment?.node?.fullPath) {
+              const url = new URL(videoAttachment.node.fullPath);
+              const firstToken = url.searchParams.get('token');
+              url.search = firstToken ? `?token=${firstToken}` : '';
+              videoAttachment.node.fullPath = url.toString();
+              console.log("videoAttachment.node.fullPath::", videoAttachment.node.fullPath);
+            }
+
+            console.log("videoAttachment::", videoAttachment);
           if (!videoAttachment) {
             console.log(`No video available for response ID: ${response.id}`);
           }
@@ -410,13 +426,31 @@ const VideoInterviewResponseViewer: React.FC<VideoInterviewResponseViewerProps> 
     });
   }
 
+
+  const cleanVideoAttachmentPath = (videoAttachment: { node: { fullPath: string } }) => {
+    if (!videoAttachment?.node?.fullPath) return '';
+    
+    try {
+      let urlStr = videoAttachment.node.fullPath;
+      // Remove any additional "?token=" parameters after the first one
+      const firstTokenIndex = urlStr.indexOf('?token=');
+      if (firstTokenIndex !== -1) {
+        urlStr = urlStr.substring(0, urlStr.indexOf('?', firstTokenIndex + 1));
+      }
+      console.log('Cleaned video attachment path:', urlStr);
+      return urlStr;
+    } catch (error) {
+      console.error('Error cleaning video attachment path:', error);
+      return videoAttachment.node.fullPath;
+    }
+  };
+
   return (
     <StyledContainer theme={theme}>
       <CompanyInfo>
         <h2>{interviewData.job?.company?.name}</h2>
         <h3>{interviewData.job?.name}</h3>
       </CompanyInfo>
-
 
       {interviewData.videoInterviewTemplate.videoInterviewQuestions.edges.map(({ node: question }, index) => {
         // Find responses that match this specific question ID
@@ -434,11 +468,13 @@ const VideoInterviewResponseViewer: React.FC<VideoInterviewResponseViewerProps> 
                 edge => edge.node.type === 'Video' || 
                 ['mp4', 'webm', 'avi'].some(ext => edge.node.fullPath.endsWith(ext))
                 );
+                const videoUrl = videoAttachment ? cleanVideoAttachmentPath(videoAttachment) : '';
+                console.log("videoUrl::", videoUrl);
               return videoAttachment ? (
                 <VideoContainer key={response.id}>
                   <VideoDownloaderPlayer 
                     // videoUrl={`${process.env.REACT_APP_SERVER_BASE_URL}/files/${videoAttachment.node.fullPath}`} 
-                    videoUrl={`${videoAttachment.node.fullPath}`} 
+                    videoUrl={`${videoUrl}`} 
                   />
                   {response.transcript && (
                     <TranscriptContainer>
