@@ -1761,7 +1761,7 @@ export const emptyInterviewData: InterviewData = {
   candidate: {
     id: '',
     jobs: {
-    jobId: '',
+    id: '',
     name: '',
     recruiterId: '',
     companyName: '',
@@ -1809,7 +1809,7 @@ export interface InterviewData {
   candidate: {
     id: string;
     jobs: {
-      jobId: string;
+      id: string;
       recruiterId: string;
       name: string;
       companyName: string;

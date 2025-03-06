@@ -183,7 +183,7 @@ const VideoInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) 
           candidate: {
             id: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.id || '',
             jobs: {
-              jobId: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.jobs?.id || '',
+              id: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.jobs?.id || '',
               name: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.jobs?.name || '',
               recruiterId: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.jobs?.recruiterId || '',
               companyName: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.jobs?.company?.name || '',

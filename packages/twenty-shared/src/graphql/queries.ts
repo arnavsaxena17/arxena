@@ -1363,7 +1363,6 @@ export const graphqlQueryToFindManyReminders = `query FindManyCandidateReminders
           node {
             clientInterviewId
             phoneCallId
-            activityId
             whatsappMessageId
             candidateReminderId
             opportunityId
