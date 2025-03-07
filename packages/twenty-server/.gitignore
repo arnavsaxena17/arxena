@@ -3,3 +3,4 @@ dist/*
 logs/**/*
 *.log
 uploads/*
+.attachments/*

@@ -364,9 +364,7 @@ export default class CandidateEngagementArx {
           .timeDifferentialinMinutesForCheckingCandidateIdsForLastHowManyHoursOfMessagesToFetchForToMakingUpdatesOnChatsForNextChatControls;
       const endTime = new Date();
       const startTime = new Date(endTime.getTime() - timeWindow * 60 * 1000);
-      // Get recent messages
 
-      // const allWhatsappMessages = await new FilterCandidates(this.workspaceQueryService).fetchAllWhatsappMessages(candidateId, apiToken)
       const messages = await this.fetchRecentMessages(
         startTime,
         endTime,
@@ -374,30 +372,24 @@ export default class CandidateEngagementArx {
       );
 
       console.log('Number of messages::', messages.length);
-      // Group by job for different chat flows
       const messagesByJob = this.groupMessagesByJob(messages);
 
       console.log('Number of Jobs::', messagesByJob.size);
+
       const eligibleCandidates = new Set<string>();
       const eligibleJobs = new Set<string>();
+      const processedCandidates = new Set<string>();
 
       for (const [jobId, jobMessages] of messagesByJob.entries()) {
-        console.log('this is hte ojb id:', jobId);
         const job = await new FilterCandidates(
           this.workspaceQueryService,
         ).fetchJobById(jobId, apiToken);
 
-        console.log('Got this joib ::', job);
-        console.log('This is the job chatfloworder::', job?.chatFlowOrder);
-        console.log(
-          'This is the default job chatfloworder::',
-          this.chatFlowConfigBuilder.getDefaultChatFlowOrder(),
-        );
         const chatFlowOrder =
           job?.chatFlowOrder ||
           this.chatFlowConfigBuilder.getDefaultChatFlowOrder();
 
-        // First update chat counts and statuses for all candidates in this job
+        // Get unique candidate IDs for this job
         const candidateIds = [
           ...new Set(jobMessages.map((message) => message.node.candidate.id)),
         ];
@@ -409,36 +401,38 @@ export default class CandidateEngagementArx {
           'Number of Candidate IDs for which we are going to do updates::',
           candidateIds.length,
         );
-        // console.log(" Candidate IDs here::", candidateIds);
-        // console.log(" Candidate IDs here::", jobMessages);
 
         // Update chat counts first
         await new UpdateChat(
           this.workspaceQueryService,
         ).updateCandidatesWithChatCount(candidateIds, apiToken);
 
-        // Then process chat statuses
+        // Process chat statuses
         const results = await new UpdateChat(
           this.workspaceQueryService,
         ).processCandidatesChatsGetStatuses(apiToken, jobIds, candidateIds);
 
-        console.log(
-          'Results from processCandidatesChatsGetStatuses::',
-          results,
-        );
         await new GoogleSheetsService().updateGoogleSheetsWithChatData(
           results,
           apiToken,
         );
 
-        // After updates are complete, check which candidates are eligible for stage transitions
+        // Check stage transitions for each unique candidate only once
         for (const message of jobMessages) {
+          const candidateId = message.node.candidate.id;
+
+          // Skip if we've already processed this candidate
+          if (processedCandidates.has(candidateId)) {
+            continue;
+          }
+
+          processedCandidates.add(candidateId);
+
           const candidate = await this.fetchCandidateById(
-            message.node.candidate.id,
+            candidateId,
             apiToken,
           );
 
-          // Now check for stage transitions with updated status
           if (
             await this.checkForStageTransitions(
               candidate,
@@ -446,13 +440,8 @@ export default class CandidateEngagementArx {
               apiToken,
             )
           ) {
-            eligibleCandidates.add(candidate.id);
+            eligibleCandidates.add(candidateId);
             eligibleJobs.add(jobId);
-          } else {
-            // Log ineligible candidates and reasons
-            console.log(
-              `Candidate ${candidate.name} ineligible for transition: Current stage incomplete or next stage already started`,
-            );
           }
         }
       }
@@ -469,10 +458,7 @@ export default class CandidateEngagementArx {
         jobIds: Array.from(eligibleJobs),
       };
     } catch (error) {
-      console.error(
-        'Error in getRecentCandidateIds ToMakeUpdatesonChats:',
-        error,
-      );
+      console.error('Error in makeUpdatesonChats:', error);
 
       return { candidateIds: [], jobIds: [] };
     }

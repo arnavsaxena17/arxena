@@ -9,7 +9,7 @@
 
 .nx/installation
 .nx/cache
-
+packages/twenty-server/.attachments/*
 .pnp.*
 .yarn/*
 !.yarn/patches
