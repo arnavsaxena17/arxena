@@ -1,37 +1,63 @@
-import { Jobs, PersonNode } from "twenty-shared";
-import { GmailSender } from "../../gmail-sender/gmail-sender";
-import { MailerService } from "../../gmail-sender/gmail-sender.service";
-import { GmailMessageData } from "../../gmail-sender/services/gmail-sender-objects-types";
+import { Jobs, PersonNode } from 'twenty-shared';
+
+import { GmailSender } from 'src/engine/core-modules/gmail-sender/gmail-sender';
+import { MailerService } from 'src/engine/core-modules/gmail-sender/gmail-sender.service';
+import { GmailMessageData } from 'src/engine/core-modules/gmail-sender/services/gmail-sender-objects-types';
 
 export class SendEmailFunctionality {
-  async sendEmailFunction(gmailMessageData: GmailMessageData, twenty_token: string) {
+  async sendEmailFunction(
+    gmailMessageData: GmailMessageData,
+    twenty_token: string,
+  ) {
     // Create a new calendar event
     const mailerService = new MailerService();
     const gmailSender = new GmailSender(mailerService);
-    const response = await gmailSender.sendEmailOfController(gmailMessageData, twenty_token).catch(console.error);
-    console.log("Response from sendEmailFunction", response); 
+    const response = await gmailSender
+      .sendEmailOfController(gmailMessageData, twenty_token)
+      .catch(console.error);
+
+    console.log('Response from sendEmailFunction', response);
+
     return response;
   }
-  async sendEmailWithAttachmentFunction(gmailMessageData: GmailMessageData, twenty_token: string) {
+
+  async sendEmailWithAttachmentFunction(
+    gmailMessageData: GmailMessageData,
+    twenty_token: string,
+  ) {
     const mailerService = new MailerService();
     const gmailSender = new GmailSender(mailerService);
-    const response = await gmailSender.sendEmailWithAttachmentsController(gmailMessageData, twenty_token).catch(console.error);
+    const response = await gmailSender
+      .sendEmailWithAttachmentsController(gmailMessageData, twenty_token)
+      .catch(console.error);
+
     return response;
   }
-  async saveDraftEmailWithAttachmentsFunction(gmailMessageData: GmailMessageData, twenty_token: string) {
+
+  async saveDraftEmailWithAttachmentsFunction(
+    gmailMessageData: GmailMessageData,
+    twenty_token: string,
+  ) {
     const mailerService = new MailerService();
     const gmailSender = new GmailSender(mailerService);
-    const response = await gmailSender.saveDraftEmailWithAttachmentsController(gmailMessageData, twenty_token).catch(console.error);
+    const response = await gmailSender
+      .saveDraftEmailWithAttachmentsController(gmailMessageData, twenty_token)
+      .catch(console.error);
+
     return response;
   }
 }
 
-
-export class EmailTemplates{
-
-  async getInterviewInvitationTemplate(person: PersonNode,candidateJob:Jobs, interviewLink: string) {
-    console.log("Goign to try and create template")
-    const candidate = person?.candidates?.edges?.find(edge => edge.node.jobs.id === candidateJob.id)?.node;
+export class EmailTemplates {
+  async getInterviewInvitationTemplate(
+    person: PersonNode,
+    candidateJob: Jobs,
+    interviewLink: string,
+  ) {
+    console.log('Goign to try and create template');
+    const candidate = person?.candidates?.edges?.find(
+      (edge) => edge.node.jobs.id === candidateJob.id,
+    )?.node;
     const jobName = candidate?.jobs.name;
     const companyName = candidate?.jobs.company.name;
 
@@ -42,7 +68,7 @@ export class EmailTemplates{
         <p>We have reviewed your profile and would like to invite you for a video interview for the position of <b>${jobName}</b> at <b>${companyName}</b>.</p>
 
         <p><strong>Interview Details:</strong></p>
-        <p>Interview Link: ${process.env.FRONT_BASE_URL+ interviewLink}</p>
+        <p>Interview Link: ${process.env.FRONT_BASE_URL + interviewLink}</p>
         <p>Note: Link expires in 48 hours</p>
         
         <p><strong>Instructions:</strong></p>
@@ -65,6 +91,7 @@ export class EmailTemplates{
         Director, Arxena</p>
       </div>
     `;
+
     return template;
   }
 }

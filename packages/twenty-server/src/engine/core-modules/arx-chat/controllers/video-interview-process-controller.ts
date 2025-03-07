@@ -1,146 +1,249 @@
-
-
+/* eslint-disable prettier/prettier */
 import { Controller, Post, Req, UseGuards } from '@nestjs/common';
+
 import { Request } from 'express';
+import { Jobs, RecruiterProfileType } from 'twenty-shared';
+
+import { VideoInterviewChatProcesses } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/chat-control-processes/start-video-interview-chat-processes';
+import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
+import { getRecruiterProfileByJob } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
+import {
+    EmailTemplates,
+    SendEmailFunctionality,
+} from 'src/engine/core-modules/arx-chat/utils/send-gmail';
+import { GmailMessageData } from 'src/engine/core-modules/gmail-sender/services/gmail-sender-objects-types';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
-import { Jobs, RecruiterProfileType } from 'twenty-shared';
-import { GmailMessageData } from '../../gmail-sender/services/gmail-sender-objects-types';
-import { StartVideoInterviewChatProcesses } from '../services/candidate-engagement/chat-control-processes/start-video-interview-chat-processes';
-import { FilterCandidates } from '../services/candidate-engagement/filter-candidates';
-import { getRecruiterProfileByJob } from '../services/recruiter-profile';
-import { EmailTemplates, SendEmailFunctionality } from '../utils/send-gmail';
-
 
 @Controller('video-interview-process')
 export class VideoInterviewProcessController {
-    constructor(private readonly workspaceQueryService: WorkspaceQueryService) {}
+  constructor(private readonly workspaceQueryService: WorkspaceQueryService) {}
 
-    @Post('create-video-interview')
-    @UseGuards(JwtAuthGuard)
-    async createVideoInterviewForCandidate(@Req() request: any): Promise<object> {
-        const candidateId = request.body.candidateId;
-        const apiToken = request.headers.authorization.split(' ')[1];
-        console.log('candidateId to create video-interview:', candidateId);
-        const createVideoInterviewResponse = await new StartVideoInterviewChatProcesses(this.workspaceQueryService).createVideoInterviewForCandidate(candidateId, apiToken);
-        console.log("createVideoInterviewResponse:", createVideoInterviewResponse);
+  @Post('create-video-interview')
+  @UseGuards(JwtAuthGuard)
+  async createVideoInterviewForCandidate(@Req() request: any): Promise<object> {
+    const candidateId = request.body.candidateId;
+    const apiToken = request.headers.authorization.split(' ')[1];
+
+    console.log('candidateId to create video-interview:', candidateId);
+    const createVideoInterviewResponse =
+      await new VideoInterviewChatProcesses(
+        this.workspaceQueryService,
+      ).createVideoInterviewLinksForCandidate(candidateId, apiToken);
+
+    console.log('createVideoInterviewResponse:', createVideoInterviewResponse);
+
+    return createVideoInterviewResponse;
+  }
+
+  @Post('create-video-interview-send-to-candidate')
+  @UseGuards(JwtAuthGuard)
+  async createVideoInterviewSendToCandidate(
+    @Req() request: Request,
+  ): Promise<object> {
+    const { workspace } =
+      await this.workspaceQueryService.accessTokenService.validateTokenByRequest(
+        request,
+      );
+
+    console.log('workspace:', workspace);
+    const authHeader = request.headers.authorization;
+
+    if (!authHeader) {
+      throw new Error('Authorization header is missing');
+    }
+    const apiToken = authHeader.split(' ')[1];
+
+    try {
+      const candidateId = request.body.candidateId;
+
+      console.log('candidateId to create video-interview:', candidateId);
+      const createVideoInterviewResponse =
+        await new VideoInterviewChatProcesses(
+          this.workspaceQueryService,
+        ).createVideoInterviewLinksForCandidate(candidateId, apiToken);
+      const personObj = await new FilterCandidates(
+        this.workspaceQueryService,
+      ).getPersonDetailsByCandidateId(candidateId, apiToken);
+      const person = await new FilterCandidates(
+        this.workspaceQueryService,
+      ).getPersonDetailsByPersonId(personObj.id, apiToken);
+
+      console.log('Got person:', person);
+      const videoInterviewUrl =
+        createVideoInterviewResponse?.data?.createVideoInterview?.interviewLink
+          ?.url;
+
+      console.log('This is the video interview link:', videoInterviewUrl);
+      const companyName = person?.candidates?.edges
+        .filter((edge) => edge.node.id === candidateId)
+        .map((edge) => edge.node.jobs.company.name)[0];
+
+      const candidateNode = person.candidates.edges[0].node;
+      const candidateJob: Jobs = candidateNode?.jobs;
+      const recruiterProfile: RecruiterProfileType =
+        await getRecruiterProfileByJob(candidateJob, apiToken);
+
+      if (videoInterviewUrl) {
+        console.log('Going to send email to person:', person);
+        const videoInterviewInviteTemplate =
+          await new EmailTemplates().getInterviewInvitationTemplate(
+            person,
+            candidateId,
+            videoInterviewUrl,
+          );
+
+        console.log('recruiterProfile?.email:', recruiterProfile?.email);
+        const emailData: GmailMessageData = {
+          sendEmailNameFrom:
+            recruiterProfile?.firstName + ' ' + recruiterProfile?.lastName,
+          sendEmailFrom: recruiterProfile?.email,
+          sendEmailTo: person?.emails.primaryEmail,
+          subject:
+            'Video Interview - ' + person?.name?.firstName + '<>' + companyName,
+          message: videoInterviewInviteTemplate,
+        };
+
+        console.log(
+          'This is the email Data from createVideo Interview Send To Candidate:',
+          emailData,
+        );
+        const sendVideoInterviewLinkResponse =
+          await new SendEmailFunctionality().sendEmailFunction(
+            emailData,
+            apiToken,
+          );
+
+        console.log(
+          'sendVideoInterviewLinkResponse::',
+          sendVideoInterviewLinkResponse,
+        );
+
+        return sendVideoInterviewLinkResponse || {};
+      } else {
         return createVideoInterviewResponse;
+      }
+    } catch (error) {
+      console.error('Error in createVideoInterviewSendToCandidate:', error);
+      throw new Error('Failed to create and send video interview');
     }
+  }
 
-    @Post('create-video-interview-send-to-candidate')
-    @UseGuards(JwtAuthGuard)
-    async createVideoInterviewSendToCandidate(@Req() request: Request): Promise<object> {
-        const { workspace } = await this.workspaceQueryService.accessTokenService.validateTokenByRequest(request);
-        console.log("workspace:", workspace);
-        const authHeader = request.headers.authorization;
-        if (!authHeader) {
-            throw new Error('Authorization header is missing');
-        }
-        const apiToken = authHeader.split(' ')[1];
-        try {
-            const candidateId = request.body.candidateId;
-            console.log('candidateId to create video-interview:', candidateId);
-            const createVideoInterviewResponse = await new StartVideoInterviewChatProcesses(this.workspaceQueryService).createVideoInterviewForCandidate(candidateId, apiToken);
-            const personObj = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByCandidateId(candidateId, apiToken);
-            const person = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPersonId(personObj.id, apiToken);
-            console.log("Got person:", person);
-            const videoInterviewUrl = createVideoInterviewResponse?.data?.createVideoInterview?.interviewLink?.url;
-            console.log("This is the video interview link:", videoInterviewUrl);
-            const companyName = person?.candidates?.edges
-            .filter(edge => edge.node.id === candidateId)
-            .map(edge => edge.node.jobs.company.name)[0];
-    
+  @Post('send-video-interview-to-candidate')
+  @UseGuards(JwtAuthGuard)
+  async sendVideoInterviewSendToCandidate(
+    @Req() request: any,
+  ): Promise<object> {
+    const apiToken = request.headers.authorization.split(' ')[1];
+    const { workspace } =
+      await this.workspaceQueryService.accessTokenService.validateTokenByRequest(
+        request,
+      );
 
-            const candidateNode = person.candidates.edges[0].node;
-            const candidateJob:Jobs = candidateNode?.jobs;
-            const recruiterProfile:RecruiterProfileType = await getRecruiterProfileByJob(candidateJob, apiToken) 
+    console.log('workspace:', workspace);
+    try {
+      let sendVideoInterviewLinkResponse;
+      const candidateId = request?.body?.candidateId;
+      let personObj;
+      let videoInterviewUrl;
 
-            if (videoInterviewUrl) {
-                console.log("Going to send email to person:", person);
-                const videoInterviewInviteTemplate = await new EmailTemplates().getInterviewInvitationTemplate(person, candidateId, videoInterviewUrl);
-                console.log("recruiterProfile?.email:", recruiterProfile?.email);
-                const emailData: GmailMessageData = {
-                    sendEmailNameFrom: recruiterProfile?.firstName + ' ' + recruiterProfile?.lastName,
-                    sendEmailFrom: recruiterProfile?.email,
-                    sendEmailTo: person?.emails.primaryEmail,
-                    subject: 'Video Interview - ' + person?.name?.firstName + '<>' + companyName,
-                    message: videoInterviewInviteTemplate,
-                };
-                console.log("This is the email Data from createVideo Interview Send To Candidate:", emailData);
-                const sendVideoInterviewLinkResponse = await new SendEmailFunctionality().sendEmailFunction(emailData, apiToken);
-                console.log("sendVideoInterviewLinkResponse::", sendVideoInterviewLinkResponse);
-                return sendVideoInterviewLinkResponse || {};
-            } else {
-                return createVideoInterviewResponse;
-            }
-        } catch (error) {
-            console.error('Error in createVideoInterviewSendToCandidate:', error);
-            throw new Error('Failed to create and send video interview');
-        }
+      personObj = await new FilterCandidates(
+        this.workspaceQueryService,
+      ).getPersonDetailsByCandidateId(candidateId, apiToken);
+      // const person = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPersonId(personObj.id, apiToken);
+      console.log('Got person:', personObj);
+      videoInterviewUrl =
+        personObj?.candidates?.edges[0]?.node?.videoInterview?.edges[0]?.node
+          ?.interviewLink?.primaryLinkUrl;
+      if (!videoInterviewUrl) {
+        const candidateId = request.body.candidateId;
+
+        console.log('candidateId to create video-interview:', candidateId);
+        await new VideoInterviewChatProcesses(
+          this.workspaceQueryService,
+        ).createVideoInterviewLinksForCandidate(candidateId, apiToken);
+      }
+
+      const personId = personObj.id;
+
+      console.log('phoen number:', personObj?.phones?.primaryPhoneNumber);
+      personObj = await new FilterCandidates(
+        this.workspaceQueryService,
+      ).getPersonDetailsByPhoneNumber(
+        personObj?.phones?.primaryPhoneNumber,
+        apiToken,
+      );
+      console.log('personObj::', personObj);
+      videoInterviewUrl = personObj?.candidates?.edges.find(
+        (edge) => edge.node.id === candidateId,
+      )?.node?.videoInterview?.edges[0]?.node?.interviewLink?.primaryLinkUrl; // const personObj = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByCandidateId(candidateId, apiToken);
+      console.log(
+        'This is the video interview in send-video-interview-to-candidate link candidates:',
+        personObj?.candidates,
+      );
+      console.log(
+        'This is the video interview in send-video-interview-to-candidate link stringufy:',
+        JSON.stringify(personObj?.candidates),
+      );
+      console.log(
+        'This is the video interview in send-video-interview-to-candidate link:',
+        videoInterviewUrl,
+      );
+      const companyName =
+        personObj?.candidates?.edges?.length > 0
+          ? personObj?.candidates?.edges
+              .filter((edge) => edge.node.id === candidateId)
+              .map((edge) => edge?.node?.jobs?.company?.name)[0]
+          : '';
+
+      const candidateNode = personObj.candidates.edges[0].node;
+      const candidateJob: Jobs = candidateNode?.jobs;
+      const recruiterProfile: RecruiterProfileType =
+        await getRecruiterProfileByJob(candidateJob, apiToken);
+
+      if (videoInterviewUrl) {
+        const videoInterviewInviteTemplate =
+          await new EmailTemplates().getInterviewInvitationTemplate(
+            personObj,
+            candidateId,
+            videoInterviewUrl,
+          );
+
+        console.log('recruiterProfile?.email:', recruiterProfile?.email);
+        const emailData: GmailMessageData = {
+          sendEmailNameFrom:
+            recruiterProfile?.firstName + ' ' + recruiterProfile?.lastName,
+          sendEmailFrom: recruiterProfile?.email,
+          sendEmailTo: personObj?.emails.primaryEmail,
+          subject:
+            'Video Interview - ' +
+            personObj?.name?.firstName +
+            '<>' +
+            companyName,
+          message: videoInterviewInviteTemplate,
+        };
+
+        console.log(
+          'This is the email Data sendVideoInterviewSendToCandidate:',
+          emailData,
+        );
+        sendVideoInterviewLinkResponse =
+          await new SendEmailFunctionality().sendEmailFunction(
+            emailData,
+            apiToken,
+          );
+        console.log(
+          'sendVideoInterviewLinkResponse::',
+          sendVideoInterviewLinkResponse,
+        );
+
+        return sendVideoInterviewLinkResponse || {};
+      } else {
+        return sendVideoInterviewLinkResponse;
+      }
+    } catch (error) {
+      console.error('Error in sendVideoInterviewSendToCandidate:', error);
+      throw new Error('Failed to create and send video interview');
     }
-
-    @Post('send-video-interview-to-candidate')
-    @UseGuards(JwtAuthGuard)
-    async sendVideoInterviewSendToCandidate(@Req() request: any): Promise<object> {
-
-        const apiToken = request.headers.authorization.split(' ')[1];
-        const { workspace } = await this.workspaceQueryService.accessTokenService.validateTokenByRequest(request);
-        console.log("workspace:", workspace);
-        try {
-            let sendVideoInterviewLinkResponse;
-            const candidateId = request?.body?.candidateId;
-            let personObj;
-            let videoInterviewUrl;
-            personObj = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByCandidateId(candidateId, apiToken);
-            // const person = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPersonId(personObj.id, apiToken);
-            console.log("Got person:", personObj);
-            videoInterviewUrl = personObj?.candidates?.edges[0]?.node?.videoInterview?.edges[0]?.node?.interviewLink?.primaryLinkUrl;
-            if (!videoInterviewUrl) {
-                const candidateId = request.body.candidateId;
-                console.log('candidateId to create video-interview:', candidateId);
-                await new StartVideoInterviewChatProcesses(this.workspaceQueryService).createVideoInterviewForCandidate(candidateId, apiToken);
-                
-            }
-
-            const personId = personObj.id
-            console.log("phoen number:", personObj?.phones?.primaryPhoneNumber);
-            personObj = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByPhoneNumber(personObj?.phones?.primaryPhoneNumber, apiToken);
-            console.log("personObj::", personObj)
-            videoInterviewUrl = personObj?.candidates?.edges
-                .find(edge => edge.node.id === candidateId)
-                ?.node?.videoInterview?.edges[0]?.node?.interviewLink?.primaryLinkUrl;  // const personObj = await new FilterCandidates(this.workspaceQueryService).getPersonDetailsByCandidateId(candidateId, apiToken);
-            console.log("This is the video interview in send-video-interview-to-candidate link candidates:", personObj?.candidates);
-            console.log("This is the video interview in send-video-interview-to-candidate link stringufy:", JSON.stringify(personObj?.candidates));
-            console.log("This is the video interview in send-video-interview-to-candidate link:", videoInterviewUrl);
-            const companyName = personObj?.candidates?.edges?.length > 0 ? 
-                personObj?.candidates?.edges
-                    .filter(edge => edge.node.id === candidateId)
-                    .map(edge => edge?.node?.jobs?.company?.name)[0] 
-                : '';
-
-            const candidateNode = personObj.candidates.edges[0].node;
-            const candidateJob:Jobs = candidateNode?.jobs;
-            const recruiterProfile:RecruiterProfileType = await getRecruiterProfileByJob(candidateJob, apiToken) 
-            if (videoInterviewUrl) {
-                const videoInterviewInviteTemplate = await new EmailTemplates().getInterviewInvitationTemplate(personObj, candidateId, videoInterviewUrl);
-                console.log("recruiterProfile?.email:", recruiterProfile?.email);
-                const emailData: GmailMessageData = {
-                    sendEmailNameFrom: recruiterProfile?.firstName + ' ' + recruiterProfile?.lastName,
-                    sendEmailFrom: recruiterProfile?.email,
-                    sendEmailTo: personObj?.emails.primaryEmail,
-                    subject: 'Video Interview - ' + personObj?.name?.firstName + '<>' + companyName,
-                    message: videoInterviewInviteTemplate,
-                };
-                console.log("This is the email Data sendVideoInterviewSendToCandidate:", emailData);
-                sendVideoInterviewLinkResponse = await new SendEmailFunctionality().sendEmailFunction(emailData, apiToken);
-                console.log("sendVideoInterviewLinkResponse::", sendVideoInterviewLinkResponse);
-                return sendVideoInterviewLinkResponse || {};
-            } else {
-                return sendVideoInterviewLinkResponse;
-            }
-        } catch (error) {
-            console.error('Error in sendVideoInterviewSendToCandidate:', error);
-            throw new Error('Failed to create and send video interview');
-        }
-    }
+  }
 }

@@ -26,8 +26,10 @@
     "types": ["jest", "node"],
     "paths": {
       "src/*": ["./src/*"],
-      "test/*": ["./test/*"]
-    }
+      "test/*": ["./test/*"],
+      "@/*": ["src/*"]
+    },
+    "baseUrl": "./"
   },
   "ts-node": {
     "files": true,

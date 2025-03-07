@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Req, Res } from '@nestjs/common';
-import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
-import { IncomingWhatsappMessages } from '../services/whatsapp-api/incoming-messages';
 
+import { IncomingWhatsappMessages } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/incoming-messages';
+import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 @Controller('webhook')
@@ -14,9 +14,10 @@ export class WhatsappWebhook {
   @Get()
   findAll(@Req() request: any, @Res() response: any) {
     console.log('-------------- New Request GET --------------');
-    var mode = request.query['hub.mode'];
-    var token = request.query['hub.verify_token'];
-    var challenge = request.query['hub.challenge'];
+    const mode = request.query['hub.mode'];
+    const token = request.query['hub.verify_token'];
+    const challenge = request.query['hub.challenge'];
+
     console.log('Mode:', mode);
     console.log('token:', token);
     console.log('challenge:', challenge);
@@ -45,24 +46,34 @@ export class WhatsappWebhook {
   @Post()
   async create(@Req() request: any, @Res() response: any) {
     console.log('-------------- New Request POST --------------');
-    // console.log('Headers:' + JSON.stringify(request.headers, null, 3)); 
-    console.log('Body from POST REQUEST:' + JSON.stringify(request.body, null, 3));
+    // console.log('Headers:' + JSON.stringify(request.headers, null, 3));
+    console.log(
+      'Body from POST REQUEST:' + JSON.stringify(request.body, null, 3),
+    );
     // const apiToken = request.headers.authorization.split(' ')[1];
 
     const requestBody = request.body;
+
     try {
-      const userMessageBodyFrom = requestBody?.entry[0]?.changes[0]?.value?.messages[0]?.from || '';
+      const userMessageBodyFrom =
+        requestBody?.entry[0]?.changes[0]?.value?.messages[0]?.from || '';
+
       console.log('UserMessageBodyFrom::', userMessageBodyFrom);
       if (userMessageBodyFrom === '1234567890') {
-      console.log('This is a cron test to check if the connection exists or not');
-      return;
+        console.log(
+          'This is a cron test to check if the connection exists or not',
+        );
+
+        return;
       }
     } catch (error) {
       console.log('Incoming message could be utility messages:');
     }
 
     try {
-      await new IncomingWhatsappMessages(this.workspaceQueryService).receiveIncomingMessagesFromFacebook(requestBody);
+      await new IncomingWhatsappMessages(
+        this.workspaceQueryService,
+      ).receiveIncomingMessagesFromFacebook(requestBody);
     } catch (error) {
       // Handle error
     }

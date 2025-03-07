@@ -1,90 +1,81 @@
-interface TemplateComponent {
-    type: string;
-    text: string;
-    format?: string;
-    buttons?: Array<{
-      type: string;
-      text: string;
-      url: string;
-    }>;
+import { Template } from 'twenty-shared';
+
+export class MessageGenerator {
+  private templates: Map<string, Template>;
+
+  constructor(templatesData: any) {
+    this.templates = new Map();
+    this.initializeTemplates(templatesData);
   }
-  
-  interface Template {
-    name: string;
-    components: TemplateComponent[];
-    language: string;
-    status: string;
-    category: string;
-    id: string;
+
+  private initializeTemplates(templatesData: any) {
+    templatesData.templates.forEach((template: Template) => {
+      this.templates.set(template.name, template);
+    });
   }
-  
-  export class MessageGenerator {
-    private templates: Map<string, Template>;
-  
-    constructor(templatesData: any) {
-      this.templates = new Map();
-      this.initializeTemplates(templatesData);
+
+  public generateMessage(
+    templateName: string,
+    data: Record<string, any>,
+  ): string {
+    const template = this.templates.get(templateName);
+
+    if (!template) {
+      throw new Error(`Template "${templateName}" not found`);
     }
-  
-    private initializeTemplates(templatesData: any) {
-      templatesData.templates.forEach((template: Template) => {
-        this.templates.set(template.name, template);
-      });
-    }
-  
-    public generateMessage(templateName: string, data: Record<string, any>): string {
-      const template = this.templates.get(templateName);
-      
-      if (!template) {
-        throw new Error(`Template "${templateName}" not found`);
+
+    return this.processTemplate(template, data);
+  }
+
+  private processTemplate(
+    template: Template,
+    data: Record<string, any>,
+  ): string {
+    let message = '';
+
+    template.components.forEach((component) => {
+      switch (component.type) {
+        case 'HEADER':
+          message += `${this.replaceParameters(component.text, data)}\n\n`;
+          break;
+
+        case 'BODY':
+          message += `${this.replaceParameters(component.text, data)}\n`;
+          break;
+
+        case 'FOOTER':
+          message += `\n${this.replaceParameters(component.text, data)}`;
+          break;
       }
-  
-      return this.processTemplate(template, data);
-    }
-  
-    private processTemplate(template: Template, data: Record<string, any>): string {
-      let message = '';
-  
-      template.components.forEach(component => {
-        switch (component.type) {
-          case 'HEADER':
-            message += `${this.replaceParameters(component.text, data)}\n\n`;
-            break;
-          
-          case 'BODY':
-            message += `${this.replaceParameters(component.text, data)}\n`;
-            break;
-          
-          case 'FOOTER':
-            message += `\n${this.replaceParameters(component.text, data)}`;
-            break;
-        }
-      });
-  
-      return message.trim();
-    }
-  
-    private replaceParameters(text: string, data: Record<string, any>): string {
-      // Handle numbered parameters ({{1}}, {{2}}, etc.)
-      const numberedParamRegex = /{{(\d+)}}/g;
-      text = text.replace(numberedParamRegex, (match, num) => {
-        const key = `param${num}`;
-        return data[key] || match;
-      });
-  
-      // Handle named parameters
-      const namedParamRegex = /{{(\w+)}}/g;
-      text = text.replace(namedParamRegex, (match, key) => {
-        return data[key] || match;
-      });
-  
-      return text;
-    }
+    });
+
+    return message.trim();
   }
-  
-  // Usage example:
+
+  private replaceParameters(text: string, data: Record<string, any>): string {
+    // Handle numbered parameters ({{1}}, {{2}}, etc.)
+    const numberedParamRegex = /{{(\d+)}}/g;
+
+    text = text.replace(numberedParamRegex, (match, num) => {
+      const key = `param${num}`;
+
+      return data[key] || match;
+    });
+
+    // Handle named parameters
+    const namedParamRegex = /{{(\w+)}}/g;
+
+    text = text.replace(namedParamRegex, (match, key) => {
+      return data[key] || match;
+    });
+
+    return text;
+  }
+}
+
+// Usage example:
 //   const messageGenerator = new MessageGenerator(templatesJson);
-  
+
 //   // Example using the 'application' template
 //   const message = messageGenerator.generateMessage('application', {
 //     param1: 'John', // candidateFirstName

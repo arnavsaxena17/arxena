@@ -1,7 +1,4 @@
 import axios from 'axios';
-import { getRecruiterProfileByJob } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
-import { IncomingWhatsappMessages } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/incoming-messages';
-import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import {
   allStatuses,
   AnswerMessageObj,
@@ -18,54 +15,86 @@ import {
   whatappUpdateMessageObjType,
 } from 'twenty-shared';
 import { v4 } from 'uuid';
-import { axiosRequest } from '../../utils/arx-chat-agent-utils';
-import { Semaphore } from '../../utils/semaphore';
-import { StageWiseClassification } from '../llm-agents/stage-classification';
+
+import { StageWiseClassification } from 'src/engine/core-modules/arx-chat/services/llm-agents/stage-classification';
+import { getRecruiterProfileByJob } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
+import { IncomingWhatsappMessages } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/incoming-messages';
+import { axiosRequest } from 'src/engine/core-modules/arx-chat/utils/arx-chat-agent-utils';
+import { Semaphore } from 'src/engine/core-modules/arx-chat/utils/semaphore';
+import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
+
 import CandidateEngagementArx from './candidate-engagement';
 import { FilterCandidates } from './filter-candidates';
 
 export class UpdateChat {
   constructor(private readonly workspaceQueryService: WorkspaceQueryService) {}
 
-
   // Add this new method to the ScheduledJobService
-async updateMeetingStatusAfterCompletion(
-  candidateProfileDataNodeObj: PersonNode,
-  candidateJob: Jobs,
-  apiToken: string
-): Promise<void> {
-  try {
-    console.log("Going to update the meeitng after completion of the interview")
-    // Get candidate ID
-    const candidateId = candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.id;
-    // Get updated version of candidate profile data
-    const graphqlQueryObjToFetchCandidateData = JSON.stringify({
-      query: graphqlToFetchAllCandidateData,
-      variables: { filter: { id: { eq: candidateId } } },
-    });
-    const updatedCandidateResponse = await axiosRequest(graphqlQueryObjToFetchCandidateData, apiToken);
-    const updatedCandidateProfileDataNodeObj = updatedCandidateResponse?.data?.data?.candidates?.edges[0]?.node;
+  async updateMeetingStatusAfterCompletion(
+    candidateProfileDataNodeObj: PersonNode,
+    candidateJob: Jobs,
+    apiToken: string,
+  ): Promise<void> {
+    try {
+      console.log(
+        'Going to update the meeitng after completion of the interview',
+      );
+      // Get candidate ID
+      const candidateId =
+        candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.id;
+      // Get updated version of candidate profile data
+      const graphqlQueryObjToFetchCandidateData = JSON.stringify({
+        query: graphqlToFetchAllCandidateData,
+        variables: { filter: { id: { eq: candidateId } } },
+      });
+      const updatedCandidateResponse = await axiosRequest(
+        graphqlQueryObjToFetchCandidateData,
+        apiToken,
+      );
+      const updatedCandidateProfileDataNodeObj =
+        updatedCandidateResponse?.data?.data?.candidates?.edges[0]?.node;
 
-    console.log("updatedCandidateProfileDataNodeObj::", updatedCandidateProfileDataNodeObj)
-    const clientInterviewId = updatedCandidateProfileDataNodeObj?.clientInterview?.edges[0]?.node?.id; 
-    console.log("clientInterviewId::", clientInterviewId)
-    const updateClientInterviewVariables = { idToUpdate: clientInterviewId, input: { clientInterviewCompleted: true }, };
-    const graphqlQueryObj = JSON.stringify({ query: graphqlToUpdateOneClientInterview, variables: updateClientInterviewVariables, });
-    await axiosRequest(graphqlQueryObj, apiToken);
-    console.log(`Successfully closed meeting status for candidate ${candidateId}`);
-    // Optionally, you could also update the candidate's status or add follow-up tasks here
+      console.log(
+        'updatedCandidateProfileDataNodeObj::',
+        updatedCandidateProfileDataNodeObj,
+      );
+      const clientInterviewId =
+        updatedCandidateProfileDataNodeObj?.clientInterview?.edges[0]?.node?.id;
 
-    // Update the candidate's status to "Interview Completed"
-    const updateCandidateVariables = { idToUpdate: candidateId, input: { startMeetingSchedulingChatCompleted: true }, };
-    const updateGraphqlQueryObj = JSON.stringify({ query: graphQltoUpdateOneCandidate, variables: updateCandidateVariables });
-    await axiosRequest(updateGraphqlQueryObj, apiToken);
-    console.log(`Successfully updated candidate status to "Interview Completed" for candidate ${candidateId}`);
-    
-  } catch (error) {
-    console.error('Error updating meeting status after completion:', error);
+      console.log('clientInterviewId::', clientInterviewId);
+      const updateClientInterviewVariables = {
+        idToUpdate: clientInterviewId,
+        input: { clientInterviewCompleted: true },
+      };
+      const graphqlQueryObj = JSON.stringify({
+        query: graphqlToUpdateOneClientInterview,
+        variables: updateClientInterviewVariables,
+      });
+
+      await axiosRequest(graphqlQueryObj, apiToken);
+      console.log(
+        `Successfully closed meeting status for candidate ${candidateId}`,
+      );
+      // Optionally, you could also update the candidate's status or add follow-up tasks here
+
+      // Update the candidate's status to "Interview Completed"
+      const updateCandidateVariables = {
+        idToUpdate: candidateId,
+        input: { startMeetingSchedulingChatCompleted: true },
+      };
+      const updateGraphqlQueryObj = JSON.stringify({
+        query: graphQltoUpdateOneCandidate,
+        variables: updateCandidateVariables,
+      });
+
+      await axiosRequest(updateGraphqlQueryObj, apiToken);
+      console.log(
+        `Successfully updated candidate status to "Interview Completed" for candidate ${candidateId}`,
+      );
+    } catch (error) {
+      console.error('Error updating meeting status after completion:', error);
+    }
   }
-}
-
 
   async checkScheduledClientMeetingsCount(jobId, apiToken: string) {
     const scheduledClientMeetings = await new FilterCandidates(
@@ -73,11 +102,14 @@ async updateMeetingStatusAfterCompletion(
     ).fetchScheduledClientMeetings(jobId, apiToken);
     const today = new Date();
     const dayAfterTomorrow = new Date(today);
+
     dayAfterTomorrow.setDate(today.getDate() + 2);
     const countScheduledMeetings = scheduledClientMeetings.filter((meeting) => {
       const meetingDate = new Date(meeting.interviewTime.date);
+
       return meetingDate.toDateString() === dayAfterTomorrow.toDateString();
     }).length;
+
     console.log(
       `Number of scheduled meetings for the day after tomorrow: ${countScheduledMeetings}`,
     );
@@ -90,7 +122,9 @@ async updateMeetingStatusAfterCompletion(
     const candidateIds = scheduledClientMeetings.map(
       (meeting) => meeting.candidateId,
     );
+
     await this.createShortlist(candidateIds, apiToken);
+
     return scheduledClientMeetings;
   }
 
@@ -99,6 +133,7 @@ async updateMeetingStatusAfterCompletion(
       process.env.ENV_NODE === 'production'
         ? 'https://arxena.com/create-shortlist'
         : 'http://127.0.0.1:5050/create-shortlist';
+
     console.log('This is the url:', url);
     console.log(
       'going to create create-shortlist by candidate Ids',
@@ -115,14 +150,18 @@ async updateMeetingStatusAfterCompletion(
         },
       },
     );
+
     console.log('Response from create-shortlist', response.data);
+
     return response.data;
   }
+
   async createShortlistDocument(candidateIds: string[], apiToken: string) {
     const url =
       process.env.ENV_NODE === 'production'
         ? 'https://arxena.com/create-shortlist-document'
         : 'http://127.0.0.1:5050/create-shortlist-document';
+
     console.log('This is the url:', url);
     console.log(
       'going to create create-shortlist by candidate Ids',
@@ -139,7 +178,9 @@ async updateMeetingStatusAfterCompletion(
         },
       },
     );
+
     console.log('Response from create-shortlist', response.data);
+
     return response.data;
   }
 
@@ -148,6 +189,7 @@ async updateMeetingStatusAfterCompletion(
       process.env.ENV_NODE === 'production'
         ? 'https://arxena.com/create-create_gmail_draft_shortlist'
         : 'http://127.0.0.1:5050/create_gmail_draft_shortlist';
+
     console.log('This is the url:', url);
     console.log(
       'going to create create-shortlist by candidate Ids',
@@ -164,7 +206,9 @@ async updateMeetingStatusAfterCompletion(
         },
       },
     );
+
     console.log('Response from create-shortlist', response.data);
+
     return response.data;
   }
 
@@ -176,6 +220,7 @@ async updateMeetingStatusAfterCompletion(
       process.env.ENV_NODE === 'production'
         ? 'https://arxena.com/chat_based_shortlist_delivery'
         : 'http://127.0.0.1:5050/chat_based_shortlist_delivery';
+
     console.log('This is the url:', url);
     console.log(
       'going to create gmail-draft-shortlist by shortlists by candidate Ids',
@@ -192,6 +237,7 @@ async updateMeetingStatusAfterCompletion(
         },
       },
     );
+
     return response.data;
   }
 
@@ -200,6 +246,7 @@ async updateMeetingStatusAfterCompletion(
       process.env.ENV_NODE === 'production'
         ? 'https://arxena.com/create-interview-videos'
         : 'http://127.0.0.1:5050/create-interview-videos';
+
     console.log('This is the url:', url);
     console.log('going to create jobId based interview videos', jobId);
     const response = await axios.post(
@@ -213,6 +260,7 @@ async updateMeetingStatusAfterCompletion(
         },
       },
     );
+
     return response.data;
   }
 
@@ -221,6 +269,7 @@ async updateMeetingStatusAfterCompletion(
       process.env.ENV_NODE === 'production'
         ? 'https://arxena.com/test_arxena_connection'
         : 'http://127.0.0.1:5050/test_arxena_connection';
+
     console.log('This is the url:', url);
     const response = await axios.post(
       url,
@@ -233,6 +282,7 @@ async updateMeetingStatusAfterCompletion(
         },
       },
     );
+
     return response.data;
   }
 
@@ -262,6 +312,7 @@ async updateMeetingStatusAfterCompletion(
     const candidateProfileData = await new FilterCandidates(
       this.workspaceQueryService,
     ).getCandidateInformation(whatsappIncomingMessage, apiToken);
+
     console.log(
       'This is the candiate who has sent us the message., we have to update the database that this message has been recemivged::',
       chatReply,
@@ -280,6 +331,7 @@ async updateMeetingStatusAfterCompletion(
       candidateJob,
       apiToken,
     );
+
     console.log(
       'This is the response after message update::',
       responseAfterMessageUpdate,
@@ -298,14 +350,17 @@ async updateMeetingStatusAfterCompletion(
       });
       const response = await axiosRequest(graphqlQueryObj, apiToken);
       const currentCandidates = response?.data?.data?.candidates?.edges || [];
+
       console.log('Number of current Candidates:', currentCandidates.length);
       for (const candidate of currentCandidates) {
         const currentCount = candidate.node.chatCount || 0;
+
         console.log('Current chat count::', currentCount);
         const messagesList = await await new FilterCandidates(
           this.workspaceQueryService,
         ).fetchAllWhatsappMessages(candidate.node.id, apiToken);
         const newCount = messagesList.length;
+
         console.log('New chat count::', newCount);
         if (newCount !== currentCount) {
           const graphqlVariables = {
@@ -320,6 +375,7 @@ async updateMeetingStatusAfterCompletion(
             updateGraphqlQueryObj,
             apiToken,
           );
+
           if (updateResponse.data.errors) {
             console.log(
               'Error updating chat count:',
@@ -340,6 +396,7 @@ async updateMeetingStatusAfterCompletion(
       console.error('Error in updateCandidates WithChatCount:', error);
     }
   }
+
   async processCandidatesChatsGetStatuses(
     apiToken: string,
     jobIds: string[],
@@ -354,6 +411,7 @@ async updateMeetingStatusAfterCompletion(
       'allStartedAndStoppedChats',
       apiToken,
     );
+
     console.log(
       'Received a lngth of allCandidates in process Candidates Chats GetStatuses::',
       allCandidates?.length,
@@ -381,6 +439,7 @@ async updateMeetingStatusAfterCompletion(
       await semaphore.acquire();
       try {
         const candidateId = candidate?.id;
+
         console.log(
           'This is the candidate ID::',
           candidateId,
@@ -390,6 +449,7 @@ async updateMeetingStatusAfterCompletion(
         const jobId = candidateIds
           ? jobIds[candidateIds.indexOf(candidateId)]
           : '';
+
         console.log('This is the job ID::', jobId);
 
         if (jobId == '') {
@@ -409,6 +469,7 @@ async updateMeetingStatusAfterCompletion(
             apiToken,
           ) as Promise<allStatuses>,
         ]);
+
         console.log(
           'This is the candidate status::',
           candidate,
@@ -417,6 +478,7 @@ async updateMeetingStatusAfterCompletion(
           'and the status is::',
           candidateStatus,
         );
+
         return {
           candidateId,
           candidateStatus,
@@ -425,6 +487,7 @@ async updateMeetingStatusAfterCompletion(
         };
       } catch (error) {
         console.log('Error in processing candidate:', error);
+
         return null;
       } finally {
         semaphore.release();
@@ -445,6 +508,7 @@ async updateMeetingStatusAfterCompletion(
         query: graphQltoUpdateOneCandidate,
         variables: updateCandidateObjectVariables,
       });
+
       // if (['CONVERSATION_CLOSED_TO_BE_CONTACTED', 'CANDIDATE_IS_KEEN_TO_CHAT'].includes(result.candidateStatus)){
       if (
         ['CONVERSATION_CLOSED_TO_BE_CONTACTED'].includes(result.candidateStatus)
@@ -457,6 +521,7 @@ async updateMeetingStatusAfterCompletion(
           query: graphQltoUpdateOneCandidate,
           variables: updateCandidateVariables,
         });
+
         console.log(
           'graphqlQueryObjForUpdationForCandidateStatus::',
           graphqlQueryObjForUpdationForCandidateStatus,
@@ -472,6 +537,7 @@ async updateMeetingStatusAfterCompletion(
       }
       try {
         const response = await axiosRequest(graphqlQueryObj, apiToken);
+
         console.log(
           'Candidate chat status updated successfully "with the status of ::',
           result.candidateStatus,
@@ -482,6 +548,7 @@ async updateMeetingStatusAfterCompletion(
     });
 
     await Promise.all(updatePromises);
+
     return validResults;
   }
 
@@ -518,6 +585,7 @@ async updateMeetingStatusAfterCompletion(
         audioFilePath: userMessage?.databaseFilePath,
       },
     };
+
     console.log(
       'This si the create update whatsapp message::',
       createNewWhatsappMessageUpdateVariables,
@@ -526,16 +594,19 @@ async updateMeetingStatusAfterCompletion(
       query: graphqlQueryToCreateOneNewWhatsappMessage,
       variables: createNewWhatsappMessageUpdateVariables,
     });
+
     try {
       console.log(
         'GRAPHQL WITH WHATSAPP MESSAGE:',
         createNewWhatsappMessageUpdateVariables?.input?.message,
       );
       const response = await axiosRequest(graphqlQueryObj, apiToken);
+
       console.log(
         'This is the response data from the axios request in udpate message::',
         response.data,
       );
+
       return response.data;
     } catch (error) {
       console.log(error);
@@ -549,6 +620,7 @@ async updateMeetingStatusAfterCompletion(
   ) {
     const candidateEngagementStatus =
       whatappUpdateMessageObj.messageType !== 'botMessage';
+
     console.log(
       'Updating candidate engagement status to:',
       candidateEngagementStatus,
@@ -569,14 +641,17 @@ async updateMeetingStatusAfterCompletion(
       query: graphQltoUpdateOneCandidate,
       variables: updateCandidateObjectVariables,
     });
+
     try {
       const response = await axiosRequest(graphqlQueryObj, apiToken);
+
       console.log(
         'Candidate engagement status updated successfully to ::',
         candidateEngagementStatus,
         ' at time :: ',
         new Date().toISOString(),
       );
+
       return response.data;
     } catch (error) {
       console.log('Error in updating candidate status::', error);
@@ -601,14 +676,17 @@ async updateMeetingStatusAfterCompletion(
       query: graphQltoUpdateOneCandidate,
       variables: updateCandidateObjectVariables,
     });
+
     try {
       const response = await axiosRequest(graphqlQueryObj, apiToken);
+
       console.log(
         'Candidate engagement status updated successfully to false ::',
         false,
         ' at time :: ',
         new Date().toISOString(),
       );
+
       return response.data;
     } catch (error) {
       console.log(error);
@@ -625,13 +703,16 @@ async updateMeetingStatusAfterCompletion(
       query: graphqlQueryToCreateOneAnswer,
       variables: updateCandidateObjectVariables,
     });
+
     try {
       const response = await axiosRequest(graphqlQueryObj, apiToken);
+
       return response.data;
     } catch (error) {
       console.log(error);
     }
   }
+
   async scheduleCandidateInterview(
     candidateProfileObj: CandidateNode,
     scheduleInterviewObj: whatappUpdateMessageObjType,
@@ -645,8 +726,10 @@ async updateMeetingStatusAfterCompletion(
       query: {},
       variables: updateCandidateObjectVariables,
     });
+
     try {
       const response = await axiosRequest(graphqlQueryObj, apiToken);
+
       return response.data;
     } catch (error) {
       console.log(error);
@@ -656,15 +739,16 @@ async updateMeetingStatusAfterCompletion(
   async updateCandidateEngagementDataInTable(
     whatappUpdateMessageObj: whatappUpdateMessageObjType,
     apiToken: string,
-    isAfterMessageSent: boolean = false,
+    isAfterMessageSent = false,
   ) {
     console.log('Updating candidate engagement status in table');
-    let candidateProfileObj =
+    const candidateProfileObj =
       whatappUpdateMessageObj.messageType !== 'botMessage'
         ? await new FilterCandidates(
             this.workspaceQueryService,
           ).getCandidateInformation(whatappUpdateMessageObj, apiToken)
         : whatappUpdateMessageObj.candidateProfile;
+
     if (candidateProfileObj.name === '') return;
     console.log('Candidate information retrieved successfully');
     const whatsappMessage = await new UpdateChat(
@@ -674,10 +758,12 @@ async updateMeetingStatusAfterCompletion(
       whatappUpdateMessageObj,
       apiToken,
     );
+
     if (!whatsappMessage || isAfterMessageSent) {
       console.log(
         'WhatsApp message not found or message already sent, hence not updating the candidate engagement status to true',
       );
+
       return;
     }
     const updateCandidateStatusObj = await new UpdateChat(
@@ -687,7 +773,9 @@ async updateMeetingStatusAfterCompletion(
       whatappUpdateMessageObj,
       apiToken,
     );
+
     if (!updateCandidateStatusObj) return;
+
     return {
       status: 'success',
       message: 'Candidate engagement status updated successfully',
@@ -701,6 +789,7 @@ async updateMeetingStatusAfterCompletion(
     const personCandidateNode = personObj?.candidates?.edges[0]?.node;
     const messagesList = personCandidateNode?.whatsappMessages?.edges;
     const messageIDs = messagesList?.map((message) => message?.node?.id);
+
     this.removeChatsByMessageIDs(messageIDs, apiToken);
   }
 
@@ -711,7 +800,9 @@ async updateMeetingStatusAfterCompletion(
       variables: graphQLVariables,
     });
     const response = await axiosRequest(graphqlQueryObj, apiToken);
+
     console.log('REsponse status:', response.status);
+
     return response;
   }
 
@@ -721,9 +812,11 @@ async updateMeetingStatusAfterCompletion(
     apiToken: string,
   ) {
     const candidateStatus = whatappUpdateMessageObj.messageType;
+
     console.log('Updating the candidate status::', candidateStatus);
     console.log('Updating the candidate api token::', apiToken);
     const candidateId = candidateProfileObj?.id;
+
     console.log(
       'This is the candidateID for which we are trying to update the status:',
       candidateId,
@@ -736,10 +829,13 @@ async updateMeetingStatusAfterCompletion(
       query: graphQltoUpdateOneCandidate,
       variables: updateCandidateObjectVariables,
     });
+
     console.log('GraphQL query to update candidate status:', graphqlQueryObj);
     try {
       const response = await axiosRequest(graphqlQueryObj, apiToken);
+
       console.log('REsponse from updating candidate status:', response.status);
+
       return 'Updated the candidate profile with the status.';
     } catch {
       console.log('Error in updating candidate profile status');

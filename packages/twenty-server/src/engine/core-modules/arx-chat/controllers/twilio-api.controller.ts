@@ -1,10 +1,11 @@
 import { Controller, Post, Req, UseGuards } from '@nestjs/common';
-import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
+
 import twilio from 'twilio';
+
+import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 
 @Controller('twilio')
 export class TwilioControllers {
-
   @Post('sendMessage')
   @UseGuards(JwtAuthGuard)
   async sendMessage(@Req() request: any): Promise<object> {
@@ -34,7 +35,8 @@ export class TwilioControllers {
 
     // Replace placeholders with actual values
     let body = template;
-    let replacementVariables = variables;
+    const replacementVariables = variables;
+
     for (const [key, value] of Object.entries(replacementVariables)) {
       body = body.replace(`{${key}}`, value);
     }
@@ -43,12 +45,14 @@ export class TwilioControllers {
     const accountSid = process.env.TWILIO_ACCOUNT_SID;
     const authToken = process.env.TWILIO_AUTH_TOKEN;
     const client = twilio(accountSid, authToken);
+
     console.log('Client created');
     const message = await client.messages.create({
       body: body,
       from: 'whatsapp:+15153163273',
       to: 'whatsapp:+919601277382',
     });
+
     console.log('This is mesage body:', message.body);
 
     return message;
@@ -59,16 +63,16 @@ export class TwilioControllers {
   async testMessage(@Req() request: any): Promise<any> {
     const accountSid = process.env.TWILIO_ACCOUNT_SID;
     const authToken = process.env.TWILIO_AUTH_TOKEN;
-    const client = require('twilio')(accountSid, authToken);
+    const client = twilio(accountSid, authToken);
 
-    client.messages.create({
-        body: 'Hi, would you be keen on a new role?',
-        from: 'whatsapp:+15153163273',
-        to: 'whatsapp:+918411937769',
-      }).then(message => console.log(message.sid)).done();
+    const message = await client.messages.create({
+      body: 'Hi, would you be keen on a new role?',
+      from: 'whatsapp:+15153163273',
+      to: 'whatsapp:+918411937769',
+    });
+
+    console.log(message.sid);
+
+    return message;
   }
-  
 }
-
-
-

@@ -1,7 +1,5 @@
 import { Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
-import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/services/candidate.service';
-import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
-import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
+
 import {
   ChatControlsObjType,
   ChatHistoryItem,
@@ -17,17 +15,24 @@ import {
   mutations,
   PersonNode,
   queries,
-  whatappUpdateMessageObjType
+  whatappUpdateMessageObjType,
 } from 'twenty-shared';
-import { GoogleSheetsService } from '../../google-sheets/google-sheets.service';
-import CandidateEngagementArx from '../services/candidate-engagement/candidate-engagement';
-import { FilterCandidates } from '../services/candidate-engagement/filter-candidates';
-import { UpdateChat } from '../services/candidate-engagement/update-chat';
-import { OpenAIArxMultiStepClient } from '../services/llm-agents/arx-multi-step-client';
-import { HumanLikeLLM } from '../services/llm-agents/human-or-bot-classification';
-import { getRecruiterProfileByJob } from '../services/recruiter-profile';
-import { FacebookWhatsappChatApi } from '../services/whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
-import { axiosRequest, formatChat } from '../utils/arx-chat-agent-utils';
+
+import CandidateEngagementArx from 'src/engine/core-modules/arx-chat/services/candidate-engagement/candidate-engagement';
+import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
+import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/update-chat';
+import { OpenAIArxMultiStepClient } from 'src/engine/core-modules/arx-chat/services/llm-agents/arx-multi-step-client';
+import { HumanLikeLLM } from 'src/engine/core-modules/arx-chat/services/llm-agents/human-or-bot-classification';
+import { getRecruiterProfileByJob } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
+import { FacebookWhatsappChatApi } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
+import {
+  axiosRequest,
+  formatChat,
+} from 'src/engine/core-modules/arx-chat/utils/arx-chat-agent-utils';
+import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/services/candidate.service';
+import { GoogleSheetsService } from 'src/engine/core-modules/google-sheets/google-sheets.service';
+import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
+import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 
 @Controller('arx-chat')
 export class ArxChatEndpoint {
@@ -46,6 +51,7 @@ export class ArxChatEndpoint {
     const response = await new CandidateEngagementArx(
       this.workspaceQueryService,
     ).createChatControl(request.body.candidateId, chatControl, apiToken);
+
     console.log('Response from create start-Chat api', response);
   }
 
@@ -88,14 +94,17 @@ export class ArxChatEndpoint {
   async startChatsByCandidateIds(@Req() request: any): Promise<object> {
     const apiToken = request.headers.authorization.split(' ')[1];
     const candidateIds = request.body.candidateIds;
+
     for (const candidateId of candidateIds) {
       const chatControl: ChatControlsObjType = {
         chatControlType: 'startChat',
       };
+
       await await new CandidateEngagementArx(
         this.workspaceQueryService,
       ).createChatControl(candidateId, chatControl, apiToken);
     }
+
     return { status: 'Success' };
   }
 
@@ -123,6 +132,7 @@ export class ArxChatEndpoint {
   async fetchCandidateByPhoneNumber(@Req() request: any) {
     const apiToken = request.headers.authorization.split(' ')[1]; // Assuming Bearer token
     const phoneNumber = request.body.phoneNumber;
+
     console.log('called fetchCandidateByPhoneNumber for phone:', phoneNumber);
     const personObj: PersonNode = await new FilterCandidates(
       this.workspaceQueryService,
@@ -140,10 +150,12 @@ export class ArxChatEndpoint {
     });
 
     const response = await axiosRequest(graphqlQueryObj, apiToken);
+
     console.log(
       'Response from create fetch-candidate-by-phone-number-start::',
       response.data,
     );
+
     return response.data;
   }
 
@@ -160,24 +172,21 @@ export class ArxChatEndpoint {
       const personCandidateNode = personObj?.candidates?.edges[0]?.node;
       const candidateJob = personCandidateNode?.jobs;
       // const messagesList = personCandidateNode?.whatsappMessages?.edges;
-      const messagesList: MessageNode[] =
-        await new FilterCandidates(
-          this.workspaceQueryService,
-        ).fetchAllWhatsappMessages(personCandidateNode.id, apiToken);
-      let mostRecentMessageArr: ChatHistoryItem[] =
-        new FilterCandidates(
-          this.workspaceQueryService,
-        ).getMostRecentMessageFromMessagesList(messagesList);
-      const isChatEnabled: boolean = false;
+      const messagesList: MessageNode[] = await new FilterCandidates(
+        this.workspaceQueryService,
+      ).fetchAllWhatsappMessages(personCandidateNode.id, apiToken);
+      let mostRecentMessageArr: ChatHistoryItem[] = new FilterCandidates(
+        this.workspaceQueryService,
+      ).getMostRecentMessageFromMessagesList(messagesList);
+      const isChatEnabled = false;
+
       if (mostRecentMessageArr?.length > 0) {
-        let chatAgent: OpenAIArxMultiStepClient;
-        chatAgent = new OpenAIArxMultiStepClient(
-          personObj,
-          this.workspaceQueryService,
-        );
+        const chatAgent: OpenAIArxMultiStepClient =
+          new OpenAIArxMultiStepClient(personObj, this.workspaceQueryService);
         const chatControl: ChatControlsObjType = {
           chatControlType: 'startChat',
         };
+
         mostRecentMessageArr =
           (await chatAgent.createCompletion(
             mostRecentMessageArr,
@@ -186,11 +195,13 @@ export class ArxChatEndpoint {
             apiToken,
             isChatEnabled,
           )) || [];
+
         return mostRecentMessageArr;
       }
     } catch (err) {
       return { status: err };
     }
+
     return { status: 'Failed' };
   }
 
@@ -200,9 +211,13 @@ export class ArxChatEndpoint {
     const apiToken = request.headers.authorization.split(' ')[1]; // Assuming Bearer token
     const interimChat = request.body.interimChat;
     const phoneNumber = request.body.phoneNumber;
-    console.log('called interimChat:', interimChat);
-    await new UpdateChat(this.workspaceQueryService).createInterimChat(interimChat, phoneNumber, apiToken);
 
+    console.log('called interimChat:', interimChat);
+    await new UpdateChat(this.workspaceQueryService).createInterimChat(
+      interimChat,
+      phoneNumber,
+      apiToken,
+    );
 
     return;
   }
@@ -215,8 +230,16 @@ export class ArxChatEndpoint {
     const messageToSend = request?.body?.messageToSend;
     const phoneNumber = request.body.phoneNumberTo;
 
-    const personObj: PersonNode = await new FilterCandidates( this.workspaceQueryService, ).getPersonDetailsByPhoneNumber(phoneNumber, apiToken); console.log('This is the chat reply:', messageToSend);
-    const candidateJob: Jobs = personObj.candidates?.edges[0]?.node?.jobs; const recruiterProfile = await getRecruiterProfileByJob( candidateJob, apiToken, );
+    const personObj: PersonNode = await new FilterCandidates(
+      this.workspaceQueryService,
+    ).getPersonDetailsByPhoneNumber(phoneNumber, apiToken);
+
+    console.log('This is the chat reply:', messageToSend);
+    const candidateJob: Jobs = personObj.candidates?.edges[0]?.node?.jobs;
+    const recruiterProfile = await getRecruiterProfileByJob(
+      candidateJob,
+      apiToken,
+    );
 
     console.log('Recruiter profile', recruiterProfile);
     const chatMessages =
@@ -225,17 +248,21 @@ export class ArxChatEndpoint {
     const chatControl: ChatControlsObjType = {
       chatControlType: 'startChat',
     };
+
     chatHistory =
       personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node
         ?.messageObj;
-    let whatappUpdateMessageObj: whatappUpdateMessageObjType = {
+    const whatappUpdateMessageObj: whatappUpdateMessageObjType = {
       candidateProfile: personObj?.candidates?.edges[0]?.node,
       candidateFirstName: personObj?.name?.firstName || '',
       phoneNumberFrom: recruiterProfile.phoneNumber,
       whatsappMessageType:
         personObj?.candidates?.edges[0]?.node.whatsappProvider ||
         'application03',
-      phoneNumberTo: personObj.phones.primaryPhoneNumber.length==10 ? '91'+personObj.phones.primaryPhoneNumber : personObj.phones.primaryPhoneNumber,
+      phoneNumberTo:
+        personObj.phones.primaryPhoneNumber.length == 10
+          ? '91' + personObj.phones.primaryPhoneNumber
+          : personObj.phones.primaryPhoneNumber,
       messages: [{ content: request?.body?.messageToSend }],
       messageType: 'recruiterMessage',
       messageObj: chatHistory,
@@ -243,14 +270,18 @@ export class ArxChatEndpoint {
       whatsappDeliveryStatus: 'created',
       whatsappMessageId: 'startChat',
     };
-    let messageObj: ChatRequestBody = {
+    const messageObj: ChatRequestBody = {
       phoneNumberFrom: recruiterProfile.phoneNumber,
-      phoneNumberTo: personObj.phones.primaryPhoneNumber.length==10 ? '91'+personObj.phones.primaryPhoneNumber : personObj.phones.primaryPhoneNumber,
+      phoneNumberTo:
+        personObj.phones.primaryPhoneNumber.length == 10
+          ? '91' + personObj.phones.primaryPhoneNumber
+          : personObj.phones.primaryPhoneNumber,
       messages: messageToSend,
     };
     const sendMessageResponse = await new FacebookWhatsappChatApi(
       this.workspaceQueryService,
     ).sendWhatsappTextMessage(messageObj, apiToken);
+
     whatappUpdateMessageObj.whatsappMessageId =
       sendMessageResponse?.data?.messages[0]?.id;
     whatappUpdateMessageObj.whatsappDeliveryStatus = 'sent';
@@ -261,6 +292,7 @@ export class ArxChatEndpoint {
       whatappUpdateMessageObj,
       apiToken,
     );
+
     return { status: 'success' };
   }
 
@@ -274,6 +306,7 @@ export class ArxChatEndpoint {
     const allWhatsappMessages = await new FilterCandidates(
       this.workspaceQueryService,
     ).fetchAllWhatsappMessages(candidateId, apiToken);
+
     return allWhatsappMessages;
   }
 
@@ -281,6 +314,7 @@ export class ArxChatEndpoint {
   @UseGuards(JwtAuthGuard)
   async getAllMessagesByPhoneNumber(@Req() request: any): Promise<object> {
     const apiToken = request.headers.authorization.split(' ')[1];
+
     console.log(
       'Going to get all messages by phone Number for :',
       request.body.phoneNumber,
@@ -293,12 +327,14 @@ export class ArxChatEndpoint {
       this.workspaceQueryService,
     ).fetchAllWhatsappMessages(candidateId, apiToken);
     const formattedMessages = await formatChat(allWhatsappMessages);
+
     console.log(
       'All messages length:',
       allWhatsappMessages?.length,
       'for phone number:',
       request.body.phoneNumber,
     );
+
     return { formattedMessages: formattedMessages };
   }
 
@@ -316,12 +352,14 @@ export class ArxChatEndpoint {
     ).getPersonDetailsByPhoneNumber(request.body.phoneNumber, apiToken);
     const candidateStatus =
       personObj?.candidates?.edges[0]?.node?.status || 'Unknown';
+
     console.log(
       'Candidate satus:',
       candidateStatus,
       'for phone number:',
       request.body.phoneNumber,
     );
+
     return { status: candidateStatus };
   }
 
@@ -329,6 +367,7 @@ export class ArxChatEndpoint {
   @UseGuards(JwtAuthGuard)
   async getCandidateIdsByPhoneNumbers(@Req() request: any): Promise<object> {
     const apiToken = request.headers.authorization.split(' ')[1];
+
     console.log(
       'Going to get candidate by phone Number for :',
       request.body.phoneNumber,
@@ -337,10 +376,12 @@ export class ArxChatEndpoint {
       this.workspaceQueryService,
     ).getPersonDetailsByPhoneNumber(request.body.phoneNumber, apiToken);
     const candidateId = personObj?.candidates?.edges[0]?.node?.id;
+
     console.log(
       'candidateId to fetch all candidateby phonenumber:',
       candidateId,
     );
+
     return { candidateId: candidateId };
   }
 
@@ -349,6 +390,7 @@ export class ArxChatEndpoint {
   async getCandidateIdsByHiringNaukriURL(@Req() request: any): Promise<object> {
     try {
       const apiToken = request.headers.authorization.split(' ')[1];
+
       console.log(
         'Going to get candidate by hiring-naukri-url :',
         request?.body?.hiringNaukriUrl,
@@ -361,17 +403,22 @@ export class ArxChatEndpoint {
         },
       });
       const response = await axiosRequest(graphqlQueryObj, apiToken);
+
       console.log('Fetched candidate by candidate ID:', response?.data);
       const candidateObj = response?.data?.data?.candidates?.edges[0]?.node;
+
       console.log('Fetched candidate by candidate OB:', candidateObj);
       const candidateId = candidateObj?.id;
+
       console.log(
         'candidateId to fetch all candidateby hiring-naukri:',
         candidateId,
       );
+
       return { candidateId };
     } catch (err) {
       console.log('Error in fetching candidate by hiring-naukri-url :', err);
+
       return { candidateId: null };
     }
   }
@@ -381,6 +428,7 @@ export class ArxChatEndpoint {
   async getCandidateIdsByResdexNaukriURL(@Req() request: any): Promise<object> {
     try {
       const apiToken = request.headers.authorization.split(' ')[1];
+
       console.log(
         'Going to get candidate esdex-naukri-ur :',
         request.body.resdexNaukriUrl,
@@ -393,17 +441,22 @@ export class ArxChatEndpoint {
         },
       });
       const response = await axiosRequest(graphqlQueryObj, apiToken);
+
       console.log('Fetched candidate by candidate ID:', response?.data);
       const candidateObj = response?.data?.data?.candidates?.edges[0]?.node;
+
       console.log('Fetched candidate by candidate Obj ID:', candidateObj);
       const candidateId = candidateObj?.id;
+
       console.log(
         'candidateId to fetch all candidateby resdex-naukri:',
         candidateId,
       );
+
       return { candidateId };
     } catch (err) {
       console.log('Error in fetching candidate by resdex-naukri-url:', err);
+
       return { candidateId: null };
     }
   }
@@ -428,9 +481,11 @@ export class ArxChatEndpoint {
       const candidateId =
         response?.data?.data?.people?.edges[0]?.node?.candidates?.edges[0]?.node
           ?.id || null;
+
       return { candidateId };
     } catch (err) {
       console.error('Error in getCandidateByUniqueStringKey:', err);
+
       return { candidateId: null };
     }
   }
@@ -441,6 +496,7 @@ export class ArxChatEndpoint {
     try {
       const apiToken = request.headers.authorization.split(' ')[1];
       const { candidateIds } = request.body;
+
       console.log('going to refresh chats');
       console.log('Fetching job IDs for candidates:', candidateIds);
       // const graphqlQuery = JSON.stringify({
@@ -458,6 +514,7 @@ export class ArxChatEndpoint {
       const results = await new UpdateChat(
         this.workspaceQueryService,
       ).processCandidatesChatsGetStatuses(apiToken, jobIds, candidateIds);
+
       console.log(
         'Have received results and will try and update the sheets also from the controlelr',
       );
@@ -469,6 +526,7 @@ export class ArxChatEndpoint {
       return { status: 'Success' };
     } catch (err) {
       console.error('Error in countChats:', err);
+
       return { status: 'Failed', error: err };
     }
   }
@@ -477,15 +535,19 @@ export class ArxChatEndpoint {
   @UseGuards(JwtAuthGuard)
   async refreshChats(@Req() request: any): Promise<object> {
     const apiToken = request.headers.authorization.split(' ')[1];
+
     try {
       const { candidateIds } = request.body;
+
       console.log('going to refresh chat counts by candidate Ids');
       await new UpdateChat(
         this.workspaceQueryService,
       ).updateCandidatesWithChatCount(candidateIds, apiToken);
+
       return { status: 'Success' };
     } catch (err) {
       console.error('Error in refresh-chat-counts-by-candi chats:', err);
+
       return { status: 'Failed', error: err };
     }
   }
@@ -496,6 +558,7 @@ export class ArxChatEndpoint {
     try {
       const { candidateIds } = request.body;
       const apiToken = request.headers.authorization.split(' ')[1];
+
       console.log(
         'going to refresh chat counts by candidate Ids',
         candidateIds,
@@ -507,29 +570,33 @@ export class ArxChatEndpoint {
       console.log(
         'This is the response in create createShortlistDocument shortlist',
       );
+
       return { status: 'Success' };
     } catch (err) {
       console.error('Error in create_gmail_draft_shortlist chats:', err);
+
       return { status: 'Failed', error: err };
     }
   }
+
   @Post('test-arxena-connection')
   @UseGuards(JwtAuthGuard)
   async testArxenaConnection(@Req() request: any): Promise<object> {
     try {
       const apiToken = request.headers.authorization.split(' ')[1];
-      console.log(
-        'going to test arxena connection',
-      );
+
+      console.log('going to test arxena connection');
       await new UpdateChat(this.workspaceQueryService).testArxenaConnection(
         apiToken,
       );
       console.log(
         'This is the response in create testArxenaConnection testArxenaConnection',
       );
+
       return { status: 'Success' };
     } catch (err) {
       console.error('Error in testArxenaConnection chats:', err);
+
       return { status: 'Failed', error: err };
     }
   }
@@ -540,6 +607,7 @@ export class ArxChatEndpoint {
     try {
       const { candidateIds } = request.body;
       const apiToken = request.headers.authorization.split(' ')[1];
+
       console.log(
         'going to refresh chat counts by candidate Ids',
         candidateIds,
@@ -550,9 +618,11 @@ export class ArxChatEndpoint {
       console.log(
         'This is the response in create chatBasedShortlistDelivery shortlist',
       );
+
       return { status: 'Success' };
     } catch (err) {
       console.error('Error in create_gmail_draft_shortlist chats:', err);
+
       return { status: 'Failed', error: err };
     }
   }
@@ -563,6 +633,7 @@ export class ArxChatEndpoint {
     try {
       const { candidateIds } = request.body;
       const apiToken = request.headers.authorization.split(' ')[1];
+
       console.log(
         'going to refresh chat counts by candidate Ids',
         candidateIds,
@@ -570,12 +641,15 @@ export class ArxChatEndpoint {
       const createGmailBasedShortlist = await new UpdateChat(
         this.workspaceQueryService,
       ).createGmailDraftShortlist(candidateIds, apiToken);
+
       console.log(
         'This is the response in create chatGmailDraftShortlist shortlist',
       );
+
       return { status: 'Success' };
     } catch (err) {
       console.error('Error in create_gmail_draft_shortlist chats:', err);
+
       return { status: 'Failed', error: err };
     }
   }
@@ -587,13 +661,16 @@ export class ArxChatEndpoint {
       console.log('Create shortlist called');
       const { candidateIds } = request.body;
       const apiToken = request.headers.authorization.split(' ')[1];
+
       await new UpdateChat(this.workspaceQueryService).createShortlist(
         candidateIds,
         apiToken,
       );
+
       return { status: 'Success' };
     } catch (err) {
       console.error('Error creating shortlist:', err);
+
       return { status: 'Failed', error: err };
     }
   }
@@ -605,13 +682,16 @@ export class ArxChatEndpoint {
       console.log('Create video interview called');
       const apiToken = request.headers.authorization.split(' ')[1];
       const jobId = request.body.jobId;
+
       await new UpdateChat(this.workspaceQueryService).createInterviewVideos(
         jobId,
         apiToken,
       );
+
       return { status: 'Success' };
     } catch (err) {
       console.log('Error creating interview videos:', err);
+
       return { status: 'Failed', error: err };
     }
   }
@@ -644,12 +724,14 @@ export class ArxChatEndpoint {
         response?.data?.data?.candidates?.edges[0]?.node?.id || null;
 
       console.log(`Fetched candidateId for ${type}: ${candidateId}`);
+
       return { candidateId };
     } catch (err) {
       console.error(
         `Error fetching candidate by ${request.body.resdexNaukriUrl ? 'resdex' : 'hiring'}-naukri-url:`,
         err,
       );
+
       return { candidateId: null };
     }
   }
@@ -665,7 +747,9 @@ export class ArxChatEndpoint {
     const { people, candidateJob } = await new CandidateEngagementArx(
       this.workspaceQueryService,
     ).fetchSpecificPeopleToEngageAcrossAllChatControls(chatControl, apiToken);
+
     console.log('All people length:', people?.length);
+
     return people;
   }
 
@@ -683,7 +767,9 @@ export class ArxChatEndpoint {
     const allPeople = await new FilterCandidates(
       this.workspaceQueryService,
     ).fetchAllPeopleByCandidatePeopleIds([person.id], apiToken);
+
     console.log('All people length:', allPeople?.length);
+
     return allPeople;
   }
 
@@ -703,17 +789,22 @@ export class ArxChatEndpoint {
       apiToken,
     );
     const candidateObj = candidateObjresponse?.data?.data;
+
     console.log('candidate objk1:', candidateObj);
 
     const candidateNode =
       candidateObjresponse?.data?.data?.candidates?.edges[0]?.node;
+
     if (!candidateNode) {
       console.log('Candidate not found');
+
       return { status: 'Failed', message: 'Candidate not found' };
     }
     const personId = candidateNode?.people?.id;
+
     if (!personId) {
       console.log('Person ID not found');
+
       return { status: 'Failed', message: 'Person ID not found' };
     }
 
@@ -725,28 +816,34 @@ export class ArxChatEndpoint {
     console.log('Going to try and delete candidate');
     try {
       const response = await axiosRequest(graphqlQueryObj, apiToken);
+
       console.log('Deleted candidate:', response.data);
     } catch (err) {
       console.log(
         'Error deleting candidate:',
         err.response?.data || err.message,
       );
+
       return { status: 'Failed', message: 'Error deleting candidate' };
     }
     const graphqlQueryObjToDeletePerson = JSON.stringify({
       query: graphqlMutationToDeleteManyPeople,
       variables: { filter: { id: { in: [personId] } } },
     });
+
     console.log('Going to try and delete person');
     try {
       const response = await axiosRequest(
         graphqlQueryObjToDeletePerson,
         apiToken,
       );
+
       console.log('Deleted person:', response.data);
+
       return { status: 'Success' };
     } catch (err) {
       console.log('Error deleting person:', err.response?.data || err.message);
+
       return { status: 'Failed', message: 'Error deleting person' };
     }
   }
@@ -756,6 +853,7 @@ export class ArxChatEndpoint {
   async deletePeopleFromPersonIds(@Req() request: any): Promise<object> {
     const personId = request.body.personId;
     const apiToken = request.headers.authorization.split(' ')[1];
+
     console.log('personId to delete:', personId);
     const graphqlQueryObjToFetchPerson = JSON.stringify({
       query: graphqlQueryToFindManyPeople,
@@ -766,17 +864,24 @@ export class ArxChatEndpoint {
       apiToken,
     );
     const personObj = personresponse?.data?.data;
+
     console.log('personresponse objk1:', personObj);
     const personNode = personresponse?.data?.data?.people?.edges[0]?.node;
+
     if (!personNode) {
-      console.log('Person not found so cant do things in dlete peopel from person ids');
+      console.log(
+        'Person not found so cant do things in dlete peopel from person ids',
+      );
+
       return { status: 'Failed', message: 'Candidate not found' };
     }
     const candidateId = personNode?.candidates?.edges[0].node.id;
+
     console.log('personNode:', personNode);
     console.log('candidateId:', candidateId);
     if (!candidateId) {
       console.log('candidateId ID not found');
+
       return { status: 'Failed', message: 'candidateId ID not found' };
     }
     console.log('candidateId ID:', candidateId);
@@ -784,31 +889,38 @@ export class ArxChatEndpoint {
       query: graphqlMutationToDeleteManyCandidates,
       variables: { filter: { id: { in: [candidateId] } } },
     });
+
     console.log('Going to try and delete candidate');
     try {
       const response = await axiosRequest(graphqlQueryObj, apiToken);
+
       console.log('Deleted candidate:', response.data);
     } catch (err) {
       console.log(
         'Error deleting candidate:',
         err.response?.data || err.message,
       );
+
       return { status: 'Failed', message: 'Error deleting candidate' };
     }
     const graphqlQueryObjToDeletePerson = JSON.stringify({
       query: graphqlMutationToDeleteManyPeople,
       variables: { filter: { id: { in: [personId] } } },
     });
+
     console.log('Going to try and delete person');
     try {
       const response = await axiosRequest(
         graphqlQueryObjToDeletePerson,
         apiToken,
       );
+
       console.log('Deleted person:', response.data);
+
       return { status: 'Success' };
     } catch (err) {
       console.log('Error deleting person:', err.response?.data || err.message);
+
       return { status: 'Failed', message: 'Error deleting person' };
     }
   }
@@ -849,6 +961,7 @@ export class ArxChatEndpoint {
           query: graphqlMutationToDeleteManyCandidates,
           variables: { filter: { id: { in: candidateIds } } },
         });
+
         await axiosRequest(graphqlQueryObjDeleteCandidates, apiToken);
 
         // Delete associated people in bulk
@@ -856,6 +969,7 @@ export class ArxChatEndpoint {
           query: graphqlMutationToDeleteManyPeople,
           variables: { filter: { id: { in: personIdsFromCandidates } } },
         });
+
         await axiosRequest(graphqlQueryObjDeletePeople, apiToken);
 
         results.succeeded.push(...candidateIds);
@@ -890,6 +1004,7 @@ export class ArxChatEndpoint {
           query: graphqlMutationToDeleteManyCandidates,
           variables: { filter: { id: { in: candidateIdsFromPeople } } },
         });
+
         await axiosRequest(graphqlQueryObjDeleteCandidates, apiToken);
 
         // Then delete people
@@ -897,6 +1012,7 @@ export class ArxChatEndpoint {
           query: graphqlMutationToDeleteManyPeople,
           variables: { filter: { id: { in: personIds } } },
         });
+
         await axiosRequest(graphqlQueryObjDeletePeople, apiToken);
 
         results.succeeded.push(...personIds);
@@ -936,6 +1052,7 @@ export class ArxChatEndpoint {
       const personObj: PersonNode = await new FilterCandidates(
         this.workspaceQueryService,
       ).getPersonDetailsByPhoneNumber(request.body.phoneNumberFrom, apiToken);
+
       console.log('Person object receiveed::', personObj);
       const checkHumanLike = await new HumanLikeLLM(
         this.workspaceQueryService,
@@ -943,7 +1060,9 @@ export class ArxChatEndpoint {
         request.body.contentObj,
         apiToken,
       );
+
       console.log('checkHumanLike:', checkHumanLike);
+
       return { status: 'Success' };
     } catch (err) {
       return { status: err };
@@ -955,8 +1074,9 @@ export class ArxChatEndpoint {
   async updateDeliveryStatus(@Req() request: any): Promise<object> {
     const apiToken = request.headers.authorization.split(' ')[1];
     const listOfMessagesIds: string[] = request.body.listOfMessagesIds;
+
     try {
-      for (let id of listOfMessagesIds) {
+      for (const id of listOfMessagesIds) {
         const variablesToUpdateDeliveryStatus = {
           idToUpdate: id,
           input: {
@@ -973,6 +1093,7 @@ export class ArxChatEndpoint {
           graphqlQueryObjForUpdationForDeliveryStatus,
           apiToken,
         );
+
         console.log(
           'responseOfDeliveryStatus::',
           responseOfDeliveryStatus?.data,
@@ -982,6 +1103,7 @@ export class ArxChatEndpoint {
           '---------------DELIVERY STATUS UPDATE DONE-----------------------',
         );
       }
+
       return { status: 'Success' };
     } catch (err) {
       return { status: err };

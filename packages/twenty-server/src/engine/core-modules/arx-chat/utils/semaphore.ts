@@ -1,4 +1,3 @@
-
 export class Semaphore {
   private permits: number;
   private tasks: (() => void)[] = [];
@@ -7,7 +6,7 @@ export class Semaphore {
   }
 
   async acquire(): Promise<void> {
-    return new Promise(resolve => {
+    return new Promise((resolve) => {
       if (this.permits > 0) {
         this.permits--;
         resolve();
@@ -22,6 +21,7 @@ export class Semaphore {
     if (this.tasks.length > 0 && this.permits > 0) {
       this.permits--;
       const nextTask = this.tasks.shift();
+
       nextTask?.();
     }
   }

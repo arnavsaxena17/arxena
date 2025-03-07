@@ -1,13 +1,4 @@
-
 // Define the possible roles in the chat
-export type ChatRole = "system" | "user" | "tool" | "assistant";
-
-// Interface for chat message without tool call
-export interface ChatMessage {
-  role: ChatRole;
-  content: string | null;
-  name?: string; // Optional, only for tool messages
-}
 
 export interface ChatTableProps {
   individuals: PersonNode[];
@@ -15,19 +6,45 @@ export interface ChatTableProps {
   unreadMessages: UnreadMessageListManyCandidates;
   onIndividualSelect: (id: string) => void;
   onSelectionChange?: (selectedIds: string[]) => void;
-
 }
+
 export interface JobDropdownProps {
   jobs: Job[];
   selectedJob: string;
   onJobChange: (jobId: string) => void;
 }
 
+export type JobProcessStage = {
+  id: string;
+  name: string;
+  order: number;
+  actions?: string[];
+  JobProcessStageName?: 'APPLICATION' | 'INTERVIEW' | 'OFFER' | 'ONBOARDING';
+  JobProcessStageStatus?: 'PENDING' | 'COMPLETED' | 'IN_PROGRESS';
+};
 
+export type JobProcess = {
+  jobId: string;
+  clientId?: string;
+  stages: JobProcessStage[];
+  createdAt: Date;
+  updatedAt: Date;
+};
 
+export type JobProcessModificationStage = Omit<JobProcessStage, 'id'>;
+
+export type JobProcessModifications = {
+  JobProcessModificationType: 'ADD' | 'REMOVE' | 'UPDATE';
+  JobProcessModificationStage?: JobProcessModificationStage;
+};
+
+export type JobProcessModificationsType = {
+  jobId: string;
+  JobProcessModifications: JobProcessModifications;
+};
 
 export interface Name {
-  firstName: string | '',
+  firstName: string | '';
   lastName: string | '';
 }
 
@@ -48,7 +65,6 @@ export enum MaritalStatus {
   MARRIED = 'Married',
   SINGLE = 'Single',
   SINGLE_UNMARRIED = 'Single/unmarried',
-
   NA = 'NA',
 }
 
@@ -64,10 +80,19 @@ export enum NoticeStatus {
 export interface ColumnDefinition {
   key: string;
   header: string;
-  type: 'string' | 'number' | 'date' | 'enum' | 'boolean' | 'array' | 'url' | 'object';
+  type:
+    | 'string'
+    | 'number'
+    | 'date'
+    | 'enum'
+    | 'boolean'
+    | 'array'
+    | 'url'
+    | 'object';
   enum?: any;
   format?: (value: any) => string;
 }
+
 export interface ProcessCandidatesJobData {
   data: UserProfile[];
   jobId: string;
@@ -88,13 +113,15 @@ export const columnDefinitions: ColumnDefinition[] = [
     key: 'email_address',
     header: 'Email',
     type: 'array',
-    format: (value: string[]) => (Array.isArray(value) ? value[0] || '' : value || ''),
+    format: (value: string[]) =>
+      Array.isArray(value) ? value[0] || '' : value || '',
   },
   {
     key: 'phone_numbers',
     header: 'Phone',
     type: 'array',
-    format: (value: string[]) => (Array.isArray(value) ? value[0] || '' : value || ''),
+    format: (value: string[]) =>
+      Array.isArray(value) ? value[0] || '' : value || '',
   },
   {
     key: 'job_title',
@@ -134,14 +161,18 @@ export const columnDefinitions: ColumnDefinition[] = [
     header: 'Gender',
     type: 'enum',
     enum: Gender,
-    format: (value: string) => (Object.values(Gender).includes(value as Gender) ? value : Gender.NA),
+    format: (value: string) =>
+      Object.values(Gender).includes(value as Gender) ? value : Gender.NA,
   },
   {
     key: 'marital_status',
     header: 'Marital Status',
     type: 'enum',
     enum: MaritalStatus,
-    format: (value: string) => (Object.values(MaritalStatus).includes(value as MaritalStatus) ? value : MaritalStatus.NA),
+    format: (value: string) =>
+      Object.values(MaritalStatus).includes(value as MaritalStatus)
+        ? value
+        : MaritalStatus.NA,
   },
   {
     key: 'inferred_salary',
@@ -190,7 +221,10 @@ export const columnDefinitions: ColumnDefinition[] = [
     header: 'Notice Period',
     type: 'enum',
     enum: NoticeStatus,
-    format: (value: string) => (Object.values(NoticeStatus).includes(value as NoticeStatus) ? value : NoticeStatus.NA),
+    format: (value: string) =>
+      Object.values(NoticeStatus).includes(value as NoticeStatus)
+        ? value
+        : NoticeStatus.NA,
   },
   {
     key: 'key_skills',
@@ -203,40 +237,38 @@ export const columnDefinitions: ColumnDefinition[] = [
     header: 'UG Degree',
     type: 'string',
     format: (value: string) => value || '',
-
   },
   {
     key: 'education_institute_ug',
     header: 'UG Institute',
     type: 'string',
     format: (value: string) => value || '',
-
   },
   {
     key: 'ug_graduation_year',
     header: 'UG Year',
     type: 'number',
-    format: (value: number) => (value > 1950 && value < 2030 ? value.toString() : ''),
+    format: (value: number) =>
+      value > 1950 && value < 2030 ? value.toString() : '',
   },
   {
     key: 'education_course_pg',
     header: 'PG Degree',
     type: 'string',
     format: (value: string) => value || '',
-
   },
   {
     key: 'education_institute_pg',
     header: 'PG Institute',
     type: 'string',
     format: (value: string) => value || '',
-
   },
   {
     key: 'pg_graduation_year',
     header: 'PG Year',
     type: 'number',
-    format: (value: number) => (value > 1950 && value < 2030 ? value.toString() : ''),
+    format: (value: number) =>
+      value > 1950 && value < 2030 ? value.toString() : '',
   },
   {
     key: 'profile_url',
@@ -261,7 +293,6 @@ export const columnDefinitions: ColumnDefinition[] = [
     header: 'UniqueKey',
     type: 'string',
     format: (value: string) => value || '',
-
   },
   {
     key: 'languages',
@@ -273,7 +304,8 @@ export const columnDefinitions: ColumnDefinition[] = [
     key: 'english_level',
     header: 'English Proficiency',
     type: 'object',
-    format: (value: { level: string; description: string }) => value?.level || '',
+    format: (value: { level: string; description: string }) =>
+      value?.level || '',
   },
   {
     key: 'experience_departments',
@@ -347,7 +379,6 @@ export const columnDefinitions: ColumnDefinition[] = [
     type: 'string',
     format: (value: string) => value || '',
   },
-
 ];
 
 interface Profile {
@@ -541,8 +572,7 @@ interface Person {
     firstName: string;
     lastName: string;
   };
-  linkedinLink: 
-    { primaryLinkLabel: string; primaryLinkUrl: string }
+  linkedinLink: { primaryLinkLabel: string; primaryLinkUrl: string };
   jobTitle: string;
 }
 
@@ -550,10 +580,10 @@ export interface ArxenaCandidateNode {
   name: string;
   engagementStatus: boolean;
   startChat: boolean;
-  phoneNumber:{ primaryPhoneNumber: string; }
-  email:{ primaryEmail: any; }
-  campaign:string
-  source:string
+  phoneNumber: { primaryPhoneNumber: string };
+  email: { primaryEmail: any };
+  campaign: string;
+  source: string;
   startVideoInterviewChat: boolean;
   startMeetingSchedulingChat: boolean;
   uniqueStringKey: string;
@@ -596,7 +626,7 @@ export interface ArxenaJobCandidateNode {
   profileTitle: string;
   name?: string;
   linkedinLink?: string;
-  emails : { primaryEmail: string };
+  emails: { primaryEmail: string };
   uniqueStringKey?: string;
   phones?: { primaryPhoneNumber: string };
   jobTitle?: string;
@@ -631,8 +661,8 @@ export interface ArxenaPersonNode {
     firstName: string;
     lastName: string;
   };
-  linkedinLink?: { primaryLinkLabel: string; primaryLinkUrl: string }
-  displayPicture?: { primaryLinkLabel: string; primaryLinkUrl: string }
+  linkedinLink?: { primaryLinkLabel: string; primaryLinkUrl: string };
+  displayPicture?: { primaryLinkLabel: string; primaryLinkUrl: string };
   emails?: { primaryEmail: string };
   phones?: { primaryPhoneNumber: string };
   uniqueStringKey?: string | null;
@@ -683,17 +713,53 @@ export interface Jobs {
   arxenaSiteId?: string;
 }
 
-// Interface for chat message with tool call
-export interface ToolChatMessage {
-  tool_call_id: string;
-  name: string; // Required for tool messages
-  role: ChatRole;
-  content: string;
+// // Interface for chat message with tool call
+// export interface ToolChatMessage {
+//   tool_call_id: string;
+//   name: string; // Required for tool messages
+//   role: ChatRole;
+//   content: string;
+// }
+
+export interface TemplateComponent {
+  type: string;
+  text: string;
+  format?: string;
+  buttons?: Array<{
+    type: string;
+    text: string;
+    url: string;
+  }>;
 }
 
-// Type for chat history items
-export type ChatHistoryItem = ChatMessage | ToolChatMessage;
+export interface Template {
+  name: string;
+  components: TemplateComponent[];
+  language: string;
+  status: string;
+  category: string;
+  id: string;
+}
 
+export type ChatRole = 'system' | 'user' | 'tool' | 'assistant';
+
+// Interface for chat message without tool call
+// export interface ChatMessage {
+//   role: ChatRole;
+//   content: string | null;
+//   name?: string; // Optional, only for tool messages
+// }
+
+// Type for chat history items
+// export type ChatHistoryItem = ChatMessage | ToolChatMessage;
+
+export type ChatHistoryItem = {
+  role: ChatRole;
+  content: string | null;
+  tool_calls?: any;
+  tool_call_id?: string;
+  name?: string;
+};
 
 export interface AnswerMessageObj {
   questionsId: string;
@@ -701,7 +767,6 @@ export interface AnswerMessageObj {
   position: string;
   candidateId: string;
 }
-
 
 export interface SendAttachment {
   filePath: string;
@@ -729,7 +794,7 @@ export interface BaileysIncomingMessage {
   message: string;
   messageTimeStamp: string;
   phoneNumberFrom: string;
-  baileysMessageId:string;
+  baileysMessageId: string;
   fromName: string;
   phoneNumberTo: string;
 }
@@ -744,14 +809,13 @@ export interface whatappUpdateMessageObjType {
   phoneNumberTo: string;
   messageType: string;
   whatsappDeliveryStatus: string;
-  whatsappMessageType:string;
-  lastEngagementChatControl:string
+  whatsappMessageType: string;
+  lastEngagementChatControl: string;
 
   whatsappMessageId: string;
   type?: string;
   databaseFilePath?: string;
 }
-
 
 export interface sendWhatsappTemplateMessageObjectType {
   template_name: string;
@@ -765,19 +829,13 @@ export interface sendWhatsappTemplateMessageObjectType {
   jobLocation: string;
 }
 
-
 export interface WhatsAppMessages {
   edges: WhatsAppMessagesEdge[];
 }
 
-
-
 export interface ClientInterviews {
-
   edges: ClientInterviewEdge[];
 }
-
-
 
 export interface CandidatesEdge {
   node: CandidateNode;
@@ -787,19 +845,15 @@ export interface ClientInterviewEdge {
   node: ClientInterviewNode;
 }
 
-
-export interface ClientInterviewNode{
+export interface ClientInterviewNode {
   id: string;
   name: string;
   createdAt: string;
   updatedAt: string;
-  clientInterviewCompleted:boolean
+  clientInterviewCompleted: boolean;
   jobId: boolean;
   candidateId: boolean;
-
 }
-
-
 
 export interface Candidates {
   edges: CandidatesEdge[];
@@ -811,12 +865,12 @@ export interface Candidates {
 // }
 
 export interface PersonNode {
-  phones: {"primaryPhoneNumber":string};
-  emails: {"primaryEmail":string};
+  phones: { primaryPhoneNumber: string };
+  emails: { primaryEmail: string };
   suitabilityDescription?: string;
-  salary:string;
-  city:string;
-  uniqueStringKey:  string;
+  salary: string;
+  city: string;
+  uniqueStringKey: string;
 
   jobTitle: string;
   id: string;
@@ -849,8 +903,6 @@ export interface companyInfoType {
   descriptionOneliner: string;
 }
 
-
-
 export interface jobProfileType {
   name: any;
   jobLocation: string;
@@ -859,17 +911,15 @@ export interface jobProfileType {
   company: companyInfoType;
 }
 
-
 interface Entry {
   id: string;
   changes: any[];
 }
 
 export interface WhatsAppBusinessAccount {
-  object: "whatsapp_business_account";
+  object: 'whatsapp_business_account';
   entry: Entry[];
 }
-
 
 export const emptyCandidateProfileObj: CandidateNode = {
   name: '',
@@ -887,7 +937,7 @@ export const emptyCandidateProfileObj: CandidateNode = {
       descriptionOneliner: '',
     },
     jobLocation: '',
-    jobCode: "",
+    jobCode: '',
     whatsappMessages: {
       edges: [
         {
@@ -905,7 +955,7 @@ export const emptyCandidateProfileObj: CandidateNode = {
             name: '',
             phoneFrom: '',
             messageObj: [],
-            whatsappDeliveryStatus: ''
+            whatsappDeliveryStatus: '',
           },
         },
       ],
@@ -918,11 +968,11 @@ export const emptyCandidateProfileObj: CandidateNode = {
           id: '',
           interviewLink: {
             primaryLinkLabel: '',
-            primaryLinkUrl: ''
+            primaryLinkUrl: '',
           },
           updatedAt: '',
           interviewCompleted: false,
-          interviewStarted: false
+          interviewStarted: false,
         },
       },
     ],
@@ -968,7 +1018,7 @@ export const emptyCandidateProfileObj: CandidateNode = {
           name: '',
           phoneFrom: '',
           messageObj: [],
-          whatsappDeliveryStatus: ''
+          whatsappDeliveryStatus: '',
         },
       },
     ],
@@ -1002,16 +1052,15 @@ export const emptyCandidateProfileObj: CandidateNode = {
     uniqueStringKey: '',
     name: {
       firstName: '',
-      lastName: ''
+      lastName: '',
     },
     candidates: {
-      edges: []
+      edges: [],
     },
     salary: '',
-    city: ''
-  }
+    city: '',
+  },
 };
-
 
 export interface Attachment {
   __typename: string;
@@ -1037,7 +1086,6 @@ export interface Attachment {
   questionId: string | null;
   answerId: string | null;
 }
-
 
 export interface candidateProfileType {
   first_name: any;
@@ -1090,159 +1138,135 @@ export interface OneUnreadMessage {
   whatsappDeliveryStatus: string;
 }
 
-
-
-
-
 export interface SelectOption {
-    color: string;
-    label: string;
-    position: number;
-    value: string;
+  color: string;
+  label: string;
+  position: number;
+  value: string;
 }
 
-
 export interface CurrentUserResponse {
-    data: {
-      currentUser: {
+  data: {
+    currentUser: {
+      id: string;
+      firstName: string;
+      lastName: string;
+      email: string;
+      canImpersonate: boolean;
+      supportUserHash: string;
+      onboardingStep: string;
+      workspaceMember: {
         id: string;
-        firstName: string;
-        lastName: string;
-        email: string;
-        canImpersonate: boolean;
-        supportUserHash: string;
-        onboardingStep: string;
-        workspaceMember: {
-          id: string;
-          name: {
-            firstName: string;
-            lastName: string;
-          };
-          colorScheme: string;
-          avatarUrl: string;
-          locale: string;
+        name: {
+          firstName: string;
+          lastName: string;
         };
-        defaultWorkspace: {
-          id: string;
-          displayName: string;
-          logo: string;
-          domainName: string;
-          inviteHash: string;
-          allowImpersonation: boolean;
-          subscriptionStatus: string;
-          activationStatus: string;
-          featureFlags: Array<{
-            id: string;
-            key: string;
-            value: boolean;
-            workspaceId: string;
-          }>;
-          currentCacheVersion: number;
-          currentBillingSubscription: {
-            id: string;
-            status: string;
-            interval: string;
-          };
-        };
-        workspaces: Array<{
-          workspace: {
-            id: string;
-            logo: string;
-            displayName: string;
-            domainName: string;
-          };
-        }>;
+        colorScheme: string;
+        avatarUrl: string;
+        locale: string;
       };
+      defaultWorkspace: {
+        id: string;
+        displayName: string;
+        logo: string;
+        domainName: string;
+        inviteHash: string;
+        allowImpersonation: boolean;
+        subscriptionStatus: string;
+        activationStatus: string;
+        featureFlags: Array<{
+          id: string;
+          key: string;
+          value: boolean;
+          workspaceId: string;
+        }>;
+        currentCacheVersion: number;
+        currentBillingSubscription: {
+          id: string;
+          status: string;
+          interval: string;
+        };
+      };
+      workspaces: Array<{
+        workspace: {
+          id: string;
+          logo: string;
+          displayName: string;
+          domainName: string;
+        };
+      }>;
     };
-  }
-  
+  };
+}
+
 export interface BaseField {
-    description?: string;
-    icon?: string;
-    label: string;
-    name: string;
-    objectMetadataId: string;
-    type: FieldType;
-    defaultValue?: any;
+  description?: string;
+  icon?: string;
+  label: string;
+  name: string;
+  objectMetadataId: string;
+  type: FieldType;
+  defaultValue?: any;
 }
 
 export interface TextField extends BaseField {
-    type: 'TEXT';
+  type: 'TEXT';
 }
 
 export interface NumberField extends BaseField {
-    type: 'NUMBER';
+  type: 'NUMBER';
 }
 
 export interface BooleanField extends BaseField {
-    type: 'BOOLEAN';
-    defaultValue?: boolean;
+  type: 'BOOLEAN';
+  defaultValue?: boolean;
 }
 
 export interface DateTimeField extends BaseField {
-    type: 'DATE_TIME';
+  type: 'DATE_TIME';
 }
 
 export interface SelectField extends BaseField {
-    type: 'SELECT';
-    options: SelectOption[];
+  type: 'SELECT';
+  options: SelectOption[];
 }
 
 export interface LinkField extends BaseField {
-    type: 'LINKS';
+  type: 'LINKS';
 }
 
 export interface RawJsonField extends BaseField {
-    type: 'RAW_JSON';
+  type: 'RAW_JSON';
 }
 
-
 export interface ObjectMetadata {
-    id?: string;
-    nameSingular?: string;
-    labelPlural?: string;
-    labelSingular?: string;
-    namePlural?: string;
-    description?: string;
-    icon?: string;
-    fields?: {
-        edges?: Array<{
-            node?: FieldMetadata;
-        }>;
-    };
-
-
+  id?: string;
+  nameSingular?: string;
+  labelPlural?: string;
+  labelSingular?: string;
+  namePlural?: string;
+  description?: string;
+  icon?: string;
+  fields?: {
+    edges?: Array<{
+      node?: FieldMetadata;
+    }>;
+  };
 }
 
 export interface ObjectCreationInput {
-    object?: {
-        description?: string;
-        icon?: string;
-        labelPlural?: string;
-        labelSingular?: string;
-        nameSingular?: string;
-        namePlural?: string;
-    };
+  object?: {
+    description?: string;
+    icon?: string;
+    labelPlural?: string;
+    labelSingular?: string;
+    nameSingular?: string;
+    namePlural?: string;
+  };
 }
-
 
 export interface CreateOneFieldMetadataInput {
-    field: {
-        type: string;
-        name: string;
-        label: string;
-        description?: string;
-        icon?: string;
-        objectMetadataId: string;
-        options?: Array<{
-            color: string;
-            label: string;
-            position: number;
-            value: string;
-        }>;
-    }
-}
-export interface FieldMetadata {
+  field: {
     type: string;
     name: string;
     label: string;
@@ -1250,155 +1274,178 @@ export interface FieldMetadata {
     icon?: string;
     objectMetadataId: string;
     options?: Array<{
-        color: string;
-        label: string;
-        position: number;
-        value: string;
+      color: string;
+      label: string;
+      position: number;
+      value: string;
     }>;
+  };
+}
+export interface FieldMetadata {
+  type: string;
+  name: string;
+  label: string;
+  description?: string;
+  icon?: string;
+  objectMetadataId: string;
+  options?: Array<{
+    color: string;
+    label: string;
+    position: number;
+    value: string;
+  }>;
 }
 export interface CreateOneObjectInput {
-    object: {
-        description: string;
-        icon: string;
-        labelPlural: string;
-        labelSingular: string;
-        nameSingular: string;
-        namePlural: string;
-    }
+  object: {
+    description: string;
+    icon: string;
+    labelPlural: string;
+    labelSingular: string;
+    nameSingular: string;
+    namePlural: string;
+  };
 }
 
 export interface FieldCreationInput {
-    field?: {
-        description?: string;
-        icon?: string;
-        label?: string;
-        name?: string;
-        objectMetadataId?: string;
-        type?: string;
-        options?: Array<{
-            color?: string;
-            label?: string;
-            position?: number;
-            value?: string;
-        }>;
-        defaultValue?: any;
-    };
-}
-
-export interface QueryResponse<T> {
-    data?: {
-        objects?: {
-            edges?: Array<{
-                node?: T;
-            }>;
-        };
-    };
-}
-
-export interface Relation {
-    fromDescription?: string | null;
-    fromIcon?: string;
-    fromLabel?: string;
-    fromName?: string;
-    fromObjectMetadataId?: string;
-    relationType?: "ONE_TO_MANY" | "ONE_TO_ONE" | "MANY_TO_ONE" | "MANY_TO_MANY";
-    toObjectMetadataId?: string;
-    toDescription?: string;
-    toLabel?: string;
-    toIcon?: string;
-    toName?: string;
-    fromFieldMetadataId?: string;
-    toFieldMetadataId?: string;
-
-}
-
-export interface RelationInput {
-    relationMetadata: Relation;
-}
-
-export type FieldType = "SELECT" | "DATE_TIME" | "TEXT" | "NUMBER" | "BOOLEAN" | "LINKS" | "RAW_JSON" | "EMAILS" | "PHONES";
-
-export interface FieldOption {
-    color?: string;
-    label?: string;
-    position?: number;
-    value?: string;
-}
-
-export interface Field {
+  field?: {
     description?: string;
     icon?: string;
     label?: string;
     name?: string;
     objectMetadataId?: string;
-    type?: FieldType;
-    options?: FieldOption[];
+    type?: string;
+    options?: Array<{
+      color?: string;
+      label?: string;
+      position?: number;
+      value?: string;
+    }>;
     defaultValue?: any;
+  };
+}
+
+export interface QueryResponse<T> {
+  data?: {
+    objects?: {
+      edges?: Array<{
+        node?: T;
+      }>;
+    };
+  };
+}
+
+export interface Relation {
+  fromDescription?: string | null;
+  fromIcon?: string;
+  fromLabel?: string;
+  fromName?: string;
+  fromObjectMetadataId?: string;
+  relationType?: 'ONE_TO_MANY' | 'ONE_TO_ONE' | 'MANY_TO_ONE' | 'MANY_TO_MANY';
+  toObjectMetadataId?: string;
+  toDescription?: string;
+  toLabel?: string;
+  toIcon?: string;
+  toName?: string;
+  fromFieldMetadataId?: string;
+  toFieldMetadataId?: string;
+}
+
+export interface RelationInput {
+  relationMetadata: Relation;
+}
+
+export type FieldType =
+  | 'SELECT'
+  | 'DATE_TIME'
+  | 'TEXT'
+  | 'NUMBER'
+  | 'BOOLEAN'
+  | 'LINKS'
+  | 'RAW_JSON'
+  | 'EMAILS'
+  | 'PHONES';
+
+export interface FieldOption {
+  color?: string;
+  label?: string;
+  position?: number;
+  value?: string;
+}
+
+export interface Field {
+  description?: string;
+  icon?: string;
+  label?: string;
+  name?: string;
+  objectMetadataId?: string;
+  type?: FieldType;
+  options?: FieldOption[];
+  defaultValue?: any;
 }
 
 export interface FieldInput {
-    field?: Field;
+  field?: Field;
 }
-
-
 
 // Video Interview Model Types
 export interface VideoInterviewModel {
-    name: string;
-    country: string;
-    language: string;
+  name: string;
+  country: string;
+  language: string;
 }
 
 export interface VideoInterviewTemplate {
-    name: string;
-    videoInterviewModelId: string;
-    jobId: string;
-    introduction?: string;
-    instructions?: string;
+  name: string;
+  videoInterviewModelId: string;
+  jobId: string;
+  introduction?: string;
+  instructions?: string;
 }
 
 // Add country and language mapping types
 export interface CountryNames {
-    [key: string]: string[];
+  [key: string]: string[];
 }
 
 export interface CountryLanguages {
-    [key: string]: string[];
+  [key: string]: string[];
 }
 
-
 export interface EnrichmentField {
-    name: string;
-    type: string;
-    description: string;
-    id: number;
-    enumValues?: string[];
+  name: string;
+  type: string;
+  description: string;
+  id: number;
+  enumValues?: string[];
 }
 
 export interface Enrichment {
-    modelName: string;
-    prompt: string;
-    fields: EnrichmentField[];
-    selectedMetadataFields: string[];
-    selectedModel: string;
-    bestOf?: number;
+  modelName: string;
+  prompt: string;
+  fields: EnrichmentField[];
+  selectedMetadataFields: string[];
+  selectedModel: string;
+  bestOf?: number;
 }
-
-
-
 
 import Anthropic from '@anthropic-ai/sdk';
 import OpenAI from 'openai';
 
 // Define the possible roles in the chat
 
+export const statusesArray = [
+  'SCREENING',
+  'INTERESTED',
+  'NOT_INTERESTED',
+  'NOT_FIT',
+  'CV_SENT',
+  'CV_RECEIVED',
+  'RECRUITER_INTERVIEW',
+  'CLIENT_INTERVIEW',
+  'NEGOTIATION',
+] as const;
 
-
-
-
-export const statusesArray = ['SCREENING', "INTERESTED", "NOT_INTERESTED", "NOT_FIT",'CV_SENT',"CV_RECEIVED",'RECRUITER_INTERVIEW','CLIENT_INTERVIEW','NEGOTIATION'] as const;
-
-export type WhatsappMessageType = "messages" | "media"
+export type WhatsappMessageType = 'messages' | 'media';
 export interface ChatControlNode {
   chatControlType: string;
   nextNodes: string[];
@@ -1408,29 +1455,31 @@ export interface ChatControlNode {
   }[];
 }
 export const allStatusesArray: [string, ...string[]] = [
-  "ONLY_ADDED_NO_CONVERSATION",
-  "CONVERSATION_STARTED_HAS_NOT_RESPONDED",
-  "SHARED_JD_HAS_NOT_RESPONDED",
-  "CANDIDATE_REFUSES_TO_RELOCATE",
-  "STOPPED_RESPONDING_ON_QUESTIONS",
-  "CANDIDATE_SALARY_OUT_OF_RANGE",
-  "CANDIDATE_IS_KEEN_TO_CHAT",
-  "CANDIDATE_HAS_FOLLOWED_UP_TO_SETUP_CHAT",
-  "CANDIDATE_IS_RELUCTANT_TO_DISCUSS_COMPENSATION",
-  "CANDIDATE_DECLINED_OPPORTUNITY",
-  "CONVERSATION_CLOSED_TO_BE_CONTACTED",
+  'ONLY_ADDED_NO_CONVERSATION',
+  'CONVERSATION_STARTED_HAS_NOT_RESPONDED',
+  'SHARED_JD_HAS_NOT_RESPONDED',
+  'CANDIDATE_REFUSES_TO_RELOCATE',
+  'STOPPED_RESPONDING_ON_QUESTIONS',
+  'CANDIDATE_SALARY_OUT_OF_RANGE',
+  'CANDIDATE_IS_KEEN_TO_CHAT',
+  'CANDIDATE_HAS_FOLLOWED_UP_TO_SETUP_CHAT',
+  'CANDIDATE_IS_RELUCTANT_TO_DISCUSS_COMPENSATION',
+  'CANDIDATE_DECLINED_OPPORTUNITY',
+  'CONVERSATION_CLOSED_TO_BE_CONTACTED',
 ];
 
-export type allStatuses = typeof allStatusesArray[number];
-export type statuses = typeof statusesArray[number];
+export type allStatuses = (typeof allStatusesArray)[number];
+export type statuses = (typeof statusesArray)[number];
 
-export type chatControlType = "startChat" | "allStartedAndStoppedChats" | "startVideoInterviewChat" | "startMeetingSchedulingChat";
+export type chatControlType =
+  | 'startChat'
+  | 'allStartedAndStoppedChats'
+  | 'startVideoInterviewChat'
+  | 'startMeetingSchedulingChat';
 export interface ChatControlsObjType {
   chatControlType: chatControlType;
   chatMessageTemplate?: string;
 }
-
-
 
 // Type for chat history items
 
@@ -1451,7 +1500,6 @@ export interface MessageNode {
   whatsappDeliveryStatus: string;
 }
 
-
 export interface chatMessageType {
   messages: { [x: string]: any }[];
   phoneNumberFrom: string;
@@ -1460,31 +1508,30 @@ export interface chatMessageType {
 }
 
 export interface SendWhatsappUtilityMessageObjectType {
-  discussionDate?: string | "";
-  nextStep?: string | "";
-  availableDate?: string | "";
-  template_name: string | "";
-  recipient: string | "";
+  discussionDate?: string | '';
+  nextStep?: string | '';
+  availableDate?: string | '';
+  template_name: string | '';
+  recipient: string | '';
 
-  candidateSource:string;
-  recruiterName: string | "";
-  recruiterFirstName: string | "";
-  candidateFirstName: string | "";
-  recruiterJobTitle: string | "";
-  recruiterCompanyName: string | "";
-  recruiterCompanyDescription: string | "";
-  descriptionOneliner:string | "";
-  companyName: string | "";
-  jobPositionName: string | "";
+  candidateSource: string;
+  recruiterName: string | '';
+  recruiterFirstName: string | '';
+  candidateFirstName: string | '';
+  recruiterJobTitle: string | '';
+  recruiterCompanyName: string | '';
+  recruiterCompanyDescription: string | '';
+  descriptionOneliner: string | '';
+  companyName: string | '';
+  jobPositionName: string | '';
   videoInterviewLink: string;
-  jobCode: string | "";
-  jobLocation: string | "";
+  jobCode: string | '';
+  jobLocation: string | '';
 }
 
 export interface WhatsAppMessagesEdge {
   node: MessageNode;
 }
-
 
 export interface Candidate {
   stopChat: any;
@@ -1492,7 +1539,7 @@ export interface Candidate {
   startChatCompleted: any;
   updatedAt: string | number | Date;
   candConversationStatus: string;
-startMeetingSchedulingChat: any;
+  startMeetingSchedulingChat: any;
   videoInterview?: videoInterview;
   id: string;
   name: string;
@@ -1506,7 +1553,6 @@ startMeetingSchedulingChat: any;
     };
   };
 }
-
 
 export interface videoInterview {
   edges: videoInterviewEdge[];
@@ -1525,17 +1571,14 @@ export interface videoInterviewNode {
 }
 
 export interface InterviewLink {
-   primaryLinkLabel: string; primaryLinkUrl: string 
-  };
-
-
-
-
+  primaryLinkLabel: string;
+  primaryLinkUrl: string;
+}
 
 export interface CandidateNode {
   updatedAt: string | number | Date;
   videoInterview: videoInterview;
-  whatsappProvider: string | "application03";
+  whatsappProvider: string | 'application03';
   name: string;
   id: string;
   engagementStatus: boolean;
@@ -1545,16 +1588,16 @@ export interface CandidateNode {
   phoneNumber: string;
   email: string;
   input: string;
-  candConversationStatus?:string;
+  candConversationStatus?: string;
   startChat: boolean;
   stopChat: boolean;
-  status:string;
+  status: string;
   whatsappMessages: WhatsAppMessages;
   emailMessages: EmailMessages;
   jobs: Jobs;
   candidateReminders: Reminders;
   clientInterview?: ClientInterviews;
-  person : PersonNode
+  person: PersonNode;
 }
 
 // export interface ArxJobs {
@@ -1601,7 +1644,7 @@ export interface EmailMessageNode {
   // messageType: string;
   messageThreadId: string;
   receivedAt: string;
-  
+
   updatedAt: string;
   createdAt: string;
 }
@@ -1658,7 +1701,7 @@ export interface Jobs {
   id: string;
   recruiterId: string;
   jobLocation: string;
-  jobCode:string;
+  jobCode: string;
   company: company;
   createdAt?: string;
   interviewSchedule?: InterviewSchedules;
@@ -1674,18 +1717,13 @@ export interface InterviewScheduleEdge {
   node: InterviewSchedule;
 }
 
-
-export interface InterviewSchedule{
-  meetingType:string;
-  jobId:string;
-  id:string;
-  slotsAvailable:any;
-  interviewTime:any;
-
+export interface InterviewSchedule {
+  meetingType: string;
+  jobId: string;
+  id: string;
+  slotsAvailable: any;
+  interviewTime: any;
 }
-
-
-
 
 interface Entry {
   id: string;
@@ -1696,8 +1734,6 @@ export interface WhatsAppBusinessAccount {
   object: 'whatsapp_business_account';
   entry: Entry[];
 }
-
-
 
 export interface Attachment {
   __typename: string;
@@ -1724,11 +1760,6 @@ export interface Attachment {
   answerId: string | null;
 }
 
-
-
-
-
-
 export interface Question {
   attachments: any;
   id: string;
@@ -1748,26 +1779,26 @@ export const emptyInterviewData: InterviewData = {
     name: '',
     email: '',
     phoneNumber: '',
-    jobTitle: ''
+    jobTitle: '',
   },
   id: '',
   name: '',
   candidate: {
     id: '',
     jobs: {
-    id: '',
-    name: '',
-    recruiterId: '',
-    companyName: '',
+      id: '',
+      name: '',
+      recruiterId: '',
+      companyName: '',
     },
     people: {
       id: '',
-    name: {
-      firstName: '',
-      lastName: '',
-    },
-    email: '',
-    phone: '',
+      name: {
+        firstName: '',
+        lastName: '',
+      },
+      email: '',
+      phone: '',
     },
   },
   videoInterview: {
@@ -1776,37 +1807,35 @@ export const emptyInterviewData: InterviewData = {
     introduction: '',
     instructions: '',
     videoInterviewQuestions: {
-    edges: [],
+      edges: [],
     },
   },
-  };
+};
 
+export interface RecruiterProfileType {
+  jobTitle: string;
+  companyName: string;
+  companyDescription: string;
+  firstName: string;
+  lastName: string;
+  name: string;
+  email: string;
+  phoneNumber: string;
+}
 
-  export interface RecruiterProfileType {
-    jobTitle: string;
-    companyName: string;
-    companyDescription: string;
-    firstName: string;
-    lastName: string;
-    name: string;
-    email: string;
-    phoneNumber: string;
-  }
-  
-
-  export interface InterviewDataJobTemplate {
-    job: Job;
-    videoInterviewTemplate: {
-      videoInterviewQuestions: {
-        edges: Array<{
-          node: videoInterviewQuestion;
-        }>;
-      };
+export interface InterviewDataJobTemplate {
+  job: Job;
+  videoInterviewTemplate: {
+    videoInterviewQuestions: {
+      edges: Array<{
+        node: videoInterviewQuestion;
+      }>;
     };
-  }
+  };
+}
 
 export interface InterviewData {
-  recruiterProfile:RecruiterProfileType,
+  recruiterProfile: RecruiterProfileType;
   id: string;
   name: string;
   candidate: {
@@ -1854,7 +1883,6 @@ export interface VideoInterviewAttachment {
   name: string;
 }
 
-
 export interface GetInterviewDetailsResponse {
   responseFromInterviewRequests: InterviewData;
   videoInterviewAttachmentResponse: VideoInterviewAttachment;
@@ -1876,13 +1904,6 @@ export interface StartInterviewPageProps {
   InterviewData: InterviewData;
   introductionVideoData: VideoInterviewAttachment;
 }
-
-
-
-
-
-
-
 
 interface videoInterviewResponse {
   id: string;
@@ -1913,13 +1934,11 @@ interface Job {
 }
 
 export interface JobNode {
-  node:{
-
+  node: {
     id: string;
     name: string;
-  }
+  };
 }
-
 
 export interface VideoInterviewResponseViewerProps {
   candidateId?: string;

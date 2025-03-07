@@ -1,470 +1,750 @@
 import { SchedulerRegistry } from '@nestjs/schedule';
+
 import fuzzy from 'fuzzy';
+import { ChatCompletionTool } from 'openai/resources';
+import {
+  allStatusesArray,
+  ChatControlsObjType,
+  graphqlQueryToCreateOneClientInterview,
+  graphqlQueryToCreateOneReminder,
+  Jobs,
+  PersonNode,
+  RecruiterProfileType,
+  statusesArray,
+} from 'twenty-shared';
+import { z } from 'zod';
+
+import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/update-chat';
+import { getRecruiterProfileByJob } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import { ScheduledJobService } from 'src/engine/core-modules/arx-chat/services/scheduled-job.service';
+import {
+  addHoursInDate,
+  axiosRequest,
+  toIsoString,
+} from 'src/engine/core-modules/arx-chat/utils/arx-chat-agent-utils';
+import { CalendarEmailService } from 'src/engine/core-modules/arx-chat/utils/calendar-email';
+import {
+  EmailTemplates,
+  SendEmailFunctionality,
+} from 'src/engine/core-modules/arx-chat/utils/send-gmail';
+import { CalendarEventType } from 'src/engine/core-modules/calendar-events/services/calendar-data-objects-types';
 import { GmailMessageData } from 'src/engine/core-modules/gmail-sender/services/gmail-sender-objects-types';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
-import { allStatusesArray, ChatControlsObjType, graphqlQueryToCreateOneClientInterview, graphqlQueryToCreateOneReminder, Jobs, PersonNode, RecruiterProfileType, statusesArray } from 'twenty-shared';
-import { z } from "zod";
-import { CalendarEventType } from '../../../calendar-events/services/calendar-data-objects-types';
-import { addHoursInDate, axiosRequest, toIsoString } from '../../utils/arx-chat-agent-utils';
-import { CalendarEmailService } from '../../utils/calendar-email';
-import { EmailTemplates, SendEmailFunctionality } from '../../utils/send-gmail';
-import { FilterCandidates } from '../candidate-engagement/filter-candidates';
-import { getRecruiterProfileByJob } from '../recruiter-profile';
+
 import { ToolCallsProcessing } from './tool-calls-processing';
 
 const commaSeparatedStatuses = statusesArray.join(', ');
 
-const availableTimeSlots = '12PM-3PM, 4PM -6PM on the 24th and 25th August 2024.';
-
+const availableTimeSlots =
+  '12PM-3PM, 4PM -6PM on the 24th and 25th August 2024.';
 
 export class ToolCallingAgents {
-
-  constructor( private readonly workspaceQueryService: WorkspaceQueryService ) {}
+  constructor(private readonly workspaceQueryService: WorkspaceQueryService) {}
   currentConversationStage = z.object({
-    stageOfTheConversation: z.enum(allStatusesArray)
+    stageOfTheConversation: z.enum(allStatusesArray),
   });
-  
-  getAvailableFunctions(candidateJob:Jobs, apiToken: string) {
+
+  getAvailableFunctions(candidateJob: Jobs, apiToken: string) {
     return {
-      share_jd: (inputs: any, personNode: PersonNode, candidateJob:Jobs, chatControl: ChatControlsObjType, apiToken: string) => 
-        this.shareJD(inputs, personNode,candidateJob, chatControl, apiToken),
-      
-      update_candidate_profile: (inputs: any, personNode: PersonNode, candidateJob:Jobs, chatControl: ChatControlsObjType, apiToken: string) => 
-        this.updateCandidateProfile(inputs, personNode, candidateJob,apiToken),
-      
-      update_answer: (inputs: { question: string; answer: string }, personNode: PersonNode, candidateJob:Jobs, chatControl: ChatControlsObjType, apiToken: string) => 
-        this.updateAnswer(inputs, personNode,candidateJob, apiToken),
-      
-      schedule_meeting: (inputs: any, personNode: PersonNode,candidateJob:Jobs,  chatControl: ChatControlsObjType, apiToken: string) => 
-        this.scheduleMeeting(inputs, personNode, candidateJob, apiToken),
-      
-      send_email: (inputs: any, personNode: PersonNode,candidateJob:Jobs,  chatControl: ChatControlsObjType, apiToken: string) => 
-        this.sendEmail(inputs, personNode,candidateJob, apiToken),
-      
-      create_reminder: (inputs: { reminderDuration: string }, personNode: PersonNode, candidateJob:Jobs, chatControl: ChatControlsObjType, apiToken: string) => 
-        this.createReminder(inputs, personNode, candidateJob, apiToken),
-      
-      share_interview_link: (inputs: any, personNode: PersonNode, candidateJob:Jobs, chatControl: ChatControlsObjType, apiToken: string) => 
-        this.shareInterviewLink(inputs, personNode,candidateJob, apiToken)
+      share_jd: (
+        inputs: any,
+        personNode: PersonNode,
+        candidateJob: Jobs,
+        chatControl: ChatControlsObjType,
+        apiToken: string,
+      ) =>
+        this.shareJD(inputs, personNode, candidateJob, chatControl, apiToken),
+
+      update_candidate_profile: (
+        inputs: any,
+        personNode: PersonNode,
+        candidateJob: Jobs,
+        chatControl: ChatControlsObjType,
+        apiToken: string,
+      ) =>
+        this.updateCandidateProfile(inputs, personNode, candidateJob, apiToken),
+
+      update_answer: (
+        inputs: { question: string; answer: string },
+        personNode: PersonNode,
+        candidateJob: Jobs,
+        chatControl: ChatControlsObjType,
+        apiToken: string,
+      ) => this.updateAnswer(inputs, personNode, candidateJob, apiToken),
+
+      schedule_meeting: (
+        inputs: any,
+        personNode: PersonNode,
+        candidateJob: Jobs,
+        chatControl: ChatControlsObjType,
+        apiToken: string,
+      ) => this.scheduleMeeting(inputs, personNode, candidateJob, apiToken),
+
+      send_email: (
+        inputs: any,
+        personNode: PersonNode,
+        candidateJob: Jobs,
+        chatControl: ChatControlsObjType,
+        apiToken: string,
+      ) => this.sendEmail(inputs, personNode, candidateJob, apiToken),
+
+      create_reminder: (
+        inputs: { reminderDuration: string },
+        personNode: PersonNode,
+        candidateJob: Jobs,
+        chatControl: ChatControlsObjType,
+        apiToken: string,
+      ) => this.createReminder(inputs, personNode, candidateJob, apiToken),
+
+      share_interview_link: (
+        inputs: any,
+        personNode: PersonNode,
+        candidateJob: Jobs,
+        chatControl: ChatControlsObjType,
+        apiToken: string,
+      ) => this.shareInterviewLink(inputs, personNode, candidateJob, apiToken),
     };
   }
 
-  async shareInterviewLink(inputs: any, personNode: PersonNode, candidateJob:Jobs, twenty_token: string) {
+  async shareInterviewLink(
+    inputs: any,
+    personNode: PersonNode,
+    candidateJob: Jobs,
+    twenty_token: string,
+  ) {
     // const jobProfile = personNode?.candidates?.edges[0]?.node?.jobs;
-    const candidate = personNode?.candidates?.edges?.find(edge => edge.node.jobs.id === candidateJob.id)?.node;
+    const candidate = personNode?.candidates?.edges?.find(
+      (edge) => edge.node.jobs.id === candidateJob.id,
+    )?.node;
 
-    const videoInterviewUrl = candidate?.videoInterview.edges[0].node?.interviewLink?.primaryLinkUrl;
+    const videoInterviewUrl =
+      candidate?.videoInterview.edges[0].node?.interviewLink?.primaryLinkUrl;
     // console.log("job Profile:", jobProfile);
 
     const companyName = personNode?.candidates?.edges
-    .filter(edge => candidate && edge.node.id === candidate.id)
-    .map(edge => edge.node.jobs.company.name)[0];
+      .filter((edge) => candidate && edge.node.id === candidate.id)
+      .map((edge) => edge.node.jobs.company.name)[0];
 
     if (!videoInterviewUrl) {
       throw new Error('Video interview URL is undefined');
     }
-    const videoInterviewInviteTemplate = await new EmailTemplates().getInterviewInvitationTemplate(personNode, candidateJob, videoInterviewUrl);
-    const recruiterProfile:RecruiterProfileType = await getRecruiterProfileByJob(candidateJob, twenty_token) 
+    const videoInterviewInviteTemplate =
+      await new EmailTemplates().getInterviewInvitationTemplate(
+        personNode,
+        candidateJob,
+        videoInterviewUrl,
+      );
+    const recruiterProfile: RecruiterProfileType =
+      await getRecruiterProfileByJob(candidateJob, twenty_token);
 
-    console.log("recruiterProfile?.email:", recruiterProfile?.email);
+    console.log('recruiterProfile?.email:', recruiterProfile?.email);
     const emailData: GmailMessageData = {
-      sendEmailNameFrom: recruiterProfile?.firstName + ' ' + recruiterProfile?.lastName,
+      sendEmailNameFrom:
+        recruiterProfile?.firstName + ' ' + recruiterProfile?.lastName,
       sendEmailFrom: recruiterProfile?.email,
       sendEmailTo: personNode?.emails.primaryEmail,
-      subject: 'Video Interview - ' + personNode?.name?.firstName + '<>' + companyName,
+      subject:
+        'Video Interview - ' + personNode?.name?.firstName + '<>' + companyName,
       message: videoInterviewInviteTemplate,
     };
-    console.log("This is the email Data from createVideo Interview Send To Candidate:", emailData);
-    const sendVideoInterviewLinkResponse = await new SendEmailFunctionality().sendEmailFunction(emailData, twenty_token);
-    console.log("sendVideoInterviewLinkResponse:", sendVideoInterviewLinkResponse);
+
+    console.log(
+      'This is the email Data from createVideo Interview Send To Candidate:',
+      emailData,
+    );
+    const sendVideoInterviewLinkResponse =
+      await new SendEmailFunctionality().sendEmailFunction(
+        emailData,
+        twenty_token,
+      );
+
+    console.log(
+      'sendVideoInterviewLinkResponse:',
+      sendVideoInterviewLinkResponse,
+    );
+
     return 'Interview link shared successfully.';
   }
 
-  async createReminder(inputs: { reminderDuration: string }, candidateProfileDataNodeObj: PersonNode, candidateJob:Jobs,  apiToken:string) {
-    console.log('Function Called:  candidateProfileDataNodeObj:any', candidateProfileDataNodeObj);
-    debugger;
-    const reminderTimestamp = addHoursInDate(new Date(), Number(inputs?.reminderDuration));
+  async createReminder(
+    inputs: { reminderDuration: string },
+    candidateProfileDataNodeObj: PersonNode,
+    candidateJob: Jobs,
+    apiToken: string,
+  ) {
+    console.log(
+      'Function Called:  candidateProfileDataNodeObj:any',
+      candidateProfileDataNodeObj,
+    );
+    const reminderTimestamp = addHoursInDate(
+      new Date(),
+      Number(inputs?.reminderDuration),
+    );
     const reminderTimestampInIsoFormat = toIsoString(reminderTimestamp);
+
     console.log('Reminder Timestamp:', reminderTimestamp);
     const createOneReminderVariables = {
       input: {
         remindCandidateDuration: inputs?.reminderDuration,
         remindCandidateAtTimestamp: reminderTimestampInIsoFormat,
-        candidateId: candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.id,
+        candidateId:
+          candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.id,
         name: `Reminder for ${candidateProfileDataNodeObj?.name?.firstName} ${candidateProfileDataNodeObj?.name?.lastName} to remind in ${inputs?.reminderDuration} hours`,
         isReminderActive: true,
       },
     };
+
     console.log('Function Called: createReminder');
     const graphqlQueryObj = JSON.stringify({
-      query:  graphqlQueryToCreateOneReminder,
+      query: graphqlQueryToCreateOneReminder,
       variables: createOneReminderVariables,
     });
 
-    const response = await axiosRequest(graphqlQueryObj,  apiToken);
+    const response = await axiosRequest(graphqlQueryObj, apiToken);
+
     console.log('Response from createReminder:', response.data);
+
     return 'Reminder created successfully.';
   }
 
-  async sendEmail(inputs: any, person: PersonNode, candidateJob:Jobs, apiToken:string) {
-    const recruiterProfile:RecruiterProfileType = await getRecruiterProfileByJob(candidateJob, apiToken) 
-
+  async sendEmail(
+    inputs: any,
+    person: PersonNode,
+    candidateJob: Jobs,
+    apiToken: string,
+  ) {
+    const recruiterProfile: RecruiterProfileType =
+      await getRecruiterProfileByJob(candidateJob, apiToken);
 
     const emailData: GmailMessageData = {
-      sendEmailNameFrom: recruiterProfile?.firstName + ' ' + recruiterProfile?.lastName,
+      sendEmailNameFrom:
+        recruiterProfile?.firstName + ' ' + recruiterProfile?.lastName,
       sendEmailFrom: recruiterProfile?.email,
       sendEmailTo: person?.emails.primaryEmail,
       subject: inputs?.subject || 'Email from the recruiter',
       message: inputs?.message || '',
     };
+
     await new SendEmailFunctionality().sendEmailFunction(emailData, apiToken);
+
     return 'Email sent successfully.';
   }
 
-  async shareJD(inputs: any, personNode: PersonNode, candidateJob:Jobs, chatControl: ChatControlsObjType,  apiToken:string) {
+  async shareJD(
+    inputs: any,
+    personNode: PersonNode,
+    candidateJob: Jobs,
+    chatControl: ChatControlsObjType,
+    apiToken: string,
+  ) {
     try {
       console.log('Function Called: inputs', inputs);
       console.log('Function Called: personNode', personNode);
       console.log('Function Called: candidateJob', candidateJob);
       console.log('Function Called: chatControl', chatControl);
       console.log('Function Called: apiToken', apiToken);
-      await new ToolCallsProcessing(this.workspaceQueryService).shareJDtoCandidate(personNode,  candidateJob, chatControl,  apiToken);
-      console.log('Function Called:  candidateProfileDataNodeObj:any', personNode);
-    } catch {
-      debugger;
+      await new ToolCallsProcessing(
+        this.workspaceQueryService,
+      ).shareJDtoCandidate(personNode, candidateJob, chatControl, apiToken);
+      console.log(
+        'Function Called:  candidateProfileDataNodeObj:any',
+        personNode,
+      );
+    } catch (error) {
+      console.log('Error in shareJD:', error);
     }
+
     return 'Shared the JD with the candidate and updated the database.';
   }
-  
 
-  async updateCandidateProfile(inputs: any, personNode: PersonNode,  candidateJob:Jobs, apiToken:string) {
+  async updateCandidateProfile(
+    inputs: any,
+    personNode: PersonNode,
+    candidateJob: Jobs,
+    apiToken: string,
+  ) {
     try {
       console.log('UPDATE CANDIDATE PROFILE CALLED AND UPDATING TO ::', inputs);
-      console.log('Function Called:  candidateProfileDataNodeObj:any', personNode);
+      console.log(
+        'Function Called:  candidateProfileDataNodeObj:any',
+        personNode,
+      );
       // const status: statuses = 'RECRUITER_INTERVIEW';
-      await new ToolCallsProcessing(this.workspaceQueryService).updateCandidateStatus(personNode, inputs.candidateStatus,  apiToken);
+      await new ToolCallsProcessing(
+        this.workspaceQueryService,
+      ).updateCandidateStatus(personNode, inputs.candidateStatus, apiToken);
+
       return 'Updated the candidate profile.';
     } catch (error) {
       console.log('Error in updateCandidateProfile:', error);
     }
   }
 
-  async updateAnswer(inputs: { question: string; answer: string }, candidateProfileDataNodeObj: PersonNode, candidateJob:Jobs,  apiToken:string) {
+  async updateAnswer(
+    inputs: { question: string; answer: string },
+    candidateProfileDataNodeObj: PersonNode,
+    candidateJob: Jobs,
+    apiToken: string,
+  ) {
     // const newQuestionArray = this.questionArray
-    const jobId = candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.jobs?.id;
+    const jobId =
+      candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.jobs?.id;
 
-    const { questionIdArray, questionArray } = await new FilterCandidates(this.workspaceQueryService).fetchQuestionsByJobId(jobId,  apiToken);
+    const { questionIdArray, questionArray } = await new FilterCandidates(
+      this.workspaceQueryService,
+    ).fetchQuestionsByJobId(jobId, apiToken);
     const results = fuzzy.filter(inputs.question, questionArray);
     const matches = results.map(function (el) {
       return el.string;
     });
-    console.log('The matches are:', matches);
-    const mostSimilarQuestion = questionIdArray.filter(questionObj => questionObj.question == matches[0]);
-    const AnswerMessageObj = { questionsId: mostSimilarQuestion[0]?.questionId, name: inputs.answer, candidateId: candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.id };
 
-    await new ToolCallsProcessing(this.workspaceQueryService).updateAnswerInDatabase(candidateProfileDataNodeObj, AnswerMessageObj,  apiToken);
+    console.log('The matches are:', matches);
+    const mostSimilarQuestion = questionIdArray.filter(
+      (questionObj) => questionObj.question == matches[0],
+    );
+    const AnswerMessageObj = {
+      questionsId: mostSimilarQuestion[0]?.questionId,
+      name: inputs.answer,
+      candidateId: candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.id,
+    };
+
+    await new ToolCallsProcessing(
+      this.workspaceQueryService,
+    ).updateAnswerInDatabase(
+      candidateProfileDataNodeObj,
+      AnswerMessageObj,
+      apiToken,
+    );
     try {
-      console.log('Function Called:  candidateProfileDataNodeObj:any', candidateProfileDataNodeObj);
+      console.log(
+        'Function Called:  candidateProfileDataNodeObj:any',
+        candidateProfileDataNodeObj,
+      );
       console.log('Function Called: updateAnswer');
     } catch {
       console.log('Update Answer in Database working');
     }
+
     return 'Updated the candidate updateAnswer.';
   }
 
-  async scheduleMeeting(inputs: any, candidateProfileDataNodeObj: PersonNode, candidateJob:Jobs,  apiToken:string) {
-    console.log('Function Called:  candidateProfileDataNodeObj:any', candidateProfileDataNodeObj);
+  async scheduleMeeting(
+    inputs: any,
+    candidateProfileDataNodeObj: PersonNode,
+    candidateJob: Jobs,
+    apiToken: string,
+  ) {
+    console.log(
+      'Function Called:  candidateProfileDataNodeObj:any',
+      candidateProfileDataNodeObj,
+    );
     const gptInputs = inputs?.inputs;
+
     console.log('GPT Inputs:any', gptInputs);
 
     console.log('Function Called: scheduleMeeting');
     const calendarEventObj: CalendarEventType = {
-      summary: `${candidateProfileDataNodeObj?.name.firstName} & ${candidateProfileDataNodeObj.candidates.edges[0].node.jobs.company.name}`  ||gptInputs?.summary || 'Meeting with the candidate',
+      summary:
+        `${candidateProfileDataNodeObj?.name.firstName} & ${candidateProfileDataNodeObj.candidates.edges[0].node.jobs.company.name}` ||
+        gptInputs?.summary ||
+        'Meeting with the candidate',
       typeOfMeeting: gptInputs?.typeOfMeeting || 'Virtual',
       location: gptInputs?.location || 'Google Meet',
-      description: gptInputs?.description || 'This meeting is scheduled to discuss the role and the company.',
-      start: { dateTime: gptInputs?.startDateTime, timeZone: gptInputs?.timeZone },
+      description:
+        gptInputs?.description ||
+        'This meeting is scheduled to discuss the role and the company.',
+      start: {
+        dateTime: gptInputs?.startDateTime,
+        timeZone: gptInputs?.timeZone,
+      },
       end: { dateTime: gptInputs?.endDateTime, timeZone: gptInputs?.timeZone },
       attendees: [{ email: candidateProfileDataNodeObj.emails.primaryEmail }],
       reminders: {
         useDefault: false,
-        overrides: [ { method: 'email', minutes: 24 * 60 }, { method: 'popup', minutes: 10 }, ],
+        overrides: [
+          { method: 'email', minutes: 24 * 60 },
+          { method: 'popup', minutes: 10 },
+        ],
       },
     };
-    await new CalendarEmailService().createNewCalendarEvent(calendarEventObj, apiToken);
-    const interviewTime = [ { date: new Date(gptInputs?.startDateTime).toISOString().split('T')[0],
-      slots: [ { startTime: new Date(gptInputs?.startDateTime).toISOString().split('T')[1].substring(0, 5), endTime: new Date(gptInputs?.endDateTime).toISOString().split('T')[1].substring(0, 5), }, ], }, ];
-    const createClientInterviewVariables = { 
-      input: { 
-        interviewTime: interviewTime, 
-        candidateId: candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.id,
-        interviewScheduleId: candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.jobs?.interviewSchedule?.edges[0]?.node?.id,
+
+    await new CalendarEmailService().createNewCalendarEvent(
+      calendarEventObj,
+      apiToken,
+    );
+    const interviewTime = [
+      {
+        date: new Date(gptInputs?.startDateTime).toISOString().split('T')[0],
+        slots: [
+          {
+            startTime: new Date(gptInputs?.startDateTime)
+              .toISOString()
+              .split('T')[1]
+              .substring(0, 5),
+            endTime: new Date(gptInputs?.endDateTime)
+              .toISOString()
+              .split('T')[1]
+              .substring(0, 5),
+          },
+        ],
+      },
+    ];
+    const createClientInterviewVariables = {
+      input: {
+        interviewTime: interviewTime,
+        candidateId:
+          candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.id,
+        interviewScheduleId:
+          candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.jobs
+            ?.interviewSchedule?.edges[0]?.node?.id,
         name: `Interview with ${candidateProfileDataNodeObj?.name?.firstName} ${candidateProfileDataNodeObj?.name?.lastName} scheduled on ${new Date(gptInputs?.startDateTime).toISOString().split('T')[0]}`,
-        jobId: candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.jobs?.id,
-      }, 
-    }; 
+        jobId:
+          candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.jobs?.id,
+      },
+    };
     const graphqlQueryObj = JSON.stringify({
-      query: graphqlQueryToCreateOneClientInterview, variables: createClientInterviewVariables,
+      query: graphqlQueryToCreateOneClientInterview,
+      variables: createClientInterviewVariables,
     });
+
     await axiosRequest(graphqlQueryObj, apiToken);
 
-    await this.scheduleReminderNotifications(candidateProfileDataNodeObj, candidateJob, gptInputs?.startDateTime,gptInputs?.endDateTime, apiToken);
+    await this.scheduleReminderNotifications(
+      candidateProfileDataNodeObj,
+      candidateJob,
+      gptInputs?.startDateTime,
+      gptInputs?.endDateTime,
+      apiToken,
+    );
+
     return 'scheduleMeeting the candidate meeting.';
   }
 
-
-
   private async scheduleReminderNotifications(
-    candidateProfileDataNodeObj: PersonNode, 
-    candidateJob: Jobs, 
-    meetingStartDateTime: string, 
+    candidateProfileDataNodeObj: PersonNode,
+    candidateJob: Jobs,
+    meetingStartDateTime: string,
     meetingEndDateTime: string,
-    apiToken: string
+    apiToken: string,
   ) {
     // Import the ScheduledJobService
-    const scheduledJobService = new ScheduledJobService(new SchedulerRegistry(), this.workspaceQueryService);
+    const scheduledJobService = new ScheduledJobService(
+      new SchedulerRegistry(),
+      this.workspaceQueryService,
+    );
     const meetingStartTime = new Date(meetingStartDateTime);
-    
+
     // 1. Schedule first reminder (8:30 PM the night before)
     const nightBeforeMeeting = new Date(meetingStartTime);
+
     nightBeforeMeeting.setDate(nightBeforeMeeting.getDate() - 1); // One day before
     nightBeforeMeeting.setHours(20, 30, 0, 0); // 8:30 PM
 
-
     const twoHoursBeforeMeeting = new Date(meetingStartTime);
+
     twoHoursBeforeMeeting.setHours(twoHoursBeforeMeeting.getHours() - 2);
-    
+
     const twoMinutesFromNow = new Date();
-    console.log(`- Test reminder  time now: ${twoMinutesFromNow.toISOString()}`);
+
+    console.log(
+      `- Test reminder  time now: ${twoMinutesFromNow.toISOString()}`,
+    );
     twoMinutesFromNow.setMinutes(twoMinutesFromNow.getMinutes() + 2);
-    console.log(`- Test reminder firstInterviewReminder 2 minutes from now: ${twoMinutesFromNow.toISOString()}`);
+    console.log(
+      `- Test reminder firstInterviewReminder 2 minutes from now: ${twoMinutesFromNow.toISOString()}`,
+    );
     const fourMinutesFromNow = new Date();
+
     fourMinutesFromNow.setMinutes(fourMinutesFromNow.getMinutes() + 4);
-    console.log(`- Test reminder secondInterviewReminder 4 minutes from now: ${fourMinutesFromNow.toISOString()}`);
+    console.log(
+      `- Test reminder secondInterviewReminder 4 minutes from now: ${fourMinutesFromNow.toISOString()}`,
+    );
     const meetingEndTime = new Date(meetingEndDateTime);
     const afterMeetingEndTime = new Date(meetingEndTime);
+
     afterMeetingEndTime.setMinutes(afterMeetingEndTime.getMinutes() + 5);
     const sixMinutesFromNow = new Date();
+
     sixMinutesFromNow.setMinutes(sixMinutesFromNow.getMinutes() + 6);
-    console.log(`- Test reminder closeMeetingStatus 6 minutes from now: ${sixMinutesFromNow.toISOString()}`);
+    console.log(
+      `- Test reminder closeMeetingStatus 6 minutes from now: ${sixMinutesFromNow.toISOString()}`,
+    );
     // Schedule the test reminder
     // Data payload for the first reminder
-    const firstReminderData = { action: 'firstInterviewReminder', candidateProfileDataNodeObj, candidateJob, apiToken, meetingStartTime };
-    const secondReminderData = { action: 'secondInterviewReminder', candidateProfileDataNodeObj, candidateJob, apiToken, meetingStartTime };
-    const meetingClosureData = { action: 'closeMeetingStatus', candidateProfileDataNodeObj, candidateJob, apiToken, meetingTime: meetingStartTime };
+    const firstReminderData = {
+      action: 'firstInterviewReminder',
+      candidateProfileDataNodeObj,
+      candidateJob,
+      apiToken,
+      meetingStartTime,
+    };
+    const secondReminderData = {
+      action: 'secondInterviewReminder',
+      candidateProfileDataNodeObj,
+      candidateJob,
+      apiToken,
+      meetingStartTime,
+    };
+    const meetingClosureData = {
+      action: 'closeMeetingStatus',
+      candidateProfileDataNodeObj,
+      candidateJob,
+      apiToken,
+      meetingTime: meetingStartTime,
+    };
 
-
-
-    
     // Schedule the reminders/ tasks
     if (process.env.NODE_ENV === 'production') {
-      scheduledJobService.scheduleJobForSpecificTime(firstReminderData, nightBeforeMeeting);
-      scheduledJobService.scheduleJobForSpecificTime(secondReminderData, twoHoursBeforeMeeting);
-      scheduledJobService.scheduleJobForSpecificTime(meetingClosureData, afterMeetingEndTime);
+      scheduledJobService.scheduleJobForSpecificTime(
+        firstReminderData,
+        nightBeforeMeeting,
+      );
+      scheduledJobService.scheduleJobForSpecificTime(
+        secondReminderData,
+        twoHoursBeforeMeeting,
+      );
+      scheduledJobService.scheduleJobForSpecificTime(
+        meetingClosureData,
+        afterMeetingEndTime,
+      );
     } else {
-      scheduledJobService.scheduleJobForSpecificTime(firstReminderData, twoMinutesFromNow);
-      scheduledJobService.scheduleJobForSpecificTime(secondReminderData, fourMinutesFromNow); 
-      scheduledJobService.scheduleJobForSpecificTime(meetingClosureData, sixMinutesFromNow);
+      scheduledJobService.scheduleJobForSpecificTime(
+        firstReminderData,
+        twoMinutesFromNow,
+      );
+      scheduledJobService.scheduleJobForSpecificTime(
+        secondReminderData,
+        fourMinutesFromNow,
+      );
+      scheduledJobService.scheduleJobForSpecificTime(
+        meetingClosureData,
+        sixMinutesFromNow,
+      );
     }
 
-    console.log(`Scheduled reminders for meeting with ${candidateProfileDataNodeObj?.name?.firstName}:`);
+    console.log(
+      `Scheduled reminders for meeting with ${candidateProfileDataNodeObj?.name?.firstName}:`,
+    );
     console.log(`- First reminder: ${nightBeforeMeeting.toISOString()}`);
     console.log(`- Second reminder: ${twoHoursBeforeMeeting.toISOString()}`);
     console.log(`- closeMeetingStatus: ${afterMeetingEndTime.toISOString()}`);
-    
   }
 
-  
-      
-  async setupSecondReminderForMeeting(candidateProfileDataNodeObj: PersonNode, candidateJob:Jobs, apiToken: string) {
-    const phoneNumber = '91'+candidateProfileDataNodeObj?.phones.primaryPhoneNumber;
-    await new UpdateChat(this.workspaceQueryService).createInterimChat('secondInterviewReminder', phoneNumber, apiToken);
+  async setupSecondReminderForMeeting(
+    candidateProfileDataNodeObj: PersonNode,
+    candidateJob: Jobs,
+    apiToken: string,
+  ) {
+    const phoneNumber =
+      '91' + candidateProfileDataNodeObj?.phones.primaryPhoneNumber;
+
+    await new UpdateChat(this.workspaceQueryService).createInterimChat(
+      'secondInterviewReminder',
+      phoneNumber,
+      apiToken,
+    );
   }
 
-  async setupFirstReminderForMeeting(candidateProfileDataNodeObj: PersonNode, candidateJob:Jobs, apiToken: string) {
-    const phoneNumber = '91'+candidateProfileDataNodeObj?.phones.primaryPhoneNumber;
-    await new UpdateChat(this.workspaceQueryService).createInterimChat('firstInterviewReminder', phoneNumber, apiToken);
+  async setupFirstReminderForMeeting(
+    candidateProfileDataNodeObj: PersonNode,
+    candidateJob: Jobs,
+    apiToken: string,
+  ) {
+    const phoneNumber =
+      '91' + candidateProfileDataNodeObj?.phones.primaryPhoneNumber;
+
+    await new UpdateChat(this.workspaceQueryService).createInterimChat(
+      'firstInterviewReminder',
+      phoneNumber,
+      apiToken,
+    );
   }
 
-
-  async getVideoInterviewTools(candidateJob:Jobs){
-    let tools;
-      tools = [
-        {
-          type: 'function',
-          function: {
-            name: 'share_interview_link',
-            description: 'Share the interview link with the candidate',
-          },
-        },
-      ]
-      return tools;
-  }
-
-  async getStartChatTools(candidateJob:Jobs) {
-    let tools;
-      tools = [
-        {
-          type: 'function',
-          function: {
-            name: 'share_jd',
-            description: 'Share the candidate JD',
-          },
-        },
-        {
-          type: 'function',
-          function: {
-            name: 'update_candidate_profile',
-            description: 'Update the candidate profile',
-            parameters: {
-              type: 'object',
-              properties: {
-                candidateStatus: {
-                  type: 'string',
-                  description: 'The status of the candidate',
-                },
-              },
-              required: ['candidateStatus'],
-            },
-          },
-        },
-        {
-          type: 'function',
-          function: {
-            name: 'update_answer',
-            description: "Update the candidate's answer based on the question asked",
-            parameters: {
-              type: 'object',
-              properties: {
-                question: {
-                  type: 'string',
-                  description: 'The question asked',
-                },
-                answer: {
-                  type: 'string',
-                  description: 'The answer provided by the candidate',
-                },
-              },
-              required: ['question', 'answer'],
-            },
-          },
-        },
-      ];
-    return tools;
-  }
-  async getStartMeetingSchedulingTools(candidateJob:Jobs) {
-    let tools;
-      tools = [
-        {
-          type: 'function',
-          function: {
-            name: 'schedule_meeting',
-            description: 'Schedule a meeting with the candidate',
-            parameters: {
-              type: 'object',
-              properties: {
-                inputs: {
-                  type: 'object',
-                  description: 'Name of the candidate + Client Name',
-                  properties: {
-                    summary: {
-                      type: 'string',
-                      description: 'Summary of the meeting',
-                    },
-                    typeOfMeeting: {
-                      type: 'string',
-                      description: 'Type of the meeting, can be either Virtual or In-Person. Default is Virtual.',
-                    },
-                    location: {
-                      type: 'string',
-                      description: 'Location of the meeting',
-                    },
-                    description: {
-                      type: 'string',
-                      description: 'Description of the meeting',
-                    },
-                    startDateTime: {
-                      type: 'string',
-                      format: 'date-time',
-                      description: 'Start date and time of the meeting in ISO 8601 format',
-                    },
-                    endDateTime: {
-                      type: 'string',
-                      format: 'date-time',
-                      description: 'End date and time of the meeting in ISO 8601 format',
-                    },
-                    timeZone: {
-                      type: 'string',
-                      description: 'Time zone of the meeting',
-                    },
-                  },
-                  required: ['startDateTime', 'endDateTime', 'timeZone'],
-                },
-                candidateProfileDataNodeObj: {
-                  type: 'object',
-                  description: 'Profile data of the candidate',
-                  properties: {
-                    email: {
-                      type: 'string',
-                      format: 'email',
-                      description: 'Email of the candidate',
-                    },
-                  },
-                  required: ['email'],
-                },
-              },
-              required: ['inputs', 'candidateProfileDataNodeObj'],
-            },
-          },
-        },
-        {
-          type: 'function',
-          function: {
-            name: 'update_answer',
-            description: "Update the candidate's answer based on the question asked",
-            parameters: {
-              type: 'object',
-              properties: {
-                question: {
-                  type: 'string',
-                  description: 'The question asked',
-                },
-                answer: {
-                  type: 'string',
-                  description: 'The answer provided by the candidate',
-                },
-              },
-              required: ['question', 'answer'],
-            },
-          },
-        },
-        // {
-        //   type: 'function',
-        //   function: {
-        //     name: 'create_reminder',
-        //     description: 'Create a reminder for the candidate',
-        //     parameters: {
-        //       type: 'object',
-        //       properties: {
-        //         reminderDuration: {
-        //           type: 'string',
-        //           description: 'Number of hours for the reminder.',
-        //         },
-        //       },
-        //       required: ['reminderDuration', 'hours'],
-        //     },
-        //   },
-        // },  
-      ];
-    return tools;
-  }
-
-  getTimeManagementTools() {
+  async getVideoInterviewTools(
+    candidateJob: Jobs,
+  ): Promise<ChatCompletionTool[]> {
     return [
       {
         type: 'function',
+        function: {
+          name: 'share_interview_link',
+          description: 'Share the interview link with the candidate',
+        },
+      },
+    ];
+  }
+
+  async getStartChatTools(candidateJob: Jobs): Promise<ChatCompletionTool[]> {
+    const tools = [
+      {
+        type: 'function' as const,
+        function: {
+          name: 'share_jd',
+          description: 'Share the candidate JD',
+        },
+      },
+      {
+        type: 'function' as const,
+        function: {
+          name: 'update_candidate_profile',
+          description: 'Update the candidate profile',
+          parameters: {
+            type: 'object',
+            properties: {
+              candidateStatus: {
+                type: 'string',
+                description: 'The status of the candidate',
+              },
+            },
+            required: ['candidateStatus'],
+          },
+        },
+      },
+      {
+        type: 'function' as const,
+        function: {
+          name: 'update_answer',
+          description:
+            "Update the candidate's answer based on the question asked",
+          parameters: {
+            type: 'object',
+            properties: {
+              question: {
+                type: 'string',
+                description: 'The question asked',
+              },
+              answer: {
+                type: 'string',
+                description: 'The answer provided by the candidate',
+              },
+            },
+            required: ['question', 'answer'],
+          },
+        },
+      },
+    ];
+
+    return tools;
+  }
+
+  async getStartMeetingSchedulingTools(
+    candidateJob: Jobs,
+  ): Promise<ChatCompletionTool[]> {
+    const tools = [
+      {
+        type: 'function' as const,
+        function: {
+          name: 'schedule_meeting',
+          description: 'Schedule a meeting with the candidate',
+          parameters: {
+            type: 'object',
+            properties: {
+              inputs: {
+                type: 'object',
+                description: 'Name of the candidate + Client Name',
+                properties: {
+                  summary: {
+                    type: 'string',
+                    description: 'Summary of the meeting',
+                  },
+                  typeOfMeeting: {
+                    type: 'string',
+                    description:
+                      'Type of the meeting, can be either Virtual or In-Person. Default is Virtual.',
+                  },
+                  location: {
+                    type: 'string',
+                    description: 'Location of the meeting',
+                  },
+                  description: {
+                    type: 'string',
+                    description: 'Description of the meeting',
+                  },
+                  startDateTime: {
+                    type: 'string',
+                    format: 'date-time',
+                    description:
+                      'Start date and time of the meeting in ISO 8601 format',
+                  },
+                  endDateTime: {
+                    type: 'string',
+                    format: 'date-time',
+                    description:
+                      'End date and time of the meeting in ISO 8601 format',
+                  },
+                  timeZone: {
+                    type: 'string',
+                    description: 'Time zone of the meeting',
+                  },
+                },
+                required: ['startDateTime', 'endDateTime', 'timeZone'],
+              },
+              candidateProfileDataNodeObj: {
+                type: 'object',
+                description: 'Profile data of the candidate',
+                properties: {
+                  email: {
+                    type: 'string',
+                    format: 'email',
+                    description: 'Email of the candidate',
+                  },
+                },
+                required: ['email'],
+              },
+            },
+            required: ['inputs', 'candidateProfileDataNodeObj'],
+          },
+        },
+      },
+      {
+        type: 'function' as const,
+        function: {
+          name: 'update_answer',
+          description:
+            "Update the candidate's answer based on the question asked",
+          parameters: {
+            type: 'object',
+            properties: {
+              question: {
+                type: 'string',
+                description: 'The question asked',
+              },
+              answer: {
+                type: 'string',
+                description: 'The answer provided by the candidate',
+              },
+            },
+            required: ['question', 'answer'],
+          },
+        },
+      },
+      // {
+      //   type: 'function',
+      //   function: {
+      //     name: 'create_reminder',
+      //     description: 'Create a reminder for the candidate',
+      //     parameters: {
+      //       type: 'object',
+      //       properties: {
+      //         reminderDuration: {
+      //           type: 'string',
+      //           description: 'Number of hours for the reminder.',
+      //         },
+      //       },
+      //       required: ['reminderDuration', 'hours'],
+      //     },
+      //   },
+      // },
+    ];
+
+    return tools;
+  }
+
+  getTimeManagementTools(): ChatCompletionTool[] {
+    return [
+      {
+        type: 'function' as const,
         function: {
           name: 'create_reminder',
           description: 'Create a reminder for the candidate',
@@ -482,10 +762,4 @@ export class ToolCallingAgents {
       },
     ];
   }
-
-
-
-
 }
-
-

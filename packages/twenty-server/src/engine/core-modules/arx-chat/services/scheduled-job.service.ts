@@ -1,16 +1,18 @@
 import { Injectable } from '@nestjs/common';
 import { SchedulerRegistry } from '@nestjs/schedule';
+
+import { v4 as uuidv4 } from 'uuid';
+
 import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/update-chat';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
-import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class ScheduledJobService {
   private workspaceQueryService: WorkspaceQueryService;
-  
+
   constructor(
     private schedulerRegistry: SchedulerRegistry,
-    workspaceQueryService: WorkspaceQueryService
+    workspaceQueryService: WorkspaceQueryService,
   ) {
     this.workspaceQueryService = workspaceQueryService;
   }
@@ -19,20 +21,25 @@ export class ScheduledJobService {
     const jobId = uuidv4();
     const now = new Date();
     const timeUntilExecution = scheduledTime.getTime() - now.getTime();
-    
+
     if (timeUntilExecution <= 0) {
       console.log('Target time is in the past, executing immediately');
       this.executeScheduledJob(data);
+
       return uuidv4(); // Return a job ID even for immediate execution
     }
-    
-    console.log(`Scheduling job ${jobId} to run at ${scheduledTime.toISOString()}`);
+
+    console.log(
+      `Scheduling job ${jobId} to run at ${scheduledTime.toISOString()}`,
+    );
     console.log(`Time until execution: ${timeUntilExecution}ms`);
-    
+
     const timeout = setTimeout(async () => {
       try {
         await this.executeScheduledJob(data);
-        console.log(`Job ${jobId} completed successfully at ${new Date().toISOString()}`);
+        console.log(
+          `Job ${jobId} completed successfully at ${new Date().toISOString()}`,
+        );
       } catch (error) {
         console.error(`Error in job ${jobId}:`, error);
       } finally {
@@ -44,8 +51,9 @@ export class ScheduledJobService {
         }
       }
     }, timeUntilExecution);
-    
+
     this.schedulerRegistry.addTimeout(jobId, timeout);
+
     return jobId;
   }
 
@@ -53,34 +61,55 @@ export class ScheduledJobService {
     // Check what type of action needs to be performed
     if (!data || !data.action) {
       console.error('Invalid data payload for scheduled job:', data);
+
       return;
     }
-    
-    const { action, candidateProfileDataNodeObj, candidateJob, apiToken } = data;
-    
-    console.log(`Executing scheduled job: ${action} at ${new Date().toISOString()}`);
-    
+
+    const { action, candidateProfileDataNodeObj, candidateJob, apiToken } =
+      data;
+
+    console.log(
+      `Executing scheduled job: ${action} at ${new Date().toISOString()}`,
+    );
+
     try {
-      // Create the UpdateChat service
       const updateChatService = new UpdateChat(this.workspaceQueryService);
-      
+      const phoneNumber =
+        '91' + candidateProfileDataNodeObj?.phones.primaryPhoneNumber;
+
       switch (action) {
         case 'firstInterviewReminder':
-            const phoneNumber1 = '91' + candidateProfileDataNodeObj?.phones.primaryPhoneNumber;
-            await updateChatService.createInterimChat('firstInterviewReminder', phoneNumber1, apiToken);
-            console.log(`Sent first interview reminder to ${candidateProfileDataNodeObj?.name?.firstName}`);
-            break;
-          
+          await updateChatService.createInterimChat(
+            'firstInterviewReminder',
+            phoneNumber,
+            apiToken,
+          );
+          console.log(
+            `Sent first interview reminder to ${candidateProfileDataNodeObj?.name?.firstName}`,
+          );
+          break;
+
         case 'secondInterviewReminder':
-            const phoneNumber2 = '91' + candidateProfileDataNodeObj?.phones.primaryPhoneNumber;
-            await updateChatService.createInterimChat('secondInterviewReminder', phoneNumber2, apiToken);
-            console.log(`Sent second interview reminder to ${candidateProfileDataNodeObj?.name?.firstName}`);
-            break;
-          
+          await updateChatService.createInterimChat(
+            'secondInterviewReminder',
+            phoneNumber,
+            apiToken,
+          );
+          console.log(
+            `Sent second interview reminder to ${candidateProfileDataNodeObj?.name?.firstName}`,
+          );
+          break;
+
         case 'closeMeetingStatus':
-            await updateChatService.updateMeetingStatusAfterCompletion(candidateProfileDataNodeObj, candidateJob, apiToken);
-            console.log(`Closed meeting status for ${candidateProfileDataNodeObj?.name?.firstName}`);
-            break;
+          await updateChatService.updateMeetingStatusAfterCompletion(
+            candidateProfileDataNodeObj,
+            candidateJob,
+            apiToken,
+          );
+          console.log(
+            `Closed meeting status for ${candidateProfileDataNodeObj?.name?.firstName}`,
+          );
+          break;
         default:
           console.warn(`Unknown action type: ${action}`);
       }
@@ -93,9 +122,11 @@ export class ScheduledJobService {
     try {
       this.schedulerRegistry.deleteTimeout(jobId);
       console.log(`Successfully canceled job ${jobId}`);
+
       return true;
     } catch (error) {
       console.error(`Failed to cancel job ${jobId}:`, error);
+
       return false;
     }
   }

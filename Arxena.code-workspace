@@ -1,0 +1,22 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../arxena-site"
+		},
+		{
+			"path": "../arxtension_v2"
+		}
+	],
+	"settings": {
+		"javascript.format.enable": false,
+		"typescript.format.enable": false,
+		"eslint.debug": true,
+		"files.associations": {
+			".cursorrules": "markdown"
+		},
+		"jestrunner.codeLensSelector": "**/*.{test,spec,integration-spec}.{js,jsx,ts,tsx}"
+	}
+}

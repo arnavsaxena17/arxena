@@ -1,10 +1,5 @@
 import { Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
-import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
-import { UpdateChat } from '../services/candidate-engagement/update-chat';
-import { FacebookWhatsappChatApi } from '../services/whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
-import { WhatsappTemplateMessages } from '../services/whatsapp-api/facebook-whatsapp/whatsapp-template-messages';
-// import {Transformations} from '../services/candidate-engagement/transformations';
-import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
+
 import {
   CandidateNode,
   ChatHistoryItem,
@@ -14,8 +9,14 @@ import {
   sendWhatsappTemplateMessageObjectType,
   SendWhatsappUtilityMessageObjectType,
 } from 'twenty-shared';
-import { FilterCandidates } from '../services/candidate-engagement/filter-candidates';
-import { getRecruiterProfileByJob } from '../services/recruiter-profile';
+
+import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
+import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/update-chat';
+import { getRecruiterProfileByJob } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
+import { FacebookWhatsappChatApi } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
+import { WhatsappTemplateMessages } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/facebook-whatsapp/whatsapp-template-messages';
+import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
+import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 
 @Controller('whatsapp-test')
 export class WhatsappTestAPI {
@@ -28,8 +29,14 @@ export class WhatsappTestAPI {
       const requestBody = request.body as any;
       const apiToken = request.headers.authorization.split(' ')[1];
 
-      const personObj: PersonNode = await new FilterCandidates( this.workspaceQueryService, ).getPersonDetailsByPhoneNumber(requestBody.phoneNumberTo, apiToken);
-      console.log( 'This is the process.env.SERVER_BASE_URL:', process.env.SERVER_BASE_URL, );
+      const personObj: PersonNode = await new FilterCandidates(
+        this.workspaceQueryService,
+      ).getPersonDetailsByPhoneNumber(requestBody.phoneNumberTo, apiToken);
+
+      console.log(
+        'This is the process.env.SERVER_BASE_URL:',
+        process.env.SERVER_BASE_URL,
+      );
 
       const candidateNode: CandidateNode =
         personObj?.candidates?.edges[0]?.node;
@@ -41,7 +48,10 @@ export class WhatsappTestAPI {
       );
 
       const sendTemplateMessageObj = {
-        recipient: personObj.phones.primaryPhoneNumber.length==10 ? '91'+personObj.phones.primaryPhoneNumber : personObj.phones.primaryPhoneNumber,
+        recipient:
+          personObj.phones.primaryPhoneNumber.length == 10
+            ? '91' + personObj.phones.primaryPhoneNumber
+            : personObj.phones.primaryPhoneNumber,
         template_name: requestBody.templateName,
         candidateFirstName: personObj.name.firstName,
         recruiterName: recruiterProfile.name,
@@ -62,6 +72,7 @@ export class WhatsappTestAPI {
               ?.node?.interviewLink?.primaryLinkUrl || '',
         candidateSource: 'Apna',
       };
+
       console.log(
         'This is the sendTemplateMessageObj:',
         sendTemplateMessageObj,
@@ -70,7 +81,7 @@ export class WhatsappTestAPI {
       const response = await new FacebookWhatsappChatApi(
         this.workspaceQueryService,
       ).sendWhatsappUtilityMessage(sendTemplateMessageObj, apiToken);
-      let utilityMessage =
+      const utilityMessage =
         await new WhatsappTemplateMessages().getUpdatedUtilityMessageObj(
           sendTemplateMessageObj,
         );
@@ -78,11 +89,13 @@ export class WhatsappTestAPI {
       const mostRecentMessageArr: ChatHistoryItem[] =
         personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node
           ?.messageObj;
+
       console.log('This is the mostRecentMessageArr:', mostRecentMessageArr);
       const chatControl = {
         chatControlType:
           personObj?.candidates?.edges[0]?.node?.lastEngagementChatControl,
       };
+
       mostRecentMessageArr.push({
         role: 'user',
         content: requestBody.templateName,
@@ -97,6 +110,7 @@ export class WhatsappTestAPI {
         chatControl,
         apiToken,
       );
+
       await new UpdateChat(
         this.workspaceQueryService,
       ).updateCandidateEngagementDataInTable(whatappUpdateMessageObj, apiToken);
@@ -105,6 +119,7 @@ export class WhatsappTestAPI {
       console.error('Error in sendTemplateMessage:', error);
       throw error;
     }
+
     return { status: 'success' };
   }
 
@@ -115,11 +130,14 @@ export class WhatsappTestAPI {
 
     const sendMessageObj: sendWhatsappTemplateMessageObjectType =
       request.body as unknown as sendWhatsappTemplateMessageObjectType;
+
     new FacebookWhatsappChatApi(
       this.workspaceQueryService,
     ).sendWhatsappTemplateMessage(sendMessageObj, apiToken);
+
     return { status: 'success' };
   }
+
   @Post('utility')
   @UseGuards(JwtAuthGuard)
   async createUtilityMessage(@Req() request: any): Promise<object> {
@@ -127,9 +145,11 @@ export class WhatsappTestAPI {
 
     const sendMessageObj: SendWhatsappUtilityMessageObjectType =
       request.body as unknown as SendWhatsappUtilityMessageObjectType;
+
     new FacebookWhatsappChatApi(
       this.workspaceQueryService,
     ).sendWhatsappUtilityMessage(sendMessageObj, apiToken);
+
     return { status: 'success' };
   }
 
@@ -143,9 +163,11 @@ export class WhatsappTestAPI {
       phoneNumberFrom: '918411937769',
       messages: 'This is the panda talking',
     };
+
     new FacebookWhatsappChatApi(
       this.workspaceQueryService,
     ).sendWhatsappTextMessage(sendTextMessageObj, apiToken);
+
     return { status: 'success' };
   }
 
@@ -161,6 +183,7 @@ export class WhatsappTestAPI {
       mediaFileName: 'AttachmentFile',
       mediaID: '377908408596785',
     };
+
     return { status: 'success' };
   }
 
@@ -176,12 +199,13 @@ export class WhatsappTestAPI {
   //   return { status: 'success' };
   // }
 
-  @Post('downloadAttachment')
-  @UseGuards(JwtAuthGuard)
-  async downloadFileToFBWAAPIUser(@Req() request: Request): Promise<object> {
-    const downloadAttachmentMessageObj = request.body;
-    return { status: 'success' };
-  }
+  // @Post('downloadAttachment')
+  // @UseGuards(JwtAuthGuard)
+  // async downloadFileToFBWAAPIUser(@Req() request: Request): Promise<object> {
+  //   const downloadAttachmentMessageObj = request.body;
+
+  //   return { status: 'success' };
+  // }
 
   @Get('get-templates')
   @UseGuards(JwtAuthGuard)
@@ -190,6 +214,7 @@ export class WhatsappTestAPI {
     const templates = await new FacebookWhatsappChatApi(
       this.workspaceQueryService,
     ).getWhatsappTemplates(apiToken);
+
     return { templates };
   }
 }
