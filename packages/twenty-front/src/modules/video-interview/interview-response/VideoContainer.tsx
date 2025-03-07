@@ -2,7 +2,7 @@ import styled from '@emotion/styled';
 import React, { useEffect, useRef, useState } from 'react';
 import Webcam from 'react-webcam';
 
-import { useStream } from '../StreamManager';
+import { useStream } from './StreamManager';
 import { ButtonText, StyledControlsOverlay, StyledCountdownOverlay, StyledRecordButton, StyledVideoContainer } from './styled-components/StyledComponentsInterviewResponse';
 
 interface VideoContainerProps {

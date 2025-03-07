@@ -18,20 +18,20 @@ const StyledContainer = styled.div`
   flex-direction: column;
   height: 100vh; // Changed to 100vh to take full viewport height
   width: 100%; // Ensure full width
-  background-color: ${props => props.theme.background.primary};
+  background-color: ${(props) => props.theme.background.primary};
   position: relative; // Added for proper positioning
   overflow: hidden; // Prevent scrolling of container
 `;
 
 const ModifiedAttachmentPanel = styled(AttachmentPanel)`
-  position: absolute; 
+  position: absolute;
   top: 0;
   right: 0;
   width: 100% !important; // Force full width
   height: 100vh !important; // Force full height
   margin: 0;
   padding: 0;
-  
+
   // Override any internal positioning if necessary
   & > div {
     position: relative;
@@ -47,18 +47,20 @@ const EmptyState = styled.div`
   align-items: center;
   justify-content: center;
   height: 100%;
-  color: ${props => props.theme.font.color.light};
+  color: ${(props) => props.theme.font.color.light};
   text-align: center;
-  padding: ${props => props.theme.spacing(4)};
+  padding: ${(props) => props.theme.spacing(4)};
 `;
-
 
 export const RightDrawerCVThread = () => {
   const [tokenPair] = useRecoilState(tokenPairState);
   const [chatPanel] = useRecoilState(chatPanelState);
   const [messageHistory, setMessageHistory] = useState<MessageNode[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [candidateData, setCandidateData] = useState<{ id: string; name: string } | null>(null);
+  const [candidateData, setCandidateData] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
   const [isAttachmentPanelOpen, setIsAttachmentPanelOpen] = useState(true);
 
   const candidateId = chatPanel.selectedRecordIds[0];
@@ -132,7 +134,7 @@ export const RightDrawerCVThread = () => {
         />
       )}
     </StyledContainer>
-  )
+  );
 };
 
 export default RightDrawerCVThread;

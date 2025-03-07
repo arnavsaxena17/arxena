@@ -1,7 +1,7 @@
 // src/components/UploadProgressIndicator.tsx
 import styled from '@emotion/styled';
 import React from 'react';
-import { useUploadContext } from './VideoInterviewFlow';
+import { useUploadContext } from './components/VideoInterviewFlow';
 
 const ProgressContainer = styled.div`
   position: fixed;

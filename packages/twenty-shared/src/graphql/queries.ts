@@ -1,4 +1,3 @@
-
 export const graphqlToFetchWhatsappMessageByWhatsappId = `query FindOneWhatsappMessage($whatsappMessageId: String!) {
   whatsappMessage(filter: {whatsappMessageId: {eq: $whatsappMessageId}}) {
     id
@@ -8,9 +7,6 @@ export const graphqlToFetchWhatsappMessageByWhatsappId = `query FindOneWhatsappM
     messageObj
   }
 }`;
-
-
-
 
 export const graphqlToFetchCandidatesWithRecentUpdates = `
   query getCandidatesWithRecentUpdates($filter: CandidateFilter) {
@@ -34,7 +30,6 @@ export const graphqlToFetchCandidatesWithRecentUpdates = `
     }
   }
 `;
-
 
 export const graphqlQueryToFindScheduledClientMeetings = `query FindManyClientInterviews($filter: ClientInterviewFilterInput, $orderBy: [ClientInterviewOrderByInput], $lastCursor: String, $limit: Int) {
   clientInterviews(
@@ -71,8 +66,6 @@ export const graphqlQueryToFindScheduledClientMeetings = `query FindManyClientIn
   }
 }`;
 
-
-
 export const graphqlQueryToFetchPrompts = `
   query FindManyPrompts($filter: PromptFilterInput, $orderBy: [PromptOrderByInput], $limit: Int) {
   prompts(filter: $filter, orderBy: $orderBy, first: $limit) {
@@ -83,10 +76,7 @@ export const graphqlQueryToFetchPrompts = `
     }
   }
   }
-`
-
-
-
+`;
 
 export const graphqlQueryToFindVideoInterviewTemplatesByJobId = `query FindManyVideoInterviewTemplates($filter: VideoInterviewTemplateFilterInput, $orderBy: [VideoInterviewTemplateOrderByInput], $lastCursor: String, $limit: Int) {
   videoInterviewTemplates(
@@ -137,11 +127,6 @@ export const graphqlQueryToFindVideoInterviewTemplatesByJobId = `query FindManyV
     totalCount
   }
 }`;
-
-
-
-
-
 
 export const graphqlToFindManyJobs = `query FindManyJobs($filter: JobFilterInput, $orderBy: [JobOrderByInput], $lastCursor: String, $limit: Int) {
   jobs(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
@@ -330,9 +315,7 @@ export const FindManyVideoInterviewModels = `query FindManyVideoInterviewModels(
     totalCount
     __typename
   }
-  }`
-
-
+  }`;
 
 export const findManyAttachmentsQuery = `query FindManyAttachments($filter: AttachmentFilterInput, $orderBy: [AttachmentOrderByInput], $lastCursor: String, $limit: Int) {
     attachments(
@@ -374,7 +357,6 @@ export const findManyAttachmentsQuery = `query FindManyAttachments($filter: Atta
       totalCount
     }
   }`;
-
 
 export const graphqlQueryToGetTimelineThreadsFromPersonId = `query GetTimelineThreadsFromPersonId($personId: UUID!, $page: Int!, $pageSize: Int!) {
   getTimelineThreadsFromPersonId(
@@ -427,13 +409,7 @@ fragment ParticipantFragment on TimelineThreadParticipant {
   __typename
 }`;
 
-
-
-
-
-
-
-export const findWorkspaceMemberProfiles =  `query FindManyWorkspaceMemberProfiles($filter: WorkspaceMemberProfileFilterInput, $orderBy: [WorkspaceMemberProfileOrderByInput], $lastCursor: String, $limit: Int) {
+export const findWorkspaceMemberProfiles = `query FindManyWorkspaceMemberProfiles($filter: WorkspaceMemberProfileFilterInput, $orderBy: [WorkspaceMemberProfileOrderByInput], $lastCursor: String, $limit: Int) {
   workspaceMemberProfiles(
     filter: $filter
     orderBy: $orderBy
@@ -469,8 +445,7 @@ export const findWorkspaceMemberProfiles =  `query FindManyWorkspaceMemberProfil
     totalCount
     __typename
   }
-}`
-
+}`;
 
 export const graphQueryToFindManyvideoInterviews = `query FindManyVideoInterviews($filter: VideoInterviewFilterInput, $orderBy: [VideoInterviewOrderByInput], $lastCursor: String, $limit: Int) {
   videoInterviews(
@@ -603,8 +578,7 @@ export const graphQueryToFindManyvideoInterviews = `query FindManyVideoInterview
     totalCount
     __typename
   }
-}`
-
+}`;
 
 export const questionsQuery = `
     query FindManyVideoInterviewQuestions($filter: VideoInterviewQuestionFilterInput, $orderBy: [VideoInterviewQuestionsOrderByInput], $limit: Int) {
@@ -626,8 +600,6 @@ export const questionsQuery = `
     }
     }
 `;
-
-
 
 export const fullFindManyObjectsFieldsQuery = `query ObjectMetadataItems {
     objects(paging: { first: 1000 }) {
@@ -726,9 +698,9 @@ export const fullFindManyObjectsFieldsQuery = `query ObjectMetadataItems {
         endCursor
       }
     }
-  }`
+  }`;
 
-export const queryObjectMetadataItems =       `query ObjectMetadataItems($objectFilter: ObjectFilter, $fieldFilter: FieldFilter) {
+export const queryObjectMetadataItems = `query ObjectMetadataItems($objectFilter: ObjectFilter, $fieldFilter: FieldFilter) {
   objects(paging: {first: 1000}, filter: $objectFilter) {
     edges {
       node {
@@ -780,8 +752,7 @@ export const graphQlTofindManyCandidateEnrichments = `query FindManyCandidateEnr
             totalCount
             __typename
           }
-        }`
-
+        }`;
 
 export const FindManyWorkspaceMembers = `
 query FindManyWorkspaceMembers($filter: WorkspaceMemberFilterInput, $orderBy: [WorkspaceMemberOrderByInput], $lastCursor: String, $limit: Int) {
@@ -819,10 +790,6 @@ query FindManyWorkspaceMembers($filter: WorkspaceMemberFilterInput, $orderBy: [W
   }
 }
 `;
-
-
-
-
 
 export const graphqlQueryToFindManyPeople = `query FindManyPeople($filter: PersonFilterInput, $orderBy: [PersonOrderByInput], $lastCursor: String, ) {
   people(filter: $filter, orderBy: $orderBy,  after: $lastCursor) {
@@ -960,7 +927,6 @@ export const graphqlQueryToFindManyPeople = `query FindManyPeople($filter: Perso
   }
 }`;
 
-
 export const FindOneJob = `
   query FindOneJob($objectRecordId: ID!) {
     job(filter: {id: {eq: $objectRecordId}}) {
@@ -989,9 +955,6 @@ export const FindOneJob = `
   }
   `;
 
-
-
-
 export const graphqlQueryToFindSMS = `
 query FindManySMS($filter: SMSFilterInput, $orderBy: [SMSOrderByInput], $lastCursor: String, $limit: Int) {
     smsMessages(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
@@ -1017,10 +980,6 @@ query FindManySMS($filter: SMSFilterInput, $orderBy: [SMSOrderByInput], $lastCur
         totalCount
     }
 }`;
-
-
-
-
 
 export const graphQlToFetchWhatsappMessages = `query FindManyWhatsappMessages($filter: WhatsappMessageFilterInput, $orderBy: [WhatsappMessageOrderByInput], $lastCursor: String, $limit: Int) {
   whatsappMessages(
@@ -1078,8 +1037,7 @@ export const graphQlToFetchWhatsappMessages = `query FindManyWhatsappMessages($f
     __typename
   }
 }
-`
-
+`;
 
 export const graphqlQueryToGetCurrentUser = `query GetCurrentUser {
   currentUser {
@@ -1194,9 +1152,7 @@ fragment WorkspaceMemberQueryFragment on WorkspaceMember {
   dateFormat
   timeFormat
   __typename
-  }`
-
-
+  }`;
 
 export const graphqlQueryToFindOneWorkspaceMember = `
 query FindOneWorkspaceMember($objectRecordId: ID!) {
@@ -1225,7 +1181,6 @@ query FindOneWorkspaceMember($objectRecordId: ID!) {
   }
 }
 `;
-
 
 export const graphqlQueryToFindManyQuestionsByJobId = `query FindManyQuestions($filter: QuestionFilterInput, $orderBy: [QuestionOrderByInput], $lastCursor: String, $limit: Int) {
     questions(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
@@ -1269,8 +1224,6 @@ export const graphqlQueryToFindManyQuestionsByJobId = `query FindManyQuestions($
       totalCount
     }
   }`;
-
-
 
 export const graphqlToFindManyAnswers = `query FindManyAnswers($filter: AnswerFilterInput, $orderBy: [AnswerOrderByInput], $lastCursor: String, $limit: Int) {
     answers(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
@@ -1354,9 +1307,7 @@ export const graphqlQueryToFindManyReminders = `query FindManyCandidateReminders
   }
 }`;
 
-
-
-  export const queryByvideoInterview = `query FindOneVideoInterview($objectRecordId: ID!) {
+export const queryByvideoInterview = `query FindOneVideoInterview($objectRecordId: ID!) {
   videoInterview(filter: {id: {eq: $objectRecordId}}) {
     attachments {
       edges {
@@ -1532,11 +1483,8 @@ export const graphqlQueryToFindManyReminders = `query FindManyCandidateReminders
   }
   }
   `;
-  
 
-
-  
-  export const graphqlToFetchAllCandidateData = `
+export const graphqlToFetchAllCandidateData = `
   query FindManyCandidates($lastCursor: String, $limit: Int, $filter: CandidateFilterInput) {
     candidates(after: $lastCursor, first: $limit, filter: $filter) {
       edges {
@@ -1722,12 +1670,7 @@ export const graphqlQueryToFindManyReminders = `query FindManyCandidateReminders
 
       }
     }
-  }`
-  
-
-
-
-
+  }`;
 
 export const findManyPhoneCalls = `
   query FindManyPhoneCalls($filter: PhoneCallFilterInput, $orderBy: [PhoneCallOrderByInput], $lastCursor: String, $limit: Int) {
@@ -1771,8 +1714,7 @@ export const findManyPhoneCalls = `
           totalCount
       }
   }
-  `
-
+  `;
 
 export const findManyShortlistsquery = `query FindManyShortlists($filter: ShortlistFilterInput, $orderBy: [ShortlistOrderByInput], $lastCursor: String, $limit: Int) {
   shortlists(
@@ -1817,8 +1759,7 @@ export const findManyShortlistsquery = `query FindManyShortlists($filter: Shortl
     }
   }
 }
-`
-
+`;
 
 export const findOneCandidate = `query FindOneCandidate($objectRecordId: ID!) {
 candidate(filter: {id: {eq: $objectRecordId}}) {
@@ -1868,9 +1809,7 @@ candidate(filter: {id: {eq: $objectRecordId}}) {
     startVideoInterviewChatCompleted
   }
 }
-`
-
-
+`;
 
 export const findOnePersonQuery = `
   query FindOnePerson($objectRecordId: ID!) {
@@ -1902,11 +1841,7 @@ export const findOnePersonQuery = `
       companyId
     }
   }
-`
-
-
-
-
+`;
 
 export const graphqlQueryToFindManyPeopleEngagedCandidatesOlderSchema = `query FindManyPeople($filter: PersonFilterInput, $orderBy: [PersonOrderByInput], $lastCursor: String, ) {
   people(filter: $filter, orderBy: $orderBy,  after: $lastCursor) {
@@ -2005,12 +1940,7 @@ export const graphqlQueryToFindManyPeopleEngagedCandidatesOlderSchema = `query F
       }
     }
   }
-}`
-
-
-
-
-
+}`;
 
 export const graphqlToFetchManyCandidatesOlderSchema = `
 query FindManyCandidates($lastCursor: String, $limit: Int, $filter: CandidateFilterInput) {
@@ -2078,10 +2008,7 @@ query FindManyCandidates($lastCursor: String, $limit: Int, $filter: CandidateFil
     }
   }
 }
-`
-
-
-
+`;
 
 export const graphqlToFindManyJobByArxenaSiteIdOlderSchema = `
 query FindManyJobs($filter: JobFilterInput, $orderBy: [JobOrderByInput], $lastCursor: String, $limit: Int) {
@@ -2112,5 +2039,4 @@ pageInfo {
 totalCount
 __typename
 }
-}`
-
+}`;

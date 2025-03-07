@@ -4,6 +4,7 @@ import { useRecoilState } from 'recoil';
 import { ArxEnrichLeftSideContainer } from '@/arx-enrich/left-side/ArxEnrichLeftSideContainer';
 import { ArxEnrichRightSideContainer } from '@/arx-enrich/right-side/ArxEnrichRightSideContainer';
 import { isArxEnrichModalOpenState } from '@/arx-enrich/states/arxEnrichModalOpenState';
+
 const StyledModalContainer = styled.div`
   background-color: solid;
   top: 20vh;
@@ -16,11 +17,8 @@ const StyledModalContainer = styled.div`
   height: 60vh;
   width: 80vw;
   z-index: 1000;
-  pointer-events: none; /* This ensures clicks pass through to the backdrop */
+  pointer-events: none;
 `;
-
-
-
 
 const StyledModalBackdrop = styled.div`
   position: fixed;
@@ -28,12 +26,10 @@ const StyledModalBackdrop = styled.div`
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
-  z-index: 999; /* Just below your modal container */
-  pointer-events: all; /* Ensures clicks are captured by this element */
+  background-color: ${({ theme }) => theme.background.overlayPrimary};
+  z-index: 999;
+  pointer-events: all;
 `;
-
-
 
 const StyledAdjuster = styled.div`
   display: flex;
@@ -42,13 +38,11 @@ const StyledAdjuster = styled.div`
   padding: 0 120px;
   justify-content: center;
   align-items: center;
-
 `;
-
 
 export interface Enrichment {
   modelName: string;
-  prompt: string; // Add this field
+  prompt: string;
   fields: Array<{
     id: number;
     name: string;
@@ -59,7 +53,6 @@ export interface Enrichment {
   selectedModel: string;
   selectedMetadataFields: string[];
 }
-
 
 const StyledModal = styled.div`
   background-color: ${({ theme }) => theme.background.tertiary};
@@ -73,16 +66,14 @@ const StyledModal = styled.div`
   overflow: hidden;
   max-height: 680px;
   box-sizing: border-box;
-  position: relative;  // Ensure this is present
+  position: relative;
   pointer-events: auto;
-  user-select: none;  // Prevent text selection
+  user-select: none;
 
-    & * {
+  & * {
     pointer-events: auto;
   }
 
-
-  /* Add custom scrollbar styling */
   ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
@@ -94,27 +85,26 @@ const StyledModal = styled.div`
   }
 
   ::-webkit-scrollbar-thumb {
-    background: ${({ theme }) => theme.background.quaternary || '#888'};
+    background: ${({ theme }) => theme.background.quaternary};
     border-radius: 4px;
-    
+
     &:hover {
-      background: ${({ theme }) => theme.background.noisy || '#666'};
+      background: ${({ theme }) => theme.background.primary};
     }
   }
 
-  /* For Firefox */
   scrollbar-width: thin;
-  scrollbar-color: ${({ theme }) => `${theme.background.quaternary || '#888'} ${theme.background.tertiary}`};
+  scrollbar-color: ${({ theme }) =>
+    `${theme.background.quaternary} ${theme.background.tertiary}`};
 `;
 
-
-const ScrollableContent = styled.div`
+const StyledScrollableContent = styled.div`
   display: flex;
   flex-direction: row;
   width: 100%;
   height: 100%;
   overflow-y: auto;
-  padding-right: 8px; /* Compensate for scrollbar width */
+  padding-right: 8px;
 `;
 
 export const ArxEnrichmentModal = ({
@@ -124,29 +114,13 @@ export const ArxEnrichmentModal = ({
   objectNameSingular: string;
   objectRecordId: string;
 }) => {
-  const [isArxEnrichModalOpen, setIsArxEnrichModalOpen] = useRecoilState(isArxEnrichModalOpenState);
-  
+  const [isArxEnrichModalOpen, setIsArxEnrichModalOpen] = useRecoilState(
+    isArxEnrichModalOpenState,
+  );
+
   const closeModal = () => {
     setIsArxEnrichModalOpen(false);
   };
-
-  // const { loading, error, data } = useQuery(FIND_MANY_VIDEO_INTERVIEW_MODELS);
-
-  // if (loading) {
-  //   return (
-  //     <StyledModalContainer onClick={closeModal}>
-  //       <StyledAdjuster>
-  //         <StyledModal onClick={(e) => e.stopPropagation()}>
-  //           <div>Loading...</div>
-  //         </StyledModal>
-  //       </StyledAdjuster>
-  //     </StyledModalContainer>
-  //   );
-  // }
-
-  // if (error != null) {
-  //   return <div>Error: {error.message}</div>;
-  // }
 
   if (!isArxEnrichModalOpen) {
     return null;

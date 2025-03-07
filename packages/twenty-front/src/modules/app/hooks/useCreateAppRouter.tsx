@@ -32,12 +32,10 @@ import { SyncEmails } from '~/pages/onboarding/SyncEmails';
 import GoogleSheet from '@/google-sheet/GoogleSheet';
 import { HotPage } from '@/hot/hotCandidates';
 import OrgChart from '@/orgchart/OrgChart';
-import VideoInterviewFlow from '@/video-interview/interview-response/VideoInterviewFlow';
+import VideoInterviewFlow from '@/video-interview/interview-response/components/VideoInterviewFlow';
 import VideoInterviewResponseViewer from '@/video-interview/interview-response/VideoInterviewResponseViewer';
 import { Chats } from '~/pages/chats/Chats';
 
-
-// VideoInterviewWrapper()
 
 const VideoInterviewWrapper = () => {
   console.log("VideoInterviewWrapper rendering");

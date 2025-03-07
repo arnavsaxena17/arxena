@@ -1,5 +1,14 @@
-import { Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  HttpException,
+  HttpStatus,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 
+import axios from 'axios';
 import {
   ChatControlsObjType,
   ChatHistoryItem,
@@ -1107,6 +1116,51 @@ export class ArxChatEndpoint {
       return { status: 'Success' };
     } catch (err) {
       return { status: err };
+    }
+  }
+
+  @Post('upload-jd')
+  @UseGuards(JwtAuthGuard)
+  async uploadJD(@Req() request: any) {
+    try {
+      const { jobId, attachmentUrl } = request.body;
+
+      console.log('jobId:', jobId);
+      console.log('attachmentUrl:', attachmentUrl);
+      console.log(
+        'request.headers.authorization:',
+        request.headers.authorization,
+      );
+      if (!jobId || !attachmentUrl) {
+        throw new HttpException(
+          'Missing jobId or attachmentUrl',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      const arxenaSiteBaseUrl =
+        process.env.REACT_APP_ARXENA_SITE_BASE_URL || 'http://127.0.0.1:5050';
+
+      // Process the JD using the process-jd endpoint
+      const processResponse = await axios.post(
+        `${arxenaSiteBaseUrl}/process-jd`,
+        {
+          jobId,
+          attachmentUrl,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${request.headers.authorization}`,
+          },
+        },
+      );
+
+      return processResponse.data;
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Failed to process JD',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 }

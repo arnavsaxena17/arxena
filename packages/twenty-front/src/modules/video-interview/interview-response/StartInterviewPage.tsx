@@ -4,7 +4,7 @@ import { VideoPlayer } from './utils/videoPlaybackUtils';
 
 
 import { StartInterviewPageProps } from 'twenty-shared';
-import { useStream } from '../StreamManager';
+import { useStream } from './StreamManager';
 import {
   AccessMessage,
   ButtonContainer,
