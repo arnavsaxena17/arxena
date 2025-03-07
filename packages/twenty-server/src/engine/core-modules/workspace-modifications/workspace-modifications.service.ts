@@ -1,123 +1,164 @@
 import { Injectable } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
-import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
-import { DataSourceEntity } from 'src/engine/metadata-modules/data-source/data-source.entity';
-import { DataSource, EntityManager, In, Repository } from 'typeorm';
-// import { EnvironmentService } from 'src/engine/integrations/environment/environment.service';
-
-import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
-// import { TokenService } from 'src/engine/core-modules/auth/services/token.service';
-import { AccessTokenService } from 'src/engine/core-modules/auth/token/services/access-token.service';
 
 import Anthropic from '@anthropic-ai/sdk';
 import OpenAI from 'openai';
-// import { WorkspaceQueryService } from '../workspace-query.service';
+import { DataSource, EntityManager, In, Repository } from 'typeorm';
+
+import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
+import { DataSourceEntity } from 'src/engine/metadata-modules/data-source/data-source.entity';
+// import { EnvironmentService } from 'src/engine/integrations/environment/environment.service';
+import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
+// import { TokenService } from 'src/engine/core-modules/auth/services/token.service';
+import { AccessTokenService } from 'src/engine/core-modules/auth/token/services/access-token.service';
+// import { WorkspaceQueryService } from '../workspace-query.service';  
 import { ApiKeyService } from 'src/engine/core-modules/auth/services/api-key.service';
 
 @Injectable()
 export class WorkspaceQueryService {
   constructor(
-
     @InjectRepository(Workspace, 'core')
     private readonly workspaceRepository: Repository<Workspace>,
     @InjectRepository(DataSourceEntity, 'metadata')
     public readonly dataSourceRepository: Repository<DataSourceEntity>,
     @InjectDataSource('metadata')
     private readonly metadataDataSource: DataSource,
-    public readonly apiKeyService :ApiKeyService,
+    public readonly apiKeyService: ApiKeyService,
 
     public readonly accessTokenService: AccessTokenService,
     public readonly workspaceDataSourceService: WorkspaceDataSourceService,
   ) {}
 
   async getWorkspaceIdFromToken(apiToken: string) {
-    const validatedToken = await this.accessTokenService.validateToken(apiToken);
+    const validatedToken =
+      await this.accessTokenService.validateToken(apiToken);
+
     return validatedToken.workspace.id;
   }
-  async getWorkspaceApiKey(workspaceId: string, keyName: string): Promise<string | null> {
+
+  async getWorkspaceApiKey(
+    workspaceId: string,
+    keyName: string,
+  ): Promise<string | null> {
     try {
       return this.getSpecificWorkspaceKey(workspaceId, keyName);
     } catch (error) {
-      console.log(`Error fetching ${keyName} for workspace ${workspaceId}:`, error);
+      console.log(
+        `Error fetching ${keyName} for workspace ${workspaceId}:`,
+        error,
+      );
+
       return null;
     }
   }
 
   async initializeLLMClients(workspaceId: string) {
-    console.log("LLM Client Initialised")
-    console.log("Workspace openaikey API key:", await this.getWorkspaceApiKey(workspaceId, 'openaikey'));
-    console.log("Workspace anthropicKey API key:", await this.getWorkspaceApiKey(workspaceId, 'anthropicKey'));
-    
-    const openAIKey = await this.getWorkspaceApiKey(workspaceId, 'openaikey') || process.env.OPENAI_API_KEY;
-    const anthropicKey = await this.getWorkspaceApiKey(workspaceId, 'anthropicKey') || process.env.ANTHROPIC_API_KEY;
-  
+    console.log('LLM Client Initialised');
+    console.log(
+      'Workspace openaikey API key:',
+      await this.getWorkspaceApiKey(workspaceId, 'openaikey'),
+    );
+    console.log(
+      'Workspace anthropicKey API key:',
+      await this.getWorkspaceApiKey(workspaceId, 'anthropicKey'),
+    );
+
+    const openAIKey =
+      (await this.getWorkspaceApiKey(workspaceId, 'openaikey')) ||
+      process.env.OPENAI_API_KEY;
+    const anthropicKey =
+      (await this.getWorkspaceApiKey(workspaceId, 'anthropicKey')) ||
+      process.env.ANTHROPIC_API_KEY;
+
     return {
       openAIclient: new OpenAI({ apiKey: openAIKey }),
-      anthropic: new Anthropic({ apiKey: anthropicKey })
+      anthropic: new Anthropic({ apiKey: anthropicKey }),
     };
   }
 
   async executeQueryAcrossWorkspaces<T>(
-    queryCallback: (workspaceId: string, dataSourceSchema: string, transactionManager?: EntityManager) => Promise<T>
+    queryCallback: (
+      workspaceId: string,
+      dataSourceSchema: string,
+      transactionManager?: EntityManager,
+    ) => Promise<T>,
   ): Promise<T[]> {
     const queryRunner = this.metadataDataSource.createQueryRunner();
+
     await queryRunner.connect();
-    
+
     const results: T[] = [];
-    
+
     try {
       await queryRunner.startTransaction();
       const transactionManager = queryRunner.manager;
-  
+
       const workspaceIds = await this.getWorkspaces();
       const dataSources = await this.dataSourceRepository.find({
         where: {
           workspaceId: In(workspaceIds),
         },
       });
-      
+
       const workspaceIdsWithDataSources = new Set(
         dataSources.map((dataSource) => dataSource.workspaceId),
       );
-  
+
       for (const workspaceId of workspaceIdsWithDataSources) {
-        const dataSourceSchema = this.workspaceDataSourceService.getSchemaName(workspaceId);
-        
+        const dataSourceSchema =
+          this.workspaceDataSourceService.getSchemaName(workspaceId);
+
         // Check if table exists before querying
-        const tableExists = await this.checkIfTableExists(dataSourceSchema, "_videoInterview");
-        
+        const tableExists = await this.checkIfTableExists(
+          dataSourceSchema,
+          '_videoInterview',
+        );
+
         if (!tableExists) {
-          console.log(`Table _videoInterview doesn't exist in schema ${dataSourceSchema}`);
+          console.log(
+            `Table _videoInterview doesn't exist in schema ${dataSourceSchema}`,
+          );
           continue;
+        } else {
+          console.log(
+            `Table _videoInterview exists in schema ${dataSourceSchema}`,
+          );
         }
-        else{
-          console.log(`Table _videoInterview exists in schema ${dataSourceSchema}`);
-        }
-        
+
         try {
-          const result = await queryCallback(workspaceId, dataSourceSchema, transactionManager);
+          const result = await queryCallback(
+            workspaceId,
+            dataSourceSchema,
+            transactionManager,
+          );
+
           if (result) {
             results.push(result);
           }
         } catch (error) {
-          console.log("Going to throw an error");
+          console.log('Going to throw an error');
           console.error(`Error processing workspace ${workspaceId}:`, error);
         }
       }
-  
+
       await queryRunner.commitTransaction();
+
       return results;
     } catch (error) {
-      console.error("Error executing query across workspaces:", error);
+      console.error('Error executing query across workspaces:', error);
       await queryRunner.rollbackTransaction();
     } finally {
       await queryRunner.release();
     }
+
     return [];
   }
-  
+
   // Helper function to check if table exists
-  private async checkIfTableExists(schema: string, tableName: string): Promise<boolean> {
+  private async checkIfTableExists(
+    schema: string,
+    tableName: string,
+  ): Promise<boolean> {
     const query = `
       SELECT EXISTS (
         SELECT FROM information_schema.tables 
@@ -126,27 +167,46 @@ export class WorkspaceQueryService {
       );
     `;
 
-    const result = await this.metadataDataSource.query(query, [schema, tableName]);
+    const result = await this.metadataDataSource.query(query, [
+      schema,
+      tableName,
+    ]);
+
     return result[0].exists;
   }
 
-  async executeRawQuery(query: string, params: any[], workspaceId: string, transactionManager?: EntityManager) {
-    console.log("Executing raw query to run update api key")
-    return this.workspaceDataSourceService.executeRawQuery(query, params, workspaceId, transactionManager);
+  async executeRawQuery(
+    query: string,
+    params: any[],
+    workspaceId: string,
+    transactionManager?: EntityManager,
+  ) {
+    console.log('Executing raw query to run update api key');
+
+    return this.workspaceDataSourceService.executeRawQuery(
+      query,
+      params,
+      workspaceId,
+      transactionManager,
+    );
   }
 
- async getWorkspaces(): Promise<string[]> {
+  async getWorkspaces(): Promise<string[]> {
     const workspaces = await this.workspaceRepository.find({
       select: ['id'],
     });
     const workspaceIds = workspaces.map((workspace) => workspace.id);
+
     return workspaceIds;
   }
 
-
   // Add this method to the service
-  async getApiKeys(workspaceId: string, dataSourceSchema: string, transactionManager?: EntityManager) {
-    console.log("Getting API keys for workspace:", workspaceId);
+  async getApiKeys(
+    workspaceId: string,
+    dataSourceSchema: string,
+    transactionManager?: EntityManager,
+  ) {
+    console.log('Getting API keys for workspace:', workspaceId);
     try {
       const apiKeys = await this.workspaceDataSourceService.executeRawQuery(
         `SELECT * FROM ${dataSourceSchema}."apiKey" where "apiKey"."revokedAt" IS NULL ORDER BY "apiKey"."createdAt" ASC`,
@@ -154,29 +214,36 @@ export class WorkspaceQueryService {
         workspaceId,
         transactionManager,
       );
+
       return apiKeys;
     } catch (e) {
-      console.log("Error in  ID", workspaceId, "for dataSourceSchema", dataSourceSchema);
+      console.log(
+        'Error in  ID',
+        workspaceId,
+        'for dataSourceSchema',
+        dataSourceSchema,
+      );
+
       return [];
     }
   }
 
-async getWorkspaceApiKeys(workspaceId: string): Promise<{
-  openaikey?: string;
-  twilio_account_sid?: string;
-  twilio_auth_token?: string;
-  smart_proxy_url?: string;
-  whatsapp_key?: string;
-  anthropic_key?: string;
-  facebook_whatsapp_api_token?: string;
-  facebook_whatsapp_phone_number_id?: string;
-  facebook_whatsapp_app_id?: string;
-  facebook_whatsapp_asset_id?: string;
-}> {
-  try {
-    console.log("Getting workspace api keys for workspace:", workspaceId);
-    // First, ensure all necessary columns exist
-    const alterTableQuery = `
+  async getWorkspaceApiKeys(workspaceId: string): Promise<{
+    openaikey?: string;
+    twilio_account_sid?: string;
+    twilio_auth_token?: string;
+    smart_proxy_url?: string;
+    whatsapp_key?: string;
+    anthropic_key?: string;
+    facebook_whatsapp_api_token?: string;
+    facebook_whatsapp_phone_number_id?: string;
+    facebook_whatsapp_app_id?: string;
+    facebook_whatsapp_asset_id?: string;
+  }> {
+    try {
+      console.log('Getting workspace api keys for workspace:', workspaceId);
+      // First, ensure all necessary columns exist
+      const alterTableQuery = `
       ALTER TABLE core.workspace
       ADD COLUMN IF NOT EXISTS openaikey varchar(255),
       ADD COLUMN IF NOT EXISTS twilio_account_sid varchar(255),
@@ -190,9 +257,9 @@ async getWorkspaceApiKeys(workspaceId: string): Promise<{
       ADD COLUMN IF NOT EXISTS facebook_whatsapp_asset_id varchar(255)
     `;
 
-    await this.executeRawQuery(alterTableQuery, [], workspaceId);
-    // Then proceed with the select query
-    const selectQuery = `
+      await this.executeRawQuery(alterTableQuery, [], workspaceId);
+      // Then proceed with the select query
+      const selectQuery = `
       SELECT 
         openaikey,
         twilio_account_sid,
@@ -208,58 +275,84 @@ async getWorkspaceApiKeys(workspaceId: string): Promise<{
       WHERE id = $1
     `;
 
-    const result = await this.executeRawQuery(selectQuery, [workspaceId], workspaceId);
+      const result = await this.executeRawQuery(
+        selectQuery,
+        [workspaceId],
+        workspaceId,
+      );
 
-    if (result && result[0]) {
-      return {
-        openaikey: result[0].openaikey,
-        twilio_account_sid: result[0].twilio_account_sid,
-        twilio_auth_token: result[0].twilio_auth_token,
-        smart_proxy_url: result[0].smart_proxy_url,
-        whatsapp_key: result[0].whatsapp_key,
-        anthropic_key: result[0].anthropic_key,
-        facebook_whatsapp_api_token: result[0].facebook_whatsapp_api_token,
-        facebook_whatsapp_phone_number_id: result[0].facebook_whatsapp_phone_number_id,
-        facebook_whatsapp_app_id: result[0].facebook_whatsapp_app_id,
-        facebook_whatsapp_asset_id: result[0].facebook_whatsapp_asset_id
-      };
+      if (result && result[0]) {
+        return {
+          openaikey: result[0].openaikey,
+          twilio_account_sid: result[0].twilio_account_sid,
+          twilio_auth_token: result[0].twilio_auth_token,
+          smart_proxy_url: result[0].smart_proxy_url,
+          whatsapp_key: result[0].whatsapp_key,
+          anthropic_key: result[0].anthropic_key,
+          facebook_whatsapp_api_token: result[0].facebook_whatsapp_api_token,
+          facebook_whatsapp_phone_number_id:
+            result[0].facebook_whatsapp_phone_number_id,
+          facebook_whatsapp_app_id: result[0].facebook_whatsapp_app_id,
+          facebook_whatsapp_asset_id: result[0].facebook_whatsapp_asset_id,
+        };
+      }
+
+      return {};
+    } catch (error) {
+      console.error(
+        `Error fetching API keys for workspace ${workspaceId}:`,
+        error,
+      );
+      throw new Error('Failed to fetch workspace API keys');
     }
-    return {};
-  } catch (error) {
-    console.error(`Error fetching API keys for workspace ${workspaceId}:`, error);
-    throw new Error('Failed to fetch workspace API keys');
   }
-}
-  async getSpecificWorkspaceKey(workspaceId: string, keyName: string): Promise<string | null> {
+
+  async getSpecificWorkspaceKey(
+    workspaceId: string,
+    keyName: string,
+  ): Promise<string | null> {
     try {
       // Convert camelCase to snake_case for database column names
-      const columnName = keyName.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
-      
+      const columnName = keyName.replace(
+        /[A-Z]/g,
+        (letter) => `_${letter.toLowerCase()}`,
+      );
+
       const query = `
         SELECT ${columnName}
         FROM core.workspace 
         WHERE id = $1
       `;
 
-      const result = await this.executeRawQuery(query, [workspaceId], workspaceId);
+      const result = await this.executeRawQuery(
+        query,
+        [workspaceId],
+        workspaceId,
+      );
 
       if (result && result[0]) {
         return result[0][columnName] || null;
       }
+
       return null;
     } catch (error) {
-      console.error(`Error fetching ${keyName} for workspace ${workspaceId}:`, error);
+      console.error(
+        `Error fetching ${keyName} for workspace ${workspaceId}:`,
+        error,
+      );
       throw new Error(`Failed to fetch ${keyName}`);
     }
   }
 
-  async checkWorkspaceKeyExists(workspaceId: string, keyName: string): Promise<boolean> {
+  async checkWorkspaceKeyExists(
+    workspaceId: string,
+    keyName: string,
+  ): Promise<boolean> {
     const value = await this.getSpecificWorkspaceKey(workspaceId, keyName);
+
     return value !== null && value !== undefined && value !== '';
   }
 
-
-  
   async updateWorkspaceApiKeys(
     workspaceId: string,
     keys: {
@@ -273,27 +366,31 @@ async getWorkspaceApiKeys(workspaceId: string): Promise<{
       facebook_whatsapp_phone_number_id?: string;
       facebook_whatsapp_app_id?: string;
       facebook_whatsapp_asset_id?: string;
-      }
+    },
   ): Promise<boolean> {
     try {
-      console.log("Going to try and update workspace api keys::", keys)
+      console.log('Going to try and update workspace api keys::', keys);
       const updates: string[] = [];
       const params: any[] = [];
       let paramCounter = 1;
 
       Object.entries(keys).forEach(([key, value]) => {
         if (value !== undefined) {
-          const columnName = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+          const columnName = key.replace(
+            /[A-Z]/g,
+            (letter) => `_${letter.toLowerCase()}`,
+          );
+
           updates.push(`${columnName} = $${paramCounter}`);
           params.push(value);
           paramCounter++;
         }
       });
-      console.log("These are the updates::", updates)
+      console.log('These are the updates::', updates);
       if (updates.length === 0) {
         return true;
       }
-      console.log("This is the workspace Id:", workspaceId)
+      console.log('This is the workspace Id:', workspaceId);
 
       params.push(workspaceId);
       const query = `
@@ -301,12 +398,17 @@ async getWorkspaceApiKeys(workspaceId: string): Promise<{
         SET ${updates.join(', ')}
         WHERE id = $${paramCounter}
       `;
-      console.log("This si the raw query:", query)
+
+      console.log('This si the raw query:', query);
       await this.executeRawQuery(query, params, workspaceId);
+
       return true;
     } catch (error) {
-      console.error(`Error updating API keys for workspace ${workspaceId}:`, error);
+      console.error(
+        `Error updating API keys for workspace ${workspaceId}:`,
+        error,
+      );
       throw new Error('Failed to update workspace API keys');
     }
-  } 
+  }
 }
