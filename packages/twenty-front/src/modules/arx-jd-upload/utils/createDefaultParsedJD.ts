@@ -42,7 +42,7 @@ export const createDefaultParsedJD = (
         : DEFAULT_VIDEO_QUESTIONS,
     },
     meetingScheduling: {
-      meetingType: partialData.meetingScheduling?.meetingType || 'scheduled',
+      meetingType: partialData.meetingScheduling?.meetingType || 'online',
       availableDates: partialData.meetingScheduling?.availableDates || [],
     },
   };

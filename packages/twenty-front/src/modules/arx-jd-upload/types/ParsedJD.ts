@@ -21,7 +21,7 @@ export type ParsedJD = {
     questions: string[];
   };
   meetingScheduling: {
-    meetingType: 'walkin' | 'scheduled';
+    meetingType: 'walkIn' | 'online' | 'inPerson';
     availableDates: Array<{
       date: string;
       timeSlots: {

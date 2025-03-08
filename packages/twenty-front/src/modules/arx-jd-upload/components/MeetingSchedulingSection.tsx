@@ -112,27 +112,28 @@ export const MeetingSchedulingSection: React.FC<FormComponentProps> = ({
       <StyledSectionContent>
         <StyledLabel>Meeting Type</StyledLabel>
         <MenuItemSelect
-          selected={parsedJD.meetingScheduling.meetingType === 'walkin'}
+          selected={parsedJD.meetingScheduling.meetingType === 'walkIn'}
           onClick={() => {
             setParsedJD({
               ...parsedJD,
               meetingScheduling: {
                 ...parsedJD.meetingScheduling,
                 meetingType:
-                  parsedJD.meetingScheduling.meetingType === 'walkin'
-                    ? 'scheduled'
-                    : 'walkin',
+                  parsedJD.meetingScheduling.meetingType === 'walkIn'
+                    ? 'walkIn'
+                    : 'online',
               },
             });
           }}
           text={
-            parsedJD.meetingScheduling.meetingType === 'walkin'
+            parsedJD.meetingScheduling.meetingType === 'walkIn'
               ? 'Walk-in'
-              : 'Scheduled Meeting'
+              : 'Online Meeting'
           }
         />
 
-        {parsedJD.meetingScheduling.meetingType === 'scheduled' && (
+        {(parsedJD.meetingScheduling.meetingType === 'online' ||
+          parsedJD.meetingScheduling.meetingType === 'inPerson') && (
           <>
             <StyledLabel style={{ marginTop: theme.spacing(4) }}>
               Select Available Dates & Time Slots

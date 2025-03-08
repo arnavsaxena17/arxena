@@ -35,6 +35,9 @@ export const useArxJDUpload = () => {
   const { createManyRecords: createManyVideoQuestions } = useCreateManyRecords({
     objectNameSingular: 'videoInterviewQuestion',
   });
+  const { createOneRecord: createOneInterviewSchedule } = useCreateOneRecord({
+    objectNameSingular: 'interviewSchedule',
+  });
 
   const { records: companies = [] } = useFindManyRecords({
     objectNameSingular: 'company',
@@ -48,10 +51,12 @@ export const useArxJDUpload = () => {
 
   const findBestCompanyMatch = useCallback(
     (companyName: string): Company | null => {
+      console.log('Finding best company match...', companyName);
       if (!Array.isArray(companies) || companies.length === 0) {
         return null;
       }
 
+      console.log('Companies:', companies);
       const companiesWithName = companies.filter(
         (company): company is Company =>
           typeof company === 'object' &&
@@ -59,6 +64,8 @@ export const useArxJDUpload = () => {
           'name' in company &&
           typeof company.name === 'string',
       );
+
+      console.log('Companies with name:', companiesWithName);
 
       if (companiesWithName.length === 0) {
         return null;
@@ -68,8 +75,9 @@ export const useArxJDUpload = () => {
         keys: ['name'],
         threshold: 0.4,
       });
-
+      console.log('Fuse:', fuse);
       const result = fuse.search(companyName);
+      console.log('Result:', result);
       return result.length > 0 ? result[0].item : null;
     },
     [companies],
@@ -85,7 +93,7 @@ export const useArxJDUpload = () => {
       setError(null);
       setIsUploading(true);
       const file = acceptedFiles[0];
-
+      console.log('File:', file);
       try {
         const createdJob = await createOneRecord({
           name: file.name.split('.')[0],
@@ -97,12 +105,16 @@ export const useArxJDUpload = () => {
           throw new Error('Failed to create job record');
         }
 
+        console.log('Uploading attachment file...');
+
         const { attachmentAbsoluteURL } = await uploadAttachmentFile(file, {
           targetObjectNameSingular: CoreObjectNameSingular.Job,
           id: createdJob.id,
         });
 
         console.log('Uploaded attachment file:', attachmentAbsoluteURL);
+
+        console.log('Uploading JD...');
 
         const response = await axios({
           method: 'post',
@@ -119,6 +131,7 @@ export const useArxJDUpload = () => {
         console.log('API response:', response.data);
 
         if (response.data.success === true) {
+          console.log('JD uploaded successfully');
           const data = response.data.data;
           const parsedData = createDefaultParsedJD({
             name: data.name,
@@ -139,6 +152,7 @@ export const useArxJDUpload = () => {
             typeof parsedData.companyName === 'string' &&
             parsedData.companyName !== ''
           ) {
+            console.log('Finding best company match...');
             const matchedCompany = findBestCompanyMatch(parsedData.companyName);
             if (
               typeof matchedCompany?.id === 'string' &&
@@ -250,7 +264,7 @@ export const useArxJDUpload = () => {
         const transformedParsedJD = {
           ...parsedJD,
           meetingScheduling: {
-            meetingType: parsedJD.meetingScheduling?.meetingType || 'scheduled',
+            meetingType: parsedJD.meetingScheduling?.meetingType || 'online',
             availableDates:
               parsedJD.meetingScheduling?.availableDates.map(
                 (date) => date.date,
@@ -362,8 +376,7 @@ export const useArxJDUpload = () => {
         // 3. Create video interview questions
         if (
           parsedJD.videoInterview.questions &&
-          parsedJD.videoInterview.questions.length > 0 &&
-          parsedJD.chatFlow.order.startVideoInterviewChat
+          parsedJD.videoInterview.questions.length > 0
         ) {
           // First, fetch the job to get its associated video interview template
           console.log('Fetching job with ID:', jobId);
@@ -446,14 +459,16 @@ export const useArxJDUpload = () => {
             jobResponse.data.job.videoInterviewTemplate.edges[0].node.id;
 
           // Create video interview questions
-          console.log('Creating video interview questions...');
+          console.log(
+            'Creating video interview questions...',
+            parsedJD.videoInterview.questions,
+          );
           const videoQuestionsToCreate = parsedJD.videoInterview.questions.map(
             (question, index) => ({
               videoInterviewTemplateId: videoInterviewTemplateId,
               questionValue: question,
               name: question,
-              timeLimit: 120, // Default time limit in seconds
-              position: index + 1,
+              timeLimit: 120,
             }),
           );
 
@@ -473,22 +488,6 @@ export const useArxJDUpload = () => {
             'Starting interview schedule creation with type:',
             parsedJD.meetingScheduling.meetingType,
           );
-          const createInterviewScheduleMutation = `
-          mutation CreateOneInterviewSchedule($input: InterviewScheduleCreateInput!) {
-            createInterviewSchedule(data: $input) {
-              __typename
-              createdAt
-              deletedAt
-              id
-              jobsId
-              meetingType
-              name
-              position
-              slotsAvailable
-              updatedAt
-            }
-          }
-        `;
 
           const interviewScheduleData = {
             jobsId: jobId,
@@ -502,33 +501,31 @@ export const useArxJDUpload = () => {
             interviewScheduleData,
           );
 
-          // Send GraphQL mutation using axios directly
-          const response = await axios.request({
-            method: 'post',
-            url: process.env.REACT_APP_GRAPHQL_URL || '/graphql',
-            headers: {
-              authorization: 'Bearer ' + (tokenPair?.accessToken || ''),
-              'content-type': 'application/json',
-            },
-            data: JSON.stringify({
-              query: createInterviewScheduleMutation,
-              variables: {
-                input: interviewScheduleData,
-              },
-            }),
-          });
-
-          if (response.data.errors === true) {
-            console.error(
-              'Interview schedule creation failed:',
-              response.data.errors,
+          try {
+            const createdInterviewSchedule = await createOneInterviewSchedule(
+              interviewScheduleData,
             );
+
+            if (!createdInterviewSchedule) {
+              console.error(
+                'Interview schedule creation failed: No response data',
+              );
+              throw new Error(
+                'Failed to create interview schedule: No response data',
+              );
+            }
+
+            console.log(
+              'Interview schedule created successfully:',
+              createdInterviewSchedule,
+            );
+          } catch (error) {
+            console.error('Interview schedule creation failed:', error);
             throw new Error(
               'Failed to create interview schedule: ' +
-                JSON.stringify(response.data.errors),
+                (error instanceof Error ? error.message : String(error)),
             );
           }
-          console.log('Successfully created interview schedule');
         } else {
           console.log('No interview schedule to create');
         }
@@ -552,6 +549,7 @@ export const useArxJDUpload = () => {
       tokenPair,
       updateOneRecord,
       apolloClient,
+      createOneInterviewSchedule,
     ],
   );
 

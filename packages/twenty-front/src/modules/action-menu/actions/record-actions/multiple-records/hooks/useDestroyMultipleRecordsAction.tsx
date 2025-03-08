@@ -87,7 +87,7 @@ export const useDestroyMultipleRecordsAction: ActionHookWithObjectMetadataItem =
 
     const shouldBeRegistered =
       !isRemoteObject &&
-      isDeletedFilterActive &&
+      // isDeletedFilterActive &&
       isDefined(contextStoreNumberOfSelectedRecords) &&
       contextStoreNumberOfSelectedRecords < BACKEND_BATCH_REQUEST_MAX_COUNT &&
       contextStoreNumberOfSelectedRecords > 0;

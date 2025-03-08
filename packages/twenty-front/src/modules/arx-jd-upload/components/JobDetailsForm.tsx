@@ -1,13 +1,13 @@
 import React from 'react';
 import { FormComponentProps } from '../types/FormComponentProps';
 import {
-    StyledFieldGroup,
-    StyledFullWidthField,
-    StyledInput,
-    StyledLabel,
-    StyledSection,
-    StyledSectionContent,
-    StyledSectionHeader,
+  StyledFieldGroup,
+  StyledFullWidthField,
+  StyledInput,
+  StyledLabel,
+  StyledSection,
+  StyledSectionContent,
+  StyledSectionHeader,
 } from './ArxJDUploadModal.styled';
 
 export const JobDetailsForm: React.FC<FormComponentProps> = ({
