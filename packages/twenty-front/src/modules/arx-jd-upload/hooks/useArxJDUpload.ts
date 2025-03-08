@@ -3,7 +3,11 @@ import axios from 'axios';
 import Fuse from 'fuse.js';
 import { useCallback, useState } from 'react';
 import { useRecoilState } from 'recoil';
-import { isDefined } from 'twenty-shared';
+import {
+  FindManyVideoInterviewModels,
+  FindOneJob,
+  isDefined,
+} from 'twenty-shared';
 
 import { useUploadAttachmentFile } from '@/activities/files/hooks/useUploadAttachmentFile';
 import { tokenPairState } from '@/auth/states/tokenPairState';
@@ -144,6 +148,7 @@ export const useArxJDUpload = () => {
             pathPosition: data.pathPosition,
             companyName: data.companyName,
             companyId: data.companyId,
+            id: createdJob.id,
           });
 
           console.log('Parsed JD data created successfully:', parsedData);
@@ -242,6 +247,40 @@ export const useArxJDUpload = () => {
         ...validJobFields
       } = parsedJD;
 
+      // Check if we already have a job ID from the initial file upload
+      if (
+        'id' in validJobFields &&
+        typeof validJobFields.id === 'string' &&
+        validJobFields.id !== ''
+      ) {
+        console.log('Using existing job ID:', validJobFields.id);
+
+        // Update the existing job with any new information
+        await updateOneRecord({
+          idToUpdate: validJobFields.id,
+          updateOneRecordInput: validJobFields,
+        });
+
+        console.log('Updated existing job:', validJobFields.id);
+
+        // Transform parsedJD to match handleFinish parameter type
+        const transformedParsedJD = {
+          ...parsedJD,
+          meetingScheduling: {
+            meetingType: parsedJD.meetingScheduling?.meetingType || 'online',
+            availableDates:
+              parsedJD.meetingScheduling?.availableDates.map(
+                (date) => date.date,
+              ) || [],
+          },
+        };
+        console.log('Transformed parsedJD:', transformedParsedJD);
+
+        await handleFinish(validJobFields.id, transformedParsedJD);
+        return true;
+      }
+
+      // If no existing job ID, create a new job (this is a fallback case)
       let createdJob;
 
       if (typeof companyName === 'string' && companyName !== '') {
@@ -339,13 +378,13 @@ export const useArxJDUpload = () => {
           parsedJD.chatFlow.order,
         );
         const selectedChatFlows = [];
-        if (parsedJD.chatFlow.order.startChat) {
+        if (parsedJD.chatFlow.order.initialChat) {
           selectedChatFlows.push('startChat');
         }
-        if (parsedJD.chatFlow.order.startVideoInterviewChat) {
+        if (parsedJD.chatFlow.order.meetingScheduling) {
           selectedChatFlows.push('startVideoInterviewChat');
         }
-        if (parsedJD.chatFlow.order.startMeetingSchedulingChat) {
+        if (parsedJD.chatFlow.order.videoInterview) {
           selectedChatFlows.push('startMeetingSchedulingChat');
         }
         console.log('Selected chat flows:', selectedChatFlows);
@@ -395,24 +434,10 @@ export const useArxJDUpload = () => {
         ) {
           // First, fetch the job to get its associated video interview template
           console.log('Fetching job with ID:', jobId);
-          const findJobQuery = `
-            query FindOneJob($objectRecordId: ID!) {
-              job(filter: {id: {eq: $objectRecordId}}) {
-                id
-                videoInterviewTemplate {
-                  edges {
-                    node {
-                      id
-                    }
-                  }
-                }
-              }
-            }
-          `;
 
           const jobResponse = await apolloClient.query({
             query: gql`
-              ${findJobQuery}
+              ${FindOneJob}
             `,
             variables: {
               objectRecordId: jobId,
@@ -425,33 +450,10 @@ export const useArxJDUpload = () => {
 
             // Create a video interview template if it doesn't exist
             // First, fetch available video interview models
-            const findVideoInterviewModelsQuery = `
-              query FindManyVideoInterviewModels($filter: VideoInterviewModelFilterInput, $orderBy: [VideoInterviewModelOrderByInput], $lastCursor: String, $limit: Int) {
-                videoInterviewModels(
-                  filter: $filter
-                  orderBy: $orderBy
-                  first: $limit
-                  after: $lastCursor
-                ) {
-                  edges {
-                    node {
-                      id
-                      name
-                      position
-                    }
-                    cursor
-                  }
-                  pageInfo {
-                    hasNextPage
-                    endCursor
-                  }
-                }
-              }
-            `;
 
             const modelsResponse = await apolloClient.query({
               query: gql`
-                ${findVideoInterviewModelsQuery}
+                ${FindManyVideoInterviewModels}
               `,
               variables: {
                 filter: {},

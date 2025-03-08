@@ -118,18 +118,37 @@ export const MeetingSchedulingSection: React.FC<FormComponentProps> = ({
               ...parsedJD,
               meetingScheduling: {
                 ...parsedJD.meetingScheduling,
-                meetingType:
-                  parsedJD.meetingScheduling.meetingType === 'walkIn'
-                    ? 'walkIn'
-                    : 'online',
+                meetingType: 'walkIn',
               },
             });
           }}
-          text={
-            parsedJD.meetingScheduling.meetingType === 'walkIn'
-              ? 'Walk-in'
-              : 'Online Meeting'
-          }
+          text="Walk-in"
+        />
+        <MenuItemSelect
+          selected={parsedJD.meetingScheduling.meetingType === 'online'}
+          onClick={() => {
+            setParsedJD({
+              ...parsedJD,
+              meetingScheduling: {
+                ...parsedJD.meetingScheduling,
+                meetingType: 'online',
+              },
+            });
+          }}
+          text="Online"
+        />
+        <MenuItemSelect
+          selected={parsedJD.meetingScheduling.meetingType === 'inPerson'}
+          onClick={() => {
+            setParsedJD({
+              ...parsedJD,
+              meetingScheduling: {
+                ...parsedJD.meetingScheduling,
+                meetingType: 'inPerson',
+              },
+            });
+          }}
+          text="In Person"
         />
 
         {(parsedJD.meetingScheduling.meetingType === 'online' ||

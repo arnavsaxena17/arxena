@@ -9,6 +9,7 @@ export type ParsedJD = {
   pathPosition: string;
   companyName?: string;
   companyId?: string;
+  id?: string;
   chatFlow: {
     order: {
       initialChat: boolean;
