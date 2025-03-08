@@ -100,16 +100,14 @@ export const ArxJDFormStepper: React.FC<ArxJDFormStepperProps> = ({
 
   useEffect(() => {
     // Only advance to next step if:
-    // 1. We have a non-null parsedJD with valid data
+    // 1. We have a non-null parsedJD
     // 2. We're on the first step (Upload)
     // 3. We haven't already auto-advanced for this parsedJD
-    if (
-      parsedJD !== null &&
-      activeStep === 0 &&
-      parsedJD.name !== undefined &&
-      parsedJD.name !== '' &&
-      !hasAutoAdvancedRef.current
-    ) {
+    if (parsedJD !== null && activeStep === 0 && !hasAutoAdvancedRef.current) {
+      console.log(
+        'Auto-advancing to job details step because parsedJD is available:',
+        parsedJD,
+      );
       // Mark that we've auto-advanced to prevent loops
       hasAutoAdvancedRef.current = true;
       // Advance to the next step

@@ -1,9 +1,9 @@
 import { useCallback } from 'react';
 import { useRecoilState } from 'recoil';
 import {
-    arxJDFormStepperState,
-    ArxJDFormStepperState,
-    ArxJDFormStepType,
+  arxJDFormStepperState,
+  ArxJDFormStepperState,
+  ArxJDFormStepType,
 } from '../states/arxJDFormStepperState';
 
 // Default form steps, always including the first three
