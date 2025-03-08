@@ -87,11 +87,54 @@ export const ArxJDFormStepper: React.FC<ArxJDFormStepperProps> = ({
   // Adjust the step if needed (e.g., if a step was removed but we're on it)
   useEffect(() => {
     // Only check if parsedJD is not null
-    if (parsedJD !== null && activeStep >= availableSteps.length) {
-      // We're on a step that no longer exists, go to the last available step
-      setStep(availableSteps.length - 1);
+    if (parsedJD !== null) {
+      const currentSteps = availableSteps;
+      const currentStepType = currentSteps[activeStep];
+
+      // If we're on a step that no longer exists, go to the last available step
+      if (activeStep >= currentSteps.length) {
+        setStep(currentSteps.length - 1);
+      }
+      // If we're on the VideoInterview step but it's not selected in the chat flow
+      else if (
+        currentStepType === ArxJDFormStepType.VideoInterview &&
+        !parsedJD.chatFlow.order.videoInterview
+      ) {
+        // Go to the next available step or the last step
+        const nextAvailableStep = currentSteps.findIndex(
+          (step) =>
+            step === ArxJDFormStepType.MeetingScheduling &&
+            parsedJD.chatFlow.order.meetingScheduling,
+        );
+
+        if (nextAvailableStep !== -1) {
+          setStep(nextAvailableStep);
+        } else {
+          // If no next step is available, go to the last valid step
+          setStep(currentSteps.indexOf(ArxJDFormStepType.ChatConfiguration));
+        }
+      }
+      // If we're on the MeetingScheduling step but it's not selected in the chat flow
+      else if (
+        currentStepType === ArxJDFormStepType.MeetingScheduling &&
+        !parsedJD.chatFlow.order.meetingScheduling
+      ) {
+        // Go to the previous available step
+        const prevAvailableStep = currentSteps.findIndex(
+          (step) =>
+            step === ArxJDFormStepType.VideoInterview &&
+            parsedJD.chatFlow.order.videoInterview,
+        );
+
+        if (prevAvailableStep !== -1) {
+          setStep(prevAvailableStep);
+        } else {
+          // If no previous step is available, go to the chat configuration step
+          setStep(currentSteps.indexOf(ArxJDFormStepType.ChatConfiguration));
+        }
+      }
     }
-  }, [parsedJD, activeStep, setStep, availableSteps.length]);
+  }, [parsedJD, activeStep, setStep, availableSteps]);
 
   // Automatically move to step 2 when parsedJD becomes available (after upload)
   // We use a ref to track if we've already auto-advanced, to prevent loops

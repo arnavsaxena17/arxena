@@ -41,13 +41,49 @@ export const ChatFlowSection: React.FC<FormComponentProps> = ({
           selectedId as keyof typeof parsedJD.chatFlow.order
         ],
     };
-    setParsedJD({
-      ...parsedJD,
-      chatFlow: {
-        ...parsedJD.chatFlow,
-        order: newOrder,
-      },
-    });
+
+    // If videoInterview is being turned off and meetingScheduling is on,
+    // we need to handle the step navigation properly
+    if (
+      selectedId === 'videoInterview' &&
+      !newOrder.videoInterview &&
+      newOrder.meetingScheduling
+    ) {
+      // Ensure we can still navigate to meeting scheduling
+      setParsedJD({
+        ...parsedJD,
+        chatFlow: {
+          ...parsedJD.chatFlow,
+          order: newOrder,
+        },
+      });
+    }
+    // If meetingScheduling is being turned off and videoInterview is on,
+    // we need to handle the step navigation properly
+    else if (
+      selectedId === 'meetingScheduling' &&
+      !newOrder.meetingScheduling &&
+      newOrder.videoInterview
+    ) {
+      // Ensure we can still navigate to video interview
+      setParsedJD({
+        ...parsedJD,
+        chatFlow: {
+          ...parsedJD.chatFlow,
+          order: newOrder,
+        },
+      });
+    }
+    // Normal case
+    else {
+      setParsedJD({
+        ...parsedJD,
+        chatFlow: {
+          ...parsedJD.chatFlow,
+          order: newOrder,
+        },
+      });
+    }
   };
 
   return (

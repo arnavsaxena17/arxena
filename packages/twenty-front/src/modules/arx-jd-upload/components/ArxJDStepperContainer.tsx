@@ -2,6 +2,7 @@ import styled from '@emotion/styled';
 import React from 'react';
 
 import { useArxJDFormStepper } from '../hooks/useArxJDFormStepper';
+import { ArxJDFormStepType } from '../states/arxJDFormStepperState';
 import { FormComponentProps } from '../types/FormComponentProps';
 import { ArxJDFormStepper } from './ArxJDFormStepper';
 import { ArxJDModalLayout } from './ArxJDModalLayout';
@@ -63,19 +64,77 @@ export const ArxJDStepperContainer: React.FC<ArxJDStepperContainerProps> = ({
   onClose,
   title,
 }) => {
-  const { activeStep, nextStep, prevStep, isLastStep } = useArxJDFormStepper();
+  const { activeStep, nextStep, prevStep } = useArxJDFormStepper();
 
   // Make sure parsedJD is not null when rendering the stepper
   if (!parsedJD) {
     return null;
   }
 
+  // Get the available steps based on selected chat flow options
+  const getAvailableSteps = () => {
+    // Always start with Upload JD step
+    const steps = [ArxJDFormStepType.UploadJD];
+
+    // Only add other steps if we have a parsedJD (file uploaded)
+    if (parsedJD !== null) {
+      steps.push(ArxJDFormStepType.JobDetails);
+      steps.push(ArxJDFormStepType.ChatConfiguration);
+
+      // Add VideoInterview step if selected
+      if (parsedJD.chatFlow.order.videoInterview) {
+        steps.push(ArxJDFormStepType.VideoInterview);
+      }
+
+      // Add MeetingScheduling step if selected
+      if (parsedJD.chatFlow.order.meetingScheduling) {
+        steps.push(ArxJDFormStepType.MeetingScheduling);
+      }
+    }
+
+    return steps;
+  };
+
+  const availableSteps = getAvailableSteps();
+  const isLastStep = activeStep === availableSteps.length - 1;
+
   // Handle next button action
   const handleNext = () => {
     if (isLastStep) {
       onSubmit && onSubmit();
     } else {
-      nextStep();
+      // Get the current step type
+      const currentStepType = availableSteps[activeStep];
+
+      // If we're on the chat configuration step, we need to determine the next step
+      // based on the selected options
+      if (currentStepType === ArxJDFormStepType.ChatConfiguration) {
+        // Find the index of the next available step
+        const nextStepIndex = activeStep + 1;
+
+        // If there's a next step available, go to it
+        if (nextStepIndex < availableSteps.length) {
+          nextStep();
+        } else {
+          // If there's no next step, but we should have one based on the configuration,
+          // update the available steps and then navigate
+          if (
+            parsedJD.chatFlow.order.videoInterview ||
+            parsedJD.chatFlow.order.meetingScheduling
+          ) {
+            // Force a re-render to update the available steps
+            setParsedJD({ ...parsedJD });
+            // Then navigate to the next step
+            nextStep();
+          } else {
+            // If no additional steps are selected, treat as last step
+            onSubmit && onSubmit();
+          }
+        }
+      } else {
+        // For other steps, just go to the next one
+        nextStep();
+      }
     }
   };
 

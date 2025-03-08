@@ -11,6 +11,8 @@ const DEFAULT_FORM_STEPS = [
   ArxJDFormStepType.UploadJD,
   ArxJDFormStepType.JobDetails,
   ArxJDFormStepType.ChatConfiguration,
+  ArxJDFormStepType.VideoInterview,
+  ArxJDFormStepType.MeetingScheduling,
 ];
 
 export const useArxJDFormStepper = (initialStep = 0) => {
@@ -18,13 +20,10 @@ export const useArxJDFormStepper = (initialStep = 0) => {
     arxJDFormStepperState,
   );
 
-  // For now, we'll use all steps until we integrate with parsedJD
-  // This will be updated in the ArxJDFormStepper component
-  const FORM_STEPS = [
-    ...DEFAULT_FORM_STEPS,
-    ArxJDFormStepType.VideoInterview,
-    ArxJDFormStepType.MeetingScheduling,
-  ];
+  // We'll use the default steps for navigation logic
+  // The actual available steps will be determined in the ArxJDFormStepper component
+  // based on the parsedJD configuration
+  const FORM_STEPS = DEFAULT_FORM_STEPS;
 
   const nextStep = useCallback(() => {
     setArxJDFormStepper((prev: ArxJDFormStepperState) => ({
