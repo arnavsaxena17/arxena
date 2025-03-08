@@ -5,29 +5,17 @@ const StyledContainer = styled.div`
   border-top: 1px solid ${({ theme }) => theme.border.color.medium};
   display: flex;
   justify-content: space-between;
-  margin-top: ${({ theme }) => theme.spacing(4)};
-  padding: ${({ theme }) => theme.spacing(3)} ${({ theme }) => theme.spacing(4)};
+  margin-top: ${({ theme }) => theme.spacing(2)};
+  padding: ${({ theme }) => theme.spacing(2)} ${({ theme }) => theme.spacing(4)};
+  position: sticky;
+  bottom: 0;
+  background-color: ${({ theme }) => theme.background.tertiary};
+  z-index: 1;
 `;
 
 const StyledButtonContainer = styled.div`
   display: flex;
   gap: ${({ theme }) => theme.spacing(2)};
-`;
-
-const StyledBackButton = styled.button`
-  display: flex;
-  align-items: center;
-  color: ${({ theme }) => theme.font.color.tertiary};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  gap: ${({ theme }) => theme.spacing(1)};
-  padding: ${({ theme }) => theme.spacing(1)};
-  border: none;
-  background: none;
-  cursor: pointer;
-
-  &:hover {
-    color: ${({ theme }) => theme.font.color.secondary};
-  }
 `;
 
 type ArxJDStepNavigationProps = {
@@ -49,14 +37,17 @@ export const ArxJDStepNavigation = ({
 }: ArxJDStepNavigationProps) => {
   return (
     <StyledContainer>
-      <div>
+      <StyledButtonContainer>
         {showBackButton && onBack && (
-          <StyledBackButton onClick={onBack}>
-            <IconArrowLeft size={12} />
-            Back
-          </StyledBackButton>
+          <Button
+            title="Back"
+            onClick={onBack}
+            variant="secondary"
+            Icon={IconArrowLeft}
+            size="small"
+          />
         )}
-      </div>
+      </StyledButtonContainer>
       <StyledButtonContainer>
         {showNextButton && onNext && (
           <Button
@@ -64,6 +55,7 @@ export const ArxJDStepNavigation = ({
             onClick={onNext}
             disabled={isNextDisabled}
             variant="primary"
+            size="small"
           />
         )}
       </StyledButtonContainer>

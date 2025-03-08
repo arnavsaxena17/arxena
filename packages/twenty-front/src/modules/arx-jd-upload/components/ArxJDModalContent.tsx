@@ -67,9 +67,12 @@ export const ArxJDModalContent = ({
       getRootProps={getRootProps}
       getInputProps={getInputProps}
       isDragActive={isDragActive}
-      isUploading={false} // Explicitly set to false since we're in the parsed state
-      error={null} // Reset error state once we have a valid parsedJD
+      isUploading={false}
+      error={null}
       handleFileUpload={handleFileUpload}
+      isOpen={true}
+      onClose={onCancel}
+      title="Job Description"
     />
   );
 };

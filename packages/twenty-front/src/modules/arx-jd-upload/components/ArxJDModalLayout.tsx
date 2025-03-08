@@ -2,16 +2,16 @@ import { ReactNode } from 'react';
 import { IconButton, IconX } from 'twenty-ui';
 
 import {
-    StyledAdjuster,
-    StyledBackdrop,
-    StyledBody,
-    StyledFooter,
-    StyledModal,
-    StyledModalContainer,
-    StyledModalContent,
-    StyledModalHeader,
-    StyledScrollableContent,
-    StyledTitle,
+  StyledAdjuster,
+  StyledBackdrop,
+  StyledBody,
+  StyledFooter,
+  StyledModal,
+  StyledModalContainer,
+  StyledModalContent,
+  StyledModalHeader,
+  StyledScrollableContent,
+  StyledTitle,
 } from './ArxJDUploadModal.styled';
 
 type ArxJDModalLayoutProps = {
@@ -20,6 +20,7 @@ type ArxJDModalLayoutProps = {
   onClose: () => void;
   children: ReactNode;
   footer?: ReactNode;
+  navigation?: ReactNode;
 };
 
 export const ArxJDModalLayout = ({
@@ -28,6 +29,7 @@ export const ArxJDModalLayout = ({
   onClose,
   children,
   footer,
+  navigation,
 }: ArxJDModalLayoutProps) => {
   if (!isOpen) {
     return null;
@@ -90,6 +92,7 @@ export const ArxJDModalLayout = ({
               <StyledScrollableContent>
                 <StyledBody>{children}</StyledBody>
               </StyledScrollableContent>
+              {navigation && <StyledFooter>{navigation}</StyledFooter>}
               {footer && <StyledFooter>{footer}</StyledFooter>}
             </StyledModalContent>
           </StyledModalContainer>

@@ -24,7 +24,7 @@ export const StyledModalContainer = styled.div`
   background-color: transparent;
   display: flex;
   flex-direction: row;
-  height: 60vh;
+  height: 70vh;
   justify-content: center;
   position: relative;
   width: 80vw;
@@ -47,11 +47,11 @@ export const StyledModal = styled.div`
   border-radius: 16px;
   display: flex;
   flex-direction: row;
-  height: 150%;
+  height: 100%;
   flex-basis: 900px;
   z-index: 1001;
   overflow: hidden;
-  max-height: 680px;
+  max-height: 90vh;
   box-sizing: border-box;
   position: relative;
   pointer-events: auto;
@@ -59,7 +59,7 @@ export const StyledModal = styled.div`
   -webkit-user-select: text;
   -moz-user-select: text;
   -ms-user-select: text;
-  isolation: isolate; /* Creates a new stacking context */
+  isolation: isolate;
 
   & * {
     pointer-events: auto !important;
@@ -91,11 +91,15 @@ export const StyledModal = styled.div`
 
 export const StyledScrollableContent = styled.div`
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   width: 100%;
-  height: 100%;
+  flex: 1;
   overflow-y: auto;
   padding-right: 8px;
+  min-height: 0;
+  max-height: calc(
+    90vh - 120px
+  ); /* Increased from 160px to allow more content to be visible */
 `;
 
 export const StyledModalContent = styled.div`
@@ -103,14 +107,19 @@ export const StyledModalContent = styled.div`
   flex-direction: column;
   width: 100%;
   height: 100%;
-  padding: ${({ theme }) => theme.spacing(6)};
+  padding: ${({ theme }) => theme.spacing(4)};
+  position: relative;
+  overflow: hidden;
 `;
 
 export const StyledModalHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
   align-items: center;
+  background-color: ${({ theme }) => theme.background.tertiary};
+  display: flex;
+  flex-shrink: 0;
+  justify-content: space-between;
   margin-bottom: ${({ theme }) => theme.spacing(4)};
+  z-index: 1;
 `;
 
 export const StyledTitle = styled.div`
@@ -123,20 +132,24 @@ export const StyledBody = styled.div`
   display: flex;
   flex-direction: column;
   flex: 1;
-  gap: ${({ theme }) => theme.spacing(4)};
+  gap: ${({ theme }) => theme.spacing(2)};
+  padding-bottom: ${({ theme }) => theme.spacing(2)};
+  overflow-y: auto;
 `;
 
 export const StyledFooter = styled.div`
   align-items: center;
   background-color: ${({ theme }) => theme.background.noisy};
   border-top: 1px solid ${({ theme }) => theme.border.color.light};
-  bottom: 0;
   display: flex;
   justify-content: flex-end;
   gap: ${({ theme }) => theme.spacing(3)};
-  padding: ${({ theme }) => theme.spacing(4)};
-  position: sticky;
+  padding: ${({ theme }) => theme.spacing(2)};
   width: 100%;
+  flex-shrink: 0;
+  z-index: 1;
+  position: sticky;
+  bottom: 0;
 `;
 
 export const StyledDropzoneArea = styled.div`
@@ -177,7 +190,7 @@ export const StyledFieldGroup = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing(2)};
-  margin-bottom: ${({ theme }) => theme.spacing(4)};
+  margin-bottom: ${({ theme }) => theme.spacing(3)};
 `;
 
 export const StyledLabel = styled.label`
@@ -213,7 +226,7 @@ export const StyledSectionContent = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing(2)};
-  margin-bottom: ${({ theme }) => theme.spacing(6)};
+  margin-bottom: ${({ theme }) => theme.spacing(4)};
 `;
 
 export const StyledSectionDivider = styled.div`
@@ -224,5 +237,5 @@ export const StyledSectionDivider = styled.div`
 `;
 
 export const StyledSection = styled.div`
-  margin-bottom: ${({ theme }) => theme.spacing(6)};
+  margin-bottom: ${({ theme }) => theme.spacing(4)};
 `;

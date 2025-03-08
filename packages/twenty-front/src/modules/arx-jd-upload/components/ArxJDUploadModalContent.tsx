@@ -20,6 +20,7 @@ type ArxJDUploadModalContentProps = {
   getRootProps: () => DropzoneRootProps;
   getInputProps: () => DropzoneInputProps;
   isDragActive: boolean;
+  handleFileUpload: (files: File[]) => Promise<void>;
 };
 
 export const ArxJDUploadModalContent = ({
@@ -32,6 +33,7 @@ export const ArxJDUploadModalContent = ({
   getRootProps,
   getInputProps,
   isDragActive,
+  handleFileUpload,
 }: ArxJDUploadModalContentProps) => {
   const theme = useTheme();
   const { reset: resetFormStepper } = useArxJDFormStepper();
@@ -40,9 +42,12 @@ export const ArxJDUploadModalContent = ({
   useEffect(() => {
     // This will only run when parsedJD changes from null to a value
     if (parsedJD !== null) {
-      resetFormStepper();
+      console.log('JD parsed successfully, resetting form stepper', parsedJD);
+      resetFormStepper(0);
     }
-  }, [parsedJD !== null]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [parsedJD, resetFormStepper]);
+
+  console.log('Current state:', { isUploading, error, parsedJD });
 
   if (isUploading) {
     return <ArxJDUploadingState />;
@@ -65,18 +70,24 @@ export const ArxJDUploadModalContent = ({
     );
   }
 
-  // Ensure we have a valid parsedJD structure
+  // Ensure we have a valid parsedJD structure with defaults
   const validParsedJD = createDefaultParsedJD(parsedJD);
 
   return (
-    <div onClick={(e) => e.stopPropagation()}>
-      <ArxJDStepperContainer
-        parsedJD={validParsedJD}
-        setParsedJD={setParsedJD}
-        onCancel={closeModal}
-        onSubmit={handleCreateJob}
-        showFooter={true}
-      />
-    </div>
+    <ArxJDStepperContainer
+      parsedJD={validParsedJD}
+      setParsedJD={setParsedJD}
+      onCancel={closeModal}
+      onSubmit={handleCreateJob}
+      getRootProps={getRootProps}
+      getInputProps={getInputProps}
+      isDragActive={isDragActive}
+      isUploading={isUploading}
+      error={error}
+      handleFileUpload={handleFileUpload}
+      isOpen={true}
+      onClose={closeModal}
+      title="Upload Job Description"
+    />
   );
 };

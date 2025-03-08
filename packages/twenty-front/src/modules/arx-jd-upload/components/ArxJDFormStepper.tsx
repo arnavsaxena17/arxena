@@ -6,7 +6,6 @@ import { useArxJDFormStepper } from '../hooks/useArxJDFormStepper';
 import { ArxJDFormStepType } from '../states/arxJDFormStepperState';
 import { FormComponentProps } from '../types/FormComponentProps';
 import { ArxJDStepHeading } from './ArxJDStepHeading';
-import { ArxJDStepNavigation } from './ArxJDStepNavigation';
 import { ArxJDUploadStep } from './ArxJDUploadStep';
 import { ChatFlowSection } from './ChatFlowSection';
 import { ChatQuestionsSection } from './ChatQuestionsSection';
@@ -20,6 +19,7 @@ const StyledStepContent = styled.div`
   flex: 1;
   width: 100%;
   overflow-y: auto;
+  max-height: 100%;
 `;
 
 const StyledContentWrapper = styled.div`
@@ -169,100 +169,64 @@ export const ArxJDFormStepper: React.FC<ArxJDFormStepperProps> = ({
 
       case ArxJDFormStepType.JobDetails:
         return (
-          <>
-            <StyledContentWrapper>
-              <ArxJDStepHeading
-                title="Job Details"
-                description="Review and edit the job details"
-                currentStep={currentStep}
-                totalSteps={totalSteps}
-              />
-              <JobDetailsForm parsedJD={parsedJD} setParsedJD={setParsedJD} />
-            </StyledContentWrapper>
-            <ArxJDStepNavigation
-              onNext={handleNext}
-              onBack={handleBack}
-              nextLabel={
-                activeStep === availableSteps.length - 1 ? 'Finish' : 'Next'
-              }
+          <StyledContentWrapper>
+            <ArxJDStepHeading
+              title="Job Details"
+              description="Review and edit the job details"
+              currentStep={currentStep}
+              totalSteps={totalSteps}
             />
-          </>
+            <JobDetailsForm parsedJD={parsedJD} setParsedJD={setParsedJD} />
+          </StyledContentWrapper>
         );
 
       case ArxJDFormStepType.ChatConfiguration:
         return (
-          <>
-            <StyledContentWrapper>
-              <ArxJDStepHeading
-                title="Chat Configuration"
-                description="Configure the chat flow and questions"
-                currentStep={currentStep}
-                totalSteps={totalSteps}
-              />
-              <ChatFlowSection parsedJD={parsedJD} setParsedJD={setParsedJD} />
-              <ChatQuestionsSection
-                parsedJD={parsedJD}
-                setParsedJD={setParsedJD}
-              />
-            </StyledContentWrapper>
-            <ArxJDStepNavigation
-              onNext={handleNext}
-              onBack={handleBack}
-              nextLabel={
-                activeStep === availableSteps.length - 1 ? 'Finish' : 'Next'
-              }
+          <StyledContentWrapper>
+            <ArxJDStepHeading
+              title="Chat Configuration"
+              description="Configure the chat flow and questions"
+              currentStep={currentStep}
+              totalSteps={totalSteps}
             />
-          </>
+            <ChatFlowSection parsedJD={parsedJD} setParsedJD={setParsedJD} />
+            <ChatQuestionsSection
+              parsedJD={parsedJD}
+              setParsedJD={setParsedJD}
+            />
+          </StyledContentWrapper>
         );
 
       case ArxJDFormStepType.VideoInterview:
         return (
-          <>
-            <StyledContentWrapper>
-              <ArxJDStepHeading
-                title="Video Interview"
-                description="Configure video interview questions"
-                currentStep={currentStep}
-                totalSteps={totalSteps}
-              />
-              <VideoQuestionsSection
-                parsedJD={parsedJD}
-                setParsedJD={setParsedJD}
-              />
-            </StyledContentWrapper>
-            <ArxJDStepNavigation
-              onNext={handleNext}
-              onBack={handleBack}
-              nextLabel={
-                activeStep === availableSteps.length - 1 ? 'Finish' : 'Next'
-              }
+          <StyledContentWrapper>
+            <ArxJDStepHeading
+              title="Video Interview"
+              description="Configure video interview questions"
+              currentStep={currentStep}
+              totalSteps={totalSteps}
             />
-          </>
+            <VideoQuestionsSection
+              parsedJD={parsedJD}
+              setParsedJD={setParsedJD}
+            />
+          </StyledContentWrapper>
         );
 
       case ArxJDFormStepType.MeetingScheduling:
         return (
-          <>
-            <StyledContentWrapper>
-              <ArxJDStepHeading
-                title="Meeting Scheduling"
-                description="Configure meeting scheduling options"
-                currentStep={currentStep}
-                totalSteps={totalSteps}
-              />
-              <MeetingSchedulingSection
-                parsedJD={parsedJD}
-                setParsedJD={setParsedJD}
-              />
-            </StyledContentWrapper>
-            <ArxJDStepNavigation
-              onNext={handleNext}
-              onBack={handleBack}
-              nextLabel={
-                activeStep === availableSteps.length - 1 ? 'Finish' : 'Next'
-              }
+          <StyledContentWrapper>
+            <ArxJDStepHeading
+              title="Meeting Scheduling"
+              description="Configure meeting scheduling options"
+              currentStep={currentStep}
+              totalSteps={totalSteps}
             />
-          </>
+            <MeetingSchedulingSection
+              parsedJD={parsedJD}
+              setParsedJD={setParsedJD}
+            />
+          </StyledContentWrapper>
         );
 
       default:
@@ -270,5 +234,17 @@ export const ArxJDFormStepper: React.FC<ArxJDFormStepperProps> = ({
     }
   };
 
-  return <StyledStepContent>{renderStepContent()}</StyledStepContent>;
+  // Render navigation buttons separately from content
+  const renderNavigation = () => {
+    // We no longer need to render navigation here
+    // as it's being handled by the ArxJDStepperContainer
+    return null;
+  };
+
+  return (
+    <StyledStepContent>
+      {renderStepContent()}
+      {renderNavigation()}
+    </StyledStepContent>
+  );
 };

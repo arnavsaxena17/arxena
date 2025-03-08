@@ -1,5 +1,16 @@
 import { ParsedJD } from '../types/ParsedJD';
 
+// Default questions for chat and video sections
+const DEFAULT_CHAT_QUESTIONS = [
+  'What is your current and expected CTC?',
+  'Who do you report to, which functions report to you?',
+];
+
+const DEFAULT_VIDEO_QUESTIONS = [
+  'Please tell us about yourself',
+  'Why are you interested in working with us?',
+];
+
 export const createDefaultParsedJD = (
   partialData: Partial<ParsedJD> = {},
 ): ParsedJD => {
@@ -21,10 +32,14 @@ export const createDefaultParsedJD = (
         meetingScheduling:
           partialData.chatFlow?.order?.meetingScheduling || false,
       },
-      questions: partialData.chatFlow?.questions || [],
+      questions: partialData.chatFlow?.questions?.length
+        ? partialData.chatFlow.questions
+        : DEFAULT_CHAT_QUESTIONS,
     },
     videoInterview: {
-      questions: partialData.videoInterview?.questions || [],
+      questions: partialData.videoInterview?.questions?.length
+        ? partialData.videoInterview.questions
+        : DEFAULT_VIDEO_QUESTIONS,
     },
     meetingScheduling: {
       meetingType: partialData.meetingScheduling?.meetingType || 'scheduled',

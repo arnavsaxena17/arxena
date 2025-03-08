@@ -4,7 +4,9 @@ import React from 'react';
 import { useArxJDFormStepper } from '../hooks/useArxJDFormStepper';
 import { FormComponentProps } from '../types/FormComponentProps';
 import { ArxJDFormStepper } from './ArxJDFormStepper';
+import { ArxJDModalLayout } from './ArxJDModalLayout';
 import { ArxJDStepBar } from './ArxJDStepBar';
+import { ArxJDStepNavigation } from './ArxJDStepNavigation';
 
 const StyledContainer = styled.div`
   display: flex;
@@ -29,7 +31,6 @@ const StyledContent = styled.div`
   flex-direction: column;
   flex: 1;
   width: 100%;
-  overflow-y: auto;
 `;
 
 export type ArxJDStepperContainerProps = FormComponentProps & {
@@ -42,6 +43,9 @@ export type ArxJDStepperContainerProps = FormComponentProps & {
   isUploading?: boolean;
   error?: string | null;
   handleFileUpload?: (files: File[]) => Promise<void>;
+  isOpen: boolean;
+  onClose: () => void;
+  title: string;
 };
 
 export const ArxJDStepperContainer: React.FC<ArxJDStepperContainerProps> = ({
@@ -55,28 +59,65 @@ export const ArxJDStepperContainer: React.FC<ArxJDStepperContainerProps> = ({
   isUploading,
   error,
   handleFileUpload,
+  isOpen,
+  onClose,
+  title,
 }) => {
-  const { activeStep } = useArxJDFormStepper();
+  const { activeStep, nextStep, prevStep, isLastStep } = useArxJDFormStepper();
+
+  // Make sure parsedJD is not null when rendering the stepper
+  if (!parsedJD) {
+    return null;
+  }
+
+  // Handle next button action
+  const handleNext = () => {
+    if (isLastStep) {
+      onSubmit && onSubmit();
+    } else {
+      nextStep();
+    }
+  };
+
+  // Handle back button action
+  const handleBack = () => {
+    prevStep();
+  };
 
   return (
-    <StyledContainer onClick={(e) => e.stopPropagation()}>
-      <StyledHeader>
-        <ArxJDStepBar activeStep={activeStep} parsedJD={parsedJD} />
-      </StyledHeader>
-      <StyledContent>
-        <ArxJDFormStepper
-          parsedJD={parsedJD}
-          setParsedJD={setParsedJD}
-          getRootProps={getRootProps}
-          getInputProps={getInputProps}
-          isDragActive={isDragActive}
-          isUploading={isUploading}
-          error={error}
-          handleFileUpload={handleFileUpload}
-          onCancel={onCancel}
-          onSubmit={onSubmit}
-        />
-      </StyledContent>
-    </StyledContainer>
+    <ArxJDModalLayout
+      isOpen={isOpen}
+      onClose={onClose}
+      title={title}
+      navigation={
+        activeStep !== 0 && (
+          <ArxJDStepNavigation
+            onNext={handleNext}
+            onBack={handleBack}
+            nextLabel={isLastStep ? 'Finish' : 'Next'}
+          />
+        )
+      }
+    >
+      <StyledContainer onClick={(e) => e.stopPropagation()}>
+        <StyledHeader>
+          <ArxJDStepBar activeStep={activeStep} parsedJD={parsedJD} />
+        </StyledHeader>
+        <StyledContent>
+          <ArxJDFormStepper
+            parsedJD={parsedJD}
+            setParsedJD={setParsedJD}
+            getRootProps={getRootProps}
+            getInputProps={getInputProps}
+            isDragActive={isDragActive}
+            isUploading={isUploading}
+            error={error}
+            handleFileUpload={handleFileUpload}
+            onCancel={onCancel}
+            onSubmit={onSubmit}
+          />
+        </StyledContent>
+      </StyledContainer>
+    </ArxJDModalLayout>
   );
 };

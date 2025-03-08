@@ -17,6 +17,7 @@ export const ArxJDDropzoneWrapper = ({
     accept: {
       'application/pdf': ['.pdf'],
       'application/msword': ['.doc'],
+      'text/plain': ['.txt'],
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
         ['.docx'],
     },

@@ -70,6 +70,7 @@ export const useArxJDUpload = () => {
         return;
       }
 
+      console.log('Starting file upload...', acceptedFiles[0].name);
       setError(null);
       setIsUploading(true);
       const file = acceptedFiles[0];
@@ -79,6 +80,8 @@ export const useArxJDUpload = () => {
           name: file.name.split('.')[0],
         });
 
+        console.log('Created job record:', createdJob);
+
         if (createdJob?.id === undefined || createdJob?.id === null) {
           throw new Error('Failed to create job record');
         }
@@ -87,6 +90,8 @@ export const useArxJDUpload = () => {
           targetObjectNameSingular: CoreObjectNameSingular.Job,
           id: createdJob.id,
         });
+
+        console.log('Uploaded attachment file:', attachmentAbsoluteURL);
 
         const response = await axios({
           method: 'post',
@@ -99,6 +104,8 @@ export const useArxJDUpload = () => {
             Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
           },
         });
+
+        console.log('API response:', response.data);
 
         if (response.data.success === true) {
           const data = response.data.data;
@@ -114,6 +121,8 @@ export const useArxJDUpload = () => {
             companyName: data.companyName,
             companyId: data.companyId,
           });
+
+          console.log('Parsed JD data:', parsedData);
 
           if (
             typeof parsedData.companyName === 'string' &&
@@ -180,6 +189,7 @@ export const useArxJDUpload = () => {
       return;
     }
 
+    console.log('parsedJD', parsedJD);
     try {
       if (
         typeof parsedJD.companyName === 'string' &&
