@@ -154,29 +154,38 @@ export const useArxJDUpload = () => {
           ) {
             console.log('Finding best company match...');
             const matchedCompany = findBestCompanyMatch(parsedData.companyName);
+
+            const {
+              companyName,
+              chatFlow,
+              videoInterview,
+              meetingScheduling,
+              ...updateData
+            } = parsedData;
+
             if (
-              typeof matchedCompany?.id === 'string' &&
+              matchedCompany !== null &&
+              typeof matchedCompany.id === 'string' &&
               matchedCompany.id !== ''
             ) {
-              const {
-                companyName,
-                chatFlow,
-                videoInterview,
-                meetingScheduling,
-                ...updateData
-              } = parsedData;
               updateData.companyId = matchedCompany.id;
               console.log(
                 'Setting parsedJD state with company match:',
                 parsedData,
               );
-              setParsedJD(parsedData);
-
-              await updateOneRecord({
-                idToUpdate: createdJob.id,
-                updateOneRecordInput: updateData,
-              });
+            } else {
+              console.log(
+                'Setting parsedJD state without company match (no match found):',
+                parsedData,
+              );
             }
+
+            setParsedJD(parsedData);
+
+            await updateOneRecord({
+              idToUpdate: createdJob.id,
+              updateOneRecordInput: updateData,
+            });
           } else {
             const {
               companyName,
@@ -186,7 +195,7 @@ export const useArxJDUpload = () => {
               ...updateData
             } = parsedData;
             console.log(
-              'Setting parsedJD state without company match:',
+              'Setting parsedJD state without company match (no company name):',
               parsedData,
             );
             setParsedJD(parsedData);
@@ -219,7 +228,7 @@ export const useArxJDUpload = () => {
 
   const handleCreateJob = async () => {
     if (parsedJD === null) {
-      return;
+      return false;
     }
 
     console.log('parsedJD', parsedJD);
@@ -236,6 +245,7 @@ export const useArxJDUpload = () => {
       let createdJob;
 
       if (typeof companyName === 'string' && companyName !== '') {
+        console.log('Finding best company match...');
         const matchedCompany = findBestCompanyMatch(companyName);
         if (
           matchedCompany !== null &&
@@ -248,10 +258,13 @@ export const useArxJDUpload = () => {
           });
         }
       } else {
+        console.log('Creating job without company match...');
         createdJob = await createOneRecord({
           ...validJobFields,
         });
       }
+
+      console.log('Created job:', createdJob);
 
       // If job was created successfully, call handleFinish with the job ID
       if (isDefined(createdJob) && isDefined(createdJob.id)) {
@@ -259,6 +272,7 @@ export const useArxJDUpload = () => {
           'Job created successfully, now calling handleFinish with ID:',
           createdJob.id,
         );
+        console.log('Parsed JD:', parsedJD);
 
         // Transform parsedJD to match handleFinish parameter type
         const transformedParsedJD = {
@@ -271,6 +285,7 @@ export const useArxJDUpload = () => {
               ) || [],
           },
         };
+        console.log('Transformed parsedJD:', transformedParsedJD);
 
         await handleFinish(createdJob.id, transformedParsedJD);
       }
@@ -404,77 +419,135 @@ export const useArxJDUpload = () => {
             },
           });
 
-          // if (!jobResponse.data?.job?.videoInterviewTemplate?.edges?.length) {
-          //   console.log('No video interview template found for job');
-          //   console.log('Creating video interview template...');
+          if (!jobResponse.data?.job?.videoInterviewTemplate?.edges?.length) {
+            console.log('No video interview template found for job');
+            console.log('Creating video interview template...');
 
-          //   // Create a video interview template if it doesn't exist
-          //   const createVideoInterviewTemplateMutation = `
-          //     mutation CreateOneVideoInterviewTemplate($input: VideoInterviewTemplateCreateInput!) {
-          //       createVideoInterviewTemplate(data: $input) {
-          //         id
-          //         name
-          //         jobId
-          //       }
-          //     }
-          //   `;
+            // Create a video interview template if it doesn't exist
+            // First, fetch available video interview models
+            const findVideoInterviewModelsQuery = `
+              query FindManyVideoInterviewModels($filter: VideoInterviewModelFilterInput, $orderBy: [VideoInterviewModelOrderByInput], $lastCursor: String, $limit: Int) {
+                videoInterviewModels(
+                  filter: $filter
+                  orderBy: $orderBy
+                  first: $limit
+                  after: $lastCursor
+                ) {
+                  edges {
+                    node {
+                      id
+                      name
+                      position
+                    }
+                    cursor
+                  }
+                  pageInfo {
+                    hasNextPage
+                    endCursor
+                  }
+                }
+              }
+            `;
 
-          //   const templateResponse = await apolloClient.mutate({
-          //     mutation: gql`
-          //       ${createVideoInterviewTemplateMutation}
-          //     `,
-          //     variables: {
-          //       input: {
-          //         name: `${parsedJD.name} Video Interview Template`,
-          //         jobId: jobId,
-          //         introduction:
-          //           'Please answer the following questions for your video interview.',
-          //         instructions:
-          //           'You will have 2 minutes to answer each question.',
-          //         position: 1,
-          //         videoInterviewModelId: '1', // Use a default value or fetch available models if needed
-          //       },
-          //     },
-          //   });
+            const modelsResponse = await apolloClient.query({
+              query: gql`
+                ${findVideoInterviewModelsQuery}
+              `,
+              variables: {
+                filter: {},
+                orderBy: [{ position: 'AscNullsFirst' }],
+              },
+            });
 
-          //   const videoInterviewTemplateId =
-          //     templateResponse.data?.createVideoInterviewTemplate?.id;
+            console.log('Video interview models:', modelsResponse.data);
+            const videoInterviewModelId =
+              modelsResponse.data?.videoInterviewModels?.edges?.[0]?.node?.id ||
+              '1';
+            console.log(
+              'Using video interview model ID:',
+              videoInterviewModelId,
+            );
 
-          //   // Create video interview questions
-          //   console.log('Creating video interview questions...');
-          //   const videoQuestionsToCreate =
-          //     parsedJD.videoInterview.questions.map((question, index) => ({
-          //       videoInterviewTemplateId: videoInterviewTemplateId,
-          //       questionValue: question,
-          //       name: question,
-          //       timeLimit: 120, // Default time limit in seconds
-          //       position: index + 1,
-          //     }));
+            const createVideoInterviewTemplateMutation = `
+              mutation CreateOneVideoInterviewTemplate($input: VideoInterviewTemplateCreateInput!) {
+                createVideoInterviewTemplate(data: $input) {
+                  id
+                  name
+                  jobId
+                  introduction
+                  instructions
+                  videoInterviewModelId
+                }
+              }
+            `;
 
-          //   await createManyVideoQuestions(videoQuestionsToCreate);
-          //   console.log('Successfully created video interview questions');
-          // } else {
-          // Get the video interview template ID from the job
-          const videoInterviewTemplateId =
-            jobResponse.data.job.videoInterviewTemplate.edges[0].node.id;
+            const templateResponse = await apolloClient.mutate({
+              mutation: gql`
+                ${createVideoInterviewTemplateMutation}
+              `,
+              variables: {
+                input: {
+                  name: `${parsedJD.name} Interview Template`,
+                  jobId: jobId,
+                  introduction: `Hi, I am Arnav Saxena. I am a Director at Arxena, a US based recruitment firm. 
+                  Thanks so much for your application for the role of a ${parsedJD.name}. 
+                  We are excited to get to know you a little better!
+                  So we have ${parsedJD.videoInterview.questions.length} questions in the steps ahead!
+                  You'll need about 10 to 15 minutes and a strong signal to complete this.
+                  When you click the I'm ready lets go button, you'll be taken to the first question, you'll have 4 minutes to record your answer. 
+                  If this is your first time doing this interview this way, please don't stress about getting the perfect video. We are more interested in getting to know you and not getting the perfect video. 
+                  So relax, take a breath and get started!`,
+                  instructions: `Before you begin the interview:
+                  1. Find a quiet place with good internet connectivity
+                  2. Ensure you are in a well-lit area where your face is clearly visible
+                  3. Dress professionally for the interview
+                  4. Look directly at the camera while speaking
+                  5. Speak clearly at a moderate pace
+                  You will have 4 minutes to answer each question. Good luck!`,
+                  videoInterviewModelId: videoInterviewModelId,
+                },
+              },
+            });
 
-          // Create video interview questions
-          console.log(
-            'Creating video interview questions...',
-            parsedJD.videoInterview.questions,
-          );
-          const videoQuestionsToCreate = parsedJD.videoInterview.questions.map(
-            (question, index) => ({
-              videoInterviewTemplateId: videoInterviewTemplateId,
-              questionValue: question,
-              name: question,
-              timeLimit: 120,
-            }),
-          );
+            console.log('Template creation response:', templateResponse.data);
+            const videoInterviewTemplateId =
+              templateResponse.data?.createVideoInterviewTemplate?.id;
 
-          await createManyVideoQuestions(videoQuestionsToCreate);
-          console.log('Successfully created video interview questions');
-          // }
+            // Create video interview questions
+            console.log('Creating video interview questions...');
+            const videoQuestionsToCreate =
+              parsedJD.videoInterview.questions.map((question, index) => ({
+                videoInterviewTemplateId: videoInterviewTemplateId,
+                questionValue: question,
+                name: question,
+                timeLimit: 120, // Default time limit in seconds
+                position: index + 1,
+              }));
+
+            await createManyVideoQuestions(videoQuestionsToCreate);
+            console.log('Successfully created video interview questions');
+          } else {
+            // Get the video interview template ID from the job
+            console.log('Job response:', jobResponse.data.job);
+            const videoInterviewTemplateId =
+              jobResponse.data.job.videoInterviewTemplate.edges[0].node.id;
+
+            // Create video interview questions
+            console.log(
+              'Creating video interview questions...',
+              parsedJD.videoInterview.questions,
+            );
+            const videoQuestionsToCreate =
+              parsedJD.videoInterview.questions.map((question, index) => ({
+                videoInterviewTemplateId: videoInterviewTemplateId,
+                questionValue: question,
+                name: question,
+                timeLimit: 120,
+              }));
+
+            await createManyVideoQuestions(videoQuestionsToCreate);
+            console.log('Successfully created video interview questions');
+          }
         } else {
           console.log('No video interview questions to create');
         }
