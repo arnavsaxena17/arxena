@@ -18,14 +18,13 @@ import {
 
 import { workspacesWithOlderSchema } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/candidate-engagement';
 import { getCurrentUser } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
+import { ProcessCandidatesService } from 'src/engine/core-modules/candidate-sourcing/jobs/process-candidates.service';
+import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/services/candidate.service';
 import { PersonService } from 'src/engine/core-modules/candidate-sourcing/services/person.service';
+import { axiosRequest } from 'src/engine/core-modules/candidate-sourcing/utils/utils';
+import { GoogleSheetsService } from 'src/engine/core-modules/google-sheets/google-sheets.service';
+import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
-
-import { GoogleSheetsService } from '../../google-sheets/google-sheets.service';
-import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
-import { ProcessCandidatesService } from '../jobs/process-candidates.service';
-import { CandidateService } from '../services/candidate.service';
-import { axiosRequest } from '../utils/utils';
 
 @Controller('candidate-sourcing')
 export class CandidateSourcingController {
@@ -798,6 +797,66 @@ export class CandidateSourcingController {
       return { status: 'success' };
     } catch (error) {
       console.log('Error in add questions', error);
+
+      return { error: error.message };
+    }
+  }
+
+  @Post('delete-job-in-arxena-and-sheets')
+  async deleteJobInArxena(@Req() req: any): Promise<any> {
+    console.log('going to delete job in arxena');
+    const apiToken = req.headers.authorization.split(' ')[1];
+
+    try {
+      if (!req?.body?.id_to_delete) {
+        throw new Error('Missing required field: id_to_delete');
+      }
+      const jobId = req.body.id_to_delete;
+
+      console.log('this is the job id to delete:', jobId);
+
+      // const jobObject: Jobs = await this.candidateService.getJobDetails(
+      //   jobId,
+      //   '',
+      //   apiToken,
+      // );
+
+      // console.log('this is the job object:', jobObject);
+      // const arxenaSiteId = jobObject?.arxenaSiteId;
+
+      // Call the Arxena API to delete the job
+      const arxenaApiUrl =
+        process.env.NODE_ENV === 'production'
+          ? 'https://app.arxena.com/delete_job'
+          : 'http://127.0.0.1:5050/delete_job';
+
+      console.log('arxenaApiUrl:', arxenaApiUrl);
+      console.log('jobId:', jobId);
+
+      const response = await axios.post(
+        arxenaApiUrl,
+        { id_to_delete: jobId },
+        {
+          headers: {
+            Authorization: `Bearer ${apiToken}`,
+            'Content-Type': 'application/json',
+          },
+        },
+      );
+
+      if (response.status !== 200 && response.status !== 201) {
+        throw new Error(
+          `Failed to delete job from Arxena: ${response.statusText}`,
+        );
+      }
+
+      return {
+        success: true,
+        message: 'Job deleted successfully from Arxena and sheets',
+        data: response.data,
+      };
+    } catch (error) {
+      console.log('Error in deleteJobInArxena:', error);
 
       return { error: error.message };
     }

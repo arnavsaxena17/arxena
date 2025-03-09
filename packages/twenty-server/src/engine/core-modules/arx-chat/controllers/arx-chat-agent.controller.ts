@@ -1143,7 +1143,7 @@ export class ArxChatEndpoint {
 
       // Process the JD using the process-jd endpoint
       const processResponse = await axios.post(
-        `${arxenaSiteBaseUrl}/process-jd`,
+        `${arxenaSiteBaseUrl}/upload-jd`,
         {
           jobId,
           attachmentUrl,

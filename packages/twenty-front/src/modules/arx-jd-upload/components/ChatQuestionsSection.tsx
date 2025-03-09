@@ -17,6 +17,11 @@ export const ChatQuestionsSection: React.FC<FormComponentProps> = ({
   parsedJD,
   setParsedJD,
 }) => {
+  // Prevent hotkey propagation when typing in inputs
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    e.stopPropagation();
+  };
+
   const handleChatQuestionAdd = () => {
     const currentQuestions = parsedJD.chatFlow?.questions?.length
       ? [...parsedJD.chatFlow.questions]
@@ -73,6 +78,7 @@ export const ChatQuestionsSection: React.FC<FormComponentProps> = ({
                 });
               }}
               placeholder="Enter question"
+              onKeyDown={handleKeyDown}
             />
             <Button
               variant="secondary"

@@ -44,6 +44,11 @@ export const MeetingSchedulingSection: React.FC<FormComponentProps> = ({
 }) => {
   const theme = useTheme();
 
+  // Prevent hotkey propagation when interacting with calendar
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    e.stopPropagation();
+  };
+
   const handleDateSelect = (date: Date) => {
     const dateStr = date.toISOString();
     const existingDateIndex =
@@ -157,7 +162,10 @@ export const MeetingSchedulingSection: React.FC<FormComponentProps> = ({
             <StyledLabel style={{ marginTop: theme.spacing(4) }}>
               Select Available Dates & Time Slots
             </StyledLabel>
-            <div onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+            <div
+              onClick={(e: React.MouseEvent) => e.stopPropagation()}
+              onKeyDown={handleKeyDown}
+            >
               <StyledCalendarContainer>
                 <Calendar
                   date={new Date()}

@@ -18,6 +18,7 @@ import { useFindManyRecords } from '@/object-record/hooks/useFindManyRecords';
 import { useUpdateOneRecord } from '@/object-record/hooks/useUpdateOneRecord';
 import { ObjectRecord } from '@/object-record/types/ObjectRecord';
 
+import mongoose from 'mongoose';
 import { ParsedJD } from '../types/ParsedJD';
 import { createDefaultParsedJD } from '../utils/createDefaultParsedJD';
 // import { useArxJDFormStepper } from './useArxJDFormStepper';
@@ -87,6 +88,39 @@ export const useArxJDUpload = () => {
     [companies],
   );
 
+  const sendJobToArxena = useCallback(
+    async (jobName: string, jobId: string) => {
+      console.log('process.env.NODE_ENV', process.env.NODE_ENV);
+      try {
+        const arxenaJobId = new mongoose.Types.ObjectId().toString();
+
+        console.log('This is the jobName', jobName);
+        const response = await axios.post(
+          process.env.NODE_ENV === 'production'
+            ? 'https://app.arxena.com/candidate-sourcing/create-job-in-arxena-and-sheets'
+            : 'http://localhost:3000/candidate-sourcing/create-job-in-arxena-and-sheets',
+          { job_name: jobName, new_job_id: arxenaJobId, id_to_update: jobId },
+          {
+            headers: {
+              Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
+              'Content-Type': 'application/json',
+            },
+          },
+        );
+
+        if (response.status !== 200 && response.status !== 201) {
+          throw new Error(
+            `Failed to create job on Arxena: ${response.statusText}`,
+          );
+        }
+        return response.data;
+      } catch (error) {
+        console.error('Error sending job to Arxena:', error);
+      }
+    },
+    [tokenPair?.accessToken?.token],
+  );
+
   const handleFileUpload = useCallback(
     async (acceptedFiles: File[]): Promise<void> => {
       if (acceptedFiles.length === 0) {
@@ -145,7 +179,7 @@ export const useArxJDUpload = () => {
             salaryBracket: data.salaryBracket,
             isActive: true,
             specificCriteria: data.specificCriteria,
-            pathPosition: data.pathPosition,
+            // pathPosition: data.pathPosition,
             companyName: data.companyName,
             companyId: data.companyId,
             id: createdJob.id,
@@ -575,12 +609,10 @@ export const useArxJDUpload = () => {
             'Creating interview schedule with data:',
             interviewScheduleData,
           );
-
           try {
             const createdInterviewSchedule = await createOneInterviewSchedule(
               interviewScheduleData,
             );
-
             if (!createdInterviewSchedule) {
               console.error(
                 'Interview schedule creation failed: No response data',
@@ -589,7 +621,6 @@ export const useArxJDUpload = () => {
                 'Failed to create interview schedule: No response data',
               );
             }
-
             console.log(
               'Interview schedule created successfully:',
               createdInterviewSchedule,
@@ -604,6 +635,9 @@ export const useArxJDUpload = () => {
         } else {
           console.log('No interview schedule to create');
         }
+        console.log('Sending job to Arxena...');
+        await sendJobToArxena(parsedJD.name, jobId);
+        console.log('Job sent to Arxena successfully');
 
         console.log('handleFinish completed successfully');
         setLoading(false);
@@ -621,8 +655,8 @@ export const useArxJDUpload = () => {
     [
       createManyQuestions,
       createManyVideoQuestions,
-      tokenPair,
       updateOneRecord,
+      sendJobToArxena,
       apolloClient,
       createOneInterviewSchedule,
     ],

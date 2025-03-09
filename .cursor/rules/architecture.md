@@ -95,3 +95,6 @@ The project is organized as a monorepo using nx, with the following main package
 - End-to-End Testing:
   - Framework: Playwright
   - Coverage: Critical user journeys 
+
+- Arxena Site Server:
+  - Arxena Site is the python server located at 127.0.0.1:5050. Do not use port 5000 or localhost

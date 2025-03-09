@@ -14,6 +14,11 @@ export const JobDetailsForm: React.FC<FormComponentProps> = ({
   parsedJD,
   setParsedJD,
 }) => {
+  // Prevent hotkey propagation when typing in inputs
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    e.stopPropagation();
+  };
+
   return (
     <StyledSection>
       <StyledSectionHeader>Job Details</StyledSectionHeader>
@@ -24,6 +29,7 @@ export const JobDetailsForm: React.FC<FormComponentProps> = ({
             value={parsedJD.name}
             onChange={(e) => setParsedJD({ ...parsedJD, name: e.target.value })}
             placeholder="Enter job title"
+            onKeyDown={handleKeyDown}
           />
         </StyledFieldGroup>
 
@@ -38,6 +44,7 @@ export const JobDetailsForm: React.FC<FormComponentProps> = ({
               })
             }
             placeholder="Enter job code"
+            onKeyDown={handleKeyDown}
           />
         </StyledFieldGroup>
 
@@ -52,6 +59,7 @@ export const JobDetailsForm: React.FC<FormComponentProps> = ({
               })
             }
             placeholder="Enter location"
+            onKeyDown={handleKeyDown}
           />
         </StyledFieldGroup>
 
@@ -66,6 +74,7 @@ export const JobDetailsForm: React.FC<FormComponentProps> = ({
               })
             }
             placeholder="Enter salary range"
+            onKeyDown={handleKeyDown}
           />
         </StyledFieldGroup>
 
@@ -82,6 +91,7 @@ export const JobDetailsForm: React.FC<FormComponentProps> = ({
             }
             placeholder="Enter job description"
             style={{ minHeight: '100px', resize: 'vertical' }}
+            onKeyDown={handleKeyDown}
           />
         </StyledFullWidthField>
 
@@ -96,6 +106,7 @@ export const JobDetailsForm: React.FC<FormComponentProps> = ({
               })
             }
             placeholder="Enter specific criteria"
+            onKeyDown={handleKeyDown}
           />
         </StyledFieldGroup>
 
@@ -110,6 +121,7 @@ export const JobDetailsForm: React.FC<FormComponentProps> = ({
               })
             }
             placeholder="Enter path position"
+            onKeyDown={handleKeyDown}
           />
         </StyledFieldGroup>
       </StyledSectionContent>

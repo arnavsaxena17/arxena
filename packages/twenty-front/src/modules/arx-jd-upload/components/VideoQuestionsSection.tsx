@@ -18,6 +18,11 @@ export const VideoQuestionsSection: React.FC<FormComponentProps> = ({
   parsedJD,
   setParsedJD,
 }) => {
+  // Prevent hotkey propagation when typing in inputs
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    e.stopPropagation();
+  };
+
   const handleVideoQuestionAdd = () => {
     const currentQuestions = parsedJD.videoInterview?.questions?.length
       ? [...parsedJD.videoInterview.questions]
@@ -75,6 +80,7 @@ export const VideoQuestionsSection: React.FC<FormComponentProps> = ({
                 });
               }}
               placeholder="Enter question"
+              onKeyDown={handleKeyDown}
             />
             <Button
               variant="secondary"

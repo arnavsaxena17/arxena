@@ -68,8 +68,9 @@ export const useCreateOneRecord = <
           },
         },
       );
-
-      if (response.status !== 200) {
+      console.log('Respons statyse from Arxena', response.status);
+      if (response.status !== 200 && response.status !== 201) {
+        console.log('Error creating job on Arxena', response);
         throw new Error(
           `Failed to create job on Arxena: ${response.statusText}`,
         );
@@ -81,6 +82,7 @@ export const useCreateOneRecord = <
           ? error.message
           : 'Failed to create job on Arxena',
       );
+      console.log('Error creating job on Arxena', error);
       throw error;
     }
   };

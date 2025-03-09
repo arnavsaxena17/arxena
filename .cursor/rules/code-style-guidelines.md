@@ -94,6 +94,28 @@ Twenty emphasizes clean, readable, and maintainable code. This document outlines
   };
   ```
 
+
+### isDefined Over Direct Checks
+- Use isDefined helper for null/undefined/empty checks
+- Clearer intent and consistent checking
+  ```typescript
+  // ✅ Correct
+  const userName = isDefined(user?.name) ? user.name : 'Anonymous';
+  const processItems = (items?: Item[]) => {
+    if (!isDefined(items)) return [];
+    return items.map(processItem);
+  };
+
+  // ❌ Incorrect 
+  const userName = user?.name !== undefined && user.name !== '' ? user.name : 'Anonymous';
+  const processItems = (items?: Item[]) => {
+    if (!items || items.length === 0) return [];
+    return items.map(processItem);
+  };
+  ```
+
+
+
 ## Operators and Expressions
 
 ### Optional Chaining Over &&
@@ -173,6 +195,21 @@ Twenty emphasizes clean, readable, and maintainable code. This document outlines
   logger.info('User action completed', { userId: user.id });
   logger.error('Operation failed', { error });
   ```
+- Use % formatting for logging to defer string formatting until needed
+- Avoid direct string concatenation in logging calls
+  ```Python
+  ### Lazy % Formatting in Logging
+  # ✅ Correct
+  logging.info("User %s performed action %s", user_id, action)
+  logging.debug("Processing item %d of %d", current, total)
+  
+  # ❌ Incorrect 
+  logging.info("User " + user_id + " performed action " + action)
+  logging.debug(f"Processing item {current} of {total}")
+  ```
+
+
+
 
 ### Minimal Comments
 - Write self-documenting code

@@ -21,6 +21,11 @@ export const UploadForm = ({
   const rootProps = getRootProps();
   const inputProps = getInputProps();
 
+  // Prevent hotkey propagation
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    e.stopPropagation();
+  };
+
   return (
     <StyledDropzoneArea
       onClick={(e) => {
@@ -31,6 +36,7 @@ export const UploadForm = ({
       onDragEnter={rootProps.onDragEnter}
       onDragLeave={rootProps.onDragLeave}
       onDragOver={rootProps.onDragOver}
+      onKeyDown={handleKeyDown}
     >
       <input
         type="file"
@@ -40,6 +46,7 @@ export const UploadForm = ({
         autoComplete="off"
         tabIndex={-1}
         style={{ display: 'none' }}
+        onKeyDown={handleKeyDown}
       />
       <IconUpload size={32} />
       {isDragActive ? (
