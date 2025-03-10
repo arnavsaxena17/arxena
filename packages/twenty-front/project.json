@@ -7,14 +7,16 @@
     "build": {
       "outputs": ["{options.outputPath}"],
       "options": {
-        "outputPath": "{projectRoot}/build"
+        "outputPath": "{projectRoot}/build",
+        "env": { "NODE_OPTIONS": "--max_old_space_size=26000" }
       },
       "dependsOn": ["^build"]
     },
     "build:sourcemaps": {
       "outputs": ["{options.outputPath}"],
       "options": {
-        "outputPath": "{projectRoot}/build"
+        "outputPath": "{projectRoot}/build",
+        "env": { "NODE_OPTIONS": "--max_old_space_size=26000" }
       },
       "dependsOn": ["^build"]
     },
