@@ -1,17 +1,14 @@
 import { useCallback, useState } from 'react';
-import { useRecoilState } from 'recoil';
-
-import { tokenPairState } from '@/auth/states/tokenPairState';
 
 import { ParsedJD } from '../types/ParsedJD';
 // import { useArxJDFormStepper } from './useArxJDFormStepper';
 
 export const useArxJDUpload = () => {
-  const [tokenPair] = useRecoilState(tokenPairState);
+  // const [tokenPair] = useRecoilState(tokenPairState);
   const [parsedJD, setParsedJD] = useState<ParsedJD | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  // const [loading, setLoading] = useState(false);
   // const apolloClient = useApolloClient();
 
   // const { createOneRecord } = useCreateOneRecord({ objectNameSingular: 'job' });
@@ -720,6 +717,6 @@ export const useArxJDUpload = () => {
     // handleCreateJob,
     resetUploadState,
     // handleFinish,
-    loading,
+    // loading,
   };
 };
