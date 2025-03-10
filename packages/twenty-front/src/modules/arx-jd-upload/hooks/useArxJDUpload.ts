@@ -1,13 +1,12 @@
 import { gql, useApolloClient } from '@apollo/client';
 import axios from 'axios';
-import Fuse from 'fuse.js';
 import fuzzy from 'fuzzy';
 import { useCallback, useMemo, useState } from 'react';
 import { useRecoilState } from 'recoil';
 import {
   FindManyVideoInterviewModels,
   FindOneJob,
-  isDefined
+  isDefined,
 } from 'twenty-shared';
 
 import { useUploadAttachmentFile } from '@/activities/files/hooks/useUploadAttachmentFile';
@@ -55,7 +54,6 @@ export const useArxJDUpload = () => {
     name: string;
   };
 
-  // Memoize the companies with names and create Fuse instance once
   const companiesWithNameAndFuse = useMemo(() => {
     const companiesWithName = companies.filter(
       (company): company is Company =>
@@ -65,22 +63,25 @@ export const useArxJDUpload = () => {
         typeof company.name === 'string',
     );
 
+    // Just store the filtered companies, no need to create a Fuse instance
     return {
       companiesWithName,
-      fuse:
-        companiesWithName.length > 0
-          ? new Fuse(companiesWithName, {
-              keys: ['name'],
-              threshold: 0.4,
-            })
-          : null,
+      // Create a simple lookup map for faster retrieval later
+      companyMap: companiesWithName.reduce(
+        (map, company) => {
+          map[company.name] = company;
+          return map;
+        },
+        {} as Record<string, Company>,
+      ),
     };
   }, [companies]);
 
   const findBestCompanyMatch = useCallback(
-    (companyName: string) => {
+    (companyName: string): Company | null => {
       if (
         !companyName ||
+        !companiesWithNameAndFuse.companiesWithName ||
         companiesWithNameAndFuse.companiesWithName.length === 0
       ) {
         return null;
@@ -92,7 +93,11 @@ export const useArxJDUpload = () => {
       );
 
       // Perform fuzzy search
-      const results = fuzzy.filter(companyName, companyNames);
+      const results = fuzzy.filter(companyName, companyNames, {
+        pre: '', // No highlighting needed
+        post: '', // No highlighting needed
+        extract: (input: string) => input, // We're already using simple strings
+      });
 
       // No matches found
       if (results.length === 0) {
@@ -102,13 +107,66 @@ export const useArxJDUpload = () => {
       // Get the best match string
       const bestMatchName = results[0].string;
 
-      // Find the corresponding company object
-      return companiesWithNameAndFuse.companiesWithName.find(
-        (company) => company.name === bestMatchName,
-      );
+      // Find the corresponding company object using our map for better performance
+      return companiesWithNameAndFuse.companyMap[bestMatchName] || null;
     },
-    [companiesWithNameAndFuse.companiesWithName],
+    [companiesWithNameAndFuse],
   );
+
+  // Memoize the companies with names and create Fuse instance once
+  // const companiesWithNameAndFuse = useMemo(() => {
+  //   const companiesWithName = companies.filter(
+  //     (company): company is Company =>
+  //       typeof company === 'object' &&
+  //       company !== null &&
+  //       'name' in company &&
+  //       typeof company.name === 'string',
+  //   );
+
+  //   return {
+  //     companiesWithName,
+  //     fuse:
+  //       companiesWithName.length > 0
+  //         ? new Fuse(companiesWithName, {
+  //             keys: ['name'],
+  //             threshold: 0.4,
+  //           })
+  //         : null,
+  //   };
+  // }, [companies]);
+
+  // const findBestCompanyMatch = useCallback(
+  //   (companyName: string) => {
+  //     if (
+  //       !companyName ||
+  //       companiesWithNameAndFuse.companiesWithName.length === 0
+  //     ) {
+  //       return null;
+  //     }
+
+  //     // Create an array of just company names for fuzzy searching
+  //     const companyNames = companiesWithNameAndFuse.companiesWithName.map(
+  //       (company) => company.name,
+  //     );
+
+  //     // Perform fuzzy search
+  //     const results = fuzzy.filter(companyName, companyNames);
+
+  //     // No matches found
+  //     if (results.length === 0) {
+  //       return null;
+  //     }
+
+  //     // Get the best match string
+  //     const bestMatchName = results[0].string;
+
+  //     // Find the corresponding company object
+  //     return companiesWithNameAndFuse.companiesWithName.find(
+  //       (company) => company.name === bestMatchName,
+  //     );
+  //   },
+  //   [companiesWithNameAndFuse.companiesWithName],
+  // );
 
   const sendJobToArxena = useCallback(
     async (jobName: string, jobId: string) => {
