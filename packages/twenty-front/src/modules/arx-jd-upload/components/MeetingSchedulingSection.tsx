@@ -1,9 +1,10 @@
 import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
+import { addDays } from 'date-fns';
 import React from 'react';
-// import { Calendar } from 'react-date-range';
-// import 'react-date-range/dist/styles.css';
-// import 'react-date-range/dist/theme/default.css';
+import { Calendar } from 'react-date-range';
+import 'react-date-range/dist/styles.css';
+import 'react-date-range/dist/theme/default.css';
 import { Button, IconMinus, MenuItemSelect } from 'twenty-ui';
 import { FormComponentProps } from '../types/FormComponentProps';
 import {
@@ -165,7 +166,7 @@ export const MeetingSchedulingSection: React.FC<FormComponentProps> = ({
               onClick={(e: React.MouseEvent) => e.stopPropagation()}
               onKeyDown={handleKeyDown}
             >
-              {/* <StyledCalendarContainer>
+              <StyledCalendarContainer>
                 <Calendar
                   date={new Date()}
                   onChange={handleDateSelect}
@@ -174,7 +175,7 @@ export const MeetingSchedulingSection: React.FC<FormComponentProps> = ({
                   dateDisplayFormat="yyyy-MM-dd"
                   color={theme.color.blue}
                 />
-              </StyledCalendarContainer> */}
+              </StyledCalendarContainer>
 
               <StyledDateSlotContainer>
                 {parsedJD.meetingScheduling.availableDates.map(

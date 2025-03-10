@@ -19247,6 +19247,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/react-date-range@npm:^1.4.10":
+  version: 1.4.10
+  resolution: "@types/react-date-range@npm:1.4.10"
+  dependencies:
+    "@types/react": "npm:*"
+    date-fns: "npm:^2.16.1"
+  checksum: 10c0/6a52875846bdf4531edd5467c9429c511044d08bbd5807715fd19e7ddb60d4375ec1060fdf0090783326722052869c3ac76fca828bf897563891c3ff570b3e92
+  languageName: node
+  linkType: hard
+
 "@types/react-datepicker@npm:^6.2.0":
   version: 6.2.0
   resolution: "@types/react-datepicker@npm:6.2.0"
@@ -26745,7 +26755,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"date-fns@npm:^2.30.0":
+"date-fns@npm:^2.16.1, date-fns@npm:^2.30.0":
   version: 2.30.0
   resolution: "date-fns@npm:2.30.0"
   dependencies:
@@ -49362,6 +49372,7 @@ __metadata:
     "@types/passport-microsoft": "npm:^1.0.3"
     "@types/pluralize": "npm:^0.0.33"
     "@types/react": "npm:^18.2.39"
+    "@types/react-date-range": "npm:^1.4.10"
     "@types/react-datepicker": "npm:^6.2.0"
     "@types/react-dom": "npm:^18.2.15"
     "@types/scroll-into-view": "npm:^1.16.0"

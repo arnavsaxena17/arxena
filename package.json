@@ -74,6 +74,7 @@
     "@types/multer": "^1.4.12",
     "@types/nodemailer": "^6.4.14",
     "@types/passport-microsoft": "^1.0.3",
+    "@types/react-date-range": "^1.4.10",
     "@whiskeysockets/baileys": "^6.7.13",
     "@wyw-in-js/vite": "^0.5.3",
     "@xyflow/react": "^12.4.2",
