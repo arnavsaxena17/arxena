@@ -1,7 +1,7 @@
 import { gql, useApolloClient } from '@apollo/client';
 import axios from 'axios';
 // import fuzzy from 'fuzzy';
-import Fuse from 'fuse.js';
+// import Fuse from 'fuse.js';
 import { useCallback, useState } from 'react';
 import { useRecoilState } from 'recoil';
 import {
@@ -77,22 +77,22 @@ export const useArxJDUpload = () => {
         return null;
       }
 
-      // const company = companiesWithName.find(
-      //   (company) => company.name.toLowerCase() === companyName.toLowerCase(),
-      // );
+      const company = companiesWithName.find(
+        (company) => company.name.toLowerCase() === companyName.toLowerCase(),
+      );
 
-      // return company || null;
+      return company || null;
 
-      const fuse = new Fuse(companiesWithName, {
-        keys: ['name'],
-        threshold: 0.4,
-      });
-      console.log('Fuse:', fuse);
-      const result = fuse.search(companyName);
+      // const fuse = new Fuse(companiesWithName, {
+      //   keys: ['name'],
+      //   threshold: 0.4,
+      // });
+      // console.log('Fuse:', fuse);
+      // const result = fuse.search(companyName);
 
-      console.log('Result:', result);
+      // console.log('Result:', result);
 
-      return result.length > 0 ? result[0].item : null;
+      // return result.length > 0 ? result[0].item : null;
     },
     [companies],
   );
