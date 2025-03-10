@@ -54,7 +54,22 @@ export const useArxJDUpload = () => {
     name: string;
   };
 
-  const companiesWithNameAndFuse = useMemo(() => {
+  type CompanySearchData = {
+    initialized: boolean;
+    companyNames: string[];
+    companyMap: Record<string, Company>;
+  };
+
+  const [companySearchData, setCompanySearchData] = useState<CompanySearchData>(
+    {
+      initialized: false,
+      companyNames: [],
+      companyMap: {},
+    },
+  );
+
+  // Prepare data for lazy initialization
+  const companiesData = useMemo(() => {
     const companiesWithName = companies.filter(
       (company): company is Company =>
         typeof company === 'object' &&
@@ -63,41 +78,51 @@ export const useArxJDUpload = () => {
         typeof company.name === 'string',
     );
 
-    // Just store the filtered companies, no need to create a Fuse instance
-    return {
-      companiesWithName,
-      // Create a simple lookup map for faster retrieval later
-      companyMap: companiesWithName.reduce(
-        (map, company) => {
-          map[company.name] = company;
-          return map;
-        },
-        {} as Record<string, Company>,
-      ),
-    };
+    return companiesWithName;
   }, [companies]);
+
+  // Initialize search data only when needed
+  const initializeCompanySearch = useCallback(() => {
+    if (!companySearchData.initialized && companiesData.length > 0) {
+      const companyMap = {} as Record<string, Company>;
+      const companyNames = companiesData.map((company) => {
+        companyMap[company.name] = company;
+        return company.name;
+      });
+
+      setCompanySearchData({
+        initialized: true,
+        companyNames,
+        companyMap,
+      });
+
+      console.log('Lazy initialized company search data');
+    }
+  }, [companiesData, companySearchData.initialized]);
 
   const findBestCompanyMatch = useCallback(
     (companyName: string): Company | null => {
-      if (
-        !companyName ||
-        !companiesWithNameAndFuse.companiesWithName ||
-        companiesWithNameAndFuse.companiesWithName.length === 0
-      ) {
+      if (!companyName) {
         return null;
       }
 
-      // Create an array of just company names for fuzzy searching
-      const companyNames = companiesWithNameAndFuse.companiesWithName.map(
-        (company) => company.name,
-      );
+      // Only initialize search data when this function is called
+      initializeCompanySearch();
+
+      if (companySearchData.companyNames.length === 0) {
+        return null;
+      }
 
       // Perform fuzzy search
-      const results = fuzzy.filter(companyName, companyNames, {
-        pre: '', // No highlighting needed
-        post: '', // No highlighting needed
-        extract: (input: string) => input, // We're already using simple strings
-      });
+      const results = fuzzy.filter(
+        companyName,
+        companySearchData.companyNames,
+        {
+          pre: '', // No highlighting needed
+          post: '', // No highlighting needed
+          extract: (input: string) => input, // We're already using simple strings
+        },
+      );
 
       // No matches found
       if (results.length === 0) {
@@ -107,66 +132,11 @@ export const useArxJDUpload = () => {
       // Get the best match string
       const bestMatchName = results[0].string;
 
-      // Find the corresponding company object using our map for better performance
-      return companiesWithNameAndFuse.companyMap[bestMatchName] || null;
+      // Find the corresponding company object using our map
+      return companySearchData.companyMap[bestMatchName] || null;
     },
-    [companiesWithNameAndFuse],
+    [companiesData, companySearchData, initializeCompanySearch],
   );
-
-  // Memoize the companies with names and create Fuse instance once
-  // const companiesWithNameAndFuse = useMemo(() => {
-  //   const companiesWithName = companies.filter(
-  //     (company): company is Company =>
-  //       typeof company === 'object' &&
-  //       company !== null &&
-  //       'name' in company &&
-  //       typeof company.name === 'string',
-  //   );
-
-  //   return {
-  //     companiesWithName,
-  //     fuse:
-  //       companiesWithName.length > 0
-  //         ? new Fuse(companiesWithName, {
-  //             keys: ['name'],
-  //             threshold: 0.4,
-  //           })
-  //         : null,
-  //   };
-  // }, [companies]);
-
-  // const findBestCompanyMatch = useCallback(
-  //   (companyName: string) => {
-  //     if (
-  //       !companyName ||
-  //       companiesWithNameAndFuse.companiesWithName.length === 0
-  //     ) {
-  //       return null;
-  //     }
-
-  //     // Create an array of just company names for fuzzy searching
-  //     const companyNames = companiesWithNameAndFuse.companiesWithName.map(
-  //       (company) => company.name,
-  //     );
-
-  //     // Perform fuzzy search
-  //     const results = fuzzy.filter(companyName, companyNames);
-
-  //     // No matches found
-  //     if (results.length === 0) {
-  //       return null;
-  //     }
-
-  //     // Get the best match string
-  //     const bestMatchName = results[0].string;
-
-  //     // Find the corresponding company object
-  //     return companiesWithNameAndFuse.companiesWithName.find(
-  //       (company) => company.name === bestMatchName,
-  //     );
-  //   },
-  //   [companiesWithNameAndFuse.companiesWithName],
-  // );
 
   const sendJobToArxena = useCallback(
     async (jobName: string, jobId: string) => {
@@ -286,7 +256,7 @@ export const useArxJDUpload = () => {
             } = parsedData;
 
             if (
-              isDefined(matchedCompany) &&
+              matchedCompany !== null &&
               typeof matchedCompany.id === 'string' &&
               matchedCompany.id !== ''
             ) {
@@ -387,7 +357,7 @@ export const useArxJDUpload = () => {
             meetingType: parsedJD.meetingScheduling?.meetingType || 'online',
             availableDates:
               parsedJD.meetingScheduling?.availableDates.map(
-                (date) => date.date,
+                (date: { date: string }) => date.date,
               ) || [],
           },
         };
@@ -404,7 +374,7 @@ export const useArxJDUpload = () => {
         console.log('Finding best company match...');
         const matchedCompany = findBestCompanyMatch(companyName);
         if (
-          isDefined(matchedCompany) &&
+          matchedCompany !== null &&
           typeof matchedCompany.id === 'string' &&
           matchedCompany.id !== ''
         ) {
@@ -437,7 +407,7 @@ export const useArxJDUpload = () => {
             meetingType: parsedJD.meetingScheduling?.meetingType || 'online',
             availableDates:
               parsedJD.meetingScheduling?.availableDates.map(
-                (date) => date.date,
+                (date: { date: string }) => date.date,
               ) || [],
           },
         };
