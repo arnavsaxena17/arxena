@@ -31,16 +31,13 @@ export const SettingsProfile = () => {
           <ProfilePictureUploader />
         </Section>
         <Section>
-          <H2Title
-            title={t`Full Name`}
-            description={t`Your panda as it is`}
-          />
+          <H2Title title={`Full Name`} description={`Your panda as it is`} />
           <NameFields />
         </Section>
         <Section>
           <H2Title
-            title={t`Email Address`}
-            description={t`The super human panda super human secret samurai associated to your account`}
+            title={`Email Address`}
+            description={`The super human panda super human secret samurai associated to your account`}
           />
           <EmailField />
         </Section>

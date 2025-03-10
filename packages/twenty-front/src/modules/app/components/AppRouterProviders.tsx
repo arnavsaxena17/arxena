@@ -27,8 +27,6 @@ import { StrictMode } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { getPageTitleFromPath } from '~/utils/title-utils';
 
-
-
 export const MinimalProviders: React.FC = () => (
   <ApolloProvider>
     <BaseThemeProvider>
@@ -36,8 +34,6 @@ export const MinimalProviders: React.FC = () => (
     </BaseThemeProvider>
   </ApolloProvider>
 );
-
-
 
 export const AppRouterProviders = () => {
   const { pathname } = useLocation();
@@ -62,7 +58,9 @@ export const AppRouterProviders = () => {
                         <SnackBarProvider>
                           <DialogManagerScope dialogManagerScopeId="dialog-manager">
                             <DialogManager>
-                            <ModalProvider> {/* Add ModalProvider here */}
+                              <ModalProvider>
+                                {' '}
+                                {/* Add ModalProvider here */}
                                 <StrictMode>
                                   <PromiseRejectionEffect />
                                   <GotoHotkeysEffectsProvider />
