@@ -1,12 +1,13 @@
 import { gql, useApolloClient } from '@apollo/client';
 import axios from 'axios';
 import Fuse from 'fuse.js';
+import fuzzy from 'fuzzy';
 import { useCallback, useMemo, useState } from 'react';
 import { useRecoilState } from 'recoil';
 import {
   FindManyVideoInterviewModels,
   FindOneJob,
-  isDefined,
+  isDefined
 } from 'twenty-shared';
 
 import { useUploadAttachmentFile } from '@/activities/files/hooks/useUploadAttachmentFile';
@@ -77,18 +78,36 @@ export const useArxJDUpload = () => {
   }, [companies]);
 
   const findBestCompanyMatch = useCallback(
-    (companyName: string): Company | null => {
+    (companyName: string) => {
       if (
-        !companiesWithNameAndFuse.fuse ||
+        !companyName ||
         companiesWithNameAndFuse.companiesWithName.length === 0
       ) {
         return null;
       }
 
-      const result = companiesWithNameAndFuse.fuse.search(companyName);
-      return result.length > 0 ? result[0].item : null;
+      // Create an array of just company names for fuzzy searching
+      const companyNames = companiesWithNameAndFuse.companiesWithName.map(
+        (company) => company.name,
+      );
+
+      // Perform fuzzy search
+      const results = fuzzy.filter(companyName, companyNames);
+
+      // No matches found
+      if (results.length === 0) {
+        return null;
+      }
+
+      // Get the best match string
+      const bestMatchName = results[0].string;
+
+      // Find the corresponding company object
+      return companiesWithNameAndFuse.companiesWithName.find(
+        (company) => company.name === bestMatchName,
+      );
     },
-    [companiesWithNameAndFuse],
+    [companiesWithNameAndFuse.companiesWithName],
   );
 
   const sendJobToArxena = useCallback(
@@ -209,7 +228,7 @@ export const useArxJDUpload = () => {
             } = parsedData;
 
             if (
-              matchedCompany !== null &&
+              isDefined(matchedCompany) &&
               typeof matchedCompany.id === 'string' &&
               matchedCompany.id !== ''
             ) {
@@ -327,7 +346,7 @@ export const useArxJDUpload = () => {
         console.log('Finding best company match...');
         const matchedCompany = findBestCompanyMatch(companyName);
         if (
-          matchedCompany !== null &&
+          isDefined(matchedCompany) &&
           typeof matchedCompany.id === 'string' &&
           matchedCompany.id !== ''
         ) {
