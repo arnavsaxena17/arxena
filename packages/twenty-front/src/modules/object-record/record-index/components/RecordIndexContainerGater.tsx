@@ -23,7 +23,8 @@ import { capitalize } from 'twenty-shared';
 
 import { ArxEnrichmentModal } from '@/arx-enrich/components/arxEnrichmentModal';
 import { isArxEnrichModalOpenState } from '@/arx-enrich/states/arxEnrichModalOpenState';
-import { ArxJDUploadModal } from '@/arx-jd-upload/components/ArxJDUploadModal';
+// import { isArxUploadJDModalOpenState } from '@/arx-jd-upload/states/arxUploadJDModalOpenState';
+
 const StyledIndexContainer = styled.div`
   display: flex;
   height: 100%;
@@ -107,7 +108,7 @@ export const RecordIndexContainerGater = () => {
                     ) : (
                       <></>
                     )}
-
+                    {/* 
                     {isArxUploadJDModalOpen ? (
                       <ArxJDUploadModal
                         objectNameSingular="job"
@@ -115,7 +116,7 @@ export const RecordIndexContainerGater = () => {
                       />
                     ) : (
                       <></>
-                    )}
+                    )} */}
                   </StyledIndexContainer>
                 </PageBody>
               </ActionMenuComponentInstanceContext.Provider>
