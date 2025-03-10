@@ -40,6 +40,7 @@ export const useArxJDUpload = () => {
       if (!Array.isArray(companies) || companies.length === 0) {
         return null;
       }
+      console.log('Companies:', companies);
 
       const companiesWithName = companies.filter(
         (company): company is Company =>
@@ -49,17 +50,25 @@ export const useArxJDUpload = () => {
           typeof company.name === 'string',
       );
 
+      console.log('Companies with name:', companiesWithName);
       if (companiesWithName.length === 0) {
         return null;
       }
+      console.log('Company name:', companyName);
+      try {
+        const fuse = new Fuse(companiesWithName, {
+          keys: ['name'],
+          threshold: 0.4,
+        });
 
-      const fuse = new Fuse(companiesWithName, {
-        keys: ['name'],
-        threshold: 0.4,
-      });
-
-      const result = fuse.search(companyName);
-      return result.length > 0 ? result[0].item : null;
+        console.log('Fuse:', fuse);
+        const result = fuse.search(companyName);
+        console.log('Result:', result);
+        return result.length > 0 ? result[0].item : null;
+      } catch (error) {
+        console.log('Error:', error);
+        return null;
+      }
     },
     [companies],
   );
@@ -82,6 +91,8 @@ export const useArxJDUpload = () => {
         if (createdJob?.id === undefined || createdJob?.id === null) {
           throw new Error('Failed to create job record');
         }
+
+        console.log('Created job:', createdJob);
 
         const { attachmentAbsoluteURL } = await uploadAttachmentFile(file, {
           targetObjectNameSingular: CoreObjectNameSingular.Job,
@@ -115,15 +126,21 @@ export const useArxJDUpload = () => {
             companyId: data.companyId,
           });
 
+          console.log('Parsed data:', parsedData);
+          console.log('Created job:', createdJob);
+
           if (
             typeof parsedData.companyName === 'string' &&
             parsedData.companyName !== ''
           ) {
+            console.log('Finding best company match');
             const matchedCompany = findBestCompanyMatch(parsedData.companyName);
+            console.log('Matched company:', matchedCompany);
             if (
               typeof matchedCompany?.id === 'string' &&
               matchedCompany.id !== ''
             ) {
+              console.log('Matched company:', matchedCompany);
               const {
                 companyName,
                 chatFlow,
@@ -140,6 +157,7 @@ export const useArxJDUpload = () => {
               });
             }
           } else {
+            console.log('No company name found');
             const {
               companyName,
               chatFlow,
@@ -147,6 +165,7 @@ export const useArxJDUpload = () => {
               meetingScheduling,
               ...updateData
             } = parsedData;
+            console.log('Update data:', updateData);
             setParsedJD(parsedData);
 
             await updateOneRecord({
@@ -158,7 +177,7 @@ export const useArxJDUpload = () => {
           throw new Error(response.data.message || 'Failed to process JD');
         }
       } catch (error: any) {
-        console.error('Error processing JD:', error);
+        console.log('Error processing JD:', error);
         setError(error?.message || 'Failed to process JD');
         setParsedJD(null);
       } finally {

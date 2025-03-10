@@ -24,7 +24,8 @@ import { capitalize } from 'twenty-shared';
 import { isArxEnrichModalOpenState } from '@/arx-enrich/states/arxEnrichModalOpenState';
 // import { InterviewCreationModal } from '@/ai-interview/interview-creation/InterviewCreationModal';
 import { ArxEnrichmentModal } from '@/arx-enrich/arxEnrichmentModal';
-
+import { ArxJDUploadModal } from '@/arx-jd-upload/components/ArxJDUploadModal';
+import { isArxUploadJDModalOpenState } from '@/arx-jd-upload/states/arxUploadJDModalOpenState';
 const StyledIndexContainer = styled.div`
   display: flex;
   height: 100%;
@@ -45,6 +46,7 @@ export const RecordIndexContainerGater = () => {
 
   const recordIndexId = `${objectMetadataItem.namePlural}-${contextStoreCurrentViewId}`;
   const isArxEnrichModalOpen = useRecoilValue(isArxEnrichModalOpenState);
+  const isArxUploadJDModalOpen = useRecoilValue(isArxUploadJDModalOpenState);
 
   const handleIndexRecordsLoaded = useRecoilCallback(
     ({ set }) =>
@@ -102,6 +104,15 @@ export const RecordIndexContainerGater = () => {
                             ? 'company'
                             : objectMetadataItem.namePlural.slice(0, -1)
                         }
+                        objectRecordId={'0'}
+                      />
+                    ) : (
+                      <></>
+                    )}
+
+                    {isArxUploadJDModalOpen ? (
+                      <ArxJDUploadModal
+                        objectNameSingular={objectMetadataItem.namePlural}
                         objectRecordId={'0'}
                       />
                     ) : (

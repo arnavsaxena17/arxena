@@ -4,9 +4,13 @@ import { v4 as uid } from 'uuid';
 import { CREATE_ONE_VIDEO_INTERVIEW_QUESTION } from '@/video-interview/interview-creation/queries/createOneVideoInterviewQuestion';
 import { undefined } from 'zod';
 export const useCreateOneVideoInterviewQuestionQuery = () => {
-  const [createOneVideoInterviewQuestion, { data, loading, error }] = useMutation(CREATE_ONE_VIDEO_INTERVIEW_QUESTION);
+  const [createOneVideoInterviewQuestion, { data, loading, error }] =
+    useMutation(CREATE_ONE_VIDEO_INTERVIEW_QUESTION);
 
-  const createVideoInterviewQuestions = async (questions: any[], newVideoInterviewTemplateID: string) => {
+  const createVideoInterviewQuestions = async (
+    questions: any[],
+    newVideoInterviewTemplateID: string,
+  ) => {
     const noOfQuestions = questions.length;
 
     const retakesDataTypeConverter = (num: string) => {
