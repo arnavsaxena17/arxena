@@ -1,6 +1,5 @@
 import { gql, useApolloClient } from '@apollo/client';
 import axios from 'axios';
-import Fuse from 'fuse.js';
 import { useCallback, useState } from 'react';
 import { useRecoilState } from 'recoil';
 import {
@@ -54,39 +53,42 @@ export const useArxJDUpload = () => {
     name: string;
   };
 
-  const findBestCompanyMatch = useCallback(
-    (companyName: string): Company | null => {
-      console.log('Finding best company match...', companyName);
-      if (!Array.isArray(companies) || companies.length === 0) {
-        return null;
-      }
+  // Memoize the companies with names and create Fuse instance once
+  // const companiesWithNameAndFuse = useMemo(() => {
+  //   const companiesWithName = companies.filter(
+  //     (company): company is Company =>
+  //       typeof company === 'object' &&
+  //       company !== null &&
+  //       'name' in company &&
+  //       typeof company.name === 'string',
+  //   );
 
-      console.log('Companies:', companies);
-      const companiesWithName = companies.filter(
-        (company): company is Company =>
-          typeof company === 'object' &&
-          company !== null &&
-          'name' in company &&
-          typeof company.name === 'string',
-      );
+  //   return {
+  //     companiesWithName,
+  //     fuse:
+  //       companiesWithName.length > 0
+  //         ? new Fuse(companiesWithName, {
+  //             keys: ['name'],
+  //             threshold: 0.4,
+  //           })
+  //         : null,
+  //   };
+  // }, [companies]);
 
-      console.log('Companies with name:', companiesWithName);
+  // const findBestCompanyMatch = useCallback(
+  //   (companyName: string): Company | null => {
+  //     if (
+  //       !companiesWithNameAndFuse.fuse ||
+  //       companiesWithNameAndFuse.companiesWithName.length === 0
+  //     ) {
+  //       return null;
+  //     }
 
-      if (companiesWithName.length === 0) {
-        return null;
-      }
-
-      const fuse = new Fuse(companiesWithName, {
-        keys: ['name'],
-        threshold: 0.4,
-      });
-      console.log('Fuse:', fuse);
-      const result = fuse.search(companyName);
-      console.log('Result:', result);
-      return result.length > 0 ? result[0].item : null;
-    },
-    [companies],
-  );
+  //     const result = companiesWithNameAndFuse.fuse.search(companyName);
+  //     return result.length > 0 ? result[0].item : null;
+  //   },
+  //   [companiesWithNameAndFuse],
+  // );
 
   const sendJobToArxena = useCallback(
     async (jobName: string, jobId: string) => {
@@ -192,7 +194,10 @@ export const useArxJDUpload = () => {
             parsedData.companyName !== ''
           ) {
             console.log('Finding best company match...');
-            const matchedCompany = findBestCompanyMatch(parsedData.companyName);
+            // const matchedCompany = findBestCompanyMatch(parsedData.companyName);
+            const matchedCompany = {
+              id: '66e060606060606060606060',
+            };
 
             const {
               companyName,
@@ -260,7 +265,6 @@ export const useArxJDUpload = () => {
       createOneRecord,
       updateOneRecord,
       uploadAttachmentFile,
-      findBestCompanyMatch,
       setParsedJD,
     ],
   );
@@ -319,7 +323,10 @@ export const useArxJDUpload = () => {
 
       if (typeof companyName === 'string' && companyName !== '') {
         console.log('Finding best company match...');
-        const matchedCompany = findBestCompanyMatch(companyName);
+        // const matchedCompany = findBestCompanyMatch(companyName);
+        const matchedCompany = {
+          id: '66e060606060606060606060',
+        };
         if (
           matchedCompany !== null &&
           typeof matchedCompany.id === 'string' &&

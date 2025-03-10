@@ -11,6 +11,7 @@ import {
 import { CalendarEmailService } from 'src/engine/core-modules/arx-chat/utils/calendar-email';
 import { SendEmailFunctionality } from 'src/engine/core-modules/arx-chat/utils/send-gmail';
 import { CalendarEventType } from 'src/engine/core-modules/calendar-events/services/calendar-data-objects-types';
+import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/services/candidate.service';
 import { EmailService } from 'src/engine/core-modules/email/email.service';
 import { GmailMessageData } from 'src/engine/core-modules/gmail-sender/services/gmail-sender-objects-types';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
@@ -19,6 +20,8 @@ import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 @Controller('gmail-calendar-contacts')
 export class GoogleControllers {
   constructor(
+    private readonly candidateService: CandidateService,
+
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly emailService: EmailService,
   ) {}
@@ -165,39 +168,57 @@ export class GoogleControllers {
   @Post('save-draft-mail-with-attachment')
   @UseGuards(JwtAuthGuard)
   async saveDraftEmailWithAttachments(@Req() request: any): Promise<object> {
-    console.log('saveDraftEmailWithAttachments');
-    const apiToken = request.headers.authorization.split(' ')[1];
-    const person: PersonNode = await new FilterCandidates(
-      this.workspaceQueryService,
-    ).getPersonDetailsByPhoneNumber(request.body.phoneNumber, apiToken);
-    const candidateNode = person.candidates.edges[0].node;
-    const candidateJob: Jobs = candidateNode?.jobs;
+    try {
+      console.log('saveDraftEmailWithAttachments');
+      const apiToken = request.headers.authorization.split(' ')[1];
+      const newPositionObj = request.body.newPositionObj;
 
-    console.log('This is the candidate job:', candidateJob);
-    const recruiterProfile = await getRecruiterProfileByJob(
-      candidateJob,
-      apiToken,
-    );
+      console.log('This is the new position object:', newPositionObj);
 
-    console.log('This is the recruiter profile:', recruiterProfile);
-    const emailData: GmailMessageData = {
-      sendEmailFrom: recruiterProfile?.email,
-      sendEmailNameFrom:
-        recruiterProfile?.firstName + ' ' + recruiterProfile?.lastName,
-      sendEmailTo: person?.emails.primaryEmail,
-      subject: request.body?.subject || 'Email from the recruiter',
-      message: request.body?.message || 'This is a test email',
-      attachments: request.body.attachments || [],
-    };
+      // const person: PersonNode = await new FilterCandidates(
+      //   this.workspaceQueryService,
+      // ).getPersonDetailsByPhoneNumber(request.body.phoneNumber, apiToken);
+      // const candidateNode = person.candidates.edges[0].node;
+      // const candidateJob: Jobs = candidateNode?.jobs;
 
-    console.log('This si the email data to save drafts:', emailData);
-    const response =
-      await new SendEmailFunctionality().saveDraftEmailWithAttachmentsFunction(
-        emailData,
+      // console.log('This is the candidate job:', candidateJob);
+
+      const jobObject: Jobs = await this.candidateService.getJobDetails(
+        newPositionObj.id,
+        newPositionObj.name,
         apiToken,
       );
 
-    return response || {};
+      console.log('This is the job object:', jobObject);
+
+      const recruiterProfile = await getRecruiterProfileByJob(
+        jobObject,
+        apiToken,
+      );
+
+      console.log('This is the recruiter profile:', recruiterProfile);
+      const emailData: GmailMessageData = {
+        sendEmailFrom: recruiterProfile?.email,
+        sendEmailNameFrom:
+          recruiterProfile?.firstName + ' ' + recruiterProfile?.lastName,
+        sendEmailTo: recruiterProfile?.email,
+        subject: request.body?.subject || 'Email from the recruiter',
+        message: request.body?.message || 'This is a test email',
+        attachments: request.body.attachments || [],
+      };
+
+      console.log('This si the email data to save drafts:', emailData);
+      const response =
+        await new SendEmailFunctionality().saveDraftEmailWithAttachmentsFunction(
+          emailData,
+          apiToken,
+        );
+
+      return response || {};
+    } catch (error) {
+      console.error('Error saving draft email with attachments:', error);
+      throw error;
+    }
   }
 
   @Post('send-mail-to-self')
