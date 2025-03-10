@@ -13,7 +13,6 @@ import { tokenPairState } from '@/auth/states/tokenPairState';
 import { CoreObjectNameSingular } from '@/object-metadata/types/CoreObjectNameSingular';
 import { useCreateManyRecords } from '@/object-record/hooks/useCreateManyRecords';
 import { useCreateOneRecord } from '@/object-record/hooks/useCreateOneRecord';
-import { useFindManyRecords } from '@/object-record/hooks/useFindManyRecords';
 import { useUpdateOneRecord } from '@/object-record/hooks/useUpdateOneRecord';
 
 import mongoose from 'mongoose';
@@ -42,9 +41,9 @@ export const useArxJDUpload = () => {
     objectNameSingular: 'interviewSchedule',
   });
 
-  const { records: companies = [] } = useFindManyRecords({
-    objectNameSingular: 'company',
-  });
+  // const { records: companies = [] } = useFindManyRecords({
+  //   objectNameSingular: 'company',
+  // });
 
   // const { reset: resetFormStepper } = useArxJDFormStepper();
 
