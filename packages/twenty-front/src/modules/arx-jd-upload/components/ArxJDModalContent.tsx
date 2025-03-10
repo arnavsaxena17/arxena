@@ -14,8 +14,8 @@ type ArxJDModalContentProps = {
   getInputProps: any;
   isDragActive: boolean;
   onCancel: () => void;
-  onSubmit: () => void;
-  handleFileUpload?: (files: File[]) => Promise<void>;
+  // onSubmit: () => void;
+  // handleFileUpload?: (files: File[]) => Promise<void>;
 };
 
 export const ArxJDModalContent = ({
@@ -27,8 +27,8 @@ export const ArxJDModalContent = ({
   getInputProps,
   isDragActive,
   onCancel,
-  onSubmit,
-  handleFileUpload,
+  // onSubmit,
+  // handleFileUpload,
 }: ArxJDModalContentProps) => {
   const theme = useTheme();
 
@@ -62,14 +62,14 @@ export const ArxJDModalContent = ({
       parsedJD={parsedJD}
       setParsedJD={setParsedJD}
       onCancel={onCancel}
-      onSubmit={onSubmit}
+      onSubmit={() => {}}
       showFooter={true}
       getRootProps={getRootProps}
       getInputProps={getInputProps}
       isDragActive={isDragActive}
       isUploading={false}
       error={null}
-      handleFileUpload={handleFileUpload}
+      // handleFileUpload={handleFileUpload}
       isOpen={true}
       onClose={onCancel}
       title="Job Description"

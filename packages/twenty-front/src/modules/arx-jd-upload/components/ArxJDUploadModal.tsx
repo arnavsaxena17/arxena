@@ -24,8 +24,8 @@ export const ArxJDUploadModal = ({
     setParsedJD,
     isUploading,
     error,
-    handleFileUpload,
-    handleCreateJob,
+    // handleFileUpload,
+    // handleCreateJob,
     resetUploadState,
   } = useArxJDUpload();
 
@@ -72,20 +72,19 @@ export const ArxJDUploadModal = ({
     setIsArxUploadJDModalOpen(false);
   };
 
-  const handleSubmit = async () => {
-    const success = await handleCreateJob();
-    if (success === true) {
-      closeModal();
-    }
-  };
+  // const handleSubmit = async () => {
+  //   const success = await handleCreateJob();
+  //   if (success === true) {
+  //     closeModal();
+  //   }
+  // };
 
   // Don't render anything if the modal isn't open
   if (!isArxUploadJDModalOpen) {
     return null;
   }
-
   return (
-    <ArxJDUploadDropzone onDrop={handleFileUpload}>
+    <ArxJDUploadDropzone onDrop={async () => {}}>
       {({ getRootProps, getInputProps, isDragActive }) => (
         <ArxJDModalLayout
           isOpen={true}
@@ -102,8 +101,8 @@ export const ArxJDUploadModal = ({
             getInputProps={getInputProps}
             isDragActive={isDragActive}
             onCancel={closeModal}
-            onSubmit={handleSubmit}
-            handleFileUpload={handleFileUpload}
+            // onSubmit={() => {}}
+            // handleFileUpload={handleFileUpload}
           />
         </ArxJDModalLayout>
       )}
