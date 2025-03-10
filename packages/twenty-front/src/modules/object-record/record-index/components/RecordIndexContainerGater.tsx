@@ -24,8 +24,7 @@ import { capitalize } from 'twenty-shared';
 import { isArxEnrichModalOpenState } from '@/arx-enrich/states/arxEnrichModalOpenState';
 // import { InterviewCreationModal } from '@/ai-interview/interview-creation/InterviewCreationModal';
 import { ArxEnrichmentModal } from '@/arx-enrich/arxEnrichmentModal';
-import { ArxJDUploadModal } from '@/arx-jd-upload/components/ArxJDUploadModal';
-import { isArxUploadJDModalOpenState } from '@/arx-jd-upload/states/arxUploadJDModalOpenState';
+// import { isArxUploadJDModalOpenState } from '@/arx-jd-upload/states/arxUploadJDModalOpenState';
 
 
 const StyledIndexContainer = styled.div`
@@ -97,20 +96,25 @@ export const RecordIndexContainerGater = () => {
                   <StyledIndexContainer>
                     <RecordIndexContainerContextStoreNumberOfSelectedRecordsEffect />
                     <RecordIndexContainer />
+
+
+
                     {isArxEnrichModalOpen ? (
                       <ArxEnrichmentModal
                         objectNameSingular={objectMetadataItem.namePlural === 'companies' ? 'company' : objectMetadataItem.namePlural.slice(0, -1)}
                         objectRecordId={'0'}
+
                       />
                     ) : (
                       <></>)}
-                    {isArxUploadJDModalOpenState ? (
+
+                    {/* {isArxUploadJDModalOpenState ? (
                       <ArxJDUploadModal
                         objectNameSingular={objectMetadataItem.namePlural === 'jobs' ? 'job' : objectMetadataItem.namePlural.slice(0, -1)}
                         objectRecordId={'0'}
                       />
                     ) : (
-                      <></>)}
+                      <></>)} */}
                   </StyledIndexContainer>
                 </PageBody>
               </ActionMenuComponentInstanceContext.Provider>
