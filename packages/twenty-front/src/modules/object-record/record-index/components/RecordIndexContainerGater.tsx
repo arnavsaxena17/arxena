@@ -25,7 +25,6 @@ import { isArxEnrichModalOpenState } from '@/arx-enrich/states/arxEnrichModalOpe
 // import { InterviewCreationModal } from '@/ai-interview/interview-creation/InterviewCreationModal';
 import { ArxEnrichmentModal } from '@/arx-enrich/arxEnrichmentModal';
 
-
 const StyledIndexContainer = styled.div`
   display: flex;
   height: 100%;
@@ -96,19 +95,18 @@ export const RecordIndexContainerGater = () => {
                     <RecordIndexContainerContextStoreNumberOfSelectedRecordsEffect />
                     <RecordIndexContainer />
 
-
-
                     {isArxEnrichModalOpen ? (
                       <ArxEnrichmentModal
-                        objectNameSingular={objectMetadataItem.namePlural === 'companies' ? 'company' : objectMetadataItem.namePlural.slice(0, -1)}
+                        objectNameSingular={
+                          objectMetadataItem.namePlural === 'companies'
+                            ? 'company'
+                            : objectMetadataItem.namePlural.slice(0, -1)
+                        }
                         objectRecordId={'0'}
-
                       />
                     ) : (
-                      <></>)}
-
-
-
+                      <></>
+                    )}
                   </StyledIndexContainer>
                 </PageBody>
               </ActionMenuComponentInstanceContext.Provider>
