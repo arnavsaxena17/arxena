@@ -1,5 +1,4 @@
 import axios from 'axios';
-import Fuse from 'fuse.js';
 import { useCallback, useState } from 'react';
 import { useRecoilState } from 'recoil';
 
@@ -53,13 +52,26 @@ export const useArxJDUpload = () => {
         return null;
       }
 
-      const fuse = new Fuse(companiesWithName, {
-        keys: ['name'],
-        threshold: 0.4,
-      });
+      let bestMatch: Company | null = null;
+      let bestMatchScore = 0;
 
-      const result = fuse.search(companyName);
-      return result.length > 0 ? result[0].item : null;
+      for (const company of companiesWithName) {
+        const score = company.name.length / companyName.length;
+        if (score > bestMatchScore) {
+          bestMatch = company;
+          bestMatchScore = score;
+        }
+      }
+
+      return bestMatch;
+
+      // const fuse = new Fuse(companiesWithName, {
+      //   keys: ['name'],
+      //   threshold: 0.4,
+      // });
+
+      // const result = fuse.search(companyName);
+      // return result.length > 0 ? result[0].item : null;
     },
     [companies],
   );
