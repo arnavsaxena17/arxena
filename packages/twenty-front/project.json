@@ -8,7 +8,8 @@
       "outputs": ["{options.outputPath}"],
       "options": {
         "outputPath": "{projectRoot}/build",
-        "env": { "NODE_OPTIONS": "--max-old-space-size=16384" }
+        "env": { "NODE_OPTIONS": "--max-old-space-size=16384" },
+        "reportCompressedSize": false
       },
       "dependsOn": ["^build"]
     },
