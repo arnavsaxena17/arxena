@@ -2,8 +2,8 @@ import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
 import React from 'react';
 // import { Calendar } from 'react-date-range';
-import 'react-date-range/dist/styles.css';
-import 'react-date-range/dist/theme/default.css';
+// import 'react-date-range/dist/styles.css';
+// import 'react-date-range/dist/theme/default.css';
 import { Button, IconMinus, MenuItemSelect } from 'twenty-ui';
 import { FormComponentProps } from '../types/FormComponentProps';
 import {

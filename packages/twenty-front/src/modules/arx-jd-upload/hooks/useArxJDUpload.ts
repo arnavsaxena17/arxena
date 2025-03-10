@@ -1,7 +1,7 @@
 import { gql, useApolloClient } from '@apollo/client';
 import axios from 'axios';
 // import fuzzy from 'fuzzy';
-// import Fuse from 'fuse.js';
+// import g from 'fuse.js';
 import { useCallback, useState } from 'react';
 import { useRecoilState } from 'recoil';
 import {
