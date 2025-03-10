@@ -1,0 +1,135 @@
+import { ReactNode } from 'react';
+import Dropzone, {
+    DropzoneRootProps,
+    FileRejection,
+    useDropzone,
+} from 'react-dropzone';
+
+export type DropzoneRenderProps = {
+  getRootProps: <T extends HTMLElement = HTMLElement>(
+    props?: Record<string, unknown>,
+  ) => DropzoneRootProps;
+  isDragActive: boolean;
+  isDragAccept: boolean;
+  isDragReject: boolean;
+  isFileDialogActive: boolean;
+  acceptedFiles: File[];
+  fileRejections: FileRejection[];
+};
+
+type ArxJDUploadDropzoneProps = {
+  onDrop: (acceptedFiles: File[]) => Promise<void>;
+  children: (props: {
+    getRootProps: ReturnType<typeof useDropzone>['getRootProps'];
+    getInputProps: ReturnType<typeof useDropzone>['getInputProps'];
+    isDragActive: boolean;
+  }) => ReactNode;
+};
+
+export const ArxJDUploadDropzone = ({
+  onDrop,
+  children,
+}: ArxJDUploadDropzoneProps) => {
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {
+      'application/pdf': ['.pdf'],
+      'application/msword': ['.doc'],
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+        ['.docx'],
+    },
+    multiple: false,
+  });
+
+  return (
+    <>
+      {children({ getRootProps, getInputProps, isDragActive })}
+      <Dropzone
+        noClick={true}
+        multiple={false}
+        onDrop={onDrop}
+        accept={{
+          'application/pdf': ['.pdf'],
+          'text/plain': ['.txt'],
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+            ['.docx'],
+        }}
+      >
+        {(props: DropzoneRenderProps) => {
+          const { getRootProps, isDragActive } = props;
+
+          // Explicitly type the onClick handler
+          const clickHandler = (e: React.MouseEvent<HTMLElement>) => {
+            e.stopPropagation();
+          };
+
+          // Add handlers for all mouse events to prevent propagation
+          const modalProps = getRootProps({
+            onClick: clickHandler,
+            onMouseDown: (e: React.MouseEvent<HTMLElement>) =>
+              e.stopPropagation(),
+            onMouseUp: (e: React.MouseEvent<HTMLElement>) =>
+              e.stopPropagation(),
+            onMouseMove: (e: React.MouseEvent<HTMLElement>) =>
+              e.stopPropagation(),
+            onDragEnter: (e: React.DragEvent<HTMLElement>) =>
+              e.stopPropagation(),
+            onDragOver: (e: React.DragEvent<HTMLElement>) =>
+              e.stopPropagation(),
+            onDragLeave: (e: React.DragEvent<HTMLElement>) =>
+              e.stopPropagation(),
+            onDrop: (e: React.DragEvent<HTMLElement>) => {
+              e.stopPropagation();
+            },
+          });
+
+          const modalStyle: React.CSSProperties = {
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: isDragActive ? 1 : -1,
+          };
+
+          return (
+            <div
+              role="presentation"
+              onKeyDown={(e) => {
+                modalProps.onKeyDown && modalProps.onKeyDown(e);
+                e.stopPropagation();
+              }}
+              onFocus={modalProps.onFocus}
+              onBlur={modalProps.onBlur}
+              onDragEnter={(e) => {
+                modalProps.onDragEnter && modalProps.onDragEnter(e);
+                e.stopPropagation();
+              }}
+              onDragOver={(e) => {
+                modalProps.onDragOver && modalProps.onDragOver(e);
+                e.stopPropagation();
+              }}
+              onDragLeave={(e) => {
+                modalProps.onDragLeave && modalProps.onDragLeave(e);
+                e.stopPropagation();
+              }}
+              onDrop={(e) => {
+                modalProps.onDrop && modalProps.onDrop(e);
+                e.stopPropagation();
+              }}
+              onClick={(e) => {
+                modalProps.onClick && modalProps.onClick(e);
+                e.stopPropagation();
+              }}
+              onMouseDown={(e) => e.stopPropagation()}
+              onMouseUp={(e) => e.stopPropagation()}
+              onMouseMove={(e) => e.stopPropagation()}
+              tabIndex={modalProps.tabIndex}
+              style={modalStyle}
+            />
+          );
+        }}
+      </Dropzone>
+    </>
+  );
+};
