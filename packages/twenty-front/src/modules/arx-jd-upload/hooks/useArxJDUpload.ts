@@ -1,7 +1,6 @@
 import { gql, useApolloClient } from '@apollo/client';
 import axios from 'axios';
-import fuzzy from 'fuzzy';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useRecoilState } from 'recoil';
 import {
   FindManyVideoInterviewModels,
@@ -16,7 +15,6 @@ import { useCreateManyRecords } from '@/object-record/hooks/useCreateManyRecords
 import { useCreateOneRecord } from '@/object-record/hooks/useCreateOneRecord';
 import { useFindManyRecords } from '@/object-record/hooks/useFindManyRecords';
 import { useUpdateOneRecord } from '@/object-record/hooks/useUpdateOneRecord';
-import { ObjectRecord } from '@/object-record/types/ObjectRecord';
 
 import mongoose from 'mongoose';
 import { ParsedJD } from '../types/ParsedJD';
@@ -50,93 +48,93 @@ export const useArxJDUpload = () => {
 
   // const { reset: resetFormStepper } = useArxJDFormStepper();
 
-  type Company = ObjectRecord & {
-    name: string;
-  };
+  // type Company = ObjectRecord & {
+  //   name: string;
+  // };
 
-  type CompanySearchData = {
-    initialized: boolean;
-    companyNames: string[];
-    companyMap: Record<string, Company>;
-  };
+  // type CompanySearchData = {
+  //   initialized: boolean;
+  //   companyNames: string[];
+  //   companyMap: Record<string, Company>;
+  // };
 
-  const [companySearchData, setCompanySearchData] = useState<CompanySearchData>(
-    {
-      initialized: false,
-      companyNames: [],
-      companyMap: {},
-    },
-  );
+  // const [companySearchData, setCompanySearchData] = useState<CompanySearchData>(
+  //   {
+  //     initialized: false,
+  //     companyNames: [],
+  //     companyMap: {},
+  //   },
+  // );
 
-  // Prepare data for lazy initialization
-  const companiesData = useMemo(() => {
-    const companiesWithName = companies.filter(
-      (company): company is Company =>
-        typeof company === 'object' &&
-        company !== null &&
-        'name' in company &&
-        typeof company.name === 'string',
-    );
+  // // Prepare data for lazy initialization
+  // const companiesData = useMemo(() => {
+  //   const companiesWithName = companies.filter(
+  //     (company): company is Company =>
+  //       typeof company === 'object' &&
+  //       company !== null &&
+  //       'name' in company &&
+  //       typeof company.name === 'string',
+  //   );
 
-    return companiesWithName;
-  }, [companies]);
+  //   return companiesWithName;
+  // }, [companies]);
 
-  // Initialize search data only when needed
-  const initializeCompanySearch = useCallback(() => {
-    if (!companySearchData.initialized && companiesData.length > 0) {
-      const companyMap = {} as Record<string, Company>;
-      const companyNames = companiesData.map((company) => {
-        companyMap[company.name] = company;
-        return company.name;
-      });
+  // // Initialize search data only when needed
+  // const initializeCompanySearch = useCallback(() => {
+  //   if (!companySearchData.initialized && companiesData.length > 0) {
+  //     const companyMap = {} as Record<string, Company>;
+  //     const companyNames = companiesData.map((company) => {
+  //       companyMap[company.name] = company;
+  //       return company.name;
+  //     });
 
-      setCompanySearchData({
-        initialized: true,
-        companyNames,
-        companyMap,
-      });
+  //     setCompanySearchData({
+  //       initialized: true,
+  //       companyNames,
+  //       companyMap,
+  //     });
 
-      console.log('Lazy initialized company search data');
-    }
-  }, [companiesData, companySearchData.initialized]);
+  //     console.log('Lazy initialized company search data');
+  //   }
+  // }, [companiesData, companySearchData.initialized]);
 
-  const findBestCompanyMatch = useCallback(
-    (companyName: string): Company | null => {
-      if (!companyName) {
-        return null;
-      }
+  // const findBestCompanyMatch = useCallback(
+  //   (companyName: string): Company | null => {
+  //     if (!companyName) {
+  //       return null;
+  //     }
 
-      // Only initialize search data when this function is called
-      initializeCompanySearch();
+  //     // Only initialize search data when this function is called
+  //     initializeCompanySearch();
 
-      if (companySearchData.companyNames.length === 0) {
-        return null;
-      }
+  //     if (companySearchData.companyNames.length === 0) {
+  //       return null;
+  //     }
 
-      // Perform fuzzy search
-      const results = fuzzy.filter(
-        companyName,
-        companySearchData.companyNames,
-        {
-          pre: '', // No highlighting needed
-          post: '', // No highlighting needed
-          extract: (input: string) => input, // We're already using simple strings
-        },
-      );
+  //     // Perform fuzzy search
+  //     const results = fuzzy.filter(
+  //       companyName,
+  //       companySearchData.companyNames,
+  //       {
+  //         pre: '', // No highlighting needed
+  //         post: '', // No highlighting needed
+  //         extract: (input: string) => input, // We're already using simple strings
+  //       },
+  //     );
 
-      // No matches found
-      if (results.length === 0) {
-        return null;
-      }
+  //     // No matches found
+  //     if (results.length === 0) {
+  //       return null;
+  //     }
 
-      // Get the best match string
-      const bestMatchName = results[0].string;
+  //     // Get the best match string
+  //     const bestMatchName = results[0].string;
 
-      // Find the corresponding company object using our map
-      return companySearchData.companyMap[bestMatchName] || null;
-    },
-    [companiesData, companySearchData, initializeCompanySearch],
-  );
+  //     // Find the corresponding company object using our map
+  //     return companySearchData.companyMap[bestMatchName] || null;
+  //   },
+  //   [companiesData, companySearchData, initializeCompanySearch],
+  // );
 
   const sendJobToArxena = useCallback(
     async (jobName: string, jobId: string) => {
@@ -242,10 +240,10 @@ export const useArxJDUpload = () => {
             parsedData.companyName !== ''
           ) {
             console.log('Finding best company match...');
-            const matchedCompany = findBestCompanyMatch(parsedData.companyName);
-            // const matchedCompany = {
-            //   id: '66e060606060606060606060',
-            // };
+            // const matchedCompany = findBestCompanyMatch(parsedData.companyName);
+            const matchedCompany = {
+              id: '66e060606060606060606060',
+            };
 
             const {
               companyName,
@@ -313,7 +311,7 @@ export const useArxJDUpload = () => {
       createOneRecord,
       updateOneRecord,
       uploadAttachmentFile,
-      findBestCompanyMatch,
+      // findBestCompanyMatch,
       setParsedJD,
     ],
   );
@@ -372,7 +370,10 @@ export const useArxJDUpload = () => {
 
       if (typeof companyName === 'string' && companyName !== '') {
         console.log('Finding best company match...');
-        const matchedCompany = findBestCompanyMatch(companyName);
+        // const matchedCompany = findBestCompanyMatch(companyName);
+        const matchedCompany = {
+          id: '66e060606060606060606060',
+        };
         if (
           matchedCompany !== null &&
           typeof matchedCompany.id === 'string' &&
