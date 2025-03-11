@@ -38,4 +38,5 @@ export enum AppPath {
   Hot = "hot",
   Chats = "chats",
   VideoInterviewReview = "video-interview-review",
+  Interview = "interview",
 }

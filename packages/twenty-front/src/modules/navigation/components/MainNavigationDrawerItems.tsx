@@ -76,6 +76,16 @@ export const MainNavigationDrawerItems = () => {
             }}
             Icon={IconMessage}
           />
+          <NavigationDrawerItem
+            label={`Interview`}
+            to={getAppPath(AppPath.Interview)}
+            onClick={() => {
+              setNavigationDrawerExpandedMemorized(isNavigationDrawerExpanded);
+              setIsNavigationDrawerExpanded(true);
+              setNavigationMemorizedUrl(location.pathname + location.search);
+            }}
+            Icon={IconMessage}
+          />
         </StyledMainSection>
       )}
       <ScrollWrapper

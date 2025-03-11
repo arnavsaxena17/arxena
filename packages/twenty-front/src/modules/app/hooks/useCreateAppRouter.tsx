@@ -31,30 +31,34 @@ import { SyncEmails } from '~/pages/onboarding/SyncEmails';
 
 import GoogleSheet from '@/google-sheet/GoogleSheet';
 import { HotPage } from '@/hot/hotCandidates';
+import Interview from '@/interviews/components/Interviews';
 import OrgChart from '@/orgchart/OrgChart';
 import VideoInterviewFlow from '@/video-interview/interview-response/VideoInterviewFlow';
 import VideoInterviewResponseViewer from '@/video-interview/interview-response/VideoInterviewResponseViewer';
 import { Chats } from '~/pages/chats/Chats';
 
-
 // VideoInterviewWrapper()
 
 const VideoInterviewWrapper = () => {
-  console.log("VideoInterviewWrapper rendering");
+  console.log('VideoInterviewWrapper rendering');
   const params = useParams();
-  console.log("Raw params object:", params);
+  console.log('Raw params object:', params);
   const { interviewId } = params;
-  console.log("Extracted interviewId:", interviewId);
-  
+  console.log('Extracted interviewId:', interviewId);
+
   // Check browser URL directly
-  console.log("Current URL path:", window.location.pathname);
-  
+  console.log('Current URL path:', window.location.pathname);
+
   // Extract ID manually as fallback
   const pathParts = window.location.pathname.split('/');
   const manuallyExtractedId = pathParts[pathParts.length - 1];
-  console.log("Manually extracted ID:", manuallyExtractedId);
-  
-  return <VideoInterviewFlow interviewId={interviewId || manuallyExtractedId || ''} />;
+  console.log('Manually extracted ID:', manuallyExtractedId);
+
+  return (
+    <VideoInterviewFlow
+      interviewId={interviewId || manuallyExtractedId || ''}
+    />
+  );
 };
 
 const TestParamRoute = () => {
@@ -62,16 +66,10 @@ const TestParamRoute = () => {
   return <div>Parameter value: {interviewId || 'No parameter found'}</div>;
 };
 
-
 const VideoInterviewResponseViewerWrapper = () => {
   const { videoInterviewId } = useParams();
-  return (
-    <VideoInterviewResponseViewer
-      videoInterviewId={videoInterviewId}
-    />
-  );
+  return <VideoInterviewResponseViewer videoInterviewId={videoInterviewId} />;
 };
-
 
 export const useCreateAppRouter = (
   isFunctionSettingsEnabled?: boolean,
@@ -79,20 +77,18 @@ export const useCreateAppRouter = (
 ) =>
   createBrowserRouter(
     createRoutesFromElements(
-
       <>
         {/* Special routes with MinimalProviders */}
         <Route element={<MinimalProviders />}>
           <Route element={<BlankLayout />}>
             <Route
-                path={`${AppPath.VideoInterview}/:interviewId`}
-                element={<VideoInterviewWrapper />}
+              path={`${AppPath.VideoInterview}/:interviewId`}
+              element={<VideoInterviewWrapper />}
             />
             <Route
               path="/test-param/:interviewId"
               element={<TestParamRoute />}
             />
-
 
             <Route
               path={`${AppPath.GoogleSheet}/*`}
@@ -100,7 +96,6 @@ export const useCreateAppRouter = (
             />
             <Route path={`${AppPath.OrgChart}/*`} element={<OrgChart />} />
             <Route path={`${AppPath.Hot}/*`} element={<HotPage />} />
-
           </Route>
         </Route>
         <Route
@@ -123,9 +118,10 @@ export const useCreateAppRouter = (
             <Route path={AppPath.SyncEmails} element={<SyncEmails />} />
             <Route path={AppPath.InviteTeam} element={<InviteTeam />} />
             <Route path={AppPath.Chats} element={<Chats />} />
+            <Route path={AppPath.Interview} element={<Interview />} />
 
             <Route path={`${AppPath.Chats}/:candidateId`} element={<Chats />} />
-  
+
             <Route
               path={`${AppPath.VideoInterviewReview}/:candidateId`}
               element={<VideoInterviewResponseViewerWrapper />}
