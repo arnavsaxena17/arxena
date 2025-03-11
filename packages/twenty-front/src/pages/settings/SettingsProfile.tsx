@@ -32,14 +32,14 @@ export const SettingsProfile = () => {
         </Section>
         <Section>
           <H2Title
-            title={t`Full Name`}
-            description={t`Your panda as it is`}
+            title={`Full Name`}
+            description={`Your panda as it is`}
           />
           <NameFields />
         </Section>
         <Section>
           <H2Title
-            title={t`Email Address`}
+            title={`Email Address`}
             description={t`The super human panda super human secret samurai associated to your account`}
           />
           <EmailField />

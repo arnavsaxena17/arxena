@@ -67,7 +67,7 @@ export const MainNavigationDrawerItems = () => {
             Icon={IconSettings}
           />
           <NavigationDrawerItem
-            label={t`Chats`}
+            label={`Chats`}
             to={getAppPath(AppPath.Chats)}
             onClick={() => {
               setNavigationDrawerExpandedMemorized(isNavigationDrawerExpanded);
