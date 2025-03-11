@@ -17,6 +17,7 @@ import { useObjectNamePluralFromSingular } from '@/object-metadata/hooks/useObje
 import { useHandleToggleTrashColumnFilter } from '@/object-record/record-index/hooks/useHandleToggleTrashColumnFilter';
 
 import { useArxEnrichCreationModal } from '@/arx-enrich/hooks/useArxEnrichCreationModal';
+import { useArxUploadJDModal } from '@/arx-jd-upload/hooks/useArxUploadJDModal';
 import { CoreObjectNameSingular } from '@/object-metadata/types/CoreObjectNameSingular';
 import { useObjectOptionsForBoard } from '@/object-record/object-options-dropdown/hooks/useObjectOptionsForBoard';
 import { useOptionsDropdown } from '@/object-record/object-options-dropdown/hooks/useOptionsDropdown';
@@ -90,7 +91,7 @@ export const ObjectOptionsDropdownMenuContent = () => {
     );
 
     const { openModal } = useArxEnrichCreationModal();
-    // const { openUploadJDModal } = useArxUploadJDModal();
+    const { openUploadJDModal } = useArxUploadJDModal();
 
     const handleModal = () => {
       openModal();
@@ -98,7 +99,7 @@ export const ObjectOptionsDropdownMenuContent = () => {
     };
 
     const handleUploadJDModal = () => {
-      // openUploadJDModal();
+      openUploadJDModal();
       // closeDropdown();
     };
   
