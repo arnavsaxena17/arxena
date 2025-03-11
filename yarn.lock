@@ -9233,7 +9233,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@nivo/core@npm:0.87.0, @nivo/core@npm:^0.87.0":
+"@nivo/core@npm:0.87.0":
   version: 0.87.0
   resolution: "@nivo/core@npm:0.87.0"
   dependencies:
@@ -17579,15 +17579,6 @@ __metadata:
   peerDependencies:
     "@tiptap/core": ^2.7.0
   checksum: 10c0/1f4d6025a2201db3f5af7f64f4b6f8aacd5e67e9bca3780c423fade6810d75fa4cf81141915510b33380c3fd0fcdd1d42217549cbf858490ed25ba68d3ca6e4e
-  languageName: node
-  linkType: hard
-
-"@tiptap/extension-text-style@npm:^2.10.4":
-  version: 2.10.4
-  resolution: "@tiptap/extension-text-style@npm:2.10.4"
-  peerDependencies:
-    "@tiptap/core": ^2.7.0
-  checksum: 10c0/ef9f70233fc2b78596e54c15c963d631a4ea49264142f4b04f011c12e833e7347f6e5cdb936760867b9530ce63d2b747f0d82ffca5a44264670e272565ee1b3a
   languageName: node
   linkType: hard
 
@@ -49092,8 +49083,6 @@ __metadata:
     "@blocknote/xl-pdf-exporter": "npm:^0.22.0"
     "@cyntler/react-doc-viewer": "npm:^1.17.0"
     "@lingui/detect-locale": "npm:^5.2.0"
-    "@nivo/calendar": "npm:^0.87.0"
-    "@nivo/core": "npm:^0.87.0"
     "@nivo/line": "npm:^0.87.0"
     "@react-pdf/renderer": "npm:^4.1.6"
     "@tiptap/core": "npm:^2.10.4"
@@ -49103,7 +49092,6 @@ __metadata:
     "@tiptap/extension-paragraph": "npm:^2.10.4"
     "@tiptap/extension-placeholder": "npm:^2.10.4"
     "@tiptap/extension-text": "npm:^2.10.4"
-    "@tiptap/extension-text-style": "npm:^2.10.4"
     "@tiptap/react": "npm:^2.10.4"
     "@types/file-saver": "npm:^2"
     "@xyflow/react": "npm:^12.4.2"
