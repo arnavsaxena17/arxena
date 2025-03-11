@@ -31430,13 +31430,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"gojs@npm:^3.0.19":
-  version: 3.0.19
-  resolution: "gojs@npm:3.0.19"
-  checksum: 10c0/b00220548d1f2f9494de370182bb02536974745d82989d9516a6b6ee8e6749b699e85bd8ee01b5ca069d813d36c1c3bd804e9dcb95606374942c25175356bd46
-  languageName: node
-  linkType: hard
-
 "google-auth-library@npm:^8.0.2":
   version: 8.9.0
   resolution: "google-auth-library@npm:8.9.0"
@@ -49467,7 +49460,6 @@ __metadata:
     fluent-ffmpeg: "npm:^2.1.3"
     framer-motion: "npm:^11.18.0"
     fuzzy: "npm:^0.1.3"
-    gojs: "npm:^3.0.19"
     gojs-react: "npm:^1.1.2"
     google-libphonenumber: "npm:^3.2.40"
     googleapis: "npm:105"
