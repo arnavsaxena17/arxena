@@ -19280,16 +19280,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/react-date-range@npm:^1.4.10":
-  version: 1.4.10
-  resolution: "@types/react-date-range@npm:1.4.10"
-  dependencies:
-    "@types/react": "npm:*"
-    date-fns: "npm:^2.16.1"
-  checksum: 10c0/6a52875846bdf4531edd5467c9429c511044d08bbd5807715fd19e7ddb60d4375ec1060fdf0090783326722052869c3ac76fca828bf897563891c3ff570b3e92
-  languageName: node
-  linkType: hard
-
 "@types/react-datepicker@npm:^6.2.0":
   version: 6.2.0
   resolution: "@types/react-datepicker@npm:6.2.0"
@@ -26812,7 +26802,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"date-fns@npm:^2.16.1, date-fns@npm:^2.30.0":
+"date-fns@npm:^2.30.0":
   version: 2.30.0
   resolution: "date-fns@npm:2.30.0"
   dependencies:
@@ -30874,13 +30864,6 @@ __metadata:
   version: 1.2.3
   resolution: "functions-have-names@npm:1.2.3"
   checksum: 10c0/33e77fd29bddc2d9bb78ab3eb854c165909201f88c75faa8272e35899e2d35a8a642a15e7420ef945e1f64a9670d6aa3ec744106b2aa42be68ca5114025954ca
-  languageName: node
-  linkType: hard
-
-"fuse.js@npm:^7.1.0":
-  version: 7.1.0
-  resolution: "fuse.js@npm:7.1.0"
-  checksum: 10c0/c0d1b1d192a4bdf3eade897453ddd28aff96b70bf3e49161a45880f9845ebaee97265595db633776700a5bcf8942223c752754a848d70c508c3c9fd997faad1e
   languageName: node
   linkType: hard
 
@@ -43736,21 +43719,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-date-range@npm:^2.0.1":
-  version: 2.0.1
-  resolution: "react-date-range@npm:2.0.1"
-  dependencies:
-    classnames: "npm:^2.2.6"
-    prop-types: "npm:^15.7.2"
-    react-list: "npm:^0.8.13"
-    shallow-equal: "npm:^1.2.1"
-  peerDependencies:
-    date-fns: 3.0.6 || >=3.0.0
-    react: ^0.14 || ^15.0.0-rc || >=15.0
-  checksum: 10c0/be419f377b86cd9eafbe1e4fb60ba20b81b173e64dbe6cab8649edbe2a9afbc97f23701ab1e382caf4d82f65aaf4746e89d3df8cbbeb127df9ea4b7a3d11a8ab
-  languageName: node
-  linkType: hard
-
 "react-datepicker@npm:^6.7.1":
   version: 6.9.0
   resolution: "react-datepicker@npm:6.9.0"
@@ -43972,15 +43940,6 @@ __metadata:
   version: 18.3.1
   resolution: "react-is@npm:18.3.1"
   checksum: 10c0/f2f1e60010c683479e74c63f96b09fb41603527cd131a9959e2aee1e5a8b0caf270b365e5ca77d4a6b18aae659b60a86150bb3979073528877029b35aecd2072
-  languageName: node
-  linkType: hard
-
-"react-list@npm:^0.8.13":
-  version: 0.8.18
-  resolution: "react-list@npm:0.8.18"
-  peerDependencies:
-    react: 0.14 || 15 - 19
-  checksum: 10c0/762481bcb4819f3114b2b6860ac393c4c984ce68cbb0cd9e849f188f917008f00cf18a9a0cb8fe29ebf81713afa44c848fc1798a90318fec0798e4ea44da6182
   languageName: node
   linkType: hard
 
@@ -49437,7 +49396,6 @@ __metadata:
     "@types/passport-microsoft": "npm:^1.0.3"
     "@types/pluralize": "npm:^0.0.33"
     "@types/react": "npm:^18.2.39"
-    "@types/react-date-range": "npm:^1.4.10"
     "@types/react-datepicker": "npm:^6.2.0"
     "@types/react-dom": "npm:^18.2.15"
     "@types/scroll-into-view": "npm:^1.16.0"
@@ -49508,7 +49466,6 @@ __metadata:
     file-type: "npm:16.5.4"
     fluent-ffmpeg: "npm:^2.1.3"
     framer-motion: "npm:^11.18.0"
-    fuse.js: "npm:^7.1.0"
     fuzzy: "npm:^0.1.3"
     gojs: "npm:^3.0.19"
     gojs-react: "npm:^1.1.2"
@@ -49594,7 +49551,6 @@ __metadata:
     raw-loader: "npm:^4.0.2"
     react: "npm:^18.2.0"
     react-data-grid: "npm:7.0.0-beta.13"
-    react-date-range: "npm:^2.0.1"
     react-datepicker: "npm:^6.7.1"
     react-dom: "npm:^18.2.0"
     react-dropzone: "npm:^14.2.3"
