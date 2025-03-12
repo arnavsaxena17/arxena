@@ -37,7 +37,6 @@ import VideoInterviewFlow from '@/video-interview/interview-response/VideoInterv
 import VideoInterviewResponseViewer from '@/video-interview/interview-response/VideoInterviewResponseViewer';
 import { Chats } from '~/pages/chats/Chats';
 
-// VideoInterviewWrapper()
 
 const VideoInterviewWrapper = () => {
   console.log('VideoInterviewWrapper rendering');
@@ -100,8 +99,6 @@ export const useCreateAppRouter = (
         </Route>
         <Route
           element={<AppRouterProviders />}
-          // To switch state to `loading` temporarily to enable us
-          // to set scroll position before the page is rendered
           loader={async () => Promise.resolve(null)}
         >
           <Route element={<DefaultLayout />}>
