@@ -36,6 +36,7 @@ import { useGetCurrentView } from '@/views/hooks/useGetCurrentView';
 import { ViewType } from '@/views/types/ViewType';
 import { useLocation } from 'react-router-dom';
 import { isDefined } from 'twenty-shared';
+import { useArxUploadJDModal } from '@/arx-jd-upload/hooks/useArxUploadJDModal';
 
 export const ObjectOptionsDropdownMenuContent = () => {
   const {
@@ -90,7 +91,7 @@ export const ObjectOptionsDropdownMenuContent = () => {
     );
 
     const { openModal } = useArxEnrichCreationModal();
-    // const { openUploadJDModal } = useArxUploadJDModal();
+    const { openUploadJDModal } = useArxUploadJDModal();
 
     const handleModal = () => {
       openModal();
@@ -98,7 +99,7 @@ export const ObjectOptionsDropdownMenuContent = () => {
     };
 
     const handleUploadJDModal = () => {
-      // openUploadJDModal();
+      openUploadJDModal();
       // closeDropdown();
     };
   

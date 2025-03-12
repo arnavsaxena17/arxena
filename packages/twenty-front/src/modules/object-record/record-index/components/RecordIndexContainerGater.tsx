@@ -21,11 +21,10 @@ import styled from '@emotion/styled';
 import { useRecoilCallback, useRecoilValue } from 'recoil';
 import { capitalize } from 'twenty-shared';
 
-import { isArxEnrichModalOpenState } from '@/arx-enrich/states/arxEnrichModalOpenState';
-// import { InterviewCreationModal } from '@/ai-interview/interview-creation/InterviewCreationModal';
 import { ArxEnrichmentModal } from '@/arx-enrich/arxEnrichmentModal';
-// import { isArxUploadJDModalOpenState } from '@/arx-jd-upload/states/arxUploadJDModalOpenState';
-
+import { isArxEnrichModalOpenState } from '@/arx-enrich/states/arxEnrichModalOpenState';
+import { isArxUploadJDModalOpenState } from '@/arx-jd-upload/states/arxUploadJDModalOpenState';
+import { ArxJDUploadModal } from '@/arx-jd-upload/components/ArxJDUploadModal';
 
 const StyledIndexContainer = styled.div`
   display: flex;
@@ -97,24 +96,31 @@ export const RecordIndexContainerGater = () => {
                     <RecordIndexContainerContextStoreNumberOfSelectedRecordsEffect />
                     <RecordIndexContainer />
 
-
-
                     {isArxEnrichModalOpen ? (
                       <ArxEnrichmentModal
-                        objectNameSingular={objectMetadataItem.namePlural === 'companies' ? 'company' : objectMetadataItem.namePlural.slice(0, -1)}
+                        objectNameSingular={
+                          objectMetadataItem.namePlural === 'companies'
+                            ? 'company'
+                            : objectMetadataItem.namePlural.slice(0, -1)
+                        }
                         objectRecordId={'0'}
-
                       />
                     ) : (
-                      <></>)}
+                      <></>
+                    )}
 
-                    {/* {isArxUploadJDModalOpenState ? (
+                    {isArxUploadJDModalOpenState ? (
                       <ArxJDUploadModal
-                        objectNameSingular={objectMetadataItem.namePlural === 'jobs' ? 'job' : objectMetadataItem.namePlural.slice(0, -1)}
+                        objectNameSingular={
+                          objectMetadataItem.namePlural === 'jobs'
+                            ? 'job'
+                            : objectMetadataItem.namePlural.slice(0, -1)
+                        }
                         objectRecordId={'0'}
                       />
                     ) : (
-                      <></>)} */}
+                      <></>
+                    )}
                   </StyledIndexContainer>
                 </PageBody>
               </ActionMenuComponentInstanceContext.Provider>
