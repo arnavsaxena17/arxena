@@ -1,6 +1,7 @@
 import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
 import { addDays } from 'date-fns';
+import { enUS } from 'date-fns/locale';
 import React from 'react';
 import { Calendar } from 'react-date-range';
 import 'react-date-range/dist/styles.css';
@@ -174,6 +175,7 @@ export const MeetingSchedulingSection: React.FC<FormComponentProps> = ({
                   maxDate={addDays(new Date(), 90)}
                   dateDisplayFormat="yyyy-MM-dd"
                   color={theme.color.blue}
+                  locale={enUS}
                 />
               </StyledCalendarContainer>
 

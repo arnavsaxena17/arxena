@@ -14,6 +14,7 @@ import { ObjectRecord } from '@/object-record/types/ObjectRecord';
 import { isDefined } from 'twenty-shared';
 import { ParsedJD } from '../types/ParsedJD';
 import { createDefaultParsedJD } from '../utils/createDefaultParsedJD';
+import { sendJobToArxena } from '../utils/sendJobToArxena';
 
 export const useArxJDUpload = (objectNameSingular: string) => {
   const [tokenPair] = useRecoilState(tokenPairState);
@@ -81,6 +82,24 @@ export const useArxJDUpload = (objectNameSingular: string) => {
 
         if (createdJob?.id === undefined || createdJob?.id === null) {
           throw new Error('Failed to create job record');
+        }
+
+        // Send job to Arxena after creation
+        if (
+          objectNameSingular === 'job' &&
+          isDefined(createdJob?.name) &&
+          isDefined(createdJob?.id)
+        ) {
+          try {
+            await sendJobToArxena(
+              createdJob.name,
+              createdJob.id,
+              tokenPair?.accessToken?.token || '',
+              (errorMessage) => setError(errorMessage),
+            );
+          } catch (arxenaError) {
+            console.error("Couldn't send job to arxena", arxenaError);
+          }
         }
 
         const { attachmentAbsoluteURL } = await uploadAttachmentFile(file, {
@@ -166,6 +185,7 @@ export const useArxJDUpload = (objectNameSingular: string) => {
       uploadAttachmentFile,
       findBestCompanyMatch,
       setParsedJD,
+      objectNameSingular,
     ],
   );
 
@@ -175,6 +195,7 @@ export const useArxJDUpload = (objectNameSingular: string) => {
     }
 
     try {
+      let createdJob;
       if (
         typeof parsedJD.companyName === 'string' &&
         parsedJD.companyName !== ''
@@ -186,16 +207,35 @@ export const useArxJDUpload = (objectNameSingular: string) => {
           matchedCompany.id !== ''
         ) {
           const { companyName, ...jobData } = parsedJD;
-          await createOneRecord({
+          createdJob = await createOneRecord({
             ...jobData,
             companyId: matchedCompany.id,
           });
         }
       } else {
-        await createOneRecord({
+        createdJob = await createOneRecord({
           ...parsedJD,
         });
       }
+
+      // Send job to Arxena after creation
+      if (
+        objectNameSingular === 'job' &&
+        isDefined(createdJob?.name) &&
+        isDefined(createdJob?.id)
+      ) {
+        try {
+          await sendJobToArxena(
+            createdJob.name,
+            createdJob.id,
+            tokenPair?.accessToken?.token || '',
+            (errorMessage) => setError(errorMessage),
+          );
+        } catch (arxenaError) {
+          console.error("Couldn't send job to arxena", arxenaError);
+        }
+      }
+
       return true;
     } catch (error) {
       console.error('Error creating job:', error);

@@ -3,7 +3,9 @@ import { useState } from 'react';
 import { v4 } from 'uuid';
 
 import { triggerCreateRecordsOptimisticEffect } from '@/apollo/optimistic-effect/utils/triggerCreateRecordsOptimisticEffect';
+import { sendJobToArxena } from '@/arx-jd-upload/utils/sendJobToArxena';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
+import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useObjectMetadataItem } from '@/object-metadata/hooks/useObjectMetadataItem';
 import { useObjectMetadataItems } from '@/object-metadata/hooks/useObjectMetadataItems';
 import { checkObjectMetadataItemHasFieldCreatedBy } from '@/object-metadata/utils/checkObjectMetadataItemHasFieldCreatedBy';
@@ -19,13 +21,8 @@ import { ObjectRecord } from '@/object-record/types/ObjectRecord';
 import { computeOptimisticRecordFromInput } from '@/object-record/utils/computeOptimisticRecordFromInput';
 import { getCreateOneRecordMutationResponseField } from '@/object-record/utils/getCreateOneRecordMutationResponseField';
 import { sanitizeRecordInput } from '@/object-record/utils/sanitizeRecordInput';
-import axios from 'axios';
-import mongoose from 'mongoose';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { isDefined } from 'twenty-shared';
-
-import { tokenPairState } from '@/auth/states/tokenPairState';
-
 type useCreateOneRecordProps = {
   objectNameSingular: string;
   recordGqlFields?: RecordGqlOperationGqlRecordFields;
@@ -49,41 +46,6 @@ export const useCreateOneRecord = <
   const { objectMetadataItem } = useObjectMetadataItem({
     objectNameSingular,
   });
-
-  const sendJobToArxena = async (jobName: string, jobId: string) => {
-    console.log('process.env.NODE_ENV', process.env.NODE_ENV);
-    try {
-      const arxenaJobId = new mongoose.Types.ObjectId().toString();
-
-      console.log('This is the jobName', jobName);
-      const response = await axios.post(
-        process.env.NODE_ENV === 'production'
-          ? 'https://app.arxena.com/candidate-sourcing/create-job-in-arxena-and-sheets'
-          : 'http://localhost:3000/candidate-sourcing/create-job-in-arxena-and-sheets',
-        { job_name: jobName, new_job_id: arxenaJobId, id_to_update: jobId },
-        {
-          headers: {
-            Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
-            'Content-Type': 'application/json',
-          },
-        },
-      );
-
-      if (response.status !== 200) {
-        throw new Error(
-          `Failed to create job on Arxena: ${response.statusText}`,
-        );
-      }
-      return response.data;
-    } catch (error) {
-      setJobApiError(
-        error instanceof Error
-          ? error.message
-          : 'Failed to create job on Arxena',
-      );
-      throw error;
-    }
-  };
 
   const objectMetadataHasCreatedByField =
     checkObjectMetadataItemHasFieldCreatedBy(objectMetadataItem);
@@ -198,6 +160,7 @@ export const useCreateOneRecord = <
           await sendJobToArxena(
             recordInput?.name as string,
             recordInput.id as string,
+            tokenPair?.accessToken?.token || '',
           );
         } catch {
           console.log("Couldn't send job to arxena");
