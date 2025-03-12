@@ -1,11 +1,10 @@
-import { useCallback, useState, useEffect } from 'react';
-import styled from '@emotion/styled';
-import { TextInput } from '@/ui/input/components/TextInput';
-import { H2Title } from 'twenty-ui';
-import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
-import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
-import { useRecoilState } from 'recoil';
 import { tokenPairState } from '@/auth/states/tokenPairState';
+import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
+import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
+import { TextInput } from '@/ui/input/components/TextInput';
+import styled from '@emotion/styled';
+import { useCallback, useEffect, useState } from 'react';
+import { useRecoilState } from 'recoil';
 
 const StyledInputContainer = styled.div`
   display: flex;
@@ -22,15 +21,24 @@ const StyledButtonContainer = styled.div`
 `;
 
 const StyledButton = styled.button<{ variant?: 'primary' | 'secondary' }>`
-  background-color: ${({ variant }) => variant === 'secondary' ? '#F5F5F5' : '#0000FF'};
-  color: ${({ variant }) => variant === 'secondary' ? '#000000' : 'white'};
+  background-color: ${({ variant, theme }) =>
+    variant === 'secondary' ? theme.background.tertiary : theme.color.blue};
+  color: ${({ variant, theme }) =>
+    variant === 'secondary'
+      ? theme.font.color.primary
+      : theme.font.color.inverted};
   padding: 8px 16px;
   border-radius: 4px;
-  border: 1px solid ${({ variant }) => variant === 'secondary' ? '#E0E0E0' : '#0000FF'};
+  border: 1px solid
+    ${({ variant, theme }) =>
+      variant === 'secondary' ? theme.border.color.medium : theme.color.blue};
   cursor: pointer;
 
   &:hover {
-    background-color: ${({ variant }) => variant === 'secondary' ? '#E0E0E0' : '#0000DD'};
+    background-color: ${({ variant, theme }) =>
+      variant === 'secondary'
+        ? theme.background.quaternary
+        : theme.color.blue60};
   }
 
   &:disabled {
@@ -70,11 +78,15 @@ export const ApiKeysForm = () => {
 
   const fetchExistingKeys = async () => {
     try {
-      const response = await fetch(process.env.REACT_APP_SERVER_BASE_URL+'/workspace-modifications/api-keys', {
-        headers: {
-          Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
+      const response = await fetch(
+        process.env.REACT_APP_SERVER_BASE_URL +
+          '/workspace-modifications/api-keys',
+        {
+          headers: {
+            Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
+          },
         },
-      });
+      );
 
       if (!response.ok) {
         throw new Error('Failed to fetch API keys');
@@ -92,35 +104,42 @@ export const ApiKeysForm = () => {
     }
   };
 
-  const handleChange = useCallback((field: string) => (value: string) => {
-    setKeys((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-    setErrors((prev) => ({
-      ...prev,
-      [field]: '',
-    }));
-  }, []);
+  const handleChange = useCallback(
+    (field: string) => (value: string) => {
+      setKeys((prev) => ({
+        ...prev,
+        [field]: value,
+      }));
+      setErrors((prev) => ({
+        ...prev,
+        [field]: '',
+      }));
+    },
+    [],
+  );
 
   const handleSubmit = async () => {
     if (isSubmitting) return;
     setIsSubmitting(true);
 
     try {
-      const response = await fetch(process.env.REACT_APP_SERVER_BASE_URL+'/workspace-modifications/api-keys', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
+      const response = await fetch(
+        process.env.REACT_APP_SERVER_BASE_URL +
+          '/workspace-modifications/api-keys',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
+          },
+          body: JSON.stringify(keys),
         },
-        body: JSON.stringify(keys),
-      });
-      
+      );
+
       if (!response.ok) {
         throw new Error(await response.text());
       }
-      
+
       setOriginalKeys(keys);
       setIsEditing(false);
       enqueueSnackBar('API keys updated successfully', {
@@ -128,12 +147,12 @@ export const ApiKeysForm = () => {
       });
     } catch (error) {
       enqueueSnackBar(
-        error instanceof Error 
+        error instanceof Error
           ? `Failed to update API keys: ${error.message}`
           : 'Failed to update API keys',
         {
           variant: SnackBarVariant.Error,
-        }
+        },
       );
     } finally {
       setIsSubmitting(false);
@@ -170,32 +189,39 @@ export const ApiKeysForm = () => {
       {renderInput('smart_proxy_url', 'Smart Proxy URL')}
       {renderInput('whatsapp_key', 'WhatsApp Key')}
       {renderInput('anthropic_key', 'Anthropic Key')}
-      {renderInput('facebook_whatsapp_api_token', 'Facebook WhatsApp API Token')}
-      {renderInput('facebook_whatsapp_phone_number_id', 'Facebook WhatsApp Phone Number ID')}
-      {renderInput('facebook_whatsapp_app_id', 'Facebook WhatsApp App ID')}
-      {renderInput('facebook_whatsapp_asset_id', 'Facebook WhatsApp Asset ID')}
+      {renderInput(
+        'facebook_whatsapp_api_token',
+        'Facebook WhatsApp API Token (Do Not Change)',
+      )}
+      {renderInput(
+        'facebook_whatsapp_phone_number_id',
+        'Facebook WhatsApp Phone Number ID',
+      )}
+      {renderInput(
+        'facebook_whatsapp_app_id',
+        'Facebook WhatsApp App ID (Do Not Change)',
+      )}
+      {renderInput(
+        'facebook_whatsapp_asset_id',
+        'Facebook WhatsApp Business Asset ID (WABA)',
+      )}
 
       <StyledButtonContainer>
         {isEditing ? (
           <>
-            <StyledButton 
+            <StyledButton
               variant="secondary"
               onClick={handleCancel}
               disabled={isSubmitting}
             >
               Cancel
             </StyledButton>
-            <StyledButton 
-              onClick={handleSubmit}
-              disabled={isSubmitting}
-            >
+            <StyledButton onClick={handleSubmit} disabled={isSubmitting}>
               {isSubmitting ? 'Saving...' : 'Save Changes'}
             </StyledButton>
           </>
         ) : (
-          <StyledButton 
-            onClick={() => setIsEditing(true)}
-          >
+          <StyledButton onClick={() => setIsEditing(true)}>
             Edit API Keys
           </StyledButton>
         )}

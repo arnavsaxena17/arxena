@@ -1,4 +1,3 @@
-
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
@@ -12,24 +11,40 @@ const StyledButtonContainer = styled.div`
   margin-top: 16px;
 `;
 
-const StyledButton = styled.button<{ variant?: 'primary' | 'secondary'; submitted?: boolean }>`
-  background-color: ${({ variant, submitted }) => 
-    submitted ? '#CCCCCC' : 
-    variant === 'secondary' ? '#F5F5F5' : '#0000FF'};
-  color: ${({ variant, submitted }) => 
-    submitted ? '#666666' : 
-    variant === 'secondary' ? '#000000' : 'white'};
+const StyledButton = styled.button<{
+  variant?: 'primary' | 'secondary';
+  submitted?: boolean;
+}>`
+  background-color: ${({ variant, submitted, theme }) =>
+    submitted
+      ? theme.border.color.medium
+      : variant === 'secondary'
+        ? theme.background.tertiary
+        : theme.color.blue};
+  color: ${({ variant, submitted, theme }) =>
+    submitted
+      ? theme.font.color.secondary
+      : variant === 'secondary'
+        ? theme.font.color.primary
+        : theme.font.color.inverted};
   padding: 8px 16px;
   border-radius: 4px;
-  border: 1px solid ${({ variant, submitted }) => 
-    submitted ? '#CCCCCC' : 
-    variant === 'secondary' ? '#E0E0E0' : '#0000FF'};
-  cursor: ${({ submitted }) => submitted ? 'not-allowed' : 'pointer'};
+  border: 1px solid
+    ${({ variant, submitted, theme }) =>
+      submitted
+        ? theme.border.color.medium
+        : variant === 'secondary'
+          ? theme.border.color.medium
+          : theme.color.blue};
+  cursor: ${({ submitted }) => (submitted ? 'not-allowed' : 'pointer')};
 
   &:hover {
-    background-color: ${({ variant, submitted }) => 
-      submitted ? '#CCCCCC' :
-      variant === 'secondary' ? '#E0E0E0' : '#0000DD'};
+    background-color: ${({ variant, submitted, theme }) =>
+      submitted
+        ? theme.border.color.medium
+        : variant === 'secondary'
+          ? theme.background.quaternary
+          : theme.color.blue60};
   }
 
   &:disabled {
@@ -41,16 +56,17 @@ const StyledButton = styled.button<{ variant?: 'primary' | 'secondary'; submitte
 export const MetadataStructureSection = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [tokenPair] = useRecoilState(tokenPairState);
-  const [hasBeenClicked, setHasBeenClicked] = useState(false);
+  const [hasBeenClicked, setHasBeenClicked] = useState(() => {
+    return localStorage.getItem('metadata-structure-created') === 'true';
+  });
 
   const { enqueueSnackBar } = useSnackBar();
 
   const handleCreateStructure = async () => {
-    // if (isSubmitting) return;
     if (isSubmitting || hasBeenClicked) return;
     setIsSubmitting(true);
-    setHasBeenClicked(true); // Set this to true and never change it back
-
+    setHasBeenClicked(true);
+    localStorage.setItem('metadata-structure-created', 'true');
 
     try {
       const response = await fetch(
@@ -60,7 +76,7 @@ export const MetadataStructureSection = () => {
           headers: {
             Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
           },
-        }
+        },
       );
 
       if (!response.ok) {
@@ -77,7 +93,7 @@ export const MetadataStructureSection = () => {
           : 'Failed to create metadata structure',
         {
           variant: SnackBarVariant.Error,
-        }
+        },
       );
     } finally {
       setIsSubmitting(false);
@@ -91,10 +107,10 @@ export const MetadataStructureSection = () => {
         disabled={isSubmitting}
         submitted={hasBeenClicked && !isSubmitting}
       >
-        {isSubmitting 
-          ? 'Creating...' 
-          : hasBeenClicked 
-            ? 'Creating Structure..' 
+        {isSubmitting
+          ? 'Creating...'
+          : hasBeenClicked
+            ? 'Creating Structure..'
             : 'Create Metadata Structure'}
       </StyledButton>
     </StyledButtonContainer>

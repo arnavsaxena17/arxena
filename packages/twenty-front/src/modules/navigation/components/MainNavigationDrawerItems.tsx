@@ -1,6 +1,6 @@
 import { useLocation } from 'react-router-dom';
 import { useRecoilState, useSetRecoilState } from 'recoil';
-import { IconMessage, IconSearch, IconSettings } from 'twenty-ui';
+import { IconMessage, IconSearch, IconSettings, IconVideo } from 'twenty-ui';
 
 import { useCommandMenu } from '@/command-menu/hooks/useCommandMenu';
 import { CurrentWorkspaceMemberFavoritesFolders } from '@/favorites/components/CurrentWorkspaceMemberFavoritesFolders';
@@ -84,7 +84,7 @@ export const MainNavigationDrawerItems = () => {
               setIsNavigationDrawerExpanded(true);
               setNavigationMemorizedUrl(location.pathname + location.search);
             }}
-            Icon={IconMessage}
+            Icon={IconVideo}
           />
         </StyledMainSection>
       )}

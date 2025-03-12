@@ -73,7 +73,7 @@ export const CreateProfile = () => {
     objectNameSingular: CoreObjectNameSingular.WorkspaceMember,
   });
 
-  async function signupUserOnArxena(userData: any) {
+  const signupUserOnArxena = async (userData: any) => {
     console.log('Going to create user on Arxena using user data:', userData);
     try {
       console.log(
@@ -89,7 +89,7 @@ export const CreateProfile = () => {
         'process.env.ARXENA_SITE_BASE_URL:',
         process.env.ARXENA_SITE_BASE_URL,
       );
-      let arxenaSiteBaseUrl: string = '';
+      let arxenaSiteBaseUrl = '';
       if (process.env.NODE_ENV === 'development') {
         arxenaSiteBaseUrl =
           process.env.REACT_APP_ARXENA_SITE_BASE_URL || 'http://localhost:5050';
@@ -119,13 +119,12 @@ export const CreateProfile = () => {
         body: requestParams,
       });
       console.log('signupUserO nArxena response:', response);
-
       const data = await response.json();
       return data;
     } catch (error) {
       console.log('Signup error:', error);
     }
-  }
+  };
 
   // Form
   const {
@@ -145,14 +144,14 @@ export const CreateProfile = () => {
   const onSubmit: SubmitHandler<Form> = useCallback(
     async (data) => {
       try {
-        console.log("Submit has been clicked so somet stuff")
+        console.log('Submit has been clicked so somet stuff');
         if (!currentWorkspaceMember?.id) {
           throw new Error('User is not logged in');
         }
         if (!data.firstName || !data.lastName) {
           throw new Error('First name or last name is missing');
         }
-        console.log("Some update records")
+        console.log('Some update records');
 
         await updateOneRecord({
           idToUpdate: currentWorkspaceMember?.id,
@@ -165,7 +164,7 @@ export const CreateProfile = () => {
           },
         });
 
-        console.log("Som etting")
+        console.log('Som etting');
         setCurrentWorkspaceMember((current) => {
           if (isDefined(current)) {
             return {
@@ -180,7 +179,7 @@ export const CreateProfile = () => {
           return current;
         });
         setNextOnboardingStatus();
-        console.log("Some email and user data")
+        console.log('Some email and user data');
         const userData = {
           fullName:
             data?.firstName !== '' && data?.lastName !== ''
