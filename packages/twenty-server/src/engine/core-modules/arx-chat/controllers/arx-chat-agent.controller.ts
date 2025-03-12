@@ -1130,7 +1130,7 @@ export class ArxChatEndpoint {
        }
  
        const arxenaSiteBaseUrl =
-         process.env.REACT_APP_ARXENA_SITE_BASE_URL || 'http://127.0.0.1:5050';
+         process.env.SERVER_BASE_URL || 'http://127.0.0.1:5050';
  
        // Process the JD using the process-jd endpoint
        const processResponse = await axios.post(
