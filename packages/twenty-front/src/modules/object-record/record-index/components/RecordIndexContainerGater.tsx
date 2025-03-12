@@ -23,8 +23,8 @@ import { capitalize } from 'twenty-shared';
 
 import { ArxEnrichmentModal } from '@/arx-enrich/arxEnrichmentModal';
 import { isArxEnrichModalOpenState } from '@/arx-enrich/states/arxEnrichModalOpenState';
-import { isArxUploadJDModalOpenState } from '@/arx-jd-upload/states/arxUploadJDModalOpenState';
 import { ArxJDUploadModal } from '@/arx-jd-upload/components/ArxJDUploadModal';
+import { isArxUploadJDModalOpenState } from '@/arx-jd-upload/states/arxUploadJDModalOpenState';
 
 const StyledIndexContainer = styled.div`
   display: flex;
@@ -111,11 +111,7 @@ export const RecordIndexContainerGater = () => {
 
                     {isArxUploadJDModalOpenState ? (
                       <ArxJDUploadModal
-                        objectNameSingular={
-                          objectMetadataItem.namePlural === 'jobs'
-                            ? 'job'
-                            : objectMetadataItem.namePlural.slice(0, -1)
-                        }
+                        objectNameSingular={objectMetadataItem.nameSingular}
                         objectRecordId={'0'}
                       />
                     ) : (

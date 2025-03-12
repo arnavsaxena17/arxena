@@ -27,7 +27,7 @@ export const ArxJDUploadModal = ({
     handleFileUpload,
     handleCreateJob,
     resetUploadState,
-  } = useArxJDUpload();
+  } = useArxJDUpload(objectNameSingular);
 
   const { reset: resetFormStepper } = useArxJDFormStepper();
 

@@ -205,7 +205,6 @@ export const useCreateOneRecord = <
       }
     } catch (error) {
       console.log('Error sending job to Arxena', error);
-      return null;
     }
 
     await refetchAggregateQueries();

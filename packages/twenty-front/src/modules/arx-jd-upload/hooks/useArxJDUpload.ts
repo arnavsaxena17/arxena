@@ -13,23 +13,22 @@ import { ObjectRecord } from '@/object-record/types/ObjectRecord';
 
 import { ParsedJD } from '../types/ParsedJD';
 import { createDefaultParsedJD } from '../utils/createDefaultParsedJD';
-import { useArxJDFormStepper } from './useArxJDFormStepper';
 
-export const useArxJDUpload = () => {
+export const useArxJDUpload = (objectNameSingular: string) => {
   const [tokenPair] = useRecoilState(tokenPairState);
   const [parsedJD, setParsedJD] = useState<ParsedJD | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { createOneRecord } = useCreateOneRecord({ objectNameSingular: 'job' });
-  const { updateOneRecord } = useUpdateOneRecord({ objectNameSingular: 'job' });
+  const { createOneRecord } = useCreateOneRecord({ objectNameSingular });
+  const { updateOneRecord } = useUpdateOneRecord({ objectNameSingular });
   const { uploadAttachmentFile } = useUploadAttachmentFile();
 
   const { records: companies = [] } = useFindManyRecords({
     objectNameSingular: 'company',
   });
 
-  const { reset: resetFormStepper } = useArxJDFormStepper();
+  // const { reset: resetFormStepper } = useArxJDFormStepper();
 
   type Company = ObjectRecord & {
     name: string;
