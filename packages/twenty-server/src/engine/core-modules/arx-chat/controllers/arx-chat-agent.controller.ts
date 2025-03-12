@@ -1,5 +1,14 @@
-import { Controller, Get, HttpException, HttpStatus, Post, Req, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  HttpException,
+  HttpStatus,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 
+import axios from 'axios';
 import {
   ChatControlsObjType,
   ChatHistoryItem,
@@ -18,7 +27,6 @@ import {
   whatappUpdateMessageObjType,
 } from 'twenty-shared';
 
-import axios from 'axios';
 import CandidateEngagementArx from 'src/engine/core-modules/arx-chat/services/candidate-engagement/candidate-engagement';
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/update-chat';
@@ -1110,48 +1118,50 @@ export class ArxChatEndpoint {
       return { status: err };
     }
   }
+
   @Post('upload-jd')
-   @UseGuards(JwtAuthGuard)
-   async uploadJD(@Req() request: any) {
-     try {
-       const { jobId, attachmentUrl } = request.body;
- 
-       console.log('jobId:', jobId);
-       console.log('attachmentUrl:', attachmentUrl);
-       console.log(
-         'request.headers.authorization:',
-         request.headers.authorization,
-       );
-       if (!jobId || !attachmentUrl) {
-         throw new HttpException(
-           'Missing jobId or attachmentUrl',
-           HttpStatus.BAD_REQUEST,
-         );
-       }
- 
-       const arxenaSiteBaseUrl =
-         process.env.SERVER_BASE_URL || 'http://127.0.0.1:5050';
- 
-       // Process the JD using the process-jd endpoint
-       const processResponse = await axios.post(
-         `${arxenaSiteBaseUrl}/upload-jd`,
-         {
-           jobId,
-           attachmentUrl,
-         },
-         {
-           headers: {
-             Authorization: `Bearer ${request.headers.authorization}`,
-           },
-         },
-       );
- 
-       return processResponse.data;
-     } catch (error) {
-       throw new HttpException(
-         error.message || 'Failed to process JD',
-         error.status || HttpStatus.INTERNAL_SERVER_ERROR,
-       );
-     }
-   }
+  @UseGuards(JwtAuthGuard)
+  async uploadJD(@Req() request: any) {
+    try {
+      const { jobId, attachmentUrl } = request.body;
+
+      console.log('jobId:', jobId);
+      console.log('attachmentUrl:', attachmentUrl);
+      console.log(
+        'request.headers.authorization:',
+        request.headers.authorization,
+      );
+      if (!jobId || !attachmentUrl) {
+        throw new HttpException(
+          'Missing jobId or attachmentUrl',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      const arxenaSiteBaseUrl =
+        process.env.FRONTEND_URL || 'http://127.0.0.1:5050';
+
+      console.log('arxenaSiteBaseUrl:', arxenaSiteBaseUrl);
+      // Process the JD using the process-jd endpoint
+      const processResponse = await axios.post(
+        `${arxenaSiteBaseUrl}/upload-jd`,
+        {
+          jobId,
+          attachmentUrl,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${request.headers.authorization}`,
+          },
+        },
+      );
+
+      return processResponse.data;
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Failed to process JD',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
 }
