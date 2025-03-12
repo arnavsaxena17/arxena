@@ -11,6 +11,7 @@ import { useFindManyRecords } from '@/object-record/hooks/useFindManyRecords';
 import { useUpdateOneRecord } from '@/object-record/hooks/useUpdateOneRecord';
 import { ObjectRecord } from '@/object-record/types/ObjectRecord';
 
+import { isDefined } from 'twenty-shared';
 import { ParsedJD } from '../types/ParsedJD';
 import { createDefaultParsedJD } from '../utils/createDefaultParsedJD';
 
@@ -114,45 +115,39 @@ export const useArxJDUpload = (objectNameSingular: string) => {
             companyId: data.companyId,
           });
 
+          // Process company matching and update record with parsed data
+          const {
+            companyName,
+            chatFlow,
+            videoInterview,
+            meetingScheduling,
+            ...updateData
+          } = parsedData;
+
+          setParsedJD(parsedData);
+
+          // Try to match company if a name was provided
           if (
             typeof parsedData.companyName === 'string' &&
             parsedData.companyName !== ''
           ) {
             const matchedCompany = findBestCompanyMatch(parsedData.companyName);
             if (
-              typeof matchedCompany?.id === 'string' &&
+              isDefined(matchedCompany) &&
+              matchedCompany !== null &&
+              matchedCompany.id !== undefined &&
+              typeof matchedCompany.id === 'string' &&
               matchedCompany.id !== ''
             ) {
-              const {
-                companyName,
-                chatFlow,
-                videoInterview,
-                meetingScheduling,
-                ...updateData
-              } = parsedData;
               updateData.companyId = matchedCompany.id;
-              setParsedJD(parsedData);
-
-              await updateOneRecord({
-                idToUpdate: createdJob.id,
-                updateOneRecordInput: updateData,
-              });
             }
-          } else {
-            const {
-              companyName,
-              chatFlow,
-              videoInterview,
-              meetingScheduling,
-              ...updateData
-            } = parsedData;
-            setParsedJD(parsedData);
-
-            await updateOneRecord({
-              idToUpdate: createdJob.id,
-              updateOneRecordInput: updateData,
-            });
           }
+
+          // Update the job record with the processed data
+          await updateOneRecord({
+            idToUpdate: createdJob.id,
+            updateOneRecordInput: updateData,
+          });
         } else {
           throw new Error(response.data.message || 'Failed to process JD');
         }
