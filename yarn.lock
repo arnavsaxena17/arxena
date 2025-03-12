@@ -6952,22 +6952,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@handsontable/pikaday@npm:^1.0.0":
-  version: 1.0.0
-  resolution: "@handsontable/pikaday@npm:1.0.0"
-  checksum: 10c0/cdccc7f9ff6da4a5e838860091eca4dbc415ee68009eec5fb160f66caf06da7255df5b59b3444027ca3dab469618e120df398f24e1d7df455674531fac94e567
-  languageName: node
-  linkType: hard
-
-"@handsontable/react-wrapper@npm:^15.1.0":
-  version: 15.1.0
-  resolution: "@handsontable/react-wrapper@npm:15.1.0"
-  peerDependencies:
-    handsontable: ">=15.0.0"
-  checksum: 10c0/351a460dfbc821ae1a236ed012dc5830ce2d7ddd95f9ddce4fdcf83931c62f7550e08b08733abb6b1883615c62393553ac8990bded27498ce51adf50acf69791
-  languageName: node
-  linkType: hard
-
 "@hapi/boom@npm:^10.0.1":
   version: 10.0.1
   resolution: "@hapi/boom@npm:10.0.1"
@@ -19271,6 +19255,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/react-date-range@npm:^1.4.10":
+  version: 1.4.10
+  resolution: "@types/react-date-range@npm:1.4.10"
+  dependencies:
+    "@types/react": "npm:*"
+    date-fns: "npm:^2.16.1"
+  checksum: 10c0/6a52875846bdf4531edd5467c9429c511044d08bbd5807715fd19e7ddb60d4375ec1060fdf0090783326722052869c3ac76fca828bf897563891c3ff570b3e92
+  languageName: node
+  linkType: hard
+
 "@types/react-datepicker@npm:^6.2.0":
   version: 6.2.0
   resolution: "@types/react-datepicker@npm:6.2.0"
@@ -19458,7 +19452,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/trusted-types@npm:*, @types/trusted-types@npm:^2.0.7":
+"@types/trusted-types@npm:*":
   version: 2.0.7
   resolution: "@types/trusted-types@npm:2.0.7"
   checksum: 10c0/4c4855f10de7c6c135e0d32ce462419d8abbbc33713b31d294596c0cc34ae1fa6112a2f9da729c8f7a20707782b0d69da3b1f8df6645b0366d08825ca1522e0c
@@ -23405,7 +23399,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"bignumber.js@npm:^8 || ^9, bignumber.js@npm:^9.0.0":
+"bignumber.js@npm:^9.0.0":
   version: 9.1.2
   resolution: "bignumber.js@npm:9.1.2"
   checksum: 10c0/e17786545433f3110b868725c449fa9625366a6e675cd70eb39b60938d6adbd0158cb4b3ad4f306ce817165d37e63f4aa3098ba4110db1d9a3b9f66abfbaf10d
@@ -24629,15 +24623,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"chevrotain@npm:^6.5.0":
-  version: 6.5.0
-  resolution: "chevrotain@npm:6.5.0"
-  dependencies:
-    regexp-to-ast: "npm:0.4.0"
-  checksum: 10c0/7fa4cf8ac2600f5c08bc4538bb49e0ce88daedbfb9507227251d87e5fa33ab28a39e69418b054299f00809fe9821f32cdebef0c36910b0ee7c15513f98dd609d
-  languageName: node
-  linkType: hard
-
 "chokidar@npm:3.5.1":
   version: 3.5.1
   resolution: "chokidar@npm:3.5.1"
@@ -25852,7 +25837,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"core-js@npm:^3.37.0, core-js@npm:^3.37.1":
+"core-js@npm:^3.37.1":
   version: 3.40.0
   resolution: "core-js@npm:3.40.0"
   checksum: 10c0/db7946ada881e845d8b157061945b1187618fa45cf162f392a151e8a497962aed2da688c982eaa1d444c864be97a70f8be4d73385294b515d224dd164d19f1d4
@@ -26793,7 +26778,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"date-fns@npm:^2.30.0":
+"date-fns@npm:^2.16.1, date-fns@npm:^2.30.0":
   version: 2.30.0
   resolution: "date-fns@npm:2.30.0"
   dependencies:
@@ -27589,18 +27574,6 @@ __metadata:
   version: 3.1.6
   resolution: "dompurify@npm:3.1.6"
   checksum: 10c0/3de1cca187c78d3d8cb4134fc2985b644d6a81f6b4e024c77cfb04c1c2f38544ccf7b0ea37a48ce22fcca64594170ed7c22252574c75b801c44345cdd7b06c64
-  languageName: node
-  linkType: hard
-
-"dompurify@npm:^3.1.7":
-  version: 3.2.4
-  resolution: "dompurify@npm:3.2.4"
-  dependencies:
-    "@types/trusted-types": "npm:^2.0.7"
-  dependenciesMeta:
-    "@types/trusted-types":
-      optional: true
-  checksum: 10c0/6be56810fb7ad2776155c8fc2967af5056783c030094362c7d0cf1ad13f2129cf922d8eefab528a34bdebfb98e2f44b306a983ab93aefb9d6f24c18a3d027a05
   languageName: node
   linkType: hard
 
@@ -31876,23 +31849,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"handsontable@npm:^15.1.0":
-  version: 15.1.0
-  resolution: "handsontable@npm:15.1.0"
-  dependencies:
-    "@handsontable/pikaday": "npm:^1.0.0"
-    core-js: "npm:^3.37.0"
-    dompurify: "npm:^3.1.7"
-    hyperformula: "npm:^3.0.0"
-    moment: "npm:2.30.1"
-    numbro: "npm:2.5.0"
-  dependenciesMeta:
-    hyperformula:
-      optional: true
-  checksum: 10c0/ddbcd2d816be4e42eeee7c53bf58dfd548266796f48d35511f16d4d5b3c5082d00366586cb32bbd39e08cff5a96209e80c6fe135eb647aea20ef5f4cc4d4b329
-  languageName: node
-  linkType: hard
-
 "hanji@npm:^0.0.5":
   version: 0.0.5
   resolution: "hanji@npm:0.0.5"
@@ -32947,16 +32903,6 @@ __metadata:
   dependencies:
     ms: "npm:^2.0.0"
   checksum: 10c0/f34a2c20161d02303c2807badec2f3b49cbfbbb409abd4f95a07377ae01cfe6b59e3d15ac609cffcd8f2521f0eb37b7e1091acf65da99aa2a4f1ad63c21e7e7a
-  languageName: node
-  linkType: hard
-
-"hyperformula@npm:^3.0.0":
-  version: 3.0.0
-  resolution: "hyperformula@npm:3.0.0"
-  dependencies:
-    chevrotain: "npm:^6.5.0"
-    tiny-emitter: "npm:^2.1.0"
-  checksum: 10c0/1ac1ce42365b81c0ca0f512b9dca21f1716b82ea1279a193e7f6bf93c5a4dc7fc467cbb1eb4f8788703bdc7ca3855e412623bf8739061e03e8a1c1d4d447db1b
   languageName: node
   linkType: hard
 
@@ -39194,7 +39140,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"moment@npm:2.30.1, moment@npm:^2.22.1, moment@npm:^2.29.4":
+"moment@npm:^2.22.1, moment@npm:^2.29.4":
   version: 2.30.1
   resolution: "moment@npm:2.30.1"
   checksum: 10c0/865e4279418c6de666fca7786607705fd0189d8a7b7624e2e56be99290ac846f90878a6f602e34b4e0455c549b85385b1baf9966845962b313699e7cb847543a
@@ -40440,15 +40386,6 @@ __metadata:
   version: 1.0.1
   resolution: "number-is-nan@npm:1.0.1"
   checksum: 10c0/cb97149006acc5cd512c13c1838223abdf202e76ddfa059c5e8e7507aff2c3a78cd19057516885a2f6f5b576543dc4f7b6f3c997cc7df53ae26c260855466df5
-  languageName: node
-  linkType: hard
-
-"numbro@npm:2.5.0":
-  version: 2.5.0
-  resolution: "numbro@npm:2.5.0"
-  dependencies:
-    bignumber.js: "npm:^8 || ^9"
-  checksum: 10c0/5fce44fb0e9dd9e3d48b74f0f29910af515284ac35eff0c14911ccaa7a666c2b95a55be02d2605f30fd3fac7d522ffecb5c1f24acb91c1a1880eb53b268a2ccc
   languageName: node
   linkType: hard
 
@@ -43703,6 +43640,21 @@ __metadata:
   languageName: node
   linkType: hard
 
+"react-date-range@npm:^2.0.1":
+  version: 2.0.1
+  resolution: "react-date-range@npm:2.0.1"
+  dependencies:
+    classnames: "npm:^2.2.6"
+    prop-types: "npm:^15.7.2"
+    react-list: "npm:^0.8.13"
+    shallow-equal: "npm:^1.2.1"
+  peerDependencies:
+    date-fns: 3.0.6 || >=3.0.0
+    react: ^0.14 || ^15.0.0-rc || >=15.0
+  checksum: 10c0/be419f377b86cd9eafbe1e4fb60ba20b81b173e64dbe6cab8649edbe2a9afbc97f23701ab1e382caf4d82f65aaf4746e89d3df8cbbeb127df9ea4b7a3d11a8ab
+  languageName: node
+  linkType: hard
+
 "react-datepicker@npm:^6.7.1":
   version: 6.9.0
   resolution: "react-datepicker@npm:6.9.0"
@@ -43924,6 +43876,15 @@ __metadata:
   version: 18.3.1
   resolution: "react-is@npm:18.3.1"
   checksum: 10c0/f2f1e60010c683479e74c63f96b09fb41603527cd131a9959e2aee1e5a8b0caf270b365e5ca77d4a6b18aae659b60a86150bb3979073528877029b35aecd2072
+  languageName: node
+  linkType: hard
+
+"react-list@npm:^0.8.13":
+  version: 0.8.18
+  resolution: "react-list@npm:0.8.18"
+  peerDependencies:
+    react: 0.14 || 15 - 19
+  checksum: 10c0/762481bcb4819f3114b2b6860ac393c4c984ce68cbb0cd9e849f188f917008f00cf18a9a0cb8fe29ebf81713afa44c848fc1798a90318fec0798e4ea44da6182
   languageName: node
   linkType: hard
 
@@ -44776,13 +44737,6 @@ __metadata:
   dependencies:
     regex-utilities: "npm:^2.3.0"
   checksum: 10c0/314e032f0fe09497ce7a160b99675c4a16c7524f0a24833f567cbbf3a2bebc26bf59737dc5c23f32af7c74aa7a6bd3f809fc72c90c49a05faf8be45677db508a
-  languageName: node
-  linkType: hard
-
-"regexp-to-ast@npm:0.4.0":
-  version: 0.4.0
-  resolution: "regexp-to-ast@npm:0.4.0"
-  checksum: 10c0/56b7148be88ea553e648f5ebba486c951f4c044723e5e34360786c8b5cf0b2a2315b0f145143fb3afe1699b8e44d9586bd1a977693109f7d7ae230d62fa74b61
   languageName: node
   linkType: hard
 
@@ -48276,13 +48230,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tiny-emitter@npm:^2.1.0":
-  version: 2.1.0
-  resolution: "tiny-emitter@npm:2.1.0"
-  checksum: 10c0/459c0bd6e636e80909898220eb390e1cba2b15c430b7b06cec6ac29d87acd29ef618b9b32532283af749f5d37af3534d0e3bde29fdf6bcefbf122784333c953d
-  languageName: node
-  linkType: hard
-
 "tiny-inflate@npm:^1.0.0, tiny-inflate@npm:^1.0.3":
   version: 1.0.3
   resolution: "tiny-inflate@npm:1.0.3"
@@ -49094,10 +49041,12 @@ __metadata:
     "@tiptap/extension-text": "npm:^2.10.4"
     "@tiptap/react": "npm:^2.10.4"
     "@types/file-saver": "npm:^2"
+    "@types/react-date-range": "npm:^1.4.10"
     "@xyflow/react": "npm:^12.4.2"
     buffer: "npm:^6.0.3"
     docx: "npm:^9.1.0"
     file-saver: "npm:^2.0.5"
+    react-date-range: "npm:^2.0.1"
     recoil-sync: "npm:^0.2.0"
     transliteration: "npm:^2.3.5"
     twenty-shared: "workspace:*"
@@ -49254,7 +49203,6 @@ __metadata:
     "@graphql-codegen/typescript-operations": "npm:^3.0.4"
     "@graphql-codegen/typescript-react-apollo": "npm:^3.3.7"
     "@graphql-tools/schema": "npm:^10.0.0"
-    "@handsontable/react-wrapper": "npm:^15.1.0"
     "@hapi/boom": "npm:^10.0.1"
     "@hello-pangea/dnd": "npm:^16.2.0"
     "@hookform/resolvers": "npm:^3.1.1"
@@ -49462,7 +49410,6 @@ __metadata:
     graphql-type-json: "npm:^0.3.2"
     graphql-upload: "npm:^13.0.0"
     graphql-yoga: "npm:^4.0.4"
-    handsontable: "npm:^15.1.0"
     hex-rgb: "npm:^5.0.0"
     http-server: "npm:^14.1.1"
     iframe-resizer-react: "npm:^1.1.0"
