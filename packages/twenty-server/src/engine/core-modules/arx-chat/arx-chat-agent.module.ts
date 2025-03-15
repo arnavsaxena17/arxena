@@ -17,12 +17,18 @@ import { AuthModule } from 'src/engine/core-modules/auth/auth.module';
 import { GoogleCalendarModule } from 'src/engine/core-modules/calendar-events/google-calendar.module';
 import { DataSourceEntity } from 'src/engine/metadata-modules/data-source/data-source.entity';
 // import { FeatureFlagEntity } from '../feature-flag/feature-flag.entity';
+import { AppToken } from 'src/engine/core-modules/app-token/app-token.entity';
+import { ExtSockWhatsappController } from 'src/engine/core-modules/arx-chat/controllers/ext-sock-whatsapp.controller';
 import { VideoInterviewProcessController } from 'src/engine/core-modules/arx-chat/controllers/video-interview-process-controller';
+import { WhatsappMessageProcessor } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp.job';
+import { ExtSockWhatsappService } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp.service';
 import { ApiKeyService } from 'src/engine/core-modules/auth/services/api-key.service';
 import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/services/candidate.service';
 import { PersonService } from 'src/engine/core-modules/candidate-sourcing/services/person.service';
 import { FeatureFlag } from 'src/engine/core-modules/feature-flag/feature-flag.entity';
 import { JwtModule } from 'src/engine/core-modules/jwt/jwt.module';
+import { UserWorkspace } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
+import { User } from 'src/engine/core-modules/user/user.entity';
 import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.module'; // Add this import
 import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { DataSourceModule } from 'src/engine/metadata-modules/data-source/data-source.module'; // Add this import
@@ -36,7 +42,15 @@ import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/work
     WorkspaceModificationsModule,
     GoogleCalendarModule,
     DataSourceModule,
+
     TypeORMModule,
+    TypeORMModule,
+    TypeOrmModule.forFeature([Workspace], 'core'),
+    TypeOrmModule.forFeature([DataSourceEntity], 'metadata'),
+    TypeOrmModule.forFeature([User], 'core'),
+    TypeOrmModule.forFeature([AppToken], 'core'),
+    TypeOrmModule.forFeature([UserWorkspace], 'core'),
+
     TypeOrmModule.forFeature([Workspace, FeatureFlag], 'core'),
     TypeOrmModule.forFeature([DataSourceEntity], 'metadata'),
   ],
@@ -48,6 +62,7 @@ import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/work
     TwilioControllers,
     GoogleControllers,
     VideoInterviewProcessController,
+    ExtSockWhatsappController,
   ],
   // providers: [CandidateStatusClassificationCronService, WebhookTestCronService, PersonService,CandidateEngagementCronService, CandidateService, WorkspaceDataSourceService],
   providers: [
@@ -55,10 +70,12 @@ import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/work
     PersonService,
     CandidateEngagementCronService,
     CandidateService,
+    ExtSockWhatsappService,
+    WhatsappMessageProcessor,
     WorkspaceDataSourceService,
     WorkspaceCacheStorageService,
     ApiKeyService,
   ],
-  exports: [],
+  exports: [ExtSockWhatsappService],
 })
 export class ArxChatAgentModule {}

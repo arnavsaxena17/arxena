@@ -32,6 +32,8 @@ import { TimelineJobModule } from 'src/modules/timeline/jobs/timeline-job.module
 import { TimelineActivityModule } from 'src/modules/timeline/timeline-activity.module';
 import { WebhookJobModule } from 'src/modules/webhook/jobs/webhook-job.module';
 import { WorkflowModule } from 'src/modules/workflow/workflow.module';
+// import { ArxChatAgentModule } from 'src/engine/core-modules/arx-chat/arx-chat-agent.module';
+// import { CandidateSourcingModule } from 'src/engine/core-modules/candidate-sourcing/candidate-sourcing.module';
 
 @Module({
   imports: [
@@ -48,6 +50,8 @@ import { WorkflowModule } from 'src/modules/workflow/workflow.module';
     WorkspaceModule,
     AuthModule,
     MessagingModule,
+    // ArxChatAgentModule,
+    // CandidateSourcingModule,
     CalendarModule,
     CalendarEventParticipantManagerModule,
     TimelineActivityModule,

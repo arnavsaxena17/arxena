@@ -8,6 +8,7 @@ import { AppTokenModule } from 'src/engine/core-modules/app-token/app-token.modu
 import { AuthModule } from 'src/engine/core-modules/auth/auth.module';
 import { BillingModule } from 'src/engine/core-modules/billing/billing.module';
 import { CacheStorageModule } from 'src/engine/core-modules/cache-storage/cache-storage.module';
+import { GoogleCalendarModule } from 'src/engine/core-modules/calendar-events/google-calendar.module';
 import { TimelineCalendarEventModule } from 'src/engine/core-modules/calendar/timeline-calendar-event.module';
 import { CaptchaModule } from 'src/engine/core-modules/captcha/captcha.module';
 import { captchaModuleFactory } from 'src/engine/core-modules/captcha/captcha.module-factory';
@@ -21,6 +22,7 @@ import { FeatureFlagModule } from 'src/engine/core-modules/feature-flag/feature-
 import { FileStorageModule } from 'src/engine/core-modules/file-storage/file-storage.module';
 import { fileStorageModuleFactory } from 'src/engine/core-modules/file-storage/file-storage.module-factory';
 import { FileStorageService } from 'src/engine/core-modules/file-storage/file-storage.service';
+import { GoogleContactsModule } from 'src/engine/core-modules/google-contacts/google-contacts.module';
 import { HealthModule } from 'src/engine/core-modules/health/health.module';
 import { LabModule } from 'src/engine/core-modules/lab/lab.module';
 import { LLMChatModelModule } from 'src/engine/core-modules/llm-chat-model/llm-chat-model.module';
@@ -41,14 +43,14 @@ import { ServerlessModule } from 'src/engine/core-modules/serverless/serverless.
 import { WorkspaceSSOModule } from 'src/engine/core-modules/sso/sso.module';
 import { TelemetryModule } from 'src/engine/core-modules/telemetry/telemetry.module';
 import { UserModule } from 'src/engine/core-modules/user/user.module';
+import { VideoInterviewModule } from 'src/engine/core-modules/video-interview/video-interview.module';
 import { WorkflowApiModule } from 'src/engine/core-modules/workflow/workflow-api.module';
 import { WorkspaceInvitationModule } from 'src/engine/core-modules/workspace-invitation/workspace-invitation.module';
+import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.module';
 import { WorkspaceModule } from 'src/engine/core-modules/workspace/workspace.module';
 import { RoleModule } from 'src/engine/metadata-modules/role/role.module';
 import { WorkspaceEventEmitterModule } from 'src/engine/workspace-event-emitter/workspace-event-emitter.module';
 
-import { GoogleCalendarModule } from 'src/engine/core-modules/calendar-events/google-calendar.module';
-import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { ArxChatAgentModule } from './arx-chat/arx-chat-agent.module';
 import { CandidateSourcingModule } from './candidate-sourcing/candidate-sourcing.module';
@@ -59,10 +61,6 @@ import { GoogleDriveModule } from './google-drive/google-drive.module';
 import { GoogleSheetsModule } from './google-sheets/google-sheets.module';
 // import { BaileysModule } from "./baileys/baileys.module";
 // import { RecruitmentAgentModule } from "src/engine/core-modules/recruitment-agent/recruitment-agent.module";
-import { GoogleContactsModule } from 'src/engine/core-modules/google-contacts/google-contacts.module';
-import { VideoInterviewModule } from 'src/engine/core-modules/video-interview/video-interview.module';
-
-
 
 @Module({
   imports: [
@@ -72,7 +70,6 @@ import { VideoInterviewModule } from 'src/engine/core-modules/video-interview/vi
     BillingModule,
     ClientConfigModule,
     FeatureFlagModule,
-    ArxChatAgentModule,
     CandidateSourcingModule,
     GoogleSheetsModule,
     GoogleDriveModule,
@@ -156,7 +153,6 @@ import { VideoInterviewModule } from 'src/engine/core-modules/video-interview/vi
     GoogleContactsModule,
     MailerModule,
     VideoInterviewModule,
-    ArxChatAgentModule,
     CandidateSourcingModule,
     GoogleSheetsModule,
     GoogleDriveModule,

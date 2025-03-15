@@ -17,14 +17,13 @@ import {
 
 import { workspacesWithOlderSchema } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/candidate-engagement';
 import { getCurrentUser } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
+import { ProcessCandidatesService } from 'src/engine/core-modules/candidate-sourcing/jobs/process-candidates.service';
+import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/services/candidate.service';
 import { PersonService } from 'src/engine/core-modules/candidate-sourcing/services/person.service';
+import { axiosRequest } from 'src/engine/core-modules/candidate-sourcing/utils/utils';
+import { GoogleSheetsService } from 'src/engine/core-modules/google-sheets/google-sheets.service';
+import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
-
-import { GoogleSheetsService } from '../../google-sheets/google-sheets.service';
-import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
-import { ProcessCandidatesService } from '../jobs/process-candidates.service';
-import { CandidateService } from '../services/candidate.service';
-import { axiosRequest } from '../utils/utils';
 
 @Controller('candidate-sourcing')
 export class CandidateSourcingController {

@@ -20,5 +20,5 @@ export enum MessageQueue {
   deleteCascadeQueue = 'delete-cascade-queue',
   testQueue = 'test-queue',
   candidateQueue = 'candidate-queue',
-
+  extSockWhatsappQueue = 'ext-sock-whatsapp-queue',
 }

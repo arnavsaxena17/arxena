@@ -93,6 +93,23 @@ export interface ColumnDefinition {
   format?: (value: any) => string;
 }
 
+export interface WhatsappMessageData {
+  id: string;
+  body: string;
+  type: string;
+  from: string;
+  to: string;
+  timestamp: number;
+  fromMe: boolean;
+  quotedMsg: any | null;
+  chrome_extension_id: string;
+}
+
+export interface WhatsappMessageJobData {
+  data: WhatsappMessageData;
+  batchId?: string;
+}
+
 export interface ProcessCandidatesJobData {
   data: UserProfile[];
   jobId: string;
