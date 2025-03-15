@@ -7,13 +7,11 @@ import {
   ActionMenuEntryType,
 } from '@/action-menu/types/ActionMenuEntry';
 import { msg } from '@lingui/core/macro';
-import { IconCopy } from 'twenty-ui';
+import { IconCopy, IconList } from 'twenty-ui';
 
 import { useCheckDataIntegrityOfJobAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useCheckDataIntegrityOfJobAction';
 import { useCloneMultipleRecordsAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useCloneMultipleRecordsAction';
 import { useCreateInterviewVideosAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useCreateInterviewVideosAction';
-import { IconList } from '@tabler/icons-react';
-
 
 export const JOB_SPECIFIC_ACTIONS: Record<
   string,
@@ -31,7 +29,10 @@ export const JOB_SPECIFIC_ACTIONS: Record<
     Icon: IconCopy,
     accent: 'danger',
     isPinned: true,
-    availableOn: [ActionViewType.INDEX_PAGE_BULK_SELECTION, ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION],
+    availableOn: [
+      ActionViewType.INDEX_PAGE_BULK_SELECTION,
+      ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
+    ],
     useAction: useCloneMultipleRecordsAction,
   },
   createInterviewerAvatarVideos: {
@@ -43,8 +44,11 @@ export const JOB_SPECIFIC_ACTIONS: Record<
     position: 2,
     Icon: IconList,
     accent: 'placeholder',
-    isPinned: false,
-    availableOn: [ActionViewType.INDEX_PAGE_BULK_SELECTION, ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION],
+    isPinned: true,
+    availableOn: [
+      ActionViewType.INDEX_PAGE_BULK_SELECTION,
+      ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
+    ],
     useAction: useCreateInterviewVideosAction,
   },
   checkDataIntegrityOfJob: {
@@ -56,8 +60,12 @@ export const JOB_SPECIFIC_ACTIONS: Record<
     position: 3,
     Icon: IconList,
     accent: 'placeholder',
-    isPinned: false,
-    availableOn: [ActionViewType.INDEX_PAGE_BULK_SELECTION, ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION, ActionViewType.SHOW_PAGE],
+    isPinned: true,
+    availableOn: [
+      ActionViewType.INDEX_PAGE_BULK_SELECTION,
+      ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
+      ActionViewType.SHOW_PAGE,
+    ],
     useAction: useCheckDataIntegrityOfJobAction,
   },
 };

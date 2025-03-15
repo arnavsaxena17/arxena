@@ -37,7 +37,6 @@ import VideoInterviewFlow from '@/video-interview/interview-response/VideoInterv
 import VideoInterviewResponseViewer from '@/video-interview/interview-response/VideoInterviewResponseViewer';
 import { Chats } from '~/pages/chats/Chats';
 
-
 const VideoInterviewWrapper = () => {
   console.log('VideoInterviewWrapper rendering');
   const params = useParams();

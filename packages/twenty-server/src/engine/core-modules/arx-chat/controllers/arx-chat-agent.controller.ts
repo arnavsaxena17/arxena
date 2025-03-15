@@ -1139,7 +1139,7 @@ export class ArxChatEndpoint {
       }
 
       const arxenaSiteBaseUrl =
-        process.env.FRONTEND_URL || 'http://127.0.0.1:5050';
+        process.env.ARXENA_SITE_BASE_URL || 'http://127.0.0.1:5050';
 
       console.log('arxenaSiteBaseUrl:', arxenaSiteBaseUrl);
       // Process the JD using the process-jd endpoint

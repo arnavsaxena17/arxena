@@ -17,7 +17,7 @@ import {
   StyledLeftPanelContentBox,
   StyledTextLeftPanelTextHeadline,
   StyledTextLeftPaneldisplay,
-} from './styled-components/StyledComponentsInterviewResponse';
+} from './StyledComponentsInterviewResponse';
 
 interface InterviewPageProps extends StartInterviewPageProps {
   videoPlaybackState: { isPlaying: boolean; isMuted: boolean };

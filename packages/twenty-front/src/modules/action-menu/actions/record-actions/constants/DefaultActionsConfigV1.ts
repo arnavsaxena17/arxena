@@ -1,4 +1,5 @@
 import { useDeleteMultipleRecordsAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useDeleteMultipleRecordsAction';
+import { useDestroyMultipleRecordsAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useDestroyMultipleRecordsAction';
 import { useExportMultipleRecordsAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useExportMultipleRecordsAction';
 import { MultipleRecordsActionKeys } from '@/action-menu/actions/record-actions/multiple-records/types/MultipleRecordsActionKeys';
 import { NoSelectionRecordActionKeys } from '@/action-menu/actions/record-actions/no-selection/types/NoSelectionRecordActionsKey';
@@ -19,6 +20,7 @@ import {
   IconHeart,
   IconHeartOff,
   IconTrash,
+  IconTrashX,
 } from 'twenty-ui';
 
 export const DEFAULT_ACTIONS_CONFIG_V1: Record<
@@ -107,6 +109,20 @@ export const DEFAULT_ACTIONS_CONFIG_V1: Record<
   //   availableOn: [ActionViewType.INDEX_PAGE_BULK_SELECTION],
   //   useAction: useDeleteMultipleRecordsAction,
   // },
+  destroyMultipleRecords: {
+    type: ActionMenuEntryType.Standard,
+    scope: ActionMenuEntryScope.RecordSelection,
+    key: MultipleRecordsActionKeys.DESTROY,
+    label: msg`Permanently destroy records`,
+    shortLabel: msg`Destroy`,
+    position: 11,
+    Icon: IconTrashX,
+    accent: 'danger',
+    isPinned: false,
+    availableOn: [ActionViewType.INDEX_PAGE_BULK_SELECTION],
+    useAction: useDestroyMultipleRecordsAction,
+  },
+
   exportMultipleRecords: {
     type: ActionMenuEntryType.Standard,
     scope: ActionMenuEntryScope.RecordSelection,

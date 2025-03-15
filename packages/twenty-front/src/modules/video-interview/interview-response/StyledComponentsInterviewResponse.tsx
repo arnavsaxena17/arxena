@@ -1,4 +1,3 @@
-
 import styled from '@emotion/styled';
 
 export const StyledContainer = styled.div`
@@ -11,7 +10,6 @@ export const StyledContainer = styled.div`
   background-color: white;
   @media (min-width: 768px) {
     flex-direction: row;
-    
   }
 `;
 export const EndInterviewStyledContainer = styled.div`
@@ -24,7 +22,6 @@ export const EndInterviewStyledContainer = styled.div`
   background-color: white;
   @media (min-width: 768px) {
     flex-direction: row;
-    
   }
 `;
 export const SnapScrollContainer = styled.div`
@@ -41,18 +38,17 @@ export const SnapScrollContainer = styled.div`
   @media (max-width: 767px) {
     flex-direction: column;
     height: auto;
-    width:100%
-    
+    width: 100%;
   }
 `;
 export const StyledLeftPanel = styled.div`
-  width: 30%;
-  padding: 16px;
   background-color: ${({ theme }) => theme.background.secondary};
   color: ${({ theme }) => theme.font.color.secondary};
   font-family: ${({ theme }) => theme.font.family};
   font-size: ${({ theme }) => theme.font.size.md};
   font-weight: ${({ theme }) => theme.font.weight.regular};
+  padding: 16px;
+  width: 30%;
 
   @media (max-width: 767px) {
     width: 90%;
@@ -61,13 +57,13 @@ export const StyledLeftPanel = styled.div`
   }
 `;
 export const StartInterviewStyledLeftPanel = styled.div`
-  width: 30%;
-  padding: 16px;
   background-color: ${({ theme }) => theme.background.secondary};
   color: ${({ theme }) => theme.font.color.secondary};
   font-family: ${({ theme }) => theme.font.family};
   font-size: ${({ theme }) => theme.font.size.md};
   font-weight: ${({ theme }) => theme.font.weight.regular};
+  padding: 16px;
+  width: 30%;
 
   @media (max-width: 767px) {
     width: 90%;
@@ -75,27 +71,24 @@ export const StartInterviewStyledLeftPanel = styled.div`
     font-size: ${({ theme }) => theme.font.size.sm};
   }
 `;
-
 
 export const EndInterviewStyledLeftPanel = styled.div`
-  width: 30%;
-  padding: 16px;
   background-color: ${({ theme }) => theme.background.secondary};
   color: ${({ theme }) => theme.font.color.secondary};
   font-family: ${({ theme }) => theme.font.family};
   font-size: ${({ theme }) => theme.font.size.md};
   font-weight: ${({ theme }) => theme.font.weight.regular};
-  height:100vh;
+  height: 100vh;
+  padding: 16px;
+  width: 30%;
 
   @media (max-width: 767px) {
     width: 90%;
-    height:auto;
+    height: auto;
     padding: 16px;
     font-size: ${({ theme }) => theme.font.size.sm};
   }
 `;
-
-
 
 export const StyledAnswerTimer = styled.div`
   position: absolute;
@@ -133,7 +126,7 @@ export const StyledControlsOverlay = styled.div`
   z-index: 10;
   white-space: nowrap;
   font-size: 14px;
-  
+
   @media (max-width: 768px) {
     width: 80%;
     flex-direction: column;
@@ -146,18 +139,17 @@ interface StyledRecordButtonProps {
   isRecording: boolean;
 }
 
-
 export const StyledRecordButton = styled.button<StyledRecordButtonProps>`
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background-color: ${props => (props.isRecording ? '#ff4136' : '#4285f4')};
+  align-items: center;
+  background-color: ${(props) => (props.isRecording ? '#ff4136' : '#4285f4')};
   border: none;
+  border-radius: 50%;
   cursor: pointer;
   display: flex;
-  align-items: center;
+  height: 40px;
   justify-content: center;
   margin-right: 10px;
+  width: 40px;
 
   @media (max-width: 768px) {
     margin-right: 0;
@@ -180,7 +172,6 @@ export const ButtonContainer = styled.div`
   margin-top: 24px;
 `;
 
-
 // Styled components remain the same
 export const StyledVideoPane = styled.div`
   height: 300px;
@@ -191,18 +182,18 @@ export const StyledVideoPane = styled.div`
 `;
 
 export const StyledVideo = styled.video`
-  width: 100%;
   height: 100%;
   object-fit: cover;
+  width: 100%;
 `;
 
 export const StyledVideoControls = styled.div`
-  position: absolute;
   bottom: 10px;
-  left: 50%;
-  transform: translateX(-50%);
   display: flex;
   gap: 10px;
+  left: 50%;
+  position: absolute;
+  transform: translateX(-50%);
 `;
 
 export const StyledVideoButton = styled.button`
@@ -221,17 +212,15 @@ export const StyledVideoButton = styled.button`
 `;
 
 export const StyledLoadingMessage = styled.div`
+  background-color: rgba(0, 0, 0, 0.5);
+  border-radius: 5px;
+  color: white;
+  left: 50%;
+  padding: 10px;
   position: absolute;
   top: 50%;
-  left: 50%;
   transform: translate(-50%, -50%);
-  color: white;
-  background-color: rgba(0, 0, 0, 0.5);
-  padding: 10px;
-  border-radius: 5px;
 `;
-
-
 
 export const StyledButton = styled.button`
   padding: 10px 16px;
@@ -280,17 +269,15 @@ export const StyledLeftPanelContentBox = styled.div`
   }
 `;
 
-
-
 export const StyledTextLeftPanelTextHeadline = styled.div`
-  display: flex;
-  padding: 4px 8px;
   align-items: flex-start;
-  gap: 4px;
   align-self: stretch;
   border-left: 2px solid #999;
+  display: flex;
   font-size: 16px;
   font-weight: 600;
+  gap: 4px;
+  padding: 4px 8px;
 
   @media (max-width: 767px) {
     font-size: 14px;
@@ -302,22 +289,22 @@ export const FeedbackContainer = styled.div`
   display: flex;
   flex-direction: column;
   gap: 20px;
-  width:80%
+  width: 80%;
 `;
 
 export const StyledTextArea = styled.textarea`
-  width: 100%;
-  height: 150px;
-  padding: 12px;
   border: 1px solid #ccc;
   border-radius: 8px;
   font-family: ${({ theme }) => theme.font.family};
   font-size: 16px;
+  height: 150px;
+  padding: 12px;
   resize: vertical;
+  width: 100%;
   &:focus {
-    outline: none;
     border-color: #4285f4;
     box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.2);
+    outline: none;
   }
 `;
 
@@ -350,7 +337,6 @@ export const FeedbackPrompt = styled.p`
   color: #666;
   margin-bottom: 20px;
 `;
-
 
 export const StyledTextLeftPaneldisplay = styled.div`
   color: #808080;
@@ -400,21 +386,20 @@ export const SubTitle = styled.h2`
   }
 `;
 
-
 export const StyledRightPanel = styled.div`
-  width: 70%;
-  padding: 16px;
   background-color: ${({ theme }) => theme.background.primary};
+  color: #808080;
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  color: #808080;
   font-family: ${({ theme }) => theme.font.family};
   font-size: ${({ theme }) => theme.font.size.md};
   font-style: normal;
   font-weight: 400;
+  gap: 16px;
+  height: 100vh;
   line-height: 150%;
-  height:100vh;
+  padding: 16px;
+  width: 70%;
 
   @media (max-width: 767px) {
     width: 93%;
@@ -424,19 +409,19 @@ export const StyledRightPanel = styled.div`
   }
 `;
 export const StartInterviewStyledRightPanel = styled.div`
-  width: 70%;
-  padding: 16px;
   background-color: ${({ theme }) => theme.background.primary};
+  color: #808080;
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  color: #808080;
   font-family: ${({ theme }) => theme.font.family};
   font-size: ${({ theme }) => theme.font.size.md};
   font-style: normal;
   font-weight: 400;
+  gap: 16px;
+  height: 100vh;
   line-height: 150%;
-  height:100vh;
+  padding: 16px;
+  width: 70%;
 
   @media (max-width: 767px) {
     width: 93%;
@@ -446,46 +431,46 @@ export const StartInterviewStyledRightPanel = styled.div`
   }
 `;
 export const EndInterviewStyledRightPanel = styled.div`
-  width: 70%;
-  padding: 16px;
   background-color: ${({ theme }) => theme.background.primary};
+  color: #808080;
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  color: #808080;
   font-family: ${({ theme }) => theme.font.family};
   font-size: ${({ theme }) => theme.font.size.md};
   font-style: normal;
   font-weight: 400;
+  gap: 16px;
   line-height: 150%;
+  padding: 16px;
+  width: 70%;
 
   @media (max-width: 767px) {
     width: 93%;
-    height:100vh;
+    height: 100vh;
     padding: 16px;
     font-size: ${({ theme }) => theme.font.size.sm};
     gap: 12px;
   }
 `;
 
-
 export const StyledVideoContainer = styled.div`
-  position: relative;
   background-color: white;
   border-radius: 30px;
   margin-bottom: 20px;
-
   overflow: hidden;
-  width: 100%;
-  padding-top: 56.25%; // 16:9 aspect ratio
 
-  video, .react-webcam {
+  padding-top: 56.25%;
+  position: relative;
+  width: 100%; // 16:9 aspect ratio
+
+  video,
+  .react-webcam {
+    height: 100%;
+    left: 0;
+    object-fit: cover;
     position: absolute;
     top: 0;
-    left: 0;
     width: 100%;
-    height: 100%;
-    object-fit: cover;
   }
 
   @media (max-width: 767px) {
@@ -494,8 +479,6 @@ export const StyledVideoContainer = styled.div`
     height: 45vh;
   }
 `;
-
-
 
 export const StyledMessage = styled.div`
   margin-top: 20px;
@@ -506,7 +489,6 @@ export const StyledMessage = styled.div`
   text-align: center;
 `;
 
-
 export const StyledTimer = styled.div`
   font-size: ${({ theme }) => theme.font.size.lg};
   font-weight: ${({ theme }) => theme.font.weight.semiBold};
@@ -515,12 +497,12 @@ export const StyledTimer = styled.div`
 `;
 
 export const StyledError = styled.div`
+  background-color: black;
+  border-radius: 4px;
+  color: white;
+  font-size: ${({ theme }) => theme.font.size.md};
   margin-top: 20px;
   padding: 10px;
-  background-color: black;
-  color:white;
-  border-radius: 4px;
-  font-size: ${({ theme }) => theme.font.size.md};
 `;
 
 export const StyledCountdownOverlay = styled.div`

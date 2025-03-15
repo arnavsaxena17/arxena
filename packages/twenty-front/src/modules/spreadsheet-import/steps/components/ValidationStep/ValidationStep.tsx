@@ -13,6 +13,10 @@ import {
   ImportedStructuredRow,
 } from '@/spreadsheet-import/types';
 import { addErrorsAndRunHooks } from '@/spreadsheet-import/utils/dataMutations';
+import {
+  findJobMatch,
+  useFindAllJobs,
+} from '@/spreadsheet-import/utils/findJobMatch';
 import { useDialogManager } from '@/ui/feedback/dialog-manager/hooks/useDialogManager';
 import { Modal } from '@/ui/layout/modal/components/Modal';
 import styled from '@emotion/styled';
@@ -20,15 +24,19 @@ import {
   Dispatch,
   SetStateAction,
   useCallback,
+  useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 // @ts-expect-error Todo: remove usage of react-data-grid`
 import { RowsChangeData } from 'react-data-grid';
+
 import { isDefined } from 'twenty-shared';
 import { Button, IconTrash, Toggle } from 'twenty-ui';
 import { generateColumns } from './components/columns';
 import { ImportedStructuredRowMetadata } from './types';
+// const jobs = useGetAllJobs(); // Fetch all jobs
 
 const StyledContent = styled(Modal.Content)`
   padding-left: ${({ theme }) => theme.spacing(6)};
@@ -90,13 +98,140 @@ export const ValidationStep = <T extends string>({
   const { fields, onClose, onSubmit, rowHook, tableHook } =
     useSpreadsheetImportInternal<T>();
 
+  // Fetch all jobs - we'll use this for matching
+  const { jobs, loading: jobsLoading } = useFindAllJobs();
+
+  console.log('Got job in validation step', jobs);
+
+  // Create a function to process data with job matching
+  const processDataWithJobMatching = useCallback(
+    (rowsToProcess: ImportedStructuredRow<T>[]) => {
+      // First check if there's a column mapped to Jobs (ID)
+      const jobIdField = fields.find(
+        (field) =>
+          field.key === 'jobs' ||
+          field.label === 'Jobs (ID)' ||
+          field.key === 'jobs',
+      );
+
+      console.log('Job ID field', jobIdField);
+      if (isDefined(jobIdField) && isDefined(jobs?.length)) {
+        console.log('Jobs loaded', jobs);
+        // Find which column was mapped to jobId in importedColumns
+        const mappedJobColumn = importedColumns.find(
+          (col) =>
+            (col.type === ColumnType.matched ||
+              col.type === ColumnType.matchedSelect ||
+              col.type === ColumnType.matchedSelectOptions ||
+              col.type === ColumnType.matchedCheckbox) &&
+            col.value === jobIdField?.key,
+        );
+
+        const jobIdColumnHeader = mappedJobColumn?.header;
+
+        // Add some debugging to see what's happening
+        console.log('Jobs loaded:', jobs);
+        console.log('Job ID field:', jobIdField);
+        console.log('Mapped column:', jobIdColumnHeader);
+        console.log('Full mapped column info:', mappedJobColumn);
+
+        // Process each row to match job names with IDs
+        const processedRows = rowsToProcess.map((row) => {
+          // Skip processing if the row already has a job ID (looks like a UUID)
+          if (
+            isDefined((row as any).jobs) &&
+            typeof (row as any).jobs === 'string' &&
+            (row as any).jobs.includes('-') === true
+          ) {
+            console.log('Row already has a job ID:', (row as any).jobs);
+            return row;
+          }
+
+          // Get the job name value - try both the mapped column header and the direct 'jobs' field
+          let jobNameValue = null;
+
+          if (
+            isDefined(jobIdColumnHeader) &&
+            row[jobIdColumnHeader as keyof typeof row] !== undefined
+          ) {
+            jobNameValue = row[jobIdColumnHeader as keyof typeof row];
+            console.log(
+              `Found job value in mapped column ${jobIdColumnHeader}:`,
+              jobNameValue,
+            );
+          } else if ('jobs' in row) {
+            jobNameValue = (row as any)['jobs'];
+            console.log('Found job value in direct jobs field:', jobNameValue);
+          }
+
+          // Only process if we have a job name value
+          if (isDefined(jobNameValue) && typeof jobNameValue === 'string') {
+            console.log('Trying to match job:', jobNameValue);
+            const matchedJob = findJobMatch(jobNameValue, jobs);
+            console.log('Match result:', matchedJob);
+
+            if (isDefined(matchedJob)) {
+              // Create a new row with the matched job ID
+              const updatedRow = {
+                ...row,
+                // Always update the 'jobs' field with the matched ID
+                jobs: matchedJob.id,
+                // Add metadata about the match
+                __jobMatch: {
+                  originalName: jobNameValue,
+                  matchedName: matchedJob.name,
+                  matchedId: matchedJob.id,
+                  mappedColumn: jobIdColumnHeader || 'jobs',
+                },
+              };
+
+              // If there's a mapped column that's different from 'jobs', update that too
+              if (
+                isDefined(jobIdColumnHeader) &&
+                jobIdColumnHeader !== 'jobs'
+              ) {
+                // Use type assertion to fix the type error
+                (updatedRow as any)[jobIdColumnHeader] = matchedJob.id;
+              }
+
+              console.log('Updated row:', updatedRow);
+              return updatedRow;
+            }
+          }
+          return row;
+        });
+
+        return processedRows;
+      }
+
+      // Default behavior if no job matching is needed
+      return rowsToProcess;
+    },
+    [fields, jobs, importedColumns],
+  );
+
+  // Process initial data with job matching if jobs are available
+  const processedInitialData = useMemo(() => {
+    if (!jobsLoading && isDefined(jobs) && jobs.length > 0) {
+      return processDataWithJobMatching(initialData);
+    }
+    return initialData;
+  }, [initialData, jobs, jobsLoading, processDataWithJobMatching]);
+
+  // Now use the processed data for initial state
   const [data, setData] = useState<
     (ImportedStructuredRow<T> & ImportedStructuredRowMetadata)[]
   >(
     useMemo(
-      () => addErrorsAndRunHooks<T>(initialData, fields, rowHook, tableHook),
+      () =>
+        addErrorsAndRunHooks<T>(
+          processedInitialData,
+          fields,
+          rowHook,
+          tableHook,
+        ),
       // eslint-disable-next-line react-hooks/exhaustive-deps
-      [],
+      [processedInitialData, fields, rowHook, tableHook],
     ),
   );
   const [selectedRows, setSelectedRows] = useState<
@@ -107,9 +242,15 @@ export const ValidationStep = <T extends string>({
 
   const updateData = useCallback(
     (rows: typeof data) => {
-      setData(addErrorsAndRunHooks<T>(rows, fields, rowHook, tableHook));
+      console.log('Updating data', rows);
+      // Process the rows with job matching
+      const processedRows = processDataWithJobMatching(rows);
+      // Then add errors and run hooks
+      setData(
+        addErrorsAndRunHooks<T>(processedRows, fields, rowHook, tableHook),
+      );
     },
-    [setData, rowHook, tableHook, fields],
+    [setData, rowHook, tableHook, fields, processDataWithJobMatching],
   );
 
   const deleteSelectedRows = () => {
@@ -125,10 +266,9 @@ export const ValidationStep = <T extends string>({
       rows: typeof data,
       changedData?: RowsChangeData<(typeof data)[number]>,
     ) => {
+      console.log('Updating row', changedData);
       const changes = changedData?.indexes.reduce(
-        // Todo: remove usage of react-data-grid
         (acc: any, index: any) => {
-          // when data is filtered val !== actual index in data
           const realIndex = data.findIndex(
             (value) => value.__index === rows[index].__index,
           );
@@ -161,11 +301,100 @@ export const ValidationStep = <T extends string>({
                 column.key === 'select-row',
             ).length > 0;
 
+          // Find the mapped column header for this field
+          const mappedColumnHeader = importedColumns.find(
+            (importColumn) =>
+              (importColumn.type === ColumnType.matched ||
+                importColumn.type === ColumnType.matchedSelect ||
+                importColumn.type === ColumnType.matchedSelectOptions ||
+                importColumn.type === ColumnType.matchedCheckbox) &&
+              importColumn.value === column.key,
+          )?.header;
+
+          console.log(`Column ${column.key} mapped to: ${mappedColumnHeader}`);
+
+          // Add special rendering for job ID columns
+          if (column.key === 'jobs') {
+            // Adjust key as needed
+            const columnWithCustomRender = {
+              ...column,
+              renderCell: (props: any) => {
+                const { row } = props;
+                console.log('Rendering job cell for row:', row);
+
+                // Check for job match metadata
+                if (isDefined(row.__jobMatch)) {
+                  console.log('Found job match metadata:', row.__jobMatch);
+                  return (
+                    <div>
+                      <div>{row.__jobMatch.matchedId}</div>
+                      <div style={{ fontSize: 'small', color: 'gray' }}>
+                        Matched: {row.__jobMatch.matchedName}
+                      </div>
+                    </div>
+                  );
+                }
+
+                // If the row has a jobs field that looks like a UUID (matched ID)
+                if (
+                  (row as any).jobs !== undefined &&
+                  typeof (row as any).jobs === 'string' &&
+                  (row as any).jobs.includes('-') === true
+                ) {
+                  console.log('Found job ID in jobs field:', (row as any).jobs);
+                  return (row as any).jobs;
+                }
+
+                // If we have a mapped column that's different from the standard key
+                if (
+                  isDefined(mappedColumnHeader) &&
+                  mappedColumnHeader !== column.key &&
+                  row[mappedColumnHeader] !== undefined
+                ) {
+                  // Try to get the value from the mapped column
+                  const jobValue = row[mappedColumnHeader];
+                  console.log('Job value from mapped column:', jobValue);
+                  return jobValue;
+                }
+
+                // Default fallback
+                return row[column.key];
+              },
+              // Override the editor to make it read-only when a match is found
+              renderEditCell: (props: any) => {
+                const { row } = props;
+
+                // If we have a job match, make it read-only
+                if (
+                  isDefined(row.__jobMatch) === true ||
+                  ((row as any).jobs !== undefined &&
+                    typeof (row as any).jobs === 'string' &&
+                    (row as any).jobs.includes('-') === true)
+                ) {
+                  // Return a read-only version of the cell
+                  return (
+                    <div style={{ padding: '8px' }}>
+                      {isDefined(row.__jobMatch)
+                        ? row.__jobMatch.matchedId
+                        : (row as any).jobs}
+                    </div>
+                  );
+                }
+
+                // Otherwise, use the default editor
+                return props.defaultEditor;
+              },
+            };
+
+            if (!hasBeenImported && !showUnmatchedColumns) return null;
+            return columnWithCustomRender;
+          }
+
           if (!hasBeenImported && !showUnmatchedColumns) return null;
           return column;
         })
         .filter(Boolean),
-    [fields, importedColumns, showUnmatchedColumns],
+    [fields, importedColumns, showUnmatchedColumns, data],
   );
 
   const tableData = useMemo(() => {
@@ -249,6 +478,72 @@ export const ValidationStep = <T extends string>({
       });
     }
   };
+
+  // Add this function to debug the data structure
+  const debugData = useCallback(() => {
+    if (data.length > 0) {
+      console.log('First row data:', data[0]);
+      console.log('Available columns in data:', Object.keys(data[0]));
+      // Check if job match metadata exists
+      if (isDefined((data[0] as any).__jobMatch)) {
+        console.log('Job match metadata found:', (data[0] as any).__jobMatch);
+      } else {
+        console.log('No job match metadata found');
+      }
+
+      // Check for the job ID field
+      const jobIdField = fields.find((field) => field.key === 'jobs');
+      if (isDefined(jobIdField)) {
+        console.log('Job ID field:', jobIdField);
+
+        // Find the mapped column
+        const mappedColumn = importedColumns.find(
+          (col) =>
+            (col.type === ColumnType.matched ||
+              col.type === ColumnType.matchedSelect ||
+              col.type === ColumnType.matchedSelectOptions ||
+              col.type === ColumnType.matchedCheckbox) &&
+            col.value === jobIdField.key,
+        );
+
+        if (isDefined(mappedColumn)) {
+          console.log('Mapped column for jobs:', mappedColumn);
+          console.log(
+            'Value in first row:',
+            data[0][mappedColumn.header as keyof (typeof data)[number]],
+          );
+        } else {
+          console.log('No mapped column found for jobs');
+        }
+      }
+    }
+  }, [data, fields, importedColumns]);
+
+  // Add a ref to track if we've applied job matching
+  // eslint-disable-next-line @nx/workspace-no-state-useref
+  const jobMatchingAppliedRef = useRef(false);
+
+  // Call this in useEffect or directly after data is set
+  useMemo(() => {
+    if (data.length > 0) {
+      debugData();
+    }
+  }, [data, debugData]);
+
+  // Replace the problematic useMemo with useEffect
+  useEffect(() => {
+    if (
+      data.length > 0 &&
+      !jobsLoading &&
+      isDefined(jobs) &&
+      jobs.length > 0 &&
+      !jobMatchingAppliedRef.current
+    ) {
+      console.log('Forcing update of data to apply job matching');
+      jobMatchingAppliedRef.current = true;
+      updateData(data);
+    }
+  }, [data, jobs, jobsLoading, updateData]);
 
   return (
     <>

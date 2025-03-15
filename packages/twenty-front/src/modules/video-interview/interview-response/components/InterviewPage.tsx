@@ -15,10 +15,10 @@ import {
   StyledRightPanel,
   StyledTextLeftPanelTextHeadline,
   StyledTextLeftPaneldisplay,
-  StyledTimer
-} from './styled-components/StyledComponentsInterviewResponse';
-import { VideoPlayer } from './utils/videoPlaybackUtils';
-import VideoContainer from './VideoContainer';
+  StyledTimer,
+} from '../StyledComponentsInterviewResponse';
+import VideoContainer from '../VideoContainer';
+import { VideoPlayer } from '../utils/videoPlaybackUtils';
 
 import { IconCommand, IconRewindBackward5 } from '@tabler/icons-react';
 import { InterviewPageProps } from 'twenty-shared';
@@ -31,19 +31,17 @@ const ffmpeg = createFFmpeg({
   log: true,
 });
 
-
 const PreviewContainer = styled.div`
-  position: relative;
-  width: 90%;
-  height:80%;
-
-  border-radius: 50%;
   background-color: white;
   border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  padding: 24px;
-  margin: 16px 0;
+  border-radius: 50%;
 
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  height: 80%;
+  margin: 16px 0;
+  padding: 24px;
+  position: relative;
+  width: 90%;
 `;
 
 const PreviewControls = styled.div`
@@ -52,17 +50,14 @@ const PreviewControls = styled.div`
   gap: 12px;
   margin-top: 24px;
   padding: 16px 0;
-  border-top: 1px solid #E5E7EB;
+  border-top: 1px solid #e5e7eb;
 `;
-
-
 
 const PreviewVideo = styled.video`
   width: 100%;
   transform: scaleX(1);
   -webkit-transform: scaleX(1);
-  
-  
+
   // &::-webkit-media-controls-play-button {
   //   background-color: rgba(255, 255, 255, 0.8);
   //   border-radius: 50%;
@@ -71,15 +66,26 @@ const PreviewVideo = styled.video`
   // }
 `;
 
-
-const PreloadVideo: React.FC<{ src: string }> = ({ src }) => <link rel="preload" as="video" href={src} />;
+const PreloadVideo: React.FC<{ src: string }> = ({ src }) => (
+  <link rel="preload" as="video" href={src} />
+);
 
 export interface VideoInterviewPageProps extends InterviewPageProps {
   videoPlaybackState: { isPlaying: boolean; isMuted: boolean };
   onVideoStateChange: (state: { isPlaying: boolean; isMuted: boolean }) => void;
 }
 
-export const InterviewPage: React.FC<VideoInterviewPageProps> = ({ InterviewData, questions, introductionVideoAttachment, questionsVideoAttachment, currentQuestionIndex, onNextQuestion, onFinish, videoPlaybackState, onVideoStateChange }) => {
+export const InterviewPage: React.FC<VideoInterviewPageProps> = ({
+  InterviewData,
+  questions,
+  introductionVideoAttachment,
+  questionsVideoAttachment,
+  currentQuestionIndex,
+  onNextQuestion,
+  onFinish,
+  videoPlaybackState,
+  onVideoStateChange,
+}) => {
   console.log('These are questions::', questions);
   const [isPlaying, setIsPlaying] = useState(false);
   const [recording, setRecording] = useState(false);
@@ -100,9 +106,13 @@ export const InterviewPage: React.FC<VideoInterviewPageProps> = ({ InterviewData
   const isLastQuestion = currentQuestionIndex === questions.length - 1;
   const interviewTime = 240; // 4 minutes
   const [isVideoLoading, setIsVideoLoading] = useState(true);
-  const [nextQuestionVideoUrl, setNextQuestionVideoUrl] = useState<string | null>(null);
+  const [nextQuestionVideoUrl, setNextQuestionVideoUrl] = useState<
+    string | null
+  >(null);
   const [videoLoadError, setVideoLoadError] = useState<string | null>(null);
-  const [preloadedVideos, setPreloadedVideos] = useState<Record<string, boolean>>({});
+  const [preloadedVideos, setPreloadedVideos] = useState<
+    Record<string, boolean>
+  >({});
   const [recordedVideoUrl, setRecordedVideoUrl] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [responseSubmitted, setResponseSubmitted] = useState(false);
@@ -117,7 +127,10 @@ export const InterviewPage: React.FC<VideoInterviewPageProps> = ({ InterviewData
 
   // Function to get video URL for a specific question index
   const getQuestionVideoURL = (index: number) => {
-    const attachment = questionsVideoAttachment.find(attachment => attachment?.id === questions[index]?.attachments?.edges[0]?.node?.id)?.fullPath;
+    const attachment = questionsVideoAttachment.find(
+      (attachment) =>
+        attachment?.id === questions[index]?.attachments?.edges[0]?.node?.id,
+    )?.fullPath;
     return attachment ? `${attachment}` : null;
   };
 
@@ -165,7 +178,10 @@ export const InterviewPage: React.FC<VideoInterviewPageProps> = ({ InterviewData
 
   useEffect(() => {
     if (answerTimer !== null && answerTimer > 0) {
-      const answerTimerId = setTimeout(() => setAnswerTimer(answerTimer - 1), 1000);
+      const answerTimerId = setTimeout(
+        () => setAnswerTimer(answerTimer - 1),
+        1000,
+      );
       return () => clearTimeout(answerTimerId);
     } else if (answerTimer === 0) {
       handleStopRecording();
@@ -234,28 +250,28 @@ export const InterviewPage: React.FC<VideoInterviewPageProps> = ({ InterviewData
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       const video = webcamRef.current?.video;
-      
+
       if (video && ctx) {
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
-        
+
         // Flip context horizontally
         ctx.translate(canvas.width, 0);
         ctx.scale(-1, 1);
-        
+
         // Create a new stream from the canvas
         const canvasStream = canvas.captureStream();
         const audioTrack = stream.getAudioTracks()[0];
         canvasStream.addTrack(audioTrack);
-        
+
         // Start recording from the canvas stream
         mediaRecorderRef.current = new MediaRecorder(canvasStream, {
-          mimeType: 'video/webm'
+          mimeType: 'video/webm',
         });
-        
+
         mediaRecorderRef.current.ondataavailable = handleDataAvailable;
         mediaRecorderRef.current.start();
-        
+
         // Update canvas frame continuously
         const drawFrame = () => {
           if (video && ctx && mediaRecorderRef.current?.state === 'recording') {
@@ -267,15 +283,14 @@ export const InterviewPage: React.FC<VideoInterviewPageProps> = ({ InterviewData
       } else {
         // Fallback to direct stream if canvas setup fails
         mediaRecorderRef.current = new MediaRecorder(stream, {
-          mimeType: 'video/webm'
+          mimeType: 'video/webm',
         });
         mediaRecorderRef.current.ondataavailable = handleDataAvailable;
         mediaRecorderRef.current.start();
       }
     }
   };
-  
-  
+
   useEffect(() => {
     if (videoRef.current) {
       if (isPlaying) {
@@ -315,7 +330,7 @@ export const InterviewPage: React.FC<VideoInterviewPageProps> = ({ InterviewData
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true });
       setHasCamera(true);
-      stream.getTracks().forEach(track => track.stop());
+      stream.getTracks().forEach((track) => track.stop());
     } catch (err) {
       setHasCamera(false);
       setError('Camera not available. Please check your device settings.');
@@ -333,8 +348,10 @@ export const InterviewPage: React.FC<VideoInterviewPageProps> = ({ InterviewData
 
   const handleDataAvailable = (event: BlobEvent) => {
     if (event.data && event.data.size > 0) {
-      setRecordedChunks(prev => [...prev, event.data]);
-      const videoUrl = URL.createObjectURL(new Blob([event.data], { type: 'video/webm' }));
+      setRecordedChunks((prev) => [...prev, event.data]);
+      const videoUrl = URL.createObjectURL(
+        new Blob([event.data], { type: 'video/webm' }),
+      );
       setRecordedVideoUrl(videoUrl);
       setShowPreview(true);
     }
@@ -350,23 +367,34 @@ export const InterviewPage: React.FC<VideoInterviewPageProps> = ({ InterviewData
     if (recordedChunks.length) {
       setError(null);
       setSubmitting(true);
-  
+
       const file = new Blob(recordedChunks, {
         type: `video/webm`,
       });
-  
+
       try {
         const unique_id = uuid();
         let audioBlob: Blob | null = null;
-  
+
         // Try to convert audio, but continue if it fails
         try {
           if (!ffmpeg.isLoaded()) {
             await ffmpeg.load();
           }
-  
+
           ffmpeg.FS('writeFile', `${unique_id}.webm`, await fetchFile(file));
-          await ffmpeg.run('-i', `${unique_id}.webm`, '-vn', '-acodec', 'pcm_s16le', '-ac', '1', '-ar', '16000', `${unique_id}.wav`);
+          await ffmpeg.run(
+            '-i',
+            `${unique_id}.webm`,
+            '-vn',
+            '-acodec',
+            'pcm_s16le',
+            '-ac',
+            '1',
+            '-ar',
+            '16000',
+            `${unique_id}.wav`,
+          );
           const fileData = ffmpeg.FS('readFile', `${unique_id}.wav`);
           audioBlob = new Blob([fileData], {
             type: 'audio/wav',
@@ -375,25 +403,37 @@ export const InterviewPage: React.FC<VideoInterviewPageProps> = ({ InterviewData
           console.log('FFmpeg audio conversion failed:', ffmpegError);
           // Continue without audio conversion
         }
-  
+
         const formData = new FormData();
         formData.append('operations', '{}');
         formData.append('map', '{}');
         formData.append('model', 'whisper-12');
-        formData.append('video', file, `${InterviewData.id}-video-${unique_id}.webm`);
-        formData.append('video', file, `${InterviewData.id}-video-${unique_id}.webm`);
-        
+        formData.append(
+          'video',
+          file,
+          `${InterviewData.id}-video-${unique_id}.webm`,
+        );
+        formData.append(
+          'video',
+          file,
+          `${InterviewData.id}-video-${unique_id}.webm`,
+        );
+
         // Only append audio if conversion was successful
         if (audioBlob) {
-          formData.append('audio', audioBlob, `${InterviewData.id}-audio-${unique_id}.wav`);
+          formData.append(
+            'audio',
+            audioBlob,
+            `${InterviewData.id}-audio-${unique_id}.wav`,
+          );
         }
-        
+
         formData.append('isSelectedResponse', 'true');
-  
+
         onNextQuestion(formData);
         setSubmitting(false);
         setResponseSubmitted(true);
-  
+
         if (isLastQuestion) {
           setFinalSubmissionComplete(true);
           onFinish();
@@ -406,7 +446,6 @@ export const InterviewPage: React.FC<VideoInterviewPageProps> = ({ InterviewData
     }
   };
 
-
   if (!hasCamera) {
     return <StyledError>{error}</StyledError>;
   }
@@ -414,9 +453,19 @@ export const InterviewPage: React.FC<VideoInterviewPageProps> = ({ InterviewData
   // At the top of your file:
   // const currentQuestionVideoURL = getQuestionVideoURL(currentQuestionIndex);
 
-  console.log('Current question interview attachment: for question index:', currentQuestionIndex);
-  console.log('Current question interview questionsVideoAttachment:', questionsVideoAttachment);
-  const currentQuestionInterviewAttachment = questionsVideoAttachment.find(attachment => attachment?.id === questions[currentQuestionIndex]?.attachments?.edges[0]?.node?.id)?.fullPath;
+  console.log(
+    'Current question interview attachment: for question index:',
+    currentQuestionIndex,
+  );
+  console.log(
+    'Current question interview questionsVideoAttachment:',
+    questionsVideoAttachment,
+  );
+  const currentQuestionInterviewAttachment = questionsVideoAttachment.find(
+    (attachment) =>
+      attachment?.id ===
+      questions[currentQuestionIndex]?.attachments?.edges[0]?.node?.id,
+  )?.fullPath;
   const currentQuestionVideoURL = getQuestionVideoURL(currentQuestionIndex);
   console.log('This is the currentQuestionVideoURL::', currentQuestionVideoURL);
 
@@ -424,7 +473,8 @@ export const InterviewPage: React.FC<VideoInterviewPageProps> = ({ InterviewData
     <SnapScrollContainer>
       <StyledLeftPanel>
         <h2>
-          {InterviewData?.candidate?.jobs?.name} at {InterviewData?.candidate?.jobs?.companyName}
+          {InterviewData?.candidate?.jobs?.name} at{' '}
+          {InterviewData?.candidate?.jobs?.companyName}
         </h2>
         <StyledLeftPanelContentBox>
           <StyledTextLeftPanelTextHeadline>
@@ -440,7 +490,9 @@ export const InterviewPage: React.FC<VideoInterviewPageProps> = ({ InterviewData
             onCanPlay={handleVideoCanPlay}
           />
           <h3>Question</h3>
-          <StyledTextLeftPaneldisplay>{questions[currentQuestionIndex].questionValue}</StyledTextLeftPaneldisplay>
+          <StyledTextLeftPaneldisplay>
+            {questions[currentQuestionIndex].questionValue}
+          </StyledTextLeftPaneldisplay>
         </StyledLeftPanelContentBox>
       </StyledLeftPanel>
       <StyledRightPanel>
@@ -457,7 +509,9 @@ export const InterviewPage: React.FC<VideoInterviewPageProps> = ({ InterviewData
               <VideoContainer
                 answerTimer={answerTimer}
                 isRecording={recording}
-                onRecordingClick={recording ? handleStopRecording : handleStartRecording}
+                onRecordingClick={
+                  recording ? handleStopRecording : handleStartRecording
+                }
                 setIsPlaying={setIsPlaying}
                 countdown={countdown}
                 webcamRef={webcamRef}
@@ -467,11 +521,16 @@ export const InterviewPage: React.FC<VideoInterviewPageProps> = ({ InterviewData
 
             {showPreview && (
               <PreviewContainer>
-                <h3 style={{  textAlign: 'center' }}>
+                <h3 style={{ textAlign: 'center' }}>
                   Review your recording before submitting
                 </h3>
 
-                <PreviewVideo src={recordedVideoUrl || undefined} controls width="100%" height="60%"/>
+                <PreviewVideo
+                  src={recordedVideoUrl || undefined}
+                  controls
+                  width="100%"
+                  height="60%"
+                />
                 <PreviewControls>
                   <ButtonGroup variant="primary" size="medium" accent="blue">
                     <Button
@@ -512,7 +571,9 @@ export const InterviewPage: React.FC<VideoInterviewPageProps> = ({ InterviewData
 
         {isTransitioning && timer !== null && (
           <>
-            <StyledMessage>Response submitted successfully! Moving to next question in:</StyledMessage>
+            <StyledMessage>
+              Response submitted successfully! Moving to next question in:
+            </StyledMessage>
             <StyledTimer>{timer}</StyledTimer>
           </>
         )}

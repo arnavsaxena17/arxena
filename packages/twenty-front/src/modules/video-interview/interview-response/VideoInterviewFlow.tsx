@@ -3,8 +3,8 @@ import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { EndInterviewPage } from './EndInterviewPage';
 import { ErrorBoundary } from './ErrorBoundary'; // Import the ErrorBoundary component
-import { InterviewPage } from './InterviewPage';
 import { StartInterviewPage } from './StartInterviewPage';
+import { InterviewPage } from './components/InterviewPage';
 
 import { GetInterviewDetailsResponse, InterviewData, VideoInterviewAttachment, emptyInterviewData } from 'twenty-shared';
 import { StreamProvider, useStream } from '../StreamManager';

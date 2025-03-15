@@ -74,7 +74,6 @@ export const WORKFLOW_ACTIONS_CONFIG: Record<
     availableOn: [
       ActionViewType.SHOW_PAGE,
       ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
-      
     ],
     useAction: useActivateWorkflowSingleRecordAction,
   },

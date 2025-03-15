@@ -14,12 +14,16 @@ export const setColumn = <T extends string>(
   field?: Field<T>,
   data?: MatchColumnsStepProps['data'],
 ): Column<T> => {
+
+  console.log("Fiekd", field)
+  console.log("data", data)
   if (field?.fieldType.type === 'select') {
     const fieldOptions = field.fieldType.options;
     const uniqueData = uniqueEntries(
       data || [],
       oldColumn.index,
     ) as MatchedOptions<T>[];
+    console.log("This is usnique data:", uniqueData)
 
     const matchedOptions = uniqueData.map((record) => {
       const value = fieldOptions.find(
@@ -31,9 +35,10 @@ export const setColumn = <T extends string>(
         ? ({ ...record, value } as MatchedOptions<T>)
         : (record as MatchedOptions<T>);
     });
+    console.log("matched options")
     const allMatched =
       matchedOptions.filter((o) => o.value).length === uniqueData?.length;
-
+    console.log("All Matched::", allMatched)
     return {
       ...oldColumn,
       type: allMatched

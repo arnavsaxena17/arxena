@@ -3,7 +3,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import Webcam from 'react-webcam';
 
 import { useStream } from '../StreamManager';
-import { ButtonText, StyledControlsOverlay, StyledCountdownOverlay, StyledRecordButton, StyledVideoContainer } from './styled-components/StyledComponentsInterviewResponse';
+import { ButtonText, StyledControlsOverlay, StyledCountdownOverlay, StyledRecordButton, StyledVideoContainer } from './StyledComponentsInterviewResponse';
 
 interface VideoContainerProps {
   countdown: number | null;

@@ -6,7 +6,7 @@ import {
   FeedbackContainer,
   FeedbackPrompt,
   StyledMessage
-} from './styled-components/StyledComponentsInterviewResponse';
+} from './StyledComponentsInterviewResponse';
 import { InterviewData } from './types/interviewResponseTypes';
 
 interface EndInterviewPageProps {

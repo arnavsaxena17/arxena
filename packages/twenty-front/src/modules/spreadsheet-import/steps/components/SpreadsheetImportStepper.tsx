@@ -86,6 +86,11 @@ export const SpreadsheetImportStepper = ({
         />
       );
     case SpreadsheetImportStepType.selectHeader:
+      console.log(
+        'Current step state data selectHeader',
+        currentStepState.data,
+      );
+
       return (
         <SelectHeaderStep
           importedRows={currentStepState.data}
@@ -98,6 +103,11 @@ export const SpreadsheetImportStepper = ({
         />
       );
     case SpreadsheetImportStepType.matchColumns:
+      console.log(
+        'Current step state data matchColumns',
+        currentStepState.data,
+      );
+
       return (
         <MatchColumnsStep
           data={currentStepState.data}
@@ -114,6 +124,10 @@ export const SpreadsheetImportStepper = ({
       if (!uploadedFile) {
         throw new Error('File not found');
       }
+      console.log(
+        'Current step state data validateData',
+        currentStepState.data,
+      );
       return (
         <ValidationStep
           initialData={currentStepState.data}

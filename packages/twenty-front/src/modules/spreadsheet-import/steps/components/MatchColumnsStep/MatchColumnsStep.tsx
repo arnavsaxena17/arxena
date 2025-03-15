@@ -182,14 +182,18 @@ export const MatchColumnsStep = <T extends string>({
           onIgnore(columnIndex);
         }
       } else {
+
         const field = fields.find(
           (field) => field.key === value,
         ) as unknown as Field<T>;
+        console.log("Fields::", field)
         const existingFieldIndex = columns.findIndex(
           (column) => 'value' in column && column.value === field.key,
         );
+        console.log("Existing fields index:", existingFieldIndex)
         setColumns(
           columns.map<Column<string>>((column, index) => {
+            console.log("column, field data", column, field, data)
             if (columnIndex === index) {
               return setColumn(column, field, data);
             } else if (index === existingFieldIndex) {

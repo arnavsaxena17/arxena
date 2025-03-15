@@ -7,7 +7,6 @@ import { AppPath } from '@/types/AppPath';
 import { useCallback, useMemo } from 'react';
 import { useRecoilValue } from 'recoil';
 import { isDefined } from 'twenty-shared';
-import { getAppPath } from '~/utils/navigation/getAppPath';
 
 export const useDefaultHomePagePath = () => {
   const currentUser = useRecoilValue(currentUserState);
@@ -80,14 +79,15 @@ export const useDefaultHomePagePath = () => {
       return AppPath.NotFound;
     }
 
-    const namePlural = defaultObjectPathInfo.objectMetadataItem?.namePlural;
-    const viewId = defaultObjectPathInfo.view?.id;
+    // const namePlural = defaultObjectPathInfo.objectMetadataItem?.namePlural;
+    // const viewId = defaultObjectPathInfo.view?.id;
+    return AppPath.Chats;
 
-    return getAppPath(
-      AppPath.RecordIndexPage,
-      { objectNamePlural: namePlural },
-      viewId ? { viewId } : undefined,
-    );
+    // return getAppPath(
+    //   AppPath.RecordIndexPage,
+    //   { objectNamePlural: namePlural },
+    //   viewId ? { viewId } : undefined,
+    // );
   }, [currentUser, defaultObjectPathInfo]);
 
   return { defaultHomePagePath };

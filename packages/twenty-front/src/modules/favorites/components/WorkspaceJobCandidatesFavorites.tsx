@@ -10,8 +10,15 @@ export const WorkspaceJobCandidatesFavorites = () => {
   const loading = useIsPrefetchLoading();
   const { t } = useLingui();
 
-  console.log("workspaceFavoritesObjectMetadataItems", workspaceFavoritesObjectMetadataItems.filter(x=> x.labelSingular.toLowerCase().includes( "jobcandidate")));
-  const jobCandidates = workspaceFavoritesObjectMetadataItems.filter(x=> x.labelSingular.toLowerCase().includes( "jobcandidate"));
+  console.log(
+    'workspaceFavoritesObjectMetadataItems',
+    workspaceFavoritesObjectMetadataItems.filter((x) =>
+      x.labelSingular.toLowerCase().includes('jobcandidate'),
+    ),
+  );
+  const jobCandidates = workspaceFavoritesObjectMetadataItems.filter((x) =>
+    x.labelSingular.toLowerCase().includes('jobcandidate'),
+  );
 
   if (loading) {
     return <NavigationDrawerSectionForObjectMetadataItemsSkeletonLoader />;
