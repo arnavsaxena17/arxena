@@ -8,8 +8,8 @@ import { VideoInterviewChatProcesses } from 'src/engine/core-modules/arx-chat/se
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { getRecruiterProfileByJob } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import {
-    EmailTemplates,
-    SendEmailFunctionality,
+  EmailTemplates,
+  SendEmailFunctionality,
 } from 'src/engine/core-modules/arx-chat/utils/send-gmail';
 import { GmailMessageData } from 'src/engine/core-modules/gmail-sender/services/gmail-sender-objects-types';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';

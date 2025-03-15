@@ -9,6 +9,12 @@ import { AppToken } from 'src/engine/core-modules/app-token/app-token.entity';
 import { AuthModule } from 'src/engine/core-modules/auth/auth.module';
 import { ApiKeyService } from 'src/engine/core-modules/auth/services/api-key.service';
 import { JwtAuthStrategy } from 'src/engine/core-modules/auth/strategies/jwt.auth.strategy';
+import { CandidateSourcingController } from 'src/engine/core-modules/candidate-sourcing/controllers/candidate-sourcing.controller';
+import { CandidateQueueProcessor } from 'src/engine/core-modules/candidate-sourcing/jobs/process-candidates.job';
+import { ProcessCandidatesService } from 'src/engine/core-modules/candidate-sourcing/jobs/process-candidates.service';
+import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/services/candidate.service';
+import { ChatService } from 'src/engine/core-modules/candidate-sourcing/services/chat.service';
+import { PersonService } from 'src/engine/core-modules/candidate-sourcing/services/person.service';
 import { EmailService } from 'src/engine/core-modules/email/email.service';
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 import { GoogleSheetsService } from 'src/engine/core-modules/google-sheets/google-sheets.service';
@@ -22,13 +28,6 @@ import { DataSourceEntity } from 'src/engine/metadata-modules/data-source/data-s
 import { DataSourceModule } from 'src/engine/metadata-modules/data-source/data-source.module';
 import { WorkspaceCacheStorageService } from 'src/engine/workspace-cache-storage/workspace-cache-storage.service';
 import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
-
-import { CandidateSourcingController } from './controllers/candidate-sourcing.controller';
-import { CandidateQueueProcessor } from './jobs/process-candidates.job';
-import { ProcessCandidatesService } from './jobs/process-candidates.service';
-import { CandidateService } from './services/candidate.service';
-import { ChatService } from './services/chat.service';
-import { PersonService } from './services/person.service';
 
 @Module({
   imports: [
