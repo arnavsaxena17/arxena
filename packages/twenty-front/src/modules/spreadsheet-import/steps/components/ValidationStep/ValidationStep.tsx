@@ -426,11 +426,6 @@ export const ValidationStep = <T extends string>({
   // Modify the uploadCandidatesToArxena function to match the data structure from useSpreadsheetRecordImport
   const uploadCandidatesToArxena = async (candidates: any[]) => {
     try {
-      const url =
-        process.env.ENV_NODE === 'production'
-          ? 'https://arxena.com/'
-          : 'http://localhost:5050';
-
       console.log('Uploading to Arxena URL:', url);
 
       const popup_data: Record<string, any> = {};
@@ -466,19 +461,22 @@ export const ValidationStep = <T extends string>({
       popup_data['twenty_job_id'] = job?.id;
       popup_data['job_data_source'] = data_source;
       // Make the API request to Arxena
-      const response = await fetch(url + '/upload_profiles', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${tokenPair?.accessToken?.token}` || '',
+      const response = await fetch(
+        process.env.REACT_APP_SERVER_BASE_URL + '/upload_profiles',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${tokenPair?.accessToken?.token}` || '',
+          },
+          body: JSON.stringify({
+            candidates,
+            popup_data,
+            data_source,
+            job: job ? { id: job.id, name: job.name } : null,
+          }),
         },
-        body: JSON.stringify({
-          candidates,
-          popup_data,
-          data_source,
-          job: job ? { id: job.id, name: job.name } : null,
-        }),
-      });
+      );
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
