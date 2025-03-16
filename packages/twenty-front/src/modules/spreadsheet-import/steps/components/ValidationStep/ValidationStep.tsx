@@ -466,22 +466,19 @@ export const ValidationStep = <T extends string>({
       popup_data['twenty_job_id'] = job?.id;
       popup_data['job_data_source'] = data_source;
       // Make the API request to Arxena
-      const response = await fetch(
-        process.env.REACT_APP_SERVER_BASE_URL + '/upload_profiles',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${tokenPair?.accessToken?.token}` || '',
-          },
-          body: JSON.stringify({
-            candidates,
-            popup_data,
-            data_source,
-            job: job ? { id: job.id, name: job.name } : null,
-          }),
+      const response = await fetch(url + '/upload_profiles', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${tokenPair?.accessToken?.token}` || '',
         },
-      );
+        body: JSON.stringify({
+          candidates,
+          popup_data,
+          data_source,
+          job: job ? { id: job.id, name: job.name } : null,
+        }),
+      });
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
