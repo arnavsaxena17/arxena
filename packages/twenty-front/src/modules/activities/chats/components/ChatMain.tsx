@@ -7,11 +7,18 @@ import styled from '@emotion/styled';
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
-import { CandidateNode, CandidatesEdge, Job, OneUnreadMessage, PersonNode, UnreadMessageListManyCandidates, UnreadMessagesPerOneCandidate } from 'twenty-shared';
+import {
+  CandidateNode,
+  CandidatesEdge,
+  Job,
+  OneUnreadMessage,
+  PersonNode,
+  UnreadMessageListManyCandidates,
+  UnreadMessagesPerOneCandidate,
+} from 'twenty-shared';
 import { CACHE_KEYS, cacheUtils } from '../utils/cacheUtils';
 import ChatSidebar from './ChatSidebar';
 import ChatWindow from './ChatWindow';
-
 
 interface ChatMainProps {
   initialCandidateId?: string;
@@ -33,12 +40,11 @@ const ChatContainer = styled.div`
   }
 `;
 
-
 const SidebarContainer = styled.div<{ width: number }>`
   overflow-x: auto;
   display: flex;
   height: 100vh;
-  width: ${props => props.width}px;
+  width: ${(props) => props.width}px;
   min-width: 200px;
   max-width: 800px;
   flex-shrink: 0;
@@ -52,8 +58,6 @@ const SidebarContainer = styled.div<{ width: number }>`
     z-index: 10;
   }
 `;
-
-
 
 const ChatWindowContainer = styled.div<{ sidebarWidth: number }>`
   position: relative;
@@ -71,7 +75,6 @@ const ChatWindowContainer = styled.div<{ sidebarWidth: number }>`
   }
 `;
 
-
 const Spinner = styled.div`
   width: 100%;
   height: 100%;
@@ -80,8 +83,12 @@ const Spinner = styled.div`
   border-radius: 50%;
   animation: spin 1s linear infinite;
   @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
   }
 `;
 
@@ -103,16 +110,13 @@ const Resizer = styled.div`
   }
 `;
 
-
-
 const LoadingStates = {
   INITIAL: 'initial',
   LOADING_CACHE: 'loading_cache',
   LOADING_API: 'loading_api',
   READY: 'ready',
-  ERROR: 'error'
+  ERROR: 'error',
 };
-
 
 // export interface recruiterProfileType {
 //   job_title: any;
@@ -127,24 +131,15 @@ const LoadingStates = {
 //   input: string; // Add the 'input' property
 // }
 
-
 export default function ChatMain({ initialCandidateId }: ChatMainProps) {
   const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
   const currentWorkspace = useRecoilValue(currentWorkspaceState);
-    const currentUser = useRecoilValue(currentUserState);
-    // const userEmail = currentUser?.email;
+  const currentUser = useRecoilValue(currentUserState);
+  // const userEmail = currentUser?.email;
 
-
-
-
-
-
-  
-
-  console.log("This is the currentWorkspaceMember:", currentWorkspaceMember);
-  console.log("This is the currentWorkspace:", currentWorkspace);
-  console.log("This is the currentUser:", currentUser);
-
+  console.log('This is the currentWorkspaceMember:', currentWorkspaceMember);
+  console.log('This is the currentWorkspace:', currentWorkspace);
+  console.log('This is the currentUser:', currentUser);
 
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
@@ -157,10 +152,8 @@ export default function ChatMain({ initialCandidateId }: ChatMainProps) {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-
-
   // States
-  // const [individuals, setIndividuals] = useState<PersonNode[]>(() => 
+  // const [individuals, setIndividuals] = useState<PersonNode[]>(() =>
   //   cacheUtils.getCache(CACHE_KEYS.CHATS_DATA) || []
   // );
   const [individuals, setIndividuals] = useState([]);
@@ -173,13 +166,15 @@ export default function ChatMain({ initialCandidateId }: ChatMainProps) {
   const [error, setError] = useState<string | null>(null);
   const [jobs, setJobs] = useState<Job[]>([]);
 
-  const [unreadMessages, setUnreadMessages] = useState<UnreadMessageListManyCandidates>({
-    listOfUnreadMessages: [],
-  });
+  const [unreadMessages, setUnreadMessages] =
+    useState<UnreadMessageListManyCandidates>({
+      listOfUnreadMessages: [],
+    });
 
   // Recoil states
   const [tokenPair] = useRecoilState(tokenPairState);
-  const [currentUnreadMessages, setCurrentUnreadMessages] = useRecoilState(currentUnreadChatMessagesState);
+  const [currentUnreadChatMessages, setCurrentUnreadChatMessages] =
+    useRecoilState(currentUnreadChatMessagesState);
 
   const [sidebarWidth, setSidebarWidth] = useState(300);
   const [isResizing, setIsResizing] = useState(false);
@@ -214,48 +209,58 @@ export default function ChatMain({ initialCandidateId }: ChatMainProps) {
     };
   }, [isResizing]);
 
-
-
   const loadFromCache = () => {
     setLoadingState(LoadingStates.LOADING_CACHE);
     const cachedIndividuals = cacheUtils.getCache(CACHE_KEYS.CHATS_DATA);
     const cachedJobs = cacheUtils.getCache(CACHE_KEYS.JOBS_DATA);
-    
+
     if (cachedIndividuals && cachedJobs) {
       setIndividuals(cachedIndividuals);
       setJobs(cachedJobs);
       // Calculate unread messages from cache
-      const unreadMessagesList = getUnreadMessageListManyCandidates(cachedIndividuals);
+      const unreadMessagesList =
+        getUnreadMessageListManyCandidates(cachedIndividuals);
       setUnreadMessages(unreadMessagesList);
-      setCurrentUnreadMessages(unreadMessagesList?.listOfUnreadMessages?.length);
+      setCurrentUnreadMessages(
+        unreadMessagesList?.listOfUnreadMessages?.length,
+      );
       setLoadingState(LoadingStates.READY);
       return true;
     }
     return false;
   };
 
-
-
   // Functions
-  const getUnreadMessageListManyCandidates = (personNodes: PersonNode[]): UnreadMessageListManyCandidates => {
+  const getUnreadMessageListManyCandidates = (
+    personNodes: PersonNode[],
+  ): UnreadMessageListManyCandidates => {
     const listOfUnreadMessages: UnreadMessagesPerOneCandidate[] = [];
     personNodes?.forEach((personNode: PersonNode) => {
-      personNode?.candidates?.edges?.forEach((candidateEdge: CandidatesEdge) => {
-        const candidateNode: CandidateNode = candidateEdge?.node;
-        const ManyUnreadMessages: OneUnreadMessage[] = candidateNode?.whatsappMessages?.edges
-          ?.filter((edge) => edge?.node?.whatsappDeliveryStatus === 'receivedFromCandidate')
-          ?.map((edge): OneUnreadMessage => ({
-            message: edge?.node?.message,
-            id: edge?.node?.id,
-            whatsappDeliveryStatus: edge?.node?.whatsappDeliveryStatus,
-          }));
-        if (ManyUnreadMessages?.length > 0) {
-          listOfUnreadMessages?.push({
-            candidateId: candidateNode.id,
-            ManyUnreadMessages,
-          });
-        }
-      });
+      personNode?.candidates?.edges?.forEach(
+        (candidateEdge: CandidatesEdge) => {
+          const candidateNode: CandidateNode = candidateEdge?.node;
+          const ManyUnreadMessages: OneUnreadMessage[] =
+            candidateNode?.whatsappMessages?.edges
+              ?.filter(
+                (edge) =>
+                  edge?.node?.whatsappDeliveryStatus ===
+                  'receivedFromCandidate',
+              )
+              ?.map(
+                (edge): OneUnreadMessage => ({
+                  message: edge?.node?.message,
+                  id: edge?.node?.id,
+                  whatsappDeliveryStatus: edge?.node?.whatsappDeliveryStatus,
+                }),
+              );
+          if (ManyUnreadMessages?.length > 0) {
+            listOfUnreadMessages?.push({
+              candidateId: candidateNode.id,
+              ManyUnreadMessages,
+            });
+          }
+        },
+      );
     });
     return { listOfUnreadMessages };
   };
@@ -270,16 +275,29 @@ export default function ChatMain({ initialCandidateId }: ChatMainProps) {
       setError(null);
 
       const [peopleResponse, jobsResponse] = await Promise.all([
-        axios.get(`${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/get-candidates-and-chats`, {
-          headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` },
-        }),
-        axios.post(`${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/get-all-jobs`, {}, {
-          headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` },
-        }),
+        axios.get(
+          `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/get-candidates-and-chats`,
+          {
+            headers: {
+              Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
+            },
+          },
+        ),
+        axios.post(
+          `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/get-all-jobs`,
+          {},
+          {
+            headers: {
+              Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
+            },
+          },
+        ),
       ]);
 
       const availablePeople = peopleResponse.data.filter(
-        (person:PersonNode) => person?.candidates?.edges?.length > 0 && person?.candidates?.edges[0].node.startChat
+        (person: PersonNode) =>
+          person?.candidates?.edges?.length > 0 &&
+          person?.candidates?.edges[0].node.startChat,
       );
 
       // Update cache before state to ensure smooth loading
@@ -289,8 +307,11 @@ export default function ChatMain({ initialCandidateId }: ChatMainProps) {
       setIndividuals(availablePeople);
       setJobs(jobsResponse.data.jobs);
 
-      const unreadMessagesList = getUnreadMessageListManyCandidates(availablePeople);
-      setCurrentUnreadMessages(unreadMessagesList?.listOfUnreadMessages?.length);
+      const unreadMessagesList =
+        getUnreadMessageListManyCandidates(availablePeople);
+      setCurrentUnreadMessages(
+        unreadMessagesList?.listOfUnreadMessages?.length,
+      );
       setUnreadMessages(unreadMessagesList);
 
       if (selectedIndividual) {
@@ -308,10 +329,8 @@ export default function ChatMain({ initialCandidateId }: ChatMainProps) {
   };
 
   useEffect(() => {
-    console.log("Current unreadMessages state:", unreadMessages);
+    console.log('Current unreadMessages state:', unreadMessages);
   }, [unreadMessages]);
-
-  
 
   useEffect(() => {
     const initializeData = async () => {
@@ -331,19 +350,23 @@ export default function ChatMain({ initialCandidateId }: ChatMainProps) {
 
   const updateUnreadMessagesStatus = async (selectedIndividual: string) => {
     const listOfMessagesIds = unreadMessages?.listOfUnreadMessages
-      ?.find(unreadMessage => 
-        unreadMessage?.candidateId === (individuals
-          ?.find((individual: PersonNode) => individual?.id === selectedIndividual) as unknown as PersonNode)
-          ?.candidates?.edges?.[0]?.node?.id
+      ?.find(
+        (unreadMessage) =>
+          unreadMessage?.candidateId ===
+          (
+            individuals?.find(
+              (individual: PersonNode) => individual?.id === selectedIndividual,
+            ) as unknown as PersonNode
+          )?.candidates?.edges?.[0]?.node?.id,
       )
-      ?.ManyUnreadMessages?.map(message => message.id);
+      ?.ManyUnreadMessages?.map((message) => message.id);
 
     if (!listOfMessagesIds?.length) return;
 
     await axios.post(
       `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/update-whatsapp-delivery-status`,
       { listOfMessagesIds },
-      { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } }
+      { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } },
     );
   };
 
@@ -356,8 +379,9 @@ export default function ChatMain({ initialCandidateId }: ChatMainProps) {
 
   useEffect(() => {
     if (initialCandidateId && individuals.length > 0) {
-      const individual = individuals.find((ind: PersonNode) => 
-        ind.candidates?.edges[0]?.node?.id === initialCandidateId
+      const individual = individuals.find(
+        (ind: PersonNode) =>
+          ind.candidates?.edges[0]?.node?.id === initialCandidateId,
       );
       if (individual) {
         setSelectedIndividual((individual as PersonNode).id);
@@ -372,44 +396,44 @@ export default function ChatMain({ initialCandidateId }: ChatMainProps) {
   if (isLoading && individuals.length === 0) {
     return (
       // <SpinnerContainer>
-        <Spinner />
+      <Spinner />
       // </SpinnerContainer>
     );
   }
 
+  if (
+    loadingState === LoadingStates.INITIAL ||
+    loadingState === LoadingStates.LOADING_CACHE
+  ) {
+    return <Spinner />;
+  }
 
-    if (loadingState === LoadingStates.INITIAL || loadingState === LoadingStates.LOADING_CACHE) {
-      return <Spinner />;
-    }
+  if (loadingState === LoadingStates.LOADING_API && individuals.length === 0) {
+    return <Spinner />;
+  }
 
-    if (loadingState === LoadingStates.LOADING_API && individuals.length === 0) {
-      return <Spinner />;
-    }
-
-    if (loadingState === LoadingStates.ERROR && individuals.length === 0) {
-      return <div>Error loading chats. Please try again.</div>;
-    }
-
-
+  if (loadingState === LoadingStates.ERROR && individuals.length === 0) {
+    return <div>Error loading chats. Please try again.</div>;
+  }
 
   return (
     <ChatContainer>
       <SidebarContainer width={sidebarWidth}>
-        <ChatSidebar 
-          individuals={individuals} 
-          selectedIndividual={selectedIndividual} 
-          setSelectedIndividual={setSelectedIndividual} 
-          unreadMessages={unreadMessages} 
+        <ChatSidebar
+          individuals={individuals}
+          selectedIndividual={selectedIndividual}
+          setSelectedIndividual={setSelectedIndividual}
+          unreadMessages={unreadMessages}
           jobs={jobs}
-          isRefreshing={isRefreshing} 
+          isRefreshing={isRefreshing}
           width={sidebarWidth}
         />
       </SidebarContainer>
       {!isMobile && <Resizer onMouseDown={startResizing} />}
       <ChatWindowContainer sidebarWidth={sidebarWidth}>
-        <ChatWindow 
-          selectedIndividual={selectedIndividual} 
-          individuals={individuals} 
+        <ChatWindow
+          selectedIndividual={selectedIndividual}
+          individuals={individuals}
           onMessageSent={fetchData}
           sidebarWidth={sidebarWidth}
         />
@@ -417,4 +441,3 @@ export default function ChatMain({ initialCandidateId }: ChatMainProps) {
     </ChatContainer>
   );
 }
-

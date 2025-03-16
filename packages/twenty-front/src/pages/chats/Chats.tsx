@@ -1,22 +1,21 @@
-import styled from "@emotion/styled";
+import styled from '@emotion/styled';
 
-import { IconCheckbox } from "twenty-ui";
+import { IconCheckbox } from 'twenty-ui';
 
-import { PageAddChatButton } from "@/activities/chats/components/PageAddChatButton";
+import { PageAddChatButton } from '@/activities/chats/components/PageAddChatButton';
 // import { TasksRecoilScopeContext } from "@/activities/states/recoil-scope-contexts/TasksRecoilScopeContext";
 // import { TaskGroups } from "@/activities/chats/components/TaskGroups";
 // import { TASKS_TAB_LIST_COMPONENT_ID } from "@/activities/tasks/constants/TasksTabListComponentId";
 // import { ObjectFilterDropdownButton } from "@/object-record/object-filter-dropdown/components/ObjectFilterDropdownButton";
-import { RecordFieldValueSelectorContextProvider } from "@/object-record/record-store/contexts/RecordFieldValueSelectorContext";
+import { RecordFieldValueSelectorContextProvider } from '@/object-record/record-store/contexts/RecordFieldValueSelectorContext';
 import { PageBody } from '@/ui/layout/page/components/PageBody';
 
-import { PageContainer } from "@/ui/layout/page/components/PageContainer";
-import { PageHeader } from "@/ui/layout/page/components/PageHeader";
+import { PageContainer } from '@/ui/layout/page/components/PageContainer';
+import { PageHeader } from '@/ui/layout/page/components/PageHeader';
 // import { TabList } from "@/ui/layout/tab/components/TabList";
-import { TopBar } from "@/ui/layout/top-bar/components/TopBar";
+import { TopBar } from '@/ui/layout/top-bar/components/TopBar';
 
-import ChatMain from "@/activities/chats/components/ChatMain";
-
+import ChatMain from '@/activities/chats/components/ChatMain';
 
 const StyledPageContainer = styled(PageContainer)`
   display: flex;
@@ -31,11 +30,10 @@ const StyledPageContainer = styled(PageContainer)`
   }
 `;
 
-
 const StyledPageHeader = styled(PageHeader)`
   flex-shrink: 0;
   padding: 12px 24px;
-  
+
   @media (max-width: 768px) {
     padding: 8px 16px;
   }
@@ -54,9 +52,9 @@ const StyledPageBody = styled(PageBody)`
 `;
 
 const StyledTopBar = styled(TopBar)`
-  flex-shrink: 0;
   border-bottom: 1px solid ${({ theme }) => theme.border.color.light};
-  
+  flex-shrink: 0;
+
   @media (max-width: 768px) {
     position: sticky;
     top: 0;
@@ -83,7 +81,9 @@ const StyledChatMainWrapper = styled.div`
   position: relative;
 
   @media (max-width: 768px) {
-    min-height: calc(100vh - 160px); // Adjust based on your header + topbar height
+    min-height: calc(
+      100vh - 160px
+    ); // Adjust based on your header + topbar height
   }
 `;
 
@@ -93,7 +93,7 @@ const StyledAddButtonWrapper = styled.div`
     bottom: 24px;
     right: 24px;
     z-index: 100;
-    
+
     button {
       border-radius: 50%;
       width: 56px;
@@ -116,8 +116,6 @@ const StyledAddButtonWrapper = styled.div`
   }
 `;
 
-
-
 export const Chats = () => {
   // const { candidateId } = useParams<{ candidateId: string }>();
   const candidateId = '1'; // Replace with your candidateId
@@ -126,23 +124,23 @@ export const Chats = () => {
     <StyledPageContainer>
       <RecordFieldValueSelectorContextProvider>
         {/* <RecoilScope CustomRecoilScopeContext={TasksRecoilScopeContext}> */}
-          <StyledPageHeader title="Chats" Icon={IconCheckbox}>
-            <StyledAddButtonWrapper>
-              <PageAddChatButton />
-            </StyledAddButtonWrapper>
-          </StyledPageHeader>
-          <StyledPageBody>
-            <StyledTopBar 
-              leftComponent={
-                <StyledTabListContainer>
-                  {/* Add any tab components here */}
-                </StyledTabListContainer>
-              } 
-            />
-            <StyledChatMainWrapper>
+        <StyledPageHeader title="Chats" Icon={IconCheckbox}>
+          <StyledAddButtonWrapper>
+            <PageAddChatButton />
+          </StyledAddButtonWrapper>
+        </StyledPageHeader>
+        <StyledPageBody>
+          <StyledTopBar
+            leftComponent={
+              <StyledTabListContainer>
+                {/* Add any tab components here */}
+              </StyledTabListContainer>
+            }
+          />
+          <StyledChatMainWrapper>
             <ChatMain initialCandidateId={candidateId} />
-            </StyledChatMainWrapper>
-          </StyledPageBody>
+          </StyledChatMainWrapper>
+        </StyledPageBody>
         {/* </RecoilScope> */}
       </RecordFieldValueSelectorContextProvider>
     </StyledPageContainer>
