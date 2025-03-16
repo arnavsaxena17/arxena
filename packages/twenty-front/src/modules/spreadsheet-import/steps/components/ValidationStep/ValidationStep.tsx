@@ -17,6 +17,7 @@ import {
   findJobMatch,
   useFindAllJobs,
 } from '@/spreadsheet-import/utils/findJobMatch';
+
 import { useDialogManager } from '@/ui/feedback/dialog-manager/hooks/useDialogManager';
 import { Modal } from '@/ui/layout/modal/components/Modal';
 import styled from '@emotion/styled';
@@ -32,11 +33,12 @@ import {
 // @ts-expect-error Todo: remove usage of react-data-grid`
 import { RowsChangeData } from 'react-data-grid';
 
+import { tokenPairState } from '@/auth/states/tokenPairState';
+import { useRecoilState } from 'recoil';
 import { isDefined } from 'twenty-shared';
 import { Button, IconTrash, Toggle } from 'twenty-ui';
 import { generateColumns } from './components/columns';
 import { ImportedStructuredRowMetadata } from './types';
-// const jobs = useGetAllJobs(); // Fetch all jobs
 
 const StyledContent = styled(Modal.Content)`
   padding-left: ${({ theme }) => theme.spacing(6)};
@@ -97,6 +99,9 @@ export const ValidationStep = <T extends string>({
   const { enqueueDialog } = useDialogManager();
   const { fields, onClose, onSubmit, rowHook, tableHook } =
     useSpreadsheetImportInternal<T>();
+
+  // Add token pair state for API authorization
+  const [tokenPair] = useRecoilState(tokenPairState);
 
   // Fetch all jobs - we'll use this for matching
   const { jobs, loading: jobsLoading } = useFindAllJobs();
@@ -181,6 +186,7 @@ export const ValidationStep = <T extends string>({
                   originalName: jobNameValue,
                   matchedName: matchedJob.name,
                   matchedId: matchedJob.id,
+                  arxenaSiteId: matchedJob.arxenaSiteId,
                   mappedColumn: jobIdColumnHeader || 'jobs',
                 },
               };
@@ -417,6 +423,82 @@ export const ValidationStep = <T extends string>({
     [],
   );
 
+  // Modify the uploadCandidatesToArxena function to match the data structure from useSpreadsheetRecordImport
+  const uploadCandidatesToArxena = async (candidates: any[]) => {
+    try {
+      const url =
+        process.env.ENV_NODE === 'production'
+          ? 'https://arxena.com/'
+          : 'http://localhost:5050';
+
+      console.log('Uploading to Arxena URL:', url);
+
+      const popup_data: Record<string, any> = {};
+
+      // Get job info from the first candidate if available
+      const singleCandidate = candidates[0];
+      let job = null;
+
+      // Try to get job info from the candidate data
+      if (isDefined(singleCandidate)) {
+        // Check for job match info first
+        if (isDefined(singleCandidate.jobMatchInfo)) {
+          job = {
+            id: singleCandidate.jobMatchInfo.matchedId,
+            name: singleCandidate.jobMatchInfo.matchedName,
+            arxenaSiteId: singleCandidate.jobMatchInfo.arxenaSiteId,
+          };
+        }
+        // Then check for Job Applied For field
+        else if (
+          isDefined(singleCandidate['Job Applied For']) &&
+          isDefined(jobs)
+        ) {
+          const jobAppliedFor = singleCandidate['Job Applied For'];
+          // Use the findJobMatch function that's already available
+          job = findJobMatch(jobAppliedFor, jobs);
+        }
+      }
+
+      const data_source = 'spreadsheet_import_twenty';
+      popup_data['job_id'] = job?.arxenaSiteId;
+      popup_data['job_name'] = job?.name;
+      popup_data['twenty_job_id'] = job?.id;
+      popup_data['job_data_source'] = data_source;
+      // Make the API request to Arxena
+      const response = await fetch(url + '/upload_profiles', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${tokenPair?.accessToken?.token}` || '',
+        },
+        body: JSON.stringify({
+          candidates,
+          popup_data,
+          data_source,
+          job: job ? { id: job.id, name: job.name } : null,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const responseText = await response.text();
+      if (!responseText) {
+        return [];
+      }
+
+      const data = JSON.parse(responseText);
+      console.log('Arxena upload successful:', data);
+      return data;
+    } catch (error) {
+      console.error('Error uploading candidates to Arxena:', error);
+      throw error;
+    }
+  };
+
+  // Modify the submitData function to use the same data structure as useSpreadsheetRecordImport
   const submitData = async () => {
     const calculatedData = data.reduce(
       (acc, value) => {
@@ -443,13 +525,62 @@ export const ValidationStep = <T extends string>({
       } satisfies ImportValidationResult<T>,
     );
 
+    // Check if this is a candidate import by looking for specific fields
+    // const isCandidateImport = fields.some(
+    //   (field) =>
+    //     field.key === 'candidate' ||
+    //     (typeof field.label === 'string' &&
+    //       field.label.toLowerCase().includes('candidate')),
+    // );
+
+    const isCandidateImport =
+      window.location.pathname.toLowerCase().includes('candidate') &&
+      !window.location.pathname.toLowerCase().includes('jobcandidate');
+
     setCurrentStepState({
       type: SpreadsheetImportStepType.loading,
     });
+    console.log('isCandidateImport', isCandidateImport);
+    if (isCandidateImport) {
+      try {
+        console.log('Uploading candidates to Arxena:', data);
+        const headers = Object.keys(data[0]).filter(
+          (key) => !key.startsWith('__') && key !== '__jobMatch',
+        );
+        const candidatesForArxena = data.map((row) => {
+          const cleanRow: Record<string, any> = {};
+          headers.forEach((header) => {
+            cleanRow[header] = (row as Record<string, any>)[header];
+          });
+          if (isDefined((row as any).__jobMatch)) {
+            const jobMatch = (row as any).__jobMatch;
+            if (isDefined(jobMatch.matchedId)) {
+              cleanRow['jobs'] = jobMatch.matchedId;
+              cleanRow['Job Applied For'] = jobMatch.matchedName;
+            }
+          }
+          return cleanRow;
+        });
+        console.log('Uploading candidates to Arxena:', candidatesForArxena);
+        try {
+          await uploadCandidatesToArxena(candidatesForArxena);
+          onClose();
+          return;
+        } catch (error) {
+          console.error('Error uploading to Arxena:', error);
+          onClose();
+          return;
+        }
+      } catch (error) {
+        console.error('Error uploading to Arxena:', error);
+      }
+    }
 
+    // Standard submission flow for non-candidate objects or if Arxena upload fails
     await onSubmit(calculatedData, file);
     onClose();
   };
+
   const onContinue = () => {
     const invalidData = data.find((value) => {
       if (isDefined(value?.__errors)) {
@@ -480,55 +611,55 @@ export const ValidationStep = <T extends string>({
   };
 
   // Add this function to debug the data structure
-  const debugData = useCallback(() => {
-    if (data.length > 0) {
-      console.log('First row data:', data[0]);
-      console.log('Available columns in data:', Object.keys(data[0]));
-      // Check if job match metadata exists
-      if (isDefined((data[0] as any).__jobMatch)) {
-        console.log('Job match metadata found:', (data[0] as any).__jobMatch);
-      } else {
-        console.log('No job match metadata found');
-      }
+  // const debugData = useCallback(() => {
+  //   if (data.length > 0) {
+  //     console.log('First row data:', data[0]);
+  //     console.log('Available columns in data:', Object.keys(data[0]));
+  //     // Check if job match metadata exists
+  //     if (isDefined((data[0] as any).__jobMatch)) {
+  //       console.log('Job match metadata found:', (data[0] as any).__jobMatch);
+  //     } else {
+  //       console.log('No job match metadata found');
+  //     }
 
-      // Check for the job ID field
-      const jobIdField = fields.find((field) => field.key === 'jobs');
-      if (isDefined(jobIdField)) {
-        console.log('Job ID field:', jobIdField);
+  //     // Check for the job ID field
+  //     const jobIdField = fields.find((field) => field.key === 'jobs');
+  //     if (isDefined(jobIdField)) {
+  //       console.log('Job ID field:', jobIdField);
 
-        // Find the mapped column
-        const mappedColumn = importedColumns.find(
-          (col) =>
-            (col.type === ColumnType.matched ||
-              col.type === ColumnType.matchedSelect ||
-              col.type === ColumnType.matchedSelectOptions ||
-              col.type === ColumnType.matchedCheckbox) &&
-            col.value === jobIdField.key,
-        );
+  //       // Find the mapped column
+  //       const mappedColumn = importedColumns.find(
+  //         (col) =>
+  //           (col.type === ColumnType.matched ||
+  //             col.type === ColumnType.matchedSelect ||
+  //             col.type === ColumnType.matchedSelectOptions ||
+  //             col.type === ColumnType.matchedCheckbox) &&
+  //           col.value === jobIdField.key,
+  //       );
 
-        if (isDefined(mappedColumn)) {
-          console.log('Mapped column for jobs:', mappedColumn);
-          console.log(
-            'Value in first row:',
-            data[0][mappedColumn.header as keyof (typeof data)[number]],
-          );
-        } else {
-          console.log('No mapped column found for jobs');
-        }
-      }
-    }
-  }, [data, fields, importedColumns]);
+  //       if (isDefined(mappedColumn)) {
+  //         console.log('Mapped column for jobs:', mappedColumn);
+  //         console.log(
+  //           'Value in first row:',
+  //           data[0][mappedColumn.header as keyof (typeof data)[number]],
+  //         );
+  //       } else {
+  //         console.log('No mapped column found for jobs');
+  //       }
+  //     }
+  //   }
+  // }, [data, fields, importedColumns]);
 
   // Add a ref to track if we've applied job matching
   // eslint-disable-next-line @nx/workspace-no-state-useref
   const jobMatchingAppliedRef = useRef(false);
 
   // Call this in useEffect or directly after data is set
-  useMemo(() => {
-    if (data.length > 0) {
-      debugData();
-    }
-  }, [data, debugData]);
+  // useMemo(() => {
+  //   if (data.length > 0) {
+  //     debugData();
+  //   }
+  // }, [data, debugData]);
 
   // Replace the problematic useMemo with useEffect
   useEffect(() => {

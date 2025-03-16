@@ -1,11 +1,14 @@
 import { MultipleRecordsActionKeys } from '@/action-menu/actions/record-actions/multiple-records/types/MultipleRecordsActionKeys';
 import { ActionHook } from '@/action-menu/actions/types/ActionHook';
 import { ActionViewType } from '@/action-menu/actions/types/ActionViewType';
-import { ActionMenuEntry, ActionMenuEntryScope, ActionMenuEntryType, } from '@/action-menu/types/ActionMenuEntry';
-import { msg } from '@lingui/core/macro';
 import {
-  IconCopy
-} from 'twenty-ui';
+  ActionMenuEntry,
+  ActionMenuEntryScope,
+  ActionMenuEntryType,
+} from '@/action-menu/types/ActionMenuEntry';
+import { msg } from '@lingui/core/macro';
+import { IconMessageCircle, IconShare } from '@tabler/icons-react';
+import { IconCopy, IconList, IconRefresh, IconVideo } from 'twenty-ui';
 
 import { useCloneMultipleRecordsAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useCloneMultipleRecordsAction';
 import { useCreateMultipleVideoInterviewLinksAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useCreateMultipleVideoInterviewLinksAction';
@@ -19,9 +22,7 @@ import { useShareChatAndVideoInterviewBasedShortlistAction } from '@/action-menu
 import { useShareChatBasedShortlistAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useShareChatBasedShortlistAction';
 import { useShareMultipleVideoInterviewLinksAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useShareMultipleVideoInterviewLinksAction';
 import { useStartChatWithCandidatesAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useStartChatWithCandidatesAction';
-import { IconList, IconMessageCircle, IconRefresh, IconShare, IconVideo } from '@tabler/icons-react';
 import { useUpdateSnapshotProfilesFromJobBoardsAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useUpdateSnapshotProfilesFromJobBoardsAction';
-
 
 export const CANDIDATE_SPECIFIC_ACTIONS: Record<
   string,
@@ -39,7 +40,10 @@ export const CANDIDATE_SPECIFIC_ACTIONS: Record<
     Icon: IconCopy,
     accent: 'danger',
     isPinned: true,
-    availableOn: [ActionViewType.INDEX_PAGE_BULK_SELECTION,ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION],
+    availableOn: [
+      ActionViewType.INDEX_PAGE_BULK_SELECTION,
+      ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
+    ],
     useAction: useCloneMultipleRecordsAction,
   },
   createVideoInterviewLink: {
@@ -50,9 +54,12 @@ export const CANDIDATE_SPECIFIC_ACTIONS: Record<
     shortLabel: msg`Create VINT Link`,
     position: 7,
     Icon: IconVideo,
-    accent:'placeholder',
+    accent: 'placeholder',
     isPinned: false,
-    availableOn: [ActionViewType.INDEX_PAGE_BULK_SELECTION, ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION],
+    availableOn: [
+      ActionViewType.INDEX_PAGE_BULK_SELECTION,
+      ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
+    ],
     useAction: useCreateMultipleVideoInterviewLinksAction,
   },
   shareMultipleVideoInterviewLinks: {
@@ -65,7 +72,10 @@ export const CANDIDATE_SPECIFIC_ACTIONS: Record<
     Icon: IconVideo,
     accent: 'placeholder',
     isPinned: false,
-    availableOn: [ActionViewType.INDEX_PAGE_BULK_SELECTION,ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION],
+    availableOn: [
+      ActionViewType.INDEX_PAGE_BULK_SELECTION,
+      ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
+    ],
     useAction: useShareMultipleVideoInterviewLinksAction,
   },
   startChatWithCandidates: {
@@ -78,7 +88,10 @@ export const CANDIDATE_SPECIFIC_ACTIONS: Record<
     Icon: IconMessageCircle,
     accent: 'placeholder',
     isPinned: false,
-    availableOn: [ActionViewType.INDEX_PAGE_BULK_SELECTION,ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION],
+    availableOn: [
+      ActionViewType.INDEX_PAGE_BULK_SELECTION,
+      ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
+    ],
     useAction: useStartChatWithCandidatesAction,
   },
   refreshChatStatus: {
@@ -91,7 +104,10 @@ export const CANDIDATE_SPECIFIC_ACTIONS: Record<
     Icon: IconRefresh,
     accent: 'placeholder',
     isPinned: false,
-    availableOn: [ActionViewType.INDEX_PAGE_BULK_SELECTION,ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION],
+    availableOn: [
+      ActionViewType.INDEX_PAGE_BULK_SELECTION,
+      ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
+    ],
     useAction: useRefreshChatStatusesAction,
   },
   refreshChatCount: {
@@ -104,7 +120,10 @@ export const CANDIDATE_SPECIFIC_ACTIONS: Record<
     Icon: IconMessageCircle,
     accent: 'placeholder',
     isPinned: false,
-    availableOn: [ActionViewType.INDEX_PAGE_BULK_SELECTION,ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION],
+    availableOn: [
+      ActionViewType.INDEX_PAGE_BULK_SELECTION,
+      ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
+    ],
     useAction: useRefreshChatCountsAction,
   },
   createShortlist: {
@@ -117,7 +136,10 @@ export const CANDIDATE_SPECIFIC_ACTIONS: Record<
     Icon: IconList,
     accent: 'placeholder',
     isPinned: false,
-    availableOn: [ActionViewType.INDEX_PAGE_BULK_SELECTION,ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION],
+    availableOn: [
+      ActionViewType.INDEX_PAGE_BULK_SELECTION,
+      ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
+    ],
     useAction: usePopulateShortlistAction,
   },
   shareChatBasedShortlist: {
@@ -130,7 +152,10 @@ export const CANDIDATE_SPECIFIC_ACTIONS: Record<
     Icon: IconShare,
     accent: 'placeholder',
     isPinned: false,
-    availableOn: [ActionViewType.INDEX_PAGE_BULK_SELECTION,ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION],
+    availableOn: [
+      ActionViewType.INDEX_PAGE_BULK_SELECTION,
+      ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
+    ],
     useAction: useShareChatBasedShortlistAction,
   },
   updateProfiles: {
@@ -143,7 +168,10 @@ export const CANDIDATE_SPECIFIC_ACTIONS: Record<
     Icon: IconList,
     accent: 'placeholder',
     isPinned: false,
-    availableOn: [ActionViewType.INDEX_PAGE_BULK_SELECTION,ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION  ],
+    availableOn: [
+      ActionViewType.INDEX_PAGE_BULK_SELECTION,
+      ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
+    ],
     useAction: useUpdateSnapshotProfilesFromJobBoardsAction,
   },
   shareChatAndVideoInterviewBasedShortlist: {
@@ -156,7 +184,10 @@ export const CANDIDATE_SPECIFIC_ACTIONS: Record<
     Icon: IconShare,
     accent: 'placeholder',
     isPinned: false,
-    availableOn: [ActionViewType.INDEX_PAGE_BULK_SELECTION,ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION],
+    availableOn: [
+      ActionViewType.INDEX_PAGE_BULK_SELECTION,
+      ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
+    ],
     useAction: useShareChatAndVideoInterviewBasedShortlistAction,
   },
   sendToWhatsapp: {
@@ -169,7 +200,10 @@ export const CANDIDATE_SPECIFIC_ACTIONS: Record<
     Icon: IconMessageCircle,
     accent: 'placeholder',
     isPinned: false,
-    availableOn: [ActionViewType.INDEX_PAGE_BULK_SELECTION,ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION],
+    availableOn: [
+      ActionViewType.INDEX_PAGE_BULK_SELECTION,
+      ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
+    ],
     useAction: useSendToWhatsappAction,
   },
   deleteCandidatesAndPeople: {
@@ -182,7 +216,10 @@ export const CANDIDATE_SPECIFIC_ACTIONS: Record<
     Icon: IconList,
     accent: 'placeholder',
     isPinned: false,
-    availableOn: [ActionViewType.INDEX_PAGE_BULK_SELECTION,ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION],
+    availableOn: [
+      ActionViewType.INDEX_PAGE_BULK_SELECTION,
+      ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
+    ],
     useAction: useDeleteCandidatesAndPeopleAction,
   },
 };
