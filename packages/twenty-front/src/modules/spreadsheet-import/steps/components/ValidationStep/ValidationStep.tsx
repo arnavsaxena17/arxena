@@ -426,6 +426,13 @@ export const ValidationStep = <T extends string>({
   // Modify the uploadCandidatesToArxena function to match the data structure from useSpreadsheetRecordImport
   const uploadCandidatesToArxena = async (candidates: any[]) => {
     try {
+      const url =
+        process.env.NODE_ENV === 'production'
+          ? 'https://arxena.com/'
+          : 'http://localhost:5050';
+
+      console.log('Uploading to Arxena URL:', url);
+
       const popup_data: Record<string, any> = {};
 
       // Get job info from the first candidate if available
