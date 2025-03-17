@@ -32,6 +32,12 @@ export class ProcessCandidatesService {
       console.log(
         `Breaking up ${data.length} candidates into ${totalBatches} batches of ~${batchSize} each`,
       );
+      const uniqueCandidates = new Set();
+
+      for (const candidate of data) {
+        uniqueCandidates.add(candidate.unique_key_string);
+      }
+      console.log(`Found ${uniqueCandidates.size} unique candidates`);
       for (let i = 0; i < data.length; i += batchSize) {
         const batch = data.slice(i, i + batchSize);
         const batchNumber = Math.floor(i / batchSize) + 1;

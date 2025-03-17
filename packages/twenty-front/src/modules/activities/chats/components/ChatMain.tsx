@@ -394,11 +394,11 @@ export default function ChatMain({ initialCandidateId }: ChatMainProps) {
   }, [selectedIndividual]);
 
   if (isLoading && individuals.length === 0) {
-    return (
-      // <SpinnerContainer>
-      <Spinner />
-      // </SpinnerContainer>
-    );
+    // return (
+    //   // <SpinnerContainer>
+    //   <Spinner />
+    //   // </SpinnerContainer>
+    // );
   }
 
   if (
@@ -413,7 +413,7 @@ export default function ChatMain({ initialCandidateId }: ChatMainProps) {
   }
 
   if (loadingState === LoadingStates.ERROR && individuals.length === 0) {
-    return <div>Error loading chats. Please try again.</div>;
+    return <div style={{ marginLeft: '10px' }}>No chats found.</div>;
   }
 
   return (

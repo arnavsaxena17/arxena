@@ -135,10 +135,10 @@ export const ValidationStep = <T extends string>({
         const jobIdColumnHeader = mappedJobColumn?.header;
 
         // Add some debugging to see what's happening
-        console.log('Jobs loaded:', jobs);
-        console.log('Job ID field:', jobIdField);
-        console.log('Mapped column:', jobIdColumnHeader);
-        console.log('Full mapped column info:', mappedJobColumn);
+        // console.log('Jobs loaded:', jobs);
+        // console.log('Job ID field:', jobIdField);
+        // console.log('Mapped column:', jobIdColumnHeader);
+        // console.log('Full mapped column info:', mappedJobColumn);
 
         // Process each row to match job names with IDs
         const processedRows = rowsToProcess.map((row) => {
@@ -148,7 +148,7 @@ export const ValidationStep = <T extends string>({
             typeof (row as any).jobs === 'string' &&
             (row as any).jobs.includes('-') === true
           ) {
-            console.log('Row already has a job ID:', (row as any).jobs);
+            // console.log('Row already has a job ID:', (row as any).jobs);
             return row;
           }
 
@@ -160,10 +160,10 @@ export const ValidationStep = <T extends string>({
             row[jobIdColumnHeader as keyof typeof row] !== undefined
           ) {
             jobNameValue = row[jobIdColumnHeader as keyof typeof row];
-            console.log(
-              `Found job value in mapped column ${jobIdColumnHeader}:`,
-              jobNameValue,
-            );
+            // console.log(
+            //   `Found job value in mapped column ${jobIdColumnHeader}:`,
+            //   jobNameValue,
+            // );
           } else if ('jobs' in row) {
             jobNameValue = (row as any)['jobs'];
             console.log('Found job value in direct jobs field:', jobNameValue);

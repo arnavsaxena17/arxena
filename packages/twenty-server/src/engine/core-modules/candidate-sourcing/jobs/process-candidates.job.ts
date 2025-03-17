@@ -13,8 +13,8 @@ export class CandidateQueueProcessor {
 
   @Process(CandidateQueueProcessor.name)
   async handle(jobData: ProcessCandidatesJobData): Promise<void> {
-    console.log('job.data.jobName::', jobData?.jobName);
-    console.log('job.data.jobName::', JSON.stringify(jobData));
+    // console.log('job.data.jobName::', jobData?.jobName);
+    // console.log('job.data.jobName::', JSON.stringify(jobData));
 
     const batchInfo = jobData?.batchName?.includes('Batch')
       ? jobData.batchName.match(/Batch (\d+)\/(\d+)/)

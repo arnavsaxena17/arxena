@@ -617,6 +617,35 @@ export class CandidateService {
       console.log(
         `Processing mini-chunk unique_key_string of ${candidates.map((x) => x.unique_key_string)})`,
       );
+      console.log(
+        'Number of unique key strings in the mini-chunk:',
+        candidates.map((x) => x.unique_key_string).length,
+      );
+
+      // Create a Map to deduplicate candidates by unique_key_string
+      const uniqueKeyToProfileMap = new Map<string, UserProfile>();
+
+      // Populate the map with the latest profile for each unique key
+      // Skip candidates with empty unique_key_string
+      candidates.forEach((candidate) => {
+        if (
+          candidate &&
+          candidate.unique_key_string &&
+          candidate.unique_key_string !== ''
+        ) {
+          uniqueKeyToProfileMap.set(candidate.unique_key_string, candidate);
+        }
+      });
+
+      // Convert the map values back to an array of UserProfile objects
+      const deduplicatedProfiles = Array.from(uniqueKeyToProfileMap.values());
+
+      console.log(
+        `Deduplicated and filtered ${candidates.length} candidates to ${deduplicatedProfiles.length} valid unique profiles`,
+      );
+      console.log(
+        `Removed ${candidates.length - deduplicatedProfiles.length} duplicates or empty unique_key_string entries`,
+      );
 
       // Try up to 3 times with exponential backoff
       let success = false;
@@ -627,7 +656,7 @@ export class CandidateService {
         try {
           attempt++;
           await this.processProfilesWithRateLimiting(
-            candidates,
+            deduplicatedProfiles,
             jobId,
             jobName,
             timestamp,
@@ -635,7 +664,7 @@ export class CandidateService {
           );
           success = true;
         } catch (error) {
-          console.log('error has been trhorn and will do this in another shot');
+          console.log('error has been thrown and will do this in another shot');
           if (attempt >= MAX_ATTEMPTS) {
             throw error; // Re-throw on final attempt
           }
