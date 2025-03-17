@@ -10,11 +10,12 @@ import { useRecoilState, useRecoilValue } from 'recoil';
 import {
   CandidateNode,
   CandidatesEdge,
-  Job,
+  Jobs,
   OneUnreadMessage,
   PersonNode,
   UnreadMessageListManyCandidates,
   UnreadMessagesPerOneCandidate,
+  isDefined,
 } from 'twenty-shared';
 import { CACHE_KEYS, cacheUtils } from '../utils/cacheUtils';
 import ChatSidebar from './ChatSidebar';
@@ -24,7 +25,7 @@ interface ChatMainProps {
   initialCandidateId?: string;
 }
 
-const ChatContainer = styled.div`
+const StyledChatContainer = styled.div`
   display: flex;
   height: 100vh;
   width: 100%;
@@ -40,7 +41,7 @@ const ChatContainer = styled.div`
   }
 `;
 
-const SidebarContainer = styled.div<{ width: number }>`
+const StyledSidebarContainer = styled.div<{ width: number }>`
   overflow-x: auto;
   display: flex;
   height: 100vh;
@@ -59,7 +60,7 @@ const SidebarContainer = styled.div<{ width: number }>`
   }
 `;
 
-const ChatWindowContainer = styled.div<{ sidebarWidth: number }>`
+const StyledChatWindowContainer = styled.div<{ sidebarWidth: number }>`
   position: relative;
   flex-grow: 1;
   min-width: 0;
@@ -75,11 +76,11 @@ const ChatWindowContainer = styled.div<{ sidebarWidth: number }>`
   }
 `;
 
-const Spinner = styled.div`
+const StyledSpinner = styled.div`
   width: 100%;
   height: 100%;
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid #3498db;
+  border: 4px solid ${({ theme }) => theme.border.color.light};
+  border-top: 4px solid ${({ theme }) => theme.border.color.light};
   border-radius: 50%;
   animation: spin 1s linear infinite;
   @keyframes spin {
@@ -92,21 +93,21 @@ const Spinner = styled.div`
   }
 `;
 
-const Resizer = styled.div`
+const StyledResizer = styled.div`
   width: 4px;
   cursor: col-resize;
-  background-color: #e0e0e0;
+  background-color: ${({ theme }) => theme.border.color.light};
   height: 100vh;
   position: relative;
   transition: background-color 0.2s;
   z-index: 10;
 
   &:hover {
-    background-color: #bdbdbd;
+    background-color: ${({ theme }) => theme.border.color.light};
   }
 
   &:active {
-    background-color: #9e9e9e;
+    background-color: ${({ theme }) => theme.border.color.light};
   }
 `;
 
@@ -131,7 +132,7 @@ const LoadingStates = {
 //   input: string; // Add the 'input' property
 // }
 
-export default function ChatMain({ initialCandidateId }: ChatMainProps) {
+export const ChatMain = ({ initialCandidateId }: ChatMainProps) => {
   const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
   const currentWorkspace = useRecoilValue(currentWorkspaceState);
   const currentUser = useRecoilValue(currentUserState);
@@ -164,7 +165,7 @@ export default function ChatMain({ initialCandidateId }: ChatMainProps) {
   const [isLoading, setIsLoading] = useState(individuals.length === 0);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [jobs, setJobs] = useState<Job[]>([]);
+  const [jobs, setJobs] = useState<Jobs[]>([]);
 
   const [unreadMessages, setUnreadMessages] =
     useState<UnreadMessageListManyCandidates>({
@@ -214,14 +215,14 @@ export default function ChatMain({ initialCandidateId }: ChatMainProps) {
     const cachedIndividuals = cacheUtils.getCache(CACHE_KEYS.CHATS_DATA);
     const cachedJobs = cacheUtils.getCache(CACHE_KEYS.JOBS_DATA);
 
-    if (cachedIndividuals && cachedJobs) {
+    if (isDefined(cachedIndividuals) && isDefined(cachedJobs)) {
       setIndividuals(cachedIndividuals);
       setJobs(cachedJobs);
       // Calculate unread messages from cache
       const unreadMessagesList =
         getUnreadMessageListManyCandidates(cachedIndividuals);
       setUnreadMessages(unreadMessagesList);
-      setCurrentUnreadMessages(
+      setCurrentUnreadChatMessages(
         unreadMessagesList?.listOfUnreadMessages?.length,
       );
       setLoadingState(LoadingStates.READY);
@@ -309,12 +310,12 @@ export default function ChatMain({ initialCandidateId }: ChatMainProps) {
 
       const unreadMessagesList =
         getUnreadMessageListManyCandidates(availablePeople);
-      setCurrentUnreadMessages(
+      setCurrentUnreadChatMessages(
         unreadMessagesList?.listOfUnreadMessages?.length,
       );
       setUnreadMessages(unreadMessagesList);
 
-      if (selectedIndividual) {
+      if (isDefined(selectedIndividual)) {
         updateUnreadMessagesStatus(selectedIndividual);
       }
 
@@ -378,13 +379,13 @@ export default function ChatMain({ initialCandidateId }: ChatMainProps) {
   }, []);
 
   useEffect(() => {
-    if (initialCandidateId && individuals.length > 0) {
+    if (isDefined(initialCandidateId) && individuals.length > 0) {
       const individual = individuals.find(
         (ind: PersonNode) =>
           ind.candidates?.edges[0]?.node?.id === initialCandidateId,
       );
-      if (individual) {
-        setSelectedIndividual((individual as PersonNode).id);
+      if (isDefined(individual)) {
+        setSelectedIndividual((individual as unknown as PersonNode).id);
       }
     }
   }, [initialCandidateId, individuals]);
@@ -405,11 +406,11 @@ export default function ChatMain({ initialCandidateId }: ChatMainProps) {
     loadingState === LoadingStates.INITIAL ||
     loadingState === LoadingStates.LOADING_CACHE
   ) {
-    return <Spinner />;
+    return <StyledSpinner />;
   }
 
   if (loadingState === LoadingStates.LOADING_API && individuals.length === 0) {
-    return <Spinner />;
+    return <StyledSpinner />;
   }
 
   if (loadingState === LoadingStates.ERROR && individuals.length === 0) {
@@ -417,8 +418,8 @@ export default function ChatMain({ initialCandidateId }: ChatMainProps) {
   }
 
   return (
-    <ChatContainer>
-      <SidebarContainer width={sidebarWidth}>
+    <StyledChatContainer>
+      <StyledSidebarContainer width={sidebarWidth}>
         <ChatSidebar
           individuals={individuals}
           selectedIndividual={selectedIndividual}
@@ -428,16 +429,16 @@ export default function ChatMain({ initialCandidateId }: ChatMainProps) {
           isRefreshing={isRefreshing}
           width={sidebarWidth}
         />
-      </SidebarContainer>
-      {!isMobile && <Resizer onMouseDown={startResizing} />}
-      <ChatWindowContainer sidebarWidth={sidebarWidth}>
+      </StyledSidebarContainer>
+      {!isMobile && <StyledResizer onMouseDown={startResizing} />}
+      <StyledChatWindowContainer sidebarWidth={sidebarWidth}>
         <ChatWindow
           selectedIndividual={selectedIndividual}
           individuals={individuals}
           onMessageSent={fetchData}
           sidebarWidth={sidebarWidth}
         />
-      </ChatWindowContainer>
-    </ChatContainer>
+      </StyledChatWindowContainer>
+    </StyledChatContainer>
   );
-}
+};

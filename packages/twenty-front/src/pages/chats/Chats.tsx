@@ -15,7 +15,7 @@ import { PageHeader } from '@/ui/layout/page/components/PageHeader';
 // import { TabList } from "@/ui/layout/tab/components/TabList";
 import { TopBar } from '@/ui/layout/top-bar/components/TopBar';
 
-import ChatMain from '@/activities/chats/components/ChatMain';
+import { ChatMain } from '@/activities/chats/components/ChatMain';
 
 const StyledPageContainer = styled(PageContainer)`
   display: flex;
@@ -102,7 +102,7 @@ const StyledAddButtonWrapper = styled.div`
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 4px 6px ${({ theme }) => theme.border.color.light};
 
       span {
         display: none;
