@@ -27,19 +27,46 @@ export class ProcessCandidatesService {
       console.log(`Queueing ${data.length} candidates for processing`);
 
       const batchSize = 30;
-      const totalBatches = Math.ceil(data.length / batchSize);
+      const uniqueKeyToProfileMap = new Map<string, UserProfile>();
 
-      console.log(
-        `Breaking up ${data.length} candidates into ${totalBatches} batches of ~${batchSize} each`,
-      );
+      // Skip candidates with empty unique_key_string
+      data.forEach((candidate) => {
+        if (
+          candidate &&
+          candidate.unique_key_string &&
+          candidate.unique_key_string !== ''
+        ) {
+          uniqueKeyToProfileMap.set(candidate.unique_key_string, candidate);
+        }
+      });
+
+      const deduplicatedProfiles = Array.from(uniqueKeyToProfileMap.values());
+
       const uniqueCandidates = new Set();
 
       for (const candidate of data) {
         uniqueCandidates.add(candidate.unique_key_string);
       }
       console.log(`Found ${uniqueCandidates.size} unique candidates`);
-      for (let i = 0; i < data.length; i += batchSize) {
-        const batch = data.slice(i, i + batchSize);
+
+      // const deduplicatedProfiles = Array.from(uniqueCandidates);
+      // console.log(`Deduplicated ${data.length} candidates to ${deduplicatedProfiles.length} unique profiles`);
+
+      console.log(
+        `Deduplicated ${data.length} candidates to ${deduplicatedProfiles.length} unique profiles`,
+      );
+
+      const totalBatches = Math.ceil(deduplicatedProfiles.length / batchSize);
+
+      console.log(
+        `Breaking up ${deduplicatedProfiles.length} candidates into ${totalBatches} batches of ~${batchSize} each`,
+      );
+
+      // Populate the map with the latest profile for each unique key
+
+      // Convert the map values back to an array of UserProfile objects
+      for (let i = 0; i < deduplicatedProfiles.length; i += batchSize) {
+        const batch = deduplicatedProfiles.slice(i, i + batchSize);
         const batchNumber = Math.floor(i / batchSize) + 1;
 
         console.log(

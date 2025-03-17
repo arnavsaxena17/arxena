@@ -32,6 +32,7 @@ export class CandidateQueueProcessor {
         'Reveived in CandidateQueueProcessor_batch process chunk ::',
         jobData.data.map((c) => c.unique_key_string),
       );
+
       await this.candidateService.processChunk(
         jobData.data,
         jobData.jobId,
