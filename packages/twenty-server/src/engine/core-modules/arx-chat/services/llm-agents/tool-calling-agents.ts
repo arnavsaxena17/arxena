@@ -314,6 +314,7 @@ export class ToolCallingAgents {
     ).updateAnswerInDatabase(
       candidateProfileDataNodeObj,
       AnswerMessageObj,
+      candidateJob,
       apiToken,
     );
     try {

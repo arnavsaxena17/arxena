@@ -13,65 +13,72 @@ import { useRecoilComponentValueV2 } from '@/ui/utilities/state/component-state/
 import { useCallback, useState } from 'react';
 import { isDefined } from 'twenty-shared';
 
-export const useStartChatWithCandidatesAction: ActionHookWithObjectMetadataItem = ({ objectMetadataItem }) => { 
-    
-  
-  const contextStoreNumberOfSelectedRecords = useRecoilComponentValueV2(
-    contextStoreNumberOfSelectedRecordsComponentState,
-  );
-  
-  const contextStoreTargetedRecordsRule = useRecoilComponentValueV2(
+export const useStartChatWithCandidatesAction: ActionHookWithObjectMetadataItem =
+  ({ objectMetadataItem }) => {
+    const contextStoreNumberOfSelectedRecords = useRecoilComponentValueV2(
+      contextStoreNumberOfSelectedRecordsComponentState,
+    );
+
+    const contextStoreTargetedRecordsRule = useRecoilComponentValueV2(
       contextStoreTargetedRecordsRuleComponentState,
     );
-    
+
     const contextStoreFilters = useRecoilComponentValueV2(
       contextStoreFiltersComponentState,
     );
-    
+
     const { filterValueDependencies } = useFilterValueDependencies();
-    
+
     const graphqlFilter = computeContextStoreFilters(
       contextStoreTargetedRecordsRule,
       contextStoreFilters,
       objectMetadataItem,
       filterValueDependencies,
     );
-    
+
     const { fetchAllRecords: fetchAllRecordIds } = useLazyFetchAllRecords({
       objectNameSingular: objectMetadataItem.nameSingular,
       filter: graphqlFilter,
       limit: DEFAULT_QUERY_PAGE_SIZE,
-      recordGqlFields: { id: true },
+      // recordGqlFields: { id: true, candidateId: true },
     });
 
     const isRemoteObject = objectMetadataItem.isRemote;
     const shouldBeRegistered =
-    !isRemoteObject &&
-    isDefined(contextStoreNumberOfSelectedRecords) &&
-    contextStoreNumberOfSelectedRecords < BACKEND_BATCH_REQUEST_MAX_COUNT &&
-    contextStoreNumberOfSelectedRecords > 0;
-    
-    
-    const [isStartChatWithCandidatesModalOpen, setIsStartChatWithCandidatesModalOpen] = useState(false);
+      !isRemoteObject &&
+      isDefined(contextStoreNumberOfSelectedRecords) &&
+      contextStoreNumberOfSelectedRecords < BACKEND_BATCH_REQUEST_MAX_COUNT &&
+      contextStoreNumberOfSelectedRecords > 0;
+
+    const [
+      isStartChatWithCandidatesModalOpen,
+      setIsStartChatWithCandidatesModalOpen,
+    ] = useState(false);
     const { sendStartChatRequest } = useStartChats({
       onSuccess: () => {},
       onError: () => {},
     });
 
-    console.log("The objectMetadataItem is::", objectMetadataItem);
+    console.log('The objectMetadataItem is::', objectMetadataItem);
     const handleStartChatWithCandidatesClick = useCallback(async () => {
       const recordsToStartChat = await fetchAllRecordIds();
 
-      const recordIdsToStartChat: string[] = objectMetadataItem.nameSingular.toLowerCase().includes('jobcandidate')
+      const recordIdsToStartChat: string[] = objectMetadataItem.nameSingular
+        .toLowerCase()
+        .includes('jobcandidate')
         ? recordsToStartChat.map((record) => record.candidateId)
         : recordsToStartChat.map((record) => record.id);
-      console.log("Records selected::", recordsToStartChat, "Record IDs selected::", recordIdsToStartChat);
+      console.log(
+        'Records selected::',
+        recordsToStartChat,
+        'Record IDs selected::',
+        recordIdsToStartChat,
+      );
       await sendStartChatRequest(
-      recordIdsToStartChat,
-      objectMetadataItem.nameSingular,
+        recordIdsToStartChat,
+        objectMetadataItem.nameSingular,
       );
     }, [sendStartChatRequest, fetchAllRecordIds]);
-
 
     const onClick = () => {
       if (!shouldBeRegistered) {
@@ -82,13 +89,13 @@ export const useStartChatWithCandidatesAction: ActionHookWithObjectMetadataItem 
 
     const confirmationModal = (
       <ConfirmationModal
-      isOpen={isStartChatWithCandidatesModalOpen}
-      setIsOpen={setIsStartChatWithCandidatesModalOpen}
-      title={'Start Multiple Chats'}
-      subtitle={`Are you sure you want to start multiple chats?`}
-      onConfirmClick={handleStartChatWithCandidatesClick}
-      deleteButtonText={'Start Multiple Chats'}
-      confirmButtonAccent = 'blue'
+        isOpen={isStartChatWithCandidatesModalOpen}
+        setIsOpen={setIsStartChatWithCandidatesModalOpen}
+        title={'Start Multiple Chats'}
+        subtitle={`Are you sure you want to start multiple chats?`}
+        onConfirmClick={handleStartChatWithCandidatesClick}
+        deleteButtonText={'Start Multiple Chats'}
+        confirmButtonAccent="blue"
       />
     );
 

@@ -1,5 +1,16 @@
 import axios from 'axios';
-import { WorkspaceQueryService } from '../workspace-modifications.service.js';
+import {
+  FindManyWorkspaceMembers,
+  graphqlQueryToGetCurrentUser,
+  graphqlToCreateOnePrompt,
+  graphQLToCreateOneWorkspaceMemberProfile,
+  ObjectMetadata,
+  queryObjectMetadataItems,
+  QueryResponse,
+} from 'twenty-shared';
+
+import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
+
 import { getFieldsData } from './data/fieldsData';
 import { objectCreationArr } from './data/objectsData';
 import { prompts } from './data/prompts';
@@ -14,20 +25,11 @@ import {
   createVideoInterviewTemplates,
   getJobIds,
 } from './services/videoInterviewTemplateService';
-// import { ObjectMetadata, QueryResponse } from './types/types.js';
-import {
-  FindManyWorkspaceMembers,
-  graphqlQueryToGetCurrentUser,
-  graphqlToCreateOnePrompt,
-  graphQLToCreateOneWorkspaceMemberProfile,
-  ObjectMetadata,
-  queryObjectMetadataItems,
-  QueryResponse,
-} from 'twenty-shared';
 import { executeQuery } from './utils/graphqlClient.js';
 
 export class CreateMetaDataStructure {
   constructor(private readonly workspaceQueryService: WorkspaceQueryService) {}
+
   async axiosRequest(data: string, apiToken: string) {
     console.log('This is the url:', process.env.GRAPHQL_URL);
     const response = await axios.request({
@@ -40,16 +42,17 @@ export class CreateMetaDataStructure {
       },
       data: data,
     });
+
     return response;
   }
 
   async getCurrentUser(apiToken: string) {
-    let data = JSON.stringify({
+    const data = JSON.stringify({
       query: graphqlQueryToGetCurrentUser,
       variables: {},
     });
 
-    let config = {
+    const config = {
       method: 'post',
       maxBodyLength: Infinity,
       url: process.env.GRAPHQL_URL,
@@ -63,9 +66,11 @@ export class CreateMetaDataStructure {
     };
 
     const response = await axios.request(config);
+
     console.log('This is the response:', response.data.data.currentUser);
     console.log('This is the response:', response.data.data);
     console.log('This is the response:', response.data);
+
     return response.data.data.currentUser;
   }
 
@@ -77,11 +82,12 @@ export class CreateMetaDataStructure {
     try {
       const response = await executeQuery<any>(
         queryObjectMetadataItems,
-        { after: cursor || undefined, objectFilter: { id: { eq: objectId }, }, },
+        { after: cursor || undefined, objectFilter: { id: { eq: objectId } } },
         apiToken,
       );
 
       console.log('fetchFieldsPage response:', response.data);
+
       return response;
     } catch (error) {
       console.error('Error fetching fields page:', error);
@@ -94,8 +100,10 @@ export class CreateMetaDataStructure {
       {},
       apiToken,
     );
+
     console.log('Thesear the object:::', objectsResponse?.data);
     console.log('Thesear the object:::', objectsResponse);
+
     return objectsResponse;
   };
 
@@ -103,18 +111,21 @@ export class CreateMetaDataStructure {
     apiToken: string,
   ): Promise<Record<string, string>> {
     const objectsResponse = await this.fetchAllObjects(apiToken);
+
     console.log('objectsResponse:', objectsResponse);
     console.log(
       'objectsResponse.data.data.objects.edges length',
       objectsResponse?.data?.objects?.edges?.length,
     );
     const objectsNameIdMap: Record<string, string> = {};
+
     objectsResponse?.data?.objects?.edges?.forEach((edge) => {
       if (edge?.node?.nameSingular && edge?.node?.id) {
         objectsNameIdMap[edge?.node?.nameSingular] = edge?.node?.id;
       }
     });
     console.log('objectsNameIdMap', objectsNameIdMap);
+
     return objectsNameIdMap;
   }
 
@@ -130,6 +141,7 @@ export class CreateMetaDataStructure {
       }),
       apiToken,
     );
+
     console.log(
       'This is the curent workspace member response:',
       currentWorkspaceMemberResponse?.data,
@@ -147,6 +159,7 @@ export class CreateMetaDataStructure {
     const currentWorkspaceMemberId =
       currentWorkspaceMemberResponse.data.data.workspaceMembers.edges[0].node
         .id;
+
     console.log(
       'currentWorkspaceMemberId',
       currentWorkspaceMemberResponse.data.data.workspaceMembers.edges[0].node,
@@ -158,6 +171,7 @@ export class CreateMetaDataStructure {
       currentWorkspaceMemberResponse.data.data.workspaceMembers.edges[0].node
         .name.lastName;
     const currentUser = await this.getCurrentUser(apiToken);
+
     console.log('currentUser', currentUser);
     const createResponse = await this.axiosRequest(
       JSON.stringify({
@@ -187,7 +201,9 @@ export class CreateMetaDataStructure {
       }),
       apiToken,
     );
+
     console.log('Workpace member created successfully', createResponse.data);
+
     return currentWorkspaceMemberId;
   }
 
@@ -206,6 +222,7 @@ export class CreateMetaDataStructure {
         }),
         apiToken,
       );
+
       console.log(`\${prompt.name} created successfully`, createResponse.data);
     }
   }
@@ -213,6 +230,7 @@ export class CreateMetaDataStructure {
   async addAPIKeys(apiToken: string) {
     const workspaceId =
       await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+
     await this.workspaceQueryService.updateWorkspaceApiKeys(workspaceId, {
       openaikey: process.env.OPENAI_KEY,
       twilio_account_sid: undefined,
@@ -222,7 +240,7 @@ export class CreateMetaDataStructure {
       anthropic_key: process.env.ANTHROPIC_API_KEY,
       facebook_whatsapp_api_token: process.env.FACEBOOK_WHATSAPP_API_TOKEN,
       facebook_whatsapp_phone_number_id:
-      process.env.FACEBOOK_WHATSAPP_PHONE_NUMBER_ID,
+        process.env.FACEBOOK_WHATSAPP_PHONE_NUMBER_ID,
       facebook_whatsapp_app_id: process.env.FACEBOOK_WHATSAPP_APP_ID,
       facebook_whatsapp_asset_id: process.env.FACEBOOK_WHATSAPP_ASSET_ID,
       // waba_phone_number: undefined,
@@ -230,6 +248,7 @@ export class CreateMetaDataStructure {
       // company_name: 'Arxena Inc',
     });
     console.log('API keys updated successfully');
+
     return;
   }
 
@@ -257,6 +276,7 @@ export class CreateMetaDataStructure {
           await createFields(fieldsData, apiToken);
           console.log('Fields created successfully');
           const relationsFields = getRelationsData(objectsNameIdMap);
+
           await createRelations(relationsFields, apiToken);
           console.log('Relations created successfully');
         } catch (error) {
@@ -272,6 +292,7 @@ export class CreateMetaDataStructure {
           const videoInterviewModelIds =
             await createVideoInterviewModels(apiToken);
           const jobIds = await getJobIds(apiToken);
+
           await createVideoInterviewTemplates(
             videoInterviewModelIds,
             jobIds,
@@ -296,9 +317,12 @@ export class CreateMetaDataStructure {
       if (shouldCreateApiKeys) {
         try {
           const apiKeyService = new ApiKeyService();
-          const workspaceMemberId = await this.createAndUpdateWorkspaceMember(apiToken);
+          const workspaceMemberId =
+            await this.createAndUpdateWorkspaceMember(apiToken);
+
           await this.createStartChatPrompt(apiToken);
           const apiKey = await apiKeyService.createApiKey(apiToken);
+
           console.log('API key created successfully:', apiKey);
           await this.addAPIKeys(apiToken);
         } catch (error) {

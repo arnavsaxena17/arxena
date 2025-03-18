@@ -170,6 +170,7 @@ export class FilterCandidates {
     } else {
       graphqlQueryObjToFetchAllPeopleForChats = graphqlQueryToFindManyPeople;
     }
+
     if (candidatePeopleIds.length > 0) {
       while (hasMoreResults) {
         const graphqlQueryObj = JSON.stringify({
@@ -589,7 +590,9 @@ export class FilterCandidates {
       console.log('candidate objk1:', candidateObj);
 
       const candidateNode =
-        candidateObjresponse?.data?.data?.candidates?.edges[0]?.node;
+        candidateObjresponse?.data?.data?.candidates?.edges.filter(
+          (edge) => edge.node.id === candidateId,
+        )[0]?.node;
 
       if (!candidateNode) {
         console.log('Candidate not found');

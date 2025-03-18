@@ -1,15 +1,15 @@
 import { WhatsappMessageJobData } from 'twenty-shared';
 
-import { processMessage } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp-process';
+import { ExtSockWhatsappWhitelistProcessingService } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/ext-sock-whitelist-processing';
 import { Process } from 'src/engine/core-modules/message-queue/decorators/process.decorator';
 import { Processor } from 'src/engine/core-modules/message-queue/decorators/processor.decorator';
 import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
 
-// import { ExtSockWhatsappService } from './ext-sock-whatsapp.service';
-
 @Processor(MessageQueue.extSockWhatsappQueue)
 export class WhatsappMessageProcessor {
-  constructor() {
+  constructor(
+    private readonly extSockWhatsappWhitelistProcessingService: ExtSockWhatsappWhitelistProcessingService,
+  ) {
     console.log('WhatsappMessageProcessor initialized');
   }
 
@@ -18,7 +18,29 @@ export class WhatsappMessageProcessor {
     console.log(`Processing WhatsApp message: ${jobData.data.id}`);
 
     try {
-      await processMessage(jobData.data);
+      const phoneNumber = jobData.data.from;
+
+      // Use the pre-built mapping to find userId
+      const userId =
+        await this.extSockWhatsappWhitelistProcessingService.redisService.getUserIdForPhoneNumber(
+          phoneNumber,
+        );
+
+      if (!userId) {
+        console.log(
+          `No user found for phone number ${phoneNumber}, skipping message`,
+        );
+
+        return;
+      }
+
+      console.log(`Found userId ${userId} for phone number ${phoneNumber}`);
+
+      await this.extSockWhatsappWhitelistProcessingService.processWhatsappMessage(
+        userId,
+        jobData.data,
+      );
+
       console.log(
         `WhatsApp message processed successfully: ${jobData.data.id}`,
       );

@@ -809,7 +809,7 @@ export class CandidateService {
           results.manyPersonObjects.push(personNode);
         } else {
           results.allPersonObjects.push(personObj);
-          tracking.personIdMap.set(key, personObj.id);
+          tracking.personIdMap.set(key, personObj?.id);
         }
       }
 
@@ -822,7 +822,7 @@ export class CandidateService {
 
         response?.data?.data?.createPeople?.forEach((person, idx) => {
           if (person?.id) {
-            tracking.personIdMap.set(peopleKeys[idx], person.id);
+            tracking.personIdMap.set(peopleKeys[idx], person?.id);
           }
         });
       }

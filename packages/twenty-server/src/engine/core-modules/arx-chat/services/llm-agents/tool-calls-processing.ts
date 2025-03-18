@@ -11,7 +11,6 @@ import { getRecruiterProfileByJob } from 'src/engine/core-modules/arx-chat/servi
 import { WhatsappControls } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/whatsapp-controls';
 import { AttachmentProcessingService } from 'src/engine/core-modules/arx-chat/utils/attachment-processes';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
-// import { chat } from 'googleapis/build/src/apis/chat';
 
 export class ToolCallsProcessing {
   constructor(private readonly workspaceQueryService: WorkspaceQueryService) {}
@@ -26,19 +25,32 @@ export class ToolCallsProcessing {
       'This is the person for which we are trying to send the JD:',
       person,
     );
-    const candidateId = person?.candidates?.edges[0]?.node?.id;
+    const candidateId = person?.candidates?.edges.filter(
+      (edge) => edge.node.jobs.id === candidateJob.id,
+    )[0]?.node?.id;
+
+    console.log(
+      'Filtered candidate:',
+      person?.candidates?.edges.filter(
+        (edge) => edge.node.jobs.id === candidateJob.id,
+      )[0],
+    );
 
     console.log(
       'This is the candidateID for which we are trying to send the JD:',
       candidateId,
     );
-    const jobId = person?.candidates?.edges[0]?.node?.jobs?.id;
+    const jobId = person?.candidates?.edges.filter(
+      (edge) => edge.node.jobs.id === candidateJob.id,
+    )[0]?.node?.jobs?.id;
 
     console.log(
       'This is the jobId for which we are trying to send the JD:',
       jobId,
     );
-    const jDPath = person?.candidates?.edges[0]?.node?.jobs;
+    const jDPath = person?.candidates?.edges.filter(
+      (edge) => edge.node.jobs.id === candidateJob.id,
+    )[0]?.node?.jobs;
 
     console.log(
       'This is the jDPath for which we are trying to send the JD:',
@@ -76,13 +88,17 @@ export class ToolCallsProcessing {
       'aipi token:',
       apiToken,
     );
-    const candidateId = person?.candidates?.edges[0]?.node?.id;
+    const candidateId = person?.candidates?.edges.filter(
+      (edge) => edge.node.jobs.id === candidateJob.id,
+    )[0]?.node?.id;
 
     console.log(
       'This is the candidateID for which we are trying to update the status:',
       candidateId,
     );
-    const candidateNode = person.candidates.edges[0].node;
+    const candidateNode = person.candidates.edges.filter(
+      (edge) => edge.node.jobs.id === candidateJob.id,
+    )[0].node;
     const candidateJob: Jobs = candidateNode?.jobs;
     const recruiterProfile: RecruiterProfileType =
       await getRecruiterProfileByJob(candidateJob, apiToken);
@@ -90,10 +106,13 @@ export class ToolCallsProcessing {
     const whatappUpdateMessageObj: whatappUpdateMessageObjType = {
       // executorResultObj: {},
       whatsappMessageType: '',
-      candidateProfile: person?.candidates?.edges[0]?.node,
+      candidateProfile: person?.candidates?.edges.filter(
+        (edge) => edge.node.jobs.id === candidateJob.id,
+      )[0]?.node,
       candidateFirstName: person?.name?.firstName,
-      lastEngagementChatControl:
-        person?.candidates?.edges[0]?.node?.lastEngagementChatControl,
+      lastEngagementChatControl: person?.candidates?.edges.filter(
+        (edge) => edge.node.jobs.id === candidateJob.id,
+      )[0]?.node?.lastEngagementChatControl,
       phoneNumberFrom:
         person.phones.primaryPhoneNumber.length == 10
           ? '91' + person.phones.primaryPhoneNumber
@@ -123,33 +142,40 @@ export class ToolCallsProcessing {
 
   async scheduleCandidateInterview(
     person: PersonNode,
+    candidateJob: Jobs,
     status: string,
     apiToken: string,
   ) {
     console.log('Updating the candidate interview schedule');
-    const candidateId = person?.candidates?.edges[0]?.node?.id;
+    const candidateId = person?.candidates?.edges.filter(
+      (edge) => edge.node.jobs.id === candidateJob.id,
+    )[0]?.node?.id;
 
     console.log(
       'This is the candidateID for which we are trying to update the status:',
       candidateId,
     );
-    const candidateNode = person.candidates.edges[0].node;
-    const candidateJob: Jobs = candidateNode?.jobs;
+
     const recruiterProfile: RecruiterProfileType =
       await getRecruiterProfileByJob(candidateJob, apiToken);
 
-    const candidateProfileObj = person?.candidates?.edges[0]?.node;
+    const candidateProfileObj = person?.candidates?.edges.filter(
+      (edge) => edge.node.jobs.id === candidateJob.id,
+    )[0]?.node;
     const whatappUpdateMessageObj: whatappUpdateMessageObjType = {
       // executorResultObj: {},
       whatsappMessageType: '',
-      candidateProfile: person?.candidates?.edges[0]?.node,
+      candidateProfile: person?.candidates?.edges.filter(
+        (edge) => edge.node.jobs.id === candidateJob.id,
+      )[0]?.node,
       candidateFirstName: person?.name?.firstName,
       phoneNumberFrom:
         person.phones.primaryPhoneNumber.length == 10
           ? '91' + person.phones.primaryPhoneNumber
           : person.phones.primaryPhoneNumber,
-      lastEngagementChatControl:
-        person?.candidates?.edges[0]?.node?.lastEngagementChatControl,
+      lastEngagementChatControl: person?.candidates?.edges.filter(
+        (edge) => edge.node.jobs.id === candidateJob.id,
+      )[0]?.node?.lastEngagementChatControl,
       phoneNumberTo: recruiterProfile?.phoneNumber,
       messages: [{ content: status }],
       messageType: status,
@@ -171,16 +197,21 @@ export class ToolCallsProcessing {
   async updateAnswerInDatabase(
     person: PersonNode,
     AnswerMessageObj: any,
+    candidateJob: Jobs,
     apiToken: string,
   ) {
     console.log('Updating the candidate answer in database');
-    const candidateId = person?.candidates?.edges[0]?.node?.id;
+    const candidateId = person?.candidates?.edges.filter(
+      (edge) => edge.node.jobs.id === candidateJob.id,
+    )[0]?.node?.id;
 
     console.log(
       'This is the candidateID for which we are trying to update the status:',
       candidateId,
     );
-    const candidateProfileObj = person?.candidates?.edges[0]?.node;
+    const candidateProfileObj = person?.candidates?.edges.filter(
+      (edge) => edge.node.jobs.id === candidateJob.id,
+    )[0]?.node;
     const updateCandidateStatusObj = await new UpdateChat(
       this.workspaceQueryService,
     ).updateCandidateAnswer(candidateProfileObj, AnswerMessageObj, apiToken);

@@ -32,6 +32,7 @@ import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/cand
 import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/update-chat';
 import { OpenAIArxMultiStepClient } from 'src/engine/core-modules/arx-chat/services/llm-agents/arx-multi-step-client';
 import { HumanLikeLLM } from 'src/engine/core-modules/arx-chat/services/llm-agents/human-or-bot-classification';
+import { ToolCallsProcessing } from 'src/engine/core-modules/arx-chat/services/llm-agents/tool-calls-processing';
 import { getRecruiterProfileByJob } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import { FacebookWhatsappChatApi } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
 import {
@@ -1160,6 +1161,72 @@ export class ArxChatEndpoint {
     } catch (error) {
       throw new HttpException(
         error.message || 'Failed to process JD',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Post('share-jd-to-candidate')
+  @UseGuards(JwtAuthGuard)
+  async shareJDToCandidate(@Req() request: any): Promise<object> {
+    try {
+      const apiToken = request.headers.authorization.split(' ')[1];
+      const { candidateId } = request.body;
+
+      if (!candidateId) {
+        throw new HttpException('Missing candidateId', HttpStatus.BAD_REQUEST);
+      }
+
+      // Fetch candidate details using graphql
+      const graphqlQueryObj = JSON.stringify({
+        query: graphqlToFetchAllCandidateData,
+        variables: { filter: { id: { eq: candidateId } } },
+      });
+
+      const candidateResponse = await axiosRequest(graphqlQueryObj, apiToken);
+      const candidateNode =
+        candidateResponse?.data?.data?.candidates?.edges.filter(
+          (edge) => edge.node.id === candidateId,
+        )[0]?.node;
+
+      if (!candidateNode) {
+        throw new HttpException('Candidate not found', HttpStatus.NOT_FOUND);
+      }
+      const personId = candidateNode?.people?.id;
+
+      console.log('personId:', personId);
+      console.log('candidateNode:', candidateNode);
+      const personObj = await new FilterCandidates(
+        this.workspaceQueryService,
+      ).getPersonDetailsByPersonId(personId, apiToken);
+
+      console.log('personObj:', personObj);
+      if (!personObj) {
+        throw new HttpException(
+          'Person details not found',
+          HttpStatus.NOT_FOUND,
+        );
+      }
+      console.log('personObj:', personObj);
+
+      const chatControl: ChatControlsObjType = {
+        chatControlType: 'startChat',
+      };
+
+      await new ToolCallsProcessing(
+        this.workspaceQueryService,
+      ).shareJDtoCandidate(
+        personObj,
+        candidateNode.jobs,
+        chatControl,
+        apiToken,
+      );
+
+      return { status: 'Success', message: 'JD shared successfully' };
+    } catch (error) {
+      console.error('Error sharing JD:', error);
+      throw new HttpException(
+        error.message || 'Failed to share JD',
         error.status || HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

@@ -645,17 +645,6 @@ export class FacebookWhatsappChatApi {
         messageType: whatappUpdateMessageObj.messageType,
         chatControls: chatControl,
       });
-      if (
-        whatappUpdateMessageObj.messages[0].content.includes('#DONTRESPOND#') ||
-        whatappUpdateMessageObj.messages[0].content.includes('DONTRESPOND') ||
-        whatappUpdateMessageObj.messages[0]?.content?.includes('DONOTRESPOND')
-      ) {
-        console.log(
-          'Found a #DONTRESPOND# message in STAGE 2, so not sending any message',
-        );
-
-        return;
-      }
 
       if (whatappUpdateMessageObj?.messageType === 'botMessage') {
         console.log(

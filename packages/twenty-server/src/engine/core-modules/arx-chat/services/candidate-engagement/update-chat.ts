@@ -715,6 +715,7 @@ export class UpdateChat {
 
   async scheduleCandidateInterview(
     candidateProfileObj: CandidateNode,
+    candidateJob: Jobs,
     scheduleInterviewObj: whatappUpdateMessageObjType,
     apiToken: string,
   ) {

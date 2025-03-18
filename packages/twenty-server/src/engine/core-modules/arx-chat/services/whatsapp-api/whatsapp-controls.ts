@@ -14,12 +14,11 @@ import {
 } from 'twenty-shared';
 
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
+import { ExtSockWhatsappMessageProcessor } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/ext-sock-whatsapp-message-process';
 import { BaileysWhatsappAPI } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/baileys/callBaileys';
 import { FacebookWhatsappChatApi } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 // import { Transformations } from '../candidate-engagement/transformations';
-
-const baseUrl = 'http://localhost:' + process.env.PORT; // Base URL of your GraphQL server
 
 export class WhatsappControls {
   constructor(private readonly workspaceQueryService: WorkspaceQueryService) {}
@@ -147,12 +146,24 @@ export class WhatsappControls {
   async sendWhatsappMessage(
     whatappUpdateMessageObj: whatappUpdateMessageObjType,
     personNode: PersonNode,
-    candidateJob,
+    candidateJob: Jobs,
     mostRecentMessageArr: ChatHistoryItem[],
     chatControl: ChatControlsObjType,
     apiToken: string,
   ) {
     try {
+      if (
+        whatappUpdateMessageObj.messages[0].content.includes('#DONTRESPOND#') ||
+        whatappUpdateMessageObj.messages[0].content.includes('DONTRESPOND') ||
+        whatappUpdateMessageObj.messages[0]?.content?.includes('DONOTRESPOND')
+      ) {
+        console.log(
+          'Found a #DONTRESPOND# message in STAGE 2, so not sending any message',
+        );
+
+        return;
+      }
+
       if (process.env.WHATSAPP_API === 'facebook') {
         await new FacebookWhatsappChatApi(
           this.workspaceQueryService,
@@ -168,6 +179,17 @@ export class WhatsappControls {
         await new BaileysWhatsappAPI(
           this.workspaceQueryService,
         ).sendWhatsappMessageVIABaileysAPI(
+          whatappUpdateMessageObj,
+          personNode,
+          candidateJob,
+          mostRecentMessageArr,
+          chatControl,
+          apiToken,
+        );
+      } else if (process.env.WHATSAPP_API === 'ext-sock-whatsapp') {
+        await new ExtSockWhatsappMessageProcessor(
+          this.workspaceQueryService,
+        ).sendWhatsappMessageVIAExtSockWhatsappAPI(
           whatappUpdateMessageObj,
           personNode,
           candidateJob,
@@ -199,6 +221,14 @@ export class WhatsappControls {
         this.workspaceQueryService,
       ).uploadAndSendFileToWhatsApp(
         attachmentMessage,
+        candidateJob,
+        chatControl,
+        apiToken,
+      );
+    } else if (process.env.WHATSAPP_API === 'ext-sock-whatsapp') {
+      await this.sendAttachmentExtSockWhatsapp(
+        attachmentMessage,
+        personNode,
         candidateJob,
         chatControl,
         apiToken,
@@ -288,5 +318,69 @@ export class WhatsappControls {
       chatControl,
       apiToken,
     );
+  }
+
+  async sendAttachmentExtSockWhatsapp(
+    attachmentMessage: AttachmentMessageObject,
+    personNode: PersonNode,
+    candidateJob: Jobs,
+    chatControl: ChatControlsObjType,
+    apiToken: string,
+  ) {
+    if (process.env.WHATSAPP_API === 'ext-sock-whatsapp') {
+      try {
+        const arxenaSiteBaseUrl =
+          process.env.ARXENA_SITE_BASE_URL || 'http://127.0.0.1:5050';
+
+        // Read the file from the local path
+        const fileBuffer = await fs.promises.readFile(
+          attachmentMessage.fileData.filePath,
+        );
+
+        // Create form data
+        const formData = new FormData();
+
+        // Add extension_id to form data - extract from apiToken or add as needed
+        formData.append('extension_id', 'YOUR_EXTENSION_ID'); // You'll need to get this value
+
+        formData.append(
+          'file',
+          new Blob([fileBuffer]),
+          attachmentMessage.fileData.fileName,
+        );
+
+        console.log('attachmentMessage:', attachmentMessage);
+        console.log(
+          'attachmentMessage phoneNumberTo:',
+          attachmentMessage.phoneNumberTo,
+        );
+        console.log(
+          'attachmentMessage phoneNumberFrom:',
+          attachmentMessage.phoneNumberFrom,
+        );
+        formData.append('phoneNumberTo', attachmentMessage.phoneNumberTo);
+        formData.append('phoneNumberFrom', attachmentMessage.phoneNumberFrom);
+        formData.append('personNode', JSON.stringify(personNode));
+        formData.append('candidateJob', JSON.stringify(candidateJob));
+        formData.append('chatControl', JSON.stringify(chatControl));
+        formData.append('apiToken', apiToken);
+
+        const response = await axios.post(
+          `${arxenaSiteBaseUrl}/upload_attachment`,
+          formData,
+          {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+              Authorization: `Bearer ${apiToken}`,
+            },
+          },
+        );
+
+        console.log('Attachment sent to ext-sock-whatsapp:', response.data);
+      } catch (error) {
+        console.error('Error sending attachment to ext-sock-whatsapp:', error);
+        throw error; // Re-throw to handle at higher level if needed
+      }
+    }
   }
 }

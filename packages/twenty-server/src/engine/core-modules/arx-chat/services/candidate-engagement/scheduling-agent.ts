@@ -76,6 +76,7 @@ abstract class BaseCronService {
   }
 }
 
+// const CRON_DISABLED = process.env.NODE_ENV === 'development';
 const CRON_DISABLED = false;
 
 @Injectable()
@@ -98,7 +99,7 @@ export class CandidateEngagementCronService extends BaseCronService {
 export class CandidateStatusClassificationCronService extends BaseCronService {
   @Cron(TimeManagement.crontabs.crontTabToUpdateCandidatesChatControls, {
     name: 'my-scheduled-task1',
-    disabled: false,
+    disabled: true,
   })
   async handleFiveHoursCron() {
     if (CRON_DISABLED) return;

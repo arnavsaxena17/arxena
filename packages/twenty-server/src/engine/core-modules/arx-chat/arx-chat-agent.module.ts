@@ -20,8 +20,11 @@ import { DataSourceEntity } from 'src/engine/metadata-modules/data-source/data-s
 import { AppToken } from 'src/engine/core-modules/app-token/app-token.entity';
 import { ExtSockWhatsappController } from 'src/engine/core-modules/arx-chat/controllers/ext-sock-whatsapp.controller';
 import { VideoInterviewProcessController } from 'src/engine/core-modules/arx-chat/controllers/video-interview-process-controller';
-import { WhatsappMessageProcessor } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp.job';
-import { ExtSockWhatsappService } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp.service';
+import { ExtSockWhatsappMessageProcessor } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/ext-sock-whatsapp-message-process';
+import { WhatsappMessageProcessor } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/ext-sock-whatsapp.job';
+import { ExtSockWhatsappService } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/ext-sock-whatsapp.service';
+import { ExtSockWhatsappWhitelistProcessingService } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/ext-sock-whitelist-processing';
+import { RedisService } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/redis-service-ops';
 import { ApiKeyService } from 'src/engine/core-modules/auth/services/api-key.service';
 import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/services/candidate.service';
 import { PersonService } from 'src/engine/core-modules/candidate-sourcing/services/person.service';
@@ -70,6 +73,9 @@ import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/work
     PersonService,
     CandidateEngagementCronService,
     CandidateService,
+    RedisService,
+    ExtSockWhatsappMessageProcessor,
+    ExtSockWhatsappWhitelistProcessingService,
     ExtSockWhatsappService,
     WhatsappMessageProcessor,
     WorkspaceDataSourceService,
