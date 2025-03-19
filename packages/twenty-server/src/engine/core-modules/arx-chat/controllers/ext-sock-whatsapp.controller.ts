@@ -43,9 +43,12 @@ export class ExtSockWhatsappController {
 
     try {
       const apiToken = request.headers.authorization.split(' ')[1];
+
+      console.log('API Token:', apiToken);
       const arxenaSiteBaseUrl =
         process.env.ARXENA_SITE_BASE_URL || 'http://127.0.0.1:5050';
 
+      console.log('Arxena Site Base URL:', arxenaSiteBaseUrl);
       const response = await axios.post(
         `${arxenaSiteBaseUrl}/send_whatsapp_message`,
         {
