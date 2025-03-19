@@ -89,7 +89,7 @@ export default class CandidateEngagementArx {
     if (chatControl.chatControlType == 'startVideoInterviewChat') {
       return new PromptingAgents(
         this.workspaceQueryService,
-      ).getVideoInterviewPrompt(personNode, apiToken);
+      ).getVideoInterviewPrompt(personNode, candidateJob, apiToken);
     } else if (chatControl.chatControlType === 'startChat') {
       return new PromptingAgents(this.workspaceQueryService).getStartChatPrompt(
         personNode,
@@ -618,7 +618,9 @@ export default class CandidateEngagementArx {
       await new UpdateChat(
         this.workspaceQueryService,
       ).setCandidateEngagementStatusToFalse(
-        personNode?.candidates?.edges[0]?.node?.id,
+        personNode?.candidates?.edges
+          .filter((edge) => edge.node.jobs.id === candidateJob.id)
+          .map((edge) => edge.node)[0]?.id,
         apiToken,
       );
       await this.processCandidate(
@@ -654,7 +656,9 @@ export default class CandidateEngagementArx {
       this.workspaceQueryService,
     );
     const filterCandidates = (personNode: PersonNode) => {
-      const candidate = personNode?.candidates?.edges[0]?.node;
+      const candidate = personNode?.candidates?.edges
+        .filter((edge) => edge.node.jobs.id === candidateJob.id)
+        .map((edge) => edge.node)[0];
 
       if (!candidate) return false;
       const chatFlowOrder =

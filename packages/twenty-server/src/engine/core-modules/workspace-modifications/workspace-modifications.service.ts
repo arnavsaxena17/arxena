@@ -200,6 +200,10 @@ export class WorkspaceQueryService {
     return workspaceIds;
   }
 
+  async getWorkspaceById(workspaceId: string) {
+    return this.workspaceRepository.findOne({ where: { id: workspaceId } });
+  }
+
   // Add this method to the service
   async getApiKeys(
     workspaceId: string,

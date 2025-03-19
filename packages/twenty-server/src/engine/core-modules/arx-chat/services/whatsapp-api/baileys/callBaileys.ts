@@ -59,6 +59,7 @@ export class BaileysWhatsappAPI {
       const response = await this.sendWhatsappTextMessageViaBaileys(
         sendTextMessageObj,
         personNode,
+        candidateJob,
         apiToken,
       );
 
@@ -118,6 +119,7 @@ export class BaileysWhatsappAPI {
   async sendWhatsappTextMessageViaBaileys(
     sendTextMessageObj: ChatRequestBody,
     personNode: PersonNode,
+    candidateJob: Jobs,
     apiToken: string,
   ) {
     // console.log('This is the ssendTextMessageObj for baileys to be sent ::', sendTextMessageObj);
@@ -136,14 +138,18 @@ export class BaileysWhatsappAPI {
         (sendTextMessageObj.phoneNumberTo.startsWith('+')
           ? sendTextMessageObj.phoneNumberTo.replace('+', '')
           : sendTextMessageObj.phoneNumberTo) + '@s.whatsapp.net',
-      recruiterId: personNode?.candidates?.edges[0]?.node?.jobs?.recruiterId,
+      recruiterId: personNode?.candidates?.edges
+        .filter((edge) => edge.node.jobs.id === candidateJob.id)
+        .map((edge) => edge.node)[0]?.jobs?.recruiterId,
     };
     let response;
 
     try {
       console.log(
         'Sending message via send API as recruiter ID is ::',
-        personNode?.candidates?.edges[0]?.node?.jobs?.recruiterId,
+        personNode?.candidates?.edges
+          .filter((edge) => edge.node.jobs.id === candidateJob.id)
+          .map((edge) => edge.node)[0]?.jobs?.recruiterId,
       );
       console.log(
         'Sending message via send API as personNode is ::',
@@ -151,18 +157,30 @@ export class BaileysWhatsappAPI {
       );
       console.log(
         'Sending message via send API as personNodeCandidate is ::',
-        personNode?.candidates?.edges[0]?.node?.jobs?.recruiterId,
+        personNode?.candidates?.edges
+          .filter((edge) => edge.node.jobs.id === candidateJob.id)
+          .map((edge) => edge.node)[0]?.jobs?.recruiterId,
       );
       console.log(
         'Sending message via send API as nodeCandidate is ::',
-        personNode?.candidates?.edges[0]?.node?.jobs?.company?.name,
+        personNode?.candidates?.edges
+          .filter((edge) => edge.node.jobs.id === candidateJob.id)
+          .map((edge) => edge.node)[0]?.jobs?.company?.name,
       );
-      if (!personNode?.candidates?.edges[0]?.node?.jobs?.company.name) {
+      if (
+        !personNode?.candidates?.edges
+          .filter((edge) => edge.node.jobs.id === candidateJob.id)
+          .map((edge) => edge.node)[0]?.jobs?.company.name
+      ) {
         console.log('THERE IS NO COMPANIES NAME, SO IT WILL SHOW UNDEFINED');
       } else {
         console.log('THERE IS COMPANIES NAME, SO IT WILL SHOW THE NAME');
       }
-      if (!personNode?.candidates?.edges[0]?.node?.jobs?.recruiterId) {
+      if (
+        !personNode?.candidates?.edges
+          .filter((edge) => edge.node.jobs.id === candidateJob.id)
+          .map((edge) => edge.node)[0]?.jobs?.recruiterId
+      ) {
         console.log('THERE IS NO RECRUITER ID, SO IT WILL SHOW UNDEFINED');
       } else {
         console.log('THERE IS RECRUITER ID, SO IT WILL SHOW THE ID');
@@ -288,9 +306,12 @@ export class BaileysWhatsappAPI {
   async sendAttachmentMessageViaBaileys(
     sendTextMessageObj: AttachmentMessageObject,
     personNode: PersonNode,
+    candidateJob: Jobs,
     apiToken: string,
   ) {
-    const jobProfile = personNode?.candidates?.edges[0]?.node?.jobs;
+    const jobProfile = personNode?.candidates?.edges
+      .filter((edge) => edge.node.jobs.id === candidateJob.id)
+      .map((edge) => edge.node)[0]?.jobs;
     const uploadFileUrl = `${baseUrl}/send-wa-message-file`;
     const data = {
       WANumber: sendTextMessageObj.phoneNumberTo,
@@ -302,7 +323,9 @@ export class BaileysWhatsappAPI {
       message: `Hiring for ${jobProfile.company.name}. Their site is ${jobProfile.company.domainName}. The role will be based in ${jobProfile.jobLocation}.`,
     };
     const payloadToSendToWhiskeySockets = {
-      recruiterId: personNode?.candidates?.edges[0]?.node?.jobs?.recruiterId,
+      recruiterId: personNode?.candidates?.edges
+        .filter((edge) => edge.node.jobs.id === candidateJob.id)
+        .map((edge) => edge.node)[0]?.jobs?.recruiterId,
       fileToSendData: data,
     };
 

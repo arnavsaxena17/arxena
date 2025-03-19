@@ -163,8 +163,23 @@ export class WhatsappControls {
 
         return;
       }
+      const workspaceId =
+        await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
 
-      if (process.env.WHATSAPP_API === 'facebook') {
+      let whatsapp_key: string | null = 'facebook';
+
+      whatsapp_key = await this.workspaceQueryService.getWorkspaceApiKey(
+        workspaceId,
+        'whatsapp_key',
+      );
+
+      if (whatsapp_key) {
+        console.log('whatsapp_key::', whatsapp_key);
+      } else {
+        console.log('No valid whatsapp API selected');
+      }
+
+      if (whatsapp_key === 'facebook') {
         await new FacebookWhatsappChatApi(
           this.workspaceQueryService,
         ).sendWhatsappMessageVIAFacebookAPI(
@@ -175,7 +190,7 @@ export class WhatsappControls {
           chatControl,
           apiToken,
         );
-      } else if (process.env.WHATSAPP_API === 'baileys') {
+      } else if (whatsapp_key === 'baileys') {
         await new BaileysWhatsappAPI(
           this.workspaceQueryService,
         ).sendWhatsappMessageVIABaileysAPI(
@@ -186,7 +201,7 @@ export class WhatsappControls {
           chatControl,
           apiToken,
         );
-      } else if (process.env.WHATSAPP_API === 'ext-sock-whatsapp') {
+      } else if (whatsapp_key === 'ext-sock-whatsapp') {
         await new ExtSockWhatsappMessageProcessor(
           this.workspaceQueryService,
         ).sendWhatsappMessageVIAExtSockWhatsappAPI(
@@ -216,7 +231,24 @@ export class WhatsappControls {
       'attachmentMessage received to send attachment:',
       attachmentMessage,
     );
-    if (process.env.WHATSAPP_API === 'facebook') {
+
+    const workspaceId =
+      await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+
+    let whatsapp_key: string | null = 'facebook';
+
+    whatsapp_key = await this.workspaceQueryService.getWorkspaceApiKey(
+      workspaceId,
+      'whatsapp_key',
+    );
+
+    // const workspace = await this.workspaceQueryService.getWorkspaceById(workspaceId);
+
+    // const whatsappApi = workspace.whatsappApi;
+
+    // if (whatsappApi === 'facebook') {
+
+    if (whatsapp_key === 'facebook') {
       await new FacebookWhatsappChatApi(
         this.workspaceQueryService,
       ).uploadAndSendFileToWhatsApp(
@@ -225,7 +257,7 @@ export class WhatsappControls {
         chatControl,
         apiToken,
       );
-    } else if (process.env.WHATSAPP_API === 'ext-sock-whatsapp') {
+    } else if (whatsapp_key === 'ext-sock-whatsapp') {
       await this.sendAttachmentExtSockWhatsapp(
         attachmentMessage,
         personNode,
@@ -233,12 +265,13 @@ export class WhatsappControls {
         chatControl,
         apiToken,
       );
-    } else if (process.env.WHATSAPP_API === 'baileys') {
+    } else if (whatsapp_key === 'baileys') {
       await new BaileysWhatsappAPI(
         this.workspaceQueryService,
       ).sendAttachmentMessageViaBaileys(
         attachmentMessage,
         personNode,
+        candidateJob,
         apiToken,
       );
     }
@@ -246,7 +279,7 @@ export class WhatsappControls {
 
   async sendJDViaWhatsapp(
     person: PersonNode,
-    candidateJob,
+    candidateJob: Jobs,
     attachment: Attachment,
     chatControl: ChatControlsObjType,
     apiToken: string,
@@ -298,7 +331,10 @@ export class WhatsappControls {
       console.log('Error in downloading the file:', error);
     }
     const attachmentMessageObj: AttachmentMessageObject = {
-      phoneNumberTo: person.phones.primaryPhoneNumber,
+      phoneNumberTo:
+        person.phones.primaryPhoneNumber.length == 10
+          ? '91' + person.phones.primaryPhoneNumber
+          : person.phones.primaryPhoneNumber,
       phoneNumberFrom: '918411937769',
       fullPath: fullPath,
       fileData: {

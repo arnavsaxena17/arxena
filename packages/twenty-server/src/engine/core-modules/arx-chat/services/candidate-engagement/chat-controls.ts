@@ -109,8 +109,10 @@ export class ChatControls {
           messageTemplate = 'application03';
         }
         const videoInterviewLink =
-          personNode?.candidates?.edges[0]?.node?.videoInterview?.edges[0]?.node
-            ?.interviewLink?.primaryLinkUrl || '';
+          personNode?.candidates?.edges.filter(
+            (edge) => edge.node.jobs.id === candidateJob.id,
+          )[0]?.node.videoInterview?.edges[0]?.node?.interviewLink
+            ?.primaryLinkUrl || '';
 
         console.log('videoInterviewLink::', videoInterviewLink);
         const sendTemplateMessageObj: SendWhatsappUtilityMessageObjectType = {

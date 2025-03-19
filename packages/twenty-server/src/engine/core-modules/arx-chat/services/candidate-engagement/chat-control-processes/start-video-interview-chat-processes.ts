@@ -25,7 +25,9 @@ export class VideoInterviewChatProcesses {
       let createdCount = 0;
 
       for (const personNode of peopleEngagementStartVideoInterviewChatArr) {
-        const candidateNode = personNode?.candidates?.edges[0]?.node;
+        const candidateNode = personNode?.candidates?.edges.filter(
+          (edge) => edge.node.jobs.id === candidateJob.id,
+        )[0].node;
         const videoInterview = candidateNode?.videoInterview?.edges[0]?.node;
 
         if (!videoInterview || !videoInterview.interviewLink?.primaryLinkUrl) {

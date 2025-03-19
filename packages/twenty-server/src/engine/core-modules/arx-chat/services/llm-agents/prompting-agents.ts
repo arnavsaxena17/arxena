@@ -51,11 +51,15 @@ export class PromptingAgents {
     // const location = "Surat";
     // const formattedQuestions = questions.map((question, index) =>  `${index + 1}. ${question.replace("{location}", location)}`).join("\n");
     // return formattedQuestions
-    const jobId = personNode?.candidates?.edges[0]?.node?.jobs?.id;
+    const jobId = personNode?.candidates?.edges
+      .filter((edge) => edge.node.jobs.id === candidateJob.id)
+      .map((edge) => edge.node)[0]?.jobs?.id;
 
     console.log(
       'Job Name:',
-      personNode?.candidates?.edges[0]?.node?.jobs?.name,
+      personNode?.candidates?.edges
+        .filter((edge) => edge.node.jobs.id === candidateJob.id)
+        .map((edge) => edge.node)[0]?.jobs?.name,
     );
     // console.log('This is the job Id:', jobId);
     const { questionArray, questionIdArray } = await new FilterCandidates(
@@ -92,8 +96,14 @@ export class PromptingAgents {
     return formattedQuestions;
   }
 
-  async getVideoInterviewPrompt(personNode: PersonNode, apiToken: string) {
-    const jobProfile = personNode?.candidates?.edges[0]?.node?.jobs;
+  async getVideoInterviewPrompt(
+    personNode: PersonNode,
+    candidateJob: Jobs,
+    apiToken: string,
+  ) {
+    const jobProfile = personNode?.candidates?.edges
+      .filter((edge) => edge.node.jobs.id === candidateJob.id)
+      .map((edge) => edge.node)[0]?.jobs;
     const current_job_position = jobProfile.name;
     const candidate_conversation_summary =
       'The candidate has mentioned that he/ she is interested in the role. They are okay to relocate and their salary falls in the bracket that the client is hiring for';
