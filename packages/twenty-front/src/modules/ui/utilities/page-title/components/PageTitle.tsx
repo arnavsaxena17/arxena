@@ -5,6 +5,8 @@ type PageTitleProps = {
 };
 
 export const PageTitle = (props: PageTitleProps) => {
+  console.log('PageTitle rendering');
+  console.log('props', props);
   return (
     <Helmet>
       <title>{props.title}</title>

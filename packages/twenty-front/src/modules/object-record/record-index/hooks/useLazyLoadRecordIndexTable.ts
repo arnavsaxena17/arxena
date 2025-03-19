@@ -6,7 +6,7 @@ import { useLazyFindManyRecords } from '@/object-record/hooks/useLazyFindManyRec
 import { useFindManyRecordIndexTableParams } from '@/object-record/record-index/hooks/useFindManyRecordIndexTableParams';
 import { useRecordTableRecordGqlFields } from '@/object-record/record-index/hooks/useRecordTableRecordGqlFields';
 import { useRecordTable } from '@/object-record/record-table/hooks/useRecordTable';
-import { refetchFunctionAtom } from '@/object-record/record-table/states/refetchFunctionAtom';
+import { recordTableRefetchFunctionState } from '@/object-record/record-table/states/refetchFunctionAtom';
 import { SIGN_IN_BACKGROUND_MOCK_COMPANIES } from '@/sign-in-background-mock/constants/SignInBackgroundMockCompanies';
 import { useEffect } from 'react';
 import { isWorkspaceActiveOrSuspended } from 'twenty-shared';
@@ -33,7 +33,7 @@ export const useLazyLoadRecordIndexTable = (objectNameSingular: string) => {
     fetchMoreRecords,
     queryStateIdentifier,
     hasNextPage,
-    refetchRecords
+    refetchRecords,
   } = useLazyFindManyRecords({
     ...params,
     recordGqlFields,
@@ -45,21 +45,14 @@ export const useLazyLoadRecordIndexTable = (objectNameSingular: string) => {
     },
   });
 
-
-
-
-  console.log("all records that we find:", records)
-  const [, setRefetchFunction] = useRecoilState(refetchFunctionAtom);
+  console.log('all records that we find:', records);
+  const [, setRecordTableRefetchFunction] = useRecoilState(
+    recordTableRefetchFunctionState,
+  );
 
   useEffect(() => {
-    setRefetchFunction(() => refetchRecords);
+    setRecordTableRefetchFunction(() => refetchRecords);
   }, [objectNameSingular]);
-
-
-
-
-
-
 
   return {
     findManyRecords,
@@ -72,6 +65,6 @@ export const useLazyLoadRecordIndexTable = (objectNameSingular: string) => {
     queryStateIdentifier,
     setRecordTableData,
     hasNextPage,
-    refetchRecords
+    refetchRecords,
   };
 };

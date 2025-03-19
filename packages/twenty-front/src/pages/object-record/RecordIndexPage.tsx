@@ -11,11 +11,21 @@ export const RecordIndexPage = () => {
     contextStoreCurrentViewIdComponentState,
     'main-context-store',
   );
+  console.log(
+    'contextStoreCurrentViewIdComponentState',
+    contextStoreCurrentViewIdComponentState,
+  );
+  console.log('contextStoreCurrentViewId', contextStoreCurrentViewId);
 
   const objectMetadataItem = useRecoilComponentValueV2(
     contextStoreCurrentObjectMetadataItemComponentState,
     'main-context-store',
   );
+  console.log(
+    'contextStoreCurrentObjectMetadataItemComponentState',
+    contextStoreCurrentObjectMetadataItemComponentState,
+  );
+  console.log('objectMetadataItem', objectMetadataItem);
 
   if (
     isUndefined(objectMetadataItem) ||

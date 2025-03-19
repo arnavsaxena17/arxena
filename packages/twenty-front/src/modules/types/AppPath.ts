@@ -40,4 +40,7 @@ export enum AppPath {
   VideoInterviewReview = 'video-interview-review',
   Interview = 'interview',
   Dashboard = 'dashboard',
+  CustomLayoutCandidate = 'custom-layout-candidate',
+  CustomLayoutJob = 'custom-layout-job',
+  CustomLayoutMerged = 'custom-layout-merged',
 }

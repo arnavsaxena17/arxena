@@ -1,6 +1,10 @@
 import { atom } from 'recoil';
 
-export const refetchFunctionAtom = atom({
-  key: 'refetchFunctionAtom',
-  default: () => {}, // Default to an empty function
-});
+type RecordTableRefetchFunction = () => Promise<any>;
+
+export const recordTableRefetchFunctionState = atom<RecordTableRefetchFunction>(
+  {
+    key: 'recordTableRefetchFunctionState',
+    default: async () => undefined,
+  },
+);

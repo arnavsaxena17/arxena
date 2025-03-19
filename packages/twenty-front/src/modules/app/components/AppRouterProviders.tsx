@@ -38,7 +38,7 @@ export const MinimalProviders: React.FC = () => (
 export const AppRouterProviders = () => {
   const { pathname } = useLocation();
   const pageTitle = getPageTitleFromPath(pathname);
-
+  console.log('pageTitle', pageTitle);
   return (
     <ApolloProvider>
       <BaseThemeProvider>

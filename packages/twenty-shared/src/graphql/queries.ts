@@ -1664,10 +1664,7 @@ export const graphqlToFetchAllCandidateData = `
               descriptionOneliner
             }
           }
-
         }
-
-
       }
     }
   }`;

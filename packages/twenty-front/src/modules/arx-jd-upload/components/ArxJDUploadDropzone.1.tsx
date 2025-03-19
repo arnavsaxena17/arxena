@@ -1,63 +1,25 @@
-import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
-import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
-import { ReactNode } from 'react';
-import Dropzone, {
-  DropzoneRootProps,
-  FileRejection,
-  useDropzone,
-} from 'react-dropzone';
+import Dropzone, { useDropzone } from 'react-dropzone';
+import { ArxJDUploadDropzoneProps, DropzoneRenderProps } from './ArxJDUploadDropzone';
 
-export type DropzoneRenderProps = {
-  getRootProps: <T extends HTMLElement = HTMLElement>(
-    props?: Record<string, unknown>,
-  ) => DropzoneRootProps;
-  isDragActive: boolean;
-  isDragAccept: boolean;
-  isDragReject: boolean;
-  isFileDialogActive: boolean;
-  acceptedFiles: File[];
-  fileRejections: FileRejection[];
-};
-
-type ArxJDUploadDropzoneProps = {
-  onDrop: (acceptedFiles: File[]) => Promise<void>;
-  children: (props: {
-    getRootProps: ReturnType<typeof useDropzone>['getRootProps'];
-    getInputProps: ReturnType<typeof useDropzone>['getInputProps'];
-    isDragActive: boolean;
-  }) => ReactNode;
-};
 
 export const ArxJDUploadDropzone = ({
-  onDrop,
-  children,
+  onDrop, children,
 }: ArxJDUploadDropzoneProps) => {
-  const { enqueueSnackBar } = useSnackBar();
-
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
       'application/pdf': ['.pdf'],
       'application/msword': ['.doc'],
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
-        ['.docx'],
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
     },
     multiple: false,
     validator: (file: File | DataTransferItem) => {
       // Handle both File and DataTransferItem objects
-      const fileName =
-        'name' in file
-          ? file.name
-          : (file as DataTransferItem).getAsFile()?.name;
+      const fileName = 'name' in file
+        ? file.name
+        : (file as DataTransferItem).getAsFile()?.name;
 
       if (!fileName) {
-        enqueueSnackBar(
-          `Multiple dots (.) in your file name. Remove . from file name and try again.`,
-          {
-            variant: SnackBarVariant.Error,
-          },
-        );
-
         return {
           code: 'invalid-file',
           message: 'Invalid file format',
@@ -68,8 +30,7 @@ export const ArxJDUploadDropzone = ({
       if (dotCount > 1) {
         return {
           code: 'multiple-dots',
-          message:
-            'Please remove additional dots from the file name and try again',
+          message: 'Please remove additional dots from the file name and try again',
         };
       }
       return null;
@@ -86,14 +47,10 @@ export const ArxJDUploadDropzone = ({
         accept={{
           'application/pdf': ['.pdf'],
           'text/plain': ['.txt'],
-          'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
-            ['.docx'],
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
         }}
-        validator={(file: File | DataTransferItem) => {
-          const fileName =
-            'name' in file
-              ? file.name
-              : (file as DataTransferItem).getAsFile()?.name;
+        validator={(file) => {
+          const fileName = file?.name || file?.getAsFile()?.name;
 
           if (!fileName) {
             return {
@@ -106,8 +63,7 @@ export const ArxJDUploadDropzone = ({
           if (dotCount > 1) {
             return {
               code: 'multiple-dots',
-              message:
-                'Please remove additional dots from the file name and try again',
+              message: 'Please remove additional dots from the file name and try again',
             };
           }
           return null;
@@ -124,18 +80,12 @@ export const ArxJDUploadDropzone = ({
           // Add handlers for all mouse events to prevent propagation
           const modalProps = getRootProps({
             onClick: clickHandler,
-            onMouseDown: (e: React.MouseEvent<HTMLElement>) =>
-              e.stopPropagation(),
-            onMouseUp: (e: React.MouseEvent<HTMLElement>) =>
-              e.stopPropagation(),
-            onMouseMove: (e: React.MouseEvent<HTMLElement>) =>
-              e.stopPropagation(),
-            onDragEnter: (e: React.DragEvent<HTMLElement>) =>
-              e.stopPropagation(),
-            onDragOver: (e: React.DragEvent<HTMLElement>) =>
-              e.stopPropagation(),
-            onDragLeave: (e: React.DragEvent<HTMLElement>) =>
-              e.stopPropagation(),
+            onMouseDown: (e: React.MouseEvent<HTMLElement>) => e.stopPropagation(),
+            onMouseUp: (e: React.MouseEvent<HTMLElement>) => e.stopPropagation(),
+            onMouseMove: (e: React.MouseEvent<HTMLElement>) => e.stopPropagation(),
+            onDragEnter: (e: React.DragEvent<HTMLElement>) => e.stopPropagation(),
+            onDragOver: (e: React.DragEvent<HTMLElement>) => e.stopPropagation(),
+            onDragLeave: (e: React.DragEvent<HTMLElement>) => e.stopPropagation(),
             onDrop: (e: React.DragEvent<HTMLElement>) => {
               e.stopPropagation();
             },
@@ -183,8 +133,7 @@ export const ArxJDUploadDropzone = ({
               onMouseUp={(e) => e.stopPropagation()}
               onMouseMove={(e) => e.stopPropagation()}
               tabIndex={modalProps.tabIndex}
-              style={modalStyle}
-            />
+              style={modalStyle} />
           );
         }}
       </Dropzone>

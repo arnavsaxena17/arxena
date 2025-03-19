@@ -10,7 +10,20 @@ export const RecordTableNoRecordGroupRows = () => {
     recordIndexAllRecordIdsComponentSelector,
   );
 
+  console.log('RecordTableNoRecordGroupRows rendering', allRecordIds);
+  console.log(
+    'RecordTableNoRecordGroupRows recordIndexAllRecordIdsComponentSelector',
+    recordIndexAllRecordIdsComponentSelector,
+  );
   const isRecordTableInitialLoading = useRecoilComponentValueV2(
+    isRecordTableInitialLoadingComponentState,
+  );
+  console.log(
+    'RecordTableNoRecordGroupRows isRecordTableInitialLoading',
+    isRecordTableInitialLoading,
+  );
+  console.log(
+    'RecordTableNoRecordGroupRows isRecordTableInitialLoadingComponentState',
     isRecordTableInitialLoadingComponentState,
   );
 

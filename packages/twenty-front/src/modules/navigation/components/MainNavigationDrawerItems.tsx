@@ -1,6 +1,12 @@
 import { useLocation } from 'react-router-dom';
 import { useRecoilState, useSetRecoilState } from 'recoil';
-import { IconMessage, IconSearch, IconSettings, IconVideo } from 'twenty-ui';
+import {
+  IconLayout,
+  IconMessage,
+  IconSearch,
+  IconSettings,
+  IconVideo,
+} from 'twenty-ui';
 
 import { useCommandMenu } from '@/command-menu/hooks/useCommandMenu';
 import { CurrentWorkspaceMemberFavoritesFolders } from '@/favorites/components/CurrentWorkspaceMemberFavoritesFolders';
@@ -85,6 +91,36 @@ export const MainNavigationDrawerItems = () => {
               setNavigationMemorizedUrl(location.pathname + location.search);
             }}
             Icon={IconVideo}
+          />
+          <NavigationDrawerItem
+            label={`Custom Layout Candidate`}
+            to={getAppPath(AppPath.CustomLayoutCandidate)}
+            onClick={() => {
+              setNavigationDrawerExpandedMemorized(isNavigationDrawerExpanded);
+              setIsNavigationDrawerExpanded(true);
+              setNavigationMemorizedUrl(location.pathname + location.search);
+            }}
+            Icon={IconLayout}
+          />
+          <NavigationDrawerItem
+            label={`Custom Layout Job`}
+            to={getAppPath(AppPath.CustomLayoutJob)}
+            onClick={() => {
+              setNavigationDrawerExpandedMemorized(isNavigationDrawerExpanded);
+              setIsNavigationDrawerExpanded(true);
+              setNavigationMemorizedUrl(location.pathname + location.search);
+            }}
+            Icon={IconLayout}
+          />
+          <NavigationDrawerItem
+            label={`Custom Layout Merged`}
+            to={getAppPath(AppPath.CustomLayoutMerged)}
+            onClick={() => {
+              setNavigationDrawerExpandedMemorized(isNavigationDrawerExpanded);
+              setIsNavigationDrawerExpanded(true);
+              setNavigationMemorizedUrl(location.pathname + location.search);
+            }}
+            Icon={IconLayout}
           />
         </StyledMainSection>
       )}

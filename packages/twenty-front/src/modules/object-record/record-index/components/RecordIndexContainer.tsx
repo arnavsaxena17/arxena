@@ -8,6 +8,7 @@ import { RecordIndexBoardDataLoaderEffect } from '@/object-record/record-index/c
 import { RecordIndexTableContainer } from '@/object-record/record-index/components/RecordIndexTableContainer';
 import { RecordIndexViewBarEffect } from '@/object-record/record-index/components/RecordIndexViewBarEffect';
 import { recordIndexViewTypeState } from '@/object-record/record-index/states/recordIndexViewTypeState';
+import { recordTableRefetchFunctionState } from '@/object-record/record-table/states/refetchFunctionAtom';
 
 import { InformationBannerWrapper } from '@/information-banner/components/InformationBannerWrapper';
 import { useRecordIndexContextOrThrow } from '@/object-record/record-index/contexts/RecordIndexContext';
@@ -17,19 +18,15 @@ import { SpreadsheetImportProvider } from '@/spreadsheet-import/provider/compone
 import { RecordIndexActionMenu } from '@/action-menu/components/RecordIndexActionMenu';
 import { RecordIndexFiltersToContextStoreEffect } from '@/object-record/record-index/components/RecordIndexFiltersToContextStoreEffect';
 import { RecordIndexTableContainerEffect } from '@/object-record/record-index/components/RecordIndexTableContainerEffect';
-import { refetchFunctionAtom } from '@/object-record/record-table/states/refetchFunctionAtom';
 import { ViewBar } from '@/views/components/ViewBar';
 import { ViewType } from '@/views/types/ViewType';
 import { useIsFeatureEnabled } from '@/workspace/hooks/useIsFeatureEnabled';
 import { FeatureFlagKey } from '~/generated/graphql';
-
-
 const StyledContainer = styled.div`
   display: flex;
   flex-direction: column;
   height: 100%;
   width: 100%;
-
   overflow: hidden;
 `;
 
@@ -41,7 +38,8 @@ const StyledContainerWithPadding = styled.div`
 
 export const RecordIndexContainer = () => {
   const [recordIndexViewType] = useRecoilState(recordIndexViewTypeState);
-
+  console.log('recordIndexViewType', recordIndexViewType);
+  console.log('recordIndexViewTypeState', recordIndexViewTypeState);
   const {
     objectNamePlural,
     recordIndexId,
@@ -53,17 +51,16 @@ export const RecordIndexContainer = () => {
     FeatureFlagKey.IsCommandMenuV2Enabled,
   );
 
+  const recordTableRefetchFunction = useRecoilValue(
+    recordTableRefetchFunctionState,
+  );
 
-
-
-  let refetchFunction = useRecoilValue(refetchFunctionAtom);
-
-
-  const handleRefresh = () => {
-    //@ts-ignore
-    refetchFunction();
+  const handleRefresh = async () => {
+    await recordTableRefetchFunction();
   };
 
+  console.log('RecordIndexContainer rendering');
+  console.log('RecordIndexContainer rendering::recordIndexId', recordIndexId);
 
   return (
     <>
@@ -73,7 +70,6 @@ export const RecordIndexContainer = () => {
           <SpreadsheetImportProvider>
             <ViewBar
               handleRefresh={handleRefresh}
-
               viewBarId={recordIndexId}
               optionsDropdownButton={
                 <ObjectOptionsDropdown

@@ -6,14 +6,13 @@ import { SettingsRoutes } from '@/app/components/SettingsRoutes';
 
 import { VerifyEffect } from '@/auth/components/VerifyEffect';
 import { VerifyEmailEffect } from '@/auth/components/VerifyEmailEffect';
-import indexAppPath from '@/navigation/utils/indexAppPath';
 import { AppPath } from '@/types/AppPath';
 import { BlankLayout } from '@/ui/layout/page/components/BlankLayout';
 import { DefaultLayout } from '@/ui/layout/page/components/DefaultLayout';
 import {
+  Route,
   createBrowserRouter,
   createRoutesFromElements,
-  Route,
   useParams,
 } from 'react-router-dom';
 import { Authorize } from '~/pages/auth/Authorize';
@@ -29,9 +28,13 @@ import { InviteTeam } from '~/pages/onboarding/InviteTeam';
 import { PaymentSuccess } from '~/pages/onboarding/PaymentSuccess';
 import { SyncEmails } from '~/pages/onboarding/SyncEmails';
 
+import CustomLayoutCandidate from '@/custom-layouts/components/custom-layout-candidate';
+import CustomLayoutJob from '@/custom-layouts/components/custom-layout-job';
+import CustomLayoutMerged from '@/custom-layouts/components/custom-layout-merged';
 import GoogleSheet from '@/google-sheet/GoogleSheet';
 import { HotPage } from '@/hot/hotCandidates';
 import Interview from '@/interviews/components/Interviews';
+import indexAppPath from '@/navigation/utils/indexAppPath';
 import OrgChart from '@/orgchart/OrgChart';
 import VideoInterviewFlow from '@/video-interview/interview-response/VideoInterviewFlow';
 import VideoInterviewResponseViewer from '@/video-interview/interview-response/VideoInterviewResponseViewer';
@@ -115,7 +118,18 @@ export const useCreateAppRouter = (
             <Route path={AppPath.InviteTeam} element={<InviteTeam />} />
             <Route path={AppPath.Chats} element={<Chats />} />
             <Route path={AppPath.Interview} element={<Interview />} />
-
+            <Route
+              path={AppPath.CustomLayoutCandidate}
+              element={<CustomLayoutCandidate />}
+            />
+            <Route
+              path={AppPath.CustomLayoutJob}
+              element={<CustomLayoutJob />}
+            />
+            <Route
+              path={AppPath.CustomLayoutMerged}
+              element={<CustomLayoutMerged />}
+            />
             <Route path={`${AppPath.Chats}/:candidateId`} element={<Chats />} />
 
             <Route
