@@ -11,8 +11,19 @@ import { formatFieldMetadataItemsAsSortDefinitions } from '../utils/formatFieldM
 export const useColumnDefinitionsFromFieldMetadata = (
   objectMetadataItem: ObjectMetadataItem,
 ) => {
+  // const activeFieldMetadataItems = objectMetadataItem.fields.filter(
+  //   ({ isActive, isSystem }) => isActive && !isSystem,
+  // );
+
   const activeFieldMetadataItems = objectMetadataItem.fields.filter(
-    ({ isActive, isSystem }) => isActive && !isSystem,
+    ({ isActive, isSystem }) => {
+      // For merged view, we want to include all fields
+      if (window.location.href.includes('merged')) {
+        return isActive;
+      }
+      // Default behavior for non-merged views
+      return isActive && !isSystem;
+    },
   );
 
   const filterableFieldMetadataItems = useRecoilValue(
@@ -20,10 +31,12 @@ export const useColumnDefinitionsFromFieldMetadata = (
       objectMetadataItemId: objectMetadataItem.id,
     }),
   );
+  console.log('filterableFieldMetadataItems::', filterableFieldMetadataItems);
 
   const sortDefinitions = formatFieldMetadataItemsAsSortDefinitions({
     fields: activeFieldMetadataItems,
   });
+  console.log('activeFieldMetadataItems:', activeFieldMetadataItems);
 
   const columnDefinitions: ColumnDefinition<FieldMetadata>[] =
     activeFieldMetadataItems
@@ -49,7 +62,10 @@ export const useColumnDefinitionsFromFieldMetadata = (
           isSortable: existsInSortDefinitions,
         };
       });
-
+  console.log(
+    'these are the column defintiions that we will use',
+    columnDefinitions,
+  );
   return {
     columnDefinitions,
     sortDefinitions,

@@ -51,7 +51,9 @@ export const useObjectOptionsForBoard = ({
       columnDefinitions.filter(({ isLabelIdentifier }) => !isLabelIdentifier),
     [columnDefinitions],
   );
-
+  console.log('columnDefinitions::', columnDefinitions);
+  console.log('availableColumnDefinitions::', availableColumnDefinitions);
+  console.log('recordIndexFieldDefinitions::', recordIndexFieldDefinitions);
   const recordIndexFieldDefinitionsByKey = useMemo(
     () =>
       mapArrayToObject(
@@ -59,6 +61,11 @@ export const useObjectOptionsForBoard = ({
         ({ fieldMetadataId }) => fieldMetadataId,
       ),
     [recordIndexFieldDefinitions],
+  );
+
+  console.log(
+    'recordIndexFieldDefinitionsByKey',
+    recordIndexFieldDefinitionsByKey,
   );
 
   const visibleBoardFields = useMemo(
@@ -71,6 +78,8 @@ export const useObjectOptionsForBoard = ({
         ),
     [recordIndexFieldDefinitions],
   );
+
+  console.log('visibleBoardFields', visibleBoardFields);
 
   const hiddenBoardFields = useMemo(
     () =>
@@ -91,6 +100,8 @@ export const useObjectOptionsForBoard = ({
         }),
     [availableColumnDefinitions, recordIndexFieldDefinitionsByKey],
   );
+
+  console.log('hiddenBoardFields', hiddenBoardFields);
 
   const handleReorderBoardFields: OnDragEndResponder = useCallback(
     (result) => {
@@ -152,6 +163,8 @@ export const useObjectOptionsForBoard = ({
             isVisible: true,
           },
         ];
+
+        console.log('updatedFieldsDefinitions', updatedFieldsDefinitions);
       } else {
         updatedFieldsDefinitions = recordIndexFieldDefinitions.map(
           (existingFieldDefinition) =>
@@ -164,6 +177,7 @@ export const useObjectOptionsForBoard = ({
               : existingFieldDefinition,
         );
       }
+      console.log('updatedFieldsDefinitions', updatedFieldsDefinitions);
 
       setRecordIndexFieldDefinitions(updatedFieldsDefinitions);
 

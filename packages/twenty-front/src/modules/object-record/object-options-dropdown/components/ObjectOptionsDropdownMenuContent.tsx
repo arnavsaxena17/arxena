@@ -17,6 +17,7 @@ import { useObjectNamePluralFromSingular } from '@/object-metadata/hooks/useObje
 import { useHandleToggleTrashColumnFilter } from '@/object-record/record-index/hooks/useHandleToggleTrashColumnFilter';
 
 import { useArxEnrichCreationModal } from '@/arx-enrich/hooks/useArxEnrichCreationModal';
+import { useArxUploadJDModal } from '@/arx-jd-upload/hooks/useArxUploadJDModal';
 import { CoreObjectNameSingular } from '@/object-metadata/types/CoreObjectNameSingular';
 import { useObjectOptionsForBoard } from '@/object-record/object-options-dropdown/hooks/useObjectOptionsForBoard';
 import { useOptionsDropdown } from '@/object-record/object-options-dropdown/hooks/useOptionsDropdown';
@@ -36,7 +37,6 @@ import { useGetCurrentView } from '@/views/hooks/useGetCurrentView';
 import { ViewType } from '@/views/types/ViewType';
 import { useLocation } from 'react-router-dom';
 import { isDefined } from 'twenty-shared';
-import { useArxUploadJDModal } from '@/arx-jd-upload/hooks/useArxUploadJDModal';
 
 export const ObjectOptionsDropdownMenuContent = () => {
   const {
@@ -90,21 +90,20 @@ export const ObjectOptionsDropdownMenuContent = () => {
       objectMetadataItem.nameSingular,
     );
 
-    const { openModal } = useArxEnrichCreationModal();
-    const { openUploadJDModal } = useArxUploadJDModal();
+  const { openModal } = useArxEnrichCreationModal();
+  const { openUploadJDModal } = useArxUploadJDModal();
 
-    const handleModal = () => {
-      openModal();
-      // closeDropdown();
-    };
+  const handleModal = () => {
+    openModal();
+    // closeDropdown();
+  };
 
-    const handleUploadJDModal = () => {
-      openUploadJDModal();
-      // closeDropdown();
-    };
-  
-    const locationName = useLocation().pathname
+  const handleUploadJDModal = () => {
+    openUploadJDModal();
+    // closeDropdown();
+  };
 
+  const locationName = useLocation().pathname;
 
   const { progress, download } = useExportRecords({
     delayMs: 100,
@@ -223,11 +222,25 @@ export const ObjectOptionsDropdownMenuContent = () => {
             />
           </>
         )} */}
-      { objectMetadataItem.nameSingular.toLowerCase().includes('candidate') && locationName.includes("objects") ? <MenuItem onClick={handleModal} accent="default" LeftIcon={Icon24Hours} text="Enrich" /> : null }
-      { objectMetadataItem.nameSingular.toLowerCase().includes('job') && locationName.includes("objects") ? <MenuItem onClick={handleUploadJDModal} accent="default" LeftIcon={Icon24Hours} text="Upload JD" /> : null }
-
+        {objectMetadataItem.nameSingular.toLowerCase().includes('candidate') &&
+        locationName.includes('objects') ? (
+          <MenuItem
+            onClick={handleModal}
+            accent="default"
+            LeftIcon={Icon24Hours}
+            text="Enrich"
+          />
+        ) : null}
+        {objectMetadataItem.nameSingular.toLowerCase().includes('job') &&
+        locationName.includes('objects') ? (
+          <MenuItem
+            onClick={handleUploadJDModal}
+            accent="default"
+            LeftIcon={Icon24Hours}
+            text="Upload JD"
+          />
+        ) : null}
       </DropdownMenuItemsContainer>
-
     </>
   );
 };

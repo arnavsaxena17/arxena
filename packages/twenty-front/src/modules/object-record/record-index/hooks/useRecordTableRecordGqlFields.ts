@@ -19,6 +19,7 @@ export const useRecordTableRecordGqlFields = ({
     visibleTableColumnsComponentSelector,
   );
 
+  console.log('visibleTableColumns for gql fields::', visibleTableColumns);
   const identifierQueryFields: Record<string, boolean> = {};
 
   if (isDefined(labelIdentifierFieldMetadataItem)) {

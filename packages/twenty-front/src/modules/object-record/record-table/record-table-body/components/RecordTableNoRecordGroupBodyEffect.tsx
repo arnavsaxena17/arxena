@@ -91,10 +91,17 @@ export const RecordTableNoRecordGroupBodyEffect = () => {
   useEffect(() => {
     // Skip setting record table data if we're using a custom data source
     if (!loading && !hasCustomDataSource) {
-      setRecordTableData({
-        records,
-        totalCount,
-      });
+      if (!window.location.pathname.includes('merged')) {
+        setRecordTableData({
+          records,
+          totalCount,
+        });
+      } else {
+        console.log(
+          'RecordTableNoRecordGroupBodyEffect::records not setting new records because we are probably viewing the merged view',
+          records,
+        );
+      }
     }
   }, [records, totalCount, setRecordTableData, loading, hasCustomDataSource]);
 

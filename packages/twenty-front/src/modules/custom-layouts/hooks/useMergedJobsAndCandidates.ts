@@ -70,7 +70,6 @@ export const useMergedJobsAndCandidates = () => {
           let job: Jobs = {} as Jobs;
 
           if (isDefined(candidate.jobs)) {
-            console.log(`Candidate ${candidate.id} jobs:`, candidate.jobs);
             // If jobs is an array, take the first one, otherwise use it directly
             job = Array.isArray(candidate.jobs)
               ? candidate.jobs.length > 0

@@ -126,6 +126,12 @@ export const useLoadRecordIndexStates = () => {
           set(recordIndexFieldDefinitionsState, newFieldDefinitions);
         }
 
+        console.log(
+          'existingRecordIndexFieldDefinitions',
+          existingRecordIndexFieldDefinitions,
+        );
+        console.log('newFieldDefinitions', newFieldDefinitions);
+
         for (const viewField of viewFields) {
           const viewFieldMetadataType = objectMetadataItem.fields?.find(
             (field) => field.id === viewField.fieldMetadataId,

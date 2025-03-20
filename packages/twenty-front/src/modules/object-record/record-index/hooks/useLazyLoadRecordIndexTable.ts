@@ -24,7 +24,7 @@ export const useLazyLoadRecordIndexTable = (objectNameSingular: string) => {
   const params = useFindManyRecordIndexTableParams(objectNameSingular);
 
   const recordGqlFields = useRecordTableRecordGqlFields({ objectMetadataItem });
-
+  console.log('recordGqlFields::', recordGqlFields);
   const {
     findManyRecords,
     records,

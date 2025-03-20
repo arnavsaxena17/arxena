@@ -21,6 +21,8 @@ export const RecordIndexBoardDataLoaderEffect = ({
     recordIndexFieldDefinitionsState,
   );
 
+  console.log('recordIndexFieldDefinitions', recordIndexFieldDefinitions);
+
   const recordIndexIsCompactModeActive = useRecoilValue(
     recordIndexIsCompactModeActiveState,
   );

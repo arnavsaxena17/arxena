@@ -20,8 +20,15 @@ export const mapViewFieldsToColumnDefinitions = ({
     columnDefinitions,
     ({ fieldMetadataId }) => fieldMetadataId,
   );
+  console.log(
+    'columnDefinitionsByFieldMetadataId',
+    columnDefinitionsByFieldMetadataId,
+  );
 
-  const columnDefinitionsFromViewFields = viewFields
+  console.log('columnDefinitions', columnDefinitions);
+  console.log('viewFields', viewFields);
+
+  let columnDefinitionsFromViewFields = viewFields
     .map((viewField) => {
       const correspondingColumnDefinition =
         columnDefinitionsByFieldMetadataId[viewField.fieldMetadataId];
@@ -58,11 +65,48 @@ export const mapViewFieldsToColumnDefinitions = ({
     })
     .filter(isDefined);
 
+  // Only apply filtering if we're not on a merged page
+  if (window.location.href.includes('merged')) {
+    columnDefinitionsFromViewFields =
+      columnDefinitionsFromViewFields.filter(isDefined);
+
+    // Add columnDefinitions that are not present in viewFields
+    const viewFieldMetadataIds = new Set(
+      viewFields.map((field) => field.fieldMetadataId),
+    );
+
+    const missingColumnDefinitions = columnDefinitions
+      .filter((column) => !viewFieldMetadataIds.has(column.fieldMetadataId))
+      .map((column) => ({
+        ...column,
+        isVisible: column.isLabelIdentifier || false,
+        viewFieldId: undefined,
+      }));
+    console.log('missingColumnDefinitions', missingColumnDefinitions);
+
+    columnDefinitionsFromViewFields = [
+      ...columnDefinitionsFromViewFields,
+      ...missingColumnDefinitions,
+    ];
+  }
+
+  console.log(
+    'Column definitions from view fields after filter',
+    columnDefinitionsFromViewFields,
+  );
+
   // No label identifier set for this object
   if (!labelIdentifierFieldMetadataId) return columnDefinitionsFromViewFields;
 
   const labelIdentifierIndex = columnDefinitionsFromViewFields.findIndex(
     ({ fieldMetadataId }) => fieldMetadataId === labelIdentifierFieldMetadataId,
+  );
+
+  console.log('labelIdentifierIndex', labelIdentifierIndex);
+
+  console.log(
+    'columnDefinitionsFromViewFields:::',
+    columnDefinitionsFromViewFields,
   );
 
   // Label identifier field found in view fields

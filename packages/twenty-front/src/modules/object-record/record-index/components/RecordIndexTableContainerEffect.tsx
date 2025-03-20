@@ -34,11 +34,26 @@ export const RecordIndexTableContainerEffect = () => {
 
   const { columnDefinitions } =
     useColumnDefinitionsFromFieldMetadata(objectMetadataItem);
+  console.log(
+    'columnDefinitions that we will use in container effect::',
+    columnDefinitions,
+  );
 
   const { setRecordIndexEntityCount } = useSetRecordIndexEntityCount(viewBarId);
 
+  console.log(
+    'columnDefinitions that we will use in container effect::',
+    columnDefinitions,
+  );
+
   useEffect(() => {
-    setAvailableTableColumns(columnDefinitions);
+    if (!window.location.href.includes('merged')) {
+      setAvailableTableColumns(columnDefinitions);
+    } else {
+      console.log(
+        'not setting avialable table columns because we are on a merged view',
+      );
+    }
   }, [columnDefinitions, setAvailableTableColumns]);
 
   const handleToggleColumnFilter = useHandleToggleColumnFilter({
