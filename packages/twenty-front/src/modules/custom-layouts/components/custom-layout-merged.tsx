@@ -34,6 +34,7 @@ import { RecordIndexContainerContextStoreNumberOfSelectedRecordsEffect } from '@
 import { RecordIndexLoadBaseOnContextStoreEffect } from '@/object-record/record-index/components/RecordIndexLoadBaseOnContextStoreEffect';
 import { recordIndexFieldDefinitionsState } from '@/object-record/record-index/states/recordIndexFieldDefinitionsState';
 import { recordIndexViewTypeState } from '@/object-record/record-index/states/recordIndexViewTypeState';
+import { useSetTableColumns } from '@/object-record/record-table/hooks/useSetTableColumns';
 import { RecordTableComponentInstanceContext } from '@/object-record/record-table/states/context/RecordTableComponentInstanceContext';
 import { ColumnDefinition } from '@/object-record/record-table/types/ColumnDefinition';
 import { ViewType } from '@/views/types/ViewType';
@@ -311,6 +312,44 @@ const mergedObjectMetadata = {
       isLabelSyncedWithName: false,
       relationDefinition: null,
     },
+    {
+      __typename: 'Field',
+      id: 'b8d12f5e-9c45-4b6d-8a1c-789c6e38c52f',
+      type: 'TEXT' as FieldMetadataType,
+      name: 'currentCtc',
+      label: 'Current CTC',
+      description: 'Current CTC of the candidate',
+      icon: 'IconCurrencyRupee',
+      isCustom: true,
+      isActive: true,
+      isSystem: false,
+      isNullable: true,
+      isUnique: false,
+      defaultValue: null,
+      options: null,
+      settings: null,
+      isLabelSyncedWithName: false,
+      relationDefinition: null,
+    },
+    {
+      __typename: 'Field',
+      id: '51420608-6347-4076-8d8e-6d7dd4a3f85e',
+      type: 'TEXT' as FieldMetadataType,
+      name: 'jobActive',
+      label: 'Job Status',
+      description: 'Active status of the job',
+      icon: 'IconCircleCheck',
+      isCustom: true,
+      isActive: true,
+      isSystem: false,
+      isNullable: true,
+      isUnique: false,
+      defaultValue: null,
+      options: null,
+      settings: null,
+      isLabelSyncedWithName: false,
+      relationDefinition: null,
+    },
   ],
   indexMetadatas: [], // Add any necessary indexes
 } as unknown as ObjectMetadataItem;
@@ -329,6 +368,7 @@ const CustomLayoutMerged = () => {
     contextStoreCurrentViewIdComponentState,
     'main-context-store',
   );
+  const { setTableColumns } = useSetTableColumns();
 
   const setContextStoreCurrentViewType = useSetRecoilComponentStateV2(
     contextStoreCurrentViewTypeComponentState,
@@ -467,6 +507,21 @@ const CustomLayoutMerged = () => {
         },
       },
       {
+        fieldId: 'current-ctc',
+        fieldMetadataId: 'b8d12f5e-9c45-4b6d-8a1c-789c6e38c52f',
+        label: 'Current CTC',
+        type: 'TEXT' as FieldMetadataType,
+        iconName: 'IconCurrencyRupee',
+        size: 150,
+        position: 10,
+        isVisible: true,
+        metadata: {
+          fieldName: 'currentCtc',
+          fieldId: 'b8d12f5e-9c45-4b6d-8a1c-789c6e38c52f',
+          type: 'TEXT' as FieldMetadataType,
+        },
+      },
+      {
         fieldId: 'job-location',
         fieldMetadataId: 'bd6104d7-ea69-4924-8f83-7f81853da996',
         label: 'Job Location',
@@ -526,6 +581,7 @@ const CustomLayoutMerged = () => {
           type: 'TEXT' as FieldMetadataType,
         },
       },
+
       {
         fieldId: 'candidate-id',
         fieldMetadataId: 'cf7e0c9d-3b3b-4cbe-9a78-09e5c0d8c702',
@@ -533,8 +589,8 @@ const CustomLayoutMerged = () => {
         type: 'TEXT' as FieldMetadataType,
         iconName: 'IconId',
         size: 180,
-        position: 10,
-        isVisible: false,
+        position: 11,
+        isVisible: true,
         metadata: {
           fieldName: 'candidateId',
           fieldId: 'cf7e0c9d-3b3b-4cbe-9a78-09e5c0d8c702',
@@ -548,8 +604,8 @@ const CustomLayoutMerged = () => {
         type: 'TEXT' as FieldMetadataType,
         iconName: 'IconId',
         size: 180,
-        position: 11,
-        isVisible: false,
+        position: 12,
+        isVisible: true,
         metadata: {
           fieldName: 'jobId',
           fieldId: 'a74f6206-6c54-4360-bbbe-c3fe1c7d8167',
@@ -579,6 +635,9 @@ const CustomLayoutMerged = () => {
     // Set table column definitions using the hook from useRecordTable
     setAvailableTableColumns(columnDefinitions);
 
+    // Add this to explicitly set the visible columns
+    setTableColumns(columnDefinitions, recordIndexId);
+
     // Set initial loading state
     setIsRecordTableInitialLoading(true);
 
@@ -595,6 +654,7 @@ const CustomLayoutMerged = () => {
     setContextStoreCurrentObjectMetadataItem,
     setContextStoreCurrentViewId,
     setContextStoreCurrentViewType,
+    setTableColumns,
   ]);
 
   // Initialize record data when available

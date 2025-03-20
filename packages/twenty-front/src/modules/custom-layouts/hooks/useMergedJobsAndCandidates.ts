@@ -85,8 +85,9 @@ export const useMergedJobsAndCandidates = () => {
 
           // Create a merged record with both candidate and job info
           return {
-            id: `${candidate.id}`, // Generate a unique ID for the merged record
+            id: `${candidate.id}`,
             candidateId: candidate.id,
+            name: candidate.name || '',
             candidateName: candidate.name || '',
             candidateEmail: email,
             candidatePhone: phone,
@@ -94,6 +95,7 @@ export const useMergedJobsAndCandidates = () => {
               ? 'Engaged'
               : 'Not Engaged',
             chatCount: candidate.chatCount || 0,
+            currentCtc: candidate.answers?.edges?.[0]?.node?.name || '',
             jobId: job.id || '',
             jobName: job.name || '',
             jobLocation: job.jobLocation || '',
