@@ -13,6 +13,8 @@ export const RecordTableNoRecordGroupBody = () => {
     recordIndexAllRecordIdsComponentSelector,
   );
 
+  // console.log('RecordTableNoRecordGroupBody rendering', allRecordIds);
+
   const isRecordTableInitialLoading = useRecoilComponentValueV2(
     isRecordTableInitialLoadingComponentState,
   );
@@ -21,6 +23,14 @@ export const RecordTableNoRecordGroupBody = () => {
     return <RecordTableBodyLoading />;
   }
 
+  // console.log(
+  //   'RecordTableNoRecordGroupBody rendering isRecordTableInitialLoading',
+  //   isRecordTableInitialLoading,
+  // );
+  // console.log(
+  //   'RecordTableNoRecordGroupBody rendering isRecordTableInitialLoadingComponentState',
+  //   isRecordTableInitialLoadingComponentState,
+  // );
   return (
     <RecordTableNoRecordGroupBodyContextProvider>
       <RecordTableBodyDragDropContextProvider>

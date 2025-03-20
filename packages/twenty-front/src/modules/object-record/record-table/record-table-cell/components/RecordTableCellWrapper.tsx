@@ -39,6 +39,8 @@ export const RecordTableCellWrapper = ({
     currentTableCellPosition,
   );
 
+  // console.log('RecordTableCellWrapper rendering', columnIndex);
+  // console.log('RecordTableCellWrapper rendering column', column);
   return (
     <RecordTableCellContext.Provider
       value={{

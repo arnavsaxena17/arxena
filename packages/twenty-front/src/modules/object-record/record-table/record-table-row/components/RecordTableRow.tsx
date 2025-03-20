@@ -18,6 +18,7 @@ export const RecordTableRow = ({
   rowIndexForDrag,
   isPendingRow,
 }: RecordTableRowProps) => {
+  // console.log('RecordTableRow rendering', recordId);
   return (
     <RecordTableRowWrapper
       recordId={recordId}

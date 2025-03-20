@@ -17,6 +17,8 @@ export const RecordTableRecordGroupsBody = () => {
     recordIndexAllRecordIdsComponentSelector,
   );
 
+  console.log('RecordTableRecordGroupsBody rendering', allRecordIds);
+
   const isRecordTableInitialLoading = useRecoilComponentValueV2(
     isRecordTableInitialLoadingComponentState,
   );
@@ -26,6 +28,14 @@ export const RecordTableRecordGroupsBody = () => {
     ViewType.Table,
   );
 
+  console.log(
+    'RecordTableRecordGroupsBody visibleRecordGroupIds',
+    visibleRecordGroupIds,
+  );
+  console.log(
+    'RecordTableRecordGroupsBody visibleRecordGroupIdsComponentFamilySelector',
+    visibleRecordGroupIdsComponentFamilySelector,
+  );
   if (isRecordTableInitialLoading && allRecordIds.length === 0) {
     return <RecordTableBodyLoading />;
   }

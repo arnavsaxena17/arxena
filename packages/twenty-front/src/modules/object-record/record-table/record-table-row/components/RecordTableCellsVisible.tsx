@@ -21,7 +21,11 @@ export const RecordTableCellsVisible = () => {
   }
 
   const tableColumnsAfterFirst = visibleTableColumns.slice(1);
-
+  // console.log('RecordTableCellsVisible rendering', visibleTableColumns);
+  // console.log(
+  //   'RecordTableCellsVisible rendering after first',
+  //   tableColumnsAfterFirst,
+  // );
   return (
     <>
       <RecordTableCellWrapper column={visibleTableColumns[0]} columnIndex={0}>

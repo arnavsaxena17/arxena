@@ -52,6 +52,7 @@ export const RecordTableRowWrapper = ({
     }
   }, [inView, onIndexRecordsLoaded]);
 
+  // console.log('RecordTableRowWrapper rendering', recordId);
   return (
     <RecordTableDraggableTr
       ref={elementRef}

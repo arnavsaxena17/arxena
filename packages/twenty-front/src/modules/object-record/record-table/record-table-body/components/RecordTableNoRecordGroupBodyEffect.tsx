@@ -3,6 +3,7 @@ import { useRecoilState, useRecoilValue } from 'recoil';
 import { useDebouncedCallback } from 'use-debounce';
 
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
+import { hasCustomDataSourceState } from '@/custom-layouts/states/hasCustomDataSourceState';
 import { lastShowPageRecordIdState } from '@/object-record/record-field/states/lastShowPageRecordId';
 import { useLazyLoadRecordIndexTable } from '@/object-record/record-index/hooks/useLazyLoadRecordIndexTable';
 import { ROW_HEIGHT } from '@/object-record/record-table/constants/RowHeight';
@@ -21,6 +22,7 @@ export const RecordTableNoRecordGroupBodyEffect = () => {
   const { objectNameSingular } = useRecordTableContextOrThrow();
 
   const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
+  const hasCustomDataSource = useRecoilValue(hasCustomDataSourceState);
 
   const [hasInitializedScroll, setHasInitializedScroll] = useState(false);
 
@@ -87,13 +89,14 @@ export const RecordTableNoRecordGroupBodyEffect = () => {
   ]);
 
   useEffect(() => {
-    if (!loading) {
+    // Skip setting record table data if we're using a custom data source
+    if (!loading && !hasCustomDataSource) {
       setRecordTableData({
         records,
         totalCount,
       });
     }
-  }, [records, totalCount, setRecordTableData, loading]);
+  }, [records, totalCount, setRecordTableData, loading, hasCustomDataSource]);
 
   const fetchMoreDebouncedIfRequested = useDebouncedCallback(async () => {
     // We are debouncing here to give the user some room to scroll if they want to within this throttle window
@@ -112,7 +115,8 @@ export const RecordTableNoRecordGroupBodyEffect = () => {
         !isFetchingMoreObjects &&
         tableLastRowVisible &&
         hasNextPage &&
-        !encounteredUnrecoverableError
+        !encounteredUnrecoverableError &&
+        !hasCustomDataSource // Skip fetching more if we're using a custom data source
       ) {
         const result = await fetchMoreDebouncedIfRequested();
 
@@ -136,6 +140,7 @@ export const RecordTableNoRecordGroupBodyEffect = () => {
     tableLastRowVisible,
     encounteredUnrecoverableError,
     setEncounteredUnrecoverableError,
+    hasCustomDataSource,
   ]);
 
   useEffect(() => {
@@ -143,11 +148,17 @@ export const RecordTableNoRecordGroupBodyEffect = () => {
       return;
     }
 
-    if (!hasInitialized) {
+    if (!hasInitialized && !hasCustomDataSource) {
+      // Skip initialization if we're using a custom data source
       findManyRecords();
       setHasInitialized(true);
     }
-  }, [currentWorkspaceMember, findManyRecords, hasInitialized]);
+  }, [
+    currentWorkspaceMember,
+    findManyRecords,
+    hasInitialized,
+    hasCustomDataSource,
+  ]);
 
   return <></>;
 };
