@@ -227,7 +227,7 @@ export const StyledSectionContent = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing(2)};
-  margin-bottom: ${({ theme }) => theme.spacing(4)};
+  margin-bottom: ${({ theme }) => theme.spacing(0)};
 `;
 
 export const StyledSectionDivider = styled.div`
@@ -238,5 +238,5 @@ export const StyledSectionDivider = styled.div`
 `;
 
 export const StyledSection = styled.div`
-  margin-bottom: ${({ theme }) => theme.spacing(4)};
+  margin-bottom: ${({ theme }) => theme.spacing(0)};
 `;

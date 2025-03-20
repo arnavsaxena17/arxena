@@ -6,7 +6,7 @@ import React from 'react';
 import { Calendar } from 'react-date-range';
 import 'react-date-range/dist/styles.css';
 import 'react-date-range/dist/theme/default.css';
-import { Button, IconMinus, MenuItemSelect } from 'twenty-ui';
+import { Button, IconMinus, MenuItemSelect, Radio } from 'twenty-ui';
 import { FormComponentProps } from '../types/FormComponentProps';
 import { StyledSection, StyledSectionContent } from './ArxJDUploadModal.styled';
 
@@ -45,6 +45,25 @@ const StyledCalendarContainer = styled.div`
     border: 1px solid ${({ theme }) => theme.border.color.medium};
     border-radius: ${({ theme }) => theme.border.radius.md};
   }
+`;
+
+const StyledFlexContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+`;
+
+const StyledMeetingTypeContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing(2)};
+  margin-bottom: ${({ theme }) => theme.spacing(4)};
+`;
+
+const StyledRadioOption = styled.div`
+  align-items: center;
+  display: flex;
+  gap: ${({ theme }) => theme.spacing(2)};
 `;
 
 export const MeetingSchedulingSection: React.FC<FormComponentProps> = ({
@@ -120,117 +139,112 @@ export const MeetingSchedulingSection: React.FC<FormComponentProps> = ({
     });
   };
 
+  const handleMeetingTypeChange = (type: 'walkIn' | 'online' | 'inPerson') => {
+    setParsedJD({
+      ...parsedJD,
+      meetingScheduling: {
+        ...parsedJD.meetingScheduling,
+        meetingType: type,
+      },
+    });
+  };
+
   return (
     <StyledSection>
-      {/* <StyledSectionHeader>Meeting Scheduling</StyledSectionHeader> */}
       <StyledSectionContent>
-        <StyledLabel>Meeting Type</StyledLabel>
-        <MenuItemSelect
-          selected={parsedJD.meetingScheduling.meetingType === 'walkIn'}
-          onClick={() => {
-            setParsedJD({
-              ...parsedJD,
-              meetingScheduling: {
-                ...parsedJD.meetingScheduling,
-                meetingType: 'walkIn',
-              },
-            });
-          }}
-          text="Walk-in"
-        />
-        <MenuItemSelect
-          selected={parsedJD.meetingScheduling.meetingType === 'online'}
-          onClick={() => {
-            setParsedJD({
-              ...parsedJD,
-              meetingScheduling: {
-                ...parsedJD.meetingScheduling,
-                meetingType: 'online',
-              },
-            });
-          }}
-          text="Online"
-        />
-        <MenuItemSelect
-          selected={parsedJD.meetingScheduling.meetingType === 'inPerson'}
-          onClick={() => {
-            setParsedJD({
-              ...parsedJD,
-              meetingScheduling: {
-                ...parsedJD.meetingScheduling,
-                meetingType: 'inPerson',
-              },
-            });
-          }}
-          text="In Person"
-        />
+        <StyledFlexContainer>
+          <StyledMeetingTypeContainer>
+            <StyledLabel>Meeting Type</StyledLabel>
+            <StyledRadioOption>
+              <Radio
+                checked={parsedJD.meetingScheduling.meetingType === 'walkIn'}
+                onChange={() => handleMeetingTypeChange('walkIn')}
+              />
+              <span>Walk-in</span>
+            </StyledRadioOption>
+            <StyledRadioOption>
+              <Radio
+                checked={parsedJD.meetingScheduling.meetingType === 'online'}
+                onChange={() => handleMeetingTypeChange('online')}
+              />
+              <span>Online</span>
+            </StyledRadioOption>
+            <StyledRadioOption>
+              <Radio
+                checked={parsedJD.meetingScheduling.meetingType === 'inPerson'}
+                onChange={() => handleMeetingTypeChange('inPerson')}
+              />
+              <span>In Person</span>
+            </StyledRadioOption>
+          </StyledMeetingTypeContainer>
 
-        {(parsedJD.meetingScheduling.meetingType === 'online' ||
-          parsedJD.meetingScheduling.meetingType === 'inPerson') && (
-          <>
-            <StyledLabel style={{ marginTop: theme.spacing(0) }}>
-              Select Available Dates & Time Slots
-            </StyledLabel>
-            <div
-              onClick={(e: React.MouseEvent) => e.stopPropagation()}
-              onKeyDown={handleKeyDown}
-            >
-              <StyledCalendarContainer>
-                <Calendar
-                  date={new Date()}
-                  onChange={handleDateSelect}
-                  minDate={new Date()}
-                  maxDate={addDays(new Date(), 90)}
-                  dateDisplayFormat="yyyy-MM-dd"
-                  color={theme.color.blue}
-                  locale={enUS}
-                />
-              </StyledCalendarContainer>
+          {(parsedJD.meetingScheduling.meetingType === 'online' ||
+            parsedJD.meetingScheduling.meetingType === 'inPerson') && (
+            <>
+              <StyledLabel style={{ marginTop: theme.spacing(0) }}>
+                Select Available Dates & Time Slots
+              </StyledLabel>
+              <div
+                onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                onKeyDown={handleKeyDown}
+              >
+                <StyledCalendarContainer>
+                  <Calendar
+                    date={new Date()}
+                    onChange={handleDateSelect}
+                    minDate={new Date()}
+                    maxDate={addDays(new Date(), 90)}
+                    dateDisplayFormat="yyyy-MM-dd"
+                    color={theme.color.blue}
+                    locale={enUS}
+                  />
+                </StyledCalendarContainer>
 
-              <StyledDateSlotContainer>
-                {parsedJD.meetingScheduling.availableDates.map(
-                  (date, index) => (
-                    <StyledDateSlot key={date.date}>
-                      <span>{new Date(date.date).toLocaleDateString()}</span>
-                      <MenuItemSelect
-                        selected={date.timeSlots.morning}
-                        onClick={() => toggleTimeSlot(index, 'morning')}
-                        text="Morning (9 AM - 12 PM)"
-                      />
-                      <MenuItemSelect
-                        selected={date.timeSlots.afternoon}
-                        onClick={() => toggleTimeSlot(index, 'afternoon')}
-                        text="Afternoon (12 PM - 5 PM)"
-                      />
-                      <MenuItemSelect
-                        selected={date.timeSlots.evening}
-                        onClick={() => toggleTimeSlot(index, 'evening')}
-                        text="Evening (5 PM - 8 PM)"
-                      />
-                      <Button
-                        variant="secondary"
-                        title="Remove"
-                        Icon={IconMinus}
-                        onClick={() =>
-                          setParsedJD({
-                            ...parsedJD,
-                            meetingScheduling: {
-                              ...parsedJD.meetingScheduling,
-                              availableDates:
-                                parsedJD.meetingScheduling.availableDates.filter(
-                                  (_, i) => i !== index,
-                                ),
-                            },
-                          })
-                        }
-                      />
-                    </StyledDateSlot>
-                  ),
-                )}
-              </StyledDateSlotContainer>
-            </div>
-          </>
-        )}
+                <StyledDateSlotContainer>
+                  {parsedJD.meetingScheduling.availableDates.map(
+                    (date, index) => (
+                      <StyledDateSlot key={date.date}>
+                        <span>{new Date(date.date).toLocaleDateString()}</span>
+                        <MenuItemSelect
+                          selected={date.timeSlots.morning}
+                          onClick={() => toggleTimeSlot(index, 'morning')}
+                          text="Morning (9 AM - 12 PM)"
+                        />
+                        <MenuItemSelect
+                          selected={date.timeSlots.afternoon}
+                          onClick={() => toggleTimeSlot(index, 'afternoon')}
+                          text="Afternoon (12 PM - 5 PM)"
+                        />
+                        <MenuItemSelect
+                          selected={date.timeSlots.evening}
+                          onClick={() => toggleTimeSlot(index, 'evening')}
+                          text="Evening (5 PM - 8 PM)"
+                        />
+                        <Button
+                          variant="secondary"
+                          title="Remove"
+                          Icon={IconMinus}
+                          onClick={() =>
+                            setParsedJD({
+                              ...parsedJD,
+                              meetingScheduling: {
+                                ...parsedJD.meetingScheduling,
+                                availableDates:
+                                  parsedJD.meetingScheduling.availableDates.filter(
+                                    (_, i) => i !== index,
+                                  ),
+                              },
+                            })
+                          }
+                        />
+                      </StyledDateSlot>
+                    ),
+                  )}
+                </StyledDateSlotContainer>
+              </div>
+            </>
+          )}
+        </StyledFlexContainer>
       </StyledSectionContent>
     </StyledSection>
   );
