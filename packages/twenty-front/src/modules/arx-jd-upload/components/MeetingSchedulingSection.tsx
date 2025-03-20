@@ -8,12 +8,16 @@ import 'react-date-range/dist/styles.css';
 import 'react-date-range/dist/theme/default.css';
 import { Button, IconMinus, MenuItemSelect } from 'twenty-ui';
 import { FormComponentProps } from '../types/FormComponentProps';
-import {
-  StyledLabel,
-  StyledSection,
-  StyledSectionContent,
-  StyledSectionHeader,
-} from './ArxJDUploadModal.styled';
+import { StyledSection, StyledSectionContent } from './ArxJDUploadModal.styled';
+
+const StyledLabel = styled.div`
+  color: ${({ theme }) => theme.font.color.primary};
+  font-size: ${({ theme }) => theme.font.size.md};
+  font-weight: ${({ theme }) => theme.font.weight.semiBold};
+  margin-bottom: ${({ theme }) => theme.spacing(2)};
+  text-align: center;
+  width: 100%;
+`;
 
 const StyledDateSlotContainer = styled.div`
   display: flex;
@@ -32,6 +36,10 @@ const StyledDateSlot = styled.div`
 `;
 
 const StyledCalendarContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  margin: ${({ theme }) => theme.spacing(2)} 0;
+
   .rdrCalendarWrapper {
     background-color: ${({ theme }) => theme.background.primary};
     border: 1px solid ${({ theme }) => theme.border.color.medium};
@@ -114,7 +122,7 @@ export const MeetingSchedulingSection: React.FC<FormComponentProps> = ({
 
   return (
     <StyledSection>
-      <StyledSectionHeader>Meeting Scheduling</StyledSectionHeader>
+      {/* <StyledSectionHeader>Meeting Scheduling</StyledSectionHeader> */}
       <StyledSectionContent>
         <StyledLabel>Meeting Type</StyledLabel>
         <MenuItemSelect
@@ -160,7 +168,7 @@ export const MeetingSchedulingSection: React.FC<FormComponentProps> = ({
         {(parsedJD.meetingScheduling.meetingType === 'online' ||
           parsedJD.meetingScheduling.meetingType === 'inPerson') && (
           <>
-            <StyledLabel style={{ marginTop: theme.spacing(4) }}>
+            <StyledLabel style={{ marginTop: theme.spacing(0) }}>
               Select Available Dates & Time Slots
             </StyledLabel>
             <div

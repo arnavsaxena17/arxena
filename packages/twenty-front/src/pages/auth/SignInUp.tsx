@@ -73,7 +73,7 @@ export const SignInUp = () => {
         ? t`Your Workspace`
         : workspacePublicData?.displayName;
 
-    if (workspaceName === 'twenty') {
+    if (workspaceName === 'Twenty') {
       return t`Welcome to Arxena`;
     }
 

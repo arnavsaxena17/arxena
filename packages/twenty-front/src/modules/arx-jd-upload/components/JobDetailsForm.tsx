@@ -2,7 +2,6 @@ import React from 'react';
 import { FormComponentProps } from '../types/FormComponentProps';
 import {
   StyledFieldGroup,
-  StyledFullWidthField,
   StyledInput,
   StyledLabel,
   StyledSection,
@@ -33,7 +32,7 @@ export const JobDetailsForm: React.FC<FormComponentProps> = ({
           />
         </StyledFieldGroup>
 
-        <StyledFieldGroup>
+        {/* <StyledFieldGroup>
           <StyledLabel>Job Code</StyledLabel>
           <StyledInput
             value={parsedJD.jobCode}
@@ -46,7 +45,7 @@ export const JobDetailsForm: React.FC<FormComponentProps> = ({
             placeholder="Enter job code"
             onKeyDown={handleKeyDown}
           />
-        </StyledFieldGroup>
+        </StyledFieldGroup> */}
 
         <StyledFieldGroup>
           <StyledLabel>Location</StyledLabel>
@@ -62,7 +61,7 @@ export const JobDetailsForm: React.FC<FormComponentProps> = ({
             onKeyDown={handleKeyDown}
           />
         </StyledFieldGroup>
-
+        {/* 
         <StyledFieldGroup>
           <StyledLabel>Salary Range</StyledLabel>
           <StyledInput
@@ -76,8 +75,8 @@ export const JobDetailsForm: React.FC<FormComponentProps> = ({
             placeholder="Enter salary range"
             onKeyDown={handleKeyDown}
           />
-        </StyledFieldGroup>
-
+        </StyledFieldGroup> */}
+        {/* 
         <StyledFullWidthField>
           <StyledLabel>Description</StyledLabel>
           <StyledInput
@@ -93,9 +92,9 @@ export const JobDetailsForm: React.FC<FormComponentProps> = ({
             style={{ minHeight: '100px', resize: 'vertical' }}
             onKeyDown={handleKeyDown}
           />
-        </StyledFullWidthField>
+        </StyledFullWidthField> */}
 
-        <StyledFieldGroup>
+        {/* <StyledFieldGroup>
           <StyledLabel>Specific Criteria</StyledLabel>
           <StyledInput
             value={parsedJD.specificCriteria}
@@ -123,7 +122,7 @@ export const JobDetailsForm: React.FC<FormComponentProps> = ({
             placeholder="Enter path position"
             onKeyDown={handleKeyDown}
           />
-        </StyledFieldGroup>
+        </StyledFieldGroup> */}
       </StyledSectionContent>
     </StyledSection>
   );

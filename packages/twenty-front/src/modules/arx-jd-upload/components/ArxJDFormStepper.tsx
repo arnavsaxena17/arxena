@@ -169,26 +169,12 @@ export const ArxJDFormStepper: React.FC<ArxJDFormStepperProps> = ({
   const totalSteps = availableSteps.length;
   const currentStepType = availableSteps[activeStep];
 
-  // Determine if we can move to the next step (based on current step validation)
-  const canMoveNext = () => {
-    if (currentStepType === ArxJDFormStepType.UploadJD) {
-      return parsedJD !== null;
-    }
-    return true; // For now, assume all other steps are always valid
-  };
-
   // Handle step navigation
   const handleNext = () => {
     if (activeStep < availableSteps.length - 1) {
       nextStep();
     } else if (onSubmit !== undefined) {
       onSubmit();
-    }
-  };
-
-  const handleBack = () => {
-    if (activeStep > 0) {
-      prevStep();
     }
   };
 

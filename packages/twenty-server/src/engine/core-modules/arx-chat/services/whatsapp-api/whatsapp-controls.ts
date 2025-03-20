@@ -201,7 +201,7 @@ export class WhatsappControls {
           chatControl,
           apiToken,
         );
-      } else if (whatsapp_key === 'ext-sock-whatsapp') {
+      } else if (whatsapp_key === 'whatsapp-web') {
         await new ExtSockWhatsappMessageProcessor(
           this.workspaceQueryService,
         ).sendWhatsappMessageVIAExtSockWhatsappAPI(
@@ -257,7 +257,7 @@ export class WhatsappControls {
         chatControl,
         apiToken,
       );
-    } else if (whatsapp_key === 'ext-sock-whatsapp') {
+    } else if (whatsapp_key === 'whatsapp-web') {
       await this.sendAttachmentExtSockWhatsapp(
         attachmentMessage,
         personNode,

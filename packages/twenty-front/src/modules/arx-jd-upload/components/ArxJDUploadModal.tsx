@@ -6,7 +6,7 @@ import { useArxJDFormStepper } from '../hooks/useArxJDFormStepper';
 import { useArxJDUpload } from '../hooks/useArxJDUpload';
 import { ArxJDModalContent } from './ArxJDModalContent';
 import { ArxJDModalLayout } from './ArxJDModalLayout';
-import { ArxJDUploadDropzone } from './ArxJDUploadDropzone.1';
+import { ArxJDUploadDropzone } from './ArxJDUploadDropzone';
 
 export const ArxJDUploadModal = ({
   objectNameSingular,

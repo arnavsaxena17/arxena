@@ -24,7 +24,7 @@ export const StyledModalContainer = styled.div`
   background-color: transparent;
   display: flex;
   flex-direction: row;
-  height: 70vh;
+  height: 90vh;
   justify-content: center;
   position: relative;
   width: 80vw;
@@ -144,11 +144,12 @@ export const StyledFooter = styled.div`
   display: flex;
   justify-content: flex-end;
   gap: ${({ theme }) => theme.spacing(3)};
-  padding: ${({ theme }) => theme.spacing(2)};
+  /* padding: ${({ theme }) => theme.spacing(2)}; */
   width: 100%;
   flex-shrink: 0;
   z-index: 1;
-  position: sticky;
+  /* position: sticky; */
+  height: 0;
   bottom: 0;
 `;
 
@@ -161,7 +162,7 @@ export const StyledDropzoneArea = styled.div`
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing(4)};
   justify-content: center;
-  min-height: 200px;
+  min-height: 400px;
   padding: ${({ theme }) => theme.spacing(4)};
   width: 100%;
 

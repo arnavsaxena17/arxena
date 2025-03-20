@@ -236,7 +236,7 @@ export class CreateMetaDataStructure {
       twilio_account_sid: undefined,
       twilio_auth_token: undefined,
       smart_proxy_url: undefined,
-      whatsapp_key: undefined,
+      whatsapp_key: 'whatsapp-web',
       anthropic_key: process.env.ANTHROPIC_API_KEY,
       facebook_whatsapp_api_token: process.env.FACEBOOK_WHATSAPP_API_TOKEN,
       facebook_whatsapp_phone_number_id:
