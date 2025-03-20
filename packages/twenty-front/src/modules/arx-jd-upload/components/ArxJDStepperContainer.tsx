@@ -12,7 +12,8 @@ import { ArxJDStepNavigation } from './ArxJDStepNavigation';
 const StyledContainer = styled.div`
   display: flex;
   flex-direction: column;
-  height: 100%;
+  /* top:5vh; */
+  height: 90%;
   width: 100%;
 `;
 

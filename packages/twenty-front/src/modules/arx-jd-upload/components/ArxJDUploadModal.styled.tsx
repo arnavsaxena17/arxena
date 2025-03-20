@@ -118,6 +118,7 @@ export const StyledModalHeader = styled.div`
   display: flex;
   flex-shrink: 0;
   justify-content: space-between;
+  margin-top: ${({ theme }) => theme.spacing(4)};
   margin-bottom: ${({ theme }) => theme.spacing(4)};
   z-index: 1;
 `;

@@ -51,12 +51,12 @@ export const ArxJDUploadDropzone = ({
           : (file as DataTransferItem).getAsFile()?.name;
 
       if (!fileName) {
-        enqueueSnackBar(
-          `Multiple dots (.) in your file name. Remove . from file name and try again.`,
-          {
-            variant: SnackBarVariant.Error,
-          },
-        );
+        // enqueueSnackBar(
+        //   `Multiple dots (.) in your file name. Remove . from file name and try again.`,
+        //   {
+        //     variant: SnackBarVariant.Error,
+        //   },
+        // );
 
         return {
           code: 'invalid-file',
@@ -66,6 +66,12 @@ export const ArxJDUploadDropzone = ({
 
       const dotCount = fileName.split('.').length - 1;
       if (dotCount > 1) {
+        enqueueSnackBar(
+          `Multiple dots (.) in your file name. Remove . from file name and try again.`,
+          {
+            variant: SnackBarVariant.Error,
+          },
+        );
         return {
           code: 'multiple-dots',
           message:
