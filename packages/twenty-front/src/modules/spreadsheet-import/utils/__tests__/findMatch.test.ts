@@ -1,6 +1,15 @@
 import { Field } from '@/spreadsheet-import/types';
 import { findMatch } from '@/spreadsheet-import/utils/findMatch';
 import { FieldMetadataType } from 'twenty-shared';
+
+// Mock the ALTERNATE_MATCHES import
+jest.mock('@/spreadsheet-import/utils/getMatchedColumns', () => ({
+  ALTERNATE_MATCHES: {
+    defaultField: ['default field test', 'another default match'],
+    secondaryField: ['secondary field test'],
+  },
+}));
+
 describe('findMatch', () => {
   const defaultField: Field<'defaultField'> = {
     key: 'defaultField',
@@ -45,6 +54,14 @@ describe('findMatch', () => {
     expect(result).toBe(defaultField.key);
   });
 
+  it('should return the matching field if the header matches exactly one of the static alternate matches', () => {
+    const autoMapDistance = 0;
+
+    const result = findMatch('default field test', fields, autoMapDistance);
+
+    expect(result).toBe(defaultField.key);
+  });
+
   it('should return the matching field if the header matches partially one of the alternate matches', () => {
     const header = 'First';
     const autoMapDistance = 5;
@@ -75,6 +92,15 @@ describe('findMatch', () => {
   it('should return the matching field with the smallest Levenshtein distance if within auto map distance', () => {
     const header = 'Name'.split('').reverse().join('');
     const autoMapDistance = 100;
+
+    const result = findMatch(header, fields, autoMapDistance);
+
+    expect(result).toBe(defaultField.key);
+  });
+
+  it('should return the matching field with the smallest Levenshtein distance from static alternates', () => {
+    const header = 'default field';
+    const autoMapDistance = 5;
 
     const result = findMatch(header, fields, autoMapDistance);
 

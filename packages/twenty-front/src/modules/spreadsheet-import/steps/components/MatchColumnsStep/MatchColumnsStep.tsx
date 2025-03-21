@@ -260,6 +260,7 @@ export const MatchColumnsStep = <T extends string>({
     },
     [columns, setColumns],
   );
+  console.log('fields', fields);
   const unmatchedRequiredFields = useMemo(
     () => findUnmatchedRequiredFields(fields, columns),
     [fields, columns],
@@ -276,6 +277,47 @@ export const MatchColumnsStep = <T extends string>({
   }, [handleContinue, columns, data, fields]);
 
   const handleOnContinue = useCallback(async () => {
+    console.log(
+      'handleOnContinue unmatchedRequiredFields',
+      unmatchedRequiredFields,
+    );
+
+    // Check if Jobs (ID) and phone number columns are matched
+    const hasJobsColumn = columns.some(
+      (column) =>
+        column.type !== ColumnType.empty &&
+        column.type !== ColumnType.ignored &&
+        'value' in column &&
+        (column.value === 'Jobs (ID)' ||
+          column.header === 'Jobs (ID)' ||
+          column.value === 'jobs' ||
+          column.header === 'jobs'),
+    );
+
+    console.log('these are columns', columns);
+    const hasPhoneNumberColumn = columns.some(
+      (column) =>
+        column.type !== ColumnType.empty &&
+        column.type !== ColumnType.ignored &&
+        'value' in column &&
+        (column.value === 'Phone number (phoneNumber)' ||
+          column.header === 'Phone'),
+    );
+
+    if (!hasJobsColumn || !hasPhoneNumberColumn) {
+      const missingColumns = [];
+      if (!hasJobsColumn) missingColumns.push('Jobs (ID)');
+      if (!hasPhoneNumberColumn) missingColumns.push('Phone Number');
+
+      enqueueSnackBar(
+        `Missing required columns: ${missingColumns.join(', ')}`,
+        {
+          variant: SnackBarVariant.Error,
+        },
+      );
+      return;
+    }
+
     if (unmatchedRequiredFields.length > 0) {
       enqueueDialog({
         title: 'Not all columns matched',
@@ -316,14 +358,24 @@ export const MatchColumnsStep = <T extends string>({
     columns,
     data,
     fields,
+    enqueueSnackBar,
   ]);
 
   useEffect(() => {
     const isInitialColumnsState = columns.every(
       (column) => column.type === ColumnType.empty,
     );
+    console.log('isInitialColumnsState', isInitialColumnsState);
+    console.log('autoMapHeaders', autoMapHeaders);
     if (autoMapHeaders && isInitialColumnsState) {
-      setColumns(getMatchedColumns(columns, fields, data, autoMapDistance));
+      const matchedColumns = getMatchedColumns(
+        columns,
+        fields,
+        data,
+        autoMapDistance,
+      );
+      console.log('matchedColumns', matchedColumns);
+      setColumns(matchedColumns);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
