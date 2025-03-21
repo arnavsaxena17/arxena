@@ -30,7 +30,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding-top: 53px;
+  /* padding-top: 53px; */
 }
 
 .warning {
