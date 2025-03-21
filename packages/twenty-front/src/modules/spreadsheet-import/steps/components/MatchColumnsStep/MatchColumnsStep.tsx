@@ -21,8 +21,8 @@ import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 
 import { Modal } from '@/ui/layout/modal/components/Modal';
 
-import { initialComputedColumnsSelector } from '@/spreadsheet-import/steps/components/MatchColumnsStep/components/states/initialComputedColumnsState';
 import { UnmatchColumn } from '@/spreadsheet-import/steps/components/MatchColumnsStep/components/UnmatchColumn';
+import { initialComputedColumnsSelector } from '@/spreadsheet-import/steps/components/MatchColumnsStep/components/states/initialComputedColumnsState';
 import { SpreadsheetImportStep } from '@/spreadsheet-import/steps/types/SpreadsheetImportStep';
 import { SpreadsheetImportStepType } from '@/spreadsheet-import/steps/types/SpreadsheetImportStepType';
 import { ScrollWrapper } from '@/ui/utilities/scroll/components/ScrollWrapper';
@@ -182,18 +182,17 @@ export const MatchColumnsStep = <T extends string>({
           onIgnore(columnIndex);
         }
       } else {
-
         const field = fields.find(
           (field) => field.key === value,
         ) as unknown as Field<T>;
-        console.log("Fields::", field)
+        console.log('Fields::', field);
         const existingFieldIndex = columns.findIndex(
           (column) => 'value' in column && column.value === field.key,
         );
-        console.log("Existing fields index:", existingFieldIndex)
+        console.log('Existing fields index:', existingFieldIndex);
         setColumns(
           columns.map<Column<string>>((column, index) => {
-            console.log("column, field data", column, field, data)
+            console.log('column, field data', column, field, data);
             if (columnIndex === index) {
               return setColumn(column, field, data);
             } else if (index === existingFieldIndex) {

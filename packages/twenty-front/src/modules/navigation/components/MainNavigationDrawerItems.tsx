@@ -1,11 +1,10 @@
 import { useLocation } from 'react-router-dom';
 import { useRecoilState, useSetRecoilState } from 'recoil';
 import {
-  IconLayout,
+  IconBriefcase,
   IconMessage,
   IconSearch,
   IconSettings,
-  IconVideo,
 } from 'twenty-ui';
 
 import { useCommandMenu } from '@/command-menu/hooks/useCommandMenu';
@@ -83,6 +82,26 @@ export const MainNavigationDrawerItems = () => {
             Icon={IconMessage}
           />
           <NavigationDrawerItem
+            label={`Client Dashboard`}
+            to={getAppPath(AppPath.ClientDashboard)}
+            onClick={() => {
+              setNavigationDrawerExpandedMemorized(isNavigationDrawerExpanded);
+              setIsNavigationDrawerExpanded(true);
+              setNavigationMemorizedUrl(location.pathname + location.search);
+            }}
+            Icon={IconBriefcase}
+          />
+          <NavigationDrawerItem
+            label={`Client Candidate Search`}
+            to={getAppPath(AppPath.ClientCandidateSearch)}
+            onClick={() => {
+              setNavigationDrawerExpandedMemorized(isNavigationDrawerExpanded);
+              setIsNavigationDrawerExpanded(true);
+              setNavigationMemorizedUrl(location.pathname + location.search);
+            }}
+            Icon={IconBriefcase}
+          />
+          {/* <NavigationDrawerItem
             label={`Interview`}
             to={getAppPath(AppPath.Interview)}
             onClick={() => {
@@ -121,7 +140,7 @@ export const MainNavigationDrawerItems = () => {
               setNavigationMemorizedUrl(location.pathname + location.search);
             }}
             Icon={IconLayout}
-          />
+          /> */}
         </StyledMainSection>
       )}
       <ScrollWrapper

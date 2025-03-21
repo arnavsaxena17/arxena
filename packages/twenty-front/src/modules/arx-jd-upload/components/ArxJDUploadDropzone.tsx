@@ -54,7 +54,7 @@ export const ArxJDUploadDropzone = ({
         // enqueueSnackBar(
         //   `Multiple dots (.) in your file name. Remove . from file name and try again.`,
         //   {
-        //     variant: SnackBarVariant.Error,
+        //     variant: SnackBarVariant.Error
         //   },
         // );
 

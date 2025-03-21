@@ -43,4 +43,6 @@ export enum AppPath {
   CustomLayoutCandidate = 'custom-layout-candidate',
   CustomLayoutJob = 'custom-layout-job',
   CustomLayoutMerged = 'custom-layout-merged',
+  ClientDashboard = 'client-dashboard',
+  ClientCandidateSearch = 'candidate-search',
 }

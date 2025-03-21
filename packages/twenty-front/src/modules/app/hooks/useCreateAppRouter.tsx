@@ -28,6 +28,7 @@ import { InviteTeam } from '~/pages/onboarding/InviteTeam';
 import { PaymentSuccess } from '~/pages/onboarding/PaymentSuccess';
 import { SyncEmails } from '~/pages/onboarding/SyncEmails';
 
+import { ClientDashboard } from '@/client-dashboard/components/ClientDashboard';
 import CustomLayoutCandidate from '@/custom-layouts/components/custom-layout-candidate';
 import CustomLayoutJob from '@/custom-layouts/components/custom-layout-job';
 import CustomLayoutMerged from '@/custom-layouts/components/custom-layout-merged';
@@ -118,6 +119,10 @@ export const useCreateAppRouter = (
             <Route path={AppPath.InviteTeam} element={<InviteTeam />} />
             <Route path={AppPath.Chats} element={<Chats />} />
             <Route path={AppPath.Interview} element={<Interview />} />
+            <Route
+              path={AppPath.ClientDashboard}
+              element={<ClientDashboard />}
+            />
             <Route
               path={AppPath.CustomLayoutCandidate}
               element={<CustomLayoutCandidate />}
