@@ -129,8 +129,8 @@ export class ChatControls {
           companyName:
             whatappUpdateMessageObj?.candidateProfile?.jobs?.company?.name,
           descriptionOneliner:
-            whatappUpdateMessageObj?.candidateProfile?.jobs?.company
-              ?.descriptionOneliner || '',
+            whatappUpdateMessageObj?.candidateProfile?.jobs?.companyDetails ||
+            '',
           jobCode: whatappUpdateMessageObj?.candidateProfile?.jobs?.jobCode,
           jobLocation:
             whatappUpdateMessageObj?.candidateProfile?.jobs?.jobLocation,

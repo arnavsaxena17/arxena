@@ -60,12 +60,19 @@ export class WhatsappTestAPI {
         recruiterCompanyName: recruiterProfile.companyName,
         recruiterCompanyDescription: recruiterProfile.companyDescription,
         jobPositionName: personObj?.candidates?.edges[0]?.node?.jobs?.name,
-        companyName: personObj?.candidates?.edges[0]?.node?.jobs?.company?.name,
+        companyName: personObj?.candidates?.edges.filter(
+          (edge) => edge.node.jobs.id === candidateJob.id,
+        )[0]?.node?.jobs?.company?.name,
         descriptionOneliner:
-          personObj?.candidates?.edges[0]?.node?.jobs?.company
-            ?.descriptionOneliner || '',
-        jobCode: personObj?.candidates?.edges[0]?.node?.jobs?.jobCode,
-        jobLocation: personObj?.candidates?.edges[0]?.node?.jobs?.jobLocation,
+          personObj?.candidates?.edges.filter(
+            (edge) => edge.node.jobs.id === candidateJob.id,
+          )[0]?.node?.jobs?.companyDetails || '',
+        jobCode: personObj?.candidates?.edges.filter(
+          (edge) => edge.node.jobs.id === candidateJob.id,
+        )[0]?.node?.jobs?.jobCode,
+        jobLocation: personObj?.candidates?.edges.filter(
+          (edge) => edge.node.jobs.id === candidateJob.id,
+        )[0]?.node?.jobs?.jobLocation,
         videoInterviewLink:
           process.env.SERVER_BASE_URL +
             personObj?.candidates?.edges[0]?.node?.videoInterview?.edges[0]

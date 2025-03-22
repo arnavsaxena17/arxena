@@ -36,6 +36,26 @@ export const useArxJDUpload = (objectNameSingular: string) => {
     name: string;
   };
 
+  // async function createPrompts(apiToken: string) {
+  //   for (const prompt of prompts) {
+  //     const createResponse = await this.axiosRequest(
+  //       JSON.stringify({
+  //         variables: {
+  //           input: {
+  //             name: prompt.name,
+  //             prompt: prompt.prompt,
+  //             position: 'first',
+  //           },
+  //         },
+  //         query: graphqlToCreateOnePrompt,
+  //       }),
+  //       apiToken,
+  //     );
+
+  //     console.log(`\${prompt.name} created successfully`, createResponse.data);
+  //   }
+  // }
+
   const findBestCompanyMatch = useCallback(
     (companyName: string): Company | null => {
       if (!Array.isArray(companies) || companies.length === 0) {
@@ -122,16 +142,18 @@ export const useArxJDUpload = (objectNameSingular: string) => {
         if (response.data.success === true) {
           const data = response.data.data;
           const parsedData = createDefaultParsedJD({
-            name: data.name,
-            description: data.description,
-            jobCode: data.jobCode,
-            jobLocation: data.jobLocation,
-            salaryBracket: data.salaryBracket,
+            name: data?.name || '',
+            description: data?.description || '',
+            jobCode: data?.jobCode || '',
+            jobLocation: data?.jobLocation || '',
+            salaryBracket: data?.salaryBracket || '',
             isActive: true,
-            specificCriteria: data.specificCriteria,
-            pathPosition: data.pathPosition,
-            companyName: data.companyName,
-            companyId: data.companyId,
+            specificCriteria: data?.specificCriteria || '',
+            pathPosition: data?.pathPosition || '',
+            companyName: data?.companyName || '',
+            companyId: data?.companyId || '',
+            companyDetails: data?.companyDetails || '',
+            // oneLinePitch: data.oneLinePitch,
           });
 
           // Process company matching and update record with parsed data
@@ -167,6 +189,20 @@ export const useArxJDUpload = (objectNameSingular: string) => {
             idToUpdate: createdJob.id,
             updateOneRecordInput: updateData,
           });
+
+          const createPromptsResponse = await axios({
+            method: 'post',
+            url: `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/create-prompts`,
+            data: {
+              jobId: createdJob.id,
+            },
+          });
+
+          if (createPromptsResponse.data.status === 'Success') {
+            console.log('Prompts created successfully');
+          } else {
+            console.error('Failed to create prompts');
+          }
         } else {
           throw new Error(response.data.message || 'Failed to process JD');
         }

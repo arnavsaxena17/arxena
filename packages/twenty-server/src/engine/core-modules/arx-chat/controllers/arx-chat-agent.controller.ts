@@ -16,6 +16,7 @@ import {
   graphqlMutationToDeleteManyCandidates,
   graphqlMutationToDeleteManyPeople,
   graphqlQueryToFindManyPeople,
+  graphqlToCreateOnePrompt,
   graphqlToFetchAllCandidateData,
   graphQltoUpdateOneCandidate,
   graphqlToUpdateWhatsappMessageId,
@@ -41,6 +42,7 @@ import {
 } from 'src/engine/core-modules/arx-chat/utils/arx-chat-agent-utils';
 import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/services/candidate.service';
 import { GoogleSheetsService } from 'src/engine/core-modules/google-sheets/google-sheets.service';
+import { prompts } from 'src/engine/core-modules/workspace-modifications/object-apis/data/prompts';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 
@@ -1164,6 +1166,44 @@ export class ArxChatEndpoint {
         error.status || HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
+  }
+
+  @Post('create-prompts')
+  @UseGuards(JwtAuthGuard)
+  async createPrompts(@Req() request: any): Promise<object> {
+    try {
+      const apiToken = request.headers.authorization.split(' ')[1];
+      const jobId = request.body.jobId;
+
+      for (const prompt of prompts) {
+        const createResponse = await axiosRequest(
+          JSON.stringify({
+            variables: {
+              input: {
+                name: prompt.name,
+                prompt: prompt.prompt,
+                position: 'first',
+                jobId: jobId,
+              },
+            },
+            query: graphqlToCreateOnePrompt,
+          }),
+          apiToken,
+        );
+
+        console.log(
+          `\${prompt.name} created successfully`,
+          createResponse.data,
+        );
+      }
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Failed to create prompts',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+
+    return { status: 'Success' };
   }
 
   @Post('share-jd-to-candidate')

@@ -207,7 +207,7 @@ export class CreateMetaDataStructure {
     return currentWorkspaceMemberId;
   }
 
-  async createStartChatPrompt(apiToken: string) {
+  async createPrompts(apiToken: string) {
     for (const prompt of prompts) {
       const createResponse = await this.axiosRequest(
         JSON.stringify({
@@ -320,7 +320,7 @@ export class CreateMetaDataStructure {
           const workspaceMemberId =
             await this.createAndUpdateWorkspaceMember(apiToken);
 
-          await this.createStartChatPrompt(apiToken);
+          await this.createPrompts(apiToken);
           const apiKey = await apiKeyService.createApiKey(apiToken);
 
           console.log('API key created successfully:', apiKey);

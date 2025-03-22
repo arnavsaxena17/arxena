@@ -25,6 +25,7 @@ export const createDefaultParsedJD = (
     pathPosition: partialData.pathPosition || '',
     companyName: partialData.companyName,
     companyId: partialData.companyId,
+    companyDetails: partialData.companyDetails,
     id: partialData.id,
     chatFlow: {
       order: {

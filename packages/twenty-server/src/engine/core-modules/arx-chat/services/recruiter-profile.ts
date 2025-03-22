@@ -22,9 +22,6 @@ export async function getRecruiterProfileByJob(
     findWorkspaceMemberProfilesQuery,
     apiToken,
   );
-  // console.log("workspaceMemberProfilesResponse:", workspaceMemberProfilesResponse);
-  // console.log("workspaceMemberProfilesResponse:", workspaceMemberProfilesResponse.data.data.workspaceMemberProfiles.edges[0]);
-  // console.log("workspaceMemberProfilesResponse:", workspaceMemberProfilesResponse.data.data.workspaceMemberProfiles.edges[0]);
   const recruiterProfile: RecruiterProfileType =
     workspaceMemberProfilesResponse?.data?.data?.workspaceMemberProfiles
       ?.edges[0]?.node;

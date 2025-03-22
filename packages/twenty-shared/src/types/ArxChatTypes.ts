@@ -1717,6 +1717,7 @@ export interface Jobs {
   name: string;
   id: string;
   recruiterId: string;
+  companyDetails?: string;
   jobLocation: string;
   jobCode: string;
   company: company;
