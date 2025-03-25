@@ -179,7 +179,7 @@ export class WhatsappControls {
         console.log('No valid whatsapp API selected');
       }
 
-      if (whatsapp_key === 'facebook') {
+      if (whatsapp_key === 'whatsapp-official') {
         await new FacebookWhatsappChatApi(
           this.workspaceQueryService,
         ).sendWhatsappMessageVIAFacebookAPI(
@@ -248,7 +248,7 @@ export class WhatsappControls {
 
     // if (whatsappApi === 'facebook') {
 
-    if (whatsapp_key === 'facebook') {
+    if (whatsapp_key === 'whatsapp-official') {
       await new FacebookWhatsappChatApi(
         this.workspaceQueryService,
       ).uploadAndSendFileToWhatsApp(

@@ -34,7 +34,7 @@ const DocViewer = styled.div`
   padding: 16px;
   background: white;
   border-radius: 4px;
-  
+
   p {
     margin: 8px 0;
     line-height: 1.6;
@@ -42,11 +42,10 @@ const DocViewer = styled.div`
   }
 `;
 
-
 const DefaultPanelContainer = styled.div<{ isOpen: boolean }>`
   position: fixed;
   top: 10;
-  right: ${props => (props.isOpen ? '0' : '-40%')};
+  right: ${(props) => (props.isOpen ? '0' : '-40%')};
   width: 40%;
   height: 100vh;
   background-color: #f5f5f5;
@@ -57,7 +56,6 @@ const DefaultPanelContainer = styled.div<{ isOpen: boolean }>`
   display: flex;
   flex-direction: column;
 `;
-
 
 // const PanelContainer = styled.div<{ isOpen: boolean }>`
 //   position: absolute;
@@ -91,26 +89,26 @@ const CandidateInfo = styled.div`
 `;
 
 const CandidateName = styled.h2`
-  margin: 0 0 8px 0;
   font-size: 1.2em;
+  margin: 0 0 8px 0;
 `;
 
 const FileName = styled.h3`
-  margin: 0;
   color: #666;
   font-size: 1em;
+  margin: 0;
 `;
 
 const NavigationContainer = styled.div`
-  display: flex;
   align-items: center;
+  display: flex;
 `;
 
 const ContentContainer = styled.div`
   flex: 1;
   overflow-y: auto;
   padding: 15px;
-  height: calc(100vh - 60px); // Subtract header height
+  height: calc(100vh - 60px);
   width: 100%;
 `;
 
@@ -137,12 +135,12 @@ const NavButton = styled.button`
 `;
 
 const PDFContainer = styled.div`
+  align-items: center;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  width: 100%;
   height: 100%;
   overflow-y: auto;
+  width: 100%;
 `;
 
 const AttachmentCounter = styled.span`
@@ -163,13 +161,13 @@ const CloseButton = styled.button`
 `;
 
 const ErrorMessage = styled.div`
-  color: red;
-  padding: 15px;
-  text-align: center;
   background-color: #ffeeee;
   border: 1px solid #ffcccc;
   border-radius: 4px;
+  color: red;
   margin-top: 15px;
+  padding: 15px;
+  text-align: center;
 `;
 
 // const DocxViewer = styled.div`
@@ -181,15 +179,15 @@ const ErrorMessage = styled.div`
 // `;
 
 const ContentViewer = styled.pre`
-  white-space: pre-wrap;
-  word-wrap: break-word;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 0.9em;
   max-height: 100%;
   overflow-y: auto;
   padding: 8px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
   top: 200px;
-  font-size: 0.9em;
+  white-space: pre-wrap;
+  word-wrap: break-word;
 `;
 
 interface AttachmentPanelProps {
@@ -198,22 +196,24 @@ interface AttachmentPanelProps {
   candidateId: string;
   candidateName: string;
   PanelContainer?: React.ComponentType<{ isOpen: boolean }>;
-
-
-  
 }
 
-
-
-
-const AttachmentPanel: React.FC<AttachmentPanelProps> = ({ isOpen, onClose, candidateId, candidateName,     PanelContainer = DefaultPanelContainer // Use default if not provided
+const AttachmentPanel: React.FC<AttachmentPanelProps> = ({
+  isOpen,
+  onClose,
+  candidateId,
+  candidateName,
+  PanelContainer = DefaultPanelContainer, // Use default if not provided
 }) => {
-
   const Container = PanelContainer || DefaultPanelContainer;
 
-  const [attachments, setAttachments] = useState<Array<{ id: string; name: string; fullPath: string }>>([]);
+  const [attachments, setAttachments] = useState<
+    Array<{ id: string; name: string; fullPath: string }>
+  >([]);
   const [currentAttachmentIndex, setCurrentAttachmentIndex] = useState(0);
-  const [fileContent, setFileContent] = useState<string | ArrayBuffer | null>(null);
+  const [fileContent, setFileContent] = useState<string | ArrayBuffer | null>(
+    null,
+  );
   const [tokenPair] = useRecoilState(tokenPairState);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -223,10 +223,13 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({ isOpen, onClose, cand
   const [numPages, setNumPages] = useState<number | null>(null);
   const [pageNumber, setPageNumber] = useState(1);
 
-  const onDocumentLoadSuccess = useCallback(({ numPages }: { numPages: number }) => {
-    setNumPages(numPages);
-    console.log('PDF loaded successfully. Number of pages:', numPages);
-  }, []);
+  const onDocumentLoadSuccess = useCallback(
+    ({ numPages }: { numPages: number }) => {
+      setNumPages(numPages);
+      console.log('PDF loaded successfully. Number of pages:', numPages);
+    },
+    [],
+  );
 
   const options = useMemo(
     () => ({
@@ -242,11 +245,13 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({ isOpen, onClose, cand
   }
 
   const handlePrevPage = useCallback(() => {
-    setPageNumber(prevPageNumber => Math.max(prevPageNumber - 1, 1));
+    setPageNumber((prevPageNumber) => Math.max(prevPageNumber - 1, 1));
   }, []);
 
   const handleNextPage = useCallback(() => {
-    setPageNumber(prevPageNumber => Math.min(prevPageNumber + 1, numPages || 1));
+    setPageNumber((prevPageNumber) =>
+      Math.min(prevPageNumber + 1, numPages || 1),
+    );
   }, [numPages]);
 
   useEffect(() => {
@@ -274,12 +279,13 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({ isOpen, onClose, cand
           headers: {
             Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
             'Content-Type': 'application/json',
-            'x-schema-version': '135',
           },
         },
       );
 
-      const fetchedAttachments = response.data.data.attachments.edges.map((edge: any) => edge.node);
+      const fetchedAttachments = response?.data?.data?.attachments?.edges?.map(
+        (edge: any) => edge.node,
+      );
       setAttachments(fetchedAttachments);
       setCurrentAttachmentIndex(0);
       console.log('Total Attachments: ', fetchedAttachments.length);
@@ -290,16 +296,22 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({ isOpen, onClose, cand
   }, [isOpen, candidateId, tokenPair]);
 
   const handlePrevAttachment = useCallback(() => {
-    setCurrentAttachmentIndex(prevIndex => Math.max(prevIndex - 1, 0));
+    setCurrentAttachmentIndex((prevIndex) => Math.max(prevIndex - 1, 0));
   }, []);
 
   const handleNextAttachment = useCallback(() => {
-    setCurrentAttachmentIndex(prevIndex => Math.min(prevIndex + 1, attachments.length - 1));
+    setCurrentAttachmentIndex((prevIndex) =>
+      Math.min(prevIndex + 1, attachments.length - 1),
+    );
   }, [attachments.length]);
 
   useEffect(() => {
     return () => {
-      if (fileContent && typeof fileContent === 'string' && fileContent.startsWith('blob:')) {
+      if (
+        fileContent &&
+        typeof fileContent === 'string' &&
+        fileContent.startsWith('blob:')
+      ) {
         URL.revokeObjectURL(fileContent);
       }
     };
@@ -314,14 +326,26 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({ isOpen, onClose, cand
         setError(null);
         setFileContent(null);
         setDownloadUrl(null);
-        console.log("This si the attachment.fullPath REACT_APP_SERVER_BASE_URL::", process.env.REACT_APP_SERVER_BASE_URL);
-        console.log("This si the fullPath::", attachment.fullPath);
-
+        console.log(
+          'This si the attachment.fullPath REACT_APP_SERVER_BASE_URL::',
+          process.env.REACT_APP_SERVER_BASE_URL,
+        );
+        console.log('This si the fullPath::', attachment.fullPath);
 
         // const response = await axios.get(`${process.env.REACT_APP_SERVER_BASE_URL}/files/${attachment.fullPath}`, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` }, responseType: 'arraybuffer' });
-        const response = await axios.get(`${attachment.fullPath}`, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` }, responseType: 'arraybuffer' });
+        const response = await axios.get(`${attachment.fullPath}`, {
+          headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` },
+          responseType: 'arraybuffer',
+        });
 
-        let contentType = response.headers['content-type'] || attachment?.fullPath?.split('?')[0]?.split('.').pop()?.toLowerCase() || 'application/octet-stream';
+        let contentType =
+          response.headers['content-type'] ||
+          attachment?.fullPath
+            ?.split('?')[0]
+            ?.split('.')
+            .pop()
+            ?.toLowerCase() ||
+          'application/octet-stream';
         contentType = contentType.split(';')[0];
 
         if (!contentType) {
@@ -329,12 +353,23 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({ isOpen, onClose, cand
           contentType = getContentTypeFromExtension(fileExtension);
         }
 
-        const blob = new Blob([response.data], { type: contentType || 'application/octet-stream' });
+        const blob = new Blob([response.data], {
+          type: contentType || 'application/octet-stream',
+        });
 
         if (contentType && contentType.includes('pdf')) {
           const url = URL.createObjectURL(blob);
           setFileContent(url);
-        } else if (contentType && (contentType.includes('word') || contentType.includes('doc') || contentType.includes('docx') || contentType.includes('msword') || contentType.includes('openxmlformats-officedocument.wordprocessingml.document'))) {
+        } else if (
+          contentType &&
+          (contentType.includes('word') ||
+            contentType.includes('doc') ||
+            contentType.includes('docx') ||
+            contentType.includes('msword') ||
+            contentType.includes(
+              'openxmlformats-officedocument.wordprocessingml.document',
+            ))
+        ) {
           try {
             const arrayBuffer = await blob.arrayBuffer();
             let result: DocHandlerResult;
@@ -345,7 +380,9 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({ isOpen, onClose, cand
               result = await handleDocFile(arrayBuffer);
             } else {
               // For .docx files, we can use mammoth
-              result = await mammoth.convertToHtml({ arrayBuffer: arrayBuffer });
+              result = await mammoth.convertToHtml({
+                arrayBuffer: arrayBuffer,
+              });
             }
 
             setFileContent(result.value);
@@ -353,27 +390,40 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({ isOpen, onClose, cand
             console.error('Document conversion failed:', conversionError);
             const url = URL.createObjectURL(blob);
             setDownloadUrl(url);
-            setFileContent(`Unable to display the document. Click the link below to download the ${attachment.name} file.`);
+            setFileContent(
+              `Unable to display the document. Click the link below to download the ${attachment.name} file.`,
+            );
           }
-        } else if (contentType && (contentType.includes('text') || contentType.includes('xml') || contentType.includes('json'))) {
+        } else if (
+          contentType &&
+          (contentType.includes('text') ||
+            contentType.includes('xml') ||
+            contentType.includes('json'))
+        ) {
           const decoder = new TextDecoder('utf-8');
           const text = decoder.decode(response.data);
           setFileContent(text);
         } else {
           const url = URL.createObjectURL(blob);
           setDownloadUrl(url);
-          setFileContent(`Unknown file type. Click the link below to download the ${attachment.name} file.`);
+          setFileContent(
+            `Unknown file type. Click the link below to download the ${attachment.name} file.`,
+          );
         }
       } catch (error) {
         console.error('Error fetching file content:', error);
-        setError(`Failed to load file content: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        setError(
+          `Failed to load file content: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        );
       }
       setIsLoading(false);
     },
     [tokenPair],
   );
 
-  const handleDocFile = async (arrayBuffer: ArrayBuffer): Promise<DocHandlerResult> => {
+  const handleDocFile = async (
+    arrayBuffer: ArrayBuffer,
+  ): Promise<DocHandlerResult> => {
     try {
       // Attempt to extract text using a simple method
       const uint8Array = new Uint8Array(arrayBuffer);
@@ -388,7 +438,10 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({ isOpen, onClose, cand
       return { value: `<pre>${text}</pre>` };
     } catch (error) {
       console.error('Error processing .doc file:', error);
-      return { value: '<p>Unable to read .doc file content. The file may be corrupt or use unsupported features.</p>' };
+      return {
+        value:
+          '<p>Unable to read .doc file content. The file may be corrupt or use unsupported features.</p>',
+      };
     }
   };
 
@@ -416,25 +469,14 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({ isOpen, onClose, cand
     }
   };
 
-
-
   const DocxViewer: React.FC<{ content: string }> = ({ content }) => {
-
-    const lines = content.split(/\r?\n/).filter(line => line.trim());
+    const lines = content.split(/\r?\n/).filter((line) => line.trim());
     return (
-  
       <DocViewer>
-  
-        {lines.map((line, index) => (
-  
-          <p key={index}>{line}</p>
-  
-        ))}
-  
+        {lines?.map((line, index) => <p key={index}>{line}</p>)}
       </DocViewer>
-  
     );
-  }
+  };
 
   useEffect(() => {
     if (attachments.length > 0) {
@@ -442,63 +484,86 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({ isOpen, onClose, cand
     }
   }, [currentAttachmentIndex, attachments, fetchFileContent]);
 
-  const currentAttachment = useMemo(() => attachments[currentAttachmentIndex], [attachments, currentAttachmentIndex]);
+  const currentAttachment = useMemo(
+    () => attachments[currentAttachmentIndex],
+    [attachments, currentAttachmentIndex],
+  );
 
   console.log('Current Attachment ::', currentAttachment);
-  console.log('Total Attachments : ', attachments.length);
+  console.log('Total Attachments : ', attachments?.length);
   return (
     <Container isOpen={isOpen}>
-
-    <PanelContainer isOpen={isOpen}>
-      <CloseButton onClick={onClose}>&times;</CloseButton>
-      <Header>
-        <CandidateInfo>
-          <CandidateName>{candidateName}</CandidateName>
-          {currentAttachment && <FileName>{currentAttachment.name}</FileName>}
-        </CandidateInfo>
-        <NavigationContainer>
-          <NavButton onClick={handlePrevAttachment} disabled={currentAttachmentIndex === 0}>
-            &#9650;
-          </NavButton>
-          <AttachmentCounter>
-            {currentAttachmentIndex + 1} of {attachments.length}
-          </AttachmentCounter>
-          <NavButton onClick={handleNextAttachment} disabled={currentAttachmentIndex === attachments.length - 1}>
-            &#9660;
-          </NavButton>
-        </NavigationContainer>
-      </Header>
-      <ContentContainer>
-        {error ? (
-          <ErrorMessage>{error}</ErrorMessage>
-        ) : fileContent ? (
-          typeof fileContent === 'string' && fileContent.startsWith('blob:') ? (
-            <PDFContainer>
-              <Document file={fileContent} onLoadSuccess={onDocumentLoadSuccess} onLoadError={onDocumentLoadError} options={options}>
-                {Array.from(new Array(numPages), (el, index) => (
-                  <Page key={`page_${index + 1}`} pageNumber={index + 1} renderTextLayer={false} renderAnnotationLayer={false} />
-                ))}
-              </Document>
-              {/* Add navigation controls for PDF if needed */}
-            </PDFContainer>
-          ) : typeof fileContent === 'string' && fileContent.startsWith('<') ? (
-            // <DocxViewer dangerouslySetInnerHTML={{ __html: fileContent }} />
-            <DocxViewer content={fileContent} />
+      <PanelContainer isOpen={isOpen}>
+        <CloseButton onClick={onClose}>&times;</CloseButton>
+        <Header>
+          <CandidateInfo>
+            <CandidateName>{candidateName}</CandidateName>
+            {currentAttachment && <FileName>{currentAttachment.name}</FileName>}
+          </CandidateInfo>
+          <NavigationContainer>
+            <NavButton
+              onClick={handlePrevAttachment}
+              disabled={currentAttachmentIndex === 0}
+            >
+              &#9650;
+            </NavButton>
+            <AttachmentCounter>
+              {currentAttachmentIndex + 1} of {attachments.length}
+            </AttachmentCounter>
+            <NavButton
+              onClick={handleNextAttachment}
+              disabled={currentAttachmentIndex === attachments.length - 1}
+            >
+              &#9660;
+            </NavButton>
+          </NavigationContainer>
+        </Header>
+        <ContentContainer>
+          {error ? (
+            <ErrorMessage>{error}</ErrorMessage>
+          ) : fileContent ? (
+            typeof fileContent === 'string' &&
+            fileContent.startsWith('blob:') ? (
+              <PDFContainer>
+                <Document
+                  file={fileContent}
+                  onLoadSuccess={onDocumentLoadSuccess}
+                  onLoadError={onDocumentLoadError}
+                  options={options}
+                >
+                  {Array.from(new Array(numPages), (el, index) => (
+                    <Page
+                      key={`page_${index + 1}`}
+                      pageNumber={index + 1}
+                      renderTextLayer={false}
+                      renderAnnotationLayer={false}
+                    />
+                  ))}
+                </Document>
+                {/* Add navigation controls for PDF if needed */}
+              </PDFContainer>
+            ) : typeof fileContent === 'string' &&
+              fileContent.startsWith('<') ? (
+              // <DocxViewer dangerouslySetInnerHTML={{ __html: fileContent }} />
+              <DocxViewer content={fileContent} />
+            ) : (
+              <ContentViewer>
+                {typeof fileContent === 'string'
+                  ? fileContent
+                  : 'Unsupported file type'}
+              </ContentViewer>
+            )
           ) : (
-            <ContentViewer>{typeof fileContent === 'string' ? fileContent : 'Unsupported file type'}</ContentViewer>
-          )
-        ) : (
-          <div>Loading...</div>
-        )}
-        {downloadUrl && (
-          <a href={downloadUrl} download={currentAttachment?.name}>
-            Download {currentAttachment?.name}
-          </a>
-        )}
-      </ContentContainer>
-    </PanelContainer>
+            <div>Loading...</div>
+          )}
+          {downloadUrl && (
+            <a href={downloadUrl} download={currentAttachment?.name}>
+              Download {currentAttachment?.name}
+            </a>
+          )}
+        </ContentContainer>
+      </PanelContainer>
     </Container>
-
   );
 };
 

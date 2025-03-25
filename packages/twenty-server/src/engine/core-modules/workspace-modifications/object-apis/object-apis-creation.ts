@@ -9,7 +9,9 @@ import {
   QueryResponse,
 } from 'twenty-shared';
 
-import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
+// import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
+// eslint-disable-next-line no-restricted-imports
+import { WorkspaceQueryService } from '../workspace-modifications.service';
 
 import { getFieldsData } from './data/fieldsData';
 import { objectCreationArr } from './data/objectsData';
@@ -236,7 +238,7 @@ export class CreateMetaDataStructure {
       twilio_account_sid: undefined,
       twilio_auth_token: undefined,
       smart_proxy_url: undefined,
-      whatsapp_key: 'whatsapp-web',
+      whatsapp_key: 'whatsapp-official',
       anthropic_key: process.env.ANTHROPIC_API_KEY,
       facebook_whatsapp_api_token: process.env.FACEBOOK_WHATSAPP_API_TOKEN,
       facebook_whatsapp_phone_number_id:

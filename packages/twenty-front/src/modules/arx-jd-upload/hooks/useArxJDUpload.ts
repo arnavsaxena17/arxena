@@ -23,7 +23,9 @@ export const useArxJDUpload = (objectNameSingular: string) => {
   const [error, setError] = useState<string | null>(null);
 
   const { createOneRecord } = useCreateOneRecord({ objectNameSingular });
+  console.log('objectNameSingular for createOneRecord::', objectNameSingular);
   const { updateOneRecord } = useUpdateOneRecord({ objectNameSingular });
+  console.log('objectNameSingular for updateOneRecord::', objectNameSingular);
   const { uploadAttachmentFile } = useUploadAttachmentFile();
 
   const { records: companies = [] } = useFindManyRecords({
@@ -99,6 +101,7 @@ export const useArxJDUpload = (objectNameSingular: string) => {
         const createdJob = await createOneRecord({
           name: file.name.split('.')[0],
         });
+        console.log('createdJob::', createdJob);
 
         if (createdJob?.id === undefined || createdJob?.id === null) {
           throw new Error('Failed to create job record');
@@ -155,6 +158,7 @@ export const useArxJDUpload = (objectNameSingular: string) => {
             companyDetails: data?.companyDetails || '',
             // oneLinePitch: data.oneLinePitch,
           });
+          console.log('parsedData::', parsedData);
 
           // Process company matching and update record with parsed data
           const {
@@ -167,6 +171,7 @@ export const useArxJDUpload = (objectNameSingular: string) => {
 
           setParsedJD(parsedData);
 
+          console.log('parsedData.companyName::', parsedData.companyName);
           // Try to match company if a name was provided
           if (
             typeof parsedData.companyName === 'string' &&
@@ -183,18 +188,34 @@ export const useArxJDUpload = (objectNameSingular: string) => {
               updateData.companyId = matchedCompany.id;
             }
           }
+          console.log('updateData::', updateData);
 
+          console.log('createdJob.id::', createdJob.id);
+          console.log('updateData::', updateData);
+
+          const { companyId, ...restOfUpdateData } = updateData;
+          const updateOneRecordInput = {
+            ...restOfUpdateData,
+            ...(companyId && companyId !== '' ? { companyId } : {}),
+          };
+
+          console.log('updateOneRecordInput::', updateOneRecordInput);
           // Update the job record with the processed data
           await updateOneRecord({
             idToUpdate: createdJob.id,
-            updateOneRecordInput: updateData,
+            updateOneRecordInput: updateOneRecordInput,
           });
+
+          console.log('createdJob.id::', createdJob.id);
 
           const createPromptsResponse = await axios({
             method: 'post',
             url: `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/create-prompts`,
             data: {
               jobId: createdJob.id,
+            },
+            headers: {
+              Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
             },
           });
 

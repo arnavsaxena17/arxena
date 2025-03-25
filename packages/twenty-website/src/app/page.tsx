@@ -6,7 +6,7 @@ export default function Home() {
   return (
     <ContentContainer>
       <iframe
-        src="https://detailed-elements-177735.framer.app/"
+        src="https://ai-recruitment-synergy.lovable.app/"
         title="Twenty Homepage"
         style={{
           width: '100vw',

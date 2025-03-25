@@ -1159,6 +1159,8 @@ export class ArxChatEndpoint {
         },
       );
 
+      console.log('Received processed jd uploaded ::', processResponse.data);
+
       return processResponse.data;
     } catch (error) {
       throw new HttpException(
@@ -1172,8 +1174,11 @@ export class ArxChatEndpoint {
   @UseGuards(JwtAuthGuard)
   async createPrompts(@Req() request: any): Promise<object> {
     try {
+      console.log('request.body: to create new prompts::', request.body);
       const apiToken = request.headers.authorization.split(' ')[1];
       const jobId = request.body.jobId;
+
+      console.log('jobId::', jobId);
 
       for (const prompt of prompts) {
         const createResponse = await axiosRequest(
