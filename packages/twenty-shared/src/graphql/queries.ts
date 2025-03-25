@@ -824,6 +824,7 @@ export const graphqlQueryToFindManyPeople = `query FindManyPeople($filter: Perso
                        jobLocation
                        createdAt
                        updatedAt
+                       companyDetails
                        jobCode
                        recruiterId
                        company{
@@ -1640,6 +1641,7 @@ export const graphqlToFetchAllCandidateData = `
             isActive
             googleSheetId
             recruiterId
+            companyDetails
             chatFlowOrder
             pathPosition
             createdAt

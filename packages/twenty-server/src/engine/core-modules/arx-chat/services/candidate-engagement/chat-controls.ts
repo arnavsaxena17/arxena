@@ -138,6 +138,7 @@ export class ChatControls {
           candidateSource: 'Apna Jobs',
         };
 
+        console.log('sendTemplateMessageObj::', sendTemplateMessageObj);
         response = await new FacebookWhatsappChatApi(
           this.workspaceQueryService,
         ).sendWhatsappUtilityMessage(sendTemplateMessageObj, apiToken);
