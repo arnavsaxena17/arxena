@@ -221,8 +221,9 @@ export const graphqlToFindManyJobs = `query FindManyJobs($filter: JobFilterInput
           edges {
             node {
               id
+              source
+              campaign
               whatsappProvider
-              
             }
           }
         }
@@ -522,6 +523,8 @@ export const graphQueryToFindManyvideoInterviews = `query FindManyVideoInterview
           jobSpecificFields
           jobsId
           createdAt
+          source
+          campaign
           updatedAt
           engagementStatus
           candConversationStatus
@@ -801,6 +804,8 @@ export const graphqlQueryToFindManyPeople = `query FindManyPeople($filter: Perso
                 node{
                     id
                     name
+                    source
+                    campaign
                     clientInterview{
                         edges{
                             node{
@@ -1015,6 +1020,8 @@ export const graphQlToFetchWhatsappMessages = `query FindManyWhatsappMessages($f
           id
           createdAt
           updatedAt
+          source
+          campaign
           startChat
           chatCount
           startChatCompleted
@@ -1254,6 +1261,8 @@ export const graphqlToFindManyAnswers = `query FindManyAnswers($filter: AnswerFi
             status
             createdAt
             updatedAt
+            source
+            campaign
             whatsappProvider
             startChat
             candConversationStatus
@@ -1370,6 +1379,8 @@ export const queryByvideoInterview = `query FindOneVideoInterview($objectRecordI
           startChat
           chatCount
           status
+          source
+          campaign
           jobSpecificFields
           jobsId
           createdAt
@@ -1495,8 +1506,10 @@ export const graphqlToFetchAllCandidateData = `
           name
           updatedAt
           whatsappProvider
-        candConversationStatus
-        startVideoInterviewChat
+          candConversationStatus
+          startVideoInterviewChat
+          source
+          campaign
         clientInterview {
           edges{
             node{

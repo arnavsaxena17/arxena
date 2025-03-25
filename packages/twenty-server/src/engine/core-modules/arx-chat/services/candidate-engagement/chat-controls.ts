@@ -130,12 +130,17 @@ export class ChatControls {
             whatappUpdateMessageObj?.candidateProfile?.jobs?.company?.name,
           descriptionOneliner:
             whatappUpdateMessageObj?.candidateProfile?.jobs?.companyDetails ||
+            whatappUpdateMessageObj?.candidateProfile?.jobs?.company
+              ?.descriptionOneliner ||
             '',
           jobCode: whatappUpdateMessageObj?.candidateProfile?.jobs?.jobCode,
           jobLocation:
             whatappUpdateMessageObj?.candidateProfile?.jobs?.jobLocation,
           videoInterviewLink: videoInterviewLink,
-          candidateSource: 'Apna Jobs',
+          candidateSource:
+            whatappUpdateMessageObj?.candidateProfile?.source === ''
+              ? 'Linkedin'
+              : whatappUpdateMessageObj?.candidateProfile?.source || '',
         };
 
         console.log('sendTemplateMessageObj::', sendTemplateMessageObj);

@@ -1597,6 +1597,8 @@ export interface CandidateNode {
   videoInterview: videoInterview;
   whatsappProvider: string | 'application03';
   name: string;
+  source?: string;
+  campaign?: string;
   id: string;
   engagementStatus: boolean;
   startVideoInterviewChat: boolean;
