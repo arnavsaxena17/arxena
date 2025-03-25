@@ -426,11 +426,16 @@ export class FilterCandidates {
       );
       const candidateDataObjs =
         response.data?.data?.people?.edges[0]?.node?.candidates?.edges || [];
+
+      console.log('candidateDataObjs::', candidateDataObjs);
       const maxCreatedAt =
         candidateDataObjs?.length > 0
           ? Math.max(
-              ...candidateDataObjs.map((e) =>
-                new Date(e.node.jobs.createdAt).getTime(),
+              ...candidateDataObjs.map(
+                (e) =>
+                  e?.node?.jobs?.createdAt
+                    ? new Date(e?.node?.jobs?.createdAt).getTime()
+                    : 0, // Provide a default value when createdAt is null
               ),
             )
           : 0;
