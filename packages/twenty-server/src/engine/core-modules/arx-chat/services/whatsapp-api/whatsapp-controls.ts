@@ -377,7 +377,7 @@ export class WhatsappControls {
         const formData = new FormData();
 
         // Add extension_id to form data - extract from apiToken or add as needed
-        formData.append('extension_id', 'YOUR_EXTENSION_ID'); // You'll need to get this value
+        // formData.append('extension_id', 'YOUR_EXTENSION_ID'); // You'll need to get this value
 
         formData.append(
           'file',

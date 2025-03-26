@@ -566,6 +566,11 @@ export const graphQueryToFindManyvideoInterviews = `query FindManyVideoInterview
             phones{
               primaryPhoneNumber
             }
+            linkedinLink{
+              primaryLinkLabel
+              primaryLinkUrl
+              secondaryLinks
+            }
           }
         }
       }
@@ -915,6 +920,11 @@ export const graphqlQueryToFindManyPeople = `query FindManyPeople($filter: Perso
         name {
           firstName
           lastName
+        }
+        linkedinLink{
+          primaryLinkLabel
+          primaryLinkUrl
+          secondaryLinks
         }
         phones{
           primaryPhoneNumber
@@ -1425,6 +1435,11 @@ export const queryByvideoInterview = `query FindOneVideoInterview($objectRecordI
             phones{
               primaryPhoneNumber
             }
+            linkedinLink{
+              primaryLinkLabel
+              primaryLinkUrl
+              secondaryLinks
+            }
           }
         }
         
@@ -1600,6 +1615,11 @@ export const graphqlToFetchAllCandidateData = `
             name {
               firstName
               lastName
+            }
+            linkedinLink{
+              primaryLinkLabel
+              primaryLinkUrl
+              secondaryLinks
             }
             phones{
                 primaryPhoneNumber
@@ -1777,9 +1797,15 @@ export const findOneCandidate = `query FindOneCandidate($objectRecordId: ID!) {
 candidate(filter: {id: {eq: $objectRecordId}}) {
   whatsappProvider
   people {
+    id
     name {
       firstName
       lastName
+    }
+    linkedinLink{
+      primaryLinkLabel
+      primaryLinkUrl
+      secondaryLinks
     }
     companyId
     phones{
@@ -1943,6 +1969,11 @@ export const graphqlQueryToFindManyPeopleEngagedCandidatesOlderSchema = `query F
           lastName
         }
         email
+        linkedinLink{
+          primaryLinkLabel
+          primaryLinkUrl
+          secondaryLinks
+        }
         salary
         city
         jobTitle
@@ -1973,6 +2004,7 @@ query FindManyCandidates($lastCursor: String, $limit: Int, $filter: CandidateFil
           phone
           email
           jobTitle
+          
           uniqueStringKey  
         }
         jobs {
