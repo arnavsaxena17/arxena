@@ -6,9 +6,20 @@ import { SettingsRoutes } from '@/app/components/SettingsRoutes';
 
 import { VerifyEffect } from '@/auth/components/VerifyEffect';
 import { VerifyEmailEffect } from '@/auth/components/VerifyEmailEffect';
+import { ClientDashboard } from '@/client-dashboard/components/ClientDashboard';
+import CustomLayoutCandidate from '@/custom-layouts/components/custom-layout-candidate';
+import CustomLayoutJob from '@/custom-layouts/components/custom-layout-job';
+import CustomLayoutMerged from '@/custom-layouts/components/custom-layout-merged';
+import GoogleSheet from '@/google-sheet/GoogleSheet';
+import { HotPage } from '@/hot/hotCandidates';
+import Interview from '@/interviews/components/Interviews';
+import indexAppPath from '@/navigation/utils/indexAppPath';
+import OrgChart from '@/orgchart/components/OrgChart';
 import { AppPath } from '@/types/AppPath';
 import { BlankLayout } from '@/ui/layout/page/components/BlankLayout';
 import { DefaultLayout } from '@/ui/layout/page/components/DefaultLayout';
+import VideoInterviewFlow from '@/video-interview/interview-response/VideoInterviewFlow';
+import VideoInterviewResponseViewer from '@/video-interview/interview-response/VideoInterviewResponseViewer';
 import {
   Route,
   createBrowserRouter,
@@ -18,6 +29,7 @@ import {
 import { Authorize } from '~/pages/auth/Authorize';
 import { PasswordReset } from '~/pages/auth/PasswordReset';
 import { SignInUp } from '~/pages/auth/SignInUp';
+import { Chats } from '~/pages/chats/Chats';
 import { NotFound } from '~/pages/not-found/NotFound';
 import { RecordIndexPage } from '~/pages/object-record/RecordIndexPage';
 import { RecordShowPage } from '~/pages/object-record/RecordShowPage';
@@ -27,19 +39,6 @@ import { CreateWorkspace } from '~/pages/onboarding/CreateWorkspace';
 import { InviteTeam } from '~/pages/onboarding/InviteTeam';
 import { PaymentSuccess } from '~/pages/onboarding/PaymentSuccess';
 import { SyncEmails } from '~/pages/onboarding/SyncEmails';
-
-import { ClientDashboard } from '@/client-dashboard/components/ClientDashboard';
-import CustomLayoutCandidate from '@/custom-layouts/components/custom-layout-candidate';
-import CustomLayoutJob from '@/custom-layouts/components/custom-layout-job';
-import CustomLayoutMerged from '@/custom-layouts/components/custom-layout-merged';
-import GoogleSheet from '@/google-sheet/GoogleSheet';
-import { HotPage } from '@/hot/hotCandidates';
-import Interview from '@/interviews/components/Interviews';
-import indexAppPath from '@/navigation/utils/indexAppPath';
-import OrgChart from '@/orgchart/OrgChart';
-import VideoInterviewFlow from '@/video-interview/interview-response/VideoInterviewFlow';
-import VideoInterviewResponseViewer from '@/video-interview/interview-response/VideoInterviewResponseViewer';
-import { Chats } from '~/pages/chats/Chats';
 
 const VideoInterviewWrapper = () => {
   console.log('VideoInterviewWrapper rendering');
