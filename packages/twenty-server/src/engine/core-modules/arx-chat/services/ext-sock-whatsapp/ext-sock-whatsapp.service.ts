@@ -1,4 +1,8 @@
-import { WhatsappMessageData, WhatsappMessageJobData } from 'twenty-shared';
+import {
+  WhatsappMessageData,
+  WhatsappMessageJobData,
+  isDefined,
+} from 'twenty-shared';
 
 import { QueueCronJobOptions } from 'src/engine/core-modules/message-queue/drivers/interfaces/job-options.interface';
 
@@ -15,8 +19,12 @@ export class ExtSockWhatsappService {
 
   async queueMessage(messageData: WhatsappMessageData): Promise<void> {
     try {
+      const messageType = isDefined(messageData?.linkedin_url)
+        ? 'LinkedIn'
+        : 'WhatsApp';
+
       console.log(
-        `Queueing WhatsApp message for processing: ${messageData.id}`,
+        `Queueing ${messageType} message for processing: ${messageData.id}`,
       );
 
       const queueJobOptions: QueueCronJobOptions = {
@@ -37,9 +45,11 @@ export class ExtSockWhatsappService {
         queueJobOptions,
       );
 
-      console.log(`Successfully queued WhatsApp message: ${messageData.id}`);
+      console.log(
+        `Successfully queued ${messageType} message: ${messageData.id}`,
+      );
     } catch (error) {
-      console.error('Failed to queue WhatsApp message:', error);
+      console.error('Failed to queue message:', error);
       throw error;
     }
   }

@@ -1,5 +1,5 @@
+import { executeQuery } from 'src/engine/core-modules/workspace-modifications/object-apis/utils/graphqlClient';
 import { CreateOneRelationMetadataItem, RelationInput } from 'twenty-shared';
-import { executeQuery } from '../utils/graphqlClient';
 
 export async function createRelations(fieldRelations:RelationInput[] , apiToken: string) {
     // console.log("objectsNameIdMap", objectsNameIdMap);

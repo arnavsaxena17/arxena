@@ -99,6 +99,7 @@ export async function axiosRequest(data: string, apiToken: string) {
       'content-type': 'application/json',
     },
     data: data,
+    timeout: 10000,
   });
 
   if (response.data.errors) {

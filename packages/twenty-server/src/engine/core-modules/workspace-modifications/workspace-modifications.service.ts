@@ -236,11 +236,12 @@ export class WorkspaceQueryService {
     openaikey?: string;
     twilio_account_sid?: string;
     twilio_auth_token?: string;
-    smart_proxy_url?: string;
+    linkedin_url?: string;
     whatsapp_key?: string;
     anthropic_key?: string;
     facebook_whatsapp_api_token?: string;
     facebook_whatsapp_phone_number_id?: string;
+    whatsapp_web_phone_number?: string;
     facebook_whatsapp_app_id?: string;
     facebook_whatsapp_asset_id?: string;
   }> {
@@ -252,11 +253,12 @@ export class WorkspaceQueryService {
       ADD COLUMN IF NOT EXISTS openaikey varchar(255),
       ADD COLUMN IF NOT EXISTS twilio_account_sid varchar(255),
       ADD COLUMN IF NOT EXISTS twilio_auth_token varchar(255),
-      ADD COLUMN IF NOT EXISTS smart_proxy_url varchar(255),
+      ADD COLUMN IF NOT EXISTS linkedin_url varchar(255),
       ADD COLUMN IF NOT EXISTS whatsapp_key varchar(255),
       ADD COLUMN IF NOT EXISTS anthropic_key varchar(255),
       ADD COLUMN IF NOT EXISTS facebook_whatsapp_api_token varchar(255),
       ADD COLUMN IF NOT EXISTS facebook_whatsapp_phone_number_id varchar(255),
+      ADD COLUMN IF NOT EXISTS whatsapp_web_phone_number varchar(255),
       ADD COLUMN IF NOT EXISTS facebook_whatsapp_app_id varchar(255),
       ADD COLUMN IF NOT EXISTS facebook_whatsapp_asset_id varchar(255)
     `;
@@ -268,11 +270,12 @@ export class WorkspaceQueryService {
         openaikey,
         twilio_account_sid,
         twilio_auth_token,
-        smart_proxy_url,
+        linkedin_url,
         whatsapp_key,
         anthropic_key,
         facebook_whatsapp_api_token,
         facebook_whatsapp_phone_number_id,
+        whatsapp_web_phone_number,
         facebook_whatsapp_app_id,
         facebook_whatsapp_asset_id
       FROM core.workspace 
@@ -290,12 +293,12 @@ export class WorkspaceQueryService {
           openaikey: result[0].openaikey,
           twilio_account_sid: result[0].twilio_account_sid,
           twilio_auth_token: result[0].twilio_auth_token,
-          smart_proxy_url: result[0].smart_proxy_url,
+          linkedin_url: result[0].linkedin_url,
           whatsapp_key: result[0].whatsapp_key,
           anthropic_key: result[0].anthropic_key,
           facebook_whatsapp_api_token: result[0].facebook_whatsapp_api_token,
-          facebook_whatsapp_phone_number_id:
-            result[0].facebook_whatsapp_phone_number_id,
+          facebook_whatsapp_phone_number_id: result[0].facebook_whatsapp_phone_number_id,
+          whatsapp_web_phone_number: result[0].whatsapp_web_phone_number,
           facebook_whatsapp_app_id: result[0].facebook_whatsapp_app_id,
           facebook_whatsapp_asset_id: result[0].facebook_whatsapp_asset_id,
         };
@@ -363,11 +366,12 @@ export class WorkspaceQueryService {
       openaikey?: string;
       twilio_account_sid?: string;
       twilio_auth_token?: string;
-      smart_proxy_url?: string;
+      linkedin_url?: string;
       whatsapp_key?: string;
       anthropic_key?: string;
       facebook_whatsapp_api_token?: string;
       facebook_whatsapp_phone_number_id?: string;
+      whatsapp_web_phone_number?:string;
       facebook_whatsapp_app_id?: string;
       facebook_whatsapp_asset_id?: string;
     },

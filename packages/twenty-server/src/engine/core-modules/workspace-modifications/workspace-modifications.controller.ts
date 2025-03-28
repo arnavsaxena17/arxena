@@ -26,6 +26,7 @@ export async function axiosRequest(data: string, apiToken: string) {
       'content-type': 'application/json',
     },
     data: data,
+    timeout: 10000,
   });
 
   if (response.data.errors) {
@@ -101,12 +102,13 @@ export class WorkspaceModificationsController {
       openaikey?: string;
       twilioAccountSid?: string;
       twilioAuthToken?: string;
-      smartProxyUrl?: string;
+      linkedinUrl?: string;
       whatsappKey?: string;
       anthropicKey?: string;
       facebookWhatsappApiToken?: string;
       facebookWhatsappPhoneNumberId?: string;
       facebookWhatsappAppId?: string;
+      whatsappWebPhoneNumber?:string;
     },
   ) {
     const { workspace } =

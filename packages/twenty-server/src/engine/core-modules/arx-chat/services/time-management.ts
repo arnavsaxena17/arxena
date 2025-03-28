@@ -4,6 +4,7 @@ const TimeManagementLocal = {
   crontabs: {
     crontTabToExecuteCandidateEngagement: CronExpression.EVERY_5_SECONDS,
     crontTabToUpdateCandidatesChatControls: CronExpression.EVERY_MINUTE,
+    crontTabToFetchLinkedinSockMessages: CronExpression.EVERY_MINUTE,
   },
   timeDifferentials: {
     timeDifferentialinMinutesToCheckTimeDifferentialBetweenlastMessage: 0.1,
@@ -16,6 +17,7 @@ const TimeManagementProd = {
   crontabs: {
     crontTabToExecuteCandidateEngagement: CronExpression.EVERY_MINUTE,
     crontTabToUpdateCandidatesChatControls: CronExpression.EVERY_30_MINUTES,
+    crontTabToFetchLinkedinSockMessages: CronExpression.EVERY_10_MINUTES,
   },
   timeDifferentials: {
     timeDifferentialinMinutesToCheckTimeDifferentialBetweenlastMessage: 3,

@@ -255,26 +255,43 @@ export class ArxChatEndpoint {
 
     console.log('Recruiter profile', recruiterProfile);
     const chatMessages =
-      personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges;
+      personObj?.candidates?.edges.filter(
+        (candidate) => candidate.node.jobs.id == candidateJob.id,
+      )[0]?.node?.whatsappMessages?.edges;
     let chatHistory = chatMessages[0]?.node?.messageObj || [];
     const chatControl: ChatControlsObjType = {
       chatControlType: 'startChat',
     };
 
     chatHistory =
-      personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node
+      personObj?.candidates?.edges.filter(
+        (candidate) => candidate.node.jobs.id == candidateJob.id,
+      )[0]?.node?.whatsappMessages?.edges[0]?.node
         ?.messageObj;
+
+
+    let phoneNumberTo:string = personObj.phones.primaryPhoneNumber.length == 10
+    ? '91' + personObj.phones.primaryPhoneNumber
+    : personObj.phones.primaryPhoneNumber;
+    if (personObj?.candidates?.edges[0]?.node?.messagingChannel == 'linkedin') {
+      phoneNumberTo = personObj?.linkedinLink?.primaryLinkUrl || '';
+    }
+    else{
+      phoneNumberTo = personObj.phones.primaryPhoneNumber.length == 10
+          ? '91' + personObj.phones.primaryPhoneNumber
+          : personObj.phones.primaryPhoneNumber
+    }
+      
     const whatappUpdateMessageObj: whatappUpdateMessageObjType = {
       candidateProfile: personObj?.candidates?.edges[0]?.node,
       candidateFirstName: personObj?.name?.firstName || '',
       phoneNumberFrom: recruiterProfile.phoneNumber,
       whatsappMessageType:
-        personObj?.candidates?.edges[0]?.node.whatsappProvider ||
+        personObj?.candidates?.edges.filter(
+          (candidate) => candidate.node.jobs.id == candidateJob.id,
+        )[0]?.node.whatsappProvider ||
         'application03',
-      phoneNumberTo:
-        personObj.phones.primaryPhoneNumber.length == 10
-          ? '91' + personObj.phones.primaryPhoneNumber
-          : personObj.phones.primaryPhoneNumber,
+      phoneNumberTo:phoneNumberTo,
       messages: [{ content: request?.body?.messageToSend }],
       messageType: 'recruiterMessage',
       messageObj: chatHistory,
@@ -282,6 +299,7 @@ export class ArxChatEndpoint {
       whatsappDeliveryStatus: 'created',
       whatsappMessageId: 'startChat',
     };
+
     const messageObj: ChatRequestBody = {
       phoneNumberFrom: recruiterProfile.phoneNumber,
       phoneNumberTo:
@@ -300,7 +318,9 @@ export class ArxChatEndpoint {
     await new UpdateChat(
       this.workspaceQueryService,
     ).createAndUpdateWhatsappMessage(
-      personObj.candidates.edges[0].node,
+      personObj.candidates.edges.filter(
+        (candidate) => candidate.node.jobs.id == candidateJob.id,
+      )[0].node,
       whatappUpdateMessageObj,
       apiToken,
     );

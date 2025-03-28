@@ -43,6 +43,7 @@ export class CreateMetaDataStructure {
         'content-type': 'application/json',
       },
       data: data,
+      timeout: 10000,
     });
 
     return response;
@@ -63,7 +64,7 @@ export class CreateMetaDataStructure {
         authorization: `Bearer ${apiToken}`,
         'content-type': 'application/json',
       },
-
+      timeout: 10000,
       data: data,
     };
 
@@ -237,12 +238,13 @@ export class CreateMetaDataStructure {
       openaikey: process.env.OPENAI_KEY,
       twilio_account_sid: undefined,
       twilio_auth_token: undefined,
-      smart_proxy_url: undefined,
+      linkedin_url: undefined,
       whatsapp_key: 'whatsapp-official',
       anthropic_key: process.env.ANTHROPIC_API_KEY,
       facebook_whatsapp_api_token: process.env.FACEBOOK_WHATSAPP_API_TOKEN,
       facebook_whatsapp_phone_number_id:
         process.env.FACEBOOK_WHATSAPP_PHONE_NUMBER_ID,
+        whatsapp_web_phone_number:'918411937769',
       facebook_whatsapp_app_id: process.env.FACEBOOK_WHATSAPP_APP_ID,
       facebook_whatsapp_asset_id: process.env.FACEBOOK_WHATSAPP_ASSET_ID,
       // waba_phone_number: undefined,

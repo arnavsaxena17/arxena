@@ -43,15 +43,38 @@ export class FilterCandidates {
       apiToken,
     );
 
+
+    let phoneNumberTo:string = personNode.phones.primaryPhoneNumber.length == 10
+    ? '91' + personNode.phones.primaryPhoneNumber
+    : personNode.phones.primaryPhoneNumber;
+    
+    if (personNode?.candidates?.edges.filter(
+      (candidate) => candidate.node.jobs.id == candidateJob.id,
+    )[0]?.node?.messagingChannel == 'linkedin') {
+      phoneNumberTo = personNode?.linkedinLink?.primaryLinkUrl || '';
+    }
+    else{
+      phoneNumberTo = personNode.phones.primaryPhoneNumber.length == 10
+          ? '91' + personNode.phones.primaryPhoneNumber
+          : personNode.phones.primaryPhoneNumber
+    }
+
+    let phoneNumberFrom:string = recruiterProfile.phoneNumber;
+    if (personNode?.candidates?.edges.filter(
+      (candidate) => candidate.node.jobs.id == candidateJob.id,
+    )[0]?.node?.messagingChannel == 'linkedin') {
+      phoneNumberFrom = recruiterProfile.linkedinUrl || '';
+    }
+    else{
+      phoneNumberFrom = recruiterProfile.phoneNumber
+    }
+  
     const updatedChatHistoryObj: whatappUpdateMessageObjType = {
       messageObj: chatHistory,
       candidateProfile: candidateNode,
       candidateFirstName: personNode.name?.firstName,
-      phoneNumberFrom: recruiterProfile?.phoneNumber,
-      phoneNumberTo:
-        personNode.phones.primaryPhoneNumber.length == 10
-          ? '91' + personNode.phones.primaryPhoneNumber
-          : personNode.phones.primaryPhoneNumber,
+      phoneNumberFrom: phoneNumberFrom,
+      phoneNumberTo: phoneNumberTo,
       lastEngagementChatControl: chatControl.chatControlType,
       messages: chatHistory.slice(-1),
       messageType: 'botMessage',
@@ -171,7 +194,11 @@ export class FilterCandidates {
       graphqlQueryObjToFetchAllPeopleForChats = graphqlQueryToFindManyPeople;
     }
 
+
+
+
     if (candidatePeopleIds.length > 0) {
+
       while (hasMoreResults) {
         const graphqlQueryObj = JSON.stringify({
           query: graphqlQueryObjToFetchAllPeopleForChats,
@@ -272,51 +299,6 @@ export class FilterCandidates {
       console.log('Error in fetching interviews:: ', error);
     }
   }
-
-  async getCandidateDetailsByPhoneNumber(
-    phoneNumber: string,
-    apiToken: string,
-  ): Promise<CandidateNode> {
-    const graphVariables = {
-      filter: {
-        phones: { primaryPhoneNumber: { ilike: '%' + phoneNumber + '%' } },
-      },
-      orderBy: { position: 'AscNullsFirst' },
-    };
-
-    if (phoneNumber.length > 10) {
-      console.log(
-        'Phone number is more than 10 digits will slice:',
-        phoneNumber,
-      );
-      phoneNumber = phoneNumber.slice(-10);
-    }
-    console.log('Phone number to search is :', phoneNumber);
-    try {
-      const graphqlQueryObj = JSON.stringify({
-        query: graphqlQueryToFindManyPeople,
-        variables: graphVariables,
-      });
-      const response = await axiosRequest(graphqlQueryObj, apiToken);
-
-      console.log(
-        'This is the response from getCandidate Information FROM PHONENUMBER in getPersonDetailsByPhoneNumber',
-        response.data.data,
-      );
-      const candidateDataObjs =
-        response.data?.data?.people?.edges[0]?.node?.candidates?.edges;
-
-      return candidateDataObjs;
-    } catch (error) {
-      console.log(
-        'Getting an error and returning empty candidate profile objeect:',
-        error,
-      );
-
-      return emptyCandidateProfileObj;
-    }
-  }
-
   async getPersonDetailsByPhoneNumber(phoneNumber: string, apiToken: string) {
     console.log('Trying to get person details by phone number:', phoneNumber);
 
@@ -325,20 +307,29 @@ export class FilterCandidates {
 
       return emptyCandidateProfileObj;
     }
-    if (phoneNumber.length > 10) {
-      console.log(
-        'Phone number is more than 10 digits will slice:',
-        phoneNumber,
-      );
+    if (phoneNumber.length > 10 && !phoneNumber.includes("linkedin")) {
+      console.log( 'Phone number is more than 10 digits will slice:', phoneNumber );
       phoneNumber = phoneNumber.slice(-10);
     }
     console.log('Phone number to search is :', phoneNumber);
-    const graphVariables = {
+
+    let graphVariables: any;
+
+    graphVariables = {
       filter: {
         phones: { primaryPhoneNumber: { ilike: '%' + phoneNumber + '%' } },
       },
       orderBy: { position: 'AscNullsFirst' },
     };
+
+
+    if (phoneNumber.includes("linkedin")) {
+      graphVariables = {
+        linkedinLink: {
+          primaryLinkUrl: { like: '%' + phoneNumber + '%' },
+        },
+      }
+    }
 
     try {
       console.log('Going to get person details by phone number');
@@ -379,29 +370,29 @@ export class FilterCandidates {
     console.log('This is the phoneNumberFrom', userMessage?.phoneNumberFrom);
     let phoneNumberToSearch: string;
 
+
+
     if (userMessage.messageType === 'messageFromSelf') {
       phoneNumberToSearch = userMessage.phoneNumberTo.replace('+', '');
     } else {
       phoneNumberToSearch = userMessage.phoneNumberFrom.replace('+', '');
     }
 
-    if (phoneNumberToSearch.length > 10) {
-      console.log(
-        'Phone number is more than 10 digits will slice:',
-        phoneNumberToSearch,
-      );
+    if (phoneNumberToSearch.length > 10 && !phoneNumberToSearch.includes("linkedin")) {
+      console.log( 'Phone number is more than 10 digits will slice:', phoneNumberToSearch );
       phoneNumberToSearch = phoneNumberToSearch.slice(-10);
     }
     console.log('phoneNumberToSearch::', phoneNumberToSearch);
     // Ignore if phoneNumberToSearch is not a valid number
-    if (isNaN(Number(phoneNumberToSearch))) {
-      console.log('Phone number is not valid, ignoring:', phoneNumberToSearch);
-
-      return emptyCandidateProfileObj;
-    }
-
+    // if (isNaN(Number(phoneNumberToSearch))) {
+    //   console.log('Phone number is not valid, ignoring:', phoneNumberToSearch);
+    //   return emptyCandidateProfileObj;
+    // }
     console.log('Phone number to search is :', phoneNumberToSearch);
-    const graphVariables = {
+
+    let graphVariables : any;
+
+    graphVariables = {
       filter: {
         phones: {
           primaryPhoneNumber: { ilike: '%' + phoneNumberToSearch + '%' },
@@ -410,6 +401,17 @@ export class FilterCandidates {
       orderBy: { position: 'AscNullsFirst' },
     };
 
+    if (phoneNumberToSearch.includes("linkedin")) {
+      graphVariables = {
+        filter:{
+          linkedinLink: {
+          primaryLinkUrl: { like: '%' + phoneNumberToSearch + '%' },
+        }
+        },
+      }
+    }
+    console.log("graphVariables::", graphVariables);
+
     try {
       console.log('going to get candidate information');
       const graphqlQueryObj = JSON.stringify({
@@ -417,29 +419,27 @@ export class FilterCandidates {
         variables: graphVariables,
       });
       const response = await axiosRequest(graphqlQueryObj, apiToken);
-
+      console.log("Number of people fetched::", response.data?.data?.people?.edges.length)
+      
       console.log(
         'Number of candidates fetched::',
         response.data?.data?.people?.edges[0]?.node?.candidates?.edges.length,
         'for phone number:',
         phoneNumberToSearch,
       );
-      const candidateDataObjs =
-        response.data?.data?.people?.edges[0]?.node?.candidates?.edges || [];
+      const candidateDataObjs = response.data?.data?.people?.edges[0]?.node?.candidates?.edges || [];
 
       console.log('candidateDataObjs::', candidateDataObjs);
       const maxCreatedAt =
         candidateDataObjs?.length > 0
           ? Math.max(
-              ...candidateDataObjs.map(
-                (e) =>
-                  e?.node?.jobs?.createdAt
-                    ? new Date(e?.node?.jobs?.createdAt).getTime()
-                    : 0, // Provide a default value when createdAt is null
+              ...candidateDataObjs.map((e) =>
+                e?.node?.jobs?.createdAt
+                  ? new Date(e?.node?.jobs?.createdAt).getTime()
+                  : 0,
               ),
             )
           : 0;
-
       const activeJobCandidateObj = candidateDataObjs?.find(
         (edge: CandidatesEdge) =>
           edge?.node?.jobs?.isActive &&
@@ -470,6 +470,10 @@ export class FilterCandidates {
         console.log('This isthe activeJobCandidate::', activeJobCandidate);
         const activeJob: Jobs = activeJobCandidate?.jobs;
         const activeCompany = activeJob?.company;
+
+
+
+
         const candidateProfileObj: CandidateNode = {
           name: personWithActiveJob?.node?.name?.firstName || '',
           id: activeJobCandidate?.id,

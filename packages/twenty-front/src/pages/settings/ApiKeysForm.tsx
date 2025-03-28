@@ -51,12 +51,14 @@ interface ApiKey {
   openaikey?: string;
   twilio_account_sid?: string;
   twilio_auth_token?: string;
-  smart_proxy_url?: string;
+  linkedin_url?: string;
   whatsapp_key?: string;
   anthropic_key?: string;
   facebook_whatsapp_api_token?: string;
   facebook_whatsapp_phone_number_id?: string;
   facebook_whatsapp_app_id?: string;
+
+  whatsapp_web_phone_number?:string;
   facebook_whatsapp_asset_id?: string;
 }
 
@@ -186,7 +188,7 @@ export const ApiKeysForm = () => {
       {renderInput('openaikey', 'OpenAI API Key')}
       {renderInput('twilio_account_sid', 'Twilio Account SID')}
       {renderInput('twilio_auth_token', 'Twilio Auth Token')}
-      {renderInput('smart_proxy_url', 'Smart Proxy URL')}
+      {renderInput('linkedin_url', 'Linkedin Profile URL')}
       {renderInput('whatsapp_key', 'WhatsApp Key')}
       {renderInput('anthropic_key', 'Anthropic Key')}
       {renderInput(
@@ -196,6 +198,10 @@ export const ApiKeysForm = () => {
       {renderInput(
         'facebook_whatsapp_phone_number_id',
         'Facebook WhatsApp Phone Number ID',
+      )}
+      {renderInput(
+        'whatsapp_web_phone_number',
+        'Facebook WhatsApp Phone Number',
       )}
       {renderInput(
         'facebook_whatsapp_app_id',

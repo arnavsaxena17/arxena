@@ -25,17 +25,34 @@ export class RedisService implements OnModuleInit {
     }
   }
 
+  private isLinkedInUrl(identifier: string): boolean {
+    return identifier.includes('linkedin.com');
+  }
+
+  async createIdentifierToUserMapping(
+    identifier: string,
+    userId: string,
+  ): Promise<void> {
+    await this.redisClient.set(`identifier_to_user:${identifier}`, userId);
+  }
+
+  async getUserIdForIdentifier(identifier: string): Promise<string | null> {
+    const userId = await this.redisClient.get(
+      `identifier_to_user:${identifier}`,
+    );
+
+    return userId;
+  }
+
+  async getUserIdForPhoneNumber(phoneNumber: string): Promise<string | null> {
+    return this.getUserIdForIdentifier(phoneNumber);
+  }
+
   async createPhoneToUserMapping(
     phoneNumber: string,
     userId: string,
   ): Promise<void> {
-    await this.redisClient.set(`phone_to_user:${phoneNumber}`, userId);
-  }
-
-  async getUserIdForPhoneNumber(phoneNumber: string): Promise<string | null> {
-    const userId = await this.redisClient.get(`phone_to_user:${phoneNumber}`);
-
-    return userId;
+    await this.createIdentifierToUserMapping(phoneNumber, userId);
   }
 
   // Whitelist operations
@@ -43,25 +60,25 @@ export class RedisService implements OnModuleInit {
     await this.redisClient.sadd(`whitelist:user:${userId}`, phoneNumber);
   }
 
-  async isWhitelisted(userId: string, phoneNumber: string): Promise<boolean> {
+  async isWhitelisted(userId: string, identifier: string): Promise<boolean> {
     console.log(
-      `Checking whitelist for user: ${userId} with phone: ${phoneNumber}`,
+      `Checking whitelist for user: ${userId} with identifier: ${identifier}`,
     );
 
     // Get all members and check manually first
     const allMembers = await this.redisClient.smembers(
       `whitelist:user:${userId}`,
     );
-    const manualCheck = allMembers.includes(phoneNumber);
+    const manualCheck = allMembers.includes(identifier);
 
     // Also try the Redis sismember command
     const redisCheck = await this.redisClient.sismember(
       `whitelist:user:${userId}`,
-      phoneNumber,
+      identifier,
     );
 
-    console.log(`Manual check: ${phoneNumber} exists in set: ${manualCheck}`);
-    console.log(`Redis check result: ${redisCheck} for ${phoneNumber}`);
+    console.log(`Manual check: ${identifier} exists in set: ${manualCheck}`);
+    console.log(`Redis check result: ${redisCheck} for ${identifier}`);
 
     return !!redisCheck;
   }
@@ -125,6 +142,7 @@ export class RedisService implements OnModuleInit {
     userId: string,
     messageId: string,
   ): Promise<void> {
+    console.log("Mrkeing message as processed::", userId, messageId)
     await this.redisClient.sadd(`processed_messages:user:${userId}`, messageId);
   }
 
@@ -132,10 +150,9 @@ export class RedisService implements OnModuleInit {
     userId: string,
     messageId: string,
   ): Promise<boolean> {
-    return !!(await this.redisClient.sismember(
-      `processed_messages:user:${userId}`,
-      messageId,
-    ));
+    console.log("Checking if message is processed::", userId, messageId)
+    const isProcessed =  !!(await this.redisClient.sismember( `processed_messages:user:${userId}`, messageId, ))
+    return isProcessed;
   }
 
   // Optional - cleanup old processed messages (run periodically)

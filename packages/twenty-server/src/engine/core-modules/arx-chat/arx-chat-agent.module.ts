@@ -12,6 +12,7 @@ import { WhatsappTestAPI } from 'src/engine/core-modules/arx-chat/controllers/wh
 import {
   CandidateEngagementCronService,
   CandidateStatusClassificationCronService,
+  LinkedinSockIncomingMessageFetchingCronService,
 } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/scheduling-agent';
 import { AuthModule } from 'src/engine/core-modules/auth/auth.module';
 import { GoogleCalendarModule } from 'src/engine/core-modules/calendar-events/google-calendar.module';
@@ -70,6 +71,7 @@ import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/work
   // providers: [CandidateStatusClassificationCronService, WebhookTestCronService, PersonService,CandidateEngagementCronService, CandidateService, WorkspaceDataSourceService],
   providers: [
     CandidateStatusClassificationCronService,
+    LinkedinSockIncomingMessageFetchingCronService,
     PersonService,
     CandidateEngagementCronService,
     CandidateService,

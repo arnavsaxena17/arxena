@@ -2,7 +2,7 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 
 // eslint-disable-next-line prettier/prettier
-import { FindManyWorkspaceMembers, WhatsappMessageData, graphqlToFetchAllCandidateData, graphqlToFindManyJobs, } from 'twenty-shared';
+import { FindManyWorkspaceMembers, WhatsappMessageData, graphqlToFetchAllCandidateData, graphqlToFindManyJobs, isDefined, } from 'twenty-shared';
 import { In } from 'typeorm';
 
 import { workspacesWithOlderSchema } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/candidate-engagement';
@@ -37,7 +37,7 @@ export class ExtSockWhatsappWhitelistProcessingService implements OnModuleInit {
     }
   }
 
-  private async loadWhitelistsForAllUsers() {
+  async loadWhitelistsForAllUsers() {
     try {
       // Get all workspaces with active data sources
       const workspaces = await this.getFilteredWorkspaces();
@@ -57,27 +57,28 @@ export class ExtSockWhatsappWhitelistProcessingService implements OnModuleInit {
 
           for (const user of users) {
             try {
-              const phoneNumbers = await this.fetchCandidatePhoneNumbersForUser(
+              const identifiers = await this.fetchCandidateIdentifiersForUser(
                 user.id,
                 token,
               );
 
               // Load whitelist as before
-              await this.redisService.loadWhitelist(user.id, phoneNumbers);
+              await this.redisService.loadWhitelist(user.id, identifiers);
 
-              // Create reverse mappings for all phone numbers
+              // Create reverse mappings for all identifiers
               console.log(
-                `Creating reverse mappings for ${phoneNumbers.length} phone numbers`,
+                `Creating reverse mappings for ${identifiers.length} identifiers`,
               );
-              for (const phoneNumber of phoneNumbers) {
-                await this.redisService.createPhoneToUserMapping(
-                  phoneNumber,
+              console.log('these are the identifiers', identifiers);
+              for (const identifier of identifiers) {
+                await this.redisService.createIdentifierToUserMapping(
+                  identifier,
                   user.id,
                 );
               }
 
               console.log(
-                `Loaded ${phoneNumbers.length} phone numbers for user ${user.id}`,
+                `Loaded ${identifiers.length} identifiers for user ${user.id}`,
               );
             } catch (userError) {
               console.error(
@@ -163,7 +164,7 @@ export class ExtSockWhatsappWhitelistProcessingService implements OnModuleInit {
     }
   }
 
-  private async fetchCandidatePhoneNumbersForUser(
+  private async fetchCandidateIdentifiersForUser(
     userId: string,
     apiToken: string,
   ): Promise<string[]> {
@@ -171,7 +172,6 @@ export class ExtSockWhatsappWhitelistProcessingService implements OnModuleInit {
       if (!apiToken) return [];
 
       // Fetch all jobs
-
       const response = await axiosRequest(
         JSON.stringify({
           query: graphqlToFindManyJobs,
@@ -185,7 +185,9 @@ export class ExtSockWhatsappWhitelistProcessingService implements OnModuleInit {
       );
 
       const activeJobs =
-        response?.data?.data?.jobs?.edges?.map((edge) => edge.node) || [];
+        response?.data?.data?.jobs?.edges?.map(
+          (edge: { node: any }) => edge.node,
+        ) || [];
 
       if (!activeJobs.length) {
         console.log(`No active jobs found for user`);
@@ -193,51 +195,83 @@ export class ExtSockWhatsappWhitelistProcessingService implements OnModuleInit {
         return [];
       }
 
-      // Extract job IDs
       const jobIds = activeJobs.map((job) => job.id);
 
-      // Get candidates for these jobs
-      const candidatesResponse = await axiosRequest(
-        JSON.stringify({
-          query: graphqlToFetchAllCandidateData,
-          variables: { filter: { jobsId: { in: jobIds } } },
-        }),
-        apiToken,
-      );
-
-      // Extract and normalize phone numbers
-      const phoneNumbers = new Set<string>();
-
-      candidatesResponse?.data?.data?.candidates?.edges?.forEach((edge) => {
-        const phoneNumber = edge.node?.people?.phones?.primaryPhoneNumber;
-
-        if (phoneNumber) {
-          // Format phone number to match WhatsApp format
-          const normalizedNumber = phoneNumber.replace(/\D/g, '');
-
-          // Add country code if needed (assuming Indian numbers)
-          const formattedNumber =
-            normalizedNumber.length === 10
-              ? `91${normalizedNumber}@c.us`
-              : `${normalizedNumber}@c.us`;
-
-          phoneNumbers.add(formattedNumber);
-        }
-      });
+      const identifiers = await this.fetchIdentifiers(userId, apiToken, jobIds);
 
       console.log(
-        `Found ${phoneNumbers.size} unique phone numbers for user ${userId}`,
+        `Found ${identifiers.length} unique identifiers for user ${userId}`,
       );
 
-      return Array.from(phoneNumbers);
+      console.log('this is the identifiers', identifiers);
+
+      return identifiers;
     } catch (error) {
       console.error(
-        `Failed to fetch candidate phone numbers for user ${userId}:`,
+        `Failed to fetch candidate identifiers for user ${userId}:`,
         error,
       );
 
       return [];
     }
+  }
+
+  async fetchIdentifiers(
+    userId: string,
+    apiToken: string,
+    jobIds: string[],
+  ): Promise<string[]> {
+    console.log('jobIds', jobIds);
+
+    // New pagination logic
+    const identifiers = new Set<string>();
+    let hasNextPage = true;
+    let cursor: string | null = null;
+
+    while (hasNextPage) {
+      const candidatesResponse = await axiosRequest(
+        JSON.stringify({
+          query: graphqlToFetchAllCandidateData,
+          variables: {
+            filter: { jobsId: { in: jobIds } },
+            first: 60, // Adjust page size as needed
+            lastCursor: cursor,
+          },
+        }),
+        apiToken,
+      );
+
+      const pageInfo = candidatesResponse?.data?.data?.candidates?.pageInfo;
+      const edges = candidatesResponse?.data?.data?.candidates?.edges || [];
+
+      // Process current page
+      edges.forEach((edge) => {
+        const phoneNumber = edge.node?.people?.phones?.primaryPhoneNumber;
+        const linkedinUrl = edge.node?.people?.linkedinLink?.primaryLinkUrl;
+
+        if (phoneNumber) {
+          const normalizedNumber = phoneNumber.replace(/\D/g, '');
+          const formattedNumber =
+            normalizedNumber.length === 10
+              ? `91${normalizedNumber}@c.us`
+              : `${normalizedNumber}@c.us`;
+
+          identifiers.add(formattedNumber);
+        }
+
+        if (linkedinUrl) {
+          identifiers.add(linkedinUrl);
+        }
+      });
+
+      // Update pagination state
+      hasNextPage = pageInfo?.hasNextPage || false;
+      cursor = pageInfo?.endCursor || null;
+
+      console.log(`Processed page with ${edges.length} candidates`);
+    }
+
+    return Array.from(identifiers);
   }
 
   // Methods for processing WhatsApp messages
@@ -251,20 +285,34 @@ export class ExtSockWhatsappWhitelistProcessingService implements OnModuleInit {
       message.id,
     );
 
+    console.log("Is processed message", isProcessed);
     if (isProcessed) {
       return false;
     }
 
-    // Then check if the phone number is whitelisted
-    const phoneNumber = message.from;
+    // Determine the identifier based on message type
+    const identifier = isDefined(message?.linkedin_url)
+      ? message.linkedin_url
+      : message.from;
+
+    // Check if the identifier is whitelisted
     const isWhitelisted = await this.redisService.isWhitelisted(
       userId,
-      phoneNumber,
+      identifier,
     );
 
-    console.log('isWhitelisted', isWhitelisted, 'phoneNumber', phoneNumber);
+    const messageType = isDefined(message?.linkedin_url)
+      ? 'LinkedIn'
+      : 'WhatsApp';
 
-    // Always process outgoing messages (fromMe: true)
+    console.log(
+      `is${messageType}Whitelisted`,
+      isWhitelisted,
+      `${messageType}Identifier`,
+      identifier,
+    );
+
+    // Always process outgoing messages (fromMe: true) if needed
     // if (message.fromMe) {
     //   return true;
     // }
@@ -272,7 +320,7 @@ export class ExtSockWhatsappWhitelistProcessingService implements OnModuleInit {
     return isWhitelisted;
   }
 
-  async processWhatsappMessage(
+  async processSockMessage(
     userId: string,
     message: WhatsappMessageData,
   ): Promise<void> {
@@ -285,7 +333,7 @@ export class ExtSockWhatsappWhitelistProcessingService implements OnModuleInit {
 
         return;
       }
-
+      console.log("Goign to process the message with user id and message", userId, message);
       // Process the message
       await this.extSockWhatsappMessageProcessor.processMessageWithUserId(
         message,
@@ -298,39 +346,6 @@ export class ExtSockWhatsappWhitelistProcessingService implements OnModuleInit {
       console.log(`Successfully processed message ${message.id}`);
     } catch (error) {
       console.error(`Failed to process message ${message.id}:`, error);
-      throw error;
-    }
-  }
-
-  // Method to refresh the whitelist for a specific user
-  async refreshWhitelistForUser(
-    userId: string,
-    workspaceId: string,
-  ): Promise<void> {
-    try {
-      const token = await this.getWorkspaceToken(workspaceId);
-
-      if (!token) {
-        console.log(
-          `No API token found for workspace ${workspaceId}, cannot refresh whitelist`,
-        );
-
-        return;
-      }
-
-      const phoneNumbers = await this.fetchCandidatePhoneNumbersForUser(
-        userId,
-        token,
-      );
-
-      // Clear existing whitelist and add new numbers
-      await this.redisService.loadWhitelist(userId, phoneNumbers);
-
-      console.log(
-        `Refreshed whitelist for user ${userId} with ${phoneNumbers.length} numbers`,
-      );
-    } catch (error) {
-      console.error(`Failed to refresh whitelist for user ${userId}:`, error);
       throw error;
     }
   }

@@ -112,7 +112,9 @@ export class WhatsappTestAPI {
       ).updateChatHistoryObjCreateWhatsappMessageObj(
         'success',
         personObj,
-        personObj.candidates.edges[0].node,
+        personObj.candidates.edges.filter(
+          (candidate) => candidate.node.jobs.id == candidateJob.id,
+        )[0].node,
         mostRecentMessageArr,
         chatControl,
         apiToken,

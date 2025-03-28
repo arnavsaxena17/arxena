@@ -8,7 +8,7 @@ export async function axiosRequest(data: string, apiToken: string) {
       authorization: 'Bearer ' + apiToken,
       'content-type': 'application/json',
     },
-    timeout: 60000,  // Increase timeout to 60 seconds (or more if needed)
+    timeout: 10000,  // Increase timeout to 60 seconds (or more if needed)
     data: data,
   });
   
@@ -26,7 +26,7 @@ export async function axiosRequestForMetadata(data: string, apiToken: string) {
       authorization: 'Bearer ' + apiToken,
       'content-type': 'application/json',
     },
-    timeout: 60000,
+    timeout: 10000,
     data: data,
   });
   if (response.data.errors) {

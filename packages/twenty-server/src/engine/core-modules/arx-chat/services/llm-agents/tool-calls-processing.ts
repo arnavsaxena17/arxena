@@ -103,6 +103,36 @@ export class ToolCallsProcessing {
     const recruiterProfile: RecruiterProfileType =
       await getRecruiterProfileByJob(candidateJob, apiToken);
 
+
+
+
+      let phoneNumberFrom:string = person.phones.primaryPhoneNumber.length == 10
+      ? '91' + person.phones.primaryPhoneNumber
+      : person.phones.primaryPhoneNumber;
+      if (person?.candidates?.edges.filter(
+        (candidate) => candidate.node.jobs.id == candidateJob.id,
+      )[0]?.node?.messagingChannel == 'linkedin') {
+        phoneNumberFrom = person?.linkedinLink?.primaryLinkUrl || '';
+      }
+      else{
+        phoneNumberFrom = person.phones.primaryPhoneNumber.length == 10
+            ? '91' + person.phones.primaryPhoneNumber
+            : person.phones.primaryPhoneNumber
+      }
+  
+      let phoneNumberTo:string = recruiterProfile.phoneNumber;
+  
+      if (person?.candidates?.edges.filter(
+        (candidate) => candidate.node.jobs.id == candidateJob.id,
+      )[0]?.node?.messagingChannel == 'linkedin') {
+        phoneNumberTo = recruiterProfile.linkedinUrl || '';
+      }
+      else{
+        phoneNumberTo = recruiterProfile.phoneNumber
+      }
+  
+
+
     const whatappUpdateMessageObj: whatappUpdateMessageObjType = {
       // executorResultObj: {},
       whatsappMessageType: '',
@@ -114,10 +144,8 @@ export class ToolCallsProcessing {
         (edge) => edge.node.jobs.id === candidateJob.id,
       )[0]?.node?.lastEngagementChatControl,
       phoneNumberFrom:
-        person.phones.primaryPhoneNumber.length == 10
-          ? '91' + person.phones.primaryPhoneNumber
-          : person.phones.primaryPhoneNumber,
-      phoneNumberTo: recruiterProfile?.phoneNumber,
+        phoneNumberFrom,
+      phoneNumberTo: phoneNumberTo,
       messages: [{ content: status }],
       messageType: status,
       messageObj: [],
@@ -162,6 +190,38 @@ export class ToolCallsProcessing {
     const candidateProfileObj = person?.candidates?.edges.filter(
       (edge) => edge.node.jobs.id === candidateJob.id,
     )[0]?.node;
+
+
+
+    let phoneNumberFrom:string = person.phones.primaryPhoneNumber.length == 10
+    ? '91' + person.phones.primaryPhoneNumber
+    : person.phones.primaryPhoneNumber;
+    if (person?.candidates?.edges.filter(
+      (candidate) => candidate.node.jobs.id == candidateJob.id,
+    )[0]?.node?.messagingChannel == 'linkedin') {
+      phoneNumberFrom = person?.linkedinLink?.primaryLinkUrl || '';
+    }
+    else{
+      phoneNumberFrom = person.phones.primaryPhoneNumber.length == 10
+          ? '91' + person.phones.primaryPhoneNumber
+          : person.phones.primaryPhoneNumber
+    }
+
+    let phoneNumberTo:string = recruiterProfile.phoneNumber;
+
+    if (person?.candidates?.edges.filter(
+      (candidate) => candidate.node.jobs.id == candidateJob.id,
+    )[0]?.node?.messagingChannel == 'linkedin') {
+      phoneNumberTo = recruiterProfile.linkedinUrl || '';
+    }
+    else{
+      phoneNumberTo = recruiterProfile.phoneNumber
+    }
+
+    
+
+
+
     const whatappUpdateMessageObj: whatappUpdateMessageObjType = {
       // executorResultObj: {},
       whatsappMessageType: '',
@@ -170,13 +230,11 @@ export class ToolCallsProcessing {
       )[0]?.node,
       candidateFirstName: person?.name?.firstName,
       phoneNumberFrom:
-        person.phones.primaryPhoneNumber.length == 10
-          ? '91' + person.phones.primaryPhoneNumber
-          : person.phones.primaryPhoneNumber,
+        phoneNumberFrom,
       lastEngagementChatControl: person?.candidates?.edges.filter(
         (edge) => edge.node.jobs.id === candidateJob.id,
       )[0]?.node?.lastEngagementChatControl,
-      phoneNumberTo: recruiterProfile?.phoneNumber,
+      phoneNumberTo: phoneNumberTo,
       messages: [{ content: status }],
       messageType: status,
       messageObj: [],

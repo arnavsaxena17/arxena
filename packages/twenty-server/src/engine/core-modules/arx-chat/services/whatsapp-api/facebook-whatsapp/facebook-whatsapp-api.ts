@@ -591,7 +591,6 @@ export class FacebookWhatsappChatApi {
           'facebook_whatsapp_asset_id',
         )) || '201570686381881';
 
-      console.log('Using whatsappAPIToken::', whatsappAPIToken);
       const config = {
         method: 'get',
         url: `https://graph.facebook.com/v21.0/${facebookWhatsappAssetId}/message_templates`,

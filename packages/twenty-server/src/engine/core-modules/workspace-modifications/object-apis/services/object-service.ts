@@ -1,5 +1,5 @@
+import { executeQuery } from 'src/engine/core-modules/workspace-modifications/object-apis/utils/graphqlClient';
 import { CreateOneObjectInput, CreateOneObjectMetadataItem } from 'twenty-shared';
-import { executeQuery } from '../utils/graphqlClient';
 
 export async function createObjectMetadataItems(apiToken: string, objectCreationArr: CreateOneObjectInput[]) {
     if (!objectCreationArr || !Array.isArray(objectCreationArr)) {

@@ -1,4 +1,4 @@
-import { WhatsappMessageJobData } from 'twenty-shared';
+import { WhatsappMessageJobData, isDefined } from 'twenty-shared';
 
 import { ExtSockWhatsappWhitelistProcessingService } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/ext-sock-whitelist-processing';
 import { Process } from 'src/engine/core-modules/message-queue/decorators/process.decorator';
@@ -15,40 +15,53 @@ export class WhatsappMessageProcessor {
 
   @Process(WhatsappMessageProcessor.name)
   async handle(jobData: WhatsappMessageJobData): Promise<void> {
-    console.log(`Processing WhatsApp message: ${jobData.data.id}`);
+    console.log(`Processing message: ${jobData.data.id}`);
 
     try {
-      const phoneNumber = jobData.data.from;
+      // Determine the identifier based on message type
+      let identifier: string;
+      let messageType: string;
+
+      if (isDefined(jobData?.data?.linkedin_url)) {
+        identifier = jobData.data.linkedin_url;
+        messageType = 'LinkedIn';
+      } else {
+        identifier = jobData.data.from;
+        messageType = 'WhatsApp';
+      }
+
+      console.log(`Processing ${messageType} message: ${jobData.data.id}`);
 
       // Use the pre-built mapping to find userId
       const userId =
-        await this.extSockWhatsappWhitelistProcessingService.redisService.getUserIdForPhoneNumber(
-          phoneNumber,
+        await this.extSockWhatsappWhitelistProcessingService.redisService.getUserIdForIdentifier(
+          identifier,
         );
+
+      console.log('userId', userId);
 
       if (!userId) {
         console.log(
-          `No user found for phone number ${phoneNumber}, skipping message`,
+          `No user found for ${messageType} identifier ${identifier}, skipping message`,
         );
 
         return;
       }
 
-      console.log(`Found userId ${userId} for phone number ${phoneNumber}`);
+      console.log(
+        `Found userId ${userId} for ${messageType} identifier ${identifier}`,
+      );
 
-      await this.extSockWhatsappWhitelistProcessingService.processWhatsappMessage(
+      await this.extSockWhatsappWhitelistProcessingService.processSockMessage(
         userId,
         jobData.data,
       );
 
       console.log(
-        `WhatsApp message processed successfully: ${jobData.data.id}`,
+        `${messageType} message processed successfully: ${jobData.data.id}`,
       );
     } catch (error) {
-      console.error(
-        `WhatsApp message processing failed: ${jobData.data.id}`,
-        error,
-      );
+      console.error(`Message processing failed: ${jobData.data.id}`, error);
       throw error;
     }
   }

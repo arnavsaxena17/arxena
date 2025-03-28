@@ -33,16 +33,32 @@ export class ExtSockWhatsappMessageProcessor {
       const incomingMessages = new IncomingWhatsappMessages(
         this.workspaceQueryService,
       );
+      let messageFrom:string = ""
+
+      if (messageData.from.includes("linkedin")){
+        console.log("This is a linkedin message, so we will not process it")
+        messageFrom = messageData.from
+      }
+      else{
+        messageFrom = messageData.from.split('@')[0]
+      }
+
+      console.log("Going to use message from as :::", messageFrom)
+
+
+
       const apiToken =
         await incomingMessages.getApiKeyToUseFromPhoneNumberMessageReceived({
+          object: 'whatsapp_personal_account',
           entry: [
             {
+              id: '123',
               changes: [
                 {
                   value: {
                     messages: [
                       {
-                        from: messageData.from.split('@')[0],
+                        from: messageFrom,
                       },
                     ],
                     metadata: {
@@ -55,6 +71,8 @@ export class ExtSockWhatsappMessageProcessor {
           ],
         });
 
+        console.log("Thi is the api token found when trying to process message")
+
       if (apiToken === null) {
         console.log('NO API KEY FOUND FOR THIS PHONE NUMBER');
 
@@ -63,6 +81,8 @@ export class ExtSockWhatsappMessageProcessor {
         console.log('API KEY FOUND FOR THIS PHONE NUMBER::', messageData.from);
       }
 
+      console.log("Going to rpocess :::", messageData)
+      console.log("Going to rpocess :::", apiToken)
       // Process based on whether the message is from self or from another user
       if (messageData.fromMe) {
         await this.processOutgoingMessage(messageData, apiToken, userId);
@@ -109,7 +129,7 @@ export class ExtSockWhatsappMessageProcessor {
       this.workspaceQueryService,
     );
 
-    await incomingMessages.receiveIncomingMessagesFromBaileys(
+    await incomingMessages.receiveIncomingMessages(
       baileysMessage,
       apiToken,
     );
@@ -210,10 +230,11 @@ export class ExtSockWhatsappMessageProcessor {
         'Sending WhatsApp message via ext-sock-whatsapp:',
         whatappUpdateMessageObj.messages[0].content,
       );
+      console.log("whatappUpdateMessageObj. obj:::", whatappUpdateMessageObj);
       const baseUrl = process.env.SERVER_URL || 'http://localhost:3000';
 
       const response = await axios.post(
-        `${baseUrl}/ext-sock-whatsapp/send-message`,
+        `${baseUrl}/ext-sock-whatsapp/send-sock-message`,
         whatappUpdateMessageObj,
         {
           headers: {
@@ -233,7 +254,9 @@ export class ExtSockWhatsappMessageProcessor {
         const updateChat = new UpdateChat(this.workspaceQueryService);
 
         await updateChat.createAndUpdateWhatsappMessage(
-          personNode.candidates.edges[0].node,
+          personNode.candidates.edges.filter(
+            (candidate) => candidate.node.jobs.id == candidateJob.id,
+          )[0].node,
           whatappUpdateMessageObj,
           apiToken,
         );

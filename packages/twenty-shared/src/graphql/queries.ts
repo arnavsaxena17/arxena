@@ -427,6 +427,7 @@ export const findWorkspaceMemberProfiles = `query FindManyWorkspaceMemberProfile
         lastName
         createdAt
         name
+        linkedinUrl
         jobTitle
         updatedAt
         firstName
@@ -527,6 +528,7 @@ export const graphQueryToFindManyvideoInterviews = `query FindManyVideoInterview
           campaign
           updatedAt
           engagementStatus
+          messagingChannel
           candConversationStatus
           startChatCompleted
           startVideoInterviewChat
@@ -859,8 +861,9 @@ export const graphqlQueryToFindManyPeople = `query FindManyPeople($filter: Perso
                       }
                     }
                     engagementStatus
+                    messagingChannel
+                    whatsappProvider
                     startVideoInterviewChat
-                    engagementStatus
                     startChatCompleted
                     startMeetingSchedulingChat
                     chatCount
@@ -1265,6 +1268,8 @@ export const graphqlToFindManyAnswers = `query FindManyAnswers($filter: AnswerFi
             id
             position
             engagementStatus
+            messagingChannel
+            whatsappProvider
             personId
             jobsId
             name
@@ -1387,6 +1392,7 @@ export const queryByvideoInterview = `query FindOneVideoInterview($objectRecordI
           stopChat
           peopleId
           startChat
+          messagingChannel
           chatCount
           status
           source
@@ -1396,6 +1402,7 @@ export const queryByvideoInterview = `query FindOneVideoInterview($objectRecordI
           createdAt
           updatedAt
           engagementStatus
+          messagingChannel
           candConversationStatus
           startChatCompleted
           startVideoInterviewChat
@@ -1514,9 +1521,16 @@ export const queryByvideoInterview = `query FindOneVideoInterview($objectRecordI
 export const graphqlToFetchAllCandidateData = `
   query FindManyCandidates($lastCursor: String, $limit: Int, $filter: CandidateFilterInput) {
     candidates(after: $lastCursor, first: $limit, filter: $filter) {
+        pageInfo {
+          hasNextPage
+          startCursor
+          endCursor
+      }
+
       edges {
         cursor
         node {
+  
           id
           name
           updatedAt
@@ -1837,6 +1851,7 @@ candidate(filter: {id: {eq: $objectRecordId}}) {
     startVideoInterviewChatCompleted
     engagementStatus
     stopChat
+    messagingChannel
     updatedAt
     startChat
     startChatCompleted

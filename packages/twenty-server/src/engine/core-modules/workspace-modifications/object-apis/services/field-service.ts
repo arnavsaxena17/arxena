@@ -1,5 +1,6 @@
+import { executeQuery } from 'src/engine/core-modules/workspace-modifications/object-apis/utils/graphqlClient';
 import { CreateOneFieldMetadataItem, FieldInput } from 'twenty-shared';
-import { executeQuery } from '../utils/graphqlClient';
+
 export async function createFields(fieldsData:FieldInput[], apiToken: string) {
     console.log("Number of fields to be crated", fieldsData.length);
     for (const item of fieldsData ) {

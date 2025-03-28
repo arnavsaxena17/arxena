@@ -418,6 +418,16 @@ export function getFieldsData(
     {
       field: {
         description: '',
+        icon: 'IconLinkedin',
+        label: 'Linkedin URL',
+        name: 'linkedinUrl',
+        objectMetadataId: objectsNameIdMap.workspaceMemberProfile,
+        type: 'TEXT',
+      },
+    },
+    {
+      field: {
+        description: '',
         icon: 'IconPhone',
         label: 'Phone Number',
         name: 'phoneNumber',
@@ -1563,6 +1573,16 @@ export function getFieldsData(
         icon: 'IconPencilStar',
         label: 'campaign',
         name: 'campaign',
+        objectMetadataId: objectsNameIdMap.candidate,
+        type: 'TEXT',
+      },
+    },
+    {
+      field: {
+        description: 'Messaging Channel',
+        icon: 'IconMessageCircle',
+        label: 'Messaging Channel',
+        name: 'messagingChannel',
         objectMetadataId: objectsNameIdMap.candidate,
         type: 'TEXT',
       },

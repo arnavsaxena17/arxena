@@ -2,11 +2,9 @@
 import {
   CandidateNode,
   ChatControlsObjType,
-  ChatHistoryItem,
   Jobs,
-  MessageNode,
   PersonNode,
-  chatControlType,
+  chatControlType
 } from 'twenty-shared';
 
 import { TimeManagement } from 'src/engine/core-modules/arx-chat/services/time-management';
@@ -127,19 +125,19 @@ export class ChatFlowConfigBuilder {
     return true;
   };
 
-  getMostRecentMessageFromMessagesList(messagesList: MessageNode[]) {
-    let mostRecentMessageArr: ChatHistoryItem[] = [];
+  // getMostRecentMessageFromMessagesList(messagesList: MessageNode[]) {
+  //   let mostRecentMessageArr: ChatHistoryItem[] = [];
 
-    if (messagesList) {
-      messagesList.sort(
-        (a, b) =>
-          new Date(b?.createdAt).getTime() - new Date(a?.createdAt).getTime(),
-      );
-      mostRecentMessageArr = messagesList[0]?.messageObj;
-    }
+  //   if (messagesList) {
+  //     messagesList.sort(
+  //       (a, b) =>
+  //         new Date(b?.createdAt).getTime() - new Date(a?.createdAt).getTime(),
+  //     );
+  //     mostRecentMessageArr = messagesList[0]?.messageObj;
+  //   }
 
-    return mostRecentMessageArr;
-  }
+  //   return mostRecentMessageArr;
+  // }
 
   createIsEligibleForEngagement = (
     candidate: CandidateNode,
@@ -239,6 +237,8 @@ export class ChatFlowConfigBuilder {
     chatFlowOrder: chatControlType[],
   ) {
     return (candidate: CandidateNode) => {
+      console.log("candidate name",  candidate);
+      console.log("candidate whtasapp messages lenght",  candidate.whatsappMessages.edges.length);
       if (currentOrder === 1) {
         return (
           candidate.startChat && candidate.whatsappMessages?.edges.length === 0

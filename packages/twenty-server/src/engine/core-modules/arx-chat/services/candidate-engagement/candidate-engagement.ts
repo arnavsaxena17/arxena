@@ -27,6 +27,7 @@ import {
 import { GoogleSheetsService } from 'src/engine/core-modules/google-sheets/google-sheets.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
+import axios from 'axios';
 import { FilterCandidates } from './filter-candidates';
 import { UpdateChat } from './update-chat';
 
@@ -137,16 +138,46 @@ export default class CandidateEngagementArx {
       chatHistory.push({ role: 'system', content: SYSTEM_PROMPT });
     }
     chatHistory.push({ role: 'user', content: messageSetup.userContent });
+
     const whatsappTemplate =
       candidatePersonNodeObj?.candidates?.edges[0]?.node?.whatsappProvider ||
       config.defaultTemplate;
+
+
+    let phoneNumberFrom:string = candidatePersonNodeObj.phones.primaryPhoneNumber.length == 10
+    ? '91' + candidatePersonNodeObj.phones.primaryPhoneNumber
+    : candidatePersonNodeObj.phones.primaryPhoneNumber;
+    if (candidatePersonNodeObj?.candidates?.edges[0]?.node?.messagingChannel == 'linkedin') {
+      phoneNumberFrom = candidatePersonNodeObj?.linkedinLink?.primaryLinkUrl || '';
+    }
+    else{
+      phoneNumberFrom = candidatePersonNodeObj.phones.primaryPhoneNumber.length == 10
+          ? '91' + candidatePersonNodeObj.phones.primaryPhoneNumber
+          : candidatePersonNodeObj.phones.primaryPhoneNumber
+    }
+
+    let phoneNumberTo:string = recruiterProfile.phoneNumber;
+    console.log("This is recruiter profile:", recruiterProfile)
+
+    if (candidatePersonNodeObj?.candidates?.edges[0]?.node?.messagingChannel == 'linkedin') {
+      phoneNumberTo = recruiterProfile.linkedinUrl || '';
+    }
+    else{
+      phoneNumberTo = recruiterProfile.phoneNumber
+    }
+
+    
+    
+
+
     const whatappUpdateMessageObj: whatappUpdateMessageObjType = {
-      candidateProfile: candidatePersonNodeObj?.candidates?.edges[0]?.node,
+      candidateProfile: candidatePersonNodeObj?.candidates?.edges.filter(
+        (candidate) => candidate.node.jobs.id == candidateJob.id,
+      )[0]?.node,
       candidateFirstName: candidatePersonNodeObj?.name?.firstName,
-      phoneNumberFrom:
-        '91' + candidatePersonNodeObj?.phones?.primaryPhoneNumber,
+      phoneNumberFrom: phoneNumberFrom,
       whatsappMessageType: whatsappTemplate,
-      phoneNumberTo: recruiterProfile.phoneNumber,
+      phoneNumberTo: phoneNumberTo,
       messages: [{ content: chatReply }],
       lastEngagementChatControl: chatControl.chatControlType,
       messageType: 'candidateMessage',
@@ -1149,4 +1180,36 @@ export default class CandidateEngagementArx {
       console.log('Error in checkCandidateEngagement', error);
     }
   }
+
+
+
+    async fetchLinkedinSockMessages(token: string) {
+      console.log("These are the fetch linkedin sock messages")
+      let data = JSON.stringify({});
+      const arxenaSiteBaseUrl =
+      process.env.ARXENA_SITE_BASE_URL || 'http://127.0.0.1:5050';
+
+
+      console.log("arxenaSiteBaseUrl::", arxenaSiteBaseUrl)
+      
+      let config = {
+        method: 'post',
+        maxBodyLength: Infinity,
+        url: arxenaSiteBaseUrl+'/get_linkedin_unread_messages',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        data: data
+      };
+
+      try {
+        const response = await axios.request(config);
+        return response.data;
+      } catch (error) {
+        console.error('Error fetching LinkedIn messages:', error);
+        throw error;
+      }
+    }
+
 }

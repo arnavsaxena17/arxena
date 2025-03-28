@@ -1,7 +1,7 @@
 import { Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
 
 import axios from 'axios';
-import { WhatsappMessageData } from 'twenty-shared';
+import { whatappUpdateMessageObjType, WhatsappMessageData } from 'twenty-shared';
 
 import { ExtSockWhatsappService } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/ext-sock-whatsapp.service';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
@@ -12,7 +12,7 @@ export class ExtSockWhatsappController {
     private readonly extSockWhatsappService: ExtSockWhatsappService,
   ) {}
 
-  @Post('message')
+  @Post('incoming-sock-message')
   @UseGuards(JwtAuthGuard)
   async receiveWhatsappMessage(@Body() messageData: WhatsappMessageData) {
     console.log('Received WhatsApp message:', messageData);
@@ -36,9 +36,9 @@ export class ExtSockWhatsappController {
     }
   }
 
-  @Post('send-message')
+  @Post('send-sock-message')
   @UseGuards(JwtAuthGuard)
-  async sendWhatsappMessage(@Body() messageData: any, @Req() request: any) {
+  async sendWhatsappMessage(@Body() messageData: whatappUpdateMessageObjType, @Req() request: any) {
     console.log('Sending WhatsApp message via ext-sock:', messageData);
 
     try {
@@ -50,10 +50,11 @@ export class ExtSockWhatsappController {
 
       console.log('Arxena Site Base URL:', arxenaSiteBaseUrl);
       const response = await axios.post(
-        `${arxenaSiteBaseUrl}/send_whatsapp_message`,
+        `${arxenaSiteBaseUrl}/send_sock_message`,
         {
           phoneNumber: messageData.phoneNumberTo,
           message: messageData.messages[0]?.content || messageData.messages,
+          candidateFirstName: messageData.candidateFirstName,
         },
         {
           headers: {

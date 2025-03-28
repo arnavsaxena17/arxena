@@ -554,12 +554,12 @@ export class UpdateChat {
 
   async createAndUpdateWhatsappMessage(
     candidateProfileObj: CandidateNode,
-    userMessage: whatappUpdateMessageObjType,
+    whatappUpdateMessageObj: whatappUpdateMessageObjType,
     apiToken: string,
   ) {
     console.log(
       'This is the message being updated in the database ',
-      userMessage?.messages[0]?.content || '',
+      whatappUpdateMessageObj?.messages[0]?.content || '',
     );
     console.log('This is the user candidateProfileObj::', candidateProfileObj);
     const createNewWhatsappMessageUpdateVariables = {
@@ -569,20 +569,20 @@ export class UpdateChat {
         candidateId: candidateProfileObj?.id,
         personId: candidateProfileObj?.person?.id,
         message:
-          userMessage?.messages[0]?.content ||
-          userMessage?.messages[0]?.text ||
+        whatappUpdateMessageObj?.messages[0]?.content ||
+        whatappUpdateMessageObj?.messages[0]?.text ||
           '',
-        phoneFrom: userMessage?.phoneNumberFrom,
-        phoneTo: userMessage?.phoneNumberTo,
+        phoneFrom: whatappUpdateMessageObj?.phoneNumberFrom,
+        phoneTo: whatappUpdateMessageObj?.phoneNumberTo,
         jobsId: candidateProfileObj.jobs?.id,
         recruiterId: candidateProfileObj?.jobs?.recruiterId,
-        name: userMessage?.messageType,
-        lastEngagementChatControl: userMessage?.lastEngagementChatControl,
-        messageObj: userMessage?.messageObj,
-        whatsappDeliveryStatus: userMessage.whatsappDeliveryStatus,
-        whatsappMessageId: userMessage?.whatsappMessageId,
-        typeOfMessage: userMessage?.type,
-        audioFilePath: userMessage?.databaseFilePath,
+        name: whatappUpdateMessageObj?.messageType,
+        lastEngagementChatControl: whatappUpdateMessageObj?.lastEngagementChatControl,
+        messageObj: whatappUpdateMessageObj?.messageObj,
+        whatsappDeliveryStatus: whatappUpdateMessageObj.whatsappDeliveryStatus,
+        whatsappMessageId: whatappUpdateMessageObj?.whatsappMessageId,
+        typeOfMessage: whatappUpdateMessageObj?.type,
+        audioFilePath: whatappUpdateMessageObj?.databaseFilePath,
       },
     };
 
@@ -713,36 +713,13 @@ export class UpdateChat {
     }
   }
 
-  async scheduleCandidateInterview(
-    candidateProfileObj: CandidateNode,
-    candidateJob: Jobs,
-    scheduleInterviewObj: whatappUpdateMessageObjType,
-    apiToken: string,
-  ) {
-    const updateCandidateObjectVariables = {
-      idToUpdate: candidateProfileObj?.id,
-      input: { scheduleInterviewObj: scheduleInterviewObj },
-    };
-    const graphqlQueryObj = JSON.stringify({
-      query: {},
-      variables: updateCandidateObjectVariables,
-    });
-
-    try {
-      const response = await axiosRequest(graphqlQueryObj, apiToken);
-
-      return response.data;
-    } catch (error) {
-      console.log(error);
-    }
-  }
-
   async updateCandidateEngagementDataInTable(
     whatappUpdateMessageObj: whatappUpdateMessageObjType,
     apiToken: string,
     isAfterMessageSent = false,
   ) {
     console.log('Updating candidate engagement status in table');
+    console.log('This is the whatappUpdateMessageObj::', whatappUpdateMessageObj);
     const candidateProfileObj =
       whatappUpdateMessageObj.messageType !== 'botMessage'
         ? await new FilterCandidates(
@@ -781,17 +758,6 @@ export class UpdateChat {
       status: 'success',
       message: 'Candidate engagement status updated successfully',
     };
-  }
-
-  async removeChatsByPhoneNumber(phoneNumberFrom: string, apiToken: string) {
-    const personObj: PersonNode = await new FilterCandidates(
-      this.workspaceQueryService,
-    ).getPersonDetailsByPhoneNumber(phoneNumberFrom, apiToken);
-    const personCandidateNode = personObj?.candidates?.edges[0]?.node;
-    const messagesList = personCandidateNode?.whatsappMessages?.edges;
-    const messageIDs = messagesList?.map((message) => message?.node?.id);
-
-    this.removeChatsByMessageIDs(messageIDs, apiToken);
   }
 
   async removeChatsByMessageIDs(messageIDs: string[], apiToken: string) {

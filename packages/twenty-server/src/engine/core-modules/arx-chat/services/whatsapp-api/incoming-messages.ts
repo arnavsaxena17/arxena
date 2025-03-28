@@ -29,7 +29,7 @@ interface MessageResult {
 export class IncomingWhatsappMessages {
   constructor(private readonly workspaceQueryService: WorkspaceQueryService) {}
 
-  async receiveIncomingMessagesFromBaileys(
+  async receiveIncomingMessages(
     requestBody: BaileysIncomingMessage,
     apiToken: string,
   ) {
@@ -166,18 +166,25 @@ export class IncomingWhatsappMessages {
   }
 
   async getApiKeyToUseFromPhoneNumberMessageReceived(
-    requestBody: any,
+    requestBody: WhatsAppBusinessAccount,
     transactionManager?: EntityManager,
   ): Promise<string | null> {
-    let phoneNumber =
+
+    console.log("Going to get api token to use from phone number message received");
+    let incomingSenderIdentifierId =
       requestBody?.entry[0]?.changes[0]?.value?.messages?.[0]?.from ||
       requestBody?.entry[0]?.changes[0]?.value?.statuses[0].recipient_id;
-    const phoneNumberId =
-      requestBody?.entry[0]?.changes[0]?.value.metadata?.phone_number_id;
 
+    console.log("This is the incomingSenderIdentifierId::", incomingSenderIdentifierId);
+    const incomingRecipientIdentifierId =
+      requestBody?.entry[0]?.changes[0]?.value.metadata?.phone_number_id;
+    console.log("This is the incomingRecipientIdentifierId::", incomingRecipientIdentifierId);
     // const waId = requestBody?.entry[0]?.changes[0]?.value?.contacts?.[0]?.wa_id;
 
-    console.log('This is the phone number to use and search:', phoneNumber);
+    console.log(
+      'This is the phone number to use and search:',
+      incomingSenderIdentifierId,
+    );
 
     const results =
       await this.workspaceQueryService.executeQueryAcrossWorkspaces(
@@ -185,7 +192,19 @@ export class IncomingWhatsappMessages {
           console.log('Data source schema is::', dataSourceSchema);
           console.log('id:', workspaceId);
           // First check if this workspace is valid for the phone number ID
-          const rawQuery = `SELECT * FROM core.workspace WHERE id = $1 AND facebook_whatsapp_phone_number_id ILIKE '%${phoneNumberId}%'`;
+          let rawQuery = '';
+
+          if (
+            incomingRecipientIdentifierId.includes('linkedin')
+          ) {
+            console.log(
+              'This is a linkedin phone number, we will not use this phone number to send messages to setup linkedin url as recipient id for api key finding',
+            );
+
+            rawQuery = `SELECT * FROM core.workspace WHERE id = $1 AND linkedin_url ILIKE '%${incomingRecipientIdentifierId}%'`;
+          } else {
+            rawQuery = `SELECT * FROM core.workspace WHERE id = $1 AND facebook_whatsapp_phone_number_id ILIKE '%${incomingRecipientIdentifierId}%'`;
+          }
 
           console.log('This si rawQuery:', rawQuery);
           const workspace = await this.workspaceQueryService.executeRawQuery(
@@ -195,25 +214,52 @@ export class IncomingWhatsappMessages {
           );
 
           if (workspace.length === 0) {
-            console.log(
-              'NO WORKSPACE FOUND FOR WHATSAPP INCOMING PHONE NUMBER',
+            console.log("Workspace length is 0 for facebook whatsapp phone number id");
+
+            rawQuery = `SELECT * FROM core.workspace WHERE id = $1 AND whatsapp_web_phone_number ILIKE '%${incomingRecipientIdentifierId}%'`;
+
+            const workspace = await this.workspaceQueryService.executeRawQuery(
+              rawQuery,
+              [workspaceId],
+              workspaceId,
             );
 
-            return null;
+            if (workspace.length === 0) {
+              console.log(
+                'NO WORKSPACE FOUND FOR WHATSAPP INCOMING PHONE NUMBER',
+              );
+              return null;
+            }
           }
 
           console.log(
-            'Whatsapp incoming phone number workspace found for worksapce::::',
-            workspace,
+            'Whatsapp incoming incomingSenderIdentifierId::::',
+            incomingSenderIdentifierId,
           );
-          console.log('Whatsapp incoming phoneNumber::::', phoneNumber);
+
+          if (incomingSenderIdentifierId.includes('linkedin')) {
+            console.log(
+              'This is a linkedin phone number, we will not use this phone number to send messages',
+            );
+          }
+          let recentMessageQuery = '';
+
+          if (incomingSenderIdentifierId.includes('linkedin')) {
+            recentMessageQuery = `SELECT * FROM ${dataSourceSchema}."_whatsappMessage" 
+             WHERE ("_whatsappMessage"."phoneFrom" ILIKE '%${incomingSenderIdentifierId}%' OR "_whatsappMessage"."phoneTo" ILIKE '%${incomingSenderIdentifierId}%')
+             ORDER BY "updatedAt" DESC
+             LIMIT 1`;
+          } else {
+            recentMessageQuery = `SELECT * FROM ${dataSourceSchema}."_whatsappMessage" 
+            WHERE ("_whatsappMessage"."phoneFrom" ILIKE '%${incomingSenderIdentifierId}%' OR "_whatsappMessage"."phoneTo" ILIKE '%${incomingSenderIdentifierId}%')
+            ORDER BY "updatedAt" DESC
+            LIMIT 1`;
+          }
+          console.log("Recent message query::", recentMessageQuery);
           // Get the most recent message for this phone number in this workspace
           const recentMessage =
             await this.workspaceQueryService.executeRawQuery(
-              `SELECT * FROM ${dataSourceSchema}."_whatsappMessage" 
-             WHERE ("_whatsappMessage"."phoneFrom" ILIKE '%${phoneNumber}%' OR "_whatsappMessage"."phoneTo" ILIKE '%${phoneNumber}%')
-             ORDER BY "updatedAt" DESC
-             LIMIT 1`,
+              recentMessageQuery,
               [],
               workspaceId,
             );
@@ -222,24 +268,40 @@ export class IncomingWhatsappMessages {
 
           if (recentMessage.length === 0) {
             console.log(
-              'No messages found for this phone number in workspace:',
+              'No messages found for this phone number in workspace so will return because incoming not worth it:',
               workspaceId,
             );
 
             return null;
           }
 
-          if (phoneNumber.length > 10) {
+          if (
+            incomingSenderIdentifierId.length > 10 &&
+            !incomingSenderIdentifierId.includes('linkedin')
+          ) {
             console.log('Removing ISD code to enable the search');
-            phoneNumber = phoneNumber.slice(-10);
+            incomingSenderIdentifierId = incomingSenderIdentifierId.slice(-10);
           }
+
+          let personQuery = '';
+
+          if (!incomingSenderIdentifierId.includes('linkedin')) {
+            personQuery = `SELECT * FROM ${dataSourceSchema}.person WHERE "person"."phonesPrimaryPhoneNumber" ILIKE '%${incomingSenderIdentifierId}%'`;
+          } else {
+            personQuery = `SELECT * FROM ${dataSourceSchema}.person WHERE "person"."linkedinLinkPrimaryLinkUrl" ILIKE '%${incomingSenderIdentifierId}%'`;
+          }
+
+          console.log('This is the person query:', personQuery);
+
 
           // Get the person associated with this phone number
           const person = await this.workspaceQueryService.executeRawQuery(
-            `SELECT * FROM ${dataSourceSchema}.person WHERE "person"."phonesPrimaryPhoneNumber" ILIKE '%${phoneNumber}%'`,
+            personQuery,
             [],
             workspaceId,
           );
+
+          console.log('This is the person::', person);
 
           if (person.length > 0) {
             const apiKeys = await this.workspaceQueryService.getApiKeys(
@@ -254,7 +316,9 @@ export class IncomingWhatsappMessages {
                   workspaceId,
                   apiKeys[0].id,
                 );
-              // console.log("This is the api key token::", apiKeyToken)
+
+              console.log('This is the api key token::', apiKeyToken);
+              console.log('This is the recent message::', recentMessage);
 
               if (apiKeyToken) {
                 return {
@@ -749,13 +813,49 @@ export class IncomingWhatsappMessages {
         role: replyObject.isFromMe ? 'assistant' : 'user',
         content: replyObject.chatReply,
       });
+
+
+      let phoneNumberFrom:string = candidateProfileDataNodeObj.person.phones.primaryPhoneNumber.length == 10
+      ? '91' + candidateProfileDataNodeObj.person.phones.primaryPhoneNumber
+      : candidateProfileDataNodeObj.person.phones.primaryPhoneNumber;
+      if (candidateProfileDataNodeObj.person?.candidates?.edges.filter(
+        (candidate) => candidate.node.jobs.id == candidateJob.id,
+      )[0]?.node?.messagingChannel == 'linkedin') {
+        phoneNumberFrom = candidateProfileDataNodeObj.person?.linkedinLink?.primaryLinkUrl || '';
+      }
+      else{
+        phoneNumberFrom = candidateProfileDataNodeObj.person.phones.primaryPhoneNumber.length == 10
+            ? '91' + candidateProfileDataNodeObj.person.phones.primaryPhoneNumber
+            : candidateProfileDataNodeObj.person.phones.primaryPhoneNumber
+      }
+  
+      let phoneNumberTo:string = recruiterProfile.phoneNumber;
+  
+      if (candidateProfileDataNodeObj.person?.candidates?.edges.filter(
+        (candidate) => candidate.node.jobs.id == candidateJob.id,
+      )[0]?.node?.messagingChannel == 'linkedin') {
+        phoneNumberTo = recruiterProfile.linkedinUrl || '';
+      }
+      else{
+        phoneNumberTo = recruiterProfile.phoneNumber
+      }
+  
+      
+
+
+
+
+
+
+
+
     const whatappUpdateMessageObj: whatappUpdateMessageObjType = {
       // executorResultObj: {},
       candidateProfile: candidateProfileDataNodeObj,
       whatsappMessageType: candidateProfileDataNodeObj?.whatsappProvider || '',
       candidateFirstName: candidateProfileDataNodeObj.name,
-      phoneNumberFrom: candidateProfileDataNodeObj?.phoneNumber,
-      phoneNumberTo: recruiterProfile.phoneNumber,
+      phoneNumberFrom: phoneNumberFrom,
+      phoneNumberTo: phoneNumberTo,
       messages: [{ content: replyObject.chatReply }],
       messageType: 'candidateMessage',
       messageObj: mostRecentMessageObj,

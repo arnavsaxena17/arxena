@@ -20,7 +20,12 @@ import AttachmentPanel from './AttachmentPanel';
 
 import { recordStoreFamilyState } from '@/object-record/record-store/states/recordStoreFamilyState';
 import { useNavigate } from 'react-router-dom';
-import { graphQltoUpdateOneCandidate, MessageNode, mutationToUpdateOnePerson, PersonNode } from 'twenty-shared';
+import {
+  graphQltoUpdateOneCandidate,
+  MessageNode,
+  mutationToUpdateOnePerson,
+  PersonNode,
+} from 'twenty-shared';
 // import { templates, getTemplatePreview } from './chatTemplates';
 
 const statusLabels: { [key: string]: string } = {
@@ -36,17 +41,39 @@ const statusLabels: { [key: string]: string } = {
 };
 
 // const templatesList = [ ];
-const interimChats = ['remindCandidate', 'firstInterviewReminder', 'secondInterviewreminder'];
+const interimChats = [
+  'remindCandidate',
+  'firstInterviewReminder',
+  'secondInterviewreminder',
+];
 const statusesArray = Object.keys(statusLabels);
 const PersonIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
     <circle cx="12" cy="7" r="4"></circle>
   </svg>
 );
 
 const CandidateIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
     <circle cx="9" cy="7" r="4"></circle>
     <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
@@ -55,7 +82,16 @@ const CandidateIcon = () => (
 );
 
 const StopIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
     <line x1="9" y1="9" x2="15" y2="15" />
     <line x1="15" y1="9" x2="9" y2="15" />
@@ -96,10 +132,10 @@ const FieldsContainer = styled.div`
 `;
 
 const AdditionalInfoAndButtons = styled.div`
-  display: flex;
-  justify-content: space-between;
   align-items: center;
+  display: flex;
   gap: 24px;
+  justify-content: space-between;
 
   @media (max-width: 1024px) {
     gap: 16px;
@@ -183,14 +219,14 @@ const StyledTopBar = styled.div<{ sidebarWidth: number }>`
 `;
 
 const EditableField = styled.span<{ isEditing: boolean }>`
-  cursor: ${props => (props.isEditing ? 'text' : 'pointer')};
+  cursor: ${(props) => (props.isEditing ? 'text' : 'pointer')};
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 150px;
 
   &:hover {
-    text-decoration: ${props => (props.isEditing ? 'none' : 'underline')};
+    text-decoration: ${(props) => (props.isEditing ? 'none' : 'underline')};
   }
 
   input {
@@ -223,13 +259,13 @@ const ButtonGroup = styled.div`
 `;
 
 const StyledSelect = styled.select`
-  padding: 0.5em;
-  margin-right: 1em;
+  background-color: white;
   border: 1px solid #ccc;
   border-radius: 4px;
-  background-color: white;
   font-size: 14px;
+  margin-right: 1em;
   min-width: 120px;
+  padding: 0.5em;
 
   @media (max-width: 768px) {
     padding: 0.3em;
@@ -261,10 +297,10 @@ const Container = styled.div`
 `;
 
 const InputWrapper = styled.div`
-  width: 100%;
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  width: 100%;
 
   @media (max-width: 768px) {
     gap: 0.5rem;
@@ -337,18 +373,18 @@ const ActionButton = styled.button`
 `;
 
 const Select = styled.select`
-  width: 100%;
-  padding: 0.4rem;
+  background-color: white;
   border: 1px solid #e5e7eb;
   border-radius: 0.375rem;
-  background-color: white;
-  margin-bottom: 0.5rem;
   font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+  padding: 0.4rem;
+  width: 100%;
 
   &:focus {
-    outline: none;
     border-color: #2563eb;
     box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+    outline: none;
   }
 `;
 
@@ -364,7 +400,7 @@ const ChatContainer = styled.div`
   @media (max-width: 768px) {
     flex-direction: column;
     margin: 0;
-    left:30vw;
+    left: 30vw;
     height: calc(100vh - 60px); // Adjust for mobile header
     padding-bottom: 60px; // Space for input area
   }
@@ -374,7 +410,7 @@ const StyledButton = styled.button<{ bgColor: string }>`
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: ${props => props.bgColor};
+  background-color: ${(props) => props.bgColor};
   color: white;
   border: none;
   border-radius: 50%;
@@ -421,13 +457,13 @@ const AttachmentButton = styled(StyledButton)`
 `;
 
 const StyledButtonBottom = styled.button`
-  padding: 0.5em;
   background-color: black;
-  color: white;
   border: none;
-  margin-left: 1rem;
-  cursor: pointer;
   border-radius: 4px;
+  color: white;
+  cursor: pointer;
+  margin-left: 1rem;
+  padding: 0.5em;
 `;
 const StyledWindow = styled.div`
   display: flex;
@@ -448,7 +484,7 @@ const StyledChatInput = styled.input`
 const StyledChatInputBox = styled.div<{ sidebarWidth: number }>`
   position: fixed;
   bottom: 0;
-  width: calc(100% - ${props => props.sidebarWidth + 250}px);
+  width: calc(100% - ${(props) => props.sidebarWidth + 250}px);
   background-color: rgba(255, 255, 255, 0.8);
   filter: drop-shadow(0px -2px 4px rgba(0, 0, 0, 0.1));
   backdrop-filter: saturate(180%) blur(10px);
@@ -493,14 +529,13 @@ const StyledScrollingView = styled.div`
 `;
 
 const iconStyles = css`
-  width: 16px;
   height: 16px;
+  width: 16px;
 `;
 
 const StyledSvg = styled.svg`
   ${iconStyles}
 `;
-
 
 const AdditionalInfoContent: React.FC<{
   messageCount: number;
@@ -520,44 +555,111 @@ const AdditionalInfoContent: React.FC<{
   setSalary: (value: string) => void;
   setCity: (value: string) => void;
   setCandidateStatus: (value: string) => void;
-}> = ({ messageCount, jobName, salary, city, candidateStatus, isEditingSalary, isEditingCity, isEditingCandidateStatus, onSalaryEdit, onCityEdit, onCandidateStatusEdit, onSalaryUpdate, onCityUpdate, onCandidateStatusUpdate, setSalary, setCity, setCandidateStatus }) => (
-  
+}> = ({
+  messageCount,
+  jobName,
+  salary,
+  city,
+  candidateStatus,
+  isEditingSalary,
+  isEditingCity,
+  isEditingCandidateStatus,
+  onSalaryEdit,
+  onCityEdit,
+  onCandidateStatusEdit,
+  onSalaryUpdate,
+  onCityUpdate,
+  onCandidateStatusUpdate,
+  setSalary,
+  setCity,
+  setCandidateStatus,
+}) => (
   <>
     Messages: {messageCount}
     <SeparatorDot>•</SeparatorDot>
     Current Job: {jobName || 'N/A'}
     <SeparatorDot>•</SeparatorDot>
     <EditableField isEditing={isEditingSalary} onDoubleClick={onSalaryEdit}>
-      {isEditingSalary ? <input value={salary} onChange={e => setSalary(e.target.value)} onBlur={onSalaryUpdate} onKeyPress={e => e.key === 'Enter' && onSalaryUpdate()} autoFocus /> : `Salary: ${salary || 'N/A'}`}
+      {isEditingSalary ? (
+        <input
+          value={salary}
+          onChange={(e) => setSalary(e.target.value)}
+          onBlur={onSalaryUpdate}
+          onKeyPress={(e) => e.key === 'Enter' && onSalaryUpdate()}
+          autoFocus
+        />
+      ) : (
+        `Salary: ${salary || 'N/A'}`
+      )}
     </EditableField>
     <SeparatorDot>•</SeparatorDot>
     <EditableField isEditing={isEditingCity} onDoubleClick={onCityEdit}>
-      {isEditingCity ? <input value={city} onChange={e => setCity(e.target.value)} onBlur={onCityUpdate} onKeyPress={e => e.key === 'Enter' && onCityUpdate()} autoFocus /> : `City: ${city || 'N/A'}`}
+      {isEditingCity ? (
+        <input
+          value={city}
+          onChange={(e) => setCity(e.target.value)}
+          onBlur={onCityUpdate}
+          onKeyPress={(e) => e.key === 'Enter' && onCityUpdate()}
+          autoFocus
+        />
+      ) : (
+        `City: ${city || 'N/A'}`
+      )}
     </EditableField>
     <SeparatorDot>•</SeparatorDot>
-    <EditableField isEditing={isEditingCandidateStatus} onDoubleClick={onCandidateStatusEdit}>
-    {isEditingCandidateStatus ? <input value={candidateStatus} onChange={e => setCandidateStatus(e.target.value)} onBlur={onCandidateStatusUpdate} onKeyPress={e => e.key === 'Enter' && onCandidateStatusUpdate()} autoFocus /> : `Candidate Status: ${candidateStatus || 'N/A'}`}
+    <EditableField
+      isEditing={isEditingCandidateStatus}
+      onDoubleClick={onCandidateStatusEdit}
+    >
+      {isEditingCandidateStatus ? (
+        <input
+          value={candidateStatus}
+          onChange={(e) => setCandidateStatus(e.target.value)}
+          onBlur={onCandidateStatusUpdate}
+          onKeyPress={(e) => e.key === 'Enter' && onCandidateStatusUpdate()}
+          autoFocus
+        />
+      ) : (
+        `Candidate Status: ${candidateStatus || 'N/A'}`
+      )}
     </EditableField>
   </>
 );
 
-
-
 const CopyIcon = () => (
-  <StyledSvg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+  <StyledSvg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+  >
     <path d="M8 4v12a2 2 0 002 2h8a2 2 0 002-2V7.242a2 2 0 00-.602-1.43L16.083 2.57A2 2 0 0014.685 2H10a2 2 0 00-2 2z" />
     <path d="M16 18v2a2 2 0 01-2 2H6a2 2 0 01-2-2V9a2 2 0 012-2h2" />
   </StyledSvg>
 );
 
 const CheckIcon = () => (
-  <StyledSvg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+  <StyledSvg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+  >
     <path d="M20 6L9 17l-5-5" />
   </StyledSvg>
 );
 
 const AttachmentIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
   </svg>
 );
@@ -571,10 +673,17 @@ interface ChatWindowProps {
   sidebarWidth: number;
 }
 
-export default function ChatWindow({ selectedIndividual, individuals, onMessageSent, sidebarWidth }: ChatWindowProps) {
+export default function ChatWindow({
+  selectedIndividual,
+  individuals,
+  onMessageSent,
+  sidebarWidth,
+}: ChatWindowProps) {
   const allIndividuals = individuals;
 
-  const currentIndividual = allIndividuals?.find(individual => individual?.id === selectedIndividual);
+  const currentIndividual = allIndividuals?.find(
+    (individual) => individual?.id === selectedIndividual,
+  );
   const currentCandidateId = currentIndividual?.candidates?.edges[0]?.node?.id;
 
   const navigate = useNavigate();
@@ -594,24 +703,31 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
   const [copiedField, setCopiedField] = useState(null);
   const [isEditingSalary, setIsEditingSalary] = useState(false);
   const [isEditingCity, setIsEditingCity] = useState(false);
-  const [isEditingCandidateStatus, setIsEditingCandidateStatus] = useState(false);
+  const [isEditingCandidateStatus, setIsEditingCandidateStatus] =
+    useState(false);
   const [salary, setSalary] = useState(currentIndividual?.salary || '');
   const [city, setCity] = useState(currentIndividual?.city || '');
-  const [candidateStatus, setCandidateStatus] = useState(currentIndividual?.candidates?.edges[0].node?.candConversationStatus || '');
+  const [candidateStatus, setCandidateStatus] = useState(
+    currentIndividual?.candidates?.edges[0].node?.candConversationStatus || '',
+  );
   const [isMessagePending, setIsMessagePending] = useState(false);
-  const [pendingMessage, setPendingMessage] = useState<MessageNode | null>(null);
+  const [pendingMessage, setPendingMessage] = useState<MessageNode | null>(
+    null,
+  );
   const [shouldScrollToBottom, setShouldScrollToBottom] = useState(true);
   const [userHasScrolled, setUserHasScrolled] = useState(false);
   const [previousMessageCount, setPreviousMessageCount] = useState(0);
 
   const [templates, setTemplates] = useState<string[]>([]);
-  const [templatePreviews, setTemplatePreviews] = useState<{ [key: string]: string }>({});
+  const [templatePreviews, setTemplatePreviews] = useState<{
+    [key: string]: string;
+  }>({});
   const [selectedTemplate, setSelectedTemplate] = useState('');
   const [isLoadingTemplates, setIsLoadingTemplates] = useState(true);
 
   const { enqueueSnackBar } = useSnackBar();
-    const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
-  
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
   useEffect(() => {
     const handleResize = () => {
       setIsMobile(window.innerWidth <= 768);
@@ -623,15 +739,20 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
 
   const showSnackbar = (message: string, type: 'success' | 'error') => {
     enqueueSnackBar(message, {
-      variant: type === 'success' ? SnackBarVariant.Success : SnackBarVariant.Error,
+      variant:
+        type === 'success' ? SnackBarVariant.Success : SnackBarVariant.Error,
       duration: 5000,
     });
   };
 
   const fetchAllTemplates = async () => {
     try {
-      const response = await axios.get(`${process.env.REACT_APP_SERVER_BASE_URL}/whatsapp-test/get-templates`, {
-        headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}`, }, });
+      const response = await axios.get(
+        `${process.env.REACT_APP_SERVER_BASE_URL}/whatsapp-test/get-templates`,
+        {
+          headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` },
+        },
+      );
 
       return response.data;
     } catch (error) {
@@ -669,15 +790,23 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
       try {
         const fetchedTemplates = await fetchAllTemplates();
         console.log('REceived templates::', fetchedTemplates);
-        const templateNames = fetchedTemplates.templates.filter((template: { status: string }) => template.status === 'APPROVED').map((template: { name: any }) => template.name);
+        const templateNames = fetchedTemplates.templates
+          .filter(
+            (template: { status: string }) => template.status === 'APPROVED',
+          )
+          .map((template: { name: any }) => template.name);
         console.log('Template Names::', templateNames);
         const previews: { [key: string]: string } = {};
-        fetchedTemplates.templates.forEach((template: { components: any[]; name: string | number }) => {
-          const bodyComponent = template.components.find(comp => comp.type === 'BODY');
-          if (bodyComponent) {
-            previews[template.name] = bodyComponent.text;
-          }
-        });
+        fetchedTemplates.templates.forEach(
+          (template: { components: any[]; name: string | number }) => {
+            const bodyComponent = template.components.find(
+              (comp) => comp.type === 'BODY',
+            );
+            if (bodyComponent) {
+              previews[template.name] = bodyComponent.text;
+            }
+          },
+        );
 
         setTemplates(templateNames);
         setTemplatePreviews(previews);
@@ -718,9 +847,8 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
   //   };
   // }, []);
 
-
-
-  const currentCandidateName = currentIndividual?.name.firstName + ' ' + currentIndividual?.name.lastName;
+  const currentCandidateName =
+    currentIndividual?.name.firstName + ' ' + currentIndividual?.name.lastName;
 
   const handleNavigateToPersonPage = () => {
     navigate(`/object/person/${currentIndividual?.id}`);
@@ -733,7 +861,21 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
     try {
       const response = await axios.post(
         process.env.REACT_APP_SERVER_BASE_URL + '/graphql',
-        { query: mutationToUpdateOnePerson, variables: { idToUpdate: currentIndividual?.id, input: { salary: salary }, }, }, { headers: { authorization: `Bearer ${tokenPair?.accessToken?.token}`, 'content-type': 'application/json', 'x-schema-version': '136', }, }, );
+        {
+          query: mutationToUpdateOnePerson,
+          variables: {
+            idToUpdate: currentIndividual?.id,
+            input: { salary: salary },
+          },
+        },
+        {
+          headers: {
+            authorization: `Bearer ${tokenPair?.accessToken?.token}`,
+            'content-type': 'application/json',
+            'x-schema-version': '136',
+          },
+        },
+      );
       console.log('Salary updated:', response.data);
       setIsEditingSalary(false);
     } catch (error) {
@@ -745,7 +887,20 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
     try {
       const response = await axios.post(
         process.env.REACT_APP_SERVER_BASE_URL + '/graphql',
-        { query: mutationToUpdateOnePerson, variables: { idToUpdate: currentIndividual?.id, input: { city: city }, }, }, { headers: { authorization: `Bearer ${tokenPair?.accessToken?.token}`, 'content-type': 'application/json', 'x-schema-version': '136', }, },
+        {
+          query: mutationToUpdateOnePerson,
+          variables: {
+            idToUpdate: currentIndividual?.id,
+            input: { city: city },
+          },
+        },
+        {
+          headers: {
+            authorization: `Bearer ${tokenPair?.accessToken?.token}`,
+            'content-type': 'application/json',
+            'x-schema-version': '136',
+          },
+        },
       );
       console.log('City updated:', response.data);
       setIsEditingCity(false);
@@ -757,42 +912,86 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
     try {
       const response = await axios.post(
         process.env.REACT_APP_SERVER_BASE_URL + '/graphql',
-        { query: mutationToUpdateOnePerson, variables: { idToUpdate: currentIndividual?.id, input: { candConversationStatus: candidateStatus }, }, }, { headers: { authorization: `Bearer ${tokenPair?.accessToken?.token}`, 'content-type': 'application/json', 'x-schema-version': '136', }, },
+        {
+          query: mutationToUpdateOnePerson,
+          variables: {
+            idToUpdate: currentIndividual?.id,
+            input: { candConversationStatus: candidateStatus },
+          },
+        },
+        {
+          headers: {
+            authorization: `Bearer ${tokenPair?.accessToken?.token}`,
+            'content-type': 'application/json',
+            'x-schema-version': '136',
+          },
+        },
       );
       console.log('candidate status updated:', response.data);
       setIsEditingCandidateStatus(false);
     } catch (error) {
       console.log('Error updating candidate status:', error);
       setIsEditingCandidateStatus(false);
-
     }
   };
 
   const handleStopCandidate = async () => {
     try {
-      const response = await axios.post(process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/stop-chat', { candidateId: currentCandidateId }, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } });
+      const response = await axios.post(
+        process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/stop-chat',
+        { candidateId: currentCandidateId },
+        {
+          headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` },
+        },
+      );
       console.log('Response:', response);
     } catch (error) {
       console.log('Error stopping candidate:', error);
     }
   };
 
-
-
   const sendMessage = async (messageText: string) => {
     console.log('send message');
-    const response = await axios.post(process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/send-chat', { messageToSend: messageText, phoneNumberTo: currentIndividual?.phones?.primaryPhoneNumber }, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } }); 
-    };
+    const response = await axios.post(
+      process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/send-chat',
+      {
+        messageToSend: messageText,
+        phoneNumberTo: currentIndividual?.phones?.primaryPhoneNumber,
+      },
+      { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } },
+    );
+  };
 
   async function getlistOfMessages(currentCandidateId: string) {
     try {
-      const response = await axios.post(process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/get-all-messages-by-candidate-id', { candidateId: currentCandidateId }, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } });
-      const sortedMessages = response.data.sort((a: MessageNode, b: MessageNode) => {
-        return dayjs(a.createdAt).valueOf() - dayjs(b.createdAt).valueOf();
-      });
+      const response = await axios.post(
+        process.env.REACT_APP_SERVER_BASE_URL +
+          '/arx-chat/get-all-messages-by-candidate-id',
+        { candidateId: currentCandidateId },
+        {
+          headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` },
+        },
+      );
+      const sortedMessages = response.data.sort(
+        (a: MessageNode, b: MessageNode) => {
+          return dayjs(a.createdAt).valueOf() - dayjs(b.createdAt).valueOf();
+        },
+      );
 
       // Merge with pending message if it exists and hasn't appeared in the response
-      if (pendingMessage && !sortedMessages.some((msg: MessageNode) => msg.message === pendingMessage.message && Math.abs(dayjs(msg.createdAt).diff(dayjs(pendingMessage.createdAt), 'second')) < 30)) {
+      if (
+        pendingMessage &&
+        !sortedMessages.some(
+          (msg: MessageNode) =>
+            msg.message === pendingMessage.message &&
+            Math.abs(
+              dayjs(msg.createdAt).diff(
+                dayjs(pendingMessage.createdAt),
+                'second',
+              ),
+            ) < 30,
+        )
+      ) {
         setMessageHistory([...sortedMessages, pendingMessage]);
       } else {
         setMessageHistory(sortedMessages);
@@ -808,15 +1007,31 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
   const handleShareJD = async () => {
     console.log('share JD');
     //@ts-ignore
-    const response = await axios.post(process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/send-jd-from-frontend', 
-      { phoneNumberTo: currentIndividual?.phones?.primaryPhoneNumber }, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } }); };
+    const response = await axios.post(
+      process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/send-jd-from-frontend',
+      { phoneNumberTo: currentIndividual?.phones?.primaryPhoneNumber },
+      { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } },
+    );
+  };
 
   const handleStatusUpdate = async (newStatus: string) => {
     try {
       const response = await axios.post(
         process.env.REACT_APP_SERVER_BASE_URL + '/graphql',
-        { query: graphQltoUpdateOneCandidate, variables: { idToUpdate: currentCandidateId, input: { status: newStatus }, }, },
-        { headers: { authorization: `Bearer ${tokenPair?.accessToken?.token}`, 'content-type': 'application/json', 'x-schema-version': '66', }, },
+        {
+          query: graphQltoUpdateOneCandidate,
+          variables: {
+            idToUpdate: currentCandidateId,
+            input: { status: newStatus },
+          },
+        },
+        {
+          headers: {
+            authorization: `Bearer ${tokenPair?.accessToken?.token}`,
+            'content-type': 'application/json',
+            'x-schema-version': '66',
+          },
+        },
       );
       console.log('Status updated:', response.data);
       // You might want to refresh the candidate data here
@@ -825,11 +1040,12 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
     }
   };
 
-  let currentMessageObject = currentIndividual?.candidates?.edges[0]?.node?.whatsappMessages?.edges[currentIndividual?.candidates?.edges[0]?.node?.whatsappMessages?.edges?.length - 1]?.node?.messageObj;
+  const currentMessageObject =
+    currentIndividual?.candidates?.edges[0]?.node?.whatsappMessages?.edges[
+      currentIndividual?.candidates?.edges[0]?.node?.whatsappMessages?.edges
+        ?.length - 1
+    ]?.node?.messageObj;
 
-
-
-  
   // const handleInvokeChatAndRunToolCalls = async (
   //   phoneNumber: string | undefined,
   //   latestResponseGenerated: string,
@@ -862,7 +1078,6 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
     }
   };
 
-  
   const handleSubmit = async () => {
     console.log('submit');
     //@ts-ignore
@@ -880,7 +1095,7 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
       jobsId: currentIndividual?.candidates?.edges[0]?.node?.jobs?.id || '',
       position: messageHistory.length + 1,
       messageType: 'template',
-      phoneTo: '91' + currentIndividual?.phones?.primaryPhoneNumber  || '',
+      phoneTo: '91' + currentIndividual?.phones?.primaryPhoneNumber || '',
       updatedAt: new Date().toISOString(),
       createdAt: new Date().toISOString(),
       id: Date.now().toString(),
@@ -890,14 +1105,12 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
       whatsappDeliveryStatus: 'sent',
     };
 
-    setMessageHistory(prev => [...prev, newMessage]);
+    setMessageHistory((prev) => [...prev, newMessage]);
     await sendMessage(messageSent);
 
     scrollToBottom();
     onMessageSent();
   };
-
-
 
   // const handleRetrieveBotMessage = async (
   //   phoneNumber: string | undefined,
@@ -942,103 +1155,124 @@ export default function ChatWindow({ selectedIndividual, individuals, onMessageS
   //   );
   // };
 
-
-
   const graphQLtoCreateOneAttachmentFromFilePath = `mutation CreateOneAttachment($input: AttachmentCreateInput!) {
     createAttachment(data: $input) {
       __typename
     } 
-  }`
-  
+  }`;
+
   const UploadCVButton = styled(StyledButton)`
-  background-color: #4CAF50;
-  margin-left: 8px;
-`;
+    background-color: #4caf50;
+    margin-left: 8px;
+  `;
 
-const UploadCV: React.FC<{
-  candidateId: string;
-  tokenPair: any;
-  onUploadSuccess: () => void;
-}> = ({ candidateId, tokenPair, onUploadSuccess }) => {
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const { enqueueSnackBar } = useSnackBar();
-  console.log("candidateId:", candidateId);
+  const UploadCV: React.FC<{
+    candidateId: string;
+    tokenPair: any;
+    onUploadSuccess: () => void;
+  }> = ({ candidateId, tokenPair, onUploadSuccess }) => {
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const { enqueueSnackBar } = useSnackBar();
+    console.log('candidateId:', candidateId);
 
-  const handleUpload = async (file: File) => {
-    if (!file) return;
+    const handleUpload = async (file: File) => {
+      if (!file) return;
 
-    const formData = new FormData();
-    formData.append(
-      "operations",
-      '{"operationName":"uploadFile","variables":{"file":null,"fileFolder":"Attachment"},"query":"mutation uploadFile($file: Upload!, $fileFolder: FileFolder) {\\n  uploadFile(file: $file, fileFolder: $fileFolder)\\n}"}'
-    );
-    formData.append("map", '{"1":["variables.file"]}');
-    formData.append("1", file);
+      const formData = new FormData();
+      formData.append(
+        'operations',
+        '{"operationName":"uploadFile","variables":{"file":null,"fileFolder":"Attachment"},"query":"mutation uploadFile($file: Upload!, $fileFolder: FileFolder) {\\n  uploadFile(file: $file, fileFolder: $fileFolder)\\n}"}',
+      );
+      formData.append('map', '{"1":["variables.file"]}');
+      formData.append('1', file);
 
-    try {
-      // Upload file
-      const uploadResponse = await axios.post(
-        `${process.env.REACT_APP_SERVER_BASE_URL}/graphql`,
-        formData,
-        {
-          headers: {
-            authorization: `Bearer ${tokenPair?.accessToken?.token}`,
-            accept: "*/*",
+      try {
+        // Upload file
+        const uploadResponse = await axios.post(
+          `${process.env.REACT_APP_SERVER_BASE_URL}/graphql`,
+          formData,
+          {
+            headers: {
+              authorization: `Bearer ${tokenPair?.accessToken?.token}`,
+              accept: '*/*',
+            },
           },
-        }
-      );
+        );
 
-      const uploadedFilePath = uploadResponse.data.data.uploadFile;
+        const uploadedFilePath = uploadResponse.data.data.uploadFile;
 
-      // Create attachment
-      const attachmentData = { input: { authorId: currentIndividual?.candidates?.edges[0]?.node?.jobs.recruiterId, name: file.name, fullPath: uploadedFilePath, type: "TextDocument", candidateId: candidateId, }, };
-      console.log("attachmentData:", attachmentData);
-      await axios.post(
-        `${process.env.REACT_APP_SERVER_BASE_URL}/graphql`,
-        { query: graphQLtoCreateOneAttachmentFromFilePath, variables: attachmentData, },
-        { headers: { authorization: `Bearer ${tokenPair?.accessToken?.token}`, "content-type": "application/json", }, }
-      );
+        // Create attachment
+        const attachmentData = {
+          input: {
+            authorId:
+              currentIndividual?.candidates?.edges[0]?.node?.jobs.recruiterId,
+            name: file.name,
+            fullPath: uploadedFilePath,
+            type: 'TextDocument',
+            candidateId: candidateId,
+          },
+        };
+        console.log('attachmentData:', attachmentData);
+        await axios.post(
+          `${process.env.REACT_APP_SERVER_BASE_URL}/graphql`,
+          {
+            query: graphQLtoCreateOneAttachmentFromFilePath,
+            variables: attachmentData,
+          },
+          {
+            headers: {
+              authorization: `Bearer ${tokenPair?.accessToken?.token}`,
+              'content-type': 'application/json',
+            },
+          },
+        );
 
-      enqueueSnackBar("CV uploaded successfully", {
-        variant: SnackBarVariant.Success,
-      });
-      onUploadSuccess();
-    } catch (error) {
-      console.error("Upload error:", error);
-      enqueueSnackBar("Failed to upload CV", {
-        variant: SnackBarVariant.Error,
-      });
-    }
-  };
+        enqueueSnackBar('CV uploaded successfully', {
+          variant: SnackBarVariant.Success,
+        });
+        onUploadSuccess();
+      } catch (error) {
+        console.error('Upload error:', error);
+        enqueueSnackBar('Failed to upload CV', {
+          variant: SnackBarVariant.Error,
+        });
+      }
+    };
 
-  const handleClick = () => {
-    fileInputRef.current?.click();
-  };
+    const handleClick = () => {
+      fileInputRef.current?.click();
+    };
 
-  return (
-    <>
-      <input type="file" ref={fileInputRef} style={{ display: "none" }} accept=".pdf,.doc,.docx" onChange={(e) => e.target.files && handleUpload(e.target.files[0])} />
-      <UploadCVButton
-        onClick={handleClick}
-        bgColor="#4CAF50"
-        data-tooltip="Upload CV"
-      >
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
+    return (
+      <>
+        <input
+          type="file"
+          ref={fileInputRef}
+          style={{ display: 'none' }}
+          accept=".pdf,.doc,.docx"
+          onChange={(e) => e.target.files && handleUpload(e.target.files[0])}
+        />
+        <UploadCVButton
+          onClick={handleClick}
+          bgColor="#4CAF50"
+          data-tooltip="Upload CV"
         >
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-          <polyline points="17 8 12 3 7 8" />
-          <line x1="12" y1="3" x2="12" y2="15" />
-        </svg>
-      </UploadCVButton>
-    </>
-  );
-};
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="17 8 12 3 7 8" />
+            <line x1="12" y1="3" x2="12" y2="15" />
+          </svg>
+        </UploadCVButton>
+      </>
+    );
+  };
   const handleToggleAttachmentPanel = () => {
     setIsAttachmentPanelOpen(!isAttachmentPanelOpen);
   };
@@ -1049,119 +1283,392 @@ const UploadCV: React.FC<{
     setTimeout(() => setCopiedField(null), 2000);
   };
 
-  const CopyableFieldComponent: React.FC<{ label: string; value: string; field: string; alwaysShowFull?: boolean }> = ({ label, value, field, alwaysShowFull = false }) => (
-    <CopyableField onClick={() => copyToClipboard(value, field)} title={copiedField === field ? 'Copied!' : 'Click to copy'}>
+  const CopyableFieldComponent: React.FC<{
+    label: string;
+    value: string;
+    field: string;
+    alwaysShowFull?: boolean;
+  }> = ({ label, value, field, alwaysShowFull = false }) => (
+    <CopyableField
+      onClick={() => copyToClipboard(value, field)}
+      title={copiedField === field ? 'Copied!' : 'Click to copy'}
+    >
       {label}: {alwaysShowFull ? value : ``}
       {copiedField === field ? <CheckIcon /> : <CopyIcon />}
     </CopyableField>
   );
 
-  const allIndividualsForCurrentJob = allIndividuals?.filter(individual => individual?.candidates?.edges[0]?.node?.jobs?.id === currentIndividual?.candidates?.edges[0]?.node?.jobs?.id);
+  const allIndividualsForCurrentJob = allIndividuals?.filter(
+    (individual) =>
+      individual?.candidates?.edges[0]?.node?.jobs?.id ===
+      currentIndividual?.candidates?.edges[0]?.node?.jobs?.id,
+  );
   console.log('allIndividualsForCurrentJob:', allIndividualsForCurrentJob);
-  console.log('allIndividualsForCurrentJob:', JSON.stringify(allIndividualsForCurrentJob));
+  console.log(
+    'allIndividualsForCurrentJob:',
+    JSON.stringify(allIndividualsForCurrentJob),
+  );
 
   const lastStatus = currentIndividual?.candidates?.edges[0]?.node?.status;
   const totalCandidates = allIndividualsForCurrentJob?.length;
-  const screeningState = allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.status === 'SCREENING').length;
-  const screeningPercent = ((allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.status === 'SCREENING').length / allIndividualsForCurrentJob.length) * 100).toFixed(1);
-  const unresponsive = allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.status === null).length;
-  const unresponsivePercent = ((allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.status === null).length / allIndividualsForCurrentJob.length) * 100).toFixed(1);
-  const notInterested = allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.status === 'NOT_INTERESTED').length;
-  const notInterestedPercent = ((allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.status === 'NOT_INTERESTED').length / allIndividualsForCurrentJob.length) * 100).toFixed(1);
-  const notFit = allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.status === 'NOT_FIT').length;
-  const notFitPercent = ((allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.status === 'NOT_FIT').length / allIndividualsForCurrentJob.length) * 100).toFixed(1);
-  const recruiterInterviews = allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.status === 'RECRUITER_INTERVIEW').length;
-  const recruiterInterviewsPercent = ((allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.status === 'RECRUITER_INTERVIEW').length / allIndividualsForCurrentJob.length) * 100).toFixed(1);
-  const candidateEngagementStatus = currentIndividual?.candidates?.edges[0]?.node?.engagementStatus;
-  const candidateStopChatStatus = currentIndividual?.candidates?.edges[0]?.node?.stopChat;
+  const screeningState = allIndividualsForCurrentJob?.filter(
+    (individual) =>
+      individual?.candidates?.edges[0]?.node?.status === 'SCREENING',
+  ).length;
+  const screeningPercent = (
+    (allIndividualsForCurrentJob?.filter(
+      (individual) =>
+        individual?.candidates?.edges[0]?.node?.status === 'SCREENING',
+    ).length /
+      allIndividualsForCurrentJob.length) *
+    100
+  ).toFixed(1);
+  const unresponsive = allIndividualsForCurrentJob?.filter(
+    (individual) => individual?.candidates?.edges[0]?.node?.status === null,
+  ).length;
+  const unresponsivePercent = (
+    (allIndividualsForCurrentJob?.filter(
+      (individual) => individual?.candidates?.edges[0]?.node?.status === null,
+    ).length /
+      allIndividualsForCurrentJob.length) *
+    100
+  ).toFixed(1);
+  const notInterested = allIndividualsForCurrentJob?.filter(
+    (individual) =>
+      individual?.candidates?.edges[0]?.node?.status === 'NOT_INTERESTED',
+  ).length;
+  const notInterestedPercent = (
+    (allIndividualsForCurrentJob?.filter(
+      (individual) =>
+        individual?.candidates?.edges[0]?.node?.status === 'NOT_INTERESTED',
+    ).length /
+      allIndividualsForCurrentJob.length) *
+    100
+  ).toFixed(1);
+  const notFit = allIndividualsForCurrentJob?.filter(
+    (individual) =>
+      individual?.candidates?.edges[0]?.node?.status === 'NOT_FIT',
+  ).length;
+  const notFitPercent = (
+    (allIndividualsForCurrentJob?.filter(
+      (individual) =>
+        individual?.candidates?.edges[0]?.node?.status === 'NOT_FIT',
+    ).length /
+      allIndividualsForCurrentJob.length) *
+    100
+  ).toFixed(1);
+  const recruiterInterviews = allIndividualsForCurrentJob?.filter(
+    (individual) =>
+      individual?.candidates?.edges[0]?.node?.status === 'RECRUITER_INTERVIEW',
+  ).length;
+  const recruiterInterviewsPercent = (
+    (allIndividualsForCurrentJob?.filter(
+      (individual) =>
+        individual?.candidates?.edges[0]?.node?.status ===
+        'RECRUITER_INTERVIEW',
+    ).length /
+      allIndividualsForCurrentJob.length) *
+    100
+  ).toFixed(1);
+  const candidateEngagementStatus =
+    currentIndividual?.candidates?.edges[0]?.node?.engagementStatus;
+  const candidateStopChatStatus =
+    currentIndividual?.candidates?.edges[0]?.node?.stopChat;
 
-  const onlyAddedNoConversation = allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.candConversationStatus === 'ONLY_ADDED_NO_CONVERSATION').length;
-  const onlyAddedNoConversationPercent = ((onlyAddedNoConversation / allIndividualsForCurrentJob.length) * 100).toFixed(1);
-  const conversationStartedNoResponse = allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.candConversationStatus === 'CONVERSATION_STARTED_HAS_NOT_RESPONDED').length;
-  const conversationStartedNoResponsePercent = ((conversationStartedNoResponse / allIndividualsForCurrentJob.length) * 100).toFixed(1);
-  const sharedJdNoResponse = allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.candConversationStatus === 'SHARED_JD_HAS_NOT_RESPONDED').length;
-  const sharedJdNoResponsePercent = ((sharedJdNoResponse / allIndividualsForCurrentJob.length) * 100).toFixed(1);
-  const refusesToRelocate = allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.candConversationStatus === 'CANDIDATE_REFUSES_TO_RELOCATE').length;
-  const refusesToRelocatePercent = ((refusesToRelocate / allIndividualsForCurrentJob.length) * 100).toFixed(1);
-  const stoppedRespondingQuestions = allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.candConversationStatus === 'STOPPED_RESPONDING_ON_QUESTIONS').length;
-  const stoppedRespondingQuestionsPercent = ((stoppedRespondingQuestions / allIndividualsForCurrentJob.length) * 100).toFixed(1);
-  const salaryOutOfRange = allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.candConversationStatus === 'CANDIDATE_SALARY_OUT_OF_RANGE').length;
-  const salaryOutOfRangePercent = ((salaryOutOfRange / allIndividualsForCurrentJob.length) * 100).toFixed(1);
-  const keenToChat = allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.candConversationStatus === 'CANDIDATE_IS_KEEN_TO_CHAT').length;
-  const keenToChatPercent = ((keenToChat / allIndividualsForCurrentJob.length) * 100).toFixed(1);
-  const followedUpForChat = allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.candConversationStatus === 'CANDIDATE_HAS_FOLLOWED_UP_TO_SETUP_CHAT').length;
-  const followedUpForChatPercent = ((followedUpForChat / allIndividualsForCurrentJob.length) * 100).toFixed(1);
-  const reluctantCompensation = allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.candConversationStatus === 'CANDIDATE_IS_RELUCTANT_TO_DISCUSS_COMPENSATION').length;
-  const reluctantCompensationPercent = ((reluctantCompensation / allIndividualsForCurrentJob.length) * 100).toFixed(1);
-  const closedToBeContacted = allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.candConversationStatus === 'CONVERSATION_CLOSED_TO_BE_CONTACTED').length;
-  const closedToBeContactedPercent = ((closedToBeContacted / allIndividualsForCurrentJob.length) * 100).toFixed(1);
+  const onlyAddedNoConversation = allIndividualsForCurrentJob?.filter(
+    (individual) =>
+      individual?.candidates?.edges[0]?.node?.candConversationStatus ===
+      'ONLY_ADDED_NO_CONVERSATION',
+  ).length;
+  const onlyAddedNoConversationPercent = (
+    (onlyAddedNoConversation / allIndividualsForCurrentJob.length) *
+    100
+  ).toFixed(1);
+  const conversationStartedNoResponse = allIndividualsForCurrentJob?.filter(
+    (individual) =>
+      individual?.candidates?.edges[0]?.node?.candConversationStatus ===
+      'CONVERSATION_STARTED_HAS_NOT_RESPONDED',
+  ).length;
+  const conversationStartedNoResponsePercent = (
+    (conversationStartedNoResponse / allIndividualsForCurrentJob.length) *
+    100
+  ).toFixed(1);
+  const sharedJdNoResponse = allIndividualsForCurrentJob?.filter(
+    (individual) =>
+      individual?.candidates?.edges[0]?.node?.candConversationStatus ===
+      'SHARED_JD_HAS_NOT_RESPONDED',
+  ).length;
+  const sharedJdNoResponsePercent = (
+    (sharedJdNoResponse / allIndividualsForCurrentJob.length) *
+    100
+  ).toFixed(1);
+  const refusesToRelocate = allIndividualsForCurrentJob?.filter(
+    (individual) =>
+      individual?.candidates?.edges[0]?.node?.candConversationStatus ===
+      'CANDIDATE_REFUSES_TO_RELOCATE',
+  ).length;
+  const refusesToRelocatePercent = (
+    (refusesToRelocate / allIndividualsForCurrentJob.length) *
+    100
+  ).toFixed(1);
+  const stoppedRespondingQuestions = allIndividualsForCurrentJob?.filter(
+    (individual) =>
+      individual?.candidates?.edges[0]?.node?.candConversationStatus ===
+      'STOPPED_RESPONDING_ON_QUESTIONS',
+  ).length;
+  const stoppedRespondingQuestionsPercent = (
+    (stoppedRespondingQuestions / allIndividualsForCurrentJob.length) *
+    100
+  ).toFixed(1);
+  const salaryOutOfRange = allIndividualsForCurrentJob?.filter(
+    (individual) =>
+      individual?.candidates?.edges[0]?.node?.candConversationStatus ===
+      'CANDIDATE_SALARY_OUT_OF_RANGE',
+  ).length;
+  const salaryOutOfRangePercent = (
+    (salaryOutOfRange / allIndividualsForCurrentJob.length) *
+    100
+  ).toFixed(1);
+  const keenToChat = allIndividualsForCurrentJob?.filter(
+    (individual) =>
+      individual?.candidates?.edges[0]?.node?.candConversationStatus ===
+      'CANDIDATE_IS_KEEN_TO_CHAT',
+  ).length;
+  const keenToChatPercent = (
+    (keenToChat / allIndividualsForCurrentJob.length) *
+    100
+  ).toFixed(1);
+  const followedUpForChat = allIndividualsForCurrentJob?.filter(
+    (individual) =>
+      individual?.candidates?.edges[0]?.node?.candConversationStatus ===
+      'CANDIDATE_HAS_FOLLOWED_UP_TO_SETUP_CHAT',
+  ).length;
+  const followedUpForChatPercent = (
+    (followedUpForChat / allIndividualsForCurrentJob.length) *
+    100
+  ).toFixed(1);
+  const reluctantCompensation = allIndividualsForCurrentJob?.filter(
+    (individual) =>
+      individual?.candidates?.edges[0]?.node?.candConversationStatus ===
+      'CANDIDATE_IS_RELUCTANT_TO_DISCUSS_COMPENSATION',
+  ).length;
+  const reluctantCompensationPercent = (
+    (reluctantCompensation / allIndividualsForCurrentJob.length) *
+    100
+  ).toFixed(1);
+  const closedToBeContacted = allIndividualsForCurrentJob?.filter(
+    (individual) =>
+      individual?.candidates?.edges[0]?.node?.candConversationStatus ===
+      'CONVERSATION_CLOSED_TO_BE_CONTACTED',
+  ).length;
+  const closedToBeContactedPercent = (
+    (closedToBeContacted / allIndividualsForCurrentJob.length) *
+    100
+  ).toFixed(1);
 
-  const undeliveredMessages = allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges?.some((edge: { node: { whatsappDeliveryStatus: string; }; }) => edge?.node?.whatsappDeliveryStatus === 'failed')).length;
-  const undeliveredPercent = ((undeliveredMessages / allIndividualsForCurrentJob.length) * 100).toFixed(1);
+  const undeliveredMessages = allIndividualsForCurrentJob?.filter(
+    (individual) =>
+      individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges?.some(
+        (edge: { node: { whatsappDeliveryStatus: string } }) =>
+          edge?.node?.whatsappDeliveryStatus === 'failed',
+      ),
+  ).length;
+  const undeliveredPercent = (
+    (undeliveredMessages / allIndividualsForCurrentJob.length) *
+    100
+  ).toFixed(1);
 
   // Messages read but not responded
-  const readNotResponded = allIndividualsForCurrentJob?.filter(individual => {
+  const readNotResponded = allIndividualsForCurrentJob?.filter((individual) => {
     const phone = individual?.phones?.primaryPhoneNumber || '';
     console.log('individual phone:', phone?.replace('+', ''));
-    const messages = individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges;
-    return messages?.some((edge: { node: { whatsappDeliveryStatus: string; }; }) => edge?.node?.whatsappDeliveryStatus === 'read' && !messages.some(m => m?.node?.phoneFrom?.replace('+', '') === phone?.replace('+', '')));
+    const messages =
+      individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges;
+    return messages?.some(
+      (edge: { node: { whatsappDeliveryStatus: string } }) =>
+        edge?.node?.whatsappDeliveryStatus === 'read' &&
+        !messages.some(
+          (m) =>
+            m?.node?.phoneFrom?.replace('+', '') === phone?.replace('+', ''),
+        ),
+    );
   }).length;
-  const readNotRespondedPercent = ((readNotResponded / allIndividualsForCurrentJob.length) * 100).toFixed(1);
+  const readNotRespondedPercent = (
+    (readNotResponded / allIndividualsForCurrentJob.length) *
+    100
+  ).toFixed(1);
 
   // Messages unread and not responded
-  const unreadNotResponded = allIndividualsForCurrentJob?.filter(individual => {
-    const messages = individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges; return messages?.some((edge: { node: { whatsappDeliveryStatus: string; }; }) => edge?.node?.whatsappDeliveryStatus === 'delivered' && !messages.some(m => m?.node?.phoneFrom?.replace('+', '') === individual?.phones?.primaryPhoneNumber?.replace('+', ''))); }).length;
-  const unreadNotRespondedPercent = ((unreadNotResponded / allIndividualsForCurrentJob.length) * 100).toFixed(1);
+  const unreadNotResponded = allIndividualsForCurrentJob?.filter(
+    (individual) => {
+      const messages =
+        individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges;
+      return messages?.some(
+        (edge: { node: { whatsappDeliveryStatus: string } }) =>
+          edge?.node?.whatsappDeliveryStatus === 'delivered' &&
+          !messages.some(
+            (m) =>
+              m?.node?.phoneFrom?.replace('+', '') ===
+              individual?.phones?.primaryPhoneNumber?.replace('+', ''),
+          ),
+      );
+    },
+  ).length;
+  const unreadNotRespondedPercent = (
+    (unreadNotResponded / allIndividualsForCurrentJob.length) *
+    100
+  ).toFixed(1);
 
   // Total messages not responded
   const totalNotResponded = readNotResponded + unreadNotResponded;
-  const totalNotRespondedPercent = ((totalNotResponded / allIndividualsForCurrentJob.length) * 100).toFixed(1);
+  const totalNotRespondedPercent = (
+    (totalNotResponded / allIndividualsForCurrentJob.length) *
+    100
+  ).toFixed(1);
 
   // Total messages responded
-  const totalResponded = allIndividualsForCurrentJob?.filter(individual => individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges?.some((edge: { node: { phoneFrom: string; }; }) => edge?.node?.phoneFrom?.replace('+', '') === individual?.phones?.primaryPhoneNumber?.replace('+', ''))).length;
-  const totalRespondedPercent = ((totalResponded / allIndividualsForCurrentJob.length) * 100).toFixed(1);
+  const totalResponded = allIndividualsForCurrentJob?.filter((individual) =>
+    individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges?.some(
+      (edge: { node: { phoneFrom: string } }) =>
+        edge?.node?.phoneFrom?.replace('+', '') ===
+        individual?.phones?.primaryPhoneNumber?.replace('+', ''),
+    ),
+  ).length;
+  const totalRespondedPercent = (
+    (totalResponded / allIndividualsForCurrentJob.length) *
+    100
+  ).toFixed(1);
 
   const messageStatisticsArray = [
-    { label: 'Undelivered Messages', count: undeliveredMessages, percent: parseFloat(undeliveredPercent) },
-    { label: 'Read Not Responded', count: readNotResponded, percent: parseFloat(readNotRespondedPercent) },
-    { label: 'Unread Not Responded', count: unreadNotResponded, percent: parseFloat(unreadNotRespondedPercent) },
-    { label: 'Total Not Responded', count: totalNotResponded, percent: parseFloat(totalNotRespondedPercent) },
-    { label: 'Total Responded', count: totalResponded, percent: parseFloat(totalRespondedPercent) },
+    {
+      label: 'Undelivered Messages',
+      count: undeliveredMessages,
+      percent: parseFloat(undeliveredPercent),
+    },
+    {
+      label: 'Read Not Responded',
+      count: readNotResponded,
+      percent: parseFloat(readNotRespondedPercent),
+    },
+    {
+      label: 'Unread Not Responded',
+      count: unreadNotResponded,
+      percent: parseFloat(unreadNotRespondedPercent),
+    },
+    {
+      label: 'Total Not Responded',
+      count: totalNotResponded,
+      percent: parseFloat(totalNotRespondedPercent),
+    },
+    {
+      label: 'Total Responded',
+      count: totalResponded,
+      percent: parseFloat(totalRespondedPercent),
+    },
   ];
 
   const statisticsArray = [
-    { label: 'No Conversation', count: onlyAddedNoConversation, percent: parseFloat(onlyAddedNoConversationPercent) },
-    { label: 'Started, No Response', count: conversationStartedNoResponse, percent: parseFloat(conversationStartedNoResponsePercent) },
-    { label: 'Shared JD, No Response', count: sharedJdNoResponse, percent: parseFloat(sharedJdNoResponsePercent) },
-    { label: 'Refuses Relocation', count: refusesToRelocate, percent: parseFloat(refusesToRelocatePercent) },
-    { label: 'Stopped Responding', count: stoppedRespondingQuestions, percent: parseFloat(stoppedRespondingQuestionsPercent) },
-    { label: 'Salary Out of Range', count: salaryOutOfRange, percent: parseFloat(salaryOutOfRangePercent) },
-    { label: 'Keen to Chat', count: keenToChat, percent: parseFloat(keenToChatPercent) },
-    { label: 'Followed Up', count: followedUpForChat, percent: parseFloat(followedUpForChatPercent) },
-    { label: 'Reluctant on Compensation', count: reluctantCompensation, percent: parseFloat(reluctantCompensationPercent) },
-    { label: 'Closed to Contact', count: closedToBeContacted, percent: parseFloat(closedToBeContactedPercent) },
+    {
+      label: 'No Conversation',
+      count: onlyAddedNoConversation,
+      percent: parseFloat(onlyAddedNoConversationPercent),
+    },
+    {
+      label: 'Started, No Response',
+      count: conversationStartedNoResponse,
+      percent: parseFloat(conversationStartedNoResponsePercent),
+    },
+    {
+      label: 'Shared JD, No Response',
+      count: sharedJdNoResponse,
+      percent: parseFloat(sharedJdNoResponsePercent),
+    },
+    {
+      label: 'Refuses Relocation',
+      count: refusesToRelocate,
+      percent: parseFloat(refusesToRelocatePercent),
+    },
+    {
+      label: 'Stopped Responding',
+      count: stoppedRespondingQuestions,
+      percent: parseFloat(stoppedRespondingQuestionsPercent),
+    },
+    {
+      label: 'Salary Out of Range',
+      count: salaryOutOfRange,
+      percent: parseFloat(salaryOutOfRangePercent),
+    },
+    {
+      label: 'Keen to Chat',
+      count: keenToChat,
+      percent: parseFloat(keenToChatPercent),
+    },
+    {
+      label: 'Followed Up',
+      count: followedUpForChat,
+      percent: parseFloat(followedUpForChatPercent),
+    },
+    {
+      label: 'Reluctant on Compensation',
+      count: reluctantCompensation,
+      percent: parseFloat(reluctantCompensationPercent),
+    },
+    {
+      label: 'Closed to Contact',
+      count: closedToBeContacted,
+      percent: parseFloat(closedToBeContactedPercent),
+    },
   ];
-  const sortedStatistics = [...statisticsArray].sort((a, b) => b.percent - a.percent);
+  const sortedStatistics = [...statisticsArray].sort(
+    (a, b) => b.percent - a.percent,
+  );
 
   const statusStatisticsArray = [
-    { label: 'Screening', count: screeningState, percent: parseFloat(screeningPercent) },
-    { label: 'Unresponsive', count: unresponsive, percent: parseFloat(unresponsivePercent) },
-    { label: 'Not Interested', count: notInterested, percent: parseFloat(notInterestedPercent) },
+    {
+      label: 'Screening',
+      count: screeningState,
+      percent: parseFloat(screeningPercent),
+    },
+    {
+      label: 'Unresponsive',
+      count: unresponsive,
+      percent: parseFloat(unresponsivePercent),
+    },
+    {
+      label: 'Not Interested',
+      count: notInterested,
+      percent: parseFloat(notInterestedPercent),
+    },
     { label: 'Not Fit', count: notFit, percent: parseFloat(notFitPercent) },
-    { label: 'Recruiter Interviews', count: recruiterInterviews, percent: parseFloat(recruiterInterviewsPercent) },
+    {
+      label: 'Recruiter Interviews',
+      count: recruiterInterviews,
+      percent: parseFloat(recruiterInterviewsPercent),
+    },
   ];
 
-  
-
-  const sortedStatusStatistics = [...statusStatisticsArray].sort((a, b) => b.percent - a.percent);
+  const sortedStatusStatistics = [...statusStatisticsArray].sort(
+    (a, b) => b.percent - a.percent,
+  );
 
   const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
 
   const handleTemplateSend = async (templateName: string) => {
     try {
       const response = await axios.post(
-        process.env.REACT_APP_SERVER_BASE_URL + '/whatsapp-test/send-template-message',
-        { templateName: templateName, phoneNumberTo: currentIndividual?.phones?.primaryPhoneNumber?.replace('+', '') }, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } }, );
+        process.env.REACT_APP_SERVER_BASE_URL +
+          '/whatsapp-test/send-template-message',
+        {
+          templateName: templateName,
+          phoneNumberTo: currentIndividual?.phones?.primaryPhoneNumber?.replace(
+            '+',
+            '',
+          ),
+        },
+        {
+          headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` },
+        },
+      );
       console.log('This is reponse:', response);
       showSnackbar('Template sent successfully', 'success');
       setSelectedTemplate(''); // Reset selection after successful send
@@ -1183,7 +1690,7 @@ const UploadCV: React.FC<{
         whatsappDeliveryStatus: 'sent',
       };
 
-      setMessageHistory(prev => [...prev, newMessage]);
+      setMessageHistory((prev) => [...prev, newMessage]);
       scrollToBottom();
     } catch (error) {
       showSnackbar('Failed to send template', 'error');
@@ -1199,8 +1706,17 @@ const UploadCV: React.FC<{
     }
 
     try {
-      await axios.post( process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/start-interim-chat-prompt',
-        { interimChat, phoneNumber: currentIndividual?.phones?.primaryPhoneNumber, }, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}`, }, }, );
+      await axios.post(
+        process.env.REACT_APP_SERVER_BASE_URL +
+          '/arx-chat/start-interim-chat-prompt',
+        {
+          interimChat,
+          phoneNumber: currentIndividual?.phones?.primaryPhoneNumber,
+        },
+        {
+          headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` },
+        },
+      );
       showSnackbar('Interim Chat started successfully', 'success');
       setSelectedInterimChat('');
     } catch (error) {
@@ -1219,24 +1735,27 @@ const UploadCV: React.FC<{
     }
   };
 
+  const initializeRecord = useRecoilCallback(
+    ({ set }) =>
+      () => {
+        if (currentCandidateId) {
+          set(recordStoreFamilyState(currentCandidateId), {
+            id: currentCandidateId,
+            __typename: 'Candidate', // Add the required __typename
 
-  const initializeRecord = useRecoilCallback(({ set }) => () => {
-    if (currentCandidateId) {
-      set(recordStoreFamilyState(currentCandidateId), {
-        id: currentCandidateId,
-        __typename: 'Candidate', // Add the required __typename
-
-        // Add other required initial data
-      });
-    }
-  });
+            // Add other required initial data
+          });
+        }
+      },
+    [],
+  );
 
   useEffect(() => {
     if (currentCandidateId) {
       initializeRecord();
     }
   }, [currentCandidateId]);
-  console.log("Candidate status is :", candidateStatus);
+  console.log('Candidate status is :', candidateStatus);
 
   console.log('Current Individual::', currentIndividual);
   console.log('Current currentWorkspaceMember::', currentWorkspaceMember);
@@ -1249,25 +1768,51 @@ const UploadCV: React.FC<{
               <TopbarContainer>
                 <MainInfo>
                   <FieldsContainer>
-                    <CopyableFieldComponent label="Name" value={`${currentIndividual?.name.firstName} ${currentIndividual?.name.lastName}`} field="name" alwaysShowFull={true} />
-                    <CopyableFieldComponent label="Phone" value={currentIndividual?.phones?.primaryPhoneNumber || ''} field="phone" />
-                    <CopyableFieldComponent label="Person ID" value={currentIndividual?.id || ''} field="personId" />
-                    <CopyableFieldComponent label="Candidate ID" value={currentIndividual?.candidates.edges[0].node.id || ''} field="candidateId" />
+                    <CopyableFieldComponent
+                      label="Name"
+                      value={`${currentIndividual?.name.firstName} ${currentIndividual?.name.lastName}`}
+                      field="name"
+                      alwaysShowFull={true}
+                    />
+                    <CopyableFieldComponent
+                      label="Phone"
+                      value={
+                        currentIndividual?.phones?.primaryPhoneNumber || ''
+                      }
+                      field="phone"
+                    />
+                    <CopyableFieldComponent
+                      label="Person ID"
+                      value={currentIndividual?.id || ''}
+                      field="personId"
+                    />
+                    <CopyableFieldComponent
+                      label="Candidate ID"
+                      value={
+                        currentIndividual?.candidates.edges[0].node.id || ''
+                      }
+                      field="candidateId"
+                    />
                   </FieldsContainer>
                   <AdditionalInfoAndButtons>
                     <AdditionalInfo>
                       <AdditionalInfoContent
                         messageCount={messageHistory?.length || 0}
-                        jobName={currentIndividual?.candidates?.edges[0]?.node?.jobs?.name || ''}
+                        jobName={
+                          currentIndividual?.candidates?.edges[0]?.node?.jobs
+                            ?.name || ''
+                        }
                         salary={salary}
                         city={city}
-                        candidateStatus = {candidateStatus}
+                        candidateStatus={candidateStatus}
                         isEditingSalary={isEditingSalary}
                         isEditingCity={isEditingCity}
                         isEditingCandidateStatus={isEditingCandidateStatus}
                         onSalaryEdit={() => setIsEditingSalary(true)}
                         onCityEdit={() => setIsEditingCity(true)}
-                        onCandidateStatusEdit={() => setIsEditingCandidateStatus(true)}
+                        onCandidateStatusEdit={() =>
+                          setIsEditingCandidateStatus(true)
+                        }
                         onSalaryUpdate={handleSalaryUpdate}
                         onCityUpdate={handleCityUpdate}
                         onCandidateStatusUpdate={handleCandidateStatusUpdate}
@@ -1277,12 +1822,15 @@ const UploadCV: React.FC<{
                       />
                     </AdditionalInfo>
                     <ButtonGroup>
-                      <StyledSelect value={lastStatus || ''} onChange={e => handleStatusUpdate(e.target.value)}>
+                      <StyledSelect
+                        value={lastStatus || ''}
+                        onChange={(e) => handleStatusUpdate(e.target.value)}
+                      >
                         {' '}
                         <option value="" disabled>
                           Update Status
                         </option>{' '}
-                        {statusesArray.map(status => (
+                        {statusesArray.map((status) => (
                           <option key={status} value={status}>
                             {' '}
                             {statusLabels[status]}{' '}
@@ -1290,11 +1838,14 @@ const UploadCV: React.FC<{
                         ))}{' '}
                       </StyledSelect>
 
-                      <StyledSelect value={selectedInterimChat} onChange={e => setSelectedInterimChat(e.target.value)}>
+                      <StyledSelect
+                        value={selectedInterimChat}
+                        onChange={(e) => setSelectedInterimChat(e.target.value)}
+                      >
                         <option value="" disabled>
                           Select Interim Chat
                         </option>
-                        {interimChats.map(layer => (
+                        {interimChats.map((layer) => (
                           <option key={layer} value={layer}>
                             {layer}
                           </option>
@@ -1302,25 +1853,43 @@ const UploadCV: React.FC<{
                       </StyledSelect>
 
                       {/* Add new button for starting interim chat layer */}
-                      <StyledButton onClick={() => handleStartNewInterimChat(selectedInterimChat)} bgColor="black" data-tooltip="Start Interim Chat">
+                      <StyledButton
+                        onClick={() =>
+                          handleStartNewInterimChat(selectedInterimChat)
+                        }
+                        bgColor="black"
+                        data-tooltip="Start Interim Chat"
+                      >
                         Start Layer
                       </StyledButton>
 
-                      <StyledButton onClick={handleStopCandidate} bgColor="black" data-tooltip="Stop Chat">
+                      <StyledButton
+                        onClick={handleStopCandidate}
+                        bgColor="black"
+                        data-tooltip="Stop Chat"
+                      >
                         {' '}
                         <StopIcon />{' '}
                       </StyledButton>
-                      <StyledButton onClick={handleNavigateToPersonPage} bgColor="black" data-tooltip="Person">
+                      <StyledButton
+                        onClick={handleNavigateToPersonPage}
+                        bgColor="black"
+                        data-tooltip="Person"
+                      >
                         {' '}
                         <PersonIcon />{' '}
                       </StyledButton>
-                      <StyledButton onClick={handleNavigateToCandidatePage} bgColor="black" data-tooltip="Candidate">
+                      <StyledButton
+                        onClick={handleNavigateToCandidatePage}
+                        bgColor="black"
+                        data-tooltip="Candidate"
+                      >
                         {' '}
                         <CandidateIcon />{' '}
                       </StyledButton>
 
-                        {/* Add UploadCV component here */}
-                      <UploadCV 
+                      {/* Add UploadCV component here */}
+                      <UploadCV
                         candidateId={currentCandidateId || ''}
                         tokenPair={tokenPair}
                         onUploadSuccess={() => {
@@ -1329,8 +1898,11 @@ const UploadCV: React.FC<{
                         }}
                       />
 
-
-                      <AttachmentButton onClick={handleToggleAttachmentPanel} bgColor="black" data-tooltip="View Attachments">
+                      <AttachmentButton
+                        onClick={handleToggleAttachmentPanel}
+                        bgColor="black"
+                        data-tooltip="View Attachments"
+                      >
                         {' '}
                         <AttachmentIcon />
                       </AttachmentButton>
@@ -1343,41 +1915,49 @@ const UploadCV: React.FC<{
               <ChatView ref={chatViewRef} onScroll={handleScroll}>
                 <StyledScrollingView>
                   {messageHistory.map((message, index) => {
-                    const showDateSeparator = index === 0 || formatDate(messageHistory[index - 1]?.createdAt) !== formatDate(message?.createdAt);
+                    const showDateSeparator =
+                      index === 0 ||
+                      formatDate(messageHistory[index - 1]?.createdAt) !==
+                        formatDate(message?.createdAt);
                     return (
                       <React.Fragment key={index}>
                         {' '}
                         {showDateSeparator && (
                           <p style={{ textAlign: 'center' }}>
                             {' '}
-                            <StyledDateComponent>{dayjs(message?.createdAt).format("ddd DD MMM, 'YY")}</StyledDateComponent>{' '}
+                            <StyledDateComponent>
+                              {dayjs(message?.createdAt).format(
+                                "ddd DD MMM, 'YY",
+                              )}
+                            </StyledDateComponent>{' '}
                           </p>
                         )}
-                        <SingleChatContainer phoneNumber={currentIndividual?.phones?.primaryPhoneNumber} message={message} messageName={`${currentIndividual?.name.firstName} ${currentIndividual?.name.lastName}`} />
+                        <SingleChatContainer
+                          phoneNumber={
+                            currentIndividual?.phones?.primaryPhoneNumber
+                          }
+                          message={message}
+                          messageName={`${currentIndividual?.name.firstName} ${currentIndividual?.name.lastName}`}
+                        />
                       </React.Fragment>
                     );
                   })}
                 </StyledScrollingView>
               </ChatView>
 
-
-
-
-
-
-
-
-                <NotesPanel>
-                {currentCandidateId && currentWorkspaceMember && window.innerWidth > 768 && (
-                  <Notes
-                  targetableObject={{
-                    id: currentCandidateId,
-                    targetObjectNameSingular: 'candidate',
-                  }}
-                  key={currentCandidateId}
-                  />
-                )}
-                </NotesPanel>
+              <NotesPanel>
+                {currentCandidateId &&
+                  currentWorkspaceMember &&
+                  window.innerWidth > 768 && (
+                    <Notes
+                      targetableObject={{
+                        id: currentCandidateId,
+                        targetObjectNameSingular: 'candidate',
+                      }}
+                      key={currentCandidateId}
+                    />
+                  )}
+              </NotesPanel>
             </ChatContainer>
             <StyledChatInputBox sidebarWidth={sidebarWidth}>
               <Container>
@@ -1401,17 +1981,41 @@ const UploadCV: React.FC<{
                 <PreviewSection>
                   <ControlsContainer>
                     <SectionHeader>
-                      <HeaderIcon viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 5h16a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V7a2 2 0 012-2z" />
+                      <HeaderIcon
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M4 5h16a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V7a2 2 0 012-2z"
+                        />
                       </HeaderIcon>
                       <HeaderText>Templates & Chat Layers</HeaderText>
                     </SectionHeader>
                     <div>
-                      <Select value={selectedTemplate} onChange={e => setSelectedTemplate(e.target.value)}>
-                        <option value="" disabled> {' '} Select a template{' '} </option>
-                        {templates.map(template => ( <option key={template} value={template}> {template} </option> ))}
+                      <Select
+                        value={selectedTemplate}
+                        onChange={(e) => setSelectedTemplate(e.target.value)}
+                      >
+                        <option value="" disabled>
+                          {' '}
+                          Select a template{' '}
+                        </option>
+                        {templates.map((template) => (
+                          <option key={template} value={template}>
+                            {' '}
+                            {template}{' '}
+                          </option>
+                        ))}
                       </Select>
-                      <ActionButton onClick={() => handleTemplateSend(selectedTemplate)}>Send Template</ActionButton>
+                      <ActionButton
+                        onClick={() => handleTemplateSend(selectedTemplate)}
+                      >
+                        Send Template
+                      </ActionButton>
                     </div>
                     {/* <br />
                     <div>
@@ -1425,7 +2029,9 @@ const UploadCV: React.FC<{
                     </div> */}
                   </ControlsContainer>
 
-                  <TemplatePreview>{getTemplatePreview(selectedTemplate)}</TemplatePreview>
+                  <TemplatePreview>
+                    {getTemplatePreview(selectedTemplate)}
+                  </TemplatePreview>
                 </PreviewSection>
               </Container>
 
@@ -1435,15 +2041,19 @@ const UploadCV: React.FC<{
                     type="text"
                     ref={inputRef}
                     placeholder="Type your message"
-                    onKeyDown={e => {
+                    onKeyDown={(e) => {
                       if (e.key === 'Enter') {
                         e.preventDefault();
                         handleSubmit();
                       }
                     }}
                   />
-                  <StyledButtonBottom onClick={handleSubmit}>Submit</StyledButtonBottom>
-                  <StyledButtonBottom onClick={handleShareJD}>Share JD</StyledButtonBottom>
+                  <StyledButtonBottom onClick={handleSubmit}>
+                    Submit
+                  </StyledButtonBottom>
+                  <StyledButtonBottom onClick={handleShareJD}>
+                    Share JD
+                  </StyledButtonBottom>
                 </div>
                 <div style={{ fontSize: '0.875rem', color: '#666' }}>
                   Last Status: {lastStatus} | Total: {totalCandidates} |{' '}
@@ -1454,7 +2064,14 @@ const UploadCV: React.FC<{
                     </React.Fragment>
                   ))}
                 </div>
-                <div style={{ fontSize: '0.875rem', color: '#666', whiteSpace: 'nowrap', overflow: 'auto' }}>
+                <div
+                  style={{
+                    fontSize: '0.875rem',
+                    color: '#666',
+                    whiteSpace: 'nowrap',
+                    overflow: 'auto',
+                  }}
+                >
                   Message Stats: |{' '}
                   {messageStatisticsArray.map((stat, index) => (
                     <React.Fragment key={stat.label}>
@@ -1464,7 +2081,14 @@ const UploadCV: React.FC<{
                   ))}
                 </div>
 
-                <div style={{ fontSize: '0.875rem', color: '#666', whiteSpace: 'nowrap', overflow: 'auto' }}>
+                <div
+                  style={{
+                    fontSize: '0.875rem',
+                    color: '#666',
+                    whiteSpace: 'nowrap',
+                    overflow: 'auto',
+                  }}
+                >
                   Total: {totalCandidates} |{' '}
                   {sortedStatistics.map((stat, index) => (
                     <React.Fragment key={stat.label}>
@@ -1477,7 +2101,15 @@ const UploadCV: React.FC<{
             </StyledChatInputBox>
           </StyledWindow>
         ) : (
-          <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center' }}>
+          <div
+            style={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              textAlign: 'center',
+            }}
+          >
             <div style={{ marginBottom: '2rem' }}>
               {/* <h1>WhatsApp QR Code</h1>
             {!isWhatsappLoggedIn ? (
@@ -1490,12 +2122,20 @@ const UploadCV: React.FC<{
               <p>Your WhatsApp is logged in! Enjoy!</p>
             )} */}
             </div>
-            <img src="/images/placeholders/moving-image/empty_inbox.png" alt="" />
+            <img
+              src="/images/placeholders/moving-image/empty_inbox.png"
+              alt=""
+            />
             <p>Select a chat to start talking</p>
           </div>
         )}
       </div>
-      <AttachmentPanel isOpen={isAttachmentPanelOpen} onClose={() => setIsAttachmentPanelOpen(false)} candidateId={currentCandidateId || ''} candidateName={currentCandidateName} />
+      <AttachmentPanel
+        isOpen={isAttachmentPanelOpen}
+        onClose={() => setIsAttachmentPanelOpen(false)}
+        candidateId={currentCandidateId || ''}
+        candidateName={currentCandidateName}
+      />
     </>
   );
 }

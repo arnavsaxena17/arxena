@@ -98,6 +98,7 @@ export interface WhatsappMessageData {
   body: string;
   type: string;
   from: string;
+  linkedin_url?: string;
   to: string;
   timestamp: number;
   fromMe: boolean;
@@ -884,6 +885,8 @@ export interface Candidates {
 export interface PersonNode {
   phones: { primaryPhoneNumber: string };
   emails: { primaryEmail: string };
+
+  linkedinLink?:{primaryLinkUrl:string,primaryLinkLabel:string}
   suitabilityDescription?: string;
   salary: string;
   city: string;
@@ -934,7 +937,7 @@ interface Entry {
 }
 
 export interface WhatsAppBusinessAccount {
-  object: 'whatsapp_business_account';
+  object: string;
   entry: Entry[];
 }
 
@@ -1599,6 +1602,7 @@ export interface CandidateNode {
   name: string;
   source?: string;
   campaign?: string;
+  messagingChannel?: string;
   id: string;
   engagementStatus: boolean;
   startVideoInterviewChat: boolean;
@@ -1751,7 +1755,7 @@ interface Entry {
 }
 
 export interface WhatsAppBusinessAccount {
-  object: 'whatsapp_business_account';
+  object: string;
   entry: Entry[];
 }
 
@@ -1836,6 +1840,7 @@ export interface RecruiterProfileType {
   jobTitle: string;
   companyName: string;
   companyDescription: string;
+  linkedinUrl?:string;
   firstName: string;
   lastName: string;
   name: string;

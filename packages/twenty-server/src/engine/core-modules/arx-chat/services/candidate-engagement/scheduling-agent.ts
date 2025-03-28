@@ -110,3 +110,21 @@ export class CandidateStatusClassificationCronService extends BaseCronService {
     });
   }
 }
+
+
+
+@Injectable()
+export class LinkedinSockIncomingMessageFetchingCronService extends BaseCronService {
+  @Cron(TimeManagement.crontabs.crontTabToFetchLinkedinSockMessages, {
+    name: 'fetch-linkedin-messages',
+    disabled: true,
+  })
+  async handleFiveHoursCron() {
+    if (CRON_DISABLED) return;
+    await this.executeWorkspaceTask(async (token) => {
+      await new CandidateEngagementArx(
+        this.workspaceQueryService,
+      ).fetchLinkedinSockMessages(token);
+    });
+  }
+}
