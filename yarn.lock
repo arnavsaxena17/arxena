@@ -31401,6 +31401,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"gojs@npm:^3.0.21":
+  version: 3.0.21
+  resolution: "gojs@npm:3.0.21"
+  checksum: 10c0/a83fd950d395bf8ec3157627631a7086040eee504a5fd565b5966f125c595363c7d1d08e2053d37c6b74d08c5a12778bfa5a0c26befda6f592f9e028a90ceb65
+  languageName: node
+  linkType: hard
+
 "google-auth-library@npm:^8.0.2":
   version: 8.9.0
   resolution: "google-auth-library@npm:8.9.0"
@@ -49404,6 +49411,7 @@ __metadata:
     framer-motion: "npm:^11.18.0"
     fuse.js: "npm:^7.1.0"
     fuzzy: "npm:^0.1.3"
+    gojs: "npm:^3.0.21"
     gojs-react: "npm:^1.1.2"
     google-libphonenumber: "npm:^3.2.40"
     googleapis: "npm:105"
