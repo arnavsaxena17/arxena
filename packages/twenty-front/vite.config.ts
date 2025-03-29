@@ -140,11 +140,46 @@ export default defineConfig(({ command, mode }) => {
 
     optimizeDeps: {
       exclude: ['../../node_modules/.vite', '../../node_modules/.cache'],
+      include: ['react', 'react-dom'],
+      // Force exclude GoJS to prevent bundling issues
+      force: true,
+
     },
 
     build: {
       outDir: 'build',
       sourcemap: VITE_BUILD_SOURCEMAP === 'true',
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            // Create a separate chunk for GoJS
+            'gojs-vendor': ['gojs'],
+            'gojs-react-vendor': ['gojs-react'],
+            
+            // Group major React libraries
+            'react-vendor': [
+              'react', 
+              'react-dom', 
+              'react-router-dom',
+              '@emotion/react',
+              '@emotion/styled'
+            ],
+            
+            // Group utilities
+            'utils-vendor': [
+              'lodash',
+              'date-fns',
+              // other utility libraries
+            ]
+          },
+        },
+      },
+
+
+
+
+      chunkSizeWarningLimit: 1500,
+
     },
 
     envPrefix: 'REACT_APP_',

@@ -1,9 +1,9 @@
+import { PREVIEWABLE_EXTENSIONS } from '@/activities/files/constants/documentConstants';
 import DocViewer, { DocViewerRenderers } from '@cyntler/react-doc-viewer';
 import '@cyntler/react-doc-viewer/dist/index.css';
 import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
 import { getFileNameAndExtension } from '~/utils/file/getFileNameAndExtension';
-
 const StyledDocumentViewerContainer = styled.div`
   display: flex;
   flex-direction: column;
@@ -33,28 +33,28 @@ type DocumentViewerProps = {
   documentUrl: string;
 };
 
-export const PREVIEWABLE_EXTENSIONS = [
-  'bmp',
-  'csv',
-  'odt',
-  'doc',
-  'docx',
-  'gif',
-  'htm',
-  'html',
-  'jpg',
-  'jpeg',
-  'pdf',
-  'png',
-  'ppt',
-  'pptx',
-  'tiff',
-  'txt',
-  'xls',
-  'xlsx',
-  'mp4',
-  'webp',
-];
+// export const PREVIEWABLE_EXTENSIONS = [
+//   'bmp',
+//   'csv',
+//   'odt',
+//   'doc',
+//   'docx',
+//   'gif',
+//   'htm',
+//   'html',
+//   'jpg',
+//   'jpeg',
+//   'pdf',
+//   'png',
+//   'ppt',
+//   'pptx',
+//   'tiff',
+//   'txt',
+//   'xls',
+//   'xlsx',
+//   'mp4',
+//   'webp',
+// ];
 
 const MIME_TYPE_MAPPING: Record<
   (typeof PREVIEWABLE_EXTENSIONS)[number],

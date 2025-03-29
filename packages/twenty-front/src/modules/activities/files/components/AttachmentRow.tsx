@@ -1,7 +1,7 @@
 import { ActivityRow } from '@/activities/components/ActivityRow';
 import { AttachmentDropdown } from '@/activities/files/components/AttachmentDropdown';
 import { AttachmentIcon } from '@/activities/files/components/AttachmentIcon';
-import { PREVIEWABLE_EXTENSIONS } from '@/activities/files/components/DocumentViewer';
+import { PREVIEWABLE_EXTENSIONS } from '@/activities/files/constants/documentConstants';
 import { Attachment } from '@/activities/files/types/Attachment';
 import { downloadFile } from '@/activities/files/utils/downloadFile';
 import { CoreObjectNameSingular } from '@/object-metadata/types/CoreObjectNameSingular';

@@ -36,10 +36,12 @@ import GoogleSheet from '@/google-sheet/GoogleSheet';
 import { HotPage } from '@/hot/hotCandidates';
 import Interview from '@/interviews/components/Interviews';
 import indexAppPath from '@/navigation/utils/indexAppPath';
-import OrgChart from '@/orgchart/OrgChart';
+// import OrgChart from '@/orgchart/OrgChart';
 import VideoInterviewFlow from '@/video-interview/interview-response/VideoInterviewFlow';
 import VideoInterviewResponseViewer from '@/video-interview/interview-response/VideoInterviewResponseViewer';
+import React from 'react';
 import { Chats } from '~/pages/chats/Chats';
+const OrgChart = React.lazy(() => import('@/orgchart/OrgChart'));
 
 const VideoInterviewWrapper = () => {
   console.log('VideoInterviewWrapper rendering');
@@ -96,7 +98,11 @@ export const useCreateAppRouter = (
               path={`${AppPath.GoogleSheet}/*`}
               element={<GoogleSheet />}
             />
-            <Route path={`${AppPath.OrgChart}/*`} element={<OrgChart />} />
+          <Route path={`${AppPath.OrgChart}/*`} element={
+            <React.Suspense fallback={<div>Loading organization chart...</div>}>
+              <OrgChart />
+            </React.Suspense>
+          } />
             <Route path={`${AppPath.Hot}/*`} element={<HotPage />} />
           </Route>
         </Route>
