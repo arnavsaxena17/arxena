@@ -30,7 +30,7 @@ See:
 🚀 [Self-hosting](https://arxena.com/developers/section/self-hosting)  
 🖥️ [Local Setup](https://arxena.com/developers/local-setup)  
 
-# Does the world need another CRM?
+# Does the world need another Recruitment Company?
 
 We built arxena for three reasons:
 
@@ -126,7 +126,7 @@ Below are a few features we have implemented to date:
     </picture>
 </p>
 
-## Connect your CRM to all your tools through our APIs and Webhooks.
+## Connect your Recruitment Company to all your tools through our APIs and Webhooks.
 
 <p align="center">
     <picture>
@@ -152,7 +152,7 @@ Below are a few features we have implemented to date:
 
 - Star the repo
 - Subscribe to releases (watch -> custom -> releases)
-- Follow us on [Twitter](https://twitter.com/arxenacrm) or [LinkedIn](https://www.linkedin.com/company/arxena/) 
+- Follow us on [Twitter](https://twitter.com/arxena) or [LinkedIn](https://www.linkedin.com/company/arxena/) 
 - Join our [Discord](https://discord.gg/cx5n4Jzs57)
 - Improve translations on [Crowdin](https://arxena.crowdin.com/arxena) 
 - [Contributions](https://github.com/arxenahq/arxena/contribute) are, of course, most welcome! 
