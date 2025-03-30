@@ -2,10 +2,11 @@ import { RecordIndexContextProvider } from '@/object-record/record-index/context
 
 import { ActionMenuComponentInstanceContext } from '@/action-menu/states/contexts/ActionMenuComponentInstanceContext';
 import { getActionMenuIdFromRecordIndexId } from '@/action-menu/utils/getActionMenuIdFromRecordIndexId';
+import { MAIN_CONTEXT_STORE_INSTANCE_ID } from '@/context-store/constants/MainContextStoreInstanceId';
 import { useContextStoreObjectMetadataItemOrThrow } from '@/context-store/hooks/useContextStoreObjectMetadataItemOrThrow';
 import { contextStoreCurrentViewIdComponentState } from '@/context-store/states/contextStoreCurrentViewIdComponentState';
-import { mainContextStoreComponentInstanceIdState } from '@/context-store/states/mainContextStoreComponentInstanceId';
 import { lastShowPageRecordIdState } from '@/object-record/record-field/states/lastShowPageRecordId';
+import { RecordFilterGroupsComponentInstanceContext } from '@/object-record/record-filter-group/states/context/RecordFilterGroupsComponentInstanceContext';
 import { RecordFiltersComponentInstanceContext } from '@/object-record/record-filter/states/context/RecordFiltersComponentInstanceContext';
 import { RecordIndexContainer } from '@/object-record/record-index/components/RecordIndexContainer';
 import { RecordIndexContainerContextStoreNumberOfSelectedRecordsEffect } from '@/object-record/record-index/components/RecordIndexContainerContextStoreNumberOfSelectedRecordsEffect';
@@ -13,6 +14,7 @@ import { RecordIndexLoadBaseOnContextStoreEffect } from '@/object-record/record-
 import { RecordIndexPageHeader } from '@/object-record/record-index/components/RecordIndexPageHeader';
 import { useHandleIndexIdentifierClick } from '@/object-record/record-index/hooks/useHandleIndexIdentifierClick';
 import { RecordSortsComponentInstanceContext } from '@/object-record/record-sort/states/context/RecordSortsComponentInstanceContext';
+import { getRecordIndexIdFromObjectNamePluralAndViewId } from '@/object-record/utils/getRecordIndexIdFromObjectNamePluralAndViewId';
 import { PageBody } from '@/ui/layout/page/components/PageBody';
 import { PageTitle } from '@/ui/utilities/page-title/components/PageTitle';
 import { useRecoilComponentValueV2 } from '@/ui/utilities/state/component-state/hooks/useRecoilComponentValueV2';
@@ -37,18 +39,10 @@ export const RecordIndexContainerGater = () => {
   const mainContextStoreComponentInstanceId = useRecoilValue(
     mainContextStoreComponentInstanceIdState,
   );
-  console.log(
-    'mainContextStoreComponentInstanceId',
-    mainContextStoreComponentInstanceId,
-  );
-  console.log(
-    'contextStoreCurrentViewIdComponentState',
-    contextStoreCurrentViewIdComponentState,
-  );
 
   const contextStoreCurrentViewId = useRecoilComponentValueV2(
     contextStoreCurrentViewIdComponentState,
-    mainContextStoreComponentInstanceId,
+    MAIN_CONTEXT_STORE_INSTANCE_ID,
   );
 
   console.log('contextStoreCurrentViewId', contextStoreCurrentViewId);
@@ -64,7 +58,6 @@ export const RecordIndexContainerGater = () => {
   const { objectMetadataItem } = useContextStoreObjectMetadataItemOrThrow();
 
   const recordIndexId = `${objectMetadataItem.namePlural}-${contextStoreCurrentViewId}`;
-  const isArxEnrichModalOpen = useRecoilValue(isArxEnrichModalOpenState);
 
   const handleIndexRecordsLoaded = useRecoilCallback(
     ({ set }) =>
@@ -100,7 +93,7 @@ export const RecordIndexContainerGater = () => {
         <ViewComponentInstanceContext.Provider
           value={{ instanceId: recordIndexId }}
         >
-          <RecordFiltersComponentInstanceContext.Provider
+          <RecordFilterGroupsComponentInstanceContext.Provider
             value={{ instanceId: recordIndexId }}
           >
             <RecordSortsComponentInstanceContext.Provider
@@ -119,28 +112,6 @@ export const RecordIndexContainerGater = () => {
                   <StyledIndexContainer>
                     <RecordIndexContainerContextStoreNumberOfSelectedRecordsEffect />
                     <RecordIndexContainer />
-
-                    {isArxEnrichModalOpen ? (
-                      <ArxEnrichmentModal
-                        objectNameSingular={
-                          objectMetadataItem.namePlural === 'companies'
-                            ? 'company'
-                            : objectMetadataItem.namePlural.slice(0, -1)
-                        }
-                        objectRecordId={'0'}
-                      />
-                    ) : (
-                      <></>
-                    )}
-
-                    {isArxUploadJDModalOpenState ? (
-                      <ArxJDUploadModal
-                        objectNameSingular={objectMetadataItem.nameSingular}
-                        objectRecordId={'0'}
-                      />
-                    ) : (
-                      <></>
-                    )}
                   </StyledIndexContainer>
                 </PageBody>
               </ActionMenuComponentInstanceContext.Provider>

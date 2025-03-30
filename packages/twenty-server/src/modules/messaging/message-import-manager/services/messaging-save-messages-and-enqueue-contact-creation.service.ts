@@ -36,7 +36,7 @@ export class MessagingSaveMessagesAndEnqueueContactCreationService {
     private readonly twentyORMManager: TwentyORMManager,
   ) {}
 
-  async saveMessagesAndEnqueueContactCreationJob(
+  async saveMessagesAndEnqueueContactCreation(
     messagesToSave: MessageWithParticipants[],
     messageChannel: MessageChannelWorkspaceEntity,
     connectedAccount: ConnectedAccountWorkspaceEntity,
@@ -83,6 +83,7 @@ export class MessagingSaveMessagesAndEnqueueContactCreationService {
                   isGroupEmail(participant.handle);
 
                 const shouldCreateContact =
+                  !!participant.handle &&
                   !isParticipantConnectedAccount &&
                   !isExcludedByNonProfessionalEmails &&
                   !isExcludedByGroupEmails &&

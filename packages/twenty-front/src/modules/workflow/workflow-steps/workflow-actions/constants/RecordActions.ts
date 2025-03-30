@@ -28,6 +28,10 @@ export const RECORD_ACTIONS: Array<{
   // {
   //   label: 'Do Records',
   //   type: 'DO_RECORDS',
+  // TODO: Add search records action
+  // {
+  //   label: 'Search Records',
+  //   type: 'FIND_RECORDS',
   //   icon: 'IconSearch',
   // },
 ];

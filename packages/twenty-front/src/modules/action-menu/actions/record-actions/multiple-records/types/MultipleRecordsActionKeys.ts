@@ -23,4 +23,5 @@ export enum MultipleRecordsActionKeys {
   TRANSCRIBE_CALL = 'TRANSCRIBE_CALL',
   ENRICH_CANDIDATES = 'enrich-candidates',
   UPDATE_SNAPSHOT_PROFILES_FROM_JOB_BOARDS = 'UPDATE_SNAPSHOT_PROFILES_FROM_JOB_BOARDS',
+  RESTORE = 'restore-multiple-records',
 }

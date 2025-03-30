@@ -13,7 +13,7 @@ import tsconfigPaths from 'vite-tsconfig-paths';
 type Checkers = Parameters<typeof checker>[0];
 
 export default defineConfig(({ command, mode }) => {
-  const env = loadEnv(mode, process.cwd(), '');
+  const env = loadEnv(mode, __dirname, '');
 
   const {
     REACT_APP_SERVER_BASE_URL,
@@ -200,6 +200,9 @@ export default defineConfig(({ command, mode }) => {
     resolve: {
       alias: {
         path: 'rollup-plugin-node-polyfills/polyfills/path',
+        // https://github.com/twentyhq/twenty/pull/10782/files
+        // This will likely be migrated to twenty-ui package when built separately
+        '@tabler/icons-react': '@tabler/icons-react/dist/esm/icons/index.mjs',
       },
     },
   };

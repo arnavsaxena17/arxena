@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
+import { i18n } from '@lingui/core';
 import { render } from '@react-email/render';
 import { addMilliseconds, differenceInMilliseconds } from 'date-fns';
 import ms from 'ms';
@@ -40,6 +41,7 @@ export class EmailVerificationService {
     userId: string,
     email: string,
     workspace: WorkspaceSubdomainCustomDomainAndIsCustomDomainEnabledType,
+    locale: keyof typeof APP_LOCALES,
   ) {
     if (!this.environmentService.get('IS_EMAIL_VERIFICATION_REQUIRED')) {
       return { success: false };
@@ -57,7 +59,7 @@ export class EmailVerificationService {
 
     const emailData = {
       link: verificationLink.toString(),
-      locale: 'en' as keyof typeof APP_LOCALES,
+      locale,
     };
 
     const emailTemplate = SendEmailVerificationLinkEmail(emailData);
@@ -67,6 +69,8 @@ export class EmailVerificationService {
     const text = render(emailTemplate, {
       plainText: true,
     });
+
+    i18n.activate(locale);
 
     await this.emailService.send({
       from: `${this.environmentService.get(
@@ -84,6 +88,7 @@ export class EmailVerificationService {
   async resendEmailVerificationToken(
     email: string,
     workspace: WorkspaceSubdomainCustomDomainAndIsCustomDomainEnabledType,
+    locale: keyof typeof APP_LOCALES,
   ) {
     if (!this.environmentService.get('IS_EMAIL_VERIFICATION_REQUIRED')) {
       throw new EmailVerificationException(
@@ -125,7 +130,7 @@ export class EmailVerificationService {
       await this.appTokenRepository.delete(existingToken.id);
     }
 
-    await this.sendVerificationEmail(user.id, email, workspace);
+    await this.sendVerificationEmail(user.id, email, workspace, locale);
 
     return { success: true };
   }

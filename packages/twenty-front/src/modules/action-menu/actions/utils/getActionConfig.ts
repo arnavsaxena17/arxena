@@ -1,6 +1,6 @@
 import { CANDIDATE_SPECIFIC_ACTIONS } from '@/action-menu/actions/record-actions/constants/CandidateActionsConfig';
 import { DEFAULT_ACTIONS_CONFIG_V1 } from '@/action-menu/actions/record-actions/constants/DefaultActionsConfigV1';
-import { DEFAULT_ACTIONS_CONFIG_V2 } from '@/action-menu/actions/record-actions/constants/DefaultActionsConfigV2';
+// import { DEFAULT_ACTIONS_CONFIG_V2 } from '@/action-menu/actions/record-actions/constants/DefaultActionsConfigV2';
 import { JOB_SPECIFIC_ACTIONS } from '@/action-menu/actions/record-actions/constants/JobActionsConfig';
 import { JOB_CANDIDATE_SPECIFIC_ACTIONS } from '@/action-menu/actions/record-actions/constants/JobCandidateActionsConfig';
 import { PEOPLE_SPECIFIC_ACTIONS } from '@/action-menu/actions/record-actions/constants/PeopleActionsConfig';
@@ -12,16 +12,10 @@ import { WORKFLOW_VERSIONS_ACTIONS_CONFIG } from '@/action-menu/actions/record-a
 import { CoreObjectNameSingular } from '@/object-metadata/types/CoreObjectNameSingular';
 import { ObjectMetadataItem } from '@/object-metadata/types/ObjectMetadataItem';
 
-export const getActionConfig = (
-  objectMetadataItem: ObjectMetadataItem,
-  isCommandMenuV2Enabled: boolean,
-) => {
-  // console.log("the value of isCommandMenuV2Enabled::", isCommandMenuV2Enabled)
-  // isCommandMenuV2Enabled = true;
-
+export const getActionConfig = (objectMetadataItem: ObjectMetadataItem) => {
   let baseConfig;
-
   switch (objectMetadataItem.nameSingular) {
+
     case CoreObjectNameSingular.Workflow:
       console.log('Getting here for workflow');
       baseConfig = WORKFLOW_ACTIONS_CONFIG;
@@ -37,9 +31,7 @@ export const getActionConfig = (
       break;
     default:
       console.log('Getting here for default');
-      baseConfig = isCommandMenuV2Enabled
-        ? DEFAULT_ACTIONS_CONFIG_V1
-        : DEFAULT_ACTIONS_CONFIG_V2;
+      baseConfig = DEFAULT_ACTIONS_CONFIG_V1
 
       console.log(
         'Got here for actions. The object metadata item is::',

@@ -1,12 +1,11 @@
 import styled from '@emotion/styled';
 import {
   Button,
-  IconButton,
   IconCheckbox,
   IconNotes,
   IconPlus,
   IconVideo,
-  MenuItem,
+  MenuItem
 } from 'twenty-ui';
 
 import { useOpenCreateActivityDrawer } from '@/activities/hooks/useOpenCreateActivityDrawer';
@@ -16,13 +15,11 @@ import { DropdownMenuItemsContainer } from '@/ui/layout/dropdown/components/Drop
 import { useDropdown } from '@/ui/layout/dropdown/hooks/useDropdown';
 import { SHOW_PAGE_ADD_BUTTON_DROPDOWN_ID } from '@/ui/layout/show-page/constants/ShowPageAddButtonDropdownId';
 
-import { CoreObjectNameSingular } from '@/object-metadata/types/CoreObjectNameSingular';
+import { CoreObjectNameSingular, CoreObjectNameSingular } from '@/object-metadata/types/CoreObjectNameSingular';
 import { isWorkflowSubObjectMetadata } from '@/object-metadata/utils/isWorkflowSubObjectMetadata';
 import { useCheckDataIntegrityOfJob } from '@/object-record/hooks/useCheckDataIntegrityOfJob';
 import { useInterviewCreationModal } from '@/video-interview/interview-creation/hooks/useInterviewCreationModal';
-import { useIsFeatureEnabled } from '@/workspace/hooks/useIsFeatureEnabled';
 import { IconClipboardCheck } from '@tabler/icons-react';
-import { FeatureFlagKey } from '~/generated/graphql';
 import { Dropdown } from '../../dropdown/components/Dropdown';
 
 const StyledContainer = styled.div`
@@ -42,6 +39,8 @@ export const ShowPageAddButton = ({
   const openTask = useOpenCreateActivityDrawer({
     activityObjectNameSingular: CoreObjectNameSingular.Task,
   });
+
+  const hasObjectReadOnlyPermission = useHasObjectReadOnlyPermission();
 
   const handleSelect = (objectNameSingular: CoreObjectNameSingular) => {
     if (objectNameSingular === CoreObjectNameSingular.Note) {
@@ -81,10 +80,6 @@ export const ShowPageAddButton = ({
     },
   });
 
-  const isCommandMenuV2Enabled = useIsFeatureEnabled(
-    FeatureFlagKey.IsCommandMenuV2Enabled,
-  );
-
   if (
     activityTargetObject.targetObjectNameSingular ===
       CoreObjectNameSingular.Task ||
@@ -95,30 +90,24 @@ export const ShowPageAddButton = ({
     return;
   }
 
+  if (hasObjectReadOnlyPermission) {
+    return null;
+  }
+
   return (
     <StyledContainer>
       <Dropdown
         dropdownId={SHOW_PAGE_ADD_BUTTON_DROPDOWN_ID}
         clickableComponent={
-          isCommandMenuV2Enabled ? (
-            <Button
-              Icon={IconPlus}
-              dataTestId="add-button"
-              size="small"
-              variant="secondary"
-              accent="default"
-              title="New note/task"
-              ariaLabel="New note/task"
-            />
-          ) : (
-            <IconButton
-              Icon={IconPlus}
-              size="medium"
-              dataTestId="add-showpage-button"
-              accent="default"
-              variant="secondary"
-            />
-          )
+          <Button
+            Icon={IconPlus}
+            dataTestId="add-button"
+            size="small"
+            variant="secondary"
+            accent="default"
+            title="New note/task"
+            ariaLabel="New note/task"
+          />
         }
         dropdownComponents={
           <DropdownMenuItemsContainer>
