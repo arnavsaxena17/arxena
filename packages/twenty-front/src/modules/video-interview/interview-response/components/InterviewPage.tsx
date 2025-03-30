@@ -3,8 +3,8 @@ import { createFFmpeg, fetchFile } from '@ffmpeg/ffmpeg';
 import React, { useEffect, useRef, useState } from 'react';
 import Webcam from 'react-webcam';
 
-import { Button } from '@ui/input/button/components/Button';
 import { ButtonGroup } from '@ui/input/button/components/ButtonGroup';
+import { Button } from 'twenty-ui';
 import { v4 as uuid } from 'uuid';
 import {
   SnapScrollContainer,

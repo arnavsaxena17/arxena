@@ -1,14 +1,12 @@
 import { useLocation } from 'react-router-dom';
 import { useRecoilState, useSetRecoilState } from 'recoil';
-import { IconBriefcase, IconMessage, IconSearch, IconSettings } from 'twenty-ui';
+import { IconSearch, IconSettings } from 'twenty-ui';
 
 import { useOpenRecordsSearchPageInCommandMenu } from '@/command-menu/hooks/useOpenRecordsSearchPageInCommandMenu';
 import { CurrentWorkspaceMemberFavoritesFolders } from '@/favorites/components/CurrentWorkspaceMemberFavoritesFolders';
 import { WorkspaceFavorites } from '@/favorites/components/WorkspaceFavorites';
-import { WorkspaceJobCandidatesFavorites } from '@/favorites/components/WorkspaceJobCandidatesFavorites';
 import { NavigationDrawerOpenedSection } from '@/object-metadata/components/NavigationDrawerOpenedSection';
 import { RemoteNavigationDrawerSection } from '@/object-metadata/components/RemoteNavigationDrawerSection';
-import { AppPath } from '@/types/AppPath';
 import { SettingsPath } from '@/types/SettingsPath';
 import { NavigationDrawerItem } from '@/ui/navigation/navigation-drawer/components/NavigationDrawerItem';
 import { NavigationDrawerSection } from '@/ui/navigation/navigation-drawer/components/NavigationDrawerSection';
@@ -19,7 +17,6 @@ import { useIsMobile } from '@/ui/utilities/responsive/hooks/useIsMobile';
 import { ScrollWrapper } from '@/ui/utilities/scroll/components/ScrollWrapper';
 import styled from '@emotion/styled';
 import { useLingui } from '@lingui/react/macro';
-import { getAppPath } from '~/utils/navigation/getAppPath';
 import { getSettingsPath } from '~/utils/navigation/getSettingsPath';
 
 const StyledMainSection = styled(NavigationDrawerSection)`
@@ -66,76 +63,6 @@ export const MainNavigationDrawerItems = () => {
             }}
             Icon={IconSettings}
           />
-          <NavigationDrawerItem
-            label={`Chats`}
-            to={getAppPath(AppPath.Chats)}
-            onClick={() => {
-              setNavigationDrawerExpandedMemorized(isNavigationDrawerExpanded);
-              setIsNavigationDrawerExpanded(true);
-              setNavigationMemorizedUrl(location.pathname + location.search);
-            }}
-            Icon={IconMessage}
-          />
-          <NavigationDrawerItem
-            label={`Dashboard`}
-            to={getAppPath(AppPath.Dashboard)}
-            onClick={() => {
-              setNavigationDrawerExpandedMemorized(isNavigationDrawerExpanded);
-              setIsNavigationDrawerExpanded(true);
-              setNavigationMemorizedUrl(location.pathname + location.search);
-            }}
-            Icon={IconBriefcase}
-          />
-          {/* <NavigationDrawerItem
-            label={`Client Candidate Search`}
-            to={getAppPath(AppPath.ClientCandidateSearch)}
-            onClick={() => {
-              setNavigationDrawerExpandedMemorized(isNavigationDrawerExpanded);
-              setIsNavigationDrawerExpanded(true);
-              setNavigationMemorizedUrl(location.pathname + location.search);
-            }}
-            Icon={IconBriefcase}
-          /> */}
-          {/* <NavigationDrawerItem
-            label={`Interview`}
-            to={getAppPath(AppPath.Interview)}
-            onClick={() => {
-              setNavigationDrawerExpandedMemorized(isNavigationDrawerExpanded);
-              setIsNavigationDrawerExpanded(true);
-              setNavigationMemorizedUrl(location.pathname + location.search);
-            }}
-            Icon={IconVideo}
-          />
-          <NavigationDrawerItem
-            label={`Custom Layout Candidate`}
-            to={getAppPath(AppPath.CustomLayoutCandidate)}
-            onClick={() => {
-              setNavigationDrawerExpandedMemorized(isNavigationDrawerExpanded);
-              setIsNavigationDrawerExpanded(true);
-              setNavigationMemorizedUrl(location.pathname + location.search);
-            }}
-            Icon={IconLayout}
-          />
-          <NavigationDrawerItem
-            label={`Custom Layout Job`}
-            to={getAppPath(AppPath.CustomLayoutJob)}
-            onClick={() => {
-              setNavigationDrawerExpandedMemorized(isNavigationDrawerExpanded);
-              setIsNavigationDrawerExpanded(true);
-              setNavigationMemorizedUrl(location.pathname + location.search);
-            }}
-            Icon={IconLayout}
-          />
-          <NavigationDrawerItem
-            label={`Custom Layout Merged`}
-            to={getAppPath(AppPath.CustomLayoutMerged)}
-            onClick={() => {
-              setNavigationDrawerExpandedMemorized(isNavigationDrawerExpanded);
-              setIsNavigationDrawerExpanded(true);
-              setNavigationMemorizedUrl(location.pathname + location.search);
-            }}
-            Icon={IconLayout}
-          /> */}
         </StyledMainSection>
       )}
       <ScrollWrapper
@@ -147,7 +74,6 @@ export const MainNavigationDrawerItems = () => {
         <StyledInnerContainer>
           <NavigationDrawerOpenedSection />
           <CurrentWorkspaceMemberFavoritesFolders />
-          <WorkspaceJobCandidatesFavorites />
           <WorkspaceFavorites />
           <RemoteNavigationDrawerSection />
         </StyledInnerContainer>

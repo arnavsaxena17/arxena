@@ -28,19 +28,19 @@ import { InviteTeam } from '~/pages/onboarding/InviteTeam';
 import { PaymentSuccess } from '~/pages/onboarding/PaymentSuccess';
 import { SyncEmails } from '~/pages/onboarding/SyncEmails';
 
-import CustomLayoutCandidate from '@/custom-layouts/components/custom-layout-candidate';
-import CustomLayoutJob from '@/custom-layouts/components/custom-layout-job';
-import CustomLayoutMerged from '@/custom-layouts/components/custom-layout-merged';
+// import CustomLayoutCandidate from '@/custom-layouts/components/custom-layout-candidate';
+// import CustomLayoutJob from '@/custom-layouts/components/custom-layout-job';
+// import CustomLayoutMerged from '@/custom-layouts/components/custom-layout-merged';
 import GoogleSheet from '@/google-sheet/GoogleSheet';
 import { HotPage } from '@/hot/hotCandidates';
 import Interview from '@/interviews/components/Interviews';
 import indexAppPath from '@/navigation/utils/indexAppPath';
 // import OrgChart from '@/orgchart/OrgChart';
+import { Dashboard } from '@/client-dashboard/components/Dashboard';
 import VideoInterviewFlow from '@/video-interview/interview-response/VideoInterviewFlow';
 import VideoInterviewResponseViewer from '@/video-interview/interview-response/VideoInterviewResponseViewer';
 import React from 'react';
 import { Chats } from '~/pages/chats/Chats';
-import { Dashboard } from '@/client-dashboard/components/Dashboard';
 const OrgChart = React.lazy(() => import('@/orgchart/OrgChart'));
 
 const VideoInterviewWrapper = () => {
@@ -129,7 +129,7 @@ export const useCreateAppRouter = (
               path={AppPath.Dashboard}
               element={<Dashboard />}
             />
-            <Route
+            {/* <Route
               path={AppPath.CustomLayoutCandidate}
               element={<CustomLayoutCandidate />}
             />
@@ -140,7 +140,7 @@ export const useCreateAppRouter = (
             <Route
               path={AppPath.CustomLayoutMerged}
               element={<CustomLayoutMerged />}
-            />
+            /> */}
             <Route path={`${AppPath.Chats}/:candidateId`} element={<Chats />} />
 
             <Route

@@ -1,4 +1,4 @@
-import { Button } from '@ui/input/button/components/Button';
+import { Button } from 'twenty-ui';
 
 export const VideoInterviewCreateButton = () => {
   return (

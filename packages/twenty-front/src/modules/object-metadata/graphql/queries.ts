@@ -23,7 +23,6 @@ const query = `
           imageIdentifierFieldMetadataId
           shortcut
           isLabelSyncedWithName
-          isSearchable
           duplicateCriteria
           indexMetadatas(paging: { first: 100 }) {
             edges {

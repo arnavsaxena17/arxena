@@ -54,8 +54,6 @@ export const RecordIndexContainer = () => {
     await recordTableRefetchFunction();
   };
 
-
-
   return (
     <>
       <StyledContainer>
