@@ -1,7 +1,9 @@
 import { FormFieldInputContainer } from '@/object-record/record-field/form-types/components/FormFieldInputContainer';
 import { FormTextFieldInput } from '@/object-record/record-field/form-types/components/FormTextFieldInput';
 import { InputLabel } from '@/ui/input/components/InputLabel';
+import { getDefaultFormFieldSettings } from '@/workflow/workflow-steps/workflow-actions/form-action/utils/getDefaultFormFieldSettings';
 import styled from '@emotion/styled';
+import { FieldMetadataType } from 'twenty-shared/types';
 
 type WorkflowFormFieldSettingsTextProps = {
   label?: string;
@@ -25,21 +27,25 @@ export const WorkflowFormFieldSettingsText = ({
       <FormFieldInputContainer>
         <InputLabel>Label</InputLabel>
         <FormTextFieldInput
-          onPersist={(newLabel: string | null) => {
+          onChange={(newLabel: string | null) => {
             onChange('label', newLabel);
           }}
           defaultValue={label}
-          placeholder={'Text'}
+          placeholder={
+            getDefaultFormFieldSettings(FieldMetadataType.TEXT).label
+          }
         />
       </FormFieldInputContainer>
       <FormFieldInputContainer>
         <InputLabel>Placeholder</InputLabel>
         <FormTextFieldInput
-          onPersist={(newPlaceholder: string | null) => {
+          onChange={(newPlaceholder: string | null) => {
             onChange('placeholder', newPlaceholder);
           }}
           defaultValue={placeholder}
-          placeholder={'Enter your text'}
+          placeholder={
+            getDefaultFormFieldSettings(FieldMetadataType.TEXT).placeholder
+          }
         />
       </FormFieldInputContainer>
     </StyledContainer>
