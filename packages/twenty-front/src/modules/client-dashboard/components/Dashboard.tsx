@@ -147,7 +147,7 @@ const StyledButtonContainer = styled.div`
   gap: ${({ theme }) => theme.spacing(2)};
 `;
 
-export const ClientDashboard = () => {
+export const Dashboard = () => {
   const [isAddJobModalOpen, setIsAddJobModalOpen] = useState(false);
 
   const handleOpenAddJobModal = useCallback(() => {
@@ -166,7 +166,7 @@ export const ClientDashboard = () => {
   return (
     <StyledContainer>
       <StyledHeaderContainer>
-        <H1Title title="Client Dashboard" />
+        <H1Title title="Dashboard" />
         <StyledButtonContainer>
           <Button
             title="Filter"

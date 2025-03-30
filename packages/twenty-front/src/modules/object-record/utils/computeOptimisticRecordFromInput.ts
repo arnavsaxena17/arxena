@@ -30,6 +30,7 @@ export const computeOptimisticRecordFromInput = ({
   objectMetadataItems,
   currentWorkspaceMember,
 }: ComputeOptimisticCacheRecordInputArgs) => {
+  console.log("")
   const unknownRecordInputFields = Object.keys(recordInput).filter(
     (recordKey) => {
       const isUnknownMetadataItemField =

@@ -1,6 +1,6 @@
 import { useLocation } from 'react-router-dom';
 import { useRecoilState, useSetRecoilState } from 'recoil';
-import { IconMessage, IconSearch, IconSettings } from 'twenty-ui';
+import { IconBriefcase, IconMessage, IconSearch, IconSettings } from 'twenty-ui';
 
 import { useCommandMenu } from '@/command-menu/hooks/useCommandMenu';
 import { CurrentWorkspaceMemberFavoritesFolders } from '@/favorites/components/CurrentWorkspaceMemberFavoritesFolders';
@@ -76,9 +76,9 @@ export const MainNavigationDrawerItems = () => {
             }}
             Icon={IconMessage}
           />
-          {/* <NavigationDrawerItem
-            label={`Client Dashboard`}
-            to={getAppPath(AppPath.ClientDashboard)}
+          <NavigationDrawerItem
+            label={`Dashboard`}
+            to={getAppPath(AppPath.Dashboard)}
             onClick={() => {
               setNavigationDrawerExpandedMemorized(isNavigationDrawerExpanded);
               setIsNavigationDrawerExpanded(true);
@@ -86,7 +86,7 @@ export const MainNavigationDrawerItems = () => {
             }}
             Icon={IconBriefcase}
           />
-          <NavigationDrawerItem
+          {/* <NavigationDrawerItem
             label={`Client Candidate Search`}
             to={getAppPath(AppPath.ClientCandidateSearch)}
             onClick={() => {

@@ -275,7 +275,7 @@ export class EnvironmentVariables {
     group: EnvironmentVariablesGroup.EmailSettings,
     description: 'Name used in the From header for outgoing emails',
   })
-  EMAIL_FROM_NAME = 'Felix from Twenty';
+  EMAIL_FROM_NAME = 'Arnav from Arxea';
 
   @EnvironmentVariablesMetadata({
     group: EnvironmentVariablesGroup.EmailSettings,

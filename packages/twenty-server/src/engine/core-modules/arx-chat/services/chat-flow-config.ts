@@ -4,7 +4,7 @@ import {
   ChatControlsObjType,
   Jobs,
   PersonNode,
-  chatControlType
+  chatControlType,
 } from 'twenty-shared';
 
 import { TimeManagement } from 'src/engine/core-modules/arx-chat/services/time-management';
@@ -237,8 +237,11 @@ export class ChatFlowConfigBuilder {
     chatFlowOrder: chatControlType[],
   ) {
     return (candidate: CandidateNode) => {
-      console.log("candidate name",  candidate);
-      console.log("candidate whtasapp messages lenght",  candidate.whatsappMessages.edges.length);
+      console.log('candidate name', candidate);
+      console.log(
+        'candidate whtasapp messages lenght',
+        candidate.whatsappMessages.edges.length,
+      );
       if (currentOrder === 1) {
         return (
           candidate.startChat && candidate.whatsappMessages?.edges.length === 0

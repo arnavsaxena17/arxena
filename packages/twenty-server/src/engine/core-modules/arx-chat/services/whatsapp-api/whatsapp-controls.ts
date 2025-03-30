@@ -181,39 +181,34 @@ export class WhatsappControls {
 
       const messagingChannel = personNode.candidates.edges.filter(
         (candidate) => candidate.node.jobs.id == candidateJob.id,
-      )[0].node.messagingChannel
+      )[0].node.messagingChannel;
 
-      if (
-        messagingChannel === 'linkedin'
-      ) {
+      if (messagingChannel === 'linkedin') {
         whatsapp_key = 'linkedin';
-      }
-      else if ( messagingChannel=== 'whatsapp-web') {
-        whatsapp_key = 'whatsapp-web'
-      }
-      else if ( messagingChannel=== 'whatsapp-official') {
-        whatsapp_key = 'whatsapp-official'
-      }
-      else if ( messagingChannel=== 'baileys') {
-        whatsapp_key = 'baileys'
-      }
-      else{
-        whatsapp_key = 'whatsapp-official'
+      } else if (messagingChannel === 'whatsapp-web') {
+        whatsapp_key = 'whatsapp-web';
+      } else if (messagingChannel === 'whatsapp-official') {
+        whatsapp_key = 'whatsapp-official';
+      } else if (messagingChannel === 'baileys') {
+        whatsapp_key = 'baileys';
+      } else {
+        whatsapp_key = 'whatsapp-official';
       }
 
       console.log(
-        'whatsapp_key::', whatsapp_key,
+        'whatsapp_key::',
+        whatsapp_key,
         'personNode.candidates.edges[0].node.messagingChannel::',
         personNode.candidates.edges.filter(
           (candidate) => candidate.node.jobs.id == candidateJob.id,
         )[0].node.messagingChannel,
-        "personNode.candidates.edges.filter( (candidate) => candidate.node.jobs.id == candidateJob.id, )[0].node.::",
+        'personNode.candidates.edges.filter( (candidate) => candidate.node.jobs.id == candidateJob.id, )[0].node.::',
         personNode.candidates.edges.filter(
           (candidate) => candidate.node.jobs.id == candidateJob.id,
         )[0].node,
       );
 
-      console.log("whatsapp_key:::", whatsapp_key);
+      console.log('whatsapp_key:::', whatsapp_key);
       if (whatsapp_key === 'whatsapp-official') {
         await new FacebookWhatsappChatApi(
           this.workspaceQueryService,
@@ -247,8 +242,7 @@ export class WhatsappControls {
           chatControl,
           apiToken,
         );
-      }
-      else if (whatsapp_key === 'linkedin') {
+      } else if (whatsapp_key === 'linkedin') {
         await new ExtSockWhatsappMessageProcessor(
           this.workspaceQueryService,
         ).sendWhatsappMessageVIAExtSockWhatsappAPI(
@@ -259,8 +253,6 @@ export class WhatsappControls {
           chatControl,
           apiToken,
         );
-
-        
       } else {
         console.log('No valid whatsapp API selected');
       }

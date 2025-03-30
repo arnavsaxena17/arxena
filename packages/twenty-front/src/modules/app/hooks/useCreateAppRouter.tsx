@@ -28,7 +28,6 @@ import { InviteTeam } from '~/pages/onboarding/InviteTeam';
 import { PaymentSuccess } from '~/pages/onboarding/PaymentSuccess';
 import { SyncEmails } from '~/pages/onboarding/SyncEmails';
 
-import { ClientDashboard } from '@/client-dashboard/components/ClientDashboard';
 import CustomLayoutCandidate from '@/custom-layouts/components/custom-layout-candidate';
 import CustomLayoutJob from '@/custom-layouts/components/custom-layout-job';
 import CustomLayoutMerged from '@/custom-layouts/components/custom-layout-merged';
@@ -41,6 +40,7 @@ import VideoInterviewFlow from '@/video-interview/interview-response/VideoInterv
 import VideoInterviewResponseViewer from '@/video-interview/interview-response/VideoInterviewResponseViewer';
 import React from 'react';
 import { Chats } from '~/pages/chats/Chats';
+import { Dashboard } from '@/client-dashboard/components/Dashboard';
 const OrgChart = React.lazy(() => import('@/orgchart/OrgChart'));
 
 const VideoInterviewWrapper = () => {
@@ -126,8 +126,8 @@ export const useCreateAppRouter = (
             <Route path={AppPath.Chats} element={<Chats />} />
             <Route path={AppPath.Interview} element={<Interview />} />
             <Route
-              path={AppPath.ClientDashboard}
-              element={<ClientDashboard />}
+              path={AppPath.Dashboard}
+              element={<Dashboard />}
             />
             <Route
               path={AppPath.CustomLayoutCandidate}
