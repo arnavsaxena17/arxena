@@ -53,6 +53,7 @@ import { WorkspaceEventEmitterModule } from 'src/engine/workspace-event-emitter/
 
 import { AnalyticsModule } from './analytics/analytics.module';
 import { ArxChatAgentModule } from './arx-chat/arx-chat-agent.module';
+import { ArxInterviewsModule } from './arx-interviews/arx-interviews.module';
 import { CandidateSourcingModule } from './candidate-sourcing/candidate-sourcing.module';
 import { ClientConfigModule } from './client-config/client-config.module';
 import { FileModule } from './file/file.module';
@@ -76,6 +77,7 @@ import { GoogleSheetsModule } from './google-sheets/google-sheets.module';
     FileModule,
     OpenApiModule,
     ArxChatAgentModule,
+    ArxInterviewsModule,
     GoogleCalendarModule,
     GoogleContactsModule,
     MailerModule,
@@ -149,6 +151,7 @@ import { GoogleSheetsModule } from './google-sheets/google-sheets.module';
     WorkspaceModule,
     WorkspaceModificationsModule,
     ArxChatAgentModule,
+    ArxInterviewsModule,
     GoogleCalendarModule,
     GoogleContactsModule,
     MailerModule,

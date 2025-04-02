@@ -28,6 +28,7 @@ import { InviteTeam } from '~/pages/onboarding/InviteTeam';
 import { PaymentSuccess } from '~/pages/onboarding/PaymentSuccess';
 import { SyncEmails } from '~/pages/onboarding/SyncEmails';
 
+import ArxInterview from '@/arx-interviews/components/InterviewApp';
 import CustomLayoutCandidate from '@/custom-layouts/components/custom-layout-candidate';
 import CustomLayoutJob from '@/custom-layouts/components/custom-layout-job';
 import CustomLayoutMerged from '@/custom-layouts/components/custom-layout-merged';
@@ -36,11 +37,12 @@ import { HotPage } from '@/hot/hotCandidates';
 import Interview from '@/interviews/components/Interviews';
 import indexAppPath from '@/navigation/utils/indexAppPath';
 // import OrgChart from '@/orgchart/OrgChart';
+// import Chat from '@/chats/components/Chat';
+import CandidateConversations from '@/chat/components/CandidateConversations';
 import VideoInterviewFlow from '@/video-interview/interview-response/VideoInterviewFlow';
 import VideoInterviewResponseViewer from '@/video-interview/interview-response/VideoInterviewResponseViewer';
 import React from 'react';
 import { Chats } from '~/pages/chats/Chats';
-import { Dashboard } from '@/client-dashboard/components/Dashboard';
 const OrgChart = React.lazy(() => import('@/orgchart/OrgChart'));
 
 const VideoInterviewWrapper = () => {
@@ -98,11 +100,16 @@ export const useCreateAppRouter = (
               path={`${AppPath.GoogleSheet}/*`}
               element={<GoogleSheet />}
             />
-          <Route path={`${AppPath.OrgChart}/*`} element={
-            <React.Suspense fallback={<div>Loading organization chart...</div>}>
-              <OrgChart />
-            </React.Suspense>
-          } />
+            <Route
+              path={`${AppPath.OrgChart}/*`}
+              element={
+                <React.Suspense
+                  fallback={<div>Loading organization chart...</div>}
+                >
+                  <OrgChart />
+                </React.Suspense>
+              }
+            />
             <Route path={`${AppPath.Hot}/*`} element={<HotPage />} />
           </Route>
         </Route>
@@ -124,10 +131,11 @@ export const useCreateAppRouter = (
             <Route path={AppPath.SyncEmails} element={<SyncEmails />} />
             <Route path={AppPath.InviteTeam} element={<InviteTeam />} />
             <Route path={AppPath.Chats} element={<Chats />} />
+            <Route path={AppPath.ArxInterview} element={<ArxInterview />} />
             <Route path={AppPath.Interview} element={<Interview />} />
             <Route
               path={AppPath.Dashboard}
-              element={<Dashboard />}
+              element={<CandidateConversations />}
             />
             <Route
               path={AppPath.CustomLayoutCandidate}

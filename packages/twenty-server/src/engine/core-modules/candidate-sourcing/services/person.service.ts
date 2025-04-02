@@ -1,13 +1,25 @@
 import { Injectable } from '@nestjs/common';
-import { axiosRequest } from '../utils/utils';
 
 import axios from 'axios';
-import { ArxenaPersonNode, CreateManyPeople, graphqlQueryToFindManyPeople, PersonNode } from 'twenty-shared';
+import {
+  ArxenaPersonNode,
+  CreateManyPeople,
+  graphqlQueryToFindManyPeople,
+  PersonNode,
+} from 'twenty-shared';
+
+import { axiosRequest } from 'src/engine/core-modules/candidate-sourcing/utils/utils';
 
 @Injectable()
 export class PersonService {
-  async createPeople(manyPersonObjects: ArxenaPersonNode[], apiToken: string): Promise<any> {
-    console.log('Creating people, manyPersonObjects:', manyPersonObjects.length);
+  async createPeople(
+    manyPersonObjects: ArxenaPersonNode[],
+    apiToken: string,
+  ): Promise<any> {
+    console.log(
+      'Creating people, manyPersonObjects:',
+      manyPersonObjects.length,
+    );
 
     const graphqlVariables = { data: manyPersonObjects };
     const graphqlQueryObj = JSON.stringify({
@@ -17,6 +29,7 @@ export class PersonService {
 
     try {
       const response = await axiosRequest(graphqlQueryObj, apiToken);
+
       return response;
     } catch (error) {
       console.error('Error in creating people', error);
@@ -24,13 +37,48 @@ export class PersonService {
     }
   }
 
-  async purchaseAndUpdateApnaProfile(field: string, value: string, candidateId: string, personId: string, unique_key_string:string, apiToken: string, spreadsheetId:string): Promise<any> {
-    const url = process.env.ENV_NODE === 'production' ? 'https://arxena.com/fetch_and_update_apna_profile' : 'http://127.0.0.1:5050/fetch_and_update_apna_profile';
-    console.log("REceived:::", field, value, candidateId, personId, unique_key_string, apiToken);
+  async purchaseAndUpdateApnaProfile(
+    field: string,
+    value: string,
+    candidateId: string,
+    personId: string,
+    unique_key_string: string,
+    apiToken: string,
+    spreadsheetId: string,
+  ): Promise<any> {
+    const url =
+      process.env.ENV_NODE === 'production'
+        ? 'https://arxena.com/fetch_and_update_apna_profile'
+        : 'http://127.0.0.1:5050/fetch_and_update_apna_profile';
+
+    console.log(
+      'REceived:::',
+      field,
+      value,
+      candidateId,
+      personId,
+      unique_key_string,
+      apiToken,
+    );
     try {
-      const response = await axios.post( url,
-      { field, value, candidateId, personId, unique_key_string, apiToken, spreadsheetId },
-      { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiToken}` } } );
+      const response = await axios.post(
+        url,
+        {
+          field,
+          value,
+          candidateId,
+          personId,
+          unique_key_string,
+          apiToken,
+          spreadsheetId,
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${apiToken}`,
+          },
+        },
+      );
 
       return response.data;
     } catch (error) {
@@ -38,7 +86,10 @@ export class PersonService {
     }
   }
 
-  async batchGetPersonDetailsByStringKeys(uniqueStringKeys: string[], apiToken: string): Promise<Map<string, PersonNode>> {
+  async batchGetPersonDetailsByStringKeys(
+    uniqueStringKeys: string[],
+    apiToken: string,
+  ): Promise<Map<string, PersonNode>> {
     const graphqlVariables = {
       filter: { uniqueStringKey: { in: uniqueStringKeys } },
       limit: 30,
@@ -52,7 +103,10 @@ export class PersonService {
     try {
       const response = await axiosRequest(graphqlQuery, apiToken);
       const people = response.data?.data?.people?.edges || [];
-      const personMap = new Map<string, PersonNode>(people.map((edge: any) => [edge.node.uniqueStringKey, edge.node]));
+      const personMap = new Map<string, PersonNode>(
+        people.map((edge: any) => [edge.node.uniqueStringKey, edge.node]),
+      );
+
       return personMap as Map<string, PersonNode>;
     } catch (error) {
       console.error('Error in batchGetPersonDetails:', error);

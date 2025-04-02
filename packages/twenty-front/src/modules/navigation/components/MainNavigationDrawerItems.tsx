@@ -1,6 +1,12 @@
 import { useLocation } from 'react-router-dom';
 import { useRecoilState, useSetRecoilState } from 'recoil';
-import { IconBriefcase, IconMessage, IconSearch, IconSettings } from 'twenty-ui';
+import {
+  IconBriefcase,
+  IconMessage,
+  IconSearch,
+  IconSettings,
+  IconVideo,
+} from 'twenty-ui';
 
 import { useCommandMenu } from '@/command-menu/hooks/useCommandMenu';
 import { CurrentWorkspaceMemberFavoritesFolders } from '@/favorites/components/CurrentWorkspaceMemberFavoritesFolders';
@@ -85,6 +91,16 @@ export const MainNavigationDrawerItems = () => {
               setNavigationMemorizedUrl(location.pathname + location.search);
             }}
             Icon={IconBriefcase}
+          />
+          <NavigationDrawerItem
+            label={`Arx Interview`}
+            to={getAppPath(AppPath.ArxInterview)}
+            onClick={() => {
+              setNavigationDrawerExpandedMemorized(isNavigationDrawerExpanded);
+              setIsNavigationDrawerExpanded(true);
+              setNavigationMemorizedUrl(location.pathname + location.search);
+            }}
+            Icon={IconVideo}
           />
           {/* <NavigationDrawerItem
             label={`Client Candidate Search`}

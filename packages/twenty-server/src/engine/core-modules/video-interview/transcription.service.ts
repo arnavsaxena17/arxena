@@ -1,13 +1,18 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
-import OpenAI from 'openai';
+import { BadRequestException, Injectable } from '@nestjs/common';
+
 import * as fs from 'fs';
+
+import OpenAI from 'openai';
 
 @Injectable()
 export class TranscriptionService {
   private openai: OpenAI;
 
   constructor() {
-    console.log('Going to use for transcprition OPENAI_API_KEY:', process.env.OPENAI_KEY);
+    console.log(
+      'Going to use for transcprition OPENAI_API_KEY:',
+      process.env.OPENAI_KEY,
+    );
     this.openai = new OpenAI({
       apiKey: process.env.OPENAI_KEY,
     });
@@ -21,7 +26,8 @@ export class TranscriptionService {
       });
 
       const transcript = resp.text;
-      console.log("This is the transcript:", transcript);
+
+      console.log('This is the transcript:', transcript);
       // Content moderation check
       // const response = await this.openai.moderations.create({
       //   input: transcript,

@@ -1,6 +1,6 @@
 import styled from '@emotion/styled';
 // import AgoraRTC from 'agora-rtc-sdk-ng';
-import type { IAgoraRTC } from 'agora-rtc-sdk-ng';
+import { IAgoraRTC } from 'agora-rtc-sdk-ng';
 // import AgoraRTC from 'agora-rtc-sdk-ng';
 // import AgoraRTC from 'agora-rtc-sdk-ng';
 import { useEffect, useRef, useState } from 'react';
@@ -147,8 +147,6 @@ const Interview = () => {
   const videoContainerRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
-
-
   // Base URL for API calls based on environment
   const baseUrl =
     process.env.NODE_ENV === 'production'
@@ -157,14 +155,12 @@ const Interview = () => {
 
   // Effects
   useEffect(() => {
-
-
     import('agora-rtc-sdk-ng')
-    .then(module => {
-      setAgoraSDK(module.default);
-      console.log('Agora SDK loaded successfully');
-    })
-    .catch(err => console.error('Failed to load Agora SDK:', err));
+      .then((module) => {
+        setAgoraSDK(module.default);
+        console.log('Agora SDK loaded successfully');
+      })
+      .catch((err) => console.error('Failed to load Agora SDK:', err));
 
     // Fetch available avatars
     fetchAvatars();
