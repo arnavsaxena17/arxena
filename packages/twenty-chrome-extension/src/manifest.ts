@@ -4,12 +4,12 @@ import packageData from '../package.json';
 
 const external_sites =
   process.env.VITE_MODE === 'development'
-    ? [`https://app.twenty.com/*`, `http://localhost:3001/*`]
-    : [`https://app.twenty.com/*`];
+    ? [`https://app.arxena.com/*`, `http://localhost:3001/*`, `http://localhost:3000/*`]
+    : [`https://arxena.com/*`];
 
 export default defineManifest({
   manifest_version: 3,
-  name: 'Twenty',
+  name: 'Arx Twenty Crx',
   description: packageData.description,
   version: packageData.version,
 
@@ -31,19 +31,32 @@ export default defineManifest({
 
   content_scripts: [
     {
-      matches: ['https://www.linkedin.com/*'],
+      matches: ['<all_urls>'],
       js: [
         'src/contentScript/index.ts',
-        'src/contentScript/insertSettingsButton.ts',
+        'src/contentScript/insertSettingsButton.ts',      
       ],
-      run_at: 'document_end',
+      run_at: 'document_start',
     },
   ],
 
   web_accessible_resources: [
     {
-      resources: ['sidepanel.html', 'page-inaccessible.html'],
-      matches: ['https://www.linkedin.com/*'],
+      resources: [
+        'sidepanel.html',
+        'page-inaccessible.html',
+        'assets/*',
+        'vendor/*',
+        'node_modules/twenty-shared/dist/*',
+        'src/contentScript/*',
+        'src/db/*',
+        'src/graphql/**/*',
+        'src/utils/**/*',
+        'src/**/*.ts',
+        'src/**/*.js',
+        'dist/*'
+      ],
+      matches: ['<all_urls>'],
     },
   ],
 

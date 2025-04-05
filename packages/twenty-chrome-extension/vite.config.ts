@@ -1,5 +1,6 @@
 import { crx } from '@crxjs/vite-plugin';
 import react from '@vitejs/plugin-react';
+import { resolve } from 'path';
 import { defineConfig, Plugin } from 'vite';
 import tsconfigPaths from 'vite-tsconfig-paths';
 
@@ -26,9 +27,30 @@ export default defineConfig(() => {
       emptyOutDir: true,
       outDir: 'dist',
       rollupOptions: {
-        output: { chunkFileNames: 'assets/chunk-[hash].js' },
+        input: {
+          'content-script/index': 'src/contentScript/index.ts',
+          'content-script/insertSettingsButton': 'src/contentScript/insertSettingsButton.ts',
+          'content-script/extractCompanyProfile': 'src/contentScript/extractCompanyProfile.ts',
+          'content-script/extractPersonProfile': 'src/contentScript/extractPersonProfile.ts',
+        },
+        output: {
+          entryFileNames: '[name].js',
+          chunkFileNames: 'assets/[name]-[hash].js',
+          assetFileNames: 'assets/[name]-[hash].[ext]',
+          manualChunks: {
+            'twenty-shared': ['twenty-shared'],
+            'db': ['src/db/company.db.ts', 'src/db/person.db.ts'],
+          },
+        },
       },
       target: 'ES2022',
+    },
+
+    resolve: {
+      alias: {
+        'twenty-shared': resolve(__dirname, '../../node_modules/twenty-shared/dist/index.mjs'),
+        '~': resolve(__dirname, 'src'),
+      },
     },
 
     // Adding this to fix websocket connection error.
@@ -38,6 +60,10 @@ export default defineConfig(() => {
       hmr: { port: 3002 },
     },
 
-    plugins: [viteManifestHack, crx({ manifest }), react(), tsconfigPaths()],
+    plugins: [react(), tsconfigPaths(), viteManifestHack, crx({ manifest })],
+    optimizeDeps: {
+      exclude: ['react-refresh'],
+      include: ['twenty-shared'],
+    },
   };
 });

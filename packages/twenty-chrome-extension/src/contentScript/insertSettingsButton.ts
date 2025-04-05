@@ -10,6 +10,8 @@ if (!isDefined(btn)) {
   img.width = 20;
   img.alt = 'Twenty logo';
 
+  console.log("Content script loaded from insertSettingsButton.ts");
+
   // Write universal styles for the button
   const divStyles = {
     border: '1px solid black',
@@ -55,5 +57,30 @@ if (!isDefined(btn)) {
 
   Object.assign(div.style, divStyles);
 
-  document.body.appendChild(div);
+  // Check if document.body exists before appending
+  const appendToBody = () => {
+    if (document.body) {
+      document.body.appendChild(div);
+    } else {
+      // If body doesn't exist yet, wait for it using MutationObserver
+      const observer = new MutationObserver(() => {
+        if (document.body) {
+          document.body.appendChild(div);
+          observer.disconnect();
+        }
+      });
+      
+      observer.observe(document.documentElement, { 
+        childList: true,
+        subtree: true 
+      });
+    }
+  };
+  
+  // Wait for DOM to be fully loaded
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', appendToBody);
+  } else {
+    appendToBody();
+  }
 }

@@ -6,6 +6,8 @@ import { insertButtonForPerson } from '~/contentScript/extractPersonProfile';
 // e.g. reload the page when on https://www.linkedin.com/in/mabdullahabaid/
 // await insertButtonForCompany();
 
+console.log("Content script loaded from index.ts");
+
 const companyRoute = /^https?:\/\/(?:www\.)?linkedin\.com\/company(?:\/\S+)?/;
 const personRoute = /^https?:\/\/(?:www\.)?linkedin\.com\/in(?:\/\S+)?/;
 
