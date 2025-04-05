@@ -23,6 +23,7 @@
     "@nestjs/cache-manager": "^2.2.1",
     "@nestjs/devtools-integration": "^0.1.6",
     "@nestjs/graphql": "patch:@nestjs/graphql@12.1.1#./patches/@nestjs+graphql+12.1.1.patch",
+    "@nestjs/swagger": "^7.3.0",
     "@node-saml/passport-saml": "^5.0.0",
     "@ptc-org/nestjs-query-graphql": "patch:@ptc-org/nestjs-query-graphql@4.2.0#./patches/@ptc-org+nestjs-query-graphql+4.2.0.patch",
     "@revertdotdev/revert-react": "^0.0.21",

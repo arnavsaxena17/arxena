@@ -1,17 +1,13 @@
-// // avatar.module.ts
-// import { HttpService } from '@nestjs/axios';
-// import { Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 
-// import { ConfigModule } from '@nestjs/config';
-// import { InterviewController } from './interviews.controller';
-// import { InterviewService } from './interviews.service';
+import { HeygenModule } from 'src/engine/core-modules/heygen/heygen.module';
 
-// @Module({
-//   imports: [
-//     HttpService,
-//     ConfigModule.forRoot(), // To load environment variables
-//   ],
-//   controllers: [InterviewController],
-//   providers: [InterviewService],
-// })
-// export class InterviewModule {}
+import { InterviewsController } from './interviews.controller';
+import { InterviewsService } from './interviews.service';
+
+@Module({
+  imports: [HeygenModule],
+  controllers: [InterviewsController],
+  providers: [InterviewsService],
+})
+export class InterviewsModule {}

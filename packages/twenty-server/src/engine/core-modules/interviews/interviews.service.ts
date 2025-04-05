@@ -1,91 +1,31 @@
-// import { Injectable } from '@nestjs/common';
-// import { HttpService } from '@nestjs/axios';
+import { Injectable } from '@nestjs/common';
 
-// import { ConfigService } from '@nestjs/config';
+import { HeygenService } from 'src/engine/core-modules/heygen/heygen.service';
 
-// @Injectable()
-// export class InterviewService {
-//   private baseUrl: string;
-//   private apiKey: string;
+@Injectable()
+export class InterviewsService {
+  constructor(private readonly heygenService: HeygenService) {}
 
-//   constructor(
-//     private httpService: HttpService,
-//     private configService: ConfigService,
-//   ) {
-//     this.baseUrl = this.configService.get<string>('A2E_BASE_URL', 'http://localhost:5000/api');
-//     this.apiKey = this.configService.get<string>('A2E_API_KEY', ''); 
-//   }
+  async createInterviewSession() {
+    // Possibly store session in DB, etc.
+    return { sessionId: 'some-unique-id' };
+  }
 
-//   private getHeaders() {
-//     return {
-//       'Content-Type': 'application/json',
-//       'Authorization': `Bearer ${this.apiKey}`,
-//     };
-//   }
+  async handleIntervieweeSpeech(sessionId: string, audioTranscription: string) {
+    // 1. Parse STT text
+    // 2. Send the question or statement to your LLM
+    // 3. Get the LLM's answer
+    // 4. Send the LLM’s answer to the avatar
 
-//   async getAvatars() {
-//     const response = await this.httpService
-//       .get(`${this.baseUrl}/avatars`, { headers: this.getHeaders() })
-//       .toPromise();
-//     return response.data;
-//   }
+    const llmResponse =
+      `Responding to: ${audioTranscription} ...` +
+      `\n(Here is the AI's answer)`;
 
-//   async createSession(avatarId: string) {
-//     const payload = {
-//       avatar_id: avatarId,
-//       expire_seconds: 300, // 5 minutes
-//     };
+    // Suppose we have stored a "streamId" for this session
+    const streamId = 'abc123';
 
-//     const response = await this.httpService
-//       .post(`${this.baseUrl}/session/create`, payload, { headers: this.getHeaders() })
-//       .toPromise();
-//     return response.data;
-//   }
+    await this.heygenService.sendDialogueToAvatar(streamId, llmResponse);
 
-//   async setContext(channel: string, context: string) {
-//     const payload = {
-//       channel,
-//       context,
-//     };
-
-//     const response = await this.httpService
-//       .post(`${this.baseUrl}/session/set-context`, payload, { headers: this.getHeaders() })
-//       .toPromise();
-//     return response.data;
-//   }
-
-//   async askQuestion(channel: string, question: string) {
-//     const payload = {
-//       channel,
-//       question,
-//     };
-
-//     const response = await this.httpService
-//       .post(`${this.baseUrl}/session/ask`, payload, { headers: this.getHeaders() })
-//       .toPromise();
-//     return response.data;
-//   }
-
-//   async speakDirectly(channel: string, text: string) {
-//     const payload = {
-//       channel,
-//       text,
-//     };
-
-//     const response = await this.httpService
-//       .post(`${this.baseUrl}/session/speak`, payload, { headers: this.getHeaders() })
-//       .toPromise();
-//     return response.data;
-//   }
-
-//   async closeSession(channel: string) {
-//     const payload = {
-//       channel,
-//     };
-
-//     const response = await this.httpService
-//       .post(`${this.baseUrl}/session/close`, payload, { headers: this.getHeaders() })
-//       .toPromise();
-//     return response.data;
-//   }
-// }
+    return llmResponse;
+  }
+}

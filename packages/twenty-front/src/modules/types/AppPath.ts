@@ -46,4 +46,5 @@ export enum AppPath {
   CustomLayoutMerged = 'custom-layout-merged',
   // ClientDashboard = 'client-dashboard',
   ClientCandidateSearch = 'candidate-search',
+  ArxInterview = 'arx-interview',
 }

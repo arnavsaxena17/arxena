@@ -15,10 +15,9 @@ import { EnvironmentService } from 'src/engine/core-modules/environment/environm
 import { LoggerService } from 'src/engine/core-modules/logger/logger.service';
 import { getSessionStorageOptions } from 'src/engine/core-modules/session-storage/session-storage.module-factory';
 import { UnhandledExceptionFilter } from 'src/filters/unhandled-exception.filter';
+// import { SocketIoAdapter } from 'src/modules/arx-interviews/adapters/socket-io.adapter';
 
 import { AppModule } from './app.module';
-
-
 import './instrument';
 
 import { settings } from './engine/constants/settings';
@@ -44,9 +43,8 @@ const bootstrap = async () => {
 
   app.use(session(getSessionStorageOptions(environmentService)));
 
-  // TODO: Double check this as it's not working for now, it's going to be helpful for durable trees in twenty "orm"
-  // // Apply context id strategy for durable trees
-  // ContextIdFactory.apply(new AggregateByWorkspaceContextIdStrategy());
+  // Use our custom Socket.io adapter for real-time communication
+  // app.useWebSocketAdapter(new SocketIoAdapter(app));
 
   // Apply class-validator container so that we can use injection in validators
   useContainer(app.select(AppModule), { fallbackOnErrors: true });
@@ -54,7 +52,7 @@ const bootstrap = async () => {
   // Use our logger
   app.useLogger(logger);
 
-  console.log("Using logger")
+  console.log('Using logger');
   app.useGlobalFilters(new UnhandledExceptionFilter());
 
   // Apply validation pipes globally

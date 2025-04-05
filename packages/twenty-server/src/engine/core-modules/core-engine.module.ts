@@ -24,6 +24,8 @@ import { fileStorageModuleFactory } from 'src/engine/core-modules/file-storage/f
 import { FileStorageService } from 'src/engine/core-modules/file-storage/file-storage.service';
 import { GoogleContactsModule } from 'src/engine/core-modules/google-contacts/google-contacts.module';
 import { HealthModule } from 'src/engine/core-modules/health/health.module';
+import { HeygenModule } from 'src/engine/core-modules/heygen/heygen.module';
+import { InterviewsModule } from 'src/engine/core-modules/interviews/interviews.module';
 import { LabModule } from 'src/engine/core-modules/lab/lab.module';
 import { LLMChatModelModule } from 'src/engine/core-modules/llm-chat-model/llm-chat-model.module';
 import { llmChatModelModuleFactory } from 'src/engine/core-modules/llm-chat-model/llm-chat-model.module-factory';
@@ -68,6 +70,7 @@ import { GoogleSheetsModule } from './google-sheets/google-sheets.module';
     AnalyticsModule,
     AuthModule,
     BillingModule,
+    InterviewsModule,
     ClientConfigModule,
     FeatureFlagModule,
     CandidateSourcingModule,
@@ -82,6 +85,7 @@ import { GoogleSheetsModule } from './google-sheets/google-sheets.module';
     VideoInterviewModule,
     AppTokenModule,
     TimelineMessagingModule,
+    HeygenModule,
     TimelineCalendarEventModule,
     UserModule,
     WorkspaceModule,
@@ -150,6 +154,7 @@ import { GoogleSheetsModule } from './google-sheets/google-sheets.module';
     WorkspaceModificationsModule,
     ArxChatAgentModule,
     GoogleCalendarModule,
+    HeygenModule,
     GoogleContactsModule,
     MailerModule,
     VideoInterviewModule,

@@ -77,7 +77,7 @@ abstract class BaseCronService {
 }
 
 // const CRON_DISABLED = process.env.NODE_ENV === 'development';
-const CRON_DISABLED = false;
+const CRON_DISABLED = true;
 
 @Injectable()
 export class CandidateEngagementCronService extends BaseCronService {
@@ -110,8 +110,6 @@ export class CandidateStatusClassificationCronService extends BaseCronService {
     });
   }
 }
-
-
 
 @Injectable()
 export class LinkedinSockIncomingMessageFetchingCronService extends BaseCronService {
