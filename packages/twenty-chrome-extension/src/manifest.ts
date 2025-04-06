@@ -6,7 +6,6 @@ const external_sites =
   process.env.VITE_MODE === 'development'
     ? [`https://app.arxena.com/*`, `http://localhost:3001/*`, `http://localhost:3000/*`]
     : [`https://arxena.com/*`];
-
 export default defineManifest({
   manifest_version: 3,
   name: 'Arx Twenty Crx',
@@ -34,7 +33,7 @@ export default defineManifest({
       matches: ['<all_urls>'],
       js: [
         'src/contentScript/index.ts',
-        'src/contentScript/insertSettingsButton.ts',      
+        'src/contentScript/insertSettingsButton.ts',
       ],
       run_at: 'document_start',
     },

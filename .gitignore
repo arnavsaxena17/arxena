@@ -4,6 +4,16 @@
 **/**/node_modules/
 .cache
 
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+
 # yarn is the recommended package manager across the project
 **/**/.package-lock.json
 
@@ -19,6 +29,19 @@ packages/twenty-server/.attachments/*
 !.yarn/versions
 .vercel
 .swc
+
+# dependencies
+/node_modules
+/coverage*
+/.pnp
+.pnp.js
+
+# env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
 
 **/**/logs/**
 
@@ -43,3 +66,7 @@ dump.rdb
 /flake.nix
 
 .crowdin.yml
+
+
+# eslint-plugin-project-structure
+projectStructure.cache.json

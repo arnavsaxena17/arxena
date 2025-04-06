@@ -32,6 +32,7 @@ export default defineConfig(() => {
           'content-script/insertSettingsButton': 'src/contentScript/insertSettingsButton.ts',
           'content-script/extractCompanyProfile': 'src/contentScript/extractCompanyProfile.ts',
           'content-script/extractPersonProfile': 'src/contentScript/extractPersonProfile.ts',
+          'page-inaccessible': resolve(__dirname, 'page-inaccessible.html'),
         },
         output: {
           entryFileNames: '[name].js',
