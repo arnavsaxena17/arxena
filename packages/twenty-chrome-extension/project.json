@@ -2,18 +2,26 @@
   "name": "twenty-chrome-extension",
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "projectType": "application",
-  "tags": ["scope:frontend"],
+  "tags": [
+    "scope:frontend"
+  ],
   "targets": {
     "build": {
-      "outputs": ["{options.outputPath}"],
+      "outputs": [
+        "{options.outputPath}"
+      ],
       "options": {
         "outputPath": "{projectRoot}/dist"
       },
-      "dependsOn": ["^build"]
+      "dependsOn": [
+        "^build"
+      ]
     },
     "start": {
       "executor": "nx:run-commands",
-      "dependsOn": ["build"],
+      "dependsOn": [
+        "build"
+      ],
       "options": {
         "cwd": "packages/twenty-chrome-extension",
         "command": "VITE_MODE=development vite"
@@ -29,8 +37,12 @@
     },
     "reset:env": {
       "executor": "nx:run-commands",
-      "inputs": ["{projectRoot}/.env.example"],
-      "outputs": ["{projectRoot}/.env"],
+      "inputs": [
+        "{projectRoot}/.env.example"
+      ],
+      "outputs": [
+        "{projectRoot}/.env"
+      ],
       "cache": true,
       "options": {
         "cwd": "{projectRoot}",
@@ -48,7 +60,9 @@
         "reportUnusedDisableDirectives": "error"
       },
       "configurations": {
-        "ci": { "eslintConfig": "{projectRoot}/.eslintrc-ci.cjs" },
+        "ci": {
+          "eslintConfig": "{projectRoot}/.eslintrc-ci.cjs"
+        },
         "fix": {}
       }
     },

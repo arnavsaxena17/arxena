@@ -7,55 +7,55 @@ import { isDefined } from 'twenty-shared';
 //   }
 // });
 
-chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
+// chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
 
 // This listens for an event from other parts of the extension, such as the content script, and performs the required tasks.
 // The cases themselves are labelled such that their operations are reflected by their names.
-chrome.runtime.onMessage.addListener((message, _, sendResponse) => {
-  switch (message.action) {
-    case 'getActiveTab': {
-      // e.g. "https://linkedin.com/company/twenty/"
-      chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
-        if (isDefined(tab) && isDefined(tab.id)) {
-          sendResponse({ tab });
-        }
-      });
-      break;
-    }
-    case 'openSidepanel': {
-      chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
-        if (isDefined(tab) && isDefined(tab.id)) {
-          chrome.sidePanel.open({ tabId: tab.id });
-        }
-      });
-      break;
-    }
-    default:
-      break;
-  }
+// chrome.runtime.onMessage.addListener((message, _, sendResponse) => {
+//   switch (message.action) {
+//     case 'getActiveTab': {
+//       // e.g. "https://linkedin.com/company/twenty/"
+//       chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
+//         if (isDefined(tab) && isDefined(tab.id)) {
+//           sendResponse({ tab });
+//         }
+//       });
+//       break;
+//     }
+//     case 'openSidepanel': {
+//       chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
+//         if (isDefined(tab) && isDefined(tab.id)) {
+//           chrome.sidePanel.open({ tabId: tab.id });
+//         }
+//       });
+//       break;
+//     }
+//     default:
+//       break;
+//   }
 
-  return true;
-});
+//   return true;
+// });
 
-chrome.tabs.onUpdated.addListener(async (tabId, _, tab) => {
-  const isDesiredRoute =
-    tab.url?.match(/^https?:\/\/(?:www\.)?linkedin\.com\/company(?:\/\S+)?/) ||
-    tab.url?.match(/^https?:\/\/(?:www\.)?linkedin\.com\/in(?:\/\S+)?/);
+// chrome.tabs.onUpdated.addListener(async (tabId, _, tab) => {
+//   const isDesiredRoute =
+//     tab.url?.match(/^https?:\/\/(?:www\.)?linkedin\.com\/company(?:\/\S+)?/) ||
+//     tab.url?.match(/^https?:\/\/(?:www\.)?linkedin\.com\/in(?:\/\S+)?/);
 
-  if (tab.active === true) {
-    if (isDefined(isDesiredRoute)) {
-      chrome.tabs.sendMessage(tabId, { action: 'executeContentScript' });
-    }
-  }
+//   if (tab.active === true) {
+//     if (isDefined(isDesiredRoute)) {
+//       chrome.tabs.sendMessage(tabId, { action: 'executeContentScript' });
+//     }
+//   }
 
-  await chrome.sidePanel.setOptions({
-    tabId,
-    path: tab.url?.match(/^https?:\/\/(?:www\.)?linkedin\.com/)
-      ? 'sidepanel.html'
-      : 'page-inaccessible.html',
-    enabled: true,
-  });
-});
+//   await chrome.sidePanel.setOptions({
+//     tabId,
+//     path: tab.url?.match(/^https?:\/\/(?:www\.)?linkedin\.com/)
+//       ? 'sidepanel.html'
+//       : 'page-inaccessible.html',
+//     enabled: true,
+//   });
+// });
 
 const setTokenStateFromCookie = (cookie: string) => {
   const decodedValue = decodeURIComponent(cookie);

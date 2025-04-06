@@ -49016,6 +49016,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "twenty-chrome-extension@workspace:packages/twenty-chrome-extension"
   dependencies:
+    "@crxjs/vite-plugin": "npm:^1.0.14"
     twenty-shared: "workspace:*"
   languageName: unknown
   linkType: soft

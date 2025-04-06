@@ -9,5 +9,8 @@
   },
   "dependencies": {
     "twenty-shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@crxjs/vite-plugin": "^1.0.14"
   }
 }

@@ -19,10 +19,18 @@ export default defineManifest({
     48: 'logo/32-32.png',
   },
 
-  action: {},
+  action: {
+    default_popup: 'popup.html',
+    default_icon: {
+      16: 'logo/32-32.png',
+      32: 'logo/32-32.png',
+      48: 'logo/32-32.png',
+    },
+  },
 
   //TODO: change this to a documenation page
-  options_page: 'sidepanel.html',
+  // options_page: 'sidepanel.html',
+  // action: {},
 
   background: {
     service_worker: 'src/background/index.ts',
