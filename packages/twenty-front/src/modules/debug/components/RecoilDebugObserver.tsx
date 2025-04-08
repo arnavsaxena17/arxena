@@ -1,7 +1,6 @@
 import { isDebugModeState } from '@/client-config/states/isDebugModeState';
 import { useRecoilTransactionObserver_UNSTABLE, useRecoilValue } from 'recoil';
 
-import { logDebug } from '~/utils/logDebug';
 
 const formatTitle = (stateName: string) => {
   const headerCss = [
@@ -28,13 +27,13 @@ export const RecoilDebugObserverEffect = () => {
 
       const titleArgs = formatTitle(node.key);
 
-      console.groupCollapsed(...titleArgs);
+      // console.groupCollapsed(...titleArgs);
 
-      logDebug('STATE', loadable.state);
+      // logDebug('STATE', loadable.state);
 
-      logDebug('CONTENTS', loadable.contents);
+      // logDebug('CONTENTS', loadable.contents);
 
-      console.groupEnd();
+      // console.groupEnd();
     }
   });
   return null;

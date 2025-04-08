@@ -20,6 +20,7 @@ import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { ConfirmationModal } from '@/ui/layout/modal/components/ConfirmationModal';
 import { SubMenuTopBarContainer } from '@/ui/layout/page/components/SubMenuTopBarContainer';
 import { useSubscriptionStatus } from '@/workspace/hooks/useSubscriptionStatus';
+// import console from 'console';
 import { isDefined } from 'twenty-shared';
 import {
   SubscriptionInterval,
@@ -37,6 +38,7 @@ type SwitchInfo = {
 };
 
 export const SettingsBilling = () => {
+  console.log('SettingsBilling got called');
   const { t } = useLingui();
 
   const { redirect } = useRedirect();
@@ -86,11 +88,13 @@ export const SettingsBilling = () => {
     },
     skip: !hasSubscriptions,
   });
+  console.log('data for billing portal session query', data);
 
   const billingPortalButtonDisabled =
     loading || !isDefined(data) || !isDefined(data.billingPortalSession.url);
-
+  console.log('billingPortalButtonDisabled', billingPortalButtonDisabled);
   const openBillingPortal = () => {
+    console.log('openBillingPortal got called');
     if (isDefined(data) && isDefined(data.billingPortalSession.url)) {
       redirect(data.billingPortalSession.url);
     }

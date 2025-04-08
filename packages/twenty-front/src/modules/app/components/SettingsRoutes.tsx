@@ -282,7 +282,9 @@ type SettingsRoutesProps = {
 export const SettingsRoutes = ({
   isFunctionSettingsEnabled,
   isAdminPageEnabled,
-}: SettingsRoutesProps) => (
+}: SettingsRoutesProps) => {
+  console.log('SettingsRoutes got called');
+  return (
   <Suspense fallback={<SettingsSkeletonLoader />}>
     <Routes>
       <Route path={SettingsPath.ProfilePage} element={<SettingsProfile />} />
@@ -427,9 +429,10 @@ export const SettingsRoutes = ({
             settingsPermission={SettingsFeatures.WORKSPACE}
           />
         }
-      >
-        <Route path={SettingsPath.Lab} element={<SettingsLab />} />
-      </Route>
-    </Routes>
-  </Suspense>
-);
+        >
+          <Route path={SettingsPath.Lab} element={<SettingsLab />} />
+        </Route>
+      </Routes>
+    </Suspense>
+  );
+};

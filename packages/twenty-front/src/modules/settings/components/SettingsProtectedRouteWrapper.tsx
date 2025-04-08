@@ -1,10 +1,8 @@
 import { useHasSettingsPermission } from '@/settings/roles/hooks/useHasSettingsPermission';
-import { SettingsPath } from '@/types/SettingsPath';
 import { useIsFeatureEnabled } from '@/workspace/hooks/useIsFeatureEnabled';
 import { ReactNode } from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
+import { Outlet } from 'react-router-dom';
 import { FeatureFlagKey, SettingsFeatures } from '~/generated/graphql';
-import { getSettingsPath } from '~/utils/navigation/getSettingsPath';
 
 type SettingsProtectedRouteWrapperProps = {
   children?: ReactNode;
@@ -24,13 +22,14 @@ export const SettingsProtectedRouteWrapper = ({
   const requiredFeatureFlagEnabled = useIsFeatureEnabled(
     requiredFeatureFlag || null,
   );
+  console.log('requiredFeatureFlagEnabled', requiredFeatureFlagEnabled);
 
-  if (
-    (requiredFeatureFlag && !requiredFeatureFlagEnabled) ||
-    (!hasPermission && isPermissionsEnabled)
-  ) {
-    return <Navigate to={getSettingsPath(SettingsPath.ProfilePage)} replace />;
-  }
+  // if (
+  //   (requiredFeatureFlag && !requiredFeatureFlagEnabled) ||
+  //   (!hasPermission && isPermissionsEnabled)
+  // ) {
+    // return <Navigate to={getSettingsPath(SettingsPath.ProfilePage)} replace />;
+  // }
 
   return children ?? <Outlet />;
 };
