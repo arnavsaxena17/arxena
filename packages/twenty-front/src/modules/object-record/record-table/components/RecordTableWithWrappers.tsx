@@ -53,6 +53,8 @@ export const RecordTableWithWrappers = ({
       recordTableId,
     });
 
+    console.log("objectNameSingular for which the table in RecordTableWithWrappers is rendered::", objectNameSingular)
+
   const handleSelectAllRows = () => {
     setHasUserSelectedAllRows(true);
     selectAllRows();

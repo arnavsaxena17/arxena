@@ -14,7 +14,7 @@ export const RecordIndexTableContainer = ({
   viewBarId,
 }: RecordIndexTableContainerProps) => {
   const { objectNameSingular } = useRecordIndexContextOrThrow();
-
+  console.log("objectNameSingular for which the table in RecordIndexTableContainer is rendered::", objectNameSingular)
   const { updateOneRecord } = useUpdateOneRecord({
     objectNameSingular,
   });

@@ -1,6 +1,6 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
-import OpenAI from 'openai';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import * as fs from 'fs';
+import OpenAI from 'openai';
 
 @Injectable()
 export class TranscriptionService {

@@ -38,7 +38,8 @@ const StyledIndexContainer = styled.div`
 
 // Main component
 const CustomLayoutJob = () => {
-  const recordIndexId = 'jobs-' + '4686a913-c3a3-45f1-a4bc-cd91ab882c40';
+  const viewID = 'a314b097-d2b6-4893-b2d9-5647391cb45e';
+  const recordIndexId = 'jobs-' + viewID;
   const objectMetadataItem = {
     __typename: 'ObjectMetadataItem',
     id: JobObjectFields.id,
@@ -96,7 +97,7 @@ const CustomLayoutJob = () => {
   //   'main-context-store',
   // );
 
-  const contextStoreCurrentViewId = '4686a913-c3a3-45f1-a4bc-cd91ab882c40';
+  const contextStoreCurrentViewId = viewID;
 
   const currentObjectMetadataItem = useRecoilComponentValueV2(
     contextStoreCurrentObjectMetadataItemComponentState,

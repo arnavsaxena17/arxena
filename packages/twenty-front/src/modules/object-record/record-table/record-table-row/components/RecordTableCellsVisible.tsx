@@ -19,9 +19,10 @@ export const RecordTableCellsVisible = () => {
   if (!isNonEmptyArray(visibleTableColumns)) {
     return null;
   }
+  console.log("visibleTableColumns in RecordTableCellsVisible::", visibleTableColumns)
 
   const tableColumnsAfterFirst = visibleTableColumns.slice(1);
-
+  console.log("tableColumnsAfterFirst in RecordTableCellsVisible::", tableColumnsAfterFirst)
   return (
     <>
       <RecordTableCellWrapper column={visibleTableColumns[0]} columnIndex={0}>

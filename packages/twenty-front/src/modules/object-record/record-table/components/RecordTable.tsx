@@ -36,8 +36,9 @@ const StyledTable = styled.table`
 
 export const RecordTable = () => {
   const { recordTableId, objectNameSingular } = useRecordTableContextOrThrow();
-
+  console.log("objectNameSingular for which the table in RecordTable is rendered::", objectNameSingular)
   const tableBodyRef = useRef<HTMLTableElement>(null);
+  console.log("tableBodyRef::", tableBodyRef)
 
   const { toggleClickOutsideListener } = useClickOutsideListener(
     RECORD_TABLE_CLICK_OUTSIDE_LISTENER_ID,
@@ -75,6 +76,8 @@ export const RecordTable = () => {
   if (!isNonEmptyString(objectNameSingular)) {
     return <></>;
   }
+  console.log("tableBodyRef::", tableBodyRef)
+  console.log("hasRecordGroups::", hasRecordGroups)
 
   return (
     <>

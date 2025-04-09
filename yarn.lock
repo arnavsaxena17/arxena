@@ -6952,6 +6952,22 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@handsontable/pikaday@npm:^1.0.0":
+  version: 1.0.0
+  resolution: "@handsontable/pikaday@npm:1.0.0"
+  checksum: 10c0/cdccc7f9ff6da4a5e838860091eca4dbc415ee68009eec5fb160f66caf06da7255df5b59b3444027ca3dab469618e120df398f24e1d7df455674531fac94e567
+  languageName: node
+  linkType: hard
+
+"@handsontable/react-wrapper@npm:^15.2.0":
+  version: 15.2.0
+  resolution: "@handsontable/react-wrapper@npm:15.2.0"
+  peerDependencies:
+    handsontable: ">=15.0.0"
+  checksum: 10c0/0c2d95b9ee4e8f08e992ec618eb50ce519356746881c74d94e44a66837ba1703f207ffbd76a1cd722ab0a44cf86d3a85f336dbb41e1c0424f2d5b5f6f54fb7fc
+  languageName: node
+  linkType: hard
+
 "@hapi/boom@npm:^10.0.1":
   version: 10.0.1
   resolution: "@hapi/boom@npm:10.0.1"
@@ -19452,7 +19468,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/trusted-types@npm:*":
+"@types/trusted-types@npm:*, @types/trusted-types@npm:^2.0.7":
   version: 2.0.7
   resolution: "@types/trusted-types@npm:2.0.7"
   checksum: 10c0/4c4855f10de7c6c135e0d32ce462419d8abbbc33713b31d294596c0cc34ae1fa6112a2f9da729c8f7a20707782b0d69da3b1f8df6645b0366d08825ca1522e0c
@@ -23399,6 +23415,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"bignumber.js@npm:^8 || ^9":
+  version: 9.2.1
+  resolution: "bignumber.js@npm:9.2.1"
+  checksum: 10c0/f50b2f2d633382ac5ab86f8baa90437cf6f14adfa8bd47b7159f1b893d19777853429565c33dfe6f8f695c5361c1e3cd2aae5067b99093d5608d671683c56cb4
+  languageName: node
+  linkType: hard
+
 "bignumber.js@npm:^9.0.0":
   version: 9.1.2
   resolution: "bignumber.js@npm:9.1.2"
@@ -24623,6 +24646,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"chevrotain@npm:^6.5.0":
+  version: 6.5.0
+  resolution: "chevrotain@npm:6.5.0"
+  dependencies:
+    regexp-to-ast: "npm:0.4.0"
+  checksum: 10c0/7fa4cf8ac2600f5c08bc4538bb49e0ce88daedbfb9507227251d87e5fa33ab28a39e69418b054299f00809fe9821f32cdebef0c36910b0ee7c15513f98dd609d
+  languageName: node
+  linkType: hard
+
 "chokidar@npm:3.5.1":
   version: 3.5.1
   resolution: "chokidar@npm:3.5.1"
@@ -25834,6 +25866,13 @@ __metadata:
   version: 2.6.12
   resolution: "core-js@npm:2.6.12"
   checksum: 10c0/00128efe427789120a06b819adc94cc72b96955acb331cb71d09287baf9bd37bebd191d91f1ee4939c893a050307ead4faea08876f09115112612b6a05684b63
+  languageName: node
+  linkType: hard
+
+"core-js@npm:^3.37.0":
+  version: 3.41.0
+  resolution: "core-js@npm:3.41.0"
+  checksum: 10c0/a29ed0b7fe81acf49d04ce5c17a1947166b1c15197327a5d12f95bbe84b46d60c3c13de701d808f41da06fa316285f3f55ce5903abc8d5642afc1eac4457afc8
   languageName: node
   linkType: hard
 
@@ -27574,6 +27613,18 @@ __metadata:
   version: 3.1.6
   resolution: "dompurify@npm:3.1.6"
   checksum: 10c0/3de1cca187c78d3d8cb4134fc2985b644d6a81f6b4e024c77cfb04c1c2f38544ccf7b0ea37a48ce22fcca64594170ed7c22252574c75b801c44345cdd7b06c64
+  languageName: node
+  linkType: hard
+
+"dompurify@npm:^3.1.7":
+  version: 3.2.5
+  resolution: "dompurify@npm:3.2.5"
+  dependencies:
+    "@types/trusted-types": "npm:^2.0.7"
+  dependenciesMeta:
+    "@types/trusted-types":
+      optional: true
+  checksum: 10c0/b564167cc588933ad2d25c185296716bdd7124e9d2a75dac76efea831bb22d1230ce5205a1ab6ce4c1010bb32ac35f7a5cb2dd16c78cbf382111f1228362aa59
   languageName: node
   linkType: hard
 
@@ -31863,6 +31914,23 @@ __metadata:
   languageName: node
   linkType: hard
 
+"handsontable@npm:^15.2.0":
+  version: 15.2.0
+  resolution: "handsontable@npm:15.2.0"
+  dependencies:
+    "@handsontable/pikaday": "npm:^1.0.0"
+    core-js: "npm:^3.37.0"
+    dompurify: "npm:^3.1.7"
+    hyperformula: "npm:^3.0.0"
+    moment: "npm:2.30.1"
+    numbro: "npm:2.5.0"
+  dependenciesMeta:
+    hyperformula:
+      optional: true
+  checksum: 10c0/22cfae30f723881c411b5730e6bc47ae19daaa43e42d21b72e8224b73b6352365101c71b823eb560209fc84a5f09a96698e4e7f0ff8d50098b53feeecb0f56ff
+  languageName: node
+  linkType: hard
+
 "hanji@npm:^0.0.5":
   version: 0.0.5
   resolution: "hanji@npm:0.0.5"
@@ -32917,6 +32985,16 @@ __metadata:
   dependencies:
     ms: "npm:^2.0.0"
   checksum: 10c0/f34a2c20161d02303c2807badec2f3b49cbfbbb409abd4f95a07377ae01cfe6b59e3d15ac609cffcd8f2521f0eb37b7e1091acf65da99aa2a4f1ad63c21e7e7a
+  languageName: node
+  linkType: hard
+
+"hyperformula@npm:^3.0.0":
+  version: 3.0.0
+  resolution: "hyperformula@npm:3.0.0"
+  dependencies:
+    chevrotain: "npm:^6.5.0"
+    tiny-emitter: "npm:^2.1.0"
+  checksum: 10c0/1ac1ce42365b81c0ca0f512b9dca21f1716b82ea1279a193e7f6bf93c5a4dc7fc467cbb1eb4f8788703bdc7ca3855e412623bf8739061e03e8a1c1d4d447db1b
   languageName: node
   linkType: hard
 
@@ -39154,7 +39232,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"moment@npm:^2.22.1, moment@npm:^2.29.4":
+"moment@npm:2.30.1, moment@npm:^2.22.1, moment@npm:^2.29.4":
   version: 2.30.1
   resolution: "moment@npm:2.30.1"
   checksum: 10c0/865e4279418c6de666fca7786607705fd0189d8a7b7624e2e56be99290ac846f90878a6f602e34b4e0455c549b85385b1baf9966845962b313699e7cb847543a
@@ -40400,6 +40478,15 @@ __metadata:
   version: 1.0.1
   resolution: "number-is-nan@npm:1.0.1"
   checksum: 10c0/cb97149006acc5cd512c13c1838223abdf202e76ddfa059c5e8e7507aff2c3a78cd19057516885a2f6f5b576543dc4f7b6f3c997cc7df53ae26c260855466df5
+  languageName: node
+  linkType: hard
+
+"numbro@npm:2.5.0":
+  version: 2.5.0
+  resolution: "numbro@npm:2.5.0"
+  dependencies:
+    bignumber.js: "npm:^8 || ^9"
+  checksum: 10c0/5fce44fb0e9dd9e3d48b74f0f29910af515284ac35eff0c14911ccaa7a666c2b95a55be02d2605f30fd3fac7d522ffecb5c1f24acb91c1a1880eb53b268a2ccc
   languageName: node
   linkType: hard
 
@@ -44754,6 +44841,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"regexp-to-ast@npm:0.4.0":
+  version: 0.4.0
+  resolution: "regexp-to-ast@npm:0.4.0"
+  checksum: 10c0/56b7148be88ea553e648f5ebba486c951f4c044723e5e34360786c8b5cf0b2a2315b0f145143fb3afe1699b8e44d9586bd1a977693109f7d7ae230d62fa74b61
+  languageName: node
+  linkType: hard
+
 "regexp-tree@npm:^0.1.27":
   version: 0.1.27
   resolution: "regexp-tree@npm:0.1.27"
@@ -48244,6 +48338,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"tiny-emitter@npm:^2.1.0":
+  version: 2.1.0
+  resolution: "tiny-emitter@npm:2.1.0"
+  checksum: 10c0/459c0bd6e636e80909898220eb390e1cba2b15c430b7b06cec6ac29d87acd29ef618b9b32532283af749f5d37af3534d0e3bde29fdf6bcefbf122784333c953d
+  languageName: node
+  linkType: hard
+
 "tiny-inflate@npm:^1.0.0, tiny-inflate@npm:^1.0.3":
   version: 1.0.3
   resolution: "tiny-inflate@npm:1.0.3"
@@ -49044,6 +49145,7 @@ __metadata:
     "@blocknote/xl-docx-exporter": "npm:^0.22.0"
     "@blocknote/xl-pdf-exporter": "npm:^0.22.0"
     "@cyntler/react-doc-viewer": "npm:^1.17.0"
+    "@handsontable/react-wrapper": "npm:^15.2.0"
     "@lingui/detect-locale": "npm:^5.2.0"
     "@nivo/line": "npm:^0.87.0"
     "@react-pdf/renderer": "npm:^4.1.6"
@@ -49061,6 +49163,7 @@ __metadata:
     buffer: "npm:^6.0.3"
     docx: "npm:^9.1.0"
     file-saver: "npm:^2.0.5"
+    handsontable: "npm:^15.2.0"
     react-date-range: "npm:^2.0.1"
     recoil-sync: "npm:^0.2.0"
     transliteration: "npm:^2.3.5"

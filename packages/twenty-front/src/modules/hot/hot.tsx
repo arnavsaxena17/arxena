@@ -1,12 +1,11 @@
-// import 'handsontable/styles/handsontable.min.css';
-// import 'handsontable/styles/ht-theme-main.min.css';
+import 'handsontable/styles/handsontable.min.css';
+import 'handsontable/styles/ht-theme-main.min.css';
 
 
-// import { registerAllModules } from 'handsontable/registry';
+import { registerAllModules } from 'handsontable/registry';
+registerAllModules();
 
-// registerAllModules();
-
-// import { HotTable } from '@handsontable/react-wrapper';
+import { HotTable } from '@handsontable/react-wrapper';
 
 export const HandsontableGrid = () => {
     const data = [
@@ -17,15 +16,16 @@ export const HandsontableGrid = () => {
     ];
   
     return (
-      <>  </>
-      // <HotTable
-      //   data={data}
-      //   rowHeaders={true}
-      //   colHeaders={true}
-      //   height="auto"
-      //   autoWrapRow={true}
-      //   autoWrapCol={true}
-      //   licenseKey="non-commercial-and-evaluation"
-      // />
+      // <>  </>
+      <HotTable
+        data={data}
+        rowHeaders={true}
+        colHeaders={true}
+        height="auto"
+        autoWrapRow={true}
+        autoWrapCol={true}
+        licenseKey="non-commercial-and-evaluation"
+        stretchH="all"
+      />
     );
   };

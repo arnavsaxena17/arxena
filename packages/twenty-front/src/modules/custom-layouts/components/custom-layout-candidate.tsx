@@ -38,7 +38,8 @@ const StyledIndexContainer = styled.div`
 
 // Main component
 const CustomLayoutCandidate = () => {
-  const recordIndexId = 'candidates-' + 'f7bf6f2c-e730-4b71-81d6-fc8424a3c365';
+  const viewID = '29f46927-c997-47b9-978f-2e4f924c6ec1';
+  const recordIndexId = 'candidates-' + viewID;
   const objectMetadataItem = {
     __typename: 'ObjectMetadataItem',
     id: CandidateObjectFields.id,
@@ -53,6 +54,7 @@ const CustomLayoutCandidate = () => {
     isRemote: CandidateObjectFields.isRemote,
     isActive: CandidateObjectFields.isActive,
     isSystem: CandidateObjectFields.isSystem,
+    // isVisible: true,
     createdAt: CandidateObjectFields.createdAt,
     updatedAt: CandidateObjectFields.updatedAt,
     labelIdentifierFieldMetadataId:
@@ -64,6 +66,7 @@ const CustomLayoutCandidate = () => {
       type: field.type as FieldMetadataType,
       options: field.options as any,
       settings: field.settings as any,
+      isVisible: true,
       relationDefinition: field.relationDefinition
         ? {
             ...field.relationDefinition,
@@ -74,8 +77,8 @@ const CustomLayoutCandidate = () => {
     })) as any,
     indexMetadatas: CandidateObjectFields.indexMetadatas,
   } as unknown as ObjectMetadataItem;
-  console.log('objectMetadataItem', objectMetadataItem);
-
+  
+  console.log('objectMetadataItemin custom layout candidate::', objectMetadataItem);
   const setContextStoreCurrentObjectMetadataItem = useSetRecoilComponentStateV2(
     contextStoreCurrentObjectMetadataItemComponentState,
     'main-context-store',
@@ -96,7 +99,7 @@ const CustomLayoutCandidate = () => {
   //   'main-context-store',
   // );
 
-  const contextStoreCurrentViewId = 'f7bf6f2c-e730-4b71-81d6-fc8424a3c365';
+  const contextStoreCurrentViewId = viewID;
 
   const currentObjectMetadataItem = useRecoilComponentValueV2(
     contextStoreCurrentObjectMetadataItemComponentState,
@@ -131,7 +134,7 @@ const CustomLayoutCandidate = () => {
     return null;
   }
 
-  console.log('currentObjectMetadataItem', currentObjectMetadataItem);
+  console.log('currentObjectMetadataItem in custom layout candidate::', currentObjectMetadataItem);
 
   return (
     <PageContainer>

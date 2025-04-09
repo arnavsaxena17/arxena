@@ -16,6 +16,8 @@ export const RecordTableNoRecordGroupBody = () => {
   const isRecordTableInitialLoading = useRecoilComponentValueV2(
     isRecordTableInitialLoadingComponentState,
   );
+  console.log("isRecordTableInitialLoading::", isRecordTableInitialLoading)
+  console.log("allRecordIds for which the table in RecordTableNoRecordGroupBody is rendered::", allRecordIds)
 
   if (isRecordTableInitialLoading && allRecordIds.length === 0) {
     return <RecordTableBodyLoading />;
