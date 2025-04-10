@@ -10,12 +10,12 @@ import { useRecoilState, useRecoilValue } from 'recoil';
 import {
   CandidateNode,
   CandidatesEdge,
-  Jobs,
+  JobNode,
   OneUnreadMessage,
   PersonNode,
   UnreadMessageListManyCandidates,
   UnreadMessagesPerOneCandidate,
-  isDefined,
+  isDefined
 } from 'twenty-shared';
 import { CACHE_KEYS, cacheUtils } from '../utils/cacheUtils';
 import ChatSidebar from './ChatSidebar';
@@ -165,7 +165,7 @@ export const ChatMain = ({ initialCandidateId }: ChatMainProps) => {
   const [isLoading, setIsLoading] = useState(individuals.length === 0);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [jobs, setJobs] = useState<Jobs[]>([]);
+  const [jobs, setJobs] = useState<JobNode[]>([]);
 
   const [unreadMessages, setUnreadMessages] =
     useState<UnreadMessageListManyCandidates>({
@@ -177,7 +177,7 @@ export const ChatMain = ({ initialCandidateId }: ChatMainProps) => {
   const [currentUnreadChatMessages, setCurrentUnreadChatMessages] =
     useRecoilState(currentUnreadChatMessagesState);
 
-  const [sidebarWidth, setSidebarWidth] = useState(300);
+  const [sidebarWidth, setSidebarWidth] = useState(900);
   const [isResizing, setIsResizing] = useState(false);
 
   const startResizing = (e: React.MouseEvent) => {

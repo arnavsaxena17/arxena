@@ -4,9 +4,9 @@ import styled from '@emotion/styled';
 import { useNavigate } from 'react-router-dom';
 // import * as frontChatTypes from "../types/front-chat-types";
 import {
-  Job,
+  JobNode,
   PersonNode,
-  UnreadMessageListManyCandidates,
+  UnreadMessageListManyCandidates
 } from 'twenty-shared';
 import ChatTable from './ChatTable';
 import SearchBox from './SearchBox';
@@ -115,7 +115,7 @@ interface ChatSidebarProps {
   selectedIndividual: string;
   setSelectedIndividual: (id: string) => void;
   unreadMessages: UnreadMessageListManyCandidates;
-  jobs: Job[];
+  jobs: JobNode[];
   isRefreshing?: boolean;
   width: number; // Add this
 }
