@@ -1,8 +1,11 @@
 import { HotTable } from '@handsontable/react-wrapper';
 import { registerAllModules } from 'handsontable/registry';
 import 'handsontable/styles/handsontable.min.css';
+import 'handsontable/styles/ht-theme-horizon.css';
 import 'handsontable/styles/ht-theme-main.min.css';
-import React, { useMemo } from 'react';
+
+import { useTheme } from '@emotion/react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import ActionsBar from '../ActionsBar';
 import AttachmentPanel from '../AttachmentPanel';
 import MultiCandidateChat from '../MultiCandidateChat';
@@ -45,6 +48,20 @@ export const ChatTable: React.FC<ChatTableProps> = ({
     setIsChatOpen,
   } = useChatTable(individuals, onSelectionChange);
 
+  const theme = useTheme();
+  const hotRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (!hotRef.current?.hotInstance) {
+      return;
+    }
+
+    // const themeName = theme.name === 'dark' ? 'ht-theme-horizon-dark' : 'ht-theme-horizon';
+    const themeName = theme.name === 'dark' ? 'ht-theme-main-dark' : 'ht-theme-main';
+    hotRef.current.hotInstance.useTheme(themeName);
+    hotRef.current.hotInstance.render();
+  }, [theme.name]);
+
   const columns = useMemo(
     () => createTableColumns(individuals, handleCheckboxChange),
     [individuals, handleCheckboxChange]
@@ -53,6 +70,7 @@ export const ChatTable: React.FC<ChatTableProps> = ({
   const hotTableComponent = useMemo(
     () => (
       <HotTable
+        ref={hotRef}
         data={prepareTableData(individuals)}
         columns={columns}
         colHeaders={true}
@@ -61,7 +79,7 @@ export const ChatTable: React.FC<ChatTableProps> = ({
         licenseKey="non-commercial-and-evaluation"
         stretchH="all"
         className="htCenter"
-        readOnly={true}
+        readOnly={false}
         autoWrapRow={true}
         autoWrapCol={true}
         manualRowResize={true}
@@ -73,9 +91,15 @@ export const ChatTable: React.FC<ChatTableProps> = ({
           columns: [0],
           indicators: true,
         }}
+        afterSelection={(row: number) => {
+          if (row >= 0) {
+            const selectedIndividual = individuals[row];
+            onIndividualSelect(selectedIndividual.id);
+          }
+        }}
       />
     ),
-    [individuals, columns, prepareTableData]
+    [individuals, columns, prepareTableData, onIndividualSelect]
   );
 
   return (

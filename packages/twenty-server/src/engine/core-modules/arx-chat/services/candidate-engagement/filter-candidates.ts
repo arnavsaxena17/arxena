@@ -559,10 +559,10 @@ export class FilterCandidates {
       },
       data: data,
     });
-    const questionsArray: string[] = response?.data?.data?.questions?.edges.map(
+    const questionsArray: string[] = response?.data?.data?.candidateFields?.edges.map(
       (val: { node: { name: string } }) => val.node.name,
     );
-    const questionIdArray = response?.data?.data?.questions?.edges?.map(
+    const questionIdArray = response?.data?.data?.candidateFields?.edges?.map(
       (val: { node: { id: string; name: string } }) => {
         return { questionId: val.node.id, question: val.node.name };
       },

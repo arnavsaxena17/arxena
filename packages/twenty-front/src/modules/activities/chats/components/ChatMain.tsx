@@ -391,8 +391,14 @@ export const ChatMain = ({ initialCandidateId }: ChatMainProps) => {
   }, [initialCandidateId, individuals]);
 
   useEffect(() => {
-    updateUnreadMessagesStatus(selectedIndividual);
+    if (selectedIndividual) {
+      updateUnreadMessagesStatus(selectedIndividual);
+    }
   }, [selectedIndividual]);
+
+  const handleIndividualSelect = (id: string) => {
+    setSelectedIndividual(id);
+  };
 
   if (isLoading && individuals.length === 0) {
     // return (
@@ -423,7 +429,7 @@ export const ChatMain = ({ initialCandidateId }: ChatMainProps) => {
         <ChatSidebar
           individuals={individuals}
           selectedIndividual={selectedIndividual}
-          setSelectedIndividual={setSelectedIndividual}
+          setSelectedIndividual={handleIndividualSelect}
           unreadMessages={unreadMessages}
           jobs={jobs}
           isRefreshing={isRefreshing}

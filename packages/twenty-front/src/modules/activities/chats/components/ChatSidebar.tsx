@@ -8,7 +8,7 @@ import {
   PersonNode,
   UnreadMessageListManyCandidates
 } from 'twenty-shared';
-import ChatTable from './ChatTable';
+import ChatTable from './chat-table/ChatTable';
 import SearchBox from './SearchBox';
 
 // import { Job } from "../types/front-chat-types";
@@ -190,16 +190,6 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     if (candidateId) {
       navigate(`/chats/${candidateId}`);
     }
-    console.log('Sorted individuals:', sortedIndividuals);
-
-    // if (candidateId) {
-    //   setViewableRecordId(candidateId);
-    //   setViewableRecordNameSingular('candidate');
-    // }
-
-    // const viewableRecordId = useRecoilValue(viewableRecordIdState);
-    // console.log("viewableRecordId::::", viewableRecordId);
-    console.log('viewableRecordId selectedIndividual::::', selectedIndividual);
   };
 
   useEffect(() => {
@@ -413,7 +403,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     <StyledSidebarContainer width={width} ref={sidebarRef}>
       <RefreshIndicator isRefreshing={isRefreshing} />
 
-      <FixedHeader>
+      {/* <FixedHeader>
         <StyledDropdownContainer>
           <DropdownContainer ref={jobDropdownRef}>
             <DropdownButton
@@ -486,7 +476,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
-      </FixedHeader>
+      </FixedHeader> */}
       <ScrollableContent>
         <ChatTable
           individuals={sortedIndividuals}
