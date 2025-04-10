@@ -2,8 +2,8 @@ import { Controller, Post, Req, UseGuards } from '@nestjs/common';
 
 import axios from 'axios';
 import {
+  createOneCandidateField,
   CreateOneJob,
-  createOneQuestion,
   CreateOneVideoInterviewTemplate,
   Enrichment,
   graphQlTofindManyCandidateEnrichments,
@@ -371,8 +371,8 @@ export class CandidateSourcingController {
       console.log('this is the job name:', req.body.new_job_id);
       await new Promise((resolve) => setTimeout(resolve, 500));
 
-      // let googleSheetUrl = '';
-      // let googleSheetId = '';
+      let googleSheetUrl = '';
+      let googleSheetId = '';
 
       await this.createVideoInterviewTemplate(
         req.body.job_name,
@@ -380,11 +380,12 @@ export class CandidateSourcingController {
         apiToken,
       );
 
+      // disabling sheets for now
       // const { googleSheetId: googleSheetIdFromRequest, googleSheetUrl: googleSheetUrlFromRequest } = req.body;
-      const { googleSheetId, googleSheetUrl } = await this.createSpreadsheet(
-        req.body.job_name,
-        apiToken,
-      );
+      // const { googleSheetId, googleSheetUrl } = await this.createSpreadsheet(
+      //   req.body.job_name,
+      //   apiToken,
+      // );
 
       await this.updateTwentyJob(
         req.body.job_name,
@@ -405,8 +406,8 @@ export class CandidateSourcingController {
 
       return {
         ...response?.data?.data?.createJob,
-        googleSheetId,
-        googleSheetUrl,
+        // googleSheetId,
+        // googleSheetUrl,
       };
     } catch (error) {
       console.log('Error in createJobInArxena:', error);
@@ -776,7 +777,7 @@ export class CandidateSourcingController {
           input: { name: question, jobsId: jobObject?.id },
         };
         const graphqlQueryObj = JSON.stringify({
-          query: createOneQuestion,
+          query: createOneCandidateField,
           variables: graphqlVariables,
         });
         const response = await axiosRequest(graphqlQueryObj, apiToken);

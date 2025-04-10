@@ -610,7 +610,6 @@ export interface ArxenaCandidateNode {
   resdexNaukriUrl?: { primaryLinkLabel: string; primaryLinkUrl: string };
   displayPicture: { primaryLinkLabel: string; primaryLinkUrl: string };
   jobsId: string;
-  jobSpecificFields: any;
   peopleId: string;
 }
 

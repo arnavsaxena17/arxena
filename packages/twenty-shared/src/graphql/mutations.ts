@@ -74,14 +74,14 @@ export const graphqlQueryToRemoveMessages = `mutation DeleteManyWhatsappMessages
   }
 }`;
 
-export const graphqlQueryToCreateOneAnswer = `mutation CreateOneAnswer($input: AnswerCreateInput!) {
-  createAnswer(data: $input) {
+export const graphqlQueryToCreateOneCandidateFieldValue = `mutation CreateOneCandidateFieldValue($input: CandidateFieldValueCreateInput!) {
+  createCandidateFieldValue(data: $input) {
     position
     candidateId
     createdAt
     name
     updatedAt
-    questionsId
+    candidateFieldsId
     id
   }
 }`;
@@ -405,10 +405,18 @@ export const UpdateOneJob = `mutation UpdateOneJob($idToUpdate: ID!, $input: Job
  }}
 `;
 
-export const createOneQuestion = `
-mutation CreateOneQuestion($input: QuestionCreateInput!) {
-  createQuestion(data: $input) {
+export const createOneCandidateField = `
+mutation CreateOneCandidateField($input: CandidateFieldCreateInput!) {
+  createCandidateField(data: $input) {
     __typename
+    id
+  }
+}`;
+
+export const CreateManyCandidateFieldValues = `mutation CreateCandidateFieldValues($data: [CandidateFieldValueCreateInput!]!) {
+  createCandidateFieldValues(data: $data) {
+    __typename
+    id
   }
 }`;
 
@@ -544,4 +552,41 @@ export const createShortlistMutation = `
             expectedSalary
         }
     }
+`;
+
+
+
+export const createViewFieldMutation = `
+mutation CreateOneViewField($input: ViewFieldCreateInput!) {
+  createViewField(data: $input) {
+    __typename
+    aggregateOperation
+    createdAt
+    deletedAt
+    fieldMetadataId
+    id
+    isVisible
+    position
+    size
+    updatedAt
+    view {
+      __typename
+      createdAt
+      deletedAt
+      icon
+      id
+      isCompact
+      kanbanAggregateOperation
+      kanbanAggregateOperationFieldMetadataId
+      kanbanFieldMetadataId
+      key
+      name
+      objectMetadataId
+      position
+      type
+      updatedAt
+    }
+    viewId
+  }
+}
 `;

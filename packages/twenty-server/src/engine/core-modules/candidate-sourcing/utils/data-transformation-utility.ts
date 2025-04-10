@@ -1,4 +1,4 @@
-import { ArxenaCandidateNode, ArxenaJobCandidateNode, ArxenaPersonNode } from "twenty-shared";
+import { ArxenaCandidateNode, ArxenaPersonNode } from "twenty-shared";
 
 export const mapArxCandidateToPersonNode = candidate => {
   const personNode: ArxenaPersonNode = {
@@ -12,65 +12,19 @@ export const mapArxCandidateToPersonNode = candidate => {
   };
   return personNode;
 };
-export const mapArxCandidateToJobCandidateNode = candidate => {
 
-  const ansKeys = Object.keys(candidate).filter(key => key.startsWith('Ans'));
-  const ansFields = ansKeys.reduce((acc, key) => {
-    const camelCaseKey = key.replace(/[^a-zA-Z0-9\s]/g, '').replace(/(?:^\w|[A-Z]|\b\w|\s+)/g, (match, index) => index === 0 ? match.toLowerCase() : match.toUpperCase()).replace(/\s+/g, '').slice(0, 25);
-    acc[camelCaseKey] = candidate[key];
-    return acc;
-  }, {});
-
-  const jobCandidateNode: ArxenaJobCandidateNode = {
-    name:  candidate.full_name,
-    emails: Array.isArray(candidate?.email_address) ? candidate?.email_address[0] : candidate?.email_address || "",
-    profileUrl: {"primaryLinkLabel":candidate?.profile_url || "", "primaryLinkUrl":candidate?.profile_url || ""},
-    phones:candidate?.phone_numbers && candidate?.phone_numbers?.length > 0 ? (typeof candidate?.phone_numbers[0] === 'string' ? candidate?.phone_numbers[0] : candidate?.phone_numbers[0]?.number) || "" : "",
-    uniqueStringKey:candidate?.unique_key_string,
-    jobTitle: candidate?.job_title || '',
-    profileTitle: candidate?.profile_title || '',
-    currentLocation: candidate?.location_name || '',
-    preferredLocations: candidate?.preferred_locations || "",
-    displayPicture: {"primaryLinkLabel":"Display Picture", "primaryLinkUrl":candidate?.display_picture || ''},
-    birthDate: candidate?.birth_date?.toString() || "",
-    age: candidate?.age || 0,
-    inferredSalary: candidate?.inferred_salary || 0,
-    inferredYearsExperience :candidate?.inferred_years_experience.toString() || "",
-    noticePeriod: candidate?.notice_period?.toString() || "",
-    homeTown: candidate?.home_town  || '',
-    gender: candidate.gender  || '',
-    maritalStatus: candidate?.marital_status || '',
-    ugInstituteName: candidate?.ug_institute_name || '',
-    ugGraduationYear: candidate?.ug_graduation_year || 0,
-    pgGradudationDegree: candidate?.pg_graduation_degree || '',
-    ugGraduationDegree: candidate?.ug_graduation_degree || '',
-    pgGraduationYear: candidate?.pg_graduation_year || 0,
-    resumeHeadline: candidate?.resume_headline || '',
-    keySkills: candidate?.key_skills || '',
-    industry: candidate?.industry || '',
-    modifyDateLabel: candidate?.modifyDateLabel || '',
-    experienceYears: candidate?.experience_years || 0,
-    experienceMonths: candidate?.experienceMonths || 0,
-    currentOrganization: candidate?.job_company_name || '',
-    lastActive: candidate?.last_active || null,
-    lastUpdated: candidate?.last_updated || null,
-    campaignName: candidate?.campaign_name || '',
-    ...ansFields
-  };
-  return jobCandidateNode;
-};
 
 export const mapArxCandidateToCandidateNode = (candidate: {
   email_address: any;
   phone_numbers: any; first_name: string; last_name: string; unique_key_string: any; profile_url: any; display_picture: any; 
-}, jobNode: { id: any; }, jobSpecificNode: { profileTitle: any; inferredSalary: any; inferredYearsExperience: any; inferredLocation: any; skills: any; stdFunction: any; stdGrade: any; stdFunctionRoot: any; }) => {
+}, jobNode: { id: any; }) => {
   const candidateNode: ArxenaCandidateNode = {
     name: candidate?.first_name + ' ' + candidate?.last_name || "",
     jobsId: jobNode?.id,
     engagementStatus: false,
     startChat: false,
-    phoneNumber: {primaryPhoneNumber: candidate?.phone_numbers && candidate?.phone_numbers?.length > 0 ? (typeof candidate?.phone_numbers[0] === 'string' ? candidate?.phone_numbers[0] : candidate?.phone_numbers[0]?.number) || "" : ""},
-    email:{primaryEmail: Array.isArray(candidate?.email_address) ? candidate?.email_address[0] : candidate?.email_address || ""},
+    phoneNumber: { primaryPhoneNumber: candidate?.phone_numbers && candidate?.phone_numbers?.length > 0 ? (typeof candidate?.phone_numbers[0] === 'string' ? candidate?.phone_numbers[0] : candidate?.phone_numbers[0]?.number) || "" : "" },
+    email: { primaryEmail: Array.isArray(candidate?.email_address) ? candidate?.email_address[0] : candidate?.email_address || "" },
     stopChat: false,
     startVideoInterviewChat: false,
     startMeetingSchedulingChat: false,
@@ -79,42 +33,70 @@ export const mapArxCandidateToCandidateNode = (candidate: {
     resdexNaukriUrl: { "primaryLinkLabel": candidate?.profile_url || '', "primaryLinkUrl": candidate?.profile_url || '' },
     displayPicture: { "primaryLinkLabel": "Display Picture", "primaryLinkUrl": candidate?.display_picture || '' },
     peopleId: '',
-    jobSpecificFields: jobSpecificNode,
     campaign: '',
-    source: ''
+    source: '',
   };
   return candidateNode;
 };
 
 
+export const generateCompleteMappings = async (rawCandidateData, jobNode) => {
+  // First get the current mappings
+  const { personNode, candidateNode } = await processArxCandidate(rawCandidateData, jobNode);
+  console.log('This is the personNode:', personNode);
+  console.log('This is the candidateNode:', candidateNode);
+  // Extract the keys that are already mapped
+  const personNodeKeys = Object.keys(personNode);
+  const candidateNodeKeys = Object.keys(candidateNode);
+  console.log('This is the personNodeKeys:', personNodeKeys);
 
+  console.log('This is the candidateNodeKeys:', candidateNodeKeys);
+  console.log('This is the rawCandidateData:', rawCandidateData);
+  // Get all keys from the raw data
+  const allDataKeys = Object.keys(rawCandidateData);
+  console.log('This is the allDataKeys:', allDataKeys);
+  // Identify unmapped keys
+  const unmappedKeys = allDataKeys.filter(key => {
+    // Convert snake_case keys to camelCase for comparison
+    const camelCaseKey = key.replace(/_([a-z])/g, (match, letter) => letter.toUpperCase());
+    
+    // Check if this key or its camelCase equivalent is already mapped
+    const isMappedInPerson = personNodeKeys.some(k => 
+      k.toLowerCase() === key.toLowerCase() || 
+      k.toLowerCase() === camelCaseKey.toLowerCase()
+    );
+    
+    const isMappedInCandidate = candidateNodeKeys.some(k => 
+      k.toLowerCase() === key.toLowerCase() || 
+      k.toLowerCase() === camelCaseKey.toLowerCase()
+    );
+    
+    return !isMappedInPerson && !isMappedInCandidate;
+  });
 
+  const unmappedCandidateObject = unmappedKeys.map(key => {
+    return {
+      key,
+      value: rawCandidateData[key]
+    }
+  })
+  console.log('This is the unmappedCandidateObject:', unmappedCandidateObject);
 
-export const mapArxCandidateJobSpecificFields = candidate => {
-  const jobSpecificFields = {
-    profileTitle: candidate?.profile_title || '',
-    inferredSalary: candidate?.inferred_salary || 0,
-    inferredYearsExperience: candidate?.inferred_years_experience.toString() || '',
-    inferredLocation: candidate?.inferred_location || '',
-    skills: candidate?.skills || '',
-    stdFunction: candidate?.std_function || '',
-    stdGrade: candidate?.std_grade || '',
-    stdFunctionRoot: candidate?.std_function_root || '',
+  return {
+    personNode: personNode,
+    candidateNode: candidateNode,
+    unmappedCandidateObject: unmappedCandidateObject
   };
-  return jobSpecificFields;
 };
+
 
 export const processArxCandidate = async (candidate, jobNode) => {
   // console.log("This is the job node", jobNode);
   const personNode = mapArxCandidateToPersonNode(candidate);
-  // console.log("This is the person node", personNode);
-  const jobSpecificNode = mapArxCandidateJobSpecificFields(candidate);
   // console.log("This is the job specific node", jobSpecificNode);
-  const candidateNode = mapArxCandidateToCandidateNode(candidate, jobNode, jobSpecificNode);
+  const candidateNode = mapArxCandidateToCandidateNode(candidate, jobNode);
   // console.log("This is the candidate node", candidateNode);
-  const jobCandidateNode = mapArxCandidateToJobCandidateNode(candidate);
-  // console.log("This is the job candidate node", jobCandidateNode);
-  return { personNode, candidateNode, jobCandidateNode };
+  return { personNode, candidateNode };
 };
 
 
@@ -134,32 +116,6 @@ export function transformFieldName(field: string): string {
       'unique_key_string': 'uniqueStringKey',
       'job_title': 'jobTitle',
 
-      // From jobCandidateNode mappings
-      'profile_url': 'profileUrl',
-      'profile_title': 'profileTitle',
-      'location_name': 'currentLocation',
-      'preferred_locations': 'preferredLocations',
-      'birth_date': 'birthDate',
-      'inferred_salary': 'inferredSalary',
-      'inferred_years_experience': 'inferredYearsExperience',
-      'notice_period': 'noticePeriod',
-      'home_town': 'homeTown',
-      'marital_status': 'maritalStatus',
-      'ug_institute_name': 'ugInstituteName',
-      'ug_graduation_year': 'ugGraduationYear',
-      'pg_graduation_degree': 'pgGradudationDegree',
-      'ug_graduation_degree': 'ugGraduationDegree',
-      'pg_graduation_year': 'pgGraduationYear',
-      'resume_headline': 'resumeHeadline',
-      'key_skills': 'keySkills',
-      'modify_date_label': 'modifyDateLabel',
-      'experience_years': 'experienceYears',
-      'experience_months': 'experienceMonths',
-      'job_company_name': 'currentOrganization',
-      'last_active': 'lastActive',
-      'last_updated': 'lastUpdated',
-      'campaign_name': 'campaignName',
-
 
       // From candidateNode mappings
       'jobs_id': 'jobsId',
@@ -171,11 +127,7 @@ export function transformFieldName(field: string): string {
       'hiring_naukri_url': 'hiringNaukriUrl',
       'people_id': 'peopleId',
 
-      // From jobSpecificFields mappings
-      'inferred_location': 'inferredLocation',
-      'std_function': 'stdFunction',
-      'std_grade': 'stdGrade',
-      'std_function_root': 'stdFunctionRoot'
+
   };
 
   // Check if there's a special mapping
@@ -188,7 +140,6 @@ export function transformFieldName(field: string): string {
 }
 
 export function transformFieldValue(field: string, value: any): any {
-  // Boolean fields that should convert empty strings to false
   const booleanFields = [
       'start_chat',
       'stop_chat',

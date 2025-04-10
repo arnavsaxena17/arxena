@@ -1,5 +1,7 @@
 import axios from 'axios';
 import {
+  createViewFieldMutation,
+  findManyViewsQuery,
   FindManyWorkspaceMembers,
   graphqlQueryToGetCurrentUser,
   graphqlToCreateOnePrompt,
@@ -13,6 +15,7 @@ import {
 // eslint-disable-next-line no-restricted-imports
 import { WorkspaceQueryService } from '../workspace-modifications.service';
 
+import { FieldMetadataInterface } from 'src/engine/metadata-modules/field-metadata/interfaces/field-metadata.interface';
 import { getFieldsData } from './data/fieldsData';
 import { objectCreationArr } from './data/objectsData';
 import { prompts } from './data/prompts';
@@ -256,6 +259,91 @@ export class CreateMetaDataStructure {
     return;
   }
 
+
+  async updateCandidateViewField(apiToken: string) {
+    const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+    console.log('workspaceId', workspaceId);
+
+    const objectsResponse = await this.fetchAllObjects(apiToken);
+    if (!objectsResponse?.data?.objects?.edges) {
+      throw new Error("Failed to fetch objects");
+    }
+
+    const candidateObject = objectsResponse.data.objects.edges.find(
+      (edge) => edge?.node?.nameSingular === "candidate"
+    );
+
+    if (!candidateObject?.node) {
+      throw new Error("Candidate object not found");
+    }
+
+    const candidateObjectMetadataId = candidateObject.node.id;
+    console.log('candidateObjectMetadataId', candidateObjectMetadataId);
+
+
+    const fieldsPageResponse = await this.fetchFieldsPage(candidateObjectMetadataId || '', null, apiToken);
+    console.log('fieldsPageResponse', fieldsPageResponse);
+    console.log('fieldsPageResponse edges', fieldsPageResponse?.data?.objects?.edges[0]?.node?.fields);
+    console.log('fieldsPageResponse edges length', fieldsPageResponse?.data?.objects?.edges.length);
+
+    const peopleField = fieldsPageResponse?.data?.objects?.edges[0]?.node?.fields?.edges?.find(
+      (field) => field?.node?.name === "people"
+    );
+    console.log('peopleField', peopleField);
+
+    if (!peopleField?.node) {
+      throw new Error("People field not found in candidate object");
+    }
+
+    const fieldMetadataId = (peopleField.node as FieldMetadataInterface).id;
+    console.log('fieldMetadataId', fieldMetadataId);
+
+    // Get the candidate view using the object metadata ID
+   
+
+    const viewsResponse = await this.axiosRequest(
+      JSON.stringify({
+        variables: {
+          filter: {
+            objectMetadataId: { eq: candidateObjectMetadataId }
+          }
+        },
+        query: findManyViewsQuery
+      }),
+      apiToken
+    );
+
+    if (!viewsResponse?.data?.data?.views?.edges?.[0]?.node) {
+      throw new Error("No views found for candidate object");
+    }
+
+    const viewId = viewsResponse.data.data.views.edges[0].node.id;
+    console.log('viewId', viewId);
+
+
+    const input = {
+      fieldMetadataId,
+      viewId,
+      isVisible: true,
+      position: 30,
+      size: 100
+    };
+
+    try {
+      const response = await this.axiosRequest(
+        JSON.stringify({
+          variables: { input },
+          query: createViewFieldMutation,
+        }),
+        apiToken
+      );
+
+      console.log('View field created successfully:', response.data);
+    } catch (error) {
+      console.error('Error creating view field:', error);
+      throw error;
+    }
+  }
   async createMetadataStructure(apiToken: string): Promise<void> {
     try {
       console.log('Starting metadata structure creation...');
@@ -264,6 +352,7 @@ export class CreateMetaDataStructure {
       const shouldCreateVideoInterviews = true;
       const shouldCreateArxEnrichments = true;
       const shouldCreateApiKeys = true;
+      const shoudUpdateCandidateViewField = true;
 
       if (shouldCreateObjectMetadata) {
         try {
@@ -336,6 +425,18 @@ export class CreateMetaDataStructure {
           );
         }
       }
+
+
+      if (shoudUpdateCandidateViewField) {
+        try {
+          await this.updateCandidateViewField(apiToken);
+        } catch (error) {
+          console.log('Error updating candidate view field:', error);
+        }
+      }
+
+
+
     } catch (error) {
       console.log('Error creating metadata structure:', error);
     }

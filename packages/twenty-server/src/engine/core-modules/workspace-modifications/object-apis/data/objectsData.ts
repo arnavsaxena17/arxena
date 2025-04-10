@@ -33,11 +33,11 @@ export const objectCreationArr = [
     {
         "object": {
             "description": "",
-            "icon": "IconQuestionMark",
-            "labelPlural": "Questions",
-            "labelSingular": "Question",
-            "nameSingular": "question",
-            "namePlural": "questions"
+            "icon": "IconPencilDown",
+            "labelPlural": "Candidate Fields",
+            "labelSingular": "Candidate Field",
+            "nameSingular": "candidateField",
+            "namePlural": "candidateFields"
         }
     },
         {
@@ -54,10 +54,10 @@ export const objectCreationArr = [
         "object": {
             "description": "",
             "icon": "IconBrandAnsible",
-            "labelPlural": "Answers",
-            "labelSingular": "Answer",
-            "nameSingular": "answer",
-            "namePlural": "answers"
+            "labelPlural": "Candidate Field Values",
+            "labelSingular": "Candidate Field Value",
+            "nameSingular": "candidateFieldValue",
+            "namePlural": "candidateFieldValues"
         }
     },
     {

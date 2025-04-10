@@ -204,7 +204,7 @@ export const graphqlToFindManyJobs = `query FindManyJobs($filter: JobFilterInput
             }
         }
         name
-        questions{
+        candidateFields{
             edges{
                 node{
                     id
@@ -345,8 +345,8 @@ export const findManyAttachmentsQuery = `query FindManyAttachments($filter: Atta
           id
           recruiterInterviewId
           offerId
-          questionId
-          answerId
+          candidateFieldValueId
+          candidateFieldId
         }
         cursor
       }
@@ -590,7 +590,7 @@ export const graphQueryToFindManyvideoInterviews = `query FindManyVideoInterview
   }
 }`;
 
-export const questionsQuery = `
+export const graphqQlToFindManyVideoInterviewQuestionsQuery = `
     query FindManyVideoInterviewQuestions($filter: VideoInterviewQuestionFilterInput, $orderBy: [VideoInterviewQuestionsOrderByInput], $limit: Int) {
     videoInterviewQuestions(
         filter: $filter
@@ -1203,8 +1203,8 @@ query FindOneWorkspaceMember($objectRecordId: ID!) {
 }
 `;
 
-export const graphqlQueryToFindManyQuestionsByJobId = `query FindManyQuestions($filter: QuestionFilterInput, $orderBy: [QuestionOrderByInput], $lastCursor: String, $limit: Int) {
-    questions(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
+export const graphqlQueryToFindManyCandidateFieldsByJobId = `query FindManyCandidateFields($filter: CandidateFieldFilterInput, $orderBy: [CandidateFieldOrderByInput], $lastCursor: String, $limit: Int) {
+    candidateFields(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
       edges {
         node {
           createdAt
@@ -1246,15 +1246,15 @@ export const graphqlQueryToFindManyQuestionsByJobId = `query FindManyQuestions($
     }
   }`;
 
-export const graphqlToFindManyAnswers = `query FindManyAnswers($filter: AnswerFilterInput, $orderBy: [AnswerOrderByInput], $lastCursor: String, $limit: Int) {
-    answers(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
+export const graphqlToFindManyCandidateFieldValues = `query FindManyCandidateFieldValues($filter: CandidateFieldValueFilterInput, $orderBy: [CandidateFieldValueOrderByInput], $lastCursor: String, $limit: Int) {
+    candidateFieldValues(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
       edges {
         node {
           __typename
           position
           createdAt
           name
-          questions {
+          candidateFields {
             __typename
             createdAt
             position
@@ -1364,14 +1364,14 @@ export const queryByvideoInterview = `query FindOneVideoInterview($objectRecordI
           workspaceMemberProfileId
           candidateId
           promptId
-          questionId
+          candidateFieldId
           personId
           videoInterviewTemplateId
           offerId
           cvSentId
           companyId
           videoInterviewResponseId
-          answerId
+          candidateFieldValueId
           recruiterInterviewId
         }
       }
@@ -1612,12 +1612,12 @@ export const graphqlToFetchAllCandidateData = `
             }
           }
         }
-          answers{
+          candidateFieldValues{
             edges{
               node{
                   id
                   name
-                  questions{
+                  candidateFields{
                       name
                       id
                   }
@@ -2099,3 +2099,77 @@ totalCount
 __typename
 }
 }`;
+
+
+
+export const getExistingRelationsQuery = `query GetExistingRelations($objectMetadataId: ID!) {
+  relations(filter: { 
+    or: [
+      { fromObjectMetadataId: { eq: $objectMetadataId } },
+      { toObjectMetadataId: { eq: $objectMetadataId } }
+    ]
+  }) {
+    edges {
+      node {
+        fromObjectMetadataId
+        toObjectMetadataId
+      }
+    }
+  }
+}
+`;
+
+
+
+export const findManyViewsQuery = `
+query FindManyViews($filter: ViewFilterInput, $orderBy: [ViewOrderByInput], $lastCursor: String, $limit: Int) {
+  views(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
+    edges {
+      node {
+        __typename
+        createdAt
+        icon
+        id
+        isCompact
+        kanbanAggregateOperation
+        kanbanAggregateOperationFieldMetadataId
+        kanbanFieldMetadataId
+        key
+        name
+        objectMetadataId
+        position
+        type
+        updatedAt
+        viewFields {
+          edges {
+            node {
+              __typename
+              aggregateOperation
+              createdAt
+              deletedAt
+              fieldMetadataId
+              id
+              isVisible
+              position
+              size
+              updatedAt
+              viewId
+            }
+          }
+        }
+      }
+      cursor
+    }
+    pageInfo {
+      hasNextPage
+      hasPreviousPage
+      startCursor
+      endCursor
+    }
+    totalCount
+  }
+}
+`;
+
+
+

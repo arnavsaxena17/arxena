@@ -5,7 +5,7 @@ import ffmpeg from 'fluent-ffmpeg';
 import * as fs from 'fs';
 import * as multer from 'multer';
 import * as path from 'path';
-import { createResponseMutation, findManyAttachmentsQuery, findWorkspaceMemberProfiles, graphQueryToFindManyvideoInterviews, questionsQuery, updateOneVideoInterviewMutation } from 'twenty-shared';
+import { createResponseMutation, findManyAttachmentsQuery, findWorkspaceMemberProfiles, graphQueryToFindManyvideoInterviews, graphqQlToFindManyVideoInterviewQuestionsQuery, updateOneVideoInterviewMutation } from 'twenty-shared';
 import { AttachmentProcessingService } from '../arx-chat/utils/attachment-processes';
 import { TranscriptionService } from './transcription.service';
 
@@ -457,7 +457,7 @@ export class VideoInterviewController {
     };
 
     const graphqlQueryObjForVideoInterviewQuestions = JSON.stringify({
-      query: questionsQuery,
+      query: graphqQlToFindManyVideoInterviewQuestionsQuery,
       variables: questionsVariables,
     });
 

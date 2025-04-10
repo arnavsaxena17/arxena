@@ -3,7 +3,8 @@ import { useApolloClient } from '@apollo/client';
 import { triggerUpdateRecordOptimisticEffect } from '@/apollo/optimistic-effect/utils/triggerUpdateRecordOptimisticEffect';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { useObjectMetadataItem } from '@/object-metadata/hooks/useObjectMetadataItem';
-import { useObjectMetadataItems } from '@/object-metadata/hooks/useObjectMetadataItems';
+import { objectMetadataItemsState } from '@/object-metadata/states/objectMetadataItemsState';
+import { CoreObjectNameSingular } from '@/object-metadata/types/CoreObjectNameSingular';
 import { useGetRecordFromCache } from '@/object-record/cache/hooks/useGetRecordFromCache';
 import { getObjectTypename } from '@/object-record/cache/utils/getObjectTypename';
 import { getRecordNodeFromRecord } from '@/object-record/cache/utils/getRecordNodeFromRecord';
@@ -15,6 +16,7 @@ import { ObjectRecord } from '@/object-record/types/ObjectRecord';
 import { computeOptimisticRecordFromInput } from '@/object-record/utils/computeOptimisticRecordFromInput';
 import { getUpdateOneRecordMutationResponseField } from '@/object-record/utils/getUpdateOneRecordMutationResponseField';
 import { sanitizeRecordInput } from '@/object-record/utils/sanitizeRecordInput';
+// import { useUpdateViewField } from '@/views/hooks/useUpdateViewField';
 import { isNull } from '@sniptt/guards';
 import { useRecoilValue } from 'recoil';
 import { isDefined } from 'twenty-shared';
@@ -24,11 +26,19 @@ type useUpdateOneRecordProps = {
   objectNameSingular: string;
   recordGqlFields?: Record<string, any>;
 };
+
+type PhoneNumberInput = {
+  primaryPhoneNumber?: string;
+  primaryPhoneCallingCode?: string;
+  primaryPhoneCountryCode?: string;
+};
+
 type UpdateOneRecordArgs<UpdatedObjectRecord> = {
   idToUpdate: string;
   updateOneRecordInput: Partial<Omit<UpdatedObjectRecord, 'id'>>;
   optimisticRecord?: Partial<ObjectRecord>;
 };
+
 export const useUpdateOneRecord = <
   UpdatedObjectRecord extends ObjectRecord = ObjectRecord,
 >({
@@ -36,6 +46,8 @@ export const useUpdateOneRecord = <
   recordGqlFields,
 }: useUpdateOneRecordProps) => {
   const apolloClient = useApolloClient();
+  // const { updateViewField } = useUpdateViewField();
+  const objectMetadataItems = useRecoilValue(objectMetadataItemsState);
 
   const { objectMetadataItem } = useObjectMetadataItem({
     objectNameSingular,
@@ -53,9 +65,23 @@ export const useUpdateOneRecord = <
     recordGqlFields: computedRecordGqlFields,
   });
 
+  const { updateOneRecordMutation: updateViewFieldMutation } = useUpdateOneRecordMutation({
+    objectNameSingular: CoreObjectNameSingular.ViewField,
+  });
+
   const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
 
-  const { objectMetadataItems } = useObjectMetadataItems();
+  // Get person update mutation at the top level
+  const personObjectMetadataItem = objectMetadataItems.find(
+    (item) => item.nameSingular === 'person'
+  );
+
+  const { updateOneRecordMutation: updatePersonMutation } = useUpdateOneRecordMutation({
+    objectNameSingular: 'person',
+    recordGqlFields: personObjectMetadataItem 
+      ? generateDepthOneRecordGqlFields({ objectMetadataItem: personObjectMetadataItem })
+      : undefined,
+  });
 
   const { refetchAggregateQueries } = useRefetchAggregateQueries({
     objectMetadataNamePlural: objectMetadataItem.namePlural,
@@ -135,6 +161,30 @@ export const useUpdateOneRecord = <
         recordInput: updateOneRecordInput,
       }),
     };
+    // Special case: If updating candidate's phoneNumber, also update person's phones
+    if (objectNameSingular === 'candidate' && 'phoneNumber' in sanitizedInput && !isNull(cachedRecord)) {
+      if (personObjectMetadataItem) {
+
+        const phoneNumber = sanitizedInput.phoneNumber as PhoneNumberInput;
+        const personUpdateInput = {
+          phones: {
+            primaryPhoneNumber: phoneNumber.primaryPhoneNumber,
+            primaryPhoneCallingCode: phoneNumber.primaryPhoneCallingCode,
+            primaryPhoneCountryCode: phoneNumber.primaryPhoneCountryCode,
+          },
+        };
+
+        await apolloClient.mutate({
+          mutation: updatePersonMutation,
+          variables: {
+            idToUpdate: cachedRecord.people?.id,
+            input: personUpdateInput,
+          },
+        });
+      }
+    }
+
+
     const updatedRecord = await apolloClient
       .mutate({
         mutation: updateOneRecordMutation,

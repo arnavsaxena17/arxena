@@ -6,9 +6,9 @@ import {
   ChatHistoryItem,
   chatMessageType,
   emptyCandidateProfileObj,
+  graphqlQueryToFindManyCandidateFieldsByJobId,
   graphqlQueryToFindManyPeople,
   graphqlQueryToFindManyPeopleEngagedCandidatesOlderSchema,
-  graphqlQueryToFindManyQuestionsByJobId,
   graphqlQueryToFindScheduledClientMeetings,
   graphqlQueryToFindVideoInterviewTemplatesByJobId,
   graphqlToFetchAllCandidateData,
@@ -544,7 +544,7 @@ export class FilterCandidates {
   }> {
     console.log('Going to fetch questions for job id:', jobId);
     const data = JSON.stringify({
-      query: graphqlQueryToFindManyQuestionsByJobId,
+      query: graphqlQueryToFindManyCandidateFieldsByJobId,
       variables: {
         filter: { jobsId: { in: [`${jobId}`] } },
         orderBy: { position: 'DescNullsFirst' },

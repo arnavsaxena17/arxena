@@ -808,6 +808,16 @@ export function getFieldsData(
     {
       field: {
         description: '',
+        icon: 'IconText',
+        label: 'candidateFieldType',
+        name: 'candidateFieldType',
+        objectMetadataId: objectsNameIdMap.candidateField,
+        type: 'TEXT',
+      },
+    },
+    {
+      field: {
+        description: '',
         icon: 'IconShoppingCart',
         label: 'isProfilePurchased',
         name: 'isProfilePurchased',

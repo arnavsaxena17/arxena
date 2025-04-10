@@ -4,7 +4,7 @@ import {
   AnswerMessageObj,
   CandidateNode,
   chatMessageType,
-  graphqlQueryToCreateOneAnswer,
+  graphqlQueryToCreateOneCandidateFieldValue,
   graphqlQueryToCreateOneNewWhatsappMessage,
   graphqlQueryToRemoveMessages,
   graphqlToFetchAllCandidateData,
@@ -700,7 +700,7 @@ export class UpdateChat {
   ) {
     const updateCandidateObjectVariables = { input: { ...AnswerMessageObj } };
     const graphqlQueryObj = JSON.stringify({
-      query: graphqlQueryToCreateOneAnswer,
+      query: graphqlQueryToCreateOneCandidateFieldValue,
       variables: updateCandidateObjectVariables,
     });
 
