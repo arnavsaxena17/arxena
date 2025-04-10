@@ -3,17 +3,22 @@ import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/Snac
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
-import { DragDropContext, Draggable, Droppable } from '@hello-pangea/dnd';
-import { IconChevronDown, IconChevronLeft, IconChevronRight, IconChevronUp, IconCopy, IconGripVertical } from '@tabler/icons-react';
+import { HotTable } from '@handsontable/react-wrapper';
+import { IconCopy } from '@tabler/icons-react';
 import axios from 'axios';
 import dayjs from 'dayjs';
-import React, { useEffect, useState } from 'react';
+import Handsontable from 'handsontable';
+import { registerAllModules } from 'handsontable/registry';
+import 'handsontable/styles/handsontable.min.css';
+import 'handsontable/styles/ht-theme-main.min.css';
+import React, { useMemo, useState } from 'react';
 import { useRecoilState } from 'recoil';
 import { PersonNode } from 'twenty-shared';
-import ActionsBar from './ActionsBar'; // Add this import
+import ActionsBar from './ActionsBar';
 import AttachmentPanel from './AttachmentPanel';
-import { chatStatusLabels } from './ChatSidebar';
 import MultiCandidateChat from './MultiCandidateChat';
+
+registerAllModules();
 
 const TableContainer = styled.div`
   width: 100%;
@@ -30,10 +35,10 @@ const TableContainer = styled.div`
 
 const PanelContainer = styled.div<{ isOpen: boolean }>`
   position: fixed;
-  top: 80px; // Moved up from the default position
+  top: 80px;
   right: ${props => (props.isOpen ? '0' : '-40%')};
   width: 40%;
-  height: calc(100vh - 80px); // Adjusted height to account for new top position
+  height: calc(100vh - 80px);
   background-color: #f5f5f5;
   box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
   transition: right 0.3s ease-in-out;
@@ -78,298 +83,13 @@ const NavIconButton = styled.button`
     transform: none;
   }
 
-  // Make buttons more visible with a white background
   color: #374151;
   background-color: white;
 
-  // Add hover state shadow
   &:hover:not(:disabled) {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   }
 `;
-
-const StyledTableRow = styled.div<{ $selected: boolean; $isDragging?: boolean }>`
-  display: table-row;
-  height: 12px;
-  background-color: ${props => {
-    if (props.$isDragging) return '#e5e7eb';
-    return props.$selected ? '#f5f9fd' : 'white';
-  }};
-  cursor: pointer;
-
-  @media (max-width: 768px) {
-    display: flex;
-    flex-direction: column;
-    padding: 0.5rem;
-    border-bottom: 1px solid #e0e0e0;
-    position: relative;
-    min-height: 4rem; // Ensure minimum height for content
-  }
-`;
-
-const CheckboxCell = styled.div`
-  display: table-cell;
-  padding: 0.25rem;
-  width: 40px;
-  text-align: left;
-
-  > div {
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-  }
-
-  @media (max-width: 768px) {
-    position: absolute;
-    left: 0.5rem;
-    top: 50%;
-    transform: translateY(-50%);
-
-    // Hide drag handle on mobile
-    > div > *:first-child {
-      display: none;
-    }
-  }
-`;
-
-// const ActionsBar = styled.div`
-//   position: fixed;
-//   bottom: 0;
-//   left: 30%;
-//   width: 40%;
-//   right: 0;
-//   background-color: white;
-//   box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
-//   padding: 1rem;
-//   display: flex;
-//   align-items: center;
-//   justify-content: space-between;
-//   transform: translateY(100%);
-//   transition: transform 0.3s ease-in-out;
-//   z-index: 1000;
-
-//   &[data-visible='true'] {
-//     transform: translateY(0);
-//   }
-// `;
-
-const SelectedCount = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: #4b5563;
-  font-weight: 500;
-`;
-
-const ActionButtons = styled.div`
-  display: flex;
-  gap: 1rem;
-`;
-
-const ActionButton = styled.button`
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  border-radius: 0.375rem;
-  font-weight: 500;
-  transition: all 0.2s;
-
-  &.primary {
-    background-color: #2563eb;
-    color: white;
-
-    &:hover {
-      background-color: #1d4ed8;
-    }
-  }
-
-  &.secondary {
-    background-color: #f3f4f6;
-    color: #374151;
-
-    &:hover {
-      background-color: #e5e7eb;
-    }
-  }
-
-  &.danger {
-    background-color: #ef4444;
-    color: white;
-
-    &:hover {
-      background-color: #dc2626;
-    }
-  }
-`;
-
-const CloseButton = styled.button`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.25rem;
-  border-radius: 0.375rem;
-  color: #6b7280;
-
-  &:hover {
-    background-color: #f3f4f6;
-  }
-`;
-
-const Checkbox = styled.input`
-  width: 16px;
-  height: 16px;
-  cursor: pointer;
-`;
-
-const StyledTable = styled.div`
-  width: 100%;
-  display: table;
-  border-collapse: collapse;
-
-  @media (max-width: 768px) {
-    display: block;
-  }
-`;
-
-const StyledTableCell = styled.div`
-  display: table-cell;
-  padding: 0.25rem 0.5rem;
-  border-bottom: 1px solid #e0e0e0;
-  width: 150px;
-
-  @media (max-width: 768px) {
-    display: block;
-    padding: 0.5rem;
-    border: none;
-
-    // Add this conditional styling for name cell
-    &[data-label='Name'] {
-      font-weight: 600;
-      font-size: 1.1rem;
-      padding: 1rem 0.5rem;
-      margin-left: 3rem; // Add space for checkbox
-    }
-  }
-`;
-
-const StyledTableHeaderCell = styled.div<{ isSorted: boolean }>`
-  display: table-cell;
-  padding: 0.25rem 0.5rem;
-  font-weight: 600;
-  text-align: left;
-  border-bottom: 2px solid #e0e0e0;
-  background-color: #f0f0f0;
-  cursor: pointer;
-  transition: background-color 0.2s;
-
-  &:hover {
-    background-color: #e8e8e8;
-  }
-
-  ${({ isSorted }) =>
-    isSorted &&
-    `
-    background-color: #e8e8e8;
-  `}
-`;
-
-const HeaderContent = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-`;
-
-const SortIconsContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  margin-left: 4px;
-`;
-
-const SortIcon = styled.div<{ isActive: boolean }>`
-  color: ${({ isActive }) => (isActive ? '#2563eb' : '#a0a0a0')};
-  display: flex;
-  align-items: center;
-  margin-top: -2px;
-  margin-bottom: -2px;
-`;
-
-const StyledTableBody = styled.div`
-  display: table-row-group;
-
-  @media (max-width: 768px) {
-    display: block;
-  }
-`;
-
-const StyledTableHeader = styled.div`
-  display: table-header-group;
-  position: sticky;
-  top: 0;
-  z-index: 1;
-
-  @media (max-width: 768px) {
-    display: none;
-  }
-`;
-
-const UnreadIndicator = styled.span`
-  background-color: red;
-  color: white;
-  border-radius: 50%;
-  padding: 0.25rem 0.5rem;
-  font-size: 0.8rem;
-  min-height: 1rem;
-  min-width: 1rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
-  @media (max-width: 768px) {
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
-  }
-`;
-
-const NameCell = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-
-  @media (max-width: 768px) {
-    font-weight: 600;
-    padding-right: 3rem; // Space for unread indicator
-    white-space: normal; // Allow wrapping in mobile
-    overflow: visible;
-  }
-`;
-
-const shouldShowColumn = (key: string, data: PersonNode[]) => {
-  return data.some(individual => {
-    switch (key) {
-      case 'name':
-        return true; // Always show name column
-      case 'candidateStatus':
-        return individual.candidates?.edges[0]?.node?.candConversationStatus !== 'N/A';
-      case 'startDate':
-        return individual.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.createdAt !== 'N/A';
-      case 'status':
-        return individual.candidates?.edges[0]?.node?.status !== 'N/A';
-      case 'salary':
-        return individual.salary !== 'N/A';
-      case 'city':
-        return individual.city !== 'N/A';
-      case 'jobTitle':
-        return individual.jobTitle !== 'N/A';
-      default:
-        return false;
-    }
-  });
-};
 
 interface ChatTableProps {
   individuals: PersonNode[];
@@ -388,187 +108,61 @@ interface ChatTableProps {
   onReorder?: (selectedIds: PersonNode[]) => void;
 }
 
-interface SortConfig {
-  key: string | null;
-  direction: 'asc' | 'desc' | null;
-}
-
-const ChatTable: React.FC<ChatTableProps> = ({ individuals, selectedIndividual, unreadMessages, onIndividualSelect, onSelectionChange, onBulkMessage, onBulkDelete, onBulkAssign, onReorder }) => {
-  const [sortConfig, setSortConfig] = useState<SortConfig>({
-    key: null,
-    direction: null,
-  });
-
-  const [tableData, setTableData] = useState(individuals);
-  useEffect(() => {
-    setTableData(individuals);
-  }, [individuals]);
-
-  const { enqueueSnackBar } = useSnackBar();
-  const theme = useTheme();
-
-  const columns = [
-    { key: 'name', label: 'Name' },
-    { key: 'candidateStatus', label: 'Candidate Status' },
-    { key: 'startDate', label: 'Start Date' },
-    { key: 'status', label: 'Status' },
-    { key: 'salary', label: 'Salary' },
-    { key: 'city', label: 'City' },
-    { key: 'jobTitle', label: 'Job Title' },
-  ].filter(column => shouldShowColumn(column.key, tableData));
-
+const ChatTable: React.FC<ChatTableProps> = ({
+  individuals,
+  selectedIndividual,
+  unreadMessages,
+  onIndividualSelect,
+  onSelectionChange,
+  onBulkMessage,
+  onBulkDelete,
+  onBulkAssign,
+  onReorder,
+}) => {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isAttachmentPanelOpen, setIsAttachmentPanelOpen] = useState(false);
   const [currentPersonIndex, setCurrentPersonIndex] = useState(0);
-  const [searchTerm, setSearchTerm] = useState('');
-
   const [isChatOpen, setIsChatOpen] = useState(false);
-
   const [tokenPair] = useRecoilState(tokenPairState);
+  const { enqueueSnackBar } = useSnackBar();
+  const theme = useTheme();
 
-  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  const getUnreadCount = (individualId: string) => {
+    const candidateId = individuals.find(ind => ind.id === individualId)?.candidates?.edges[0]?.node?.id;
+    const unreadInfo = unreadMessages.listOfUnreadMessages.find(item => item.candidateId === candidateId);
+    return unreadInfo ? unreadInfo.ManyUnreadMessages.length : 0;
+  };
 
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth <= 768);
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  const currentCandidate = selectedIds.length > 0 ? individuals.find(individual => individual.id === selectedIds[currentPersonIndex]) : null;
-
-  const handleCheckboxChange = (individualId: string, event: React.ChangeEvent<HTMLInputElement>) => {
-    event.stopPropagation();
-    const newSelectedIds = event.target.checked ? [...selectedIds, individualId] : selectedIds.filter(id => id !== individualId);
+  const handleCheckboxChange = (individualId: string) => {
+    const newSelectedIds = selectedIds.includes(individualId)
+      ? selectedIds.filter(id => id !== individualId)
+      : [...selectedIds, individualId];
 
     setSelectedIds(newSelectedIds);
     onSelectionChange?.(newSelectedIds);
   };
 
-  const selectedPeople = individuals.filter(individual => selectedIds.includes(individual.id));
-
-  const selectedCandidateIds = selectedPeople.map(person => person.candidates.edges[0].node.id);
-  const handleSelectAll = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const newSelectedIds = event.target.checked ? individuals.map(individual => individual.id) : [];
-
+  const handleSelectAll = () => {
+    const newSelectedIds = selectedIds.length === individuals.length ? [] : individuals.map(individual => individual.id);
     setSelectedIds(newSelectedIds);
     onSelectionChange?.(newSelectedIds);
   };
-
-  useEffect(() => {
-    let filteredData = filterData(individuals, searchTerm);
-    if (sortConfig.key && sortConfig.direction) {
-      filteredData = sortData(filteredData, sortConfig.key, sortConfig.direction);
-    }
-    setTableData(filteredData);
-  }, [searchTerm, individuals, sortConfig]);
 
   const handleViewChats = () => {
-    console.log('View Chats');
     if (selectedIds.length > 0) {
       setIsChatOpen(true);
     }
+  };
+
+  const handleViewCVs = () => {
+    setCurrentPersonIndex(0);
+    setIsAttachmentPanelOpen(true);
   };
 
   const clearSelection = () => {
     setSelectedIds([]);
     onSelectionChange?.([]);
   };
-  const handleViewCVs = () => {
-    console.log('View CVs');
-    setCurrentPersonIndex(0);
-    setIsAttachmentPanelOpen(true);
-  };
-
-  async function createCandidateShortlists() {
-    try {
-      const response = await axios.post(
-        process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/create-shortlist',
-        { candidateIds: selectedCandidateIds },
-        { headers: { authorization: `Bearer ${tokenPair?.accessToken?.token}`, 'content-type': 'application/json', 'x-schema-version': '66' } },
-      );
-      console.log('Shortlist created successfully:', response.data);
-      enqueueSnackBar('Shortlist created successfully', {
-        variant: SnackBarVariant.Success,
-        icon: <IconCopy size={theme.icon.size.md} />,
-        duration: 2000,
-      });
-    } catch (error) {
-      console.log('Error creating shortlist:', error);
-      enqueueSnackBar('Error creating shortlist', {
-        variant: SnackBarVariant.Error,
-        icon: <IconCopy size={theme.icon.size.md} />,
-        duration: 2000,
-      });
-    }
-  }
-
-  const getStatusPriority = (status: string): number => {
-    const statusPriorities: { [key: string]: number } = {
-      CONVERSATION_CLOSED_TO_BE_CONTACTED: 11,
-      CANDIDATE_HAS_FOLLOWED_UP_TO_SETUP_CHAT: 10,
-      CANDIDATE_IS_KEEN_TO_CHAT: 9,
-      CANDIDATE_SALARY_OUT_OF_RANGE: 8,
-      CANDIDATE_DOES_NOT_WANT_TO_RELOCATE: 7,
-      CANDIDATE_DECLINED_OPPORTUNITY: 6,
-      SHARED_JD_HAS_NOT_RESPONDED: 5,
-      STOPPED_RESPONDING_ON_QUESTIONS: 4,
-      CANDIDATE_STOPPED_RESPONDING: 3,
-      CONVERSATION_STARTED_HAS_NOT_RESPONDED: 2,
-      ONLY_ADDED_NO_CONVERSATION: 1,
-    };
-    console.log('status priority is:', statusPriorities[status] || 0);
-    return statusPriorities[status] || 0;
-  };
-
-  async function createChatBasedShortlistDelivery() {
-    try {
-      const response = await axios.post(
-        process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/chat-based-shortlist-delivery',
-        { candidateIds: selectedCandidateIds },
-        { headers: { authorization: `Bearer ${tokenPair?.accessToken?.token}`, 'content-type': 'application/json', 'x-schema-version': '66' } },
-      );
-      console.log('Shortlist created successfully:', response.data);
-      enqueueSnackBar('Shortlist created successfully', {
-        variant: SnackBarVariant.Success,
-        icon: <IconCopy size={theme.icon.size.md} />,
-        duration: 2000,
-      });
-    } catch (error) {
-      console.log('Error creating shortlist:', error);
-      enqueueSnackBar('Error creating shortlist', {
-        variant: SnackBarVariant.Error,
-        icon: <IconCopy size={theme.icon.size.md} />,
-        duration: 2000,
-      });
-    }
-  }
-  async function createUpdateCandidateStatus() {
-    try {
-      const response = await axios.post(
-        process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/refresh-chat-status-by-candidates',
-        { candidateIds: selectedCandidateIds },
-        { headers: { authorization: `Bearer ${tokenPair?.accessToken?.token}`, 'content-type': 'application/json', 'x-schema-version': '66' } },
-      );
-      console.log('Shortlist created successfully:', response.data);
-      enqueueSnackBar('Shortlist created successfully', {
-        variant: SnackBarVariant.Success,
-        icon: <IconCopy size={theme.icon.size.md} />,
-        duration: 2000,
-      });
-    } catch (error) {
-      console.log('Error creating shortlist:', error);
-      enqueueSnackBar('Error creating shortlist', {
-        variant: SnackBarVariant.Error,
-        icon: <IconCopy size={theme.icon.size.md} />,
-        duration: 2000,
-      });
-    }
-  }
-
-  // }
 
   const handlePrevCandidate = () => {
     setCurrentPersonIndex(prev => Math.max(0, prev - 1));
@@ -578,237 +172,289 @@ const ChatTable: React.FC<ChatTableProps> = ({ individuals, selectedIndividual, 
     setCurrentPersonIndex(prev => Math.min(selectedIds.length - 1, prev + 1));
   };
 
-  const filterData = (data: PersonNode[], term: string) => {
-    if (!term) return data;
-    return data.filter(individual => {
-      const searchString = `
-        ${individual.name.firstName}
-        ${individual.name.lastName}
-        ${individual.city || ''}
-        ${individual.jobTitle || ''}
-        ${individual.salary || ''}
-        ${individual.candidates?.edges[0]?.node?.status || ''}
-        ${individual.candidates?.edges[0]?.node?.candConversationStatus || ''}
-      `.toLowerCase();
-      return searchString.includes(term.toLowerCase());
-    });
-  };
+  const currentCandidate = selectedIds.length > 0 ? individuals.find(individual => individual.id === selectedIds[currentPersonIndex]) : null;
 
-  const sortData = (data: PersonNode[], key: string, direction: 'asc' | 'desc') => {
-    return [...data].sort((a, b) => {
-      let aValue: any, bValue: any;
-      switch (key) {
-        case 'name':
-          aValue = `${a.name.firstName} ${a.name.lastName}`;
-          bValue = `${b.name.firstName} ${b.name.lastName}`;
-          break;
-        case 'startDate':
-          aValue = a.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.createdAt || '';
-          bValue = b.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.createdAt || '';
-          break;
-        case 'candidateStatus':
-          const aStatus = a.candidates?.edges[0]?.node?.candConversationStatus || '';
-          const bStatus = b.candidates?.edges[0]?.node?.candConversationStatus || '';
-          aValue = getStatusPriority(aStatus);
-          bValue = getStatusPriority(bStatus);
-          break;
-        case 'status':
-          aValue = a.candidates?.edges[0]?.node?.status || '';
-          bValue = b.candidates?.edges[0]?.node?.status || '';
-          break;
-        default:
-          aValue = (a as any)[key] || '';
-          bValue = (b as any)[key] || '';
-      }
-      if (direction === 'asc') {
-        return aValue > bValue ? 1 : -1;
-      }
-      return aValue < bValue ? 1 : -1;
-    });
-  };
+  const selectedPeople = individuals.filter(individual => selectedIds.includes(individual.id));
+  const selectedCandidateIds = selectedPeople.map(person => person.candidates.edges[0].node.id);
 
-  const handleSort = (key: string) => {
-    let direction: 'asc' | 'desc' = 'asc';
-    if (sortConfig.key === key && sortConfig.direction === 'asc') {
-      direction = 'desc';
-    }
-    setSortConfig({ key, direction });
-    const sortedData = sortData(tableData, key, direction);
-    setTableData(sortedData);
-  };
-
-  const getUnreadCount = (individualId: string) => {
-    const candidateId = individuals.find(ind => ind.id === individualId)?.candidates?.edges[0]?.node?.id;
-    const unreadInfo = unreadMessages.listOfUnreadMessages.find(item => item.candidateId === candidateId);
-    return unreadInfo ? unreadInfo.ManyUnreadMessages.length : 0;
-  };
-
-  const handleDragEnd = (result: any) => {
-    console.log('fradg gend result:', result);
-    if (!result.destination) return;
-    const items = Array.from(tableData);
-    const [reorderedItem] = items.splice(result.source.index, 1);
-    items.splice(result.destination.index, 0, reorderedItem);
-    console.log('items:', items);
-    setTableData(items);
-    onReorder?.(items);
-  };
-
-  const sortedIndividuals = sortConfig.key && sortConfig.direction ? sortData(individuals, sortConfig.key, sortConfig.direction) : individuals;
-
-  const DraggableTableRow = ({
-    individual,
-    index,
-    selectedIndividual,
-    selectedIds,
-    handleCheckboxChange,
-    onIndividualSelect,
-    getUnreadCount,
-  }: {
-    individual: PersonNode;
-    index: number;
-    selectedIndividual: string | null;
-    selectedIds: string[];
-    handleCheckboxChange: (id: string, e: React.ChangeEvent<HTMLInputElement>) => void;
-    onIndividualSelect: (id: string) => void;
-    getUnreadCount: (id: string) => number;
-  }) => {
-    const unreadCount = getUnreadCount(individual?.id);
-
-    let messageTime = 'N/A';
+  const createCandidateShortlists = async () => {
     try {
-      messageTime = new Date(individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.createdAt).toLocaleString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
+      const response = await axios.post(
+        process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/create-shortlist',
+        { candidateIds: selectedCandidateIds },
+        { headers: { authorization: `Bearer ${tokenPair?.accessToken?.token}`, 'content-type': 'application/json', 'x-schema-version': '66' } },
+      );
+      enqueueSnackBar('Shortlist created successfully', {
+        variant: SnackBarVariant.Success,
+        icon: <IconCopy size={theme.icon.size.md} />,
+        duration: 2000,
       });
-    } catch (e) {
-      messageTime = 'N/A';
+    } catch (error) {
+      enqueueSnackBar('Error creating shortlist', {
+        variant: SnackBarVariant.Error,
+        icon: <IconCopy size={theme.icon.size.md} />,
+        duration: 2000,
+      });
     }
-    return (
-      <Draggable draggableId={individual.id} index={index}>
-        {(provided, snapshot) => (
-          <StyledTableRow ref={provided.innerRef} {...provided.draggableProps} $selected={selectedIndividual === individual?.id} $isDragging={snapshot.isDragging} onClick={() => onIndividualSelect(individual?.id)} data-selectable-id={individual.id}>
-            <CheckboxCell onClick={e => e.stopPropagation()}>
-              <div {...provided.dragHandleProps}>
-                <IconGripVertical size={20} />
-              </div>
-              <Checkbox type="checkbox" checked={selectedIds.includes(individual.id)} onChange={e => handleCheckboxChange(individual.id, e)} />
-            </CheckboxCell>
-
-            {shouldShowColumn('name', tableData) && (
-              <StyledTableCell data-label="Name">
-                <NameCell>
-                  {`${individual.name.firstName} ${individual.name.lastName}`}
-                  {unreadCount > 0 && <UnreadIndicator>{unreadCount}</UnreadIndicator>}
-                </NameCell>
-              </StyledTableCell>
-            )}
-
-            {shouldShowColumn('candidateStatus', tableData) && <StyledTableCell>{individual.candidates?.edges[0]?.node?.candConversationStatus || 'N/A'}</StyledTableCell>}
-            {shouldShowColumn('startDate', tableData) && <StyledTableCell>{individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.createdAt ? messageTime : 'N/A'}</StyledTableCell>}
-            {shouldShowColumn('status', tableData) && <StyledTableCell>{individual.candidates?.edges[0]?.node?.status || 'N/A'}</StyledTableCell>}
-            {shouldShowColumn('salary', tableData) && <StyledTableCell>{individual.salary || 'N/A'}</StyledTableCell>}
-            {shouldShowColumn('city', tableData) && <StyledTableCell>{individual.city || 'N/A'}</StyledTableCell>}
-            {shouldShowColumn('jobTitle', tableData) && <StyledTableCell>{individual.jobTitle || 'N/A'}</StyledTableCell>}
-
-            {/* <StyledTableCell> {individual.candidates?.edges[0]?.node?.candConversationStatus || 'N/A'} </StyledTableCell>
-            <StyledTableCell>{individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.createdAt ? messageTime : 'N/A'}</StyledTableCell>
-            <StyledTableCell> {individual.candidates?.edges[0]?.node?.status || 'N/A'} </StyledTableCell>
-            <StyledTableCell>{individual.salary || 'N/A'}</StyledTableCell>
-            <StyledTableCell>{individual.city || 'N/A'}</StyledTableCell>
-            <StyledTableCell>{individual.jobTitle || 'N/A'}</StyledTableCell> */}
-          </StyledTableRow>
-        )}
-      </Draggable>
-    );
   };
 
-  // console.log('isAttachmentPanelOpen:', isAttachmentPanelOpen);
-  // console.log('isChatOpen:', isChatOpen);
-  // console.log('value of selectedIds.length > 1 && (isAttachmentPanelOpen || isChatOpen:', selectedIds.length > 1 && (isAttachmentPanelOpen || isChatOpen));
+  const createChatBasedShortlistDelivery = async () => {
+    try {
+      const response = await axios.post(
+        process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/chat-based-shortlist-delivery',
+        { candidateIds: selectedCandidateIds },
+        { headers: { authorization: `Bearer ${tokenPair?.accessToken?.token}`, 'content-type': 'application/json', 'x-schema-version': '66' } },
+      );
+      enqueueSnackBar('Shortlist created successfully', {
+        variant: SnackBarVariant.Success,
+        icon: <IconCopy size={theme.icon.size.md} />,
+        duration: 2000,
+      });
+    } catch (error) {
+      enqueueSnackBar('Error creating shortlist', {
+        variant: SnackBarVariant.Error,
+        icon: <IconCopy size={theme.icon.size.md} />,
+        duration: 2000,
+      });
+    }
+  };
+
+  const createUpdateCandidateStatus = async () => {
+    try {
+      const response = await axios.post(
+        process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/refresh-chat-status-by-candidates',
+        { candidateIds: selectedCandidateIds },
+        { headers: { authorization: `Bearer ${tokenPair?.accessToken?.token}`, 'content-type': 'application/json', 'x-schema-version': '66' } },
+      );
+      enqueueSnackBar('Status updated successfully', {
+        variant: SnackBarVariant.Success,
+        icon: <IconCopy size={theme.icon.size.md} />,
+        duration: 2000,
+      });
+    } catch (error) {
+      enqueueSnackBar('Error updating status', {
+        variant: SnackBarVariant.Error,
+        icon: <IconCopy size={theme.icon.size.md} />,
+        duration: 2000,
+      });
+    }
+  };
+
+  type TableData = {
+    id: string;
+    name: string;
+    candidateStatus: string;
+    startDate: string;
+    status: string;
+    salary: string;
+    city: string;
+    jobTitle: string;
+    checkbox: boolean;
+  };
+
+  const prepareTableData = (individuals: PersonNode[]): TableData[] => {
+    return individuals.map(individual => ({
+      id: individual.id,
+      name: `${individual.name.firstName} ${individual.name.lastName}`,
+      candidateStatus: individual.candidates?.edges[0]?.node?.candConversationStatus || 'N/A',
+      startDate: individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.createdAt 
+        ? dayjs(individual.candidates.edges[0].node.whatsappMessages.edges[0].node.createdAt).format('MMM D, HH:mm')
+        : 'N/A',
+      status: individual.candidates?.edges[0]?.node?.status || 'N/A',
+      salary: individual.salary || 'N/A',
+      city: individual.city || 'N/A',
+      jobTitle: individual.jobTitle || 'N/A',
+      checkbox: selectedIds.includes(individual.id)
+    }));
+  };
+
+  const columns: Handsontable.ColumnSettings[] = [
+    {
+      data: 'checkbox',
+      type: 'checkbox',
+      width: 40,
+      renderer: (
+        instance: Handsontable.Core,
+        td: HTMLTableCellElement,
+        row: number,
+        column: number,
+        prop: string | number,
+        value: any,
+        cellProperties: Handsontable.CellProperties
+      ) => {
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.checked = value;
+        checkbox.addEventListener('change', () => {
+          const individual = individuals[row];
+          handleCheckboxChange(individual.id);
+        });
+        td.appendChild(checkbox);
+        return td;
+      },
+    },
+    {
+      data: 'name',
+      title: 'Name',
+      renderer: (
+        instance: Handsontable.Core,
+        td: HTMLTableCellElement,
+        row: number,
+        column: number,
+        prop: string | number,
+        value: any,
+        cellProperties: Handsontable.CellProperties
+      ) => {
+        const individual = individuals[row];
+        const name = `${individual.name.firstName} ${individual.name.lastName}`;
+        td.textContent = name;
+        return td;
+      },
+    },
+    {
+      data: 'candidateStatus',
+      title: 'Candidate Status',
+      renderer: (
+        instance: Handsontable.Core,
+        td: HTMLTableCellElement,
+        row: number,
+        column: number,
+        prop: string | number,
+        value: any,
+        cellProperties: Handsontable.CellProperties
+      ) => {
+        const individual = individuals[row];
+        const status = individual.candidates?.edges[0]?.node?.candConversationStatus || 'N/A';
+        td.textContent = status;
+        return td;
+      },
+    },
+    {
+      data: 'startDate',
+      title: 'Start Date',
+      renderer: (
+        instance: Handsontable.Core,
+        td: HTMLTableCellElement,
+        row: number,
+        column: number,
+        prop: string | number,
+        value: any,
+        cellProperties: Handsontable.CellProperties
+      ) => {
+        const individual = individuals[row];
+        const date = individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.createdAt 
+          ? dayjs(individual.candidates.edges[0].node.whatsappMessages.edges[0].node.createdAt).format('MMM D, HH:mm')
+          : 'N/A';
+        td.textContent = date;
+        return td;
+      },
+    },
+    {
+      data: 'status',
+      title: 'Status',
+      renderer: (
+        instance: Handsontable.Core,
+        td: HTMLTableCellElement,
+        row: number,
+        column: number,
+        prop: string | number,
+        value: any,
+        cellProperties: Handsontable.CellProperties
+      ) => {
+        const individual = individuals[row];
+        const status = individual.candidates?.edges[0]?.node?.status || 'N/A';
+        td.textContent = status;
+        return td;
+      },
+    },
+    {
+      data: 'salary',
+      title: 'Salary',
+      renderer: (
+        instance: Handsontable.Core,
+        td: HTMLTableCellElement,
+        row: number,
+        column: number,
+        prop: string | number,
+        value: any,
+        cellProperties: Handsontable.CellProperties
+      ) => {
+        const individual = individuals[row];
+        const salary = individual.salary || 'N/A';
+        td.textContent = salary;
+        return td;
+      },
+    },
+    {
+      data: 'city',
+      title: 'City',
+      renderer: (
+        instance: Handsontable.Core,
+        td: HTMLTableCellElement,
+        row: number,
+        column: number,
+        prop: string | number,
+        value: any,
+        cellProperties: Handsontable.CellProperties
+      ) => {
+        const individual = individuals[row];
+        const city = individual.city || 'N/A';
+        td.textContent = city;
+        return td;
+      },
+    },
+    {
+      data: 'jobTitle',
+      title: 'Job Title',
+      renderer: (
+        instance: Handsontable.Core,
+        td: HTMLTableCellElement,
+        row: number,
+        column: number,
+        prop: string | number,
+        value: any,
+        cellProperties: Handsontable.CellProperties
+      ) => {
+        const individual = individuals[row];
+        const jobTitle = individual.jobTitle || 'N/A';
+        td.textContent = jobTitle;
+        return td;
+      },
+    },
+  ];
+
+  const hotTableComponent = useMemo(
+    () => (
+      <HotTable
+        data={prepareTableData(individuals)}
+        columns={columns}
+        colHeaders={true}
+        rowHeaders={true}
+        height="auto"
+        licenseKey="non-commercial-and-evaluation"
+        stretchH="all"
+        className="htCenter"
+        readOnly={true}
+        autoWrapRow={true}
+        autoWrapCol={true}
+        manualRowResize={true}
+        manualColumnResize={true}
+        contextMenu={true}
+        filters={true}
+        dropdownMenu={true}
+        hiddenColumns={{
+          columns: [0],
+          indicators: true,
+        }}
+      />
+    ),
+    [individuals, selectedIds]
+  );
 
   return (
     <>
       <TableContainer>
-        {!isMobile ? (
-          <DragDropContext onDragEnd={handleDragEnd}>
-            <StyledTable>
-              <StyledTableHeader>
-                <tr>
-                  <StyledTableHeaderCell as="th" isSorted={false}>
-                    <Checkbox type="checkbox" checked={selectedIds.length === tableData.length} onChange={handleSelectAll} />
-                  </StyledTableHeaderCell>
-                  {columns.map(({ key, label }) => (
-                    <StyledTableHeaderCell key={key} onClick={() => handleSort(key)} isSorted={sortConfig.key === key}>
-                      <HeaderContent>
-                        {label}
-                        <SortIconsContainer>
-                          <SortIcon isActive={sortConfig.key === key && sortConfig.direction === 'asc'}>
-                            <IconChevronUp size={14} />
-                          </SortIcon>
-                          <SortIcon isActive={sortConfig.key === key && sortConfig.direction === 'desc'}>
-                            <IconChevronDown size={14} />
-                          </SortIcon>
-                        </SortIconsContainer>
-                      </HeaderContent>
-                    </StyledTableHeaderCell>
-                  ))}
-                </tr>
-              </StyledTableHeader>
-              <Droppable droppableId="chat-table-rows">
-                {provided => (
-                  <StyledTableBody {...provided.droppableProps} ref={provided.innerRef}>
-                    {tableData.map((individual, index) => (
-                      <DraggableTableRow
-                        key={individual.id}
-                        individual={individual}
-                        index={index}
-                        selectedIndividual={selectedIndividual}
-                        selectedIds={selectedIds}
-                        handleCheckboxChange={handleCheckboxChange}
-                        onIndividualSelect={onIndividualSelect}
-                        getUnreadCount={getUnreadCount}
-                      />
-                    ))}
-                    {provided.placeholder}
-                  </StyledTableBody>
-                )}
-              </Droppable>
-            </StyledTable>
-          </DragDropContext>
-        ) : (
-          <StyledTable>
-            <StyledTableBody>
-              {tableData.map(individual => (
-                <StyledTableRow key={individual.id} $selected={selectedIndividual === individual?.id} onClick={() => onIndividualSelect(individual?.id)}>
-                  <CheckboxCell onClick={e => e.stopPropagation()}>
-                    <Checkbox type="checkbox" checked={selectedIds.includes(individual.id)} onChange={e => handleCheckboxChange(individual.id, e)} />
-                  </CheckboxCell>
-                  <StyledTableCell data-label="Name">
-                    <NameCell>
-                      {`${individual.name.firstName} ${individual.name.lastName}`}
-                      {getUnreadCount(individual.id) > 0 && <UnreadIndicator>{getUnreadCount(individual.id)}</UnreadIndicator>}
-                    </NameCell>
-                  </StyledTableCell>
-                  <StyledTableCell data-label="Status">{chatStatusLabels[individual.candidates?.edges[0]?.node?.candConversationStatus as keyof typeof chatStatusLabels] || 'N/A'}</StyledTableCell>
-                  <StyledTableCell data-label="Last Message">
-                    {individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.createdAt ? dayjs(individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.createdAt).format('MMM D, HH:mm') : 'N/A'}
-                  </StyledTableCell>
-                  <StyledTableCell data-label="Candidate Status">{individual.candidates?.edges[0]?.node?.status || 'N/A'}</StyledTableCell>
-                  {!isMobile && (
-                    <>
-                      <StyledTableCell data-label="Salary">{individual.salary || 'N/A'}</StyledTableCell>
-                      <StyledTableCell data-label="City">{individual.city || 'N/A'}</StyledTableCell>
-                      <StyledTableCell data-label="Job Title">{individual.jobTitle || 'N/A'}</StyledTableCell>
-                    </>
-                  )}
-                </StyledTableRow>
-              ))}
-            </StyledTableBody>
-          </StyledTable>
-        )}
+        {hotTableComponent}
       </TableContainer>
 
       <ActionsBar
@@ -836,11 +482,11 @@ const ChatTable: React.FC<ChatTableProps> = ({ individuals, selectedIndividual, 
           {selectedIds.length > 1 && (isAttachmentPanelOpen || isChatOpen) && (
             <CandidateNavigation>
               <NavIconButton onClick={handlePrevCandidate} disabled={currentPersonIndex === 0} title="Previous Candidate">
-                <IconChevronLeft size={20} />
+                ←
               </NavIconButton>
 
               <NavIconButton onClick={handleNextCandidate} disabled={currentPersonIndex === selectedIds.length - 1} title="Next Candidate">
-                <IconChevronRight size={20} />
+                →
               </NavIconButton>
             </CandidateNavigation>
           )}

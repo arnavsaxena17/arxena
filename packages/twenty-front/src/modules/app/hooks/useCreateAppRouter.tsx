@@ -36,11 +36,11 @@ import { HotPage } from '@/hot/hotCandidates';
 import Interview from '@/interviews/components/Interviews';
 import indexAppPath from '@/navigation/utils/indexAppPath';
 // import OrgChart from '@/orgchart/OrgChart';
+import { Chats } from '@/activities/chats/components/Chats';
+import { Dashboard } from '@/client-dashboard/components/Dashboard';
 import VideoInterviewFlow from '@/video-interview/interview-response/VideoInterviewFlow';
 import VideoInterviewResponseViewer from '@/video-interview/interview-response/VideoInterviewResponseViewer';
 import React from 'react';
-import { Chats } from '~/pages/chats/Chats';
-import { Dashboard } from '@/client-dashboard/components/Dashboard';
 const OrgChart = React.lazy(() => import('@/orgchart/OrgChart'));
 
 const VideoInterviewWrapper = () => {
