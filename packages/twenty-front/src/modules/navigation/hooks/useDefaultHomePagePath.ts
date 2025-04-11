@@ -81,7 +81,7 @@ export const useDefaultHomePagePath = () => {
 
     // const namePlural = defaultObjectPathInfo.objectMetadataItem?.namePlural;
     // const viewId = defaultObjectPathInfo.view?.id;
-    return AppPath.Dashboard;
+    return AppPath.Chats;
 
     // return getAppPath(
     //   AppPath.RecordIndexPage,
