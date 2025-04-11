@@ -9,6 +9,7 @@ import { PageBody } from './PageBody';
 import { PageHeader } from './PageHeader';
 
 type SubMenuTopBarContainerProps = {
+  Icon?:any
   children: JSX.Element | JSX.Element[];
   title?: string | JSX.Element;
   reserveTitleSpace?: boolean;
@@ -34,6 +35,7 @@ const StyledTitle = styled.h3<{ reserveTitleSpace?: boolean }>`
 `;
 
 export const SubMenuTopBarContainer = ({
+
   children,
   title,
   reserveTitleSpace,

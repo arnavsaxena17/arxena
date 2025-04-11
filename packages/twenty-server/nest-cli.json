@@ -5,6 +5,8 @@
   "compilerOptions": {
     "builder": "swc",
     "typeCheck": false,
+    "sourceMap": true,
+    "webpack": false,
     "assets": [
       {
         "include": "**/serverless/drivers/constants/base-typescript-project/**",

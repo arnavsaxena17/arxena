@@ -8,6 +8,7 @@
   "scripts": {
     "nx": "NX_DEFAULT_PROJECT=twenty-server node ../../node_modules/nx/bin/nx.js",
     "start:prod": "node dist/src/main",
+    "debug": "NODE_OPTIONS=\"--inspect-brk=9229\" node ../../node_modules/@nestjs/cli/bin/nest.js start --watch",
     "command:prod": "node dist/src/command/command",
     "worker:prod": "node dist/src/queue-worker/queue-worker",
     "database:init:prod": "npx ts-node ./scripts/setup-db.ts && yarn database:migrate:prod",

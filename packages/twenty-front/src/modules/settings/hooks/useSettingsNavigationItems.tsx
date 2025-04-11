@@ -30,6 +30,7 @@ import { useSettingsPermissionMap } from '@/settings/roles/hooks/useSettingsPerm
 import { NavigationDrawerItemIndentationLevel } from '@/ui/navigation/navigation-drawer/components/NavigationDrawerItem';
 import { useFeatureFlagsMap } from '@/workspace/hooks/useFeatureFlagsMap';
 import { t } from '@lingui/core/macro';
+import { IconBrandFacebook } from '@tabler/icons-react';
 import { useRecoilValue } from 'recoil';
 
 export type SettingsNavigationSection = {
@@ -92,6 +93,12 @@ export const useSettingsNavigationItems = (): SettingsNavigationSection[] => {
               label: t`Calendars`,
               path: SettingsPath.AccountsCalendars,
               Icon: IconCalendarEvent,
+              indentationLevel: 2,
+            },
+            {
+              label: t`Whatsapp Business`,
+              path: SettingsPath.FacebookSignUp,
+              Icon: IconBrandFacebook,
               indentationLevel: 2,
             },
           ],

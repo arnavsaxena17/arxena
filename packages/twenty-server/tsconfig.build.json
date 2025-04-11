@@ -5,6 +5,7 @@
     "paths": {
       "src/*": ["packages/twenty-server/src/*"]
     },
+    "sourceMap": true,
     "types": ["node"]
   },
   "exclude": ["node_modules", "dist", "test", "**/*spec.ts"]

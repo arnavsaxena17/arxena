@@ -39,4 +39,5 @@ export enum SettingsPath {
   Lab = 'lab',
   Roles = 'roles',
   RoleDetail = 'roles/:roleId',
+  FacebookSignUp = "facebook-signup",
 }

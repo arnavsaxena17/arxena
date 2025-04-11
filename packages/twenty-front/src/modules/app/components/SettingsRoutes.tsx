@@ -20,6 +20,11 @@ const SettingsAccountsEmails = lazy(() =>
     default: module.SettingsAccountsEmails,
   })),
 );
+const SettingsAccountsFacebookSignUp = lazy(() =>
+  import('~/pages/settings/accounts/SettingsAccountsFacebookSignUp').then((module) => ({
+    default: module.SettingsAccountsFacebookSignUp,
+  })),
+);
 
 const SettingsNewAccount = lazy(() =>
   import('~/pages/settings/accounts/SettingsNewAccount').then((module) => ({
@@ -298,6 +303,10 @@ export const SettingsRoutes = ({
       <Route
         path={SettingsPath.AccountsEmails}
         element={<SettingsAccountsEmails />}
+      />
+      <Route
+        path={SettingsPath.FacebookSignUp}
+        element={<SettingsAccountsFacebookSignUp />}
       />
       <Route
         element={

@@ -1,6 +1,6 @@
 import { useLocation } from 'react-router-dom';
 import { useRecoilState, useSetRecoilState } from 'recoil';
-import { IconBriefcase, IconLayout, IconMessage, IconSearch, IconSettings, IconVideo } from 'twenty-ui';
+import { IconBriefcase, IconMessage, IconSearch, IconSettings } from 'twenty-ui';
 
 import { useCommandMenu } from '@/command-menu/hooks/useCommandMenu';
 import { CurrentWorkspaceMemberFavoritesFolders } from '@/favorites/components/CurrentWorkspaceMemberFavoritesFolders';
@@ -96,7 +96,7 @@ export const MainNavigationDrawerItems = () => {
             }}
             Icon={IconBriefcase}
           /> */}
-          <NavigationDrawerItem
+          {/* <NavigationDrawerItem
             label={`Interview`}
             to={getAppPath(AppPath.Interview)}
             onClick={() => {
@@ -125,8 +125,8 @@ export const MainNavigationDrawerItems = () => {
               setNavigationMemorizedUrl(location.pathname + location.search);
             }}
             Icon={IconLayout}
-          />
-          <NavigationDrawerItem
+          /> */}
+          {/* <NavigationDrawerItem
             label={`Custom Layout Merged`}
             to={getAppPath(AppPath.CustomLayoutMerged)}
             onClick={() => {
@@ -135,7 +135,7 @@ export const MainNavigationDrawerItems = () => {
               setNavigationMemorizedUrl(location.pathname + location.search);
             }}
             Icon={IconLayout}
-          />
+          /> */}
         </StyledMainSection>
       )}
       <ScrollWrapper

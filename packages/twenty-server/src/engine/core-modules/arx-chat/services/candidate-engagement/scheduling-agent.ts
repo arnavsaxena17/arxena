@@ -86,6 +86,9 @@ export class CandidateEngagementCronService extends BaseCronService {
     disabled: CRON_DISABLED,
   })
   async handleCron() {
+    console.log('========== SCHEDULING AGENT MODULE LOADED ==========');
+    debugger;
+    console.log('handleCron');
     if (CRON_DISABLED) return;
     await this.executeWorkspaceTask(async (token) => {
       await new CandidateEngagementArx(

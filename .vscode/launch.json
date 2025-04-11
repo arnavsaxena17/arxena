@@ -10,11 +10,16 @@
       "runtimeArgs": [
         "nx",
         "run",
-        "twenty-server:start"
+        "twenty-server:start",
+        "--",
+        "--inspect-brk"    
       ],
+      "console": "internalConsole",
       "outputCapture": "std",
       "internalConsoleOptions": "openOnSessionStart",
-      "console": "internalConsole",
+      // "console": "internalConsole",
+      "restart": true,
+      "autoAttachChildProcesses": true,    
       "cwd": "${workspaceFolder}/packages/twenty-server/"
     },
     {
