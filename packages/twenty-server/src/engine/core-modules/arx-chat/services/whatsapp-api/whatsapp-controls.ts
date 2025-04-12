@@ -44,10 +44,7 @@ export class WhatsappControls {
         mostRecentMessageArr[0].role != 'system' &&
         mostRecentMessageArr.length == 1
       ) {
-        console.log(
-          'Found a single sneaky message which is coming out:: ',
-          messageText,
-        );
+        console.log( 'Found a single sneaky message which is coming out:: ', messageText, );
 
         return;
       }

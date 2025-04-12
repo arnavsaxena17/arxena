@@ -2,17 +2,8 @@ import styled from '@emotion/styled';
 
 import { Button, IconCheckbox, IconFilter, IconPlus } from 'twenty-ui';
 
-import { ChatOptionsDropdownButton } from '@/activities/chats/components/ChatOptionsDropdownButton';
 import { PageAddChatButton } from '@/activities/chats/components/PageAddChatButton';
-import { ObjectFilterDropdownButton } from '@/object-record/object-filter-dropdown/components/ObjectFilterDropdownButton';
-import { ObjectFilterDropdownComponentInstanceContext } from '@/object-record/object-filter-dropdown/states/contexts/ObjectFilterDropdownComponentInstanceContext';
-import { FiltersHotkeyScope } from '@/object-record/object-filter-dropdown/types/FiltersHotkeyScope';
-import { ObjectSortDropdownButton } from '@/object-record/object-sort-dropdown/components/ObjectSortDropdownButton';
-import { ObjectSortDropdownComponentInstanceContext } from '@/object-record/object-sort-dropdown/states/context/ObjectSortDropdownComponentInstanceContext';
-import { RecordIndexContextProvider } from '@/object-record/record-index/contexts/RecordIndexContext';
-import { RecordFieldValueSelectorContextProvider } from '@/object-record/record-store/contexts/RecordFieldValueSelectorContext';
 import { PageBody } from '@/ui/layout/page/components/PageBody';
-import { ViewComponentInstanceContext } from '@/views/states/contexts/ViewComponentInstanceContext';
 // import { TasksRecoilScopeContext } from "@/activities/states/recoil-scope-contexts/TasksRecoilScopeContext";
 // import { TaskGroups } from "@/activities/chats/components/TaskGroups";
 // import { TASKS_TAB_LIST_COMPONENT_ID } from "@/activities/tasks/constants/TasksTabListComponentId";
@@ -82,17 +73,17 @@ const StyledTabListContainer = styled.div`
   }
 `;
 
-const StyledChatMainWrapper = styled.div`
-  flex: 1;
-  overflow: hidden;
-  position: relative;
+// const StyledChatMainWrapper = styled.div`
+//   flex: 1;
+//   overflow: hidden;
+//   position: relative;
 
-  @media (max-width: 768px) {
-    min-height: calc(
-      100vh - 160px
-    ); // Adjust based on your header + topbar height
-  }
-`;
+//   @media (max-width: 768px) {
+//     min-height: calc(
+//       100vh - 160px
+//     ); // Adjust based on your header + topbar height
+//   }
+// `;
 
 const StyledAddButtonWrapper = styled.div`
   @media (max-width: 768px) {
@@ -151,10 +142,7 @@ export const Chats = () => {
 
   return (
     <StyledPageContainer>
-      <RecordFieldValueSelectorContextProvider>
-        {/* <RecoilScope CustomRecoilScopeContext={TasksRecoilScopeContext}> */}
         <StyledPageHeader title="Chats" Icon={IconCheckbox}>
-
         <Button
             title="Filter"
             Icon={IconFilter}
@@ -169,60 +157,12 @@ export const Chats = () => {
           />
           <StyledAddButtonWrapper>
             <PageAddChatButton />
-
-
-
           </StyledAddButtonWrapper>
         </StyledPageHeader>
         <StyledPageBody>
-          {/* Provide RecordIndexContext */}
-          <RecordIndexContextProvider value={recordIndexContextValue}>
-            {/* Provide ViewComponentInstanceContext needed by sort state */}
-            <ViewComponentInstanceContext.Provider
-              value={{ instanceId: recordIndexId }} // Using recordIndexId as viewBarId
-            >
-              <StyledTopBar
-                leftComponent={
-                  <StyledTabListContainer>
-                    {/* Add any tab components here */}
-                  </StyledTabListContainer>
-                }
-                rightComponent={
-                  <StyledRightSection>
-                    {/* Provide context for the filter dropdown */}
-                    <ObjectFilterDropdownComponentInstanceContext.Provider
-                      value={{ instanceId: filterDropdownId }}
-                    >
-                      <ObjectFilterDropdownButton
-                        filterDropdownId={filterDropdownId}
-                        hotkeyScope={{
-                          scope: FiltersHotkeyScope.ObjectFilterDropdownButton,
-                        }}
-                      />
-                    </ObjectFilterDropdownComponentInstanceContext.Provider>
-                    {/* Provide context directly for the sort dropdown */}
-                    <ObjectSortDropdownComponentInstanceContext.Provider
-                      value={{ instanceId: recordIndexId }}
-                    >
-                      <ObjectSortDropdownButton
-                        hotkeyScope={{
-                          scope: FiltersHotkeyScope.ObjectSortDropdownButton, // Assuming similar hotkey scope for sort
-                        }}
-                      />
-                    </ObjectSortDropdownComponentInstanceContext.Provider>
-                    {/* Use the custom chat options dropdown */}
-                    <ChatOptionsDropdownButton />
-                  </StyledRightSection>
-                }
-              />
-            </ViewComponentInstanceContext.Provider>
-          </RecordIndexContextProvider>
-          <StyledChatMainWrapper>
+
             <ChatMain initialCandidateId={candidateId} />
-          </StyledChatMainWrapper>
         </StyledPageBody>
-        {/* </RecoilScope> */}
-      </RecordFieldValueSelectorContextProvider>
     </StyledPageContainer>
   );
 };

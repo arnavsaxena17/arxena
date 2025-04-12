@@ -19,7 +19,7 @@ import {
 } from 'twenty-shared';
 import { CACHE_KEYS, cacheUtils } from '../utils/cacheUtils';
 import ChatSidebar from './ChatSidebar';
-import ChatWindow from './ChatWindow';
+import ChatWindow from './chat-window/ChatWindow';
 
 interface ChatMainProps {
   initialCandidateId?: string;
@@ -35,7 +35,7 @@ const StyledChatContainer = styled.div`
   overflow: hidden;
 
   @media (max-width: 768px) {
-    flex-direction: column; // Stack components vertically on mobile
+    flex-direction: column; 
     margin: 0;
     height: 100vh;
   }
