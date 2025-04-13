@@ -102,6 +102,7 @@ interface ActionsBarProps {
   createChatBasedShortlistDelivery: () => Promise<void>;
   createUpdateCandidateStatus: () => Promise<void>;
   createCandidateShortlists: () => Promise<void>;
+  handleActivityDrawer: () => void;
 }
 
 const ActionsBar: React.FC<ActionsBarProps> = ({
@@ -111,7 +112,8 @@ const ActionsBar: React.FC<ActionsBarProps> = ({
   handleViewCVs,
   createChatBasedShortlistDelivery,
   createUpdateCandidateStatus,
-  createCandidateShortlists
+  createCandidateShortlists,
+  handleActivityDrawer
 }) => {
   return (
     <ActionsBarContainer data-visible={selectedIds.length > 0}>
@@ -124,8 +126,11 @@ const ActionsBar: React.FC<ActionsBarProps> = ({
           <IconX size={18} />
         </CloseButton>
       </SelectionInfo>
-
       <ActionButtons>
+        <ActionButton $variant="primary" onClick={handleActivityDrawer}>
+          <IconMessages size={18} />
+          View Activity Drawer
+        </ActionButton>
         <ActionButton $variant="primary" onClick={handleViewChats}>
           <IconMessages size={18} />
           View Chats

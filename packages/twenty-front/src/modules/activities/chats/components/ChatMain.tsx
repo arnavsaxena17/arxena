@@ -19,7 +19,6 @@ import {
 } from 'twenty-shared';
 import { CACHE_KEYS, cacheUtils } from '../utils/cacheUtils';
 import ChatSidebar from './ChatSidebar';
-import ChatWindow from './chat-window/ChatWindow';
 
 interface ChatMainProps {
   initialCandidateId?: string;
@@ -68,6 +67,14 @@ const StyledChatWindowContainer = styled.div<{ sidebarWidth: number }>`
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  z-index: 1;
+
+  /* Fix for Handsontable header appearing above drawer */
+  .handsontable .ht_clone_top,
+  .handsontable .ht_clone_left,
+  .handsontable .ht_clone_corner {
+    z-index: 29; // Just below the drawer's z-index of 30
+  }
 
   @media (max-width: 768px) {
     height: 60vh;
@@ -153,11 +160,8 @@ export const ChatMain = ({ initialCandidateId }: ChatMainProps) => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // States
-  // const [individuals, setIndividuals] = useState<PersonNode[]>(() =>
-  //   cacheUtils.getCache(CACHE_KEYS.CHATS_DATA) || []
-  // );
-  const [individuals, setIndividuals] = useState([]);
+
+  const [individuals, setIndividuals] = useState<PersonNode[]>([]);
 
   const [loadingState, setLoadingState] = useState(LoadingStates.INITIAL);
 
@@ -371,7 +375,6 @@ export const ChatMain = ({ initialCandidateId }: ChatMainProps) => {
     );
   };
 
-  // Effects
   useEffect(() => {
     fetchData(true);
     const interval = setInterval(() => fetchData(false), 10000);
@@ -400,13 +403,6 @@ export const ChatMain = ({ initialCandidateId }: ChatMainProps) => {
     setSelectedIndividual(id);
   };
 
-  if (isLoading && individuals.length === 0) {
-    // return (
-    //   // <SpinnerContainer>
-    //   <Spinner />
-    //   // </SpinnerContainer>
-    // );
-  }
 
   if (
     loadingState === LoadingStates.INITIAL ||
@@ -424,27 +420,14 @@ export const ChatMain = ({ initialCandidateId }: ChatMainProps) => {
   }
 
   return (
-    <StyledChatContainer>
-      <StyledSidebarContainer width={sidebarWidth}>
-        <ChatSidebar
-          individuals={individuals}
-          selectedIndividual={selectedIndividual}
-          setSelectedIndividual={handleIndividualSelect}
-          unreadMessages={unreadMessages}
-          jobs={jobs}
-          isRefreshing={isRefreshing}
-          width={sidebarWidth}
-        />
-      </StyledSidebarContainer>
-      {!isMobile && <StyledResizer onMouseDown={startResizing} />}
-      <StyledChatWindowContainer sidebarWidth={sidebarWidth}>
-        <ChatWindow
-          selectedIndividual={selectedIndividual}
-          individuals={individuals}
-          onMessageSent={fetchData}
-          sidebarWidth={sidebarWidth}
-        />
-      </StyledChatWindowContainer>
-    </StyledChatContainer>
+    <ChatSidebar
+      individuals={individuals}
+      selectedIndividual={selectedIndividual}
+      setSelectedIndividual={handleIndividualSelect}
+      unreadMessages={unreadMessages}
+      jobs={jobs}
+      isRefreshing={isRefreshing}
+      width={sidebarWidth}
+    />
   );
 };

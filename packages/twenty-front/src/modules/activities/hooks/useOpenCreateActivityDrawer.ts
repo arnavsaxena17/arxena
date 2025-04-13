@@ -28,12 +28,14 @@ export const useOpenCreateActivityDrawer = ({
 }: {
   activityObjectNameSingular:
     | CoreObjectNameSingular.Note
-    | CoreObjectNameSingular.Task;
+    | CoreObjectNameSingular.Task
+    | CoreObjectNameSingular.View;
 }) => {
+
   const { openRightDrawer } = useRightDrawer();
+  console.log("openRightDrawer::", openRightDrawer)
 
   const setHotkeyScope = useSetHotkeyScope();
-
   const { createOneRecord: createOneActivity } = useCreateOneRecord<
     (Task | Note) & { position: 'first' | 'last' }
   >({
@@ -77,7 +79,8 @@ export const useOpenCreateActivityDrawer = ({
     targetableObjects: ActivityTargetableObject[];
     customAssignee?: WorkspaceMember;
   }) => {
-    setIsNewViewableRecordLoading(true);
+    console.log("openCreateActivityDrawer is currently running")
+      setIsNewViewableRecordLoading(true);
     if (!isCommandMenuV2Enabled) {
       openRightDrawer(RightDrawerPages.ViewRecord, {
         title: activityObjectNameSingular,
@@ -86,17 +89,24 @@ export const useOpenCreateActivityDrawer = ({
     }
     setViewableRecordId(null);
     setViewableRecordNameSingular(activityObjectNameSingular);
-
-    const activity = await createOneActivity({
-      ...(activityObjectNameSingular === CoreObjectNameSingular.Task
-        ? {
-            assigneeId: customAssignee?.id,
-          }
-        : {}),
-      position: 'last',
-    });
-
+    console.log("createOneActivity is currently running")
+    let activity: any;
+    try{
+      console.log("createOneActivity is currently running againt the database")
+       activity = await createOneActivity({
+        ...(activityObjectNameSingular === CoreObjectNameSingular.Task
+          ? {
+              assigneeId: customAssignee?.id,
+            }
+          : {}),
+        position: 'last',
+      });
+    } catch (error) {
+      console.log("error", error)
+    }
+    console.log("activity:::::", activity)
     if (targetableObjects.length > 0) {
+      console.log("targetableObjects is greater than 0", targetableObjects)
       const targetableObjectRelationIdName = `${targetableObjects[0].targetObjectNameSingular}Id`;
 
       await createOneActivityTarget({
@@ -112,6 +122,7 @@ export const useOpenCreateActivityDrawer = ({
 
       setActivityTargetableEntityArray(targetableObjects);
     } else {
+      console.log("targetableObjects is 0", targetableObjects)
       await createOneActivityTarget({
         ...(activityObjectNameSingular === CoreObjectNameSingular.Task
           ? {

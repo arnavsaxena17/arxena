@@ -260,34 +260,25 @@ export const MultiCandidateChat: React.FC<MultiCandidateChatProps> = ({
   const handlePrevCandidate = () => {
     setCurrentIndex(prev => Math.max(0, prev - 1));
   };
-
   const handleNextCandidate = () => {
     setCurrentIndex(prev => Math.min(selectedPeople.length - 1, prev + 1));
   };
-
   const currentPerson = selectedPeople[currentIndex];
 
   useEffect(() => {
-
     const fetchMessages = async () => {
       if (!currentPerson?.id || !tokenPair?.accessToken?.token) {
         setIsLoading(false);
         return;
       }
-
       try {
         setIsLoading(true);
         setError(null);
-        console.log("Goignt to try and get fetech messages laest see if ti works")
-        
+        console.log("Goignt to try and get fetech messages laest see if ti works") 
         const response = await axios.post(
           `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/get-all-messages-by-candidate-id`,
           { candidateId: currentPerson.candidates.edges[0].node.id },
-          { 
-            headers: { 
-              Authorization: `Bearer ${tokenPair.accessToken.token}` 
-            }
-          }
+          { headers: { Authorization: `Bearer ${tokenPair.accessToken.token}` } }
         );
         console.log("response data::", response.data.data);
         const sortedMessages = response.data.sort(

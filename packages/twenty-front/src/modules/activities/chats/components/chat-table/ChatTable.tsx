@@ -4,8 +4,11 @@ import 'handsontable/styles/handsontable.min.css';
 import 'handsontable/styles/ht-theme-horizon.css';
 import 'handsontable/styles/ht-theme-main.min.css';
 
+import { useRightDrawer } from '@/ui/layout/right-drawer/hooks/useRightDrawer';
+import { RightDrawerPages } from '@/ui/layout/right-drawer/types/RightDrawerPages';
 import { useTheme } from '@emotion/react';
 import React, { useEffect, useMemo, useRef } from 'react';
+import { IconList } from 'twenty-ui';
 import ActionsBar from '../ActionsBar';
 import AttachmentPanel from '../AttachmentPanel';
 import MultiCandidateChat from '../MultiCandidateChat';
@@ -53,11 +56,11 @@ export const ChatTable: React.FC<ChatTableProps> = ({
   const hotRef = useRef<any>(null);
 
   // Force render the table when selectedIds change
-  useEffect(() => {
-    if (hotRef.current?.hotInstance) {
-      hotRef.current.hotInstance.render();
-    }
-  }, [selectedIds]);
+  // useEffect(() => {
+  //   if (hotRef.current?.hotInstance) {
+  //     hotRef.current.hotInstance.render();
+  //   }
+  // }, [selectedIds]);
 
   useEffect(() => {
     if (!hotRef.current?.hotInstance) {
@@ -132,12 +135,21 @@ export const ChatTable: React.FC<ChatTableProps> = ({
     [individuals, columns, prepareTableData, onIndividualSelect, selectedIds, handleCheckboxChange, handleSelectAll]
   );
 
+  console.log('handleActivityDrawer');
+  const { openRightDrawer } = useRightDrawer();
+
+  const handleActivityDrawerClick = () => {
+    openRightDrawer(RightDrawerPages.SimpleActivity, {
+      title: 'Simple Activity',
+      Icon: IconList,
+    });
+  };
+
   return (
     <>
       <TableContainer>
         {hotTableComponent}
       </TableContainer>
-
       <ActionsBar
         selectedIds={selectedIds}
         clearSelection={clearSelection}
@@ -146,41 +158,16 @@ export const ChatTable: React.FC<ChatTableProps> = ({
         createChatBasedShortlistDelivery={createChatBasedShortlistDelivery}
         createUpdateCandidateStatus={createUpdateCandidateStatus}
         createCandidateShortlists={createCandidateShortlists}
+        handleActivityDrawer={handleActivityDrawerClick}
       />
-
-      <MultiCandidateChat 
-        isOpen={isChatOpen} 
-        onClose={() => setIsChatOpen(false)} 
-        selectedPeople={selectedPeople} 
-      />
-
+      <MultiCandidateChat isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} selectedPeople={selectedPeople} />
       {isAttachmentPanelOpen && currentCandidate && (
         <>
-          <AttachmentPanel
-            isOpen={isAttachmentPanelOpen}
-            onClose={() => setIsAttachmentPanelOpen(false)}
-            candidateId={currentCandidate.candidates.edges[0].node.id}
-            candidateName={`${currentCandidate.name.firstName} ${currentCandidate.name.lastName}`}
-            PanelContainer={PanelContainer}
-          />
-
+          <AttachmentPanel isOpen={isAttachmentPanelOpen} onClose={() => setIsAttachmentPanelOpen(false)} candidateId={currentCandidate.candidates.edges[0].node.id} candidateName={`${currentCandidate.name.firstName} ${currentCandidate.name.lastName}`} PanelContainer={PanelContainer} />
           {selectedIds.length > 1 && (isAttachmentPanelOpen || isChatOpen) && (
             <CandidateNavigation>
-              <NavIconButton 
-                onClick={handlePrevCandidate} 
-                disabled={currentPersonIndex === 0} 
-                title="Previous Candidate"
-              >
-                ←
-              </NavIconButton>
-
-              <NavIconButton 
-                onClick={handleNextCandidate} 
-                disabled={currentPersonIndex === selectedIds.length - 1} 
-                title="Next Candidate"
-              >
-                →
-              </NavIconButton>
+              <NavIconButton onClick={handlePrevCandidate} disabled={currentPersonIndex === 0} title="Previous Candidate" > ← </NavIconButton>
+              <NavIconButton onClick={handleNextCandidate} disabled={currentPersonIndex === selectedIds.length - 1} title="Next Candidate" > → </NavIconButton>
             </CandidateNavigation>
           )}
         </>

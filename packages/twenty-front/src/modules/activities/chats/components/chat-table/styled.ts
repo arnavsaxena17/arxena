@@ -6,6 +6,12 @@ export const TableContainer = styled.div`
   white-space: nowrap;
   text-overflow: ellipsis;
   -webkit-overflow-scrolling: touch;
+  position: relative;
+  z-index: 10;
+
+  .handsontable .ht_clone_top {
+    z-index: 101;
+  }
 
   @media (max-width: 768px) {
     margin: 0;

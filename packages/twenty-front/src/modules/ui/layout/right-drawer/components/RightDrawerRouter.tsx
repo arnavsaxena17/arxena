@@ -7,6 +7,7 @@ import { RightDrawerEmailThread } from '@/activities/emails/right-drawer/compone
 import { RightDrawerRecord } from '@/object-record/record-right-drawer/components/RightDrawerRecord';
 import { isRightDrawerMinimizedState } from '@/ui/layout/right-drawer/states/isRightDrawerMinimizedState';
 
+import { SimpleActivityDrawer } from '@/activities/chats/components/SimpleActivityDrawer';
 import { RightDrawerContainer } from '@/ui/layout/right-drawer/components/RightDrawerContainer';
 import { RightDrawerTopBar } from '@/ui/layout/right-drawer/components/RightDrawerTopBar';
 import { ComponentByRightDrawerPage } from '@/ui/layout/right-drawer/types/ComponentByRightDrawerPage';
@@ -41,19 +42,17 @@ const RIGHT_DRAWER_PAGES_CONFIG: ComponentByRightDrawerPage = {
   ),
   [RightDrawerPages.WorkflowStepEdit]: <RightDrawerWorkflowEditStep />,
   [RightDrawerPages.WorkflowStepView]: <RightDrawerWorkflowViewStep />,
+  [RightDrawerPages.SimpleActivity]: <SimpleActivityDrawer />,
 };
 
 export const RightDrawerRouter = () => {
   const [rightDrawerPage] = useRecoilState(rightDrawerPageState);
-
   const rightDrawerPageComponent = isDefined(rightDrawerPage) ? (
     RIGHT_DRAWER_PAGES_CONFIG[rightDrawerPage]
   ) : (
     <></>
   );
-
   const isRightDrawerMinimized = useRecoilValue(isRightDrawerMinimizedState);
-
   return (
     <RightDrawerContainer>
       <RightDrawerTopBar />

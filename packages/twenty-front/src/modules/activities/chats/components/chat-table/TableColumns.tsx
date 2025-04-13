@@ -152,7 +152,6 @@ export const createTableColumns = (
 
   // Collect all unique field names from candidateFieldValues across all individuals
   const fieldNamesSet = new Set<string>();
-  
   individuals.forEach(individual => {
     const candidateFieldEdges = individual.candidates?.edges[0]?.node?.candidateFieldValues?.edges;
     if (candidateFieldEdges) {

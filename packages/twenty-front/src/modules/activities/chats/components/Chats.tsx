@@ -2,8 +2,17 @@ import styled from '@emotion/styled';
 
 import { Button, IconCheckbox, IconFilter, IconPlus } from 'twenty-ui';
 
+import { ChatOptionsDropdownButton } from '@/activities/chats/components/ChatOptionsDropdownButton';
 import { PageAddChatButton } from '@/activities/chats/components/PageAddChatButton';
+import { ObjectFilterDropdownButton } from '@/object-record/object-filter-dropdown/components/ObjectFilterDropdownButton';
+import { ObjectFilterDropdownComponentInstanceContext } from '@/object-record/object-filter-dropdown/states/contexts/ObjectFilterDropdownComponentInstanceContext';
+import { FiltersHotkeyScope } from '@/object-record/object-filter-dropdown/types/FiltersHotkeyScope';
+import { ObjectSortDropdownButton } from '@/object-record/object-sort-dropdown/components/ObjectSortDropdownButton';
+import { ObjectSortDropdownComponentInstanceContext } from '@/object-record/object-sort-dropdown/states/context/ObjectSortDropdownComponentInstanceContext';
+import { RecordIndexContextProvider } from '@/object-record/record-index/contexts/RecordIndexContext';
+import { RecordFieldValueSelectorContextProvider } from '@/object-record/record-store/contexts/RecordFieldValueSelectorContext';
 import { PageBody } from '@/ui/layout/page/components/PageBody';
+import { ViewComponentInstanceContext } from '@/views/states/contexts/ViewComponentInstanceContext';
 // import { TasksRecoilScopeContext } from "@/activities/states/recoil-scope-contexts/TasksRecoilScopeContext";
 // import { TaskGroups } from "@/activities/chats/components/TaskGroups";
 // import { TASKS_TAB_LIST_COMPONENT_ID } from "@/activities/tasks/constants/TasksTabListComponentId";
@@ -142,27 +151,36 @@ export const Chats = () => {
 
   return (
     <StyledPageContainer>
+      <RecordFieldValueSelectorContextProvider>
         <StyledPageHeader title="Chats" Icon={IconCheckbox}>
-        <Button
-            title="Filter"
-            Icon={IconFilter}
-            variant="secondary"
-            onClick={() => {}}
-          />
-          <Button
-            title="Add Job"
-            Icon={IconPlus}
-            variant="primary"
-            onClick={() => {}}
-          />
+        <Button title="Filter" Icon={IconFilter} variant="secondary" onClick={() => {}} />
+          <Button title="Add Job" Icon={IconPlus} variant="primary" onClick={() => {}} />
           <StyledAddButtonWrapper>
             <PageAddChatButton />
           </StyledAddButtonWrapper>
         </StyledPageHeader>
         <StyledPageBody>
-
-            <ChatMain initialCandidateId={candidateId} />
+          <RecordIndexContextProvider value={recordIndexContextValue}>
+            <ViewComponentInstanceContext.Provider value={{ instanceId: recordIndexId }} >
+              <StyledTopBar
+                leftComponent={ <StyledTabListContainer> </StyledTabListContainer> }
+                rightComponent={
+                  <StyledRightSection>
+                    <ObjectFilterDropdownComponentInstanceContext.Provider value={{ instanceId: filterDropdownId }} >
+                      <ObjectFilterDropdownButton filterDropdownId={filterDropdownId} hotkeyScope={{ scope: FiltersHotkeyScope.ObjectFilterDropdownButton, }} />
+                    </ObjectFilterDropdownComponentInstanceContext.Provider>
+                    <ObjectSortDropdownComponentInstanceContext.Provider value={{ instanceId: recordIndexId }} >
+                      <ObjectSortDropdownButton hotkeyScope={{ scope: FiltersHotkeyScope.ObjectSortDropdownButton, }} />
+                    </ObjectSortDropdownComponentInstanceContext.Provider>
+                    <ChatOptionsDropdownButton />
+                  </StyledRightSection>
+                }
+              />
+            </ViewComponentInstanceContext.Provider>
+          </RecordIndexContextProvider>
+          <ChatMain initialCandidateId={candidateId} />
         </StyledPageBody>
+      </RecordFieldValueSelectorContextProvider>
     </StyledPageContainer>
   );
 };

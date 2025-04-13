@@ -395,99 +395,18 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   }, [filteredIndividuals]);
 
   const handleSelectionChange = (selectedIds: string[]) => {
-    // Do something with the selected IDs
     console.log('Selected IDs with Checkboxes:', selectedIds);
   };
 
   return (
-    <StyledSidebarContainer width={width} ref={sidebarRef}>
-      <RefreshIndicator isRefreshing={isRefreshing} />
-
-      {/* <FixedHeader>
-        <StyledDropdownContainer>
-          <DropdownContainer ref={jobDropdownRef}>
-            <DropdownButton
-              onClick={() => setIsJobDropdownOpen(!isJobDropdownOpen)}
-            >
-              {selectedJobs.length > 0
-                ? `${selectedJobs.length} Jobs Selected`
-                : 'All Jobs'}
-            </DropdownButton>
-            <DropdownContent isOpen={isJobDropdownOpen}>
-              {jobs.map((job) => (
-                <CheckboxLabel key={job.node.id}>
-                  <Checkbox
-                    type="checkbox"
-                    checked={selectedJobs.includes(job.node.id)}
-                    onChange={() => handleJobToggle(job.node.id)}
-                  />{' '}
-                  {job.node.name} ({jobCounts[job.node.id] || 0})
-                </CheckboxLabel>
-              ))}
-            </DropdownContent>
-          </DropdownContainer>
-          <DropdownContainer ref={chatStatusDropdownRef}>
-            <DropdownButton
-              onClick={() =>
-                setIsChatStatusDropdownOpen(!isChatStatusDropdownOpen)
-              }
-            >
-              {selectedChatStatuses.length > 0
-                ? `${selectedChatStatuses.length} Statuses Selected`
-                : 'Chat Status'}
-            </DropdownButton>
-            <DropdownContent isOpen={isChatStatusDropdownOpen}>
-              {Object.entries(chatStatusLabels).map(([value, label]) => (
-                <CheckboxLabel key={value}>
-                  <Checkbox
-                    type="checkbox"
-                    checked={selectedChatStatuses.includes(value)}
-                    onChange={() => handleChatStatusToggle(value)}
-                  />{' '}
-                  {label} ({chatStatusCounts[value] || 0})
-                </CheckboxLabel>
-              ))}
-            </DropdownContent>
-          </DropdownContainer>
-          <DropdownContainer ref={statusDropdownRef}>
-            <DropdownButton
-              onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
-            >
-              {selectedStatuses.length > 0
-                ? `${selectedStatuses.length} Statuses Selected`
-                : 'All Statuses'}
-            </DropdownButton>
-            <DropdownContent isOpen={isStatusDropdownOpen}>
-              {Object.entries(statusLabels).map(([value, label]) => (
-                <CheckboxLabel key={value}>
-                  <Checkbox
-                    type="checkbox"
-                    checked={selectedStatuses.includes(value)}
-                    onChange={() => handleStatusToggle(value)}
-                  />{' '}
-                  {label} ({statusCounts[value] || 0})
-                </CheckboxLabel>
-              ))}
-            </DropdownContent>
-          </DropdownContainer>
-        </StyledDropdownContainer>
-        <StyledSearchBox
-          placeholder="Search chats"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
-      </FixedHeader> */}
-      <ScrollableContent>
-        <ChatTable
-          individuals={sortedIndividuals}
-          selectedIndividual={selectedIndividual}
-          unreadMessages={unreadMessages}
-          onSelectionChange={handleSelectionChange}
-          onIndividualSelect={handleIndividualSelect}
-          onReorder={handleReorder}
-        />
-      </ScrollableContent>
-    </StyledSidebarContainer>
+    <ChatTable
+      individuals={sortedIndividuals}
+      selectedIndividual={selectedIndividual}
+      unreadMessages={unreadMessages}
+      onSelectionChange={handleSelectionChange}
+      onIndividualSelect={handleIndividualSelect}
+      onReorder={handleReorder}
+    />
   );
 };
 

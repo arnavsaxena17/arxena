@@ -11,11 +11,8 @@ import React, { useEffect, useRef, useState } from 'react';
 // import { Server } from 'socket.io';
 // import { io } from 'socket.io-client';
 // import { p } from 'node_modules/msw/lib/core/GraphQLHandler-907fc607';
-import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
-
-import AttachmentPanel from '../AttachmentPanel';
-
 import { ChatContainer, ChatView, FieldsContainer, StyledButtonBottom, StyledChatInput, StyledChatInputBox, StyledDateComponent, StyledScrollingView, StyledTopBar, StyledWindow } from '@/activities/chats/components/chat-window/ChatWindowStyles';
+import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { recordStoreFamilyState } from '@/object-record/record-store/states/recordStoreFamilyState';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -24,6 +21,7 @@ import {
   mutationToUpdateOnePerson,
   PersonNode,
 } from 'twenty-shared';
+import AttachmentPanel from '../AttachmentPanel';
 import { calculateCandidateStatistics, calculateMessageStatistics, calculateStatusStatistics } from './chatStatistics';
 // import { templates, getTemplatePreview } from './chatTemplates';
 
@@ -39,7 +37,7 @@ const statusLabels: { [key: string]: string } = {
   NEGOTIATION: 'Negotiation',
 };
 
-// const templatesList = [ ];
+// const templatesList = [];
 const interimChats = [
   'remindCandidate',
   'firstInterviewReminder',
@@ -65,14 +63,9 @@ export default function ChatWindow({
   sidebarWidth,
 }: ChatWindowProps) {
   const allIndividuals = individuals;
-
-  const currentIndividual = allIndividuals?.find(
-    (individual) => individual?.id === selectedIndividual,
-  );
+  const currentIndividual = allIndividuals?.find( (individual) => individual?.id === selectedIndividual, );
   const currentCandidateId = currentIndividual?.candidates?.edges[0]?.node?.id;
-
   const navigate = useNavigate();
-
   const [messageHistory, setMessageHistory] = useState<MessageNode[]>([]);
   const [latestResponseGenerated, setLatestResponseGenerated] = useState('');
   const [listOfToolCalls, setListOfToolCalls] = useState<string[]>([]);
@@ -80,24 +73,18 @@ export default function ChatWindow({
 
   // const [qrCode, setQrCode] = useState('');
   const [isWhatsappLoggedIn, setIsWhatsappLoggedIn] = useState(false);
-
   const botResponsePreviewRef = useRef(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [tokenPair] = useRecoilState(tokenPairState);
   const chatViewRef = useRef<HTMLDivElement>(null);
   const [isEditingSalary, setIsEditingSalary] = useState(false);
   const [isEditingCity, setIsEditingCity] = useState(false);
-  const [isEditingCandidateStatus, setIsEditingCandidateStatus] =
-    useState(false);
+  const [isEditingCandidateStatus, setIsEditingCandidateStatus] = useState(false);
   const [salary, setSalary] = useState(currentIndividual?.salary || '');
   const [city, setCity] = useState(currentIndividual?.city || '');
-  const [candidateStatus, setCandidateStatus] = useState(
-    currentIndividual?.candidates?.edges[0].node?.candConversationStatus || '',
-  );
+  const [candidateStatus, setCandidateStatus] = useState( currentIndividual?.candidates?.edges[0].node?.candConversationStatus || '', );
   const [isMessagePending, setIsMessagePending] = useState(false);
-  const [pendingMessage, setPendingMessage] = useState<MessageNode | null>(
-    null,
-  );
+  const [pendingMessage, setPendingMessage] = useState<MessageNode | null>( null, );
   const [shouldScrollToBottom, setShouldScrollToBottom] = useState(true);
   const [userHasScrolled, setUserHasScrolled] = useState(false);
   const [previousMessageCount, setPreviousMessageCount] = useState(0);
@@ -170,13 +157,13 @@ export default function ChatWindow({
         const fetchedTemplates = await fetchAllTemplates();
         console.log('REceived templates::', fetchedTemplates);
         const templateNames = fetchedTemplates.templates
-          .filter( (template: { status: string }) => template.status === 'APPROVED', )
+          .filter( (template: { status: string }) => template.status === 'APPROVED' )
           .map((template: { name: any }) => template.name);
         console.log('Template Names::', templateNames);
         const previews: { [key: string]: string } = {};
         fetchedTemplates.templates.forEach(
           (template: { components: any[]; name: string | number }) => {
-            const bodyComponent = template.components.find( (comp) => comp.type === 'BODY', );
+            const bodyComponent = template.components.find( (comp) => comp.type === 'BODY' );
             if (bodyComponent) {
               previews[template.name] = bodyComponent.text;
             }
@@ -192,10 +179,8 @@ export default function ChatWindow({
         setIsLoadingTemplates(false);
       }
     };
-
     loadTemplates();
   }, []);
-
 
   const currentCandidateName =
     currentIndividual?.name.firstName + ' ' + currentIndividual?.name.lastName;
@@ -203,6 +188,7 @@ export default function ChatWindow({
   const handleNavigateToPersonPage = () => {
     navigate(`/object/person/${currentIndividual?.id}`);
   };
+
   const handleNavigateToCandidatePage = () => {
     navigate(`/object/candidate/${currentCandidateId}`);
   };
@@ -258,6 +244,7 @@ export default function ChatWindow({
       console.log('Error updating city:', error);
     }
   };
+
   const handleCandidateStatusUpdate = async () => {
     try {
       const response = await axios.post(
@@ -304,10 +291,7 @@ export default function ChatWindow({
     console.log('send message');
     const response = await axios.post(
       process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/send-chat',
-      {
-        messageToSend: messageText,
-        phoneNumberTo: currentIndividual?.phones?.primaryPhoneNumber,
-      },
+      { messageToSend: messageText, phoneNumberTo: currentIndividual?.phones?.primaryPhoneNumber },
       { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } },
     );
   };
@@ -333,12 +317,7 @@ export default function ChatWindow({
         !sortedMessages.some(
           (msg: MessageNode) =>
             msg.message === pendingMessage.message &&
-            Math.abs(
-              dayjs(msg.createdAt).diff(
-                dayjs(pendingMessage.createdAt),
-                'second',
-              ),
-            ) < 30,
+            Math.abs( dayjs(msg.createdAt).diff( dayjs(pendingMessage.createdAt), 'second', ), ) < 30,
         )
       ) {
         setMessageHistory([...sortedMessages, pendingMessage]);
