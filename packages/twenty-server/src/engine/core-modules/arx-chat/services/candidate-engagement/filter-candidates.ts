@@ -508,6 +508,7 @@ export class FilterCandidates {
             activeJobCandidate?.startMeetingSchedulingChat,
           startVideoInterviewChat: activeJobCandidate?.startVideoInterviewChat,
           stopChat: activeJobCandidate?.stopChat,
+          candidateFieldValues: activeJobCandidate?.candidateFieldValues,
           whatsappMessages: activeJobCandidate?.whatsappMessages,
           status: activeJobCandidate?.status,
           emailMessages: { edges: activeJobCandidate?.emailMessages?.edges },

@@ -58,7 +58,9 @@ export const ChatTable: React.FC<ChatTableProps> = ({
     setIsAttachmentPanelOpen,
     setIsChatOpen,
     handleSelectAll,
+    handleAfterChange,
     tableId,
+    tableData,
   } = useChatTable(individuals, onSelectionChange, onIndividualSelect);
 
   const theme = useTheme();
@@ -111,74 +113,18 @@ export const ChatTable: React.FC<ChatTableProps> = ({
     [individuals, handleCheckboxChange, selectedIds, handleSelectAll]
   );
   
-  const hotTableComponent = useMemo(
-    () => (
-      <HotTable
-        ref={hotRef}
-        data={prepareTableData(individuals)}
-        columns={columns}
-        colHeaders={true}
-        rowHeaders={true}
-        height="auto"
-        licenseKey="non-commercial-and-evaluation"
-        stretchH="all"
-        className="htCenter"
-        readOnly={false}
-        autoWrapRow={false}
-        autoWrapCol={false}
-        autoRowSize={false}
-        rowHeights={30}
-        manualRowResize={true}
-        manualColumnResize={true}
-        contextMenu={true}
-        filters={true}
-        dropdownMenu={true}
-        afterGetColHeader={(col, TH) => {
-          if (col === 0) {
-            const isAllSelected = selectedIds.length === individuals.length && individuals.length > 0;
-            const headerCell = TH.querySelector('.colHeader');
-            if (headerCell) {
-              headerCell.innerHTML = `<input type="checkbox" class="select-all-checkbox" ${isAllSelected ? 'checked' : ''}>`;
-              const checkbox = headerCell.querySelector('.select-all-checkbox');
-              if (checkbox) {
-                checkbox.addEventListener('click', (e) => {
-                  e.stopPropagation();
-                  handleSelectAll();
-                });
-              }
-            }
-          }
-        }}
-        afterSelection={(row: number) => {
-          if (row >= 0) {
-            const selectedIndividual = individuals[row];
-            onIndividualSelect(selectedIndividual.id);
-            if (!selectedIds.includes(selectedIndividual.id)) {
-              handleCheckboxChange(selectedIndividual.id);
-            }
-          }
-        }}
-        beforeOnCellMouseDown={(event, coords) => {
-          const target = event.target as HTMLElement;
-          if (target.nodeName === 'INPUT' && (target.className === 'select-all-checkbox' || target.className === 'row-checkbox')) {
-            event.stopImmediatePropagation();
-          }
-        }}
-      />
-    ),
-    [individuals, columns, prepareTableData, onIndividualSelect, selectedIds, handleCheckboxChange, handleSelectAll]
-  );
-
-  console.log('handleActivityDrawer');
+  // For the activity drawer
   const { openRightDrawer } = useRightDrawer();
-
   const handleActivityDrawerClick = () => {
     openRightDrawer(RightDrawerPages.SimpleActivity, {
       title: 'Simple Activity',
       Icon: IconList,
     });
   };
-
+  
+  // Create a deep mutable copy of the tableData to prevent "read-only property" errors
+  const mutableData = tableData.map(row => ({...row}));
+  
   return (
     <ContextStoreComponentInstanceContext.Provider
       value={{
@@ -191,7 +137,72 @@ export const ChatTable: React.FC<ChatTableProps> = ({
         }}
       >
         <TableContainer>
-          {hotTableComponent}
+          <HotTable
+            ref={hotRef}
+            data={mutableData}
+            columns={columns}
+            colHeaders={true}
+            rowHeaders={true}
+            height="auto"
+            licenseKey="non-commercial-and-evaluation"
+            stretchH="all"
+            className="htCenter"
+            readOnly={false}
+            autoWrapRow={false}
+            autoWrapCol={false}
+            autoRowSize={false}
+            rowHeights={30}
+            manualRowResize={true}
+            manualColumnResize={true}
+            contextMenu={true}
+            filters={true}
+            dropdownMenu={true}
+            cells={(row, col) => {
+              const cellProperties = {};
+              // Make sure the first column (checkbox) is read-only
+              if (col === 0) {
+                return { ...cellProperties, readOnly: true };
+              }
+              return cellProperties;
+            }}
+            // Important: Use a specific source to avoid infinite loops
+            afterChange={(changes, source) => {
+              if (source !== 'loadData') {
+                handleAfterChange(changes, source);
+              }
+            }}
+            afterGetColHeader={(col, TH) => {
+              if (col === 0) {
+                const isAllSelected = selectedIds.length === individuals.length && individuals.length > 0;
+                const headerCell = TH.querySelector('.colHeader');
+                if (headerCell) {
+                  headerCell.innerHTML = `<input type="checkbox" class="select-all-checkbox" ${isAllSelected ? 'checked' : ''}>`;
+                  const checkbox = headerCell.querySelector('.select-all-checkbox');
+                  if (checkbox) {
+                    checkbox.addEventListener('click', (e) => {
+                      e.stopPropagation();
+                      handleSelectAll();
+                    });
+                  }
+                }
+              }
+            }}
+            afterSelection={(row: number) => {
+              if (row >= 0) {
+                const selectedIndividual = individuals[row];
+                onIndividualSelect(selectedIndividual.id);
+                if (!selectedIds.includes(selectedIndividual.id)) {
+                  handleCheckboxChange(selectedIndividual.id);
+                }
+              }
+            }}
+            beforeOnCellMouseDown={(event, coords) => {
+              const target = event.target as HTMLElement;
+              if (target.nodeName === 'INPUT' && (target.className === 'select-all-checkbox' || target.className === 'row-checkbox')) {
+                event.stopImmediatePropagation();
+              }
+            }}
+          />
         </TableContainer>
         <ActionsBar
           selectedIds={selectedIds}

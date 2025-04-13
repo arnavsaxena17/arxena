@@ -47,10 +47,14 @@ export const createTableColumns = (
   
   const nameRenderer: ColumnRenderer = (instance, td, row, column, prop, value) => {
     const individual = individuals[row];
-    const name = `${individual.name.firstName} ${individual.name.lastName}`;
+    
+    // Use the provided value if it exists (e.g., from edited data)
+    // Otherwise, construct from the individual object
+    const nameValue = value || (individual ? `${individual.name.firstName} ${individual.name.lastName}` : 'N/A');
+    
     const div = document.createElement('div');
     Object.assign(div.style, truncatedCellStyle);
-    div.textContent = name;
+    div.textContent = nameValue;
     td.innerHTML = '';
     td.appendChild(div);
     return td;
