@@ -25,8 +25,6 @@ export const RecordIndexActionMenuEffect = () => {
 
   const { openActionBar, closeActionBar } = useActionMenu(actionMenuId);
 
-  // Using closeActionBar here was causing a bug because it goes back to the
-  // previous hotkey scope, and we don't want that here.
   const setIsBottomBarOpened = useSetRecoilComponentStateV2(
     isBottomBarOpenedComponentState,
     getActionBarIdFromActionMenuId(actionMenuId),
@@ -49,9 +47,6 @@ export const RecordIndexActionMenuEffect = () => {
       !isRightDrawerOpen &&
       !isCommandMenuOpened
     ) {
-      // We only handle opening the ActionMenuBar here, not the Dropdown.
-      // The Dropdown is already managed by sync handlers for events like
-      // right-click to open and click outside to close.
       openActionBar();
     }
     if (contextStoreNumberOfSelectedRecords === 0 && isDropdownOpen) {

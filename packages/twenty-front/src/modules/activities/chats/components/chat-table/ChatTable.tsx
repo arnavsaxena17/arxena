@@ -4,8 +4,13 @@ import 'handsontable/styles/handsontable.min.css';
 import 'handsontable/styles/ht-theme-horizon.css';
 import 'handsontable/styles/ht-theme-main.min.css';
 
+import { RecordIndexActionMenu } from '@/action-menu/components/RecordIndexActionMenu';
+import { ActionMenuComponentInstanceContext } from '@/action-menu/states/contexts/ActionMenuComponentInstanceContext';
+import { ContextStoreComponentInstanceContext } from '@/context-store/states/contexts/ContextStoreComponentInstanceContext';
+import { contextStoreCurrentObjectMetadataItemComponentState } from '@/context-store/states/contextStoreCurrentObjectMetadataItemComponentState';
 import { useRightDrawer } from '@/ui/layout/right-drawer/hooks/useRightDrawer';
 import { RightDrawerPages } from '@/ui/layout/right-drawer/types/RightDrawerPages';
+import { useSetRecoilComponentStateV2 } from '@/ui/utilities/state/component-state/hooks/useSetRecoilComponentStateV2';
 import { useTheme } from '@emotion/react';
 import React, { useEffect, useMemo, useRef } from 'react';
 import { IconList } from 'twenty-ui';
@@ -16,6 +21,9 @@ import { CandidateNavigation, NavIconButton, PanelContainer, TableContainer } fr
 import { createTableColumns } from './TableColumns';
 import { ChatTableProps } from './types';
 import { useChatTable } from './useChatTable';
+
+
+
 
 registerAllModules();
 
@@ -50,17 +58,43 @@ export const ChatTable: React.FC<ChatTableProps> = ({
     setIsAttachmentPanelOpen,
     setIsChatOpen,
     handleSelectAll,
-  } = useChatTable(individuals, onSelectionChange);
+    tableId,
+  } = useChatTable(individuals, onSelectionChange, onIndividualSelect);
 
   const theme = useTheme();
   const hotRef = useRef<any>(null);
 
-  // Force render the table when selectedIds change
-  // useEffect(() => {
-  //   if (hotRef.current?.hotInstance) {
-  //     hotRef.current.hotInstance.render();
-  //   }
-  // }, [selectedIds]);
+  // Set the current object metadata item for action menu 
+  const setCurrentObjectMetadataItem = useSetRecoilComponentStateV2(
+    contextStoreCurrentObjectMetadataItemComponentState,
+    tableId
+  );
+
+  // Set object metadata item for the action menu
+  useEffect(() => {
+    // Cast as any to bypass TypeScript checking since we're providing minimal data
+    // that satisfies what the RecordIndexActionMenu needs
+    setCurrentObjectMetadataItem({
+      id: 'person-id',
+      nameSingular: 'person',
+      namePlural: 'people',
+      labelSingular: 'Person',
+      labelPlural: 'People',
+      description: 'Person records',
+      icon: 'IconUser',
+      isCustom: false,
+      isRemote: false,
+      isActive: true,
+      isSystem: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      labelIdentifierFieldMetadataId: 'name-field-id',
+      imageIdentifierFieldMetadataId: null,
+      isLabelSyncedWithName: true,
+      fields: [],
+      indexMetadatas: []
+    } as any);
+  }, [setCurrentObjectMetadataItem]);
 
   useEffect(() => {
     if (!hotRef.current?.hotInstance) {
@@ -146,34 +180,49 @@ export const ChatTable: React.FC<ChatTableProps> = ({
   };
 
   return (
-    <>
-      <TableContainer>
-        {hotTableComponent}
-      </TableContainer>
-      <ActionsBar
-        selectedIds={selectedIds}
-        clearSelection={clearSelection}
-        handleViewChats={handleViewChats}
-        handleViewCVs={handleViewCVs}
-        createChatBasedShortlistDelivery={createChatBasedShortlistDelivery}
-        createUpdateCandidateStatus={createUpdateCandidateStatus}
-        createCandidateShortlists={createCandidateShortlists}
-        handleActivityDrawer={handleActivityDrawerClick}
-      />
-      <MultiCandidateChat isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} selectedPeople={selectedPeople} />
-      {isAttachmentPanelOpen && currentCandidate && (
-        <>
-          <AttachmentPanel isOpen={isAttachmentPanelOpen} onClose={() => setIsAttachmentPanelOpen(false)} candidateId={currentCandidate.candidates.edges[0].node.id} candidateName={`${currentCandidate.name.firstName} ${currentCandidate.name.lastName}`} PanelContainer={PanelContainer} />
-          {selectedIds.length > 1 && (isAttachmentPanelOpen || isChatOpen) && (
-            <CandidateNavigation>
-              <NavIconButton onClick={handlePrevCandidate} disabled={currentPersonIndex === 0} title="Previous Candidate" > ← </NavIconButton>
-              <NavIconButton onClick={handleNextCandidate} disabled={currentPersonIndex === selectedIds.length - 1} title="Next Candidate" > → </NavIconButton>
-            </CandidateNavigation>
-          )}
-        </>
-      )}
-    </>
+    <ContextStoreComponentInstanceContext.Provider
+      value={{
+        instanceId: tableId,
+      }}
+    >
+      <ActionMenuComponentInstanceContext.Provider
+        value={{
+          instanceId: tableId,
+        }}
+      >
+        <TableContainer>
+          {hotTableComponent}
+        </TableContainer>
+        <ActionsBar
+          selectedIds={selectedIds}
+          clearSelection={clearSelection}
+          handleViewChats={handleViewChats}
+          handleViewCVs={handleViewCVs}
+          createChatBasedShortlistDelivery={createChatBasedShortlistDelivery}
+          createUpdateCandidateStatus={createUpdateCandidateStatus}
+          createCandidateShortlists={createCandidateShortlists}
+          handleActivityDrawer={handleActivityDrawerClick}
+        />
+        <RecordIndexActionMenu indexId={tableId} />
+        <MultiCandidateChat isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} selectedPeople={selectedPeople} />
+        {isAttachmentPanelOpen && currentCandidate && (
+          <>
+            <AttachmentPanel isOpen={isAttachmentPanelOpen} onClose={() => setIsAttachmentPanelOpen(false)} candidateId={currentCandidate.candidates.edges[0].node.id} candidateName={`${currentCandidate.name.firstName} ${currentCandidate.name.lastName}`} PanelContainer={PanelContainer} />
+            {selectedIds.length > 1 && (isAttachmentPanelOpen || isChatOpen) && (
+              <CandidateNavigation>
+                <NavIconButton onClick={handlePrevCandidate} disabled={currentPersonIndex === 0} title="Previous Candidate" > ← </NavIconButton>
+                <NavIconButton onClick={handleNextCandidate} disabled={currentPersonIndex === selectedIds.length - 1} title="Next Candidate" > → </NavIconButton>
+              </CandidateNavigation>
+            )}
+          </>
+        )}
+      </ActionMenuComponentInstanceContext.Provider>
+    </ContextStoreComponentInstanceContext.Provider>
   );
 };
 
 export default ChatTable; 
+
+function uuid() {
+  throw new Error('Function not implemented.');
+}
