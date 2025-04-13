@@ -12,18 +12,17 @@ import { useRightDrawer } from '@/ui/layout/right-drawer/hooks/useRightDrawer';
 import { RightDrawerPages } from '@/ui/layout/right-drawer/types/RightDrawerPages';
 import { useSetRecoilComponentStateV2 } from '@/ui/utilities/state/component-state/hooks/useSetRecoilComponentStateV2';
 import { useTheme } from '@emotion/react';
-import React, { useMemo, useRef } from 'react';
-import { useRecoilState, useRecoilValue } from 'recoil';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { IconList } from 'twenty-ui';
 import ActionsBar from '../ActionsBar';
 import AttachmentPanel from '../AttachmentPanel';
 import MultiCandidateChat from '../MultiCandidateChat';
-import { tableMetadataState } from './states/tableMetadataState';
-import { tableThemeState } from './states/tableThemeState';
 import { CandidateNavigation, NavIconButton, PanelContainer, TableContainer } from './styled';
 import { createTableColumns } from './TableColumns';
 import { ChatTableProps } from './types';
 import { useChatTable } from './useChatTable';
+
+
 
 
 registerAllModules();
@@ -67,34 +66,47 @@ export const ChatTable: React.FC<ChatTableProps> = ({
   const theme = useTheme();
   const hotRef = useRef<any>(null);
 
-  // Use Recoil state for object metadata
-  const metadata = useRecoilValue(tableMetadataState(tableId));
-  
   // Set the current object metadata item for action menu 
   const setCurrentObjectMetadataItem = useSetRecoilComponentStateV2(
     contextStoreCurrentObjectMetadataItemComponentState,
     tableId
   );
-  
-  // Set object metadata in component state
-  useMemo(() => {
-    setCurrentObjectMetadataItem(metadata as any);
-  }, [setCurrentObjectMetadataItem, metadata]);
 
-  // Use Recoil state for theme instead of useEffect
-  const [tableTheme, setTableTheme] = useRecoilState(tableThemeState(tableId));
-  
-  // Update tableTheme when theme changes
-  useMemo(() => {
-    const themeName = theme.name === 'dark' ? 'ht-theme-main-dark' : 'ht-theme-main';
-    setTableTheme(themeName);
-    
-    // Apply the theme to the table instance if it exists
-    if (hotRef.current?.hotInstance) {
-      hotRef.current.hotInstance.useTheme(themeName);
-      hotRef.current.hotInstance.render();
+  // Set object metadata item for the action menu
+  useEffect(() => {
+    // Cast as any to bypass TypeScript checking since we're providing minimal data
+    // that satisfies what the RecordIndexActionMenu needs
+    setCurrentObjectMetadataItem({
+      id: 'person-id',
+      nameSingular: 'person',
+      namePlural: 'people',
+      labelSingular: 'Person',
+      labelPlural: 'People',
+      description: 'Person records',
+      icon: 'IconUser',
+      isCustom: false,
+      isRemote: false,
+      isActive: true,
+      isSystem: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      labelIdentifierFieldMetadataId: 'name-field-id',
+      imageIdentifierFieldMetadataId: null,
+      isLabelSyncedWithName: true,
+      fields: [],
+      indexMetadatas: []
+    } as any);
+  }, [setCurrentObjectMetadataItem]);
+
+  useEffect(() => {
+    if (!hotRef.current?.hotInstance) {
+      return;
     }
-  }, [theme.name, setTableTheme]);
+
+    const themeName = theme.name === 'dark' ? 'ht-theme-main-dark' : 'ht-theme-main';
+    hotRef.current.hotInstance.useTheme(themeName);
+    hotRef.current.hotInstance.render();
+  }, [theme.name]);
 
   const columns = useMemo(
     () => createTableColumns(individuals, handleCheckboxChange, selectedIds, handleSelectAll),
@@ -220,4 +232,8 @@ export const ChatTable: React.FC<ChatTableProps> = ({
   );
 };
 
-export default ChatTable;
+export default ChatTable; 
+
+function uuid() {
+  throw new Error('Function not implemented.');
+}
