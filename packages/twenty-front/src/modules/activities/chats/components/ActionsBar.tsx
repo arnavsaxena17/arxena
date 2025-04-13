@@ -1,10 +1,10 @@
 // src/components/ActionsBar.tsx
-import React from 'react';
 import styled from '@emotion/styled';
-import { IconX, IconUsers, IconMessages, IconFileText, IconList, IconRefresh } from '@tabler/icons-react';
+import { IconFileText, IconList, IconMessages, IconRefresh, IconUsers, IconX } from '@tabler/icons-react';
+import React from 'react';
 const ActionsBarContainer = styled.div`
   position: fixed;
-  bottom: 0;
+  bottom: 100px;
   background-color: white;
   padding: 12px 24px;
   display: flex;

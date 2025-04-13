@@ -2,15 +2,15 @@ import Handsontable from 'handsontable';
 import { PersonNode } from 'twenty-shared';
 
 export type TableData = {
-  id: string;
-  name: string;
-  candidateStatus: string;
-  startDate: string;
-  status: string;
-  salary: string;
-  city: string;
-  jobTitle: string;
-  checkbox: boolean;
+  name?: string;
+  id?: string;
+  candidateStatus?: string;
+  startDate?: string;
+  status?: string;
+  salary?: string;
+  city?: string;
+  jobTitle?: string;
+  checkbox?: boolean;
 };
 
 export type UnreadMessages = {

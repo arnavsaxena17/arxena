@@ -46,27 +46,34 @@ export const ChatTable: React.FC<ChatTableProps> = ({
     createUpdateCandidateStatus,
     setIsAttachmentPanelOpen,
     setIsChatOpen,
+    handleSelectAll,
   } = useChatTable(individuals, onSelectionChange);
 
   const theme = useTheme();
   const hotRef = useRef<any>(null);
+
+  // Force render the table when selectedIds change
+  useEffect(() => {
+    if (hotRef.current?.hotInstance) {
+      hotRef.current.hotInstance.render();
+    }
+  }, [selectedIds]);
 
   useEffect(() => {
     if (!hotRef.current?.hotInstance) {
       return;
     }
 
-    // const themeName = theme.name === 'dark' ? 'ht-theme-horizon-dark' : 'ht-theme-horizon';
     const themeName = theme.name === 'dark' ? 'ht-theme-main-dark' : 'ht-theme-main';
     hotRef.current.hotInstance.useTheme(themeName);
     hotRef.current.hotInstance.render();
   }, [theme.name]);
 
   const columns = useMemo(
-    () => createTableColumns(individuals, handleCheckboxChange),
-    [individuals, handleCheckboxChange]
+    () => createTableColumns(individuals, handleCheckboxChange, selectedIds, handleSelectAll),
+    [individuals, handleCheckboxChange, selectedIds, handleSelectAll]
   );
-
+  
   const hotTableComponent = useMemo(
     () => (
       <HotTable
@@ -80,26 +87,49 @@ export const ChatTable: React.FC<ChatTableProps> = ({
         stretchH="all"
         className="htCenter"
         readOnly={false}
-        autoWrapRow={true}
-        autoWrapCol={true}
+        autoWrapRow={false}
+        autoWrapCol={false}
+        autoRowSize={false}
+        rowHeights={30}
         manualRowResize={true}
         manualColumnResize={true}
         contextMenu={true}
         filters={true}
         dropdownMenu={true}
-        hiddenColumns={{
-          columns: [0],
-          indicators: true,
+        afterGetColHeader={(col, TH) => {
+          if (col === 0) {
+            const isAllSelected = selectedIds.length === individuals.length && individuals.length > 0;
+            const headerCell = TH.querySelector('.colHeader');
+            if (headerCell) {
+              headerCell.innerHTML = `<input type="checkbox" class="select-all-checkbox" ${isAllSelected ? 'checked' : ''}>`;
+              const checkbox = headerCell.querySelector('.select-all-checkbox');
+              if (checkbox) {
+                checkbox.addEventListener('click', (e) => {
+                  e.stopPropagation();
+                  handleSelectAll();
+                });
+              }
+            }
+          }
         }}
         afterSelection={(row: number) => {
           if (row >= 0) {
             const selectedIndividual = individuals[row];
             onIndividualSelect(selectedIndividual.id);
+            if (!selectedIds.includes(selectedIndividual.id)) {
+              handleCheckboxChange(selectedIndividual.id);
+            }
+          }
+        }}
+        beforeOnCellMouseDown={(event, coords) => {
+          const target = event.target as HTMLElement;
+          if (target.nodeName === 'INPUT' && (target.className === 'select-all-checkbox' || target.className === 'row-checkbox')) {
+            event.stopImmediatePropagation();
           }
         }}
       />
     ),
-    [individuals, columns, prepareTableData, onIndividualSelect]
+    [individuals, columns, prepareTableData, onIndividualSelect, selectedIds, handleCheckboxChange, handleSelectAll]
   );
 
   return (

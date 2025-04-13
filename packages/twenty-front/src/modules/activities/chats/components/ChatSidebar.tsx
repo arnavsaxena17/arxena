@@ -192,9 +192,9 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     }
   };
 
-  useEffect(() => {
-    console.log('Jobs received in ChatSidebar:', jobs);
-  }, [jobs]);
+  // useEffect(() => {
+  //   console.log('Jobs received in ChatSidebar:', jobs);
+  // }, [jobs]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {

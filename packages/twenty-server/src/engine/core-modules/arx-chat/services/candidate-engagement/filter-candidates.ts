@@ -467,7 +467,7 @@ export class FilterCandidates {
         console.log('personWithActiveJob::', personWithActiveJob);
         const activeJobCandidate: CandidateNode = activeJobCandidateObj?.node;
 
-        console.log('This isthe activeJobCandidate::', activeJobCandidate);
+        // console.log('This isthe activeJobCandidate::', activeJobCandidate);
         const activeJob: Jobs = activeJobCandidate?.jobs;
         const activeCompany = activeJob?.company;
 

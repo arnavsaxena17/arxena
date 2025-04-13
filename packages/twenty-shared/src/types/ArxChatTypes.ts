@@ -980,6 +980,9 @@ export const emptyCandidateProfileObj: CandidateNode = {
       ],
     },
   },
+  candidateFieldValues: {
+    edges: [],
+  },
   videoInterview: {
     edges: [
       {
@@ -1617,10 +1620,35 @@ export interface CandidateNode {
   whatsappMessages: WhatsAppMessages;
   emailMessages: EmailMessages;
   jobs: Jobs;
+  candidateFieldValues: CandidateFieldValues;
   candidateReminders: Reminders;
   clientInterview?: ClientInterviews;
   person: PersonNode;
 }
+
+export interface CandidateFieldValues {
+  edges: CandidateFieldValueEdge[];
+}
+
+export interface CandidateFieldValueEdge {
+  node: CandidateFieldValueNode;
+}
+
+export interface CandidateFieldValueNode {
+  id: string;
+  name: string;
+  candidateFields: CandidateField;
+}
+
+export interface CandidateField {
+  name: string;
+  id: string;
+}
+
+
+
+
+
 
 // export interface ArxJobs {
 //   name: string;

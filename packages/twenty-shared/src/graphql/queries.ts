@@ -8,28 +8,6 @@ export const graphqlToFetchWhatsappMessageByWhatsappId = `query FindOneWhatsappM
   }
 }`;
 
-export const graphqlToFetchCandidatesWithRecentUpdates = `
-  query getCandidatesWithRecentUpdates($filter: CandidateFilter) {
-    candidates(filter: $filter) {
-      edges {
-        node {
-          id
-          jobs {
-            id
-          }
-          startChat
-          startChatCompleted
-          startVideoInterviewChat
-          startVideoInterviewChatCompleted
-          startMeetingSchedulingChat
-          chatCount
-          startMeetingSchedulingChatCompleted
-          updatedAt
-        }
-      }
-    }
-  }
-`;
 
 export const graphqlQueryToFindScheduledClientMeetings = `query FindManyClientInterviews($filter: ClientInterviewFilterInput, $orderBy: [ClientInterviewOrderByInput], $lastCursor: String, $limit: Int) {
   clientInterviews(
@@ -224,6 +202,18 @@ export const graphqlToFindManyJobs = `query FindManyJobs($filter: JobFilterInput
               source
               campaign
               whatsappProvider
+              candidateFieldValues{
+            edges{
+              node{
+                  id
+                  name
+                  candidateFields{
+                      name
+                      id
+                  }
+              }
+            }
+          }
             }
           }
         }
@@ -813,7 +803,19 @@ export const graphqlQueryToFindManyPeople = `query FindManyPeople($filter: Perso
                     name
                     source
                     campaign
-                    clientInterview{
+                    candidateFieldValues{
+                      edges{
+                        node{
+                            id
+                            name
+                            candidateFields{
+                                name
+                                id
+                            }
+                        }
+                      }
+                    }
+                    clientInterview {
                         edges{
                             node{
                                 id
