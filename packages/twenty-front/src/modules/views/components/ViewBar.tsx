@@ -9,9 +9,7 @@ import { TopBar } from '@/ui/layout/top-bar/components/TopBar';
 import { QueryParamsFiltersEffect } from '@/views/components/QueryParamsFiltersEffect';
 import { ViewBarFilterEffect } from '@/views/components/ViewBarFilterEffect';
 import { ViewBarPageTitle } from '@/views/components/ViewBarPageTitle';
-import { ViewBarSkeletonLoader } from '@/views/components/ViewBarSkeletonLoader';
 import { ViewBarSortEffect } from '@/views/components/ViewBarSortEffect';
-import { ViewPickerDropdown } from '@/views/view-picker/components/ViewPickerDropdown';
 
 import { ViewsHotkeyScope } from '../types/ViewsHotkeyScope';
 
@@ -20,6 +18,8 @@ import { VIEW_SORT_DROPDOWN_ID } from '@/object-record/object-sort-dropdown/cons
 import { ObjectSortDropdownComponentInstanceContext } from '@/object-record/object-sort-dropdown/states/context/ObjectSortDropdownComponentInstanceContext';
 import { ViewBarRecordFilterEffect } from '@/views/components/ViewBarRecordFilterEffect';
 import { ViewBarRecordSortEffect } from '@/views/components/ViewBarRecordSortEffect';
+import { ViewBarSkeletonLoader } from '@/views/components/ViewBarSkeletonLoader';
+import { ViewPickerDropdown } from '@/views/view-picker/components/ViewPickerDropdown';
 import { UpdateViewButtonGroup } from './UpdateViewButtonGroup';
 import { ViewBarDetails } from './ViewBarDetails';
 
@@ -28,7 +28,7 @@ export type ViewBarProps = {
   className?: string;
   optionsDropdownButton: ReactNode;
   handleRefresh?: () => void;
-
+  handleVideoInterviewEdit?: () => void;
 };
 
 export const ViewBar = ({
@@ -36,6 +36,7 @@ export const ViewBar = ({
   className,
   optionsDropdownButton,
   handleRefresh,
+  handleVideoInterviewEdit,
 }: ViewBarProps) => {
   const { objectNamePlural } = useParams();
 
@@ -59,8 +60,8 @@ export const ViewBar = ({
 
       <ViewBarPageTitle viewBarId={viewBarId} />
       <TopBar
+        handleVideoInterviewEdit={handleVideoInterviewEdit}
         handleRefresh={handleRefresh}
-
         className={className}
         leftComponent={
           loading ? <ViewBarSkeletonLoader /> : <ViewPickerDropdown />

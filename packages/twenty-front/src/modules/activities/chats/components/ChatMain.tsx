@@ -145,10 +145,6 @@ export const ChatMain = ({ initialCandidateId }: ChatMainProps) => {
   const currentUser = useRecoilValue(currentUserState);
   // const userEmail = currentUser?.email;
 
-  console.log('This is the currentWorkspaceMember:', currentWorkspaceMember);
-  console.log('This is the currentWorkspace:', currentWorkspace);
-  console.log('This is the currentUser:', currentUser);
-
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
   useEffect(() => {

@@ -7,8 +7,6 @@ import { REACT_APP_SERVER_BASE_URL } from '~/config';
 
 export const PageFavicon = () => {
   const workspacePublicData = useRecoilValue(workspacePublicDataState);
-  console.log('PageFavicon rendering');
-  console.log('workspacePublicData', workspacePublicData);
   if (workspacePublicData?.logo === '') {
     return (
       <Helmet>

@@ -249,7 +249,6 @@ export const MultiCandidateChat: React.FC<MultiCandidateChatProps> = ({
   selectedPeople,
 }) => {
 
-  console.log("selectedPeople::", selectedPeople);
   const [tokenPair] = useRecoilState(tokenPairState);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [messageHistory, setMessageHistory] = useState<MessageNode[]>([]);

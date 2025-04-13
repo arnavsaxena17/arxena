@@ -59,6 +59,10 @@ export const RecordIndexContainer = () => {
     await recordTableRefetchFunction();
   };
 
+  const handleVideoInterviewEdit = async () => {
+    console.log('handleVideoInterviewEdit');
+  };
+
   console.log('RecordIndexContainer rendering');
   console.log('RecordIndexContainer rendering::recordIndexId', recordIndexId);
 
@@ -70,6 +74,7 @@ export const RecordIndexContainer = () => {
           <SpreadsheetImportProvider>
             <ViewBar
               handleRefresh={handleRefresh}
+              handleVideoInterviewEdit={handleVideoInterviewEdit}
               viewBarId={recordIndexId}
               optionsDropdownButton={
                 <ObjectOptionsDropdown

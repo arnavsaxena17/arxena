@@ -1,6 +1,6 @@
 import styled from '@emotion/styled';
 import { ReactNode } from 'react';
-import { Button, IconRefresh } from 'twenty-ui';
+import { Button, IconRefresh, IconVideo } from 'twenty-ui';
 
 type TopBarProps = {
   className?: string;
@@ -10,6 +10,8 @@ type TopBarProps = {
   displayBottomBorder?: boolean;
   showRefetch?:boolean;
   handleRefresh?: () => void;
+  showVideoInterviewEdit?:boolean;
+  handleVideoInterviewEdit?: () => void;
 };
 
 const StyledContainer = styled.div`
@@ -45,13 +47,21 @@ const StyledRightSection = styled.div`
   gap: ${({ theme }) => theme.betweenSiblingsGap};
 `;
 
+
+// const showRefetch = true;
+
+
+
+
 export const TopBar = ({
   className,
   leftComponent,
   rightComponent,
   bottomComponent,
   handleRefresh,
-  showRefetch=true
+  handleVideoInterviewEdit,
+  showRefetch=true,
+  showVideoInterviewEdit=true
 }: TopBarProps) => (
   <StyledContainer className={className}>
     <StyledTopBar>
@@ -63,6 +73,15 @@ export const TopBar = ({
           variant="secondary"
           accent="default"
           onClick={handleRefresh}
+        />
+      )}
+      {showVideoInterviewEdit && (
+        <Button
+          Icon={IconVideo}
+          title="Video Interview Edit"
+          variant="secondary"
+          accent="default"
+          onClick={handleVideoInterviewEdit}
         />
       )}
 
