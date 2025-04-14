@@ -7,6 +7,8 @@ import { RightDrawerEmailThread } from '@/activities/emails/right-drawer/compone
 import { RightDrawerRecord } from '@/object-record/record-right-drawer/components/RightDrawerRecord';
 import { isRightDrawerMinimizedState } from '@/ui/layout/right-drawer/states/isRightDrawerMinimizedState';
 
+import { RightDrawerAllActionsContent } from '@/action-menu/components/RightDrawerAllActionsContent';
+import { RightDrawerChatAllActionsContent } from '@/activities/chats/components/RightDrawerChatAllActionsContent';
 import { SimpleActivityDrawer } from '@/activities/chats/components/SimpleActivityDrawer';
 import { RightDrawerContainer } from '@/ui/layout/right-drawer/components/RightDrawerContainer';
 import { RightDrawerTopBar } from '@/ui/layout/right-drawer/components/RightDrawerTopBar';
@@ -43,6 +45,8 @@ const RIGHT_DRAWER_PAGES_CONFIG: ComponentByRightDrawerPage = {
   [RightDrawerPages.WorkflowStepEdit]: <RightDrawerWorkflowEditStep />,
   [RightDrawerPages.WorkflowStepView]: <RightDrawerWorkflowViewStep />,
   [RightDrawerPages.SimpleActivity]: <SimpleActivityDrawer />,
+  [RightDrawerPages.AllActions]: <RightDrawerAllActionsContent />,
+  [RightDrawerPages.ChatAllActions]: <RightDrawerChatAllActionsContent />,
 };
 
 export const RightDrawerRouter = () => {

@@ -4,7 +4,6 @@ import { RecordAgnosticActionMenuEntriesSetter } from '@/action-menu/actions/rec
 import { RunWorkflowRecordAgnosticActionMenuEntriesSetter } from '@/action-menu/actions/record-agnostic-actions/components/RunWorkflowRecordAgnosticActionMenuEntriesSetter';
 import { ActionMenuConfirmationModals } from '@/action-menu/components/ActionMenuConfirmationModals';
 import { RecordIndexActionMenuBar } from '@/action-menu/components/RecordIndexActionMenuBar';
-import { RecordIndexActionMenuButtons } from '@/action-menu/components/RecordIndexActionMenuButtons';
 import { RecordIndexActionMenuDropdown } from '@/action-menu/components/RecordIndexActionMenuDropdown';
 import { RecordIndexActionMenuEffect } from '@/action-menu/components/RecordIndexActionMenuEffect';
 import { ActionMenuContext } from '@/action-menu/contexts/ActionMenuContext';
@@ -13,10 +12,20 @@ import { isRecordIndexLoadMoreLockedComponentState } from '@/object-record/recor
 import { useRecoilComponentValueV2 } from '@/ui/utilities/state/component-state/hooks/useRecoilComponentValueV2';
 import { useSetRecoilComponentStateV2 } from '@/ui/utilities/state/component-state/hooks/useSetRecoilComponentStateV2';
 import { useIsFeatureEnabled } from '@/workspace/hooks/useIsFeatureEnabled';
+import { ReactNode } from 'react';
 import { useIsMobile } from 'twenty-ui';
 import { FeatureFlagKey } from '~/generated/graphql';
 
-export const RecordIndexActionMenu = ({ indexId }: { indexId: string }) => {
+export type RecordIndexActionMenuProps = {
+  indexId: string;
+  customActionMenuEntriesSetter?: ReactNode;
+};
+
+export const RecordIndexActionMenu = ({ 
+  indexId,
+  customActionMenuEntriesSetter
+}: RecordIndexActionMenuProps) => {
+  console.log("RecordIndexActionMenu::", indexId)
   const contextStoreCurrentObjectMetadataItem = useRecoilComponentValueV2(
     contextStoreCurrentObjectMetadataItemComponentState,
   );
@@ -35,7 +44,9 @@ export const RecordIndexActionMenu = ({ indexId }: { indexId: string }) => {
     isRecordIndexLoadMoreLockedComponentState,
     indexId,
   );
-
+  console.log("contextStoreCurrentObjectMetadataItem::", contextStoreCurrentObjectMetadataItem)
+  console.log("isCommandMenuV2Enabled::", isCommandMenuV2Enabled)
+  console.log("isWorkflowEnabled::", isWorkflowEnabled)
   return (
     <>
       {contextStoreCurrentObjectMetadataItem && (
@@ -54,16 +65,18 @@ export const RecordIndexActionMenu = ({ indexId }: { indexId: string }) => {
             },
           }}
         >
-          {isCommandMenuV2Enabled ? (
+          {/* {isCommandMenuV2Enabled ? (
             <>{!isMobile && <RecordIndexActionMenuButtons />}</>
           ) : (
+            )} */}
+            {/* <RecordIndexActionMenuButtons /> */}
             <RecordIndexActionMenuBar />
-          )}
           <RecordIndexActionMenuDropdown />
           <ActionMenuConfirmationModals />
           <RecordIndexActionMenuEffect />
           <RecordActionMenuEntriesSetter />
           <RecordAgnosticActionMenuEntriesSetter />
+          {customActionMenuEntriesSetter}
           {isWorkflowEnabled && (
             <RunWorkflowRecordAgnosticActionMenuEntriesSetter />
           )}

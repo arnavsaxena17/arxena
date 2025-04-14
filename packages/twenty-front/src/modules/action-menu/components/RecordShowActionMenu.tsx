@@ -38,7 +38,7 @@ export const RecordShowActionMenu = ({
   );
 
   // TODO: refactor RecordShowPageBaseHeader to use the context store
-
+  console.log("isCommandMenuV2Enabled::", isCommandMenuV2Enabled)
   return (
     <>
       {contextStoreCurrentObjectMetadataItem && (

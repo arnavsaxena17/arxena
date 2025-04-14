@@ -76,8 +76,6 @@ export const useChatTable = (
   const theme = useTheme();
 
   const tableId = useMemo(() => `chat-table-${crypto.randomUUID()}`, []);
-  
-  // Use Recoil state for table data
   const [tableData, setTableData] = useRecoilState(tableDataState(tableId));
 
   const setContextStoreNumberOfSelectedRecords = useSetRecoilComponentStateV2(
@@ -88,8 +86,6 @@ export const useChatTable = (
   const prepareTableData = (individuals: PersonNode[]): TableData[] => {
     return individuals.map(individual => {
       const candidateNode = individual.candidates?.edges[0]?.node;
-      
-      // Create simple, mutable objects instead of using complex nested structures
       const baseData = {
         id: individual.id,
         name: `${individual.name.firstName} ${individual.name.lastName}`,
@@ -116,7 +112,6 @@ export const useChatTable = (
         });
       }
       
-      // Create a mutable copy by explicitly creating a new object
       return {
         ...baseData,
         ...fieldValues

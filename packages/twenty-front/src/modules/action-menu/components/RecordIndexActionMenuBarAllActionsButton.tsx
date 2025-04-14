@@ -1,7 +1,8 @@
-import { useCommandMenu } from '@/command-menu/hooks/useCommandMenu';
+import { useRightDrawer } from '@/ui/layout/right-drawer/hooks/useRightDrawer';
+import { RightDrawerPages } from '@/ui/layout/right-drawer/types/RightDrawerPages';
 import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
-import { IconLayoutSidebarRightExpand, getOsControlSymbol } from 'twenty-ui';
+import { IconLayoutSidebarRightExpand } from 'twenty-ui';
 
 const StyledButton = styled.div`
   border-radius: ${({ theme }) => theme.border.radius.sm};
@@ -24,11 +25,6 @@ const StyledButtonLabel = styled.div`
   margin-left: ${({ theme }) => theme.spacing(1)};
 `;
 
-const StyledShortcutLabel = styled.div`
-  color: ${({ theme }) => theme.font.color.light};
-  font-weight: ${({ theme }) => theme.font.weight.medium};
-`;
-
 const StyledSeparator = styled.div<{ size: 'sm' | 'md' }>`
   background: ${({ theme }) => theme.border.color.light};
   height: ${({ theme, size }) => theme.spacing(size === 'sm' ? 4 : 8)};
@@ -38,15 +34,21 @@ const StyledSeparator = styled.div<{ size: 'sm' | 'md' }>`
 
 export const RecordIndexActionMenuBarAllActionsButton = () => {
   const theme = useTheme();
-  const { openRootCommandMenu } = useCommandMenu();
+  const { openRightDrawer } = useRightDrawer();
+
+  const handleClick = () => {
+    openRightDrawer(RightDrawerPages.AllActions, {
+      title: 'All Actions',
+      Icon: IconLayoutSidebarRightExpand,
+    });
+  };
+
   return (
     <>
       <StyledSeparator size="md" />
-      <StyledButton onClick={openRootCommandMenu}>
+      <StyledButton onClick={handleClick}>
         <IconLayoutSidebarRightExpand size={theme.icon.size.md} />
         <StyledButtonLabel>All Actions</StyledButtonLabel>
-        <StyledSeparator size="sm" />
-        <StyledShortcutLabel>{getOsControlSymbol()}K</StyledShortcutLabel>
       </StyledButton>
     </>
   );

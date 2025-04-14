@@ -8,4 +8,6 @@ export enum RightDrawerPages {
   WorkflowStepView = 'workflow-step-view',
   WorkflowStepEdit = 'workflow-step-edit',
   SimpleActivity = 'simple-activity',
+  AllActions = 'all-actions',
+  ChatAllActions = 'chat-all-actions',
 }

@@ -18,7 +18,13 @@ const StyledLabel = styled.div`
   padding-right: ${({ theme }) => theme.spacing(2)};
 `;
 
-export const RecordIndexActionMenuBar = () => {
+type RecordIndexActionMenuBarProps = {
+  hideDefaultAllActionsButton?: boolean;
+};
+
+export const RecordIndexActionMenuBar = ({ 
+  hideDefaultAllActionsButton = false 
+}: RecordIndexActionMenuBarProps = {}) => {
   const contextStoreNumberOfSelectedRecords = useRecoilComponentValueV2(
     contextStoreNumberOfSelectedRecordsComponentState,
   );
@@ -26,16 +32,18 @@ export const RecordIndexActionMenuBar = () => {
   const actionMenuId = useAvailableComponentInstanceIdOrThrow(
     ActionMenuComponentInstanceContext,
   );
+  console.log('actionMenuId::', actionMenuId);
 
   const actionMenuEntries = useRecoilComponentValueV2(
     actionMenuEntriesComponentSelector,
   );
-
+  console.log('actionMenuEntries::', actionMenuEntries);
 
   const pinnedEntries = actionMenuEntries.filter((entry) => entry.isPinned);
   if (contextStoreNumberOfSelectedRecords === 0) {
     return null;
   }
+  console.log('pinnedEntries::', pinnedEntries);
 
 
   return (
@@ -47,7 +55,7 @@ export const RecordIndexActionMenuBar = () => {
       {pinnedEntries.map((entry, index) => (
         <RecordIndexActionMenuBarEntry key={index} entry={entry} />
       ))}
-      <RecordIndexActionMenuBarAllActionsButton />
+      {!hideDefaultAllActionsButton && <RecordIndexActionMenuBarAllActionsButton />}
     </BottomBar>
   );
 };
