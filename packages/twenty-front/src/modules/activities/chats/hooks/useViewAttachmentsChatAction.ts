@@ -14,16 +14,14 @@ export const useViewAttachmentsChatAction: ActionHookWithObjectMetadataItem = ({
       return;
     }
 
-    // This would typically open the attachment panel for the selected record
     console.log('Opening attachment panel for record:', recordId);
     
-    // In a real implementation, you might dispatch an event or use a state manager
-    // to trigger the opening of the attachment panel with the selected record
     const event = new CustomEvent('openAttachmentPanel', {
       detail: {
         recordId,
       },
     });
+    
     window.dispatchEvent(event);
   };
 

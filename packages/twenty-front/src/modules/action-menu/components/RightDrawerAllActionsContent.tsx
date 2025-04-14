@@ -57,7 +57,6 @@ export const RightDrawerAllActionsContent = () => {
           </StyledItemsContainer>
         </>
       )}
-
       {nonPinnedEntries.length > 0 && (
         <>
           <StyledSectionTitle>Other Actions</StyledSectionTitle>

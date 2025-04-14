@@ -9,9 +9,25 @@ import { contextStoreTargetedRecordsRuleComponentState } from '@/context-store/s
 import { ContextStoreViewType } from '@/context-store/types/ContextStoreViewType';
 import { useSetRecoilComponentStateV2 } from '@/ui/utilities/state/component-state/hooks/useSetRecoilComponentStateV2';
 import styled from '@emotion/styled';
-import { i18n } from '@lingui/core';
+import { i18n, MessageDescriptor } from '@lingui/core';
 import { useEffect, useState } from 'react';
-import { MenuItemCommand } from 'twenty-ui';
+import { IconComponent, MenuItemCommand } from 'twenty-ui';
+
+// Define action types
+type ActionHook = (params: { objectMetadataItem: any }) => {
+  onClick: () => void;
+  shouldBeRegistered?: boolean;
+};
+
+// Update the ChatAction type to match the actual structure
+type ChatAction = {
+  key: string;
+  label: MessageDescriptor | string;
+  Icon: IconComponent;
+  isPinned?: boolean;
+  useAction?: ActionHook;
+  availableOn?: ActionViewType[];
+};
 
 const StyledContainer = styled.div`
   display: flex;
@@ -39,9 +55,61 @@ const StyledItemsContainer = styled.div`
   gap: ${({ theme }) => theme.spacing(1)};
 `;
 
+// Helper function to handle i18n for both string and MessageDescriptor
+const translate = (label: MessageDescriptor | string): string => {
+  if (typeof label === 'string') {
+    return label;
+  }
+  return i18n._(label);
+};
+
+// Create ActionItem component to properly use hooks for each action
+const ActionItem = ({ action }: { action: ChatAction }) => {
+  // Call the action's hook properly within a React component
+  const actionResult = action.useAction ? 
+    action.useAction({
+      objectMetadataItem: {
+        id: 'person-id',
+        nameSingular: 'person',
+        namePlural: 'people',
+        labelSingular: 'Person',
+        labelPlural: 'People',
+        description: 'Person records',
+        icon: 'IconUser',
+        isCustom: false,
+        isRemote: false,
+        isActive: true,
+        isSystem: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        labelIdentifierFieldMetadataId: 'name-field-id',
+        imageIdentifierFieldMetadataId: null,
+        isLabelSyncedWithName: true,
+        fields: [],
+        indexMetadatas: []
+      }
+    }) : null;
+
+  const handleClick = () => {
+    if (actionResult?.onClick) {
+      actionResult.onClick();
+    } else {
+      console.log(`Action ${action.key} clicked but no onClick handler found`);
+    }
+  };
+
+  return (
+    <MenuItemCommand
+      LeftIcon={action.Icon}
+      text={translate(action.label)}
+      onClick={handleClick}
+    />
+  );
+};
+
 export const RightDrawerChatAllActionsContent = () => {
   const INSTANCE_ID = 'chat-action-menu';
-  const [preparedActions, setPreparedActions] = useState<any[]>([]);
+  const [actionsList, setActionsList] = useState<ChatAction[]>([]);
   
   // Set the necessary context store states for actions to work
   const setCurrentObjectMetadataItem = useSetRecoilComponentStateV2(
@@ -94,82 +162,25 @@ export const RightDrawerChatAllActionsContent = () => {
       selectedRecordIds: ['1', '2', '3'] // Simulate 3 selected records
     });
     
-    // Process the chat actions after context is set
+    // Process the chat actions
     prepareActions();
   }, []);
   
   const prepareActions = () => {
-    // Get all actions from CHAT_ACTIONS_CONFIG
-    const allActions = Object.values(CHAT_ACTIONS_CONFIG);
-    
-    // Prepare actions with required properties
-    const actionsList = allActions.map(action => {
-      try {
-        // Create a simple actionHook with essential properties
-        const actionHook = {
-          shouldBeRegistered: true,
-          onClick: () => {
-            console.log(`Action ${action.key} clicked`);
-            // Here we would normally call the actual action function
-            try {
-              if (action.useAction) {
-                const hookResult = action.useAction({
-                  objectMetadataItem: {
-                    id: 'person-id',
-                    nameSingular: 'person',
-                    namePlural: 'people',
-                    labelSingular: 'Person',
-                    labelPlural: 'People',
-                    description: 'Person records',
-                    icon: 'IconUser',
-                    isCustom: false,
-                    isRemote: false,
-                    isActive: true,
-                    isSystem: true,
-                    createdAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString(),
-                    labelIdentifierFieldMetadataId: 'name-field-id',
-                    imageIdentifierFieldMetadataId: null,
-                    isLabelSyncedWithName: true,
-                    fields: [],
-                    indexMetadatas: []
-                  }
-                });
-                
-                if (hookResult && hookResult.onClick) {
-                  hookResult.onClick();
-                }
-              }
-            } catch (error) {
-              console.error(`Error executing action ${action.key}:`, error);
-            }
-          }
-        };
-        
-        return {
-          ...action,
-          actionHook,
-        };
-      } catch (error) {
-        console.warn(`Error initializing action ${action.key}:`, error);
-        return {
-          ...action,
-          actionHook: { shouldBeRegistered: false, onClick: () => {} },
-        };
-      }
-    });
+    // Get all actions from CHAT_ACTIONS_CONFIG and cast to the proper type
+    const allActions = Object.values(CHAT_ACTIONS_CONFIG) as unknown as ChatAction[];
     
     // Only include actions available for bulk selection view
-    const filteredActions = actionsList.filter(
+    const filteredActions = allActions.filter(
       action => action.availableOn?.includes(ActionViewType.INDEX_PAGE_BULK_SELECTION)
     );
     
-    setPreparedActions(filteredActions);
+    setActionsList(filteredActions);
   };
   
   // Split into pinned and non-pinned actions
-  const pinnedActions = preparedActions.filter(action => action.isPinned);
-  const nonPinnedActions = preparedActions.filter(action => !action.isPinned);
+  const pinnedActions = actionsList.filter(action => action.isPinned);
+  const nonPinnedActions = actionsList.filter(action => !action.isPinned);
 
   return (
     <ActionMenuContext.Provider
@@ -197,12 +208,7 @@ export const RightDrawerChatAllActionsContent = () => {
                 <StyledSectionTitle>Pinned Actions</StyledSectionTitle>
                 <StyledItemsContainer>
                   {pinnedActions.map((action) => (
-                    <MenuItemCommand
-                      key={action.key}
-                      LeftIcon={action.Icon}
-                      text={i18n._(action.label)}
-                      onClick={action.actionHook?.onClick}
-                    />
+                    <ActionItem key={action.key} action={action} />
                   ))}
                 </StyledItemsContainer>
               </>
@@ -213,12 +219,7 @@ export const RightDrawerChatAllActionsContent = () => {
                 <StyledSectionTitle>Other Actions</StyledSectionTitle>
                 <StyledItemsContainer>
                   {nonPinnedActions.map((action) => (
-                    <MenuItemCommand
-                      key={action.key}
-                      LeftIcon={action.Icon}
-                      text={i18n._(action.label)}
-                      onClick={action.actionHook?.onClick}
-                    />
+                    <ActionItem key={action.key} action={action} />
                   ))}
                 </StyledItemsContainer>
               </>
