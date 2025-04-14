@@ -15,15 +15,16 @@ import { ActionBarHotkeyScope } from '@/action-menu/types/ActionBarHotKeyScope';
 import { ActionMenuEntry } from '@/action-menu/types/ActionMenuEntry';
 import { getActionBarIdFromActionMenuId } from '@/action-menu/utils/getActionBarIdFromActionMenuId';
 import { ChatActionMenuEntriesSetter } from '@/activities/chats/components/ChatActionMenuEntriesSetter';
+import { chatActionsState } from '@/activities/chats/components/RightDrawerChatAllActionsContent';
 import { ContextStoreComponentInstanceContext } from '@/context-store/states/contexts/ContextStoreComponentInstanceContext';
 import { contextStoreCurrentObjectMetadataItemComponentState } from '@/context-store/states/contextStoreCurrentObjectMetadataItemComponentState';
 import { contextStoreCurrentViewTypeComponentState } from '@/context-store/states/contextStoreCurrentViewTypeComponentState';
 import { contextStoreNumberOfSelectedRecordsComponentState } from '@/context-store/states/contextStoreNumberOfSelectedRecordsComponentState';
+import { contextStoreTargetedRecordsRuleComponentState } from '@/context-store/states/contextStoreTargetedRecordsRuleComponentState';
 import { ContextStoreViewType } from '@/context-store/types/ContextStoreViewType';
 import { BottomBar } from '@/ui/layout/bottom-bar/components/BottomBar';
 import { useRightDrawer } from '@/ui/layout/right-drawer/hooks/useRightDrawer';
 import { RightDrawerPages } from '@/ui/layout/right-drawer/types/RightDrawerPages';
-import { useAvailableComponentInstanceIdOrThrow } from '@/ui/utilities/state/component-state/hooks/useAvailableComponentInstanceIdOrThrow';
 import { useRecoilComponentValueV2 } from '@/ui/utilities/state/component-state/hooks/useRecoilComponentValueV2';
 import { useSetRecoilComponentStateV2 } from '@/ui/utilities/state/component-state/hooks/useSetRecoilComponentStateV2';
 import { useTheme } from '@emotion/react';
@@ -41,8 +42,20 @@ import { useChatTable } from './useChatTable';
 const ChatAllActionsButton = () => {
   const theme = useTheme();
   const { openRightDrawer } = useRightDrawer();
+  
+  const contextStoreTargetedRecordsRule = useRecoilComponentValueV2(
+    contextStoreTargetedRecordsRuleComponentState,
+  );
 
   const handleClick = () => {
+    // Store the selected IDs in the shared state
+    if (contextStoreTargetedRecordsRule?.mode === 'selection') {
+      chatActionsState.selectedRecordIds = contextStoreTargetedRecordsRule.selectedRecordIds;
+    } else {
+      chatActionsState.selectedRecordIds = [];
+    }
+    
+    // Open the right drawer
     openRightDrawer(RightDrawerPages.ChatAllActions, {
       title: 'Chat Actions',
       Icon: IconLayoutSidebarRightExpand,
@@ -87,24 +100,33 @@ const ChatAllActionsButton = () => {
 };
 
 // Custom record index action menu bar for chat that includes the All Actions button
-const ChatRecordIndexActionMenuBar = () => {
+const ChatRecordIndexActionMenuBar = ({ tableId }: { tableId: string }) => {
+  console.log('ChatRecordIndexActionMenuBar - tableId:', tableId);
+  
   const contextStoreNumberOfSelectedRecords = useRecoilComponentValueV2(
     contextStoreNumberOfSelectedRecordsComponentState,
-  );
-
-  const actionMenuId = useAvailableComponentInstanceIdOrThrow(
-    ActionMenuComponentInstanceContext,
+    tableId
   );
 
   const actionMenuEntries = useRecoilComponentValueV2(
     actionMenuEntriesComponentSelector,
+    tableId
   ) as ActionMenuEntry[];
+
+  console.log('ChatRecordIndexActionMenuBar - contextStoreNumberOfSelectedRecords:', contextStoreNumberOfSelectedRecords);
+  console.log('ChatRecordIndexActionMenuBar - actionMenuEntries:', actionMenuEntries);
 
   const pinnedEntries = actionMenuEntries.filter((entry) => entry.isPinned);
   
+  console.log('ChatRecordIndexActionMenuBar - pinnedEntries:', pinnedEntries);
+  
   if (contextStoreNumberOfSelectedRecords === 0) {
+    console.log('ChatRecordIndexActionMenuBar - returning null due to zero selected records');
     return null;
   }
+
+  // Use tableId as the action menu ID
+  const actionMenuId = tableId;
 
   const StyledLabel = styled.div`
     color: ${({ theme }) => theme.font.color.tertiary};
@@ -137,6 +159,8 @@ const ChatRecordIndexActionMenuBar = () => {
 
 // Custom chat action menu without the standard record actions
 const ChatActionMenu = ({ tableId }: { tableId: string }) => {
+  console.log('ChatActionMenu - rendering with tableId:', tableId);
+  
   return (
     <ActionMenuContext.Provider
       value={{
@@ -145,10 +169,16 @@ const ChatActionMenu = ({ tableId }: { tableId: string }) => {
         onActionExecutedCallback: () => {},
       }}
     >
-      <ChatRecordIndexActionMenuBar />
-      <RecordIndexActionMenuDropdown />
-      <ActionMenuConfirmationModals />
-      <RecordIndexActionMenuEffect />
+      <ChatRecordIndexActionMenuBar tableId={tableId} />
+      <ActionMenuComponentInstanceContext.Provider
+        value={{
+          instanceId: tableId,
+        }}
+      >
+        <RecordIndexActionMenuDropdown />
+        <ActionMenuConfirmationModals />
+        <RecordIndexActionMenuEffect />
+      </ActionMenuComponentInstanceContext.Provider>
       <ChatActionMenuEntriesSetter />
     </ActionMenuContext.Provider>
   );
@@ -190,6 +220,7 @@ export const ChatTable: React.FC<ChatTableProps> = ({
     handleAfterChange,
     tableId,
     tableData,
+    handleRowSelection,
   } = useChatTable(individuals, onSelectionChange, onIndividualSelect);
 
   const theme = useTheme();
@@ -204,6 +235,17 @@ export const ChatTable: React.FC<ChatTableProps> = ({
   // Set the current view type for action menu
   const setCurrentViewType = useSetRecoilComponentStateV2(
     contextStoreCurrentViewTypeComponentState,
+    tableId
+  );
+
+  // Get setters for context store states
+  const setContextStoreNumberOfSelectedRecords = useSetRecoilComponentStateV2(
+    contextStoreNumberOfSelectedRecordsComponentState,
+    tableId
+  );
+  
+  const setContextStoreTargetedRecordsRule = useSetRecoilComponentStateV2(
+    contextStoreTargetedRecordsRuleComponentState,
     tableId
   );
 
@@ -235,6 +277,30 @@ export const ChatTable: React.FC<ChatTableProps> = ({
     // Set the view type to Table
     setCurrentViewType(ContextStoreViewType.Table);
   }, [setCurrentObjectMetadataItem, setCurrentViewType]);
+
+  // Add this effect to update the context store when selectedIds changes
+  useEffect(() => {
+    setContextStoreNumberOfSelectedRecords(selectedIds.length);
+    setContextStoreTargetedRecordsRule({
+      mode: 'selection',
+      selectedRecordIds: selectedIds,
+    });
+    
+    console.log("ChatTable: Updated context store with selectedIds:", selectedIds);
+  }, [selectedIds, setContextStoreNumberOfSelectedRecords, setContextStoreTargetedRecordsRule]);
+
+  // Initialize with the selected individual if provided
+  useEffect(() => {
+    if (selectedIndividual && individuals.length > 0) {
+      const individual = individuals.find(ind => ind.id === selectedIndividual);
+      if (individual) {
+        // Make sure this individual is in the selectedIds
+        if (!selectedIds.includes(individual.id)) {
+          handleCheckboxChange(individual.id);
+        }
+      }
+    }
+  }, [selectedIndividual, individuals, selectedIds, handleCheckboxChange]);
 
   useEffect(() => {
     if (!hotRef.current?.hotInstance) {
@@ -293,13 +359,10 @@ export const ChatTable: React.FC<ChatTableProps> = ({
   }
   
 
-  const handleAfterSelection =  (row: number) => {
+  const handleAfterSelection = (row: number) => {
+    console.log('handleAfterSelection', row);
     if (row >= 0) {
-      const selectedIndividual = individuals[row];
-      onIndividualSelect(selectedIndividual.id);
-      if (!selectedIds.includes(selectedIndividual.id)) {
-        handleCheckboxChange(selectedIndividual.id);
-      }
+      handleRowSelection(row);
     }
   }
 
@@ -349,14 +412,24 @@ export const ChatTable: React.FC<ChatTableProps> = ({
             filters={true}
             dropdownMenu={true}
             cells={handleCellProperties}
-            // Important: Use a specific source to avoid infinite loops
             afterChange={handleAfterChangeCells}
             afterGetColHeader={handleAfterGetColHeader}
             afterSelection={handleAfterSelection}
             beforeOnCellMouseDown={handleBeforeOnCellMouseDown}
           />
         </TableContainer>
-        <ChatActionMenu tableId={tableId} />
+        
+        <div style={{ 
+          position: 'fixed', 
+          bottom: 0, 
+          left: 0, 
+          width: '100%', 
+          zIndex: 1000,
+          backgroundColor: theme.background.primary
+        }}>
+          <ChatActionMenu tableId={tableId} />
+        </div>
+        
         <MultiCandidateChat isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} selectedPeople={selectedPeople} />
         {isAttachmentPanelOpen && currentCandidate && (
           <>

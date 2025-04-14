@@ -36,7 +36,8 @@ import { HotPage } from '@/hot/hotCandidates';
 import Interview from '@/interviews/components/Interviews';
 import indexAppPath from '@/navigation/utils/indexAppPath';
 // import OrgChart from '@/orgchart/OrgChart';
-import { Chats } from '@/activities/chats/components/Chats';
+import { Jobs } from '@/activities/chats/components/Jobs';
+import { SingleJobView } from '@/activities/chats/components/SingleJobView';
 import { Dashboard } from '@/client-dashboard/components/Dashboard';
 import VideoInterviewFlow from '@/video-interview/interview-response/VideoInterviewFlow';
 import VideoInterviewResponseViewer from '@/video-interview/interview-response/VideoInterviewResponseViewer';
@@ -123,7 +124,8 @@ export const useCreateAppRouter = (
             <Route path={AppPath.CreateProfile} element={<CreateProfile />} />
             <Route path={AppPath.SyncEmails} element={<SyncEmails />} />
             <Route path={AppPath.InviteTeam} element={<InviteTeam />} />
-            <Route path={AppPath.Chats} element={<Chats />} />
+            <Route path={AppPath.Jobs} element={<Jobs />} />
+            <Route path={`${AppPath.Jobs}/:candidateId`} element={<Jobs />} />
             <Route path={AppPath.Interview} element={<Interview />} />
             <Route
               path={AppPath.Dashboard}
@@ -141,7 +143,8 @@ export const useCreateAppRouter = (
               path={AppPath.CustomLayoutMerged}
               element={<CustomLayoutMerged />}
             />
-            <Route path={`${AppPath.Chats}/:candidateId`} element={<Chats />} />
+            <Route path="job/:jobId" element={<SingleJobView />} />
+            <Route path="job/:jobId/:candidateId" element={<SingleJobView />} />
 
             <Route
               path={`${AppPath.VideoInterviewReview}/:candidateId`}

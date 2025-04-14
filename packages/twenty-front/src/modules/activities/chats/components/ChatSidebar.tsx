@@ -117,7 +117,8 @@ interface ChatSidebarProps {
   unreadMessages: UnreadMessageListManyCandidates;
   jobs: JobNode[];
   isRefreshing?: boolean;
-  width: number; // Add this
+  width: number;
+  onIndividualSelect?: (id: string) => void;
 }
 
 const statusLabels: { [key: string]: string } = {
@@ -155,7 +156,8 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   unreadMessages,
   jobs,
   isRefreshing = false,
-  width, // Add this
+  width,
+  onIndividualSelect,
 }) => {
   const navigate = useNavigate();
   // const openCreateActivity = useOpenCreateActivityDrawer();
@@ -187,8 +189,15 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     setSelectedIndividual(id);
     const individual = individuals.find((ind) => ind.id === id);
     const candidateId = individual?.candidates?.edges[0]?.node?.id;
+    
     if (candidateId) {
-      navigate(`/chats/${candidateId}`);
+      if (onIndividualSelect) {
+        // Use the callback if provided
+        onIndividualSelect(id);
+      } else {
+        // Fall back to direct navigation
+        navigate(`/jobs//${candidateId}`);
+      }
     }
   };
 

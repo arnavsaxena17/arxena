@@ -1,13 +1,22 @@
 import { RegisterRecordActionEffect } from '@/action-menu/actions/record-actions/components/RegisterRecordActionEffect';
 import { getActionViewType } from '@/action-menu/actions/utils/getActionViewType';
+import { ActionMenuComponentInstanceContext } from '@/action-menu/states/contexts/ActionMenuComponentInstanceContext';
 import { CHAT_ACTIONS_CONFIG } from '@/activities/chats/constants/ChatActionsConfig';
+import { ContextStoreComponentInstanceContext } from '@/context-store/states/contexts/ContextStoreComponentInstanceContext';
 import { contextStoreCurrentObjectMetadataItemComponentState } from '@/context-store/states/contextStoreCurrentObjectMetadataItemComponentState';
 import { contextStoreCurrentViewTypeComponentState } from '@/context-store/states/contextStoreCurrentViewTypeComponentState';
 import { contextStoreTargetedRecordsRuleComponentState } from '@/context-store/states/contextStoreTargetedRecordsRuleComponentState';
+import { useAvailableComponentInstanceIdOrThrow } from '@/ui/utilities/state/component-state/hooks/useAvailableComponentInstanceIdOrThrow';
 import { useRecoilComponentValueV2 } from '@/ui/utilities/state/component-state/hooks/useRecoilComponentValueV2';
 import { isDefined } from 'twenty-shared';
 
 export const ChatActionMenuEntriesSetter = () => {
+  const instanceId = useAvailableComponentInstanceIdOrThrow(
+    ContextStoreComponentInstanceContext,
+  );
+
+  console.log('ChatActionMenuEntriesSetter - instanceId:', instanceId);
+
   const contextStoreCurrentObjectMetadataItem = useRecoilComponentValueV2(
     contextStoreCurrentObjectMetadataItemComponentState,
   );
@@ -21,6 +30,7 @@ export const ChatActionMenuEntriesSetter = () => {
   );
 
   if (!isDefined(contextStoreCurrentObjectMetadataItem)) {
+    console.log('ChatActionMenuEntriesSetter - No objectMetadataItem defined, returning null');
     return null;
   }
 
@@ -40,9 +50,21 @@ export const ChatActionMenuEntriesSetter = () => {
     : [];
     
   console.log('ChatActionMenuEntriesSetter - actionsToRegister:', actionsToRegister);
+  
+  // Log each action's availability for the current viewType
+  if (isDefined(viewType)) {
+    console.log('ChatActionMenuEntriesSetter - Action availability for current viewType:');
+    Object.entries(CHAT_ACTIONS_CONFIG).forEach(([key, action]) => {
+      console.log(`  ${key}: ${action.availableOn?.includes(viewType)}`);
+    });
+  }
 
   return (
-    <>
+    <ActionMenuComponentInstanceContext.Provider
+      value={{
+        instanceId: instanceId,
+      }}
+    >
       {actionsToRegister.map((action) => (
         <RegisterRecordActionEffect
           key={action.key}
@@ -50,6 +72,6 @@ export const ChatActionMenuEntriesSetter = () => {
           objectMetadataItem={contextStoreCurrentObjectMetadataItem}
         />
       ))}
-    </>
+    </ActionMenuComponentInstanceContext.Provider>
   );
 }; 

@@ -129,7 +129,7 @@ const StyledRightSection = styled.div`
   gap: ${({ theme }) => theme.betweenSiblingsGap};
 `;
 
-export const Chats = () => {
+export const Jobs = () => {
   // const { candidateId } = useParams<{ candidateId: string }>();
   const candidateId = '1'; // Replace with your candidateId
   const filterDropdownId = 'chat-filter'; // Define a unique ID for the filter dropdown
@@ -152,7 +152,7 @@ export const Chats = () => {
   return (
     <StyledPageContainer>
       <RecordFieldValueSelectorContextProvider>
-        <StyledPageHeader title="Chats" Icon={IconCheckbox}>
+        <StyledPageHeader title="Jobs" Icon={IconCheckbox}>
         <Button title="Filter" Icon={IconFilter} variant="secondary" onClick={() => {}} />
           <Button title="Add Job" Icon={IconPlus} variant="primary" onClick={() => {}} />
           <StyledAddButtonWrapper>

@@ -29,6 +29,11 @@ type ChatAction = {
   availableOn?: ActionViewType[];
 };
 
+// Create a singleton to share the selected IDs between components
+export const chatActionsState = {
+  selectedRecordIds: [] as string[]
+};
+
 const StyledContainer = styled.div`
   display: flex;
   flex-direction: column;
@@ -127,9 +132,7 @@ export const RightDrawerChatAllActionsContent = () => {
     INSTANCE_ID
   );
   
-  // Initialize the context store with needed values
   useEffect(() => {
-    // Set a minimal person object metadata
     const objectMetadata = {
       id: 'person-id',
       nameSingular: 'person',
@@ -153,24 +156,20 @@ export const RightDrawerChatAllActionsContent = () => {
     
     setCurrentObjectMetadataItem(objectMetadata);
     
-    // Set the view type to make sure actions can be filtered correctly
     setCurrentViewType(ContextStoreViewType.Table);
     
-    // Set the targeted records rule to simulate bulk selection
+    // Use the shared state from chatActionsState
     setTargetedRecordsRule({
       mode: 'selection',
-      selectedRecordIds: ['1', '2', '3'] // Simulate 3 selected records
+      selectedRecordIds: chatActionsState.selectedRecordIds || []
     });
     
-    // Process the chat actions
     prepareActions();
-  }, []);
+  }, [setCurrentObjectMetadataItem, setCurrentViewType, setTargetedRecordsRule]);
   
   const prepareActions = () => {
-    // Get all actions from CHAT_ACTIONS_CONFIG and cast to the proper type
     const allActions = Object.values(CHAT_ACTIONS_CONFIG) as unknown as ChatAction[];
     
-    // Only include actions available for bulk selection view
     const filteredActions = allActions.filter(
       action => action.availableOn?.includes(ActionViewType.INDEX_PAGE_BULK_SELECTION)
     );
@@ -178,7 +177,6 @@ export const RightDrawerChatAllActionsContent = () => {
     setActionsList(filteredActions);
   };
   
-  // Split into pinned and non-pinned actions
   const pinnedActions = actionsList.filter(action => action.isPinned);
   const nonPinnedActions = actionsList.filter(action => !action.isPinned);
 

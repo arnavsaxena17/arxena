@@ -217,9 +217,15 @@ export const useChatTable = (
     const newSelectedIds = selectedIds.includes(individualId)
       ? selectedIds.filter((id) => id !== individualId)
       : [...selectedIds, individualId];
+    console.log('handleCheckboxChange - new selectedIds:', newSelectedIds);
     setSelectedIds(newSelectedIds);
     setContextStoreNumberOfSelectedRecords(newSelectedIds.length);
+    console.log('handleCheckboxChange - updating numberOfSelectedRecords to:', newSelectedIds.length);
     setContextStoreTargetedRecordsRule({
+      mode: 'selection',
+      selectedRecordIds: newSelectedIds,
+    });
+    console.log('handleCheckboxChange - updating targetedRecordsRule with:', {
       mode: 'selection',
       selectedRecordIds: newSelectedIds,
     });
@@ -228,9 +234,15 @@ export const useChatTable = (
 
   const handleSelectAll = () => {
     const newSelectedIds = selectedIds.length === individuals.length ? [] : individuals.map(individual => individual.id);
+    console.log('handleSelectAll - new selectedIds:', newSelectedIds);
     setSelectedIds(newSelectedIds);
     setContextStoreNumberOfSelectedRecords(newSelectedIds.length);
+    console.log('handleSelectAll - updating numberOfSelectedRecords to:', newSelectedIds.length);
     setContextStoreTargetedRecordsRule({
+      mode: 'selection',
+      selectedRecordIds: newSelectedIds,
+    });
+    console.log('handleSelectAll - updating targetedRecordsRule with:', {
       mode: 'selection',
       selectedRecordIds: newSelectedIds,
     });
@@ -240,17 +252,37 @@ export const useChatTable = (
   const handleRowSelection = (row: number) => {
     if (row >= 0) {
       const selectedIndividual = individuals[row];
+      console.log('Row selected:', row, 'Individual ID:', selectedIndividual.id);
       onIndividualSelect?.(selectedIndividual.id);
       const newSelectedIds = [...selectedIds];
       if (!newSelectedIds.includes(selectedIndividual.id)) {
         newSelectedIds.push(selectedIndividual.id);
         setSelectedIds(newSelectedIds);
+        console.log('handleRowSelection - Updated selectedIds with new selection:', newSelectedIds);
         setContextStoreNumberOfSelectedRecords(newSelectedIds.length);
+        console.log('handleRowSelection - updating numberOfSelectedRecords to:', newSelectedIds.length);
         setContextStoreTargetedRecordsRule({
           mode: 'selection',
           selectedRecordIds: newSelectedIds,
-        });    
+        });
+        console.log('handleRowSelection - updating targetedRecordsRule with:', {
+          mode: 'selection',
+          selectedRecordIds: newSelectedIds,
+        });
         onSelectionChange?.(newSelectedIds);
+      } else {
+        // Even if already selected, make sure context store is updated with correct count
+        console.log('Row already selected, ensuring context store is updated');
+        setContextStoreNumberOfSelectedRecords(newSelectedIds.length);
+        console.log('handleRowSelection (existing) - updating numberOfSelectedRecords to:', newSelectedIds.length);
+        setContextStoreTargetedRecordsRule({
+          mode: 'selection',
+          selectedRecordIds: newSelectedIds,
+        });
+        console.log('handleRowSelection (existing) - updating targetedRecordsRule with:', {
+          mode: 'selection',
+          selectedRecordIds: newSelectedIds,
+        });
       }
     }
   };

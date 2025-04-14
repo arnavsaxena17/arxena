@@ -1,11 +1,12 @@
 import { useLocation } from 'react-router-dom';
 import { useRecoilState, useSetRecoilState } from 'recoil';
-import { IconBriefcase, IconMessage, IconSearch, IconSettings } from 'twenty-ui';
+import { IconBriefcase, IconSearch, IconSettings } from 'twenty-ui';
 
 import { useCommandMenu } from '@/command-menu/hooks/useCommandMenu';
 import { CurrentWorkspaceMemberFavoritesFolders } from '@/favorites/components/CurrentWorkspaceMemberFavoritesFolders';
 import { WorkspaceFavorites } from '@/favorites/components/WorkspaceFavorites';
 import { WorkspaceJobCandidatesFavorites } from '@/favorites/components/WorkspaceJobCandidatesFavorites';
+import { JobsNavigationDrawerItems } from '@/navigation/components/JobsNavigationDrawerItems';
 import { NavigationDrawerOpenedSection } from '@/object-metadata/components/NavigationDrawerOpenedSection';
 import { RemoteNavigationDrawerSection } from '@/object-metadata/components/RemoteNavigationDrawerSection';
 import { AppPath } from '@/types/AppPath';
@@ -65,16 +66,6 @@ export const MainNavigationDrawerItems = () => {
               setNavigationMemorizedUrl(location.pathname + location.search);
             }}
             Icon={IconSettings}
-          />
-          <NavigationDrawerItem
-            label={`Chats`}
-            to={getAppPath(AppPath.Chats)}
-            onClick={() => {
-              setNavigationDrawerExpandedMemorized(isNavigationDrawerExpanded);
-              setIsNavigationDrawerExpanded(true);
-              setNavigationMemorizedUrl(location.pathname + location.search);
-            }}
-            Icon={IconMessage}
           />
           <NavigationDrawerItem
             label={`Dashboard`}
@@ -145,6 +136,7 @@ export const MainNavigationDrawerItems = () => {
         scrollbarVariant="no-padding"
       >
         <StyledInnerContainer>
+          <JobsNavigationDrawerItems />
           <NavigationDrawerOpenedSection />
           <CurrentWorkspaceMemberFavoritesFolders />
           <WorkspaceJobCandidatesFavorites />

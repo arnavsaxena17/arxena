@@ -44,9 +44,11 @@ export const RecordIndexActionMenu = ({
     isRecordIndexLoadMoreLockedComponentState,
     indexId,
   );
+  
   console.log("contextStoreCurrentObjectMetadataItem::", contextStoreCurrentObjectMetadataItem)
   console.log("isCommandMenuV2Enabled::", isCommandMenuV2Enabled)
   console.log("isWorkflowEnabled::", isWorkflowEnabled)
+  
   return (
     <>
       {contextStoreCurrentObjectMetadataItem && (

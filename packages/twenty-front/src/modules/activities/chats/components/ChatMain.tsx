@@ -1,3 +1,4 @@
+import ChatSidebar from '@/activities/chats/components/ChatSidebar';
 import { currentUnreadChatMessagesState } from '@/activities/chats/states/currentUnreadChatMessagesState';
 import { currentUserState } from '@/auth/states/currentUserState';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
@@ -6,6 +7,7 @@ import { tokenPairState } from '@/auth/states/tokenPairState';
 import styled from '@emotion/styled';
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import {
   CandidateNode,
@@ -18,10 +20,10 @@ import {
   isDefined
 } from 'twenty-shared';
 import { CACHE_KEYS, cacheUtils } from '../utils/cacheUtils';
-import ChatSidebar from './ChatSidebar';
 
 interface ChatMainProps {
   initialCandidateId?: string;
+  onCandidateSelect?: (candidateId: string) => void;
 }
 
 const StyledChatContainer = styled.div`
@@ -139,7 +141,7 @@ const LoadingStates = {
 //   input: string; // Add the 'input' property
 // }
 
-export const ChatMain = ({ initialCandidateId }: ChatMainProps) => {
+export const ChatMain = ({ initialCandidateId, onCandidateSelect }: ChatMainProps) => {
   const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
   const currentWorkspace = useRecoilValue(currentWorkspaceState);
   const currentUser = useRecoilValue(currentUserState);
@@ -397,8 +399,21 @@ export const ChatMain = ({ initialCandidateId }: ChatMainProps) => {
 
   const handleIndividualSelect = (id: string) => {
     setSelectedIndividual(id);
+    const individual = individuals.find((ind) => ind.id === id);
+    const candidateId = individual?.candidates?.edges[0]?.node?.id;
+    
+    if (candidateId) {
+      // Call the callback if provided
+      if (onCandidateSelect) {
+        onCandidateSelect(candidateId);
+      } else {
+        // Use default navigation behavior if no callback provided
+        navigate(`/jobs/${jobs[0]?.node.id}/${candidateId}`);
+      }
+    }
   };
 
+  const navigate = useNavigate();
 
   if (
     loadingState === LoadingStates.INITIAL ||
@@ -416,14 +431,41 @@ export const ChatMain = ({ initialCandidateId }: ChatMainProps) => {
   }
 
   return (
-    <ChatSidebar
-      individuals={individuals}
-      selectedIndividual={selectedIndividual}
-      setSelectedIndividual={handleIndividualSelect}
-      unreadMessages={unreadMessages}
-      jobs={jobs}
-      isRefreshing={isRefreshing}
-      width={sidebarWidth}
-    />
+    <StyledChatContainer
+      onMouseMove={(e) => isResizing ? resize(e as unknown as MouseEvent) : undefined}
+      onMouseUp={stopResizing}
+      onMouseLeave={stopResizing}
+    >
+      {loadingState === LoadingStates.LOADING_API && !isMobile && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            zIndex: 1000,
+          }}
+        >
+          <StyledSpinner />
+        </div>
+      )}
+
+      {/* <StyledSidebarContainer width={sidebarWidth}> */}
+        <ChatSidebar
+          individuals={individuals}
+          selectedIndividual={selectedIndividual}
+          setSelectedIndividual={setSelectedIndividual}
+          unreadMessages={unreadMessages}
+          jobs={jobs}
+          isRefreshing={isRefreshing}
+          width={sidebarWidth}
+          onIndividualSelect={handleIndividualSelect}
+        />
+      {/* </StyledSidebarContainer> */}
+      {/* <StyledResizer onMouseDown={startResizing} /> */}
+      {/* <StyledChatWindowContainer sidebarWidth={sidebarWidth}> */}
+        {/* Chat window content goes here */}
+      {/* </StyledChatWindowContainer> */}
+    </StyledChatContainer>
   );
 };

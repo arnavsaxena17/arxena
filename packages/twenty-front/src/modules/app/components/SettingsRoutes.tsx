@@ -296,27 +296,12 @@ export const SettingsRoutes = ({
       <Route path={SettingsPath.Experience} element={<SettingsExperience />} />
       <Route path={SettingsPath.Accounts} element={<SettingsAccounts />} />
       <Route path={SettingsPath.NewAccount} element={<SettingsNewAccount />} />
-      <Route
-        path={SettingsPath.AccountsCalendars}
-        element={<SettingsAccountsCalendars />}
-      />
-      <Route
-        path={SettingsPath.AccountsEmails}
-        element={<SettingsAccountsEmails />}
-      />
-      <Route
-        path={SettingsPath.FacebookSignUp}
-        element={<SettingsAccountsFacebookSignUp />}
-      />
-      <Route
-        element={
-          <SettingsProtectedRouteWrapper
-            requiredFeatureFlag={FeatureFlagKey.IsBillingPlansEnabled}
-          />
-        }
-      >
-        <Route path={SettingsPath.Billing} element={<SettingsBilling />} />
-      </Route>
+      <Route path={SettingsPath.AccountsCalendars} element={<SettingsAccountsCalendars />} />
+      <Route path={SettingsPath.AccountsEmails} element={<SettingsAccountsEmails />} />
+      <Route path={SettingsPath.FacebookSignUp} element={<SettingsAccountsFacebookSignUp />} />
+      <Route element={ <SettingsProtectedRouteWrapper requiredFeatureFlag={FeatureFlagKey.IsBillingPlansEnabled} /> } >
+      <Route path={SettingsPath.Billing} element={<SettingsBilling />} /> 
+    </Route>
       <Route path={SettingsPath.Workspace} element={<SettingsWorkspace />} />
       <Route path={SettingsPath.Domain} element={<SettingsDomain />} />
       <Route
