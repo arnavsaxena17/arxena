@@ -4,8 +4,8 @@ import styled from '@emotion/styled';
 import { useNavigate } from 'react-router-dom';
 // import * as frontChatTypes from "../types/front-chat-types";
 import {
+  CandidateNode,
   JobNode,
-  PersonNode,
   UnreadMessageListManyCandidates
 } from 'twenty-shared';
 import ChatTable from './chat-table/ChatTable';
@@ -111,14 +111,14 @@ const StyledSearchBox = styled(SearchBox)`
 `;
 
 interface ChatSidebarProps {
-  individuals: PersonNode[];
-  selectedIndividual: string;
-  setSelectedIndividual: (id: string) => void;
+  candidates: CandidateNode[];
+  selectedCandidate: string;
+  setSelectedCandidate: (id: string) => void;
   unreadMessages: UnreadMessageListManyCandidates;
   jobs: JobNode[];
   isRefreshing?: boolean;
   width: number;
-  onIndividualSelect: (id: string) => void;
+  onCandidateSelect: (id: string) => void;
 }
 
 const statusLabels: { [key: string]: string } = {
@@ -150,14 +150,14 @@ export const chatStatusLabels: { [key: string]: string } = {
 };
 
 const ChatSidebar: React.FC<ChatSidebarProps> = ({
-  individuals,
-  selectedIndividual,
-  setSelectedIndividual,
+  candidates,
+  selectedCandidate,
+  setSelectedCandidate,
   unreadMessages,
   jobs,
   isRefreshing = false,
   width,
-  onIndividualSelect,
+  onCandidateSelect,
 }) => {
   const navigate = useNavigate();
   // const openCreateActivity = useOpenCreateActivityDrawer();
@@ -218,36 +218,33 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     };
   }, []);
 
-  const filteredIndividuals = individuals.filter((individual) => {
+  const filteredCandidates = candidates.filter((candidate) => {
     const messagesList =
-      individual.candidates?.edges[0]?.node?.whatsappMessages?.edges?.map(
+      candidate.whatsappMessages?.edges?.map(
         (x) => x.node.message,
       ) || [];
     const matchesSearch =
-      individual?.name?.firstName
+      candidate?.name
         ?.toLowerCase()
         .includes(searchQuery.toLowerCase()) ||
       (
-        individual?.name?.firstName?.toLowerCase() +
-        ' ' +
-        individual?.name?.lastName?.toLowerCase()
+        candidate?.name?.toLowerCase()
       ).includes(searchQuery.toLowerCase()) ||
-      individual?.name?.lastName
+      candidate?.name?.toLowerCase()
+        .includes(searchQuery.toLowerCase()) ||
+      candidate?.email
         ?.toLowerCase()
         .includes(searchQuery.toLowerCase()) ||
-      individual?.candidates?.edges[0]?.node?.email
-        ?.toLowerCase()
-        .includes(searchQuery.toLowerCase()) ||
-      individual?.phones.primaryPhoneNumber
+      candidate?.phoneNumber
         ?.toLowerCase()
         ?.includes(searchQuery?.toLowerCase()) ||
-      individual?.candidates?.edges[0]?.node?.id
+      candidate?.id
         ?.toLowerCase()
         ?.includes(searchQuery.toLowerCase()) ||
-      individual?.candidates?.edges[0]?.node?.status
+      candidate?.status
         ?.toLowerCase()
         ?.includes(searchQuery.toLowerCase()) ||
-      individual?.id?.toLowerCase()?.includes(searchQuery.toLowerCase()) ||
+      candidate?.id?.toLowerCase()?.includes(searchQuery.toLowerCase()) ||
       messagesList.some((message) =>
         message.toLowerCase().includes(searchQuery.toLowerCase()),
       );
@@ -255,19 +252,19 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     const matchesJob =
       selectedJobs.length === 0 ||
       selectedJobs.includes(
-        individual?.candidates?.edges[0]?.node?.jobs?.id || '',
+        candidate?.jobs?.id || '',
       );
 
     const matchesStatus =
       selectedStatuses.length === 0 ||
       selectedStatuses.includes(
-        individual?.candidates?.edges[0]?.node?.status || '',
+        candidate?.status || '',
       );
 
     const matchesChatStatus =
       selectedChatStatuses.length === 0 ||
       selectedChatStatuses.includes(
-        individual?.candidates?.edges[0]?.node?.candConversationStatus || '',
+        candidate?.candConversationStatus || '',
       );
 
     return matchesSearch && matchesJob && matchesStatus && matchesChatStatus;
@@ -278,8 +275,8 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   });
 
   // Modified sortedIndividuals to consider manual ordering
-  const sortedIndividuals = useMemo(() => {
-    return filteredIndividuals.sort((a, b) => {
+  const sortedCandidates = useMemo(() => {
+    return filteredCandidates.sort((a, b) => {
       // First check manual ordering
       const orderA = manualOrder[a.id] ?? Number.MAX_SAFE_INTEGER;
       const orderB = manualOrder[b.id] ?? Number.MAX_SAFE_INTEGER;
@@ -289,9 +286,9 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
       }
 
       // If no manual order or same order, fall back to timestamp sorting
-      const getLastMessageTimestamp = (individual: PersonNode) => {
+      const getLastMessageTimestamp = (candidate: CandidateNode) => {
         const messagesEdges =
-          individual.candidates?.edges[0]?.node?.whatsappMessages?.edges || [];
+          candidate.whatsappMessages?.edges || [];
 
         const latestMessage = messagesEdges.reduce((latest, edge) => {
           const messageTimestamp = edge.node?.createdAt || '';
@@ -307,7 +304,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
 
       return bDate.getTime() - aDate.getTime();
     });
-  }, [filteredIndividuals, manualOrder]);
+  }, [filteredCandidates, manualOrder]);
 
   const handleJobToggle = (jobId: string) => {
     setSelectedJobs((prev) =>
@@ -317,12 +314,12 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     );
   };
 
-  const handleReorder = (reorderedIndividuals: PersonNode[]) => {
-    console.log('Reordered Individuals:', reorderedIndividuals);
+  const handleReorder = (reorderedCandidates: CandidateNode[]) => {
+    console.log('Reordered Candidates:', reorderedCandidates);
     // Create new order map
-    const newOrder = reorderedIndividuals.reduce(
-      (acc, individual, index) => {
-        acc[individual.id] = index;
+    const newOrder = reorderedCandidates.reduce(
+      (acc, candidate, index) => {
+        acc[candidate.id] = index;
         return acc;
       },
       {} as Record<string, number>,
@@ -351,47 +348,47 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
 
   const jobCounts = useMemo(() => {
     const counts: { [key: string]: number } = {};
-    filteredIndividuals.forEach((individual) => {
-      const jobId = individual?.candidates?.edges[0]?.node?.jobs?.id;
+    filteredCandidates.forEach((candidate) => {
+      const jobId = candidate?.jobs?.id;
       if (jobId) {
         counts[jobId] = (counts[jobId] || 0) + 1;
       }
     });
     return counts;
-  }, [filteredIndividuals]);
+  }, [filteredCandidates]);
 
   const statusCounts = useMemo(() => {
     const counts: { [key: string]: number } = {};
-    filteredIndividuals.forEach((individual) => {
-      const status = individual?.candidates?.edges[0]?.node?.status;
+    filteredCandidates.forEach((candidate) => {
+      const status = candidate?.status;
       if (status) {
         counts[status] = (counts[status] || 0) + 1;
       }
     });
     return counts;
-  }, [filteredIndividuals]);
+  }, [filteredCandidates]);
 
   const chatStatusCounts = useMemo(() => {
     const counts: { [key: string]: number } = {};
-    filteredIndividuals.forEach((individual) => {
+    filteredCandidates.forEach((candidate) => {
       const status =
-        individual?.candidates?.edges[0]?.node?.candConversationStatus;
+        candidate?.candConversationStatus;
       if (status) {
         counts[status] = (counts[status] || 0) + 1;
       }
     });
     return counts;
-  }, [filteredIndividuals]);
+  }, [filteredCandidates]);
 
 
 
   return (
     <ChatTable
-      individuals={sortedIndividuals}
-      selectedIndividual={selectedIndividual}
+      candidates={sortedCandidates}
+      selectedCandidate={selectedCandidate}
       unreadMessages={unreadMessages}
       // onSelectionChange={handleSelectionChange}
-      onIndividualSelect={onIndividualSelect}
+      onCandidateSelect={onCandidateSelect}
       onReorder={handleReorder}
     />
   );

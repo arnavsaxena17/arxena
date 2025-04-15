@@ -19,6 +19,7 @@ import { isDefined } from 'twenty-shared';
 
 export const useDestroyMultipleRecordsAction: ActionHookWithObjectMetadataItem =
   ({ objectMetadataItem }) => {
+    console.log("Called the useDestroyMultipleRecordsAction hook with the objectMetadataItem::", objectMetadataItem);
     const [isDestroyRecordsModalOpen, setIsDestroyRecordsModalOpen] =
       useState(false);
 
@@ -75,6 +76,7 @@ export const useDestroyMultipleRecordsAction: ActionHookWithObjectMetadataItem =
     });
 
     const handleDestroyClick = useCallback(async () => {
+      console.log("Called the handleDestroyClick function");
       const recordsToDestroy = await fetchAllRecordIds();
       const recordIdsToDestroy = recordsToDestroy.map((record) => record.id);
 

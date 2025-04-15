@@ -785,6 +785,22 @@ export class ArxChatEndpoint {
     return people;
   }
 
+  @Post('get-candidates-by-job-id')
+  @UseGuards(JwtAuthGuard)
+  async getCandidatesByJobId(@Req() request: any): Promise<object> {
+    console.log('Going to get all candidates by job id');
+    const { jobId } = request.body;
+    console.log('jobId in getCandidatesByJobId:', jobId);
+    const apiToken = request?.headers?.authorization?.split(' ')[1];
+    const { candidates } = await new CandidateEngagementArx(
+      this.workspaceQueryService,
+    ).fetchSpecificPeopleToEngageAcrossAllChatControlsByJobId(jobId, apiToken);
+
+    console.log('All candidates length:', candidates?.length);
+
+    return candidates;
+  }
+
   @Get('get-person-chat')
   @UseGuards(JwtAuthGuard)
   async getCandidateAndChat(@Req() request: any): Promise<object> {

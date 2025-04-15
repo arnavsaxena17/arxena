@@ -55,7 +55,6 @@ export const useShareChatAndVideoInterviewBasedShortlistAction: ActionHookWithOb
     const [isShareChatAndVideoInterviewBasedShortlistModalOpen, setIsShareChatAndVideoInterviewBasedShortlistModalOpen] = useState(false);
     const { sendCVsToClient } = useSendCVsToClient();
 
-    console.log("The objectMetadataItem is::", objectMetadataItem);
     const handleShareChatAndVideoInterviewBasedShortlistClick = useCallback(async () => {
       const recordsToShare = await fetchAllRecordIds();
       const recordIdsToShare:string[] = recordsToShare.map((record) => record.id);

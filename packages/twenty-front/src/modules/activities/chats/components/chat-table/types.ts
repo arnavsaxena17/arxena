@@ -1,5 +1,5 @@
 import Handsontable from 'handsontable';
-import { PersonNode } from 'twenty-shared';
+import { CandidateNode } from 'twenty-shared';
 
 export type TableData = {
   name?: string;
@@ -21,15 +21,15 @@ export type UnreadMessages = {
 };
 
 export interface ChatTableProps {
-  individuals: PersonNode[];
-  selectedIndividual: string | null;
+  candidates: CandidateNode[];
+  selectedCandidate: string | null;
   unreadMessages: UnreadMessages;
-  onIndividualSelect: (id: string) => void;
+  onCandidateSelect: (id: string) => void;
   onSelectionChange?: (selectedIds: string[]) => void;
   onBulkMessage?: (selectedIds: string[]) => void;
   onBulkDelete?: (selectedIds: string[]) => void;
   onBulkAssign?: (selectedIds: string[]) => void;
-  onReorder?: (selectedIds: PersonNode[]) => void;
+  onReorder?: (selectedIds: CandidateNode[]) => void;
 }
 
 export type ColumnRenderer = (

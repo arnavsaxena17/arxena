@@ -1,5 +1,4 @@
 import {
-  Candidate,
   CandidateNode,
   ChatControlsObjType,
   chatControlType,
@@ -814,10 +813,99 @@ export default class CandidateEngagementArx {
     }
   }
 
-  async fetchAllCandidatesWithAllChatControls(
+  async fetchSpecificPeopleToEngageAcrossAllChatControlsByJobId(
+    jobId: string,
+    apiToken: string,
+  ): Promise<{ candidates: CandidateNode[] }> {
+    try {
+      console.log('Fetching candidates to engage by job ID:', jobId);
+
+      const candidates = await this.fetchAllCandidatesWithAllChatControlsByJobId(
+        jobId,
+        apiToken,
+      );
+
+      // const filteredCandidates = candidates.filter(
+      //   (candidate) => candidate.jobs.id === jobId,
+      // );
+      // const candidatePeopleIds = filteredCandidates.map((candidate) => candidate.people.id);
+      // const people = await new FilterCandidates(
+      //   this.workspaceQueryService,
+      // ).fetchAllPeopleByCandidatePeopleIds(candidatePeopleIds, apiToken);
+
+
+      // const candidateJob = filteredCandidates[0].jobs;
+
+      return { candidates };
+    } catch (error) { 
+      console.error('Error fetching candidates by job ID:', error);
+      throw error;
+    }
+  }
+
+
+  async fetchAllCandidatesWithAllChatControlsByJobId(
+    jobId: string,
+    apiToken: string,
+  ): Promise<CandidateNode[]> {
+    console.log('Fetching all candidates with chatControlType by job ID:', jobId);
+
+    const allCandidates: CandidateNode[] = [];
+    let graphqlQueryObjToFetchAllCandidatesForChats = '';
+
+    try {
+      const workspaceId =
+        await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+
+      graphqlQueryObjToFetchAllCandidatesForChats =
+        workspacesWithOlderSchema.includes(workspaceId)
+          ? graphqlToFetchManyCandidatesOlderSchema
+          : graphqlToFetchAllCandidateData;
+
+      const timestampedFilter = {
+        jobsId: { eq: jobId },
+      };
+
+      let hasMoreResults = true;  
+
+      while (hasMoreResults) {
+        let lastCursor: string | null = null;
+        const graphqlQueryObj = JSON.stringify({
+          query: graphqlQueryObjToFetchAllCandidatesForChats,
+          variables: {
+            lastCursor,
+            limit: 30,
+            filter: timestampedFilter,
+            orderBy: [{ updatedAt: 'DESC' }],
+          },
+        }); 
+
+        const response = await axiosRequest(graphqlQueryObj, apiToken);
+        const edges = response?.data?.data?.candidates?.edges || [];
+
+        hasMoreResults = edges.length === 30;
+        if (!edges.length) break;
+
+        
+        allCandidates.push(...edges.map((edge: any) => edge.node));
+      
+        if (edges.length < 30) break;
+        lastCursor = edges[edges.length - 1].cursor;
+      }
+
+      console.log(`Fetched ${allCandidates.length} candidates for job ID ${jobId}`);
+      return allCandidates;
+    } catch (error) {
+      console.error('Error fetching candidates by job ID:', error);
+      throw error;
+    }
+  }
+
+  
+      async fetchAllCandidatesWithAllChatControls(
     chatControlType: chatControlType,
     apiToken: string,
-  ): Promise<Candidate[]> {
+  ): Promise<CandidateNode[]> {
     console.log(
       'Fetching all candidates with chatControlType',
       chatControlType,
@@ -832,7 +920,7 @@ export default class CandidateEngagementArx {
       ];
     }
 
-    const allCandidates: Candidate[] = [];
+    const allCandidates: CandidateNode[] = [];
     let graphqlQueryObjToFetchAllCandidatesForChats = '';
 
     try {
@@ -877,7 +965,7 @@ export default class CandidateEngagementArx {
           // Verify each candidate's timestamp before adding
           const newCandidates = edges
             .map((edge: any) => edge.node)
-            .filter((candidate: Candidate) => {
+            .filter((candidate: CandidateNode) => {
               const isNew = !allCandidates.some(
                 (existing) => existing.id === candidate.id,
               );
@@ -909,7 +997,7 @@ export default class CandidateEngagementArx {
     chatControlType: chatControlType,
     chatFlowConfigObj: Record<string, ChatFlowConfig>,
     apiToken: string,
-  ): Promise<Candidate[]> {
+  ): Promise<CandidateNode[]> {
     const config = chatFlowConfigObj[chatControlType];
 
     if (!config || !config.chatFilters) {
@@ -920,7 +1008,7 @@ export default class CandidateEngagementArx {
       return [];
     }
     const filters = config.chatFilters();
-    const allCandidates: Candidate[] = [];
+    const allCandidates: CandidateNode[] = [];
     let graphqlQueryObjToFetchAllCandidatesForChats = '';
 
     try {
@@ -982,7 +1070,7 @@ export default class CandidateEngagementArx {
           }
           const newCandidates = edges
             .map((edge: any) => edge.node)
-            .filter((candidate: Candidate) => {
+            .filter((candidate: CandidateNode) => {
               const isNew = !allCandidates.some(
                 (existing) => existing.id === candidate.id,
               );

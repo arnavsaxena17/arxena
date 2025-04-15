@@ -14,8 +14,11 @@ const StyledCommandMenuContent = styled.div`
 `;
 
 export const CommandMenuRouter = () => {
+  console.log("Called the CommandMenuRouter component");
   const commandMenuPage = useRecoilValue(commandMenuPageState);
-
+  console.log("The commandMenuPage is::", commandMenuPage);
+  console.log("The COMMAND_MENU_PAGES_CONFIG is::", COMMAND_MENU_PAGES_CONFIG);
+  console.log("The commandMenuPageState is::", commandMenuPageState);
   const commandMenuPageComponent = isDefined(commandMenuPage) ? (
     COMMAND_MENU_PAGES_CONFIG.get(commandMenuPage)
   ) : (

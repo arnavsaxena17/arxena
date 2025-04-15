@@ -54,7 +54,6 @@ export const useSendToWhatsappAction: ActionHookWithObjectMetadataItem = ({ obje
     const [isWhatsappMessageModalOpen, setIsWhatsappMessageModalOpen] = useState(false);
     const { sendToWhatsapp } = useSendToWhatsapp();
 
-    console.log("The objectMetadataItem is::", objectMetadataItem);
     const handleSendToWhatsappClick = useCallback(async () => {
       const recordsToSendToWhatsapp = await fetchAllRecordIds();
       const recordIdsToSendToWhatsapp: string[] = recordsToSendToWhatsapp.map((record) => record.id);

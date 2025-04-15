@@ -38,7 +38,10 @@ export const getActionConfig = (
         : DEFAULT_ACTIONS_CONFIG_V2;
 
       if (objectMetadataItem.nameSingular === 'candidate') {
-        return { ...baseConfig, ...CANDIDATE_SPECIFIC_ACTIONS };
+        console.log("Called the getActionConfig function for candidate");
+        const candidateSpecificActions = { ...baseConfig, ...CANDIDATE_SPECIFIC_ACTIONS };
+        console.log("The candidateSpecificActions are::", candidateSpecificActions);
+        return candidateSpecificActions;
       }
 
 

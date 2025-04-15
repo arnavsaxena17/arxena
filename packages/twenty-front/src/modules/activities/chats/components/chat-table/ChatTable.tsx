@@ -181,10 +181,10 @@ const ChatActionMenu = ({ tableId }: { tableId: string }) => {
 registerAllModules();
 
 export const ChatTable: React.FC<ChatTableProps> = ({
-  individuals,
-  selectedIndividual,
+  candidates,
+  selectedCandidate,
   unreadMessages,
-  onIndividualSelect,
+  onCandidateSelect,
   // onSelectionChange,
   onBulkMessage,
   onBulkDelete,
@@ -194,10 +194,10 @@ export const ChatTable: React.FC<ChatTableProps> = ({
   const {
     selectedIds,
     isAttachmentPanelOpen,
-    currentPersonIndex,
+    currentCandidateIndex,
     isChatOpen,
     currentCandidate,
-    selectedPeople,
+    selectedCandidates,
     handleCheckboxChange,
     handleViewChats,
     handleViewCVs,
@@ -215,7 +215,7 @@ export const ChatTable: React.FC<ChatTableProps> = ({
     tableId,
     tableData,
     handleRowSelection,
-  } = useChatTable(individuals, onIndividualSelect);
+  } = useChatTable(candidates, onCandidateSelect);
 
   const theme = useTheme();
   const hotRef = useRef<any>(null);
@@ -284,16 +284,16 @@ export const ChatTable: React.FC<ChatTableProps> = ({
 
   // Initialize with the selected individual if provided
   useEffect(() => {
-    if (selectedIndividual && individuals.length > 0) {
-      const individual = individuals.find(ind => ind.id === selectedIndividual);
-      if (individual) {
-        // Make sure this individual is in the selectedIds
-        if (!selectedIds.includes(individual.id)) {
-          handleCheckboxChange(individual.id);
+    if (selectedCandidate && candidates.length > 0) {
+      const candidate = candidates.find(cand => cand.id === selectedCandidate);
+      if (candidate) {
+        // Make sure this candidate is in the selectedIds
+        if (!selectedIds.includes(candidate.id)) {
+          handleCheckboxChange(candidate.id);
         }
       }
     }
-  }, [selectedIndividual, individuals, selectedIds, handleCheckboxChange]);
+  }, [selectedCandidate, candidates, selectedIds, handleCheckboxChange]);
 
   useEffect(() => {
     if (!hotRef.current?.hotInstance) {
@@ -306,8 +306,8 @@ export const ChatTable: React.FC<ChatTableProps> = ({
   }, [theme.name]);
 
   const columns = useMemo(
-    () => createTableColumns(individuals, handleCheckboxChange, selectedIds, handleSelectAll),
-    [individuals, handleCheckboxChange, selectedIds, handleSelectAll]
+    () => createTableColumns(candidates, handleCheckboxChange, selectedIds, handleSelectAll),
+    [candidates, handleCheckboxChange, selectedIds, handleSelectAll]
   );
   
   // For the activity drawer
@@ -336,7 +336,7 @@ export const ChatTable: React.FC<ChatTableProps> = ({
 
   const handleAfterGetColHeader = (col: number, TH: any) => {
     if (col === 0) {
-      const isAllSelected = selectedIds.length === individuals.length && individuals.length > 0;
+      const isAllSelected = selectedIds.length === candidates.length && candidates.length > 0;
       const headerCell = TH.querySelector('.colHeader');
       if (headerCell) {
         headerCell.innerHTML = `<input type="checkbox" class="select-all-checkbox" ${isAllSelected ? 'checked' : ''}>`;
@@ -423,14 +423,14 @@ export const ChatTable: React.FC<ChatTableProps> = ({
           <ChatActionMenu tableId={tableId} />
         </div>
         
-        <MultiCandidateChat isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} selectedPeople={selectedPeople} />
+        <MultiCandidateChat isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} selectedCandidates={selectedCandidates} />
         {isAttachmentPanelOpen && currentCandidate && (
           <>
-            <AttachmentPanel isOpen={isAttachmentPanelOpen} onClose={() => setIsAttachmentPanelOpen(false)} candidateId={currentCandidate.candidates.edges[0].node.id} candidateName={`${currentCandidate.name.firstName} ${currentCandidate.name.lastName}`} PanelContainer={PanelContainer} />
+            <AttachmentPanel isOpen={isAttachmentPanelOpen} onClose={() => setIsAttachmentPanelOpen(false)} candidateId={currentCandidate.id} candidateName={`${currentCandidate.name}`} PanelContainer={PanelContainer} />
             {selectedIds.length > 1 && (isAttachmentPanelOpen || isChatOpen) && (
               <CandidateNavigation>
-                <NavIconButton onClick={handlePrevCandidate} disabled={currentPersonIndex === 0} title="Previous Candidate" > ← </NavIconButton>
-                <NavIconButton onClick={handleNextCandidate} disabled={currentPersonIndex === selectedIds.length - 1} title="Next Candidate" > → </NavIconButton>
+                <NavIconButton onClick={handlePrevCandidate} disabled={currentCandidateIndex === 0} title="Previous Candidate" > ← </NavIconButton>
+                <NavIconButton onClick={handleNextCandidate} disabled={currentCandidateIndex === selectedIds.length - 1} title="Next Candidate" > → </NavIconButton>
               </CandidateNavigation>
             )}
           </>

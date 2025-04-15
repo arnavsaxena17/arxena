@@ -298,7 +298,7 @@ export const WORKFLOW_ACTIONS_CONFIG: Record<
     Icon: IconTrashX,
     accent: 'danger',
     isPinned: true,
-    availableOn: [ActionViewType.INDEX_PAGE_BULK_SELECTION],
+    availableOn: [ActionViewType.INDEX_PAGE_BULK_SELECTION, ActionViewType.INDEX_PAGE_NO_SELECTION],
     useAction: useDestroyMultipleRecordsAction,
   },
 };

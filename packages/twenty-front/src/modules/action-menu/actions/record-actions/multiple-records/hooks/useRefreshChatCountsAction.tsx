@@ -55,7 +55,6 @@ export const useRefreshChatCountsAction: ActionHookWithObjectMetadataItem = ({ o
     const [isRefreshChatCountsModalOpen, setIsRefreshChatCountsModalOpen] = useState(false);
     const { refreshChatCounts } = useRefreshChatCounts();
 
-    console.log("The objectMetadataItem is::", objectMetadataItem);
     const handleRefreshChatCountsClick = useCallback(async () => {
       const recordsToRefreshChatCounts = await fetchAllRecordIds();
       const recordIdsToRefreshChatCounts:string[] = recordsToRefreshChatCounts.map((record) => record.id);

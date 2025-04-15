@@ -1,5 +1,6 @@
 import styled from '@emotion/styled';
 import { ReactNode } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Button, IconDatabase, IconMail, IconSearch, IconVideo } from 'twenty-ui';
 
 type TopBarProps = {
@@ -75,61 +76,68 @@ export const TopBar = ({
   showVideoInterviewEdit=true,
   handleEnrichment,
   handleEngagement
-}: TopBarProps) => (
-  <StyledContainer className={className}>
-    <StyledTopBar>
-      <StyledLeftSection>{leftComponent}</StyledLeftSection>
+}: TopBarProps) => {
+  const location = useLocation();
+  const isJobPage = location.pathname.includes('/job/');
 
-      <StyledButtonContainer>
-        {showRefetch && (
-          <Button
-            Icon={IconSearch}
-            title="Sourcing"
-            variant="secondary"
-            accent="default"
-            onClick={handleRefresh}
-          />
-        )}
-        {showEngagement && (
-          <Button
-            Icon={IconMail}
-            title="Engagement" 
-            variant="secondary"
-            accent="default"
-            onClick={handleEngagement}
-          />
-        )}
-        {showEnrichment && (
-          <Button
-            Icon={IconDatabase}
-            title="Enrichment" 
-            variant="secondary"
-            accent="default"
-            onClick={handleEnrichment}
-          />
-        )}
-        {/* {showRefetch && (
-          <Button
-            Icon={IconRefresh}
-            title="Refetch"
-            variant="secondary"
-            accent="default"
-            onClick={handleRefresh}
-          />
-        )} */}
-        {showVideoInterviewEdit && (
-          <Button
-            Icon={IconVideo}
-            title="Video Interviews"
-            variant="secondary"
-            accent="default"
-            onClick={handleVideoInterviewEdit}
-          />
-        )}
-      </StyledButtonContainer>
+  return (
+    <StyledContainer className={className}>
+      <StyledTopBar>
+        <StyledLeftSection>{leftComponent}</StyledLeftSection>
 
-      <StyledRightSection>{rightComponent}</StyledRightSection>
-    </StyledTopBar>
-    {bottomComponent}
-  </StyledContainer>
-);
+        {isJobPage && (
+          <StyledButtonContainer>
+            {showRefetch && (
+              <Button
+                Icon={IconSearch}
+                title="Sourcing"
+                variant="secondary"
+                accent="default"
+                onClick={handleRefresh}
+              />
+            )}
+            {showEngagement && (
+              <Button
+                Icon={IconMail}
+                title="Engagement" 
+                variant="secondary"
+                accent="default"
+                onClick={handleEngagement}
+              />
+            )}
+            {showEnrichment && (
+              <Button
+                Icon={IconDatabase}
+                title="Enrichment" 
+                variant="secondary"
+                accent="default"
+                onClick={handleEnrichment}
+              />
+            )}
+            {/* {showRefetch && (
+              <Button
+                Icon={IconRefresh}
+                title="Refetch"
+                variant="secondary"
+                accent="default"
+                onClick={handleRefresh}
+              />
+            )} */}
+            {showVideoInterviewEdit && (
+              <Button
+                Icon={IconVideo}
+                title="Video Interviews"
+                variant="secondary"
+                accent="default"
+                onClick={handleVideoInterviewEdit}
+              />
+            )}
+          </StyledButtonContainer>
+        )}
+
+        <StyledRightSection>{rightComponent}</StyledRightSection>
+      </StyledTopBar>
+      {bottomComponent}
+    </StyledContainer>
+  );
+};

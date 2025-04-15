@@ -187,10 +187,10 @@ export const SingleJobView = () => {
   };
   
   const handleEngagement = () => {
-    if (!currentCandidateId) {
-      alert('Please select a candidate to upload JD');
-      return;
-    }
+    // if (!currentCandidateId) {
+    //   alert('Please select a candidate to upload JD');
+    //   return;
+    // }
     setIsArxUploadJDModalOpen(true);
   };
 
@@ -201,6 +201,9 @@ export const SingleJobView = () => {
   if (!job) {
     return <div>Job not found</div>;
   }
+  console.log("The job is::", job);
+  console.log("The jobId is::", jobId);
+  console.log("The candidateId is::", candidateId);
 
   return (
     <StyledPageContainer>
@@ -241,6 +244,7 @@ export const SingleJobView = () => {
             </ViewComponentInstanceContext.Provider>
           </RecordIndexContextProvider>
           <ChatMain 
+            jobId={jobId}
             initialCandidateId={currentCandidateId} 
             onCandidateSelect={handleCandidateSelect}
           />

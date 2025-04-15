@@ -14,8 +14,6 @@ import { useCallback, useState } from 'react';
 import { isDefined } from 'twenty-shared';
 
 export const usePopulateShortlistAction: ActionHookWithObjectMetadataItem = ({ objectMetadataItem }) => { 
-  console.log("Called the usePopulateShortlistAction hook with the objectMetadataItem::", objectMetadataItem);
-    
   
   const contextStoreNumberOfSelectedRecords = useRecoilComponentValueV2(
     contextStoreNumberOfSelectedRecordsComponentState,
@@ -55,7 +53,6 @@ export const usePopulateShortlistAction: ActionHookWithObjectMetadataItem = ({ o
     const [isPopulateShortlistModalOpen, setIsPopulateShortlistModalOpen] = useState(false);
     const { sendCVsToClient } = useSendCVsToClient();
 
-    console.log("The objectMetadataItem is::", objectMetadataItem);
     const handlePopulateShortlistClick = useCallback(async () => {
       const recordsForShortlist = await fetchAllRecordIds();
       const recordIdsForShortlist:string[] = recordsForShortlist.map((record) => record.id);

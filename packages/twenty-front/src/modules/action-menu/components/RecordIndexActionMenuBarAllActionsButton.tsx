@@ -1,8 +1,10 @@
+import { useCommandMenu } from '@/command-menu/hooks/useCommandMenu';
 import { useRightDrawer } from '@/ui/layout/right-drawer/hooks/useRightDrawer';
 import { RightDrawerPages } from '@/ui/layout/right-drawer/types/RightDrawerPages';
 import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
-import { IconLayoutSidebarRightExpand } from 'twenty-ui';
+import { useLocation } from 'react-router-dom';
+import { getOsControlSymbol, IconLayoutSidebarRightExpand } from 'twenty-ui';
 
 const StyledButton = styled.div`
   border-radius: ${({ theme }) => theme.border.radius.sm};
@@ -32,15 +34,35 @@ const StyledSeparator = styled.div<{ size: 'sm' | 'md' }>`
   width: 1px;
 `;
 
+const StyledShortcutLabel = styled.div`
+  align-items: center;
+  background-color: ${({ theme }) => theme.background.secondary};
+  border: 1px solid ${({ theme }) => theme.border.color.strong};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  color: ${({ theme }) => theme.font.color.tertiary};
+  display: flex;
+  font-size: ${({ theme }) => theme.font.size.sm};
+  font-weight: ${({ theme }) => theme.font.weight.regular};
+  padding: ${({ theme }) => theme.spacing(0, 1)};
+`;
+
 export const RecordIndexActionMenuBarAllActionsButton = () => {
   const theme = useTheme();
   const { openRightDrawer } = useRightDrawer();
+  const { openRootCommandMenu } = useCommandMenu();
+  const location = useLocation();
+
+  const isJobPath = location.pathname.startsWith('/job/');
 
   const handleClick = () => {
-    openRightDrawer(RightDrawerPages.AllActions, {
-      title: 'All Actions',
-      Icon: IconLayoutSidebarRightExpand,
-    });
+    if (isJobPath) {
+      openRightDrawer(RightDrawerPages.AllActions, {
+        title: 'All Actions',
+        Icon: IconLayoutSidebarRightExpand,
+      });
+    } else {
+      openRootCommandMenu();
+    }
   };
 
   return (
@@ -49,6 +71,12 @@ export const RecordIndexActionMenuBarAllActionsButton = () => {
       <StyledButton onClick={handleClick}>
         <IconLayoutSidebarRightExpand size={theme.icon.size.md} />
         <StyledButtonLabel>All Actions</StyledButtonLabel>
+        {!isJobPath && (
+          <>
+            <StyledSeparator size="sm" />
+            <StyledShortcutLabel>{getOsControlSymbol()}K</StyledShortcutLabel>
+          </>
+        )}
       </StyledButton>
     </>
   );

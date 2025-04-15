@@ -1,6 +1,6 @@
 import dayjs from 'dayjs';
 import Handsontable from 'handsontable';
-import { PersonNode } from 'twenty-shared';
+import { CandidateNode } from 'twenty-shared';
 import { ColumnRenderer } from './types';
 
 // Add CSS styles at the top level
@@ -13,8 +13,8 @@ const truncatedCellStyle = {
 };
 
 export const createTableColumns = (
-  individuals: PersonNode[],
-  handleCheckboxChange: (individualId: string) => void,
+  candidates: CandidateNode[],
+  handleCheckboxChange: (candidateId: string) => void,
   selectedIds: string[],
   handleSelectAll: () => void,
 ): Handsontable.ColumnSettings[] => {
@@ -24,18 +24,18 @@ export const createTableColumns = (
     td.innerHTML = '';
     
     // Get the individual for this row
-    const individual = individuals[row];
-    if (!individual) return td;
+    const candidate = candidates[row];
+    if (!candidate) return td;
     
     // Create checkbox element
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
-    checkbox.checked = selectedIds.includes(individual.id);
+    checkbox.checked = selectedIds.includes(candidate.id);
     checkbox.className = 'row-checkbox';
     
     // Add change event listener
     checkbox.addEventListener('change', () => {
-      handleCheckboxChange(individual.id);
+      handleCheckboxChange(candidate.id);
     });
     
     // Center the checkbox
@@ -46,11 +46,11 @@ export const createTableColumns = (
   };
   
   const nameRenderer: ColumnRenderer = (instance, td, row, column, prop, value) => {
-    const individual = individuals[row];
+    const candidate = candidates[row];
     
     // Use the provided value if it exists (e.g., from edited data)
     // Otherwise, construct from the individual object
-    const nameValue = value || (individual ? `${individual.name.firstName} ${individual.name.lastName}` : 'N/A');
+    const nameValue = value || (candidate ? `${candidate.name}` : 'N/A');
     
     const div = document.createElement('div');
     Object.assign(div.style, truncatedCellStyle);
@@ -61,8 +61,8 @@ export const createTableColumns = (
   };
 
   const statusRenderer: ColumnRenderer = (instance, td, row, column, prop, value) => {
-    const individual = individuals[row];
-    const status = individual.candidates?.edges[0]?.node?.candConversationStatus || 'N/A';
+    const candidate = candidates[row];
+    const status = candidate?.candConversationStatus || 'N/A';
     const div = document.createElement('div');
     Object.assign(div.style, truncatedCellStyle);
     div.textContent = status;
@@ -72,9 +72,9 @@ export const createTableColumns = (
   };
 
   const dateRenderer: ColumnRenderer = (instance, td, row, column, prop, value) => {
-    const individual = individuals[row];
-    const date = individual?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node?.createdAt 
-      ? dayjs(individual.candidates.edges[0].node.whatsappMessages.edges[0].node.createdAt).format('MMM D, HH:mm')
+    const candidate = candidates[row];
+    const date = candidate?.whatsappMessages?.edges[0]?.node?.createdAt 
+      ? dayjs(candidate.whatsappMessages.edges[0].node.createdAt).format('MMM D, HH:mm')
       : 'N/A';
     const div = document.createElement('div');
     Object.assign(div.style, truncatedCellStyle);
@@ -154,10 +154,10 @@ export const createTableColumns = (
     },
   ];
 
-  // Collect all unique field names from candidateFieldValues across all individuals
+  // Collect all unique field names from candidateFieldValues across all candidates
   const fieldNamesSet = new Set<string>();
-  individuals.forEach(individual => {
-    const candidateFieldEdges = individual.candidates?.edges[0]?.node?.candidateFieldValues?.edges;
+    candidates.forEach(candidate => {
+    const candidateFieldEdges = candidate.candidateFieldValues?.edges;
     if (candidateFieldEdges) {
       candidateFieldEdges.forEach(edge => {
         if (edge.node?.candidateFields?.name) {

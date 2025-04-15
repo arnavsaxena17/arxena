@@ -1065,7 +1065,7 @@ export const emptyCandidateProfileObj: CandidateNode = {
     ],
   },
   updatedAt: '',
-  person: {
+  people: {
     phones: { primaryPhoneNumber: '' },
     emails: { primaryEmail: '' },
     jobTitle: '',
@@ -1555,26 +1555,6 @@ export interface WhatsAppMessagesEdge {
   node: MessageNode;
 }
 
-export interface Candidate {
-  stopChat: any;
-  startVideoInterviewChat: any;
-  startChatCompleted: any;
-  updatedAt: string | number | Date;
-  candConversationStatus: string;
-  startMeetingSchedulingChat: any;
-  videoInterview?: videoInterview;
-  id: string;
-  name: string;
-  startChat: boolean;
-  jobs: Jobs;
-  people: {
-    id: string;
-    name: {
-      firstName: string;
-      lastName: string;
-    };
-  };
-}
 
 export interface videoInterview {
   edges: videoInterviewEdge[];
@@ -1596,6 +1576,29 @@ export interface InterviewLink {
   primaryLinkLabel: string;
   primaryLinkUrl: string;
 }
+
+
+// export interface Candidate {
+//   stopChat: any;
+//   startVideoInterviewChat: any;
+//   startChatCompleted: any;
+//   updatedAt: string | number | Date;
+//   candConversationStatus: string;
+//   startMeetingSchedulingChat: any;
+//   videoInterview?: videoInterview;
+//   id: string;
+//   name: string;
+//   startChat: boolean;
+//   jobs: Jobs;
+//   people: {
+//     id: string;
+//     name: {
+//       firstName: string;
+//       lastName: string;
+//     };
+//   };
+// }
+
 
 export interface CandidateNode {
   updatedAt: string | number | Date;
@@ -1623,8 +1626,37 @@ export interface CandidateNode {
   candidateFieldValues: CandidateFieldValues;
   candidateReminders: Reminders;
   clientInterview?: ClientInterviews;
-  person: PersonNode;
+  people: PersonNode;
 }
+
+// export interface Candidate {
+//   updatedAt: string | number | Date;
+//   videoInterview: videoInterview;
+//   whatsappProvider: string | 'application03';
+//   name: string;
+//   source?: string;
+//   campaign?: string;
+//   messagingChannel?: string;
+//   id: string;
+//   engagementStatus: boolean;
+//   startVideoInterviewChat: boolean;
+//   startMeetingSchedulingChat: boolean;
+//   lastEngagementChatControl: chatControlType;
+//   phoneNumber: string;
+//   email: string;
+//   input: string;
+//   candConversationStatus?: string;
+//   startChat: boolean;
+//   stopChat: boolean;
+//   status: string;
+//   whatsappMessages: WhatsAppMessages;
+//   emailMessages: EmailMessages;
+//   jobs: Jobs;
+//   candidateFieldValues: CandidateFieldValues;
+//   candidateReminders: Reminders;
+//   clientInterview?: ClientInterviews;
+//   people: PersonNode;
+// }
 
 export interface CandidateFieldValues {
   edges: CandidateFieldValueEdge[];

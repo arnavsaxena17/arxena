@@ -63,7 +63,6 @@ export const useUpdateSnapshotProfilesFromJobBoardsAction: ActionHookWithObjectM
       onError: () => {},
     });
 
-    console.log("The objectMetadataItem is::", objectMetadataItem);
     const handleUpdateSnapshotProfilesClick = useCallback(async () => {
       const recordsToUpdate = await fetchAllRecordIds();
       console.log("recordsToUpdate::", recordsToUpdate);

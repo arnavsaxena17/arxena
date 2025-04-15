@@ -18,7 +18,6 @@ export const useStartChatWithCandidatesAction: ActionHookWithObjectMetadataItem 
     const contextStoreNumberOfSelectedRecords = useRecoilComponentValueV2(
       contextStoreNumberOfSelectedRecordsComponentState,
     );
-    console.log("useStartChatWithCandidatesAction - contextStoreNumberOfSelectedRecords:", contextStoreNumberOfSelectedRecords);
 
     const contextStoreTargetedRecordsRule = useRecoilComponentValueV2(
       contextStoreTargetedRecordsRuleComponentState,
@@ -45,14 +44,11 @@ export const useStartChatWithCandidatesAction: ActionHookWithObjectMetadataItem 
     });
 
     const isRemoteObject = objectMetadataItem.isRemote;
-    console.log("useStartChatWithCandidatesAction - isRemoteObject:", isRemoteObject);
     const shouldBeRegistered =
       !isRemoteObject &&
       isDefined(contextStoreNumberOfSelectedRecords) &&
       contextStoreNumberOfSelectedRecords < BACKEND_BATCH_REQUEST_MAX_COUNT &&
       contextStoreNumberOfSelectedRecords > 0;
-    console.log("useStartChatWithCandidatesAction - contextStoreNumberOfSelectedRecords:", contextStoreNumberOfSelectedRecords);
-    console.log("useStartChatWithCandidatesAction - shouldBeRegistered:", shouldBeRegistered);
     const [
       isStartChatWithCandidatesModalOpen,
       setIsStartChatWithCandidatesModalOpen,
@@ -62,7 +58,6 @@ export const useStartChatWithCandidatesAction: ActionHookWithObjectMetadataItem 
       onError: () => {},
     });
 
-    console.log('The objectMetadataItem is::', objectMetadataItem);
     const handleStartChatWithCandidatesClick = useCallback(async () => {
       const recordsToStartChat = await fetchAllRecordIds();
 
@@ -71,12 +66,7 @@ export const useStartChatWithCandidatesAction: ActionHookWithObjectMetadataItem 
         .includes('jobcandidate')
         ? recordsToStartChat.map((record) => record.candidateId)
         : recordsToStartChat.map((record) => record.id);
-      console.log(
-        'Records selected::',
-        recordsToStartChat,
-        'Record IDs selected::',
-        recordIdsToStartChat,
-      );
+
       await sendStartChatRequest(
         recordIdsToStartChat,
         objectMetadataItem.nameSingular,
@@ -84,7 +74,6 @@ export const useStartChatWithCandidatesAction: ActionHookWithObjectMetadataItem 
     }, [sendStartChatRequest, fetchAllRecordIds]);
 
     const onClick = () => {
-      console.log("useStartChatWithCandidatesAction - onClick - shouldBeRegistered:", shouldBeRegistered);
       if (!shouldBeRegistered) {
         return;
       }

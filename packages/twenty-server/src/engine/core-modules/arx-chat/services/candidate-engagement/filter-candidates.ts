@@ -516,7 +516,7 @@ export class FilterCandidates {
             edges: activeJobCandidate?.candidateReminders?.edges,
           },
           updatedAt: activeJobCandidate.updatedAt,
-          person: personWithActiveJob?.node,
+          people: personWithActiveJob?.node,
         };
 
         return candidateProfileObj;

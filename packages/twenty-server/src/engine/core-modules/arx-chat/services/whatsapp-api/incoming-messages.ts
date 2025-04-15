@@ -815,23 +815,23 @@ export class IncomingWhatsappMessages {
       });
 
 
-      let phoneNumberFrom:string = candidateProfileDataNodeObj.person.phones.primaryPhoneNumber.length == 10
-      ? '91' + candidateProfileDataNodeObj.person.phones.primaryPhoneNumber
-      : candidateProfileDataNodeObj.person.phones.primaryPhoneNumber;
-      if (candidateProfileDataNodeObj.person?.candidates?.edges.filter(
+      let phoneNumberFrom:string = candidateProfileDataNodeObj.people.phones.primaryPhoneNumber.length == 10
+      ? '91' + candidateProfileDataNodeObj.people.phones.primaryPhoneNumber
+      : candidateProfileDataNodeObj.people.phones.primaryPhoneNumber;
+      if (candidateProfileDataNodeObj.people?.candidates?.edges.filter(
         (candidate) => candidate.node.jobs.id == candidateJob.id,
       )[0]?.node?.messagingChannel == 'linkedin') {
-        phoneNumberFrom = candidateProfileDataNodeObj.person?.linkedinLink?.primaryLinkUrl || '';
+        phoneNumberFrom = candidateProfileDataNodeObj.people?.linkedinLink?.primaryLinkUrl || '';
       }
       else{
-        phoneNumberFrom = candidateProfileDataNodeObj.person.phones.primaryPhoneNumber.length == 10
-            ? '91' + candidateProfileDataNodeObj.person.phones.primaryPhoneNumber
-            : candidateProfileDataNodeObj.person.phones.primaryPhoneNumber
+        phoneNumberFrom = candidateProfileDataNodeObj.people.phones.primaryPhoneNumber.length == 10
+            ? '91' + candidateProfileDataNodeObj.people.phones.primaryPhoneNumber
+            : candidateProfileDataNodeObj.people.phones.primaryPhoneNumber
       }
   
       let phoneNumberTo:string = recruiterProfile.phoneNumber;
   
-      if (candidateProfileDataNodeObj.person?.candidates?.edges.filter(
+      if (candidateProfileDataNodeObj.people?.candidates?.edges.filter(
         (candidate) => candidate.node.jobs.id == candidateJob.id,
       )[0]?.node?.messagingChannel == 'linkedin') {
         phoneNumberTo = recruiterProfile.linkedinUrl || '';

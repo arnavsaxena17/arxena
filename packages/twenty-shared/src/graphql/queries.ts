@@ -1532,7 +1532,6 @@ export const graphqlToFetchAllCandidateData = `
       edges {
         cursor
         node {
-  
           id
           name
           updatedAt

@@ -6,7 +6,7 @@ import { IconCopy } from '@tabler/icons-react';
 import axios from 'axios';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useRecoilState } from 'recoil';
-import { PersonNode } from 'twenty-shared';
+import { CandidateNode } from 'twenty-shared';
 import { TableData } from './types';
 
 import { contextStoreNumberOfSelectedRecordsComponentState } from '@/context-store/states/contextStoreNumberOfSelectedRecordsComponentState';
@@ -39,18 +39,18 @@ const createMutableCopy = <T>(obj: T): T => {
 type UseChatTableReturn = {
   selectedIds: string[];
   isAttachmentPanelOpen: boolean;
-  currentPersonIndex: number;
+  currentCandidateIndex: number;
   isChatOpen: boolean;
-  currentCandidate: PersonNode | null;
-  selectedPeople: PersonNode[];
-  handleCheckboxChange: (individualId: string) => void;
+  currentCandidate: CandidateNode | null;
+  selectedCandidates: CandidateNode[];
+  handleCheckboxChange: (candidateId: string) => void;
   handleSelectAll: () => void;
   handleViewChats: () => void;
   handleViewCVs: () => void;
   clearSelection: () => void;
   handlePrevCandidate: () => void;
   handleNextCandidate: () => void;
-  prepareTableData: (individuals: PersonNode[]) => TableData[];
+  prepareTableData: (candidates: CandidateNode[]) => TableData[];
   createCandidateShortlists: () => Promise<void>;
   createChatBasedShortlistDelivery: () => Promise<void>;
   createUpdateCandidateStatus: () => Promise<void>;
@@ -63,13 +63,13 @@ type UseChatTableReturn = {
 };
 
 export const useChatTable = (
-  individuals: PersonNode[], 
+  candidates: CandidateNode[], 
   // onSelectionChange?: (selectedIds: string[]) => void,
-  onIndividualSelect?: (id: string) => void
+  onCandidateSelect?: (id: string) => void
 ): UseChatTableReturn => {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isAttachmentPanelOpen, setIsAttachmentPanelOpen] = useState(false);
-  const [currentPersonIndex, setCurrentPersonIndex] = useState(0);
+  const [currentCandidateIndex, setCurrentCandidateIndex] = useState(0);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [tokenPair] = useRecoilState(tokenPairState);
   const { enqueueSnackBar } = useSnackBar();
@@ -83,27 +83,23 @@ export const useChatTable = (
     tableId
   );
   
-  const prepareTableData = (individuals: PersonNode[]): TableData[] => {
-    return individuals.map(individual => {
-      const candidateNode = individual.candidates?.edges[0]?.node;
+  const prepareTableData = (candidates: CandidateNode[]): TableData[] => {
+    return candidates.map(candidate => {
       const baseData = {
-        id: individual.id,
-        name: `${individual.name.firstName} ${individual.name.lastName}`,
-        phoneNumber: individual.phones?.primaryPhoneNumber || 'N/A',
-        email: individual.emails?.primaryEmail || 'N/A',
-        salary: individual.salary || 'N/A',
-        city: individual.city || 'N/A',
-        jobTitle: individual.jobTitle || 'N/A',
-        status: candidateNode?.status || 'N/A',
-        checkbox: selectedIds.includes(individual.id),
+        id: candidate.id,
+        name: `${candidate.name}`,
+        phoneNumber: candidate.phoneNumber || 'N/A',
+        email: candidate.email || 'N/A',
+        status: candidate.status || 'N/A',
+        checkbox: selectedIds.includes(candidate.id),
       };
       
       const fieldValues: Record<string, string> = {};
-      if (candidateNode?.candidateFieldValues?.edges) {
-        candidateNode.candidateFieldValues.edges.forEach(edge => {
+      if (candidate.candidateFieldValues?.edges) {
+        candidate.candidateFieldValues.edges.forEach(edge => {
           if (edge.node) {
-            const fieldName = edge.node.candidateFields.name;
-            const fieldValue = edge.node.name;
+            const fieldName = edge.node.candidateFields?.name;
+            const fieldValue = edge.node?.name;
             if (fieldName && fieldValue !== undefined) {
               const camelCaseFieldName = fieldName.replace(/_([a-z])/g, (match: string, letter: string) => letter.toUpperCase());
               fieldValues[camelCaseFieldName] = fieldValue;
@@ -121,9 +117,9 @@ export const useChatTable = (
   
   // Initialize table data when individuals change
   useEffect(() => {
-    const initialData = prepareTableData(individuals);
+    const initialData = prepareTableData(candidates);
     setTableData(initialData);
-  }, [individuals, setTableData, selectedIds]);
+  }, [candidates, setTableData, selectedIds]);
 
   const handleAfterChange = (changes: CellChange[] | null, source: ChangeSource) => {
     if (!changes || source === 'loadData') {
@@ -138,7 +134,7 @@ export const useChatTable = (
     
     // Process each change: [row, prop, oldValue, newValue]
     changes.forEach(([row, prop, oldValue, newValue]) => {
-      if (oldValue === newValue || row < 0 || row >= individuals.length) {
+      if (oldValue === newValue || row < 0 || row >= candidates.length) {
         return;
       }
       
@@ -146,7 +142,7 @@ export const useChatTable = (
       dataChanged = true;
       
       // Get the individual's ID for this row
-      const individualId = individuals[row].id;
+      const candidateId = candidates[row].id;
       
       // Update the tableData state with the new value
       if (typeof prop === 'string' && row < newData.length) {
@@ -162,7 +158,7 @@ export const useChatTable = (
           // This would require special handling if we had nested properties
         } else {
           // Save the change to the backend as a direct property update
-          saveDataToBackend(individualId, prop, newValue);
+            saveDataToBackend(candidateId, prop, newValue);
         }
       }
     });
@@ -232,7 +228,7 @@ export const useChatTable = (
   };
 
   const handleSelectAll = () => {
-    const newSelectedIds = selectedIds.length === individuals.length ? [] : individuals.map(individual => individual.id);
+    const newSelectedIds = selectedIds.length === candidates.length ? [] : candidates.map(candidate => candidate.id);
     // console.log('handleSelectAll - new selectedIds:', newSelectedIds);
     setSelectedIds(newSelectedIds);
     setContextStoreNumberOfSelectedRecords(newSelectedIds.length);
@@ -250,12 +246,12 @@ export const useChatTable = (
   
   const handleRowSelection = (row: number) => {
     if (row >= 0) {
-      const selectedIndividual = individuals[row];
-      // console.log('Row selected:', row, 'Individual ID:', selectedIndividual.id);
-      onIndividualSelect?.(selectedIndividual.id);
+      const selectedCandidate = candidates[row];
+      // console.log('Row selected:', row, 'Individual ID:', selectedCandidate.id);
+      onCandidateSelect?.(selectedCandidate.id);
       const newSelectedIds = [...selectedIds];
-      if (!newSelectedIds.includes(selectedIndividual.id)) {
-        newSelectedIds.push(selectedIndividual.id);
+      if (!newSelectedIds.includes(selectedCandidate.id)) {
+        newSelectedIds.push(selectedCandidate.id);
         setSelectedIds(newSelectedIds);
         // console.log('handleRowSelection - Updated selectedIds with new selection:', newSelectedIds);
         setContextStoreNumberOfSelectedRecords(newSelectedIds.length);
@@ -287,7 +283,7 @@ export const useChatTable = (
   };
 
   const handleViewCVs = (): void => {
-    setCurrentPersonIndex(0);
+    setCurrentCandidateIndex(0);
     setIsAttachmentPanelOpen(true);
   };
 
@@ -297,16 +293,16 @@ export const useChatTable = (
   };
 
   const handlePrevCandidate = (): void => {
-    setCurrentPersonIndex(prev => Math.max(0, prev - 1));
+    setCurrentCandidateIndex(prev => Math.max(0, prev - 1));
   };
   
   const handleNextCandidate = (): void => {
-    setCurrentPersonIndex(prev => Math.min(selectedIds.length - 1, prev + 1));
+    setCurrentCandidateIndex(prev => Math.min(selectedIds.length - 1, prev + 1));
   };
   
-  const currentCandidate = selectedIds.length > 0 ? individuals.find(individual => individual.id === selectedIds[currentPersonIndex]) ?? null : null;
-  const selectedPeople = individuals.filter(individual => selectedIds.includes(individual.id));
-  const selectedCandidateIds = selectedPeople.map(person => person.candidates.edges[0].node.id);
+  const currentCandidate = selectedIds.length > 0 ? candidates.find(candidate => candidate.id === selectedIds[currentCandidateIndex]) ?? null : null;
+  const selectedCandidates = candidates.filter(candidate => selectedIds.includes(candidate.id));
+  const selectedCandidateIds = selectedCandidates.map(candidate => candidate.id);
   
   const createCandidateShortlists = async (): Promise<void> => {
     try {
@@ -374,10 +370,10 @@ export const useChatTable = (
   return {
     selectedIds,
     isAttachmentPanelOpen,
-    currentPersonIndex,
+    currentCandidateIndex,
     isChatOpen,
     currentCandidate,
-    selectedPeople,
+    selectedCandidates,
     handleCheckboxChange,
     handleSelectAll,
     handleViewChats,

@@ -56,7 +56,6 @@ export const useCreateMultipleVideoInterviewLinksAction: ActionHookWithObjectMet
     const { createVideoInterviewLinks } = useCreateManyVideoInterviewLinks();
 
 
-    console.log("The objectMetadataItem is::", objectMetadataItem);
     const handleCreateMultipleVideoInterviewLinksClick = useCallback(async () => {
       const recordsToCreateVideoInterviewLinks = await fetchAllRecordIds();
       const recordIdsToCreateVideoInterviewLinks:string[] = recordsToCreateVideoInterviewLinks.map((record) => record.id);

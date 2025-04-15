@@ -925,9 +925,7 @@ export class CandidateService {
       case 'groupHrHeadJobCandidate':
         return candidate[fieldMetadata.fieldName];
       case 'person':
-        return candidate.person?.[fieldMetadata.fieldName];
-      case 'candidate':
-        return candidate.candidate?.[fieldMetadata.fieldName];
+        return candidate.people?.[fieldMetadata.fieldName];
       default:
         return candidate[fieldMetadata.fieldName];
     }

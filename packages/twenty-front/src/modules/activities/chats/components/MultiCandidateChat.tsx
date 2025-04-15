@@ -5,7 +5,7 @@ import axios from 'axios';
 import dayjs from 'dayjs';
 import React, { useEffect, useState } from 'react';
 import { useRecoilState } from 'recoil';
-import { MessageNode, PersonNode } from 'twenty-shared';
+import { CandidateNode, MessageNode } from 'twenty-shared';
 
 
 
@@ -240,13 +240,13 @@ const groupMessagesByDate = (messages: MessageNode[]) => {
 interface MultiCandidateChatProps {
   isOpen: boolean;
   onClose: () => void;
-  selectedPeople: PersonNode[];
+  selectedCandidates: CandidateNode[];
 }
 
 export const MultiCandidateChat: React.FC<MultiCandidateChatProps> = ({
   isOpen,
   onClose,
-  selectedPeople,
+  selectedCandidates,
 }) => {
 
   const [tokenPair] = useRecoilState(tokenPairState);
@@ -260,13 +260,13 @@ export const MultiCandidateChat: React.FC<MultiCandidateChatProps> = ({
     setCurrentIndex(prev => Math.max(0, prev - 1));
   };
   const handleNextCandidate = () => {
-    setCurrentIndex(prev => Math.min(selectedPeople.length - 1, prev + 1));
+    setCurrentIndex(prev => Math.min(selectedCandidates.length - 1, prev + 1));
   };
-  const currentPerson = selectedPeople[currentIndex];
+  const currentCandidate = selectedCandidates[currentIndex];
 
   useEffect(() => {
     const fetchMessages = async () => {
-      if (!currentPerson?.id || !tokenPair?.accessToken?.token) {
+      if (!currentCandidate?.id || !tokenPair?.accessToken?.token) {
         setIsLoading(false);
         return;
       }
@@ -276,7 +276,7 @@ export const MultiCandidateChat: React.FC<MultiCandidateChatProps> = ({
         console.log("Goignt to try and get fetech messages laest see if ti works") 
         const response = await axios.post(
           `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/get-all-messages-by-candidate-id`,
-          { candidateId: currentPerson.candidates.edges[0].node.id },
+          { candidateId: currentCandidate.id },
           { headers: { Authorization: `Bearer ${tokenPair.accessToken.token}` } }
         );
         console.log("response data::", response.data.data);
@@ -296,14 +296,14 @@ export const MultiCandidateChat: React.FC<MultiCandidateChatProps> = ({
     };
 
     fetchMessages();
-  }, [currentPerson?.id, tokenPair]);
+  }, [currentCandidate?.id, tokenPair]);
 
   const handlePrevious = () => {
     setCurrentIndex(prev => Math.max(0, prev - 1));
   };
 
   const handleNext = () => {
-    setCurrentIndex(prev => Math.min(selectedPeople.length - 1, prev + 1));
+    setCurrentIndex(prev => Math.min(selectedCandidates.length - 1, prev + 1));
   };
 
   const formatDate = (date: string) => {
@@ -327,7 +327,7 @@ export const MultiCandidateChat: React.FC<MultiCandidateChatProps> = ({
         <Header>
           <CandidateInfo>
             <CandidateName>
-              {currentPerson ? `${currentPerson.name.firstName} ${currentPerson.name.lastName}` : ''}
+              {currentCandidate ? `${currentCandidate.name}` : ''}
             </CandidateName>
           </CandidateInfo>
           <CloseButton onClick={onClose}>
@@ -366,10 +366,10 @@ export const MultiCandidateChat: React.FC<MultiCandidateChatProps> = ({
         </ChatView>
       </DrawerContainer>
 
-      {selectedPeople.length > 1 && isOpen &&(
+      {selectedCandidates.length > 1 && isOpen &&(
         <>
           <NavigationCounter>
-            {currentIndex + 1} of {selectedPeople.length}
+            {currentIndex + 1} of {selectedCandidates.length}
           </NavigationCounter>
           
           <CandidateNavigation>
@@ -383,7 +383,7 @@ export const MultiCandidateChat: React.FC<MultiCandidateChatProps> = ({
             
             <NavIconButton
               onClick={handleNextCandidate}
-              disabled={currentIndex === selectedPeople.length - 1}
+              disabled={currentIndex === selectedCandidates.length - 1}
               title="Next Candidate"
             >
               <IconChevronRight size={24} />

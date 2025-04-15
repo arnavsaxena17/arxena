@@ -36,10 +36,10 @@ export const ChatActionMenuEntriesSetter = () => {
     contextStoreCurrentViewType,
     contextStoreTargetedRecordsRule,
   );
-  console.log("ChatActionMenuEntriesSetter - contextStoreCurrentObjectMetadataItem:", contextStoreCurrentObjectMetadataItem);
-  console.log("ChatActionMenuEntriesSetter - contextStoreTargetedRecordsRule:", contextStoreTargetedRecordsRule);
-  console.log("ChatActionMenuEntriesSetter - contextStoreCurrentViewType:", contextStoreCurrentViewType);
-  console.log("ChatActionMenuEntriesSetter - viewType:", viewType);
+  // console.log("ChatActionMenuEntriesSetter - contextStoreCurrentObjectMetadataItem:", contextStoreCurrentObjectMetadataItem);
+  // console.log("ChatActionMenuEntriesSetter - contextStoreTargetedRecordsRule:", contextStoreTargetedRecordsRule);
+  // console.log("ChatActionMenuEntriesSetter - contextStoreCurrentViewType:", contextStoreCurrentViewType);
+  // console.log("ChatActionMenuEntriesSetter - viewType:", viewType);
 
   const actionsToRegister = isDefined(viewType)
     ? Object.values(CHAT_ACTIONS_CONFIG).filter((action) =>
@@ -49,11 +49,11 @@ export const ChatActionMenuEntriesSetter = () => {
     
   
   // Log each action's availability for the current viewType
-  if (isDefined(viewType)) {
-    Object.entries(CHAT_ACTIONS_CONFIG).forEach(([key, action]) => {
-      console.log(` Chat actions config for ${key}: ${action.availableOn?.includes(viewType)}`);
-    });
-  }
+  // if (isDefined(viewType)) {
+  //   Object.entries(CHAT_ACTIONS_CONFIG).forEach(([key, action]) => {
+  //     console.log(` Chat actions config for ${key}: ${action.availableOn?.includes(viewType)}`);
+  //   });
+  // }
 
   return (
     <ActionMenuComponentInstanceContext.Provider
