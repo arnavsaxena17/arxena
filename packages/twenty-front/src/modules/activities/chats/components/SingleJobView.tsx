@@ -25,6 +25,8 @@ import { ObjectSortDropdownButton } from '@/object-record/object-sort-dropdown/c
 import { ObjectSortDropdownComponentInstanceContext } from '@/object-record/object-sort-dropdown/states/context/ObjectSortDropdownComponentInstanceContext';
 import { RecordIndexContextProvider } from '@/object-record/record-index/contexts/RecordIndexContext';
 import { RecordFieldValueSelectorContextProvider } from '@/object-record/record-store/contexts/RecordFieldValueSelectorContext';
+import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
+import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { PageBody } from '@/ui/layout/page/components/PageBody';
 import { PageContainer } from '@/ui/layout/page/components/PageContainer';
 import { PageHeader } from '@/ui/layout/page/components/PageHeader';
@@ -100,6 +102,7 @@ export const SingleJobView = () => {
   const [, setIsVideoInterviewModalOpen] = useRecoilState(isVideoInterviewModalOpenState);
   const isArxUploadJDModalOpen = useRecoilValue(isArxUploadJDModalOpenState);
   const [, setIsArxUploadJDModalOpen] = useRecoilState(isArxUploadJDModalOpenState);
+  const { enqueueSnackBar } = useSnackBar();
 
   // Handle candidateId changes from URL params
   useEffect(() => {
@@ -203,7 +206,10 @@ export const SingleJobView = () => {
 
   const handleEnrichment = () => {
     if (!currentCandidateId) {
-      alert('Please select a candidate to enrich');
+      enqueueSnackBar('Please select a candidate to enrich', {
+        variant: SnackBarVariant.Warning,
+        duration: 2000,
+      });
       return;
     }
     setIsArxEnrichModalOpen(true);
@@ -211,7 +217,10 @@ export const SingleJobView = () => {
 
   const handleVideoInterviewEdit = () => {
     if (!currentCandidateId) {
-      alert('Please select a candidate to create video interview');
+      enqueueSnackBar('Please select a candidate to create video interview', {
+        variant: SnackBarVariant.Warning,
+        duration: 2000,
+      });
       return;
     }
     setIsVideoInterviewModalOpen(true);
