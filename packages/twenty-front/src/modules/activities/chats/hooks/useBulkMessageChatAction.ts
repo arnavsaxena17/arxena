@@ -6,6 +6,7 @@ import { isDefined } from 'twenty-shared';
 export const useBulkMessageChatAction: ActionHookWithObjectMetadataItem = ({
   objectMetadataItem,
 }) => {
+  console.log("useBulkMessageChatAction - has been clicked objectMetadataItem:", objectMetadataItem);
   const contextStoreTargetedRecordsRule = useRecoilComponentValueV2(
     contextStoreTargetedRecordsRuleComponentState,
   );
@@ -17,6 +18,7 @@ export const useBulkMessageChatAction: ActionHookWithObjectMetadataItem = ({
     contextStoreTargetedRecordsRule.selectedRecordIds.length > 0;
 
   const onClick = () => {
+    console.log("useBulkMessageChatAction - onClick - shouldBeRegistered:", shouldBeRegistered);
     if (!shouldBeRegistered) {
       return;
     }

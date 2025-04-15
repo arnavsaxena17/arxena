@@ -18,6 +18,7 @@ export const useStartChatWithCandidatesAction: ActionHookWithObjectMetadataItem 
     const contextStoreNumberOfSelectedRecords = useRecoilComponentValueV2(
       contextStoreNumberOfSelectedRecordsComponentState,
     );
+    console.log("useStartChatWithCandidatesAction - contextStoreNumberOfSelectedRecords:", contextStoreNumberOfSelectedRecords);
 
     const contextStoreTargetedRecordsRule = useRecoilComponentValueV2(
       contextStoreTargetedRecordsRuleComponentState,
@@ -44,12 +45,14 @@ export const useStartChatWithCandidatesAction: ActionHookWithObjectMetadataItem 
     });
 
     const isRemoteObject = objectMetadataItem.isRemote;
+    console.log("useStartChatWithCandidatesAction - isRemoteObject:", isRemoteObject);
     const shouldBeRegistered =
       !isRemoteObject &&
       isDefined(contextStoreNumberOfSelectedRecords) &&
       contextStoreNumberOfSelectedRecords < BACKEND_BATCH_REQUEST_MAX_COUNT &&
       contextStoreNumberOfSelectedRecords > 0;
-
+    console.log("useStartChatWithCandidatesAction - contextStoreNumberOfSelectedRecords:", contextStoreNumberOfSelectedRecords);
+    console.log("useStartChatWithCandidatesAction - shouldBeRegistered:", shouldBeRegistered);
     const [
       isStartChatWithCandidatesModalOpen,
       setIsStartChatWithCandidatesModalOpen,
@@ -81,6 +84,7 @@ export const useStartChatWithCandidatesAction: ActionHookWithObjectMetadataItem 
     }, [sendStartChatRequest, fetchAllRecordIds]);
 
     const onClick = () => {
+      console.log("useStartChatWithCandidatesAction - onClick - shouldBeRegistered:", shouldBeRegistered);
       if (!shouldBeRegistered) {
         return;
       }

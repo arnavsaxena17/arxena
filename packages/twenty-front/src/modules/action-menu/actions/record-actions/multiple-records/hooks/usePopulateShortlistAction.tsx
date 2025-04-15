@@ -14,6 +14,7 @@ import { useCallback, useState } from 'react';
 import { isDefined } from 'twenty-shared';
 
 export const usePopulateShortlistAction: ActionHookWithObjectMetadataItem = ({ objectMetadataItem }) => { 
+  console.log("Called the usePopulateShortlistAction hook with the objectMetadataItem::", objectMetadataItem);
     
   
   const contextStoreNumberOfSelectedRecords = useRecoilComponentValueV2(

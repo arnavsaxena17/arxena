@@ -5,18 +5,20 @@ import { CHAT_ACTIONS_CONFIG } from '@/activities/chats/constants/ChatActionsCon
 import { ContextStoreComponentInstanceContext } from '@/context-store/states/contexts/ContextStoreComponentInstanceContext';
 import { contextStoreCurrentObjectMetadataItemComponentState } from '@/context-store/states/contextStoreCurrentObjectMetadataItemComponentState';
 import { contextStoreCurrentViewTypeComponentState } from '@/context-store/states/contextStoreCurrentViewTypeComponentState';
+import { contextStoreNumberOfSelectedRecordsComponentState } from '@/context-store/states/contextStoreNumberOfSelectedRecordsComponentState';
 import { contextStoreTargetedRecordsRuleComponentState } from '@/context-store/states/contextStoreTargetedRecordsRuleComponentState';
 import { ContextStoreViewType } from '@/context-store/types/ContextStoreViewType';
 import { useSetRecoilComponentStateV2 } from '@/ui/utilities/state/component-state/hooks/useSetRecoilComponentStateV2';
 import styled from '@emotion/styled';
 import { i18n, MessageDescriptor } from '@lingui/core';
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { IconComponent, MenuItemCommand } from 'twenty-ui';
 
 // Define action types
 type ActionHook = (params: { objectMetadataItem: any }) => {
   onClick: () => void;
   shouldBeRegistered?: boolean;
+  ConfirmationModal?: React.ReactNode;
 };
 
 // Update the ChatAction type to match the actual structure
@@ -74,12 +76,12 @@ const ActionItem = ({ action }: { action: ChatAction }) => {
   const actionResult = action.useAction ? 
     action.useAction({
       objectMetadataItem: {
-        id: 'person-id',
-        nameSingular: 'person',
-        namePlural: 'people',
-        labelSingular: 'Person',
-        labelPlural: 'People',
-        description: 'Person records',
+        id: 'candidate-id',
+        nameSingular: 'candidate',
+        namePlural: 'candidates',
+        labelSingular: 'Candidate',
+        labelPlural: 'Candidates',
+        description: 'Candidate records',
         icon: 'IconUser',
         isCustom: false,
         isRemote: false,
@@ -104,11 +106,14 @@ const ActionItem = ({ action }: { action: ChatAction }) => {
   };
 
   return (
-    <MenuItemCommand
-      LeftIcon={action.Icon}
-      text={translate(action.label)}
-      onClick={handleClick}
-    />
+    <>
+      <MenuItemCommand
+        LeftIcon={action.Icon}
+        text={translate(action.label)}
+        onClick={handleClick}
+      />
+      {actionResult?.ConfirmationModal && actionResult.ConfirmationModal}
+    </>
   );
 };
 
@@ -132,14 +137,20 @@ export const RightDrawerChatAllActionsContent = () => {
     INSTANCE_ID
   );
   
+  // Add the missing state setter for the number of selected records
+  const setNumberOfSelectedRecords = useSetRecoilComponentStateV2(
+    contextStoreNumberOfSelectedRecordsComponentState,
+    INSTANCE_ID
+  );
+  
   useEffect(() => {
     const objectMetadata = {
-      id: 'person-id',
-      nameSingular: 'person',
-      namePlural: 'people',
-      labelSingular: 'Person',
-      labelPlural: 'People',
-      description: 'Person records',
+      id: 'candidate-id',
+      nameSingular: 'candidate',
+      namePlural: 'candidates',
+      labelSingular: 'Candidate',
+      labelPlural: 'Candidates',
+      description: 'Candidate records',
       icon: 'IconUser',
       isCustom: false,
       isRemote: false,
@@ -159,13 +170,18 @@ export const RightDrawerChatAllActionsContent = () => {
     setCurrentViewType(ContextStoreViewType.Table);
     
     // Use the shared state from chatActionsState
+    const selectedIds = chatActionsState.selectedRecordIds || [];
+    
     setTargetedRecordsRule({
       mode: 'selection',
-      selectedRecordIds: chatActionsState.selectedRecordIds || []
+      selectedRecordIds: selectedIds
     });
     
+    // Set the number of selected records based on the length of selectedIds
+    setNumberOfSelectedRecords(selectedIds.length);
+    
     prepareActions();
-  }, [setCurrentObjectMetadataItem, setCurrentViewType, setTargetedRecordsRule]);
+  }, [setCurrentObjectMetadataItem, setCurrentViewType, setTargetedRecordsRule, setNumberOfSelectedRecords]);
   
   const prepareActions = () => {
     const allActions = Object.values(CHAT_ACTIONS_CONFIG) as unknown as ChatAction[];

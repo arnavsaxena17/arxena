@@ -29,6 +29,8 @@ export type ViewBarProps = {
   optionsDropdownButton: ReactNode;
   handleRefresh?: () => void;
   handleVideoInterviewEdit?: () => void;
+  handleEnrichment?: () => void;
+  handleEngagement?: () => void;
 };
 
 export const ViewBar = ({
@@ -37,6 +39,8 @@ export const ViewBar = ({
   optionsDropdownButton,
   handleRefresh,
   handleVideoInterviewEdit,
+  handleEnrichment,
+  handleEngagement,
 }: ViewBarProps) => {
   const { objectNamePlural } = useParams();
 
@@ -62,6 +66,8 @@ export const ViewBar = ({
       <TopBar
         handleVideoInterviewEdit={handleVideoInterviewEdit}
         handleRefresh={handleRefresh}
+        handleEnrichment={handleEnrichment}
+        handleEngagement={handleEngagement}
         className={className}
         leftComponent={
           loading ? <ViewBarSkeletonLoader /> : <ViewPickerDropdown />

@@ -16,12 +16,14 @@ import { RecordFieldValueSelectorContextProvider } from '@/object-record/record-
 import { SpreadsheetImportProvider } from '@/spreadsheet-import/provider/components/SpreadsheetImportProvider';
 
 import { RecordIndexActionMenu } from '@/action-menu/components/RecordIndexActionMenu';
+import { isArxEnrichModalOpenState } from '@/arx-enrich/states/arxEnrichModalOpenState';
 import { RecordIndexFiltersToContextStoreEffect } from '@/object-record/record-index/components/RecordIndexFiltersToContextStoreEffect';
 import { RecordIndexTableContainerEffect } from '@/object-record/record-index/components/RecordIndexTableContainerEffect';
 import { ViewBar } from '@/views/components/ViewBar';
 import { ViewType } from '@/views/types/ViewType';
 import { useIsFeatureEnabled } from '@/workspace/hooks/useIsFeatureEnabled';
 import { FeatureFlagKey } from '~/generated/graphql';
+
 const StyledContainer = styled.div`
   display: flex;
   flex-direction: column;
@@ -54,6 +56,8 @@ export const RecordIndexContainer = () => {
   const recordTableRefetchFunction = useRecoilValue(
     recordTableRefetchFunctionState,
   );
+  
+  const [, setIsArxEnrichModalOpen] = useRecoilState(isArxEnrichModalOpenState);
 
   const handleRefresh = async () => {
     await recordTableRefetchFunction();
@@ -61,6 +65,15 @@ export const RecordIndexContainer = () => {
 
   const handleVideoInterviewEdit = async () => {
     console.log('handleVideoInterviewEdit');
+  };
+
+  const handleEnrichment = async () => {
+    console.log('handleEnrichment');
+    setIsArxEnrichModalOpen(true);
+  };
+
+  const handleEngagement = async () => {
+    console.log('handleEngagement');
   };
 
   console.log('RecordIndexContainer rendering');
@@ -76,6 +89,8 @@ export const RecordIndexContainer = () => {
               handleRefresh={handleRefresh}
               handleVideoInterviewEdit={handleVideoInterviewEdit}
               viewBarId={recordIndexId}
+              handleEnrichment={handleEnrichment}
+              handleEngagement={handleEngagement}
               optionsDropdownButton={
                 <ObjectOptionsDropdown
                   recordIndexId={recordIndexId}

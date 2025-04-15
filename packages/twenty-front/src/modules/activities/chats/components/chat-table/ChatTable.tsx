@@ -248,12 +248,12 @@ export const ChatTable: React.FC<ChatTableProps> = ({
     // Cast as any to bypass TypeScript checking since we're providing minimal data
     // that satisfies what the RecordIndexActionMenu needs
     setCurrentObjectMetadataItem({
-      id: 'person-id',
-      nameSingular: 'person',
-      namePlural: 'people',
-      labelSingular: 'Person',
-      labelPlural: 'People',
-      description: 'Person records',
+      id: 'candidate-id',
+      nameSingular: 'candidate',
+      namePlural: 'candidates',
+      labelSingular: 'Candidate',
+      labelPlural: 'Candidates',
+      description: 'Candidate records',
       icon: 'IconUser',
       isCustom: false,
       isRemote: false,
@@ -441,7 +441,3 @@ export const ChatTable: React.FC<ChatTableProps> = ({
 };
 
 export default ChatTable; 
-
-function uuid() {
-  throw new Error('Function not implemented.');
-}

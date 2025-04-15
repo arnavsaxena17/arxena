@@ -342,7 +342,7 @@ export const ChatMain = ({ initialCandidateId, onCandidateSelect }: ChatMainProp
     };
 
     initializeData();
-    const interval = setInterval(() => fetchData(false), 10000);
+    const interval = setInterval(() => fetchData(false), 100000);
     return () => clearInterval(interval);
   }, []);
 

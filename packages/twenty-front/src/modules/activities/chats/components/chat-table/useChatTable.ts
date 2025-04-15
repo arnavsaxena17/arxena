@@ -191,7 +191,6 @@ export const useChatTable = (
         }
       );
       
-      // Optionally show a success notification
       enqueueSnackBar('Data updated successfully', {
         variant: SnackBarVariant.Success,
         duration: 2000,
@@ -272,17 +271,11 @@ export const useChatTable = (
         // onSelectionChange?.(newSelectedIds);
       } else {
         // Even if already selected, make sure context store is updated with correct count
-        // console.log('Row already selected, ensuring context store is updated');
         setContextStoreNumberOfSelectedRecords(newSelectedIds.length);
-        // console.log('handleRowSelection (existing) - updating numberOfSelectedRecords to:', newSelectedIds.length);
         setContextStoreTargetedRecordsRule({
           mode: 'selection',
           selectedRecordIds: newSelectedIds,
         });
-        // console.log('handleRowSelection (existing) - updating targetedRecordsRule with:', {
-        //   mode: 'selection',
-        //   selectedRecordIds: newSelectedIds,
-        // });
       }
     }
   };

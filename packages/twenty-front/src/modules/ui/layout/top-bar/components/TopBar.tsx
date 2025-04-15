@@ -1,6 +1,6 @@
 import styled from '@emotion/styled';
 import { ReactNode } from 'react';
-import { Button, IconDatabase, IconMail, IconRefresh, IconSearch, IconVideo } from 'twenty-ui';
+import { Button, IconDatabase, IconMail, IconSearch, IconVideo } from 'twenty-ui';
 
 type TopBarProps = {
   className?: string;
@@ -12,6 +12,10 @@ type TopBarProps = {
   handleRefresh?: () => void;
   showVideoInterviewEdit?:boolean;
   handleVideoInterviewEdit?: () => void;
+  showEngagement?:boolean;
+  handleEngagement?: () => void;
+  showEnrichment?:boolean;
+  handleEnrichment?: () => void;
 };
 
 const StyledContainer = styled.div`
@@ -66,7 +70,11 @@ export const TopBar = ({
   handleRefresh,
   handleVideoInterviewEdit,
   showRefetch=true,
-  showVideoInterviewEdit=true
+  showEngagement=true,
+  showEnrichment=true,
+  showVideoInterviewEdit=true,
+  handleEnrichment,
+  handleEngagement
 }: TopBarProps) => (
   <StyledContainer className={className}>
     <StyledTopBar>
@@ -82,25 +90,25 @@ export const TopBar = ({
             onClick={handleRefresh}
           />
         )}
-        {showRefetch && (
+        {showEngagement && (
           <Button
             Icon={IconMail}
             title="Engagement" 
             variant="secondary"
             accent="default"
-            onClick={handleRefresh}
+            onClick={handleEngagement}
           />
         )}
-        {showRefetch && (
+        {showEnrichment && (
           <Button
             Icon={IconDatabase}
             title="Enrichment" 
             variant="secondary"
             accent="default"
-            onClick={handleRefresh}
+            onClick={handleEnrichment}
           />
         )}
-        {showRefetch && (
+        {/* {showRefetch && (
           <Button
             Icon={IconRefresh}
             title="Refetch"
@@ -108,7 +116,7 @@ export const TopBar = ({
             accent="default"
             onClick={handleRefresh}
           />
-        )}
+        )} */}
         {showVideoInterviewEdit && (
           <Button
             Icon={IconVideo}
