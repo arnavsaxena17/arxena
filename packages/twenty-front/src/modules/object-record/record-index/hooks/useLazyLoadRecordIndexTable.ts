@@ -45,7 +45,6 @@ export const useLazyLoadRecordIndexTable = (objectNameSingular: string) => {
     },
   });
 
-  console.log('all records that we find:', records);
   const [, setRecordTableRefetchFunction] = useRecoilState(
     recordTableRefetchFunctionState,
   );

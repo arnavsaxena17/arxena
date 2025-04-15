@@ -6,7 +6,7 @@ import { currentWorkspaceState } from '@/auth/states/currentWorkspaceState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import styled from '@emotion/styled';
 import axios from 'axios';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import {
   CandidateNode,
@@ -147,6 +147,9 @@ export const ChatMain = ({ initialCandidateId, onCandidateSelect, jobId }: ChatM
   // const userEmail = currentUser?.email;
 
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  const fetchInProgress = useRef(false);
+  const lastFetchTime = useRef<number>(0);
+  const FETCH_COOLDOWN = 1000; // 30 seconds cooldown between API calls
 
   useEffect(() => {
     const handleResize = () => {
@@ -209,7 +212,14 @@ export const ChatMain = ({ initialCandidateId, onCandidateSelect, jobId }: ChatM
 
   const loadFromCache = () => {
     setLoadingState(LoadingStates.LOADING_CACHE);
-    const cachedCandidates = cacheUtils.getCache(CACHE_KEYS.CHATS_DATA);
+    
+    if (!jobId) {
+      return false;
+    }
+    
+    // Try to load job-specific candidate cache
+    const cacheKey = `${CACHE_KEYS.CHATS_DATA}_${jobId}`;
+    const cachedCandidates = cacheUtils.getCache(cacheKey);
     const cachedJobs = cacheUtils.getCache(CACHE_KEYS.JOBS_DATA);
 
     if (isDefined(cachedCandidates) && isDefined(cachedJobs)) {
@@ -259,14 +269,38 @@ export const ChatMain = ({ initialCandidateId, onCandidateSelect, jobId }: ChatM
     return { listOfUnreadMessages };
   };
 
-  const fetchData = async (isInitialLoad = false) => {
+  const shouldFetchData = () => {
+    const now = Date.now();
+    // Only fetch if the last fetch was more than FETCH_COOLDOWN ago
+    if (now - lastFetchTime.current < FETCH_COOLDOWN) {
+      return false;
+    }
+    return true;
+  };
+
+  const fetchData = async (isInitialLoad = false, forceRefresh = false) => {
+    if (!jobId) return;
+    
+    // Avoid concurrent fetches and respect cooldown period
+    if (fetchInProgress.current || (!forceRefresh && !shouldFetchData())) {
+      return;
+    }
+    
     try {
+      fetchInProgress.current = true;
+      
       if (isInitialLoad) {
         setLoadingState(LoadingStates.LOADING_API);
       } else {
         setIsRefreshing(true);
       }
       setError(null);
+
+      // Store the current fetch time
+      lastFetchTime.current = Date.now();
+      
+      // Use the jobId in the cache key for candidates
+      const candidateCacheKey = `${CACHE_KEYS.CHATS_DATA}_${jobId}`;
 
       const [candidatesResponse, jobsResponse] = await Promise.all([
         axios.post(
@@ -293,8 +327,8 @@ export const ChatMain = ({ initialCandidateId, onCandidateSelect, jobId }: ChatM
 
       const availableCandidates:CandidateNode[] = candidatesResponse.data
 
-      // Update cache before state to ensure smooth loading
-      cacheUtils.setCache(CACHE_KEYS.CHATS_DATA, availableCandidates);
+      // Update cache with job-specific candidates
+      cacheUtils.setCache(candidateCacheKey, availableCandidates);
       cacheUtils.setCache(CACHE_KEYS.JOBS_DATA, jobsResponse.data.jobs);
 
       setCandidates(availableCandidates);
@@ -318,6 +352,7 @@ export const ChatMain = ({ initialCandidateId, onCandidateSelect, jobId }: ChatM
       setLoadingState(LoadingStates.ERROR);
     } finally {
       setIsRefreshing(false);
+      fetchInProgress.current = false;
     }
   };
 
@@ -327,21 +362,29 @@ export const ChatMain = ({ initialCandidateId, onCandidateSelect, jobId }: ChatM
 
   useEffect(() => {
     const initializeData = async () => {
+      if (!jobId) return;
+      
       const hasCachedData = loadFromCache();
       if (!hasCachedData) {
         await fetchData(true);
       } else {
-        // Even if we have cache, fetch fresh data in the background
-        fetchData(false);
+        // Only fetch fresh data in the background if enough time has passed
+        if (shouldFetchData()) {
+          fetchData(false);
+        }
       }
     };
 
     initializeData();
-    const interval = setInterval(() => fetchData(false), 100000);
+    
+    // Use a longer interval for background refreshes
+    const interval = setInterval(() => fetchData(false), 300000); // Every 5 minutes
     return () => clearInterval(interval);
-  }, []);
+  }, [jobId]);
 
   const updateUnreadMessagesStatus = async (selectedIndividual: string) => {
+    if (!selectedIndividual) return;
+    
     const listOfMessagesIds = unreadMessages?.listOfUnreadMessages
       ?.find(
         (unreadMessage) =>

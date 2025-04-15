@@ -32,18 +32,15 @@ export const RecordIndexActionMenuBar = ({
   const actionMenuId = useAvailableComponentInstanceIdOrThrow(
     ActionMenuComponentInstanceContext,
   );
-  console.log('actionMenuId::', actionMenuId);
 
   const actionMenuEntries = useRecoilComponentValueV2(
     actionMenuEntriesComponentSelector,
   );
-  console.log('actionMenuEntries::', actionMenuEntries);
 
   const pinnedEntries = actionMenuEntries.filter((entry) => entry.isPinned);
   if (contextStoreNumberOfSelectedRecords === 0) {
     return null;
   }
-  console.log('pinnedEntries::', pinnedEntries);
 
 
   return (

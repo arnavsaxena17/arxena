@@ -26,7 +26,6 @@ import { ArxEnrichmentModal } from '@/arx-enrich/arxEnrichmentModal';
 import { isArxEnrichModalOpenState } from '@/arx-enrich/states/arxEnrichModalOpenState';
 import { ArxJDUploadModal } from '@/arx-jd-upload/components/ArxJDUploadModal';
 import { isArxUploadJDModalOpenState } from '@/arx-jd-upload/states/arxUploadJDModalOpenState';
-import { contextStoreCurrentObjectMetadataItemComponentState } from '@/context-store/states/contextStoreCurrentObjectMetadataItemComponentState';
 
 const StyledIndexContainer = styled.div`
   display: flex;
@@ -38,29 +37,13 @@ export const RecordIndexContainerGater = () => {
   const mainContextStoreComponentInstanceId = useRecoilValue(
     mainContextStoreComponentInstanceIdState,
   );
-  console.log(
-    'mainContextStoreComponentInstanceId',
-    mainContextStoreComponentInstanceId,
-  );
-  console.log(
-    'contextStoreCurrentViewIdComponentState',
-    contextStoreCurrentViewIdComponentState,
-  );
+
 
   const contextStoreCurrentViewId = useRecoilComponentValueV2(
     contextStoreCurrentViewIdComponentState,
     mainContextStoreComponentInstanceId,
   );
 
-  console.log('contextStoreCurrentViewId', contextStoreCurrentViewId);
-  console.log(
-    'contextStoreCurrentObjectMetadataItemComponentState',
-    contextStoreCurrentObjectMetadataItemComponentState,
-  );
-  console.log(
-    'mainContextStoreComponentInstanceId',
-    mainContextStoreComponentInstanceId,
-  );
 
   const { objectMetadataItem } = useContextStoreObjectMetadataItemOrThrow();
 
@@ -76,16 +59,11 @@ export const RecordIndexContainerGater = () => {
       },
     [],
   );
-  console.log('recordIndexId::', recordIndexId);
 
   const { indexIdentifierUrl } = useHandleIndexIdentifierClick({
     objectMetadataItem,
     recordIndexId,
   });
-
-  console.log('recordIndexId', recordIndexId);
-  console.log('objectMetadataItem', objectMetadataItem);
-  console.log('indexIdentifierUrl', indexIdentifierUrl);
 
   return (
     <>

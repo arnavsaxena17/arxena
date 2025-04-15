@@ -39,27 +39,25 @@ export const chatActionsState = {
 const StyledContainer = styled.div`
   display: flex;
   flex-direction: column;
-  padding: ${({ theme }) => theme.spacing(4)};
-  gap: ${({ theme }) => theme.spacing(1)};
+  padding: ${({ theme }) => theme.spacing(2)};
 `;
 
-const StyledTitle = styled.h2`
-  font-size: ${({ theme }) => theme.font.size.xl};
-  margin-bottom: ${({ theme }) => theme.spacing(4)};
-`;
-
-const StyledSectionTitle = styled.h3`
-  font-size: ${({ theme }) => theme.font.size.md};
-  font-weight: ${({ theme }) => theme.font.weight.medium};
+const StyledGroupHeading = styled.div`
+  align-items: center;
   color: ${({ theme }) => theme.font.color.light};
-  margin-top: ${({ theme }) => theme.spacing(3)};
-  margin-bottom: ${({ theme }) => theme.spacing(2)};
+  font-size: ${({ theme }) => theme.font.size.xs};
+  font-weight: ${({ theme }) => theme.font.weight.semiBold};
+  padding-bottom: ${({ theme }) => theme.spacing(1)};
+  padding-left: ${({ theme }) => theme.spacing(2)};
+  padding-right: ${({ theme }) => theme.spacing(1)};
+  padding-top: ${({ theme }) => theme.spacing(2)};
+  user-select: none;
 `;
 
-const StyledItemsContainer = styled.div`
+const StyledGroup = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(1)};
+  gap: ${({ theme }) => theme.spacing(0.5)};
 `;
 
 // Helper function to handle i18n for both string and MessageDescriptor
@@ -113,6 +111,19 @@ const ActionItem = ({ action }: { action: ChatAction }) => {
         onClick={handleClick}
       />
       {actionResult?.ConfirmationModal && actionResult.ConfirmationModal}
+    </>
+  );
+};
+
+// Create a CommandGroup-like component for consistency
+const ActionGroup = ({ heading, children }: { heading: string, children: React.ReactNode }) => {
+  if (!children || !React.Children.count(children)) {
+    return null;
+  }
+  return (
+    <>
+      <StyledGroupHeading>{heading}</StyledGroupHeading>
+      <StyledGroup>{children}</StyledGroup>
     </>
   );
 };
@@ -215,28 +226,20 @@ export const RightDrawerChatAllActionsContent = () => {
           }}
         >
           <StyledContainer>
-            {/* <StyledTitle>Chat Actions</StyledTitle> */}
-            
             {pinnedActions.length > 0 && (
-              <>
-                <StyledSectionTitle>Pinned Actions</StyledSectionTitle>
-                <StyledItemsContainer>
-                  {pinnedActions.map((action) => (
-                    <ActionItem key={action.key} action={action} />
-                  ))}
-                </StyledItemsContainer>
-              </>
+              <ActionGroup heading="Pinned Actions">
+                {pinnedActions.map((action) => (
+                  <ActionItem key={action.key} action={action} />
+                ))}
+              </ActionGroup>
             )}
 
             {nonPinnedActions.length > 0 && (
-              <>
-                <StyledSectionTitle>Other Actions</StyledSectionTitle>
-                <StyledItemsContainer>
-                  {nonPinnedActions.map((action) => (
-                    <ActionItem key={action.key} action={action} />
-                  ))}
-                </StyledItemsContainer>
-              </>
+              <ActionGroup heading="Other Actions">
+                {nonPinnedActions.map((action) => (
+                  <ActionItem key={action.key} action={action} />
+                ))}
+              </ActionGroup>
             )}
           </StyledContainer>
         </ActionMenuComponentInstanceContext.Provider>

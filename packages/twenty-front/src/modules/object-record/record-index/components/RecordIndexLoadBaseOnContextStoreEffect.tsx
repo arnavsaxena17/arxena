@@ -27,14 +27,7 @@ export const RecordIndexLoadBaseOnContextStoreEffect = () => {
     contextStoreCurrentObjectMetadataItemComponentState,
   );
 
-  console.log('loadedViewId', loadedViewId);
-  console.log('contextStoreCurrentViewId', contextStoreCurrentViewId);
-  console.log(
-    'contextStoreCurrentObjectMetadataItemComponentState::',
-    contextStoreCurrentObjectMetadataItemComponentState,
-  );
-  console.log('view', view);
-  console.log('objectMetadataItem', objectMetadataItem);
+
   localStorage.setItem(
     'objectMetadataItem',
     JSON.stringify(objectMetadataItem),

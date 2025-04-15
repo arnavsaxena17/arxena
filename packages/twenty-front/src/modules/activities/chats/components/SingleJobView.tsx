@@ -11,6 +11,7 @@ import { ChatOptionsDropdownButton } from '@/activities/chats/components/ChatOpt
 import { JobNotFoundState } from '@/activities/chats/components/JobNotFoundState';
 import { PageAddChatButton } from '@/activities/chats/components/PageAddChatButton';
 import { SingleJobViewSkeletonLoader } from '@/activities/chats/components/SingleJobViewSkeletonLoader';
+import { CACHE_KEYS, cacheUtils } from '@/activities/chats/utils/cacheUtils';
 import { ArxEnrichmentModal } from '@/arx-enrich/arxEnrichmentModal';
 import { useSelectedRecordForEnrichment } from '@/arx-enrich/hooks/useSelectedRecordForEnrichment';
 import { isArxEnrichModalOpenState } from '@/arx-enrich/states/arxEnrichModalOpenState';
@@ -86,6 +87,7 @@ export const SingleJobView = () => {
   const [currentCandidateId, setCurrentCandidateId] = useState<string | undefined>(candidateId);
   const navigate = useNavigate();
   const isMounted = useRef(false);
+  const fetchInProgress = useRef(false);
   
   // Component instance IDs
   const filterDropdownId = `job-filter-${jobId}`;
@@ -118,8 +120,31 @@ export const SingleJobView = () => {
 
   useEffect(() => {
     const fetchJob = async () => {
+      // Prevent concurrent API calls
+      if (fetchInProgress.current) return;
+      
       try {
+        fetchInProgress.current = true;
         setIsLoading(true);
+        
+        // Try to get data from cache first
+        const cachedJobs = cacheUtils.getCache(CACHE_KEYS.JOBS_DATA);
+        if (cachedJobs) {
+          const foundJob = cachedJobs.find((job: any) => job.node.id === jobId);
+          if (foundJob) {
+            setJob({
+              id: foundJob.node.id,
+              name: foundJob.node.name,
+              pathPosition: foundJob.node.pathPosition,
+              isActive: foundJob.node.isActive,
+            });
+            setIsLoading(false);
+            fetchInProgress.current = false;
+            return;
+          }
+        }
+        
+        // If not in cache or not found, fetch from API
         const response = await axios.post(
           `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/get-all-jobs`,
           {},
@@ -131,6 +156,9 @@ export const SingleJobView = () => {
         );
         
         if (response.data?.jobs) {
+          // Cache the jobs for future use
+          cacheUtils.setCache(CACHE_KEYS.JOBS_DATA, response.data.jobs);
+          
           // Find the job by ID
           const foundJob = response.data.jobs.find(
             (job: any) => job.node.id === jobId
@@ -149,6 +177,7 @@ export const SingleJobView = () => {
         console.error('Error fetching job details:', error);
       } finally {
         setIsLoading(false);
+        fetchInProgress.current = false;
       }
     };
 
@@ -203,9 +232,6 @@ export const SingleJobView = () => {
   if (!job) {
     return <JobNotFoundState />;
   }
-  console.log("The job is::", job);
-  console.log("The jobId is::", jobId);
-  console.log("The candidateId is::", candidateId);
 
   return (
     <StyledPageContainer>
