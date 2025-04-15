@@ -112,6 +112,15 @@ const ContentContainer = styled.div`
   width: 100%;
 `;
 
+// Add this new styling for when used inside a tab
+const InlineContentContainer = styled.div`
+  flex: 1;
+  overflow-y: auto;
+  padding: 15px;
+  height: 100%;
+  width: 100%;
+`;
+
 // const ContentContainer = styled.div`
 //   flex-grow: 1;
 //   overflow-y: auto;
@@ -170,6 +179,16 @@ const ErrorMessage = styled.div`
   text-align: center;
 `;
 
+const NotFoundMessage = styled.div`
+  background-color: #f8f8f8;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  color: #666;
+  margin-top: 15px;
+  padding: 15px;
+  text-align: center;
+`;
+
 // const DocxViewer = styled.div`
 //   padding: 15px;
 //   background-color: white;
@@ -206,7 +225,8 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({
   PanelContainer = DefaultPanelContainer, // Use default if not provided
 }) => {
   const Container = PanelContainer || DefaultPanelContainer;
-
+  const isInline = PanelContainer !== DefaultPanelContainer;
+  
   const [attachments, setAttachments] = useState<
     Array<{ id: string; name: string; fullPath: string }>
   >([]);
@@ -264,6 +284,7 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({
     if (!isOpen || !candidateId) return;
 
     try {
+      setIsLoading(true);
       setError(null);
       const response = await axios.post(
         `${process.env.REACT_APP_SERVER_BASE_URL}/graphql`,
@@ -286,12 +307,14 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({
       const fetchedAttachments = response?.data?.data?.attachments?.edges?.map(
         (edge: any) => edge.node,
       );
-      setAttachments(fetchedAttachments);
+      setAttachments(fetchedAttachments || []);
       setCurrentAttachmentIndex(0);
-      console.log('Total Attachments: ', fetchedAttachments.length);
+      console.log('Total Attachments: ', fetchedAttachments?.length || 0);
+      setIsLoading(false);
     } catch (error) {
       console.error('Error fetching attachments:', error);
       setError('Failed to fetch attachments. Please try again.');
+      setIsLoading(false);
     }
   }, [isOpen, candidateId, tokenPair]);
 
@@ -413,7 +436,7 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({
       } catch (error) {
         console.error('Error fetching file content:', error);
         setError(
-          `Failed to load file content: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          `Attachment not found or could not be loaded.`,
         );
       }
       setIsLoading(false);
@@ -481,6 +504,8 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({
   useEffect(() => {
     if (attachments.length > 0) {
       fetchFileContent(attachments[currentAttachmentIndex]);
+    } else {
+      setIsLoading(false);
     }
   }, [currentAttachmentIndex, attachments, fetchFileContent]);
 
@@ -491,78 +516,86 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({
 
   console.log('Current Attachment ::', currentAttachment);
   console.log('Total Attachments : ', attachments?.length);
+  
+  // Choose the appropriate content container based on whether we're inline
+  const CustomContentContainer = isInline ? InlineContentContainer : ContentContainer;
+  
   return (
     <Container isOpen={isOpen}>
-      <PanelContainer isOpen={isOpen}>
-        <CloseButton onClick={onClose}>&times;</CloseButton>
-        <Header>
-          <CandidateInfo>
-            <CandidateName>{candidateName}</CandidateName>
-            {currentAttachment && <FileName>{currentAttachment.name}</FileName>}
-          </CandidateInfo>
-          <NavigationContainer>
-            <NavButton
-              onClick={handlePrevAttachment}
-              disabled={currentAttachmentIndex === 0}
-            >
-              &#9650;
-            </NavButton>
-            <AttachmentCounter>
-              {currentAttachmentIndex + 1} of {attachments.length}
-            </AttachmentCounter>
-            <NavButton
-              onClick={handleNextAttachment}
-              disabled={currentAttachmentIndex === attachments.length - 1}
-            >
-              &#9660;
-            </NavButton>
-          </NavigationContainer>
-        </Header>
-        <ContentContainer>
-          {error ? (
-            <ErrorMessage>{error}</ErrorMessage>
-          ) : fileContent ? (
-            typeof fileContent === 'string' &&
-            fileContent.startsWith('blob:') ? (
-              <PDFContainer>
-                <Document
-                  file={fileContent}
-                  onLoadSuccess={onDocumentLoadSuccess}
-                  onLoadError={onDocumentLoadError}
-                  options={options}
-                >
-                  {Array.from(new Array(numPages), (el, index) => (
-                    <Page
-                      key={`page_${index + 1}`}
-                      pageNumber={index + 1}
-                      renderTextLayer={false}
-                      renderAnnotationLayer={false}
-                    />
-                  ))}
-                </Document>
-                {/* Add navigation controls for PDF if needed */}
-              </PDFContainer>
-            ) : typeof fileContent === 'string' &&
-              fileContent.startsWith('<') ? (
-              // <DocxViewer dangerouslySetInnerHTML={{ __html: fileContent }} />
-              <DocxViewer content={fileContent} />
-            ) : (
-              <ContentViewer>
-                {typeof fileContent === 'string'
-                  ? fileContent
-                  : 'Unsupported file type'}
-              </ContentViewer>
-            )
+      {!isInline && <CloseButton onClick={onClose}>&times;</CloseButton>}
+      <Header>
+        <CandidateInfo>
+          <CandidateName>{candidateName}</CandidateName>
+          {currentAttachment && <FileName>{currentAttachment.name}</FileName>}
+        </CandidateInfo>
+        <NavigationContainer>
+          <NavButton
+            onClick={handlePrevAttachment}
+            disabled={currentAttachmentIndex === 0}
+          >
+            &#9650;
+          </NavButton>
+          <AttachmentCounter>
+            {attachments.length > 0 
+              ? `${currentAttachmentIndex + 1} of ${attachments.length}` 
+              : 'No attachments'}
+          </AttachmentCounter>
+          <NavButton
+            onClick={handleNextAttachment}
+            disabled={currentAttachmentIndex === attachments.length - 1}
+          >
+            &#9660;
+          </NavButton>
+        </NavigationContainer>
+      </Header>
+      <CustomContentContainer>
+        {error ? (
+          <NotFoundMessage>{error}</NotFoundMessage>
+        ) : isLoading ? (
+          <div>Loading attachments...</div>
+        ) : attachments.length === 0 ? (
+          <NotFoundMessage>No attachments found for this candidate {candidateId}</NotFoundMessage>
+        ) : fileContent ? (
+          typeof fileContent === 'string' &&
+          fileContent.startsWith('blob:') ? (
+            <PDFContainer>
+              <Document
+                file={fileContent}
+                onLoadSuccess={onDocumentLoadSuccess}
+                onLoadError={onDocumentLoadError}
+                options={options}
+              >
+                {Array.from(new Array(numPages), (el, index) => (
+                  <Page
+                    key={`page_${index + 1}`}
+                    pageNumber={index + 1}
+                    renderTextLayer={false}
+                    renderAnnotationLayer={false}
+                  />
+                ))}
+              </Document>
+              {/* Add navigation controls for PDF if needed */}
+            </PDFContainer>
+          ) : typeof fileContent === 'string' &&
+            fileContent.startsWith('<') ? (
+            // <DocxViewer dangerouslySetInnerHTML={{ __html: fileContent }} />
+            <DocxViewer content={fileContent} />
           ) : (
-            <div>Loading...</div>
-          )}
-          {downloadUrl && (
-            <a href={downloadUrl} download={currentAttachment?.name}>
-              Download {currentAttachment?.name}
-            </a>
-          )}
-        </ContentContainer>
-      </PanelContainer>
+            <ContentViewer>
+              {typeof fileContent === 'string'
+                ? fileContent
+                : 'Unsupported file type'}
+            </ContentViewer>
+          )
+        ) : (
+          <div>Loading...</div>
+        )}
+        {downloadUrl && (
+          <a href={downloadUrl} download={currentAttachment?.name}>
+            Download {currentAttachment?.name}
+          </a>
+        )}
+      </CustomContentContainer>
     </Container>
   );
 };

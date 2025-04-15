@@ -8,6 +8,7 @@ import { RightDrawerRecord } from '@/object-record/record-right-drawer/component
 import { isRightDrawerMinimizedState } from '@/ui/layout/right-drawer/states/isRightDrawerMinimizedState';
 
 import { RightDrawerAllActionsContent } from '@/action-menu/components/RightDrawerAllActionsContent';
+import { CandidateChatDrawer } from '@/activities/chats/components/CandidateChatDrawer';
 import { RightDrawerChatAllActionsContent } from '@/activities/chats/components/RightDrawerChatAllActionsContent';
 import { SimpleActivityDrawer } from '@/activities/chats/components/SimpleActivityDrawer';
 import { RightDrawerContainer } from '@/ui/layout/right-drawer/components/RightDrawerContainer';
@@ -47,21 +48,33 @@ const RIGHT_DRAWER_PAGES_CONFIG: ComponentByRightDrawerPage = {
   [RightDrawerPages.SimpleActivity]: <SimpleActivityDrawer />,
   [RightDrawerPages.AllActions]: <RightDrawerAllActionsContent />,
   [RightDrawerPages.ChatAllActions]: <RightDrawerChatAllActionsContent />,
+  [RightDrawerPages.CandidateChat]: <CandidateChatDrawer />,
 };
 
 export const RightDrawerRouter = () => {
   const [rightDrawerPage] = useRecoilState(rightDrawerPageState);
+  
+  console.log('RightDrawerRouter rendering with page:', rightDrawerPage);
+  
   const rightDrawerPageComponent = isDefined(rightDrawerPage) ? (
     RIGHT_DRAWER_PAGES_CONFIG[rightDrawerPage]
   ) : (
     <></>
   );
+  
+  console.log('Selected component:', rightDrawerPageComponent ? 'Found' : 'Not Found');
+  
   const isRightDrawerMinimized = useRecoilValue(isRightDrawerMinimizedState);
   return (
     <RightDrawerContainer>
       <RightDrawerTopBar />
       {!isRightDrawerMinimized && (
         <StyledRightDrawerBody>
+          {rightDrawerPage === RightDrawerPages.CandidateChat && (
+            <div style={{ padding: '16px', backgroundColor: '#f8f9fa', marginBottom: '8px', fontSize: '14px' }}>
+              Debug: CandidateChat drawer requested
+            </div>
+          )}
           {rightDrawerPageComponent}
         </StyledRightDrawerBody>
       )}

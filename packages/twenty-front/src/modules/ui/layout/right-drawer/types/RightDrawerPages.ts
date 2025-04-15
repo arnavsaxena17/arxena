@@ -10,4 +10,5 @@ export enum RightDrawerPages {
   SimpleActivity = 'simple-activity',
   AllActions = 'all-actions',
   ChatAllActions = 'chat-all-actions',
+  CandidateChat = 'candidate-chat',
 }

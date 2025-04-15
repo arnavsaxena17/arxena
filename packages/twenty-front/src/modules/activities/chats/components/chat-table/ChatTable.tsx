@@ -14,8 +14,10 @@ import { ActionMenuComponentInstanceContext } from '@/action-menu/states/context
 import { ActionBarHotkeyScope } from '@/action-menu/types/ActionBarHotKeyScope';
 import { ActionMenuEntry } from '@/action-menu/types/ActionMenuEntry';
 import { getActionBarIdFromActionMenuId } from '@/action-menu/utils/getActionBarIdFromActionMenuId';
+import ActionsBar from '@/activities/chats/components/ActionsBar';
 import { ChatActionMenuEntriesSetter } from '@/activities/chats/components/ChatActionMenuEntriesSetter';
 import { chatActionsState } from '@/activities/chats/components/RightDrawerChatAllActionsContent';
+import { selectedCandidateIdState } from '@/activities/chats/states/selectedCandidateIdState';
 import { ContextStoreComponentInstanceContext } from '@/context-store/states/contexts/ContextStoreComponentInstanceContext';
 import { contextStoreCurrentObjectMetadataItemComponentState } from '@/context-store/states/contextStoreCurrentObjectMetadataItemComponentState';
 import { contextStoreCurrentViewTypeComponentState } from '@/context-store/states/contextStoreCurrentViewTypeComponentState';
@@ -29,8 +31,9 @@ import { useRecoilComponentValueV2 } from '@/ui/utilities/state/component-state/
 import { useSetRecoilComponentStateV2 } from '@/ui/utilities/state/component-state/hooks/useSetRecoilComponentStateV2';
 import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
+import { IconLayoutSidebarRightExpand, IconList, IconMessages } from '@tabler/icons-react';
 import React, { useEffect, useMemo, useRef } from 'react';
-import { IconLayoutSidebarRightExpand, IconList } from 'twenty-ui';
+import { useSetRecoilState } from 'recoil';
 import AttachmentPanel from '../AttachmentPanel';
 import MultiCandidateChat from '../MultiCandidateChat';
 import { CandidateNavigation, NavIconButton, PanelContainer, TableContainer } from './styled';
@@ -219,6 +222,7 @@ export const ChatTable: React.FC<ChatTableProps> = ({
 
   const theme = useTheme();
   const hotRef = useRef<any>(null);
+  const setSelectedCandidateId = useSetRecoilState(selectedCandidateIdState);
 
   // Set the current object metadata item for action menu 
   const setCurrentObjectMetadataItem = useSetRecoilComponentStateV2(
@@ -351,27 +355,195 @@ export const ChatTable: React.FC<ChatTableProps> = ({
     }
   }
   
+  // Direct implementation of row selection handling to bypass the import
+  const lastRowSelected = useRef<{rowIndex: number, timestamp: number, handled: boolean}>({rowIndex: -1, timestamp: 0, handled: false});
+  const directHandleRowSelection = (rowIndex: number) => {
+    // Log information about the selected row to help debug the last row issue
+    console.log('directHandleRowSelection called with:');
+    console.log('- row index:', rowIndex);
+    console.log('- total rows:', candidates.length);
+    console.log('- is last row:', rowIndex === candidates.length - 1);
+    
+    // Debounce the function to prevent multiple calls within a short timeframe
+    const now = Date.now();
+    const isRecentSelection = lastRowSelected.current.rowIndex === rowIndex && 
+                              now - lastRowSelected.current.timestamp < 300;
+    
+    if (isRecentSelection && lastRowSelected.current.handled) {
+      console.log('Debouncing row selection, already handled recently');
+      return;
+    }
+    
+    // Update the reference even if it's the same row to mark it as handled
+    lastRowSelected.current = {rowIndex, timestamp: now, handled: true};
+    
+    if (rowIndex >= 0 && rowIndex < candidates.length) {
+      const candidate = candidates[rowIndex];
+      console.log('Direct implementation - handling candidate:', candidate.name, candidate.id);
+      
+      // Check and select the row's checkbox if not already selected
+      if (!selectedIds.includes(candidate.id)) {
+        console.log('Selecting checkbox for candidate:', candidate.name);
+        handleCheckboxChange(candidate.id);
+      }
+      
+      // Set the selected candidate ID directly
+      setSelectedCandidateId(candidate.id);
+      console.log('Selected candidate ID set to:', candidate.id);
+      
+      // Open the right drawer directly
+      console.log('About to open right drawer with CandidateChat page');
+      try {
+        openRightDrawer(RightDrawerPages.CandidateChat, {
+          title: `Chat with ${candidate.name}`,
+          Icon: IconMessages,
+        });
+        console.log('Right drawer opened successfully');
+      } catch (error) {
+        console.error('Error opening right drawer:', error);
+      }
+    }
+  };
 
-  const handleAfterSelection = (row: number) => {
-    console.log('handleAfterSelection', row);
-    if (row >= 0) {
-      handleRowSelection(row);
+  const handleAfterSelection = (row: number, column: number, row2: number, column2: number, preventScrolling: object, selectionLayerLevel: number) => {
+    console.log('handleAfterSelection event', row, column, row2, column2);
+    console.log('- Selection happening on row:', row, 'of', candidates.length, 'rows');
+    console.log('- Is last row:', row === candidates.length - 1);
+    
+    // Skip any selection events on checkbox column
+    if (column === 0 || column2 === 0) {
+      return;
+    }
+    
+    // Skip selection events on the last row to prevent reselection
+    // When a checkbox is clicked on the last row, Handsontable has a quirk
+    // that triggers selection even after we handle the checkbox click
+    if (row === candidates.length - 1) {
+      console.log('Skipping selection for last row to prevent auto-reselection');
+      return;
+    }
+    
+    // For keyboard navigation (or any selection that isn't immediately handled by cell click)
+    // We need to check if this selection was from a recent cell click that we've already handled
+    const now = Date.now();
+    if (lastRowSelected.current.rowIndex === row && 
+        now - lastRowSelected.current.timestamp < 300) {
+      // This selection event is likely a result of a cell click we've already processed
+      console.log('Skipping afterSelection handler - already handled by cell click');
+      return;
+    }
+    
+    // If we get here, this is likely from keyboard navigation or programmatic selection
+    // Only trigger on initial cell selection, not on range selection
+    if (row === row2 && column === column2 && row >= 0) {
+      // Don't trigger for checkbox column
+      if (column > 0) {
+        console.log('Handling keyboard navigation selection with row:', row);
+        directHandleRowSelection(row);
+      }
     }
   }
 
   const handleBeforeOnCellMouseDown = (event: any, coords: any) => {
     const target = event.target as HTMLElement;
-    if (target.nodeName === 'INPUT' && (target.className === 'select-all-checkbox' || target.className === 'row-checkbox')) {
+    
+    // Special handling for the last row to prevent reselection issues
+    if (coords.row === candidates.length - 1) {
+      console.log('BeforeOnCellMouseDown on last row', coords.col);
+      if (coords.col === 0 || target.nodeName === 'INPUT') {
+        console.log('Preventing event propagation for last row checkbox');
+        event.stopImmediatePropagation();
+        event.preventDefault();
+        
+        // For clicks directly on the checkbox in the last row, handle it here
+        if (target.nodeName === 'INPUT' && target.getAttribute('type') === 'checkbox') {
+          console.log('Handling last row checkbox click directly');
+          const lastCandidate = candidates[candidates.length - 1];
+          if (lastCandidate) {
+            setTimeout(() => {
+              handleCheckboxChange(lastCandidate.id);
+            }, 0);
+          }
+        }
+        return;
+      }
+    }
+    
+    // Stop propagation for checkbox column (first column)
+    if (target.nodeName === 'INPUT' || coords.col === 0) {
       event.stopImmediatePropagation();
     }
   }
 
+  const handleCellClick = (event: MouseEvent, coords: any) => {
+    // Skip clicks on checkboxes or the entire first column (checkbox column)
+    const target = event.target as HTMLElement;
+    
+    // Special handling for the last row
+    if (coords.row === candidates.length - 1) {
+      console.log('Cell click on last row - col:', coords.col);
+      
+      // Don't process row selection for the last row when clicking on first column
+      if (coords.col === 0) {
+        console.log('Skipping cell click on last row first column');
+        return;
+      }
+    }
+    
+    if (target.nodeName === 'INPUT' || coords.col === 0) {
+      return;
+    }
+    
+    console.log('Cell clicked at row:', coords.row, 'column:', coords.col);
+    if (coords.row >= 0 && coords.col > 0) {
+      // Mark this row as recently handled to prevent duplicate handling in afterSelection
+      lastRowSelected.current = {rowIndex: coords.row, timestamp: Date.now(), handled: false};
+      
+      console.log('Calling directHandleRowSelection from handleCellClick with row:', coords.row);
+      directHandleRowSelection(coords.row);
+    }
+  };
 
   // 
   // 
   // Create a deep mutable copy of the tableData to prevent "read-only property" errors
   const mutableData = tableData.map(row => ({...row}));
   
+  const handleOpenCandidateChatDrawer = () => {
+    // Use a test candidate ID
+    const testCandidateId = candidates.length > 0 ? candidates[0].id : null;
+    
+    if (testCandidateId) {
+      // Reset the row selection handling state
+      lastRowSelected.current = {rowIndex: -1, timestamp: 0, handled: false};
+      
+      console.log('Test button - opening drawer for candidate ID:', testCandidateId);
+      
+      // Check and select the candidate's checkbox if not already selected
+      if (!selectedIds.includes(testCandidateId)) {
+        console.log('Selecting checkbox for test candidate');
+        handleCheckboxChange(testCandidateId);
+      }
+      
+      // Set the selected candidate ID directly
+      setSelectedCandidateId(testCandidateId);
+      
+      // Open the drawer with CandidateChat page
+      console.log('Test button - opening CandidateChat drawer');
+      try {
+        openRightDrawer(RightDrawerPages.CandidateChat, {
+          title: 'Chat',
+          Icon: IconMessages,
+        });
+        console.log('Right drawer opened successfully (test button)');
+      } catch (error) {
+        console.error('Error opening right drawer (test button):', error);
+      }
+    } else {
+      console.error('No candidates available for testing');
+    }
+  };
+
   return (
     <ContextStoreComponentInstanceContext.Provider
       value={{
@@ -384,6 +556,67 @@ export const ChatTable: React.FC<ChatTableProps> = ({
         }}
       >
         <TableContainer>
+          <div style={{ 
+            position: 'absolute', 
+            top: '10px', 
+            right: '10px', 
+            zIndex: 1000,
+            display: 'flex',
+            gap: '10px'
+          }}>
+            <button 
+              onClick={() => {
+                const testCandidateId = candidates.length > 0 ? candidates[0].id : null;
+                if (testCandidateId) {
+                  // Reset the row selection handling state
+                  lastRowSelected.current = {rowIndex: -1, timestamp: 0, handled: false};
+                  
+                  // Check and select the candidate's checkbox if not already selected
+                  if (!selectedIds.includes(testCandidateId)) {
+                    console.log('Selecting checkbox for simple test');
+                    handleCheckboxChange(testCandidateId);
+                  }
+                  
+                  setSelectedCandidateId(testCandidateId);
+                  console.log('Opening Simple Activity drawer (test)');
+                  openRightDrawer(RightDrawerPages.SimpleActivity, {
+                    title: 'Simple Activity',
+                    Icon: IconList,
+                  });
+                }
+              }}
+              style={{
+                backgroundColor: theme.background.secondary,
+                border: `1px solid ${theme.border.color.medium}`,
+                borderRadius: '4px',
+                padding: '8px 12px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+              }}
+            >
+              <IconList size={16} />
+              <span>Test Simple</span>
+            </button>
+
+            <button 
+              onClick={handleOpenCandidateChatDrawer}
+              style={{
+                backgroundColor: theme.background.secondary,
+                border: `1px solid ${theme.border.color.medium}`,
+                borderRadius: '4px',
+                padding: '8px 12px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+              }}
+            >
+              <IconMessages size={16} />
+              <span>Test Chat</span>
+            </button>
+          </div>
           <HotTable
             ref={hotRef}
             data={mutableData}
@@ -409,6 +642,7 @@ export const ChatTable: React.FC<ChatTableProps> = ({
             afterGetColHeader={handleAfterGetColHeader}
             afterSelection={handleAfterSelection}
             beforeOnCellMouseDown={handleBeforeOnCellMouseDown}
+            afterOnCellMouseDown={handleCellClick}
           />
         </TableContainer>
         
@@ -422,7 +656,16 @@ export const ChatTable: React.FC<ChatTableProps> = ({
         }}>
           <ChatActionMenu tableId={tableId} />
         </div>
-        
+        <ActionsBar
+          selectedIds={selectedIds}
+          clearSelection={clearSelection}
+          handleViewChats={handleViewChats}
+          handleViewCVs={handleViewCVs}
+          createChatBasedShortlistDelivery={createChatBasedShortlistDelivery}
+          createUpdateCandidateStatus={createUpdateCandidateStatus}
+          createCandidateShortlists={createCandidateShortlists}
+          handleActivityDrawer={handleActivityDrawerClick}
+        />
         <MultiCandidateChat isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} selectedCandidates={selectedCandidates} />
         {isAttachmentPanelOpen && currentCandidate && (
           <>
