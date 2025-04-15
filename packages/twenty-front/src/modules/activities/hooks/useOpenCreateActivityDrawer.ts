@@ -33,7 +33,7 @@ export const useOpenCreateActivityDrawer = ({
 }) => {
 
   const { openRightDrawer } = useRightDrawer();
-  console.log("openRightDrawer::", openRightDrawer)
+  // console.log("openRightDrawer::", openRightDrawer)
 
   const setHotkeyScope = useSetHotkeyScope();
   const { createOneRecord: createOneActivity } = useCreateOneRecord<

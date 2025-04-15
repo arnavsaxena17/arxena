@@ -7,7 +7,6 @@ import { tokenPairState } from '@/auth/states/tokenPairState';
 import styled from '@emotion/styled';
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import {
   CandidateNode,
@@ -158,13 +157,9 @@ export const ChatMain = ({ initialCandidateId, onCandidateSelect }: ChatMainProp
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-
   const [individuals, setIndividuals] = useState<PersonNode[]>([]);
-
   const [loadingState, setLoadingState] = useState(LoadingStates.INITIAL);
-
   const [selectedIndividual, setSelectedIndividual] = useState<string>('');
-  const [isLoading, setIsLoading] = useState(individuals.length === 0);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [jobs, setJobs] = useState<JobNode[]>([]);
@@ -331,9 +326,9 @@ export const ChatMain = ({ initialCandidateId, onCandidateSelect }: ChatMainProp
     }
   };
 
-  useEffect(() => {
-    console.log('Current unreadMessages state:', unreadMessages);
-  }, [unreadMessages]);
+  // useEffect(() => {
+  //   console.log('Current unreadMessages state:', unreadMessages);
+  // }, [unreadMessages]);
 
   useEffect(() => {
     const initializeData = async () => {
@@ -374,12 +369,6 @@ export const ChatMain = ({ initialCandidateId, onCandidateSelect }: ChatMainProp
   };
 
   useEffect(() => {
-    fetchData(true);
-    const interval = setInterval(() => fetchData(false), 10000);
-    return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
     if (isDefined(initialCandidateId) && individuals.length > 0) {
       const individual = individuals.find(
         (ind: PersonNode) =>
@@ -396,24 +385,6 @@ export const ChatMain = ({ initialCandidateId, onCandidateSelect }: ChatMainProp
       updateUnreadMessagesStatus(selectedIndividual);
     }
   }, [selectedIndividual]);
-
-  const handleIndividualSelect = (id: string) => {
-    setSelectedIndividual(id);
-    const individual = individuals.find((ind) => ind.id === id);
-    const candidateId = individual?.candidates?.edges[0]?.node?.id;
-    
-    if (candidateId) {
-      // Call the callback if provided
-      if (onCandidateSelect) {
-        onCandidateSelect(candidateId);
-      } else {
-        // Use default navigation behavior if no callback provided
-        navigate(`/jobs/${jobs[0]?.node.id}/${candidateId}`);
-      }
-    }
-  };
-
-  const navigate = useNavigate();
 
   if (
     loadingState === LoadingStates.INITIAL ||
@@ -450,22 +421,16 @@ export const ChatMain = ({ initialCandidateId, onCandidateSelect }: ChatMainProp
         </div>
       )}
 
-      {/* <StyledSidebarContainer width={sidebarWidth}> */}
-        <ChatSidebar
-          individuals={individuals}
-          selectedIndividual={selectedIndividual}
-          setSelectedIndividual={setSelectedIndividual}
-          unreadMessages={unreadMessages}
-          jobs={jobs}
-          isRefreshing={isRefreshing}
-          width={sidebarWidth}
-          onIndividualSelect={handleIndividualSelect}
-        />
-      {/* </StyledSidebarContainer> */}
-      {/* <StyledResizer onMouseDown={startResizing} /> */}
-      {/* <StyledChatWindowContainer sidebarWidth={sidebarWidth}> */}
-        {/* Chat window content goes here */}
-      {/* </StyledChatWindowContainer> */}
+      <ChatSidebar
+        individuals={individuals}
+        selectedIndividual={selectedIndividual}
+        setSelectedIndividual={setSelectedIndividual}
+        unreadMessages={unreadMessages}
+        jobs={jobs}
+        isRefreshing={isRefreshing}
+        width={sidebarWidth}
+        onIndividualSelect={onCandidateSelect || (() => {})}
+      />
     </StyledChatContainer>
   );
 };

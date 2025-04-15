@@ -118,7 +118,7 @@ interface ChatSidebarProps {
   jobs: JobNode[];
   isRefreshing?: boolean;
   width: number;
-  onIndividualSelect?: (id: string) => void;
+  onIndividualSelect: (id: string) => void;
 }
 
 const statusLabels: { [key: string]: string } = {
@@ -184,26 +184,6 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   const jobDropdownRef = useRef<HTMLDivElement>(null);
   const statusDropdownRef = useRef<HTMLDivElement>(null);
   const chatStatusDropdownRef = useRef<HTMLDivElement>(null);
-
-  const handleIndividualSelect = (id: string) => {
-    setSelectedIndividual(id);
-    const individual = individuals.find((ind) => ind.id === id);
-    const candidateId = individual?.candidates?.edges[0]?.node?.id;
-    
-    if (candidateId) {
-      if (onIndividualSelect) {
-        // Use the callback if provided
-        onIndividualSelect(id);
-      } else {
-        // Fall back to direct navigation
-        navigate(`/jobs//${candidateId}`);
-      }
-    }
-  };
-
-  // useEffect(() => {
-  //   console.log('Jobs received in ChatSidebar:', jobs);
-  // }, [jobs]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -403,17 +383,15 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     return counts;
   }, [filteredIndividuals]);
 
-  const handleSelectionChange = (selectedIds: string[]) => {
-    console.log('Selected IDs with Checkboxes:', selectedIds);
-  };
+
 
   return (
     <ChatTable
       individuals={sortedIndividuals}
       selectedIndividual={selectedIndividual}
       unreadMessages={unreadMessages}
-      onSelectionChange={handleSelectionChange}
-      onIndividualSelect={handleIndividualSelect}
+      // onSelectionChange={handleSelectionChange}
+      onIndividualSelect={onIndividualSelect}
       onReorder={handleReorder}
     />
   );

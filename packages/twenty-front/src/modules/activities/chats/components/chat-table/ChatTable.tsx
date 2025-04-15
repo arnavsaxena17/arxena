@@ -101,7 +101,6 @@ const ChatAllActionsButton = () => {
 
 // Custom record index action menu bar for chat that includes the All Actions button
 const ChatRecordIndexActionMenuBar = ({ tableId }: { tableId: string }) => {
-  console.log('ChatRecordIndexActionMenuBar - tableId:', tableId);
   
   const contextStoreNumberOfSelectedRecords = useRecoilComponentValueV2(
     contextStoreNumberOfSelectedRecordsComponentState,
@@ -113,15 +112,11 @@ const ChatRecordIndexActionMenuBar = ({ tableId }: { tableId: string }) => {
     tableId
   ) as ActionMenuEntry[];
 
-  console.log('ChatRecordIndexActionMenuBar - contextStoreNumberOfSelectedRecords:', contextStoreNumberOfSelectedRecords);
-  console.log('ChatRecordIndexActionMenuBar - actionMenuEntries:', actionMenuEntries);
 
   const pinnedEntries = actionMenuEntries.filter((entry) => entry.isPinned);
   
-  console.log('ChatRecordIndexActionMenuBar - pinnedEntries:', pinnedEntries);
   
   if (contextStoreNumberOfSelectedRecords === 0) {
-    console.log('ChatRecordIndexActionMenuBar - returning null due to zero selected records');
     return null;
   }
 
@@ -159,7 +154,6 @@ const ChatRecordIndexActionMenuBar = ({ tableId }: { tableId: string }) => {
 
 // Custom chat action menu without the standard record actions
 const ChatActionMenu = ({ tableId }: { tableId: string }) => {
-  console.log('ChatActionMenu - rendering with tableId:', tableId);
   
   return (
     <ActionMenuContext.Provider
@@ -191,7 +185,7 @@ export const ChatTable: React.FC<ChatTableProps> = ({
   selectedIndividual,
   unreadMessages,
   onIndividualSelect,
-  onSelectionChange,
+  // onSelectionChange,
   onBulkMessage,
   onBulkDelete,
   onBulkAssign,
@@ -221,7 +215,7 @@ export const ChatTable: React.FC<ChatTableProps> = ({
     tableId,
     tableData,
     handleRowSelection,
-  } = useChatTable(individuals, onSelectionChange, onIndividualSelect);
+  } = useChatTable(individuals, onIndividualSelect);
 
   const theme = useTheme();
   const hotRef = useRef<any>(null);
@@ -286,7 +280,6 @@ export const ChatTable: React.FC<ChatTableProps> = ({
       selectedRecordIds: selectedIds,
     });
     
-    console.log("ChatTable: Updated context store with selectedIds:", selectedIds);
   }, [selectedIds, setContextStoreNumberOfSelectedRecords, setContextStoreTargetedRecordsRule]);
 
   // Initialize with the selected individual if provided

@@ -1,6 +1,6 @@
 import styled from '@emotion/styled';
 import { ReactNode } from 'react';
-import { Button, IconRefresh, IconVideo } from 'twenty-ui';
+import { Button, IconDatabase, IconMail, IconRefresh, IconSearch, IconVideo } from 'twenty-ui';
 
 type TopBarProps = {
   className?: string;
@@ -47,6 +47,11 @@ const StyledRightSection = styled.div`
   gap: ${({ theme }) => theme.betweenSiblingsGap};
 `;
 
+const StyledButtonContainer = styled.div`
+display: flex;
+gap: ${({ theme }) => theme.spacing(1)};
+margin-left: ${({ theme }) => theme.spacing(2)};
+`;
 
 // const showRefetch = true;
 
@@ -66,24 +71,54 @@ export const TopBar = ({
   <StyledContainer className={className}>
     <StyledTopBar>
       <StyledLeftSection>{leftComponent}</StyledLeftSection>
-      {showRefetch && (
-        <Button
-          Icon={IconRefresh}
-          title="Refetch"
-          variant="secondary"
-          accent="default"
-          onClick={handleRefresh}
-        />
-      )}
-      {showVideoInterviewEdit && (
-        <Button
-          Icon={IconVideo}
-          title="Video Interview Edit"
-          variant="secondary"
-          accent="default"
-          onClick={handleVideoInterviewEdit}
-        />
-      )}
+
+      <StyledButtonContainer>
+        {showRefetch && (
+          <Button
+            Icon={IconSearch}
+            title="Sourcing"
+            variant="secondary"
+            accent="default"
+            onClick={handleRefresh}
+          />
+        )}
+        {showRefetch && (
+          <Button
+            Icon={IconMail}
+            title="Engagement" 
+            variant="secondary"
+            accent="default"
+            onClick={handleRefresh}
+          />
+        )}
+        {showRefetch && (
+          <Button
+            Icon={IconDatabase}
+            title="Enrichment" 
+            variant="secondary"
+            accent="default"
+            onClick={handleRefresh}
+          />
+        )}
+        {showRefetch && (
+          <Button
+            Icon={IconRefresh}
+            title="Refetch"
+            variant="secondary"
+            accent="default"
+            onClick={handleRefresh}
+          />
+        )}
+        {showVideoInterviewEdit && (
+          <Button
+            Icon={IconVideo}
+            title="Video Interviews"
+            variant="secondary"
+            accent="default"
+            onClick={handleVideoInterviewEdit}
+          />
+        )}
+      </StyledButtonContainer>
 
       <StyledRightSection>{rightComponent}</StyledRightSection>
     </StyledTopBar>

@@ -15,7 +15,6 @@ export const ChatActionMenuEntriesSetter = () => {
     ContextStoreComponentInstanceContext,
   );
 
-  console.log('ChatActionMenuEntriesSetter - instanceId:', instanceId);
 
   const contextStoreCurrentObjectMetadataItem = useRecoilComponentValueV2(
     contextStoreCurrentObjectMetadataItemComponentState,
@@ -30,7 +29,6 @@ export const ChatActionMenuEntriesSetter = () => {
   );
 
   if (!isDefined(contextStoreCurrentObjectMetadataItem)) {
-    console.log('ChatActionMenuEntriesSetter - No objectMetadataItem defined, returning null');
     return null;
   }
 
@@ -38,10 +36,6 @@ export const ChatActionMenuEntriesSetter = () => {
     contextStoreCurrentViewType,
     contextStoreTargetedRecordsRule,
   );
-  
-  console.log('ChatActionMenuEntriesSetter - contextStoreCurrentViewType:', contextStoreCurrentViewType);
-  console.log('ChatActionMenuEntriesSetter - contextStoreTargetedRecordsRule:', contextStoreTargetedRecordsRule);
-  console.log('ChatActionMenuEntriesSetter - viewType:', viewType);
 
   const actionsToRegister = isDefined(viewType)
     ? Object.values(CHAT_ACTIONS_CONFIG).filter((action) =>
@@ -49,15 +43,13 @@ export const ChatActionMenuEntriesSetter = () => {
       )
     : [];
     
-  console.log('ChatActionMenuEntriesSetter - actionsToRegister:', actionsToRegister);
   
   // Log each action's availability for the current viewType
-  if (isDefined(viewType)) {
-    console.log('ChatActionMenuEntriesSetter - Action availability for current viewType:');
-    Object.entries(CHAT_ACTIONS_CONFIG).forEach(([key, action]) => {
-      console.log(`  ${key}: ${action.availableOn?.includes(viewType)}`);
-    });
-  }
+  // if (isDefined(viewType)) {
+  //   Object.entries(CHAT_ACTIONS_CONFIG).forEach(([key, action]) => {
+  //     console.log(`  ${key}: ${action.availableOn?.includes(viewType)}`);
+  //   });
+  // }
 
   return (
     <ActionMenuComponentInstanceContext.Provider

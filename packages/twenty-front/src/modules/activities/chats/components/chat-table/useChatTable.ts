@@ -64,7 +64,7 @@ type UseChatTableReturn = {
 
 export const useChatTable = (
   individuals: PersonNode[], 
-  onSelectionChange?: (selectedIds: string[]) => void,
+  // onSelectionChange?: (selectedIds: string[]) => void,
   onIndividualSelect?: (id: string) => void
 ): UseChatTableReturn => {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -130,7 +130,7 @@ export const useChatTable = (
       return;
     }
     
-    console.log('handleAfterChange triggered with source:', source, 'changes:', changes);
+    // console.log('handleAfterChange triggered with source:', source, 'changes:', changes);
     
     // Create a new copy of the data to modify
     const newData = [...tableData];
@@ -142,7 +142,7 @@ export const useChatTable = (
         return;
       }
       
-      console.log('Cell changed:', row, prop, oldValue, newValue);
+      // console.log('Cell changed:', row, prop, oldValue, newValue);
       dataChanged = true;
       
       // Get the individual's ID for this row
@@ -158,7 +158,7 @@ export const useChatTable = (
         
         // If the property is composite (like 'name.firstName'), handle it specially
         if (prop.includes('.')) {
-          console.log('Composite property detected:', prop);
+          // console.log('Composite property detected:', prop);
           // This would require special handling if we had nested properties
         } else {
           // Save the change to the backend as a direct property update
@@ -169,7 +169,7 @@ export const useChatTable = (
     
     // Only update the state if we made actual changes to avoid unnecessary renders
     if (dataChanged) {
-      console.log('Updating tableData with:', newData);
+      // console.log('Updating tableData with:', newData);
       // Update with a slight delay to avoid any race conditions with Handsontable
       setTimeout(() => setTableData(newData), 0);
     }
@@ -180,16 +180,16 @@ export const useChatTable = (
     try {
       // Implement the API call to update the data on the server
       // This is just an example - you'll need to replace with your actual API endpoint
-      // await axios.patch(
-      //   `${process.env.REACT_APP_SERVER_BASE_URL}/individuals/${individualId}`,
-      //   { [field]: value },
-      //   { 
-      //     headers: { 
-      //       authorization: `Bearer ${tokenPair?.accessToken?.token}`, 
-      //       'content-type': 'application/json'
-      //     }
-      //   }
-      // );
+      await axios.patch(
+        `${process.env.REACT_APP_SERVER_BASE_URL}/individuals/${individualId}`,
+        { [field]: value },
+        { 
+          headers: { 
+            authorization: `Bearer ${tokenPair?.accessToken?.token}`, 
+            'content-type': 'application/json'
+          }
+        }
+      );
       
       // Optionally show a success notification
       enqueueSnackBar('Data updated successfully', {
@@ -217,72 +217,72 @@ export const useChatTable = (
     const newSelectedIds = selectedIds.includes(individualId)
       ? selectedIds.filter((id) => id !== individualId)
       : [...selectedIds, individualId];
-    console.log('handleCheckboxChange - new selectedIds:', newSelectedIds);
+    // console.log('handleCheckboxChange - new selectedIds:', newSelectedIds);
     setSelectedIds(newSelectedIds);
     setContextStoreNumberOfSelectedRecords(newSelectedIds.length);
-    console.log('handleCheckboxChange - updating numberOfSelectedRecords to:', newSelectedIds.length);
+    // console.log('handleCheckboxChange - updating numberOfSelectedRecords to:', newSelectedIds.length);
     setContextStoreTargetedRecordsRule({
       mode: 'selection',
       selectedRecordIds: newSelectedIds,
     });
-    console.log('handleCheckboxChange - updating targetedRecordsRule with:', {
-      mode: 'selection',
-      selectedRecordIds: newSelectedIds,
-    });
-    onSelectionChange?.(newSelectedIds);
+    // console.log('handleCheckboxChange - updating targetedRecordsRule with:', {
+    //   mode: 'selection',
+    //   selectedRecordIds: newSelectedIds,
+    // });
+    // onSelectionChange?.(newSelectedIds);
   };
 
   const handleSelectAll = () => {
     const newSelectedIds = selectedIds.length === individuals.length ? [] : individuals.map(individual => individual.id);
-    console.log('handleSelectAll - new selectedIds:', newSelectedIds);
+    // console.log('handleSelectAll - new selectedIds:', newSelectedIds);
     setSelectedIds(newSelectedIds);
     setContextStoreNumberOfSelectedRecords(newSelectedIds.length);
-    console.log('handleSelectAll - updating numberOfSelectedRecords to:', newSelectedIds.length);
+    // console.log('handleSelectAll - updating numberOfSelectedRecords to:', newSelectedIds.length);
     setContextStoreTargetedRecordsRule({
       mode: 'selection',
       selectedRecordIds: newSelectedIds,
     });
-    console.log('handleSelectAll - updating targetedRecordsRule with:', {
-      mode: 'selection',
-      selectedRecordIds: newSelectedIds,
-    });
-    onSelectionChange?.(newSelectedIds);
+    // console.log('handleSelectAll - updating targetedRecordsRule with:', {
+    //   mode: 'selection',
+    //   selectedRecordIds: newSelectedIds,
+    // });
+    // onSelectionChange?.(newSelectedIds);
   };
   
   const handleRowSelection = (row: number) => {
     if (row >= 0) {
       const selectedIndividual = individuals[row];
-      console.log('Row selected:', row, 'Individual ID:', selectedIndividual.id);
+      // console.log('Row selected:', row, 'Individual ID:', selectedIndividual.id);
       onIndividualSelect?.(selectedIndividual.id);
       const newSelectedIds = [...selectedIds];
       if (!newSelectedIds.includes(selectedIndividual.id)) {
         newSelectedIds.push(selectedIndividual.id);
         setSelectedIds(newSelectedIds);
-        console.log('handleRowSelection - Updated selectedIds with new selection:', newSelectedIds);
+        // console.log('handleRowSelection - Updated selectedIds with new selection:', newSelectedIds);
         setContextStoreNumberOfSelectedRecords(newSelectedIds.length);
-        console.log('handleRowSelection - updating numberOfSelectedRecords to:', newSelectedIds.length);
+        // console.log('handleRowSelection - updating numberOfSelectedRecords to:', newSelectedIds.length);
         setContextStoreTargetedRecordsRule({
           mode: 'selection',
           selectedRecordIds: newSelectedIds,
         });
-        console.log('handleRowSelection - updating targetedRecordsRule with:', {
-          mode: 'selection',
-          selectedRecordIds: newSelectedIds,
-        });
-        onSelectionChange?.(newSelectedIds);
+        // console.log('handleRowSelection - updating targetedRecordsRule with:', {
+        //   mode: 'selection',
+        //   selectedRecordIds: newSelectedIds,
+        // });
+        // onSelectionChange?.(newSelectedIds);
       } else {
         // Even if already selected, make sure context store is updated with correct count
-        console.log('Row already selected, ensuring context store is updated');
+        // console.log('Row already selected, ensuring context store is updated');
         setContextStoreNumberOfSelectedRecords(newSelectedIds.length);
-        console.log('handleRowSelection (existing) - updating numberOfSelectedRecords to:', newSelectedIds.length);
+        // console.log('handleRowSelection (existing) - updating numberOfSelectedRecords to:', newSelectedIds.length);
         setContextStoreTargetedRecordsRule({
           mode: 'selection',
           selectedRecordIds: newSelectedIds,
         });
-        console.log('handleRowSelection (existing) - updating targetedRecordsRule with:', {
-          mode: 'selection',
-          selectedRecordIds: newSelectedIds,
-        });
+        // console.log('handleRowSelection (existing) - updating targetedRecordsRule with:', {
+        //   mode: 'selection',
+        //   selectedRecordIds: newSelectedIds,
+        // });
       }
     }
   };
@@ -300,7 +300,7 @@ export const useChatTable = (
 
   const clearSelection = (): void => {
     setSelectedIds([]);
-    onSelectionChange?.([]);
+    // onSelectionChange?.([]);
   };
 
   const handlePrevCandidate = (): void => {
