@@ -1,9 +1,14 @@
 import styled from '@emotion/styled';
+import { useRecoilState, useRecoilValue } from 'recoil';
 
 import { Button, IconCheckbox, IconFilter, IconPlus } from 'twenty-ui';
 
 import { ChatOptionsDropdownButton } from '@/activities/chats/components/ChatOptionsDropdownButton';
 import { PageAddChatButton } from '@/activities/chats/components/PageAddChatButton';
+import { useSelectedRecordForEnrichment } from '@/arx-enrich/hooks/useSelectedRecordForEnrichment';
+import { isArxEnrichModalOpenState } from '@/arx-enrich/states/arxEnrichModalOpenState';
+import { ArxJDUploadModal } from '@/arx-jd-upload/components/ArxJDUploadModal';
+import { isArxUploadJDModalOpenState } from '@/arx-jd-upload/states/arxUploadJDModalOpenState';
 import { ObjectFilterDropdownButton } from '@/object-record/object-filter-dropdown/components/ObjectFilterDropdownButton';
 import { ObjectFilterDropdownComponentInstanceContext } from '@/object-record/object-filter-dropdown/states/contexts/ObjectFilterDropdownComponentInstanceContext';
 import { FiltersHotkeyScope } from '@/object-record/object-filter-dropdown/types/FiltersHotkeyScope';
@@ -23,6 +28,9 @@ import { PageHeader } from '@/ui/layout/page/components/PageHeader';
 import { TopBar } from '@/ui/layout/top-bar/components/TopBar';
 
 import { ChatMain } from '@/activities/chats/components/ChatMain';
+import { ArxEnrichmentModal } from '@/arx-enrich/arxEnrichmentModal';
+import { InterviewCreationModal } from '@/video-interview/interview-creation/InterviewCreationModal';
+import { isVideoInterviewModalOpenState } from '@/video-interview/interview-creation/states/videoInterviewModalState';
 
 const StyledPageContainer = styled(PageContainer)`
   display: flex;
@@ -149,6 +157,39 @@ export const Jobs = () => {
     recordIndexId: recordIndexId,
   };
 
+  const isArxEnrichModalOpen = useRecoilValue(isArxEnrichModalOpenState);
+  const [, setIsArxEnrichModalOpen] = useRecoilState(isArxEnrichModalOpenState);
+  const { hasSelectedRecord, selectedRecordId } = useSelectedRecordForEnrichment();
+
+  const isVideoInterviewModalOpen = useRecoilValue(isVideoInterviewModalOpenState);
+  const [, setIsVideoInterviewModalOpen] = useRecoilState(isVideoInterviewModalOpenState);
+  const isArxUploadJDModalOpen = useRecoilValue(isArxUploadJDModalOpenState);
+  const [, setIsArxUploadJDModalOpen] = useRecoilState(isArxUploadJDModalOpenState);
+
+  const handleEnrichment = () => {
+    if (!candidateId) {
+      alert('Please select a chat to enrich');
+      return;
+    }
+    setIsArxEnrichModalOpen(true);
+  };
+
+  const handleVideoInterviewEdit = () => {
+    if (!candidateId) {
+      alert('Please select a chat to create video interview');
+      return;
+    }
+    setIsVideoInterviewModalOpen(true);
+  };
+
+  const handleEngagement = () => {
+    if (!candidateId) {
+      alert('Please select a chat to upload JD');
+      return;
+    }
+    setIsArxUploadJDModalOpen(true);
+  };
+
   return (
     <StyledPageContainer>
       <RecordFieldValueSelectorContextProvider>
@@ -164,6 +205,12 @@ export const Jobs = () => {
             <ViewComponentInstanceContext.Provider value={{ instanceId: recordIndexId }} >
               <StyledTopBar
                 leftComponent={ <StyledTabListContainer> </StyledTabListContainer> }
+                handleEnrichment={handleEnrichment}
+                handleVideoInterviewEdit={handleVideoInterviewEdit}
+                handleEngagement={handleEngagement}
+                showEnrichment={true}
+                showVideoInterviewEdit={true}
+                showEngagement={true}
                 rightComponent={
                   <StyledRightSection>
                     <ObjectFilterDropdownComponentInstanceContext.Provider value={{ instanceId: filterDropdownId }} >
@@ -179,6 +226,33 @@ export const Jobs = () => {
             </ViewComponentInstanceContext.Provider>
           </RecordIndexContextProvider>
           <ChatMain initialCandidateId={candidateId} />
+          
+          {isArxEnrichModalOpen ? (
+            <ArxEnrichmentModal
+              objectNameSingular="chat"
+              objectRecordId={candidateId}
+            />
+          ) : (
+            <></>
+          )}
+          
+          {isVideoInterviewModalOpen ? (
+            <InterviewCreationModal
+              objectNameSingular="chat"
+              objectRecordId={candidateId}
+            />
+          ) : (
+            <></>
+          )}
+          
+          {isArxUploadJDModalOpen ? (
+            <ArxJDUploadModal
+              objectNameSingular="chat"
+              objectRecordId={candidateId}
+            />
+          ) : (
+            <></>
+          )}
         </StyledPageBody>
       </RecordFieldValueSelectorContextProvider>
     </StyledPageContainer>

@@ -16,6 +16,7 @@ import { RecordFieldValueSelectorContextProvider } from '@/object-record/record-
 import { SpreadsheetImportProvider } from '@/spreadsheet-import/provider/components/SpreadsheetImportProvider';
 
 import { RecordIndexActionMenu } from '@/action-menu/components/RecordIndexActionMenu';
+import { useSelectedRecordForEnrichment } from '@/arx-enrich/hooks/useSelectedRecordForEnrichment';
 import { isArxEnrichModalOpenState } from '@/arx-enrich/states/arxEnrichModalOpenState';
 import { RecordIndexFiltersToContextStoreEffect } from '@/object-record/record-index/components/RecordIndexFiltersToContextStoreEffect';
 import { RecordIndexTableContainerEffect } from '@/object-record/record-index/components/RecordIndexTableContainerEffect';
@@ -56,8 +57,9 @@ export const RecordIndexContainer = () => {
   const recordTableRefetchFunction = useRecoilValue(
     recordTableRefetchFunctionState,
   );
-  
+
   const [, setIsArxEnrichModalOpen] = useRecoilState(isArxEnrichModalOpenState);
+  const { hasSelectedRecord } = useSelectedRecordForEnrichment();
 
   const handleRefresh = async () => {
     await recordTableRefetchFunction();
@@ -68,12 +70,11 @@ export const RecordIndexContainer = () => {
   };
 
   const handleEnrichment = async () => {
-    console.log('handleEnrichment');
+    if (!hasSelectedRecord) {
+      alert('Please select a record to enrich');
+      return;
+    }
     setIsArxEnrichModalOpen(true);
-  };
-
-  const handleEngagement = async () => {
-    console.log('handleEngagement');
   };
 
   console.log('RecordIndexContainer rendering');
@@ -90,7 +91,6 @@ export const RecordIndexContainer = () => {
               handleVideoInterviewEdit={handleVideoInterviewEdit}
               viewBarId={recordIndexId}
               handleEnrichment={handleEnrichment}
-              handleEngagement={handleEngagement}
               optionsDropdownButton={
                 <ObjectOptionsDropdown
                   recordIndexId={recordIndexId}

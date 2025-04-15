@@ -2,6 +2,7 @@ import { RecordIndexContextProvider } from '@/object-record/record-index/context
 
 import { ActionMenuComponentInstanceContext } from '@/action-menu/states/contexts/ActionMenuComponentInstanceContext';
 import { getActionMenuIdFromRecordIndexId } from '@/action-menu/utils/getActionMenuIdFromRecordIndexId';
+import { useSelectedRecordForEnrichment } from '@/arx-enrich/hooks/useSelectedRecordForEnrichment';
 import { useContextStoreObjectMetadataItemOrThrow } from '@/context-store/hooks/useContextStoreObjectMetadataItemOrThrow';
 import { contextStoreCurrentViewIdComponentState } from '@/context-store/states/contextStoreCurrentViewIdComponentState';
 import { mainContextStoreComponentInstanceIdState } from '@/context-store/states/mainContextStoreComponentInstanceId';
@@ -65,6 +66,7 @@ export const RecordIndexContainerGater = () => {
 
   const recordIndexId = `${objectMetadataItem.namePlural}-${contextStoreCurrentViewId}`;
   const isArxEnrichModalOpen = useRecoilValue(isArxEnrichModalOpenState);
+  const { selectedRecordId } = useSelectedRecordForEnrichment();
 
   const handleIndexRecordsLoaded = useRecoilCallback(
     ({ set }) =>
@@ -127,7 +129,7 @@ export const RecordIndexContainerGater = () => {
                             ? 'company'
                             : objectMetadataItem.namePlural.slice(0, -1)
                         }
-                        objectRecordId={'0'}
+                        objectRecordId={selectedRecordId}
                       />
                     ) : (
                       <></>

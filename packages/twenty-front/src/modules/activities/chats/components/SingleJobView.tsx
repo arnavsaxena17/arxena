@@ -2,13 +2,18 @@ import styled from '@emotion/styled';
 import axios from 'axios';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useRecoilState } from 'recoil';
+import { useRecoilState, useRecoilValue } from 'recoil';
 
 import { Button, IconCheckbox, IconFilter, IconPlus } from 'twenty-ui';
 
 import { ChatMain } from '@/activities/chats/components/ChatMain';
 import { ChatOptionsDropdownButton } from '@/activities/chats/components/ChatOptionsDropdownButton';
 import { PageAddChatButton } from '@/activities/chats/components/PageAddChatButton';
+import { ArxEnrichmentModal } from '@/arx-enrich/arxEnrichmentModal';
+import { useSelectedRecordForEnrichment } from '@/arx-enrich/hooks/useSelectedRecordForEnrichment';
+import { isArxEnrichModalOpenState } from '@/arx-enrich/states/arxEnrichModalOpenState';
+import { ArxJDUploadModal } from '@/arx-jd-upload/components/ArxJDUploadModal';
+import { isArxUploadJDModalOpenState } from '@/arx-jd-upload/states/arxUploadJDModalOpenState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { ObjectFilterDropdownButton } from '@/object-record/object-filter-dropdown/components/ObjectFilterDropdownButton';
 import { ObjectFilterDropdownComponentInstanceContext } from '@/object-record/object-filter-dropdown/states/contexts/ObjectFilterDropdownComponentInstanceContext';
@@ -21,6 +26,8 @@ import { PageBody } from '@/ui/layout/page/components/PageBody';
 import { PageContainer } from '@/ui/layout/page/components/PageContainer';
 import { PageHeader } from '@/ui/layout/page/components/PageHeader';
 import { TopBar } from '@/ui/layout/top-bar/components/TopBar';
+import { InterviewCreationModal } from '@/video-interview/interview-creation/InterviewCreationModal';
+import { isVideoInterviewModalOpenState } from '@/video-interview/interview-creation/states/videoInterviewModalState';
 import { ViewComponentInstanceContext } from '@/views/states/contexts/ViewComponentInstanceContext';
 
 const StyledPageContainer = styled(PageContainer)`
@@ -81,6 +88,14 @@ export const SingleJobView = () => {
   // Component instance IDs
   const filterDropdownId = `job-filter-${jobId}`;
   const recordIndexId = `job-${jobId}`;
+
+  const isArxEnrichModalOpen = useRecoilValue(isArxEnrichModalOpenState);
+  const [, setIsArxEnrichModalOpen] = useRecoilState(isArxEnrichModalOpenState);
+  const { hasSelectedRecord, selectedRecordId } = useSelectedRecordForEnrichment();
+  const isVideoInterviewModalOpen = useRecoilValue(isVideoInterviewModalOpenState);
+  const [, setIsVideoInterviewModalOpen] = useRecoilState(isVideoInterviewModalOpenState);
+  const isArxUploadJDModalOpen = useRecoilValue(isArxUploadJDModalOpenState);
+  const [, setIsArxUploadJDModalOpen] = useRecoilState(isArxUploadJDModalOpenState);
 
   // Handle candidateId changes from URL params
   useEffect(() => {
@@ -155,6 +170,30 @@ export const SingleJobView = () => {
     recordIndexId,
   };
 
+  const handleEnrichment = () => {
+    if (!currentCandidateId) {
+      alert('Please select a candidate to enrich');
+      return;
+    }
+    setIsArxEnrichModalOpen(true);
+  };
+
+  const handleVideoInterviewEdit = () => {
+    if (!currentCandidateId) {
+      alert('Please select a candidate to create video interview');
+      return;
+    }
+    setIsVideoInterviewModalOpen(true);
+  };
+  
+  const handleEngagement = () => {
+    if (!currentCandidateId) {
+      alert('Please select a candidate to upload JD');
+      return;
+    }
+    setIsArxUploadJDModalOpen(true);
+  };
+
   if (isLoading) {
     return <div>Loading job details...</div>;
   }
@@ -176,6 +215,12 @@ export const SingleJobView = () => {
             <ViewComponentInstanceContext.Provider value={{ instanceId: recordIndexId }}>
               <StyledTopBar
                 leftComponent={<StyledTabListContainer />}
+                handleEnrichment={handleEnrichment}
+                handleVideoInterviewEdit={handleVideoInterviewEdit}
+                handleEngagement={handleEngagement}
+                showEnrichment={true}
+                showVideoInterviewEdit={true}
+                showEngagement={true}
                 rightComponent={
                   <StyledRightSection>
                     <ObjectFilterDropdownComponentInstanceContext.Provider value={{ instanceId: filterDropdownId }}>
@@ -199,6 +244,33 @@ export const SingleJobView = () => {
             initialCandidateId={currentCandidateId} 
             onCandidateSelect={handleCandidateSelect}
           />
+          
+          {isArxEnrichModalOpen ? (
+            <ArxEnrichmentModal
+              objectNameSingular="candidate"
+              objectRecordId={currentCandidateId || '0'}
+            />
+          ) : (
+            <></>
+          )}
+          
+          {isVideoInterviewModalOpen ? (
+            <InterviewCreationModal
+              objectNameSingular="candidate"
+              objectRecordId={currentCandidateId || '0'}
+            />
+          ) : (
+            <></>
+          )}
+          
+          {isArxUploadJDModalOpen ? (
+            <ArxJDUploadModal
+              objectNameSingular="candidate"
+              objectRecordId={currentCandidateId || '0'}
+            />
+          ) : (
+            <></>
+          )}
         </StyledPageBody>
       </RecordFieldValueSelectorContextProvider>
     </StyledPageContainer>
