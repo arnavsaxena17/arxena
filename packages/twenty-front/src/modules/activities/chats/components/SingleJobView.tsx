@@ -113,6 +113,7 @@ export const SingleJobView = () => {
 
   // Handle candidate selection from ChatMain
   const handleCandidateSelect = (id: string) => {
+    console.log("handleCandidateSelect::id", id)
     setCurrentCandidateId(id);
     
     // Update URL without full page reload

@@ -14,7 +14,6 @@ import { ActionMenuComponentInstanceContext } from '@/action-menu/states/context
 import { ActionBarHotkeyScope } from '@/action-menu/types/ActionBarHotKeyScope';
 import { ActionMenuEntry } from '@/action-menu/types/ActionMenuEntry';
 import { getActionBarIdFromActionMenuId } from '@/action-menu/utils/getActionBarIdFromActionMenuId';
-import ActionsBar from '@/activities/chats/components/ActionsBar';
 import { ChatActionMenuEntriesSetter } from '@/activities/chats/components/ChatActionMenuEntriesSetter';
 import { chatActionsState } from '@/activities/chats/components/RightDrawerChatAllActionsContent';
 import { selectedCandidateIdState } from '@/activities/chats/states/selectedCandidateIdState';
@@ -217,7 +216,6 @@ export const ChatTable: React.FC<ChatTableProps> = ({
     handleAfterChange,
     tableId,
     tableData,
-    handleRowSelection,
   } = useChatTable(candidates, onCandidateSelect);
 
   const theme = useTheme();
@@ -358,6 +356,8 @@ export const ChatTable: React.FC<ChatTableProps> = ({
   // Direct implementation of row selection handling to bypass the import
   const lastRowSelected = useRef<{rowIndex: number, timestamp: number, handled: boolean}>({rowIndex: -1, timestamp: 0, handled: false});
   const directHandleRowSelection = (rowIndex: number) => {
+    // Remove the handleRowSelection call to avoid double rendering
+    // handleRowSelection(rowIndex);
     // Log information about the selected row to help debug the last row issue
     console.log('directHandleRowSelection called with:');
     console.log('- row index:', rowIndex);
@@ -390,6 +390,13 @@ export const ChatTable: React.FC<ChatTableProps> = ({
       // Set the selected candidate ID directly
       setSelectedCandidateId(candidate.id);
       console.log('Selected candidate ID set to:', candidate.id);
+      
+      // Call onCandidateSelect to ensure SingleJobView.handleCandidateSelect gets called
+      // This is important for URL updates and other state changes in the parent component
+      if (onCandidateSelect) {
+        console.log('Calling onCandidateSelect with candidate ID:', candidate.id);
+        onCandidateSelect(candidate.id);
+      }
       
       // Open the right drawer directly
       console.log('About to open right drawer with CandidateChat page');
@@ -509,40 +516,40 @@ export const ChatTable: React.FC<ChatTableProps> = ({
   // Create a deep mutable copy of the tableData to prevent "read-only property" errors
   const mutableData = tableData.map(row => ({...row}));
   
-  const handleOpenCandidateChatDrawer = () => {
-    // Use a test candidate ID
-    const testCandidateId = candidates.length > 0 ? candidates[0].id : null;
+  // const handleOpenCandidateChatDrawer = () => {
+  //   // Use a test candidate ID
+  //   const testCandidateId = candidates.length > 0 ? candidates[0].id : null;
     
-    if (testCandidateId) {
-      // Reset the row selection handling state
-      lastRowSelected.current = {rowIndex: -1, timestamp: 0, handled: false};
+  //   if (testCandidateId) {
+  //     // Reset the row selection handling state
+  //     lastRowSelected.current = {rowIndex: -1, timestamp: 0, handled: false};
       
-      console.log('Test button - opening drawer for candidate ID:', testCandidateId);
+  //     console.log('Test button - opening drawer for candidate ID:', testCandidateId);
       
-      // Check and select the candidate's checkbox if not already selected
-      if (!selectedIds.includes(testCandidateId)) {
-        console.log('Selecting checkbox for test candidate');
-        handleCheckboxChange(testCandidateId);
-      }
+  //     // Check and select the candidate's checkbox if not already selected
+  //     if (!selectedIds.includes(testCandidateId)) {
+  //       console.log('Selecting checkbox for test candidate');
+  //       handleCheckboxChange(testCandidateId);
+  //     }
       
-      // Set the selected candidate ID directly
-      setSelectedCandidateId(testCandidateId);
+  //     // Set the selected candidate ID directly
+  //     setSelectedCandidateId(testCandidateId);
       
-      // Open the drawer with CandidateChat page
-      console.log('Test button - opening CandidateChat drawer');
-      try {
-        openRightDrawer(RightDrawerPages.CandidateChat, {
-          title: 'Chat',
-          Icon: IconMessages,
-        });
-        console.log('Right drawer opened successfully (test button)');
-      } catch (error) {
-        console.error('Error opening right drawer (test button):', error);
-      }
-    } else {
-      console.error('No candidates available for testing');
-    }
-  };
+  //     // Open the drawer with CandidateChat page
+  //     console.log('Test button - opening CandidateChat drawer');
+  //     try {
+  //       openRightDrawer(RightDrawerPages.CandidateChat, {
+  //         title: 'Chat',
+  //         Icon: IconMessages,
+  //       });
+  //       console.log('Right drawer opened successfully (test button)');
+  //     } catch (error) {
+  //       console.error('Error opening right drawer (test button):', error);
+  //     }
+  //   } else {
+  //     console.error('No candidates available for testing');
+  //   }
+  // };
 
   return (
     <ContextStoreComponentInstanceContext.Provider
@@ -556,7 +563,7 @@ export const ChatTable: React.FC<ChatTableProps> = ({
         }}
       >
         <TableContainer>
-          <div style={{ 
+          {/* <div style={{ 
             position: 'absolute', 
             top: '10px', 
             right: '10px', 
@@ -616,7 +623,7 @@ export const ChatTable: React.FC<ChatTableProps> = ({
               <IconMessages size={16} />
               <span>Test Chat</span>
             </button>
-          </div>
+          </div> */}
           <HotTable
             ref={hotRef}
             data={mutableData}
@@ -656,16 +663,7 @@ export const ChatTable: React.FC<ChatTableProps> = ({
         }}>
           <ChatActionMenu tableId={tableId} />
         </div>
-        <ActionsBar
-          selectedIds={selectedIds}
-          clearSelection={clearSelection}
-          handleViewChats={handleViewChats}
-          handleViewCVs={handleViewCVs}
-          createChatBasedShortlistDelivery={createChatBasedShortlistDelivery}
-          createUpdateCandidateStatus={createUpdateCandidateStatus}
-          createCandidateShortlists={createCandidateShortlists}
-          handleActivityDrawer={handleActivityDrawerClick}
-        />
+
         <MultiCandidateChat isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} selectedCandidates={selectedCandidates} />
         {isAttachmentPanelOpen && currentCandidate && (
           <>

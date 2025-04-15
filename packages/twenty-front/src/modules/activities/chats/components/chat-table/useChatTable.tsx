@@ -111,37 +111,6 @@ export const useChatTable = (
     }
   };
 
-  // Handle row selection (clicking a row)
-  const handleRowSelection = (rowIndex: number) => {
-    console.log('handleRowSelection called with rowIndex:', rowIndex);
-    if (rowIndex >= 0 && rowIndex < candidates.length) {
-      const candidate = candidates[rowIndex];
-      console.log('handleRowSelection called with candidate:', candidate.name, candidate.id);
-      
-      // Set the selected candidate ID
-      setSelectedCandidateId(candidate.id);
-      console.log('Selected candidate ID set to:', candidate.id);
-      
-      // Open the right drawer with the CandidateChatDrawer component
-      console.log('About to open right drawer with CandidateChatDrawer');
-      try {
-        openRightDrawer(RightDrawerPages.CandidateChat, {
-          title: `${candidate.name}`,
-          Icon: IconMessages,
-        });
-        console.log('Right drawer opened successfully');
-      } catch (error) {
-        console.error('Error opening right drawer:', error);
-      }
-      
-      // Callback if provided
-      if (onCandidateSelect) {
-        onCandidateSelect(candidate.id);
-        console.log('onCandidateSelect callback called');
-      }
-    }
-  };
-
   // Handle navigation to previous candidate
   const handlePrevCandidate = () => {
     setCurrentCandidateIndex(prevIndex => Math.max(0, prevIndex - 1));
@@ -242,6 +211,5 @@ export const useChatTable = (
     handleAfterChange,
     tableId,
     tableData,
-    handleRowSelection,
   };
 }; 

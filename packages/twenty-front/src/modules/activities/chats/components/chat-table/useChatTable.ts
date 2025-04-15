@@ -56,7 +56,6 @@ type UseChatTableReturn = {
   createUpdateCandidateStatus: () => Promise<void>;
   setIsAttachmentPanelOpen: (value: boolean) => void;
   setIsChatOpen: (value: boolean) => void;
-  handleRowSelection: (row: number) => void;
   handleAfterChange: (changes: CellChange[] | null, source: ChangeSource) => void;
   tableId: string;
   tableData: TableData[];
@@ -244,38 +243,6 @@ export const useChatTable = (
     // onSelectionChange?.(newSelectedIds);
   };
   
-  const handleRowSelection = (row: number) => {
-    if (row >= 0) {
-      const selectedCandidate = candidates[row];
-      // console.log('Row selected:', row, 'Individual ID:', selectedCandidate.id);
-      onCandidateSelect?.(selectedCandidate.id);
-      const newSelectedIds = [...selectedIds];
-      if (!newSelectedIds.includes(selectedCandidate.id)) {
-        newSelectedIds.push(selectedCandidate.id);
-        setSelectedIds(newSelectedIds);
-        // console.log('handleRowSelection - Updated selectedIds with new selection:', newSelectedIds);
-        setContextStoreNumberOfSelectedRecords(newSelectedIds.length);
-        // console.log('handleRowSelection - updating numberOfSelectedRecords to:', newSelectedIds.length);
-        setContextStoreTargetedRecordsRule({
-          mode: 'selection',
-          selectedRecordIds: newSelectedIds,
-        });
-        // console.log('handleRowSelection - updating targetedRecordsRule with:', {
-        //   mode: 'selection',
-        //   selectedRecordIds: newSelectedIds,
-        // });
-        // onSelectionChange?.(newSelectedIds);
-      } else {
-        // Even if already selected, make sure context store is updated with correct count
-        setContextStoreNumberOfSelectedRecords(newSelectedIds.length);
-        setContextStoreTargetedRecordsRule({
-          mode: 'selection',
-          selectedRecordIds: newSelectedIds,
-        });
-      }
-    }
-  };
-
   const handleViewChats = (): void => {
     if (selectedIds.length > 0) {
       setIsChatOpen(true);
@@ -387,7 +354,6 @@ export const useChatTable = (
     createUpdateCandidateStatus,
     setIsAttachmentPanelOpen,
     setIsChatOpen,
-    handleRowSelection,
     handleAfterChange,
     tableId,
     tableData,

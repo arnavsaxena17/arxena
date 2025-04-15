@@ -177,6 +177,8 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
       formElement?.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
+
+    // const jobId = useRecoilValue(jobIdState);
     console.log("All Enrichmetns", enrichments)
 
     let selectedRecordIds = (recordsToEnrich?.length || 0) > 0 ? recordsToEnrich : selectedRecords;
@@ -187,6 +189,7 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
       const response = await axios.post(process.env.REACT_APP_SERVER_BASE_URL+'/candidate-sourcing/create-enrichments', {
         enrichments,
         objectNameSingular,
+        // jobId,
         // availableSortDefinitions,
         // availableFilterDefinitions,
         objectRecordId,
