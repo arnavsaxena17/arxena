@@ -8,7 +8,9 @@ import { Button, IconCheckbox, IconFilter, IconPlus } from 'twenty-ui';
 
 import { ChatMain } from '@/activities/chats/components/ChatMain';
 import { ChatOptionsDropdownButton } from '@/activities/chats/components/ChatOptionsDropdownButton';
+import { JobNotFoundState } from '@/activities/chats/components/JobNotFoundState';
 import { PageAddChatButton } from '@/activities/chats/components/PageAddChatButton';
+import { SingleJobViewSkeletonLoader } from '@/activities/chats/components/SingleJobViewSkeletonLoader';
 import { ArxEnrichmentModal } from '@/arx-enrich/arxEnrichmentModal';
 import { useSelectedRecordForEnrichment } from '@/arx-enrich/hooks/useSelectedRecordForEnrichment';
 import { isArxEnrichModalOpenState } from '@/arx-enrich/states/arxEnrichModalOpenState';
@@ -195,11 +197,11 @@ export const SingleJobView = () => {
   };
 
   if (isLoading) {
-    return <div>Loading job details...</div>;
+    return <SingleJobViewSkeletonLoader />;
   }
 
   if (!job) {
-    return <div>Job not found</div>;
+    return <JobNotFoundState />;
   }
   console.log("The job is::", job);
   console.log("The jobId is::", jobId);

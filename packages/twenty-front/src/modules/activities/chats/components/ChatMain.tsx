@@ -16,6 +16,7 @@ import {
   UnreadMessagesPerOneCandidate,
   isDefined
 } from 'twenty-shared';
+import { Loader } from 'twenty-ui';
 import { CACHE_KEYS, cacheUtils } from '../utils/cacheUtils';
 
 interface ChatMainProps {
@@ -83,22 +84,22 @@ const StyledChatWindowContainer = styled.div<{ sidebarWidth: number }>`
   }
 `;
 
-const StyledSpinner = styled.div`
-  width: 100%;
-  height: 100%;
-  border: 4px solid ${({ theme }) => theme.border.color.light};
-  border-top: 4px solid ${({ theme }) => theme.border.color.light};
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  @keyframes spin {
-    0% {
-      transform: rotate(0deg);
-    }
-    100% {
-      transform: rotate(360deg);
-    }
-  }
-`;
+// const StyledSpinner = styled.div`
+//   width: 100%;
+//   height: 100%;
+//   border: 4px solid ${({ theme }) => theme.border.color.light};
+//   border-top: 4px solid ${({ theme }) => theme.border.color.light};
+//   border-radius: 50%;
+//   animation: spin 1s linear infinite;
+//   @keyframes spin {
+//     0% {
+//       transform: rotate(0deg);
+//     }
+//     100% {
+//       transform: rotate(360deg);
+//     }
+//   }
+// `;
 
 const StyledResizer = styled.div`
   width: 4px;
@@ -384,11 +385,11 @@ export const ChatMain = ({ initialCandidateId, onCandidateSelect, jobId }: ChatM
     loadingState === LoadingStates.INITIAL ||
     loadingState === LoadingStates.LOADING_CACHE
   ) {
-    return <StyledSpinner />;
+    return <Loader />;
   }
 
   if (loadingState === LoadingStates.LOADING_API && candidates.length === 0) {
-    return <StyledSpinner />;
+    return <Loader />;
   }
 
   if (loadingState === LoadingStates.ERROR && candidates.length === 0) {
@@ -411,7 +412,7 @@ export const ChatMain = ({ initialCandidateId, onCandidateSelect, jobId }: ChatM
             zIndex: 1000,
           }}
         >
-          <StyledSpinner />
+          <Loader />
         </div>
       )}
 

@@ -215,7 +215,7 @@ export const RightDrawerChatAllActionsContent = () => {
           }}
         >
           <StyledContainer>
-            <StyledTitle>Chat Actions</StyledTitle>
+            {/* <StyledTitle>Chat Actions</StyledTitle> */}
             
             {pinnedActions.length > 0 && (
               <>
