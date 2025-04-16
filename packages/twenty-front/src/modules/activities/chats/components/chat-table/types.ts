@@ -53,6 +53,7 @@ export interface ChatTableProps {
   onBulkDelete?: (selectedIds: string[]) => void;
   onBulkAssign?: (selectedIds: string[]) => void;
   onReorder?: (selectedIds: CandidateNode[]) => void;
+  refreshData?: () => Promise<void>;
 }
 
 export type ColumnRenderer = (

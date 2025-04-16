@@ -64,7 +64,8 @@ type UseChatTableReturn = {
 export const useChatTable = (
   candidates: CandidateNode[], 
   // onSelectionChange?: (selectedIds: string[]) => void,
-  onCandidateSelect?: (id: string) => void
+  onCandidateSelect?: (id: string) => void,
+  refreshData?: () => Promise<void>
 ): UseChatTableReturn => {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isAttachmentPanelOpen, setIsAttachmentPanelOpen] = useState(false);
@@ -148,7 +149,26 @@ export const useChatTable = (
     }
   }, [candidates, setTableData, prepareTableData]);
 
-  // Function to save data changes to the backend
+  // Function to update local candidate data
+  const updateLocalCandidateData = useCallback((candidateId: string, field: string, value: any) => {
+    // Create a new deep copy of the tableData
+    const newData = createMutableCopy(tableData);
+    
+    // Find the row index for this candidate
+    const rowIndex = newData.findIndex(row => row.id === candidateId);
+    
+    if (rowIndex !== -1) {
+      // Update the field in our local data
+      newData[rowIndex] = {
+        ...newData[rowIndex],
+        [field]: value
+      };
+      
+      // Update the tableData state immediately
+      setTableData(newData);
+    }
+  }, [tableData, setTableData]);
+  
   const saveDataToBackend = useCallback(async (candidateId: string, field: string, value: any) => {
     try {
       // Dynamically check if the field exists directly on the candidate object
@@ -179,9 +199,14 @@ export const useChatTable = (
       
       console.log('Update response:', response.data);
       
-      // Find the candidate and update it in the local state first
-      // This ensures immediate updates in the UI even before the backend responds
-      updateLocalCandidateData(candidateId, field, value);
+      // After successful update, refresh data if the function is provided
+      if (refreshData) {
+        await refreshData();
+      } else {
+        // If no refreshData provided, update local state manually
+        // This provides immediate feedback while waiting for any background refreshes
+        updateLocalCandidateData(candidateId, field, value);
+      }
       
       enqueueSnackBar('Data updated successfully', {
         variant: SnackBarVariant.Success,
@@ -196,27 +221,7 @@ export const useChatTable = (
         duration: 2000,
       });
     }
-  }, [candidates, tokenPair, enqueueSnackBar]);
-  
-  // Function to update local candidate data
-  const updateLocalCandidateData = useCallback((candidateId: string, field: string, value: any) => {
-    // Create a new deep copy of the tableData
-    const newData = createMutableCopy(tableData);
-    
-    // Find the row index for this candidate
-    const rowIndex = newData.findIndex(row => row.id === candidateId);
-    
-    if (rowIndex !== -1) {
-      // Update the field in our local data
-      newData[rowIndex] = {
-        ...newData[rowIndex],
-        [field]: value
-      };
-      
-      // Update the tableData state immediately
-      setTableData(newData);
-    }
-  }, [tableData, setTableData]);
+  }, [candidates, tokenPair, enqueueSnackBar, updateLocalCandidateData, refreshData]);
 
   const handleAfterChange = useCallback((changes: CellChange[] | null, source: ChangeSource) => {
     if (!changes || source === 'loadData') {

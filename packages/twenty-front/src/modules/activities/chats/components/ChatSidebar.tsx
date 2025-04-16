@@ -4,9 +4,9 @@ import styled from '@emotion/styled';
 import { useNavigate } from 'react-router-dom';
 // import * as frontChatTypes from "../types/front-chat-types";
 import {
-  CandidateNode,
-  JobNode,
-  UnreadMessageListManyCandidates
+    CandidateNode,
+    JobNode,
+    UnreadMessageListManyCandidates
 } from 'twenty-shared';
 import ChatTable from './chat-table/ChatTable';
 import SearchBox from './SearchBox';
@@ -119,6 +119,7 @@ interface ChatSidebarProps {
   isRefreshing?: boolean;
   width: number;
   onCandidateSelect: (id: string) => void;
+  refreshData?: () => Promise<void>;
 }
 
 const statusLabels: { [key: string]: string } = {
@@ -158,6 +159,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   isRefreshing = false,
   width,
   onCandidateSelect,
+  refreshData,
 }) => {
   const navigate = useNavigate();
   // const openCreateActivity = useOpenCreateActivityDrawer();
@@ -390,6 +392,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
       // onSelectionChange={handleSelectionChange}
       onCandidateSelect={onCandidateSelect}
       onReorder={handleReorder}
+      refreshData={refreshData}
     />
   );
 };

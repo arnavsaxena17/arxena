@@ -192,6 +192,7 @@ export const ChatTable: React.FC<ChatTableProps> = ({
   onBulkDelete,
   onBulkAssign,
   onReorder,
+  refreshData,
 }) => {
   const {
     selectedIds,
@@ -216,7 +217,7 @@ export const ChatTable: React.FC<ChatTableProps> = ({
     handleAfterChange,
     tableId,
     tableData,
-  } = useChatTable(candidates, onCandidateSelect);
+  } = useChatTable(candidates, onCandidateSelect, refreshData);
 
   const theme = useTheme();
   const hotRef = useRef<any>(null);
