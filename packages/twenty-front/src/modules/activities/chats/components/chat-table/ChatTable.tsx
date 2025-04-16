@@ -511,45 +511,22 @@ export const ChatTable: React.FC<ChatTableProps> = ({
     }
   };
 
-  // 
-  // 
   // Create a deep mutable copy of the tableData to prevent "read-only property" errors
-  const mutableData = tableData.map(row => ({...row}));
+  // Use JSON stringify/parse for a true deep copy to ensure no references are shared
+  const mutableData = useMemo(() => {
+    return tableData.map(row => JSON.parse(JSON.stringify(row)));
+  }, [tableData]);
   
-  // const handleOpenCandidateChatDrawer = () => {
-  //   // Use a test candidate ID
-  //   const testCandidateId = candidates.length > 0 ? candidates[0].id : null;
-    
-  //   if (testCandidateId) {
-  //     // Reset the row selection handling state
-  //     lastRowSelected.current = {rowIndex: -1, timestamp: 0, handled: false};
-      
-  //     console.log('Test button - opening drawer for candidate ID:', testCandidateId);
-      
-  //     // Check and select the candidate's checkbox if not already selected
-  //     if (!selectedIds.includes(testCandidateId)) {
-  //       console.log('Selecting checkbox for test candidate');
-  //       handleCheckboxChange(testCandidateId);
-  //     }
-      
-  //     // Set the selected candidate ID directly
-  //     setSelectedCandidateId(testCandidateId);
-      
-  //     // Open the drawer with CandidateChat page
-  //     console.log('Test button - opening CandidateChat drawer');
-  //     try {
-  //       openRightDrawer(RightDrawerPages.CandidateChat, {
-  //         title: 'Chat',
-  //         Icon: IconMessages,
-  //       });
-  //       console.log('Right drawer opened successfully (test button)');
-  //     } catch (error) {
-  //       console.error('Error opening right drawer (test button):', error);
-  //     }
-  //   } else {
-  //     console.error('No candidates available for testing');
-  //   }
-  // };
+  // Force Handsontable to re-render when data changes
+  useEffect(() => {
+    if (hotRef.current?.hotInstance) {
+      console.log('Updating HotTable with new data');
+      // Forcefully update the data source
+      hotRef.current.hotInstance.loadData(mutableData);
+      // Then render the table with the new data
+      hotRef.current.hotInstance.render();
+    }
+  }, [mutableData]);
 
   return (
     <ContextStoreComponentInstanceContext.Provider
@@ -563,67 +540,6 @@ export const ChatTable: React.FC<ChatTableProps> = ({
         }}
       >
         <TableContainer>
-          {/* <div style={{ 
-            position: 'absolute', 
-            top: '10px', 
-            right: '10px', 
-            zIndex: 1000,
-            display: 'flex',
-            gap: '10px'
-          }}>
-            <button 
-              onClick={() => {
-                const testCandidateId = candidates.length > 0 ? candidates[0].id : null;
-                if (testCandidateId) {
-                  // Reset the row selection handling state
-                  lastRowSelected.current = {rowIndex: -1, timestamp: 0, handled: false};
-                  
-                  // Check and select the candidate's checkbox if not already selected
-                  if (!selectedIds.includes(testCandidateId)) {
-                    console.log('Selecting checkbox for simple test');
-                    handleCheckboxChange(testCandidateId);
-                  }
-                  
-                  setSelectedCandidateId(testCandidateId);
-                  console.log('Opening Simple Activity drawer (test)');
-                  openRightDrawer(RightDrawerPages.SimpleActivity, {
-                    title: 'Simple Activity',
-                    Icon: IconList,
-                  });
-                }
-              }}
-              style={{
-                backgroundColor: theme.background.secondary,
-                border: `1px solid ${theme.border.color.medium}`,
-                borderRadius: '4px',
-                padding: '8px 12px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-              }}
-            >
-              <IconList size={16} />
-              <span>Test Simple</span>
-            </button>
-
-            <button 
-              onClick={handleOpenCandidateChatDrawer}
-              style={{
-                backgroundColor: theme.background.secondary,
-                border: `1px solid ${theme.border.color.medium}`,
-                borderRadius: '4px',
-                padding: '8px 12px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-              }}
-            >
-              <IconMessages size={16} />
-              <span>Test Chat</span>
-            </button>
-          </div> */}
           <HotTable
             ref={hotRef}
             data={mutableData}

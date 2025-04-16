@@ -2,17 +2,17 @@ import { Controller, Post, Req, UseGuards } from '@nestjs/common';
 
 import axios from 'axios';
 import {
-  createOneCandidateField,
-  CreateOneJob,
-  CreateOneVideoInterviewTemplate,
-  Enrichment,
-  graphQlTofindManyCandidateEnrichments,
-  graphqlToFindManyJobByArxenaSiteIdOlderSchema,
-  graphqlToFindManyJobs,
-  Jobs,
-  mutationToCreateOneCandidateEnrichment,
-  UpdateOneJob,
-  UserProfile,
+    createOneCandidateField,
+    CreateOneJob,
+    CreateOneVideoInterviewTemplate,
+    Enrichment,
+    graphQlTofindManyCandidateEnrichments,
+    graphqlToFindManyJobByArxenaSiteIdOlderSchema,
+    graphqlToFindManyJobs,
+    Jobs,
+    mutationToCreateOneCandidateEnrichment,
+    UpdateOneJob,
+    UserProfile,
 } from 'twenty-shared';
 
 import { workspacesWithOlderSchema } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/candidate-engagement';
@@ -788,6 +788,76 @@ export class CandidateSourcingController {
       console.log('Error in add questions', error);
 
       return { error: error.message };
+    }
+  }
+
+  @Post('update-candidate-field-value')
+  @UseGuards(JwtAuthGuard)
+  async updateCandidateFieldValue(@Req() request: any): Promise<object> {
+    try {
+      const apiToken = request.headers.authorization.split(' ')[1];
+      const { candidateId, fieldName, value } = request.body;
+
+      if (!candidateId || !fieldName) {
+        return {
+          status: 'Failed',
+          message: 'Missing required fields: candidateId or fieldName',
+        };
+      }
+
+      const result = await this.candidateService.updateCandidateFieldValue(
+        candidateId,
+        fieldName,
+        value,
+        apiToken,
+      );
+
+      return {
+        status: 'Success',
+        message: 'Candidate field value updated successfully',
+        result,
+      };
+    } catch (err) {
+      console.error('Error updating candidate field value:', err);
+      return {
+        status: 'Failed',
+        error: err.message,
+      };
+    }
+  }
+
+  @Post('update-candidate-field')
+  @UseGuards(JwtAuthGuard)
+  async updateCandidateField(@Req() request: any): Promise<object> {
+    try {
+      const apiToken = request.headers.authorization.split(' ')[1];
+      const { candidateId, fieldName, value } = request.body;
+
+      if (!candidateId || !fieldName) {
+        return {
+          status: 'Failed',
+          message: 'Missing required fields: candidateId or fieldName',
+        };
+      }
+
+      const result = await this.candidateService.updateCandidateField(
+        candidateId,
+        fieldName,
+        value,
+        apiToken,
+      );
+
+      return {
+        status: 'Success',
+        message: 'Candidate field updated successfully',
+        result,
+      };
+    } catch (err) {
+      console.error('Error updating candidate field:', err);
+      return {
+        status: 'Failed',
+        error: err.message,
+      };
     }
   }
 }

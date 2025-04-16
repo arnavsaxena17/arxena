@@ -1,7 +1,7 @@
 import styled from '@emotion/styled';
 import { ReactNode } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Button, IconDatabase, IconMail, IconSearch, IconVideo } from 'twenty-ui';
+import { Button, IconDatabase, IconMail, IconRefresh, IconSearch, IconVideo } from 'twenty-ui';
 
 type TopBarProps = {
   className?: string;
@@ -84,7 +84,19 @@ export const TopBar = ({
     <StyledContainer className={className}>
       <StyledTopBar>
         <StyledLeftSection>{leftComponent}</StyledLeftSection>
-
+        {!isJobPage && (
+          <StyledButtonContainer>
+            {showRefetch && (
+              <Button
+                Icon={IconRefresh}
+                title="Refetch"
+                variant="secondary"
+                accent="default"
+                onClick={handleRefresh}
+              />
+            )}
+          </StyledButtonContainer>
+        )}
         {isJobPage && (
           <StyledButtonContainer>
             {showRefetch && (
@@ -114,15 +126,6 @@ export const TopBar = ({
                 onClick={handleEnrichment}
               />
             )}
-            {/* {showRefetch && (
-              <Button
-                Icon={IconRefresh}
-                title="Refetch"
-                variant="secondary"
-                accent="default"
-                onClick={handleRefresh}
-              />
-            )} */}
             {showVideoInterviewEdit && (
               <Button
                 Icon={IconVideo}

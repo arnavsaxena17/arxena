@@ -8,9 +8,11 @@ import {
   createOneCandidateField,
   FindManyVideoInterviewModels,
   getExistingRelationsQuery,
+  graphqlQueryToCreateOneCandidateFieldValue,
   graphqlQueryToFindManyCandidateFieldsByJobId,
   graphqlToFetchAllCandidateData,
   graphqlToFindManyJobs,
+  graphQltoUpdateOneCandidate,
   Jobs,
   PersonNode,
   UserProfile
@@ -1040,6 +1042,204 @@ export class CandidateService {
       .replace(/([A-Z])/g, ' $1')
       .replace(/\b\w/g, (l) => l.toUpperCase())
       .trim();
+  }
+
+  /**
+   * Updates a field value for a candidate
+   */
+  async updateCandidateFieldValue(
+    candidateId: string,
+    fieldName: string,
+    value: any,
+    apiToken: string,
+  ): Promise<any> {
+    try {
+      const workspaceId = await this.getWorkspaceIdFromToken(apiToken);
+      
+      // Initialize candidate fields for this workspace if not already loaded
+      await this.initializeCandidateFields(workspaceId, apiToken);
+      
+      // Get the workspace fields map
+      const workspaceFieldsMap = this.candidateFieldsMap.get(workspaceId) || new Map();
+      
+      // Try to find the field directly
+      let fieldInfo = workspaceFieldsMap.get(fieldName);
+      
+      // If not found, try various transformations of the field name
+      if (!fieldInfo) {
+        // Try snake_case (convert camelCase to snake_case)
+        const snakeCaseName = fieldName.replace(/([A-Z])/g, '_$1').toLowerCase();
+        fieldInfo = workspaceFieldsMap.get(snakeCaseName);
+        
+        // If still not found, check if any workspace field name is contained within the fieldName
+        if (!fieldInfo) {
+          console.log('Field not directly found, checking similar names...');
+          for (const [key, value] of workspaceFieldsMap.entries()) {
+            // Check if the field name contains the workspace field key
+            if (fieldName.toLowerCase().includes(key.toLowerCase())) {
+              console.log(`Found potential match: ${key} for ${fieldName}`);
+              fieldInfo = value;
+              break;
+            }
+          }
+        }
+      }
+      
+      if (!fieldInfo || !fieldInfo.id) {
+        console.error(`Field ${fieldName} not found in workspace fields`);
+        
+        // As a fallback, create the field if it doesn't exist
+        console.log(`Creating new field: ${fieldName}`);
+        const createFieldQuery = createOneCandidateField;
+        const fieldVariables = {
+          input: {
+            name: fieldName,
+            candidateFieldType: 'Text', // Default to Text type
+          }
+        };
+
+        try {
+          const response = await axiosRequest(
+            JSON.stringify({ query: createFieldQuery, variables: fieldVariables }),
+            apiToken
+          );
+          
+          if (response?.data?.data?.createCandidateField?.id) {
+            fieldInfo = {
+              id: response.data.data.createCandidateField.id,
+              name: fieldName
+            };
+            
+            // Update the map
+            workspaceFieldsMap.set(fieldName, fieldInfo);
+            this.candidateFieldsMap.set(workspaceId, workspaceFieldsMap);
+            
+            console.log(`Successfully created field: ${fieldName} (ID: ${fieldInfo.id})`);
+          } else {
+            throw new Error(`Failed to create field ${fieldName}`);
+          }
+        } catch (error) {
+          console.error(`Error creating field ${fieldName}:`, error);
+          throw error;
+        }
+      }
+      
+      // Query to find existing field value
+      const findQuery = `
+        query FindCandidateFieldValue($where: CandidateFieldValueWhereInput!) {
+          candidateFieldValues(where: $where) {
+            edges {
+              node {
+                id
+              }
+            }
+          }
+        }
+      `;
+      
+      const findVariables = {
+        where: {
+          candidateFieldsId: { eq: fieldInfo.id },
+          candidateId: { eq: candidateId }
+        }
+      };
+      
+      const findResponse = await axiosRequest(
+        JSON.stringify({ query: findQuery, variables: findVariables }),
+        apiToken
+      );
+      
+      const existingFieldValues = findResponse?.data?.data?.candidateFieldValues?.edges || [];
+      
+      if (existingFieldValues.length > 0) {
+        // Update existing field value using a simple GraphQL mutation
+        const updateMutation = `
+          mutation UpdateCandidateFieldValue($id: ID!, $data: CandidateFieldValueUpdateInput!) {
+            updateCandidateFieldValue(id: $id, data: $data) {
+              id
+              name
+              candidateFieldsId
+              candidateId
+            }
+          }
+        `;
+        
+        const fieldValueId = existingFieldValues[0]?.node?.id;
+        
+        const updateVariables = {
+          id: fieldValueId,
+          data: { name: String(value) }
+        };
+        
+        const updateResponse = await axiosRequest(
+          JSON.stringify({ query: updateMutation, variables: updateVariables }),
+          apiToken
+        );
+        
+        return updateResponse?.data?.data?.updateCandidateFieldValue;
+      } else {
+        // Create new field value
+        const createMutation = graphqlQueryToCreateOneCandidateFieldValue;
+        
+        const createVariables = {
+          input: {
+            name: String(value),
+            candidateFieldsId: fieldInfo.id,
+            candidateId: candidateId
+          }
+        };
+        
+        const createResponse = await axiosRequest(
+          JSON.stringify({ query: createMutation, variables: createVariables }),
+          apiToken
+        );
+        
+        return createResponse?.data?.data?.createCandidateFieldValue;
+      }
+    } catch (error) {
+      console.error('Error updating candidate field value:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Updates a direct field on a candidate
+   */
+  async updateCandidateField(
+    candidateId: string,
+    fieldName: string,
+    value: any,
+    apiToken: string,
+  ): Promise<any> {
+    try {
+      // Format the value based on field type
+      let formattedValue = value;
+      
+      // Convert boolean strings to actual booleans
+      if (value === 'true' || value === 'false') {
+        formattedValue = value === 'true';
+      }
+      
+      // Prepare the update data dynamically
+      const updateData: Record<string, any> = {};
+      updateData[fieldName] = formattedValue;
+      
+      // Use the shared mutation from twenty-shared
+      const variables = {
+        idToUpdate: candidateId,
+        input: updateData
+      };
+      
+      const response = await axiosRequest(
+        JSON.stringify({ query: graphQltoUpdateOneCandidate, variables }),
+        apiToken
+      );
+      
+      return response?.data?.data?.updateCandidate;
+    } catch (error) {
+      console.error('Error updating candidate field:', error);
+      throw error;
+    }
   }
 
 }

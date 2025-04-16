@@ -4,7 +4,7 @@ import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { useTheme } from '@emotion/react';
 import { IconCopy } from '@tabler/icons-react';
 import axios from 'axios';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilState } from 'recoil';
 import { CandidateNode } from 'twenty-shared';
 import { TableData } from './types';
@@ -82,7 +82,7 @@ export const useChatTable = (
     tableId
   );
   
-  const prepareTableData = (candidates: CandidateNode[]): TableData[] => {
+  const prepareTableData = useCallback((candidates: CandidateNode[]): TableData[] => {
     return candidates.map(candidate => {
       const baseData = {
         id: candidate.id,
@@ -110,7 +110,6 @@ export const useChatTable = (
         stopVideoInterviewChat: candidate?.stopVideoInterviewChat || 'N/A',
         stopVideoInterviewChatCompleted: candidate?.stopVideoInterviewChatCompleted || 'N/A',
         checkbox: selectedIds.includes(candidate?.id),
-
       };
       
       
@@ -135,76 +134,41 @@ export const useChatTable = (
         ...baseData,
         ...fieldValues
       };
-      console.log("updatedBaseData", updatedBaseData)
       return updatedBaseData;
     });
-  };
+  }, [selectedIds]);
   
-  console.log("tableData", tableData)
   // Initialize table data when individuals change
   useEffect(() => {
     const initialData = prepareTableData(candidates);
-    setTableData(initialData);
-  }, [candidates, setTableData, selectedIds]);
+    
+    // Compare with current tableData to avoid unnecessary updates
+    if (tableData.length === 0 || JSON.stringify(tableData) !== JSON.stringify(initialData)) {
+      setTableData(initialData);
+    }
+  }, [candidates, setTableData, prepareTableData]);
 
-  const handleAfterChange = (changes: CellChange[] | null, source: ChangeSource) => {
-    if (!changes || source === 'loadData') {
-      return;
-    }
-    
-    // console.log('handleAfterChange triggered with source:', source, 'changes:', changes);
-    
-    // Create a new copy of the data to modify
-    const newData = [...tableData];
-    let dataChanged = false;
-    
-    // Process each change: [row, prop, oldValue, newValue]
-    changes.forEach(([row, prop, oldValue, newValue]) => {
-      if (oldValue === newValue || row < 0 || row >= candidates.length) {
-        return;
-      }
-      
-      // console.log('Cell changed:', row, prop, oldValue, newValue);
-      dataChanged = true;
-      
-      // Get the individual's ID for this row
-      const candidateId = candidates[row].id;
-      
-      // Update the tableData state with the new value
-      if (typeof prop === 'string' && row < newData.length) {
-        // Create a new object for the row to ensure reactivity
-        newData[row] = {
-          ...newData[row],
-          [prop]: newValue
-        };
-        
-        // If the property is composite (like 'name.firstName'), handle it specially
-        if (prop.includes('.')) {
-          // console.log('Composite property detected:', prop);
-          // This would require special handling if we had nested properties
-        } else {
-          // Save the change to the backend as a direct property update
-            saveDataToBackend(candidateId, prop, newValue);
-        }
-      }
-    });
-    
-    // Only update the state if we made actual changes to avoid unnecessary renders
-    if (dataChanged) {
-      // console.log('Updating tableData with:', newData);
-      // Update with a slight delay to avoid any race conditions with Handsontable
-      setTimeout(() => setTableData(newData), 0);
-    }
-  };
-  
   // Function to save data changes to the backend
-  const saveDataToBackend = async (individualId: string, field: string, value: any) => {
+  const saveDataToBackend = useCallback(async (candidateId: string, field: string, value: any) => {
     try {
-      // Implement the API call to update the data on the server
-      // This is just an example - you'll need to replace with your actual API endpoint
-      await axios.patch(
-        `${process.env.REACT_APP_SERVER_BASE_URL}/individuals/${individualId}`,
-        { [field]: value },
+      // Dynamically check if the field exists directly on the candidate object
+      // by examining the first candidate in the array (if available)
+      const isDirectField = candidates.length > 0 && 
+        Object.prototype.hasOwnProperty.call(candidates[0], field) && 
+        field !== 'candidateFieldValues';
+      
+      console.log(`Updating field: ${field}, isDirectField: ${isDirectField}`);
+      
+      // Choose the appropriate endpoint based on field type
+      const endpoint = isDirectField 
+        ? `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/update-candidate-field`
+        : `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/update-candidate-field-value`;
+      
+      const payload = { candidateId, fieldName: field, value };
+      
+      const response = await axios.post(
+        endpoint,
+        payload,
         { 
           headers: { 
             authorization: `Bearer ${tokenPair?.accessToken?.token}`, 
@@ -212,6 +176,12 @@ export const useChatTable = (
           }
         }
       );
+      
+      console.log('Update response:', response.data);
+      
+      // Find the candidate and update it in the local state first
+      // This ensures immediate updates in the UI even before the backend responds
+      updateLocalCandidateData(candidateId, field, value);
       
       enqueueSnackBar('Data updated successfully', {
         variant: SnackBarVariant.Success,
@@ -226,79 +196,118 @@ export const useChatTable = (
         duration: 2000,
       });
     }
-  };
+  }, [candidates, tokenPair, enqueueSnackBar]);
+  
+  // Function to update local candidate data
+  const updateLocalCandidateData = useCallback((candidateId: string, field: string, value: any) => {
+    // Create a new deep copy of the tableData
+    const newData = createMutableCopy(tableData);
+    
+    // Find the row index for this candidate
+    const rowIndex = newData.findIndex(row => row.id === candidateId);
+    
+    if (rowIndex !== -1) {
+      // Update the field in our local data
+      newData[rowIndex] = {
+        ...newData[rowIndex],
+        [field]: value
+      };
+      
+      // Update the tableData state immediately
+      setTableData(newData);
+    }
+  }, [tableData, setTableData]);
 
+  const handleAfterChange = useCallback((changes: CellChange[] | null, source: ChangeSource) => {
+    if (!changes || source === 'loadData') {
+      return;
+    }
+    
+    // Process each change: [row, prop, oldValue, newValue]
+    changes.forEach(([row, prop, oldValue, newValue]) => {
+      if (oldValue === newValue || row < 0 || row >= candidates.length) {
+        return;
+      }
+      
+      // Get the candidate's ID for this row
+      const candidateId = candidates[row].id;
+      
+      // Skip updates to the checkbox field, as it's handled by selection logic
+      if (prop === 'checkbox') {
+        return;
+      }
+      
+      // Only proceed if prop is a string and valid
+      if (typeof prop === 'string') {
+        // Save the change to the backend
+        saveDataToBackend(candidateId, prop, newValue);
+      }
+    });
+  }, [candidates, saveDataToBackend]);
   
   const setContextStoreTargetedRecordsRule = useSetRecoilComponentStateV2(
     contextStoreTargetedRecordsRuleComponentState,
     tableId
   );
 
-  const handleCheckboxChange = (individualId: string) => {
+  const handleCheckboxChange = useCallback((individualId: string) => {
     const newSelectedIds = selectedIds.includes(individualId)
       ? selectedIds.filter((id) => id !== individualId)
       : [...selectedIds, individualId];
-    // console.log('handleCheckboxChange - new selectedIds:', newSelectedIds);
     setSelectedIds(newSelectedIds);
     setContextStoreNumberOfSelectedRecords(newSelectedIds.length);
-    // console.log('handleCheckboxChange - updating numberOfSelectedRecords to:', newSelectedIds.length);
     setContextStoreTargetedRecordsRule({
       mode: 'selection',
       selectedRecordIds: newSelectedIds,
     });
-    // console.log('handleCheckboxChange - updating targetedRecordsRule with:', {
-    //   mode: 'selection',
-    //   selectedRecordIds: newSelectedIds,
-    // });
-    // onSelectionChange?.(newSelectedIds);
-  };
+  }, [selectedIds, setContextStoreNumberOfSelectedRecords, setContextStoreTargetedRecordsRule]);
 
-  const handleSelectAll = () => {
+  const handleSelectAll = useCallback(() => {
     const newSelectedIds = selectedIds.length === candidates.length ? [] : candidates.map(candidate => candidate.id);
-    // console.log('handleSelectAll - new selectedIds:', newSelectedIds);
     setSelectedIds(newSelectedIds);
     setContextStoreNumberOfSelectedRecords(newSelectedIds.length);
-    // console.log('handleSelectAll - updating numberOfSelectedRecords to:', newSelectedIds.length);
     setContextStoreTargetedRecordsRule({
       mode: 'selection',
       selectedRecordIds: newSelectedIds,
     });
-    // console.log('handleSelectAll - updating targetedRecordsRule with:', {
-    //   mode: 'selection',
-    //   selectedRecordIds: newSelectedIds,
-    // });
-    // onSelectionChange?.(newSelectedIds);
-  };
+  }, [candidates, selectedIds, setContextStoreNumberOfSelectedRecords, setContextStoreTargetedRecordsRule]);
   
-  const handleViewChats = (): void => {
+  const handleViewChats = useCallback((): void => {
     if (selectedIds.length > 0) {
       setIsChatOpen(true);
     }
-  };
+  }, [selectedIds]);
 
-  const handleViewCVs = (): void => {
+  const handleViewCVs = useCallback((): void => {
     setCurrentCandidateIndex(0);
     setIsAttachmentPanelOpen(true);
-  };
+  }, []);
 
-  const clearSelection = (): void => {
+  const clearSelection = useCallback((): void => {
     setSelectedIds([]);
-    // onSelectionChange?.([]);
-  };
+  }, []);
 
-  const handlePrevCandidate = (): void => {
+  const handlePrevCandidate = useCallback((): void => {
     setCurrentCandidateIndex(prev => Math.max(0, prev - 1));
-  };
+  }, []);
   
-  const handleNextCandidate = (): void => {
+  const handleNextCandidate = useCallback((): void => {
     setCurrentCandidateIndex(prev => Math.min(selectedIds.length - 1, prev + 1));
-  };
+  }, [selectedIds.length]);
   
-  const currentCandidate = selectedIds.length > 0 ? candidates.find(candidate => candidate.id === selectedIds[currentCandidateIndex]) ?? null : null;
-  const selectedCandidates = candidates.filter(candidate => selectedIds.includes(candidate.id));
-  const selectedCandidateIds = selectedCandidates.map(candidate => candidate.id);
+  const currentCandidate = useMemo(() => {
+    return selectedIds.length > 0 ? candidates.find(candidate => candidate.id === selectedIds[currentCandidateIndex]) ?? null : null;
+  }, [candidates, selectedIds, currentCandidateIndex]);
   
-  const createCandidateShortlists = async (): Promise<void> => {
+  const selectedCandidates = useMemo(() => {
+    return candidates.filter(candidate => selectedIds.includes(candidate.id));
+  }, [candidates, selectedIds]);
+
+  const selectedCandidateIds = useMemo(() => {
+    return selectedCandidates.map(candidate => candidate.id);
+  }, [selectedCandidates]);
+  
+  const createCandidateShortlists = useCallback(async (): Promise<void> => {
     try {
       await axios.post(
         process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/create-shortlist',
@@ -317,9 +326,9 @@ export const useChatTable = (
         duration: 2000,
       });
     }
-  };
+  }, [selectedCandidateIds, tokenPair, enqueueSnackBar, theme.icon.size.md]);
 
-  const createChatBasedShortlistDelivery = async (): Promise<void> => {
+  const createChatBasedShortlistDelivery = useCallback(async (): Promise<void> => {
     try {
       await axios.post(
         process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/chat-based-shortlist-delivery',
@@ -338,9 +347,9 @@ export const useChatTable = (
         duration: 2000,
       });
     }
-  };
+  }, [selectedCandidateIds, tokenPair, enqueueSnackBar, theme.icon.size.md]);
 
-  const createUpdateCandidateStatus = async (): Promise<void> => {
+  const createUpdateCandidateStatus = useCallback(async (): Promise<void> => {
     try {
       await axios.post(
         process.env.REACT_APP_SERVER_BASE_URL + '/arx-chat/refresh-chat-status-by-candidates',
@@ -359,7 +368,7 @@ export const useChatTable = (
         duration: 2000,
       });
     }
-  };
+  }, [selectedCandidateIds, tokenPair, enqueueSnackBar, theme.icon.size.md]);
 
   return {
     selectedIds,

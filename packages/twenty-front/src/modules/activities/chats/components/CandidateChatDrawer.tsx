@@ -143,10 +143,8 @@ export const CandidateChatDrawer = () => {
     },
   ];
 
-  console.log('CandidateChatDrawer rendered with candidateId:', candidateId);
 
   useEffect(() => {
-    console.log('CandidateChatDrawer useEffect triggered with candidateId:', candidateId);
     
     // Set default active tab
     if (!activeTabId) {
