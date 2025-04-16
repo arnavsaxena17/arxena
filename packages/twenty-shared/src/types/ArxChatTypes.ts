@@ -943,6 +943,13 @@ export interface WhatsAppBusinessAccount {
 export const emptyCandidateProfileObj: CandidateNode = {
   name: '',
   id: '',
+  chatCount: 0,
+  input: '',
+  candConversationStatus: '',
+  startChat: false,
+  stopChat: false,
+  status: '',
+
   whatsappProvider: '',
   jobs: {
     name: '',
@@ -1012,17 +1019,12 @@ export const emptyCandidateProfileObj: CandidateNode = {
       },
     ],
   },
-  status: '',
   engagementStatus: false,
   phoneNumber: '',
   email: '',
-  input: '',
-  startChat: false,
-  candConversationStatus: '',
   startMeetingSchedulingChat: false,
   lastEngagementChatControl: 'startChat' as chatControlType,
   startVideoInterviewChat: false,
-  stopChat: false,
   whatsappMessages: {
     edges: [
       {
@@ -1599,7 +1601,6 @@ export interface InterviewLink {
 //   };
 // }
 
-
 export interface CandidateNode {
   updatedAt: string | number | Date;
   videoInterview: videoInterview;
@@ -1615,6 +1616,8 @@ export interface CandidateNode {
   lastEngagementChatControl: chatControlType;
   phoneNumber: string;
   email: string;
+  chatCount: number;
+  
   input: string;
   candConversationStatus?: string;
   startChat: boolean;
@@ -1627,6 +1630,16 @@ export interface CandidateNode {
   candidateReminders: Reminders;
   clientInterview?: ClientInterviews;
   people: PersonNode;
+  startChatCompleted?: boolean;
+  startMeetingSchedulingChatCompleted?: boolean;
+  startVideoInterviewChatCompleted?: boolean;
+  stopChatCompleted?: boolean;
+  stopMeetingSchedulingChat?: boolean;
+  stopMeetingSchedulingChatCompleted?: boolean;
+  stopVideoInterviewChat?: boolean;
+  stopVideoInterviewChatCompleted?: boolean;
+  hiringNaukriUrl?: string;
+  resdexNaukriUrl?: string;
 }
 
 // export interface Candidate {
@@ -1670,6 +1683,7 @@ export interface CandidateFieldValueNode {
   id: string;
   name: string;
   candidateFields: CandidateField;
+  // fieldValueJSON: any;
 }
 
 export interface CandidateField {

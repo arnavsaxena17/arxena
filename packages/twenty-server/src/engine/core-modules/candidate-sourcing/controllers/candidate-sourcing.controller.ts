@@ -654,23 +654,23 @@ export class CandidateSourcingController {
     console.log('Getting all jobs');
     const workspaceId =
       await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-    let graphqlQueryObjToFetchAllCandidatesForChats = '';
+    let graphqlQueryObjToFetchAllJobs = '';
 
     if (workspacesWithOlderSchema.includes(workspaceId)) {
-      graphqlQueryObjToFetchAllCandidatesForChats =
+      graphqlQueryObjToFetchAllJobs =
         graphqlToFindManyJobByArxenaSiteIdOlderSchema;
     } else {
-      graphqlQueryObjToFetchAllCandidatesForChats = graphqlToFindManyJobs;
+      graphqlQueryObjToFetchAllJobs = graphqlToFindManyJobs;
     }
     const responseFromGetAllJobs = await axiosRequest(
       JSON.stringify({
-        query: graphqlQueryObjToFetchAllCandidatesForChats,
+        query: graphqlQueryObjToFetchAllJobs,
         variables: { limit: 30, orderBy: [{ position: 'AscNullsFirst' }] },
       }),
       apiToken,
     );
-    const jobsObject: Jobs = responseFromGetAllJobs.data?.data?.jobs?.edges;
-
+    const jobsObject: Jobs[] = responseFromGetAllJobs.data?.data?.jobs?.edges;
+    console.log('This is the number of jobsObjects:', jobsObject.length);
     return { jobs: jobsObject };
   }
 

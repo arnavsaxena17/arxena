@@ -52,11 +52,7 @@ export const JobsNavigationDrawerItems = () => {
         const response = await axios.post(
           `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/get-all-jobs`,
           {},
-          {
-            headers: {
-              Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
-            },
-          },
+          { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}`, }, },
         );
         
         if (response.data?.jobs) {
@@ -70,6 +66,7 @@ export const JobsNavigationDrawerItems = () => {
               isActive: job.node.isActive,
             }));
           
+          console.log('This is the activeJobs:', activeJobs);
           setJobs(activeJobs);
         }
       } catch (error) {

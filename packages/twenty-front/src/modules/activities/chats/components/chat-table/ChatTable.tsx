@@ -634,6 +634,7 @@ export const ChatTable: React.FC<ChatTableProps> = ({
             licenseKey="non-commercial-and-evaluation"
             stretchH="all"
             className="htCenter"
+            columnSorting={true}
             readOnly={false}
             autoWrapRow={false}
             autoWrapCol={false}

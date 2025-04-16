@@ -815,6 +815,46 @@ export function getFieldsData(
         type: 'TEXT',
       },
     },
+    // {
+    //   field: {
+    //     description: '',
+    //     icon: 'IconText',
+    //     label: 'fieldValueString',
+    //     name: 'fieldValueString',
+    //     objectMetadataId: objectsNameIdMap.candidateFieldValue,
+    //     type: 'TEXT',
+    //   },
+    // },
+    // {
+    //   field: {
+    //     description: '',
+    //     icon: 'IconNumber',
+    //     label: 'fieldValueNumber',
+    //     name: 'fieldValueNumber',
+    //     objectMetadataId: objectsNameIdMap.candidateFieldValue,
+    //     type: 'NUMBER',
+    //   },
+    // },
+    // {
+    //   field: {
+    //     description: '',
+    //     icon: 'IconToggleLeft',
+    //     label: 'fieldValueBoolean',
+    //     name: 'fieldValueBoolean',
+    //     objectMetadataId: objectsNameIdMap.candidateFieldValue,
+    //     type: 'BOOLEAN',
+    //   },
+    // },
+    // {
+    //   field: {
+    //     description: '',
+    //     icon: 'IconJson',
+    //     label: 'fieldValueJSON',
+    //     name: 'fieldValueJSON',
+    //     objectMetadataId: objectsNameIdMap.candidateFieldValue,
+    //     type: 'RAW_JSON',
+    //   },
+    // },
     {
       field: {
         description: '',

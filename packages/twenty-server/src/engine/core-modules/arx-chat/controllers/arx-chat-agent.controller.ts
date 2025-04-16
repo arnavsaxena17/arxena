@@ -13,6 +13,7 @@ import {
   ChatControlsObjType,
   ChatHistoryItem,
   ChatRequestBody,
+  graphqlMutationToDeleteManyCandidateFieldValues,
   graphqlMutationToDeleteManyCandidates,
   graphqlMutationToDeleteManyPeople,
   graphqlQueryToFindManyPeople,
@@ -1003,8 +1004,17 @@ export class ArxChatEndpoint {
         .map((edge) => edge.node?.people?.id)
         .filter((id) => id);
 
-      // Delete candidates in bulk
+      // Delete candidate field values first
       try {
+        const graphqlQueryObjDeleteCandidateFieldValues = JSON.stringify({
+          query: graphqlMutationToDeleteManyCandidateFieldValues,
+          variables: { filter: { candidateId: { in: candidateIds } } },
+        });
+
+        await axiosRequest(graphqlQueryObjDeleteCandidateFieldValues, apiToken);
+        console.log(`Deleted candidate field values for ${candidateIds.length} candidates`);
+
+        // Delete candidates in bulk
         const graphqlQueryObjDeleteCandidates = JSON.stringify({
           query: graphqlMutationToDeleteManyCandidates,
           variables: { filter: { id: { in: candidateIds } } },
@@ -1047,7 +1057,18 @@ export class ArxChatEndpoint {
         .filter((id) => id);
 
       try {
-        // Delete candidates first
+        // Delete candidate field values first
+        if (candidateIdsFromPeople.length > 0) {
+          const graphqlQueryObjDeleteCandidateFieldValues = JSON.stringify({
+            query: graphqlMutationToDeleteManyCandidateFieldValues,
+            variables: { filter: { candidateId: { in: candidateIdsFromPeople } } },
+          });
+
+          await axiosRequest(graphqlQueryObjDeleteCandidateFieldValues, apiToken);
+          console.log(`Deleted candidate field values for ${candidateIdsFromPeople.length} candidates from people`);
+        }
+
+        // Delete candidates next
         const graphqlQueryObjDeleteCandidates = JSON.stringify({
           query: graphqlMutationToDeleteManyCandidates,
           variables: { filter: { id: { in: candidateIdsFromPeople } } },

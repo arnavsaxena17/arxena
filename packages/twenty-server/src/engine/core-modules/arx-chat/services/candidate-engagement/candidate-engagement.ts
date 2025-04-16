@@ -867,14 +867,13 @@ export default class CandidateEngagementArx {
       };
 
       let hasMoreResults = true;  
-
+      let lastCursor: string | null = null;
       while (hasMoreResults) {
-        let lastCursor: string | null = null;
         const graphqlQueryObj = JSON.stringify({
           query: graphqlQueryObjToFetchAllCandidatesForChats,
           variables: {
             lastCursor,
-            limit: 30,
+            limit: 60,
             filter: timestampedFilter,
             orderBy: [{ updatedAt: 'DESC' }],
           },
@@ -882,14 +881,20 @@ export default class CandidateEngagementArx {
 
         const response = await axiosRequest(graphqlQueryObj, apiToken);
         const edges = response?.data?.data?.candidates?.edges || [];
-
-        hasMoreResults = edges.length === 30;
-        if (!edges.length) break;
+        console.log('number of edges::', edges.length);
+        hasMoreResults = edges.length === 60;
+        if (!edges.length) {
+          hasMoreResults = false;
+          break;
+        }
 
         
         allCandidates.push(...edges.map((edge: any) => edge.node));
       
-        if (edges.length < 30) break;
+        if (edges.length < 60) {
+          hasMoreResults = false;
+          break;
+        }
         lastCursor = edges[edges.length - 1].cursor;
       }
 

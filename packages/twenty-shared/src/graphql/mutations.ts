@@ -554,7 +554,14 @@ export const createShortlistMutation = `
     }
 `;
 
-
+export const graphqlMutationToDeleteManyCandidateFieldValues = `
+mutation DeleteManyCandidateFieldValues($filter: CandidateFieldValueFilterInput!) {
+  deleteCandidateFieldValues(filter: $filter) {
+    id
+    __typename
+  }
+}
+`;
 
 export const createViewFieldMutation = `
 mutation CreateOneViewField($input: ViewFieldCreateInput!) {

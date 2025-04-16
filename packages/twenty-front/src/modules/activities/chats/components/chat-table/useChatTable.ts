@@ -86,34 +86,61 @@ export const useChatTable = (
     return candidates.map(candidate => {
       const baseData = {
         id: candidate.id,
-        name: `${candidate.name}`,
         phoneNumber: candidate.phoneNumber || 'N/A',
         email: candidate.email || 'N/A',
         status: candidate.status || 'N/A',
-        checkbox: selectedIds.includes(candidate.id),
+        candidateFieldValues: candidate.candidateFieldValues || 'N/A',
+        chatCount: candidate?.chatCount || 'N/A',
+        clientInterview: candidate?.clientInterview || 'N/A',    
+        hiringNaukriUrl: candidate?.hiringNaukriUrl || 'N/A',
+        lastEngagementChatControl: candidate?.lastEngagementChatControl || 'N/A',
+        name: candidate?.name || 'N/A',
+        resdexNaukriUrl: candidate?.resdexNaukriUrl || 'N/A',
+        source: candidate?.source || 'N/A',
+        startChat: candidate?.startChat || 'N/A',
+        startChatCompleted: candidate?.startChatCompleted || 'N/A',
+        startMeetingSchedulingChat: candidate?.startMeetingSchedulingChat || 'N/A',
+        startMeetingSchedulingChatCompleted: candidate?.startMeetingSchedulingChatCompleted || 'N/A',
+        startVideoInterviewChat: candidate?.startVideoInterviewChat || 'N/A',
+        startVideoInterviewChatCompleted: candidate?.startVideoInterviewChatCompleted || 'N/A',
+        stopChat: candidate?.stopChat || 'N/A',
+        stopChatCompleted: candidate?.stopChatCompleted || 'N/A',
+        stopMeetingSchedulingChat: candidate?.stopMeetingSchedulingChat || 'N/A',
+        stopMeetingSchedulingChatCompleted: candidate?.stopMeetingSchedulingChatCompleted || 'N/A',
+        stopVideoInterviewChat: candidate?.stopVideoInterviewChat || 'N/A',
+        stopVideoInterviewChatCompleted: candidate?.stopVideoInterviewChatCompleted || 'N/A',
+        checkbox: selectedIds.includes(candidate?.id),
+
       };
+      
       
       const fieldValues: Record<string, string> = {};
       if (candidate.candidateFieldValues?.edges) {
         candidate.candidateFieldValues.edges.forEach(edge => {
           if (edge.node) {
             const fieldName = edge.node.candidateFields?.name;
-            const fieldValue = edge.node?.name;
+            const camelCaseFieldName = fieldName.replace(/_([a-z])/g, (match: string, letter: string) => letter.toUpperCase());
+            let fieldValue = edge.node?.name;
             if (fieldName && fieldValue !== undefined) {
-              const camelCaseFieldName = fieldName.replace(/_([a-z])/g, (match: string, letter: string) => letter.toUpperCase());
+              fieldValues[camelCaseFieldName] = fieldValue;
+            }
+            if (typeof fieldValue === 'object') {
+              fieldValue = JSON.stringify(fieldValue);
               fieldValues[camelCaseFieldName] = fieldValue;
             }
           }
         });
       }
-      
-      return {
+      const updatedBaseData = {
         ...baseData,
         ...fieldValues
       };
+      console.log("updatedBaseData", updatedBaseData)
+      return updatedBaseData;
     });
   };
   
+  console.log("tableData", tableData)
   // Initialize table data when individuals change
   useEffect(() => {
     const initialData = prepareTableData(candidates);

@@ -12,6 +12,12 @@ const truncatedCellStyle = {
   display: 'block',
 };
 
+// Define fields that should be excluded from automatic column generation
+const excludedFields = [
+  'id', 'checkbox', 'name', 'candidateFieldValues', 'jobTitle',
+  // Add any other fields you want to exclude
+];
+
 export const createTableColumns = (
   candidates: CandidateNode[],
   handleCheckboxChange: (candidateId: string) => void,
@@ -110,41 +116,6 @@ export const createTableColumns = (
       width: 150,
       renderer: nameRenderer,
     },
-    // {
-    //   data: 'candidateStatus',
-    //   title: 'Candidate Status',
-    //   type: 'text',
-    //   width: 150,
-    //   renderer: statusRenderer,
-    // },
-    // {
-    //   data: 'startDate',
-    //   title: 'Start Date',
-    //   type: 'date',
-    //   width: 150,
-    //   renderer: dateRenderer,
-    // },
-    // {
-    //   data: 'status',
-    //   title: 'Status',
-    //   type: 'text',
-    //   width: 150,
-    //   renderer: simpleRenderer,
-    // },
-    // {
-    //   data: 'salary',
-    //   title: 'Salary',
-    //   type: 'text',
-    //   width: 150,
-    //   renderer: simpleRenderer,
-    // },
-    // {
-    //   data: 'city',
-    //   title: 'City',
-    //   type: 'text',
-    //   width: 150,
-    //   renderer: simpleRenderer,
-    // },
     {
       data: 'jobTitle',
       title: 'Job Title',
@@ -156,7 +127,12 @@ export const createTableColumns = (
 
   // Collect all unique field names from candidateFieldValues across all candidates
   const fieldNamesSet = new Set<string>();
-    candidates.forEach(candidate => {
+  
+  // Also collect base data field names
+  const baseDataFieldNamesSet = new Set<string>();
+  
+  candidates.forEach(candidate => {
+    // Process candidateFieldValues
     const candidateFieldEdges = candidate.candidateFieldValues?.edges;
     if (candidateFieldEdges) {
       candidateFieldEdges.forEach(edge => {
@@ -167,10 +143,54 @@ export const createTableColumns = (
         }
       });
     }
+    
+    // Process base data properties
+    if (candidate) {
+      // Type assertion with proper conversion through unknown first
+      const candidateObj = candidate as unknown as Record<string, unknown>;
+      
+      // Get properties from the candidate to determine base data fields
+      Object.keys(candidateObj).forEach(key => {
+        if (!excludedFields.includes(key) && typeof candidateObj[key] !== 'object') {
+          baseDataFieldNamesSet.add(key);
+        }
+      });
+      
+      // Also add chat control fields we know exist in baseData
+      const chatControlFields = [
+        'startChat', 'startChatCompleted', 
+        'stopChat', 'stopChatCompleted',
+        'startMeetingSchedulingChat', 'startMeetingSchedulingChatCompleted',
+        'stopMeetingSchedulingChat', 'stopMeetingSchedulingChatCompleted',
+        'startVideoInterviewChat', 'startVideoInterviewChatCompleted',
+        'stopVideoInterviewChat', 'stopVideoInterviewChatCompleted'
+      ];
+      
+      chatControlFields.forEach(field => {
+        baseDataFieldNamesSet.add(field);
+      });
+    }
   });
 
-  // Create dynamic columns for all field names
+  // Create dynamic columns for candidateFieldValues fields
   const dynamicColumns = Array.from(fieldNamesSet).map(fieldName => {
+    // Format the title: convert camelCase to Title Case With Spaces
+    const formattedTitle = fieldName
+      // Insert space before capital letters and uppercase the first letter
+      .replace(/([A-Z])/g, ' $1')
+      .replace(/^./, str => str.toUpperCase());
+    
+    return {
+      data: fieldName,
+      title: formattedTitle,
+      type: 'text',
+      width: 150,
+      renderer: simpleRenderer,
+    };
+  });
+  
+  // Create dynamic columns for base data fields
+  const baseDataColumns = Array.from(baseDataFieldNamesSet).map(fieldName => {
     // Format the title: convert camelCase to Title Case With Spaces
     const formattedTitle = fieldName
       // Insert space before capital letters and uppercase the first letter
@@ -187,5 +207,5 @@ export const createTableColumns = (
   });
 
   // Return combined fixed and dynamic columns
-  return [...baseColumns, ...dynamicColumns];
+  return [...baseColumns, ...baseDataColumns, ...dynamicColumns];
 };

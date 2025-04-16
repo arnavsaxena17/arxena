@@ -1528,7 +1528,6 @@ export const graphqlToFetchAllCandidateData = `
           startCursor
           endCursor
       }
-
       edges {
         cursor
         node {

@@ -11,6 +11,29 @@ export type TableData = {
   city?: string;
   jobTitle?: string;
   checkbox?: boolean;
+  phoneNumber?: string;
+  email?: string;
+  candidateFieldValues?: any;
+  chatCount?: string | number;
+  clientInterview?: any;
+  hiringNaukriUrl?: string;
+  lastEngagementChatControl?: any;
+  jobs?: any;
+  people?: any;
+  resdexNaukriUrl?: string;
+  source?: string;
+  startChat?: any;
+  startChatCompleted?: any;
+  startMeetingSchedulingChat?: any;
+  startMeetingSchedulingChatCompleted?: any;
+  startVideoInterviewChat?: any;
+  startVideoInterviewChatCompleted?: any;
+  stopChat?: any;
+  stopChatCompleted?: any;
+  stopMeetingSchedulingChat?: any;
+  stopMeetingSchedulingChatCompleted?: any;
+  stopVideoInterviewChat?: any;
+  stopVideoInterviewChatCompleted?: any;
 };
 
 export type UnreadMessages = {

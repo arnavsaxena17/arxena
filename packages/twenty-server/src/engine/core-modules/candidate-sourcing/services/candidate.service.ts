@@ -312,7 +312,6 @@ export class CandidateService {
     await this.createCandidateFieldsAndValues(data, jobObject, results, tracking, apiToken);
 
 
-
     return results;
   }
 
@@ -441,7 +440,7 @@ export class CandidateService {
           );
           if (!isDuplicate) {
             fieldValuesToCreate.push({
-              name: String(candidate[field.key]),
+              name: typeof candidate[field.key] === 'string' ? candidate[field.key] : JSON.stringify(candidate[field.key]),
               candidateId,
               candidateFieldsId: fieldId
             });
