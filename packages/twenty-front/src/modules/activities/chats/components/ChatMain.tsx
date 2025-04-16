@@ -9,12 +9,12 @@ import axios from 'axios';
 import React, { useEffect, useRef, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import {
-    CandidateNode,
-    JobNode,
-    OneUnreadMessage,
-    UnreadMessageListManyCandidates,
-    UnreadMessagesPerOneCandidate,
-    isDefined
+  CandidateNode,
+  JobNode,
+  OneUnreadMessage,
+  UnreadMessageListManyCandidates,
+  UnreadMessagesPerOneCandidate,
+  isDefined
 } from 'twenty-shared';
 import { Loader } from 'twenty-ui';
 import { CACHE_KEYS, cacheUtils } from '../utils/cacheUtils';
