@@ -20,7 +20,6 @@ export const useCandidateEnrichmentAction: ActionHookWithObjectMetadataItem = ({
     
   const [recordsToEnrich, setRecordsToEnrich] = useRecoilState(recordsToEnrichState);
 
-  console.log("Current recordsToEnrichState in useCandidateEnrichmentAction:", recordsToEnrich);
 
   const contextStoreNumberOfSelectedRecords = useRecoilComponentValueV2(
     contextStoreNumberOfSelectedRecordsComponentState,
@@ -30,7 +29,6 @@ export const useCandidateEnrichmentAction: ActionHookWithObjectMetadataItem = ({
       contextStoreTargetedRecordsRuleComponentState,
     );
     
-  console.log("Current contextStoreTargetedRecordsRule:", contextStoreTargetedRecordsRule);
 
     const contextStoreFilters = useRecoilComponentValueV2(
       contextStoreFiltersComponentState,

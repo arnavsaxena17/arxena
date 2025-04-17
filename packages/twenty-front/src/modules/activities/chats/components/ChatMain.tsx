@@ -1,18 +1,19 @@
-import ChatSidebar from '@/activities/chats/components/ChatSidebar';
 import { currentUnreadChatMessagesState } from '@/activities/chats/states/currentUnreadChatMessagesState';
-import { currentUserState } from '@/auth/states/currentUserState';
-import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
-import { currentWorkspaceState } from '@/auth/states/currentWorkspaceState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import styled from '@emotion/styled';
 import axios from 'axios';
 import React, { useEffect, useRef, useState } from 'react';
-import { useRecoilState, useRecoilValue } from 'recoil';
+import { useRecoilState } from 'recoil';
 import {
   CandidateNode,
   JobNode,
+  UnreadMessageListManyCandidates
+} from 'twenty-shared';
+import ChatTable from './chat-table/ChatTable';
+
+
+import {
   OneUnreadMessage,
-  UnreadMessageListManyCandidates,
   UnreadMessagesPerOneCandidate,
   isDefined
 } from 'twenty-shared';
@@ -41,83 +42,7 @@ const StyledChatContainer = styled.div`
   }
 `;
 
-const StyledSidebarContainer = styled.div<{ width: number }>`
-  overflow-x: auto;
-  display: flex;
-  height: 100vh;
-  width: ${(props) => props.width}px;
-  min-width: 200px;
-  max-width: 800px;
-  flex-shrink: 0;
 
-  @media (max-width: 768px) {
-    width: 100%;
-    height: 40vh;
-    position: fixed;
-    top: 0;
-    left: 0;
-    z-index: 10;
-  }
-`;
-
-const StyledChatWindowContainer = styled.div<{ sidebarWidth: number }>`
-  position: relative;
-  flex-grow: 1;
-  min-width: 0;
-  height: 100vh;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  z-index: 1;
-
-  /* Fix for Handsontable header appearing above drawer */
-  .handsontable .ht_clone_top,
-  .handsontable .ht_clone_left,
-  .handsontable .ht_clone_corner {
-    z-index: 29; // Just below the drawer's z-index of 30
-  }
-
-  @media (max-width: 768px) {
-    height: 60vh;
-    width: 100%;
-    margin-top: 0vh; // Adjust based on sidebar height
-  }
-`;
-
-// const StyledSpinner = styled.div`
-//   width: 100%;
-//   height: 100%;
-//   border: 4px solid ${({ theme }) => theme.border.color.light};
-//   border-top: 4px solid ${({ theme }) => theme.border.color.light};
-//   border-radius: 50%;
-//   animation: spin 1s linear infinite;
-//   @keyframes spin {
-//     0% {
-//       transform: rotate(0deg);
-//     }
-//     100% {
-//       transform: rotate(360deg);
-//     }
-//   }
-// `;
-
-const StyledResizer = styled.div`
-  width: 4px;
-  cursor: col-resize;
-  background-color: ${({ theme }) => theme.border.color.light};
-  height: 100vh;
-  position: relative;
-  transition: background-color 0.2s;
-  z-index: 10;
-
-  &:hover {
-    background-color: ${({ theme }) => theme.border.color.light};
-  }
-
-  &:active {
-    background-color: ${({ theme }) => theme.border.color.light};
-  }
-`;
 
 const LoadingStates = {
   INITIAL: 'initial',
@@ -141,10 +66,7 @@ const LoadingStates = {
 // }
 
 export const ChatMain = ({ initialCandidateId, onCandidateSelect, jobId }: ChatMainProps) => {
-  const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
-  const currentWorkspace = useRecoilValue(currentWorkspaceState);
-  const currentUser = useRecoilValue(currentUserState);
-  // const userEmail = currentUser?.email;
+
 
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const fetchInProgress = useRef(false);
@@ -444,30 +366,21 @@ export const ChatMain = ({ initialCandidateId, onCandidateSelect, jobId }: ChatM
       onMouseLeave={stopResizing}
     >
       {loadingState === LoadingStates.LOADING_API && !isMobile && (
-        <div
-          style={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            zIndex: 1000,
-          }}
-        >
+        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 1000, }} >
           <Loader />
         </div>
       )}
 
-      <ChatSidebar
-        candidates={candidates}
-        selectedCandidate={selectedCandidate}
-        setSelectedCandidate={setSelectedCandidate}
-        unreadMessages={unreadMessages}
-        jobs={jobs}
-        isRefreshing={isRefreshing}
-        width={sidebarWidth}
-        onCandidateSelect={onCandidateSelect || (() => {})}
-        refreshData={() => fetchData(false, true)}
-      />
+
+    <ChatTable
+      candidates={candidates}
+      selectedCandidate={selectedCandidate}
+      unreadMessages={unreadMessages}
+      // onSelectionChange={handleSelectionChange}
+      onCandidateSelect={onCandidateSelect || (() => {})}
+      // onReorder={handleReorder}
+      refreshData={() => fetchData(false, true)}
+    />
     </StyledChatContainer>
   );
 };

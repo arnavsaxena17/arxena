@@ -188,10 +188,10 @@ export const ChatTable: React.FC<ChatTableProps> = ({
   unreadMessages,
   onCandidateSelect,
   // onSelectionChange,
-  onBulkMessage,
-  onBulkDelete,
-  onBulkAssign,
-  onReorder,
+  // onBulkMessage,
+  // onBulkDelete,
+  // onBulkAssign,
+  // onReorder,
   refreshData,
 }) => {
   // Check if the refreshData prop is provided, if not, define a dummy function
