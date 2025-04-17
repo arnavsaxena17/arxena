@@ -1205,7 +1205,7 @@ query FindOneWorkspaceMember($objectRecordId: ID!) {
 }
 `;
 
-export const graphqlQueryToFindManyCandidateFieldsByJobId = `query FindManyCandidateFields($filter: CandidateFieldFilterInput, $orderBy: [CandidateFieldOrderByInput], $lastCursor: String, $limit: Int) {
+export const graphqlQueryToFindManyCandidateFields = `query FindManyCandidateFields($filter: CandidateFieldFilterInput, $orderBy: [CandidateFieldOrderByInput], $lastCursor: String, $limit: Int) {
     candidateFields(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
       edges {
         node {
@@ -1219,17 +1219,17 @@ export const graphqlQueryToFindManyCandidateFieldsByJobId = `query FindManyCandi
             name
             position
             createdAt
-                      interviewSchedule{
-          edges{
-              node{
-                  id
-                  name
-                  createdAt
-                  slotsAvailable
-                  meetingType
+            interviewSchedule{
+              edges{
+                  node{
+                      id
+                      name
+                      createdAt
+                      slotsAvailable
+                      meetingType
+                  }
+                }
               }
-            }
-          }
             isActive
             jobLocation
             jobCode
@@ -1536,6 +1536,7 @@ export const graphqlToFetchAllCandidateData = `
           updatedAt
           whatsappProvider
           candConversationStatus
+          peopleId
           startVideoInterviewChat
           source
           campaign

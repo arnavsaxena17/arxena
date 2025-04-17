@@ -9,10 +9,12 @@ import { useRecoilState } from 'recoil';
 import { CandidateNode } from 'twenty-shared';
 import { TableData } from './types';
 
+import { recordsToEnrichState } from '@/arx-enrich/states/arxEnrichModalOpenState';
 import { contextStoreNumberOfSelectedRecordsComponentState } from '@/context-store/states/contextStoreNumberOfSelectedRecordsComponentState';
 import { contextStoreTargetedRecordsRuleComponentState } from '@/context-store/states/contextStoreTargetedRecordsRuleComponentState';
 import { useSetRecoilComponentStateV2 } from '@/ui/utilities/state/component-state/hooks/useSetRecoilComponentStateV2';
 import { CellChange, ChangeSource } from 'handsontable/common';
+import { refreshTableDataTriggerState } from '../../states/refreshTableDataTriggerState';
 import { tableDataState } from './states/tableDataState';
 
 // Utility function to create a deep, mutable copy of an object
@@ -74,6 +76,8 @@ export const useChatTable = (
   const [tokenPair] = useRecoilState(tokenPairState);
   const { enqueueSnackBar } = useSnackBar();
   const theme = useTheme();
+  const [recordsToEnrich, setRecordsToEnrich] = useRecoilState(recordsToEnrichState);
+  const [refreshTrigger, setRefreshTrigger] = useRecoilState(refreshTableDataTriggerState);
 
   const tableId = useMemo(() => `chat-table-${crypto.randomUUID()}`, []);
   const [tableData, setTableData] = useRecoilState(tableDataState(tableId));
@@ -83,6 +87,50 @@ export const useChatTable = (
     tableId
   );
   
+  const setContextStoreTargetedRecordsRule = useSetRecoilComponentStateV2(
+    contextStoreTargetedRecordsRuleComponentState,
+    tableId
+  );
+
+  // Initialize selectedIds from recordsToEnrichState if it has values
+  useEffect(() => {
+    if (recordsToEnrich?.length > 0) {
+      // Filter to only include IDs that exist in the candidates list
+      const validIds = recordsToEnrich.filter(id => 
+        candidates.some(candidate => candidate.id === id)
+      );
+      if (validIds.length > 0) {
+        setSelectedIds(validIds);
+      }
+    }
+  }, [recordsToEnrich, candidates]);
+
+  // Update context store when recordsToEnrichState changes
+  useEffect(() => {
+    if (selectedIds.length > 0) {
+      setContextStoreNumberOfSelectedRecords(selectedIds.length);
+      setContextStoreTargetedRecordsRule({
+        mode: 'selection',
+        selectedRecordIds: selectedIds,
+      });
+    }
+  }, [selectedIds, setContextStoreNumberOfSelectedRecords, setContextStoreTargetedRecordsRule]);
+
+  // Add effect to listen for refresh trigger
+  useEffect(() => {
+    if (refreshTrigger && refreshData) {
+      console.log('Refreshing table data due to enrichment creation');
+      
+      // Reset the trigger first to avoid infinite loops
+      setRefreshTrigger(false);
+      
+      // Call the refreshData function provided by the parent
+      refreshData().catch(error => {
+        console.error('Error refreshing table data:', error);
+      });
+    }
+  }, [refreshTrigger, refreshData, setRefreshTrigger]);
+
   const prepareTableData = useCallback((candidates: CandidateNode[]): TableData[] => {
     return candidates.map(candidate => {
       const baseData = {
@@ -250,32 +298,29 @@ export const useChatTable = (
     });
   }, [candidates, saveDataToBackend]);
   
-  const setContextStoreTargetedRecordsRule = useSetRecoilComponentStateV2(
-    contextStoreTargetedRecordsRuleComponentState,
-    tableId
-  );
-
   const handleCheckboxChange = useCallback((individualId: string) => {
     const newSelectedIds = selectedIds.includes(individualId)
       ? selectedIds.filter((id) => id !== individualId)
       : [...selectedIds, individualId];
     setSelectedIds(newSelectedIds);
+    setRecordsToEnrich(newSelectedIds);
     setContextStoreNumberOfSelectedRecords(newSelectedIds.length);
     setContextStoreTargetedRecordsRule({
       mode: 'selection',
       selectedRecordIds: newSelectedIds,
     });
-  }, [selectedIds, setContextStoreNumberOfSelectedRecords, setContextStoreTargetedRecordsRule]);
+  }, [selectedIds, setContextStoreNumberOfSelectedRecords, setContextStoreTargetedRecordsRule, setRecordsToEnrich]);
 
   const handleSelectAll = useCallback(() => {
     const newSelectedIds = selectedIds.length === candidates.length ? [] : candidates.map(candidate => candidate.id);
     setSelectedIds(newSelectedIds);
+    setRecordsToEnrich(newSelectedIds);
     setContextStoreNumberOfSelectedRecords(newSelectedIds.length);
     setContextStoreTargetedRecordsRule({
       mode: 'selection',
       selectedRecordIds: newSelectedIds,
     });
-  }, [candidates, selectedIds, setContextStoreNumberOfSelectedRecords, setContextStoreTargetedRecordsRule]);
+  }, [candidates, selectedIds, setContextStoreNumberOfSelectedRecords, setContextStoreTargetedRecordsRule, setRecordsToEnrich]);
   
   const handleViewChats = useCallback((): void => {
     if (selectedIds.length > 0) {
@@ -290,7 +335,8 @@ export const useChatTable = (
 
   const clearSelection = useCallback((): void => {
     setSelectedIds([]);
-  }, []);
+    setRecordsToEnrich([]);
+  }, [setRecordsToEnrich]);
 
   const handlePrevCandidate = useCallback((): void => {
     setCurrentCandidateIndex(prev => Math.max(0, prev - 1));

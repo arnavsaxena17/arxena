@@ -1,9 +1,9 @@
-import styled from '@emotion/styled';
-import { useRecoilState } from 'recoil';
-import { enrichmentsState, activeEnrichmentState } from '@/arx-enrich/states/arxEnrichModalOpenState';
-import { useEffect, useState } from 'react';
-import axios from 'axios';
+import { activeEnrichmentState, enrichmentsState } from '@/arx-enrich/states/arxEnrichModalOpenState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
+import styled from '@emotion/styled';
+import axios from 'axios';
+import { useEffect, useState } from 'react';
+import { useRecoilState } from 'recoil';
 
 const StyledSampleContainer = styled.div`
   display: flex;
@@ -55,7 +55,7 @@ const SAMPLE_ENRICHMENTS = [
         id: 1733655403505
       }
     ],
-    selectedMetadataFields: ["currentLocation"],
+    selectedMetadataFields: ["location_name"],
     selectedModel: "gpt4omini"
   },
   {
@@ -75,7 +75,7 @@ const SAMPLE_ENRICHMENTS = [
         id: 1733655310939
       }
     ],
-    selectedMetadataFields: ["resumeHeadline", "jobTitle"],
+    selectedMetadataFields: ["profile_title"],
     selectedModel: "gpt4omini"
   }
 ];

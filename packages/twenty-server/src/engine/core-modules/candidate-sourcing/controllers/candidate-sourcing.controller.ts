@@ -2,17 +2,17 @@ import { Controller, Post, Req, UseGuards } from '@nestjs/common';
 
 import axios from 'axios';
 import {
-    createOneCandidateField,
-    CreateOneJob,
-    CreateOneVideoInterviewTemplate,
-    Enrichment,
-    graphQlTofindManyCandidateEnrichments,
-    graphqlToFindManyJobByArxenaSiteIdOlderSchema,
-    graphqlToFindManyJobs,
-    Jobs,
-    mutationToCreateOneCandidateEnrichment,
-    UpdateOneJob,
-    UserProfile,
+  createOneCandidateField,
+  CreateOneJob,
+  CreateOneVideoInterviewTemplate,
+  Enrichment,
+  graphQlTofindManyCandidateEnrichments,
+  graphqlToFindManyJobByArxenaSiteIdOlderSchema,
+  graphqlToFindManyJobs,
+  Jobs,
+  mutationToCreateOneCandidateEnrichment,
+  UpdateOneJob,
+  UserProfile,
 } from 'twenty-shared';
 
 import { workspacesWithOlderSchema } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/candidate-engagement';
@@ -88,8 +88,6 @@ export class CandidateSourcingController {
 
       const response = await axiosRequest(graphqlQueryObj, apiToken);
 
-      console.log('response.data.data:', response.data);
-
       return {
         status: 'Success',
         data: response.data.data.candidateEnrichments.edges.map(
@@ -98,7 +96,6 @@ export class CandidateSourcingController {
       };
     } catch (err) {
       console.error('Error in findManyEnrichments:', err);
-
       return { status: 'Failed', error: err };
     }
   }
@@ -255,6 +252,20 @@ export class CandidateSourcingController {
     console.log('Going to find job by path_position id:', path_position);
     const variables = {
       filter: { pathPosition: { in: [path_position] } },
+      limit: 30,
+      orderBy: [{ position: 'AscNullsFirst' }],
+    };
+    const query = graphqlToFindManyJobs;
+    const data = { query, variables };
+    const response = await axiosRequest(JSON.stringify(data), apiToken);
+    const job = response.data?.data?.jobs?.edges[0]?.node;
+    console.log('This is the job:', job);
+    return job;
+  }
+  async findJobById(id: string, apiToken: string): Promise<any> {
+    console.log('Going to find job by path_position id:', id);
+    const variables = {
+      filter: { id: { in: [id] } },
       limit: 30,
       orderBy: [{ position: 'AscNullsFirst' }],
     };
@@ -854,6 +865,78 @@ export class CandidateSourcingController {
       };
     } catch (err) {
       console.error('Error updating candidate field:', err);
+      return {
+        status: 'Failed',
+        error: err.message,
+      };
+    }
+  }
+
+  @Post('get-candidate-fields-by-job')
+  @UseGuards(JwtAuthGuard)
+  async getCandidateFieldsByJob(@Req() request: any): Promise<object> {
+    try {
+      const apiToken = request.headers.authorization.split(' ')[1];
+      const { jobId } = request.body;
+
+      console.log('Fetching candidate fields for jobId:', jobId);
+
+      if (!jobId) {
+        return {
+          status: 'Failed',
+          message: 'Missing required field: jobId',
+        };
+      }
+
+      // Also fetch some candidate field values for this job
+      const candidateFields = await this.candidateService.getCandidateFieldsByJobId(
+        jobId,
+        apiToken,
+      );
+
+      console.log(`Found ${candidateFields?.length || 0} candidate fields for job ${jobId}`);
+
+      // Transform fields to have a consistent format if needed
+      const formattedFields = candidateFields.map(field => ({
+        name: field || '',
+        label: field || '',
+      }));
+
+      return {
+        status: 'Success',
+        candidateFields: formattedFields,
+      };
+    } catch (err) {
+      console.error('Error fetching candidate fields by job:', err);
+      return {
+        status: 'Failed',
+        error: err.message,
+      };
+    }
+  }
+
+  @Post('find-job')
+  @UseGuards(JwtAuthGuard)
+  async findJobByPathPosition(@Req() request: any): Promise<object> {
+    const apiToken = request.headers.authorization.split(' ')[1];
+    const { path_position } = request.body;
+
+    try {
+      if (!path_position) {
+        return {
+          status: 'Failed',
+          message: 'Missing required field: path_position',
+        };
+      }
+
+      const job = await this.findJob(path_position, apiToken);
+
+      return {
+        status: 'Success',
+        job: job,
+      };
+    } catch (err) {
+      console.error('Error finding job by path position:', err);
       return {
         status: 'Failed',
         error: err.message,

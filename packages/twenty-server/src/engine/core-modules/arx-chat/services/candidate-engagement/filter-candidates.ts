@@ -6,7 +6,7 @@ import {
   ChatHistoryItem,
   chatMessageType,
   emptyCandidateProfileObj,
-  graphqlQueryToFindManyCandidateFieldsByJobId,
+  graphqlQueryToFindManyCandidateFields,
   graphqlQueryToFindManyPeople,
   graphqlQueryToFindManyPeopleEngagedCandidatesOlderSchema,
   graphqlQueryToFindScheduledClientMeetings,
@@ -493,19 +493,17 @@ export class FilterCandidates {
             jobLocation: activeJob?.jobLocation,
             whatsappMessages: activeJob?.whatsappMessages,
           },
+
           videoInterview: activeJobCandidate?.videoInterview,
           engagementStatus: activeJobCandidate?.engagementStatus,
-          lastEngagementChatControl:
-            activeJobCandidate?.lastEngagementChatControl,
-          phoneNumber:
-            personWithActiveJob?.node?.phones.primaryPhoneNumber.length == 10
-              ? '91' + personWithActiveJob?.node?.phones.primaryPhoneNumber
-              : personWithActiveJob?.node?.phones.primaryPhoneNumber,
+          lastEngagementChatControl: activeJobCandidate?.lastEngagementChatControl,
+          phoneNumber: personWithActiveJob?.node?.phones.primaryPhoneNumber.length == 10
+            ? '91' + personWithActiveJob?.node?.phones.primaryPhoneNumber
+            : personWithActiveJob?.node?.phones.primaryPhoneNumber,
           email: personWithActiveJob?.node?.emails.primaryEmail,
           input: userMessage?.messages[0]?.content,
           startChat: activeJobCandidate?.startChat,
-          startMeetingSchedulingChat:
-            activeJobCandidate?.startMeetingSchedulingChat,
+          startMeetingSchedulingChat: activeJobCandidate?.startMeetingSchedulingChat,
           startVideoInterviewChat: activeJobCandidate?.startVideoInterviewChat,
           stopChat: activeJobCandidate?.stopChat,
           candidateFieldValues: activeJobCandidate?.candidateFieldValues,
@@ -517,6 +515,7 @@ export class FilterCandidates {
           },
           updatedAt: activeJobCandidate.updatedAt,
           people: personWithActiveJob?.node,
+          chatCount: activeJobCandidate.chatCount
         };
 
         return candidateProfileObj;
@@ -545,7 +544,7 @@ export class FilterCandidates {
   }> {
     console.log('Going to fetch questions for job id:', jobId);
     const data = JSON.stringify({
-      query: graphqlQueryToFindManyCandidateFieldsByJobId,
+      query: graphqlQueryToFindManyCandidateFields,
       variables: {
         filter: { jobsId: { in: [`${jobId}`] } },
         orderBy: { position: 'DescNullsFirst' },

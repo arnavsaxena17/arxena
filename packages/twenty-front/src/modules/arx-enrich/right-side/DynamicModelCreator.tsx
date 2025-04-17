@@ -1,10 +1,12 @@
-import { enrichmentsState } from '@/arx-enrich/states/arxEnrichModalOpenState';
+import { currentJobIdState, enrichmentsState } from '@/arx-enrich/states/arxEnrichModalOpenState';
+import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useObjectMetadataItem } from '@/object-metadata/hooks/useObjectMetadataItem';
 import styled from '@emotion/styled';
 import { IconEdit } from '@tabler/icons-react';
 import { Button } from '@ui/input/button/components/Button';
+import axios from 'axios';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useRecoilState } from 'recoil';
+import { useRecoilState, useRecoilValue } from 'recoil';
 import { IconAlertCircle, IconPlus, IconX } from 'twenty-ui';
 
 
@@ -233,6 +235,25 @@ const ModelCodeDisplay = styled.div<{ show: boolean }>`
   transition: opacity 0.3s ease-in-out;
 `;
 
+const LoadingIndicator = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  color: #6b7280;
+  font-size: 0.875rem;
+`;
+
+const FieldsLoadingContainer = styled.div`
+  width: 96%;
+  min-height: 80px;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
 interface DynamicModelCreatorProps {
   objectNameSingular: string;
   index: number;
@@ -275,6 +296,11 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
   const [editingFieldId, setEditingFieldId] = useState<number | null>(null);
   const [enrichments, setEnrichments] = useRecoilState(enrichmentsState);
   const [error, setError] = useState<string>('');
+  const [candidateFields, setCandidateFields] = useState<Array<{name: string, label: string}>>([]);
+  const [isLoadingFields, setIsLoadingFields] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
+  const currentJobId = useRecoilValue(currentJobIdState);
+  const [tokenPair] = useRecoilState(tokenPairState);
 
   // Initialize local state with deep copy of current enrichment
   const currentEnrichment = useMemo(() => ({
@@ -291,6 +317,83 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
     enumValues: [] as string[], // Add this line
 
   });
+
+  // Add a state to track if fields have been fetched
+  const [fieldsFetched, setFieldsFetched] = useState(false);
+
+  // Fetch candidate fields only once when component mounts or jobId changes
+  const fetchCandidateFields = useCallback(async () => {
+    try {
+      setIsLoadingFields(true);
+      setApiError(null);
+      
+      // Get jobId from the Recoil state
+      const jobId = currentJobId;
+      
+      if (jobId) {
+        try {
+          console.log('Fetching candidate fields for job ID:', jobId);
+          
+          const response = await axios.post(
+            `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/get-candidate-fields-by-job`,
+            { jobId },
+            {
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
+              },
+            }
+          );
+          
+          if (response.data.status === 'Success' && response.data.candidateFields) {
+            console.log('Received candidate fields:', response.data.candidateFields);
+            setCandidateFields(response.data.candidateFields);
+            
+            // Update enrichment state with job ID if not already set
+            if (!enrichments[index]?.jobId) {
+              setEnrichments(prev => {
+                const newEnrichments = [...prev];
+                if (newEnrichments[index]) {
+                  newEnrichments[index] = {
+                    ...newEnrichments[index],
+                    jobId: jobId
+                  };
+                }
+                return newEnrichments;
+              });
+            }
+          } else {
+            console.warn('No fields returned from API or unexpected response format');
+            setApiError('No custom fields found for this job');
+          }
+        } catch (error) {
+          console.error('Error fetching candidate fields:', error);
+          setApiError('Error fetching candidate fields');
+        }
+      } else {
+        console.warn('No job ID available in Recoil state');
+        setApiError('No job ID available');
+      }
+    } catch (error) {
+      console.error('Error in fetchCandidateFields:', error);
+      setApiError('Unexpected error occurred');
+    } finally {
+      setIsLoadingFields(false);
+    }
+  }, [currentJobId, tokenPair?.accessToken?.token, index, setEnrichments]);
+
+  // Fetch candidate fields only once when component mounts or jobId changes
+  useEffect(() => {
+    if (!fieldsFetched && currentJobId) {
+      fetchCandidateFields();
+      setFieldsFetched(true);
+    }
+  }, [fetchCandidateFields, currentJobId, fieldsFetched]);
+
+  // Reset fieldsFetched when index changes (switching between enrichments)
+  useEffect(() => {
+    setFieldsFetched(false);
+  }, [index]);
 
   const handleFieldNameValidation = (name: string) => {
     const validationError = validateFieldName(name);
@@ -467,6 +570,11 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
 
 
   console.log("Enrichmetnsa re these:", enrichments);
+  // console.log("objectMetadataItem?.fields re these:", objectMetadataItem?.fields.map(field => field.name));
+  const metadataFields = objectMetadataItem?.fields.map(field => field.name);
+  console.log("metadataFields re these:", objectMetadataItem?.fields.filter(field => field.name === "currentLocation"));
+  console.log("enrichments[index]?.selectedMetadataFields re these:", enrichments[index]?.selectedMetadataFields);
+  console.log("candidateFields re these:", candidateFields);
     // const handleMetadataFieldsChange = (selectedOptions: string[]) => {
     //   setEnrichments(prev => {
     //     const newEnrichments = prev.map((enrichment, idx) => 
@@ -521,7 +629,9 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
     return code;
   }, [enrichments, index, fields]);  // Update dependencies
 
-  
+    console.log("Fields are these::", fields);
+    console.log("Metadata fields are these::", enrichments[index]?.selectedMetadataFields);
+    console.log("Model name is this::", enrichments);
   
   return (
     <Container>
@@ -592,56 +702,83 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
 
 
       <SelectLabel>Select Metadata Fields</SelectLabel>
-      <MultiSelect
-        multiple
-        value={enrichments[index]?.selectedMetadataFields || []}
-        onChange={e => {
-          const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
-          setEnrichments(prev => {
-        const newEnrichments = [...prev];
-        if (newEnrichments[index]) {
-          newEnrichments[index] = {
-            ...newEnrichments[index],
-            selectedMetadataFields: selectedOptions
-          };
-        }
-        return newEnrichments;
-          });
-        }}>
-        {objectMetadataItem?.fields.map(field => (
-          <option key={field.name} value={field.name}>
-        {field.label}
-          </option>
-        ))}
-      </MultiSelect>
+      {isLoadingFields ? (
+        <FieldsLoadingContainer>
+          <LoadingIndicator>Loading fields...</LoadingIndicator>
+        </FieldsLoadingContainer>
+      ) : apiError ? (
+        <FieldsLoadingContainer>
+          <div style={{ color: '#ef4444', fontSize: '0.875rem' }}>
+            {apiError}
+          </div>
+        </FieldsLoadingContainer>
+      ) : (
+        <>
+          <MultiSelect
+            multiple
+            value={enrichments[index]?.selectedMetadataFields || []}
+            onChange={e => {
+              const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
+              // Deduplicate selected options
+              const uniqueSelectedOptions = [...new Set(selectedOptions)];
+              setEnrichments(prev => {
+                const newEnrichments = [...prev];
+                if (newEnrichments[index]) {
+                  newEnrichments[index] = {
+                    ...newEnrichments[index],
+                    selectedMetadataFields: uniqueSelectedOptions
+                  };
+                }
+                return newEnrichments;
+              });
+            }}>
+            {candidateFields.map((field, idx) => (
+                <option key={`${field.name}-${idx}`} value={field.name}>
+                  {field.label || field.name}
+                </option>
+            ))
+            }
+          </MultiSelect>
+          
+          {candidateFields.length === 0 && !isLoadingFields && (
+            <div style={{ marginTop: '0.5rem', color: '#6b7280', fontSize: '0.875rem' }}>
+              No custom fields found for this job. Using default metadata fields.
+            </div>
+          )}
+        </>
+      )}
 
 
       {enrichments[index]?.selectedMetadataFields?.length > 0 && (
         <SelectedFieldsContainer>
-          {enrichments[index].selectedMetadataFields.map((fieldName: string) => (
-            <SelectedFieldTag key={fieldName}>
-              {fieldName}
-              <IconX
-                size={14}
-                stroke={1.5}
-                style={{ cursor: 'pointer' }}
-                onClick={() => {
-                  setEnrichments(prev => {
-                    const newEnrichments = [...prev];
-                    if (newEnrichments[index]) {
-                      newEnrichments[index] = {
-                        ...newEnrichments[index],
-                        selectedMetadataFields: newEnrichments[index].selectedMetadataFields.filter(
-                          (                          name: string) => name !== fieldName
-                        )
-                      };
-                    }
-                    return newEnrichments;
-                  });
-                }}
-              />
-            </SelectedFieldTag>
-          ))}
+          {/* Create a unique array of selected fields to avoid duplicates */}
+          {enrichments[index].selectedMetadataFields
+            .filter((fieldName: string, index: number, self: string[]) => 
+              self.indexOf(fieldName) === index)
+            .map((fieldName: string) => (
+              <SelectedFieldTag key={`selected-${fieldName}`}>
+                {fieldName}
+                <IconX
+                  size={14}
+                  stroke={1.5}
+                  style={{ cursor: 'pointer' }}
+                  onClick={() => {
+                    setEnrichments(prev => {
+                      const newEnrichments = [...prev];
+                      if (newEnrichments[index]) {
+                        newEnrichments[index] = {
+                          ...newEnrichments[index],
+                          selectedMetadataFields: newEnrichments[index].selectedMetadataFields.filter(
+                            (name: string) => name !== fieldName
+                          )
+                        };
+                      }
+                      return newEnrichments;
+                    });
+                  }}
+                />
+              </SelectedFieldTag>
+            ))}
         </SelectedFieldsContainer>
       )}
 

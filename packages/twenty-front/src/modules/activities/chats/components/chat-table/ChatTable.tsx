@@ -31,7 +31,7 @@ import { useSetRecoilComponentStateV2 } from '@/ui/utilities/state/component-sta
 import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
 import { IconLayoutSidebarRightExpand, IconList, IconMessages } from '@tabler/icons-react';
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useSetRecoilState } from 'recoil';
 import AttachmentPanel from '../AttachmentPanel';
 import MultiCandidateChat from '../MultiCandidateChat';
@@ -194,6 +194,22 @@ export const ChatTable: React.FC<ChatTableProps> = ({
   onReorder,
   refreshData,
 }) => {
+  // Check if the refreshData prop is provided, if not, define a dummy function
+  // that logs a warning
+  const handleRefreshData = useCallback(async () => {
+    console.log('Refreshing ChatTable data');
+    if (refreshData) {
+      try {
+        await refreshData();
+        console.log('ChatTable data refreshed successfully');
+      } catch (error) {
+        console.error('Error refreshing ChatTable data:', error);
+      }
+    } else {
+      console.warn('refreshData function not provided to ChatTable');
+    }
+  }, [refreshData]);
+
   const {
     selectedIds,
     isAttachmentPanelOpen,
@@ -217,7 +233,7 @@ export const ChatTable: React.FC<ChatTableProps> = ({
     handleAfterChange,
     tableId,
     tableData,
-  } = useChatTable(candidates, onCandidateSelect, refreshData);
+  } = useChatTable(candidates, onCandidateSelect, handleRefreshData);
 
   const theme = useTheme();
   const hotRef = useRef<any>(null);

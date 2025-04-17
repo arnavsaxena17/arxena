@@ -1,3 +1,4 @@
+import { useCandidateEnrichmentAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useCandidateEnrichmentAction';
 import { useCloneMultipleRecordsAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useCloneMultipleRecordsAction';
 import { useCreateMultipleVideoInterviewLinksAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useCreateMultipleVideoInterviewLinksAction';
 import { useDeleteCandidatesAndPeopleAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useDeleteCandidatesAndPeopleAction';
@@ -14,24 +15,24 @@ import { MultipleRecordsActionKeys } from '@/action-menu/actions/record-actions/
 import { ActionHook } from '@/action-menu/actions/types/ActionHook';
 import { ActionViewType } from '@/action-menu/actions/types/ActionViewType';
 import {
-  ActionMenuEntry,
-  ActionMenuEntryScope,
-  ActionMenuEntryType,
+    ActionMenuEntry,
+    ActionMenuEntryScope,
+    ActionMenuEntryType,
 } from '@/action-menu/types/ActionMenuEntry';
 import { useBulkMessageChatAction } from '@/activities/chats/hooks/useBulkMessageChatAction';
 import { useViewAttachmentsChatAction } from '@/activities/chats/hooks/useViewAttachmentsChatAction';
 import { ChatActionKeys } from '@/activities/chats/types/ChatActionKeys';
 import { msg } from '@lingui/core/macro';
-import { IconMessageCircle, IconShare } from '@tabler/icons-react';
+import { IconEngine, IconMessageCircle, IconShare } from '@tabler/icons-react';
 import {
-  IconCopy,
-  IconFileCheck,
-  IconList,
-  IconMessage,
-  IconPaperclip,
-  IconRefresh,
-  IconUser,
-  IconVideo,
+    IconCopy,
+    IconFileCheck,
+    IconList,
+    IconMessage,
+    IconPaperclip,
+    IconRefresh,
+    IconUser,
+    IconVideo,
 } from 'twenty-ui';
 
 export const CHAT_ACTIONS_CONFIG: Record<
@@ -285,5 +286,21 @@ export const CHAT_ACTIONS_CONFIG: Record<
       ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
     ],
     useAction: useDeleteCandidatesAndPeopleAction,
+  },
+  enrichCandidates: {
+    type: ActionMenuEntryType.Standard,
+    scope: ActionMenuEntryScope.RecordSelection,
+    key: MultipleRecordsActionKeys.ENRICH_CANDIDATES,
+    shortLabel: msg`Enrich Candidates`,
+    label: msg`Enrich Candidates`,
+    position: 7,
+    Icon: IconEngine,
+    accent: 'placeholder',
+    isPinned: false,
+    availableOn: [
+      ActionViewType.INDEX_PAGE_BULK_SELECTION,
+      ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
+    ],
+    useAction: useCandidateEnrichmentAction,
   },
 }; 

@@ -9,7 +9,7 @@ import {
   FindManyVideoInterviewModels,
   getExistingRelationsQuery,
   graphqlQueryToCreateOneCandidateFieldValue,
-  graphqlQueryToFindManyCandidateFieldsByJobId,
+  graphqlQueryToFindManyCandidateFields,
   graphqlToFetchAllCandidateData,
   graphqlToFindManyJobs,
   graphQltoUpdateOneCandidate,
@@ -67,7 +67,7 @@ export class CandidateService {
         return;
       }
 
-      const query = graphqlQueryToFindManyCandidateFieldsByJobId;
+      const query = graphqlQueryToFindManyCandidateFields;
       const variables = {
         filter: {},
         orderBy: [{ position: 'AscNullsFirst' }],
@@ -1238,6 +1238,39 @@ export class CandidateService {
       return response?.data?.data?.updateCandidate;
     } catch (error) {
       console.error('Error updating candidate field:', error);
+      throw error;
+    }
+  }
+
+
+  async getCandidateFieldsByJobId(
+    jobId: string,
+    apiToken: string,
+  ): Promise<any> {
+    try {
+      // Set up the filter to get candidate fields for this job
+      const variables = {
+        filter: { id: { eq: jobId } },
+        orderBy: [{ position: 'AscNullsFirst' }],
+        limit: 100 // Adjust limit as needed
+      };
+
+      // Use the graphqlQueryToFindManyCandidateFields query from twenty-shared
+      const query = graphqlToFindManyJobs;
+      
+      // Execute the GraphQL query
+      const response = await axiosRequest(
+        JSON.stringify({ query, variables }),
+        apiToken
+      );
+      console.log('This is the response:', response.data.data?.jobs?.edges[0]?.node?.candidates?.edges[0]?.node?.candidateFieldValues?.edges.map((edge: any) => edge.node.candidateFields.name));
+      // Process and return the results
+      const candidateFieldsJobs = response?.data?.data?.jobs?.edges[0]?.node?.candidateFields?.edges || [];
+      const candidateFields = response.data.data?.jobs?.edges[0]?.node?.candidates?.edges[0]?.node?.candidateFieldValues?.edges.map((edge: any) => edge.node.candidateFields.name) || [];
+      // Return a cleaned up version of the fields
+      return candidateFields;
+    } catch (error) {
+      console.error('Error fetching candidate fields by job ID:', error);
       throw error;
     }
   }

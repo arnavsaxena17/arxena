@@ -2,7 +2,7 @@ import styled from '@emotion/styled';
 import axios from 'axios';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useRecoilState, useRecoilValue } from 'recoil';
+import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 
 import { Button, IconCheckbox, IconFilter, IconPlus } from 'twenty-ui';
 
@@ -14,7 +14,7 @@ import { SingleJobViewSkeletonLoader } from '@/activities/chats/components/Singl
 import { CACHE_KEYS, cacheUtils } from '@/activities/chats/utils/cacheUtils';
 import { ArxEnrichmentModal } from '@/arx-enrich/arxEnrichmentModal';
 import { useSelectedRecordForEnrichment } from '@/arx-enrich/hooks/useSelectedRecordForEnrichment';
-import { isArxEnrichModalOpenState } from '@/arx-enrich/states/arxEnrichModalOpenState';
+import { currentJobIdState, isArxEnrichModalOpenState } from '@/arx-enrich/states/arxEnrichModalOpenState';
 import { ArxJDUploadModal } from '@/arx-jd-upload/components/ArxJDUploadModal';
 import { isArxUploadJDModalOpenState } from '@/arx-jd-upload/states/arxUploadJDModalOpenState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
@@ -90,6 +90,7 @@ export const SingleJobView = () => {
   const navigate = useNavigate();
   const isMounted = useRef(false);
   const fetchInProgress = useRef(false);
+  const setCurrentJobId = useSetRecoilState(currentJobIdState);
   
   // Component instance IDs
   const filterDropdownId = `job-filter-${jobId}`;
@@ -130,6 +131,11 @@ export const SingleJobView = () => {
       try {
         fetchInProgress.current = true;
         setIsLoading(true);
+        
+        // Update the Recoil state with the current jobId
+        if (jobId) {
+          setCurrentJobId(jobId);
+        }
         
         // Try to get data from cache first
         const cachedJobs = cacheUtils.getCache(CACHE_KEYS.JOBS_DATA);
@@ -194,7 +200,7 @@ export const SingleJobView = () => {
     return () => {
       isMounted.current = false;
     };
-  }, [jobId, tokenPair]);
+  }, [jobId, tokenPair, setCurrentJobId]);
 
   const recordIndexContextValue = {
     indexIdentifierUrl: (recordId: string) => `/job/${jobId}/${recordId}`,

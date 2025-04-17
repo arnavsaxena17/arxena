@@ -18,7 +18,9 @@ import { isDefined } from 'twenty-shared';
 
 export const useCandidateEnrichmentAction: ActionHookWithObjectMetadataItem = ({ objectMetadataItem }) => { 
     
-  const [, setRecordsToEnrich] = useRecoilState(recordsToEnrichState);
+  const [recordsToEnrich, setRecordsToEnrich] = useRecoilState(recordsToEnrichState);
+
+  console.log("Current recordsToEnrichState in useCandidateEnrichmentAction:", recordsToEnrich);
 
   const contextStoreNumberOfSelectedRecords = useRecoilComponentValueV2(
     contextStoreNumberOfSelectedRecordsComponentState,
@@ -28,6 +30,8 @@ export const useCandidateEnrichmentAction: ActionHookWithObjectMetadataItem = ({
       contextStoreTargetedRecordsRuleComponentState,
     );
     
+  console.log("Current contextStoreTargetedRecordsRule:", contextStoreTargetedRecordsRule);
+
     const contextStoreFilters = useRecoilComponentValueV2(
       contextStoreFiltersComponentState,
     );
@@ -77,17 +81,29 @@ export const useCandidateEnrichmentAction: ActionHookWithObjectMetadataItem = ({
     const { openModal } = useArxEnrichCreationModal();
     
     const handleModal = async () => {
-      const recordsToEnrich = await fetchAllRecordIds();
+      console.log("handleModal: Current selectedIds in recordsToEnrichState:", recordsToEnrich);
+      console.log("handleModal: Targeted records rule:", contextStoreTargetedRecordsRule);
+
+      // If we already have IDs in recordsToEnrichState, use them directly
+      if (recordsToEnrich?.length > 0) {
+        console.log("Using existing recordsToEnrich:", recordsToEnrich);
+        openModal();
+        return;
+      }
+
+      // Otherwise fetch them from the context store
+      const recordsToEnrichFromServer = await fetchAllRecordIds();
       const recordIdsToEnrich = objectMetadataItem.nameSingular.toLowerCase().includes('jobcandidate')
-        ? recordsToEnrich.map((record) => record.id)
-        : recordsToEnrich.map((record) => record.id);
+        ? recordsToEnrichFromServer.map((record) => record.id)
+        : recordsToEnrichFromServer.map((record) => record.id);
       
 
-        console.log("Records selected::", recordsToEnrich, "Record IDs selected::", recordIdsToEnrich);
-      // Store the records in Recoil state
+      console.log("Records selected from server:", recordsToEnrichFromServer);
+      console.log("Record IDs selected from server:", recordIdsToEnrich);
+      
+      // Store the records in Recoil state only if we don't already have them
       setRecordsToEnrich(recordIdsToEnrich);
       
-    
       openModal();
     };
 

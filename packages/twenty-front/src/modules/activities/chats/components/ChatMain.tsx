@@ -229,9 +229,7 @@ export const ChatMain = ({ initialCandidateId, onCandidateSelect, jobId }: ChatM
       const unreadMessagesList =
         getUnreadMessageListManyCandidates(cachedCandidates);
       setUnreadMessages(unreadMessagesList);
-      setCurrentUnreadChatMessages(
-        unreadMessagesList?.listOfUnreadMessages?.length,
-      );
+      setCurrentUnreadChatMessages( unreadMessagesList?.listOfUnreadMessages?.length, );
       setLoadingState(LoadingStates.READY);
       return true;
     }

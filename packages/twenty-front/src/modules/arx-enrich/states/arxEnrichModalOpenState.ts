@@ -21,9 +21,13 @@ export const activeEnrichmentState = createState<number | null>({
   defaultValue: null,
 });
 
-
 export const recordsToEnrichState = createState<any[]>({
   key: 'recordsToEnrichState',
   defaultValue: [],
+});
+
+export const currentJobIdState = createState<string | null>({
+  key: 'currentJobIdState',
+  defaultValue: null,
 });
 

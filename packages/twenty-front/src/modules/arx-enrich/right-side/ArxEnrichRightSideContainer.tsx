@@ -1,7 +1,8 @@
 import { activeEnrichmentState, enrichmentsState, recordsToEnrichState } from '@/arx-enrich/states/arxEnrichModalOpenState';
 import styled from '@emotion/styled';
 import axios from 'axios';
-import { useRecoilState, useRecoilValue } from 'recoil';
+import { useEffect } from 'react';
+import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { selectedRecordsForModalState } from '@/object-record/states/selectedRecordsState';
@@ -12,6 +13,7 @@ import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { IconLoader2 } from '@tabler/icons-react';
 import { useState } from 'react';
 import { IconAlertCircle } from 'twenty-ui';
+import { refreshTableDataTriggerState } from '../../activities/chats/states/refreshTableDataTriggerState';
 import { ArxEnrichName } from './ArxEnrichName'; // Ensure this import is correct
 import DynamicModelCreator from './DynamicModelCreator';
 
@@ -116,7 +118,10 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
   };
   const recordsToEnrich = useRecoilValue(recordsToEnrichState);
 
-
+  // Log recordsToEnrich when it changes
+  useEffect(() => {
+    console.log("ArxEnrichRightSideContainer - recordsToEnrich updated:", recordsToEnrich);
+  }, [recordsToEnrich]);
 
   const currentViewId = location.href.split("view=")[1];
   // const {
@@ -181,10 +186,17 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
     // const jobId = useRecoilValue(jobIdState);
     console.log("All Enrichmetns", enrichments)
 
-    let selectedRecordIds = (recordsToEnrich?.length || 0) > 0 ? recordsToEnrich : selectedRecords;
+    // Prioritize recordsToEnrich if it has values
+    const selectedRecordIds = recordsToEnrich?.length > 0 
+      ? recordsToEnrich 
+      : selectedRecords || [];
+    
     console.log("Selected Record Ids::selectedRecordIds", selectedRecordIds)
     console.log("Selected Record Ids:::recordsToEnrich", recordsToEnrich)
     console.log("Selected Record Ids:::selectedRecords", selectedRecords)
+
+    const setRefreshTableDataTrigger = useSetRecoilState(refreshTableDataTriggerState);
+
     try {
       const response = await axios.post(process.env.REACT_APP_SERVER_BASE_URL+'/candidate-sourcing/create-enrichments', {
         enrichments,
@@ -204,6 +216,8 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
           variant: SnackBarVariant.Success,
           duration: 3000,
         });
+        // Trigger table refresh
+        setRefreshTableDataTrigger(true);
         closeModal();
       }
     } catch (error) {
@@ -216,7 +230,7 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
     } finally {
       setIsLoading(false);
     }
-    };
+  };
   
 
   return (
