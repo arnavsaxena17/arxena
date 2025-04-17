@@ -40,8 +40,9 @@ const StyledPageContainer = styled(PageContainer)`
   overflow: hidden;
 
   @media (max-width: 768px) {
-    height: 100%;
-    min-height: 100vh;
+    flex-direction: column; 
+    margin: 0;
+    height: 100vh;
   }
 `;
 
@@ -211,6 +212,7 @@ export const Jobs = () => {
                 showEnrichment={true}
                 showVideoInterviewEdit={true}
                 showEngagement={true}
+                showSearch={true}
                 rightComponent={
                   <StyledRightSection>
                     <ObjectFilterDropdownComponentInstanceContext.Provider value={{ instanceId: filterDropdownId }} >

@@ -1,6 +1,8 @@
+import { chatSearchQueryState } from '@/activities/chats/states/chatSearchQueryState';
 import styled from '@emotion/styled';
 import { ReactNode } from 'react';
 import { useLocation } from 'react-router-dom';
+import { useRecoilState } from 'recoil';
 import { Button, IconDatabase, IconMail, IconRefresh, IconSearch, IconVideo } from 'twenty-ui';
 
 type TopBarProps = {
@@ -17,6 +19,8 @@ type TopBarProps = {
   handleEngagement?: () => void;
   showEnrichment?:boolean;
   handleEnrichment?: () => void;
+  onSearch?: (query: string) => void;
+  showSearch?: boolean;
 };
 
 const StyledContainer = styled.div`
@@ -58,10 +62,35 @@ gap: ${({ theme }) => theme.spacing(1)};
 margin-left: ${({ theme }) => theme.spacing(2)};
 `;
 
+const StyledSearchContainer = styled.div`
+  display: flex;
+  align-items: center;
+  position: relative;
+  width: 240px;
+  margin-right: ${({ theme }) => theme.spacing(2)};
+`;
+
+const StyledSearchInput = styled.input`
+  padding: ${({ theme }) => theme.spacing(2)};
+  padding-left: ${({ theme }) => theme.spacing(8)};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  border: 1px solid ${({ theme }) => theme.border.color.light};
+  font-size: ${({ theme }) => theme.font.size.sm};
+  width: 100%;
+  
+  &:focus {
+    outline: none;
+    border-color: ${({ theme }) => theme.color.blue};
+  }
+`;
+
+const StyledIconContainer = styled.div`
+  position: absolute;
+  left: ${({ theme }) => theme.spacing(2)};
+  color: ${({ theme }) => theme.font.color.light};
+`;
+
 // const showRefetch = true;
-
-
-
 
 export const TopBar = ({
   className,
@@ -75,16 +104,27 @@ export const TopBar = ({
   showEnrichment=true,
   showVideoInterviewEdit=true,
   handleEnrichment,
-  handleEngagement
+  handleEngagement,
+  onSearch,
+  showSearch=false
 }: TopBarProps) => {
   const location = useLocation();
   const isJobPage = location.pathname.includes('/job/');
+  const [searchQuery, setSearchQuery] = useRecoilState(chatSearchQueryState);
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const query = e.target.value;
+    setSearchQuery(query);
+    if (onSearch) {
+      onSearch(query);
+    }
+  };
 
   return (
     <StyledContainer className={className}>
       <StyledTopBar>
         <StyledLeftSection>{leftComponent}</StyledLeftSection>
-        {!isJobPage && (
+        {!isJobPage && !showSearch && (
           <StyledButtonContainer>
             {showRefetch && (
               <Button
@@ -97,45 +137,60 @@ export const TopBar = ({
             )}
           </StyledButtonContainer>
         )}
-        {isJobPage && (
-          <StyledButtonContainer>
-            {showRefetch && (
-              <Button
-                Icon={IconSearch}
-                title="Sourcing"
-                variant="secondary"
-                accent="default"
-                onClick={handleRefresh}
+
+        
+        {(isJobPage || showSearch) && (
+          <>
+            <StyledSearchContainer>
+              <StyledIconContainer>
+                <IconSearch />
+              </StyledIconContainer>
+              <StyledSearchInput
+                type="text"
+                placeholder="Search candidates..."
+                value={searchQuery}
+                onChange={handleSearchChange}
               />
-            )}
-            {showEngagement && (
-              <Button
-                Icon={IconMail}
-                title="Engagement" 
-                variant="secondary"
-                accent="default"
-                onClick={handleEngagement}
-              />
-            )}
-            {showEnrichment && (
-              <Button
-                Icon={IconDatabase}
-                title="Enrichment" 
-                variant="secondary"
-                accent="default"
-                onClick={handleEnrichment}
-              />
-            )}
-            {showVideoInterviewEdit && (
-              <Button
-                Icon={IconVideo}
-                title="Video Interviews"
-                variant="secondary"
-                accent="default"
-                onClick={handleVideoInterviewEdit}
-              />
-            )}
-          </StyledButtonContainer>
+            </StyledSearchContainer>
+            <StyledButtonContainer>
+              {showRefetch && (
+                <Button
+                  Icon={IconSearch}
+                  title="Sourcing"
+                  variant="secondary"
+                  accent="default"
+                  onClick={handleRefresh}
+                />
+              )}
+              {showEngagement && (
+                <Button
+                  Icon={IconMail}
+                  title="Engagement" 
+                  variant="secondary"
+                  accent="default"
+                  onClick={handleEngagement}
+                />
+              )}
+              {showEnrichment && (
+                <Button
+                  Icon={IconDatabase}
+                  title="Enrichment" 
+                  variant="secondary"
+                  accent="default"
+                  onClick={handleEnrichment}
+                />
+              )}
+              {showVideoInterviewEdit && (
+                <Button
+                  Icon={IconVideo}
+                  title="Video Interviews"
+                  variant="secondary"
+                  accent="default"
+                  onClick={handleVideoInterviewEdit}
+                />
+              )}
+            </StyledButtonContainer>
+          </>
         )}
 
         <StyledRightSection>{rightComponent}</StyledRightSection>

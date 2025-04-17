@@ -104,25 +104,25 @@ export const createTableColumns = (
     {
       data: 'checkbox',
       title: '', // Empty title - will be handled by afterGetColHeader hook
-      width: 50,
+      width: 80,
       readOnly: false,
       renderer: checkboxRenderer,
       className: 'htCenter htMiddle',
     },
-    {
-      data: 'name',
-      title: 'Name',
-      type: 'text',
-      width: 150,
-      renderer: nameRenderer,
-    },
-    {
-      data: 'jobTitle',
-      title: 'Job Title',
-      type: 'text',
-      width: 150,
-      renderer: simpleRenderer,
-    },
+    // {
+    //   data: 'name',
+    //   title: 'Name',
+    //   type: 'text',
+    //   width: 150,
+    //   renderer: nameRenderer,
+    // },
+    // {
+    //   data: 'jobTitle',
+    //   title: 'Job Title',
+    //   type: 'text',
+    //   width: 150,
+    //   renderer: simpleRenderer,
+    // },
   ];
 
   // Collect all unique field names from candidateFieldValues across all candidates
@@ -172,6 +172,7 @@ export const createTableColumns = (
     }
   });
 
+
   // Create dynamic columns for candidateFieldValues fields
   const dynamicColumns = Array.from(fieldNamesSet).map(fieldName => {
     // Format the title: convert camelCase to Title Case With Spaces
@@ -206,6 +207,10 @@ export const createTableColumns = (
     };
   });
 
+  console.log("base columns:", baseColumns)
+  console.log("base baseDataColumns:", baseDataColumns)
+  console.log("base dynamicColumns:", dynamicColumns)
+
   // Return combined fixed and dynamic columns
-  return [...baseColumns, ...baseDataColumns, ...dynamicColumns];
+  return [...baseColumns, ...dynamicColumns, ...baseDataColumns, ];
 };

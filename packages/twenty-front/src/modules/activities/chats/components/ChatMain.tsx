@@ -1,16 +1,16 @@
+import { chatSearchQueryState } from '@/activities/chats/states/chatSearchQueryState';
 import { currentUnreadChatMessagesState } from '@/activities/chats/states/currentUnreadChatMessagesState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import styled from '@emotion/styled';
 import axios from 'axios';
 import React, { useEffect, useRef, useState } from 'react';
-import { useRecoilState } from 'recoil';
+import { useRecoilState, useRecoilValue } from 'recoil';
 import {
   CandidateNode,
   JobNode,
   UnreadMessageListManyCandidates
 } from 'twenty-shared';
 import ChatTable from './chat-table/ChatTable';
-
 
 import {
   OneUnreadMessage,
@@ -42,8 +42,6 @@ const StyledChatContainer = styled.div`
   }
 `;
 
-
-
 const LoadingStates = {
   INITIAL: 'initial',
   LOADING_CACHE: 'loading_cache',
@@ -52,22 +50,7 @@ const LoadingStates = {
   ERROR: 'error',
 };
 
-// export interface recruiterProfileType {
-//   job_title: any;
-//   job_company_name: any;
-//   company_description_oneliner: any;
-//   first_name: any;
-//   last_name: any;
-//   status: string;
-//   name: string;
-//   email: string;
-//   phone: string;
-//   input: string; // Add the 'input' property
-// }
-
 export const ChatMain = ({ initialCandidateId, onCandidateSelect, jobId }: ChatMainProps) => {
-
-
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const fetchInProgress = useRef(false);
   const lastFetchTime = useRef<number>(0);
@@ -98,9 +81,12 @@ export const ChatMain = ({ initialCandidateId, onCandidateSelect, jobId }: ChatM
   const [tokenPair] = useRecoilState(tokenPairState);
   const [currentUnreadChatMessages, setCurrentUnreadChatMessages] =
     useRecoilState(currentUnreadChatMessagesState);
+  const searchQuery = useRecoilValue(chatSearchQueryState);
 
   const [sidebarWidth, setSidebarWidth] = useState(900);
   const [isResizing, setIsResizing] = useState(false);
+
+  const [filteredCandidates, setFilteredCandidates] = useState<CandidateNode[]>([]);
 
   const startResizing = (e: React.MouseEvent) => {
     setIsResizing(true);
@@ -276,10 +262,6 @@ export const ChatMain = ({ initialCandidateId, onCandidateSelect, jobId }: ChatM
     }
   };
 
-  // useEffect(() => {
-  //   console.log('Current unreadMessages state:', unreadMessages);
-  // }, [unreadMessages]);
-
   useEffect(() => {
     const initializeData = async () => {
       if (!jobId) return;
@@ -344,6 +326,39 @@ export const ChatMain = ({ initialCandidateId, onCandidateSelect, jobId }: ChatM
     }
   }, [selectedCandidate]);
 
+  // Filter candidates based on search query
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setFilteredCandidates(candidates);
+      return;
+    }
+
+    const lowerCaseQuery = searchQuery.toLowerCase();
+    const filtered = candidates.filter((candidate) => {
+      // Using the correct properties as defined in CandidateNode interface
+      const name = (candidate.name || '').toLowerCase();
+      const email = (candidate.email || '').toLowerCase();
+      const phoneNumber = candidate.phoneNumber || '';
+
+      return (
+        name.includes(lowerCaseQuery) ||
+        email.includes(lowerCaseQuery) ||
+        phoneNumber.includes(lowerCaseQuery)
+      );
+    });
+
+    setFilteredCandidates(filtered);
+  }, [searchQuery, candidates]);
+
+  // Update filteredCandidates when candidates change
+  useEffect(() => {
+    setFilteredCandidates(candidates);
+  }, [candidates]);
+
+  const handleRefresh = () => {
+    fetchData(false, true);
+  };
+
   if (
     loadingState === LoadingStates.INITIAL ||
     loadingState === LoadingStates.LOADING_CACHE
@@ -360,27 +375,30 @@ export const ChatMain = ({ initialCandidateId, onCandidateSelect, jobId }: ChatM
   }
 
   return (
-    <StyledChatContainer
-      onMouseMove={(e) => isResizing ? resize(e as unknown as MouseEvent) : undefined}
-      onMouseUp={stopResizing}
-      onMouseLeave={stopResizing}
-    >
-      {loadingState === LoadingStates.LOADING_API && !isMobile && (
-        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 1000, }} >
-          <Loader />
-        </div>
-      )}
+    <>
+      {/* <TopBar
+        onSearch={handleSearch}
+        handleRefresh={() => fetchData(false, true)}
+      /> */}
+      <StyledChatContainer
+        onMouseMove={(e) => isResizing ? resize(e as unknown as MouseEvent) : undefined}
+        onMouseUp={stopResizing}
+        onMouseLeave={stopResizing}
+      >
+        {loadingState === LoadingStates.LOADING_API && !isMobile && (
+          <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 1000, }} >
+            <Loader />
+          </div>
+        )}
 
-
-    <ChatTable
-      candidates={candidates}
-      selectedCandidate={selectedCandidate}
-      unreadMessages={unreadMessages}
-      // onSelectionChange={handleSelectionChange}
-      onCandidateSelect={onCandidateSelect || (() => {})}
-      // onReorder={handleReorder}
-      refreshData={() => fetchData(false, true)}
-    />
-    </StyledChatContainer>
+        <ChatTable
+          candidates={filteredCandidates}
+          selectedCandidate={selectedCandidate}
+          unreadMessages={unreadMessages}
+          onCandidateSelect={onCandidateSelect || (() => {})}
+          refreshData={() => fetchData(false, true)}
+        />
+      </StyledChatContainer>
+    </>
   );
 };

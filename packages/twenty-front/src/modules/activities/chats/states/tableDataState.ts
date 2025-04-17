@@ -1,5 +1,5 @@
 import { atomFamily, selectorFamily } from 'recoil';
-import { TableData } from '../types';
+import { TableData } from '../components/chat-table/types';
 
 // Extend TableData to allow string indexing
 interface IndexableTableData extends TableData {

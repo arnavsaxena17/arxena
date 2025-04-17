@@ -15,7 +15,7 @@ import { contextStoreTargetedRecordsRuleComponentState } from '@/context-store/s
 import { useSetRecoilComponentStateV2 } from '@/ui/utilities/state/component-state/hooks/useSetRecoilComponentStateV2';
 import { CellChange, ChangeSource } from 'handsontable/common';
 import { refreshTableDataTriggerState } from '../../states/refreshTableDataTriggerState';
-import { tableDataState } from './states/tableDataState';
+import { tableDataState } from '../../states/tableDataState';
 
 // Utility function to create a deep, mutable copy of an object
 const createMutableCopy = <T>(obj: T): T => {
