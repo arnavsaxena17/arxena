@@ -230,6 +230,7 @@ export const ChatTable: React.FC<ChatTableProps> = ({
     setIsAttachmentPanelOpen,
     setIsChatOpen,
     handleSelectAll,
+    handleSelectRows,
     handleAfterChange,
     tableId,
     tableData,
@@ -436,6 +437,17 @@ export const ChatTable: React.FC<ChatTableProps> = ({
     
     // Skip any selection events on checkbox column
     if (column === 0 || column2 === 0) {
+      return;
+    }
+    
+    // Check if this is a multi-row selection (drag selection)
+    if (row !== row2) {
+      console.log('Multi-row selection detected', row, row2);
+      
+      // Handle multi-row selection for checkboxes
+      handleSelectRows(row, row2);
+      
+      // If this is a drag to select multiple rows, don't proceed with normal selection
       return;
     }
     

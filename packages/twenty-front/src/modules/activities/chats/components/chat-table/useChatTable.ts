@@ -47,6 +47,7 @@ type UseChatTableReturn = {
   selectedCandidates: CandidateNode[];
   handleCheckboxChange: (candidateId: string) => void;
   handleSelectAll: () => void;
+  handleSelectRows: (rowStartIndex: number, rowEndIndex: number) => void;
   handleViewChats: () => void;
   handleViewCVs: () => void;
   clearSelection: () => void;
@@ -322,6 +323,45 @@ export const useChatTable = (
     });
   }, [candidates, selectedIds, setContextStoreNumberOfSelectedRecords, setContextStoreTargetedRecordsRule, setRecordsToEnrich]);
   
+  const handleSelectRows = useCallback((rowStartIndex: number, rowEndIndex: number) => {
+    // Make sure indices are valid
+    if (rowStartIndex < 0 || rowEndIndex < 0 || 
+        rowStartIndex >= candidates.length || rowEndIndex >= candidates.length) {
+      return;
+    }
+    
+    // Get the candidate IDs for the selected range
+    const startIdx = Math.min(rowStartIndex, rowEndIndex);
+    const endIdx = Math.max(rowStartIndex, rowEndIndex);
+    
+    // Get IDs for all candidates in the range
+    const rangeIds = candidates.slice(startIdx, endIdx + 1).map(candidate => candidate.id);
+    
+    // Create a new set that includes currently selected IDs plus new range IDs
+    // Using a Set to ensure no duplicates
+    const newSelectedSet = new Set([...selectedIds, ...rangeIds]);
+    const newSelectedIds = Array.from(newSelectedSet);
+
+    // Update selections
+    setSelectedIds(newSelectedIds);
+    setRecordsToEnrich(newSelectedIds);
+    setContextStoreNumberOfSelectedRecords(newSelectedIds.length);
+    setContextStoreTargetedRecordsRule({
+      mode: 'selection',
+      selectedRecordIds: newSelectedIds,
+    });
+    
+    // Update the checkbox state in the tableData
+    const newTableData = createMutableCopy(tableData);
+    for (let i = 0; i < newTableData.length; i++) {
+      const row = newTableData[i];
+      if (row.id && rangeIds.includes(row.id)) {
+        row.checkbox = true;
+      }
+    }
+    setTableData(newTableData);
+  }, [candidates, selectedIds, setRecordsToEnrich, setContextStoreNumberOfSelectedRecords, setContextStoreTargetedRecordsRule, tableData, setTableData]);
+  
   const handleViewChats = useCallback((): void => {
     if (selectedIds.length > 0) {
       setIsChatOpen(true);
@@ -430,6 +470,7 @@ export const useChatTable = (
     selectedCandidates,
     handleCheckboxChange,
     handleSelectAll,
+    handleSelectRows,
     handleViewChats,
     handleViewCVs,
     clearSelection,

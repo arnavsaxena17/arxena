@@ -192,7 +192,9 @@ export class CandidateSourcingController {
       console.log('selectedRecordIds:', selectedRecordIds);
 
       const path_position = objectNameSingular.replace('JobCandidate', '');
-      const jobObject = await this.findJob(path_position, apiToken);
+      const jobId = request.body.jobId
+      const jobObject = await this.findJobById(jobId, apiToken);
+      // const jobId = jobObject.id
 
       console.log('Found job:', jobObject);
 
@@ -203,18 +205,15 @@ export class CandidateSourcingController {
             jobObject,
             apiToken,
           );
-
-          console.log('Response from create enrichment:', response);
+        console.log('Response from create enrichment:', response);
         }
         const response = await this.createOneEnrichment(
           enrichment,
           jobObject,
           apiToken,
         );
-
         console.log('Response from create enrichment:', response);
       }
-
       console.log('process.env.ENV_NODE::', process.env.ENV_NODE);
       const url =
         process.env.ENV_NODE === 'production'
@@ -224,6 +223,7 @@ export class CandidateSourcingController {
         url,
         {
           enrichments,
+          jobId,
           objectNameSingular,
           availableSortDefinitions,
           availableFilterDefinitions,

@@ -10,6 +10,7 @@ import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/Snac
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 // import { useViewStates } from '@/views/hooks/internal/useViewStates';
 // import { currentViewWithFiltersState } from '@/views/states/currentViewState';
+import { currentJobIdState } from '@/arx-enrich/states/arxEnrichModalOpenState';
 import { IconLoader2 } from '@tabler/icons-react';
 import { useState } from 'react';
 import { IconAlertCircle } from 'twenty-ui';
@@ -107,6 +108,8 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
     // Add loading state and style
   const [isLoading, setIsLoading] = useState(false);
   const { enqueueSnackBar } = useSnackBar();
+  const setRefreshTableDataTrigger = useSetRecoilState(refreshTableDataTriggerState);
+  const jobId = useRecoilValue(currentJobIdState);
 
   
   const handleError = (newError: string) => {
@@ -183,7 +186,6 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
       return;
     }
 
-    // const jobId = useRecoilValue(jobIdState);
     console.log("All Enrichmetns", enrichments)
 
     // Prioritize recordsToEnrich if it has values
@@ -195,13 +197,11 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
     console.log("Selected Record Ids:::recordsToEnrich", recordsToEnrich)
     console.log("Selected Record Ids:::selectedRecords", selectedRecords)
 
-    const setRefreshTableDataTrigger = useSetRecoilState(refreshTableDataTriggerState);
-
     try {
       const response = await axios.post(process.env.REACT_APP_SERVER_BASE_URL+'/candidate-sourcing/create-enrichments', {
         enrichments,
         objectNameSingular,
-        // jobId,
+        jobId,
         // availableSortDefinitions,
         // availableFilterDefinitions,
         objectRecordId,
