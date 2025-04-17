@@ -66,7 +66,7 @@ const StyledSearchContainer = styled.div`
   display: flex;
   align-items: center;
   position: relative;
-  width: 240px;
+  width: 15%;
   margin-right: ${({ theme }) => theme.spacing(2)};
 `;
 
@@ -76,7 +76,7 @@ const StyledSearchInput = styled.input`
   border-radius: ${({ theme }) => theme.border.radius.sm};
   border: 1px solid ${({ theme }) => theme.border.color.light};
   font-size: ${({ theme }) => theme.font.size.sm};
-  width: 100%;
+  width: 130%;
   
   &:focus {
     outline: none;
@@ -123,7 +123,9 @@ export const TopBar = ({
   return (
     <StyledContainer className={className}>
       <StyledTopBar>
-        <StyledLeftSection>{leftComponent}</StyledLeftSection>
+        {!isJobPage && !showSearch && (
+            <StyledLeftSection>{leftComponent}</StyledLeftSection>
+        )}
         {!isJobPage && !showSearch && (
           <StyledButtonContainer>
             {showRefetch && (
@@ -143,7 +145,9 @@ export const TopBar = ({
           <>
             <StyledSearchContainer>
               <StyledIconContainer>
-                <IconSearch />
+                <IconSearch size={15
+
+                } />
               </StyledIconContainer>
               <StyledSearchInput
                 type="text"

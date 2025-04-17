@@ -335,16 +335,16 @@ export const ChatMain = ({ initialCandidateId, onCandidateSelect, jobId }: ChatM
 
     const lowerCaseQuery = searchQuery.toLowerCase();
     const filtered = candidates.filter((candidate) => {
-      // Using the correct properties as defined in CandidateNode interface
-      const name = (candidate.name || '').toLowerCase();
-      const email = (candidate.email || '').toLowerCase();
-      const phoneNumber = candidate.phoneNumber || '';
-
-      return (
-        name.includes(lowerCaseQuery) ||
-        email.includes(lowerCaseQuery) ||
-        phoneNumber.includes(lowerCaseQuery)
-      );
+      return Object.entries(candidate).some(([_, value]) => {
+        if (value === null || value === undefined) return false;
+        
+        // Handle nested objects by converting to string
+        const stringValue = typeof value === 'object' 
+          ? JSON.stringify(value).toLowerCase()
+          : String(value).toLowerCase();
+          
+        return stringValue.includes(lowerCaseQuery);
+      });
     });
 
     setFilteredCandidates(filtered);

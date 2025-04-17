@@ -80,15 +80,15 @@ const StyledTopBar = styled(TopBar)`
 `;
 
 const StyledTabListContainer = styled.div`
-  align-items: end;
-  display: flex;
-  height: 40px;
-  padding: 0 16px;
+  // align-items: end;
+  // display: flex;
+  // height: 40px;
+  // padding: 0 16px;
 
-  @media (max-width: 768px) {
-    height: 32px;
-    padding: 0 8px;
-  }
+  // @media (max-width: 768px) {
+  //   height: 32px;
+  //   padding: 0 8px;
+  // }
 `;
 
 // const StyledChatMainWrapper = styled.div`
