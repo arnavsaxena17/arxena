@@ -16,6 +16,7 @@ import { ArxEnrichmentModal } from '@/arx-enrich/arxEnrichmentModal';
 import { useSelectedRecordForEnrichment } from '@/arx-enrich/hooks/useSelectedRecordForEnrichment';
 import { currentJobIdState, isArxEnrichModalOpenState } from '@/arx-enrich/states/arxEnrichModalOpenState';
 import { ArxJDUploadModal } from '@/arx-jd-upload/components/ArxJDUploadModal';
+import { useArxUploadJDModal } from '@/arx-jd-upload/hooks/useArxUploadJDModal';
 import { isArxUploadJDModalOpenState } from '@/arx-jd-upload/states/arxUploadJDModalOpenState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { ObjectFilterDropdownButton } from '@/object-record/object-filter-dropdown/components/ObjectFilterDropdownButton';
@@ -101,8 +102,8 @@ export const SingleJobView = () => {
   const { hasSelectedRecord, selectedRecordId } = useSelectedRecordForEnrichment();
   const isVideoInterviewModalOpen = useRecoilValue(isVideoInterviewModalOpenState);
   const [, setIsVideoInterviewModalOpen] = useRecoilState(isVideoInterviewModalOpenState);
+  const { openUploadJDModal } = useArxUploadJDModal();
   const isArxUploadJDModalOpen = useRecoilValue(isArxUploadJDModalOpenState);
-  const [, setIsArxUploadJDModalOpen] = useRecoilState(isArxUploadJDModalOpenState);
   const { enqueueSnackBar } = useSnackBar();
 
   // Handle candidateId changes from URL params
@@ -234,11 +235,7 @@ export const SingleJobView = () => {
   };
   
   const handleEngagement = () => {
-    // if (!currentCandidateId) {
-    //   alert('Please select a candidate to upload JD');
-    //   return;
-    // }
-    setIsArxUploadJDModalOpen(true);
+    openUploadJDModal();
   };
 
   if (isLoading) {

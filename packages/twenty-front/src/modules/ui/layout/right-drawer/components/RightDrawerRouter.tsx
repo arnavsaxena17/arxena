@@ -6,6 +6,7 @@ import { RightDrawerAIChat } from '@/activities/copilot/right-drawer/components/
 import { RightDrawerEmailThread } from '@/activities/emails/right-drawer/components/RightDrawerEmailThread';
 import { RightDrawerRecord } from '@/object-record/record-right-drawer/components/RightDrawerRecord';
 import { isRightDrawerMinimizedState } from '@/ui/layout/right-drawer/states/isRightDrawerMinimizedState';
+import { NotificationsDrawer } from '@/ui/notifications/components/NotificationsDrawer';
 
 import { RightDrawerAllActionsContent } from '@/action-menu/components/RightDrawerAllActionsContent';
 import { CandidateChatDrawer } from '@/activities/chats/components/CandidateChatDrawer';
@@ -49,6 +50,7 @@ const RIGHT_DRAWER_PAGES_CONFIG: ComponentByRightDrawerPage = {
   [RightDrawerPages.AllActions]: <RightDrawerAllActionsContent />,
   [RightDrawerPages.ChatAllActions]: <RightDrawerChatAllActionsContent />,
   [RightDrawerPages.CandidateChat]: <CandidateChatDrawer />,
+  [RightDrawerPages.Notifications]: <NotificationsDrawer />,
 };
 
 export const RightDrawerRouter = () => {

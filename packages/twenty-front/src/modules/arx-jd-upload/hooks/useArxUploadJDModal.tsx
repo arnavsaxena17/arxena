@@ -10,8 +10,13 @@ export const useArxUploadJDModal = () => {
     setIsArxUploadJDModalOpen(true);
   };
 
+  const closeUploadJDModal = () => {
+    setIsArxUploadJDModalOpen(false);
+  };
+
   return {
     isArxUploadJDModalOpen,
     openUploadJDModal,
+    closeUploadJDModal,
   };
 };

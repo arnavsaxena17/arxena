@@ -28,23 +28,11 @@ export const UploadForm = ({
 
   return (
     <StyledDropzoneArea
-      onClick={(e) => {
-        e.stopPropagation();
-        rootProps.onClick && rootProps.onClick(e);
-      }}
-      onDrop={rootProps.onDrop}
-      onDragEnter={rootProps.onDragEnter}
-      onDragLeave={rootProps.onDragLeave}
-      onDragOver={rootProps.onDragOver}
+      {...rootProps}
       onKeyDown={handleKeyDown}
     >
       <input
-        type="file"
-        onChange={inputProps.onChange}
-        onClick={inputProps.onClick}
-        accept={inputProps.accept}
-        autoComplete="off"
-        tabIndex={-1}
+        {...inputProps}
         style={{ display: 'none' }}
         onKeyDown={handleKeyDown}
       />

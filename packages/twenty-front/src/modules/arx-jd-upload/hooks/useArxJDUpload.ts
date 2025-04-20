@@ -252,7 +252,7 @@ export const useArxJDUpload = (objectNameSingular: string) => {
     }
 
     try {
-      let createdJob;
+      let createdJob: ObjectRecord & { id?: string; name?: string } | undefined;
       if (
         typeof parsedJD.companyName === 'string' &&
         parsedJD.companyName !== ''
@@ -291,6 +291,15 @@ export const useArxJDUpload = (objectNameSingular: string) => {
         } catch (arxenaError) {
           console.error("Couldn't send job to arxena", arxenaError);
         }
+      }
+
+      // After successful job creation and when it's the last step, reload the page and navigate to job details
+      if (isDefined(createdJob?.id)) {
+        // Use setTimeout to ensure the modal is closed before navigation
+        setTimeout(() => {
+          // Reload the page and navigate to job/{id}
+          window.location.href = `/job/${createdJob.id}`;
+        }, 100);
       }
 
       return true;

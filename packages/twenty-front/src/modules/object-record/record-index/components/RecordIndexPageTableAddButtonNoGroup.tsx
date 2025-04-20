@@ -1,5 +1,6 @@
 import { useRecordIndexContextOrThrow } from '@/object-record/record-index/contexts/RecordIndexContext';
 import { useCreateNewTableRecord } from '@/object-record/record-table/hooks/useCreateNewTableRecords';
+import { NotificationsButton } from '@/ui/layout/page/components/NotificationsButton';
 import { PageHotkeysEffect } from '@/ui/layout/page/components/PageHotkeysEffect';
 
 export const RecordIndexPageTableAddButtonNoGroup = () => {
@@ -17,7 +18,7 @@ export const RecordIndexPageTableAddButtonNoGroup = () => {
   return (
     <>
       <PageHotkeysEffect onAddButtonClick={handleCreateNewTableRecord} />
-      {/* <PageAddButton onClick={handleCreateNewTableRecord} /> */}
+      <NotificationsButton />
     </>
   );
 };

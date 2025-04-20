@@ -86,7 +86,6 @@ export const ArxJDUploadDropzone = ({
     <>
       {children({ getRootProps, getInputProps, isDragActive })}
       <Dropzone
-        noClick={true}
         multiple={false}
         onDrop={onDrop}
         accept={{
@@ -122,20 +121,8 @@ export const ArxJDUploadDropzone = ({
         {(props: DropzoneRenderProps) => {
           const { getRootProps, isDragActive } = props;
 
-          // Explicitly type the onClick handler
-          const clickHandler = (e: React.MouseEvent<HTMLElement>) => {
-            e.stopPropagation();
-          };
-
           // Add handlers for all mouse events to prevent propagation
           const modalProps = getRootProps({
-            onClick: clickHandler,
-            onMouseDown: (e: React.MouseEvent<HTMLElement>) =>
-              e.stopPropagation(),
-            onMouseUp: (e: React.MouseEvent<HTMLElement>) =>
-              e.stopPropagation(),
-            onMouseMove: (e: React.MouseEvent<HTMLElement>) =>
-              e.stopPropagation(),
             onDragEnter: (e: React.DragEvent<HTMLElement>) =>
               e.stopPropagation(),
             onDragOver: (e: React.DragEvent<HTMLElement>) =>
@@ -181,13 +168,6 @@ export const ArxJDUploadDropzone = ({
                 modalProps.onDrop && modalProps.onDrop(e);
                 e.stopPropagation();
               }}
-              onClick={(e) => {
-                modalProps.onClick && modalProps.onClick(e);
-                e.stopPropagation();
-              }}
-              onMouseDown={(e) => e.stopPropagation()}
-              onMouseUp={(e) => e.stopPropagation()}
-              onMouseMove={(e) => e.stopPropagation()}
               tabIndex={modalProps.tabIndex}
               style={modalStyle}
             />

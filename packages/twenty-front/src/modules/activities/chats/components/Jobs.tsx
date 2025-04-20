@@ -249,7 +249,7 @@ export const Jobs = () => {
           
           {isArxUploadJDModalOpen ? (
             <ArxJDUploadModal
-              objectNameSingular="chat"
+              objectNameSingular="job"
               objectRecordId={candidateId}
             />
           ) : (

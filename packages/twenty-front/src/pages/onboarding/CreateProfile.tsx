@@ -12,6 +12,7 @@ import { Title } from '@/auth/components/Title';
 import { currentUserState } from '@/auth/states/currentUserState';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { currentWorkspaceState } from '@/auth/states/currentWorkspaceState';
+import { tokenPairState } from '@/auth/states/tokenPairState';
 import { CoreObjectNameSingular } from '@/object-metadata/types/CoreObjectNameSingular';
 import { useUpdateOneRecord } from '@/object-record/hooks/useUpdateOneRecord';
 import { useOnboardingStatus } from '@/onboarding/hooks/useOnboardingStatus';
@@ -54,24 +55,48 @@ const validationSchema = z
     lastName: z.string().min(1, { message: 'Last name can not be empty' }),
   })
   .required();
-
 type Form = z.infer<typeof validationSchema>;
-
 export const CreateProfile = () => {
   const { t } = useLingui();
   const onboardingStatus = useOnboardingStatus();
+  const [tokenPair] = useRecoilState(tokenPairState)
   const setNextOnboardingStatus = useSetNextOnboardingStatus();
   const { enqueueSnackBar } = useSnackBar();
   const [currentWorkspaceMember, setCurrentWorkspaceMember] = useRecoilState(
     currentWorkspaceMemberState,
   );
-
   const currentUser = useRecoilValue(currentUserState);
   const currentWorkspace = useRecoilValue(currentWorkspaceState);
-
   const { updateOneRecord } = useUpdateOneRecord<WorkspaceMember>({
     objectNameSingular: CoreObjectNameSingular.WorkspaceMember,
   });
+
+
+  const createWorkspaceModifications = async () => {
+    try {
+      const response = await fetch(
+        `${process.env.REACT_APP_SERVER_BASE_URL}/workspace-modifications/create-metadata-structure`,
+        { method: 'POST', headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } },
+      );
+      if (!response.ok) {
+        throw new Error('Failed to create metadata structure');
+      }
+      return true;
+    } catch (error) {
+      console.error('Error creating metadata structure:', error);
+      enqueueSnackBar(
+        error instanceof Error
+          ? `Failed to create metadata structure: ${error.message}`
+          : 'Failed to create metadata structure',
+        {
+          variant: SnackBarVariant.Error,
+        },
+      );
+      return false;
+    }
+  };
+
+
 
   const signupUserOnArxena = async (userData: any) => {
     console.log('Going to create user on Arxena using user data:', userData);
@@ -178,6 +203,10 @@ export const CreateProfile = () => {
           }
           return current;
         });
+        
+        // Call metadata structure creation before Arxena signup
+        await createWorkspaceModifications();
+        
         setNextOnboardingStatus();
         console.log('Some email and user data');
         const userData = {

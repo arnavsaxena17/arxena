@@ -7,6 +7,7 @@ import {
   MenuItem,
 } from 'twenty-ui';
 
+import { useArxUploadJDModal } from '@/arx-jd-upload/hooks/useArxUploadJDModal';
 import { DROPDOWN_OFFSET_Y } from '@/dropdown/constants/DropdownOffsetY';
 import { DROPDOWN_WIDTH } from '@/dropdown/constants/DropdownWidth';
 import { Dropdown } from '@/ui/layout/dropdown/components/Dropdown';
@@ -19,11 +20,6 @@ import {
 // Define your specific actions here
 const handleCreateEnrichments = () => {
   console.log('Action: Create Enrichments');
-  // TODO: Implement action
-};
-
-const handleUploadJD = () => {
-  console.log('Action: Upload JD');
   // TODO: Implement action
 };
 
@@ -40,6 +36,11 @@ const handleCreateVideoInterview = () => {
 export const ChatOptionsDropdownButton = () => {
   const dropdownId = useId(); // Generate a unique ID
   const { isDropdownOpen } = useDropdown(dropdownId);
+  const { openUploadJDModal } = useArxUploadJDModal();
+
+  const handleUploadJD = () => {
+    openUploadJDModal();
+  };
 
   return (
     <Dropdown

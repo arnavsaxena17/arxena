@@ -32,10 +32,8 @@ export const ArxJDUploadModal = ({
   const { reset: resetFormStepper } = useArxJDFormStepper();
 
   // Track the previous open state to detect when the modal is first opened
-  // eslint-disable-next-line @nx/workspace-no-state-useref
   const prevOpenStateRef = useRef(false);
   // Track if we've done the stepper reset to avoid loops
-  // eslint-disable-next-line @nx/workspace-no-state-useref
   const didStepperResetRef = useRef(false);
 
   // Reset effect only runs on modal open transition

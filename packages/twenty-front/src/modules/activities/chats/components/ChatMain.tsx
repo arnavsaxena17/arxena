@@ -1,10 +1,11 @@
+import { EmptyJobState } from '@/activities/chats/components/EmptyJobState';
 import { chatSearchQueryState } from '@/activities/chats/states/chatSearchQueryState';
 import { currentUnreadChatMessagesState } from '@/activities/chats/states/currentUnreadChatMessagesState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import styled from '@emotion/styled';
 import axios from 'axios';
 import React, { useEffect, useRef, useState } from 'react';
-import { useRecoilState, useRecoilValue } from 'recoil';
+import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 import {
   CandidateNode,
   JobNode,
@@ -12,6 +13,8 @@ import {
 } from 'twenty-shared';
 import ChatTable from './chat-table/ChatTable';
 
+import { isArxUploadJDModalOpenState } from '@/arx-jd-upload/states/arxUploadJDModalOpenState';
+import { IconFileDescription } from '@tabler/icons-react';
 import {
   OneUnreadMessage,
   UnreadMessagesPerOneCandidate,
@@ -40,6 +43,23 @@ const StyledChatContainer = styled.div`
     margin: 0;
     height: 100vh;
   }
+`;
+
+const StyledEmptyStateContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
+`;
+
+const StyledLoaderContainer = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
 `;
 
 const LoadingStates = {
@@ -71,6 +91,7 @@ export const ChatMain = ({ initialCandidateId, onCandidateSelect, jobId }: ChatM
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [jobs, setJobs] = useState<JobNode[]>([]);
+  const setIsArxUploadJDModalOpen = useSetRecoilState(isArxUploadJDModalOpenState);
 
   const [unreadMessages, setUnreadMessages] =
     useState<UnreadMessageListManyCandidates>({
@@ -152,10 +173,7 @@ export const ChatMain = ({ initialCandidateId, onCandidateSelect, jobId }: ChatM
     candidates?.forEach((candidate: CandidateNode) => {
       const unreadMessages: OneUnreadMessage[] = 
         candidate?.whatsappMessages?.edges
-          ?.filter(
-            (edge) =>
-              edge?.node?.whatsappDeliveryStatus === 'receivedFromCandidate',
-          )
+          ?.filter( (edge) => edge?.node?.whatsappDeliveryStatus === 'receivedFromCandidate', )
           ?.map(
             (edge): OneUnreadMessage => ({
               message: edge?.node?.message,
@@ -182,6 +200,10 @@ export const ChatMain = ({ initialCandidateId, onCandidateSelect, jobId }: ChatM
       return false;
     }
     return true;
+  };
+
+  const handleOpenUploadJDModal = () => {
+    setIsArxUploadJDModalOpen(true);
   };
 
   const fetchData = async (isInitialLoad = false, forceRefresh = false) => {
@@ -359,15 +381,45 @@ export const ChatMain = ({ initialCandidateId, onCandidateSelect, jobId }: ChatM
     fetchData(false, true);
   };
 
-  if (
-    loadingState === LoadingStates.INITIAL ||
-    loadingState === LoadingStates.LOADING_CACHE
-  ) {
-    return <Loader />;
-  }
+    console.log('jobs.length', jobs.length);
+  console.log('loadingState', loadingState);
 
-  if (loadingState === LoadingStates.LOADING_API && candidates.length === 0) {
-    return <Loader />;
+
+
+  // if (
+  //   loadingState === LoadingStates.INITIAL ||
+  //   loadingState === LoadingStates.LOADING_CACHE
+  // ) {
+  //   return (
+  //     <StyledLoaderContainer>
+  //       <Loader />
+  //     </StyledLoaderContainer>
+  //   );
+  // }
+
+  // if (loadingState === LoadingStates.LOADING_API && candidates.length === 0) {
+  //   return (
+  //     <StyledLoaderContainer>
+  //       <Loader />
+  //     </StyledLoaderContainer>
+  //   );
+  // }
+  console.log('jobs.length', jobs.length);
+  console.log('loadingState', loadingState);
+
+  if (jobs.length === 0) {
+    return (
+      <StyledEmptyStateContainer>
+        <EmptyJobState
+          animatedPlaceholderType="job"
+          title="No jobs found"
+          subTitle="Upload a job description to get started"
+          ButtonIcon={IconFileDescription}
+          buttonTitle="Upload Job Description"
+          onClick={handleOpenUploadJDModal}
+        />
+      </StyledEmptyStateContainer>
+    );
   }
 
   if (loadingState === LoadingStates.ERROR && candidates.length === 0) {
