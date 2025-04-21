@@ -8,6 +8,7 @@ import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
 import { useRecoilState } from 'recoil';
 import { findManyAttachmentsQuery } from 'twenty-shared';
 // import { extractRawText } from 'docx2html';
+import { UploadCV } from './chat-window/UploadCV';
 
 // Add a type declaration for the handleDocFile function
 type DocHandlerResult = {
@@ -209,6 +210,24 @@ const ContentViewer = styled.pre`
   word-wrap: break-word;
 `;
 
+const UploadContainer = styled.div`
+  margin-top: 20px;
+  text-align: center;
+  padding: 20px;
+  border: 1px dashed #ccc;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+`;
+
+const UploadMessage = styled.p`
+  margin-bottom: 16px;
+  color: ${props => props.theme.font.color.secondary};
+`;
+
 interface AttachmentPanelProps {
   isOpen: boolean;
   onClose: () => void;
@@ -242,6 +261,9 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({
 
   const [numPages, setNumPages] = useState<number | null>(null);
   const [pageNumber, setPageNumber] = useState(1);
+
+  // Add state to track when CV is uploaded
+  const [uploadSuccess, setUploadSuccess] = useState(false);
 
   const onDocumentLoadSuccess = useCallback(
     ({ numPages }: { numPages: number }) => {
@@ -520,6 +542,12 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({
   // Choose the appropriate content container based on whether we're inline
   const CustomContentContainer = isInline ? InlineContentContainer : ContentContainer;
   
+  // Handle successful upload
+  const handleUploadSuccess = useCallback(() => {
+    setUploadSuccess(true);
+    fetchAttachments();
+  }, [fetchAttachments]);
+
   return (
     <Container isOpen={isOpen}>
       {!isInline && <CloseButton onClick={onClose}>&times;</CloseButton>}
@@ -554,7 +582,19 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({
         ) : isLoading ? (
           <div>Loading attachments...</div>
         ) : attachments.length === 0 ? (
-          <NotFoundMessage>No attachments found for this candidate {candidateId}</NotFoundMessage>
+          <>
+            <NotFoundMessage>No attachments found for this candidate</NotFoundMessage>
+            <UploadContainer>
+              <UploadMessage>Upload a CV for this candidate</UploadMessage>
+              <UploadCV 
+                candidateId={candidateId}
+                tokenPair={tokenPair}
+                onUploadSuccess={handleUploadSuccess}
+                currentIndividual={null}
+                buttonColor="#000000"
+              />
+            </UploadContainer>
+          </>
         ) : fileContent ? (
           typeof fileContent === 'string' &&
           fileContent.startsWith('blob:') ? (

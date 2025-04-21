@@ -44,7 +44,6 @@ const StyledButton = styled.button<{ bgColor: string }>`
 `;
 
 const UploadCVButton = styled(StyledButton)`
-  background-color: #4caf50;
   margin-left: 8px;
 `;
 
@@ -59,9 +58,10 @@ type UploadCVProps = {
   tokenPair: any;
   onUploadSuccess: () => void;
   currentIndividual: any;
+  buttonColor?: string;
 };
 
-export const UploadCV = ({ candidateId, tokenPair, onUploadSuccess, currentIndividual }: UploadCVProps) => {
+export const UploadCV = ({ candidateId, tokenPair, onUploadSuccess, currentIndividual, buttonColor = "#4CAF50" }: UploadCVProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { enqueueSnackBar } = useSnackBar();
 
@@ -94,7 +94,7 @@ export const UploadCV = ({ candidateId, tokenPair, onUploadSuccess, currentIndiv
       // Create attachment
       const attachmentData = {
         input: {
-          authorId: currentIndividual?.candidates?.edges[0]?.node?.jobs.recruiterId,
+          authorId: currentIndividual?.candidates?.edges[0]?.node?.jobs?.recruiterId || null,
           name: file.name,
           fullPath: uploadedFilePath,
           type: 'TextDocument',
@@ -104,16 +104,8 @@ export const UploadCV = ({ candidateId, tokenPair, onUploadSuccess, currentIndiv
 
       await axios.post(
         `${process.env.REACT_APP_SERVER_BASE_URL}/graphql`,
-        {
-          query: graphQLtoCreateOneAttachmentFromFilePath,
-          variables: attachmentData,
-        },
-        {
-          headers: {
-            authorization: `Bearer ${tokenPair?.accessToken?.token}`,
-            'content-type': 'application/json',
-          },
-        },
+        { query: graphQLtoCreateOneAttachmentFromFilePath, variables: attachmentData, },
+        { headers: { authorization: `Bearer ${tokenPair?.accessToken?.token}`, 'content-type': 'application/json', }, },
       );
 
       enqueueSnackBar('CV uploaded successfully', {
@@ -143,7 +135,7 @@ export const UploadCV = ({ candidateId, tokenPair, onUploadSuccess, currentIndiv
       />
       <UploadCVButton
         onClick={handleClick}
-        bgColor="#4CAF50"
+        bgColor={buttonColor}
         data-tooltip="Upload CV"
       >
         <svg
