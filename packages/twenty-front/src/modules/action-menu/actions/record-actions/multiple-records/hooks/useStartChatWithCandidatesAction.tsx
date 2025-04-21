@@ -95,7 +95,6 @@ export const useStartChatWithCandidatesAction: ActionHookWithObjectMetadataItem 
           ? recordsToStartChat.map((record) => record.id)
           : recordsToStartChat.map((record) => record.candidateId);
           
-
         console.log('recordIdsToStartChat:::', recordIdsToStartChat);
         // Get job IDs to check integrity
         const jobIds = recordsToStartChat
@@ -193,10 +192,10 @@ export const useStartChatWithCandidatesAction: ActionHookWithObjectMetadataItem 
         setIsOpen={setIsStartChatWithCandidatesModalOpen}
         title={'Start Multiple Chats'}
         subtitle={`Are you sure you want to start multiple chats?${
-          isPerformingIntegrityCheck 
-            ? '\n\nChecking data integrity...' 
-            : integrityCheckError 
-              ? `\n\nError: ${integrityCheckError}` 
+          isPerformingIntegrityCheck
+            ? '\n\nChecking data integrity...'
+            : integrityCheckError
+              ? `\n\nError: ${integrityCheckError}`
               : ''
         }`}
         onConfirmClick={handleStartChatWithCandidatesClick}

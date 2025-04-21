@@ -4,7 +4,7 @@ import { currentUnreadChatMessagesState } from '@/activities/chats/states/curren
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import styled from '@emotion/styled';
 import axios from 'axios';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 import {
   CandidateNode,
@@ -27,6 +27,10 @@ interface ChatMainProps {
   initialCandidateId?: string;
   onCandidateSelect?: (candidateId: string) => void;
   jobId?: string;
+}
+
+export interface ChatMainRef {
+  fetchData: (isInitial?: boolean, forceRefresh?: boolean) => Promise<void>;
 }
 
 const StyledChatContainer = styled.div`
@@ -70,7 +74,8 @@ const LoadingStates = {
   ERROR: 'error',
 };
 
-export const ChatMain = ({ initialCandidateId, onCandidateSelect, jobId }: ChatMainProps) => {
+export const ChatMain = forwardRef<ChatMainRef, ChatMainProps>(
+  ({ initialCandidateId, onCandidateSelect, jobId }, ref) => {
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const fetchInProgress = useRef(false);
   const lastFetchTime = useRef<number>(0);
@@ -381,31 +386,10 @@ export const ChatMain = ({ initialCandidateId, onCandidateSelect, jobId }: ChatM
     fetchData(false, true);
   };
 
-    console.log('jobs.length', jobs.length);
-  console.log('loadingState', loadingState);
-
-
-
-  // if (
-  //   loadingState === LoadingStates.INITIAL ||
-  //   loadingState === LoadingStates.LOADING_CACHE
-  // ) {
-  //   return (
-  //     <StyledLoaderContainer>
-  //       <Loader />
-  //     </StyledLoaderContainer>
-  //   );
-  // }
-
-  // if (loadingState === LoadingStates.LOADING_API && candidates.length === 0) {
-  //   return (
-  //     <StyledLoaderContainer>
-  //       <Loader />
-  //     </StyledLoaderContainer>
-  //   );
-  // }
-  console.log('jobs.length', jobs.length);
-  console.log('loadingState', loadingState);
+  // Expose the fetchData method to parent components
+  useImperativeHandle(ref, () => ({
+    fetchData
+  }));
 
   if (jobs.length === 0) {
     return (
@@ -428,10 +412,6 @@ export const ChatMain = ({ initialCandidateId, onCandidateSelect, jobId }: ChatM
 
   return (
     <>
-      {/* <TopBar
-        onSearch={handleSearch}
-        handleRefresh={() => fetchData(false, true)}
-      /> */}
       <StyledChatContainer
         onMouseMove={(e) => isResizing ? resize(e as unknown as MouseEvent) : undefined}
         onMouseUp={stopResizing}
@@ -453,4 +433,7 @@ export const ChatMain = ({ initialCandidateId, onCandidateSelect, jobId }: ChatM
       </StyledChatContainer>
     </>
   );
-};
+});
+
+// Add displayName for better debugging
+ChatMain.displayName = 'ChatMain';

@@ -6,11 +6,12 @@ import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 
 import { Button, IconCheckbox, IconFilter, IconPlus } from 'twenty-ui';
 
-import { ChatMain } from '@/activities/chats/components/ChatMain';
+import { ChatMain, ChatMainRef } from '@/activities/chats/components/ChatMain';
 import { ChatOptionsDropdownButton } from '@/activities/chats/components/ChatOptionsDropdownButton';
 import { JobNotFoundState } from '@/activities/chats/components/JobNotFoundState';
 import { PageAddChatButton } from '@/activities/chats/components/PageAddChatButton';
 import { SingleJobViewSkeletonLoader } from '@/activities/chats/components/SingleJobViewSkeletonLoader';
+import { refreshTableDataTriggerState } from '@/activities/chats/states/refreshTableDataTriggerState';
 import { CACHE_KEYS, cacheUtils } from '@/activities/chats/utils/cacheUtils';
 import { ArxEnrichmentModal } from '@/arx-enrich/arxEnrichmentModal';
 import { useSelectedRecordForEnrichment } from '@/arx-enrich/hooks/useSelectedRecordForEnrichment';
@@ -92,6 +93,8 @@ export const SingleJobView = () => {
   const isMounted = useRef(false);
   const fetchInProgress = useRef(false);
   const setCurrentJobId = useSetRecoilState(currentJobIdState);
+  const [, setRefreshTrigger] = useRecoilState(refreshTableDataTriggerState);
+  const chatMainRef = useRef<ChatMainRef>(null);
   
   // Component instance IDs
   const filterDropdownId = `job-filter-${jobId}`;
@@ -121,6 +124,18 @@ export const SingleJobView = () => {
     // Update URL without full page reload
     if (jobId) {
       navigate(`/job/${jobId}/${id}`, { replace: true });
+    }
+  };
+
+  const refreshChatTable = () => {
+    // Method 1: Using the recoil refreshTableDataTriggerState
+    setRefreshTrigger(true);
+    
+    // Method 2: Directly call ChatMain's fetchData method if available
+    if (chatMainRef.current) {
+      chatMainRef.current.fetchData(false, true).catch(error => {
+        console.error('Error refreshing chat table:', error);
+      });
     }
   };
 
@@ -259,9 +274,11 @@ export const SingleJobView = () => {
             <ViewComponentInstanceContext.Provider value={{ instanceId: recordIndexId }}>
               <StyledTopBar
                 leftComponent={<StyledTabListContainer />}
+                handleRefresh={refreshChatTable}
                 handleEnrichment={handleEnrichment}
                 handleVideoInterviewEdit={handleVideoInterviewEdit}
                 handleEngagement={handleEngagement}
+                showRefetch={true}
                 showEnrichment={true}
                 showVideoInterviewEdit={true}
                 showEngagement={true}
@@ -288,6 +305,7 @@ export const SingleJobView = () => {
             jobId={jobId}
             initialCandidateId={currentCandidateId} 
             onCandidateSelect={handleCandidateSelect}
+            ref={chatMainRef}
           />
           
           {isArxEnrichModalOpen ? (

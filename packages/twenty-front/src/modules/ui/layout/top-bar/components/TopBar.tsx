@@ -145,9 +145,7 @@ export const TopBar = ({
           <>
             <StyledSearchContainer>
               <StyledIconContainer>
-                <IconSearch size={15
-
-                } />
+                <IconSearch size={15} />
               </StyledIconContainer>
               <StyledSearchInput
                 type="text"
@@ -157,7 +155,16 @@ export const TopBar = ({
               />
             </StyledSearchContainer>
             <StyledButtonContainer>
-              {showRefetch && (
+              {isJobPage && showRefetch && (
+                <Button
+                  Icon={IconRefresh}
+                  title="Refresh"
+                  variant="secondary"
+                  accent="default"
+                  onClick={handleRefresh}
+                />
+              )}
+              {showRefetch && !isJobPage && (
                 <Button
                   Icon={IconSearch}
                   title="Sourcing"
