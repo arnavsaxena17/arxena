@@ -2,7 +2,7 @@ import { tokenPairState } from '@/auth/states/tokenPairState';
 import { TabList } from '@/ui/layout/tab/components/TabList';
 import { useTabList } from '@/ui/layout/tab/hooks/useTabList';
 import styled from '@emotion/styled';
-import { IconFileText, IconMessages } from '@tabler/icons-react';
+import { IconFileText, IconMessages, IconVideo } from '@tabler/icons-react';
 import axios from 'axios';
 import dayjs from 'dayjs';
 import React, { useEffect, useRef, useState } from 'react';
@@ -10,6 +10,7 @@ import { useRecoilState, useRecoilValue } from 'recoil';
 import { MessageNode } from 'twenty-shared';
 import AttachmentPanel from '../components/AttachmentPanel';
 import { selectedCandidateIdState } from '../states/selectedCandidateIdState';
+import VideoInterviewTab from './VideoInterviewTab';
 
 const StyledContainer = styled.div`
   display: flex;
@@ -126,6 +127,7 @@ export const CandidateChatDrawer = () => {
   const [error, setError] = useState<string | null>(null);
   const [candidateName, setCandidateName] = useState<string>('Candidate');
   const prevCandidateIdRef = useRef<string | null>(null);
+  const [candidateData, setCandidateData] = useState<any>(null);
   
   // Tab handling
   const tabListId = 'candidate-chat-drawer-tabs';
@@ -141,6 +143,11 @@ export const CandidateChatDrawer = () => {
       title: 'CV',
       Icon: IconFileText,
     },
+    {
+      id: 'video-interview',
+      title: 'Video Interview',
+      Icon: IconVideo,
+    },
   ];
 
 
@@ -150,7 +157,7 @@ export const CandidateChatDrawer = () => {
     if (!activeTabId) {
       // Check if we have a default tab in localStorage
       const defaultTab = localStorage.getItem('candidate-chat-default-tab');
-      if (defaultTab && (defaultTab === 'chat' || defaultTab === 'cv')) {
+      if (defaultTab && (defaultTab === 'chat' || defaultTab === 'cv' || defaultTab === 'video-interview')) {
         setActiveTabId(defaultTab);
         // Clear the stored value after using it
         localStorage.removeItem('candidate-chat-default-tab');
@@ -205,7 +212,105 @@ export const CandidateChatDrawer = () => {
       }
     };
 
+    const fetchCandidateData = async () => {
+      if (!candidateId || !tokenPair?.accessToken?.token) {
+        return;
+      }
+      
+      try {
+        setIsLoading(true);
+        
+        const response = await fetch(`${process.env.REACT_APP_SERVER_BASE_URL}/graphql`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${tokenPair.accessToken.token}`,
+          },
+          body: JSON.stringify({
+            query: `
+              query FindCandidate($filter: CandidateFilterInput) {
+                candidates(filter: $filter) {
+                  edges {
+                    node {
+                      id
+                      name
+                      videoInterview {
+                        edges {
+                          node {
+                            id
+                            interviewCompleted
+                            interviewStarted
+                            videoInterviewTemplate {
+                              id
+                              name
+                              videoInterviewQuestions {
+                                edges {
+                                  node {
+                                    id
+                                    questionValue
+                                    timeLimit
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                      videoInterviewResponse {
+                        edges {
+                          node {
+                            id
+                            transcript
+                            videoInterviewQuestionId
+                            attachments {
+                              edges {
+                                node {
+                                  id
+                                  type
+                                  fullPath
+                                  name
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                      jobs {
+                        id
+                        name
+                        company {
+                          name
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            `,
+            variables: {
+              filter: {
+                id: { eq: candidateId }
+              }
+            },
+          }),
+        });
+        
+        const responseData = await response.json();
+        if (responseData?.data?.candidates?.edges?.[0]?.node) {
+          setCandidateData(responseData.data.candidates.edges[0].node);
+          if (responseData.data.candidates.edges[0].node.name) {
+            setCandidateName(responseData.data.candidates.edges[0].node.name);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching candidate data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
     fetchMessages();
+    fetchCandidateData();
   }, [candidateId, tokenPair, activeTabId, setActiveTabId]);
 
   const renderChatTab = () => (
@@ -250,6 +355,13 @@ export const CandidateChatDrawer = () => {
     />
   );
 
+  const renderVideoInterviewTab = () => (
+    <VideoInterviewTab 
+      candidateData={candidateData}
+      isLoading={isLoading}
+    />
+  );
+
   // Custom styled container for inline usage inside the drawer
   const StyledInlineContainer = styled.div<{ isOpen: boolean }>`
     position: relative;
@@ -272,6 +384,7 @@ export const CandidateChatDrawer = () => {
       <TabContent>
         {activeTabId === 'chat' && renderChatTab()}
         {activeTabId === 'cv' && renderCVTab()}
+        {activeTabId === 'video-interview' && renderVideoInterviewTab()}
       </TabContent>
     </StyledContainer>
   );

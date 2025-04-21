@@ -1585,7 +1585,6 @@ export const graphqlToFetchAllCandidateData = `
             }
           }
         }
-  
         videoInterview{
             edges{
                 node{
@@ -1613,12 +1612,12 @@ export const graphqlToFetchAllCandidateData = `
             }
           }
         }
-          candidateFieldValues{
+        candidateFieldValues {
             edges{
               node{
                   id
                   name
-                  candidateFields{
+                  candidateFields {
                       name
                       id
                   }
@@ -1631,27 +1630,27 @@ export const graphqlToFetchAllCandidateData = `
               firstName
               lastName
             }
-            linkedinLink{
+            linkedinLink {
               primaryLinkLabel
               primaryLinkUrl
               secondaryLinks
             }
-            phones{
+            phones {
                 primaryPhoneNumber
             }
-            emails{
+            emails {
                 primaryEmail
             }
             jobTitle
             uniqueStringKey  
-            phoneCall{
-                edges{
-                    node{
+            phoneCall {
+                edges {
+                    node {
                         name
                         id
                         transcript
-                        attachments{
-                            edges{
+                        attachments {
+                            edges {
                                 node{
                                     name
                                     id
@@ -1694,9 +1693,9 @@ export const graphqlToFetchAllCandidateData = `
             pathPosition
             createdAt
             updatedAt
-            interviewSchedule{
-              edges{
-                  node{
+            interviewSchedule {
+              edges {
+                  node {
                       id
                       name
                       createdAt
@@ -1705,10 +1704,10 @@ export const graphqlToFetchAllCandidateData = `
                   }
                 }
               }
-            company{
+            company {
               name
               id
-              domainName{
+              domainName {
                 primaryLinkUrl
               }
               descriptionOneliner

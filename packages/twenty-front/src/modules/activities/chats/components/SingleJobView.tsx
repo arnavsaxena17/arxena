@@ -29,6 +29,7 @@ import { RecordIndexContextProvider } from '@/object-record/record-index/context
 import { RecordFieldValueSelectorContextProvider } from '@/object-record/record-store/contexts/RecordFieldValueSelectorContext';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
+import { NotificationsButton } from '@/ui/layout/page/components/NotificationsButton';
 import { PageBody } from '@/ui/layout/page/components/PageBody';
 import { PageContainer } from '@/ui/layout/page/components/PageContainer';
 import { PageHeader } from '@/ui/layout/page/components/PageHeader';
@@ -268,6 +269,7 @@ export const SingleJobView = () => {
           <Button title="Filter" Icon={IconFilter} variant="secondary" />
           <Button title="Add Candidate" Icon={IconPlus} variant="primary" />
           <PageAddChatButton />
+          <NotificationsButton />
         </StyledPageHeader>
         <StyledPageBody>
           <RecordIndexContextProvider value={recordIndexContextValue}>

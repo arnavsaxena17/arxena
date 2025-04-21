@@ -33,9 +33,7 @@ import styled from '@emotion/styled';
 import { IconLayoutSidebarRightExpand, IconList, IconMessages } from '@tabler/icons-react';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useSetRecoilState } from 'recoil';
-import AttachmentPanel from '../AttachmentPanel';
-import MultiCandidateChat from '../MultiCandidateChat';
-import { CandidateNavigation, NavIconButton, PanelContainer, TableContainer } from './styled';
+import { TableContainer } from './styled';
 import { createTableColumns } from './TableColumns';
 import { ChatTableProps } from './types';
 import { useChatTable } from './useChatTable';
@@ -610,8 +608,8 @@ export const ChatTable: React.FC<ChatTableProps> = ({
           <ChatActionMenu tableId={tableId} />
         </div>
 
-        <MultiCandidateChat isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} selectedCandidates={selectedCandidates} />
-        {isAttachmentPanelOpen && currentCandidate && (
+        {/* <MultiCandidateChat isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} selectedCandidates={selectedCandidates} /> */}
+        {/* {isAttachmentPanelOpen && currentCandidate && (
           <>
             <AttachmentPanel isOpen={isAttachmentPanelOpen} onClose={() => setIsAttachmentPanelOpen(false)} candidateId={currentCandidate.id} candidateName={`${currentCandidate.name}`} PanelContainer={PanelContainer} />
             {selectedIds.length > 1 && (isAttachmentPanelOpen || isChatOpen) && (
@@ -621,7 +619,7 @@ export const ChatTable: React.FC<ChatTableProps> = ({
               </CandidateNavigation>
             )}
           </>
-        )}
+        )} */}
       </ActionMenuComponentInstanceContext.Provider>
     </ContextStoreComponentInstanceContext.Provider>
   );
