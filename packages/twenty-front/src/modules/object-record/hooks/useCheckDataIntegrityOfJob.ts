@@ -18,7 +18,7 @@ export const useCheckDataIntegrityOfJob = ({
 }: UseCheckDataIntegrityOfJobProps = {}) => {
   const [tokenPair] = useRecoilState(tokenPairState);
   const { enqueueSnackBar } = useSnackBar();
-
+  console.log('checking data integrity of job', tokenPair);
   const [executeQuery, { error, data }] = useLazyQuery(gql`
     ${graphqlToFindManyJobs}
   `);
