@@ -192,6 +192,35 @@ export const ChatTable: React.FC<ChatTableProps> = ({
   // onReorder,
   refreshData,
 }) => {
+  // Create a state to track URL clicks to prevent drawer opening
+  // const [isUrlClicked, setIsUrlClicked] = useState(false);
+  // const urlClickTimeout = useRef<NodeJS.Timeout | null>(null);
+
+  // // Function to handle URL clicks
+  // const handleUrlClick = useCallback(() => {
+  //   console.log("URL click detected and tracked");
+  //   setIsUrlClicked(true);
+    
+  //   // Clear any existing timeout
+  //   if (urlClickTimeout.current) {
+  //     clearTimeout(urlClickTimeout.current);
+  //   }
+    
+  //   // Reset after a short delay
+  //   urlClickTimeout.current = setTimeout(() => {
+  //     setIsUrlClicked(false);
+  //   }, 500);
+  // }, []);
+  
+  // // Clean up timeout on unmount
+  // useEffect(() => {
+  //   return () => {
+  //     if (urlClickTimeout.current) {
+  //       clearTimeout(urlClickTimeout.current);
+  //     }
+  //   };
+  // }, []);
+
   // Check if the refreshData prop is provided, if not, define a dummy function
   // that logs a warning
   const handleRefreshData = useCallback(async () => {
@@ -433,6 +462,33 @@ export const ChatTable: React.FC<ChatTableProps> = ({
     console.log('- Selection happening on row:', row, 'of', candidates.length, 'rows');
     console.log('- Is last row:', row === candidates.length - 1);
     
+    // Get the cell element that was selected
+    if (hotRef.current?.hotInstance) {
+      const cellElement = hotRef.current.hotInstance.getCell(row, column);
+      
+      // If the cell contains a link, skip all selection handling
+      if (cellElement && (cellElement.querySelector('a') || cellElement.closest('td')?.querySelector('a'))) {
+        console.log('Selection contains a URL link - cancelling selection');
+        
+        // Cancel the selection entirely by setting it to the cell that's already active
+        setTimeout(() => {
+          if (hotRef.current?.hotInstance) {
+            const currentCell = hotRef.current.hotInstance.getSelectedLast() || [0, 0];
+            hotRef.current.hotInstance.selectCell(currentCell[0], currentCell[1], currentCell[0], currentCell[1], false);
+          }
+        }, 0);
+        
+        return;
+      }
+    }
+    
+    // Check if this selection was triggered by a URL click (check the last event target)
+    const lastClickTarget = document.activeElement;
+    if (lastClickTarget && (lastClickTarget.nodeName === 'A' || lastClickTarget.closest('a'))) {
+      console.log('Selection was triggered by URL link - skipping selection handling');
+      return;
+    }
+    
     // Skip any selection events on checkbox column
     if (column === 0 || column2 === 0) {
       return;
@@ -481,6 +537,13 @@ export const ChatTable: React.FC<ChatTableProps> = ({
   const handleBeforeOnCellMouseDown = (event: any, coords: any) => {
     const target = event.target as HTMLElement;
     
+    // Skip handling if clicking on a link (URL renderer)
+    if (target.nodeName === 'A' || target.closest('a')) {
+      console.log('URL link clicked in beforeOnCellMouseDown - allowing default behavior');
+      // handleUrlClick(); // Track URL click
+      return;
+    }
+    
     // Special handling for the last row to prevent reselection issues
     if (coords.row === candidates.length - 1) {
       console.log('BeforeOnCellMouseDown on last row', coords.col);
@@ -512,6 +575,13 @@ export const ChatTable: React.FC<ChatTableProps> = ({
   const handleCellClick = (event: MouseEvent, coords: any) => {
     // Skip clicks on checkboxes or the entire first column (checkbox column)
     const target = event.target as HTMLElement;
+    
+    // Skip handling if clicking on a link (URL renderer)
+    if (target.nodeName === 'A' || target.closest('a')) {
+      console.log('URL link clicked - allowing default behavior');
+      // handleUrlClick(); // Track URL click
+      return;
+    }
     
     // Special handling for the last row
     if (coords.row === candidates.length - 1) {

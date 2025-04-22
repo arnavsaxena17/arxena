@@ -18,6 +18,13 @@ const excludedFields = [
   // Add any other fields you want to exclude
 ];
 
+// Define fields that should be rendered as URLs
+const urlFields = [
+  'profileUrl', 'linkedinUrl', 'linkedInUrl', 'githubUrl', 'portfolioUrl',
+  'resdexNaukriUrl', 'hiringNaukriUrl', 'website', 'websiteUrl',
+  // Add any other URL fields you want to include
+];
+
 export const createTableColumns = (
   candidates: CandidateNode[],
   handleCheckboxChange: (candidateId: string) => void,
@@ -87,6 +94,67 @@ export const createTableColumns = (
     div.textContent = date;
     td.innerHTML = '';
     td.appendChild(div);
+    return td;
+  };
+
+  const urlRenderer: ColumnRenderer = (instance, td, row, column, prop, value) => {
+    // Clear any previous content
+    td.innerHTML = '';
+    
+    if (!value || value === 'N/A') {
+      const div = document.createElement('div');
+      Object.assign(div.style, truncatedCellStyle);
+      div.textContent = 'N/A';
+      td.appendChild(div);
+      return td;
+    }
+    
+    // Format URL if needed (make sure it has http/https prefix)
+    let url = value;
+    if (url && !url.startsWith('http://') && !url.startsWith('https://')) {
+      url = 'https://' + url;
+    }
+    
+    // Create hyperlink element
+    const link = document.createElement('a');
+    link.href = url;
+    link.target = '_blank'; // Open in new tab
+    link.rel = 'noopener noreferrer'; // Security best practice
+    link.textContent = value; // Display original value as text
+    
+    // Apply styling
+    Object.assign(link.style, truncatedCellStyle);
+    link.style.color = '#1976d2'; // Standard link color
+    link.style.textDecoration = 'none'; // No underline by default
+    
+    // Add hover effect
+    link.onmouseover = () => {
+      link.style.textDecoration = 'underline';
+    };
+    link.onmouseout = () => {
+      link.style.textDecoration = 'none';
+    };
+    
+    // Stop propagation on all events to prevent table from handling them
+    link.addEventListener('click', (e) => {
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      // Let the default browser behavior handle the link
+    });
+    
+    // Also stop mousedown event which triggers Handsontable selection
+    link.addEventListener('mousedown', (e) => {
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    });
+    
+    // And prevent selection handler from triggering on mouseup
+    link.addEventListener('mouseup', (e) => {
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    });
+    
+    td.appendChild(link);
     return td;
   };
 
@@ -181,12 +249,17 @@ export const createTableColumns = (
       .replace(/([A-Z])/g, ' $1')
       .replace(/^./, str => str.toUpperCase());
     
+    // Check if this field should be rendered as URL
+    const isUrl = urlFields.some(urlField => 
+      fieldName.toLowerCase().includes(urlField.toLowerCase())
+    );
+    
     return {
       data: fieldName,
       title: formattedTitle,
       type: 'text',
       width: 150,
-      renderer: simpleRenderer,
+      renderer: isUrl ? urlRenderer : simpleRenderer,
     };
   });
   
@@ -198,12 +271,17 @@ export const createTableColumns = (
       .replace(/([A-Z])/g, ' $1')
       .replace(/^./, str => str.toUpperCase());
     
+    // Check if this field should be rendered as URL
+    const isUrl = urlFields.some(urlField => 
+      fieldName.toLowerCase().includes(urlField.toLowerCase())
+    );
+    
     return {
       data: fieldName,
       title: formattedTitle,
       type: 'text',
       width: 150,
-      renderer: simpleRenderer,
+      renderer: isUrl ? urlRenderer : simpleRenderer,
     };
   });
 
