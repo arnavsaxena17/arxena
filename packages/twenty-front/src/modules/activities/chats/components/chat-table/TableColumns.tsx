@@ -14,7 +14,7 @@ const truncatedCellStyle = {
 
 // Define fields that should be excluded from automatic column generation
 const excludedFields = [
-  'id', 'checkbox', 'name', 'candidateFieldValues', 'jobTitle',
+  'id', 'checkbox', 'name', 'candidateFieldValues', 'jobTitle', 'firstName', 'lastName', 'uniqueKeyString', 'emailAddress', 'industries', 'profiles','phoneNumbers', 'jobProcess', 'locations','experience', 'experienceStats', 'lastUpdated','education','interests','skills','dataSources','allNumbers','jobName','uploadId','allMails','socialprofiles','tables','created','middleName','middleInitial','creationSource','contactDetails','queryId','phoneNumber','socialProfiles','updatedAt'
   // Add any other fields you want to exclude
 ];
 
@@ -207,7 +207,10 @@ export const createTableColumns = (
         if (edge.node?.candidateFields?.name) {
           // Convert snake_case to camelCase for consistent property naming
           const fieldName = edge?.node?.candidateFields?.name.replace(/_([a-z])/g, (match: string, letter: string) => letter.toUpperCase());
-          fieldNamesSet.add(fieldName);
+          if (!excludedFields.includes(fieldName)) {
+            console.log("fieldName:", fieldName)
+            fieldNamesSet.add(fieldName);
+          }
         }
       });
     }

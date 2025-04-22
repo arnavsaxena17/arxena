@@ -11,10 +11,13 @@ import {
   graphqlQueryToCreateOneCandidateFieldValue,
   graphqlQueryToFindManyCandidateFields,
   graphqlToFetchAllCandidateData,
+  graphqlToFindManyCandidateFieldValues,
   graphqlToFindManyJobs,
   graphQltoUpdateOneCandidate,
   Jobs,
+  mutationToUpdateOnePerson,
   PersonNode,
+  updateCandidateFieldValueMutation,
   UserProfile
 } from 'twenty-shared';
 
@@ -22,6 +25,8 @@ import { generateCompleteMappings, processArxCandidate } from 'src/engine/core-m
 import {
   axiosRequest
 } from 'src/engine/core-modules/candidate-sourcing/utils/utils';
+
+
 import { JwtWrapperService } from 'src/engine/core-modules/jwt/services/jwt-wrapper.service';
 import { CreateFieldsOnObject } from 'src/engine/core-modules/workspace-modifications/object-apis/data/createFields';
 import { CreateMetaDataStructure } from 'src/engine/core-modules/workspace-modifications/object-apis/object-apis-creation';
@@ -1054,6 +1059,7 @@ export class CandidateService {
     apiToken: string,
   ): Promise<any> {
     try {
+      console.log("Going to update fieldName:", fieldName)
       const workspaceId = await this.getWorkspaceIdFromToken(apiToken);
       
       // Initialize candidate fields for this workspace if not already loaded
@@ -1124,19 +1130,13 @@ export class CandidateService {
         }
       }
       
-      // Query to find existing field value
-      const findQuery = `
-        query FindCandidateFieldValue($where: CandidateFieldValueWhereInput!) {
-          candidateFieldValues(where: $where) {
-            edges {
-              node {
-                id
-              }
-            }
-          }
-        }
-      `;
+      // Special handling for mobile_phone field
+      if (fieldName === 'mobilePhone') {
+        console.log("Going to update mobilePhone in person and candidate")
+        return this.handlePhoneNumberUpdate(candidateId, value, apiToken);
+      }
       
+
       const findVariables = {
         where: {
           candidateFieldsId: { eq: fieldInfo.id },
@@ -1145,7 +1145,7 @@ export class CandidateService {
       };
       
       const findResponse = await axiosRequest(
-        JSON.stringify({ query: findQuery, variables: findVariables }),
+        JSON.stringify({ query: graphqlToFindManyCandidateFieldValues, variables: findVariables }),
         apiToken
       );
       
@@ -1153,16 +1153,6 @@ export class CandidateService {
       
       if (existingFieldValues.length > 0) {
         // Update existing field value using a simple GraphQL mutation
-        const updateMutation = `
-          mutation UpdateCandidateFieldValue($id: ID!, $data: CandidateFieldValueUpdateInput!) {
-            updateCandidateFieldValue(id: $id, data: $data) {
-              id
-              name
-              candidateFieldsId
-              candidateId
-            }
-          }
-        `;
         
         const fieldValueId = existingFieldValues[0]?.node?.id;
         
@@ -1172,7 +1162,7 @@ export class CandidateService {
         };
         
         const updateResponse = await axiosRequest(
-          JSON.stringify({ query: updateMutation, variables: updateVariables }),
+          JSON.stringify({ query: updateCandidateFieldValueMutation, variables: updateVariables }),
           apiToken
         );
         
@@ -1202,6 +1192,57 @@ export class CandidateService {
     }
   }
 
+
+
+
+  async handlePhoneNumberUpdate(candidateId: string, value: string, apiToken: string): Promise<any> {
+
+      try {
+        // Get the candidate to find the associated person
+        
+        const candidateResponse = await axiosRequest(
+          JSON.stringify({ query: graphqlToFetchAllCandidateData, variables: { id: candidateId } }),
+          apiToken
+        );
+        console.log("candidateResponse:", candidateResponse.data.data)
+        const personId = candidateResponse?.data?.data?.candidates?.edges[0]?.node?.peopleId;
+        console.log("personId:", personId)
+        if (personId) {
+          // Update person's phoneNumber field
+          
+          await axiosRequest(
+            JSON.stringify({ 
+              query: mutationToUpdateOnePerson, 
+              variables: { 
+                idToUpdate: personId, 
+                input: { phones: {primaryPhoneNumber: String(value)} } 
+              } 
+            }),
+            apiToken
+          );
+          console.log("person updated")
+        }
+        
+        
+        await axiosRequest(
+          JSON.stringify({ 
+            query: graphQltoUpdateOneCandidate, 
+            variables: { 
+              idToUpdate: candidateId, 
+              input: { phoneNumber: {primaryPhoneNumber: String(value)} } 
+            } 
+          }),
+          apiToken
+        );
+        console.log("candidate updated")
+        
+        console.log(`Updated phoneNumber for candidate ${candidateId} and person ${personId}`);
+      } catch (error) {
+        console.error('Error updating phoneNumber fields:', error);
+        // Continue with the regular field value update even if this fails
+      }
+
+    }
   /**
    * Updates a direct field on a candidate
    */

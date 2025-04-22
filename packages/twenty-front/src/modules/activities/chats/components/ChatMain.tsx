@@ -396,7 +396,7 @@ export const ChatMain = forwardRef<ChatMainRef, ChatMainProps>(
       <StyledEmptyStateContainer>
         <EmptyJobState
           animatedPlaceholderType="job"
-          title="No jobs found"
+          title="Get started"
           subTitle="Upload a job description to get started"
           ButtonIcon={IconFileDescription}
           buttonTitle="Upload Job Description"

@@ -67,12 +67,16 @@ export const ArxJDUploadModal = ({
 
   // Close modal and reset state
   const closeModal = () => {
+    console.log('closeModal');
     setIsArxUploadJDModalOpen(false);
   };
 
   const handleSubmit = async () => {
+    console.log('handleSubmit');
     const success = await handleCreateJob();
+    console.log('success has been returned', success);
     if (success === true) {
+      console.log('success is true, closing modal');
       closeModal();
     }
   };

@@ -162,7 +162,6 @@ export const useChatTable = (
         checkbox: selectedIds.includes(candidate?.id),
       };
       
-      
       const fieldValues: Record<string, string> = {};
       if (candidate.candidateFieldValues?.edges) {
         candidate.candidateFieldValues.edges.forEach(edge => {
@@ -222,6 +221,7 @@ export const useChatTable = (
     try {
       // Dynamically check if the field exists directly on the candidate object
       // by examining the first candidate in the array (if available)
+      
       const isDirectField = candidates.length > 0 && 
         Object.prototype.hasOwnProperty.call(candidates[0], field) && 
         field !== 'candidateFieldValues';

@@ -73,7 +73,32 @@ export const graphqlQueryToRemoveMessages = `mutation DeleteManyWhatsappMessages
     __typename
   }
 }`;
+export const updateCandidateFieldValueMutation = `
+mutation UpdateCandidateFieldValue($id: ID!, $data: CandidateFieldValueUpdateInput!) {
+  updateCandidateFieldValue(id: $id, data: $data) {
+    id
+    name
+    candidateFieldsId
+    candidateId
+  }
+}
+`;
 
+export const graphqlMutationToDeleteManyCandidateFieldValues = `
+mutation DeleteManyCandidateFieldValues($filter: CandidateFieldValueFilterInput!) {
+  deleteCandidateFieldValues(filter: $filter) {
+    id
+    __typename
+  }
+}
+`;
+
+export const CreateManyCandidateFieldValues = `mutation CreateCandidateFieldValues($data: [CandidateFieldValueCreateInput!]!) {
+  createCandidateFieldValues(data: $data) {
+    __typename
+    id
+  }
+}`;
 export const graphqlQueryToCreateOneCandidateFieldValue = `mutation CreateOneCandidateFieldValue($input: CandidateFieldValueCreateInput!) {
   createCandidateFieldValue(data: $input) {
     position
@@ -413,12 +438,6 @@ mutation CreateOneCandidateField($input: CandidateFieldCreateInput!) {
   }
 }`;
 
-export const CreateManyCandidateFieldValues = `mutation CreateCandidateFieldValues($data: [CandidateFieldValueCreateInput!]!) {
-  createCandidateFieldValues(data: $data) {
-    __typename
-    id
-  }
-}`;
 
 export const CreateManyPeople = `
 mutation CreatePeople($data: [PersonCreateInput!]!) {
@@ -554,14 +573,6 @@ export const createShortlistMutation = `
     }
 `;
 
-export const graphqlMutationToDeleteManyCandidateFieldValues = `
-mutation DeleteManyCandidateFieldValues($filter: CandidateFieldValueFilterInput!) {
-  deleteCandidateFieldValues(filter: $filter) {
-    id
-    __typename
-  }
-}
-`;
 
 export const createViewFieldMutation = `
 mutation CreateOneViewField($input: ViewFieldCreateInput!) {

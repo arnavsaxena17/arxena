@@ -11,10 +11,12 @@ import { useFindManyRecords } from '@/object-record/hooks/useFindManyRecords';
 import { useUpdateOneRecord } from '@/object-record/hooks/useUpdateOneRecord';
 import { ObjectRecord } from '@/object-record/types/ObjectRecord';
 
-import { isDefined } from 'twenty-shared';
+import { createOneCandidateField, isDefined } from 'twenty-shared';
 import { ParsedJD } from '../types/ParsedJD';
 import { createDefaultParsedJD } from '../utils/createDefaultParsedJD';
 import { sendJobToArxena } from '../utils/sendJobToArxena';
+
+
 
 export const useArxJDUpload = (objectNameSingular: string) => {
   const [tokenPair] = useRecoilState(tokenPairState);
@@ -98,6 +100,7 @@ export const useArxJDUpload = (objectNameSingular: string) => {
       const file = acceptedFiles[0];
 
       try {
+        console.log('creating new job in handleFileUpload::');
         const createdJob = await createOneRecord({
           name: file.name.split('.')[0],
         });
@@ -156,6 +159,7 @@ export const useArxJDUpload = (objectNameSingular: string) => {
             companyName: data?.companyName || '',
             companyId: data?.companyId || '',
             companyDetails: data?.companyDetails || '',
+            id: createdJob.id,
             // oneLinePitch: data.oneLinePitch,
           });
           console.log('parsedData::', parsedData);
@@ -219,14 +223,22 @@ export const useArxJDUpload = (objectNameSingular: string) => {
             },
           });
 
+
           if (createPromptsResponse.data.status === 'Success') {
             console.log('Prompts created successfully');
           } else {
             console.error('Failed to create prompts');
           }
+
+          console.log('parsedJD uqestion::::', parsedJD?.chatFlow);
+          console.log('parsedJD uqestion::::', parsedJD?.chatFlow?.questions);
+          // Create candidate fields for each question in the chat flow
+
         } else {
           throw new Error(response.data.message || 'Failed to process JD');
         }
+
+        console.log('parsedJD uqestion::::', parsedJD?.chatFlow);
       } catch (error: any) {
         console.error('Error processing JD:', error);
         setError(error?.message || 'Failed to process JD');
@@ -247,22 +259,28 @@ export const useArxJDUpload = (objectNameSingular: string) => {
   );
 
   const handleCreateJob = async () => {
+    console.log('handleCreateJob');
+    console.log('parsedJD::', parsedJD);
     if (parsedJD === null) {
+      console.log('parsedJD is null in handleCreateJob');
       return;
     }
 
     try {
       let createdJob: ObjectRecord & { id?: string; name?: string } | undefined;
+      console.log('parsedJD.companyName::', parsedJD.companyName);
       if (
         typeof parsedJD.companyName === 'string' &&
         parsedJD.companyName !== ''
       ) {
+        console.log('parsedJD.companyName is not empty in handleCreateJob');
         const matchedCompany = findBestCompanyMatch(parsedJD.companyName);
         if (
           matchedCompany !== null &&
           typeof matchedCompany.id === 'string' &&
           matchedCompany.id !== ''
         ) {
+          console.log('matchedCompany::', matchedCompany);
           const { companyName, ...jobData } = parsedJD;
           createdJob = await createOneRecord({
             ...jobData,
@@ -270,6 +288,7 @@ export const useArxJDUpload = (objectNameSingular: string) => {
           });
         }
       } else {
+        console.log('parsedJD hence creating new record in database in handleCreateJob::', parsedJD);
         createdJob = await createOneRecord({
           ...parsedJD,
         });
@@ -282,6 +301,7 @@ export const useArxJDUpload = (objectNameSingular: string) => {
         isDefined(createdJob?.id)
       ) {
         try {
+          console.log('sending job to arxena in handleCreateJob::');
           await sendJobToArxena(
             createdJob.name,
             createdJob.id,
@@ -292,6 +312,8 @@ export const useArxJDUpload = (objectNameSingular: string) => {
           console.error("Couldn't send job to arxena", arxenaError);
         }
       }
+      console.log('parsedJD.chatFlow.questions::', parsedJD.chatFlow.questions);
+      console.log('parsedJD.chatFlow.questions::createdJob', createdJob);
 
       // After successful job creation and when it's the last step, reload the page and navigate to job details
       if (isDefined(createdJob?.id)) {
@@ -301,6 +323,43 @@ export const useArxJDUpload = (objectNameSingular: string) => {
           window.location.href = `/job/${createdJob.id}`;
         }, 100);
       }
+
+
+      console.log('parsedJD.chatFlow.questions::', parsedJD.chatFlow.questions);
+      if (parsedJD?.chatFlow?.questions && parsedJD.chatFlow.questions.length > 0) {
+        console.log('parsedJD.chatFlow.questions::', parsedJD.chatFlow.questions);
+        try {
+          const createCandidateFieldsPromises = parsedJD.chatFlow.questions.map(
+            async (question: string, index: number) => {
+              return axios({
+                method: 'post',
+                url: `${process.env.REACT_APP_SERVER_BASE_URL}/graphql`,
+                data: {
+                  query: createOneCandidateField,
+                  variables: {
+                    input: {
+                      name: question,
+                      jobsId: parsedJD.id,
+                      candidateFieldType: 'Text',
+                    },
+                  },
+                },
+                headers: {
+                  Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
+                },
+              });
+            },
+          );
+          
+
+          const candidateFieldsResponses = await Promise.all(createCandidateFieldsPromises);
+          console.log('Candidate fields created successfully', candidateFieldsResponses);
+        } catch (error) {
+          console.error('Error creating candidate fields:', error);
+        }
+      }
+
+
 
       return true;
     } catch (error) {
