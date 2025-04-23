@@ -72,11 +72,6 @@ export const RightDrawerRouter = () => {
       <RightDrawerTopBar />
       {!isRightDrawerMinimized && (
         <StyledRightDrawerBody>
-          {rightDrawerPage === RightDrawerPages.CandidateChat && (
-            <div style={{ padding: '16px', backgroundColor: '#f8f9fa', marginBottom: '8px', fontSize: '14px' }}>
-              Debug: CandidateChat drawer requested
-            </div>
-          )}
           {rightDrawerPageComponent}
         </StyledRightDrawerBody>
       )}

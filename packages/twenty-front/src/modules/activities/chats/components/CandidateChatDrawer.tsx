@@ -12,6 +12,7 @@ import { useRecoilState, useRecoilValue } from 'recoil';
 import { MessageNode } from 'twenty-shared';
 import AttachmentPanel from '../components/AttachmentPanel';
 import { selectedCandidateIdState } from '../states/selectedCandidateIdState';
+import { CandidateInfoHeader } from './CandidateInfoHeader';
 import VideoInterviewTab from './VideoInterviewTab';
 
 const StyledContainer = styled.div`
@@ -709,20 +710,30 @@ export const CandidateChatDrawer = () => {
 
   return (
     <StyledContainer>
+      <CandidateInfoHeader />
       <TabContainer>
         <TabList
           tabListInstanceId={tabListId}
           tabs={tabs}
           loading={isLoading}
-          behaveAsLinks={false}
         />
       </TabContainer>
       <TabContent>
-        {activeTabId === 'chat' && renderChatTab()}
-        {activeTabId === 'cv' && renderCVTab()}
-        {activeTabId === 'video-interview' && renderVideoInterviewTab()}
+        {!candidateId ? (
+          <div>No candidate selected</div>
+        ) : isLoading ? (
+          <div>Loading chat...</div>
+        ) : error ? (
+          <div>Error: {error}</div>
+        ) : (
+          <>
+            {activeTabId === 'chat' && renderChatTab()}
+            {activeTabId === 'cv' && renderCVTab()}
+            {activeTabId === 'video-interview' && renderVideoInterviewTab()}
+          </>
+        )}
       </TabContent>
-      {activeTabId === 'chat' && renderMessageInput()}
+      {candidateId && activeTabId === 'chat' && renderMessageInput()}
     </StyledContainer>
   );
 }; 

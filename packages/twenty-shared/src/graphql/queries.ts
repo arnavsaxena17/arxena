@@ -1272,7 +1272,7 @@ export const graphqlToFindManyCandidateFieldValues = `query FindManyCandidateFie
             engagementStatus
             messagingChannel
             whatsappProvider
-            personId
+            peopleId
             jobsId
             name
             status
