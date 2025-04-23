@@ -30,11 +30,11 @@ import { useRecoilComponentValueV2 } from '@/ui/utilities/state/component-state/
 import { useSetRecoilComponentStateV2 } from '@/ui/utilities/state/component-state/hooks/useSetRecoilComponentStateV2';
 import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
-import { IconLayoutSidebarRightExpand, IconList, IconMessages } from '@tabler/icons-react';
+import { IconLayoutSidebarRightExpand, IconList } from '@tabler/icons-react';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useSetRecoilState } from 'recoil';
 import { TableContainer } from './styled';
-import { createTableColumns } from './TableColumns';
+import { createContextMenu, createTableColumns } from './TableColumns';
 import { ChatTableProps } from './types';
 import { useChatTable } from './useChatTable';
 
@@ -245,6 +245,8 @@ export const ChatTable: React.FC<ChatTableProps> = ({
     currentCandidate,
     selectedCandidates,
     handleCheckboxChange,
+    handleSelectAll,
+    handleSelectRows,
     handleViewChats,
     handleViewCVs,
     clearSelection,
@@ -256,11 +258,10 @@ export const ChatTable: React.FC<ChatTableProps> = ({
     createUpdateCandidateStatus,
     setIsAttachmentPanelOpen,
     setIsChatOpen,
-    handleSelectAll,
-    handleSelectRows,
     handleAfterChange,
     tableId,
     tableData,
+    specialHandleUnselect,
   } = useChatTable(candidates, onCandidateSelect, handleRefreshData);
 
   const theme = useTheme();
@@ -446,15 +447,15 @@ export const ChatTable: React.FC<ChatTableProps> = ({
       
       // Open the right drawer directly
       console.log('About to open right drawer with CandidateChat page');
-      try {
-        openRightDrawer(RightDrawerPages.CandidateChat, {
-          title: `Chat with ${candidate.name}`,
-          Icon: IconMessages,
-        });
-        console.log('Right drawer opened successfully');
-      } catch (error) {
-        console.error('Error opening right drawer:', error);
-      }
+      // try {
+      //   openRightDrawer(RightDrawerPages.CandidateChat, {
+      //     title: `Chat with ${candidate.name}`,
+      //     Icon: IconMessages,
+      //   });
+      //   console.log('Right drawer opened successfully');
+      // } catch (error) {
+      //   console.error('Error opening right drawer:', error);
+      // }
     }
   };
 
@@ -614,7 +615,7 @@ export const ChatTable: React.FC<ChatTableProps> = ({
   const mutableData = useMemo(() => {
     return tableData.map(row => JSON.parse(JSON.stringify(row)));
   }, [tableData]);
-  
+
   // Force Handsontable to re-render when data changes
   useEffect(() => {
     if (hotRef.current?.hotInstance) {
@@ -656,7 +657,7 @@ export const ChatTable: React.FC<ChatTableProps> = ({
             rowHeights={30}
             manualRowResize={true}
             manualColumnResize={true}
-            contextMenu={true}
+            contextMenu={createContextMenu(candidates, specialHandleUnselect, selectedIds)}
             filters={true}
             dropdownMenu={true}
             cells={handleCellProperties}

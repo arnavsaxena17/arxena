@@ -62,6 +62,7 @@ type UseChatTableReturn = {
   handleAfterChange: (changes: CellChange[] | null, source: ChangeSource) => void;
   tableId: string;
   tableData: TableData[];
+  specialHandleUnselect: (idsToKeep: string[]) => void;
 };
 
 export const useChatTable = (
@@ -297,9 +298,16 @@ export const useChatTable = (
   }, [candidates, saveDataToBackend]);
   
   const handleCheckboxChange = useCallback((individualId: string) => {
+    console.log('[CHECKBOX] handleCheckboxChange called with ID:', individualId);
+    console.log('[CHECKBOX] Current selectedIds:', selectedIds);
+    
     const newSelectedIds = selectedIds.includes(individualId)
       ? selectedIds.filter((id) => id !== individualId)
       : [...selectedIds, individualId];
+    
+    console.log('[CHECKBOX] New selectedIds will be:', newSelectedIds);
+    console.log('[CHECKBOX] Action:', selectedIds.includes(individualId) ? 'REMOVING' : 'ADDING');
+    
     setSelectedIds(newSelectedIds);
     setRecordsToEnrich(newSelectedIds);
     setContextStoreNumberOfSelectedRecords(newSelectedIds.length);
@@ -307,6 +315,8 @@ export const useChatTable = (
       mode: 'selection',
       selectedRecordIds: newSelectedIds,
     });
+    
+    console.log('[CHECKBOX] State updated, selectedIds should now be:', newSelectedIds);
   }, [selectedIds, setContextStoreNumberOfSelectedRecords, setContextStoreTargetedRecordsRule, setRecordsToEnrich]);
 
   const handleSelectAll = useCallback(() => {
@@ -321,9 +331,19 @@ export const useChatTable = (
   }, [candidates, selectedIds, setContextStoreNumberOfSelectedRecords, setContextStoreTargetedRecordsRule, setRecordsToEnrich]);
   
   const handleSelectRows = useCallback((rowStartIndex: number, rowEndIndex: number) => {
+    console.log('[SELECT_ROWS] handleSelectRows called with', rowStartIndex, rowEndIndex);
+    
+    // Special case for the context menu where we're directly setting the IDs
+    // Instead of using row indices, use the current selectedIds
+    if (rowStartIndex === -1 && rowEndIndex === -1) {
+      console.log('[SELECT_ROWS] This is a context menu unselect operation');
+      return;
+    }
+    
     // Make sure indices are valid
     if (rowStartIndex < 0 || rowEndIndex < 0 || 
         rowStartIndex >= candidates.length || rowEndIndex >= candidates.length) {
+      console.log('[SELECT_ROWS] Invalid row indices, ignoring');
       return;
     }
     
@@ -331,13 +351,17 @@ export const useChatTable = (
     const startIdx = Math.min(rowStartIndex, rowEndIndex);
     const endIdx = Math.max(rowStartIndex, rowEndIndex);
     
+    console.log(`[SELECT_ROWS] Processing row range ${startIdx} to ${endIdx}`);
+    
     // Get IDs for all candidates in the range
     const rangeIds = candidates.slice(startIdx, endIdx + 1).map(candidate => candidate.id);
+    console.log('[SELECT_ROWS] Found candidate IDs in range:', rangeIds);
     
     // Create a new set that includes currently selected IDs plus new range IDs
     // Using a Set to ensure no duplicates
     const newSelectedSet = new Set([...selectedIds, ...rangeIds]);
     const newSelectedIds = Array.from(newSelectedSet);
+    console.log('[SELECT_ROWS] New selected IDs:', newSelectedIds);
 
     // Update selections
     setSelectedIds(newSelectedIds);
@@ -357,6 +381,8 @@ export const useChatTable = (
       }
     }
     setTableData(newTableData);
+    
+    console.log('[SELECT_ROWS] Selection updated successfully');
   }, [candidates, selectedIds, setRecordsToEnrich, setContextStoreNumberOfSelectedRecords, setContextStoreTargetedRecordsRule, tableData, setTableData]);
   
   const handleViewChats = useCallback((): void => {
@@ -371,9 +397,14 @@ export const useChatTable = (
   }, []);
 
   const clearSelection = useCallback((): void => {
+    console.log('[CLEAR] clearSelection called');
+    console.log('[CLEAR] Current selectedIds:', selectedIds);
+    
     setSelectedIds([]);
     setRecordsToEnrich([]);
-  }, [setRecordsToEnrich]);
+    
+    console.log('[CLEAR] Selection cleared, selectedIds should now be empty');
+  }, [setRecordsToEnrich, selectedIds]);
 
   const handlePrevCandidate = useCallback((): void => {
     setCurrentCandidateIndex(prev => Math.max(0, prev - 1));
@@ -458,6 +489,51 @@ export const useChatTable = (
     }
   }, [selectedCandidateIds, tokenPair, enqueueSnackBar, theme.icon.size.md]);
 
+  // Special function to unselect rows from context menu without toggling
+  const specialHandleUnselect = useCallback((idsToKeep: string[]) => {
+    console.log('[SPECIAL_UNSELECT] ========== BEGIN ==========');
+    console.log('[SPECIAL_UNSELECT] Called with IDs to keep:', idsToKeep);
+    console.log('[SPECIAL_UNSELECT] Current selectedIds:', selectedIds);
+    
+    // IMPORTANT: Create a new array to avoid reference issues
+    const newIds = [...idsToKeep];
+    console.log('[SPECIAL_UNSELECT] Created new array with IDs:', newIds);
+    
+    // Set selected IDs directly, without toggling
+    console.log('[SPECIAL_UNSELECT] About to call setSelectedIds');
+    setSelectedIds(newIds);
+    console.log('[SPECIAL_UNSELECT] Called setSelectedIds');
+    
+    console.log('[SPECIAL_UNSELECT] About to update related state');
+    setRecordsToEnrich(newIds);
+    setContextStoreNumberOfSelectedRecords(newIds.length);
+    setContextStoreTargetedRecordsRule({
+      mode: 'selection',
+      selectedRecordIds: newIds,
+    });
+    
+    console.log('[SPECIAL_UNSELECT] Updated global state to new IDs:', newIds);
+    
+    // Update checkbox UI immediately
+    console.log('[SPECIAL_UNSELECT] About to update UI checkboxes');
+    const newTableData = createMutableCopy(tableData);
+    for (let i = 0; i < newTableData.length; i++) {
+      if (newTableData[i] && newTableData[i].id) {
+        // Mark checkboxes based on whether they're in the kept IDs
+        const rowId = newTableData[i].id;
+        if (rowId) { // Make sure the ID is not undefined
+          const isChecked = newIds.includes(rowId);
+          newTableData[i].checkbox = isChecked;
+          console.log(`[SPECIAL_UNSELECT] Row ${i} with ID ${rowId} checkbox set to ${isChecked}`);
+        }
+      }
+    }
+    setTableData(newTableData);
+    
+    console.log('[SPECIAL_UNSELECT] Updated table data checkboxes');
+    console.log('[SPECIAL_UNSELECT] ========== END ==========');
+  }, [selectedIds, setRecordsToEnrich, setContextStoreNumberOfSelectedRecords, setContextStoreTargetedRecordsRule, tableData, setTableData]);
+
   return {
     selectedIds,
     isAttachmentPanelOpen,
@@ -482,5 +558,6 @@ export const useChatTable = (
     handleAfterChange,
     tableId,
     tableData,
+    specialHandleUnselect,
   };
 };

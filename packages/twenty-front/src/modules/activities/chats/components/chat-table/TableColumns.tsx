@@ -22,11 +22,155 @@ const urlFields = [
   'resdexNaukriUrl', 'hiringNaukriUrl', 'website', 'websiteUrl',
 ];
 
+/**
+ * Unselect all selected candidates from the table
+ * @param setSelectedIds Function to update the selected IDs state
+ */
+export const unselect = (setSelectedIds: (ids: string[]) => void) => {
+  setSelectedIds([]);
+};
+
+/**
+ * Configure context menu for the table
+ * @param candidates List of candidates
+ * @param setSelectedIds Function to update selected IDs
+ * @param selectedIds Currently selected IDs
+ * @returns Context menu configuration
+ */
+export const createContextMenu = (
+  candidates: CandidateNode[],
+  setSelectedIds: (ids: string[]) => void,
+  selectedIds: string[],
+) => {
+  console.log('[CREATE_CONTEXT_MENU] Creating context menu with selectedIds:', selectedIds);
+  
+  return {
+    items: {
+      copy: {
+        name: 'Copy',
+      },
+      unselect_all: {
+        name: 'Unselect All',
+        callback: () => {
+          console.log('[CONTEXT_MENU] Unselect All clicked');
+          unselect(setSelectedIds);
+        },
+      },
+      unselect_selected_rows: {
+        name: 'Unselect Selected Rows',
+        callback: function(key: string, selection: any[]) {
+          console.log('[UNSELECT] === Unselect Selected Rows called ===');
+          console.log('[UNSELECT] Current selection ranges:', JSON.stringify(selection));
+          console.log('[UNSELECT] Currently selected IDs:', selectedIds);
+          
+          if (!selection || selection.length === 0) {
+            console.log('[UNSELECT] No selection found');
+            return;
+          }
+          
+          // Get all rows in the current selection range
+          const rowsToUnselect = new Set<number>();
+          
+          // Process all selected ranges (in case of multi-selection with Ctrl key)
+          for (const range of selection) {
+            const startRow = Math.min(range.start.row, range.end.row);
+            const endRow = Math.max(range.start.row, range.end.row);
+            
+            console.log(`[UNSELECT] Processing range: rows ${startRow} to ${endRow}`);
+            
+            // Add all rows in the range to the set of rows to unselect
+            for (let row = startRow; row <= endRow; row++) {
+              rowsToUnselect.add(row);
+            }
+          }
+          
+          console.log('[UNSELECT] Rows to unselect indices:', Array.from(rowsToUnselect));
+          
+          // Find candidate IDs to unselect
+          const idsToUnselect = new Set<string>();
+          
+          // Only unselect rows that are currently selected
+          rowsToUnselect.forEach(row => {
+            if (row >= 0 && row < candidates.length) {
+              const candidate = candidates[row];
+              if (candidate) {
+                console.log(`[UNSELECT] Row ${row} candidate: id=${candidate.id}, name=${candidate.name || 'unnamed'}`);
+                
+                if (candidate.id && selectedIds.includes(candidate.id)) {
+                  console.log(`[UNSELECT] Row ${row} (${candidate.name || 'unnamed'}) IS selected - adding to unselect list`);
+                  idsToUnselect.add(candidate.id);
+                } else {
+                  console.log(`[UNSELECT] Row ${row} (${candidate.name || 'unnamed'}) is NOT selected - skipping`);
+                }
+              } else {
+                console.log(`[UNSELECT] Row ${row} has no candidate data`);
+              }
+            } else {
+              console.log(`[UNSELECT] Row ${row} is out of bounds - candidates length: ${candidates.length}`);
+            }
+          });
+          
+          if (idsToUnselect.size > 0) {
+            console.log('[UNSELECT] IDs to unselect:', Array.from(idsToUnselect));
+            
+            // Create a NEW array with only IDs we want to keep
+            const idsToKeep = selectedIds.filter(id => !idsToUnselect.has(id));
+            console.log('[UNSELECT] IDs to keep selected after unselect:', idsToKeep);
+            
+            // IMPORTANT: Directly call setSelectedIds instead of returning the array
+            console.log('[UNSELECT] Directly calling setSelectedIds with IDs to keep');
+            setSelectedIds([...idsToKeep]);
+          } else {
+            console.log('[UNSELECT] No candidates to unselect in this range');
+          }
+        },
+        disabled: function() {
+          return selectedIds.length === 0;
+        }
+      },
+      select_row: {
+        name: 'Select This Row',
+        callback: function(key: string, selection: any[]) {
+          // Get the row index from the selection
+          const row = selection[0].start.row;
+          if (row >= 0 && row < candidates.length) {
+            const candidate = candidates[row];
+            if (candidate && candidate.id) {
+              // Add this candidate to selection
+              // We need to create a new array with both previous IDs and new ID
+              const newIds = [...selectedIds, candidate.id];
+              setSelectedIds(newIds);
+            }
+          }
+        }
+      },
+      export_to_csv: {
+        name: 'Export to CSV',
+        callback: function() {
+          // This needs to be implemented based on your application's export functionality
+          console.log('Export to CSV triggered');
+          // You would typically call an export function here
+        }
+      },
+      separator1: { name: '---------' },
+      row_below: {
+        name: 'Insert row below',
+        disabled: true // Disabled for demonstration
+      },
+      remove_row: {
+        name: 'Remove row',
+        disabled: true // Disabled for demonstration
+      }
+    }
+  };
+};
+
 export const createTableColumns = (
   candidates: CandidateNode[],
   handleCheckboxChange: (candidateId: string) => void,
   selectedIds: string[],
   handleSelectAll: () => void,
+  setSelectedIds?: (ids: string[]) => void, // Added parameter for unselect functionality
 ): Handsontable.ColumnSettings[] => {
   // Define standard renderers
   const checkboxRenderer: ColumnRenderer = (instance, td, row, column, prop, value) => {
@@ -205,20 +349,13 @@ export const createTableColumns = (
       renderer: checkboxRenderer,
       className: 'htCenter htMiddle',
     },
-    // {
-    //   data: 'name',
-    //   title: 'Name',
-    //   type: 'text',
-    //   width: 150,
-    //   renderer: nameRenderer,
-    // },
-    // {
-    //   data: 'jobTitle',
-    //   title: 'Job Title',
-    //   type: 'text',
-    //   width: 150,
-    //   renderer: simpleRenderer,
-    // },
+    {
+      data: 'name',
+      title: 'Full Name',
+      type: 'text',
+      width: 150,
+      renderer: nameRenderer,
+    },
   ];
 
   // Add contact info columns
@@ -240,6 +377,24 @@ export const createTableColumns = (
       renderer: emailRenderer,
       readOnly: false,
       editor: 'text'
+    },
+  ];
+
+  // Profile title and company columns
+  const profileColumns: Handsontable.ColumnSettings[] = [
+    {
+      data: 'jobTitle',
+      title: 'Profile Title',
+      type: 'text',
+      width: 150,
+      renderer: simpleRenderer,
+    },
+    {
+      data: 'company',
+      title: 'Job Company',
+      type: 'text',
+      width: 150,
+      renderer: simpleRenderer,
     },
   ];
 
@@ -340,6 +495,16 @@ export const createTableColumns = (
   console.log("base baseDataColumns:", baseDataColumns)
   console.log("base dynamicColumns:", dynamicColumns)
 
-  // Return combined fixed and dynamic columns
-  return [...baseColumns,  ...dynamicColumns, ...contactColumns,...baseDataColumns];
+  // Return combined fixed and dynamic columns in the requested order
+  return [
+    ...baseColumns,       // checkbox, full name
+    contactColumns[0],    // phone number
+    ...profileColumns,    // profile title, job company
+    contactColumns[1],    // email
+    ...dynamicColumns,
+    ...baseDataColumns.filter(col => 
+      // Filter out any duplicates that might already be in profileColumns
+      col.data !== 'jobTitle' && col.data !== 'company'
+    )
+  ];
 };
