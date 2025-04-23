@@ -103,6 +103,8 @@ export const useArxJDUpload = (objectNameSingular: string) => {
         console.log('creating new job in handleFileUpload::');
         const createdJob = await createOneRecord({
           name: file.name.split('.')[0],
+          jobCode: file.name.split('.')[0].replace(/ /g, '-').slice(0, 10),
+          chatFlowOrder: "['startChat']",          
         });
         console.log('createdJob::', createdJob);
 

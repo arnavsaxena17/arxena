@@ -14,15 +14,12 @@ const truncatedCellStyle = {
 
 // Define fields that should be excluded from automatic column generation
 const excludedFields = [
-  'id', 'checkbox', 'name', 'candidateFieldValues', 'jobTitle', 'firstName', 'lastName', 'uniqueKeyString', 'emailAddress', 'industries', 'profiles','phoneNumbers', 'jobProcess', 'locations','experience', 'experienceStats', 'lastUpdated','education','interests','skills','dataSources','allNumbers','jobName','uploadId','allMails','socialprofiles','tables','created','middleName','middleInitial','creationSource','contactDetails','queryId','phoneNumber','socialProfiles','updatedAt'
-  // Add any other fields you want to exclude
+  'id', 'checkbox', 'name', 'candidateFieldValues','token', 'jobTitle', 'firstName','phone', 'searchId','phoneNumbers','filterQueryHash','mayAlsoKnow','languages','englishLevel','baseQueryHash','creationDate','apnaSearchToken','lastName', 'uniqueKeyString', 'emailAddress', 'industries', 'profiles', 'jobProcess', 'locations','experience', 'experienceStats', 'lastUpdated','education','interests','skills','dataSources','allNumbers','jobName','uploadId','allMails','socialprofiles','tables','created','middleName','middleInitial','creationSource','contactDetails','queryId','socialProfiles','updatedAt'
 ];
 
-// Define fields that should be rendered as URLs
 const urlFields = [
-  'profileUrl', 'linkedinUrl', 'linkedInUrl', 'githubUrl', 'portfolioUrl',
+  'profileUrl', 'linkedinUrl', 'linkedInUrl', 'githubUrl', 'portfolioUrl','profilePhotoUrl','englishAudioIntroUrl',
   'resdexNaukriUrl', 'hiringNaukriUrl', 'website', 'websiteUrl',
-  // Add any other URL fields you want to include
 ];
 
 export const createTableColumns = (
@@ -167,6 +164,37 @@ export const createTableColumns = (
     return td;
   };
 
+  // Renderers for contact info from people object
+  const phoneRenderer: ColumnRenderer = (instance, td, row, column, prop, value) => {
+    const candidate = candidates[row];
+    
+    // Use the provided value if it exists (e.g., from edited data)
+    // Otherwise, construct from the candidate object
+    const phoneNumber = value || candidate?.people?.phones?.primaryPhoneNumber || 'N/A';
+    
+    const div = document.createElement('div');
+    Object.assign(div.style, truncatedCellStyle);
+    div.textContent = phoneNumber;
+    td.innerHTML = '';
+    td.appendChild(div);
+    return td;
+  };
+  
+  const emailRenderer: ColumnRenderer = (instance, td, row, column, prop, value) => {
+    const candidate = candidates[row];
+    
+    // Use the provided value if it exists (e.g., from edited data)
+    // Otherwise, construct from the candidate object
+    const email = value || candidate?.people?.emails?.primaryEmail || 'N/A';
+    
+    const div = document.createElement('div');
+    Object.assign(div.style, truncatedCellStyle);
+    div.textContent = email;
+    td.innerHTML = '';
+    td.appendChild(div);
+    return td;
+  };
+
   // Base columns that always exist
   const baseColumns: Handsontable.ColumnSettings[] = [
     {
@@ -193,6 +221,28 @@ export const createTableColumns = (
     // },
   ];
 
+  // Add contact info columns
+  const contactColumns: Handsontable.ColumnSettings[] = [
+    {
+      data: 'phone',
+      title: 'Phone Number',
+      type: 'text',
+      width: 150,
+      renderer: phoneRenderer,
+      readOnly: false,
+      editor: 'text'
+    },
+    {
+      data: 'email',
+      title: 'Email',
+      type: 'text',
+      width: 200,
+      renderer: emailRenderer,
+      readOnly: false,
+      editor: 'text'
+    },
+  ];
+
   // Collect all unique field names from candidateFieldValues across all candidates
   const fieldNamesSet = new Set<string>();
   
@@ -205,10 +255,8 @@ export const createTableColumns = (
     if (candidateFieldEdges) {
       candidateFieldEdges.forEach(edge => {
         if (edge.node?.candidateFields?.name) {
-          // Convert snake_case to camelCase for consistent property naming
           const fieldName = edge?.node?.candidateFields?.name.replace(/_([a-z])/g, (match: string, letter: string) => letter.toUpperCase());
           if (!excludedFields.includes(fieldName)) {
-            console.log("fieldName:", fieldName)
             fieldNamesSet.add(fieldName);
           }
         }
@@ -230,7 +278,7 @@ export const createTableColumns = (
       // Also add chat control fields we know exist in baseData
       const chatControlFields = [
         'startChat', 'startChatCompleted', 
-        'stopChat', 'stopChatCompleted',
+        'stopChat', 'stopChatCompleted', 'phoneNumber',
         'startMeetingSchedulingChat', 'startMeetingSchedulingChatCompleted',
         'stopMeetingSchedulingChat', 'stopMeetingSchedulingChatCompleted',
         'startVideoInterviewChat', 'startVideoInterviewChatCompleted',
@@ -293,5 +341,5 @@ export const createTableColumns = (
   console.log("base dynamicColumns:", dynamicColumns)
 
   // Return combined fixed and dynamic columns
-  return [...baseColumns, ...dynamicColumns, ...baseDataColumns, ];
+  return [...baseColumns,  ...dynamicColumns, ...contactColumns,...baseDataColumns];
 };

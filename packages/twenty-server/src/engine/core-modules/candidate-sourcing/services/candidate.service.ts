@@ -1255,7 +1255,7 @@ export class CandidateService {
     try {
       // Format the value based on field type
       let formattedValue = value;
-      
+      console.log("formattedValue::", formattedValue)
       // Convert boolean strings to actual booleans
       if (value === 'true' || value === 'false') {
         formattedValue = value === 'true';
@@ -1265,18 +1265,19 @@ export class CandidateService {
       const updateData: Record<string, any> = {};
       updateData[fieldName] = formattedValue;
       
+      console.log("updateData::", updateData)
       // Use the shared mutation from twenty-shared
       const variables = {
         idToUpdate: candidateId,
         input: updateData
       };
-      
+      console.log("variables::", variables)
       const response = await axiosRequest(
         JSON.stringify({ query: graphQltoUpdateOneCandidate, variables }),
         apiToken
       );
-      
-      return response?.data?.data?.updateCandidate;
+      console.log("response::", response?.data?.data)
+      return response?.data?.data;
     } catch (error) {
       console.error('Error updating candidate field:', error);
       throw error;

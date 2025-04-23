@@ -136,8 +136,11 @@ export const useChatTable = (
     return candidates.map(candidate => {
       const baseData = {
         id: candidate.id,
+        // Set the phone field from people object for the phone column
+        phone: candidate?.people?.phones?.primaryPhoneNumber || candidate.phoneNumber || 'N/A',
+        // Set the email field from people object for the email column
+        email: candidate?.people?.emails?.primaryEmail || candidate.email || 'N/A',
         phoneNumber: candidate.phoneNumber || 'N/A',
-        email: candidate.email || 'N/A',
         status: candidate.status || 'N/A',
         candidateFieldValues: candidate.candidateFieldValues || 'N/A',
         chatCount: candidate?.chatCount || 'N/A',
@@ -219,16 +222,10 @@ export const useChatTable = (
   
   const saveDataToBackend = useCallback(async (candidateId: string, field: string, value: any) => {
     try {
-      // Dynamically check if the field exists directly on the candidate object
-      // by examining the first candidate in the array (if available)
-      
       const isDirectField = candidates.length > 0 && 
         Object.prototype.hasOwnProperty.call(candidates[0], field) && 
         field !== 'candidateFieldValues';
-      
-      console.log(`Updating field: ${field}, isDirectField: ${isDirectField}`);
-      
-      // Choose the appropriate endpoint based on field type
+      console.log(`Updating field: ${field}, isDirectField: ${isDirectField}`);      
       const endpoint = isDirectField 
         ? `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/update-candidate-field`
         : `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/update-candidate-field-value`;

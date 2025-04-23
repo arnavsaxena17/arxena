@@ -352,6 +352,7 @@ export const ChatTable: React.FC<ChatTableProps> = ({
     hotRef.current.hotInstance.render();
   }, [theme.name]);
 
+  console.log("candidates::", candidates);
   const columns = useMemo(
     () => createTableColumns(candidates, handleCheckboxChange, selectedIds, handleSelectAll),
     [candidates, handleCheckboxChange, selectedIds, handleSelectAll]

@@ -101,6 +101,9 @@ export const useCheckDataIntegrityOfJob = ({
             data?.jobs?.edges?.[0]?.node?.questions?.edges?.length === 0 &&
               'No questions attached',
 
+
+              
+
             // Video interview template
             !data?.jobs?.edges?.[0]?.node?.videoInterviewTemplate?.edges &&
               'Video interview template data structure is missing',

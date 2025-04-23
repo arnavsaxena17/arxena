@@ -478,7 +478,7 @@ export const CandidateChatDrawer = () => {
     };
     
     loadTemplates();
-  }, [candidateId, tokenPair, activeTabId, setActiveTabId]);
+  }, [candidateId, activeTabId, setActiveTabId]);
 
   const sendMessage = async (messageText: string) => {
     if (!phoneNumber) {

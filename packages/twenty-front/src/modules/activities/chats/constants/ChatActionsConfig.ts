@@ -15,9 +15,9 @@ import { MultipleRecordsActionKeys } from '@/action-menu/actions/record-actions/
 import { ActionHook } from '@/action-menu/actions/types/ActionHook';
 import { ActionViewType } from '@/action-menu/actions/types/ActionViewType';
 import {
-    ActionMenuEntry,
-    ActionMenuEntryScope,
-    ActionMenuEntryType,
+  ActionMenuEntry,
+  ActionMenuEntryScope,
+  ActionMenuEntryType,
 } from '@/action-menu/types/ActionMenuEntry';
 import { useBulkMessageChatAction } from '@/activities/chats/hooks/useBulkMessageChatAction';
 import { useViewAttachmentsChatAction } from '@/activities/chats/hooks/useViewAttachmentsChatAction';
@@ -25,14 +25,14 @@ import { ChatActionKeys } from '@/activities/chats/types/ChatActionKeys';
 import { msg } from '@lingui/core/macro';
 import { IconEngine, IconMessageCircle, IconShare } from '@tabler/icons-react';
 import {
-    IconCopy,
-    IconFileCheck,
-    IconList,
-    IconMessage,
-    IconPaperclip,
-    IconRefresh,
-    IconUser,
-    IconVideo,
+  IconCopy,
+  IconFileCheck,
+  IconList,
+  IconMessage,
+  IconPaperclip,
+  IconRefresh,
+  IconUser,
+  IconVideo,
 } from 'twenty-ui';
 
 export const CHAT_ACTIONS_CONFIG: Record<
@@ -231,11 +231,12 @@ export const CHAT_ACTIONS_CONFIG: Record<
     label: msg`Update Snapshot Profiles From Job Boards`,
     position: 5,
     Icon: IconList,
-    accent: 'placeholder',
-    isPinned: false,
+    accent: 'danger',
+    isPinned: true,
     availableOn: [
       ActionViewType.INDEX_PAGE_BULK_SELECTION,
       ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
+      ActionViewType.SHOW_PAGE,
     ],
     useAction: useUpdateSnapshotProfilesFromJobBoardsAction,
   },

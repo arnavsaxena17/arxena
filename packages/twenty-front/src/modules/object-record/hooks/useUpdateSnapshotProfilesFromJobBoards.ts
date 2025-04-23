@@ -22,7 +22,7 @@ export const useUpdateSnapshotProfilesFromJobBoards = ({
   //   let scopeId: string | undefined;
   // let currentViewWithCombinedFiltersAndSorts: any;
   const updateSnapshotProfiles = async (candidateIds: string[],uniqueStringKeys:string[], personIds:string[], objectNameSingular: string) => {
-    console.log("jobCandidateIds::", candidateIds);
+    console.log("candidateIds::", candidateIds);
     console.log("objectNameSingular::", objectNameSingular);
     
     setLoading(true);

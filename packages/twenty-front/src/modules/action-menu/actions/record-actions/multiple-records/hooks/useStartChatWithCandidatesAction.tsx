@@ -5,7 +5,6 @@ import { contextStoreTargetedRecordsRuleComponentState } from '@/context-store/s
 import { computeContextStoreFilters } from '@/context-store/utils/computeContextStoreFilters';
 import { BACKEND_BATCH_REQUEST_MAX_COUNT } from '@/object-record/constants/BackendBatchRequestMaxCount';
 import { DEFAULT_QUERY_PAGE_SIZE } from '@/object-record/constants/DefaultQueryPageSize';
-import { useCheckDataIntegrityOfJob } from '@/object-record/hooks/useCheckDataIntegrityOfJob';
 import { useLazyFetchAllRecords } from '@/object-record/hooks/useLazyFetchAllRecords';
 import { useStartChats } from '@/object-record/hooks/useStartChats';
 import { useFilterValueDependencies } from '@/object-record/record-filter/hooks/useFilterValueDependencies';
@@ -32,14 +31,6 @@ export const useStartChatWithCandidatesAction: ActionHookWithObjectMetadataItem 
 
     const { filterValueDependencies } = useFilterValueDependencies();
     const { enqueueSnackBar } = useSnackBar();
-    const { checkDataIntegrityOfJob } = useCheckDataIntegrityOfJob({
-      onError: (error) => {
-        enqueueSnackBar('Data integrity check failed', {
-          variant: SnackBarVariant.Error,
-          duration: 5000,
-        });
-      },
-    });
 
     const graphqlFilter = computeContextStoreFilters(
       contextStoreTargetedRecordsRule,
@@ -54,11 +45,7 @@ export const useStartChatWithCandidatesAction: ActionHookWithObjectMetadataItem 
       objectNameSingular: objectMetadataItem.nameSingular,
       filter: graphqlFilter,
       limit: DEFAULT_QUERY_PAGE_SIZE,
-      // recordGqlFields: { id: true, candidateId: true, jobId: true, jobsId: true },
     });
-
-    // console.log('fetchAllRecordIds', fetchAllRecords);
-    // console.log('fetchAllRecords', fetchAllRecords);
 
     const isRemoteObject = objectMetadataItem.isRemote;
     const shouldBeRegistered =
@@ -66,85 +53,71 @@ export const useStartChatWithCandidatesAction: ActionHookWithObjectMetadataItem 
       isDefined(contextStoreNumberOfSelectedRecords) &&
       contextStoreNumberOfSelectedRecords < BACKEND_BATCH_REQUEST_MAX_COUNT &&
       contextStoreNumberOfSelectedRecords > 0;
-    const [
-      isStartChatWithCandidatesModalOpen,
-      setIsStartChatWithCandidatesModalOpen,
-    ] = useState(false);
-    const [isPerformingIntegrityCheck, setIsPerformingIntegrityCheck] = useState(false);
-    const [integrityCheckError, setIntegrityCheckError] = useState<string | null>(null);
-    const { sendStartChatRequest } = useStartChats({
-      onSuccess: () => {},
-      onError: () => {},
+    
+    const [isStartChatWithCandidatesModalOpen, setIsStartChatWithCandidatesModalOpen] = useState(false);
+    const [isProcessing, setIsProcessing] = useState(false);
+    
+    const { sendStartChatRequest, loading } = useStartChats({
+      onSuccess: () => {
+        enqueueSnackBar('Chats started successfully', {
+          variant: SnackBarVariant.Success,
+          duration: 5000,
+        });
+        setIsStartChatWithCandidatesModalOpen(false);
+      },
+      onError: (error) => {
+        enqueueSnackBar(`Failed to start chats: ${error.message}`, {
+          variant: SnackBarVariant.Error,
+          duration: 5000,
+        });
+      },
     });
 
     const handleStartChatWithCandidatesClick = useCallback(async () => {
       try {
-        console.log('Starting integrity check...');
-        setIsPerformingIntegrityCheck(true);
-        setIntegrityCheckError(null);
+        setIsProcessing(true);
         
-        // First fetch all records
+        // Fetch all records
         const recordsToStartChat = await fetchAllRecordIds();
-        console.log('recordsToStartChat in chandle start chatheck:::', recordsToStartChat);
+        console.log('recordsToStartChat in handle start chat:::', recordsToStartChat);
         
         console.log('objectMetadataItem.nameSingular:::', objectMetadataItem.nameSingular);
-        debugger;
-        console.log('objectMetadataItem.nameSingular in chandle start chat:::', objectMetadataItem.nameSingular);
+        
+        // Get candidate IDs
         const recordIdsToStartChat: string[] = objectMetadataItem.nameSingular
           .toLowerCase()
           ? recordsToStartChat.map((record) => record.id)
           : recordsToStartChat.map((record) => record.candidateId);
           
         console.log('recordIdsToStartChat:::', recordIdsToStartChat);
-        // Get job IDs to check integrity
+        
+        // Get job IDs for data integrity check
         const jobIds = recordsToStartChat
           .filter(record => isDefined(record.jobsId))
           .map(record => record.jobsId);
           
         console.log('jobsId:::', jobIds);
         
-        // We already checked for empty jobIds in onClick, but double-check here as a safeguard
         if (jobIds.length === 0) {
-          console.log('No job associated with selected candidates. Please associate candidates with a job first.');
           throw new Error('No job associated with selected candidates. Please associate candidates with a job first.');
         }
         
-        // Perform data integrity check on jobs
-        await checkDataIntegrityOfJob(jobIds);
-          
-        console.log('recordIdsToStartChat', recordIdsToStartChat);
-        // If we reach here, data integrity check passed
+        // Send the request with both candidate IDs and job IDs
         await sendStartChatRequest(
           recordIdsToStartChat,
           objectMetadataItem.nameSingular,
+          jobIds
         );
-        
-        setIsStartChatWithCandidatesModalOpen(false);
       } catch (error) {
-        let errorMessage = 'Cannot start chats: Job data integrity check failed';
-        
-        if (error instanceof Error) {
-          if (error.message.includes('No job associated')) {
-            errorMessage = error.message;
-          } else {
-            console.error('Error starting chats:', error);
-          }
-        }
-        
-        setIntegrityCheckError(errorMessage);
-        enqueueSnackBar(errorMessage, {
-          variant: SnackBarVariant.Error,
-          duration: 5000,
-        });
+        console.error('Error starting chats:', error);
+        // Error handling is done in the useStartChats hook
       } finally {
-        setIsPerformingIntegrityCheck(false);
+        setIsProcessing(false);
       }
     }, [
       sendStartChatRequest, 
       fetchAllRecordIds, 
-      checkDataIntegrityOfJob, 
-      objectMetadataItem.nameSingular, 
-      enqueueSnackBar
+      objectMetadataItem.nameSingular
     ]);
 
     const onClick = async () => {
@@ -153,11 +126,11 @@ export const useStartChatWithCandidatesAction: ActionHookWithObjectMetadataItem 
       }
       
       try {
-        setIsPerformingIntegrityCheck(true);
+        setIsProcessing(true);
         
         // First fetch all records to check if they have job associations
         const recordsToStartChat = await fetchAllRecordIds();
-        console.log('recordsToStartChat in check:::', recordsToStartChat);
+        console.log('recordsToStartChat in check job associations:::', recordsToStartChat);
         console.log('objectMetadataItem.nameSingular in check:::', objectMetadataItem.nameSingular);
 
         const jobIds = recordsToStartChat
@@ -182,7 +155,7 @@ export const useStartChatWithCandidatesAction: ActionHookWithObjectMetadataItem 
           duration: 5000,
         });
       } finally {
-        setIsPerformingIntegrityCheck(false);
+        setIsProcessing(false);
       }
     };
 
@@ -191,17 +164,11 @@ export const useStartChatWithCandidatesAction: ActionHookWithObjectMetadataItem 
         isOpen={isStartChatWithCandidatesModalOpen}
         setIsOpen={setIsStartChatWithCandidatesModalOpen}
         title={'Start Multiple Chats'}
-        subtitle={`Are you sure you want to start multiple chats?${
-          isPerformingIntegrityCheck
-            ? '\n\nChecking data integrity...'
-            : integrityCheckError
-              ? `\n\nError: ${integrityCheckError}`
-              : ''
-        }`}
+        subtitle={'Are you sure you want to start multiple chats? This will verify job data integrity before proceeding.'}
         onConfirmClick={handleStartChatWithCandidatesClick}
         deleteButtonText={'Start Multiple Chats'}
         confirmButtonAccent="blue"
-        loading={isPerformingIntegrityCheck}
+        loading={isProcessing || loading}
       />
     );
 

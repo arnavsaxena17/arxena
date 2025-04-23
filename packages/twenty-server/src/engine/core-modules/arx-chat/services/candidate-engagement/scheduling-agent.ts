@@ -77,7 +77,7 @@ abstract class BaseCronService {
 }
 
 // const CRON_DISABLED = process.env.NODE_ENV === 'development';
-const CRON_DISABLED = true;
+const CRON_DISABLED = false;
 
 @Injectable()
 export class CandidateEngagementCronService extends BaseCronService {
@@ -87,7 +87,6 @@ export class CandidateEngagementCronService extends BaseCronService {
   })
   async handleCron() {
     console.log('========== SCHEDULING AGENT MODULE LOADED ==========');
-    debugger;
     console.log('handleCron');
     if (CRON_DISABLED) return;
     await this.executeWorkspaceTask(async (token) => {

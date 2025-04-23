@@ -25,9 +25,7 @@ export async function getRecruiterProfileByJob(
   const recruiterProfile: RecruiterProfileType =
     workspaceMemberProfilesResponse?.data?.data?.workspaceMemberProfiles
       ?.edges[0]?.node;
-
   console.log('Got this recruiterProfile:', recruiterProfile);
-
   return recruiterProfile;
 }
 
