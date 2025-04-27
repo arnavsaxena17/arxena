@@ -1,25 +1,12 @@
-import styled from '@emotion/styled';
-import axios from 'axios';
-import { useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
-
-import { Button, IconCheckbox, IconFilter, IconPlus } from 'twenty-ui';
-
-import { ChatMain, ChatMainRef } from '@/activities/chats/components/ChatMain';
+import { ActionMenuComponentInstanceContext } from '@/action-menu/states/contexts/ActionMenuComponentInstanceContext';
+import { CandidateArrProcessing } from '@/activities/chats/components/CandidateArrProcessing';
+import { TableContainer } from '@/activities/chats/components/chat-table/styled';
+import { ChatActionMenu } from '@/activities/chats/components/ChatActionMenu';
 import { ChatOptionsDropdownButton } from '@/activities/chats/components/ChatOptionsDropdownButton';
-import { JobNotFoundState } from '@/activities/chats/components/JobNotFoundState';
 import { PageAddChatButton } from '@/activities/chats/components/PageAddChatButton';
-import { SingleJobViewSkeletonLoader } from '@/activities/chats/components/SingleJobViewSkeletonLoader';
-import { refreshTableDataTriggerState } from '@/activities/chats/states/refreshTableDataTriggerState';
 import { CACHE_KEYS, cacheUtils } from '@/activities/chats/utils/cacheUtils';
-import { ArxEnrichmentModal } from '@/arx-enrich/arxEnrichmentModal';
-import { useSelectedRecordForEnrichment } from '@/arx-enrich/hooks/useSelectedRecordForEnrichment';
-import { currentJobIdState, isArxEnrichModalOpenState } from '@/arx-enrich/states/arxEnrichModalOpenState';
-import { ArxJDUploadModal } from '@/arx-jd-upload/components/ArxJDUploadModal';
-import { useArxUploadJDModal } from '@/arx-jd-upload/hooks/useArxUploadJDModal';
-import { isArxUploadJDModalOpenState } from '@/arx-jd-upload/states/arxUploadJDModalOpenState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
+import { ContextStoreComponentInstanceContext } from '@/context-store/states/contexts/ContextStoreComponentInstanceContext';
 import { ObjectFilterDropdownButton } from '@/object-record/object-filter-dropdown/components/ObjectFilterDropdownButton';
 import { ObjectFilterDropdownComponentInstanceContext } from '@/object-record/object-filter-dropdown/states/contexts/ObjectFilterDropdownComponentInstanceContext';
 import { FiltersHotkeyScope } from '@/object-record/object-filter-dropdown/types/FiltersHotkeyScope';
@@ -27,16 +14,28 @@ import { ObjectSortDropdownButton } from '@/object-record/object-sort-dropdown/c
 import { ObjectSortDropdownComponentInstanceContext } from '@/object-record/object-sort-dropdown/states/context/ObjectSortDropdownComponentInstanceContext';
 import { RecordIndexContextProvider } from '@/object-record/record-index/contexts/RecordIndexContext';
 import { RecordFieldValueSelectorContextProvider } from '@/object-record/record-store/contexts/RecordFieldValueSelectorContext';
-import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
-import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { NotificationsButton } from '@/ui/layout/page/components/NotificationsButton';
 import { PageBody } from '@/ui/layout/page/components/PageBody';
 import { PageContainer } from '@/ui/layout/page/components/PageContainer';
 import { PageHeader } from '@/ui/layout/page/components/PageHeader';
 import { TopBar } from '@/ui/layout/top-bar/components/TopBar';
-import { InterviewCreationModal } from '@/video-interview/interview-creation/InterviewCreationModal';
-import { isVideoInterviewModalOpenState } from '@/video-interview/interview-creation/states/videoInterviewModalState';
 import { ViewComponentInstanceContext } from '@/views/states/contexts/ViewComponentInstanceContext';
+import { useTheme } from '@emotion/react';
+import styled from '@emotion/styled';
+import HotTable, { HotTableRef } from '@handsontable/react-wrapper';
+import axios from 'axios';
+import Handsontable from 'handsontable';
+import { registerAllModules } from 'handsontable/registry';
+import 'handsontable/styles/handsontable.min.css';
+import 'handsontable/styles/ht-theme-main.min.css';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useParams } from 'react-router-dom';
+import { useRecoilState } from 'recoil';
+import { CandidateNode, JobNode } from 'twenty-shared';
+import { Button, IconCheckbox, IconFilter, IconPlus } from 'twenty-ui';
+import { TableData } from './chat-table/types';
+
+registerAllModules();
 
 const StyledPageContainer = styled(PageContainer)`
   display: flex;
@@ -59,6 +58,22 @@ const StyledPageBody = styled(PageBody)`
   position: relative;
 `;
 
+type Job = {
+  id: string;
+  name: string;
+  pathPosition?: string;
+  isActive: boolean;
+};
+
+const LoadingStates = {
+  INITIAL: 'initial',
+  LOADING_CACHE: 'loading_cache',
+  LOADING_API: 'loading_api',
+  READY: 'ready',
+  ERROR: 'error',
+};
+
+
 const StyledTopBar = styled(TopBar)`
   border-bottom: 1px solid ${({ theme }) => theme.border.color.light};
   flex-shrink: 0;
@@ -77,147 +92,230 @@ const StyledRightSection = styled.div`
   gap: ${({ theme }) => theme.betweenSiblingsGap};
 `;
 
-type Job = {
-  id: string;
-  name: string;
-  pathPosition?: string;
-  isActive: boolean;
+
+// Add CSS styles at the top level
+export const truncatedCellStyle = {
+  whiteSpace: 'nowrap',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  maxWidth: '100%',
+  display: 'block',
+};
+
+// Define fields that should be excluded from automatic column generation
+const excludedFields = [
+  'id', 'checkbox', 'name', 'candidateFieldValues','token', 'jobTitle', 'firstName','phone', 'searchId','phoneNumbers','filterQueryHash','mayAlsoKnow','languages','englishLevel','baseQueryHash','creationDate','apnaSearchToken','lastName', 'uniqueKeyString', 'emailAddress', 'industries', 'profiles', 'jobProcess', 'locations','experience', 'experienceStats', 'lastUpdated','education','interests','skills','dataSources','allNumbers','jobName','uploadId','allMails','socialprofiles','tables','created','middleName','middleInitial','creationSource','contactDetails','queryId','socialProfiles','updatedAt'
+];
+
+const urlFields = [
+  'profileUrl', 'linkedinUrl', 'linkedInUrl', 'githubUrl', 'portfolioUrl','profilePhotoUrl','englishAudioIntroUrl',
+  'resdexNaukriUrl', 'hiringNaukriUrl', 'website', 'websiteUrl',
+];
+
+/**
+ * Unselect all selected candidates from the table
+ * @param setSelectedIds Function to update the selected IDs state
+ */
+export const unselect = (setSelectedIds: (ids: string[]) => void) => {
+  setSelectedIds([]);
+};
+
+
+export type TableState = {
+  data: TableData[];
+  jobs: JobNode[];
+  candidates: CandidateNode[];
+  columns: Handsontable.ColumnSettings[];
+  isLoading: boolean;
+  error: string | null;
+  selectedIds: string[];
 };
 
 export const SingleJobView = () => {
   const { jobId, candidateId } = useParams<{ jobId: string; candidateId: string }>();
   const [tokenPair] = useRecoilState(tokenPairState);
   const [job, setJob] = useState<Job | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [currentCandidateId, setCurrentCandidateId] = useState<string | undefined>(candidateId);
-  const navigate = useNavigate();
-  const isMounted = useRef(false);
+  const lastFetchTime = useRef<number>(0);
+
+  const hotRef = useRef<HotTableRef>(null);
+
+
+
   const fetchInProgress = useRef(false);
-  const setCurrentJobId = useSetRecoilState(currentJobIdState);
-  const [, setRefreshTrigger] = useRecoilState(refreshTableDataTriggerState);
-  const chatMainRef = useRef<ChatMainRef>(null);
-  
+  const theme = useTheme();
+  const tableId = useMemo(() => `chat-table-${crypto.randomUUID()}`, []);
+
   // Component instance IDs
   const filterDropdownId = `job-filter-${jobId}`;
   const recordIndexId = `job-${jobId}`;
 
-  const isArxEnrichModalOpen = useRecoilValue(isArxEnrichModalOpenState);
-  const [, setIsArxEnrichModalOpen] = useRecoilState(isArxEnrichModalOpenState);
-  const { hasSelectedRecord, selectedRecordId } = useSelectedRecordForEnrichment();
-  const isVideoInterviewModalOpen = useRecoilValue(isVideoInterviewModalOpenState);
-  const [, setIsVideoInterviewModalOpen] = useRecoilState(isVideoInterviewModalOpenState);
-  const { openUploadJDModal } = useArxUploadJDModal();
-  const isArxUploadJDModalOpen = useRecoilValue(isArxUploadJDModalOpenState);
-  const { enqueueSnackBar } = useSnackBar();
+  const [loadingState, setLoadingState] = useState(LoadingStates.INITIAL);
+  const [jobs, setJobs] = useState<JobNode[]>([]);
 
-  // Handle candidateId changes from URL params
-  useEffect(() => {
-    if (candidateId !== currentCandidateId) {
-      setCurrentCandidateId(candidateId);
-    }
-  }, [candidateId]);
 
-  // Handle candidate selection from ChatMain
-  const handleCandidateSelect = (id: string) => {
-    console.log("handleCandidateSelect::id", id)
-    setCurrentCandidateId(id);
-    
-    // Update URL without full page reload
-    if (jobId) {
-      navigate(`/job/${jobId}/${id}`, { replace: true });
-    }
-  };
+  const [tableState, setTableState] = useState<TableState>({
+    data: [] as TableData[],
+    jobs : [] as JobNode[],
+    candidates: [] as CandidateNode[],
+    columns: [] as Handsontable.ColumnSettings[],
+    selectedIds: [] as string[],
+    isLoading: true,
+    error: null
+  });
+  
+  
 
-  const refreshChatTable = () => {
-    // Method 1: Using the recoil refreshTableDataTriggerState
-    setRefreshTrigger(true);
-    
-    // Method 2: Directly call ChatMain's fetchData method if available
-    if (chatMainRef.current) {
-      chatMainRef.current.fetchData(false, true).catch(error => {
-        console.error('Error refreshing chat table:', error);
-      });
-    }
-  };
-
-  useEffect(() => {
-    const fetchJob = async () => {
-      // Prevent concurrent API calls
-      if (fetchInProgress.current) return;
+  const prepareTableData = (candidates: CandidateNode[]): TableData[] => {
+    return candidates.map(candidate => {
+      const baseData = {
+        id: candidate.id,
+        // Set the phone field from people object for the phone column
+        phone: candidate?.people?.phones?.primaryPhoneNumber || candidate.phoneNumber || 'N/A',
+        // Set the email field from people object for the email column
+        email: candidate?.people?.emails?.primaryEmail || candidate.email || 'N/A',
+        phoneNumber: candidate.phoneNumber || 'N/A',
+        status: candidate.status || 'N/A',
+        candidateFieldValues: candidate.candidateFieldValues || 'N/A',
+        chatCount: candidate?.chatCount || 'N/A',
+        clientInterview: candidate?.clientInterview || 'N/A',    
+        hiringNaukriUrl: candidate?.hiringNaukriUrl || 'N/A',
+        lastEngagementChatControl: candidate?.lastEngagementChatControl || 'N/A',
+        name: candidate?.name || 'N/A',
+        resdexNaukriUrl: candidate?.resdexNaukriUrl || 'N/A',
+        source: candidate?.source || 'N/A',
+        startChat: candidate?.startChat || 'N/A',
+        startChatCompleted: candidate?.startChatCompleted || 'N/A',
+        startMeetingSchedulingChat: candidate?.startMeetingSchedulingChat || 'N/A',
+        startMeetingSchedulingChatCompleted: candidate?.startMeetingSchedulingChatCompleted || 'N/A',
+        startVideoInterviewChat: candidate?.startVideoInterviewChat || 'N/A',
+        startVideoInterviewChatCompleted: candidate?.startVideoInterviewChatCompleted || 'N/A',
+        stopChat: candidate?.stopChat || 'N/A',
+        stopChatCompleted: candidate?.stopChatCompleted || 'N/A',
+        stopMeetingSchedulingChat: candidate?.stopMeetingSchedulingChat || 'N/A',
+        stopMeetingSchedulingChatCompleted: candidate?.stopMeetingSchedulingChatCompleted || 'N/A',
+        stopVideoInterviewChat: candidate?.stopVideoInterviewChat || 'N/A',
+        stopVideoInterviewChatCompleted: candidate?.stopVideoInterviewChatCompleted || 'N/A',
+        checkbox: tableState.selectedIds.includes(candidate?.id),
+      };
       
-      try {
-        fetchInProgress.current = true;
-        setIsLoading(true);
-        
-        // Update the Recoil state with the current jobId
-        if (jobId) {
-          setCurrentJobId(jobId);
-        }
-        
-        // Try to get data from cache first
-        const cachedJobs = cacheUtils.getCache(CACHE_KEYS.JOBS_DATA);
-        if (cachedJobs) {
-          const foundJob = cachedJobs.find((job: any) => job.node.id === jobId);
-          if (foundJob) {
-            setJob({
-              id: foundJob.node.id,
-              name: foundJob.node.name,
-              pathPosition: foundJob.node.pathPosition,
-              isActive: foundJob.node.isActive,
-            });
-            setIsLoading(false);
-            fetchInProgress.current = false;
-            return;
+      const fieldValues: Record<string, string> = {};
+      if (candidate.candidateFieldValues?.edges) {
+        candidate.candidateFieldValues.edges.forEach(edge => {
+          if (edge.node) {
+            const fieldName = edge.node.candidateFields?.name;
+            const camelCaseFieldName = fieldName.replace(/_([a-z])/g, (match: string, letter: string) => letter.toUpperCase());
+            let fieldValue = edge.node?.name;
+            if (fieldName && fieldValue !== undefined) {
+              fieldValues[camelCaseFieldName] = fieldValue;
+            }
+            if (typeof fieldValue === 'object') {
+              fieldValue = JSON.stringify(fieldValue);
+              fieldValues[camelCaseFieldName] = fieldValue;
+            }
           }
-        }
-        
-        // If not in cache or not found, fetch from API
-        const response = await axios.post(
+        });
+      }
+      const updatedBaseData = {
+        ...baseData,
+        ...fieldValues
+      };
+      return updatedBaseData;
+    });
+  }
+
+
+
+  console.log("SingleJobView rendering");
+  
+
+
+  const fetchData = useCallback(async (isInitialLoad = false, forceRefresh = false) => {
+    if (!jobId) return;
+    
+    if (fetchInProgress.current) {
+      return;
+    }
+    
+    try {
+      fetchInProgress.current = true;
+      
+      if (isInitialLoad) {
+        setLoadingState(LoadingStates.LOADING_API);
+      }
+      // setError(null);
+
+      lastFetchTime.current = Date.now();
+      
+      // Use the jobId in the cache key for candidates
+      const candidateCacheKey = `${CACHE_KEYS.CHATS_DATA}_${jobId}`;
+
+      const [candidatesResponse, jobsResponse] = await Promise.all([
+        axios.post(
+          `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/get-candidates-by-job-id`,
+          { jobId, },
+          { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}`, }, },
+        ),
+        axios.post(
           `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/get-all-jobs`,
           {},
-          {
-            headers: {
-              Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
-            },
-          },
-        );
-        
-        if (response.data?.jobs) {
-          // Cache the jobs for future use
-          cacheUtils.setCache(CACHE_KEYS.JOBS_DATA, response.data.jobs);
-          
-          // Find the job by ID
-          const foundJob = response.data.jobs.find(
-            (job: any) => job.node.id === jobId
-          );
-          
-          if (foundJob) {
-            setJob({
-              id: foundJob.node.id,
-              name: foundJob.node.name,
-              pathPosition: foundJob.node.pathPosition,
-              isActive: foundJob.node.isActive,
-            });
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching job details:', error);
-      } finally {
-        setIsLoading(false);
-        fetchInProgress.current = false;
+          { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}`, }, },
+        ),
+      ]);
+
+      const availableCandidates:CandidateNode[] = candidatesResponse.data
+      cacheUtils.setCache(candidateCacheKey, availableCandidates);
+      cacheUtils.setCache(CACHE_KEYS.JOBS_DATA, jobsResponse.data.jobs);
+
+      // First set candidates in tableState to make them available for column generation
+      setTableState(prevState => ({
+        ...prevState,
+        candidates: availableCandidates,
+        jobs: jobsResponse.data.jobs,
+      }));
+
+      const { dynamicColumns, baseDataColumns, generatedColumnsList } = CandidateArrProcessing({ candidates: availableCandidates, excludedFields, urlFields, tableState });
+
+      console.log("dynamicColumns:", dynamicColumns);
+      console.log("generatedColumnsList:", generatedColumnsList);
+
+      const initialData = prepareTableData(availableCandidates);
+      console.log("initialData", initialData);
+      
+      if (initialData.length > 0) {
+        setTableState(prevState => ({
+          ...prevState, 
+          data: initialData,
+          columns: generatedColumnsList
+        }));
       }
-    };
+      setLoadingState(LoadingStates.READY);
 
-    if (jobId) {
-      fetchJob();
+
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      // setError('Failed to load chats. Please try again.');
+      setLoadingState(LoadingStates.ERROR);
+    } finally {
+      fetchInProgress.current = false;
     }
+  }, []);
 
-    isMounted.current = true;
-    
-    return () => {
-      isMounted.current = false;
+  useEffect(() => {
+    const loadData = async () => {
+      await fetchData(true);
+      // After data is loaded, create columns
+      //  setColumns(columnsList);
     };
-  }, [jobId, tokenPair, setCurrentJobId]);
+    
+    loadData();
+  }, [jobId, fetchData]);
+  
+
+  // useEffect(() => {
+  //   const columns = createTableColumns(candidates, selectedIds);
+  //   console.log("columns:", columns)
+  //    setColumns(columns);
+  // }, [candidates, selectedIds]);
 
   const recordIndexContextValue = {
     indexIdentifierUrl: (recordId: string) => `/job/${jobId}/${recordId}`,
@@ -228,44 +326,44 @@ export const SingleJobView = () => {
     recordIndexId,
   };
 
-  const handleEnrichment = () => {
-    if (!currentCandidateId) {
-      enqueueSnackBar('Please select a candidate to enrich', {
-        variant: SnackBarVariant.Warning,
-        duration: 2000,
-      });
-      return;
-    }
-    setIsArxEnrichModalOpen(true);
-  };
+  // const handleEnrichment = () => {
+  //   if (!currentCandidateId) {
+  //     enqueueSnackBar('Please select a candidate to enrich', {
+  //       variant: SnackBarVariant.Warning,
+  //       duration: 2000,
+  //     });
+  //     return;
+  //   }
+  //   setIsArxEnrichModalOpen(true);
+  // };
 
-  const handleVideoInterviewEdit = () => {
-    if (!currentCandidateId) {
-      enqueueSnackBar('Please select a candidate to create video interview', {
-        variant: SnackBarVariant.Warning,
-        duration: 2000,
-      });
-      return;
-    }
-    setIsVideoInterviewModalOpen(true);
-  };
+  // const handleVideoInterviewEdit = () => {
+  //   if (!currentCandidateId) {
+  //     enqueueSnackBar('Please select a candidate to create video interview', {
+  //       variant: SnackBarVariant.Warning,
+  //       duration: 2000,
+  //     });
+  //     return;
+  //   }
+  //   setIsVideoInterviewModalOpen(true);
+  // };
   
-  const handleEngagement = () => {
-    openUploadJDModal();
-  };
+  // const handleEngagement = () => {
+  //   openUploadJDModal();
+  // };
 
-  if (isLoading) {
-    return <SingleJobViewSkeletonLoader />;
-  }
+  // const handleRefresh = () => {
+  //   return fetchData(false, true);
+  // };
 
-  if (!job) {
-    return <JobNotFoundState />;
-  }
+  // Create a console log to verify columns before return
+  console.log("Rendering with columns:", tableState.columns?.length || 0);
+  console.log("recordIndexId:", recordIndexId);
 
   return (
     <StyledPageContainer>
       <RecordFieldValueSelectorContextProvider>
-        <StyledPageHeader title={job.name} Icon={IconCheckbox}>
+        <StyledPageHeader title={''} Icon={IconCheckbox}>
           <Button title="Filter" Icon={IconFilter} variant="secondary" />
           <Button title="Add Candidate" Icon={IconPlus} variant="primary" />
           <PageAddChatButton />
@@ -276,10 +374,10 @@ export const SingleJobView = () => {
             <ViewComponentInstanceContext.Provider value={{ instanceId: recordIndexId }}>
               <StyledTopBar
                 leftComponent={<StyledTabListContainer />}
-                handleRefresh={refreshChatTable}
-                handleEnrichment={handleEnrichment}
-                handleVideoInterviewEdit={handleVideoInterviewEdit}
-                handleEngagement={handleEngagement}
+                // handleRefresh={handleRefresh}
+                // handleEnrichment={handleEnrichment}
+                // handleVideoInterviewEdit={handleVideoInterviewEdit}
+                // handleEngagement={handleEngagement}
                 showRefetch={true}
                 showEnrichment={true}
                 showVideoInterviewEdit={true}
@@ -303,13 +401,51 @@ export const SingleJobView = () => {
               />
             </ViewComponentInstanceContext.Provider>
           </RecordIndexContextProvider>
-          <ChatMain 
-            jobId={jobId}
-            initialCandidateId={currentCandidateId} 
-            onCandidateSelect={handleCandidateSelect}
-            ref={chatMainRef}
-          />
-          
+          <ContextStoreComponentInstanceContext.Provider value={{ instanceId: tableId }} >
+            <ActionMenuComponentInstanceContext.Provider
+              value={{
+                instanceId: tableId,
+              }}
+            >
+              <TableContainer>
+                <HotTable
+                  ref={hotRef}
+                  themeName="ht-theme-main"
+                  data={tableState.data}
+                  columns={tableState.columns}
+                  colHeaders={true}
+                  rowHeaders={true}
+                  height="auto"
+                  licenseKey="non-commercial-and-evaluation"
+                  stretchH="all"
+                  className="htCenter"
+                  columnSorting={true}
+                  readOnly={false}
+                  selectionMode="range"
+                  autoWrapRow={false}
+                  autoWrapCol={false}
+                  autoRowSize={false}
+                  rowHeights={30}
+                  manualRowResize={true}
+                  manualColumnResize={true}
+                  filters={true}
+                  dropdownMenu={true}
+                />
+              </TableContainer>
+              
+              <div style={{ 
+                position: 'fixed', 
+                bottom: 0, 
+                left: 0, 
+                width: '100%', 
+                zIndex: 1000,
+                backgroundColor: theme.background.primary
+              }}>
+                <ChatActionMenu tableId={tableId} />
+              </div>
+            </ActionMenuComponentInstanceContext.Provider>
+          </ContextStoreComponentInstanceContext.Provider>
+          {/*           
           {isArxEnrichModalOpen ? (
             <ArxEnrichmentModal
               objectNameSingular="candidate"
@@ -318,8 +454,8 @@ export const SingleJobView = () => {
           ) : (
             <></>
           )}
-          
-          {isVideoInterviewModalOpen ? (
+           */}
+          {/* {isVideoInterviewModalOpen ? (
             <InterviewCreationModal
               objectNameSingular="candidate"
               objectRecordId={currentCandidateId || '0'}
@@ -327,17 +463,17 @@ export const SingleJobView = () => {
           ) : (
             <></>
           )}
-          
-          {isArxUploadJDModalOpen ? (
+           */}
+          {/* {isArxUploadJDModalOpen ? (
             <ArxJDUploadModal
               objectNameSingular="candidate"
               objectRecordId={currentCandidateId || '0'}
             />
           ) : (
             <></>
-          )}
+          )} */}
         </StyledPageBody>
       </RecordFieldValueSelectorContextProvider>
     </StyledPageContainer>
   );
-}; 
+};

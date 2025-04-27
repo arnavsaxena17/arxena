@@ -37,7 +37,7 @@ import Interview from '@/interviews/components/Interviews';
 import indexAppPath from '@/navigation/utils/indexAppPath';
 // import OrgChart from '@/orgchart/OrgChart';
 import { Jobs } from '@/activities/chats/components/Jobs';
-import { SingleJobView } from '@/activities/chats/components/SingleJobView';
+import { JobPage } from '@/candidate-table/JobPage';
 import { Dashboard } from '@/client-dashboard/components/Dashboard';
 import VideoInterviewFlow from '@/video-interview/interview-response/VideoInterviewFlow';
 import VideoInterviewResponseViewer from '@/video-interview/interview-response/VideoInterviewResponseViewer';
@@ -143,8 +143,10 @@ export const useCreateAppRouter = (
               path={AppPath.CustomLayoutMerged}
               element={<CustomLayoutMerged />}
             />
-            <Route path="job/:jobId" element={<SingleJobView />} />
-            <Route path="job/:jobId/:candidateId" element={<SingleJobView />} />
+            {/* <Route path="job/:jobId" element={<SingleJobView />} />
+            <Route path="job/:jobId/:candidateId" element={<SingleJobView />} /> */}
+            <Route path="job/:jobId" element={<JobPage />} />
+            <Route path="job/:jobId/:candidateId" element={<JobPage />} />
 
             <Route
               path={`${AppPath.VideoInterviewReview}/:candidateId`}

@@ -2,15 +2,24 @@ import styled from '@emotion/styled';
 
 export const TableContainer = styled.div`
   width: 100%;
-  overflow-x: auto;
+  height: calc(100vh - 200px); /* Set a fixed height to enable scrolling */
+  overflow: auto;
   white-space: nowrap;
   text-overflow: ellipsis;
   -webkit-overflow-scrolling: touch;
   position: relative;
   z-index: 10;
 
+  .handsontable {
+    overflow: visible;
+  }
+
   .handsontable .ht_clone_top {
     z-index: 101;
+  }
+
+  .handsontable .wtHolder {
+    overflow: auto;
   }
 
   @media (max-width: 768px) {

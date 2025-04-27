@@ -27,7 +27,6 @@ import { PageHeader } from '@/ui/layout/page/components/PageHeader';
 // import { TabList } from "@/ui/layout/tab/components/TabList";
 import { TopBar } from '@/ui/layout/top-bar/components/TopBar';
 
-import { ChatMain } from '@/activities/chats/components/ChatMain';
 import { ArxEnrichmentModal } from '@/arx-enrich/arxEnrichmentModal';
 import { InterviewCreationModal } from '@/video-interview/interview-creation/InterviewCreationModal';
 import { isVideoInterviewModalOpenState } from '@/video-interview/interview-creation/states/videoInterviewModalState';
@@ -227,7 +226,7 @@ export const Jobs = () => {
               />
             </ViewComponentInstanceContext.Provider>
           </RecordIndexContextProvider>
-          <ChatMain initialCandidateId={candidateId} />
+          {/* <ChatMain initialCandidateId={candidateId} /> */}
           
           {isArxEnrichModalOpen ? (
             <ArxEnrichmentModal
