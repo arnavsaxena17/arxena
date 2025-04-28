@@ -586,7 +586,7 @@ export class FacebookWhatsappChatApi {
         workspaceId,
         'facebook_whatsapp_phone_number_id',
       );
-      console.log('phoneNumberId', phoneNumberId);
+      console.log('phoneNumberId for whatsapp templates', phoneNumberId);
       const facebookWhatsappAssetId =
         (await this.workspaceQueryService.getWorkspaceApiKey(
           workspaceId,

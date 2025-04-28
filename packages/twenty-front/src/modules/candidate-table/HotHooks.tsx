@@ -10,11 +10,15 @@ export const afterSelectionEnd = (tableRef: any, column: number, row: number, ro
   
 
   try {
+    const selectedIds = hot.getSelected();
+    console.log("selectedIds in afterSelectionEnd", selectedIds);
     console.log("opening right drawer");
-    openRightDrawer(RightDrawerPages.CandidateChat, {
-      title: `Chat`,
-      Icon: IconMessages,
-    });
+    if (selectedIds.length === 1) {
+      openRightDrawer(RightDrawerPages.CandidateChat, {
+        title: `Chat`,
+        Icon: IconMessages,
+      });
+    }
     console.log('Right drawer opened successfully');
   } catch (error) {
     console.error('Error opening right drawer:', error);

@@ -14,6 +14,7 @@ import { graphqlToFetchAllCandidateData, MessageNode } from 'twenty-shared';
 import AttachmentPanel from './AttachmentPanel';
 import { CandidateInfoHeader } from './CandidateInfoHeader';
 import VideoInterviewTab from './VideoInterviewTab';
+import { useTemplates } from './hooks/useTemplates';
 
 const StyledContainer = styled.div`
   display: flex;
@@ -205,7 +206,6 @@ const groupMessagesByDate = (messages: MessageNode[]) => {
 
 export const CandidateChatDrawer = () => {
   const [tokenPair] = useRecoilState(tokenPairState);
-  // const candidateId = useRecoilValue(selectedCandidateIdState);
   const tableState = useRecoilValue(tableStateAtom);
   const processedData = useRecoilValue(processedDataSelector);
   const candidateId = tableState.selectedRowIds[0];
@@ -217,6 +217,9 @@ export const CandidateChatDrawer = () => {
   const [candidateData, setCandidateData] = useState<any>(null);
   const { enqueueSnackBar } = useSnackBar();
   const inputRef = useRef<HTMLInputElement>(null);
+  
+  // Use the templates hook
+  const { templates, templatePreviews, isLoading: isLoadingTemplates } = useTemplates();
   
   // Tab handling for main tabs
   const tabListId = 'candidate-chat-drawer-tabs';
@@ -241,12 +244,7 @@ export const CandidateChatDrawer = () => {
 
   // Message input tabs
   const [activeMessageTab, setActiveMessageTab] = useState<'direct' | 'template'>('direct');
-  const [templates, setTemplates] = useState<string[]>([]);
-  const [templatePreviews, setTemplatePreviews] = useState<{
-    [key: string]: string;
-  }>({});
   const [selectedTemplate, setSelectedTemplate] = useState('');
-  const [isLoadingTemplates, setIsLoadingTemplates] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState<string>('');
 
   const showSnackbar = (message: string, type: 'success' | 'error') => {
@@ -255,19 +253,6 @@ export const CandidateChatDrawer = () => {
         type === 'success' ? SnackBarVariant.Success : SnackBarVariant.Error,
       duration: 5000,
     });
-  };
-
-  const fetchAllTemplates = async () => {
-    try {
-      const response = await axios.get(
-        `${process.env.REACT_APP_SERVER_BASE_URL}/whatsapp-test/get-templates`,
-        { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } },
-      );
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching templates:', error);
-      return { templates: [] };
-    }
   };
 
   const getTemplatePreview = (templateName: string): string => {
@@ -377,38 +362,6 @@ export const CandidateChatDrawer = () => {
 
     fetchMessages();
     fetchCandidateData();
-    
-    // Load templates
-    const loadTemplates = async () => {
-      setIsLoadingTemplates(true);
-      try {
-        const fetchedTemplates = await fetchAllTemplates();
-        const templateNames = fetchedTemplates.templates
-          .filter((template: { status: string }) => template.status === 'APPROVED')
-          .map((template: { name: string }) => template.name);
-        
-        const previews: { [key: string]: string } = {};
-        fetchedTemplates.templates.forEach(
-          (template: { components: any[]; name: string }) => {
-            const bodyComponent = template.components.find(
-              (comp) => comp.type === 'BODY'
-            );
-            if (bodyComponent) {
-              previews[template.name] = bodyComponent.text;
-            }
-          },
-        );
-
-        setTemplates(templateNames);
-        setTemplatePreviews(previews);
-      } catch (error) {
-        console.error('Error loading templates:', error);
-      } finally {
-        setIsLoadingTemplates(false);
-      }
-    };
-    
-    loadTemplates();
   }, [candidateId, activeTabId, setActiveTabId]);
 
   const sendMessage = async (messageText: string) => {

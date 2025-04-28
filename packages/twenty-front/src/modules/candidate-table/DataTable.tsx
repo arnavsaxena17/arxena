@@ -31,6 +31,16 @@ const StyledTableContainer = styled.div`
     z-index: 101;
   }
 
+  /* Hide scrollbar only in header's wtHolder */
+  .handsontable .ht_clone_top .wtHolder {
+    overflow: hidden !important;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .handsontable .ht_clone_top .wtHolder::-webkit-scrollbar {
+    display: none;
+  }
+
   .handsontable .wtHolder {
     overflow: auto;
   }
@@ -226,22 +236,55 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
       }
     }, [jobId, setTableState, tokenPair]);
   
-    // const setupTable = useCallback(() => {
-    //   if (!tableRef.current) return;
-    //   const hot = tableRef.current.hotInstance;
-    //   console.log("hot in setupTable", hot);      
-    // }, [setTableState, jobId]);
+
   
     // Initial data load
     useEffect(() => {
       loadData();
     }, [loadData]);
-    
-    // Setup table after render
-    // useEffect(() => {
-    //   setupTable();
-    // }, [setupTable]);
+
   
+    // Compute select-all state for visible rows
+    const allVisibleIds = useMemo(() => filteredData.map((row: any) => row.id), [filteredData]);
+    const allSelected = allVisibleIds.length > 0 && allVisibleIds.every((id: string) => tableState.selectedRowIds.includes(id));
+    const noneSelected = allVisibleIds.every((id: string) => !tableState.selectedRowIds.includes(id));
+    const someSelected = !allSelected && !noneSelected;
+
+    // Handler for select-all checkbox
+    const handleSelectAll = (checked: boolean) => {
+      setTableState(prev => ({
+        ...prev,
+        selectedRowIds: checked ? allVisibleIds : []
+      }));
+    };
+
+    // Custom colHeaders: first column is empty string, others use column title
+    const colHeaders = (col: number) => {
+      if (col === 0) return '';
+      return columns[col]?.title || '';
+    };
+
+    // afterGetColHeader hook to inject select-all checkbox
+    const afterGetColHeader = (col: number, TH: HTMLTableCellElement) => {
+      if (col === 0) {
+        // Prevent duplicate checkboxes
+        if (TH.querySelector('input[type="checkbox"]')) return;
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.style.marginTop = '8px';
+        checkbox.checked = allSelected;
+        checkbox.indeterminate = someSelected;
+        checkbox.style.cursor = 'pointer';
+        checkbox.onclick = (e) => {
+          e.stopPropagation();
+          handleSelectAll(!allSelected);
+        };
+        // Clear and append
+        TH.innerHTML = '';
+        TH.appendChild(checkbox);
+      }
+    };
+
     if (tableState.isLoading) {
       return <StyledLoadingContainer>Loading candidates data...</StyledLoadingContainer>
     }
@@ -270,7 +313,8 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
           ref={tableRef}
           data={mutatableData}
           columns={columns}
-          colHeaders={true}
+          colHeaders={colHeaders}
+          afterGetColHeader={afterGetColHeader}
           rowHeaders={true}
           contextMenu={true}
           height="calc(100vh - 200px)"

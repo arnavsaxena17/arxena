@@ -9,6 +9,7 @@ import { isRightDrawerMinimizedState } from '@/ui/layout/right-drawer/states/isR
 import { NotificationsDrawer } from '@/ui/notifications/components/NotificationsDrawer';
 
 import { RightDrawerAllActionsContent } from '@/action-menu/components/RightDrawerAllActionsContent';
+import { RightDrawerChatAllActionsContent } from '@/activities/chats/components/RightDrawerChatAllActionsContent';
 import { SimpleActivityDrawer } from '@/activities/chats/components/SimpleActivityDrawer';
 import { CandidateChatDrawer } from '@/candidate-table/CandidateChatDrawer';
 import { RightDrawerContainer } from '@/ui/layout/right-drawer/components/RightDrawerContainer';
@@ -47,7 +48,7 @@ const RIGHT_DRAWER_PAGES_CONFIG: ComponentByRightDrawerPage = {
   [RightDrawerPages.WorkflowStepView]: <RightDrawerWorkflowViewStep />,
   [RightDrawerPages.SimpleActivity]: <SimpleActivityDrawer />,
   [RightDrawerPages.AllActions]: <RightDrawerAllActionsContent />,
-  // [RightDrawerPages.ChatAllActions]: <RightDrawerChatAllActionsContent />,
+  [RightDrawerPages.ChatAllActions]: <RightDrawerChatAllActionsContent />,
   [RightDrawerPages.CandidateChat]: <CandidateChatDrawer />,
   [RightDrawerPages.Notifications]: <NotificationsDrawer />,
 };

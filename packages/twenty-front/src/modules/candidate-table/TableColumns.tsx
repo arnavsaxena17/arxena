@@ -11,18 +11,16 @@ type ColumnRenderer = (
   cellProperties: Handsontable.CellProperties
 ) => HTMLTableCellElement;
 
-
 const urlFields = [
   'profileUrl', 'linkedinUrl', 'linkedInUrl', 'githubUrl','personId', 'portfolioUrl','profilePhotoUrl','englishAudioIntroUrl',
   'resdexNaukriUrl', 'hiringNaukriUrl', 'website', 'websiteUrl',
 ];
 
-// Define fields that should be excluded from automatic column generation
 const excludedFields = [
   'id', 'checkbox', 'name', 'candidateFieldValues','token', 'jobTitle', 'firstName','phone', 'searchId','phoneNumbers','filterQueryHash','mayAlsoKnow','languages','englishLevel','baseQueryHash','creationDate','apnaSearchToken','lastName', 'uniqueKeyString', 'emailAddress', 'industries', 'profiles', 'jobProcess', 'locations','experience', 'experienceStats', 'lastUpdated','education','interests','skills','dataSources','allNumbers','jobName','uploadId','allMails','socialprofiles','tables','created','middleName','middleInitial','creationSource','contactDetails','queryId','socialProfiles','updatedAt'
 ];
 
-export const TableColumns = ({ processedData }: { processedData: any[] }) => {
+export const TableColumns = ({ processedData, selectAllChecked, selectAllIndeterminate, onSelectAllChange }: { processedData: any[], selectAllChecked?: boolean, selectAllIndeterminate?: boolean, onSelectAllChange?: (checked: boolean) => void }) => {
   if (!processedData.length) return [];
     
   // Collect all unique keys from all entries
@@ -139,6 +137,7 @@ export const TableColumns = ({ processedData }: { processedData: any[] }) => {
   columns.push({
     data: 'checkbox',
     type: 'checkbox',
+    // Handsontable expects title as string; custom header must be set via colHeaders in DataTable.tsx
     title: '',
     width: 40,
     readOnly: false,
