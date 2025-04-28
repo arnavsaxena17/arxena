@@ -115,7 +115,6 @@ interface DataTableProps {
       if (!jobId) return;
       
       try {
-        // If specific IDs are provided, use them for a partial refresh
         const requestBody = specificIds?.length 
           ? { jobId, candidateIds: specificIds }
           : { jobId };
@@ -127,10 +126,9 @@ interface DataTableProps {
         );
         
         const rawData: CandidateNode[] = response.data;
-        
-        // If it was a partial refresh, merge with existing data
         if (specificIds?.length) {
           setTableState(prev => {
+            console.log("Partial refresh in refreshData", rawData);
             const updatedRawData = [...prev.rawData];
             for (const newData of rawData) {
               const index = updatedRawData.findIndex(item => item.id === newData.id);
@@ -143,7 +141,7 @@ interface DataTableProps {
             return { ...prev, rawData: updatedRawData };
           });
         } else {
-          // Full refresh
+          console.log("Full refresh in refreshData", rawData);
           setTableState(prev => ({
             ...prev,
             rawData,
