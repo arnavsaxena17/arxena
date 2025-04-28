@@ -22,7 +22,7 @@ import { TopBar } from "@/ui/layout/top-bar/components/TopBar";
 import { ViewComponentInstanceContext } from "@/views/states/contexts/ViewComponentInstanceContext";
 import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSetRecoilState } from "recoil";
 import { Button, IconCheckbox, IconFilter, IconPlus } from 'twenty-ui';
 
@@ -70,6 +70,7 @@ export const JobPage: React.FC = () => {
   const setJobId = useSetRecoilState(jobIdAtom);
   const [jobId, setLocalJobId] = useState<string>('job-id');
   const theme = useTheme();
+  const dataTableRef = useRef<{ refreshData: () => Promise<void> }>(null);
   
   // Extract jobId from URL on mount
   useEffect(() => {
@@ -79,6 +80,9 @@ export const JobPage: React.FC = () => {
     setLocalJobId(extractedJobId);
   }, [setJobId]);
   
+  const handleRefresh = () => {
+    dataTableRef.current?.refreshData();
+  };
 
   const recordIndexContextValue = {
     indexIdentifierUrl: (recordId: string) => `/job/${jobId}/${recordId}` || '',
@@ -119,7 +123,7 @@ export const JobPage: React.FC = () => {
             <ViewComponentInstanceContext.Provider value={{ instanceId: jobId }}>
               <StyledTopBar
                 leftComponent={<StyledTabListContainer />}
-                // handleRefresh={handleRefresh}
+                handleRefresh={handleRefresh}
                 // handleEnrichment={handleEnrichment}
                 // handleVideoInterviewEdit={handleVideoInterviewEdit}
                 // handleEngagement={handleEngagement}
@@ -153,7 +157,7 @@ export const JobPage: React.FC = () => {
               }}
             >
               <TableContainer>
-                <DataTable jobId={jobId} />
+                <DataTable ref={dataTableRef} jobId={jobId} />
               </TableContainer>
               
               <div style={{ 

@@ -10,7 +10,7 @@ import axios from "axios";
 import { CellChange, ChangeSource } from 'handsontable/common';
 import 'handsontable/styles/handsontable.min.css';
 import 'handsontable/styles/ht-theme-main.min.css';
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef } from "react";
 import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
 import { CandidateNode } from 'twenty-shared';
 import { IconPlus } from 'twenty-ui';
@@ -94,7 +94,7 @@ interface DataTableProps {
   }
   
 
-  export const DataTable: React.FC<DataTableProps> = ({ jobId }) => {
+  export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTableProps>(({ jobId }, ref) => {
     const tableRef = useRef<any>(null);
     const tableState = useRecoilValue(tableStateAtom);
     const setTableState = useSetRecoilState(tableStateAtom);
@@ -176,6 +176,10 @@ interface DataTableProps {
       }
     }, [jobId, setTableState, tokenPair]);
     
+    // Expose the refreshData method through the ref
+    useImperativeHandle(ref, () => ({
+      refreshData
+    }));
 
     const afterSelectionEndHandler = (row: number, column: number, row2: number, column2: number, selectionLayerLevel: number) => {
       console.log("row in afterSelectionEndHandler", row);
@@ -282,7 +286,7 @@ interface DataTableProps {
       </StyledTableContainer>
       
     );
-  };
+  });
 
 //   <HotTable
 //   ref={hotRef}
