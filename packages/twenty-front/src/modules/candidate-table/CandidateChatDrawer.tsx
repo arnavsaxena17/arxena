@@ -11,7 +11,7 @@ import dayjs from 'dayjs';
 import React, { useEffect, useRef, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { MessageNode } from 'twenty-shared';
-import AttachmentPanel from '../components/AttachmentPanel';
+import AttachmentPanel from './AttachmentPanel';
 import { CandidateInfoHeader } from './CandidateInfoHeader';
 import VideoInterviewTab from './VideoInterviewTab';
 
