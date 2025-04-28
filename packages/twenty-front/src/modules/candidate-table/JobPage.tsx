@@ -124,13 +124,11 @@ export const JobPage: React.FC = () => {
               <StyledTopBar
                 leftComponent={<StyledTabListContainer />}
                 handleRefresh={handleRefresh}
-                // handleEnrichment={handleEnrichment}
-                // handleVideoInterviewEdit={handleVideoInterviewEdit}
-                // handleEngagement={handleEngagement}
                 showRefetch={true}
                 showEnrichment={true}
                 showVideoInterviewEdit={true}
                 showEngagement={true}
+                showSearch={true}
                 rightComponent={
                   <StyledRightSection>
                     <ObjectFilterDropdownComponentInstanceContext.Provider value={{ instanceId: jobId }}>

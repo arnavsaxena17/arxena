@@ -1,3 +1,4 @@
+import { chatSearchQueryState } from '@/activities/chats/states/chatSearchQueryState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { afterChange, afterSelectionEnd } from '@/candidate-table/HotHooks';
 import { columnsSelector, processedDataSelector, tableStateAtom } from "@/candidate-table/states";
@@ -92,16 +93,16 @@ const StyledEmptyDescription = styled.div`
 
 interface DataTableProps {
     jobId: string;
-  }
-  
+}
 
-  export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTableProps>(({ jobId }, ref) => {
+export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTableProps>(({ jobId }, ref) => {
     const tableRef = useRef<any>(null);
     const tableState = useRecoilValue(tableStateAtom);
     const setTableState = useSetRecoilState(tableStateAtom);
     const [tokenPair] = useRecoilState(tokenPairState);
     const processedData = useRecoilValue(processedDataSelector);
     const columns = useRecoilValue(columnsSelector);
+    const searchQuery = useRecoilValue(chatSearchQueryState);
     const { openRightDrawer } = useRightDrawer();
     const setContextStoreTargetedRecordsRule = useSetRecoilComponentStateV2(
       contextStoreTargetedRecordsRuleComponentState,
@@ -112,14 +113,26 @@ interface DataTableProps {
       jobId
     );
 
-    console.log("processedData in DataTable", processedData);
+    const filteredData = useMemo(() => {
+      if (!searchQuery) return processedData;
+      
+      const query = searchQuery.toLowerCase();
+      return processedData.filter((candidate: any) => {
+        return Object.values(candidate).some(value => {
+          if (typeof value === 'string') {
+            return value.toLowerCase().includes(query);
+          }
+          return false;
+        });
+      });
+    }, [processedData, searchQuery]);
 
     const mutatableData = useMemo(() => {
-      return processedData.map((candidate: any) => ({
+      return filteredData.map((candidate: any) => ({
         ...candidate,
         isEditable: true
       }));
-    }, [processedData]);
+    }, [filteredData]);
   
     // const keyDownHandler = (event: KeyboardEvent) => {
     //   handleKeyDown(event, tableRef, tableState, setTableState);
