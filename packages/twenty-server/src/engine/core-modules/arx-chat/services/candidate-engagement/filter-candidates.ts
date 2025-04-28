@@ -198,22 +198,23 @@ export class FilterCandidates {
 
 
     if (candidatePeopleIds.length > 0) {
-
-      while (hasMoreResults) {
+      let hasNextPage = true;
+      while (hasNextPage) {
         const graphqlQueryObj = JSON.stringify({
           query: graphqlQueryObjToFetchAllPeopleForChats,
-          variables: { filter: { id: { in: candidatePeopleIds } }, lastCursor },
+          variables: { filter: { id: { in: candidatePeopleIds } }, limit: 400, lastCursor },
         });
         const response = await axiosRequest(graphqlQueryObj, apiToken);
         const edges = response?.data?.data?.people?.edges;
 
         if (!edges || edges?.length === 0) {
-          hasMoreResults = false;
+          hasNextPage = false;
           break;
         }
+
         allPeople = allPeople.concat(edges.map((edge: any) => edge?.node));
         lastCursor = edges[edges.length - 1].cursor;
-        hasMoreResults = edges.length === 30; // Assuming page size is 30
+        hasNextPage = response?.data?.data?.people?.pageInfo?.hasNextPage || false;
       }
       console.log(
         'Number of people fetched in fetchAllPeopleByCandidatePeopleIds:',
@@ -230,14 +231,14 @@ export class FilterCandidates {
   ): Promise<MessageNode[]> {
     let allWhatsappMessages: MessageNode[] = [];
     let lastCursor = null;
-    let hasMoreResults = true;
+    let hasNextPage = true;
 
-    while (hasMoreResults) {
+    while (hasNextPage) {
       try {
         const graphqlQueryObj = JSON.stringify({
           query: graphQlToFetchWhatsappMessages,
           variables: {
-            limit: 30,
+            limit: 400,
             lastCursor: lastCursor,
             filter: { candidateId: { in: [candidateId] } },
             orderBy: [{ position: 'DescNullsFirst' }],
@@ -257,9 +258,9 @@ export class FilterCandidates {
         allWhatsappMessages = allWhatsappMessages.concat(newWhatsappMessages);
         lastCursor =
           whatsappMessages.edges[whatsappMessages.edges.length - 1].cursor;
-        hasMoreResults = newWhatsappMessages.length === 30;
+        hasNextPage = newWhatsappMessages.length === 400;
       } catch (error) {
-        hasMoreResults = false;
+        hasNextPage = false;
         console.error('Error fetching whatsappmessages:', error);
       }
     }

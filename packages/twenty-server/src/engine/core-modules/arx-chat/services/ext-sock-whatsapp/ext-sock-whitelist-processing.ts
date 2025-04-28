@@ -234,7 +234,7 @@ export class ExtSockWhatsappWhitelistProcessingService implements OnModuleInit {
           query: graphqlToFetchAllCandidateData,
           variables: {
             filter: { jobsId: { in: jobIds } },
-            first: 60, // Adjust page size as needed
+            limit: 400, // Adjust page size as needed
             lastCursor: cursor,
           },
         }),
@@ -243,6 +243,8 @@ export class ExtSockWhatsappWhitelistProcessingService implements OnModuleInit {
 
       const pageInfo = candidatesResponse?.data?.data?.candidates?.pageInfo;
       const edges = candidatesResponse?.data?.data?.candidates?.edges || [];
+
+      console.log('Number of edges', edges.length);
 
       // Process current page
       edges.forEach((edge) => {

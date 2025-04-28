@@ -866,14 +866,14 @@ export default class CandidateEngagementArx {
         jobsId: { eq: jobId },
       };
 
-      let hasMoreResults = true;  
+      let hasNextPage = true;
       let lastCursor: string | null = null;
-      while (hasMoreResults) {
+      while (hasNextPage) {
         const graphqlQueryObj = JSON.stringify({
           query: graphqlQueryObjToFetchAllCandidatesForChats,
           variables: {
             lastCursor,
-            limit: 60,
+            limit: 400,
             filter: timestampedFilter,
             orderBy: [{ updatedAt: 'DESC' }],
           },
@@ -882,17 +882,17 @@ export default class CandidateEngagementArx {
         const response = await axiosRequest(graphqlQueryObj, apiToken);
         const edges = response?.data?.data?.candidates?.edges || [];
         console.log('number of edges::', edges.length);
-        hasMoreResults = edges.length === 60;
+        hasNextPage = response?.data?.data?.candidates?.pageInfo?.hasNextPage || false;
+        console.log('hasNextPage::', hasNextPage);
         if (!edges.length) {
-          hasMoreResults = false;
+          hasNextPage = false;
           break;
         }
 
         
         allCandidates.push(...edges.map((edge: any) => edge.node));
       
-        if (edges.length < 60) {
-          hasMoreResults = false;
+        if (!hasNextPage) {
           break;
         }
         lastCursor = edges[edges.length - 1].cursor;
@@ -907,7 +907,7 @@ export default class CandidateEngagementArx {
   }
 
   
-      async fetchAllCandidatesWithAllChatControls(
+  async fetchAllCandidatesWithAllChatControls(
     chatControlType: chatControlType,
     apiToken: string,
   ): Promise<CandidateNode[]> {
@@ -948,14 +948,14 @@ export default class CandidateEngagementArx {
           updatedAt: { lte: timestamp }, // Only get candidates updated up to now
         };
 
-        let hasMoreResults = true;
+        let hasNextPage = true;
 
-        while (hasMoreResults) {
+        while (hasNextPage) {
           const graphqlQueryObj = JSON.stringify({
             query: graphqlQueryObjToFetchAllCandidatesForChats,
             variables: {
               lastCursor,
-              limit: 30,
+              limit: 400,
               filter: timestampedFilter,
               orderBy: [{ updatedAt: 'DESC' }],
             },
@@ -964,8 +964,9 @@ export default class CandidateEngagementArx {
           const response = await axiosRequest(graphqlQueryObj, apiToken);
           const edges = response?.data?.data?.candidates?.edges || [];
 
-          hasMoreResults = edges.length === 30;
           if (!edges.length) break;
+
+          hasNextPage = response?.data?.data?.candidates?.pageInfo?.hasNextPage || false;
 
           // Verify each candidate's timestamp before adding
           const newCandidates = edges
@@ -982,7 +983,7 @@ export default class CandidateEngagementArx {
 
           allCandidates.push(...newCandidates);
 
-          if (edges.length < 30) break;
+          if (!hasNextPage) break;
           lastCursor = edges[edges.length - 1].cursor;
         }
       }
@@ -1041,14 +1042,14 @@ export default class CandidateEngagementArx {
           updatedAt: { lte: timestamp },
         };
 
-        const hasMoreResults = true;
+        let hasNextPage = true;
 
-        while (hasMoreResults) {
+        while (hasNextPage) {
           const graphqlQueryObj = JSON.stringify({
             query: graphqlQueryObjToFetchAllCandidatesForChats,
             variables: {
               lastCursor,
-              limit: 30,
+              limit: 400,
               filter: timestampedFilter,
               orderBy: [{ updatedAt: 'DESC' }],
             },
@@ -1065,7 +1066,9 @@ export default class CandidateEngagementArx {
             break;
           }
           const edges = response?.data?.data?.candidates?.edges || [];
+          console.log('edges::', edges.length);
 
+          hasNextPage = response?.data?.data?.candidates?.pageInfo?.hasNextPage || false;
           console.log(
             `Received ${edges.length} candidates for current filter, for chatControlType ${chatControlType}`,
           );
@@ -1094,7 +1097,8 @@ export default class CandidateEngagementArx {
             `Found ${newCandidates.length} new candidates after filtering`,
           );
           allCandidates.push(...newCandidates);
-          if (edges.length < 30) break;
+          console.log('hasNextPage::', hasNextPage);
+          if (!hasNextPage) break;
           lastCursor = edges[edges.length - 1].cursor;
         }
       }
