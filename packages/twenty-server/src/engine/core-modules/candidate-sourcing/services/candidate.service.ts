@@ -1247,6 +1247,7 @@ export class CandidateService {
    * Updates a direct field on a candidate
    */
   async updateCandidateField(
+    personId: string,
     candidateId: string,
     fieldName: string,
     value: any,
@@ -1257,16 +1258,33 @@ export class CandidateService {
       let formattedValue = value;
       console.log("formattedValue::", formattedValue)
       // Convert boolean strings to actual booleans
-      if (value === 'true' || value === 'false') {
-        formattedValue = value === 'true';
+      if (value.toLowerCase() === 'true' || value.toLowerCase() === 'false') {
+        formattedValue = value.toLowerCase() === 'true';
       }
       
-      // Prepare the update data dynamically
-      const updateData: Record<string, any> = {};
+      let updateData: Record<string, any> = {};
       updateData[fieldName] = formattedValue;
       
+      if (fieldName === 'email') {
+        updateData = {"email":{primaryEmail: formattedValue}}
+        const response = await axiosRequest(
+          JSON.stringify({ query: mutationToUpdateOnePerson, variables: {idToUpdate: personId, input: {emails: {primaryEmail: formattedValue}}} }),
+          apiToken
+        );
+        console.log("response::", response?.data?.data)
+      }
+
+      if (fieldName === 'mobilePhone' || fieldName === 'phone' || fieldName === 'phoneNumber') {
+        updateData = {"phoneNumber":{primaryPhoneNumber: formattedValue}}
+        const response = await axiosRequest(
+          JSON.stringify({ query: mutationToUpdateOnePerson, variables: {idToUpdate: personId, input: {phones: {primaryPhoneNumber: formattedValue}}} }),
+          apiToken
+        );
+        console.log("response::", response?.data?.data)
+      }
+
+
       console.log("updateData::", updateData)
-      // Use the shared mutation from twenty-shared
       const variables = {
         idToUpdate: candidateId,
         input: updateData
@@ -1283,8 +1301,6 @@ export class CandidateService {
       throw error;
     }
   }
-
-
   async getCandidateFieldsByJobId(
     jobId: string,
     apiToken: string,

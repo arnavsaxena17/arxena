@@ -104,7 +104,7 @@ export const afterChange = async (tableRef: React.RefObject<any>, changes: any, 
           'Content-Type': 'application/json', 
           'Authorization': `Bearer ${tokenPair?.accessToken?.token}` 
         },
-        body: JSON.stringify({ candidateId: rowData.id, fieldName: prop, value: newValue })
+        body: JSON.stringify({ candidateId: rowData.id, fieldName: prop, value: newValue, personId: rowData.personId })
       });
       
       if (response.ok) {

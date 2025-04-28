@@ -26,9 +26,7 @@ export const TableColumns = ({ processedData }: { processedData: any[] }) => {
   // Create checkbox renderer
   const checkboxRenderer: ColumnRenderer = (instance, td, row, column, prop, value, cellProperties) => {
     td.innerHTML = '';
-    
     const rowData = instance.getSourceDataAtRow(row);
-    
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
     checkbox.checked = value || false;

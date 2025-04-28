@@ -842,7 +842,7 @@ export class CandidateSourcingController {
   async updateCandidateField(@Req() request: any): Promise<object> {
     try {
       const apiToken = request.headers.authorization.split(' ')[1];
-      const { candidateId, fieldName, value } = request.body;
+      const { candidateId, fieldName, value, personId } = request.body;
 
       if (!candidateId || !fieldName) {
         return {
@@ -852,6 +852,7 @@ export class CandidateSourcingController {
       }
 
       const result = await this.candidateService.updateCandidateField(
+        personId,
         candidateId,
         fieldName,
         value,

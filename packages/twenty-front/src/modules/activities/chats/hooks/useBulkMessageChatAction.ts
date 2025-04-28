@@ -17,7 +17,12 @@ export const useBulkMessageChatAction: ActionHookWithObjectMetadataItem = ({
     contextStoreTargetedRecordsRule.selectedRecordIds.length > 0;
 
   const onClick = () => {
+    console.log("contextStoreTargetedRecordsRule", contextStoreTargetedRecordsRule);
+    console.log("shouldBeRegistered", shouldBeRegistered);
+    console.log("objectMetadataItem:", objectMetadataItem)
     if (!shouldBeRegistered) {
+      console.log("objectMetadataItem:", objectMetadataItem)
+      console.log("shouldBeRegistered", shouldBeRegistered);
       return;
     }
 

@@ -20,6 +20,18 @@ const StyledTableContainer = styled.div`
   height: 100%;
   overflow: auto;
   position: relative;
+
+  .handsontable {
+    overflow: visible;
+  }
+
+  .handsontable .ht_clone_top {
+    z-index: 101;
+  }
+
+  .handsontable .wtHolder {
+    overflow: auto;
+  }
 `;
 
 const StyledLoadingContainer = styled.div`
@@ -243,7 +255,7 @@ interface DataTableProps {
           colHeaders={true}
           rowHeaders={true}
           contextMenu={true}
-          height="auto"
+          height="calc(100vh - 200px)"
           themeName="ht-theme-main"
           licenseKey="non-commercial-and-evaluation"
           stretchH="all"
@@ -252,6 +264,7 @@ interface DataTableProps {
           columnSorting={true}
           selectionMode="range"
           autoWrapRow={false}
+          fixedRowsTop={0}
           afterSelectionEnd={afterSelectionEndHandler}
           afterChange={afterChangeHandler}
           // beforeOnCellMouseDown={beforeOnCellMouseDownHandler}
@@ -264,6 +277,7 @@ interface DataTableProps {
           manualColumnMove={true}
           filters={true}
           dropdownMenu={true}
+          fixedColumnsLeft={1}
         />
       </StyledTableContainer>
       
