@@ -1540,6 +1540,7 @@ export const graphqlToFetchAllCandidateData = `
           startVideoInterviewChat
           source
           campaign
+          messagingChannel
         clientInterview {
           edges{
             node{

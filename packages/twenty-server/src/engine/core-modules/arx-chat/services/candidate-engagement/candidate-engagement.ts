@@ -813,35 +813,35 @@ export default class CandidateEngagementArx {
     }
   }
 
-  async fetchSpecificPeopleToEngageAcrossAllChatControlsByJobId(
-    jobId: string,
-    apiToken: string,
-  ): Promise<{ candidates: CandidateNode[] }> {
-    try {
-      console.log('Fetching candidates to engage by job ID:', jobId);
+  // async fetchSpecificPeopleToEngageAcrossAllChatControlsByJobId(
+  //   jobId: string,
+  //   apiToken: string,
+  // ): Promise<{ candidates: CandidateNode[] }> {
+  //   try {
+  //     console.log('Fetching candidates to engage by job ID:', jobId);
 
-      const candidates = await this.fetchAllCandidatesWithAllChatControlsByJobId(
-        jobId,
-        apiToken,
-      );
+  //     const candidates = await this.fetchAllCandidatesWithAllChatControlsByJobId(
+  //       jobId,
+  //       apiToken,
+  //     );
 
-      // const filteredCandidates = candidates.filter(
-      //   (candidate) => candidate.jobs.id === jobId,
-      // );
-      // const candidatePeopleIds = filteredCandidates.map((candidate) => candidate.people.id);
-      // const people = await new FilterCandidates(
-      //   this.workspaceQueryService,
-      // ).fetchAllPeopleByCandidatePeopleIds(candidatePeopleIds, apiToken);
+  //     // const filteredCandidates = candidates.filter(
+  //     //   (candidate) => candidate.jobs.id === jobId,
+  //     // );
+  //     // const candidatePeopleIds = filteredCandidates.map((candidate) => candidate.people.id);
+  //     // const people = await new FilterCandidates(
+  //     //   this.workspaceQueryService,
+  //     // ).fetchAllPeopleByCandidatePeopleIds(candidatePeopleIds, apiToken);
 
 
-      // const candidateJob = filteredCandidates[0].jobs;
+  //     // const candidateJob = filteredCandidates[0].jobs;
 
-      return { candidates };
-    } catch (error) { 
-      console.error('Error fetching candidates by job ID:', error);
-      throw error;
-    }
-  }
+  //     return { candidates };
+  //   } catch (error) { 
+  //     console.error('Error fetching candidates by job ID:', error);
+  //     throw error;
+  //   }
+  // }
 
 
   async fetchAllCandidatesWithAllChatControlsByJobId(
@@ -851,26 +851,28 @@ export default class CandidateEngagementArx {
     console.log('Fetching all candidates with chatControlType by job ID:', jobId);
 
     const allCandidates: CandidateNode[] = [];
-    let graphqlQueryObjToFetchAllCandidatesForChats = '';
+    // let graphqlQueryObjToFetchAllCandidatesForChats = '';
 
     try {
-      const workspaceId =
-        await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+      // const workspaceId =
+      //   await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
 
-      graphqlQueryObjToFetchAllCandidatesForChats =
-        workspacesWithOlderSchema.includes(workspaceId)
-          ? graphqlToFetchManyCandidatesOlderSchema
-          : graphqlToFetchAllCandidateData;
+      // graphqlQueryObjToFetchAllCandidatesForChats =
+      //   workspacesWithOlderSchema.includes(workspaceId)
+      //     ? graphqlToFetchManyCandidatesOlderSchema
+      //     : graphqlToFetchAllCandidateData;
 
       const timestampedFilter = {
         jobsId: { eq: jobId },
       };
 
+      console.log('timestampedFilter::', timestampedFilter);
+
       let hasNextPage = true;
       let lastCursor: string | null = null;
       while (hasNextPage) {
         const graphqlQueryObj = JSON.stringify({
-          query: graphqlQueryObjToFetchAllCandidatesForChats,
+          query: graphqlToFetchAllCandidateData,
           variables: {
             lastCursor,
             limit: 400,
@@ -888,7 +890,6 @@ export default class CandidateEngagementArx {
           hasNextPage = false;
           break;
         }
-
         
         allCandidates.push(...edges.map((edge: any) => edge.node));
       

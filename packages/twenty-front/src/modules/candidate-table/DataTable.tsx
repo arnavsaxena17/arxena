@@ -332,6 +332,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
           readOnly={false}
           className="htCenter"
           columnSorting={true}
+          copyPaste={true}
           selectionMode="range"
           autoWrapRow={false}
           fixedRowsTop={0}

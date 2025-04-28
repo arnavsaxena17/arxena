@@ -10,7 +10,7 @@ import axios from 'axios';
 import dayjs from 'dayjs';
 import React, { useEffect, useRef, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
-import { MessageNode } from 'twenty-shared';
+import { graphqlToFetchAllCandidateData, MessageNode } from 'twenty-shared';
 import AttachmentPanel from '../components/AttachmentPanel';
 import { CandidateInfoHeader } from './CandidateInfoHeader';
 import VideoInterviewTab from './VideoInterviewTab';
@@ -349,76 +349,7 @@ export const CandidateChatDrawer = () => {
             Authorization: `Bearer ${tokenPair.accessToken.token}`,
           },
           body: JSON.stringify({
-            query: `
-              query FindCandidate($filter: CandidateFilterInput) {
-                candidates(filter: $filter) {
-                  edges {
-                    node {
-                      id
-                      name
-                      person {
-                        phones {
-                          edges {
-                            node {
-                              label
-                              number
-                            }
-                          }
-                        }
-                      }
-                      videoInterview {
-                        edges {
-                          node {
-                            id
-                            interviewCompleted
-                            interviewStarted
-                            videoInterviewTemplate {
-                              id
-                              name
-                              videoInterviewQuestions {
-                                edges {
-                                  node {
-                                    id
-                                    questionValue
-                                    timeLimit
-                                  }
-                                }
-                              }
-                            }
-                          }
-                        }
-                      }
-                      videoInterviewResponse {
-                        edges {
-                          node {
-                            id
-                            transcript
-                            videoInterviewQuestionId
-                            attachments {
-                              edges {
-                                node {
-                                  id
-                                  type
-                                  fullPath
-                                  name
-                                }
-                              }
-                            }
-                          }
-                        }
-                      }
-                      jobs {
-                        id
-                        name
-                        company {
-                          name
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            `,
+            query: graphqlToFetchAllCandidateData,
             variables: {
               filter: {
                 id: { eq: candidateId }
@@ -724,7 +655,7 @@ export const CandidateChatDrawer = () => {
         {!candidateId ? (
           <div>No candidate selected</div>
         ) : isLoading ? (
-          <div>Loading chat...</div>
+          <div style={{ padding: '20px' }}>Loading chat...</div>
         ) : error ? (
           <div>Error: {error}</div>
         ) : (
@@ -739,3 +670,5 @@ export const CandidateChatDrawer = () => {
     </StyledContainer>
   );
 }; 
+
+

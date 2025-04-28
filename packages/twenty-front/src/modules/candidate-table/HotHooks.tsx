@@ -13,7 +13,7 @@ export const afterSelectionEnd = (tableRef: any, column: number, row: number, ro
     const selectedIds = hot.getSelected();
     console.log("selectedIds in afterSelectionEnd", selectedIds);
     console.log("opening right drawer");
-    if (selectedIds.length === 1) {
+    if (selectedIds.length === 1 && column === 1) {
       openRightDrawer(RightDrawerPages.CandidateChat, {
         title: `Chat`,
         Icon: IconMessages,

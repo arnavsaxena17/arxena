@@ -47,7 +47,11 @@ export const useCheckDataIntegrityOfJob = ({
           );
           const apiKeys = await response.json();
           console.log('apiKeys', apiKeys);
-          console.log('data', apiKeys);
+          console.log('data from data integrity check of the damn job', data);
+          const chatFlowOrder = data?.jobs?.edges?.[0]?.node?.chatFlowOrder;
+          const hasMeetingScheduling = chatFlowOrder?.includes('startMeetingSchedulingChat');
+          const hasVideoInterview = chatFlowOrder?.includes('startVideoInterviewChat');
+
           const consolidatedErrorMessage = [
             // API Keys
             !apiKeys?.openaikey && 'OpenAI API key is missing',
@@ -81,69 +85,59 @@ export const useCheckDataIntegrityOfJob = ({
             !data?.jobs?.edges?.[0]?.node?.company?.descriptionOneliner &&
               'Company description is missing',
 
-            // Interview schedule
-            !data?.jobs?.edges?.[0]?.node?.interviewSchedule?.edges &&
+            // Interview schedule - only validate if meeting scheduling is in chat flow
+            hasMeetingScheduling && !data?.jobs?.edges?.[0]?.node?.interviewSchedule?.edges &&
               'Interview schedule data structure is missing',
-            data?.jobs?.edges?.[0]?.node?.interviewSchedule?.edges?.length ===
-              0 && 'Interview schedule is missing',
-            !data?.jobs?.edges?.[0]?.node?.interviewSchedule?.edges?.[0]?.node
-              ?.slotsAvailable && 'Interview slots are not available',
-            !data?.jobs?.edges?.[0]?.node?.interviewSchedule?.edges?.[0]?.node
-              ?.meetingType && 'Meeting type is not specified',
+            hasMeetingScheduling && data?.jobs?.edges?.[0]?.node?.interviewSchedule?.edges?.length === 0 && 
+              'Interview schedule is missing',
+            hasMeetingScheduling && !data?.jobs?.edges?.[0]?.node?.interviewSchedule?.edges?.[0]?.node?.slotsAvailable && 
+              'Interview slots are not available',
+            hasMeetingScheduling && !data?.jobs?.edges?.[0]?.node?.interviewSchedule?.edges?.[0]?.node?.meetingType && 
+              'Meeting type is not specified',
 
             // Recruiter
             !data?.jobs?.edges?.[0]?.node?.recruiterId &&
               'Recruiter ID is missing',
 
             // Questions
-            !data?.jobs?.edges?.[0]?.node?.questions?.edges &&
-              'Questions data structure is missing',
-            data?.jobs?.edges?.[0]?.node?.questions?.edges?.length === 0 &&
-              'No questions attached',
+            // !data?.jobs?.edges?.[0]?.node?.questions?.edges &&
+            //   'Questions data structure is missing',
+            // data?.jobs?.edges?.[0]?.node?.questions?.edges?.length === 0 &&
+            //   'No questions attached',
 
-
-              
-
-            // Video interview template
-            !data?.jobs?.edges?.[0]?.node?.videoInterviewTemplate?.edges &&
+            // Video interview template - only validate if video interview is in chat flow
+            hasVideoInterview && !data?.jobs?.edges?.[0]?.node?.videoInterviewTemplate?.edges &&
               'Video interview template data structure is missing',
-            data?.jobs?.edges?.[0]?.node?.videoInterviewTemplate?.edges
-              ?.length === 0 && 'No video interview template attached',
-            !data?.jobs?.edges?.[0]?.node?.videoInterviewTemplate?.edges?.[0]
-              ?.node && 'Video interview template node is missing',
-            !data?.jobs?.edges?.[0]?.node?.videoInterviewTemplate?.edges?.[0]
-              ?.node?.videoInterviewModelId &&
+            hasVideoInterview && data?.jobs?.edges?.[0]?.node?.videoInterviewTemplate?.edges?.length === 0 && 
+              'No video interview template attached',
+            hasVideoInterview && !data?.jobs?.edges?.[0]?.node?.videoInterviewTemplate?.edges?.[0]?.node && 
+              'Video interview template node is missing',
+            hasVideoInterview && !data?.jobs?.edges?.[0]?.node?.videoInterviewTemplate?.edges?.[0]?.node?.videoInterviewModelId &&
               'Video interview model ID is missing',
-            !data?.jobs?.edges?.[0]?.node?.videoInterviewTemplate?.edges?.[0]
-              ?.node?.instructions &&
+            hasVideoInterview && !data?.jobs?.edges?.[0]?.node?.videoInterviewTemplate?.edges?.[0]?.node?.instructions &&
               'Video interview instructions are missing',
 
             // Video interview questions
-            !data?.jobs?.edges?.[0]?.node?.videoInterviewTemplate?.edges?.[0]
-              ?.node?.videoInterviewQuestions?.edges &&
+            hasVideoInterview && !data?.jobs?.edges?.[0]?.node?.videoInterviewTemplate?.edges?.[0]?.node?.videoInterviewQuestions?.edges &&
               'Video interview questions data structure is missing',
-            data?.jobs?.edges?.[0]?.node?.videoInterviewTemplate?.edges?.[0]
-              ?.node?.videoInterviewQuestions?.edges?.length === 0 &&
+            hasVideoInterview && data?.jobs?.edges?.[0]?.node?.videoInterviewTemplate?.edges?.[0]?.node?.videoInterviewQuestions?.edges?.length === 0 &&
               'No video interview questions found',
-            data?.jobs?.edges?.[0]?.node?.videoInterviewTemplate?.edges?.[0]?.node?.videoInterviewQuestions?.edges?.some(
+            hasVideoInterview && data?.jobs?.edges?.[0]?.node?.videoInterviewTemplate?.edges?.[0]?.node?.videoInterviewQuestions?.edges?.some(
               (edge: { node: { questionValue: any } }) =>
                 !edge?.node?.questionValue,
             ) && 'One or more video interview questions are empty',
-            data?.jobs?.edges?.[0]?.node?.videoInterviewTemplate?.edges?.[0]?.node?.videoInterviewQuestions?.edges?.some(
+            hasVideoInterview && data?.jobs?.edges?.[0]?.node?.videoInterviewTemplate?.edges?.[0]?.node?.videoInterviewQuestions?.edges?.some(
               (edge: { node: { attachments: { edges: string | any[] } } }) =>
                 !edge?.node?.attachments?.edges ||
                 edge?.node?.attachments?.edges?.length === 0,
             ) && 'Video attachments missing for interview questions',
 
             // Video interview introduction
-            !data?.jobs?.edges?.[0]?.node?.videoInterviewTemplate?.edges?.[0]
-              ?.node?.introduction &&
+            hasVideoInterview && !data?.jobs?.edges?.[0]?.node?.videoInterviewTemplate?.edges?.[0]?.node?.introduction &&
               'Video interview introduction text is missing',
-            !data?.jobs?.edges?.[0]?.node?.videoInterviewTemplate?.edges?.[0]
-              ?.node?.attachments?.edges ||
-              (data?.jobs?.edges?.[0]?.node?.videoInterviewTemplate?.edges?.[0]
-                ?.node?.attachments?.edges?.length === 0 &&
-                'Video interview introduction video is missing'),
+            hasVideoInterview && (!data?.jobs?.edges?.[0]?.node?.videoInterviewTemplate?.edges?.[0]?.node?.attachments?.edges ||
+              data?.jobs?.edges?.[0]?.node?.videoInterviewTemplate?.edges?.[0]?.node?.attachments?.edges?.length === 0) &&
+              'Video interview introduction video is missing',
 
             // Recruiter profile
             !data?.jobs?.edges?.[0]?.node?.recruiter?.workspaceMemberProfile
@@ -184,7 +178,7 @@ export const useCheckDataIntegrityOfJob = ({
             .filter(Boolean)
             .join('\n• ');
 
-          if (isDefined(consolidatedErrorMessage)) {
+          if (consolidatedErrorMessage && consolidatedErrorMessage.trim().length > 0) {
             console.log(
               'Job validation failed. Please fix the following issues:\n\n• ',
               consolidatedErrorMessage,
@@ -196,14 +190,14 @@ export const useCheckDataIntegrityOfJob = ({
                 duration: 10000,
               },
             );
+          } else {
+            console.log('Successfully created job object');
+            enqueueSnackBar('Successfully created job object', {
+              variant: SnackBarVariant.Success,
+              duration: 3000,
+            });
+            if (isDefined(onSuccess)) onSuccess();
           }
-
-          console.log('Successfully created job object');
-          enqueueSnackBar('Successfully created job object', {
-            variant: SnackBarVariant.Success,
-            duration: 3000,
-          });
-          if (isDefined(onSuccess)) onSuccess();
         }
       } catch (error) {
         enqueueSnackBar('Error in creating job object', {

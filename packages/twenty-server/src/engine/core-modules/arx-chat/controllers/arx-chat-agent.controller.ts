@@ -793,9 +793,9 @@ export class ArxChatEndpoint {
     const { jobId } = request.body;
     console.log('jobId in getCandidatesByJobId:', jobId);
     const apiToken = request?.headers?.authorization?.split(' ')[1];
-    const { candidates } = await new CandidateEngagementArx(
+    const candidates = await new CandidateEngagementArx(
       this.workspaceQueryService,
-    ).fetchSpecificPeopleToEngageAcrossAllChatControlsByJobId(jobId, apiToken);
+    ).fetchAllCandidatesWithAllChatControlsByJobId(jobId, apiToken);
 
     console.log('All candidates length:', candidates?.length);
 

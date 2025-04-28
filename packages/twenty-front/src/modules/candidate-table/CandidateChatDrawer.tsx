@@ -217,6 +217,8 @@ export const CandidateChatDrawer = () => {
   const [candidateData, setCandidateData] = useState<any>(null);
   const { enqueueSnackBar } = useSnackBar();
   const inputRef = useRef<HTMLInputElement>(null);
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
   
   // Use the templates hook
   const { templates, templatePreviews, isLoading: isLoadingTemplates } = useTemplates();
@@ -247,6 +249,19 @@ export const CandidateChatDrawer = () => {
   const [selectedTemplate, setSelectedTemplate] = useState('');
   const [phoneNumber, setPhoneNumber] = useState<string>('');
 
+  const scrollToBottom = () => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
+  };
+
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    if (!isLoading) {
+      scrollToBottom();
+    }
+  }, [messageHistory, isLoading]);
+
   const showSnackbar = (message: string, type: 'success' | 'error') => {
     enqueueSnackBar(message, {
       variant:
@@ -260,8 +275,116 @@ export const CandidateChatDrawer = () => {
     return templatePreviews[templateName] || 'Template preview not available';
   };
 
+  const fetchMessages = async () => {
+    if (!candidateId || !tokenPair?.accessToken?.token) {
+      console.log('Missing candidateId or token, skipping fetch');
+      setIsLoading(false);
+      return;
+    }
+    
+    try {
+      
+      console.log('Fetching messages for candidateId:', candidateId);
+      const response = await axios.post(
+        `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/get-all-messages-by-candidate-id`,
+        { candidateId },
+        { headers: { Authorization: `Bearer ${tokenPair.accessToken.token}` } }
+      );
+      console.log('Received message data:', response.data);
+      
+      const sortedMessages = response.data.sort(
+        (a: any, b: any) => b.position - a.position
+      );
+
+      // Check if messages have actually changed
+      const hasMessagesChanged = JSON.stringify(sortedMessages) !== JSON.stringify(messageHistory);
+      
+      if (hasMessagesChanged) {
+        setIsLoading(true);
+        setError(null);
+        
+        // Fetch candidate name if available in the messages
+        if (sortedMessages.length > 0 && sortedMessages[0].candidateName) {
+          setCandidateName(sortedMessages[0].candidateName);
+        }
+
+        setMessageHistory(sortedMessages);
+      } else {
+        console.log('No changes in messages, skipping update');
+      }
+    } catch (error) {
+      console.error('Error fetching chat messages:', error);
+      setError('Failed to load chat messages');
+      setMessageHistory([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchCandidateData = async () => {
+    if (!candidateId || !tokenPair?.accessToken?.token) {
+      return;
+    }
+    try {
+      setIsLoading(true);
+      const response = await fetch(`${process.env.REACT_APP_SERVER_BASE_URL}/graphql`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${tokenPair.accessToken.token}`,
+        },
+        body: JSON.stringify({
+          query: graphqlToFetchAllCandidateData,
+          variables: {
+            filter: {
+              id: { eq: candidateId }
+            }
+          },
+        }),
+      });
+      
+      const responseData = await response.json();
+      if (responseData?.data?.candidates?.edges?.[0]?.node) {
+        const candidate = responseData.data.candidates.edges[0].node;
+        setCandidateData(candidate);
+        if (candidate.name) {
+          setCandidateName(candidate.name);
+        }
+        if (candidate?.people?.phones?.primaryPhoneNumber) {
+          setPhoneNumber(candidate?.people?.phones?.primaryPhoneNumber);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching candidate data:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Start polling when component mounts and candidateId is available
   useEffect(() => {
-    // Set default active tab
+    if (candidateId) {
+      // Initial fetch
+      fetchMessages();
+      fetchCandidateData();
+
+      // Set up polling interval
+      pollingIntervalRef.current = setInterval(() => {
+        fetchMessages();
+      }, 10000); // Poll every 10 seconds
+
+      // Cleanup interval on unmount or when candidateId changes
+      return () => {
+        if (pollingIntervalRef.current) {
+          clearInterval(pollingIntervalRef.current);
+          pollingIntervalRef.current = null;
+        }
+      };
+    }
+  }, [candidateId]);
+
+  // Set default active tab
+  useEffect(() => {
     if (!activeTabId) {
       // Check if we have a default tab in localStorage
       const defaultTab = localStorage.getItem('candidate-chat-default-tab');
@@ -273,96 +396,7 @@ export const CandidateChatDrawer = () => {
         setActiveTabId('chat');
       }
     }
-    
-    // Skip if the candidateId is the same as the previous one to prevent duplicate requests
-    if (candidateId === prevCandidateIdRef.current) {
-      console.log('Same candidateId as before, skipping fetch:', candidateId);
-      return;
-    }
-    
-    prevCandidateIdRef.current = candidateId;
-    
-    const fetchMessages = async () => {
-      if (!candidateId || !tokenPair?.accessToken?.token) {
-        console.log('Missing candidateId or token, skipping fetch');
-        setIsLoading(false);
-        return;
-      }
-      
-      try {
-        setIsLoading(true);
-        setError(null);
-        
-        console.log('Fetching messages for candidateId:', candidateId);
-        const response = await axios.post(
-          `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/get-all-messages-by-candidate-id`,
-          { candidateId },
-          { headers: { Authorization: `Bearer ${tokenPair.accessToken.token}` } }
-        );
-        console.log('Received message data:', response.data);
-        
-        const sortedMessages = response.data.sort(
-          (a: any, b: any) => b.position - a.position
-        );
-
-        // Fetch candidate name if available in the messages
-        if (sortedMessages.length > 0 && sortedMessages[0].candidateName) {
-          setCandidateName(sortedMessages[0].candidateName);
-        }
-
-        setMessageHistory(sortedMessages);
-      } catch (error) {
-        console.error('Error fetching chat messages:', error);
-        setError('Failed to load chat messages');
-        setMessageHistory([]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    const fetchCandidateData = async () => {
-      if (!candidateId || !tokenPair?.accessToken?.token) {
-        return;
-      }
-      try {
-        setIsLoading(true);
-        const response = await fetch(`${process.env.REACT_APP_SERVER_BASE_URL}/graphql`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${tokenPair.accessToken.token}`,
-          },
-          body: JSON.stringify({
-            query: graphqlToFetchAllCandidateData,
-            variables: {
-              filter: {
-                id: { eq: candidateId }
-              }
-            },
-          }),
-        });
-        
-        const responseData = await response.json();
-        if (responseData?.data?.candidates?.edges?.[0]?.node) {
-          const candidate = responseData.data.candidates.edges[0].node;
-          setCandidateData(candidate);
-          if (candidate.name) {
-            setCandidateName(candidate.name);
-          }
-          if (candidate.person?.phones?.edges?.[0]?.node?.number) {
-            setPhoneNumber(candidate.person.phones.edges[0].node.number);
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching candidate data:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchMessages();
-    fetchCandidateData();
-  }, [candidateId, activeTabId, setActiveTabId]);
+  }, [activeTabId, setActiveTabId]);
 
   const sendMessage = async (messageText: string) => {
     if (!phoneNumber) {
@@ -475,7 +509,7 @@ export const CandidateChatDrawer = () => {
   };
 
   const renderChatTab = () => (
-    <ChatView>
+    <ChatView ref={chatContainerRef}>
       {isLoading ? (
         <div>Loading chat history... for {candidateId}</div>
       ) : error ? (
