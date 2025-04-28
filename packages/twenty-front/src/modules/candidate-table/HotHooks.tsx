@@ -1,23 +1,53 @@
-export const afterSelectionEnd = (tableRef: any, row: number, row2: number, setTableState: any ) => {
+export const afterSelectionEnd = (tableRef: any, column: number, row: number, row2: number, setTableState: any ) => {
   console.log("row in afterSelectionEnd", row);
   console.log("row in afterSelectionEndHandler", row);
   const hot = tableRef.current?.hotInstance;
+  console.log("hot in afterSelectionEnd", hot);
   if (!hot) return;
-  const selectedRows: string[] = [];
-  for (let i = Math.min(row, row2); i <= Math.max(row, row2); i++) {
-    const rowData = hot.getSourceDataAtRow(i);
-    console.log("rowData", rowData);
+  
+  // Check if this is a checkbox column selection (column === 0)
+  if (column === 0) {
+    // Get all currently selected rows
+    const rowData = hot.getSourceDataAtRow(row);
     if (rowData && rowData.id) {
-      selectedRows.push(rowData.id);
+      setTableState((prev: any) => {
+        const currentSelectedIds = [...prev.selectedRowIds];
+        const rowId = rowData.id;
+        
+        // Toggle selection for this row
+        const index = currentSelectedIds.indexOf(rowId);
+        if (index > -1) {
+          // Already selected, remove it
+          currentSelectedIds.splice(index, 1);
+        } else {
+          // Not selected, add it
+          currentSelectedIds.push(rowId);
+        }
+        
+        return {
+          ...prev,
+          selectedRowIds: currentSelectedIds
+        };
+      });
     }
-  }
-  console.log("selectedRows", selectedRows);
+  } else {
+    // For non-checkbox column selections, use the original behavior
+    const selectedRows: string[] = [];
+    for (let i = Math.min(row, row2); i <= Math.max(row, row2); i++) {
+      const rowData = hot.getSourceDataAtRow(i);
+      console.log("rowData", rowData);
+      if (rowData && rowData.id) {
+        selectedRows.push(rowData.id);
+      }
+    }
+    console.log("selectedRows", selectedRows);
 
-  setTableState((prev: any) => ({
-    ...prev,
-    selectedRowIds: selectedRows
-  }));
-  return selectedRows;
+    setTableState((prev: any) => ({
+      ...prev,
+      selectedRowIds: selectedRows
+    }));
+    return selectedRows;
+  }
 }
 
 export const afterChange = async (tableRef: React.RefObject<any>, changes: any, source: any, jobId: string, tokenPair: any, setTableState: any, refreshData: any) => {
@@ -38,6 +68,29 @@ export const afterChange = async (tableRef: React.RefObject<any>, changes: any, 
     if (!rowData || !rowData.id) continue;
     
     try {
+      // Special handling for checkbox column
+      if (prop === 'checkbox') {
+        setTableState((prev: any) => {
+          const currentSelectedIds = [...prev.selectedRowIds];
+          const rowId = rowData.id;
+          
+          if (newValue === true && !currentSelectedIds.includes(rowId)) {
+            currentSelectedIds.push(rowId);
+          } else if (newValue === false) {
+            const index = currentSelectedIds.indexOf(rowId);
+            if (index > -1) {
+              currentSelectedIds.splice(index, 1);
+            }
+          }
+          
+          return {
+            ...prev,
+            selectedRowIds: currentSelectedIds
+          };
+        });
+        continue;
+      }
+      
       const isDirectField = 
         Object.prototype.hasOwnProperty.call(rowData, prop) && prop !== 'candidateFieldValues';
       console.log(`Updating field: ${prop}, isDirectField: ${isDirectField}`);
@@ -56,7 +109,7 @@ export const afterChange = async (tableRef: React.RefObject<any>, changes: any, 
       });
       
       if (response.ok) {
-        console.log(`Updated candidate field: ${prop}`);
+        console.log(`Updated candidate field: ${prop} for candidate ${rowData.id}`);
         updatedRows.add(rowData.id);
       } else {
         console.error('Update failed:', await response.text());

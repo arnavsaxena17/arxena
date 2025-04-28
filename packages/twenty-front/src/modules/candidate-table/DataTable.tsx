@@ -156,8 +156,9 @@ interface DataTableProps {
 
     const afterSelectionEndHandler = (row: number, column: number, row2: number, column2: number, selectionLayerLevel: number) => {
       console.log("row in afterSelectionEndHandler", row);
-      afterSelectionEnd(tableRef, row, row2, setTableState);
+      afterSelectionEnd(tableRef, column, row, row2, setTableState);
     }
+
     const loadData = useCallback(async () => {
       if (!jobId || jobId === "job-id") return;
       
@@ -254,6 +255,7 @@ interface DataTableProps {
           dropdownMenu={true}
         />
       </StyledTableContainer>
+      
     );
   };
 

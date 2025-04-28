@@ -1,10 +1,10 @@
 import { ActionMenuComponentInstanceContext } from "@/action-menu/states/contexts/ActionMenuComponentInstanceContext";
 import { TableContainer } from "@/activities/chats/components/chat-table/styled";
 // import { StyledTopBar } from "@/activities/chats/components/chat-window/ChatWindowStyles";
-import { ChatActionMenu } from "@/activities/chats/components/ChatActionMenu";
 import { ChatOptionsDropdownButton } from "@/activities/chats/components/ChatOptionsDropdownButton";
 import { PageAddChatButton } from "@/activities/chats/components/PageAddChatButton";
 import { DataTable } from "@/candidate-table/DataTable";
+import { HotTableActionMenu } from "@/candidate-table/HotTableActionMenu";
 import { jobIdAtom } from "@/candidate-table/states";
 import { ContextStoreComponentInstanceContext } from "@/context-store/states/contexts/ContextStoreComponentInstanceContext";
 import { ObjectFilterDropdownButton } from "@/object-record/object-filter-dropdown/components/ObjectFilterDropdownButton";
@@ -164,7 +164,7 @@ export const JobPage: React.FC = () => {
                 zIndex: 1000,
                 backgroundColor: theme.background.primary
               }}>
-                <ChatActionMenu tableId={jobId} />
+                <HotTableActionMenu tableId={jobId} />
               </div>
             </ActionMenuComponentInstanceContext.Provider>
           </ContextStoreComponentInstanceContext.Provider>

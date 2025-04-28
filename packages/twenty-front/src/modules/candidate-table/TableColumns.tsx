@@ -27,7 +27,7 @@ export const TableColumns = ({ processedData }: { processedData: any[] }) => {
   const checkboxRenderer: ColumnRenderer = (instance, td, row, column, prop, value, cellProperties) => {
     td.innerHTML = '';
     
-    // const candidate = instance.getSourceDataAtRow(row);
+    const rowData = instance.getSourceDataAtRow(row);
     
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
@@ -37,6 +37,8 @@ export const TableColumns = ({ processedData }: { processedData: any[] }) => {
     
     checkbox.addEventListener('click', (e) => {
       e.stopPropagation(); // Prevent row selection when clicking checkbox
+      // Update the data source directly to trigger afterChange event
+      instance.setDataAtRowProp(row, 'checkbox', !value);
     });
     
     td.appendChild(checkbox);
