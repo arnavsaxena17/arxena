@@ -1,4 +1,5 @@
 import { tokenPairState } from '@/auth/states/tokenPairState';
+import { tableStateAtom } from '@/candidate-table/states';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { TabList } from '@/ui/layout/tab/components/TabList';
@@ -11,7 +12,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { MessageNode } from 'twenty-shared';
 import AttachmentPanel from '../components/AttachmentPanel';
-import { selectedCandidateIdState } from '../states/selectedCandidateIdState';
 import { CandidateInfoHeader } from './CandidateInfoHeader';
 import VideoInterviewTab from './VideoInterviewTab';
 
@@ -205,7 +205,9 @@ const groupMessagesByDate = (messages: MessageNode[]) => {
 
 export const CandidateChatDrawer = () => {
   const [tokenPair] = useRecoilState(tokenPairState);
-  const candidateId = useRecoilValue(selectedCandidateIdState);
+  // const candidateId = useRecoilValue(selectedCandidateIdState);
+  const tableState = useRecoilValue(tableStateAtom);
+  const candidateId = tableState.selectedRowIds[0];
   const [messageHistory, setMessageHistory] = useState<MessageNode[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

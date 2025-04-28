@@ -11,6 +11,17 @@ type ColumnRenderer = (
   cellProperties: Handsontable.CellProperties
 ) => HTMLTableCellElement;
 
+
+const urlFields = [
+  'profileUrl', 'linkedinUrl', 'linkedInUrl', 'githubUrl','personId', 'portfolioUrl','profilePhotoUrl','englishAudioIntroUrl',
+  'resdexNaukriUrl', 'hiringNaukriUrl', 'website', 'websiteUrl',
+];
+
+// Define fields that should be excluded from automatic column generation
+const excludedFields = [
+  'id', 'checkbox', 'name', 'candidateFieldValues','token', 'jobTitle', 'firstName','phone', 'searchId','phoneNumbers','filterQueryHash','mayAlsoKnow','languages','englishLevel','baseQueryHash','creationDate','apnaSearchToken','lastName', 'uniqueKeyString', 'emailAddress', 'industries', 'profiles', 'jobProcess', 'locations','experience', 'experienceStats', 'lastUpdated','education','interests','skills','dataSources','allNumbers','jobName','uploadId','allMails','socialprofiles','tables','created','middleName','middleInitial','creationSource','contactDetails','queryId','socialProfiles','updatedAt'
+];
+
 export const TableColumns = ({ processedData }: { processedData: any[] }) => {
   if (!processedData.length) return [];
     
@@ -19,9 +30,6 @@ export const TableColumns = ({ processedData }: { processedData: any[] }) => {
   processedData.forEach(item => {
     Object.keys(item).forEach(key => allKeys.add(key));
   });
-
-  // Define excluded fields that shouldn't be displayed as columns
-  const excludedFields = ['id'];
 
   // Create checkbox renderer
   const checkboxRenderer: ColumnRenderer = (instance, td, row, column, prop, value, cellProperties) => {
@@ -62,6 +70,68 @@ export const TableColumns = ({ processedData }: { processedData: any[] }) => {
     return td;
   };
 
+  const urlRenderer: ColumnRenderer = (instance, td, row, column, prop, value) => {
+    // Clear any previous content
+    td.innerHTML = '';
+    
+    if (!value || value === 'N/A') {
+      const div = document.createElement('div');
+      Object.assign(div.style, truncatedCellStyle);
+      div.textContent = 'N/A';
+      td.appendChild(div);
+      return td;
+    }
+    
+    // Format URL if needed (make sure it has http/https prefix)
+    let url = value;
+    if (url && !url.startsWith('http://') && !url.startsWith('https://')) {
+      url = 'https://' + url;
+    }
+    
+    // Create hyperlink element
+    const link = document.createElement('a');
+    link.href = url;
+    link.target = '_blank'; // Open in new tab
+    link.rel = 'noopener noreferrer'; // Security best practice
+    link.textContent = value; // Display original value as text
+    
+    // Apply styling
+    Object.assign(link.style, truncatedCellStyle);
+    link.style.color = '#1976d2'; // Standard link color
+    link.style.textDecoration = 'none'; // No underline by default
+    
+    // Add hover effect
+    link.onmouseover = () => {
+      link.style.textDecoration = 'underline';
+    };
+    link.onmouseout = () => {
+      link.style.textDecoration = 'none';
+    };
+    
+    // Stop propagation on all events to prevent table from handling them
+    link.addEventListener('click', (e) => {
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      // Let the default browser behavior handle the link
+    });
+    
+    // Also stop mousedown event which triggers Handsontable selection
+    link.addEventListener('mousedown', (e) => {
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    });
+    
+    // And prevent selection handler from triggering on mouseup
+    link.addEventListener('mouseup', (e) => {
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    });
+    
+    td.appendChild(link);
+    return td;
+  };
+
+
   // Generate column definitions
   const columns: Handsontable.ColumnSettings[] = [];
 
@@ -87,7 +157,7 @@ export const TableColumns = ({ processedData }: { processedData: any[] }) => {
   // Add other commonly used columns
   const commonColumns = ['email', 'phone', 'status', 'source'];
   commonColumns.forEach(column => {
-    if (allKeys.has(column)) {
+    if (allKeys.has(column) && !excludedFields.includes(column)) {
       columns.push({
         data: column,
         title: column.charAt(0).toUpperCase() + column.slice(1),
@@ -100,14 +170,14 @@ export const TableColumns = ({ processedData }: { processedData: any[] }) => {
 
   // Add remaining columns
   Array.from(allKeys)
-    .filter(key => !excludedFields.includes(key) && key !== 'checkbox')
+    .filter(key => !excludedFields.includes(key))
     .sort()
     .forEach(key => {
       columns.push({
         data: key,
         title: key.charAt(0).toUpperCase() + key.slice(1),
         width: 150,
-        renderer: simpleRenderer,
+        renderer: urlFields.includes(key) ? urlRenderer : simpleRenderer,
       });
     });
 

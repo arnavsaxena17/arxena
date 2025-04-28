@@ -3,6 +3,7 @@ import { afterChange, afterSelectionEnd } from '@/candidate-table/HotHooks';
 import { columnsSelector, processedDataSelector, tableStateAtom } from "@/candidate-table/states";
 import { contextStoreNumberOfSelectedRecordsComponentState } from '@/context-store/states/contextStoreNumberOfSelectedRecordsComponentState';
 import { contextStoreTargetedRecordsRuleComponentState } from '@/context-store/states/contextStoreTargetedRecordsRuleComponentState';
+import { useRightDrawer } from '@/ui/layout/right-drawer/hooks/useRightDrawer';
 import { useSetRecoilComponentStateV2 } from '@/ui/utilities/state/component-state/hooks/useSetRecoilComponentStateV2';
 import styled from '@emotion/styled';
 import HotTable from "@handsontable/react-wrapper";
@@ -101,7 +102,7 @@ interface DataTableProps {
     const [tokenPair] = useRecoilState(tokenPairState);
     const processedData = useRecoilValue(processedDataSelector);
     const columns = useRecoilValue(columnsSelector);
-
+    const { openRightDrawer } = useRightDrawer();
     const setContextStoreTargetedRecordsRule = useSetRecoilComponentStateV2(
       contextStoreTargetedRecordsRuleComponentState,
       jobId
@@ -183,7 +184,7 @@ interface DataTableProps {
 
     const afterSelectionEndHandler = (row: number, column: number, row2: number, column2: number, selectionLayerLevel: number) => {
       console.log("row in afterSelectionEndHandler", row);
-      afterSelectionEnd(tableRef, column, row, row2, setTableState, setContextStoreNumberOfSelectedRecords, setContextStoreTargetedRecordsRule);
+      afterSelectionEnd(tableRef, column, row, row2, setTableState, setContextStoreNumberOfSelectedRecords, setContextStoreTargetedRecordsRule, openRightDrawer);
     }
 
     const loadData = useCallback(async () => {
