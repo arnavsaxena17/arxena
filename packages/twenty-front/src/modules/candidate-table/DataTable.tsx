@@ -112,7 +112,7 @@ interface DataTableProps {
     // }
 
     const refreshData = useCallback(async (specificIds?: string[]) => {
-      if (!jobId) return;
+      if (!jobId || jobId === "job-id") return;
       
       try {
         const requestBody = specificIds?.length 
@@ -159,7 +159,7 @@ interface DataTableProps {
       afterSelectionEnd(tableRef, row, row2, setTableState);
     }
     const loadData = useCallback(async () => {
-      if (!jobId) return;
+      if (!jobId || jobId === "job-id") return;
       
       try {
         setTableState(prev => ({ ...prev, isLoading: true }));
