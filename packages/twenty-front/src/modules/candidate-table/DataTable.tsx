@@ -8,7 +8,7 @@ import { useRightDrawer } from '@/ui/layout/right-drawer/hooks/useRightDrawer';
 import { useSetRecoilComponentStateV2 } from '@/ui/utilities/state/component-state/hooks/useSetRecoilComponentStateV2';
 import styled from '@emotion/styled';
 import HotTable from "@handsontable/react-wrapper";
-import axios from "axios";
+import axios from 'axios';
 import { CellChange, ChangeSource } from 'handsontable/common';
 import 'handsontable/styles/handsontable.min.css';
 import 'handsontable/styles/ht-theme-main.min.css';
@@ -43,6 +43,14 @@ const StyledTableContainer = styled.div`
 
   .handsontable .wtHolder {
     overflow: auto;
+  }
+
+  .ht_clone_inline_start .wtHolder {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE 10+ */
+  }
+  .ht_clone_inline_start .wtHolder::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
   }
 `;
 
