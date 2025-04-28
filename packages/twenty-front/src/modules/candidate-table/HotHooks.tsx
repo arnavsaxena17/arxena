@@ -1,29 +1,24 @@
 export const afterSelectionEnd = (tableRef: any, column: number, row: number, row2: number, setTableState: any, setContextStoreNumberOfSelectedRecords: any, setContextStoreTargetedRecordsRule: any ) => {
   console.log("row in afterSelectionEnd", row);
-  console.log("row in afterSelectionEndHandler", row);
+  console.log("row2 in afterSelectionEnd", row2);
   const hot = tableRef.current?.hotInstance;
   console.log("hot in afterSelectionEnd", hot);
   if (!hot) return;
   
-  // Check if this is a checkbox column selection (column === 0)
   if (column === 0) {
-    // Get all currently selected rows
     const rowData = hot.getSourceDataAtRow(row);
+    console.log("rowData in afterSelectionEnd", rowData);
     if (rowData && rowData.id) {
       setTableState((prev: any) => {
         const currentSelectedIds = [...prev.selectedRowIds];
         const rowId = rowData.id;
         
-        // Toggle selection for this row
         const index = currentSelectedIds.indexOf(rowId);
         if (index > -1) {
-          // Already selected, remove it
           currentSelectedIds.splice(index, 1);
         } else {
-          // Not selected, add it
           currentSelectedIds.push(rowId);
         }
-        
         return {
           ...prev,
           selectedRowIds: currentSelectedIds
@@ -31,7 +26,6 @@ export const afterSelectionEnd = (tableRef: any, column: number, row: number, ro
       });
     }
   } else {
-    // For non-checkbox column selections, use the original behavior
     const selectedRows: string[] = [];
     for (let i = Math.min(row, row2); i <= Math.max(row, row2); i++) {
       const rowData = hot.getSourceDataAtRow(i);
@@ -41,7 +35,6 @@ export const afterSelectionEnd = (tableRef: any, column: number, row: number, ro
       }
     }
     console.log("selectedRows", selectedRows);
-
     setTableState((prev: any) => ({
       ...prev,
       selectedRowIds: selectedRows
@@ -52,7 +45,6 @@ export const afterSelectionEnd = (tableRef: any, column: number, row: number, ro
       mode: 'selection',
       selectedRecordIds: selectedRows,
     });
-
     return selectedRows;
   }
 }
