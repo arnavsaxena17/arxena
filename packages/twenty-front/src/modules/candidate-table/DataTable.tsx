@@ -102,14 +102,59 @@ interface DataTableProps {
     // };
 
     const afterChangeHandler = ( changes: CellChange[] | null, source: ChangeSource) => {
-      console.log("changes, source in afterChangeHandler", changes, source);
-      afterChange( tableRef, changes, source, jobId, tokenPair, setTableState);
+      console.log("changes and source in after Change Handler", changes, source);
+      afterChange( tableRef, changes, source, jobId, tokenPair, setTableState, refreshData);
     }
 
     // const beforeOnCellMouseDownHandler = (event: MouseEvent, coords: { row: number; col: number }) => {
     //   console.log("event in beforeOnCellMouseDownHandler", event);
     //   beforeOnCellMouseDown(tableRef, event, coords, tableState , setTableState)
     // }
+
+    const refreshData = useCallback(async (specificIds?: string[]) => {
+      if (!jobId) return;
+      
+      try {
+        // If specific IDs are provided, use them for a partial refresh
+        const requestBody = specificIds?.length 
+          ? { jobId, candidateIds: specificIds }
+          : { jobId };
+        
+        const response = await axios.post(
+          `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/get-candidates-by-job-id`,
+          requestBody,
+          { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } }
+        );
+        
+        const rawData: CandidateNode[] = response.data;
+        
+        // If it was a partial refresh, merge with existing data
+        if (specificIds?.length) {
+          setTableState(prev => {
+            const updatedRawData = [...prev.rawData];
+            for (const newData of rawData) {
+              const index = updatedRawData.findIndex(item => item.id === newData.id);
+              if (index >= 0) {
+                updatedRawData[index] = newData;
+              } else {
+                updatedRawData.push(newData);
+              }
+            }
+            return { ...prev, rawData: updatedRawData };
+          });
+        } else {
+          // Full refresh
+          setTableState(prev => ({
+            ...prev,
+            rawData,
+            isLoading: false
+          }));
+        }
+      } catch (error) {
+        console.error('Data refresh failed:', error);
+      }
+    }, [jobId, setTableState, tokenPair]);
+    
 
     const afterSelectionEndHandler = (row: number, column: number, row2: number, column2: number, selectionLayerLevel: number) => {
       console.log("row in afterSelectionEndHandler", row);

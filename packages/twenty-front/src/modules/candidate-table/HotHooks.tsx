@@ -20,7 +20,7 @@ export const afterSelectionEnd = (tableRef: any, row: number, row2: number, setT
   return selectedRows;
 }
 
-export const afterChange = async (tableRef: React.RefObject<any>, changes: any, source: any, jobId: string, tokenPair: any, setTableState: any) => {
+export const afterChange = async (tableRef: React.RefObject<any>, changes: any, source: any, jobId: string, tokenPair: any, setTableState: any, refreshData: any) => {
   console.log("changes in afterChange", changes);
   if (!changes || source !== 'edit') return;
   
@@ -62,6 +62,11 @@ export const afterChange = async (tableRef: React.RefObject<any>, changes: any, 
         // Revert the cell to its previous value if update failed
         hot.setDataAtRowProp(row, prop, oldValue);
       }
+
+      if (updatedRows.size > 0 && refreshData) {
+        await refreshData(Array.from(updatedRows));
+      }
+    
     } catch (error) {
       console.error('Update failed:', error);
       // Revert cell on error
