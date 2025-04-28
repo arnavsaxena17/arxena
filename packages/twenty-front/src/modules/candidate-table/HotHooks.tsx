@@ -1,4 +1,4 @@
-export const afterSelectionEnd = (tableRef: any, column: number, row: number, row2: number, setTableState: any ) => {
+export const afterSelectionEnd = (tableRef: any, column: number, row: number, row2: number, setTableState: any, setContextStoreNumberOfSelectedRecords: any, setContextStoreTargetedRecordsRule: any ) => {
   console.log("row in afterSelectionEnd", row);
   console.log("row in afterSelectionEndHandler", row);
   const hot = tableRef.current?.hotInstance;
@@ -46,6 +46,13 @@ export const afterSelectionEnd = (tableRef: any, column: number, row: number, ro
       ...prev,
       selectedRowIds: selectedRows
     }));
+
+    setContextStoreNumberOfSelectedRecords(selectedRows.length);
+    setContextStoreTargetedRecordsRule({
+      mode: 'selection',
+      selectedRecordIds: selectedRows,
+    });
+
     return selectedRows;
   }
 }

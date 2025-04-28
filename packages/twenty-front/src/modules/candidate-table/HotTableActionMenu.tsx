@@ -83,22 +83,16 @@ const HotTableAllActionsButton = () => {
   };
 
 // Custom record index action menu bar for chat that includes the All Actions button
-const ChatRecordIndexActionMenuBar = ({ tableId }: { tableId: string }) => {
-  
+const HotTableRecordIndexActionMenuBar = ({ tableId }: { tableId: string }) => {
     const contextStoreNumberOfSelectedRecords = useRecoilComponentValueV2(
       contextStoreNumberOfSelectedRecordsComponentState,
       tableId
     );
-  
     const actionMenuEntries = useRecoilComponentValueV2(
       actionMenuEntriesComponentSelector,
       tableId
     ) as ActionMenuEntry[];
-  
-  
     const pinnedEntries = actionMenuEntries.filter((entry) => entry.isPinned);
-    
-    
     if (contextStoreNumberOfSelectedRecords === 0) {
       return null;
     }
@@ -146,7 +140,7 @@ export const HotTableActionMenu = ({ tableId }: { tableId: string }) => {
           onActionExecutedCallback: () => {},
         }}
       >
-        <ChatRecordIndexActionMenuBar tableId={tableId} />
+        <HotTableRecordIndexActionMenuBar tableId={tableId} />
         <ActionMenuComponentInstanceContext.Provider
           value={{
             instanceId: tableId,

@@ -1,6 +1,9 @@
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { afterChange, afterSelectionEnd } from '@/candidate-table/HotHooks';
 import { columnsSelector, processedDataSelector, tableStateAtom } from "@/candidate-table/states";
+import { contextStoreNumberOfSelectedRecordsComponentState } from '@/context-store/states/contextStoreNumberOfSelectedRecordsComponentState';
+import { contextStoreTargetedRecordsRuleComponentState } from '@/context-store/states/contextStoreTargetedRecordsRuleComponentState';
+import { useSetRecoilComponentStateV2 } from '@/ui/utilities/state/component-state/hooks/useSetRecoilComponentStateV2';
 import styled from '@emotion/styled';
 import HotTable from "@handsontable/react-wrapper";
 import axios from "axios";
@@ -87,8 +90,16 @@ interface DataTableProps {
     const processedData = useRecoilValue(processedDataSelector);
     const columns = useRecoilValue(columnsSelector);
 
-    console.log("processedData in DataTable", processedData);
+    const setContextStoreTargetedRecordsRule = useSetRecoilComponentStateV2(
+      contextStoreTargetedRecordsRuleComponentState,
+      jobId
+    );
+    const setContextStoreNumberOfSelectedRecords = useSetRecoilComponentStateV2(
+      contextStoreNumberOfSelectedRecordsComponentState,
+      jobId
+    );
 
+    console.log("processedData in DataTable", processedData);
 
     const mutatableData = useMemo(() => {
       return processedData.map((candidate: any) => ({
@@ -156,7 +167,7 @@ interface DataTableProps {
 
     const afterSelectionEndHandler = (row: number, column: number, row2: number, column2: number, selectionLayerLevel: number) => {
       console.log("row in afterSelectionEndHandler", row);
-      afterSelectionEnd(tableRef, column, row, row2, setTableState);
+      afterSelectionEnd(tableRef, column, row, row2, setTableState, setContextStoreNumberOfSelectedRecords, setContextStoreTargetedRecordsRule);
     }
 
     const loadData = useCallback(async () => {
