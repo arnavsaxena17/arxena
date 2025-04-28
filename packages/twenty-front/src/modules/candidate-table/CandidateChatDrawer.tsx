@@ -1,5 +1,5 @@
 import { tokenPairState } from '@/auth/states/tokenPairState';
-import { tableStateAtom } from '@/candidate-table/states';
+import { processedDataSelector, tableStateAtom } from '@/candidate-table/states';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { TabList } from '@/ui/layout/tab/components/TabList';
@@ -10,7 +10,7 @@ import axios from 'axios';
 import dayjs from 'dayjs';
 import React, { useEffect, useRef, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
-import { MessageNode } from 'twenty-shared';
+import { graphqlToFetchAllCandidateData, MessageNode } from 'twenty-shared';
 import AttachmentPanel from './AttachmentPanel';
 import { CandidateInfoHeader } from './CandidateInfoHeader';
 import VideoInterviewTab from './VideoInterviewTab';
@@ -207,6 +207,7 @@ export const CandidateChatDrawer = () => {
   const [tokenPair] = useRecoilState(tokenPairState);
   // const candidateId = useRecoilValue(selectedCandidateIdState);
   const tableState = useRecoilValue(tableStateAtom);
+  const processedData = useRecoilValue(processedDataSelector);
   const candidateId = tableState.selectedRowIds[0];
   const [messageHistory, setMessageHistory] = useState<MessageNode[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -338,10 +339,8 @@ export const CandidateChatDrawer = () => {
       if (!candidateId || !tokenPair?.accessToken?.token) {
         return;
       }
-      
       try {
         setIsLoading(true);
-        
         const response = await fetch(`${process.env.REACT_APP_SERVER_BASE_URL}/graphql`, {
           method: 'POST',
           headers: {
@@ -349,76 +348,7 @@ export const CandidateChatDrawer = () => {
             Authorization: `Bearer ${tokenPair.accessToken.token}`,
           },
           body: JSON.stringify({
-            query: `
-              query FindCandidate($filter: CandidateFilterInput) {
-                candidates(filter: $filter) {
-                  edges {
-                    node {
-                      id
-                      name
-                      person {
-                        phones {
-                          edges {
-                            node {
-                              label
-                              number
-                            }
-                          }
-                        }
-                      }
-                      videoInterview {
-                        edges {
-                          node {
-                            id
-                            interviewCompleted
-                            interviewStarted
-                            videoInterviewTemplate {
-                              id
-                              name
-                              videoInterviewQuestions {
-                                edges {
-                                  node {
-                                    id
-                                    questionValue
-                                    timeLimit
-                                  }
-                                }
-                              }
-                            }
-                          }
-                        }
-                      }
-                      videoInterviewResponse {
-                        edges {
-                          node {
-                            id
-                            transcript
-                            videoInterviewQuestionId
-                            attachments {
-                              edges {
-                                node {
-                                  id
-                                  type
-                                  fullPath
-                                  name
-                                }
-                              }
-                            }
-                          }
-                        }
-                      }
-                      jobs {
-                        id
-                        name
-                        company {
-                          name
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            `,
+            query: graphqlToFetchAllCandidateData,
             variables: {
               filter: {
                 id: { eq: candidateId }
@@ -434,8 +364,6 @@ export const CandidateChatDrawer = () => {
           if (candidate.name) {
             setCandidateName(candidate.name);
           }
-          
-          // Extract phone number
           if (candidate.person?.phones?.edges?.[0]?.node?.number) {
             setPhoneNumber(candidate.person.phones.edges[0].node.number);
           }

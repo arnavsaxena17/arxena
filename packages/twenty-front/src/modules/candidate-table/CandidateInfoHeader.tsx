@@ -1,5 +1,5 @@
-import { selectedCandidateIdState } from '@/activities/chats/states/selectedCandidateIdState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
+import { processedDataSelector, tableStateAtom } from '@/candidate-table/states';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import styled from '@emotion/styled';
@@ -134,38 +134,24 @@ const StyledSelect = styled.select`
 `;
 
 export const CandidateInfoHeader = () => {
-  const candidateId = useRecoilValue(selectedCandidateIdState);
+  const tableState = useRecoilValue(tableStateAtom);
+  const candidateId = tableState.selectedRowIds[0];
   const [tokenPair] = useRecoilState(tokenPairState);
+  const processedData = useRecoilValue(processedDataSelector);
+
   const [selectedInterimChat, setSelectedInterimChat] = useState('');
   const { enqueueSnackBar } = useSnackBar();
 
   // Function to find all table data states and search for our candidate
   const findCandidateInTableData = () => {
     // If we don't have a candidate ID, return null
-    if (!candidateId) return null;
-    
-    // We need to get all table data atoms, so create a dummy key pattern
-    // This is a bit of a hack since we don't have a direct way to query all table data atoms
-    const tableDataPattern = /^tableDataState_.+/;
-    
-    // Check local storage for keys matching our pattern
-    const allKeys = Object.keys(localStorage);
-    const tableDataKeys = allKeys.filter(key => tableDataPattern.test(key));
-    
-    // For each table data key, try to parse and check for our candidate
-    for (const key of tableDataKeys) {
-      try {
-        const data = JSON.parse(localStorage.getItem(key) || '[]');
-        
-        // Look for the candidate in this table's data
-        const candidate = data.find((item: any) => item.id === candidateId);
-        if (candidate) return candidate;
-      } catch (error) {
-        console.error('Error parsing table data:', error);
-      }
+    if (!candidateId) {
+      return null;
     }
-    
-    return null;
+
+    // Find the candidate data in the table state
+    const candidateData = processedData.find((row) => row.id === candidateId);
+    return candidateData;
   };
 
   // Find the candidate data

@@ -1,7 +1,7 @@
+import VideoDownloaderPlayer from '@/video-interview/interview-response/VideoDownloaderPlayer';
 import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
 import React from 'react';
-import VideoDownloaderPlayer from '../../../video-interview/interview-response/VideoDownloaderPlayer';
 
 const StyledContainer = styled.div`
   background-color: white;

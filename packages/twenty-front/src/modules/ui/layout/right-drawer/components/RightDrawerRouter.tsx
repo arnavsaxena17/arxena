@@ -9,8 +9,8 @@ import { isRightDrawerMinimizedState } from '@/ui/layout/right-drawer/states/isR
 import { NotificationsDrawer } from '@/ui/notifications/components/NotificationsDrawer';
 
 import { RightDrawerAllActionsContent } from '@/action-menu/components/RightDrawerAllActionsContent';
-import { CandidateChatDrawer } from '@/activities/chats/components/CandidateChatDrawer';
 import { SimpleActivityDrawer } from '@/activities/chats/components/SimpleActivityDrawer';
+import { CandidateChatDrawer } from '@/candidate-table/CandidateChatDrawer';
 import { RightDrawerContainer } from '@/ui/layout/right-drawer/components/RightDrawerContainer';
 import { RightDrawerTopBar } from '@/ui/layout/right-drawer/components/RightDrawerTopBar';
 import { ComponentByRightDrawerPage } from '@/ui/layout/right-drawer/types/ComponentByRightDrawerPage';
