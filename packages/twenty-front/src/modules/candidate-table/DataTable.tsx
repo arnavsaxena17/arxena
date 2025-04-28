@@ -1,5 +1,5 @@
 import { tokenPairState } from '@/auth/states/tokenPairState';
-import { afterChange, afterSelectionEnd, beforeOnCellMouseDown, handleKeyDown } from '@/candidate-table/HotHooks';
+import { afterChange, afterSelectionEnd } from '@/candidate-table/HotHooks';
 import { columnsSelector, processedDataSelector, tableStateAtom } from "@/candidate-table/states";
 import styled from '@emotion/styled';
 import HotTable from "@handsontable/react-wrapper";
@@ -7,7 +7,7 @@ import axios from "axios";
 import { CellChange, ChangeSource } from 'handsontable/common';
 import 'handsontable/styles/handsontable.min.css';
 import 'handsontable/styles/ht-theme-main.min.css';
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
 import { CandidateNode } from 'twenty-shared';
 import { IconPlus } from 'twenty-ui';
@@ -86,26 +86,35 @@ interface DataTableProps {
     const [tokenPair] = useRecoilState(tokenPairState);
     const processedData = useRecoilValue(processedDataSelector);
     const columns = useRecoilValue(columnsSelector);
+
+    console.log("processedData in DataTable", processedData);
+
+
+    const mutatableData = useMemo(() => {
+      return processedData.map((candidate: any) => ({
+        ...candidate,
+        isEditable: true
+      }));
+    }, [processedData]);
   
-    const keyDownHandler = (event: KeyboardEvent) => {
-      handleKeyDown(event, tableRef, tableState, setTableState);
-    };
+    // const keyDownHandler = (event: KeyboardEvent) => {
+    //   handleKeyDown(event, tableRef, tableState, setTableState);
+    // };
 
     const afterChangeHandler = ( changes: CellChange[] | null, source: ChangeSource) => {
       console.log("changes, source in afterChangeHandler", changes, source);
-      afterChange( tableRef, changes, source, jobId);
+      afterChange( tableRef, changes, source, jobId, tokenPair, setTableState);
     }
 
-    const beforeOnCellMouseDownHandler = (event: MouseEvent, coords: { row: number; col: number }) => {
-      console.log("event in beforeOnCellMouseDownHandler", event);
-      beforeOnCellMouseDown(tableRef, event, coords, tableState , setTableState)
-    }
+    // const beforeOnCellMouseDownHandler = (event: MouseEvent, coords: { row: number; col: number }) => {
+    //   console.log("event in beforeOnCellMouseDownHandler", event);
+    //   beforeOnCellMouseDown(tableRef, event, coords, tableState , setTableState)
+    // }
 
     const afterSelectionEndHandler = (row: number, column: number, row2: number, column2: number, selectionLayerLevel: number) => {
       console.log("row in afterSelectionEndHandler", row);
       afterSelectionEnd(tableRef, row, row2, setTableState);
     }
-
     const loadData = useCallback(async () => {
       if (!jobId) return;
       
@@ -174,7 +183,7 @@ interface DataTableProps {
       <StyledTableContainer>
         <HotTable
           ref={tableRef}
-          data={processedData}
+          data={mutatableData}
           columns={columns}
           colHeaders={true}
           rowHeaders={true}
@@ -190,8 +199,8 @@ interface DataTableProps {
           autoWrapRow={false}
           afterSelectionEnd={afterSelectionEndHandler}
           afterChange={afterChangeHandler}
-          beforeOnCellMouseDown={beforeOnCellMouseDownHandler}
-          beforeKeyDown={keyDownHandler}
+          // beforeOnCellMouseDown={beforeOnCellMouseDownHandler}
+          // beforeKeyDown={keyDownHandler}
           autoWrapCol={false}
           autoRowSize={false}
           rowHeights={30}

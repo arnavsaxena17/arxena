@@ -13,7 +13,6 @@ export const afterSelectionEnd = (tableRef: any, row: number, row2: number, setT
   }
   console.log("selectedRows", selectedRows);
 
-  // const selectedRows = afterSelectionEnd(hot, row, row2);
   setTableState((prev: any) => ({
     ...prev,
     selectedRowIds: selectedRows
@@ -21,31 +20,66 @@ export const afterSelectionEnd = (tableRef: any, row: number, row2: number, setT
   return selectedRows;
 }
 
-export const afterChange = (tableRef: React.RefObject<any>, changes: any, source: any, jobId: string) => {
+export const afterChange = async (tableRef: React.RefObject<any>, changes: any, source: any, jobId: string, tokenPair: any, setTableState: any) => {
   console.log("changes in afterChange", changes);
-  console.log("source in afterChange", source);
-  if (source !== 'edit') return;
-  changes.forEach(async ([row, prop, oldValue, newValue]: any) => {
-  if (oldValue === newValue) return;
+  if (!changes || source !== 'edit') return;
+  
+  // Track successful updates to refresh data if needed
+  const updatedRows = new Set();
+  
+  for (const [row, prop, oldValue, newValue] of changes) {
+    if (oldValue === newValue) continue;
+    
     const hot = tableRef.current?.hotInstance;
-    if (!hot) return;
+    if (!hot) continue;
+    
     const rowData = hot.getSourceDataAtRow(row);
+    if (!rowData || !rowData.id) continue;
+    
     try {
-      await fetch(`/api/candidates/${jobId}/${rowData.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ [prop]: newValue })
+      const isDirectField = 
+        Object.prototype.hasOwnProperty.call(rowData, prop) && prop !== 'candidateFieldValues';
+      console.log(`Updating field: ${prop}, isDirectField: ${isDirectField}`);
+      
+      const endpoint = isDirectField 
+        ? `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/update-candidate-field`
+        : `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/update-candidate-field-value`;
+      
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json', 
+          'Authorization': `Bearer ${tokenPair?.accessToken?.token}` 
+        },
+        body: JSON.stringify({ candidateId: rowData.id, fieldName: prop, value: newValue })
       });
+      
+      if (response.ok) {
+        console.log(`Updated candidate field: ${prop}`);
+        updatedRows.add(rowData.id);
+      } else {
+        console.error('Update failed:', await response.text());
+        // Revert the cell to its previous value if update failed
+        hot.setDataAtRowProp(row, prop, oldValue);
+      }
     } catch (error) {
       console.error('Update failed:', error);
+      // Revert cell on error
+      const hot = tableRef.current?.hotInstance;
+      if (hot) hot.setDataAtRowProp(row, prop, oldValue);
     }
-  });
+  }
+  
+  // If we have successful updates, refresh the data
+  if (updatedRows.size > 0) {
+    // Optional: refresh data from server to ensure consistency
+    // You could call loadData() here or implement a partial refresh
+  }
 }
 
 
-
 export const handleKeyDown = ( event: KeyboardEvent, tableRef: React.RefObject<any>, tableState: any, setTableState: any ) => {
-  console.log("event in handleKeyDown", event);
+  // console.log("event in handleKeyDown", event);
   if (tableState.isRightPanelOpen && event.key === 'ArrowDown') {
     const hot = tableRef.current?.hotInstance;
     if (!hot) return;
