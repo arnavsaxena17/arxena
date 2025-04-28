@@ -25,6 +25,8 @@ export const ProcessedData = ({ rawData, selectedRowIds }: { rawData: CandidateN
           }
         });
       }
-      return { ...baseData, ...fieldValues };
+      // console.log("Field Values", fieldValues);
+      const processedData = {  ...fieldValues, ...baseData };
+      return processedData;
     });
   };

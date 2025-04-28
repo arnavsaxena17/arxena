@@ -22,6 +22,7 @@ export const afterSelectionEnd = (tableRef: any, row: number, row2: number, setT
 
 export const afterChange = async (tableRef: React.RefObject<any>, changes: any, source: any, jobId: string, tokenPair: any, setTableState: any, refreshData: any) => {
   console.log("changes in afterChange", changes);
+  console.log("source in afterChange", source);
   if (!changes || source !== 'edit') return;
   
   // Track successful updates to refresh data if needed
@@ -64,6 +65,7 @@ export const afterChange = async (tableRef: React.RefObject<any>, changes: any, 
       }
 
       if (updatedRows.size > 0 && refreshData) {
+        console.log("Will be calling refresh data with the changes", updatedRows);
         await refreshData(Array.from(updatedRows));
       }
     
