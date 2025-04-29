@@ -28,9 +28,6 @@ import { InviteTeam } from '~/pages/onboarding/InviteTeam';
 import { PaymentSuccess } from '~/pages/onboarding/PaymentSuccess';
 import { SyncEmails } from '~/pages/onboarding/SyncEmails';
 
-import CustomLayoutCandidate from '@/custom-layouts/components/custom-layout-candidate';
-import CustomLayoutJob from '@/custom-layouts/components/custom-layout-job';
-import CustomLayoutMerged from '@/custom-layouts/components/custom-layout-merged';
 import GoogleSheet from '@/google-sheet/GoogleSheet';
 import { HotPage } from '@/hot/hotCandidates';
 import Interview from '@/interviews/components/Interviews';
@@ -38,7 +35,6 @@ import indexAppPath from '@/navigation/utils/indexAppPath';
 // import OrgChart from '@/orgchart/OrgChart';
 import { Jobs } from '@/activities/chats/components/Jobs';
 import { JobPage } from '@/candidate-table/JobPage';
-import { Dashboard } from '@/client-dashboard/components/Dashboard';
 import VideoInterviewFlow from '@/video-interview/interview-response/VideoInterviewFlow';
 import VideoInterviewResponseViewer from '@/video-interview/interview-response/VideoInterviewResponseViewer';
 import React from 'react';
@@ -127,7 +123,7 @@ export const useCreateAppRouter = (
             <Route path={AppPath.Jobs} element={<Jobs />} />
             <Route path={`${AppPath.Jobs}/:candidateId`} element={<Jobs />} />
             <Route path={AppPath.Interview} element={<Interview />} />
-            <Route
+            {/* <Route
               path={AppPath.Dashboard}
               element={<Dashboard />}
             />
@@ -142,7 +138,7 @@ export const useCreateAppRouter = (
             <Route
               path={AppPath.CustomLayoutMerged}
               element={<CustomLayoutMerged />}
-            />
+            /> */}
             {/* <Route path="job/:jobId" element={<SingleJobView />} />
             <Route path="job/:jobId/:candidateId" element={<SingleJobView />} /> */}
             <Route path="job/:jobId" element={<JobPage />} />

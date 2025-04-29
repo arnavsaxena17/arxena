@@ -201,7 +201,7 @@ export const ApiKeysForm = () => {
       )}
       {renderInput(
         'whatsapp_web_phone_number',
-        'Facebook WhatsApp Phone Number',
+        'WhatsApp Web Phone Number',
       )}
       {renderInput(
         'facebook_whatsapp_app_id',

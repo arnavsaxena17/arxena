@@ -1,6 +1,6 @@
 import { useLocation } from 'react-router-dom';
 import { useRecoilState, useSetRecoilState } from 'recoil';
-import { IconBriefcase, IconSearch, IconSettings } from 'twenty-ui';
+import { IconSearch, IconSettings } from 'twenty-ui';
 
 import { useCommandMenu } from '@/command-menu/hooks/useCommandMenu';
 import { CurrentWorkspaceMemberFavoritesFolders } from '@/favorites/components/CurrentWorkspaceMemberFavoritesFolders';
@@ -9,7 +9,6 @@ import { WorkspaceJobCandidatesFavorites } from '@/favorites/components/Workspac
 import { JobsNavigationDrawerItems } from '@/navigation/components/JobsNavigationDrawerItems';
 import { NavigationDrawerOpenedSection } from '@/object-metadata/components/NavigationDrawerOpenedSection';
 import { RemoteNavigationDrawerSection } from '@/object-metadata/components/RemoteNavigationDrawerSection';
-import { AppPath } from '@/types/AppPath';
 import { SettingsPath } from '@/types/SettingsPath';
 import { NavigationDrawerItem } from '@/ui/navigation/navigation-drawer/components/NavigationDrawerItem';
 import { NavigationDrawerSection } from '@/ui/navigation/navigation-drawer/components/NavigationDrawerSection';
@@ -20,7 +19,6 @@ import { useIsMobile } from '@/ui/utilities/responsive/hooks/useIsMobile';
 import { ScrollWrapper } from '@/ui/utilities/scroll/components/ScrollWrapper';
 import styled from '@emotion/styled';
 import { useLingui } from '@lingui/react/macro';
-import { getAppPath } from '~/utils/navigation/getAppPath';
 import { getSettingsPath } from '~/utils/navigation/getSettingsPath';
 
 const StyledMainSection = styled(NavigationDrawerSection)`
@@ -67,7 +65,7 @@ export const MainNavigationDrawerItems = () => {
             }}
             Icon={IconSettings}
           />
-          <NavigationDrawerItem
+          {/* <NavigationDrawerItem
             label={`Dashboard`}
             to={getAppPath(AppPath.Dashboard)}
             onClick={() => {
@@ -76,7 +74,7 @@ export const MainNavigationDrawerItems = () => {
               setNavigationMemorizedUrl(location.pathname + location.search);
             }}
             Icon={IconBriefcase}
-          />
+          /> */}
           {/* <NavigationDrawerItem
             label={`Client Candidate Search`}
             to={getAppPath(AppPath.ClientCandidateSearch)}
