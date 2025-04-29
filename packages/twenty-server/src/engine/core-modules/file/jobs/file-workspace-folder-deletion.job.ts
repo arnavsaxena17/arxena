@@ -18,8 +18,9 @@ export class FileWorkspaceFolderDeletionJob {
     try {
       await this.fileService.deleteWorkspaceFolder(workspaceId);
     } catch (error) {
-      throw new Error(
+      console.log(
         `[${FileWorkspaceFolderDeletionJob.name}] Cannot delete workspace folder - ${workspaceId}`,
+        error,
       );
     }
   }

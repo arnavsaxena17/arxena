@@ -19,7 +19,9 @@ export const DeleteAccount = () => {
   const { signOut } = useAuth();
 
   const deleteAccount = async () => {
+    console.log('Deleting account');
     await deleteUserAccount();
+    console.log('Account deleted');
     await signOut();
   };
 

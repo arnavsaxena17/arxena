@@ -12,10 +12,10 @@ import { useAuth } from '@/auth/hooks/useAuth';
 import { useOnboardingStatus } from '@/onboarding/hooks/useOnboardingStatus';
 import { useSetNextOnboardingStatus } from '@/onboarding/hooks/useSetNextOnboardingStatus';
 import { WorkspaceLogoUploader } from '@/settings/workspace/components/WorkspaceLogoUploader';
-import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { TextInputV2 } from '@/ui/input/components/TextInputV2';
 import { Trans, useLingui } from '@lingui/react/macro';
+import console from 'console';
 import { isDefined } from 'twenty-shared';
 import {
   OnboardingStatus,
@@ -82,9 +82,10 @@ export const CreateWorkspace = () => {
         await loadCurrentUser();
         setNextOnboardingStatus();
       } catch (error: any) {
-        enqueueSnackBar(error?.message, {
-          variant: SnackBarVariant.Error,
-        });
+        console.log('ERROR', error);
+        // enqueueSnackBar(error?.message, {
+        //   variant: SnackBarVariant.Error,
+        // });
       }
     },
     [

@@ -1,7 +1,6 @@
 import { useAnalyticsTinybirdJwts } from '@/analytics/hooks/useAnalyticsTinybirdJwts';
 import { AnalyticsComponentProps as useGraphDataProps } from '@/analytics/types/AnalyticsComponentProps';
 import { fetchGraphDataOrThrow } from '@/analytics/utils/fetchGraphDataOrThrow';
-import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { isUndefined } from '@sniptt/guards';
 import { useCallback } from 'react';
@@ -25,12 +24,13 @@ export const useGraphData = ({ recordId, endpointName }: useGraphDataProps) => {
         });
       } catch (error) {
         if (error instanceof Error) {
-          enqueueSnackBar(
-            `Something went wrong while fetching webhook usage: ${error.message}`,
-            {
-              variant: SnackBarVariant.Error,
-            },
-          );
+          console.log('ERROR', error);
+          // enqueueSnackBar(
+          //   `Something went wrong while fetching webhook usage: ${error.message}`,
+          //   {
+          //     variant: SnackBarVariant.Error,
+          //   },
+          // );
         }
         return [];
       }

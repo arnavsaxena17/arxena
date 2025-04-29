@@ -245,8 +245,7 @@ export class CreateMetaDataStructure {
       whatsapp_key: 'whatsapp-official',
       anthropic_key: process.env.ANTHROPIC_API_KEY,
       facebook_whatsapp_api_token: process.env.FACEBOOK_WHATSAPP_API_TOKEN,
-      facebook_whatsapp_phone_number_id:
-        process.env.FACEBOOK_WHATSAPP_PHONE_NUMBER_ID,
+      facebook_whatsapp_phone_number_id: process.env.FACEBOOK_WHATSAPP_PHONE_NUMBER_ID,
         whatsapp_web_phone_number:'918411937769',
       facebook_whatsapp_app_id: process.env.FACEBOOK_WHATSAPP_APP_ID,
       facebook_whatsapp_asset_id: process.env.FACEBOOK_WHATSAPP_ASSET_ID,
@@ -287,7 +286,7 @@ export class CreateMetaDataStructure {
     console.log('fieldsPageResponse edges length', fieldsPageResponse?.data?.objects?.edges.length);
 
     const peopleField = fieldsPageResponse?.data?.objects?.edges[0]?.node?.fields?.edges?.find(
-      (field) => field?.node?.name === "people"
+      (field: { node: { name: string; }; }) => field?.node?.name === "people"
     );
     console.log('peopleField', peopleField);
 

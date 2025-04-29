@@ -77,40 +77,50 @@ export class UserService extends TypeOrmQueryService<User> {
     userId: string;
     workspaceId: string;
   }) {
+    console.log('Deleting user from workspace');
     const dataSourceMetadata =
       await this.dataSourceService.getLastDataSourceMetadataFromWorkspaceIdOrFail(
         workspaceId,
       );
-
+    console.log('Got data source metadata');
     const workspaceDataSource =
       await this.typeORMService.connectToDataSource(dataSourceMetadata);
-
+    console.log('Connected to data source');
+    console.log('Getting workspace members::', dataSourceMetadata.schema);
     const workspaceMembers = await workspaceDataSource?.query(
       `SELECT * FROM ${dataSourceMetadata.schema}."workspaceMember"`,
     );
+    console.log('Got workspace members');
     const workspaceMember = workspaceMembers.filter(
       (member: WorkspaceMemberWorkspaceEntity) => member.userId === userId,
     )?.[0];
-
+    console.log('Got workspace member');
     assert(workspaceMember, 'WorkspaceMember not found');
+    console.log('Workspace member found');
+
+    await workspaceDataSource?.query(
+      `DELETE FROM ${dataSourceMetadata.schema}."attachment"`,
+    );
+    console.log('Deleted attachments');
 
     await workspaceDataSource?.query(
       `DELETE FROM ${dataSourceMetadata.schema}."workspaceMember" WHERE "userId" = '${userId}'`,
     );
-
+    console.log('Deleted workspace member');
     const objectMetadata = await this.objectMetadataRepository.findOneOrFail({
       where: {
         nameSingular: 'workspaceMember',
         workspaceId,
       },
     });
-
+    console.log('Got object metadata');
     if (workspaceMembers.length === 1) {
+      console.log('Deleting workspace');
       await this.workspaceService.deleteWorkspace(workspaceId);
-
+      console.log('Workspace deleted');
       return;
     }
-
+    console.log('Emitting database batch event');
     this.workspaceEventEmitter.emitDatabaseBatchEvent({
       objectMetadataNameSingular: 'workspaceMember',
       action: DatabaseEventAction.DELETED,
@@ -125,6 +135,7 @@ export class UserService extends TypeOrmQueryService<User> {
       ],
       workspaceId,
     });
+    console.log('Emitted database batch event');
   }
 
   async deleteUser(userId: string): Promise<User> {

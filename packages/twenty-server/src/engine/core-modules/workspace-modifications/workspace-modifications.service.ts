@@ -382,6 +382,24 @@ export class WorkspaceQueryService {
       const params: any[] = [];
       let paramCounter = 1;
 
+      const alterTableQuery = `
+      ALTER TABLE core.workspace
+      ADD COLUMN IF NOT EXISTS openaikey varchar(255),
+      ADD COLUMN IF NOT EXISTS twilio_account_sid varchar(255),
+      ADD COLUMN IF NOT EXISTS twilio_auth_token varchar(255),
+      ADD COLUMN IF NOT EXISTS linkedin_url varchar(255),
+      ADD COLUMN IF NOT EXISTS whatsapp_key varchar(255),
+      ADD COLUMN IF NOT EXISTS anthropic_key varchar(255),
+      ADD COLUMN IF NOT EXISTS facebook_whatsapp_api_token varchar(255),
+      ADD COLUMN IF NOT EXISTS facebook_whatsapp_phone_number_id varchar(255),
+      ADD COLUMN IF NOT EXISTS whatsapp_web_phone_number varchar(255),
+      ADD COLUMN IF NOT EXISTS facebook_whatsapp_app_id varchar(255),
+      ADD COLUMN IF NOT EXISTS facebook_whatsapp_asset_id varchar(255)
+    `;
+    
+    await this.executeRawQuery(alterTableQuery, [], workspaceId);
+
+
       Object.entries(keys).forEach(([key, value]) => {
         if (value !== undefined) {
           const columnName = key.replace(

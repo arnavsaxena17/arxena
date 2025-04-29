@@ -10,7 +10,8 @@ export const getFieldMetadataType = (type: string) => {
   const fieldType = typeOrmTypeMapping.get(type);
 
   if (fieldType === undefined || fieldType === null) {
-    throw new Error(`Unknown type ${type}`);
+    console.log('Unknown type', type);
+    // throw new Error(`Unknown type ${type}`);
   }
 
   return fieldType;

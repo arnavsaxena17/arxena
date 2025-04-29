@@ -344,6 +344,7 @@ export const CandidateChatDrawer = () => {
       });
       
       const responseData = await response.json();
+      console.log('Response data:', responseData);
       if (responseData?.data?.candidates?.edges?.[0]?.node) {
         const candidate = responseData.data.candidates.edges[0].node;
         setCandidateData(candidate);
@@ -637,11 +638,11 @@ export const CandidateChatDrawer = () => {
       </TabContainer>
       <TabContent>
         {!candidateId ? (
-          <div>No candidate selected</div>
+          <div style={{padding: '20px'}}>No candidate selected</div>
         ) : isLoading ? (
-          <div>Loading chat...</div>
+          <div style={{padding: '20px'}}>Loading chat...</div>
         ) : error ? (
-          <div>Error: {error}</div>
+          <div style={{padding: '20px'}}>Error: {error}</div>
         ) : (
           <>
             {activeTabId === 'chat' && renderChatTab()}

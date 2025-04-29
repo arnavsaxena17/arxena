@@ -231,9 +231,10 @@ export const CreateProfile = () => {
           console.log('Error while signing up on Arxena:', err);
         }
       } catch (error: any) {
-        enqueueSnackBar(error?.message, {
-          variant: SnackBarVariant.Error,
-        });
+        console.log('ERROR', error);
+        // enqueueSnackBar(error?.message, {
+        //   variant: SnackBarVariant.Error,
+        // });
       }
     },
     [

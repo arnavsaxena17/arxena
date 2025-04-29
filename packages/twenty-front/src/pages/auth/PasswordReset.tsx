@@ -106,9 +106,10 @@ export const PasswordReset = () => {
     },
     skip: !passwordResetToken,
     onError: (error) => {
-      enqueueSnackBar(error?.message ?? 'Token Invalid', {
-        variant: SnackBarVariant.Error,
-      });
+      console.log('ERROR', error);
+      // enqueueSnackBar(error?.message ?? 'Token Invalid', {
+      //   variant: SnackBarVariant.Error,
+      // });
       navigate(AppPath.Index);
     },
     onCompleted: (data) => {

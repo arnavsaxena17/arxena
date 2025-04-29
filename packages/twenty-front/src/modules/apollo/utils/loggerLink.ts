@@ -68,28 +68,31 @@ export const loggerLink = (getSchemaName: (operation: Operation) => string) =>
         getGroup(!hasError)(...titleArgs);
 
         if (isDefined(errors)) {
-          errors.forEach((err: any) => {
-            logDebug(
-              `%c${err.message}`,
-              // eslint-disable-next-line @nx/workspace-no-hardcoded-colors
-              'color: #F51818; font-weight: lighter',
-            );
-          });
+          console.log('ERRORS', errors);
+          // errors.forEach((err: any) => {
+          //     logDebug(
+          //       // `%c${err.message}`,
+          //       // eslint-disable-next-line @nx/workspace-no-hardcoded-colors
+          //       // 'color: #F51818; font-weight: lighter',
+          //     );
+          // });
         }
 
-        logDebug('HEADERS: ', headers);
+        // logDebug('HEADERS: ', headers);
 
         if (variables && Object.keys(variables).length !== 0) {
-          logDebug('VARIABLES', variables);
+          console.log('VARIABLES', variables);
+          // logDebug('VARIABLES', variables);
         }
 
         // logDebug('QUERY', query);
 
         if (isDefined(result.data)) {
-          logDebug('RESULT', result.data);
+          // logDebug('RESULT', result.data);
         }
         if (isDefined(errors)) {
-          logDebug('ERRORS', errors);
+          console.log('ERRORS', errors);
+          // logDebug('ERRORS', errors);
         }
 
         console.groupEnd();
@@ -102,6 +105,8 @@ export const loggerLink = (getSchemaName: (operation: Operation) => string) =>
           logError(errors);
         }
       }
+
+      console.log('RESULT', result);
 
       return result;
     });

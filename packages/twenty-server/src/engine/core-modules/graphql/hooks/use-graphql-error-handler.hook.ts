@@ -135,7 +135,7 @@ export const useGraphQLErrorHandlerHook = <
           requestMetadataVersion &&
           requestMetadataVersion !== `${currentMetadataVersion}`
         ) {
-          throw new GraphQLError(
+          console.log(
             `Schema version mismatch, please refresh the page.`,
           );
         }
