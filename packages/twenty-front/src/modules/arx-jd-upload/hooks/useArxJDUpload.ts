@@ -11,6 +11,7 @@ import { useFindManyRecords } from '@/object-record/hooks/useFindManyRecords';
 import { useUpdateOneRecord } from '@/object-record/hooks/useUpdateOneRecord';
 import { ObjectRecord } from '@/object-record/types/ObjectRecord';
 
+import { uploadedJDState } from '@/arx-jd-upload/states/arxJDFormStepperState';
 import { createOneCandidateField, isDefined } from 'twenty-shared';
 import { ParsedJD } from '../types/ParsedJD';
 import { createDefaultParsedJD } from '../utils/createDefaultParsedJD';
@@ -22,18 +23,20 @@ export const useArxJDUpload = (objectNameSingular: string) => {
   const [tokenPair] = useRecoilState(tokenPairState);
   const [parsedJD, setParsedJD] = useState<ParsedJD | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
+  const [error, setError] = useState<string | null>(null);
   const { createOneRecord } = useCreateOneRecord({ objectNameSingular });
   console.log('objectNameSingular for createOneRecord::', objectNameSingular);
   const { updateOneRecord } = useUpdateOneRecord({ objectNameSingular });
   console.log('objectNameSingular for updateOneRecord::', objectNameSingular);
   const { uploadAttachmentFile } = useUploadAttachmentFile();
-
+  const [uploadedJD, setUploadedJD] = useRecoilState(uploadedJDState);
   const { records: companies = [] } = useFindManyRecords({
     objectNameSingular: 'company',
   });
 
+
+  // debugger;
   // const { reset: resetFormStepper } = useArxJDFormStepper();
 
   type Company = ObjectRecord & {
@@ -100,14 +103,22 @@ export const useArxJDUpload = (objectNameSingular: string) => {
       const file = acceptedFiles[0];
 
       try {
-        console.log('creating new job in handleFileUpload::');
+        const jobCode = file.name.split('.')[0].replace(/ /g, '-').slice(0, 10);
+        console.log('jobCode::', jobCode);
+        console.log('creating new job in name:::', file.name.split('.')[0]);
         const createdJob = await createOneRecord({
           name: file.name.split('.')[0],
-          jobCode: file.name.split('.')[0].replace(/ /g, '-').slice(0, 10),
-          chatFlowOrder: "['startChat']",          
+          jobCode: jobCode,
+          chatFlowOrder: ['startChat'],
         });
         console.log('createdJob::', createdJob);
-
+        setUploadedJD({
+          jobCode: jobCode,
+          jobName: file.name.split('.')[0],
+          jobDescription: '',
+          jobLocation: '',
+          jobSalary: '',
+        });
         if (createdJob?.id === undefined || createdJob?.id === null) {
           throw new Error('Failed to create job record');
         }
@@ -149,6 +160,13 @@ export const useArxJDUpload = (objectNameSingular: string) => {
 
         if (response.data.success === true) {
           const data = response.data.data;
+          
+          // Try to match company if a name was provided
+          let matchedCompany = null;
+          if (data?.companyName) {
+            matchedCompany = findBestCompanyMatch(data.companyName);
+          }
+
           const parsedData = createDefaultParsedJD({
             name: data?.name || '',
             description: data?.description || '',
@@ -159,10 +177,9 @@ export const useArxJDUpload = (objectNameSingular: string) => {
             specificCriteria: data?.specificCriteria || '',
             pathPosition: data?.pathPosition || '',
             companyName: data?.companyName || '',
-            companyId: data?.companyId || '',
+            companyId: matchedCompany?.id || '',
             companyDetails: data?.companyDetails || '',
             id: createdJob.id,
-            // oneLinePitch: data.oneLinePitch,
           });
           console.log('parsedData::', parsedData);
 
@@ -225,7 +242,6 @@ export const useArxJDUpload = (objectNameSingular: string) => {
             },
           });
 
-
           if (createPromptsResponse.data.status === 'Success') {
             console.log('Prompts created successfully');
           } else {
@@ -260,6 +276,7 @@ export const useArxJDUpload = (objectNameSingular: string) => {
     ],
   );
 
+
   const handleCreateJob = async () => {
     console.log('handleCreateJob');
     console.log('parsedJD::', parsedJD);
@@ -271,6 +288,8 @@ export const useArxJDUpload = (objectNameSingular: string) => {
     try {
       let createdJob: ObjectRecord & { id?: string; name?: string } | undefined;
       console.log('parsedJD.companyName::', parsedJD.companyName);
+      console.log('uploadedJD::', uploadedJD);
+      // debugger;
       if (
         typeof parsedJD.companyName === 'string' &&
         parsedJD.companyName !== ''
@@ -289,6 +308,11 @@ export const useArxJDUpload = (objectNameSingular: string) => {
             companyId: matchedCompany.id,
           });
         }
+        else {
+          console.log('matchedCompany is null in handleCreateJob');
+        }
+
+
       } else {
         console.log('parsedJD hence creating new record in database in handleCreateJob::', parsedJD);
         createdJob = await createOneRecord({
@@ -296,22 +320,42 @@ export const useArxJDUpload = (objectNameSingular: string) => {
         });
       }
 
+      if ((parsedJD?.name !== uploadedJD?.jobName || parsedJD?.jobCode !== uploadedJD?.jobCode || parsedJD?.description !== uploadedJD?.jobDescription || parsedJD?.jobLocation !== uploadedJD?.jobLocation || parsedJD?.salaryBracket !== uploadedJD?.jobSalary) && isDefined(parsedJD.id)) {
+        updateOneRecord({
+          idToUpdate: parsedJD.id,
+          updateOneRecordInput: {
+            name: parsedJD.name,
+            jobCode: parsedJD.jobCode,
+            description: parsedJD.description,
+            jobLocation: parsedJD.jobLocation,
+            salaryBracket: parsedJD.salaryBracket,
+          },
+        });
+      }
+
+
+
+
+
+
       // Send job to Arxena after creation
       if (
         objectNameSingular === 'job' &&
-        isDefined(createdJob?.name) &&
-        isDefined(createdJob?.id)
+        isDefined(parsedJD?.name) &&
+        isDefined(parsedJD?.id)
       ) {
         try {
           console.log('sending job to arxena in handleCreateJob::');
+          console.log('parsedJD.name::', parsedJD.name);
+          console.log('parsedJD.id::', parsedJD.id);
           await sendJobToArxena(
-            createdJob.name,
-            createdJob.id,
+            parsedJD.name,
+            parsedJD.id,
             tokenPair?.accessToken?.token || '',
             (errorMessage) => setError(errorMessage),
           );
-        } catch (arxenaError) {
-          console.error("Couldn't send job to arxena", arxenaError);
+        } catch (error) {
+          console.error("Couldn't send job to arxena", error);
         }
       }
       console.log('parsedJD.chatFlow.questions::', parsedJD.chatFlow.questions);
@@ -326,6 +370,7 @@ export const useArxJDUpload = (objectNameSingular: string) => {
         }, 100);
       }
 
+      
 
       console.log('parsedJD.chatFlow.questions::', parsedJD.chatFlow.questions);
       if (parsedJD?.chatFlow?.questions && parsedJD.chatFlow.questions.length > 0) {

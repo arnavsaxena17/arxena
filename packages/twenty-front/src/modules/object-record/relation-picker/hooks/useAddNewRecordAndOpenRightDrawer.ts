@@ -34,9 +34,12 @@ export const useAddNewRecordAndOpenRightDrawer = ({
     viewableRecordNameSingularState,
   );
 
+  console.log('relationObjectMetadataNameSingular', relationObjectMetadataNameSingular);
+
   const { createOneRecord } = useCreateOneRecord({
     objectNameSingular: relationObjectMetadataNameSingular,
   });
+  
 
   const { updateOneRecord } = useUpdateOneRecord({
     objectNameSingular:

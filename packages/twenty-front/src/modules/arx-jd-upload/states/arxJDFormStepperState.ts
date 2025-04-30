@@ -12,9 +12,29 @@ export type ArxJDFormStepperState = {
   activeStep: number;
 };
 
+
+export type UploadedJDState = {
+  jobCode: string;
+  jobName: string;
+  jobDescription: string;
+  jobLocation: string;
+  jobSalary: string;
+};
 export const arxJDFormStepperState = atom<ArxJDFormStepperState>({
   key: 'arxJDFormStepperState',
   default: {
     activeStep: 0,
+  },
+});
+
+
+export const uploadedJDState = atom<UploadedJDState | null>({
+  key: 'uploadedJDState',
+  default: {
+    jobCode: '',
+    jobName: '',
+    jobDescription: '',
+    jobLocation: '',
+    jobSalary: '',
   },
 });

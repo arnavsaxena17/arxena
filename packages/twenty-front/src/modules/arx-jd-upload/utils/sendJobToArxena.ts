@@ -10,8 +10,11 @@ export const sendJobToArxena = async (
   setError?: (error: string) => void,
 ) => {
   try {
+    console.log('sending job to arxena in sendJobToArxena::');
+    console.log('jobName::', jobName);
+    console.log('jobId::', jobId);
     const arxenaJobId = new mongoose.Types.ObjectId().toString();
-
+    console.log('arxenaJobId::', arxenaJobId);
     const response = await axios.post(
       process.env.NODE_ENV === 'production'
         ? 'https://app.arxena.com/candidate-sourcing/create-job-in-arxena-and-sheets'

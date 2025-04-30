@@ -379,7 +379,7 @@ export class CandidateSourcingController {
       const jobId = req?.body?.id_to_update;
 
       console.log('this is the job name:', req.body.job_name);
-      console.log('this is the job name:', req.body.new_job_id);
+      console.log('this is the job id:', req.body.new_job_id);
       await new Promise((resolve) => setTimeout(resolve, 500));
 
       let googleSheetUrl = '';

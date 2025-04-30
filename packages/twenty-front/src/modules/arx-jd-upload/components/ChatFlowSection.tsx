@@ -2,10 +2,9 @@ import React, { useEffect } from 'react';
 import { MenuItemSelect } from 'twenty-ui';
 import { FormComponentProps } from '../types/FormComponentProps';
 import {
-  StyledLabel,
   StyledSection,
   StyledSectionContent,
-  StyledSectionHeader,
+  StyledSectionHeader
 } from './ArxJDUploadModal.styled';
 
 export const ChatFlowSection: React.FC<FormComponentProps> = ({
@@ -88,9 +87,9 @@ export const ChatFlowSection: React.FC<FormComponentProps> = ({
 
   return (
     <StyledSection>
-      <StyledSectionHeader>Chat Flow Configuration</StyledSectionHeader>
+      <StyledSectionHeader>Select your candidate engagement process</StyledSectionHeader>
       <StyledSectionContent>
-        <StyledLabel>Chat Flow Order</StyledLabel>
+        {/* <StyledLabel>Chat Flow Order</StyledLabel> */}
         <div
           style={{
             display: 'flex',
@@ -101,7 +100,7 @@ export const ChatFlowSection: React.FC<FormComponentProps> = ({
           <MenuItemSelect
             selected={true} // Always selected
             onClick={() => {}} // No-op function since we don't allow toggling
-            text="Initial Chat (Required)"
+            text="Initial Whatsapp/ Linkedin Chat (Required)"
           />
           <MenuItemSelect
             selected={parsedJD.chatFlow.order.videoInterview}

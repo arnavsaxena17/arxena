@@ -8832,6 +8832,20 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@nestjs/platform-socket.io@npm:^11.1.0":
+  version: 11.1.0
+  resolution: "@nestjs/platform-socket.io@npm:11.1.0"
+  dependencies:
+    socket.io: "npm:4.8.1"
+    tslib: "npm:2.8.1"
+  peerDependencies:
+    "@nestjs/common": ^11.0.0
+    "@nestjs/websockets": ^11.0.0
+    rxjs: ^7.1.0
+  checksum: 10c0/90a3426e3b5a01a0f25145ea2d0bbc9b5ff72a7817a4c84d962bd7538a61dc487f5e9d68314d73466bcb6bd1338dff68432c523bfaa14ee336ea7f81dcf1783a
+  languageName: node
+  linkType: hard
+
 "@nestjs/schedule@npm:^5.0.1":
   version: 5.0.1
   resolution: "@nestjs/schedule@npm:5.0.1"
@@ -8984,9 +8998,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@nestjs/websockets@npm:^11.0.10":
-  version: 11.0.10
-  resolution: "@nestjs/websockets@npm:11.0.10"
+"@nestjs/websockets@npm:^11.1.0":
+  version: 11.1.0
+  resolution: "@nestjs/websockets@npm:11.1.0"
   dependencies:
     iterare: "npm:1.2.1"
     object-hash: "npm:3.0.0"
@@ -9000,7 +9014,7 @@ __metadata:
   peerDependenciesMeta:
     "@nestjs/platform-socket.io":
       optional: true
-  checksum: 10c0/27d39d51481c7535357bde829f31717cfae5f57937278f7f30aeba82d679b460a29e4895b9e04be2b6b6a751900e32a8ca0448918c30b0f5031e72f24b0c62af
+  checksum: 10c0/924635d6851eefd124022904881a55a9694624154c169a2ddaf58c684284d857e145a54e706668e93bb2da3c396fbfcf61bcff62db3af249e58c55d1b516449c
   languageName: node
   linkType: hard
 
@@ -28063,6 +28077,19 @@ __metadata:
   languageName: node
   linkType: hard
 
+"engine.io-client@npm:~6.6.1":
+  version: 6.6.3
+  resolution: "engine.io-client@npm:6.6.3"
+  dependencies:
+    "@socket.io/component-emitter": "npm:~3.1.0"
+    debug: "npm:~4.3.1"
+    engine.io-parser: "npm:~5.2.1"
+    ws: "npm:~8.17.1"
+    xmlhttprequest-ssl: "npm:~2.1.1"
+  checksum: 10c0/ebe0b1da6831d5a68564f9ffb80efe682da4f0538488eaffadf0bcf5177a8b4472cdb01d18a9f20dece2f8de30e2df951eb4635bef2f1b492e9f08a523db91a0
+  languageName: node
+  linkType: hard
+
 "engine.io-parser@npm:~5.2.1":
   version: 5.2.3
   resolution: "engine.io-parser@npm:5.2.3"
@@ -46693,6 +46720,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"socket.io-client@npm:^4.8.1":
+  version: 4.8.1
+  resolution: "socket.io-client@npm:4.8.1"
+  dependencies:
+    "@socket.io/component-emitter": "npm:~3.1.0"
+    debug: "npm:~4.3.2"
+    engine.io-client: "npm:~6.6.1"
+    socket.io-parser: "npm:~4.2.4"
+  checksum: 10c0/544c49cc8cc77118ef68b758a8a580c8e680a5909cae05c566d2cc07ec6cd6720a4f5b7e985489bf2a8391749177a5437ac30b8afbdf30b9da6402687ad51c86
+  languageName: node
+  linkType: hard
+
 "socket.io-parser@npm:~4.2.4":
   version: 4.2.4
   resolution: "socket.io-parser@npm:4.2.4"
@@ -46703,7 +46742,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"socket.io@npm:^4.8.1":
+"socket.io@npm:4.8.1, socket.io@npm:^4.8.1":
   version: 4.8.1
   resolution: "socket.io@npm:4.8.1"
   dependencies:
@@ -49345,13 +49384,14 @@ __metadata:
     "@nestjs/jwt": "npm:^10.0.3"
     "@nestjs/passport": "npm:^9.0.3"
     "@nestjs/platform-express": "npm:^9.0.0"
+    "@nestjs/platform-socket.io": "npm:^11.1.0"
     "@nestjs/schedule": "npm:^5.0.1"
     "@nestjs/schematics": "npm:^9.0.0"
     "@nestjs/serve-static": "npm:^4.0.1"
     "@nestjs/terminus": "npm:^11.0.0"
     "@nestjs/testing": "npm:^9.0.0"
     "@nestjs/typeorm": "npm:^10.0.0"
-    "@nestjs/websockets": "npm:^11.0.10"
+    "@nestjs/websockets": "npm:^11.1.0"
     "@next/eslint-plugin-next": "npm:^14.1.4"
     "@nx/eslint": "npm:18.3.3"
     "@nx/eslint-plugin": "npm:18.3.3"
@@ -49628,6 +49668,7 @@ __metadata:
     sharp: "npm:^0.32.1"
     slash: "npm:^5.1.0"
     socket.io: "npm:^4.8.1"
+    socket.io-client: "npm:^4.8.1"
     source-map-support: "npm:^0.5.20"
     storybook: "npm:^7.6.3"
     storybook-addon-cookie: "npm:^3.2.0"
@@ -52370,6 +52411,13 @@ __metadata:
   version: 2.2.0
   resolution: "xmlchars@npm:2.2.0"
   checksum: 10c0/b64b535861a6f310c5d9bfa10834cf49127c71922c297da9d4d1b45eeaae40bf9b4363275876088fbe2667e5db028d2cd4f8ee72eed9bede840a67d57dab7593
+  languageName: node
+  linkType: hard
+
+"xmlhttprequest-ssl@npm:~2.1.1":
+  version: 2.1.2
+  resolution: "xmlhttprequest-ssl@npm:2.1.2"
+  checksum: 10c0/70d60869323e823f473a238f78fd108437edbc3690ecd5859c39c83217080090a18899b272e515769c0d1f518cc64cbed6b6995b23fdd7ba13b297d530b6e631
   languageName: node
   linkType: hard
 

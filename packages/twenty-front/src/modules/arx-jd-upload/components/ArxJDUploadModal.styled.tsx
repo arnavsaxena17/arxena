@@ -15,7 +15,7 @@ export const StyledBackdrop = styled.div`
   top: 0;
   user-select: none;
   width: 100vw;
-  z-index: 999;
+  z-index: 10;
   isolation: isolate; /* Creates a new stacking context */
 `;
 
@@ -239,5 +239,5 @@ export const StyledSectionDivider = styled.div`
 `;
 
 export const StyledSection = styled.div`
-  margin-bottom: ${({ theme }) => theme.spacing(0)};
+  margin-bottom: ${({ theme }) => theme.spacing(10)};
 `;

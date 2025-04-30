@@ -22,6 +22,7 @@ export type SingleRecordSelectMenuItemsWithSearchProps = {
   recordPickerInstanceId?: string;
   selectedRecordIds: string[];
   dropdownPlacement?: Placement | null;
+  isJobDetailsForm?: boolean;
 } & Pick<
   SingleRecordSelectMenuItemsProps,
   | 'EmptyIcon'
@@ -41,6 +42,7 @@ export const SingleRecordSelectMenuItemsWithSearch = ({
   objectNameSingular,
   selectedRecordIds,
   dropdownPlacement,
+  isJobDetailsForm,
 }: SingleRecordSelectMenuItemsWithSearchProps) => {
   const { handleSearchFilterChange } = useRecordSelectSearch();
 
@@ -94,8 +96,13 @@ export const SingleRecordSelectMenuItemsWithSearch = ({
       )}
       <DropdownMenuSearchInput
         onChange={handleSearchFilterChange}
-        autoFocus
+        autoFocus={!isJobDetailsForm}
         role="combobox"
+        onKeyDown={(e) => {
+          if (isJobDetailsForm) {
+            e.stopPropagation();
+          }
+        }}
       />
       {(dropdownPlacement?.includes('start') ||
         isUndefinedOrNull(dropdownPlacement)) && (
@@ -121,7 +128,7 @@ export const SingleRecordSelectMenuItemsWithSearch = ({
             <DropdownMenuSeparator />
           )}
           {isDefined(onCreate) && (
-            <DropdownMenuItemsContainer scrollable={false}>
+            <DropdownMenuItemsContainer scrollable={false} isJobDetailsForm={isJobDetailsForm}>
               {createNewButton}
             </DropdownMenuItemsContainer>
           )}

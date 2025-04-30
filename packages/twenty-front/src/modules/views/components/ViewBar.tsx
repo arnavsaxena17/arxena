@@ -43,7 +43,6 @@ export const ViewBar = ({
   handleEngagement,
 }: ViewBarProps) => {
   const { objectNamePlural } = useParams();
-
   const filterDropdownId = 'view-filter';
 
   const loading = useIsPrefetchLoading();
@@ -61,7 +60,6 @@ export const ViewBar = ({
       <ViewBarFilterEffect filterDropdownId={filterDropdownId} />
       <ViewBarSortEffect />
       <QueryParamsFiltersEffect />
-
       <ViewBarPageTitle viewBarId={viewBarId} />
       <TopBar
         handleVideoInterviewEdit={handleVideoInterviewEdit}
@@ -76,14 +74,10 @@ export const ViewBar = ({
           <>
             <ObjectFilterDropdownButton
               filterDropdownId={filterDropdownId}
-              hotkeyScope={{
-                scope: FiltersHotkeyScope.ObjectFilterDropdownButton,
-              }}
+              hotkeyScope={{ scope: FiltersHotkeyScope.ObjectFilterDropdownButton, }}
             />
             <ObjectSortDropdownButton
-              hotkeyScope={{
-                scope: FiltersHotkeyScope.ObjectSortDropdownButton,
-              }}
+              hotkeyScope={{ scope: FiltersHotkeyScope.ObjectSortDropdownButton, }}
             />
             {optionsDropdownButton}
           </>

@@ -59,25 +59,19 @@ export const ArxJDFormStepper: React.FC<ArxJDFormStepperProps> = ({
 
   // Generate the available steps based on selected chat flow options
   const getFormSteps = () => {
-    // Always start with Upload JD step
     const steps = [ArxJDFormStepType.UploadJD];
-
-    // Only add other steps if we have a parsedJD (file uploaded)
     if (parsedJD !== null) {
       steps.push(ArxJDFormStepType.JobDetails);
       steps.push(ArxJDFormStepType.ChatConfiguration);
 
-      // Add VideoInterview step if selected
       if (parsedJD.chatFlow.order.videoInterview) {
         steps.push(ArxJDFormStepType.VideoInterview);
       }
 
-      // Add MeetingScheduling step if selected
       if (parsedJD.chatFlow.order.meetingScheduling) {
         steps.push(ArxJDFormStepType.MeetingScheduling);
       }
     }
-
     return steps;
   };
 
@@ -211,8 +205,8 @@ export const ArxJDFormStepper: React.FC<ArxJDFormStepperProps> = ({
         return (
           <StyledContentWrapper>
             <ArxJDStepHeading
-              title="Chat Configuration"
-              description="Configure the chat flow and questions"
+              title="Candidate Engagement Process"
+              description="Configure the engagement process and screening questions"
               currentStep={currentStep}
               totalSteps={totalSteps}
             />

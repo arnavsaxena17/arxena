@@ -29,6 +29,7 @@ import { TwentyORMModule } from 'src/engine/twenty-orm/twenty-orm.module';
 import { WorkspaceCacheStorageModule } from 'src/engine/workspace-cache-storage/workspace-cache-storage.module';
 import { ModulesModule } from 'src/modules/modules.module';
 
+import { WebSocketModule } from 'src/modules/websocket/websocket.module';
 import { CoreEngineModule } from './engine/core-modules/core-engine.module';
 import { I18nModule } from './engine/core-modules/i18n/i18n.module';
 
@@ -65,6 +66,7 @@ const MIGRATED_REST_METHODS = [
     CoreGraphQLApiModule,
     MetadataGraphQLApiModule,
     RestApiModule,
+    WebSocketModule,
     DataSourceModule,
     MiddlewareModule,
     WorkspaceMetadataCacheModule,

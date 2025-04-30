@@ -1,12 +1,24 @@
-import React from 'react';
+import { useObjectMetadataItem } from '@/object-metadata/hooks/useObjectMetadataItem';
+import { useCreateOneRecord } from '@/object-record/hooks/useCreateOneRecord';
+import { viewableRecordIdState } from '@/object-record/record-right-drawer/states/viewableRecordIdState';
+import { viewableRecordNameSingularState } from '@/object-record/record-right-drawer/states/viewableRecordNameSingularState';
+import { SingleRecordSelectMenuItemsWithSearch } from '@/object-record/relation-picker/components/SingleRecordSelectMenuItemsWithSearch';
+import { useAddNewRecordAndOpenRightDrawer } from '@/object-record/relation-picker/hooks/useAddNewRecordAndOpenRightDrawer';
+import { RecordForSelect } from '@/object-record/relation-picker/types/RecordForSelect';
+import { useRightDrawer } from '@/ui/layout/right-drawer/hooks/useRightDrawer';
+import { RightDrawerPages } from '@/ui/layout/right-drawer/types/RightDrawerPages';
+import React, { useState } from 'react';
+import { useSetRecoilState } from 'recoil';
+import { IconEye } from 'twenty-ui';
+import { v4 } from 'uuid';
 import { FormComponentProps } from '../types/FormComponentProps';
 import {
   StyledFieldGroup,
+  StyledFullWidthField,
   StyledInput,
   StyledLabel,
   StyledSection,
-  StyledSectionContent,
-  StyledSectionHeader,
+  StyledSectionContent
 } from './ArxJDUploadModal.styled';
 
 export const JobDetailsForm: React.FC<FormComponentProps> = ({
@@ -15,12 +27,84 @@ export const JobDetailsForm: React.FC<FormComponentProps> = ({
 }) => {
   // Prevent hotkey propagation when typing in inputs
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    // Prevent keyboard event from propagating to global handlers
     e.stopPropagation();
+  };
+
+  const [companySearchInput, setCompanySearchInput] = useState('');
+  const setViewableRecordId = useSetRecoilState(viewableRecordIdState);
+  const setViewableRecordNameSingular = useSetRecoilState(viewableRecordNameSingularState);
+  const { openRightDrawer } = useRightDrawer();
+  const { createOneRecord } = useCreateOneRecord({
+    objectNameSingular: 'company',
+  });
+
+  const { objectMetadataItem: companyObjectMetadataItem } = useObjectMetadataItem({
+    objectNameSingular: 'company',
+  });
+
+  const { createNewRecordAndOpenRightDrawer } = useAddNewRecordAndOpenRightDrawer({
+    relationObjectMetadataNameSingular: 'company',
+    relationObjectMetadataItem: companyObjectMetadataItem,
+    recordId: parsedJD.id || '',
+  });
+
+  // const { records: companies } = useFindManyRecords({
+  //   objectNameSingular: 'company',
+  //   filter: companySearchInput
+  //     ? {
+  //         name: {
+  //           ilike: `%${companySearchInput}%`,
+  //         },
+  //       }
+  //     : undefined,
+  // });
+
+  const handleCompanySelect = (company?: RecordForSelect) => {
+    if (company) {
+      setParsedJD({
+        ...parsedJD,
+        companyId: company.id,
+        companyName: company.name,
+      });
+    } else {
+      setParsedJD({
+        ...parsedJD,
+        companyId: '',
+        companyName: '',
+      });
+    }
+  };
+
+  const handleCreateCompany = async (searchInput?: string) => {
+    try {
+      if (createNewRecordAndOpenRightDrawer) {
+        await createNewRecordAndOpenRightDrawer(searchInput);
+      } else {
+        // Fallback implementation when createNewRecordAndOpenRightDrawer is undefined
+        const newRecordId = v4();
+        const createRecordPayload = {
+          id: newRecordId,
+          name: searchInput ?? '',
+        };
+
+        await createOneRecord(createRecordPayload);
+
+        setViewableRecordId(newRecordId);
+        setViewableRecordNameSingular('company');
+        openRightDrawer(RightDrawerPages.ViewRecord, {
+          title: 'View Company',
+          Icon: IconEye,
+        });
+      }
+    } catch (error) {
+      console.error('Error creating company:', error);
+    }
   };
 
   return (
     <StyledSection>
-      <StyledSectionHeader>Job Details</StyledSectionHeader>
+      {/* <StyledSectionHeader>Job Details</StyledSectionHeader> */}
       <StyledSectionContent>
         <StyledFieldGroup>
           <StyledLabel>Job Title</StyledLabel>
@@ -29,6 +113,18 @@ export const JobDetailsForm: React.FC<FormComponentProps> = ({
             onChange={(e) => setParsedJD({ ...parsedJD, name: e.target.value })}
             placeholder="Enter job title"
             onKeyDown={handleKeyDown}
+          />
+        </StyledFieldGroup>
+
+        <StyledFieldGroup>
+          <StyledLabel>Company</StyledLabel>
+          <SingleRecordSelectMenuItemsWithSearch
+            objectNameSingular="company"
+            selectedRecordIds={parsedJD.companyId ? [parsedJD.companyId] : []}
+            onRecordSelected={handleCompanySelect}
+            emptyLabel="No Company"
+            onCreate={handleCreateCompany}
+            isJobDetailsForm={true}
           />
         </StyledFieldGroup>
 
@@ -43,7 +139,6 @@ export const JobDetailsForm: React.FC<FormComponentProps> = ({
               })
             }
             placeholder="Enter job code"
-            onKeyDown={handleKeyDown}
           />
         </StyledFieldGroup> */}
 
@@ -61,7 +156,7 @@ export const JobDetailsForm: React.FC<FormComponentProps> = ({
             onKeyDown={handleKeyDown}
           />
         </StyledFieldGroup>
-        {/* 
+        
         <StyledFieldGroup>
           <StyledLabel>Salary Range</StyledLabel>
           <StyledInput
@@ -75,10 +170,10 @@ export const JobDetailsForm: React.FC<FormComponentProps> = ({
             placeholder="Enter salary range"
             onKeyDown={handleKeyDown}
           />
-        </StyledFieldGroup> */}
-        {/* 
+        </StyledFieldGroup>
+        
         <StyledFullWidthField>
-          <StyledLabel>Description</StyledLabel>
+          <StyledLabel>Short One Line Pitch</StyledLabel>
           <StyledInput
             as="textarea"
             value={parsedJD.description}
@@ -88,11 +183,11 @@ export const JobDetailsForm: React.FC<FormComponentProps> = ({
                 description: e.target.value,
               })
             }
-            placeholder="Enter job description"
-            style={{ minHeight: '100px', resize: 'vertical' }}
+            placeholder="A one line pitch for the job"
+            style={{ minHeight: '50px', width: '100%', resize: 'vertical' }}
             onKeyDown={handleKeyDown}
           />
-        </StyledFullWidthField> */}
+        </StyledFullWidthField>
 
         {/* <StyledFieldGroup>
           <StyledLabel>Specific Criteria</StyledLabel>
@@ -105,7 +200,6 @@ export const JobDetailsForm: React.FC<FormComponentProps> = ({
               })
             }
             placeholder="Enter specific criteria"
-            onKeyDown={handleKeyDown}
           />
         </StyledFieldGroup>
 
@@ -120,9 +214,7 @@ export const JobDetailsForm: React.FC<FormComponentProps> = ({
               })
             }
             placeholder="Enter path position"
-            onKeyDown={handleKeyDown}
-          />
-        </StyledFieldGroup> */}
+          /> */}
       </StyledSectionContent>
     </StyledSection>
   );

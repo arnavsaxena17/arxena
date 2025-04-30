@@ -4,6 +4,7 @@ import { useId } from 'react';
 
 const StyledDropdownMenuItemsExternalContainer = styled.div<{
   hasMaxHeight?: boolean;
+  isJobDetailsForm?: boolean;
 }>`
   --padding: ${({ theme }) => theme.spacing(1)};
 
@@ -16,6 +17,10 @@ const StyledDropdownMenuItemsExternalContainer = styled.div<{
   padding: var(--padding);
 
   width: calc(100% - 2 * var(--padding));
+
+  background: ${({ theme, isJobDetailsForm }) => isJobDetailsForm ? theme.color.gray10 : 'transparent'};
+  box-shadow: ${({ theme, isJobDetailsForm }) => isJobDetailsForm ? theme.boxShadow.strong : 'none'};
+  border-radius: ${({ theme, isJobDetailsForm }) => isJobDetailsForm ? theme.border.radius.md : 'none'};
 `;
 
 const StyledDropdownMenuItemsInternalContainer = styled.div`
@@ -39,11 +44,13 @@ export const DropdownMenuItemsContainer = ({
   hasMaxHeight,
   className,
   scrollable = true,
+  isJobDetailsForm = false,
 }: {
   children: React.ReactNode;
   hasMaxHeight?: boolean;
   className?: string;
   scrollable?: boolean;
+  isJobDetailsForm?: boolean;
 }) => {
   const id = useId();
 
@@ -51,6 +58,7 @@ export const DropdownMenuItemsContainer = ({
     <StyledDropdownMenuItemsExternalContainer
       hasMaxHeight={hasMaxHeight}
       className={className}
+      isJobDetailsForm={isJobDetailsForm}
       role="listbox"
     >
       {hasMaxHeight ? (
@@ -77,6 +85,7 @@ export const DropdownMenuItemsContainer = ({
       <StyledDropdownMenuItemsExternalContainer
         hasMaxHeight={hasMaxHeight}
         className={className}
+        isJobDetailsForm={isJobDetailsForm}
         role="listbox"
       >
         <StyledDropdownMenuItemsInternalContainer>

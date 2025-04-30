@@ -102,7 +102,6 @@ export const useFindManyRecords = <T extends ObjectRecord = ObjectRecord>({
     });
 
   const pageInfo = data?.[objectMetadataItem.namePlural]?.pageInfo;
-
   const totalCount = data?.[objectMetadataItem.namePlural]?.totalCount;
 
   return {

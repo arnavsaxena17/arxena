@@ -14,6 +14,7 @@ export const ViewBarPageTitle = ({ viewBarId }: ViewBarPageTitleProps) => {
   const { currentViewWithCombinedFiltersAndSorts: currentView } =
     useGetCurrentView(viewBarId);
 
+  console.log("currentView", currentView)
   if (!objectNamePlural) {
     return;
   }

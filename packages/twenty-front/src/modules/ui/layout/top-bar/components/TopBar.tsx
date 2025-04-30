@@ -112,6 +112,8 @@ export const TopBar = ({
   const isJobPage = location.pathname.includes('/job/');
   const [searchQuery, setSearchQuery] = useRecoilState(chatSearchQueryState);
 
+
+
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
     setSearchQuery(query);
@@ -120,13 +122,16 @@ export const TopBar = ({
     }
   };
 
+  console.log("showSearch", showSearch)
+  console.log("isJobPage", isJobPage)
+  console.log("!isJobPage && !showSearch &&::", !isJobPage && !showSearch)
   return (
     <StyledContainer className={className}>
       <StyledTopBar>
         {!isJobPage && !showSearch && (
             <StyledLeftSection>{leftComponent}</StyledLeftSection>
         )}
-        {!isJobPage && !showSearch && (
+        {!isJobPage && !showSearch && !location.pathname.includes('jobs') && (
           <StyledButtonContainer>
             {showRefetch && (
               <Button

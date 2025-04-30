@@ -4,23 +4,22 @@ import { useRecoilState } from 'recoil';
 import { ArxEnrichLeftSideContainer } from '@/arx-enrich/left-side/ArxEnrichLeftSideContainer';
 import { ArxEnrichRightSideContainer } from '@/arx-enrich/right-side/ArxEnrichRightSideContainer';
 import { isArxEnrichModalOpenState } from '@/arx-enrich/states/arxEnrichModalOpenState';
+
+
 const StyledModalContainer = styled.div`
   background-color: solid;
-  top: 20vh;
+  top: 10vh;
   left: 10vw;
   display: flex;
   flex-direction: row;
   justify-content: center;
   align-items: center;
   position: fixed;
-  height: 60vh;
+  height: 80vh;
   width: 80vw;
   z-index: 1000;
   pointer-events: none; /* This ensures clicks pass through to the backdrop */
 `;
-
-
-
 
 const StyledModalBackdrop = styled.div`
   position: fixed;

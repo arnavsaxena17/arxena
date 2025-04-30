@@ -91,6 +91,8 @@ const bootstrap = async () => {
   // Inject the server url in the frontend page
   generateFrontConfig();
 
+  console.log("Starting server")
+  console.log("environmentService.get('NODE_PORT')", environmentService.get('NODE_PORT'))
   await app.listen(environmentService.get('NODE_PORT'));
 };
 

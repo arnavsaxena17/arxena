@@ -35,15 +35,16 @@ const StyledInput = styled.input`
 export const DropdownMenuSearchInput = forwardRef<
   HTMLInputElement,
   InputHTMLAttributes<HTMLInputElement>
->(({ value, onChange, placeholder = 'Search', type }, forwardedRef) => {
-  const { inputRef } = useInputFocusWithoutScrollOnMount();
+>(({ value, onChange, placeholder = 'Search', type, onKeyDown, autoFocus = true, ...rest }, forwardedRef) => {
+  const { inputRef } = useInputFocusWithoutScrollOnMount(autoFocus);
   const ref = forwardedRef ?? inputRef;
   return (
     <StyledDropdownMenuSearchInputContainer>
       <StyledInput
         autoComplete="off"
-        {...{ onChange, placeholder, type, value }}
+        {...{ onChange, placeholder, type, value, onKeyDown, autoFocus }}
         ref={ref}
+        {...rest}
       />
     </StyledDropdownMenuSearchInputContainer>
   );
