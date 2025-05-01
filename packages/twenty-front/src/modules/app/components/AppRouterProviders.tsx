@@ -23,7 +23,7 @@ import { PageFavicon } from '@/ui/utilities/page-favicon/components/PageFavicon'
 import { PageTitle } from '@/ui/utilities/page-title/components/PageTitle';
 import { UserProvider } from '@/users/components/UserProvider';
 import { UserProviderEffect } from '@/users/components/UserProviderEffect';
-import { WebSocketProvider } from '@/websocket-context/WebsocketContext';
+import { WebSocketProvider } from '@/websocket-context/WebSocketContextProvider';
 import { WorkspaceProviderEffect } from '@/workspace/components/WorkspaceProviderEffect';
 import { StrictMode } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
