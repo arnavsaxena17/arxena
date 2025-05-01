@@ -161,12 +161,13 @@ export const useArxJDUpload = (objectNameSingular: string) => {
         if (response.data.success === true) {
           const data = response.data.data;
           
-          // Try to match company if a name was provided
           let matchedCompany = null;
           if (data?.companyName) {
             matchedCompany = findBestCompanyMatch(data.companyName);
           }
 
+          console.log('matchedCompany::', matchedCompany);
+          // Create default parsed JD
           const parsedData = createDefaultParsedJD({
             name: data?.name || '',
             description: data?.description || '',
@@ -299,14 +300,24 @@ export const useArxJDUpload = (objectNameSingular: string) => {
         if (
           matchedCompany !== null &&
           typeof matchedCompany.id === 'string' &&
-          matchedCompany.id !== ''
+          matchedCompany.id !== '' 
         ) {
           console.log('matchedCompany::', matchedCompany);
           const { companyName, ...jobData } = parsedJD;
-          createdJob = await createOneRecord({
-            ...jobData,
-            companyId: matchedCompany.id,
-          });
+          console.log('jobData::', jobData);
+          if (jobData.id) {
+            createdJob = await updateOneRecord({
+              idToUpdate: jobData.id,
+              updateOneRecordInput: {
+                companyId: matchedCompany.id,
+              },
+            });
+          } else {
+            createdJob = await createOneRecord({
+              ...jobData,
+              companyId: matchedCompany.id,
+            });
+          }
         }
         else {
           console.log('matchedCompany is null in handleCreateJob');
@@ -431,6 +442,6 @@ export const useArxJDUpload = (objectNameSingular: string) => {
     error,
     handleFileUpload,
     handleCreateJob,
-    resetUploadState,
+     resetUploadState,
   };
 };

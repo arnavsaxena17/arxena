@@ -67,6 +67,12 @@ export const SingleRecordSelectMenuItemsWithSearch = ({
   const shouldDisplayDropdownMenuItems =
     records.recordsToSelect.length + records.selectedRecords?.length > 0;
 
+  console.log('isJobDetailsForm::', isJobDetailsForm);
+  console.log('dropdownPlacement::', dropdownPlacement);
+  console.log('shouldDisplayDropdownMenuItems::', shouldDisplayDropdownMenuItems);
+  console.log('recordPickerSearchFilter::', recordPickerSearchFilter);
+  console.log('records.recordsToSelect::', records.recordsToSelect.map((record) => record.name));
+  console.log('records.selectedRecords::', records.selectedRecords);
   return (
     <>
       {dropdownPlacement?.includes('end') && (
@@ -83,6 +89,7 @@ export const SingleRecordSelectMenuItemsWithSearch = ({
               shouldSelectEmptyOption={selectedRecordIds?.length === 0}
               hotkeyScope={recordPickerInstanceId}
               isFiltered={!!recordPickerSearchFilter}
+              isJobDetailsForm={isJobDetailsForm}
               {...{
                 EmptyIcon,
                 emptyLabel,
@@ -116,6 +123,7 @@ export const SingleRecordSelectMenuItemsWithSearch = ({
               shouldSelectEmptyOption={selectedRecordIds?.length === 0}
               hotkeyScope={recordPickerInstanceId}
               isFiltered={!!recordPickerSearchFilter}
+              isJobDetailsForm={isJobDetailsForm}
               {...{
                 EmptyIcon,
                 emptyLabel,

@@ -19,7 +19,7 @@ const StyledDropdownMenuItemsExternalContainer = styled.div<{
   width: calc(100% - 2 * var(--padding));
 
   background: ${({ theme, isJobDetailsForm }) => isJobDetailsForm ? theme.color.gray10 : 'transparent'};
-  box-shadow: ${({ theme, isJobDetailsForm }) => isJobDetailsForm ? theme.boxShadow.strong : 'none'};
+  box-shadow: ${({ theme, isJobDetailsForm }) => isJobDetailsForm ? theme.boxShadow.light : 'none'};
   border-radius: ${({ theme, isJobDetailsForm }) => isJobDetailsForm ? theme.border.radius.md : 'none'};
 `;
 

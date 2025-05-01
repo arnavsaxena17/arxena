@@ -27,6 +27,7 @@ export type SingleRecordSelectMenuItemsProps = {
   hotkeyScope?: string;
   isFiltered: boolean;
   shouldSelectEmptyOption?: boolean;
+  isJobDetailsForm?: boolean;
 };
 
 export const SingleRecordSelectMenuItems = ({
@@ -40,10 +41,11 @@ export const SingleRecordSelectMenuItems = ({
   hotkeyScope = RelationPickerHotkeyScope.RelationPicker,
   isFiltered,
   shouldSelectEmptyOption,
+  isJobDetailsForm,
 }: SingleRecordSelectMenuItemsProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const selectNone = emptyLabel
+  const selectNone = emptyLabel && !isJobDetailsForm
     ? {
         __typename: '',
         id: 'select-none',
@@ -104,7 +106,7 @@ export const SingleRecordSelectMenuItems = ({
               switch (record.id) {
                 case 'select-none': {
                   return (
-                    emptyLabel && (
+                    emptyLabel && !isJobDetailsForm && (
                       <MenuItemSelect
                         key={record.id}
                         onClick={() => onRecordSelected()}

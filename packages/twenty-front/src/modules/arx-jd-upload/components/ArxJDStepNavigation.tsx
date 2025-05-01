@@ -35,6 +35,15 @@ export const ArxJDStepNavigation = ({
   showBackButton = true,
   showNextButton = true,
 }: ArxJDStepNavigationProps) => {
+  console.log('showNextButton::', showNextButton);
+  console.log('onNext::', onNext);
+
+  // if (nextLabel === 'Finish') {
+  //   showNextButton = false;
+  // }
+  // debugger;
+
+
   return (
     <StyledContainer>
       <StyledButtonContainer>

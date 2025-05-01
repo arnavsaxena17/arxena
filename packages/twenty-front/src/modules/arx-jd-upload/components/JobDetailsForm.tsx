@@ -81,15 +81,12 @@ export const JobDetailsForm: React.FC<FormComponentProps> = ({
       if (createNewRecordAndOpenRightDrawer) {
         await createNewRecordAndOpenRightDrawer(searchInput);
       } else {
-        // Fallback implementation when createNewRecordAndOpenRightDrawer is undefined
         const newRecordId = v4();
         const createRecordPayload = {
           id: newRecordId,
           name: searchInput ?? '',
         };
-
         await createOneRecord(createRecordPayload);
-
         setViewableRecordId(newRecordId);
         setViewableRecordNameSingular('company');
         openRightDrawer(RightDrawerPages.ViewRecord, {

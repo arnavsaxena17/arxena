@@ -174,6 +174,7 @@ export const ArxJDFormStepper: React.FC<ArxJDFormStepperProps> = ({
 
   // Render the appropriate step content
   const renderStepContent = () => {
+    console.log('currentStepType::', currentStepType);
     switch (currentStepType) {
       case ArxJDFormStepType.UploadJD:
         return (
@@ -265,7 +266,7 @@ export const ArxJDFormStepper: React.FC<ArxJDFormStepperProps> = ({
   return (
     <StyledStepContent>
       {renderStepContent()}
-      {renderNavigation()}
+      {/* {renderNavigation()} */}
     </StyledStepContent>
   );
 };

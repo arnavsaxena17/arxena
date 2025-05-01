@@ -10,7 +10,6 @@ const StyledDropdownMenuSearchInputContainer = styled.div`
   flex-direction: row;
   min-height: calc(36px - 2 * var(--vertical-padding));
   padding: var(--vertical-padding) 0;
-
   width: 100%;
 `;
 
@@ -18,8 +17,9 @@ const StyledInput = styled.input`
   ${TEXT_INPUT_STYLE}
 
   font-size: ${({ theme }) => theme.font.size.sm};
-  background-color: transparent;
+  background-color: white;
   width: 100%;
+  height: ${({ theme }) => theme.spacing(8)};
 
   &[type='number']::-webkit-outer-spin-button,
   &[type='number']::-webkit-inner-spin-button {

@@ -37,7 +37,9 @@ export const ArxJDModalContent = ({
     return (
       <div style={{ textAlign: 'center' }}>
         <CircularProgressBar size={32} />
-        <div style={{ marginTop: 16 }}>Uploading & analyzing JD...</div>
+        <div style={{ marginTop: 16 }}>
+          Uploading & analyzing JD... GPT Calls can take upto 2 minutes
+        </div>
       </div>
     );
   }
