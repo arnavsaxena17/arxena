@@ -9,12 +9,17 @@ const StyledContainer = styled.div`
   display: flex;
   flex: 1;
   justify-content: space-between;
+  height: 40px; /* Fixed height to ensure consistency */
+  align-items: center; /* Vertically center all content */
+  min-height: 40px; /* Ensure minimum height */
+  margin: 0; /* Remove margin to fit perfectly in parent */
 `;
 
 const StyledStepContainer = styled.div<{ isLast: boolean }>`
   align-items: center;
   display: flex;
   flex-grow: ${({ isLast }) => (isLast ? '0' : '1')};
+  height: 100%; /* Fill the parent container height */
 `;
 
 const StyledStepCircle = styled(motion.div)<{ isNextStep: boolean }>`
@@ -60,6 +65,8 @@ const StyledStepLine = styled(motion.div)`
   margin-right: ${({ theme }) => theme.spacing(2)};
   overflow: hidden;
   width: 100%;
+  align-self: center; /* Ensure vertical centering */
+  flex-shrink: 1; /* Allow line to shrink if needed */
 `;
 
 const STEP_LABELS: Record<ArxJDFormStepType, string> = {
@@ -67,7 +74,7 @@ const STEP_LABELS: Record<ArxJDFormStepType, string> = {
   [ArxJDFormStepType.JobDetails]: 'Job Details',
   [ArxJDFormStepType.ChatConfiguration]: 'Chat Configuration',
   [ArxJDFormStepType.VideoInterview]: 'Video Interview',
-  [ArxJDFormStepType.MeetingScheduling]: 'Meeting Scheduling',
+  [ArxJDFormStepType.MeetingScheduling]: 'Scheduling',
 };
 
 export type ArxJDStepBarProps = {
@@ -106,15 +113,6 @@ export const ArxJDStepBar = ({ activeStep, parsedJD, isEditMode = false }: ArxJD
 
   const availableSteps = getAvailableSteps();
   
-  // Debug log
-  console.log('ArxJDStepBar rendering with:', {
-    activeStep,
-    availableSteps,
-    parsedJDExists: parsedJD !== null,
-    videoInterviewEnabled: parsedJD?.chatFlow?.order?.videoInterview,
-    meetingSchedulingEnabled: parsedJD?.chatFlow?.order?.meetingScheduling
-  });
-
   const variantsCircle = {
     active: {
       backgroundColor: theme.font.color.primary,

@@ -286,7 +286,7 @@ export const ArxJDFormStepper: React.FC<ArxJDFormStepperProps> = ({
       return (
         <StyledContentWrapper>
           <ArxJDStepHeading
-            title="Meeting Scheduling"
+            title="Scheduling"
             description="Configure meeting scheduling options"
             currentStep={currentStep}
             totalSteps={totalSteps}

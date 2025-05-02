@@ -25,6 +25,7 @@ const StyledHeader = styled.div`
   border-bottom: 1px solid ${({ theme }) => theme.border.color.medium};
   display: flex;
   height: 60px;
+  min-height: 60px;
   padding: 0px;
   padding-left: ${({ theme }) => theme.spacing(6)};
   padding-right: ${({ theme }) => theme.spacing(6)};
