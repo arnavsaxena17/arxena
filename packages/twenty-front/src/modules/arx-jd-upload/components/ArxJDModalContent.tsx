@@ -3,6 +3,7 @@ import { CircularProgressBar } from 'twenty-ui';
 
 import { ParsedJD } from '../types/ParsedJD';
 import { ArxJDStepperContainer } from './ArxJDStepperContainer';
+import { RecruiterDetails } from './JobDetailsForm';
 import { UploadForm } from './UploadForm';
 
 type ArxJDModalContentProps = {
@@ -16,6 +17,7 @@ type ArxJDModalContentProps = {
   onCancel: () => void;
   onSubmit: () => void;
   handleFileUpload?: (files: File[]) => Promise<void>;
+  onRecruiterInfoChange?: (recruiterDetails: RecruiterDetails) => void;
 };
 
 export const ArxJDModalContent = ({
@@ -29,6 +31,7 @@ export const ArxJDModalContent = ({
   onCancel,
   onSubmit,
   handleFileUpload,
+  onRecruiterInfoChange,
 }: ArxJDModalContentProps) => {
   const theme = useTheme();
 
@@ -75,6 +78,7 @@ export const ArxJDModalContent = ({
       isOpen={true}
       onClose={onCancel}
       title="Job Description"
+      onRecruiterInfoChange={onRecruiterInfoChange}
     />
   );
 };

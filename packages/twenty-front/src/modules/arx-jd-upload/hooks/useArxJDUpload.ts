@@ -10,9 +10,13 @@ import { useCreateOneRecord } from '@/object-record/hooks/useCreateOneRecord';
 import { useFindManyRecords } from '@/object-record/hooks/useFindManyRecords';
 import { useUpdateOneRecord } from '@/object-record/hooks/useUpdateOneRecord';
 import { ObjectRecord } from '@/object-record/types/ObjectRecord';
+import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
+import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
+import { gql, useMutation } from '@apollo/client';
 
 import { uploadedJDState } from '@/arx-jd-upload/states/arxJDFormStepperState';
-import { createOneCandidateField, isDefined } from 'twenty-shared';
+import { createOneCandidateField, graphQLToUpdateOneWorkspaceMemberProfile, isDefined } from 'twenty-shared';
+import { RecruiterDetails } from '../components/JobDetailsForm';
 import { ParsedJD } from '../types/ParsedJD';
 import { createDefaultParsedJD } from '../utils/createDefaultParsedJD';
 import { sendJobToArxena } from '../utils/sendJobToArxena';
@@ -23,6 +27,8 @@ export const useArxJDUpload = (objectNameSingular: string) => {
   const [tokenPair] = useRecoilState(tokenPairState);
   const [parsedJD, setParsedJD] = useState<ParsedJD | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [recruiterDetails, storeRecruiterDetails] = useState<RecruiterDetails | null>(null);
+  const { enqueueSnackBar } = useSnackBar();
 
   const [error, setError] = useState<string | null>(null);
   const { createOneRecord } = useCreateOneRecord({ objectNameSingular });
@@ -35,6 +41,89 @@ export const useArxJDUpload = (objectNameSingular: string) => {
     objectNameSingular: 'company',
   });
 
+  const [updateWorkspaceMemberProfile] = useMutation(gql`
+    ${graphQLToUpdateOneWorkspaceMemberProfile}
+  `);
+
+  // Handler to update recruiter details from JobDetailsForm
+  const updateRecruiterDetails = useCallback((details: RecruiterDetails) => {
+    // Only update the state if something actually changed
+    const hasChanged = !recruiterDetails || 
+      JSON.stringify(recruiterDetails.missingRecruiterInfo) !== JSON.stringify(details.missingRecruiterInfo) ||
+      recruiterDetails.recruiterProfileId !== details.recruiterProfileId ||
+      recruiterDetails.showRecruiterFields !== details.showRecruiterFields ||
+      recruiterDetails.workspaceMemberId !== details.workspaceMemberId;
+      
+    if (hasChanged) {
+      console.log('Received recruiter details in useArxJDUpload:', details);
+      storeRecruiterDetails(details);
+    }
+  }, [recruiterDetails]);
+
+  const updateRecruiterProfile = useCallback(async () => {
+    if (!recruiterDetails || !recruiterDetails.recruiterProfileId || !recruiterDetails.showRecruiterFields) {
+      console.log('No recruiter details to update or update not required');
+      return true; // No update needed, return success
+    }
+
+    // Validate that required fields are filled
+    const emptyFields = Object.entries(recruiterDetails.missingRecruiterInfo)
+      .filter(([_, value]) => !value)
+      .map(([key]) => key);
+
+    console.log('emptyFields::', emptyFields);
+    if (emptyFields.length > 0) {
+      enqueueSnackBar(`Please fill all the required recruiter fields: ${emptyFields.join(', ')}`, {
+        variant: SnackBarVariant.Error,
+      });
+      return false;
+    }
+
+    try {
+      console.log('Updating recruiter profile with:', recruiterDetails);
+      
+      // Get workspaceMemberId from the recruiterDetails
+      const workspaceMemberId = recruiterDetails.workspaceMemberId;
+      
+      if (!workspaceMemberId) {
+        console.error('No workspaceMemberId found for recruiter profile update');
+        enqueueSnackBar('Unable to update recruiter profile: No recruiter ID found', {
+          variant: SnackBarVariant.Error,
+        });
+        return false;
+      }
+      
+      const updateWorkspaceMemberProfileInput = {
+        ...(recruiterDetails.missingRecruiterInfo.name && { name: recruiterDetails.missingRecruiterInfo.name }),
+        ...(recruiterDetails.missingRecruiterInfo.phoneNumber && { phoneNumber: recruiterDetails.missingRecruiterInfo.phoneNumber }),
+        ...(recruiterDetails.missingRecruiterInfo.companyDescription && { companyDescription: recruiterDetails.missingRecruiterInfo.companyDescription }),
+        ...(recruiterDetails.missingRecruiterInfo.jobTitle && { jobTitle: recruiterDetails.missingRecruiterInfo.jobTitle }),
+        workspaceMemberId,
+      };
+      console.log('updateWorkspaceMemberProfileInput::', updateWorkspaceMemberProfileInput);
+      // Update the workspace member profile
+      await updateWorkspaceMemberProfile({
+        variables: {
+          idToUpdate: recruiterDetails.recruiterProfileId,
+          input: {
+            ...updateWorkspaceMemberProfileInput,
+          },
+        },
+      });
+
+      enqueueSnackBar('Recruiter profile updated successfully', {
+        variant: SnackBarVariant.Success,
+      });
+      
+      return true;
+    } catch (error) {
+      console.error('Error updating recruiter profile:', error);
+      enqueueSnackBar(`Failed to update recruiter profile: ${error instanceof Error ? error.message : 'Unknown error'}`, {
+        variant: SnackBarVariant.Error,
+      });
+      return false;
+    }
+  }, [recruiterDetails, enqueueSnackBar, updateWorkspaceMemberProfile]);
 
   // debugger;
   // const { reset: resetFormStepper } = useArxJDFormStepper();
@@ -62,6 +151,9 @@ export const useArxJDUpload = (objectNameSingular: string) => {
   //     console.log(`\${prompt.name} created successfully`, createResponse.data);
   //   }
   // }
+
+
+
 
   const findBestCompanyMatch = useCallback(
     (companyName: string): Company | null => {
@@ -110,6 +202,7 @@ export const useArxJDUpload = (objectNameSingular: string) => {
           name: file.name.split('.')[0],
           jobCode: jobCode,
           chatFlowOrder: ['startChat'],
+
         });
         console.log('createdJob::', createdJob);
         setUploadedJD({
@@ -146,7 +239,7 @@ export const useArxJDUpload = (objectNameSingular: string) => {
           id: createdJob.id,
         });
 
-        const response = await axios({
+        const uploadJDResponse = await axios({
           method: 'post',
           url: `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/upload-jd`,
           data: {
@@ -158,8 +251,17 @@ export const useArxJDUpload = (objectNameSingular: string) => {
           },
         });
 
-        if (response.data.success === true) {
-          const data = response.data.data;
+
+        // console.log('response.data::', response.data);
+
+        // const response = 
+
+
+
+
+
+        if (uploadJDResponse.data.success === true) {
+          const data = uploadJDResponse.data.data;
           
           let matchedCompany = null;
           if (data?.companyName) {
@@ -167,7 +269,6 @@ export const useArxJDUpload = (objectNameSingular: string) => {
           }
 
           console.log('matchedCompany::', matchedCompany);
-          // Create default parsed JD
           const parsedData = createDefaultParsedJD({
             name: data?.name || '',
             description: data?.description || '',
@@ -181,6 +282,7 @@ export const useArxJDUpload = (objectNameSingular: string) => {
             companyId: matchedCompany?.id || '',
             companyDetails: data?.companyDetails || '',
             id: createdJob.id,
+
           });
           console.log('parsedData::', parsedData);
 
@@ -254,7 +356,7 @@ export const useArxJDUpload = (objectNameSingular: string) => {
           // Create candidate fields for each question in the chat flow
 
         } else {
-          throw new Error(response.data.message || 'Failed to process JD');
+          throw new Error(uploadJDResponse.data.message || 'Failed to process JD');
         }
 
         console.log('parsedJD uqestion::::', parsedJD?.chatFlow);
@@ -274,6 +376,8 @@ export const useArxJDUpload = (objectNameSingular: string) => {
       findBestCompanyMatch,
       setParsedJD,
       objectNameSingular,
+      setUploadedJD,
+      enqueueSnackBar
     ],
   );
 
@@ -287,6 +391,20 @@ export const useArxJDUpload = (objectNameSingular: string) => {
     }
 
     try {
+      // First, update the recruit
+      // coner profile if needed
+      console.log('recruiterDetails::', recruiterDetails);
+      if (recruiterDetails?.showRecruiterFields) {
+        try {
+          console.log('recruiterDetails::', recruiterDetails);
+          const profileUpdated = await updateRecruiterProfile();
+          console.log('profileUpdated::', profileUpdated);
+        } catch (error) {
+          console.log('Error updating recruiter profile:', error);
+        }
+
+      }
+
       let createdJob: ObjectRecord & { id?: string; name?: string } | undefined;
       console.log('parsedJD.companyName::', parsedJD.companyName);
       console.log('uploadedJD::', uploadedJD);
@@ -343,11 +461,6 @@ export const useArxJDUpload = (objectNameSingular: string) => {
           },
         });
       }
-
-
-
-
-
 
       // Send job to Arxena after creation
       if (
@@ -417,8 +530,6 @@ export const useArxJDUpload = (objectNameSingular: string) => {
         }
       }
 
-
-
       return true;
     } catch (error) {
       console.error('Error creating job:', error);
@@ -433,6 +544,7 @@ export const useArxJDUpload = (objectNameSingular: string) => {
     setParsedJD(null);
     setError(null);
     setIsUploading(false);
+    storeRecruiterDetails(null);
   }, []);
 
   return {
@@ -442,6 +554,7 @@ export const useArxJDUpload = (objectNameSingular: string) => {
     error,
     handleFileUpload,
     handleCreateJob,
-     resetUploadState,
+    resetUploadState,
+    updateRecruiterDetails,
   };
 };

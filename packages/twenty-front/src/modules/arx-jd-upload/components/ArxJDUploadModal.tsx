@@ -27,6 +27,7 @@ export const ArxJDUploadModal = ({
     handleFileUpload,
     handleCreateJob,
     resetUploadState,
+    updateRecruiterDetails,
   } = useArxJDUpload(objectNameSingular);
 
   const { reset: resetFormStepper } = useArxJDFormStepper();
@@ -106,6 +107,7 @@ export const ArxJDUploadModal = ({
             onCancel={closeModal}
             onSubmit={handleSubmit}
             handleFileUpload={handleFileUpload}
+            onRecruiterInfoChange={updateRecruiterDetails}
           />
         </ArxJDModalLayout>
       )}

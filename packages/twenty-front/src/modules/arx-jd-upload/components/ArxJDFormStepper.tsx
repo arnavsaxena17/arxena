@@ -9,7 +9,7 @@ import { ArxJDStepHeading } from './ArxJDStepHeading';
 import { ArxJDUploadStep } from './ArxJDUploadStep';
 import { ChatFlowSection } from './ChatFlowSection';
 import { ChatQuestionsSection } from './ChatQuestionsSection';
-import { JobDetailsForm } from './JobDetailsForm';
+import { JobDetailsForm, RecruiterDetails } from './JobDetailsForm';
 import { MeetingSchedulingSection } from './MeetingSchedulingSection';
 import { VideoQuestionsSection } from './VideoQuestionsSection';
 
@@ -39,6 +39,7 @@ export type ArxJDFormStepperProps = FormComponentProps & {
   handleFileUpload?: (files: File[]) => void;
   onCancel?: () => void;
   onSubmit?: () => void;
+  onRecruiterInfoChange?: (recruiterDetails: RecruiterDetails) => void;
 };
 
 export const ArxJDFormStepper: React.FC<ArxJDFormStepperProps> = ({
@@ -52,6 +53,7 @@ export const ArxJDFormStepper: React.FC<ArxJDFormStepperProps> = ({
   handleFileUpload,
   onCancel,
   onSubmit,
+  onRecruiterInfoChange,
 }) => {
   const theme = useTheme();
   const { activeStep, nextStep, prevStep, setStep, isFirstStep, isLastStep } =
@@ -198,7 +200,11 @@ export const ArxJDFormStepper: React.FC<ArxJDFormStepperProps> = ({
               currentStep={currentStep}
               totalSteps={totalSteps}
             />
-            <JobDetailsForm parsedJD={parsedJD} setParsedJD={setParsedJD} />
+            <JobDetailsForm 
+              parsedJD={parsedJD} 
+              setParsedJD={setParsedJD} 
+              onRecruiterInfoChange={onRecruiterInfoChange}
+            />
           </StyledContentWrapper>
         );
 

@@ -235,6 +235,13 @@ export const graphQLToCreateOneWorkspaceMemberProfile = `mutation CreateOneWorks
     }
   }`;
 
+
+  export const graphQLToUpdateOneWorkspaceMemberProfile = `mutation UpdateOneWorkspaceMemberProfile($idToUpdate: ID!, $input: WorkspaceMemberProfileUpdateInput!) {
+    updateWorkspaceMemberProfile(id: $idToUpdate, data: $input) {
+      id
+    }
+  }`;
+
 export const CreateManyCandidates = `mutation CreateCandidates($data: [CandidateCreateInput!]!) {
     createCandidates(data: $data) {
       __typename
