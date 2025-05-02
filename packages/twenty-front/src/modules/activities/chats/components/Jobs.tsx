@@ -32,9 +32,9 @@ import { useObjectMetadataItems } from '@/object-metadata/hooks/useObjectMetadat
 import { useFindManyRecords } from '@/object-record/hooks/useFindManyRecords';
 import { RecordTableContextProvider } from '@/object-record/record-table/contexts/RecordTableContext';
 import { RecordTableEmptyStateDisplay } from '@/object-record/record-table/empty-state/components/RecordTableEmptyStateDisplay';
-import { RecordTableEmptyStateDisplayNoButton } from '@/object-record/record-table/empty-state/components/RecordTableEmptyStateDisplayNoButton';
 import { InterviewCreationModal } from '@/video-interview/interview-creation/InterviewCreationModal';
 import { isVideoInterviewModalOpenState } from '@/video-interview/interview-creation/states/videoInterviewModalState';
+import { AnimatedPlaceholder, AnimatedPlaceholderEmptyContainer, AnimatedPlaceholderEmptySubTitle, AnimatedPlaceholderEmptyTextContainer, AnimatedPlaceholderEmptyTitle } from 'twenty-ui';
 
 const StyledPageContainer = styled(PageContainer)`
   display: flex;
@@ -155,13 +155,15 @@ export const Jobs = () => {
   const jobMetadataItem = objectMetadataItems.find(item => item.nameSingular === 'job');
   let updatedMetadataStructureLoaded = false;
 
-
-  const jobs = useFindManyRecords({
-    objectNameSingular: 'job',
-  })
-
-  console.log("jobs", jobs)
   updatedMetadataStructureLoaded = !!jobMetadataItem;
+
+  const jobs = updatedMetadataStructureLoaded 
+    ? useFindManyRecords({
+        objectNameSingular: 'job',
+      })
+    : {records:[]};
+
+  console.log("jobs", jobs);
 
   // Placeholder value for RecordIndexContext
   const recordIndexContextValue = {
@@ -206,10 +208,10 @@ export const Jobs = () => {
     setIsArxUploadJDModalOpen(true);
   };
 
-
-let showSearch = true;
-console.log("updatedMetadataStructureLoaded", updatedMetadataStructureLoaded)
-console.log("jobMetadataItem", jobMetadataItem)
+  let showSearch = true;
+  console.log("updatedMetadataStructureLoaded", updatedMetadataStructureLoaded)
+  console.log("jobMetadataItem", jobMetadataItem)
+  
   if (!updatedMetadataStructureLoaded) {
     console.log("showSearch to false", showSearch)
     showSearch = false
@@ -219,13 +221,36 @@ console.log("jobMetadataItem", jobMetadataItem)
 
   console.log("showSearch", showSearch)
   
-  // const { recordTableId, objectNameSingular, objectMetadataItem } =
-  //   useRecordTableContextOrThrow();
-  // console.log("recordTableId", recordTableId)
-  // console.log("objectNameSingular", objectNameSingular)
-  // console.log("objectMetadataItem", objectMetadataItem)
+  // If metadata isn't loaded yet, show a loading state
+  if (!updatedMetadataStructureLoaded) {
+    return (
+      <StyledPageContainer>
+        <RecordFieldValueSelectorContextProvider>
+          <StyledPageHeader title="Jobs" Icon={IconCheckbox}>
+            <Button title="Add Job" Icon={IconPlus} variant="primary" onClick={handleEngagement} />
+            <StyledAddButtonWrapper>
+              <PageAddChatButton />
+            </StyledAddButtonWrapper>
+          </StyledPageHeader>
+          <StyledPageBody>
+            <AnimatedPlaceholderEmptyContainer>
+              <AnimatedPlaceholder type="noRecord" />
+              <AnimatedPlaceholderEmptyTextContainer>
+                <AnimatedPlaceholderEmptyTitle>
+                  Loading your Recruiter AI Models
+                </AnimatedPlaceholderEmptyTitle>
+                <AnimatedPlaceholderEmptySubTitle>
+                  Your AI powered models will be ready in 10 minutes. We will notify you when they are ready.
+                </AnimatedPlaceholderEmptySubTitle>
+              </AnimatedPlaceholderEmptyTextContainer>
+            </AnimatedPlaceholderEmptyContainer>
+          </StyledPageBody>
+        </RecordFieldValueSelectorContextProvider>
+      </StyledPageContainer>
+    );
+  }
 
-
+  // If metadata is loaded, render the full component with context providers
   return (
     <RecordTableContextProvider value={{
       recordTableId: 'jobs',
@@ -234,45 +259,40 @@ console.log("jobMetadataItem", jobMetadataItem)
       objectMetadataItem: jobMetadataItem as any,
       visibleTableColumns: [],
     }}>
+      <StyledPageContainer>
+        <RecordFieldValueSelectorContextProvider>
+          <StyledPageHeader title="Jobs" Icon={IconCheckbox}>
+            <Button title="Add Job" Icon={IconPlus} variant="primary" onClick={handleEngagement} />
+            <StyledAddButtonWrapper>
+              <PageAddChatButton />
+            </StyledAddButtonWrapper>
+          </StyledPageHeader>
+          <StyledPageBody>
+            <RecordIndexContextProvider value={recordIndexContextValue}>
+              <ViewComponentInstanceContext.Provider value={{ instanceId: recordIndexId }} >
+                <StyledTopBar
+                  leftComponent={ <StyledTabListContainer> </StyledTabListContainer> }
+                  handleVideoInterviewEdit={handleVideoInterviewEdit}
+                  handleEnrichment={handleEnrichment}
+                  handleEngagement={handleEngagement}
+                  showEnrichment={true}
+                  showVideoInterviewEdit={true}
+                  showEngagement={true}
+                  showSearch={showSearch}
+                  rightComponent={
+                    <StyledRightSection>
+                      <ObjectFilterDropdownComponentInstanceContext.Provider value={{ instanceId: filterDropdownId }} >
+                        <ObjectFilterDropdownButton filterDropdownId={filterDropdownId} hotkeyScope={{ scope: FiltersHotkeyScope.ObjectFilterDropdownButton, }} />
+                      </ObjectFilterDropdownComponentInstanceContext.Provider>
+                      <ObjectSortDropdownComponentInstanceContext.Provider value={{ instanceId: recordIndexId }} >
+                        <ObjectSortDropdownButton hotkeyScope={{ scope: FiltersHotkeyScope.ObjectSortDropdownButton, }} />
+                      </ObjectSortDropdownComponentInstanceContext.Provider>
+                      <ChatOptionsDropdownButton />
+                    </StyledRightSection>
+                  }
+                />
 
-
-    <StyledPageContainer>
-      <RecordFieldValueSelectorContextProvider>
-        <StyledPageHeader title="Jobs" Icon={IconCheckbox}>
-          {/* <Button title="Filter" Icon={IconFilter} variant="secondary" onClick={() => {}} /> */}
-          <Button title="Add Job" Icon={IconPlus} variant="primary" onClick={handleEngagement} />
-          <StyledAddButtonWrapper>
-            <PageAddChatButton />
-          </StyledAddButtonWrapper>
-        </StyledPageHeader>
-        <StyledPageBody>
-          <RecordIndexContextProvider value={recordIndexContextValue}>
-            <ViewComponentInstanceContext.Provider value={{ instanceId: recordIndexId }} >
-              <StyledTopBar
-                leftComponent={ <StyledTabListContainer> </StyledTabListContainer> }
-                handleVideoInterviewEdit={handleVideoInterviewEdit}
-                handleEnrichment={handleEnrichment}
-                handleEngagement={handleEngagement}
-                showEnrichment={true}
-                showVideoInterviewEdit={true}
-                showEngagement={true}
-                showSearch={showSearch}
-                rightComponent={
-                  <StyledRightSection>
-                    <ObjectFilterDropdownComponentInstanceContext.Provider value={{ instanceId: filterDropdownId }} >
-                      <ObjectFilterDropdownButton filterDropdownId={filterDropdownId} hotkeyScope={{ scope: FiltersHotkeyScope.ObjectFilterDropdownButton, }} />
-                    </ObjectFilterDropdownComponentInstanceContext.Provider>
-                    <ObjectSortDropdownComponentInstanceContext.Provider value={{ instanceId: recordIndexId }} >
-                      <ObjectSortDropdownButton hotkeyScope={{ scope: FiltersHotkeyScope.ObjectSortDropdownButton, }} />
-                    </ObjectSortDropdownComponentInstanceContext.Provider>
-                    <ChatOptionsDropdownButton />
-                  </StyledRightSection>
-                }
-              />
-
-
-                {updatedMetadataStructureLoaded ? (
-                  <RecordTableEmptyStateDisplay
+                <RecordTableEmptyStateDisplay
                   buttonTitle="Add Job"
                   subTitle="No jobs found"
                   title="No jobs found"
@@ -280,49 +300,38 @@ console.log("jobMetadataItem", jobMetadataItem)
                   animatedPlaceholderType="noRecord"
                   onClick={handleEngagement}
                 />
-              ) : (
-                <RecordTableEmptyStateDisplayNoButton
-                  subTitle="Your AI powered models will be ready in 10 minutes. We will notify you when they are ready."
-                  title="Loading your Recruiter AI Models"
-                  animatedPlaceholderType="noRecord"
-                  onClick={() => {}}
-                />
-                )}
-
-
-            </ViewComponentInstanceContext.Provider>
-          </RecordIndexContextProvider>
-          {/* <ChatMain initialCandidateId={candidateId} /> */}
-          
-          {isArxEnrichModalOpen ? (
-            <ArxEnrichmentModal
-              objectNameSingular="job"
-              objectRecordId={candidateId}
-            />
-          ) : (
-            <></>
-          )}
-          
-          {isVideoInterviewModalOpen ? (
-            <InterviewCreationModal
-              objectNameSingular="job"
-              objectRecordId={candidateId}
-            />
-          ) : (
-            <></>
-          )}
-          
-          {isArxUploadJDModalOpen ? (
-            <ArxJDUploadModal
-              objectNameSingular="job"
-              objectRecordId={candidateId}
-            />
-          ) : (
-            <></>
-          )}
-        </StyledPageBody>
-      </RecordFieldValueSelectorContextProvider>
-    </StyledPageContainer>
+              </ViewComponentInstanceContext.Provider>
+            </RecordIndexContextProvider>
+            
+            {isArxEnrichModalOpen ? (
+              <ArxEnrichmentModal
+                objectNameSingular="job"
+                objectRecordId={candidateId}
+              />
+            ) : (
+              <></>
+            )}
+            
+            {isVideoInterviewModalOpen ? (
+              <InterviewCreationModal
+                objectNameSingular="job"
+                objectRecordId={candidateId}
+              />
+            ) : (
+              <></>
+            )}
+            
+            {isArxUploadJDModalOpen ? (
+              <ArxJDUploadModal
+                objectNameSingular="job"
+                objectRecordId={candidateId}
+              />
+            ) : (
+              <></>
+            )}
+          </StyledPageBody>
+        </RecordFieldValueSelectorContextProvider>
+      </StyledPageContainer>
     </RecordTableContextProvider>
   );
 };
