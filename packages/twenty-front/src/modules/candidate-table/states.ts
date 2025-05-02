@@ -15,6 +15,20 @@ export const jobIdAtom = atom<string>({
   key: 'jobIdAtom',
   default: '',
 });
+
+// Store the jobs data fetched from the API
+export const jobsState = atom<
+  Array<{
+    id: string;
+    name: string;
+    pathPosition?: string;
+    isActive: boolean;
+  }>
+>({
+  key: 'candidate-table/jobsState',
+  default: [],
+});
+
 export const tableStateAtom = atom<TableState>({
   key: 'tableStateAtom',
   default: {

@@ -5,6 +5,7 @@ import { useRecoilState, useSetRecoilState } from 'recoil';
 import { IconBriefcase } from 'twenty-ui';
 
 import { tokenPairState } from '@/auth/states/tokenPairState';
+import { jobsState } from '@/candidate-table/states';
 import { AppPath } from '@/types/AppPath';
 import { NavigationDrawerItem } from '@/ui/navigation/navigation-drawer/components/NavigationDrawerItem';
 import { NavigationDrawerItemGroup } from '@/ui/navigation/navigation-drawer/components/NavigationDrawerItemGroup';
@@ -30,7 +31,8 @@ const StyledSubItemLeftAdornment = styled.div`
 `;
 
 export const JobsNavigationDrawerItems = () => {
-  const [jobs, setJobs] = useState<Job[]>([]);
+  const [localJobs, setLocalJobs] = useState<Job[]>([]);
+  const [jobs, setJobs] = useRecoilState(jobsState);
   const [isLoading, setIsLoading] = useState(true);
   const [tokenPair] = useRecoilState(tokenPairState);
   const location = useLocation();
@@ -67,7 +69,8 @@ export const JobsNavigationDrawerItems = () => {
             }));
           
           console.log('This is the activeJobs:', activeJobs);
-          setJobs(activeJobs);
+          setLocalJobs(activeJobs);
+          setJobs(activeJobs); // Store jobs in Recoil state
         }
       } catch (error) {
         console.error('Error fetching jobs:', error);
@@ -77,7 +80,7 @@ export const JobsNavigationDrawerItems = () => {
     };
 
     fetchJobs();
-  }, [tokenPair]);
+  }, [tokenPair, setJobs]);
 
   const handleItemClick = () => {
     setNavigationDrawerExpandedMemorized(isNavigationDrawerExpanded);
@@ -85,7 +88,7 @@ export const JobsNavigationDrawerItems = () => {
     setNavigationMemorizedUrl(location.pathname + location.search);
   };
 
-  if (isLoading || jobs.length === 0) {
+  if (isLoading || localJobs.length === 0) {
     return null;
   }
 
@@ -99,14 +102,14 @@ export const JobsNavigationDrawerItems = () => {
           onClick={handleItemClick}
           Icon={IconBriefcase}
         />
-        {jobs.map((job, index) => (
+        {localJobs.map((job, index) => (
           <NavigationDrawerItem
             key={job.id}
             label={job.name}
             to={`/job/${job.id}`}
             onClick={handleItemClick}
             subItemState={getNavigationSubItemLeftAdornment({
-              arrayLength: jobs.length,
+              arrayLength: localJobs.length,
               index,
               selectedIndex: -1,
             })}

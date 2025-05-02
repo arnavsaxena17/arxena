@@ -109,7 +109,7 @@ export const TopBar = ({
   showSearch=false
 }: TopBarProps) => {
   const location = useLocation();
-  const isJobPage = location.pathname.includes('/job/');
+  const isJobPage = location.pathname.includes('/job/') || location.pathname.includes('/jobs/');
   const [searchQuery, setSearchQuery] = useRecoilState(chatSearchQueryState);
 
 

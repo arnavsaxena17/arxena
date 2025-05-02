@@ -3,9 +3,14 @@ import { TableContainer } from "@/activities/chats/components/chat-table/styled"
 // import { StyledTopBar } from "@/activities/chats/components/chat-window/ChatWindowStyles";
 import { ChatOptionsDropdownButton } from "@/activities/chats/components/ChatOptionsDropdownButton";
 import { PageAddChatButton } from "@/activities/chats/components/PageAddChatButton";
+import { ArxEnrichmentModal } from '@/arx-enrich/arxEnrichmentModal';
+import { useSelectedRecordForEnrichment } from "@/arx-enrich/hooks/useSelectedRecordForEnrichment";
+import { isArxEnrichModalOpenState } from "@/arx-enrich/states/arxEnrichModalOpenState";
+import { ArxJDUploadModal } from '@/arx-jd-upload/components/ArxJDUploadModal';
+import { isArxUploadJDModalOpenState } from "@/arx-jd-upload/states/arxUploadJDModalOpenState";
 import { DataTable } from "@/candidate-table/DataTable";
 import { HotTableActionMenu } from "@/candidate-table/HotTableActionMenu";
-import { jobIdAtom } from "@/candidate-table/states";
+import { jobIdAtom, jobsState } from "@/candidate-table/states";
 import { ContextStoreComponentInstanceContext } from "@/context-store/states/contexts/ContextStoreComponentInstanceContext";
 import { ObjectFilterDropdownButton } from "@/object-record/object-filter-dropdown/components/ObjectFilterDropdownButton";
 import { ObjectFilterDropdownComponentInstanceContext } from "@/object-record/object-filter-dropdown/states/contexts/ObjectFilterDropdownComponentInstanceContext";
@@ -19,11 +24,14 @@ import { PageBody } from '@/ui/layout/page/components/PageBody';
 import { PageContainer } from '@/ui/layout/page/components/PageContainer';
 import { PageHeader } from '@/ui/layout/page/components/PageHeader';
 import { TopBar } from "@/ui/layout/top-bar/components/TopBar";
+import { InterviewCreationModal } from '@/video-interview/interview-creation/InterviewCreationModal';
+import { isVideoInterviewModalOpenState } from "@/video-interview/interview-creation/states/videoInterviewModalState";
 import { ViewComponentInstanceContext } from "@/views/states/contexts/ViewComponentInstanceContext";
 import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
-import { useEffect, useRef, useState } from "react";
-import { useSetRecoilState } from "recoil";
+import { useEffect, useMemo, useRef } from "react";
+import { useLocation } from "react-router-dom";
+import { useRecoilState, useRecoilValue } from "recoil";
 import { Button, IconCheckbox, IconFilter, IconPlus } from 'twenty-ui';
 
 const StyledPageContainer = styled(PageContainer)`
@@ -67,18 +75,67 @@ const StyledRightSection = styled.div`
 `;
 
 export const JobPage: React.FC = () => {
-  const setJobId = useSetRecoilState(jobIdAtom);
-  const [jobId, setLocalJobId] = useState<string>('job-id');
+  const [jobId, setJobId] = useRecoilState(jobIdAtom);
+  const jobs = useRecoilValue(jobsState);
   const theme = useTheme();
+  const location = useLocation();
   const dataTableRef = useRef<{ refreshData: () => Promise<void> }>(null);
-  
-  // Extract jobId from URL on mount
+  const [isArxEnrichModalOpen, setIsArxEnrichModalOpen] = useRecoilState(isArxEnrichModalOpenState);
+  const { hasSelectedRecord, selectedRecordId } = useSelectedRecordForEnrichment();
+
+  const isVideoInterviewModalOpen = useRecoilValue(isVideoInterviewModalOpenState);
+  const [, setIsVideoInterviewModalOpen] = useRecoilState(isVideoInterviewModalOpenState);
+
+  const isArxUploadJDModalOpen = useRecoilValue(isArxUploadJDModalOpenState);
+  const [, setIsArxUploadJDModalOpen] = useRecoilState(isArxUploadJDModalOpenState);
+
+  // Find the current job based on jobId
+  const currentJob = useMemo(() => {
+    return jobs.find((job) => job.id === jobId);
+  }, [jobs, jobId]);
+
+  const handleEnrichment = () => {
+    if (!selectedRecordId) {
+      alert('Please select a candidate to enrich');
+      return;
+    }
+    setIsArxEnrichModalOpen(true);
+  };
+
+  const handleVideoInterviewEdit = () => {
+    if (!selectedRecordId) {
+      alert('Please select a candidate to create video interview');
+      return;
+    }
+    setIsVideoInterviewModalOpen(true);
+  };
+
+  const handleEngagement = () => {
+    if (!selectedRecordId) {
+      alert('Please select a candidate to upload JD');
+      return;
+    }
+    setIsArxUploadJDModalOpen(true);
+  };
+
+  // Extract jobId from URL whenever location changes
   useEffect(() => {
-    const path = window.location.pathname;
-    const extractedJobId = path.split('/job/')[1];
-    setJobId(extractedJobId);
-    setLocalJobId(extractedJobId);
-  }, [setJobId]);
+    const path = location.pathname;
+    const pathParts = path.split('/job/');
+    if (pathParts.length > 1) {
+      // Handle potential candidate ID in URL (e.g., /job/jobId/candidateId)
+      const remainingPath = pathParts[1];
+      const extractedJobId = remainingPath.split('/')[0];
+      
+      console.log('URL changed, extracted jobId:', extractedJobId);
+      setJobId(extractedJobId);
+      
+      // Refresh data when job changes
+      setTimeout(() => {
+        dataTableRef.current?.refreshData();
+      }, 100);
+    }
+  }, [location.pathname, setJobId]);
   
   const handleRefresh = () => {
     dataTableRef.current?.refreshData();
@@ -95,24 +152,12 @@ export const JobPage: React.FC = () => {
 
   console.log("JobPage rendering with jobId:", jobId);
   console.log("JobPage rendering with recordIndexContextValue:", recordIndexContextValue);
+  console.log("Current job found:", currentJob);
 
   return (
-    // <StyledPageContainer>
-    //   <StyledPageHeader title={'Job Candidates'} Icon={IconCheckbox}>
-    //     <Button title="Filter" Icon={IconFilter} variant="secondary" />
-    //     <Button title="Add Candidate" Icon={IconPlus} variant="primary" />
-    //     <NotificationsButton />
-    //   </StyledPageHeader>
-    //   <StyledPageBody>
-        
-    //     <DataTable jobId={jobId} />
-    //   </StyledPageBody>
-    // </StyledPageContainer>
-
-
     <StyledPageContainer>
       <RecordFieldValueSelectorContextProvider>
-        <StyledPageHeader title={''} Icon={IconCheckbox}>
+        <StyledPageHeader title={currentJob?.name || 'Job'} Icon={IconCheckbox}>
           <Button title="Filter" Icon={IconFilter} variant="secondary" />
           <Button title="Add Candidate" Icon={IconPlus} variant="primary" />
           <PageAddChatButton />
@@ -124,9 +169,9 @@ export const JobPage: React.FC = () => {
               <StyledTopBar
                 leftComponent={<StyledTabListContainer />}
                 handleRefresh={handleRefresh}
-                // handleEnrichment={handleEnrichment}
-                // handleVideoInterviewEdit={handleVideoInterviewEdit}
-                // handleEngagement={handleEngagement}
+                handleEnrichment={handleEnrichment}
+                handleVideoInterviewEdit={handleVideoInterviewEdit}
+                handleEngagement={handleEngagement}
                 showRefetch={true}
                 showEnrichment={true}
                 showVideoInterviewEdit={true}
@@ -173,37 +218,35 @@ export const JobPage: React.FC = () => {
               </div>
             </ActionMenuComponentInstanceContext.Provider>
           </ContextStoreComponentInstanceContext.Provider>
-          {/*           
+
           {isArxEnrichModalOpen ? (
             <ArxEnrichmentModal
               objectNameSingular="candidate"
-              objectRecordId={currentCandidateId || '0'}
+              objectRecordId={selectedRecordId || '0'}
             />
           ) : (
             <></>
           )}
-           */}
-          {/* {isVideoInterviewModalOpen ? (
+          
+          {isVideoInterviewModalOpen ? (
             <InterviewCreationModal
               objectNameSingular="candidate"
-              objectRecordId={currentCandidateId || '0'}
+              objectRecordId={selectedRecordId || '0'}
             />
           ) : (
             <></>
           )}
-           */}
-          {/* {isArxUploadJDModalOpen ? (
+          
+          {isArxUploadJDModalOpen ? (
             <ArxJDUploadModal
               objectNameSingular="candidate"
-              objectRecordId={currentCandidateId || '0'}
+              objectRecordId={selectedRecordId || '0'}
             />
           ) : (
             <></>
-          )} */}
+          )}
         </StyledPageBody>
       </RecordFieldValueSelectorContextProvider>
     </StyledPageContainer>
-
-
   );
 };
