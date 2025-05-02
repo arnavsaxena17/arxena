@@ -1,8 +1,9 @@
 import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
+import { Button, IconTrash } from 'twenty-ui';
 
+import { ParsedJD } from '../types/ParsedJD';
 import { ArxJDStepHeading } from './ArxJDStepHeading';
-import { ArxJDStepNavigation } from './ArxJDStepNavigation';
 import { UploadForm } from './UploadForm';
 
 const StyledContainer = styled.div`
@@ -37,6 +38,37 @@ const StyledListItem = styled.li`
   margin-bottom: ${({ theme }) => theme.spacing(1)};
 `;
 
+const StyledExistingFileSection = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing(2)};
+  margin-bottom: ${({ theme }) => theme.spacing(4)};
+  padding: ${({ theme }) => theme.spacing(3)};
+  border: 1px solid ${({ theme }) => theme.border.color.medium};
+  border-radius: ${({ theme }) => theme.border.radius.md};
+`;
+
+const StyledFileInfo = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+`;
+
+const StyledFileName = styled.div`
+  font-weight: ${({ theme }) => theme.font.weight.medium};
+  color: ${({ theme }) => theme.font.color.primary};
+`;
+
+const StyledFileActions = styled.div`
+  display: flex;
+  gap: ${({ theme }) => theme.spacing(2)};
+`;
+
+const StyledNextButton = styled(Button)`
+  margin-top: ${({ theme }) => theme.spacing(4)};
+  align-self: flex-end;
+`;
+
 type ArxJDUploadStepProps = {
   getRootProps: () => Record<string, any>;
   getInputProps: () => Record<string, any>;
@@ -45,6 +77,9 @@ type ArxJDUploadStepProps = {
   error: string | null;
   onNext?: () => void;
   canAdvance?: boolean;
+  isEditMode?: boolean;
+  parsedJD?: ParsedJD | null;
+  onRemoveFile?: () => void;
 };
 
 export const ArxJDUploadStep = ({
@@ -55,23 +90,60 @@ export const ArxJDUploadStep = ({
   error,
   onNext,
   canAdvance = false,
+  isEditMode = false,
+  parsedJD = null,
+  onRemoveFile,
 }: ArxJDUploadStepProps) => {
   const theme = useTheme();
+
+  // Helper to extract filename from job data
+  const getFileName = () => {
+    if (!parsedJD || !parsedJD.name) return null;
+    
+    // If we have a job code, use that as part of the displayed filename
+    const jobCode = parsedJD.jobCode ? `${parsedJD.jobCode} - ` : '';
+    return `${jobCode}${parsedJD.name}.pdf`;
+  };
+
+  // Show file info in both edit mode and when a file has been uploaded in create mode
+  const fileName = getFileName();
+  const hasFile = fileName !== null;
 
   return (
     <StyledContainer>
       <StyledContent>
         <ArxJDStepHeading
-          title="Upload Job Description"
-          description="Upload a job description file to get started"
+          title={isEditMode ? "Manage Job Description File" : "Upload Job Description"}
+          description={isEditMode 
+            ? "View, replace, or remove the current job description file" 
+            : "Upload a job description file to get started"}
           currentStep={1}
-          totalSteps={3}
+          totalSteps={isEditMode ? 4 : 5}
         />
+
+        {hasFile && (
+          <StyledExistingFileSection>
+            <h3>{isEditMode ? "Current Job Description File" : "Uploaded Job Description File"}</h3>
+            <StyledFileInfo>
+              <StyledFileName>{fileName}</StyledFileName>
+              <StyledFileActions>
+                <Button
+                  variant="secondary"
+                  accent="danger"
+                  title="Remove"
+                  Icon={IconTrash}
+                  onClick={onRemoveFile}
+                />
+              </StyledFileActions>
+            </StyledFileInfo>
+          </StyledExistingFileSection>
+        )}
 
         <StyledInstructions>
           <p>
-            Please upload a job description file to begin. We support the
-            following formats:
+            {hasFile
+              ? `You can ${isEditMode ? "replace" : "change"} the ${isEditMode ? "current" : "uploaded"} job description by uploading a new file:` 
+              : "Please upload a job description file to begin. We support the following formats:"}
           </p>
           <StyledList>
             <StyledListItem>PDF (.pdf)</StyledListItem>
@@ -81,6 +153,7 @@ export const ArxJDUploadStep = ({
           <p>Maximum file size: 10MB</p>
         </StyledInstructions>
 
+        {/* Only show the upload form if no file is uploaded or if a file is present but user may want to replace it */}
         <UploadForm
           getRootProps={getRootProps}
           getInputProps={getInputProps}
@@ -88,14 +161,20 @@ export const ArxJDUploadStep = ({
           isUploading={isUploading}
           error={error}
           theme={theme}
+          uploadButtonLabel={hasFile ? "Replace File" : "Upload File"}
         />
+
+        {/* Add Next button when file is uploaded in non-edit mode */}
+        {hasFile && !isEditMode && onNext && (
+          <StyledNextButton
+            variant="primary"
+            title="Continue to Job Details"
+            onClick={onNext}
+          >
+            Continue to Job Details
+          </StyledNextButton>
+        )}
       </StyledContent>
-      <ArxJDStepNavigation
-        onNext={onNext}
-        nextLabel="Continue"
-        isNextDisabled={!canAdvance}
-        showBackButton={false}
-      />
     </StyledContainer>
   );
 };

@@ -67,6 +67,7 @@ export type ArxJDStepperContainerProps = FormComponentProps & {
   onClose: () => void;
   title: string;
   onRecruiterInfoChange?: (recruiterDetails: RecruiterDetails) => void;
+  isEditMode?: boolean;
 };
 
 export const ArxJDStepperContainer: React.FC<ArxJDStepperContainerProps> = ({
@@ -84,25 +85,46 @@ export const ArxJDStepperContainer: React.FC<ArxJDStepperContainerProps> = ({
   onClose,
   title,
   onRecruiterInfoChange,
+  isEditMode = false,
 }) => {
-  const { activeStep, nextStep, prevStep } = useArxJDFormStepper();
+  const { activeStep, nextStep, prevStep, setStep } = useArxJDFormStepper();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Make sure parsedJD is not null when rendering the stepper
-  if (!parsedJD) {
+  // In edit mode, if we're still loading job data, show a spinner
+  // This is different from the upload case because we want to stay in the stepper UI
+  if (isEditMode && !parsedJD && isUploading) {
+    return (
+      <ArxJDModalLayout
+        isOpen={isOpen}
+        onClose={onClose}
+        title={title}
+        navigation={null}
+      >
+        <StyledLoadingContainer>
+          <Loader />
+          <StyledLoadingMessage>Loading job details...</StyledLoadingMessage>
+        </StyledLoadingContainer>
+      </ArxJDModalLayout>
+    );
+  }
+
+  // When not in edit mode and parsedJD is null, we shouldn't show the stepper
+  if (!parsedJD && !isEditMode) {
     return null;
   }
 
   // Get the available steps based on selected chat flow options - memoized to prevent recalculation
   const availableSteps = useMemo(() => {
-    // Always start with Upload JD step
+    // Always include the UploadJD step, regardless of edit mode
+    // In edit mode, we'll show the current file with options to replace or remove it
     const steps = [ArxJDFormStepType.UploadJD];
 
-    // Only add other steps if we have a parsedJD (file uploaded)
-    if (parsedJD !== null) {
-      steps.push(ArxJDFormStepType.JobDetails);
-      steps.push(ArxJDFormStepType.ChatConfiguration);
+    // Add job details and chat config steps
+    steps.push(ArxJDFormStepType.JobDetails);
+    steps.push(ArxJDFormStepType.ChatConfiguration);
 
+    // Only proceed with other steps if we have a parsedJD
+    if (parsedJD) {
       // Add VideoInterview step if selected
       if (parsedJD.chatFlow.order.videoInterview) {
         steps.push(ArxJDFormStepType.VideoInterview);
@@ -141,8 +163,8 @@ export const ArxJDStepperContainer: React.FC<ArxJDStepperContainerProps> = ({
           // If there's no next step, but we should have one based on the configuration,
           // update the available steps and then navigate
           if (
-            parsedJD.chatFlow.order.videoInterview ||
-            parsedJD.chatFlow.order.meetingScheduling
+            parsedJD?.chatFlow.order.videoInterview ||
+            parsedJD?.chatFlow.order.meetingScheduling
           ) {
             // Force a re-render to update the available steps
             setParsedJD({...parsedJD});
@@ -168,7 +190,8 @@ export const ArxJDStepperContainer: React.FC<ArxJDStepperContainerProps> = ({
 
   // Memoize the navigation component to prevent re-renders
   const navigationComponent = useMemo(() => {
-    if (activeStep === 0 || isSubmitting) {
+    // Don't show navigation on first step (except in edit mode) or when submitting
+    if ((activeStep === 0 && !isEditMode) || isSubmitting) {
       return null;
     }
     
@@ -177,9 +200,10 @@ export const ArxJDStepperContainer: React.FC<ArxJDStepperContainerProps> = ({
         onNext={handleNext}
         onBack={handleBack}
         nextLabel={isLastStep ? 'Finish' : 'Next'}
+        disableBack={activeStep === 0} // Disable back button on first step in edit mode
       />
     );
-  }, [activeStep, handleBack, handleNext, isLastStep, isSubmitting]);
+  }, [activeStep, handleBack, handleNext, isLastStep, isSubmitting, isEditMode]);
 
   return (
     <ArxJDModalLayout
@@ -192,12 +216,14 @@ export const ArxJDStepperContainer: React.FC<ArxJDStepperContainerProps> = ({
         {isSubmitting ? (
           <StyledLoadingContainer>
             <Loader />
-            <StyledLoadingMessage>Creating job process...</StyledLoadingMessage>
+            <StyledLoadingMessage>
+              {isEditMode ? 'Updating job...' : 'Creating job process...'}
+            </StyledLoadingMessage>
           </StyledLoadingContainer>
         ) : (
           <>
             <StyledHeader>
-              <ArxJDStepBar activeStep={activeStep} parsedJD={parsedJD} />
+              <ArxJDStepBar activeStep={activeStep} parsedJD={parsedJD} isEditMode={isEditMode} />
             </StyledHeader>
             <StyledContent>
               <ArxJDFormStepper
@@ -212,6 +238,7 @@ export const ArxJDStepperContainer: React.FC<ArxJDStepperContainerProps> = ({
                 onCancel={onCancel}
                 onSubmit={onSubmit}
                 onRecruiterInfoChange={onRecruiterInfoChange}
+                isEditMode={isEditMode}
               />
             </StyledContent>
           </>

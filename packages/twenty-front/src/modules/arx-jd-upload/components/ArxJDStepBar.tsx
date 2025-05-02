@@ -73,14 +73,15 @@ const STEP_LABELS: Record<ArxJDFormStepType, string> = {
 export type ArxJDStepBarProps = {
   activeStep: number;
   parsedJD: ParsedJD | null;
+  isEditMode?: boolean;
 };
 
-export const ArxJDStepBar = ({ activeStep, parsedJD }: ArxJDStepBarProps) => {
+export const ArxJDStepBar = ({ activeStep, parsedJD, isEditMode = false }: ArxJDStepBarProps) => {
   const theme = useTheme();
 
   // Generate steps based on selected chat flow options
   const getAvailableSteps = () => {
-    // Always include the Upload JD step first
+    // Always include Upload JD step, regardless of edit mode
     const steps = [ArxJDFormStepType.UploadJD];
 
     // Add Job Details and Chat Configuration steps
@@ -132,6 +133,7 @@ export const ArxJDStepBar = ({ activeStep, parsedJD }: ArxJDStepBarProps) => {
   return (
     <StyledContainer>
       {availableSteps.map((stepType, index) => {
+        // We no longer need special handling for edit mode since we're including the upload step
         const isActive = index <= activeStep;
         const isNextStep = activeStep + 1 === index;
         const isLast = index === availableSteps.length - 1;

@@ -40,6 +40,7 @@ export type ArxJDFormStepperProps = FormComponentProps & {
   onCancel?: () => void;
   onSubmit?: () => void;
   onRecruiterInfoChange?: (recruiterDetails: RecruiterDetails) => void;
+  isEditMode?: boolean;
 };
 
 export const ArxJDFormStepper: React.FC<ArxJDFormStepperProps> = ({
@@ -54,37 +55,42 @@ export const ArxJDFormStepper: React.FC<ArxJDFormStepperProps> = ({
   onCancel,
   onSubmit,
   onRecruiterInfoChange,
+  isEditMode = false,
 }) => {
   const theme = useTheme();
-  const { activeStep, nextStep, prevStep, setStep, isFirstStep, isLastStep } =
+  const { activeStep, nextStep, prevStep, setStep, availableSteps, currentStepType, isFirstStep, isLastStep } =
     useArxJDFormStepper();
-
+  
   // Generate the available steps based on selected chat flow options
-  const getFormSteps = () => {
-    const steps = [ArxJDFormStepType.UploadJD];
+  const getCustomFormSteps = () => {
+    // In edit mode, skip the upload step
+    const customSteps = isEditMode 
+      ? [] 
+      : [ArxJDFormStepType.UploadJD];
+      
     if (parsedJD !== null) {
-      steps.push(ArxJDFormStepType.JobDetails);
-      steps.push(ArxJDFormStepType.ChatConfiguration);
+      customSteps.push(ArxJDFormStepType.JobDetails);
+      customSteps.push(ArxJDFormStepType.ChatConfiguration);
 
       if (parsedJD.chatFlow.order.videoInterview) {
-        steps.push(ArxJDFormStepType.VideoInterview);
+        customSteps.push(ArxJDFormStepType.VideoInterview);
       }
 
       if (parsedJD.chatFlow.order.meetingScheduling) {
-        steps.push(ArxJDFormStepType.MeetingScheduling);
+        customSteps.push(ArxJDFormStepType.MeetingScheduling);
       }
     }
-    return steps;
+    return customSteps;
   };
 
   // Get the actual steps based on the selected options
-  const availableSteps = getFormSteps();
+  const customAvailableSteps = getCustomFormSteps();
 
   // Adjust the step if needed (e.g., if a step was removed but we're on it)
   useEffect(() => {
     // Only check if parsedJD is not null
     if (parsedJD !== null) {
-      const currentSteps = availableSteps;
+      const currentSteps = customAvailableSteps;
       const currentStepType = currentSteps[activeStep];
 
       // If we're on a step that no longer exists, go to the last available step
@@ -130,44 +136,23 @@ export const ArxJDFormStepper: React.FC<ArxJDFormStepperProps> = ({
         }
       }
     }
-  }, [parsedJD, activeStep, setStep, availableSteps]);
+  }, [parsedJD, activeStep, setStep, customAvailableSteps]);
 
   // Automatically move to step 2 when parsedJD becomes available (after upload)
   // We use a ref to track if we've already auto-advanced, to prevent loops
   // eslint-disable-next-line @nx/workspace-no-state-useref
   const hasAutoAdvancedRef = useRef(false);
 
-  useEffect(() => {
-    // Only advance to next step if:
-    // 1. We have a non-null parsedJD
-    // 2. We're on the first step (Upload)
-    // 3. We haven't already auto-advanced for this parsedJD
-    if (parsedJD !== null && activeStep === 0 && !hasAutoAdvancedRef.current) {
-      console.log(
-        'Auto-advancing to job details step because parsedJD is available:',
-        parsedJD,
-      );
-      // Mark that we've auto-advanced to prevent loops
-      hasAutoAdvancedRef.current = true;
-      // Advance to the next step
-      nextStep();
-    }
-
-    // Reset the auto-advance flag when parsedJD becomes null again
-    // This allows the auto-advance to work the next time a JD is uploaded
-    if (parsedJD === null) {
-      hasAutoAdvancedRef.current = false;
-    }
-  }, [parsedJD, activeStep, nextStep]);
-
+  // Note: We're disabling auto-advancing here and will let the user 
+  // manually navigate to the next step using the Continue button
+  
   // Get current step info
   const currentStep = activeStep + 1;
-  const totalSteps = availableSteps.length;
-  const currentStepType = availableSteps[activeStep];
+  const totalSteps = customAvailableSteps.length;
 
   // Handle step navigation
   const handleNext = () => {
-    if (activeStep < availableSteps.length - 1) {
+    if (activeStep < customAvailableSteps.length - 1) {
       nextStep();
     } else if (onSubmit !== undefined) {
       onSubmit();
@@ -176,103 +161,126 @@ export const ArxJDFormStepper: React.FC<ArxJDFormStepperProps> = ({
 
   // Render the appropriate step content
   const renderStepContent = () => {
-    console.log('currentStepType::', currentStepType);
-    switch (currentStepType) {
-      case ArxJDFormStepType.UploadJD:
-        return (
-          <ArxJDUploadStep
-            getRootProps={getRootProps || (() => ({}))}
-            getInputProps={getInputProps || (() => ({}))}
-            isDragActive={isDragActive || false}
-            isUploading={isUploading}
-            error={error}
-            onNext={handleNext}
-            canAdvance={parsedJD !== null}
-          />
-        );
-
-      case ArxJDFormStepType.JobDetails:
-        return (
-          <StyledContentWrapper>
-            <ArxJDStepHeading
-              title="Job Details"
-              description="Review and edit the job details"
-              currentStep={currentStep}
-              totalSteps={totalSteps}
-            />
-            <JobDetailsForm 
-              parsedJD={parsedJD} 
-              setParsedJD={setParsedJD} 
-              onRecruiterInfoChange={onRecruiterInfoChange}
-            />
-          </StyledContentWrapper>
-        );
-
-      case ArxJDFormStepType.ChatConfiguration:
-        return (
-          <StyledContentWrapper>
-            <ArxJDStepHeading
-              title="Candidate Engagement Process"
-              description="Configure the engagement process and screening questions"
-              currentStep={currentStep}
-              totalSteps={totalSteps}
-            />
-            <ChatFlowSection parsedJD={parsedJD} setParsedJD={setParsedJD} />
-            <ChatQuestionsSection
-              parsedJD={parsedJD}
-              setParsedJD={setParsedJD}
-            />
-          </StyledContentWrapper>
-        );
-
-      case ArxJDFormStepType.VideoInterview:
-        return (
-          <StyledContentWrapper>
-            <ArxJDStepHeading
-              title="Video Interview"
-              description="Configure video interview questions"
-              currentStep={currentStep}
-              totalSteps={totalSteps}
-            />
-            <VideoQuestionsSection
-              parsedJD={parsedJD}
-              setParsedJD={setParsedJD}
-            />
-          </StyledContentWrapper>
-        );
-
-      case ArxJDFormStepType.MeetingScheduling:
-        return (
-          <StyledContentWrapper>
-            <ArxJDStepHeading
-              title="Meeting Scheduling"
-              description="Configure meeting scheduling options"
-              currentStep={currentStep}
-              totalSteps={totalSteps}
-            />
-            <MeetingSchedulingSection
-              parsedJD={parsedJD}
-              setParsedJD={setParsedJD}
-            />
-          </StyledContentWrapper>
-        );
-
-      default:
-        return null;
+    // If we're in edit mode and no parsedJD yet, show loading
+    if (isEditMode && !parsedJD) {
+      return (
+        <StyledContentWrapper>
+          <div style={{ textAlign: 'center', padding: '2rem' }}>
+            Loading job details...
+          </div>
+        </StyledContentWrapper>
+      );
     }
-  };
+    
+    // Use activeStep to determine which component to render
+    if (activeStep === 0) {
+      return (
+        <ArxJDUploadStep
+          getRootProps={getRootProps || (() => ({}))}
+          getInputProps={getInputProps || (() => ({}))}
+          isDragActive={isDragActive || false}
+          isUploading={isUploading}
+          error={error}
+          onNext={handleNext}
+          canAdvance={parsedJD !== null}
+          isEditMode={isEditMode}
+          parsedJD={parsedJD}
+          onRemoveFile={() => {
+            // Handle file removal
+            if (handleFileUpload && onCancel) {
+              // In edit mode, we can't set parsedJD to null, so create a blank one
+              if (isEditMode && parsedJD) {
+                // Create a blank version but preserve the ID
+                const blankJD = {
+                  ...parsedJD,
+                  name: '',
+                  description: '',
+                  jobLocation: '',
+                  salaryBracket: '',
+                };
+                setParsedJD(blankJD);
+              }
+              
+              // Notify parent that file was removed
+              onCancel();
+            }
+          }}
+        />
+      );
+    }
+    else if (activeStep === 1) {
+      return (
+        <StyledContentWrapper>
+          <ArxJDStepHeading
+            title="Job Details"
+            description="Review and edit the job details"
+            currentStep={currentStep}
+            totalSteps={totalSteps}
+          />
+          <JobDetailsForm 
+            parsedJD={parsedJD} 
+            setParsedJD={setParsedJD} 
+            onRecruiterInfoChange={onRecruiterInfoChange}
+          />
+        </StyledContentWrapper>
+      );
+    }
+    else if (activeStep === 2) {
+      return (
+        <StyledContentWrapper>
+          <ArxJDStepHeading
+            title="Candidate Engagement Process"
+            description="Configure the engagement process and screening questions"
+            currentStep={currentStep}
+            totalSteps={totalSteps}
+          />
+          <ChatFlowSection parsedJD={parsedJD} setParsedJD={setParsedJD} />
+          <ChatQuestionsSection
+            parsedJD={parsedJD}
+            setParsedJD={setParsedJD}
+          />
+        </StyledContentWrapper>
+      );
+    }
+    else if (activeStep === 3) {
+      return (
+        <StyledContentWrapper>
+          <ArxJDStepHeading
+            title="Video Interview"
+            description="Configure video interview questions"
+            currentStep={currentStep}
+            totalSteps={totalSteps}
+          />
+          <VideoQuestionsSection
+            parsedJD={parsedJD}
+            setParsedJD={setParsedJD}
+          />
+        </StyledContentWrapper>
+      );
+    }
+    else if (activeStep === 4) {
+      return (
+        <StyledContentWrapper>
+          <ArxJDStepHeading
+            title="Meeting Scheduling"
+            description="Configure meeting scheduling options"
+            currentStep={currentStep}
+            totalSteps={totalSteps}
+          />
+          <MeetingSchedulingSection
+            parsedJD={parsedJD}
+            setParsedJD={setParsedJD}
+          />
+        </StyledContentWrapper>
+      );
+    }
 
-  // Render navigation buttons separately from content
-  const renderNavigation = () => {
-    // We no longer need to render navigation here
-    // as it's being handled by the ArxJDStepperContainer
     return null;
   };
 
   return (
     <StyledStepContent>
       {renderStepContent()}
-      {/* {renderNavigation()} */}
     </StyledStepContent>
   );
 };

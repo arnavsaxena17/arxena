@@ -122,9 +122,6 @@ export const TopBar = ({
     }
   };
 
-  console.log("showSearch", showSearch)
-  console.log("isJobPage", isJobPage)
-  console.log("!isJobPage && !showSearch &&::", !isJobPage && !showSearch)
   return (
     <StyledContainer className={className}>
       <StyledTopBar>

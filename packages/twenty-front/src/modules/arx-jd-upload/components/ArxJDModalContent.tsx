@@ -7,8 +7,8 @@ import { RecruiterDetails } from './JobDetailsForm';
 import { UploadForm } from './UploadForm';
 
 type ArxJDModalContentProps = {
-  parsedJD: ParsedJD | null;
-  setParsedJD: (jd: ParsedJD | null) => void;
+  parsedJD: ParsedJD;
+  setParsedJD: (jd: ParsedJD) => void;
   isUploading: boolean;
   error: string | null;
   getRootProps: any;
@@ -18,6 +18,7 @@ type ArxJDModalContentProps = {
   onSubmit: () => void;
   handleFileUpload?: (files: File[]) => Promise<void>;
   onRecruiterInfoChange?: (recruiterDetails: RecruiterDetails) => void;
+  isEditMode?: boolean;
 };
 
 export const ArxJDModalContent = ({
@@ -32,6 +33,7 @@ export const ArxJDModalContent = ({
   onSubmit,
   handleFileUpload,
   onRecruiterInfoChange,
+  isEditMode = false,
 }: ArxJDModalContentProps) => {
   const theme = useTheme();
 
@@ -41,13 +43,14 @@ export const ArxJDModalContent = ({
       <div style={{ textAlign: 'center' }}>
         <CircularProgressBar size={32} />
         <div style={{ marginTop: 16 }}>
-          Uploading & analyzing JD... GPT Calls can take upto 2 minutes
+          {isEditMode ? 'Loading job details...' : 'Uploading & analyzing JD... GPT Calls can take upto 2 minutes'}
         </div>
       </div>
     );
   }
 
   // If no parsedJD (initial state or error), show the upload form
+  // This applies to both create and edit modes
   if (parsedJD === null) {
     return (
       <UploadForm
@@ -57,11 +60,12 @@ export const ArxJDModalContent = ({
         isUploading={false} // Explicitly set to false since we're in the null parsedJD branch
         error={error}
         theme={theme}
+        uploadButtonLabel={isEditMode ? "Replace File" : "Upload File"}
       />
     );
   }
 
-  // Only show the stepper container when we have a valid parsedJD
+  // Either we have a valid parsedJD or we're in edit mode waiting for data
   return (
     <ArxJDStepperContainer
       parsedJD={parsedJD}
@@ -79,6 +83,7 @@ export const ArxJDModalContent = ({
       onClose={onCancel}
       title="Job Description"
       onRecruiterInfoChange={onRecruiterInfoChange}
+      isEditMode={isEditMode}
     />
   );
 };

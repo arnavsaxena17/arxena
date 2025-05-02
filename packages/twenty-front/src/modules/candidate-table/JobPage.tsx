@@ -178,20 +178,20 @@ export const JobPage: React.FC = () => {
                 showEngagement={true}
                 showSearch={true}
                 rightComponent={
-                  <StyledRightSection>
-                    <ObjectFilterDropdownComponentInstanceContext.Provider value={{ instanceId: jobId }}>
-                      <ObjectFilterDropdownButton 
-                        filterDropdownId={jobId} 
-                        hotkeyScope={{ scope: FiltersHotkeyScope.ObjectFilterDropdownButton }}
-                      />
-                    </ObjectFilterDropdownComponentInstanceContext.Provider>
-                    <ObjectSortDropdownComponentInstanceContext.Provider value={{ instanceId: jobId }}>
-                      <ObjectSortDropdownButton 
-                        hotkeyScope={{ scope: FiltersHotkeyScope.ObjectSortDropdownButton }}
-                      />
-                    </ObjectSortDropdownComponentInstanceContext.Provider>
-                    <ChatOptionsDropdownButton />
-                  </StyledRightSection>
+                <StyledRightSection>
+                  <ObjectFilterDropdownComponentInstanceContext.Provider value={{ instanceId: jobId }}>
+                    <ObjectFilterDropdownButton 
+                      filterDropdownId={jobId} 
+                      hotkeyScope={{ scope: FiltersHotkeyScope.ObjectFilterDropdownButton }}
+                    />
+                  </ObjectFilterDropdownComponentInstanceContext.Provider>
+                  <ObjectSortDropdownComponentInstanceContext.Provider value={{ instanceId: jobId }}>
+                    <ObjectSortDropdownButton 
+                      hotkeyScope={{ scope: FiltersHotkeyScope.ObjectSortDropdownButton }}
+                    />
+                  </ObjectSortDropdownComponentInstanceContext.Provider>
+                  <ChatOptionsDropdownButton />
+                </StyledRightSection>
                 }
               />
             </ViewComponentInstanceContext.Provider>

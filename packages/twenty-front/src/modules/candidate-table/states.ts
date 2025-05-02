@@ -12,8 +12,8 @@ export interface TableState {
   error: string | null;
 }
 export const jobIdAtom = atom<string>({
-  key: 'jobIdAtom',
-  default: '',
+  key: 'candidate-table/jobIdAtom',
+  default: 'job-id',
 });
 
 // Store the jobs data fetched from the API

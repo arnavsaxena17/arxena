@@ -25,6 +25,7 @@ type ArxJDStepNavigationProps = {
   isNextDisabled?: boolean;
   showBackButton?: boolean;
   showNextButton?: boolean;
+  disableBack?: boolean;
 };
 
 export const ArxJDStepNavigation = ({
@@ -34,16 +35,8 @@ export const ArxJDStepNavigation = ({
   isNextDisabled = false,
   showBackButton = true,
   showNextButton = true,
+  disableBack = false,
 }: ArxJDStepNavigationProps) => {
-  console.log('showNextButton::', showNextButton);
-  console.log('onNext::', onNext);
-
-  // if (nextLabel === 'Finish') {
-  //   showNextButton = false;
-  // }
-  // debugger;
-
-
   return (
     <StyledContainer>
       <StyledButtonContainer>
@@ -54,6 +47,7 @@ export const ArxJDStepNavigation = ({
             variant="secondary"
             Icon={IconArrowLeft}
             size="small"
+            disabled={disableBack}
           />
         )}
       </StyledButtonContainer>

@@ -11,41 +11,74 @@ const DEFAULT_VIDEO_QUESTIONS = [
   'Why are you interested in working with us?',
 ];
 
-export const createDefaultParsedJD = (
-  partialData: Partial<ParsedJD> = {},
-): ParsedJD => {
+type CreateDefaultParsedJDInput = Partial<ParsedJD>;
+
+export const createDefaultParsedJD = (input: CreateDefaultParsedJDInput = {}): ParsedJD => {
   return {
-    name: partialData.name || '',
-    description: partialData.description || '',
-    jobCode: partialData.jobCode || '',
-    jobLocation: partialData.jobLocation || '',
-    salaryBracket: partialData.salaryBracket || '',
-    isActive: partialData.isActive !== undefined ? partialData.isActive : true,
-    specificCriteria: partialData.specificCriteria || '',
-    pathPosition: partialData.pathPosition || '',
-    companyName: partialData.companyName,
-    companyId: partialData.companyId,
-    companyDetails: partialData.companyDetails,
-    id: partialData.id,
+    name: input.name || '',
+    description: input.description || '',
+    jobCode: input.jobCode || '',
+    jobLocation: input.jobLocation || '',
+    salaryBracket: input.salaryBracket || '',
+    isActive: input.isActive ?? true,
+    specificCriteria: input.specificCriteria || '',
+    pathPosition: input.pathPosition || '',
+    companyName: input.companyName || '',
+    companyId: input.companyId || '',
+    companyDetails: input.companyDetails || '',
+    id: input.id,
     chatFlow: {
       order: {
-        initialChat: true,
-        videoInterview: partialData.chatFlow?.order?.videoInterview || false,
-        meetingScheduling:
-          partialData.chatFlow?.order?.meetingScheduling || false,
+        initialChat: input.chatFlow?.order?.initialChat ?? true,
+        videoInterview: input.chatFlow?.order?.videoInterview ?? false,
+        meetingScheduling: input.chatFlow?.order?.meetingScheduling ?? false,
       },
-      questions: partialData.chatFlow?.questions?.length
-        ? partialData.chatFlow.questions
-        : DEFAULT_CHAT_QUESTIONS,
+      questions: input.chatFlow?.questions?.length ? input.chatFlow.questions : DEFAULT_CHAT_QUESTIONS,
     },
     videoInterview: {
-      questions: partialData.videoInterview?.questions?.length
-        ? partialData.videoInterview.questions
-        : DEFAULT_VIDEO_QUESTIONS,
+      questions: input.videoInterview?.questions?.length ? input.videoInterview.questions : DEFAULT_VIDEO_QUESTIONS,
     },
     meetingScheduling: {
-      meetingType: partialData.meetingScheduling?.meetingType || 'online',
-      availableDates: partialData.meetingScheduling?.availableDates || [],
+      meetingType: input.meetingScheduling?.meetingType || 'online',
+      availableDates: input.meetingScheduling?.availableDates || [],
     },
   };
 };
+
+
+
+export const blankParsedJD: ParsedJD = {
+  name: '',
+  description: '',
+  jobCode: '',
+  jobLocation: '',
+  salaryBracket: '',
+  isActive: true,
+  specificCriteria: '',
+  pathPosition: '',
+  companyName: '',
+  companyId: '',
+  companyDetails: '',
+  id: undefined,
+  chatFlow: {
+    order: {
+      initialChat: true,
+      videoInterview: false,
+      meetingScheduling: false,
+    },
+    questions: [
+      'What is your current and expected CTC?',
+      'Who do you report to, which functions report to you?',
+    ],
+  },
+  videoInterview: {
+    questions: [
+      'Please tell us about yourself',
+      'Why are you interested in working with us?',
+    ],
+  },
+  meetingScheduling: {
+    meetingType: 'online',
+    availableDates: [],
+  },
+}; 

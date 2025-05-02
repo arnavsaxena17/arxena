@@ -8,6 +8,7 @@ type UploadFormProps = {
   isUploading: boolean;
   error: string | null;
   theme: any;
+  uploadButtonLabel?: string;
 };
 
 export const UploadForm = ({
@@ -17,6 +18,7 @@ export const UploadForm = ({
   isUploading,
   error,
   theme,
+  uploadButtonLabel = "Upload File",
 }: UploadFormProps) => {
   const rootProps = getRootProps();
   const inputProps = getInputProps();
@@ -41,7 +43,7 @@ export const UploadForm = ({
         <p>Drop the JD file here...</p>
       ) : (
         <p>
-          Drag & drop a JD file here, or click to select one
+          Drag & drop a JD file here, or click to {uploadButtonLabel.toLowerCase()}
           <br />
           <small>Supported formats: PDF, DOC, DOCX (max 10MB)</small>
         </p>
