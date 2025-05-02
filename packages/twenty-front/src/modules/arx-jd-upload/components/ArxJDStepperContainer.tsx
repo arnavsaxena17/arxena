@@ -143,45 +143,17 @@ export const ArxJDStepperContainer: React.FC<ArxJDStepperContainerProps> = ({
 
   // Handle next button action
   const handleNext = useCallback(() => {
+    console.log('handleNext called, activeStep:', activeStep, 'isLastStep:', isLastStep);
+    
     if (isLastStep) {
+      console.log('This is the last step, submitting');
       setIsSubmitting(true);
       onSubmit && onSubmit();
     } else {
-      // Get the current step type
-      const currentStepType = availableSteps[activeStep];
-
-      // If we're on the chat configuration step, we need to determine the next step
-      // based on the selected options
-      if (currentStepType === ArxJDFormStepType.ChatConfiguration) {
-        // Find the index of the next available step
-        const nextStepIndex = activeStep + 1;
-
-        // If there's a next step available, go to it
-        if (nextStepIndex < availableSteps.length) {
-          nextStep();
-        } else {
-          // If there's no next step, but we should have one based on the configuration,
-          // update the available steps and then navigate
-          if (
-            parsedJD?.chatFlow.order.videoInterview ||
-            parsedJD?.chatFlow.order.meetingScheduling
-          ) {
-            // Force a re-render to update the available steps
-            setParsedJD({...parsedJD});
-            // Then navigate to the next step
-            nextStep();
-          } else {
-            // If no additional steps are selected, treat as last step
-            setIsSubmitting(true);
-            onSubmit && onSubmit();
-          }
-        }
-      } else {
-        // For other steps, just go to the next one
-        nextStep();
-      }
+      console.log('Moving to next step');
+      nextStep();
     }
-  }, [activeStep, availableSteps, isLastStep, nextStep, onSubmit, parsedJD, setParsedJD]);
+  }, [activeStep, isLastStep, nextStep, onSubmit]);
 
   // Handle back button action
   const handleBack = useCallback(() => {
@@ -195,10 +167,18 @@ export const ArxJDStepperContainer: React.FC<ArxJDStepperContainerProps> = ({
       return null;
     }
     
+    console.log('Creating navigation component for step:', activeStep, 'isLastStep:', isLastStep);
+    
     return (
       <ArxJDStepNavigation
-        onNext={handleNext}
-        onBack={handleBack}
+        onNext={() => {
+          console.log('Next button clicked, calling handleNext');
+          handleNext();
+        }}
+        onBack={() => {
+          console.log('Back button clicked, calling handleBack');
+          handleBack();
+        }}
         nextLabel={isLastStep ? 'Finish' : 'Next'}
         disableBack={activeStep === 0} // Disable back button on first step in edit mode
       />

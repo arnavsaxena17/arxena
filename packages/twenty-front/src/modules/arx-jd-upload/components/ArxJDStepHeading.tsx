@@ -17,6 +17,12 @@ const StyledDescription = styled.p`
   line-height: 1.5;
 `;
 
+const StyledStepIndicator = styled.span`
+  font-size: ${({ theme }) => theme.font.size.md};
+  color: ${({ theme }) => theme.font.color.tertiary};
+  font-weight: ${({ theme }) => theme.font.weight.regular};
+`;
+
 export type ArxJDStepHeadingProps = {
   title: string;
   description?: string;
@@ -30,14 +36,17 @@ export const ArxJDStepHeading = ({
   currentStep,
   totalSteps,
 }: ArxJDStepHeadingProps) => {
+  // Only show step indicator if both currentStep and totalSteps are provided and valid
   const stepIndicator =
-    currentStep && totalSteps ? ` (Step ${currentStep} of ${totalSteps})` : '';
+    currentStep && totalSteps && currentStep > 0 && totalSteps > 0
+      ? ` (Step ${currentStep} of ${totalSteps})`
+      : '';
 
   return (
     <StyledContainer>
       <StyledTitle>
         {title}
-        {stepIndicator}
+        {stepIndicator && <StyledStepIndicator>{stepIndicator}</StyledStepIndicator>}
       </StyledTitle>
       {description && <StyledDescription>{description}</StyledDescription>}
     </StyledContainer>

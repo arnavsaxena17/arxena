@@ -31,6 +31,9 @@ export const ArxJDModalLayout = ({
   footer,
   navigation,
 }: ArxJDModalLayoutProps) => {
+  // Debug log
+  console.log('ArxJDModalLayout rendering with navigation:', !!navigation);
+  
   if (!isOpen) {
     return null;
   }
@@ -92,7 +95,11 @@ export const ArxJDModalLayout = ({
               <StyledScrollableContent>
                 <StyledBody>{children}</StyledBody>
               </StyledScrollableContent>
-              {navigation && <StyledFooter>{navigation}</StyledFooter>}
+              {navigation && (
+                <StyledFooter onClick={(e) => e.stopPropagation()}>
+                  {navigation}
+                </StyledFooter>
+              )}
               {footer && <StyledFooter>{footer}</StyledFooter>}
             </StyledModalContent>
           </StyledModalContainer>

@@ -37,6 +37,13 @@ export const ArxJDModalContent = ({
 }: ArxJDModalContentProps) => {
   const theme = useTheme();
 
+  console.log('ArxJDModalContent rendering with:', {
+    parsedJDExists: parsedJD !== null,
+    isUploading,
+    error,
+    isEditMode
+  });
+
   // Show loading state when uploading a file
   if (isUploading === true) {
     return (

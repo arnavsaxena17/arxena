@@ -15,18 +15,20 @@ import { VideoQuestionsSection } from './VideoQuestionsSection';
 type ParsedJDFormProps = {
   parsedJD: ParsedJD;
   setParsedJD: (jd: ParsedJD) => void;
+  onRecruiterInfoChange?: any;
 };
 
 // Main Component that uses all the subcomponents in a vertical layout
 export const ParsedJDForm: React.FC<ParsedJDFormProps> = ({
   parsedJD,
   setParsedJD,
+  onRecruiterInfoChange,
 }) => {
   return (
     <StyledParsedContent>
       <StyledFormGrid>
         {/* Job Details */}
-        <JobDetailsForm parsedJD={parsedJD} setParsedJD={setParsedJD} />
+        <JobDetailsForm parsedJD={parsedJD} setParsedJD={setParsedJD} onRecruiterInfoChange={onRecruiterInfoChange} />
 
         <StyledSectionDivider />
 

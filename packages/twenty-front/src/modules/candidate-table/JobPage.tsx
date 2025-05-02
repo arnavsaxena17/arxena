@@ -221,7 +221,7 @@ export const JobPage: React.FC = () => {
 
           {isArxEnrichModalOpen ? (
             <ArxEnrichmentModal
-              objectNameSingular="candidate"
+              objectNameSingular="job"
               objectRecordId={selectedRecordId || '0'}
             />
           ) : (
@@ -230,7 +230,7 @@ export const JobPage: React.FC = () => {
           
           {isVideoInterviewModalOpen ? (
             <InterviewCreationModal
-              objectNameSingular="candidate"
+              objectNameSingular="job"
               objectRecordId={selectedRecordId || '0'}
             />
           ) : (
@@ -239,8 +239,8 @@ export const JobPage: React.FC = () => {
           
           {isArxUploadJDModalOpen ? (
             <ArxJDUploadModal
-              objectNameSingular="candidate"
-              objectRecordId={selectedRecordId || '0'}
+              objectNameSingular="job"
+              objectRecordId={jobId || '0'}
             />
           ) : (
             <></>

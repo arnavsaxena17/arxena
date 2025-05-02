@@ -61,12 +61,14 @@ export const ArxJDFormStepper: React.FC<ArxJDFormStepperProps> = ({
   const { activeStep, nextStep, prevStep, setStep, availableSteps, currentStepType, isFirstStep, isLastStep } =
     useArxJDFormStepper();
   
+  // For debugging
+  console.log('ArxJDFormStepper rendering with activeStep:', activeStep, 'currentStepType:', currentStepType);
+  
   // Generate the available steps based on selected chat flow options
   const getCustomFormSteps = () => {
-    // In edit mode, skip the upload step
-    const customSteps = isEditMode 
-      ? [] 
-      : [ArxJDFormStepType.UploadJD];
+    // Always include the upload step, regardless of edit mode
+    // This ensures consistency with ArxJDStepBar and ArxJDStepperContainer
+    const customSteps = [ArxJDFormStepType.UploadJD];
       
     if (parsedJD !== null) {
       customSteps.push(ArxJDFormStepType.JobDetails);
@@ -85,6 +87,22 @@ export const ArxJDFormStepper: React.FC<ArxJDFormStepperProps> = ({
 
   // Get the actual steps based on the selected options
   const customAvailableSteps = getCustomFormSteps();
+  
+  // Get current step info - for child components
+  const currentStep = activeStep + 1;
+  const totalSteps = customAvailableSteps.length;
+  
+  console.log('ArxJDFormStepper - customAvailableSteps:', customAvailableSteps, 'currentStep:', currentStep, 'totalSteps:', totalSteps);
+  
+  // Recalculate steps whenever chat flow order changes
+  useEffect(() => {
+    // This effect will re-execute when parsedJD or its chatFlow settings change
+    // No need to do anything here, as customAvailableSteps will be recalculated
+    // on every render
+  }, [
+    parsedJD?.chatFlow?.order?.videoInterview,
+    parsedJD?.chatFlow?.order?.meetingScheduling
+  ]);
 
   // Adjust the step if needed (e.g., if a step was removed but we're on it)
   useEffect(() => {
@@ -146,10 +164,6 @@ export const ArxJDFormStepper: React.FC<ArxJDFormStepperProps> = ({
   // Note: We're disabling auto-advancing here and will let the user 
   // manually navigate to the next step using the Continue button
   
-  // Get current step info
-  const currentStep = activeStep + 1;
-  const totalSteps = customAvailableSteps.length;
-
   // Handle step navigation
   const handleNext = () => {
     if (activeStep < customAvailableSteps.length - 1) {
@@ -172,6 +186,9 @@ export const ArxJDFormStepper: React.FC<ArxJDFormStepperProps> = ({
       );
     }
     
+    // For debugging
+    console.log('Rendering step content for step:', activeStep, 'of type:', currentStepType);
+    
     // Use activeStep to determine which component to render
     if (activeStep === 0) {
       return (
@@ -182,27 +199,34 @@ export const ArxJDFormStepper: React.FC<ArxJDFormStepperProps> = ({
           isUploading={isUploading}
           error={error}
           onNext={handleNext}
-          canAdvance={parsedJD !== null}
+          canAdvance={parsedJD !== null && parsedJD.name !== ''}
           isEditMode={isEditMode}
           parsedJD={parsedJD}
+          currentStep={currentStep}
+          totalSteps={totalSteps}
           onRemoveFile={() => {
             // Handle file removal
-            if (handleFileUpload && onCancel) {
+            if (handleFileUpload) {
               // In edit mode, we can't set parsedJD to null, so create a blank one
               if (isEditMode && parsedJD) {
-                // Create a blank version but preserve the ID
+                // Create a blank version but preserve the ID and other essential properties
                 const blankJD = {
                   ...parsedJD,
                   name: '',
                   description: '',
                   jobLocation: '',
                   salaryBracket: '',
+                  specificCriteria: '',
+                  pathPosition: '',
+                  companyName: '',
+                  companyDetails: '',
+                  // Preserve ID and all chat flow configurations, videoInterview, and meetingScheduling settings
                 };
                 setParsedJD(blankJD);
+              } else if (!isEditMode && onCancel) {
+                // Only call onCancel (which closes the modal) in non-edit mode
+                onCancel();
               }
-              
-              // Notify parent that file was removed
-              onCancel();
             }
           }}
         />

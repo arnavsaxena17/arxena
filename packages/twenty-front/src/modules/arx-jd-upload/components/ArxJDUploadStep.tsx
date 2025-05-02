@@ -80,6 +80,8 @@ type ArxJDUploadStepProps = {
   isEditMode?: boolean;
   parsedJD?: ParsedJD | null;
   onRemoveFile?: () => void;
+  totalSteps?: number;
+  currentStep?: number;
 };
 
 export const ArxJDUploadStep = ({
@@ -93,12 +95,15 @@ export const ArxJDUploadStep = ({
   isEditMode = false,
   parsedJD = null,
   onRemoveFile,
+  totalSteps,
+  currentStep = 1,
 }: ArxJDUploadStepProps) => {
   const theme = useTheme();
 
   // Helper to extract filename from job data
   const getFileName = () => {
-    if (!parsedJD || !parsedJD.name) return null;
+    // Return null if parsedJD is null or name is empty
+    if (!parsedJD || !parsedJD.name || parsedJD.name.trim() === '') return null;
     
     // If we have a job code, use that as part of the displayed filename
     const jobCode = parsedJD.jobCode ? `${parsedJD.jobCode} - ` : '';
@@ -117,8 +122,8 @@ export const ArxJDUploadStep = ({
           description={isEditMode 
             ? "View, replace, or remove the current job description file" 
             : "Upload a job description file to get started"}
-          currentStep={1}
-          totalSteps={isEditMode ? 4 : 5}
+          currentStep={currentStep}
+          totalSteps={totalSteps}
         />
 
         {hasFile && (

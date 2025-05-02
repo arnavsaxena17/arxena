@@ -162,11 +162,15 @@ export const useArxJDUpload = (objectNameSingular: string) => {
 
       try {
         const jobCode = file.name.split('.')[0].replace(/ /g, '-').slice(0, 10);
+        // Ensure we're creating a job record, not a candidate record
+        if (objectNameSingular !== 'job') {
+          throw new Error('Cannot upload JD for non-job object');
+        }
+        
         const createdJob = await createOneRecord({
           name: file.name.split('.')[0],
           jobCode: jobCode,
-          chatFlowOrder: ['startChat'],
-
+          // Remove chatFlowOrder as it's causing issues - we'll set it later
         });
         
         setUploadedJD({
@@ -179,6 +183,19 @@ export const useArxJDUpload = (objectNameSingular: string) => {
         
         if (createdJob?.id === undefined || createdJob?.id === null) {
           throw new Error('Failed to create job record');
+        }
+
+        // Set chatFlowOrder after job creation
+        try {
+          await updateOneRecord({
+            idToUpdate: createdJob.id,
+            updateOneRecordInput: {
+              chatFlowOrder: ['startChat'],
+            },
+          });
+        } catch (chatFlowError) {
+          console.error("Couldn't set chatFlowOrder", chatFlowError);
+          // Continue with process even if setting chatFlowOrder fails
         }
 
         // Send job to Arxena after creation

@@ -105,6 +105,15 @@ export const ArxJDStepBar = ({ activeStep, parsedJD, isEditMode = false }: ArxJD
   };
 
   const availableSteps = getAvailableSteps();
+  
+  // Debug log
+  console.log('ArxJDStepBar rendering with:', {
+    activeStep,
+    availableSteps,
+    parsedJDExists: parsedJD !== null,
+    videoInterviewEnabled: parsedJD?.chatFlow?.order?.videoInterview,
+    meetingSchedulingEnabled: parsedJD?.chatFlow?.order?.meetingScheduling
+  });
 
   const variantsCircle = {
     active: {

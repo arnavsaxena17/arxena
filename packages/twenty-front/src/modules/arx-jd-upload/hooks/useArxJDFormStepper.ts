@@ -26,24 +26,34 @@ export const useArxJDFormStepper = (initialStep = 0) => {
   const FORM_STEPS = DEFAULT_FORM_STEPS;
 
   const nextStep = useCallback(() => {
-    setArxJDFormStepper((prev: ArxJDFormStepperState) => ({
-      ...prev,
-      activeStep: Math.min(prev.activeStep + 1, FORM_STEPS.length - 1),
-    }));
-  }, [setArxJDFormStepper]);
+    console.log('nextStep called, current activeStep:', activeStep);
+    setArxJDFormStepper((prev: ArxJDFormStepperState) => {
+      const newActiveStep = Math.min(prev.activeStep + 1, DEFAULT_FORM_STEPS.length - 1);
+      console.log('Setting activeStep from', prev.activeStep, 'to', newActiveStep);
+      return {
+        ...prev,
+        activeStep: newActiveStep,
+      };
+    });
+  }, [activeStep, setArxJDFormStepper]);
 
   const prevStep = useCallback(() => {
-    setArxJDFormStepper((prev: ArxJDFormStepperState) => ({
-      ...prev,
-      activeStep: Math.max(prev.activeStep - 1, 0),
-    }));
-  }, [setArxJDFormStepper]);
+    console.log('prevStep called, current activeStep:', activeStep);
+    setArxJDFormStepper((prev: ArxJDFormStepperState) => {
+      const newActiveStep = Math.max(prev.activeStep - 1, 0);
+      console.log('Setting activeStep from', prev.activeStep, 'to', newActiveStep);
+      return {
+        ...prev,
+        activeStep: newActiveStep,
+      };
+    });
+  }, [activeStep, setArxJDFormStepper]);
 
   const setStep = useCallback(
     (step: number) => {
       setArxJDFormStepper((prev: ArxJDFormStepperState) => ({
         ...prev,
-        activeStep: Math.max(0, Math.min(step, FORM_STEPS.length - 1)),
+        activeStep: Math.max(0, Math.min(step, DEFAULT_FORM_STEPS.length - 1)),
       }));
     },
     [setArxJDFormStepper],
@@ -62,9 +72,9 @@ export const useArxJDFormStepper = (initialStep = 0) => {
     [activeStep, initialStep, setArxJDFormStepper],
   );
 
-  // Calculate current step and total steps for display
+  // Calculate current step only - totalSteps should be determined by the component
+  // based on the actual flow configuration
   const currentStep = activeStep + 1;
-  const totalSteps = FORM_STEPS.length;
 
   return {
     nextStep,
@@ -73,10 +83,9 @@ export const useArxJDFormStepper = (initialStep = 0) => {
     reset,
     activeStep,
     currentStep,
-    totalSteps,
-    availableSteps: FORM_STEPS,
-    currentStepType: FORM_STEPS[activeStep],
+    availableSteps: DEFAULT_FORM_STEPS,
+    currentStepType: DEFAULT_FORM_STEPS[activeStep],
     isFirstStep: activeStep === 0,
-    isLastStep: activeStep === FORM_STEPS.length - 1,
+    isLastStep: activeStep === DEFAULT_FORM_STEPS.length - 1,
   };
 };
