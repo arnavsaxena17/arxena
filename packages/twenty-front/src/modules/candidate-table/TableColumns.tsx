@@ -20,7 +20,19 @@ const excludedFields = [
   'id', 'checkbox', 'name', 'candidateFieldValues','token', 'personId','jobTitle', 'firstName', 'searchId','phoneNumbers','filterQueryHash','mayAlsoKnow','languages','englishLevel','baseQueryHash','creationDate','apnaSearchToken','lastName', 'uniqueKeyString', 'emailAddress', 'industries', 'profiles', 'jobProcess', 'locations','experience', 'experienceStats', 'lastUpdated','education','interests','skills','dataSources','allNumbers','jobName','uploadId','allMails','socialprofiles','tables','created','middleName','middleInitial','creationSource','contactDetails','queryId','socialProfiles','updatedAt'
 ];
 
-export const TableColumns = ({ processedData, selectAllChecked, selectAllIndeterminate, onSelectAllChange }: { processedData: any[], selectAllChecked?: boolean, selectAllIndeterminate?: boolean, onSelectAllChange?: (checked: boolean) => void }) => {
+export const TableColumns = ({ 
+  processedData, 
+  selectAllChecked, 
+  selectAllIndeterminate, 
+  onSelectAllChange,
+  unreadMessagesCounts = {}
+}: { 
+  processedData: any[], 
+  selectAllChecked?: boolean, 
+  selectAllIndeterminate?: boolean, 
+  onSelectAllChange?: (checked: boolean) => void,
+  unreadMessagesCounts?: Record<string, number>
+}) => {
   if (!processedData.length) return [];
     
   // Collect all unique keys from all entries
@@ -68,21 +80,62 @@ export const TableColumns = ({ processedData, selectAllChecked, selectAllIndeter
     return td;
   };
 
+  // Name renderer with unread message count
+  const nameRenderer: ColumnRenderer = (instance, td, row, column, prop, value) => {
+    td.innerHTML = '';
+    
+    // Cast rowData to any to safely access properties
+    const rowData: any = instance.getSourceDataAtRow(row);
+    const candidateId = rowData && typeof rowData === 'object' && 'id' in rowData ? rowData.id : null;
+    const unreadCount = candidateId && unreadMessagesCounts[candidateId] ? unreadMessagesCounts[candidateId] : 0;
+    
+    const container = document.createElement('div');
+    container.style.display = 'flex';
+    container.style.alignItems = 'center';
+    container.style.gap = '8px';
+    
+    const nameDiv = document.createElement('div');
+    Object.assign(nameDiv.style, truncatedCellStyle);
+    nameDiv.textContent = value !== undefined && value !== null ? String(value) : 'N/A';
+    container.appendChild(nameDiv);
+    
+    if (unreadCount > 0) {
+      const badge = document.createElement('div');
+      badge.textContent = String(unreadCount);
+      badge.style.backgroundColor = '#1976d2';
+      badge.style.color = 'white';
+      badge.style.borderRadius = '50%';
+      badge.style.width = '20px';
+      badge.style.height = '20px';
+      badge.style.display = 'flex';
+      badge.style.alignItems = 'center';
+      badge.style.justifyContent = 'center';
+      badge.style.fontSize = '12px';
+      badge.style.fontWeight = 'bold';
+      badge.style.minWidth = '20px';
+      badge.style.flexShrink = '0';
+      container.appendChild(badge);
+    }
+    
+    td.appendChild(container);
+    return td;
+  };
+
   const urlRenderer: ColumnRenderer = (instance, td, row, column, prop, value) => {
     // Clear any previous content
     td.innerHTML = '';
     
-    if (!value || value === 'N/A') {
+    if (!value || value === 'N/A' || typeof value !== 'string') {
       const div = document.createElement('div');
       Object.assign(div.style, truncatedCellStyle);
-      div.textContent = 'N/A';
+      div.textContent = value !== undefined && value !== null ? String(value) : 'N/A';
       td.appendChild(div);
       return td;
     }
     
     // Format URL if needed (make sure it has http/https prefix)
     let url = value;
-    if (url && !url.startsWith('http://') && !url.startsWith('https://')) {
+    if (typeof url === 'string' && !url.startsWith('http://') && !url.startsWith('https://')) {
       url = 'https://' + url;
     }
     
@@ -150,7 +203,7 @@ export const TableColumns = ({ processedData, selectAllChecked, selectAllIndeter
     data: 'name',
     title: 'Name',
     width: 200,
-    renderer: simpleRenderer,
+    renderer: nameRenderer,
   });
 
   // Add other commonly used columns
@@ -172,11 +225,14 @@ export const TableColumns = ({ processedData, selectAllChecked, selectAllIndeter
     .filter(key => !excludedFields.includes(key))
     .sort()
     .forEach(key => {
+      // Check if this key should use URL renderer
+      const isUrlField = urlFields.includes(key);
+      
       columns.push({
         data: key,
         title: key.charAt(0).toUpperCase() + key.slice(1),
         width: 150,
-        renderer: urlFields.includes(key) ? urlRenderer : simpleRenderer,
+        renderer: isUrlField ? urlRenderer : simpleRenderer,
       });
     });
 

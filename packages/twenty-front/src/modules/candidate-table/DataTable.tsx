@@ -14,7 +14,6 @@ import 'handsontable/styles/handsontable.min.css';
 import 'handsontable/styles/ht-theme-main.min.css';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef } from "react";
 import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
-import { CandidateNode } from 'twenty-shared';
 import { IconPlus } from 'twenty-ui';
 
 const StyledTableContainer = styled.div`
@@ -180,12 +179,27 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
           { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } }
         );
         
-        const rawData: CandidateNode[] = response.data;
+        // Verify the response is valid
+        const rawData = Array.isArray(response.data) ? response.data : [];
+        
+        // Process unread messages for each candidate
+        const unreadMessagesCounts: Record<string, number> = {};
+        rawData.forEach(candidate => {
+          if (!candidate || typeof candidate !== 'object' || !candidate.id) return;
+          
+          const unreadCount = candidate?.whatsappMessages?.edges
+            ?.filter((edge: any) => edge?.node?.whatsappDeliveryStatus === 'receivedFromCandidate')
+            ?.length || 0;
+          
+          unreadMessagesCounts[candidate.id] = unreadCount;
+        });
+        
         if (specificIds?.length) {
           setTableState(prev => {
             console.log("Partial refresh in refreshData", rawData);
             const updatedRawData = [...prev.rawData];
             for (const newData of rawData) {
+              if (!newData || !newData.id) continue;
               const index = updatedRawData.findIndex(item => item.id === newData.id);
               if (index >= 0) {
                 updatedRawData[index] = newData;
@@ -193,13 +207,18 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
                 updatedRawData.push(newData);
               }
             }
-            return { ...prev, rawData: updatedRawData };
+            return { 
+              ...prev, 
+              rawData: updatedRawData,
+              unreadMessagesCounts: { ...prev.unreadMessagesCounts, ...unreadMessagesCounts }
+            };
           });
         } else {
           console.log("Full refresh in refreshData", rawData);
           setTableState(prev => ({
             ...prev,
             rawData,
+            unreadMessagesCounts,
             isLoading: false
           }));
         }
@@ -228,18 +247,39 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
           { jobId },
           { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } }
         );
-        const rawData:CandidateNode[] = response.data;
+        
+        // Verify the response is valid
+        const rawData = Array.isArray(response.data) ? response.data : [];
         console.log(rawData);
+        
+        // Process unread messages for each candidate
+        const unreadMessagesCounts: Record<string, number> = {};
+        rawData.forEach(candidate => {
+          if (!candidate || typeof candidate !== 'object') return;
+          
+          const unreadCount = candidate?.whatsappMessages?.edges
+            ?.filter((edge: any) => edge?.node?.whatsappDeliveryStatus === 'receivedFromCandidate')
+            ?.length || 0;
+          
+          if (candidate.id) {
+            unreadMessagesCounts[candidate.id] = unreadCount;
+          }
+        });
+        
         setTableState(prev => ({
           ...prev,
           rawData,
+          unreadMessagesCounts,
           isLoading: false
         }));
       } catch (error) {
+        console.error('Failed to load candidate data:', error);
         setTableState(prev => ({ 
           ...prev, 
           isLoading: false, 
-          error: error instanceof Error ? error.message : 'Unknown error' 
+          error: error instanceof Error ? error.message : 'Unknown error',
+          rawData: [],
+          unreadMessagesCounts: {}
         }));
       }
     }, [jobId, setTableState, tokenPair]);

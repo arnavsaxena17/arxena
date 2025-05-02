@@ -957,9 +957,10 @@ export const emptyCandidateProfileObj: CandidateNode = {
     isActive: false,
     recruiterId: '',
     company: {
+      id: '',
       name: '',
       companyId: '',
-      domainName: '',
+      domainName: {"primaryLinkUrl":''},
       descriptionOneliner: '',
     },
     jobLocation: '',
@@ -1775,13 +1776,16 @@ export interface companyInfoType {
   name: string;
   companyId: string;
   descriptionOneliner: string;
+  id: string;
+  domainName: {"primaryLinkUrl":string};
 }
 
 export interface company {
-  domainName?: any;
   name: string;
   companyId?: string;
   descriptionOneliner?: string;
+  id: string;
+  domainName: {"primaryLinkUrl":string};
 }
 
 export interface jobProfileType {

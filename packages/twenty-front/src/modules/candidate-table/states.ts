@@ -10,6 +10,7 @@ export interface TableState {
   currentRightPanelRowId: string | null;
   isLoading: boolean;
   error: string | null;
+  unreadMessagesCounts: Record<string, number>;
 }
 export const jobIdAtom = atom<string>({
   key: 'candidate-table/jobIdAtom',
@@ -38,8 +39,10 @@ export const tableStateAtom = atom<TableState>({
     currentRightPanelRowId: null,
     isLoading: false,
     error: null,
+    unreadMessagesCounts: {}
   },
 });
+
 export const processedDataSelector = selector({
   key: 'processedDataSelector',
   get: ({ get }) => {
@@ -47,13 +50,20 @@ export const processedDataSelector = selector({
     return ProcessedData({ rawData, selectedRowIds });
   },
 });
+
 export const columnsSelector = selector({
   key: 'columnsSelector',
   get: ({ get }) => {
+    const state = get(tableStateAtom);
     const processedData = get(processedDataSelector);
-    return TableColumns({ processedData });
+    
+    return TableColumns({ 
+      processedData,
+      unreadMessagesCounts: state.unreadMessagesCounts
+    });
   },
 });
+
 export const showRecordActionBarSelector = selector({
   key: 'showRecordActionBarSelector',
   get: ({get}) => {

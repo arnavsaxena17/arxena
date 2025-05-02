@@ -15,7 +15,7 @@ import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { gql, useMutation } from '@apollo/client';
 
 import { uploadedJDState } from '@/arx-jd-upload/states/arxJDFormStepperState';
-import { createOneCandidateField, graphQLToUpdateOneWorkspaceMemberProfile, isDefined } from 'twenty-shared';
+import { companyInfoType, createOneCandidateField, graphQLToUpdateOneWorkspaceMemberProfile, isDefined } from 'twenty-shared';
 import { RecruiterDetails } from '../components/JobDetailsForm';
 import { ParsedJD } from '../types/ParsedJD';
 import { blankParsedJD, createDefaultParsedJD } from '../utils/createDefaultParsedJD';
@@ -38,10 +38,41 @@ export const useArxJDUpload = (objectNameSingular: string) => {
   const { records: companies = [] } = useFindManyRecords({
     objectNameSingular: 'company',
   });
+  const { createOneRecord: createOneCompanyRecord } = useCreateOneRecord({ 
+    objectNameSingular: 'company' 
+  });
+  const { updateOneRecord: updateOneCompanyRecord } = useUpdateOneRecord({ 
+    objectNameSingular: 'company' 
+  });
 
   const [updateWorkspaceMemberProfile] = useMutation(gql`
     ${graphQLToUpdateOneWorkspaceMemberProfile}
   `);
+
+  // Function to update company record with companyDetails as descriptionOneliner
+  const updateCompanyWithDetails = useCallback(async (companyId: string, companyDetails: string) => {
+    if (!companyId || !companyDetails) {
+      return;
+    }
+    
+    try {
+      await updateOneCompanyRecord({
+        idToUpdate: companyId,
+        updateOneRecordInput: {
+          descriptionOneliner: companyDetails,
+        },
+      });
+      
+      enqueueSnackBar('Company details updated successfully', {
+        variant: SnackBarVariant.Success,
+      });
+    } catch (error) {
+      console.error('Error updating company details:', error);
+      enqueueSnackBar(`Failed to update company details: ${error instanceof Error ? error.message : 'Unknown error'}`, {
+        variant: SnackBarVariant.Error,
+      });
+    }
+  }, [updateOneCompanyRecord, enqueueSnackBar]);
 
   // Handler to update recruiter details from JobDetailsForm
   const updateRecruiterDetails = useCallback((details: RecruiterDetails) => {
@@ -116,36 +147,62 @@ export const useArxJDUpload = (objectNameSingular: string) => {
     }
   }, [recruiterDetails, enqueueSnackBar, updateWorkspaceMemberProfile]);
 
-  type Company = ObjectRecord & {
-    name: string;
-  };
-
-
   const findBestCompanyMatch = useCallback(
-    (companyName: string): Company | null => {
+    (companyName: string, companyWebsiteUrl?: string): companyInfoType | null => {
       if (!Array.isArray(companies) || companies.length === 0) {
         return null;
       }
 
       const companiesWithName = companies.filter(
-        (company): company is Company =>
+        (company): company is (ObjectRecord & { name: string; domainName: { primaryLinkUrl: string } }) =>
           typeof company === 'object' &&
           company !== null &&
           'name' in company &&
-          typeof company.name === 'string',
+          typeof company.name === 'string' &&
+          'domainName' in company &&
+          typeof company.domainName === 'object' &&
+          'primaryLinkUrl' in company.domainName &&
+          typeof company.domainName.primaryLinkUrl === 'string',
       );
 
       if (companiesWithName.length === 0) {
         return null;
       }
 
+      // First try exact domain match
+      if (companyWebsiteUrl) {
+        const domainMatch = companiesWithName.find(
+          company => company.domainName.primaryLinkUrl === companyWebsiteUrl
+        );
+        if (domainMatch) {
+          return {
+            name: domainMatch.name,
+            companyId: domainMatch.id,
+            descriptionOneliner: domainMatch.descriptionOneliner || '',
+            id: domainMatch.id,
+            domainName: { primaryLinkUrl: domainMatch.domainName.primaryLinkUrl }
+          };
+        }
+      }
+
+      // Fallback to fuzzy name matching
       const fuse = new Fuse(companiesWithName, {
         keys: ['name'],
         threshold: 0.4,
       });
 
       const result = fuse.search(companyName);
-      return result.length > 0 ? result[0].item : null;
+      if (result.length > 0) {
+        const matchedCompany = result[0].item;
+        return {
+          name: matchedCompany.name,
+          companyId: matchedCompany.id,
+          descriptionOneliner: matchedCompany.descriptionOneliner || '',
+          id: matchedCompany.id,
+          domainName: { primaryLinkUrl: matchedCompany.domainName.primaryLinkUrl }
+        };
+      }
+      return null;
     },
     [companies],
   );
@@ -237,8 +294,35 @@ export const useArxJDUpload = (objectNameSingular: string) => {
           const data = uploadJDResponse.data.data;
           
           let matchedCompany = null;
+          let companyId = '';
+          
           if (data?.companyName) {
-            matchedCompany = findBestCompanyMatch(data.companyName);
+            matchedCompany = findBestCompanyMatch(data.companyName, data.companyWebsiteUrl);
+            
+            // If no matching company is found, create a new one
+            if (!matchedCompany && data.companyName.trim() !== '') {
+              try {
+                const newCompany = await createOneCompanyRecord({
+                  name: data.companyName,
+                  ...(data.companyDetails ? { descriptionOneliner: data.companyDetails } : {}),
+                    ...(data.companyWebsiteUrl ? { domainName: { primaryLinkUrl: data.companyWebsiteUrl } } : {}),
+                });
+                
+                if (newCompany && newCompany.id) {
+                  companyId = newCompany.id;
+                  enqueueSnackBar('Created new company record', {
+                    variant: SnackBarVariant.Success,
+                  });
+                }
+              } catch (companyCreateError) {
+                console.error("Couldn't create new company", companyCreateError);
+                enqueueSnackBar(`Failed to create new company: ${companyCreateError instanceof Error ? companyCreateError.message : 'Unknown error'}`, {
+                  variant: SnackBarVariant.Error,
+                });
+              }
+            } else if (matchedCompany && matchedCompany.id) {
+              companyId = matchedCompany.id;
+            }
           }
 
           const parsedData = createDefaultParsedJD({
@@ -251,7 +335,7 @@ export const useArxJDUpload = (objectNameSingular: string) => {
             specificCriteria: data?.specificCriteria || '',
             pathPosition: data?.pathPosition || '',
             companyName: data?.companyName || '',
-            companyId: matchedCompany?.id || '',
+            companyId: companyId,
             companyDetails: data?.companyDetails || '',
             id: createdJob.id,
           });
@@ -267,28 +351,23 @@ export const useArxJDUpload = (objectNameSingular: string) => {
 
           setParsedJD(parsedData);
 
-          // Try to match company if a name was provided
-          if (
-            typeof parsedData.companyName === 'string' &&
-            parsedData.companyName !== ''
-          ) {
-            const matchedCompany = findBestCompanyMatch(parsedData.companyName);
-            if (
-              isDefined(matchedCompany) &&
-              matchedCompany !== null &&
-              matchedCompany.id !== undefined &&
-              typeof matchedCompany.id === 'string' &&
-              matchedCompany.id !== ''
-            ) {
-              updateData.companyId = matchedCompany.id;
+          // Update company details if we have a companyId and companyDetails
+          if (companyId && parsedData.companyDetails && parsedData.companyDetails.trim() !== '') {
+            try {
+              await updateCompanyWithDetails(companyId, parsedData.companyDetails);
+            } catch (companyUpdateError) {
+              console.error("Couldn't update company details", companyUpdateError);
+              // Continue with process even if updating company details fails
             }
           }
 
-          const { companyId, ...restOfUpdateData } = updateData;
+          const { companyId: _, ...restOfUpdateData } = updateData;
           const updateOneRecordInput = {
             ...restOfUpdateData,
             ...(companyId && companyId !== '' ? { companyId } : {}),
           };
+
+          console.log("updateOneRecordInput", updateOneRecordInput);
 
           // Update the job record with the processed data
           await updateOneRecord({
@@ -327,10 +406,12 @@ export const useArxJDUpload = (objectNameSingular: string) => {
       updateOneRecord,
       uploadAttachmentFile,
       findBestCompanyMatch,
+      createOneCompanyRecord,
       setParsedJD,
       objectNameSingular,
       setUploadedJD,
-      enqueueSnackBar
+      enqueueSnackBar,
+      updateCompanyWithDetails
     ],
   );
 
@@ -356,7 +437,7 @@ export const useArxJDUpload = (objectNameSingular: string) => {
         typeof parsedJD?.companyName === 'string' &&
         parsedJD?.companyName !== ''
       ) {
-        const matchedCompany = findBestCompanyMatch(parsedJD.companyName);
+        const matchedCompany = findBestCompanyMatch(parsedJD.companyName, '');
         if (
           matchedCompany !== null &&
           typeof matchedCompany.id === 'string' &&
@@ -375,6 +456,11 @@ export const useArxJDUpload = (objectNameSingular: string) => {
               ...jobData,
               companyId: matchedCompany.id,
             });
+          }
+          
+          // Update company details if available
+          if (parsedJD.companyDetails && parsedJD.companyDetails.trim() !== '') {
+            await updateCompanyWithDetails(matchedCompany.id, parsedJD.companyDetails);
           }
         }
       } else {
@@ -483,5 +569,6 @@ export const useArxJDUpload = (objectNameSingular: string) => {
     handleCreateJob,
     resetUploadState,
     updateRecruiterDetails,
+    updateCompanyWithDetails,
   };
 };

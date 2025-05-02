@@ -3,6 +3,7 @@ import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import styled from '@emotion/styled';
 import axios from 'axios';
 import { useRef } from 'react';
+import { graphQLtoCreateOneAttachmentFromFilePath } from 'twenty-shared';
 
 const StyledButton = styled.button<{ bgColor: string }>`
   display: flex;
@@ -47,11 +48,6 @@ const UploadCVButton = styled(StyledButton)`
   margin-left: 8px;
 `;
 
-const graphQLtoCreateOneAttachmentFromFilePath = `mutation CreateOneAttachment($input: AttachmentCreateInput!) {
-  createAttachment(data: $input) {
-    __typename
-  } 
-}`;
 
 type UploadCVProps = {
   candidateId: string;
