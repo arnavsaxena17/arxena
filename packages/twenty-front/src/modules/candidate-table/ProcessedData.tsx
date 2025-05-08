@@ -6,14 +6,14 @@ export const ProcessedData = ({ rawData, selectedRowIds }: { rawData: CandidateN
     return rawData.map(candidate => {
       const baseData = {
 
-        id: candidate.id,
-        personId: candidate.people.id,
-        name: candidate.name || 'N/A',
+        id: candidate?.id,
+        personId: candidate?.people?.id,
+        name: candidate?.name || 'N/A',
         phone: candidate?.people?.phones?.primaryPhoneNumber || 'N/A',
         email: candidate?.people?.emails?.primaryEmail || 'N/A',
         status: candidate?.status || 'N/A',
         source: candidate?.source || 'N/A',
-        checkbox: selectedRowIds.includes(candidate.id),
+        checkbox: selectedRowIds.includes(candidate?.id || ''),
         startChat: candidate?.startChat || false,
         startChatCompleted: candidate?.startChatCompleted || false,
         engagementStatus: candidate?.engagementStatus || 'N/A',

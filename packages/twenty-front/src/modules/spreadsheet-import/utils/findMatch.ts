@@ -25,7 +25,7 @@ export const ALTERNATE_MATCHES: AlternateMatch[] = [
   },
   {
     fieldName: 'Email (email)',
-    alternativeHeaders: ['Email'],
+    alternativeHeaders: ['Email', 'email PrimaryEmail', 'PrimaryEmail', 'email PrimaryEmail', 'email primaryEmail'],
   },
   {
     fieldName: 'Phone number (phoneNumber)',
@@ -37,6 +37,8 @@ export const ALTERNATE_MATCHES: AlternateMatch[] = [
       'phone number',
       'work phone',
       'cell phone',
+      'phoneNumber PrimaryPhoneNumber',
+      'primaryPhoneNumber'
     ],
   },
   {

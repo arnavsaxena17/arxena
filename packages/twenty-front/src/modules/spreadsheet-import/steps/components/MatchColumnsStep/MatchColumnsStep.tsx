@@ -1,6 +1,7 @@
 import styled from '@emotion/styled';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
+import { jobIdAtom, jobsState } from '@/candidate-table/states';
 import { Heading } from '@/spreadsheet-import/components/Heading';
 import { StepNavigationButton } from '@/spreadsheet-import/components/StepNavigationButton';
 import { useSpreadsheetImportInternal } from '@/spreadsheet-import/hooks/useSpreadsheetImportInternal';
@@ -26,7 +27,7 @@ import { initialComputedColumnsSelector } from '@/spreadsheet-import/steps/compo
 import { SpreadsheetImportStep } from '@/spreadsheet-import/steps/types/SpreadsheetImportStep';
 import { SpreadsheetImportStepType } from '@/spreadsheet-import/steps/types/SpreadsheetImportStepType';
 import { ScrollWrapper } from '@/ui/utilities/scroll/components/ScrollWrapper';
-import { useRecoilState } from 'recoil';
+import { useRecoilState, useRecoilValue } from 'recoil';
 import { ColumnGrid } from './components/ColumnGrid';
 import { TemplateColumn } from './components/TemplateColumn';
 import { UserTableColumn } from './components/UserTableColumn';
@@ -148,6 +149,9 @@ export const MatchColumnsStep = <T extends string>({
   const [columns, setColumns] = useRecoilState(
     initialComputedColumnsSelector(headerValues),
   );
+  const currentJobId = useRecoilValue(jobIdAtom);
+  const jobs = useRecoilValue(jobsState);
+  const currentJob = useMemo(() => jobs.find(job => job.id === currentJobId) || null, [jobs, currentJobId]);
 
   const { matchColumnsStepHook } = useSpreadsheetImportInternal();
 
@@ -175,7 +179,7 @@ export const MatchColumnsStep = <T extends string>({
 
   const onChange = useCallback(
     (value: T, columnIndex: number) => {
-      if (value === 'do-not-import') {
+      if (value === 'do-not-import' || value === 'id') {
         if (columns[columnIndex].type === ColumnType.ignored) {
           onRevertIgnore(columnIndex);
         } else {
@@ -226,11 +230,52 @@ export const MatchColumnsStep = <T extends string>({
       columns: Columns<string>,
     ) => {
       try {
-        const data = await matchColumnsStepHook(values, rawData, columns);
+        // Filter out any columns with value="id"
+        const filteredColumns = columns.map(column => {
+          if ('value' in column && column.value === 'id') {
+            return setIgnoreColumn(column);
+          }
+          return column;
+        });
+        
+        // Ensure the Default Job Name column is mapped to Jobs (ID) field
+        const defaultJobNameColumnIndex = filteredColumns.findIndex(
+          column => column.header === 'Default Job Name'
+        );
+        
+        if (defaultJobNameColumnIndex !== -1) {
+          const jobField = fields.find(
+            field => field.key === 'jobs' || field.key === 'Jobs (ID)'
+          ) as Field<T> | undefined;
+          
+          if (jobField && filteredColumns[defaultJobNameColumnIndex].type !== ColumnType.matched) {
+            filteredColumns[defaultJobNameColumnIndex] = setColumn(
+              filteredColumns[defaultJobNameColumnIndex],
+              jobField,
+              rawData
+            );
+          }
+        }
+        
+        // Ensure values have the Default Job Name data
+        if (defaultJobNameColumnIndex !== -1 && currentJob) {
+          // Make sure each row has the Default Job Name value
+          const updatedValues = values.map(row => {
+            const newRow = { ...row };
+            // Set both the jobs field and Default Job Name field
+            (newRow as any)['jobs'] = `${currentJob.name || ''}`;
+            (newRow as any)['Default Job Name'] = `${currentJob.name || ''}`;
+            return newRow;
+          });
+          
+          values = updatedValues;
+        }
+        
+        const data = await matchColumnsStepHook(values, rawData, filteredColumns);
         setCurrentStepState({
           type: SpreadsheetImportStepType.validateData,
           data,
-          importedColumns: columns,
+          importedColumns: filteredColumns,
         });
         setPreviousStepState(currentStepState);
         nextStep();
@@ -245,6 +290,8 @@ export const MatchColumnsStep = <T extends string>({
       setPreviousStepState,
       setCurrentStepState,
       currentStepState,
+      fields,
+      currentJob,
     ],
   );
 
@@ -283,7 +330,7 @@ export const MatchColumnsStep = <T extends string>({
     );
 
     // Check if Jobs (ID) and phone number columns are matched
-    const hasJobsColumn = columns.some(
+    let hasJobsColumn = columns.some(
       (column) =>
         column.type !== ColumnType.empty &&
         column.type !== ColumnType.ignored &&
@@ -291,7 +338,8 @@ export const MatchColumnsStep = <T extends string>({
         (column.value === 'Jobs (ID)' ||
           column.header === 'Jobs (ID)' ||
           column.value === 'jobs' ||
-          column.header === 'jobs'),
+          column.header === 'jobs' ||
+          column.header === 'Default Job Name'),
     );
 
     console.log('these are columns', columns);
@@ -301,8 +349,41 @@ export const MatchColumnsStep = <T extends string>({
         column.type !== ColumnType.ignored &&
         'value' in column &&
         (column.value === 'Phone number (phoneNumber)' ||
+          column.value === 'phoneNumber' ||
+          column.value === 'PrimaryPhoneNumber' ||
+          column.value === 'primaryPhoneNumber' ||
+          column.header === 'Phone Number' ||
+          column.header === 'phoneNumber PrimaryPhoneNumber' ||
+          column.value === 'phoneNumber PrimaryPhoneNumber' ||
+          column.header === 'Phone Number (phoneNumber)' ||
           column.header === 'Phone'),
     );
+
+    // If we have a current job and no Jobs column, we can add a Default Job Name column
+    if (!hasJobsColumn && currentJob) {
+      // Add a new column for Default Job Name
+      const newColumnIndex = columns.length;
+      const newColumn: Column<string> = {
+        type: ColumnType.empty,
+        index: newColumnIndex,
+        header: 'Default Job Name'
+      };
+      
+      // Update data with default job values
+      const newData = data.map(row => [...row, `${currentJob.name || ''}`]);
+      
+      // Find the Jobs field
+      const jobField = fields.find(
+        field => field.key === 'jobs' || field.key === 'Jobs (ID)'
+      ) as Field<T> | undefined;
+      
+      if (jobField) {
+        // Set the column to match with Jobs field
+        const mappedColumn = setColumn(newColumn, jobField, newData);
+        setColumns([...columns, mappedColumn]);
+        hasJobsColumn = true;
+      }
+    }
 
     if (!hasJobsColumn || !hasPhoneNumberColumn) {
       const missingColumns = [];
@@ -359,26 +440,124 @@ export const MatchColumnsStep = <T extends string>({
     data,
     fields,
     enqueueSnackBar,
+    currentJob,
+    setColumns,
   ]);
 
   useEffect(() => {
     const isInitialColumnsState = columns.every(
       (column) => column.type === ColumnType.empty,
     );
+    
+    // Check if we've already added a Default Job Name column to avoid infinite loops
+    const defaultJobNameColumnExists = columns.some(
+      column => column.header === 'Default Job Name'
+    );
+    
     console.log('isInitialColumnsState', isInitialColumnsState);
     console.log('autoMapHeaders', autoMapHeaders);
-    if (autoMapHeaders && isInitialColumnsState) {
+    
+    if (autoMapHeaders && isInitialColumnsState && !defaultJobNameColumnExists && currentJob) {
+      // Create custom mappings for phone number field
+      const customMappings: Record<string, string> = {
+        'phoneNumber PrimaryPhoneNumber': 'Phone number (phoneNumber)'
+      };
+      
+      // Create a new column for Default Job Name
+      // Add column header to headerValues
+      const newHeaderValues = [...headerValues, 'Default Job Name'];
+      
+      // Add default job name column to data
+      const newData = data.map(row => [...row, `${currentJob.name || ''}`]);
+      
+      // Update header index for new column
+      const newColumnIndex = headerValues.length;
+      
+      // Get matched columns including the new column
+      const matchedColumns = getMatchedColumns(
+        [...columns, {
+          type: ColumnType.empty,
+          index: newColumnIndex,
+          header: 'Default Job Name'
+        }],
+        fields,
+        newData,
+        autoMapDistance,
+        customMappings
+      );
+      
+      // Auto-ignore any ID columns      
+      const processedColumns = matchedColumns.map(column => {
+        if ('value' in column && column.value === 'id') {
+          return setIgnoreColumn(column);
+        }
+        return column;
+      });
+      
+      console.log('matchedColumns with default job', processedColumns);
+      setColumns(processedColumns);
+    } else if (autoMapHeaders && isInitialColumnsState && !defaultJobNameColumnExists) {
+      // No current job, just process normally
+      const customMappings: Record<string, string> = {
+        'phoneNumber PrimaryPhoneNumber': 'Phone number (phoneNumber)'
+      };
+      
       const matchedColumns = getMatchedColumns(
         columns,
         fields,
         data,
         autoMapDistance,
+        customMappings
       );
-      console.log('matchedColumns', matchedColumns);
-      setColumns(matchedColumns);
+
+      // Auto-ignore any ID columns      
+      const processedColumns = matchedColumns.map(column => {
+        if ('value' in column && column.value === 'id') {
+          return setIgnoreColumn(column);
+        }
+        return column;
+      });
+      
+      console.log('matchedColumns', processedColumns);
+      setColumns(processedColumns);
+    }
+    
+    // This part should run only once when defaultJobNameColumnExists is false
+    if (currentJob && !defaultJobNameColumnExists) {
+      // Find if there's a Jobs column already that we can set the value for
+      const jobsColumnIndex = columns.findIndex(
+        (column) => 
+          column.type !== ColumnType.ignored && 
+          (column.header === 'Jobs (ID)' || 
+           column.header === 'jobs' || 
+           column.header === 'Default Job Name' ||
+           (column.type !== ColumnType.empty && 'value' in column && 
+            (column.value === 'Jobs (ID)' || column.value === 'jobs')))
+      );
+      
+      if (jobsColumnIndex !== -1) {
+        // Jobs column exists, set the default value with the current job ID and name
+        const jobsData = data.map(row => {
+          const newRow = [...row];
+          newRow[columns[jobsColumnIndex].index] = `${currentJob.name || ''}`;
+          return newRow;
+        });
+        
+        const jobField = fields.find(
+          (field) => field.key === 'jobs' || field.key === 'Jobs (ID)'
+        ) as Field<T> | undefined;
+        
+        if (jobField) {
+          setColumns(
+            columns.map((column, index) => 
+              index === jobsColumnIndex ? setColumn(column, jobField, jobsData) : column
+            )
+          );
+        }
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [autoMapHeaders, autoMapDistance]);
 
   return (
     <>

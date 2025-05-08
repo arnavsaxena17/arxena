@@ -133,12 +133,14 @@ export const ValidationStep = <T extends string>({
         );
 
         const jobIdColumnHeader = mappedJobColumn?.header;
+        
+        // Also check specifically for Default Job Name column
+        const hasDefaultJobNameColumn = importedColumns.some(
+          col => col.header === 'Default Job Name'
+        );
 
-        // Add some debugging to see what's happening
-        // console.log('Jobs loaded:', jobs);
-        // console.log('Job ID field:', jobIdField);
-        // console.log('Mapped column:', jobIdColumnHeader);
-        // console.log('Full mapped column info:', mappedJobColumn);
+        console.log('Has Default Job Name column:', hasDefaultJobNameColumn);
+        console.log('All imported columns:', importedColumns);
 
         // Process each row to match job names with IDs
         const processedRows = rowsToProcess.map((row) => {
@@ -155,15 +157,15 @@ export const ValidationStep = <T extends string>({
           // Get the job name value - try both the mapped column header and the direct 'jobs' field
           let jobNameValue = null;
 
-          if (
+          // First check for Default Job Name
+          if (hasDefaultJobNameColumn && 'Default Job Name' in row) {
+            jobNameValue = (row as any)['Default Job Name'];
+            console.log('Found job value in Default Job Name:', jobNameValue);
+          } else if (
             isDefined(jobIdColumnHeader) &&
             row[jobIdColumnHeader as keyof typeof row] !== undefined
           ) {
             jobNameValue = row[jobIdColumnHeader as keyof typeof row];
-            // console.log(
-            //   `Found job value in mapped column ${jobIdColumnHeader}:`,
-            //   jobNameValue,
-            // );
           } else if ('jobs' in row) {
             jobNameValue = (row as any)['jobs'];
             console.log('Found job value in direct jobs field:', jobNameValue);
@@ -187,7 +189,7 @@ export const ValidationStep = <T extends string>({
                   matchedName: matchedJob.name,
                   matchedId: matchedJob.id,
                   arxenaSiteId: matchedJob.arxenaSiteId,
-                  mappedColumn: jobIdColumnHeader || 'jobs',
+                  mappedColumn: jobIdColumnHeader || 'Default Job Name' || 'jobs',
                 },
               };
 
@@ -293,7 +295,7 @@ export const ValidationStep = <T extends string>({
     () =>
       generateColumns(fields)
         .map((column) => {
-          const hasBeenImported =
+          let hasBeenImported =
             importedColumns.filter(
               (importColumn) =>
                 (importColumn.type === ColumnType.matched &&
@@ -306,6 +308,11 @@ export const ValidationStep = <T extends string>({
                   importColumn.value === column.key) ||
                 column.key === 'select-row',
             ).length > 0;
+
+          // Special check for Default Job Name column
+          const hasDefaultJobNameColumn = importedColumns.some(
+            importColumn => importColumn.header === 'Default Job Name'
+          );
 
           // Find the mapped column header for this field
           const mappedColumnHeader = importedColumns.find(
@@ -321,6 +328,11 @@ export const ValidationStep = <T extends string>({
 
           // Add special rendering for job ID columns
           if (column.key === 'jobs') {
+            // Set hasBeenImported to true if we have a Default Job Name column
+            if (hasDefaultJobNameColumn) {
+              hasBeenImported = true;
+            }
+            
             // Adjust key as needed
             const columnWithCustomRender = {
               ...column,
@@ -351,6 +363,15 @@ export const ValidationStep = <T extends string>({
                   return (row as any).jobs;
                 }
 
+                // Check for Default Job Name column 
+                if (
+                  (row as any)['Default Job Name'] !== undefined &&
+                  typeof (row as any)['Default Job Name'] === 'string'
+                ) {
+                  console.log('Found job in Default Job Name:', (row as any)['Default Job Name']);
+                  return (row as any)['Default Job Name'];
+                }
+
                 // If we have a mapped column that's different from the standard key
                 if (
                   isDefined(mappedColumnHeader) &&
@@ -375,14 +396,16 @@ export const ValidationStep = <T extends string>({
                   isDefined(row.__jobMatch) === true ||
                   ((row as any).jobs !== undefined &&
                     typeof (row as any).jobs === 'string' &&
-                    (row as any).jobs.includes('-') === true)
+                    (row as any).jobs.includes('-') === true) ||
+                  ((row as any)['Default Job Name'] !== undefined &&
+                    typeof (row as any)['Default Job Name'] === 'string')
                 ) {
                   // Return a read-only version of the cell
                   return (
                     <div style={{ padding: '8px' }}>
                       {isDefined(row.__jobMatch)
                         ? row.__jobMatch.matchedId
-                        : (row as any).jobs}
+                        : (row as any).jobs || (row as any)['Default Job Name']}
                     </div>
                   );
                 }
@@ -535,7 +558,8 @@ export const ValidationStep = <T extends string>({
 
     const isCandidateImport =
       window.location.pathname.toLowerCase().includes('candidate') &&
-      !window.location.pathname.toLowerCase().includes('jobcandidate');
+      !window.location.pathname.toLowerCase().includes('jobcandidate') ||
+      window.location.pathname.toLowerCase().includes('/job/');
 
     setCurrentStepState({
       type: SpreadsheetImportStepType.loading,
