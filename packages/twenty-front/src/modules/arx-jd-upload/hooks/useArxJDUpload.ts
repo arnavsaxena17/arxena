@@ -19,7 +19,7 @@ import { companyInfoType, createOneCandidateField, graphQLToUpdateOneWorkspaceMe
 import { RecruiterDetails } from '../components/JobDetailsForm';
 import { ParsedJD } from '../types/ParsedJD';
 import { blankParsedJD, createDefaultParsedJD } from '../utils/createDefaultParsedJD';
-import { sendJobToArxena } from '../utils/sendJobToArxena';
+import { sendCreateJobToArxena } from '../utils/sendCreateJobToArxena';
 
 
 
@@ -262,7 +262,7 @@ export const useArxJDUpload = (objectNameSingular: string) => {
           isDefined(createdJob?.id)
         ) {
           try {
-            await sendJobToArxena(
+            await sendCreateJobToArxena(
               createdJob.name,
               createdJob.id,
               tokenPair?.accessToken?.token || '',
@@ -488,22 +488,22 @@ export const useArxJDUpload = (objectNameSingular: string) => {
       }
 
       // Send job to Arxena after creation
-      if (
-        objectNameSingular === 'job' &&
-        isDefined(parsedJD?.name) &&
-        isDefined(parsedJD?.id)
-      ) {
-        try {
-          await sendJobToArxena(
-            parsedJD.name,
-            parsedJD.id,
-            tokenPair?.accessToken?.token || '',
-            (errorMessage) => setError(errorMessage),
-          );
-        } catch (error) {
-          console.error("Couldn't send job to arxena", error);
-        }
-      }
+      // if (
+      //   objectNameSingular === 'job' &&
+      //   isDefined(parsedJD?.name) &&
+      //   isDefined(parsedJD?.id)
+      // ) {
+      //   try {
+      //     await sendJobToArxena(
+      //       parsedJD.name,
+      //       parsedJD.id,
+      //       tokenPair?.accessToken?.token || '',
+      //       (errorMessage) => setError(errorMessage),
+      //     );
+      //   } catch (error) {
+      //     console.error("Couldn't send job to arxena", error);
+      //   }
+      // }
 
       // After successful job creation and when it's the last step, reload the page and navigate to job details
       if (isDefined(createdJob?.id)) {

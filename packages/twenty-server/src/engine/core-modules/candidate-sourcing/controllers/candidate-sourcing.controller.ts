@@ -944,4 +944,66 @@ export class CandidateSourcingController {
       };
     }
   }
+
+  @Post('update-job-in-arxena-and-sheets')
+  @UseGuards(JwtAuthGuard)
+  async updateJobInArxena(@Req() req: any): Promise<any> {
+    console.log('going to update job in arxena');
+    const apiToken = req.headers.authorization.split(' ')[1];
+
+    try {
+      if (!req?.body?.job_name || !req?.body?.arxena_site_id) {
+        throw new Error('Missing required fields: job_name or arxena_site_id');
+      }
+
+      console.log('this is the job name:', req.body.job_name);
+      console.log('this is the arxena site id:', req.body.arxena_site_id);
+      
+      const response = await this.callUpdateJobInArxena(
+        req.body.job_name,
+        req.body.arxena_site_id,
+        apiToken,
+      );
+
+      return {
+        ...response?.data,
+      };
+    } catch (error) {
+      console.log('Error in updateJobInArxena:', error);
+
+      return { error: error.message };
+    }
+  }
+
+  private async callUpdateJobInArxena(
+    jobName: string,
+    arxenaSiteId: string,
+    apiToken: string,
+  ): Promise<any> {
+    try {
+      const url =
+        process.env.ENV_NODE === 'production'
+          ? 'https://arxena.com/update_one_job'
+          : 'http://127.0.0.1:5050/update_one_job';
+      const response = await axios.post(
+        url,
+        {
+          job_name: jobName,
+          arxena_site_id: arxenaSiteId,
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${apiToken}`,
+          },
+        },
+      );
+
+      return response.data;
+    } catch (error) {
+      console.error('Error calling update job in Arxena:', error);
+
+      return { data: error.message };
+    }
+  }
 }

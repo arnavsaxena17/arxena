@@ -137,7 +137,7 @@ export const TopBar = ({
         {!isJobPage && !showSearch && (
             <StyledLeftSection>{leftComponent}</StyledLeftSection>
         )}
-        {!isJobPage && !showSearch && !location.pathname.includes('jobs') && (
+        {!isJobPage && !showSearch && (!location.pathname.includes('jobs') || location.pathname.includes('objects')) && (
           <StyledButtonContainer>
             {showRefetch && (
               <Button

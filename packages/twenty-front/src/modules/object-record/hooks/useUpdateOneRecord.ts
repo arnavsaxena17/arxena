@@ -1,7 +1,9 @@
 import { useApolloClient } from '@apollo/client';
 
 import { triggerUpdateRecordOptimisticEffect } from '@/apollo/optimistic-effect/utils/triggerUpdateRecordOptimisticEffect';
+import { sendUpdateJobToArxena } from '@/arx-jd-upload/utils/sendUpdateJobToArxena';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
+import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useObjectMetadataItem } from '@/object-metadata/hooks/useObjectMetadataItem';
 import { objectMetadataItemsState } from '@/object-metadata/states/objectMetadataItemsState';
 import { CoreObjectNameSingular } from '@/object-metadata/types/CoreObjectNameSingular';
@@ -18,7 +20,7 @@ import { getUpdateOneRecordMutationResponseField } from '@/object-record/utils/g
 import { sanitizeRecordInput } from '@/object-record/utils/sanitizeRecordInput';
 // import { useUpdateViewField } from '@/views/hooks/useUpdateViewField';
 import { isNull } from '@sniptt/guards';
-import { useRecoilValue } from 'recoil';
+import { useRecoilState, useRecoilValue } from 'recoil';
 import { isDefined } from 'twenty-shared';
 import { buildRecordFromKeysWithSameValue } from '~/utils/array/buildRecordFromKeysWithSameValue';
 
@@ -48,6 +50,7 @@ export const useUpdateOneRecord = <
   const apolloClient = useApolloClient();
   // const { updateViewField } = useUpdateViewField();
   const objectMetadataItems = useRecoilValue(objectMetadataItemsState);
+  const [tokenPair] = useRecoilState(tokenPairState);
 
   const { objectMetadataItem } = useObjectMetadataItem({
     objectNameSingular,
@@ -249,6 +252,28 @@ export const useUpdateOneRecord = <
 
         throw error;
       });
+
+    // Call sendUpdateJobToArxena if we're updating a job
+    try {
+      if (objectNameSingular === 'job' && 
+          isDefined(updateOneRecordInput) && 
+          isDefined(cachedRecord) && 
+          isDefined(cachedRecord.arxenaSiteId)) {
+        const jobName = (updateOneRecordInput.name as string) || cachedRecord.name;
+        
+        try {
+          await sendUpdateJobToArxena(
+            jobName,
+            cachedRecord.arxenaSiteId as string,
+            tokenPair?.accessToken?.token || '',
+          );
+        } catch (error) {
+          console.log("Couldn't update job in arxena", error);
+        }
+      }
+    } catch (error) {
+      console.log('Error with Arxena job update operations', error);
+    }
 
     await refetchAggregateQueries();
     return updatedRecord?.data?.[mutationResponseField] ?? null;

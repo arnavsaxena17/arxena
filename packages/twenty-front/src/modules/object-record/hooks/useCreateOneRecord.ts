@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { v4 } from 'uuid';
 
 import { triggerCreateRecordsOptimisticEffect } from '@/apollo/optimistic-effect/utils/triggerCreateRecordsOptimisticEffect';
-import { sendJobToArxena } from '@/arx-jd-upload/utils/sendJobToArxena';
+import { sendCreateJobToArxena } from '@/arx-jd-upload/utils/sendCreateJobToArxena';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useObjectMetadataItem } from '@/object-metadata/hooks/useObjectMetadataItem';
@@ -157,7 +157,7 @@ export const useCreateOneRecord = <
       console.log('This is the input', recordInput);
       if (objectNameSingular === 'job' && isDefined(recordInput?.id)) {
         try {
-          await sendJobToArxena(
+          await sendCreateJobToArxena(
             recordInput?.name as string,
             recordInput.id as string,
             tokenPair?.accessToken?.token || '',
@@ -167,9 +167,8 @@ export const useCreateOneRecord = <
         }
       }
     } catch (error) {
-      console.log('Error sending job to Arxena', error);
+      console.log('Error with Arxena job operations', error);
     }
-
     await refetchAggregateQueries();
     return createdObject.data?.[mutationResponseField] ?? null;
   };

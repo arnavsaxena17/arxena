@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 
 import { isDefined } from 'twenty-shared';
 
-export const sendJobToArxena = async (
+export const sendCreateJobToArxena = async (
   jobName: string,
   jobId: string,
   accessToken: string,

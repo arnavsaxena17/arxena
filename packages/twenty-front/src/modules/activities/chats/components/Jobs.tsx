@@ -171,8 +171,10 @@ export const Jobs = () => {
     recordIndexId: recordIndexId,
   };
 
-  // Initialize the spreadsheet import hook for candidates
-  const { openObjectRecordsSpreasheetImportDialog } = useOpenObjectRecordsSpreadsheetImportDialog('candidate');
+  // Initialize the spreadsheet import hook for candidates only when metadata is loaded
+  const openObjectRecordsSpreasheetImportDialog = updatedMetadataStructureLoaded
+    ? useOpenObjectRecordsSpreadsheetImportDialog('candidate').openObjectRecordsSpreasheetImportDialog
+    : () => null;
   console.log('jobsFromState', jobsFromState);
 
   const isArxEnrichModalOpen = useRecoilValue(isArxEnrichModalOpenState);
@@ -209,6 +211,10 @@ export const Jobs = () => {
   };
 
   const handleImportCandidates = () => {
+    if (!updatedMetadataStructureLoaded) {
+      alert('System is still loading. Please try again in a moment.');
+      return;
+    }
     openObjectRecordsSpreasheetImportDialog();
   };
 
