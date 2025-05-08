@@ -487,7 +487,8 @@ export class FilterCandidates {
             isActive: activeJob?.isActive,
             company: {
               name: activeCompany?.name || '',
-              companyId: activeCompany?.companyId,
+              id: activeCompany?.companyId || '',
+              companyId: activeCompany?.companyId || '',
               domainName: activeCompany?.domainName,
               descriptionOneliner: activeCompany?.descriptionOneliner,
             },

@@ -19,11 +19,21 @@ import styled from '@emotion/styled';
 import { useLingui } from '@lingui/react/macro';
 import { getAppPath } from '~/utils/navigation/getAppPath';
 
-type Job = {
+// Define the Job type for API response
+type ApiJob = {
   id: string;
   name: string;
-  pathPosition?: string;
   isActive: boolean;
+  createdAt?: string;
+  jobLocation?: string;
+  pathPosition?: string;
+  candidates?: {
+    edges?: Array<{
+      node: {
+        id: string;
+      }
+    }>
+  }
 };
 
 const StyledSubItemLeftAdornment = styled.div`
@@ -31,7 +41,7 @@ const StyledSubItemLeftAdornment = styled.div`
 `;
 
 export const JobsNavigationDrawerItems = () => {
-  const [localJobs, setLocalJobs] = useState<Job[]>([]);
+  const [localJobs, setLocalJobs] = useState<ApiJob[]>([]);
   const [jobs, setJobs] = useRecoilState(jobsState);
   const [isLoading, setIsLoading] = useState(true);
   const [tokenPair] = useRecoilState(tokenPairState);
@@ -58,15 +68,20 @@ export const JobsNavigationDrawerItems = () => {
         );
         
         if (response.data?.jobs) {
+          console.log('This is the response.data.jobs:', response.data.jobs);
           // Filter active jobs
           const activeJobs = response.data.jobs
-            .filter((job: any) => job.node.isActive)
-            .map((job: any) => ({
-              id: job.node.id,
-              name: job.node.name,
-              pathPosition: job.node.pathPosition,
-              isActive: job.node.isActive,
-            }));
+            // .filter((job: any) => job.node.isActive)
+            .map((job: any) => (job.node));
+          // Sort jobs by active status first, then by creation date descending
+          activeJobs.sort((a: any, b: any) => {
+            // First sort by active status
+            if (a.isActive !== b.isActive) {
+              return b.isActive ? -1 : 1;
+            }
+            // Then sort by creation date descending
+            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          });
           
           console.log('This is the activeJobs:', activeJobs);
           setLocalJobs(activeJobs);
@@ -102,12 +117,14 @@ export const JobsNavigationDrawerItems = () => {
           onClick={handleItemClick}
           Icon={IconBriefcase}
         />
-        {localJobs.map((job, index) => (
+        {localJobs.filter((job) => job.isActive).map((job, index) => (
           <NavigationDrawerItem
             key={job.id}
             label={job.name}
             to={`/job/${job.id}`}
             onClick={handleItemClick}
+            Icon={IconBriefcase}
+
             subItemState={getNavigationSubItemLeftAdornment({
               arrayLength: localJobs.length,
               index,

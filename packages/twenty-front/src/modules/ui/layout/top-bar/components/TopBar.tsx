@@ -1,9 +1,10 @@
 import { chatSearchQueryState } from '@/activities/chats/states/chatSearchQueryState';
+import { useOpenObjectRecordsSpreadsheetImportDialog } from '@/object-record/spreadsheet-import/hooks/useOpenObjectRecordsSpreadsheetImportDialog';
 import styled from '@emotion/styled';
 import { ReactNode } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useRecoilState } from 'recoil';
-import { Button, IconDatabase, IconMail, IconRefresh, IconSearch, IconVideo } from 'twenty-ui';
+import { Button, IconDatabase, IconFileImport, IconMail, IconRefresh, IconSearch, IconVideo } from 'twenty-ui';
 
 type TopBarProps = {
   className?: string;
@@ -14,6 +15,7 @@ type TopBarProps = {
   showRefetch?:boolean;
   handleRefresh?: () => void;
   showVideoInterviewEdit?:boolean;
+  handleImportCandidates?: () => void;
   handleVideoInterviewEdit?: () => void;
   showEngagement?:boolean;
   handleEngagement?: () => void;
@@ -101,6 +103,7 @@ export const TopBar = ({
   handleVideoInterviewEdit,
   showRefetch=true,
   showEngagement=true,
+  // handleImportCandidates,
   showEnrichment=true,
   showVideoInterviewEdit=true,
   handleEnrichment,
@@ -112,7 +115,13 @@ export const TopBar = ({
   const isJobPage = location.pathname.includes('/job/') || location.pathname.includes('/jobs/');
   const [searchQuery, setSearchQuery] = useRecoilState(chatSearchQueryState);
 
+  const { openObjectRecordsSpreasheetImportDialog } = useOpenObjectRecordsSpreadsheetImportDialog('candidate');
 
+
+
+  const handleImportCandidates = () => {
+    openObjectRecordsSpreasheetImportDialog();
+  };
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
@@ -164,6 +173,15 @@ export const TopBar = ({
                   variant="secondary"
                   accent="default"
                   onClick={handleRefresh}
+                />
+              )}
+              {isJobPage && (
+                <Button
+                  Icon={IconFileImport}
+                  title="Import Candidates"
+                  variant="secondary"
+                  accent="default"
+                  onClick={handleImportCandidates}
                 />
               )}
               {showRefetch && !isJobPage && (

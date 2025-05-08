@@ -19,6 +19,8 @@ import { ObjectSortDropdownButton } from "@/object-record/object-sort-dropdown/c
 import { ObjectSortDropdownComponentInstanceContext } from "@/object-record/object-sort-dropdown/states/context/ObjectSortDropdownComponentInstanceContext";
 import { RecordIndexContextProvider } from "@/object-record/record-index/contexts/RecordIndexContext";
 import { RecordFieldValueSelectorContextProvider } from "@/object-record/record-store/contexts/RecordFieldValueSelectorContext";
+import { useOpenObjectRecordsSpreadsheetImportDialog } from "@/object-record/spreadsheet-import/hooks/useOpenObjectRecordsSpreadsheetImportDialog";
+import { SpreadsheetImportProvider } from "@/spreadsheet-import/provider/components/SpreadsheetImportProvider";
 import { NotificationsButton } from '@/ui/layout/page/components/NotificationsButton';
 import { PageBody } from '@/ui/layout/page/components/PageBody';
 import { PageContainer } from '@/ui/layout/page/components/PageContainer';
@@ -32,7 +34,7 @@ import styled from '@emotion/styled';
 import { useEffect, useMemo, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { useRecoilState, useRecoilValue } from "recoil";
-import { Button, IconCheckbox, IconFilter, IconPlus } from 'twenty-ui';
+import { Button, IconCheckbox, IconFileImport, IconFilter, IconPlus } from 'twenty-ui';
 
 const StyledPageContainer = styled(PageContainer)`
   display: flex;
@@ -74,6 +76,11 @@ const StyledRightSection = styled.div`
   gap: ${({ theme }) => theme.betweenSiblingsGap};
 `;
 
+const StyledButtonContainer = styled.div`
+  display: flex;
+  gap: ${({ theme }) => theme.spacing(2)};
+`;
+
 export const JobPage: React.FC = () => {
   const [jobId, setJobId] = useRecoilState(jobIdAtom);
   const jobs = useRecoilValue(jobsState);
@@ -88,6 +95,9 @@ export const JobPage: React.FC = () => {
 
   const isArxUploadJDModalOpen = useRecoilValue(isArxUploadJDModalOpenState);
   const [, setIsArxUploadJDModalOpen] = useRecoilState(isArxUploadJDModalOpenState);
+
+  // Initialize the spreadsheet import hook for candidates
+  const { openObjectRecordsSpreasheetImportDialog } = useOpenObjectRecordsSpreadsheetImportDialog('candidate');
 
   // Find the current job based on jobId
   const currentJob = useMemo(() => {
@@ -116,6 +126,10 @@ export const JobPage: React.FC = () => {
       return;
     }
     setIsArxUploadJDModalOpen(true);
+  };
+
+  const handleImportCandidates = () => {
+    openObjectRecordsSpreasheetImportDialog();
   };
 
   // Extract jobId from URL whenever location changes
@@ -155,98 +169,104 @@ export const JobPage: React.FC = () => {
   console.log("Current job found:", currentJob);
 
   return (
-    <StyledPageContainer>
-      <RecordFieldValueSelectorContextProvider>
-        <StyledPageHeader title={currentJob?.name || 'Job'} Icon={IconCheckbox}>
-          <Button title="Filter" Icon={IconFilter} variant="secondary" />
-          <Button title="Add Candidate" Icon={IconPlus} variant="primary" />
-          <PageAddChatButton />
-          <NotificationsButton />
-        </StyledPageHeader>
-        <StyledPageBody>
-          <RecordIndexContextProvider value={recordIndexContextValue}>
-            <ViewComponentInstanceContext.Provider value={{ instanceId: jobId }}>
-              <StyledTopBar
-                leftComponent={<StyledTabListContainer />}
-                handleRefresh={handleRefresh}
-                handleEnrichment={handleEnrichment}
-                handleVideoInterviewEdit={handleVideoInterviewEdit}
-                handleEngagement={handleEngagement}
-                showRefetch={true}
-                showEnrichment={true}
-                showVideoInterviewEdit={true}
-                showEngagement={true}
-                showSearch={true}
-                rightComponent={
-                <StyledRightSection>
-                  <ObjectFilterDropdownComponentInstanceContext.Provider value={{ instanceId: jobId }}>
-                    <ObjectFilterDropdownButton 
-                      filterDropdownId={jobId} 
-                      hotkeyScope={{ scope: FiltersHotkeyScope.ObjectFilterDropdownButton }}
-                    />
-                  </ObjectFilterDropdownComponentInstanceContext.Provider>
-                  <ObjectSortDropdownComponentInstanceContext.Provider value={{ instanceId: jobId }}>
-                    <ObjectSortDropdownButton 
-                      hotkeyScope={{ scope: FiltersHotkeyScope.ObjectSortDropdownButton }}
-                    />
-                  </ObjectSortDropdownComponentInstanceContext.Provider>
-                  <ChatOptionsDropdownButton />
-                </StyledRightSection>
-                }
-              />
-            </ViewComponentInstanceContext.Provider>
-          </RecordIndexContextProvider>
-          <ContextStoreComponentInstanceContext.Provider value={{ instanceId: jobId }} >
-            <ActionMenuComponentInstanceContext.Provider
-              value={{
-                instanceId: jobId,
-              }}
-            >
-              <TableContainer>
-                <DataTable ref={dataTableRef} jobId={jobId} />
-              </TableContainer>
-              
-              <div style={{ 
-                position: 'fixed', 
-                bottom: 0, 
-                left: 0, 
-                width: '100%', 
-                zIndex: 1000,
-                backgroundColor: theme.background.primary
-              }}>
-                <HotTableActionMenu tableId={jobId} />
-              </div>
-            </ActionMenuComponentInstanceContext.Provider>
-          </ContextStoreComponentInstanceContext.Provider>
+    <SpreadsheetImportProvider>
+      <StyledPageContainer>
+        <RecordFieldValueSelectorContextProvider>
+          <StyledPageHeader title={currentJob?.name || 'Job'} Icon={IconCheckbox}>
+            <StyledButtonContainer>
+              <Button title="Import Candidates" Icon={IconFileImport} variant="secondary" onClick={handleImportCandidates} />
+              <Button title="Filter" Icon={IconFilter} variant="secondary" />
+              <Button title="Add Candidate" Icon={IconPlus} variant="primary" />
+            </StyledButtonContainer>
+            <PageAddChatButton />
+            <NotificationsButton />
+          </StyledPageHeader>
+          <StyledPageBody>
+            <RecordIndexContextProvider value={recordIndexContextValue}>
+              <ViewComponentInstanceContext.Provider value={{ instanceId: jobId }}>
+                <StyledTopBar
+                  leftComponent={<StyledTabListContainer />}
+                  handleRefresh={handleRefresh}
+                  handleEnrichment={handleEnrichment}
+                  handleVideoInterviewEdit={handleVideoInterviewEdit}
+                  handleEngagement={handleEngagement}
+                  handleImportCandidates={handleImportCandidates}
+                  showRefetch={true}
+                  showEnrichment={true}
+                  showVideoInterviewEdit={true}
+                  showEngagement={true}
+                  showSearch={true}
+                  rightComponent={
+                  <StyledRightSection>
+                    <ObjectFilterDropdownComponentInstanceContext.Provider value={{ instanceId: jobId }}>
+                      <ObjectFilterDropdownButton 
+                        filterDropdownId={jobId} 
+                        hotkeyScope={{ scope: FiltersHotkeyScope.ObjectFilterDropdownButton }}
+                      />
+                    </ObjectFilterDropdownComponentInstanceContext.Provider>
+                    <ObjectSortDropdownComponentInstanceContext.Provider value={{ instanceId: jobId }}>
+                      <ObjectSortDropdownButton 
+                        hotkeyScope={{ scope: FiltersHotkeyScope.ObjectSortDropdownButton }}
+                      />
+                    </ObjectSortDropdownComponentInstanceContext.Provider>
+                    <ChatOptionsDropdownButton />
+                  </StyledRightSection>
+                  }
+                />
+              </ViewComponentInstanceContext.Provider>
+            </RecordIndexContextProvider>
+            <ContextStoreComponentInstanceContext.Provider value={{ instanceId: jobId }} >
+              <ActionMenuComponentInstanceContext.Provider
+                value={{
+                  instanceId: jobId,
+                }}
+              >
+                <TableContainer>
+                  <DataTable ref={dataTableRef} jobId={jobId} />
+                </TableContainer>
+                
+                <div style={{ 
+                  position: 'fixed', 
+                  bottom: 0, 
+                  left: 0, 
+                  width: '100%', 
+                  zIndex: 1000,
+                  backgroundColor: theme.background.primary
+                }}>
+                  <HotTableActionMenu tableId={jobId} />
+                </div>
+              </ActionMenuComponentInstanceContext.Provider>
+            </ContextStoreComponentInstanceContext.Provider>
 
-          {isArxEnrichModalOpen ? (
-            <ArxEnrichmentModal
-              objectNameSingular="job"
-              objectRecordId={selectedRecordId || '0'}
-            />
-          ) : (
-            <></>
-          )}
-          
-          {isVideoInterviewModalOpen ? (
-            <InterviewCreationModal
-              objectNameSingular="job"
-              objectRecordId={selectedRecordId || '0'}
-            />
-          ) : (
-            <></>
-          )}
-          
-          {isArxUploadJDModalOpen ? (
-            <ArxJDUploadModal
-              objectNameSingular="job"
-              objectRecordId={jobId || '0'}
-            />
-          ) : (
-            <></>
-          )}
-        </StyledPageBody>
-      </RecordFieldValueSelectorContextProvider>
-    </StyledPageContainer>
+            {isArxEnrichModalOpen ? (
+              <ArxEnrichmentModal
+                objectNameSingular="job"
+                objectRecordId={selectedRecordId || '0'}
+              />
+            ) : (
+              <></>
+            )}
+            
+            {isVideoInterviewModalOpen ? (
+              <InterviewCreationModal
+                objectNameSingular="job"
+                objectRecordId={selectedRecordId || '0'}
+              />
+            ) : (
+              <></>
+            )}
+            
+            {isArxUploadJDModalOpen ? (
+              <ArxJDUploadModal
+                objectNameSingular="job"
+                objectRecordId={jobId || '0'}
+              />
+            ) : (
+              <></>
+            )}
+          </StyledPageBody>
+        </RecordFieldValueSelectorContextProvider>
+      </StyledPageContainer>
+    </SpreadsheetImportProvider>
   );
 };

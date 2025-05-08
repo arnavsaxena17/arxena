@@ -56,15 +56,13 @@ export const ArxJDModalContent = ({
     );
   }
 
-  // If no parsedJD (initial state or error), show the upload form
-  // This applies to both create and edit modes
   if (parsedJD === null) {
     return (
       <UploadForm
         getRootProps={getRootProps}
         getInputProps={getInputProps}
         isDragActive={isDragActive}
-        isUploading={false} // Explicitly set to false since we're in the null parsedJD branch
+        isUploading={false}
         error={error}
         theme={theme}
         uploadButtonLabel={isEditMode ? "Replace File" : "Upload File"}

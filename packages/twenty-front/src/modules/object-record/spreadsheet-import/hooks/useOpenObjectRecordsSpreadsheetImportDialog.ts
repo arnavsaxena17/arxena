@@ -6,6 +6,7 @@ import { useOpenSpreadsheetImportDialog } from '@/spreadsheet-import/hooks/useOp
 import { SpreadsheetImportDialogOptions } from '@/spreadsheet-import/types';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
+
 import {
   FieldMetadataType,
   RelationDefinitionType,
@@ -17,6 +18,7 @@ export const useOpenObjectRecordsSpreadsheetImportDialog = (
   const { openSpreadsheetImportDialog } = useOpenSpreadsheetImportDialog<any>();
   const { enqueueSnackBar } = useSnackBar();
 
+  console.log('objectNameSingular', objectNameSingular);
   const { objectMetadataItem } = useObjectMetadataItem({
     objectNameSingular,
   });
@@ -50,10 +52,12 @@ export const useOpenObjectRecordsSpreadsheetImportDialog = (
     const availableFields = buildAvailableFieldsForImport(
       availableFieldMetadataItems,
     );
+    console.log("availableFields", availableFields);
 
     openSpreadsheetImportDialog({
       ...options,
       onSubmit: async (data) => {
+        console.log("data", data);
         const createInputs = data.validStructuredRows.map((record) => {
           const fieldMapping: Record<string, any> =
             buildRecordFromImportedStructuredRow({

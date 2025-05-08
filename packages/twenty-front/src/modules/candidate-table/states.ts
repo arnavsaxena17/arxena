@@ -24,6 +24,15 @@ export const jobsState = atom<
     name: string;
     pathPosition?: string;
     isActive: boolean;
+    createdAt?: string;
+    jobLocation?: string;
+    candidates?: {
+      edges?: Array<{
+        node: {
+          id: string;
+        }
+      }>
+    }
   }>
 >({
   key: 'candidate-table/jobsState',
