@@ -27,6 +27,8 @@ import { WorkspaceMember } from '@/workspace-member/types/WorkspaceMember';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { isDefined } from 'twenty-shared';
 import { OnboardingStatus } from '~/generated/graphql';
+import { useWebSocketEvent } from '../../modules/websocket-context/useWebSocketEvent';
+import { useWebSocket } from '../../modules/websocket-context/WebSocketContextProvider';
 
 const StyledContentContainer = styled.div`
   width: 100%;
@@ -56,7 +58,24 @@ const validationSchema = z
   })
   .required();
 type Form = z.infer<typeof validationSchema>;
+
 export const CreateProfile = () => {
+  const { connected, socket } = useWebSocket();
+  
+  // Add WebSocket event listener for metadata structure progress
+  useWebSocketEvent<{ step: string; message: string }>(
+    'metadata-structure-progress',
+    (data: { step: string; message: string }) => {
+      console.log('CreateProfile component received WebSocket event:', data);
+      
+      if (data?.step === 'metadata-structure-complete') {
+        console.log('CreateProfile: Metadata structure creation completed');
+        // No need to reload here since we're going to navigate away from this page
+      }
+    },
+    []
+  );
+
   const { t } = useLingui();
   const onboardingStatus = useOnboardingStatus();
   const [tokenPair] = useRecoilState(tokenPairState)

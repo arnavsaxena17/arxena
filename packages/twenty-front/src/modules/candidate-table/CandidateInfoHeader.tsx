@@ -6,6 +6,7 @@ import styled from '@emotion/styled';
 import { IconCopy, IconId, IconMessageCircle, IconMessageX, IconPhone, IconUserCircle } from '@tabler/icons-react';
 import axios from 'axios';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { graphQltoUpdateOneCandidate } from 'twenty-shared';
 import { Status } from 'twenty-ui';
@@ -133,11 +134,22 @@ const StyledSelect = styled.select`
   }
 `;
 
+const StyledIconWrapper = styled.div`
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  
+  &:hover {
+    opacity: 0.8;
+  }
+`;
+
 export const CandidateInfoHeader = () => {
   const tableState = useRecoilValue(tableStateAtom);
   const candidateId = tableState.selectedRowIds[0];
   const [tokenPair] = useRecoilState(tokenPairState);
   const processedData = useRecoilValue(processedDataSelector);
+  const navigate = useNavigate();
 
   const [selectedInterimChat, setSelectedInterimChat] = useState('');
   const { enqueueSnackBar } = useSnackBar();
@@ -267,6 +279,10 @@ export const CandidateInfoHeader = () => {
     }
   };
 
+  const handleNavigateToCandidate = () => {
+    navigate(`/object/candidate/${candidateId}`);
+  };
+
   // Get status color based on current status
   const getStatusColor = (status: string): "red" | "green" | "orange" | "turquoise" | "sky" | "blue" | "purple" | "gray" | "pink" | "yellow" => {
     return STATUS_COLORS[status] || 'gray';
@@ -285,10 +301,14 @@ export const CandidateInfoHeader = () => {
       </StyledTopRow>
 
       <StyledInfoRow>
-        <StyledInfoItem onClick={() => handleCopy(candidateId || '', 'Candidate ID')}>
-          <IconId size={16} />
+        <StyledInfoItem>
+          <StyledIconWrapper onClick={handleNavigateToCandidate}>
+            <IconId size={16} />
+          </StyledIconWrapper>
           <span>ID: {candidateId?.substring(0, 8)}...</span>
-          <IconCopy size={14} />
+          <StyledIconWrapper onClick={() => handleCopy(candidateId || '', 'Candidate ID')}>
+            <IconCopy size={14} />
+          </StyledIconWrapper>
         </StyledInfoItem>
         
         {candidateData.phone && (

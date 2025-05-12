@@ -248,6 +248,8 @@ export const useArxJDUpload = (objectNameSingular: string) => {
             idToUpdate: createdJob.id,
             updateOneRecordInput: {
               chatFlowOrder: ['startChat'],
+              jobCode: jobCode
+
             },
           });
         } catch (chatFlowError) {
@@ -362,10 +364,13 @@ export const useArxJDUpload = (objectNameSingular: string) => {
           }
 
           const { companyId: _, ...restOfUpdateData } = updateData;
+          console.log("restOfUpdateData", restOfUpdateData);
           const updateOneRecordInput = {
             ...restOfUpdateData,
+            jobCode: jobCode,
             ...(companyId && companyId !== '' ? { companyId } : {}),
           };
+          
 
           console.log("updateOneRecordInput", updateOneRecordInput);
 

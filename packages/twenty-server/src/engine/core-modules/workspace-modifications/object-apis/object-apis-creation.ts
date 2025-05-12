@@ -13,6 +13,7 @@ import {
 
 // import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 // eslint-disable-next-line no-restricted-imports
+import { WebSocketService } from 'src/modules/websocket/websocket.service';
 import { WorkspaceQueryService } from '../workspace-modifications.service';
 
 import { FieldMetadataInterface } from 'src/engine/metadata-modules/field-metadata/interfaces/field-metadata.interface';
@@ -33,7 +34,21 @@ import {
 import { executeQuery } from './utils/graphqlClient.js';
 
 export class CreateMetaDataStructure {
-  constructor(private readonly workspaceQueryService: WorkspaceQueryService) {}
+  constructor(
+    private readonly workspaceQueryService: WorkspaceQueryService,
+    private readonly webSocketService?: WebSocketService,
+  ) {}
+
+  // Helper method to emit websocket events
+  private emitProgress(userId: string, step: string, message: string) {
+    if (this.webSocketService) {
+      console.log('emitting websocket event', userId, step, message);
+      this.webSocketService.sendToUser(userId, 'metadata-structure-progress', {
+        step,
+        message,
+      });
+    }
+  }
 
   async axiosRequest(data: string, apiToken: string) {
     console.log('This is the url:', process.env.GRAPHQL_URL);
@@ -72,7 +87,6 @@ export class CreateMetaDataStructure {
     };
 
     const response = await axios.request(config);
-
     console.log('This is the response:', response.data.data.currentUser);
     console.log('This is the response:', response.data.data);
     console.log('This is the response:', response.data);
@@ -236,7 +250,6 @@ export class CreateMetaDataStructure {
   async addAPIKeys(apiToken: string) {
     const workspaceId =
       await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-
     await this.workspaceQueryService.updateWorkspaceApiKeys(workspaceId, {
       openaikey: process.env.OPENAI_KEY,
       twilio_account_sid: undefined,
@@ -346,6 +359,14 @@ export class CreateMetaDataStructure {
   async createMetadataStructure(apiToken: string): Promise<void> {
     try {
       console.log('Starting metadata structure creation...');
+      const currentUser = await this.getCurrentUser(apiToken);
+      const userId = currentUser?.id;
+      console.log('userId', userId);
+
+      if (!userId) {
+        console.error('Failed to get user ID from token');
+        return;
+      }
 
       const shouldCreateObjectMetadata = true;
       const shouldCreateVideoInterviews = true;
@@ -371,6 +392,9 @@ export class CreateMetaDataStructure {
 
           await createRelations(relationsFields, apiToken);
           console.log('Relations created successfully');
+          
+          // Send websocket notification after relations are created
+          this.emitProgress(userId, 'relations-created', 'Objects and relationships created successfully');
         } catch (error) {
           console.log(
             'Error creating object metadata items, fields, or relations:',
@@ -392,6 +416,9 @@ export class CreateMetaDataStructure {
           );
           console.log('Video Interview Models created successfully');
           console.log('Video Interviews created successfully');
+          
+          // Send websocket notification after video interview templates are created
+          this.emitProgress(userId, 'video-interviews-created', 'Video interview models and templates created successfully');
         } catch (error) {
           console.log('Error creating Video Interview Models:', error);
         }
@@ -417,6 +444,9 @@ export class CreateMetaDataStructure {
 
           console.log('API key created successfully:', apiKey);
           await this.addAPIKeys(apiToken);
+          
+          // Send websocket notification after API keys are added
+          this.emitProgress(userId, 'api-keys-added', 'API keys and prompts configured successfully');
         } catch (error) {
           console.log(
             'Error during API key creation or workspace member update:',
@@ -425,16 +455,19 @@ export class CreateMetaDataStructure {
         }
       }
 
-
       if (shoudUpdateCandidateViewField) {
         try {
           await this.updateCandidateViewField(apiToken);
+          
+          // Send websocket notification after candidate view field is updated
+          this.emitProgress(userId, 'candidate-view-updated', 'Candidate view field updated successfully');
+          
+          // Send completion event to trigger page reload
+          this.emitProgress(userId, 'metadata-structure-complete', 'Metadata structure creation completed successfully');
         } catch (error) {
           console.log('Error updating candidate view field:', error);
         }
       }
-
-
 
     } catch (error) {
       console.log('Error creating metadata structure:', error);

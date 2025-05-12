@@ -12,6 +12,7 @@ import axios from 'axios';
 import { Request } from 'express';
 
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
+import { WebSocketService } from 'src/modules/websocket/websocket.service';
 
 import { WorkspaceQueryService } from './workspace-modifications.service';
 
@@ -43,7 +44,10 @@ export async function axiosRequest(data: string, apiToken: string) {
 
 @Controller('workspace-modifications')
 export class WorkspaceModificationsController {
-  constructor(private readonly workspaceQueryService: WorkspaceQueryService) {
+  constructor(
+    private readonly workspaceQueryService: WorkspaceQueryService,
+    private readonly webSocketService: WebSocketService,
+  ) {
     console.log('GraphQL URL configured as:', process.env.GRAPHQL_URL);
   }
 
@@ -129,6 +133,7 @@ export class WorkspaceModificationsController {
 
     new CreateMetaDataStructure(
       this.workspaceQueryService,
+      this.webSocketService,
     ).createMetadataStructure(apiToken);
 
     return;

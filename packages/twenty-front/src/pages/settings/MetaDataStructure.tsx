@@ -2,8 +2,10 @@ import { tokenPairState } from '@/auth/states/tokenPairState';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import styled from '@emotion/styled';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRecoilState } from 'recoil';
+import { useWebSocketEvent } from '../../modules/websocket-context/useWebSocketEvent';
+import { useWebSocket } from '../../modules/websocket-context/WebSocketContextProvider';
 
 const StyledButtonContainer = styled.div`
   display: flex;
@@ -59,8 +61,91 @@ export const MetadataStructureSection = () => {
   const [hasBeenClicked, setHasBeenClicked] = useState(() => {
     return localStorage.getItem('metadata-structure-created') === 'true';
   });
-
+  const { connected, socket } = useWebSocket();
   const { enqueueSnackBar } = useSnackBar();
+
+  console.log('MetadataStructureSection rendered, socket:', !!socket, 'connected:', connected);
+
+  // Direct event handler using socket
+  useEffect(() => {
+    if (!socket) return;
+    
+    console.log('Setting up direct socket event listener for metadata-structure-progress');
+    
+    const handleProgressEvent = (data: any) => {
+      console.log('Direct socket listener received:', data);
+      
+      if (data?.message) {
+        let variant = SnackBarVariant.Info;
+        
+        if (data.step === 'candidate-view-updated') {
+          variant = SnackBarVariant.Success;
+        }
+        
+        if (data.step === 'metadata-structure-complete') {
+          variant = SnackBarVariant.Success;
+          enqueueSnackBar(data.message, { variant });
+          
+          // Give the snackbar time to display before reloading
+          console.log('Reloading page in 3 seconds due to metadata-structure-complete event');
+          setTimeout(() => {
+            window.location.reload();
+          }, 3000);
+          return;
+        }
+        
+        enqueueSnackBar(data.message, { variant });
+      }
+    };
+    
+    socket.on('metadata-structure-progress', handleProgressEvent);
+    
+    return () => {
+      console.log('Cleaning up direct socket event listener');
+      socket.off('metadata-structure-progress', handleProgressEvent);
+    };
+  }, [socket, enqueueSnackBar]);
+
+  // Also keep the original hook for backup
+  useWebSocketEvent<{ step: string; message: string }>(
+    'metadata-structure-progress',
+    (data: { step: string; message: string }) => {
+      console.log('useWebSocketEvent hook received:', data);
+      
+      if (data?.message) {
+        let variant = SnackBarVariant.Info;
+        
+        console.log('data::', data);
+        console.log('data.step::', data.step);
+        
+        if (data.step === 'candidate-view-updated') {
+          variant = SnackBarVariant.Success;
+        }
+        
+        if (data.step === 'metadata-structure-complete') {
+          variant = SnackBarVariant.Success;
+          enqueueSnackBar(data.message, { variant });
+          
+          // Give the snackbar time to display before reloading
+          console.log('Reloading page in 3 seconds due to metadata-structure-complete event');
+          setTimeout(() => {
+            window.location.reload();
+          }, 3000);
+          return;
+        }
+        
+        enqueueSnackBar(data.message, { variant });
+      }
+    },
+    []
+  );
+
+  useEffect(() => {
+    if (connected) {
+      enqueueSnackBar('Connected to server', { variant: SnackBarVariant.Info });
+      console.log('WebSocket connected status changed to:', connected);
+    }
+  }, [connected, enqueueSnackBar]);
 
   const handleCreateStructure = async () => {
     if (isSubmitting || hasBeenClicked) return;
@@ -83,8 +168,8 @@ export const MetadataStructureSection = () => {
         throw new Error('Failed to create metadata structure');
       }
 
-      enqueueSnackBar('Metadata structure created successfully', {
-        variant: SnackBarVariant.Success,
+      enqueueSnackBar('Started metadata structure creation process', {
+        variant: SnackBarVariant.Info,
       });
     } catch (error) {
       enqueueSnackBar(
@@ -95,6 +180,8 @@ export const MetadataStructureSection = () => {
           variant: SnackBarVariant.Error,
         },
       );
+      setHasBeenClicked(false);
+      localStorage.removeItem('metadata-structure-created');
     } finally {
       setIsSubmitting(false);
     }

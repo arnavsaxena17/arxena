@@ -16,7 +16,6 @@ export class ExtSockWhatsappController {
   @UseGuards(JwtAuthGuard)
   async receiveWhatsappMessage(@Body() messageData: WhatsappMessageData) {
     console.log('Received WhatsApp message:', messageData);
-
     try {
       await this.extSockWhatsappService.queueMessage(messageData);
 

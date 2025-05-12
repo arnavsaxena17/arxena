@@ -101,14 +101,14 @@ export const findMatch = <T extends string>(
 ): T | undefined => {
   // First check for exact matches in keys, labels, or alternateMatches
   for (const field of fields) {
-    console.log(
-      'field::',
-      field,
-      'of fields::',
-      fields,
-      'with header::',
-      header,
-    );
+    // console.log(
+    //   'field::',
+    //   field,
+    //   'of fields::',
+    //   fields,
+    //   'with header::',
+    //   header,
+    // );
     // Check field key
     if (isExactMatch(field.key.toLowerCase(), header.toLowerCase())) {
       return field.key as T;

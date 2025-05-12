@@ -94,6 +94,22 @@ export const CANDIDATE_SPECIFIC_ACTIONS: Record<
     ],
     useAction: useStartChatWithCandidatesAction,
   },
+  // saveResumesFromSnapshotProfiles: {
+  //   type: ActionMenuEntryType.Standard,
+  //   scope: ActionMenuEntryScope.RecordSelection,
+  //   key: MultipleRecordsActionKeys.SAVE_RESUMES_FROM_SNAPSHOT_PROFILES,
+  //   label: msg`Save Resumes from Snapshot Profiles`,
+  //   shortLabel: msg`Save Resumes`,
+  //   position: 5,
+  //   Icon: IconMessageCircle,
+  //   accent: 'placeholder',
+  //   isPinned: false,
+  //   availableOn: [
+  //     ActionViewType.INDEX_PAGE_BULK_SELECTION,
+  //     ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
+  //   ],
+  //   useAction: useSaveResumesFromSnapshotProfilesAction,
+  // },
   refreshChatStatus: {
     type: ActionMenuEntryType.Standard,
     scope: ActionMenuEntryScope.RecordSelection,

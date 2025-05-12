@@ -21,11 +21,14 @@ import { RecordFieldValueSelectorContextProvider } from '@/object-record/record-
 import { RecordTableEmptyStateDisplay } from '@/object-record/record-table/empty-state/components/RecordTableEmptyStateDisplay';
 import { useOpenObjectRecordsSpreadsheetImportDialog } from '@/object-record/spreadsheet-import/hooks/useOpenObjectRecordsSpreadsheetImportDialog';
 import { SpreadsheetImportProvider } from '@/spreadsheet-import/provider/components/SpreadsheetImportProvider';
+import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
+import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { PageBody } from '@/ui/layout/page/components/PageBody';
 import { PageContainer } from '@/ui/layout/page/components/PageContainer';
 import { PageHeader } from '@/ui/layout/page/components/PageHeader';
 import { TopBar } from '@/ui/layout/top-bar/components/TopBar';
 import { ViewComponentInstanceContext } from '@/views/states/contexts/ViewComponentInstanceContext';
+import { useWebSocketEvent } from '../../../websocket-context/useWebSocketEvent';
 
 import { ArxEnrichmentModal } from '@/arx-enrich/arxEnrichmentModal';
 import { useObjectMetadataItems } from '@/object-metadata/hooks/useObjectMetadataItems';
@@ -186,6 +189,40 @@ export const Jobs = () => {
   const isArxUploadJDModalOpen = useRecoilValue(isArxUploadJDModalOpenState);
   const [, setIsArxUploadJDModalOpen] = useRecoilState(isArxUploadJDModalOpenState);
 
+  // Add useSnackBar hook
+  const { enqueueSnackBar } = useSnackBar();
+
+  // Add WebSocket event listener for metadata structure progress
+  useWebSocketEvent<{ step: string; message: string }>(
+    'metadata-structure-progress',
+    (data: { step: string; message: string }) => {
+      console.log('Jobs component received WebSocket event:', data);
+      
+      if (data?.message) {
+        let variant = SnackBarVariant.Info;
+        
+        if (data.step === 'candidate-view-updated') {
+          variant = SnackBarVariant.Success;
+        }
+        
+        if (data.step === 'metadata-structure-complete') {
+          variant = SnackBarVariant.Success;
+          enqueueSnackBar(data.message, { variant });
+          
+          // Give the snackbar time to display before reloading
+          console.log('Jobs: Reloading page in 1 seconds due to metadata-structure-complete event');
+          setTimeout(() => {
+            window.location.reload();
+          }, 1000);
+          return;
+        }
+        
+        enqueueSnackBar(data.message, { variant });
+      }
+    },
+    []
+  );
+
   const handleEnrichment = () => {
     if (!candidateId) {
       alert('Please select a chat to enrich');
@@ -335,7 +372,7 @@ export const Jobs = () => {
                     <RecordTableEmptyStateDisplay
                       buttonTitle="Add Job"
                       subTitle="No jobs found"
-                      title="No jobs found"
+                      title="Your workspace is ready"
                       ButtonIcon={IconPlus}
                       animatedPlaceholderType="noRecord"
                       onClick={handleEngagement}

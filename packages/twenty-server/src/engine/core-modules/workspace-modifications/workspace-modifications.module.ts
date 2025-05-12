@@ -11,6 +11,7 @@ import { DataSourceEntity } from 'src/engine/metadata-modules/data-source/data-s
 import { DataSourceModule } from 'src/engine/metadata-modules/data-source/data-source.module';
 import { WorkspaceCacheStorageService } from 'src/engine/workspace-cache-storage/workspace-cache-storage.service';
 import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
+import { WebSocketModule } from 'src/modules/websocket/websocket.module';
 
 import { WorkspaceModificationsController } from './workspace-modifications.controller';
 import { WorkspaceQueryService } from './workspace-modifications.service';
@@ -20,7 +21,7 @@ import { WorkspaceQueryService } from './workspace-modifications.service';
     AuthModule,
     DataSourceModule,
     TypeORMModule,
-    WorkspaceModificationsModule, // Add this import
+    WebSocketModule,
     TypeOrmModule.forFeature([Workspace], 'core'),
     TypeOrmModule.forFeature([DataSourceEntity], 'metadata'),
     JwtModule,
