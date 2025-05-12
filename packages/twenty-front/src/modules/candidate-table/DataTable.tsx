@@ -21,8 +21,6 @@ const StyledTableWrapper = styled.div`
   position: relative;
   width: 100%;
   height: 100%;
-  overscroll-behavior: none;
-  touch-action: pan-y;
 `;
 
 
@@ -44,23 +42,11 @@ const StyledTableContainer = styled.div`
   /* Hide scrollbar only in header's wtHolder */
   .handsontable .ht_clone_top .wtHolder {
     overflow: hidden !important;
-    scrollbar-width: none;
     -ms-overflow-style: none;
-  }
-  .handsontable .ht_clone_top .wtHolder::-webkit-scrollbar {
-    display: none;
   }
 
   .handsontable .wtHolder {
     overflow: auto;
-  }
-
-  .ht_clone_inline_start .wtHolder {
-    scrollbar-width: none; /* Firefox */
-    -ms-overflow-style: none; /* IE 10+ */
-  }
-  .ht_clone_inline_start .wtHolder::-webkit-scrollbar {
-    display: none; /* Chrome, Safari, Opera */
   }
 
   /* Style for selected rows */
@@ -150,10 +136,8 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
       contextStoreNumberOfSelectedRecordsComponentState,
       jobId
     );
-
     const filteredData = useMemo(() => {
       if (!searchQuery) return processedData;
-      
       const query = searchQuery.toLowerCase();
       return processedData.filter((candidate: any) => {
         return Object.values(candidate).some(value => {

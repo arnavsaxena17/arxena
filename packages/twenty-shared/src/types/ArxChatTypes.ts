@@ -611,6 +611,7 @@ export interface ArxenaCandidateNode {
   displayPicture: { primaryLinkLabel: string; primaryLinkUrl: string };
   jobsId: string;
   peopleId: string;
+  whatsappProvider: string;
 }
 
 export interface ArxenaJobCandidateNode {

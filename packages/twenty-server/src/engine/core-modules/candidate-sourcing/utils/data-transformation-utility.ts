@@ -17,7 +17,7 @@ export const mapArxCandidateToPersonNode = candidate => {
 export const mapArxCandidateToCandidateNode = (candidate: {
   email_address: any;
   phone_numbers: any; first_name: string; last_name: string; unique_key_string: any; profile_url: any; display_picture: any; data_source: any; campaign: any; source: any;
-}, jobNode: { id: any; }) => {
+}, jobNode: { id: any; }, whatsapp_key: string) => {
   const candidateNode: ArxenaCandidateNode = {
     name: candidate?.first_name + ' ' + candidate?.last_name || "",
     jobsId: jobNode?.id,
@@ -35,6 +35,7 @@ export const mapArxCandidateToCandidateNode = (candidate: {
     peopleId: '',
     campaign: candidate?.campaign || '',
     source: candidate?.data_source || '',
+    whatsappProvider: whatsapp_key,
   };
   return candidateNode;
 };
@@ -85,11 +86,11 @@ export const generateCompleteMappings = async (rawCandidateData, jobNode) => {
 };
 
 
-export const processArxCandidate = async (candidate, jobNode) => {
+export const processArxCandidate = async (candidate, jobNode, whatsapp_key = 'whatsapp-web') => {
   // console.log("This is the job node", jobNode);
   const personNode = mapArxCandidateToPersonNode(candidate);
   // console.log("This is the job specific node", jobSpecificNode);
-  const candidateNode = mapArxCandidateToCandidateNode(candidate, jobNode);
+  const candidateNode = mapArxCandidateToCandidateNode(candidate, jobNode, whatsapp_key);
   // console.log("This is the candidate node", candidateNode);
   return { personNode, candidateNode };
 };

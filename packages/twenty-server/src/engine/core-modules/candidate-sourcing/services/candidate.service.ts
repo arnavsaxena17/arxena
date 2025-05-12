@@ -774,6 +774,13 @@ export class CandidateService {
         apiToken,
       );
 
+      const workspaceId = await this.getWorkspaceIdFromToken(apiToken);
+
+
+      const whatsapp_key = await this.workspaceQueryService.getWorkspaceApiKey(
+        workspaceId,
+        'whatsapp_key',
+      ) || 'whatsapp-web';
       console.log('Candidates map:', candidatesMap);
       const candidatesToCreate: ArxenaCandidateNode[] = [];
       const candidateKeys: string[] = [];
@@ -791,6 +798,7 @@ export class CandidateService {
           const { candidateNode } = await processArxCandidate(
             profile,
             jobObject,
+            whatsapp_key,
           );
 
           // console.log("Candidate Node:", candidateNode, "for pro  file:", profile);
