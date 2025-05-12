@@ -1,4 +1,4 @@
-import { chatSearchQueryState } from '@/activities/chats/states/chatSearchQueryState';
+import { chatSearchQueryState } from '@/candidate-table/states/chatSearchQueryState';
 import { useOpenObjectRecordsSpreadsheetImportDialog } from '@/object-record/spreadsheet-import/hooks/useOpenObjectRecordsSpreadsheetImportDialog';
 import styled from '@emotion/styled';
 import { ReactNode } from 'react';

@@ -1,10 +1,10 @@
 import { Trans } from '@lingui/react/macro';
 import { useId } from 'react';
 import {
-  IconFileText,
-  IconSparkles,
-  IconVideo,
-  MenuItem,
+    IconFileText,
+    IconSparkles,
+    IconVideo,
+    MenuItem,
 } from 'twenty-ui';
 
 import { useArxUploadJDModal } from '@/arx-jd-upload/hooks/useArxUploadJDModal';
@@ -14,7 +14,7 @@ import { Dropdown } from '@/ui/layout/dropdown/components/Dropdown';
 import { StyledHeaderDropdownButton } from '@/ui/layout/dropdown/components/StyledHeaderDropdownButton';
 import { useDropdown } from '@/ui/layout/dropdown/hooks/useDropdown';
 import {
-  IconFileDescription,
+    IconFileDescription,
 } from '@tabler/icons-react';
 
 // Define your specific actions here

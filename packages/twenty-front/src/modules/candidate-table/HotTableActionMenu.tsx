@@ -8,8 +8,8 @@ import { ActionMenuComponentInstanceContext } from "@/action-menu/states/context
 import { ActionBarHotkeyScope } from "@/action-menu/types/ActionBarHotKeyScope";
 import { ActionMenuEntry } from "@/action-menu/types/ActionMenuEntry";
 import { getActionBarIdFromActionMenuId } from "@/action-menu/utils/getActionBarIdFromActionMenuId";
-import { ChatActionMenuEntriesSetter } from "@/activities/chats/components/ChatActionMenuEntriesSetter";
-import { chatActionsState } from "@/activities/chats/components/RightDrawerChatAllActionsContent";
+import { ChatActionMenuEntriesSetter } from "@/candidate-table/ChatActionMenuEntriesSetter";
+import { chatActionsState } from "@/candidate-table/RightDrawerChatAllActionsContent";
 import { contextStoreNumberOfSelectedRecordsComponentState } from "@/context-store/states/contextStoreNumberOfSelectedRecordsComponentState";
 import { contextStoreTargetedRecordsRuleComponentState } from "@/context-store/states/contextStoreTargetedRecordsRuleComponentState";
 import { BottomBar } from "@/ui/layout/bottom-bar/components/BottomBar";

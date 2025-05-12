@@ -93,6 +93,19 @@ export const TableColumns = ({
     container.style.display = 'flex';
     container.style.alignItems = 'center';
     container.style.gap = '8px';
+    container.style.cursor = 'pointer';
+    container.style.padding = '4px';
+    container.style.borderRadius = '4px';
+    container.style.backgroundColor = '#f5f5f5';
+    container.style.transition = 'background-color 0.2s ease';
+    
+    // Add hover effect
+    container.onmouseover = () => {
+      container.style.backgroundColor = '#e0e0e0';
+    };
+    container.onmouseout = () => {
+      container.style.backgroundColor = '#f5f5f5';
+    };
     
     const nameDiv = document.createElement('div');
     Object.assign(nameDiv.style, truncatedCellStyle);

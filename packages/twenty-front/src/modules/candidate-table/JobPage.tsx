@@ -1,15 +1,15 @@
 import { ActionMenuComponentInstanceContext } from "@/action-menu/states/contexts/ActionMenuComponentInstanceContext";
-import { TableContainer } from "@/activities/chats/components/chat-table/styled";
+import { TableContainer } from "@/candidate-table/components/styled";
 // import { StyledTopBar } from "@/activities/chats/components/chat-window/ChatWindowStyles";
-import { ChatOptionsDropdownButton } from "@/activities/chats/components/ChatOptionsDropdownButton";
-import { PageAddChatButton } from "@/activities/chats/components/PageAddChatButton";
 import { ArxEnrichmentModal } from '@/arx-enrich/arxEnrichmentModal';
 import { useSelectedRecordForEnrichment } from "@/arx-enrich/hooks/useSelectedRecordForEnrichment";
 import { isArxEnrichModalOpenState } from "@/arx-enrich/states/arxEnrichModalOpenState";
 import { ArxJDUploadModal } from '@/arx-jd-upload/components/ArxJDUploadModal';
 import { isArxUploadJDModalOpenState } from "@/arx-jd-upload/states/arxUploadJDModalOpenState";
+import { ChatOptionsDropdownButton } from "@/candidate-table/ChatOptionsDropdownButton";
 import { DataTable } from "@/candidate-table/DataTable";
 import { HotTableActionMenu } from "@/candidate-table/HotTableActionMenu";
+import { PageAddChatButton } from "@/candidate-table/PageAddChatButton";
 import { jobIdAtom, jobsState } from "@/candidate-table/states";
 import { ContextStoreComponentInstanceContext } from "@/context-store/states/contexts/ContextStoreComponentInstanceContext";
 import { ObjectFilterDropdownButton } from "@/object-record/object-filter-dropdown/components/ObjectFilterDropdownButton";

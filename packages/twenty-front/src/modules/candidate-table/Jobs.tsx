@@ -3,13 +3,13 @@ import { useRecoilState, useRecoilValue } from 'recoil';
 
 import { Button, IconCheckbox, IconPlus } from 'twenty-ui';
 
-import { ChatOptionsDropdownButton } from '@/activities/chats/components/ChatOptionsDropdownButton';
-import { JobCard } from '@/activities/chats/components/JobCard';
-import { PageAddChatButton } from '@/activities/chats/components/PageAddChatButton';
 import { useSelectedRecordForEnrichment } from '@/arx-enrich/hooks/useSelectedRecordForEnrichment';
 import { isArxEnrichModalOpenState } from '@/arx-enrich/states/arxEnrichModalOpenState';
 import { ArxJDUploadModal } from '@/arx-jd-upload/components/ArxJDUploadModal';
 import { isArxUploadJDModalOpenState } from '@/arx-jd-upload/states/arxUploadJDModalOpenState';
+import { ChatOptionsDropdownButton } from '@/candidate-table/ChatOptionsDropdownButton';
+import { JobCard } from '@/candidate-table/JobCard';
+import { PageAddChatButton } from '@/candidate-table/PageAddChatButton';
 import { jobsState } from '@/candidate-table/states';
 import { ObjectFilterDropdownButton } from '@/object-record/object-filter-dropdown/components/ObjectFilterDropdownButton';
 import { ObjectFilterDropdownComponentInstanceContext } from '@/object-record/object-filter-dropdown/states/contexts/ObjectFilterDropdownComponentInstanceContext';
@@ -28,7 +28,7 @@ import { PageContainer } from '@/ui/layout/page/components/PageContainer';
 import { PageHeader } from '@/ui/layout/page/components/PageHeader';
 import { TopBar } from '@/ui/layout/top-bar/components/TopBar';
 import { ViewComponentInstanceContext } from '@/views/states/contexts/ViewComponentInstanceContext';
-import { useWebSocketEvent } from '../../../websocket-context/useWebSocketEvent';
+import { useWebSocketEvent } from '../websocket-context/useWebSocketEvent';
 
 import { ArxEnrichmentModal } from '@/arx-enrich/arxEnrichmentModal';
 import { useObjectMetadataItems } from '@/object-metadata/hooks/useObjectMetadataItems';

@@ -1,7 +1,7 @@
 import { ActionViewType } from '@/action-menu/actions/types/ActionViewType';
 import { ActionMenuContext } from '@/action-menu/contexts/ActionMenuContext';
 import { ActionMenuComponentInstanceContext } from '@/action-menu/states/contexts/ActionMenuComponentInstanceContext';
-import { CHAT_ACTIONS_CONFIG } from '@/activities/chats/constants/ChatActionsConfig';
+import { CHAT_ACTIONS_CONFIG } from '@/candidate-table/ChatActionsConfig';
 import { ContextStoreComponentInstanceContext } from '@/context-store/states/contexts/ContextStoreComponentInstanceContext';
 import { contextStoreCurrentObjectMetadataItemComponentState } from '@/context-store/states/contextStoreCurrentObjectMetadataItemComponentState';
 import { contextStoreCurrentViewTypeComponentState } from '@/context-store/states/contextStoreCurrentViewTypeComponentState';
@@ -15,7 +15,7 @@ import React, { useEffect, useState } from 'react';
 import { IconComponent, MenuItemCommand } from 'twenty-ui';
 
 // Define action types
-type ActionHook = (params: { objectMetadataItem: any }) => {
+type ActionHook = (params: { objectMetadataItem: any }) => {    
   onClick: () => void;
   shouldBeRegistered?: boolean;
   ConfirmationModal?: React.ReactNode;

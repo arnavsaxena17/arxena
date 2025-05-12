@@ -14,7 +14,7 @@ import { currentJobIdState } from '@/arx-enrich/states/arxEnrichModalOpenState';
 import { IconLoader2 } from '@tabler/icons-react';
 import { useState } from 'react';
 import { IconAlertCircle } from 'twenty-ui';
-import { refreshTableDataTriggerState } from '../../activities/chats/states/refreshTableDataTriggerState';
+import { refreshTableDataTriggerState } from '../../candidate-table/states/refreshTableDataTriggerState';
 import { ArxEnrichName } from './ArxEnrichName'; // Ensure this import is correct
 import DynamicModelCreator from './DynamicModelCreator';
 

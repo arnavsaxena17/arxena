@@ -1,7 +1,7 @@
-import { chatSearchQueryState } from '@/activities/chats/states/chatSearchQueryState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { afterChange, afterSelectionEnd } from '@/candidate-table/HotHooks';
 import { columnsSelector, processedDataSelector, tableStateAtom } from "@/candidate-table/states";
+import { chatSearchQueryState } from '@/candidate-table/states/chatSearchQueryState';
 import { contextStoreNumberOfSelectedRecordsComponentState } from '@/context-store/states/contextStoreNumberOfSelectedRecordsComponentState';
 import { contextStoreTargetedRecordsRuleComponentState } from '@/context-store/states/contextStoreTargetedRecordsRuleComponentState';
 import { useRightDrawer } from '@/ui/layout/right-drawer/hooks/useRightDrawer';
@@ -15,6 +15,16 @@ import 'handsontable/styles/ht-theme-main.min.css';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef } from "react";
 import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
 import { IconPlus } from 'twenty-ui';
+
+
+const StyledTableWrapper = styled.div`
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overscroll-behavior: none;
+  touch-action: pan-y;
+`;
+
 
 const StyledTableContainer = styled.div`
   width: 100%;
@@ -356,13 +366,14 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
     }
     
     return (
-      <StyledTableContainer>
-        <HotTable
-          ref={tableRef}
-          data={mutatableData}
-          columns={columns}
-          colHeaders={colHeaders}
-          afterGetColHeader={afterGetColHeader}
+      <StyledTableWrapper>
+        <StyledTableContainer>
+          <HotTable
+            ref={tableRef}
+            data={mutatableData}
+            columns={columns}
+            colHeaders={colHeaders}
+            afterGetColHeader={afterGetColHeader}
           rowHeaders={true}
           contextMenu={true}
           height="calc(100vh - 200px)"
@@ -391,6 +402,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
           fixedColumnsLeft={1}
         />
       </StyledTableContainer>
+      </StyledTableWrapper>
       
     );
   });
