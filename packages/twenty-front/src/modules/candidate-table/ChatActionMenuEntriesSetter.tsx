@@ -1,7 +1,7 @@
 import { RegisterRecordActionEffect } from '@/action-menu/actions/record-actions/components/RegisterRecordActionEffect';
+import { CHAT_ACTIONS_CONFIG } from '@/action-menu/actions/record-actions/constants/ChatActionsConfig';
 import { getActionViewType } from '@/action-menu/actions/utils/getActionViewType';
 import { ActionMenuComponentInstanceContext } from '@/action-menu/states/contexts/ActionMenuComponentInstanceContext';
-import { CHAT_ACTIONS_CONFIG } from '@/candidate-table/ChatActionsConfig';
 import { ContextStoreComponentInstanceContext } from '@/context-store/states/contexts/ContextStoreComponentInstanceContext';
 import { contextStoreCurrentObjectMetadataItemComponentState } from '@/context-store/states/contextStoreCurrentObjectMetadataItemComponentState';
 import { contextStoreCurrentViewTypeComponentState } from '@/context-store/states/contextStoreCurrentViewTypeComponentState';

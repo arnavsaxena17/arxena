@@ -61,6 +61,16 @@ const StyledTableContainer = styled.div`
   .ht_clone_inline_start .wtHolder::-webkit-scrollbar {
     display: none; /* Chrome, Safari, Opera */
   }
+
+  /* Style for selected rows */
+  .handsontable tr.selected-row td {
+    background-color: ${({ theme }) => theme.background.tertiary} !important;
+  }
+
+  /* Ensure selected row style persists on hover */
+  .handsontable tr.selected-row:hover td {
+    background-color: ${({ theme }) => theme.background.tertiary} !important;
+  }
 `;
 
 const StyledLoadingContainer = styled.div`

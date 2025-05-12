@@ -15,7 +15,7 @@ import { isDefined } from 'twenty-shared';
 
 export const useRefreshChatStatusesAction: ActionHookWithObjectMetadataItem = ({ objectMetadataItem }) => { 
     
-  
+  console.log('objectMetadataItem', objectMetadataItem);
   const contextStoreNumberOfSelectedRecords = useRecoilComponentValueV2(
     contextStoreNumberOfSelectedRecordsComponentState,
   );

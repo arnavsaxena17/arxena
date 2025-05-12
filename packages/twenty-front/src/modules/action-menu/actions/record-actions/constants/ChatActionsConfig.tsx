@@ -15,9 +15,9 @@ import { MultipleRecordsActionKeys } from '@/action-menu/actions/record-actions/
 import { ActionHook } from '@/action-menu/actions/types/ActionHook';
 import { ActionViewType } from '@/action-menu/actions/types/ActionViewType';
 import {
-    ActionMenuEntry,
-    ActionMenuEntryScope,
-    ActionMenuEntryType,
+  ActionMenuEntry,
+  ActionMenuEntryScope,
+  ActionMenuEntryType,
 } from '@/action-menu/types/ActionMenuEntry';
 import { useBulkMessageChatAction } from '@/candidate-table/hooks/useBulkMessageChatAction';
 import { useViewAttachmentsChatAction } from '@/candidate-table/hooks/useViewAttachmentsChatAction';
@@ -25,12 +25,12 @@ import { ChatActionKeys } from '@/candidate-table/types/ChatActionKeys';
 import { msg } from '@lingui/core/macro';
 import { IconEngine, IconMessageCircle, IconShare } from '@tabler/icons-react';
 import {
-    IconCopy,
-    IconList,
-    IconPaperclip,
-    IconRefresh,
-    IconUser,
-    IconVideo
+  IconCopy,
+  IconList,
+  IconPaperclip,
+  IconRefresh,
+  IconUser,
+  IconVideo
 } from 'twenty-ui';
 
 export const CHAT_ACTIONS_CONFIG: Record<
@@ -202,10 +202,10 @@ export const CHAT_ACTIONS_CONFIG: Record<
     availableOn: [
       ActionViewType.INDEX_PAGE_BULK_SELECTION,
       ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
+      ActionViewType.SHOW_PAGE,
     ],
     useAction: useRefreshChatCountsAction,
   },
-
   shareChatBasedShortlist: {
     type: ActionMenuEntryType.Standard,
     scope: ActionMenuEntryScope.RecordSelection,
@@ -219,6 +219,7 @@ export const CHAT_ACTIONS_CONFIG: Record<
     availableOn: [
       ActionViewType.INDEX_PAGE_BULK_SELECTION,
       ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
+      ActionViewType.SHOW_PAGE,
     ],
     useAction: useShareChatBasedShortlistAction,
   },

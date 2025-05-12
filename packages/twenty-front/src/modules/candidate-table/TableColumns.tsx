@@ -1,4 +1,11 @@
+import styled from '@emotion/styled';
 import Handsontable from "handsontable";
+
+const StyledSelectedRow = styled.tr`
+  &.selected-row td {
+    background-color: ${({ theme }) => theme.background.tertiary} !important;
+  }
+`;
 
 // Define the renderer type similar to TableStateColumns.tsx
 type ColumnRenderer = (
@@ -51,10 +58,25 @@ export const TableColumns = ({
     checkbox.className = 'row-checkbox';
     td.style.textAlign = 'center';
     
+    // Get the row element and toggle the selected-row class based on checkbox state
+    const rowElement = td.parentElement;
+    if (rowElement) {
+      if (value) {
+        rowElement.classList.add('selected-row');
+      } else {
+        rowElement.classList.remove('selected-row');
+      }
+    }
+    
     checkbox.addEventListener('click', (e) => {
       e.stopPropagation(); // Prevent row selection when clicking checkbox
       // Update the data source directly to trigger afterChange event
       instance.setDataAtRowProp(row, 'checkbox', !value);
+      
+      // Toggle selected-row class on click
+      if (rowElement) {
+        rowElement.classList.toggle('selected-row');
+      }
     });
     
     td.appendChild(checkbox);

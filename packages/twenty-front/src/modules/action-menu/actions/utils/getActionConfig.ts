@@ -2,7 +2,7 @@ import { CANDIDATE_SPECIFIC_ACTIONS } from '@/action-menu/actions/record-actions
 import { DEFAULT_ACTIONS_CONFIG_V1 } from '@/action-menu/actions/record-actions/constants/DefaultActionsConfigV1';
 import { DEFAULT_ACTIONS_CONFIG_V2 } from '@/action-menu/actions/record-actions/constants/DefaultActionsConfigV2';
 import { JOB_SPECIFIC_ACTIONS } from '@/action-menu/actions/record-actions/constants/JobActionsConfig';
-import { JOB_CANDIDATE_SPECIFIC_ACTIONS } from '@/action-menu/actions/record-actions/constants/JobCandidateActionsConfig';
+// import { JOB_CANDIDATE_SPECIFIC_ACTIONS } from '@/action-menu/actions/record-actions/constants/JobCandidateActionsConfig';
 import { PEOPLE_SPECIFIC_ACTIONS } from '@/action-menu/actions/record-actions/constants/PeopleActionsConfig';
 import { PHONE_CALL_SPECIFIC_ACTIONS } from '@/action-menu/actions/record-actions/constants/PhoneCallActionsConfig';
 import { VIDEO_INTERVIEW_SPECIFIC_ACTIONS } from '@/action-menu/actions/record-actions/constants/VideoInterviewActionsConfig';
@@ -53,11 +53,11 @@ export const getActionConfig = (
         return { ...baseConfig, ...PEOPLE_SPECIFIC_ACTIONS };
       }
 
-      if (
-        objectMetadataItem.nameSingular.toLowerCase().includes('jobcandidate')
-      ) {
-        return { ...baseConfig, ...JOB_CANDIDATE_SPECIFIC_ACTIONS };
-      }
+      // if (
+      //     objectMetadataItem.nameSingular.toLowerCase().includes('jobcandidate')
+      //   ) {
+      //     return { ...baseConfig, ...JOB_CANDIDATE_SPECIFIC_ACTIONS };
+      //   }
 
       if (
         objectMetadataItem.nameSingular.toLowerCase().includes('videointerview')
