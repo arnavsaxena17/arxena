@@ -949,6 +949,7 @@ export const emptyCandidateProfileObj: CandidateNode = {
   startChat: false,
   stopChat: false,
   status: '',
+  createdAt: '',
 
   whatsappProvider: '',
   jobs: {
@@ -1619,6 +1620,7 @@ export interface CandidateNode {
   email: string;
   chatCount: number;
   
+  createdAt: string | number | Date;
   input: string;
   candConversationStatus?: string;
   startChat: boolean;

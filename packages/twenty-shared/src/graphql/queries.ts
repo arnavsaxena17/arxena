@@ -1534,6 +1534,7 @@ export const graphqlToFetchAllCandidateData = `
           id
           name
           updatedAt
+          createdAt
           whatsappProvider
           candConversationStatus
           peopleId
@@ -1541,32 +1542,32 @@ export const graphqlToFetchAllCandidateData = `
           source
           campaign
           messagingChannel
-        clientInterview {
-          edges{
-            node{
-              id
-              name
-              jobId
-              createdAt
-              updatedAt
-              clientInterviewCompleted
-              candidateId
+          clientInterview {
+            edges{
+              node{
+                id
+                name
+                jobId
+                createdAt
+                updatedAt
+                clientInterviewCompleted
+                candidateId
+              }
             }
           }
-        }
-        lastEngagementChatControl
-        startVideoInterviewChat
-        startMeetingSchedulingChat
-        stopChat
-        uniqueStringKey
-        hiringNaukriUrl{
-          primaryLinkUrl
-          primaryLinkLabel
-        }
-        resdexNaukriUrl{
-          primaryLinkUrl
-          primaryLinkLabel
-        }
+          lastEngagementChatControl
+          startVideoInterviewChat
+          startMeetingSchedulingChat
+          stopChat
+          uniqueStringKey
+          hiringNaukriUrl{
+            primaryLinkUrl
+            primaryLinkLabel
+          }
+          resdexNaukriUrl{
+            primaryLinkUrl
+            primaryLinkLabel
+          }
         videoInterviewResponse {
           edges {
             node {

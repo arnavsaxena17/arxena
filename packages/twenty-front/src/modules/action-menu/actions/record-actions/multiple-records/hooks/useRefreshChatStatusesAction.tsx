@@ -15,7 +15,7 @@ import { isDefined } from 'twenty-shared';
 
 export const useRefreshChatStatusesAction: ActionHookWithObjectMetadataItem = ({ objectMetadataItem }) => { 
     
-  console.log('objectMetadataItem', objectMetadataItem);
+  console.log('objectMetadataItem in useRefreshChatStatusesAction:', objectMetadataItem);
   const contextStoreNumberOfSelectedRecords = useRecoilComponentValueV2(
     contextStoreNumberOfSelectedRecordsComponentState,
   );
@@ -45,16 +45,26 @@ export const useRefreshChatStatusesAction: ActionHookWithObjectMetadataItem = ({
     });
 
     const isRemoteObject = objectMetadataItem.isRemote;
-    const shouldBeRegistered =
-    !isRemoteObject &&
-    isDefined(contextStoreNumberOfSelectedRecords) &&
-    contextStoreNumberOfSelectedRecords < BACKEND_BATCH_REQUEST_MAX_COUNT &&
-    contextStoreNumberOfSelectedRecords > 0;
+    console.log('shouldBeRegistered conditions:', {
+      isRemoteObject,
+      contextStoreNumberOfSelectedRecords,
+      maxCount: BACKEND_BATCH_REQUEST_MAX_COUNT,
+      isDefined: isDefined(contextStoreNumberOfSelectedRecords)
+    });
+
+    const shouldBeRegistered = true;
+    // const shouldBeRegistered =
+    // !isRemoteObject &&
+    // isDefined(contextStoreNumberOfSelectedRecords) &&
+    // contextStoreNumberOfSelectedRecords < BACKEND_BATCH_REQUEST_MAX_COUNT &&
+    // contextStoreNumberOfSelectedRecords > 0;
     
+    console.log('shouldBeRegistered result in useRefreshChatStatusesAction:', shouldBeRegistered);
     
     const [isRefreshChatStatusModalOpen, setIsRefreshChatStatusModalOpen] = useState(false);
     const { refreshChatStatus } = useRefreshChatStatus();
 
+    console.log("isRefreshChatStatusModalOpen in useRefreshChatStatusesAction:", isRefreshChatStatusModalOpen);
     const handleRefreshChatStatusClick = useCallback(async () => {
       const recordsToRefresh = await fetchAllRecordIds();
       const recordIdsToRefresh: string[] = recordsToRefresh.map((record) => record.id);

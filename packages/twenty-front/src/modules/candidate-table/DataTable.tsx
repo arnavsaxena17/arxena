@@ -32,6 +32,7 @@ const StyledTableContainer = styled.div`
   overflow: auto;
   position: relative;
 
+
   .handsontable {
     overflow: visible;
   }
@@ -199,8 +200,12 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
           { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } }
         );
         
-        // Verify the response is valid
-        const rawData = Array.isArray(response.data) ? response.data : [];
+        // Verify the response is valid and sort by createdAt descending
+        const rawData = Array.isArray(response.data) 
+          ? [...response.data].sort((a, b) => 
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            )
+          : [];
         
         // Process unread messages for each candidate
         const unreadMessagesCounts: Record<string, number> = {};

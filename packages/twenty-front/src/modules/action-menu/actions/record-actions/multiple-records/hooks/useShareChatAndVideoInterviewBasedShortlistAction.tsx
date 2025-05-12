@@ -15,7 +15,7 @@ import { isDefined } from 'twenty-shared';
 
 export const useShareChatAndVideoInterviewBasedShortlistAction: ActionHookWithObjectMetadataItem = ({ objectMetadataItem }) => { 
     
-  
+  console.log('objectMetadataItem for share chat and video interview based shortlist', objectMetadataItem);
   const contextStoreNumberOfSelectedRecords = useRecoilComponentValueV2(
     contextStoreNumberOfSelectedRecordsComponentState,
   );
@@ -29,28 +29,28 @@ export const useShareChatAndVideoInterviewBasedShortlistAction: ActionHookWithOb
     );
     
     const { filterValueDependencies } = useFilterValueDependencies();
-    
+    console.log('filterValueDependencies', filterValueDependencies);
     const graphqlFilter = computeContextStoreFilters(
       contextStoreTargetedRecordsRule,
       contextStoreFilters,
       objectMetadataItem,
       filterValueDependencies,
     );
-    
+    console.log('graphqlFilter', graphqlFilter);
     const { fetchAllRecords: fetchAllRecordIds } = useLazyFetchAllRecords({
       objectNameSingular: objectMetadataItem.nameSingular,
       filter: graphqlFilter,
       limit: DEFAULT_QUERY_PAGE_SIZE,
       recordGqlFields: { id: true },
     });
-
+    console.log('fetchAllRecordIds', fetchAllRecordIds);
     const isRemoteObject = objectMetadataItem.isRemote;
     const shouldBeRegistered =
     !isRemoteObject &&
     isDefined(contextStoreNumberOfSelectedRecords) &&
     contextStoreNumberOfSelectedRecords < BACKEND_BATCH_REQUEST_MAX_COUNT &&
     contextStoreNumberOfSelectedRecords > 0;
-    
+    console.log('shouldBeRegistered', shouldBeRegistered);
     
     const [isShareChatAndVideoInterviewBasedShortlistModalOpen, setIsShareChatAndVideoInterviewBasedShortlistModalOpen] = useState(false);
     const { sendCVsToClient } = useSendCVsToClient();
@@ -62,12 +62,14 @@ export const useShareChatAndVideoInterviewBasedShortlistAction: ActionHookWithOb
       await sendCVsToClient(recordIdsToShare, 'create-gmail-draft-shortlist' );
     }, [sendCVsToClient, fetchAllRecordIds]);
 
+    console.log('handleShareChatAndVideoInterviewBasedShortlistClick', handleShareChatAndVideoInterviewBasedShortlistClick);
     const onClick = () => {
       if (!shouldBeRegistered) {
       return;
       }
       setIsShareChatAndVideoInterviewBasedShortlistModalOpen(true);
     };
+    console.log('onClick', onClick);
 
     const confirmationModal = (
       <ConfirmationModal

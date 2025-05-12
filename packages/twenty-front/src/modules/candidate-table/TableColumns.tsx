@@ -1,5 +1,6 @@
 import styled from '@emotion/styled';
 import Handsontable from "handsontable";
+import { formatToHumanReadableDateTime } from '~/utils/date-utils';
 
 const StyledSelectedRow = styled.tr`
   &.selected-row td {
@@ -24,7 +25,7 @@ const urlFields = [
 ];
 
 const excludedFields = [
-  'id', 'checkbox', 'name', 'fullName','candidateFieldValues','token', 'personId','jobTitle', 'firstName', 'searchId','phoneNumbers','mobilePhone','filterQueryHash','mayAlsoKnow','languages','englishLevel','baseQueryHash','creationDate','apnaSearchToken','lastName', 'uniqueKeyString', 'emailAddress', 'industries', 'profiles', 'jobProcess', 'locations','experience', 'experienceStats', 'lastUpdated','education','interests','skills','dataSources','allNumbers','jobName','uploadId','allMails','socialprofiles','tables','created','middleName','middleInitial','creationSource','contactDetails','queryId','socialProfiles','updatedAt'
+  'id', 'checkbox', 'name', 'fullName','candidateFieldValues','token','dataSource', 'personId','jobTitle', 'firstName', 'searchId','phoneNumbers','mobilePhone','filterQueryHash','mayAlsoKnow','languages','englishLevel','baseQueryHash','creationDate','apnaSearchToken','lastName', 'uniqueKeyString', 'emailAddress', 'industries', 'profiles', 'jobProcess', 'locations','experience', 'experienceStats', 'lastUpdated','education','interests','skills','dataSources','allNumbers','jobName','uploadId','allMails','socialprofiles','tables','created','middleName','middleInitial','creationSource','contactDetails','queryId','socialProfiles','updatedAt'
 ];
 
 export const TableColumns = ({ 
@@ -114,9 +115,9 @@ export const TableColumns = ({
     const container = document.createElement('div');
     container.style.display = 'flex';
     container.style.alignItems = 'center';
-    container.style.gap = '8px';
+    // container.style.gap = '8px';
     container.style.cursor = 'pointer';
-    container.style.padding = '4px';
+    // container.style.padding = '2px';
     container.style.borderRadius = '4px';
     container.style.backgroundColor = '#f5f5f5';
     container.style.transition = 'background-color 0.2s ease';
@@ -217,6 +218,22 @@ export const TableColumns = ({
     return td;
   };
 
+  // Create date renderer
+  const dateRenderer: ColumnRenderer = (instance, td, row, column, prop, value) => {
+    td.innerHTML = '';
+    
+    const div = document.createElement('div');
+    Object.assign(div.style, truncatedCellStyle);
+    
+    if (value) {
+      div.textContent = formatToHumanReadableDateTime(value);
+    } else {
+      div.textContent = 'N/A';
+    }
+    
+    td.appendChild(div);
+    return td;
+  };
 
   // Generate column definitions
   const columns: Handsontable.ColumnSettings[] = [];
@@ -260,14 +277,15 @@ export const TableColumns = ({
     .filter(key => !excludedFields.includes(key))
     .sort()
     .forEach(key => {
-      // Check if this key should use URL renderer
+      // Check if this key should use URL renderer or date renderer
       const isUrlField = urlFields.includes(key);
+      const isDateField = key === 'createdAt' || key === 'updatedAt' || key === 'deletedAt';
       
       columns.push({
         data: key,
         title: key.charAt(0).toUpperCase() + key.slice(1),
         width: 150,
-        renderer: isUrlField ? urlRenderer : simpleRenderer,
+        renderer: isUrlField ? urlRenderer : isDateField ? dateRenderer : simpleRenderer,
       });
     });
 

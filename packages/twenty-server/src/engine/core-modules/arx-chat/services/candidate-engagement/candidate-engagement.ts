@@ -851,17 +851,7 @@ export default class CandidateEngagementArx {
     console.log('Fetching all candidates with chatControlType by job ID:', jobId);
 
     const allCandidates: CandidateNode[] = [];
-    // let graphqlQueryObjToFetchAllCandidatesForChats = '';
-
     try {
-      // const workspaceId =
-      //   await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-
-      // graphqlQueryObjToFetchAllCandidatesForChats =
-      //   workspacesWithOlderSchema.includes(workspaceId)
-      //     ? graphqlToFetchManyCandidatesOlderSchema
-      //     : graphqlToFetchAllCandidateData;
-
       const timestampedFilter = {
         jobsId: { eq: jobId },
       };
@@ -877,7 +867,7 @@ export default class CandidateEngagementArx {
             lastCursor,
             limit: 400,
             filter: timestampedFilter,
-            orderBy: [{ updatedAt: 'DESC' }],
+            orderBy: [{ createdAt: 'DESC' }],
           },
         }); 
 

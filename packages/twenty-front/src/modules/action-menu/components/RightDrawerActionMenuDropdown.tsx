@@ -72,8 +72,8 @@ export const RightDrawerActionMenuDropdown = () => {
       clickableComponent={
         <Button title="Actions" hotkeys={[getOsControlSymbol(), 'O']} />
       }
-      dropdownPlacement="top-end"
-      dropdownOffset={{ y: parseInt(theme.spacing(2), 10) }}
+      // dropdownPlacement="top-end"
+      // dropdownOffset={{ y: parseInt(theme.spacing(2), 10) }}
       dropdownComponents={
         <DropdownMenuItemsContainer>
           {actionMenuEntries

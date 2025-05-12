@@ -19,17 +19,12 @@ import {
   ActionMenuEntryScope,
   ActionMenuEntryType,
 } from '@/action-menu/types/ActionMenuEntry';
-import { useBulkMessageChatAction } from '@/candidate-table/hooks/useBulkMessageChatAction';
-import { useViewAttachmentsChatAction } from '@/candidate-table/hooks/useViewAttachmentsChatAction';
-import { ChatActionKeys } from '@/candidate-table/types/ChatActionKeys';
 import { msg } from '@lingui/core/macro';
 import { IconEngine, IconMessageCircle, IconShare } from '@tabler/icons-react';
 import {
   IconCopy,
   IconList,
-  IconPaperclip,
   IconRefresh,
-  IconUser,
   IconVideo
 } from 'twenty-ui';
 
@@ -51,21 +46,21 @@ export const CHAT_ACTIONS_CONFIG: Record<
   //   availableOn: [ActionViewType.INDEX_PAGE_BULK_SELECTION],
   //   useAction: useBulkMessageChatAction,
   // },
-  viewAttachmentsChat: {
-    type: ActionMenuEntryType.Standard,
-    scope: ActionMenuEntryScope.RecordSelection,
-    key: ChatActionKeys.VIEW_ATTACHMENTS,
-    label: msg`View attachments`,
-    shortLabel: msg`Attachments`,
-    position: 2,
-    isPinned: true, // This makes it visible in the action menu bar
-    Icon: IconPaperclip,
-    availableOn: [
-      ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
-      ActionViewType.SHOW_PAGE,
-    ],
-    useAction: useViewAttachmentsChatAction,
-  },
+  // viewAttachmentsChat: {
+  //   type: ActionMenuEntryType.Standard,
+  //   scope: ActionMenuEntryScope.RecordSelection,
+  //   key: ChatActionKeys.VIEW_ATTACHMENTS,
+  //   label: msg`View attachments`,
+  //   shortLabel: msg`Attachments`,
+  //   position: 0,
+  //   isPinned: true, // This makes it visible in the action menu bar
+  //   Icon: IconPaperclip,
+  //   availableOn: [
+  //     ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
+  //     ActionViewType.SHOW_PAGE,
+  //   ],
+  //   useAction: useViewAttachmentsChatAction,
+  // },
   // createShortlist: {
   //   type: ActionMenuEntryType.Standard,
   //   scope: ActionMenuEntryScope.RecordSelection,
@@ -84,29 +79,28 @@ export const CHAT_ACTIONS_CONFIG: Record<
     key: MultipleRecordsActionKeys.POPULATE_SHORTLIST,
     label: msg`Populate Shortlist Records`,
     shortLabel: msg`Populate Shortlist`,
-    position: 5,
+    position: 0,
     Icon: IconList,
     isPinned: true,
     accent: 'placeholder',
-    // isPinned: false,
     availableOn: [
       ActionViewType.INDEX_PAGE_BULK_SELECTION,
       ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
     ],
     useAction: usePopulateShortlistAction,
   },
-  updateStatus: {
-    type: ActionMenuEntryType.Standard,
-    scope: ActionMenuEntryScope.RecordSelection,
-    key: ChatActionKeys.UPDATE_STATUS,
-    label: msg`Update status`,
-    shortLabel: msg`Status`,
-    position: 4,
-    isPinned: false, // This will NOT be visible in the action menu bar but will be in the dropdown
-    Icon: IconUser,
-    availableOn: [ActionViewType.INDEX_PAGE_BULK_SELECTION],
-    useAction: useBulkMessageChatAction, // This would typically point to a different action hook
-  },
+  // updateStatus: {
+  //   type: ActionMenuEntryType.Standard,
+  //   scope: ActionMenuEntryScope.RecordSelection,
+  //   key: ChatActionKeys.UPDATE_STATUS,
+  //   label: msg`Update status`,
+  //   shortLabel: msg`Status`,
+  //   position: 1,
+  //   isPinned: false, // This will NOT be visible in the action menu bar but will be in the dropdown
+  //   Icon: IconUser,
+  //   availableOn: [ActionViewType.INDEX_PAGE_BULK_SELECTION],
+  //   useAction: useBulkMessageChatAction, // This would typically point to a different action hook
+  // },
 
 
   cloneMultipleRecords: {
@@ -115,10 +109,10 @@ export const CHAT_ACTIONS_CONFIG: Record<
     key: MultipleRecordsActionKeys.CLONE,
     label: msg`Clone multiple`,
     shortLabel: msg`Clone`,
-    position: 6,
+    position: 1,
     Icon: IconCopy,
     accent: 'danger',
-    isPinned: true,
+    isPinned: false,
     availableOn: [
       ActionViewType.INDEX_PAGE_BULK_SELECTION,
       ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
@@ -131,7 +125,7 @@ export const CHAT_ACTIONS_CONFIG: Record<
     key: MultipleRecordsActionKeys.VINT_LINK,
     label: msg`Create Video Interview Link`,
     shortLabel: msg`Create VINT Link`,
-    position: 7,
+    position: 2,
     Icon: IconVideo,
     accent: 'placeholder',
     isPinned: false,
@@ -147,7 +141,7 @@ export const CHAT_ACTIONS_CONFIG: Record<
     key: MultipleRecordsActionKeys.SHARE_VINT_LINK,
     label: msg`Share Video Interview Link`,
     shortLabel: msg`Share VINT Link`,
-    position: 5,
+    position: 3,
     Icon: IconVideo,
     accent: 'placeholder',
     isPinned: false,
@@ -156,6 +150,22 @@ export const CHAT_ACTIONS_CONFIG: Record<
       ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
     ],
     useAction: useShareMultipleVideoInterviewLinksAction,
+  },
+  shareChatAndVideoInterviewBasedShortlist: {
+    type: ActionMenuEntryType.Standard,
+    scope: ActionMenuEntryScope.RecordSelection,
+    key: MultipleRecordsActionKeys.CHAT_AND_VIDEO_INTERVIEW_SHORTLIST,
+    label: msg`Share VINT and Chat Based Shortlist`,
+    shortLabel: msg`Share VINT and Chat Shortlist`,
+    position: 4,
+    Icon: IconShare,
+    accent: 'placeholder',
+    isPinned: false,
+    availableOn: [
+      ActionViewType.INDEX_PAGE_BULK_SELECTION,
+      ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
+    ],
+    useAction: useShareChatAndVideoInterviewBasedShortlistAction,
   },
   startChatWithCandidates: {
     type: ActionMenuEntryType.Standard,
@@ -173,13 +183,14 @@ export const CHAT_ACTIONS_CONFIG: Record<
     ],
     useAction: useStartChatWithCandidatesAction,
   },
+
   refreshChatStatus: {
     type: ActionMenuEntryType.Standard,
     scope: ActionMenuEntryScope.RecordSelection,
     key: MultipleRecordsActionKeys.REFRESH_CHAT_STATUS,
     label: msg`Refresh Chat Status`,
     shortLabel: msg`Refresh Chat Status`,
-    position: 5,
+    position: 6,
     Icon: IconRefresh,
     accent: 'placeholder',
     isPinned: false,
@@ -195,7 +206,7 @@ export const CHAT_ACTIONS_CONFIG: Record<
     key: MultipleRecordsActionKeys.REFRESH_CHAT_COUNT,
     label: msg`Refresh Chat Count`,
     shortLabel: msg`Refresh Chat Counts`,
-    position: 5,
+    position: 7,
     Icon: IconMessageCircle,
     accent: 'placeholder',
     isPinned: false,
@@ -212,7 +223,7 @@ export const CHAT_ACTIONS_CONFIG: Record<
     key: MultipleRecordsActionKeys.CREATE_CHAT_BASED_SHORTLIST,
     label: msg`Share Chat Based Shortlist`,
     shortLabel: msg`Share Chat Shortlist`,
-    position: 5,
+    position: 8,
     Icon: IconShare,
     accent: 'placeholder',
     isPinned: false,
@@ -229,7 +240,7 @@ export const CHAT_ACTIONS_CONFIG: Record<
     key: MultipleRecordsActionKeys.UPDATE_SNAPSHOT_PROFILES_FROM_JOB_BOARDS,
     shortLabel: msg`Update Snapshot Profiles From Job Boards`,
     label: msg`Update Snapshot Profiles From Job Boards`,
-    position: 5,
+    position: 9,
     Icon: IconList,
     accent: 'danger',
     isPinned: true,
@@ -240,29 +251,13 @@ export const CHAT_ACTIONS_CONFIG: Record<
     ],
     useAction: useUpdateSnapshotProfilesFromJobBoardsAction,
   },
-  shareChatAndVideoInterviewBasedShortlist: {
-    type: ActionMenuEntryType.Standard,
-    scope: ActionMenuEntryScope.RecordSelection,
-    key: MultipleRecordsActionKeys.CHAT_AND_VIDEO_INTERVIEW_SHORTLIST,
-    label: msg`Share VINT and Chat Based Shortlist`,
-    shortLabel: msg`Share VINT and Chat Shortlist`,
-    position: 5,
-    Icon: IconShare,
-    accent: 'placeholder',
-    isPinned: false,
-    availableOn: [
-      ActionViewType.INDEX_PAGE_BULK_SELECTION,
-      ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
-    ],
-    useAction: useShareChatAndVideoInterviewBasedShortlistAction,
-  },
   sendToWhatsapp: {
     type: ActionMenuEntryType.Standard,
     scope: ActionMenuEntryScope.RecordSelection,
     key: MultipleRecordsActionKeys.SEND_TO_WHATSAPP,
     label: msg`Send To Whatsapp Chrome Extension`,
     shortLabel: msg`Send to Whatsapp Chrome Extension`,
-    position: 5,
+    position: 10,
     Icon: IconMessageCircle,
     accent: 'placeholder',
     isPinned: false,
@@ -278,7 +273,7 @@ export const CHAT_ACTIONS_CONFIG: Record<
     key: MultipleRecordsActionKeys.DELETE_CANDIDATES_AND_PEOPLE,
     label: msg`Delete Candidates and People`,
     shortLabel: msg`Delete Candidates and People`,
-    position: 5,
+    position: 9,
     Icon: IconList,
     accent: 'placeholder',
     isPinned: false,
@@ -294,7 +289,7 @@ export const CHAT_ACTIONS_CONFIG: Record<
     key: MultipleRecordsActionKeys.ENRICH_CANDIDATES,
     shortLabel: msg`Enrich Candidates`,
     label: msg`Enrich Candidates`,
-    position: 7,
+    position: 10,
     Icon: IconEngine,
     accent: 'placeholder',
     isPinned: false,

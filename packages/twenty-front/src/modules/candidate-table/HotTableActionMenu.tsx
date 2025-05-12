@@ -114,6 +114,8 @@ const HotTableRecordIndexActionMenuBar = ({ tableId }: { tableId: string }) => {
       margin: 0 ${({ theme }) => theme.spacing(1)};
       width: 1px;
     `;
+
+    console.log("HotTableRecordIndexActionMenuBar - pinnedEntries:", pinnedEntries);
   
     return (
       <BottomBar

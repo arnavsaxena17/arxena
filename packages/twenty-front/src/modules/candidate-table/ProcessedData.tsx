@@ -25,6 +25,7 @@ export const ProcessedData = ({ rawData, selectedRowIds }: { rawData: CandidateN
         stopChatCompleted: candidate?.stopChatCompleted || false,
         stopVideoInterviewChat: candidate?.stopVideoInterviewChat || false,
         stopVideoInterviewChatCompleted: candidate?.stopVideoInterviewChatCompleted || false,
+        createdAt: candidate?.createdAt || 'N/A',
         messagingChannel: candidate?.messagingChannel || 'N/A',
       };
       const fieldValues: Record<string, string> = {};

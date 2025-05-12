@@ -3,7 +3,6 @@ import { contextStoreFiltersComponentState } from '@/context-store/states/contex
 import { contextStoreNumberOfSelectedRecordsComponentState } from '@/context-store/states/contextStoreNumberOfSelectedRecordsComponentState';
 import { contextStoreTargetedRecordsRuleComponentState } from '@/context-store/states/contextStoreTargetedRecordsRuleComponentState';
 import { computeContextStoreFilters } from '@/context-store/utils/computeContextStoreFilters';
-import { BACKEND_BATCH_REQUEST_MAX_COUNT } from '@/object-record/constants/BackendBatchRequestMaxCount';
 import { DEFAULT_QUERY_PAGE_SIZE } from '@/object-record/constants/DefaultQueryPageSize';
 import { useLazyFetchAllRecords } from '@/object-record/hooks/useLazyFetchAllRecords';
 import { useStartChats } from '@/object-record/hooks/useStartChats';
@@ -17,6 +16,7 @@ import { isDefined } from 'twenty-shared';
 
 export const useStartChatWithCandidatesAction: ActionHookWithObjectMetadataItem =
   ({ objectMetadataItem }) => {
+    console.log('objectMetadataItem in useStartChatWithCandidatesAction:::', objectMetadataItem);
     const contextStoreNumberOfSelectedRecords = useRecoilComponentValueV2(
       contextStoreNumberOfSelectedRecordsComponentState,
     );
@@ -48,12 +48,12 @@ export const useStartChatWithCandidatesAction: ActionHookWithObjectMetadataItem 
     });
 
     const isRemoteObject = objectMetadataItem.isRemote;
-    const shouldBeRegistered =
-      !isRemoteObject &&
-      isDefined(contextStoreNumberOfSelectedRecords) &&
-      contextStoreNumberOfSelectedRecords < BACKEND_BATCH_REQUEST_MAX_COUNT &&
-      contextStoreNumberOfSelectedRecords > 0;
-    
+    const shouldBeRegistered = true;
+      // !isRemoteObject &&
+      // isDefined(contextStoreNumberOfSelectedRecords) &&
+      // contextStoreNumberOfSelectedRecords < BACKEND_BATCH_REQUEST_MAX_COUNT &&
+      // contextStoreNumberOfSelectedRecords > 0;
+    console.log('shouldBeRegistered', shouldBeRegistered);
     const [isStartChatWithCandidatesModalOpen, setIsStartChatWithCandidatesModalOpen] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
     
@@ -163,10 +163,10 @@ export const useStartChatWithCandidatesAction: ActionHookWithObjectMetadataItem 
       <ConfirmationModal
         isOpen={isStartChatWithCandidatesModalOpen}
         setIsOpen={setIsStartChatWithCandidatesModalOpen}
-        title={'Start Multiple Chats'}
-        subtitle={'Are you sure you want to start multiple chats? This will verify job data integrity before proceeding.'}
+        title={'Start Chat'}
+        subtitle={'Are you sure you want to start a chat?'}
         onConfirmClick={handleStartChatWithCandidatesClick}
-        deleteButtonText={'Start Multiple Chats'}
+        deleteButtonText={'Start Chat'}
         confirmButtonAccent="blue"
         loading={isProcessing || loading}
       />

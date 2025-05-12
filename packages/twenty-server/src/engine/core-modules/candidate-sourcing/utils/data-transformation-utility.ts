@@ -16,7 +16,7 @@ export const mapArxCandidateToPersonNode = candidate => {
 
 export const mapArxCandidateToCandidateNode = (candidate: {
   email_address: any;
-  phone_numbers: any; first_name: string; last_name: string; unique_key_string: any; profile_url: any; display_picture: any; 
+  phone_numbers: any; first_name: string; last_name: string; unique_key_string: any; profile_url: any; display_picture: any; data_source: any; campaign: any; source: any;
 }, jobNode: { id: any; }) => {
   const candidateNode: ArxenaCandidateNode = {
     name: candidate?.first_name + ' ' + candidate?.last_name || "",
@@ -33,8 +33,8 @@ export const mapArxCandidateToCandidateNode = (candidate: {
     resdexNaukriUrl: { "primaryLinkLabel": candidate?.profile_url || '', "primaryLinkUrl": candidate?.profile_url || '' },
     displayPicture: { "primaryLinkLabel": "Display Picture", "primaryLinkUrl": candidate?.display_picture || '' },
     peopleId: '',
-    campaign: '',
-    source: '',
+    campaign: candidate?.campaign || '',
+    source: candidate?.data_source || '',
   };
   return candidateNode;
 };
@@ -57,15 +57,12 @@ export const generateCompleteMappings = async (rawCandidateData, jobNode) => {
   console.log('This is the allDataKeys:', allDataKeys);
   // Identify unmapped keys
   const unmappedKeys = allDataKeys.filter(key => {
-    // Convert snake_case keys to camelCase for comparison
     const camelCaseKey = key.replace(/_([a-z])/g, (match, letter) => letter.toUpperCase());
-    
-    // Check if this key or its camelCase equivalent is already mapped
+
     const isMappedInPerson = personNodeKeys.some(k => 
       k.toLowerCase() === key.toLowerCase() || 
       k.toLowerCase() === camelCaseKey.toLowerCase()
     );
-    
     const isMappedInCandidate = candidateNodeKeys.some(k => 
       k.toLowerCase() === key.toLowerCase() || 
       k.toLowerCase() === camelCaseKey.toLowerCase()
@@ -73,7 +70,6 @@ export const generateCompleteMappings = async (rawCandidateData, jobNode) => {
     
     return !isMappedInPerson && !isMappedInCandidate;
   });
-
   const unmappedCandidateObject = unmappedKeys.map(key => {
     return {
       key,
@@ -81,7 +77,6 @@ export const generateCompleteMappings = async (rawCandidateData, jobNode) => {
     }
   })
   console.log('This is the unmappedCandidateObject:', unmappedCandidateObject);
-
   return {
     personNode: personNode,
     candidateNode: candidateNode,
