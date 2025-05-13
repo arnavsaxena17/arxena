@@ -465,7 +465,7 @@ export class CandidateService {
     // Create all field values in batches
     if (fieldValuesToCreate.length > 0) {
       console.log(`\nCreating ${fieldValuesToCreate.length} field values in batches`);
-      const batchSize = 50;
+      const batchSize = 100;
       for (let i = 0; i < fieldValuesToCreate.length; i += batchSize) {
         const batch = fieldValuesToCreate.slice(i, i + batchSize);
         console.log(`Processing batch ${Math.floor(i/batchSize) + 1} of ${Math.ceil(fieldValuesToCreate.length/batchSize)}`);
@@ -479,6 +479,8 @@ export class CandidateService {
             apiToken
           );
           console.log(`Successfully created batch ${Math.floor(i/batchSize) + 1}`);
+          // Add delay between batches to prevent rate limiting
+          // await new Promise(resolve => setTimeout(resolve, 150)); // A bit longer than the 100ms window
         } catch (error) {
           console.error('Error creating field values batch:', error);
         }
@@ -781,6 +783,7 @@ export class CandidateService {
         workspaceId,
         'whatsapp_key',
       ) || 'whatsapp-web';
+      console.log('whatsapp_key:', whatsapp_key);
       console.log('Candidates map:', candidatesMap);
       const candidatesToCreate: ArxenaCandidateNode[] = [];
       const candidateKeys: string[] = [];
@@ -843,7 +846,7 @@ export class CandidateService {
     apiToken: string,
   ): Promise<any> {
     console.log('Creating candidates, count:', manyCandidateObjects?.length);
-
+    console.log('This is the manyCandidateObjects:', manyCandidateObjects);
     const graphqlVariables = { data: manyCandidateObjects };
     const graphqlQueryObj = JSON.stringify({
       query: CreateManyCandidates,

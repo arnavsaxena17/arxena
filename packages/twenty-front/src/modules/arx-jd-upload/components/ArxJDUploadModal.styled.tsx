@@ -241,3 +241,19 @@ export const StyledSectionDivider = styled.div`
 export const StyledSection = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing(10)};
 `;
+
+export const StyledRemoveButton = styled.button`
+  background-color: transparent;
+  border: 1px solid ${({ theme }) => theme.border.color.medium};
+  border-radius: ${({ theme }) => theme.border.radius.sm};
+  color: ${({ theme }) => theme.color.gray50};
+  cursor: pointer;
+  font-size: ${({ theme }) => theme.font.size.sm};
+  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
+  transition: all 0.1s ease-in-out;
+
+  &:hover {
+    background-color: ${({ theme }) => theme.background.transparent.light};
+    color: ${({ theme }) => theme.color.gray60};
+  }
+`;

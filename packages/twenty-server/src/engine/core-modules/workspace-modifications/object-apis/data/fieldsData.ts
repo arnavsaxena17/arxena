@@ -1688,6 +1688,16 @@ export function getFieldsData(
     },
     {
       field: {
+        description: 'LinkedIn URL',
+        icon: 'IconLink',
+        label: 'linkedinUrl',
+        name: 'linkedinUrl',
+        objectMetadataId: objectsNameIdMap.candidate,
+        type: 'LINKS',
+      },
+    },
+    {
+      field: {
         description: 'Display Picture URL',
         icon: 'IconLink',
         label: 'displayPicture',

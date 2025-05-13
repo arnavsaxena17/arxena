@@ -538,6 +538,11 @@ export const graphQueryToFindManyvideoInterviews = `query FindManyVideoInterview
             primaryLinkUrl
             __typename
           }
+          linkedinUrl {
+            primaryLinkLabel
+            primaryLinkUrl
+            __typename
+          }
           jobs {
             name
             id
@@ -1424,6 +1429,11 @@ export const queryByvideoInterview = `query FindOneVideoInterview($objectRecordI
             primaryLinkUrl
             __typename
           }
+          linkedinUrl {
+            primaryLinkLabel
+            primaryLinkUrl
+            __typename
+          }
           jobs {
             name
             id
@@ -1565,6 +1575,10 @@ export const graphqlToFetchAllCandidateData = `
             primaryLinkLabel
           }
           resdexNaukriUrl{
+            primaryLinkUrl
+            primaryLinkLabel
+          }
+          linkedinUrl {
             primaryLinkUrl
             primaryLinkLabel
           }
@@ -2065,6 +2079,7 @@ query FindManyCandidates($lastCursor: String, $limit: Int, $filter: CandidateFil
           url
           label
         }
+
       }
     }
   }

@@ -35,6 +35,13 @@ export class WorkspaceQueryService {
 
     return validatedToken.workspace.id;
   }
+  async getWorkspaceNameFromToken(apiToken: string) {
+    const validatedToken =
+      await this.accessTokenService.validateToken(apiToken);
+      console.log("This isthe validated name workspace:", validatedToken.workspace)
+
+    return validatedToken.workspace.displayName;
+  }
 
   async getWorkspaceApiKey(
     workspaceId: string,
@@ -74,6 +81,10 @@ export class WorkspaceQueryService {
       openAIclient: new OpenAI({ apiKey: openAIKey }),
       anthropic: new Anthropic({ apiKey: anthropicKey }),
     };
+  }
+
+  getDataSourceSchema(workspaceId: string) {
+    return this.workspaceDataSourceService.getSchemaName(workspaceId);
   }
 
   async executeQueryAcrossWorkspaces<T>(

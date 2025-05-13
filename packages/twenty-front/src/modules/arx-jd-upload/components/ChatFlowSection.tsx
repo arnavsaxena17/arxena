@@ -110,7 +110,7 @@ export const ChatFlowSection: React.FC<FormComponentProps> = ({
           <MenuItemSelect
             selected={parsedJD.chatFlow.order.meetingScheduling}
             onClick={() => handleChatFlowOrderChange('meetingScheduling')}
-            text="Sheduling"
+            text="Scheduling"
           />
         </div>
       </StyledSectionContent>

@@ -18,6 +18,16 @@ export const mapArxCandidateToCandidateNode = (candidate: {
   email_address: any;
   phone_numbers: any; first_name: string; last_name: string; unique_key_string: any; profile_url: any; display_picture: any; data_source: any; campaign: any; source: any;
 }, jobNode: { id: any; }, whatsapp_key: string) => {
+
+  console.log('whatsapp_key:', whatsapp_key);
+
+  if (candidate?.data_source === 'linkedin') {
+    whatsapp_key = 'linkedin';
+  }
+  else if (candidate?.data_source.includes('naukri')) {
+    whatsapp_key = whatsapp_key
+  }
+  
   const candidateNode: ArxenaCandidateNode = {
     name: candidate?.first_name + ' ' + candidate?.last_name || "",
     jobsId: jobNode?.id,
@@ -32,11 +42,13 @@ export const mapArxCandidateToCandidateNode = (candidate: {
     hiringNaukriUrl: { "primaryLinkLabel": candidate?.profile_url || '', "primaryLinkUrl": candidate?.profile_url || '' },
     resdexNaukriUrl: { "primaryLinkLabel": candidate?.profile_url || '', "primaryLinkUrl": candidate?.profile_url || '' },
     displayPicture: { "primaryLinkLabel": "Display Picture", "primaryLinkUrl": candidate?.display_picture || '' },
+    linkedinUrl: { "primaryLinkLabel": candidate?.profile_url || '', "primaryLinkUrl": candidate?.profile_url || '' },
     peopleId: '',
     campaign: candidate?.campaign || '',
     source: candidate?.data_source || '',
-    whatsappProvider: whatsapp_key,
+    messagingChannel: whatsapp_key,
   };
+  console.log('This is the candidateNode:', candidateNode);
   return candidateNode;
 };
 

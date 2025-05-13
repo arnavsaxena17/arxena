@@ -237,7 +237,7 @@ export const ArxJDFormStepper: React.FC<ArxJDFormStepperProps> = ({
         <StyledContentWrapper>
           <ArxJDStepHeading
             title="Job Details"
-            description="Review and edit the job details"
+            description="Review job details"
             currentStep={currentStep}
             totalSteps={totalSteps}
           />

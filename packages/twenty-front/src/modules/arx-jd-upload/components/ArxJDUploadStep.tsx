@@ -144,30 +144,29 @@ export const ArxJDUploadStep = ({
           </StyledExistingFileSection>
         )}
 
-        <StyledInstructions>
-          <p>
-            {hasFile
-              ? `You can ${isEditMode ? "replace" : "change"} the ${isEditMode ? "current" : "uploaded"} job description by uploading a new file:` 
-              : "Please upload a job description file to begin. We support the following formats:"}
-          </p>
-          <StyledList>
-            <StyledListItem>PDF (.pdf)</StyledListItem>
-            <StyledListItem>Microsoft Word (.doc, .docx)</StyledListItem>
-            <StyledListItem>Text (.txt)</StyledListItem>
-          </StyledList>
-          <p>Maximum file size: 10MB</p>
-        </StyledInstructions>
+        {!hasFile && (
+          <>
+            <StyledInstructions>
+              <p>Please upload a job description file to begin. We support the following formats:</p>
+              <StyledList>
+                <StyledListItem>PDF (.pdf)</StyledListItem>
+                <StyledListItem>Microsoft Word (.doc, .docx)</StyledListItem>
+                <StyledListItem>Text (.txt)</StyledListItem>
+              </StyledList>
+              <p>Maximum file size: 10MB</p>
+            </StyledInstructions>
 
-        {/* Only show the upload form if no file is uploaded or if a file is present but user may want to replace it */}
-        <UploadForm
-          getRootProps={getRootProps}
-          getInputProps={getInputProps}
-          isDragActive={isDragActive}
-          isUploading={isUploading}
-          error={error}
-          theme={theme}
-          uploadButtonLabel={hasFile ? "Replace File" : "Upload File"}
-        />
+            <UploadForm
+              getRootProps={getRootProps}
+              getInputProps={getInputProps}
+              isDragActive={isDragActive}
+              isUploading={isUploading}
+              error={error}
+              theme={theme}
+              uploadButtonLabel="Upload File"
+            />
+          </>
+        )}
 
         {/* Add Next button when file is uploaded in non-edit mode */}
         {hasFile && !isEditMode && onNext && (

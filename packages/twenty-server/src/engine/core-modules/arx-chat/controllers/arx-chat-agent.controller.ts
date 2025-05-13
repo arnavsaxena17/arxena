@@ -13,7 +13,6 @@ import {
   ChatControlsObjType,
   ChatHistoryItem,
   ChatRequestBody,
-  graphqlMutationToDeleteManyCandidateFieldValues,
   graphqlMutationToDeleteManyCandidates,
   graphqlMutationToDeleteManyPeople,
   graphqlQueryToFindManyPeople,
@@ -26,7 +25,7 @@ import {
   mutations,
   PersonNode,
   queries,
-  whatappUpdateMessageObjType,
+  whatappUpdateMessageObjType
 } from 'twenty-shared';
 
 import CandidateEngagementArx from 'src/engine/core-modules/arx-chat/services/candidate-engagement/candidate-engagement';
@@ -825,6 +824,7 @@ export class ArxChatEndpoint {
   @Post('delete-people-and-candidates-from-candidate-id')
   @UseGuards(JwtAuthGuard)
   async deletePeopleFromCandidateIds(@Req() request: any): Promise<object> {
+    console.log("Received request to delete people and candidates from candidate id:", request.body);
     const candidateId = request.body.candidateId;
     const apiToken = request.headers.authorization.split(' ')[1];
 
@@ -978,117 +978,158 @@ export class ArxChatEndpoint {
   @UseGuards(JwtAuthGuard)
   async deletePeopleAndCandidatesBulk(@Req() request: any): Promise<object> {
     const apiToken = request.headers.authorization.split(' ')[1];
-
     const { candidateIds, personIds } = request.body;
+    console.log("Received request to delete people and candidates from bulk:", request.body);
+
+    const BATCH_SIZE = 100;
+    const SUB_BATCH_SIZE = 50;
     const results: { succeeded: string[]; failed: string[] } = {
       succeeded: [],
       failed: [],
     };
 
-    if (candidateIds?.length) {
-      // First fetch all candidate information to get associated person IDs
-      const graphqlQueryObjToFetchCandidates = JSON.stringify({
-        query: graphqlToFetchAllCandidateData,
-        variables: { filter: { id: { in: candidateIds } } },
-      });
+    const workspaceName =
+      await this.workspaceQueryService.getWorkspaceNameFromToken(apiToken);
+    const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+    const dataSourceSchema =
+      this.workspaceQueryService.getDataSourceSchema(workspaceId);
 
-      const candidatesResponse = await axiosRequest(
-        graphqlQueryObjToFetchCandidates,
-        apiToken,
-      );
-      const candidateNodes =
-        candidatesResponse?.data?.data?.candidates?.edges || [];
+    console.log('dataSourceSchema:', dataSourceSchema);
+    console.log('workspaceName:', workspaceName);
+    console.log('workspaceId:', workspaceId);
 
-      // Collect all person IDs associated with these candidates
-      const personIdsFromCandidates = candidateNodes
-        .map((edge) => edge.node?.people?.id)
-        .filter((id) => id);
-
-      // Delete candidate field values first
-      try {
-        const graphqlQueryObjDeleteCandidateFieldValues = JSON.stringify({
-          query: graphqlMutationToDeleteManyCandidateFieldValues,
-          variables: { filter: { candidateId: { in: candidateIds } } },
-        });
-
-        await axiosRequest(graphqlQueryObjDeleteCandidateFieldValues, apiToken);
-        console.log(`Deleted candidate field values for ${candidateIds.length} candidates`);
-
-        // Delete candidates in bulk
-        const graphqlQueryObjDeleteCandidates = JSON.stringify({
-          query: graphqlMutationToDeleteManyCandidates,
-          variables: { filter: { id: { in: candidateIds } } },
-        });
-
-        await axiosRequest(graphqlQueryObjDeleteCandidates, apiToken);
-
-        // Delete associated people in bulk
-        const graphqlQueryObjDeletePeople = JSON.stringify({
-          query: graphqlMutationToDeleteManyPeople,
-          variables: { filter: { id: { in: personIdsFromCandidates } } },
-        });
-
-        await axiosRequest(graphqlQueryObjDeletePeople, apiToken);
-
-        results.succeeded.push(...candidateIds);
-      } catch (err) {
-        console.error('Error in bulk deletion:', err);
-        results.failed.push(...candidateIds);
+    // Helper function to process arrays in batches
+    const processBatch = async <T>(
+      items: T[],
+      batchSize: number,
+      processor: (batch: T[]) => Promise<void>
+    ): Promise<void> => {
+      for (let i = 0; i < items.length; i += batchSize) {
+        const batch = items.slice(i, i + batchSize);
+        await processor(batch);
       }
+    };
+
+    // Helper function to delete field values in smaller sub-batches
+    const deleteFieldValuesInBatches = async (candidateIds: string[]): Promise<void> => {
+      for (let i = 0; i < candidateIds.length; i += SUB_BATCH_SIZE) {
+        const subBatch = candidateIds.slice(i, i + SUB_BATCH_SIZE);
+        const candidateIdsStr = subBatch.map(id => `'${id}'`).join(',');
+        const deleteFieldValuesQuery = `DELETE FROM ${dataSourceSchema}."_candidateFieldValue" WHERE "candidateId" IN (${candidateIdsStr})`;
+        
+        try {
+          await this.workspaceQueryService.executeRawQuery(
+            deleteFieldValuesQuery,
+            [],
+            workspaceId,
+          );
+          console.log(`Successfully deleted field values for ${subBatch.length} candidates`);
+        } catch (error) {
+          console.error(`Error deleting field values for batch: ${error.message}`);
+          // Continue with next batch even if this one fails
+        }
+      }
+    };
+
+    if (candidateIds?.length) {
+      // Process candidates in batches
+      await processBatch<string>(candidateIds as string[], BATCH_SIZE, async (batchCandidateIds) => {
+        try {
+          // First fetch all candidate information to get associated person IDs for this batch
+          const graphqlQueryObjToFetchCandidates = JSON.stringify({
+            query: graphqlToFetchAllCandidateData,
+            variables: { filter: { id: { in: batchCandidateIds } } },
+          });
+
+          const candidatesResponse = await axiosRequest(
+            graphqlQueryObjToFetchCandidates,
+            apiToken,
+          );
+          const candidateNodes =
+            candidatesResponse?.data?.data?.candidates?.edges || [];
+
+          // Collect all person IDs associated with these candidates
+          const personIdsFromCandidates = candidateNodes
+            .map((edge: { node: { people: { id: any; }; }; }) => edge.node?.people?.id)
+            .filter((id: any) => id);
+
+          // Delete field values in smaller sub-batches
+          await deleteFieldValuesInBatches(batchCandidateIds);
+
+          // Delete candidates in this batch
+          const graphqlQueryObjDeleteCandidates = JSON.stringify({
+            query: graphqlMutationToDeleteManyCandidates,
+            variables: { filter: { id: { in: batchCandidateIds } } },
+          });
+
+          await axiosRequest(graphqlQueryObjDeleteCandidates, apiToken);
+
+          // Delete associated people in this batch
+          if (personIdsFromCandidates.length > 0) {
+            const graphqlQueryObjDeletePeople = JSON.stringify({
+              query: graphqlMutationToDeleteManyPeople,
+              variables: { filter: { id: { in: personIdsFromCandidates } } },
+            });
+            await axiosRequest(graphqlQueryObjDeletePeople, apiToken);
+          }
+
+          results.succeeded.push(...batchCandidateIds);
+        } catch (err) {
+          console.error('Error in candidate batch deletion:', err);
+          results.failed.push(...batchCandidateIds);
+        }
+      });
     }
 
     if (personIds?.length) {
-      // First fetch all person information to get associated candidate IDs
-      const graphqlQueryObjToFetchPeople = JSON.stringify({
-        query: graphqlQueryToFindManyPeople,
-        variables: { filter: { id: { in: personIds } } },
-      });
-
-      const peopleResponse = await axiosRequest(
-        graphqlQueryObjToFetchPeople,
-        apiToken,
-      );
-      const peopleNodes = peopleResponse?.data?.data?.people?.edges || [];
-
-      // Collect all candidate IDs associated with these people
-      const candidateIdsFromPeople = peopleNodes
-        .flatMap((edge) => edge.node?.candidates?.edges || [])
-        .map((edge) => edge?.node?.id)
-        .filter((id) => id);
-
-      try {
-        // Delete candidate field values first
-        if (candidateIdsFromPeople.length > 0) {
-          const graphqlQueryObjDeleteCandidateFieldValues = JSON.stringify({
-            query: graphqlMutationToDeleteManyCandidateFieldValues,
-            variables: { filter: { candidateId: { in: candidateIdsFromPeople } } },
+      // Process people in batches
+      await processBatch<string>(personIds as string[], BATCH_SIZE, async (batchPersonIds) => {
+        try {
+          // First fetch all person information to get associated candidate IDs for this batch
+          const graphqlQueryObjToFetchPeople = JSON.stringify({
+            query: graphqlQueryToFindManyPeople,
+            variables: { filter: { id: { in: batchPersonIds } } },
           });
 
-          await axiosRequest(graphqlQueryObjDeleteCandidateFieldValues, apiToken);
-          console.log(`Deleted candidate field values for ${candidateIdsFromPeople.length} candidates from people`);
+          const peopleResponse = await axiosRequest(
+            graphqlQueryObjToFetchPeople,
+            apiToken,
+          );
+          const peopleNodes = peopleResponse?.data?.data?.people?.edges || [];
+
+          // Collect all candidate IDs associated with these people
+          const candidateIdsFromPeople = peopleNodes
+            .flatMap((edge) => edge.node?.candidates?.edges || [])
+            .map((edge) => edge?.node?.id)
+            .filter((id) => id);
+
+          // Delete field values in smaller sub-batches
+          if (candidateIdsFromPeople.length > 0) {
+            await deleteFieldValuesInBatches(candidateIdsFromPeople);
+
+            // Delete candidates for this batch
+            const graphqlQueryObjDeleteCandidates = JSON.stringify({
+              query: graphqlMutationToDeleteManyCandidates,
+              variables: { filter: { id: { in: candidateIdsFromPeople } } },
+            });
+
+            await axiosRequest(graphqlQueryObjDeleteCandidates, apiToken);
+          }
+
+          // Delete people in this batch
+          const graphqlQueryObjDeletePeople = JSON.stringify({
+            query: graphqlMutationToDeleteManyPeople,
+            variables: { filter: { id: { in: batchPersonIds } } },
+          });
+
+          await axiosRequest(graphqlQueryObjDeletePeople, apiToken);
+
+          results.succeeded.push(...batchPersonIds);
+        } catch (err) {
+          console.error('Error in people batch deletion:', err);
+          results.failed.push(...batchPersonIds);
         }
-
-        // Delete candidates next
-        const graphqlQueryObjDeleteCandidates = JSON.stringify({
-          query: graphqlMutationToDeleteManyCandidates,
-          variables: { filter: { id: { in: candidateIdsFromPeople } } },
-        });
-
-        await axiosRequest(graphqlQueryObjDeleteCandidates, apiToken);
-
-        // Then delete people
-        const graphqlQueryObjDeletePeople = JSON.stringify({
-          query: graphqlMutationToDeleteManyPeople,
-          variables: { filter: { id: { in: personIds } } },
-        });
-
-        await axiosRequest(graphqlQueryObjDeletePeople, apiToken);
-
-        results.succeeded.push(...personIds);
-      } catch (err) {
-        console.error('Error in bulk deletion:', err);
-        results.failed.push(...personIds);
-      }
+      });
     }
 
     if (results.failed.length > 0) {

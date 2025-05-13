@@ -839,14 +839,6 @@ export class IncomingWhatsappMessages {
       else{
         phoneNumberTo = recruiterProfile.phoneNumber
       }
-  
-      
-
-
-
-
-
-
 
 
     const whatappUpdateMessageObj: whatappUpdateMessageObjType = {

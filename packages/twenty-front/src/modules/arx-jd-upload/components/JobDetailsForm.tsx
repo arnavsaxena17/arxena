@@ -3,9 +3,11 @@ import { useObjectMetadataItem } from '@/object-metadata/hooks/useObjectMetadata
 import { useCreateOneRecord } from '@/object-record/hooks/useCreateOneRecord';
 import { viewableRecordIdState } from '@/object-record/record-right-drawer/states/viewableRecordIdState';
 import { viewableRecordNameSingularState } from '@/object-record/record-right-drawer/states/viewableRecordNameSingularState';
+import { SingleRecordSelectMenuItems } from '@/object-record/relation-picker/components/SingleRecordSelectMenuItems';
 import { SingleRecordSelectMenuItemsWithSearch } from '@/object-record/relation-picker/components/SingleRecordSelectMenuItemsWithSearch';
 import { useAddNewRecordAndOpenRightDrawer } from '@/object-record/relation-picker/hooks/useAddNewRecordAndOpenRightDrawer';
 import { RecordForSelect } from '@/object-record/relation-picker/types/RecordForSelect';
+import { RelationPickerHotkeyScope } from '@/object-record/relation-picker/types/RelationPickerHotkeyScope';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { useRightDrawer } from '@/ui/layout/right-drawer/hooks/useRightDrawer';
@@ -22,6 +24,7 @@ import {
   StyledFullWidthField,
   StyledInput,
   StyledLabel,
+  StyledRemoveButton,
   StyledSection,
   StyledSectionContent
 } from './ArxJDUploadModal.styled';
@@ -289,14 +292,42 @@ export const JobDetailsForm: React.FC<FormComponentProps> = ({
 
         <StyledFieldGroup>
           <StyledLabel>Company</StyledLabel>
-          <SingleRecordSelectMenuItemsWithSearch
-            objectNameSingular="company"
-            selectedRecordIds={parsedJD.companyId ? [parsedJD.companyId] : []}
-            onRecordSelected={handleCompanySelect}
-            emptyLabel="No Company"
-            onCreate={handleCreateCompany}
-            isJobDetailsForm={true}
-          />
+          {parsedJD.companyId && parsedJD.companyName ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
+              <div style={{ flex: 1 }}>
+                <SingleRecordSelectMenuItems
+                  recordsToSelect={[]}
+                  loading={false}
+                  selectedRecord={{
+                    id: parsedJD.companyId,
+                    name: parsedJD.companyName,
+                    record: {
+                      id: parsedJD.companyId,
+                      __typename: 'Company'
+                    }
+                  }}
+                  shouldSelectEmptyOption={false}
+                  hotkeyScope={RelationPickerHotkeyScope.RelationPicker}
+                  isFiltered={false}
+                  isJobDetailsForm={true}
+                  onRecordSelected={handleCompanySelect}
+                  emptyLabel="Remove Company"
+                />
+              </div>
+              <StyledRemoveButton onClick={() => handleCompanySelect()}>
+                Remove
+              </StyledRemoveButton>
+            </div>
+          ) : (
+            <SingleRecordSelectMenuItemsWithSearch
+              objectNameSingular="company"
+              selectedRecordIds={parsedJD.companyId ? [parsedJD.companyId] : []}
+              onRecordSelected={handleCompanySelect}
+              emptyLabel="No Company"
+              onCreate={handleCreateCompany}
+              isJobDetailsForm={true}
+            />
+          )}
         </StyledFieldGroup>
 
         {/* <StyledFieldGroup>
@@ -346,7 +377,7 @@ export const JobDetailsForm: React.FC<FormComponentProps> = ({
         <StyledFullWidthField>
           <StyledLabel>Short One Line Pitch</StyledLabel>
           <StyledInput
-            as="textarea"
+            // as="textarea"
             value={parsedJD.description}
             onChange={(e) =>
               setParsedJD({
@@ -355,19 +386,17 @@ export const JobDetailsForm: React.FC<FormComponentProps> = ({
               })
             }
             placeholder="A one line pitch for the job"
-            style={{ minHeight: '50px', width: '100%', resize: 'vertical' }}
+            // style={{ minHeight: '50px', width: '100%', resize: 'vertical' }}
             onKeyDown={handleKeyDown}
           />
         </StyledFullWidthField>
 
         {showRecruiterFields && (
           <>
-            <StyledFullWidthField>
-              <StyledLabel style={{ fontWeight: 'bold', marginTop: '16px' }}>Recruiter Profile Details</StyledLabel>
-              <div style={{ fontSize: '14px', marginBottom: '12px', color: '#666' }}>
+              {/* <StyledLabel>Recruiter Profile Details</StyledLabel> */}
+              {/* <div style={{ fontSize: '14px', marginBottom: '12px', color: '#666' }}>
                 To communicate with the candidates for the job.
-              </div>
-            </StyledFullWidthField>
+              </div> */}
 
             {isDefined(missingRecruiterInfo.name) && (
               <StyledFieldGroup>
@@ -383,7 +412,7 @@ export const JobDetailsForm: React.FC<FormComponentProps> = ({
 
             {isDefined(missingRecruiterInfo.phoneNumber) && (
               <StyledFieldGroup>
-                <StyledLabel>Phone Number</StyledLabel>
+                <StyledLabel>Recruiter's Phone Number</StyledLabel>
                 <StyledInput
                   value={missingRecruiterInfo.phoneNumber}
                   onChange={(e) => updateRecruiterInfoField('phoneNumber', e.target.value)}
@@ -395,7 +424,7 @@ export const JobDetailsForm: React.FC<FormComponentProps> = ({
 
             {isDefined(missingRecruiterInfo.jobTitle) && (
               <StyledFieldGroup>
-                <StyledLabel>Job Title</StyledLabel>
+                <StyledLabel>Recruiter's Job Title</StyledLabel>
                 <StyledInput
                   value={missingRecruiterInfo.jobTitle}
                   onChange={(e) => updateRecruiterInfoField('jobTitle', e.target.value)}
@@ -418,24 +447,6 @@ export const JobDetailsForm: React.FC<FormComponentProps> = ({
                 />
               </StyledFullWidthField>
             )}
-
-            {/* <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'flex-end' }}>
-              <button
-                onClick={updateRecruiterProfile}
-                disabled={isUpdatingProfile}
-                style={{
-                  padding: '8px 16px',
-                  backgroundColor: '#0052CC',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: isUpdatingProfile ? 'not-allowed' : 'pointer',
-                  opacity: isUpdatingProfile ? 0.7 : 1,
-                }}
-              >
-                {isUpdatingProfile ? 'Updating...' : 'Update Recruiter Profile'}
-              </button>
-            </div> */}
           </>
         )}
       </StyledSectionContent>

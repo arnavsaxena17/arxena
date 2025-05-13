@@ -495,7 +495,7 @@ export class FilterCandidates {
             jobLocation: activeJob?.jobLocation,
             whatsappMessages: activeJob?.whatsappMessages,
           },
-
+          createdAt: activeJobCandidate?.createdAt,
           videoInterview: activeJobCandidate?.videoInterview,
           engagementStatus: activeJobCandidate?.engagementStatus,
           lastEngagementChatControl: activeJobCandidate?.lastEngagementChatControl,

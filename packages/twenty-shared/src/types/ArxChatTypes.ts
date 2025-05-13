@@ -608,10 +608,11 @@ export interface ArxenaCandidateNode {
   stopChat: boolean;
   hiringNaukriUrl?: { primaryLinkLabel: string; primaryLinkUrl: string };
   resdexNaukriUrl?: { primaryLinkLabel: string; primaryLinkUrl: string };
+  linkedinUrl?: { primaryLinkLabel: string; primaryLinkUrl: string };
   displayPicture: { primaryLinkLabel: string; primaryLinkUrl: string };
   jobsId: string;
   peopleId: string;
-  whatsappProvider: string;
+  messagingChannel: string;
 }
 
 export interface ArxenaJobCandidateNode {
