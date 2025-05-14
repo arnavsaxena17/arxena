@@ -359,7 +359,7 @@ export const CandidateInfoHeader = () => {
 
         <StyledActionButton onClick={handleStartInterimChat}>
           <IconMessageCircle size={16} />
-          <span>Start Chat</span>
+          <span>Start Interim Chat</span>
         </StyledActionButton>
 
         <StyledActionButton onClick={handleStopChat}>
