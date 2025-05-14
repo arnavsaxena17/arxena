@@ -1691,8 +1691,16 @@ export const graphqlToFetchAllCandidateData = `
                 updatedAt
                 messageObj
                 createdAt
+                whatsappDeliveryStatus
                 id
                 name
+                recruiterId
+                message
+                candidateId
+                jobsId
+                position
+                phoneTo
+                phoneFrom
               }
             }
           }

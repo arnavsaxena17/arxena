@@ -2,13 +2,13 @@ import { Injectable } from '@nestjs/common';
 
 import axios from 'axios';
 import {
-  BaileysIncomingMessage,
-  ChatControlsObjType,
-  ChatHistoryItem,
-  Jobs,
-  PersonNode,
-  WhatsappMessageData,
-  whatappUpdateMessageObjType,
+    BaileysIncomingMessage,
+    ChatControlsObjType,
+    ChatHistoryItem,
+    Jobs,
+    PersonNode,
+    WhatsappMessageData,
+    whatappUpdateMessageObjType,
 } from 'twenty-shared';
 
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';

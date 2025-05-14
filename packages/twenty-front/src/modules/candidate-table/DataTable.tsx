@@ -243,7 +243,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
 
     const afterSelectionEndHandler = (row: number, column: number, row2: number, column2: number, selectionLayerLevel: number) => {
       console.log("row in afterSelectionEndHandler", row);
-      afterSelectionEnd(tableRef, column, row, row2, setTableState, setContextStoreNumberOfSelectedRecords, setContextStoreTargetedRecordsRule, openRightDrawer);
+      afterSelectionEnd(tableRef, column, row, row2, setTableState, setContextStoreNumberOfSelectedRecords, setContextStoreTargetedRecordsRule, openRightDrawer, tokenPair);
     }
 
     const loadData = useCallback(async () => {
@@ -422,27 +422,3 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
       
     );
   });
-
-//   <HotTable
-//   ref={hotRef}
-//   themeName="ht-theme-main"
-//   data={tableState.data}
-//   columns={tableState.columns}
-//   colHeaders={true}
-//   rowHeaders={true}
-//   height="auto"
-//   licenseKey="non-commercial-and-evaluation"
-//   stretchH="all"
-//   className="htCenter"
-//   columnSorting={true}
-//   readOnly={false}
-//   selectionMode="range"
-//   autoWrapRow={false}
-//   autoWrapCol={false}
-//   autoRowSize={false}
-//   rowHeights={30}
-//   manualRowResize={true}
-//   manualColumnResize={true}
-//   filters={true}
-//   dropdownMenu={true}
-// />

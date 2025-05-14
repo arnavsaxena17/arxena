@@ -1,8 +1,24 @@
 import { RightDrawerPages } from "@/ui/layout/right-drawer/types/RightDrawerPages";
 import { IconMessages } from "@tabler/icons-react";
+import axios from 'axios';
 import { Change } from './states/tableStateAtom';
 
-export const afterSelectionEnd = (tableRef: any, column: number, row: number, row2: number, setTableState: any, setContextStoreNumberOfSelectedRecords: any, setContextStoreTargetedRecordsRule: any, openRightDrawer: any ) => {
+const updateUnreadMessagesStatus = async (unreadMessageIds: string[], tokenPair: any) => {
+  if (!unreadMessageIds?.length) return;
+
+  try {
+    await axios.post(
+      `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/update-whatsapp-delivery-status`,
+      { listOfMessagesIds: unreadMessageIds },
+      { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } },
+    );
+    console.log('Successfully marked messages as read');
+  } catch (error) {
+    console.error('Error updating message status:', error);
+  }
+};
+
+export const afterSelectionEnd = (tableRef: any, column: number, row: number, row2: number, setTableState: any, setContextStoreNumberOfSelectedRecords: any, setContextStoreTargetedRecordsRule: any, openRightDrawer: any, tokenPair: any) => {
   console.log("row in afterSelectionEnd", row);
   console.log("row2 in afterSelectionEnd", row2);
   const hot = tableRef.current?.hotInstance;
@@ -13,12 +29,62 @@ export const afterSelectionEnd = (tableRef: any, column: number, row: number, ro
   try {
     const selectedIds = hot.getSelected();
     console.log("selectedIds in afterSelectionEnd", selectedIds);
-    console.log("opening right drawer");
+    
+    // Handle chat drawer opening
     if (selectedIds.length === 1 && column === 1) {
-      openRightDrawer(RightDrawerPages.CandidateChat, {
-        title: `Chat`,
-        Icon: IconMessages,
-      });
+      const selectedRow = hot.getSourceDataAtRow(row);
+      console.log("selectedRow in afterSelectionEnd", selectedRow);
+      
+      if (selectedRow?.id) {
+        // Fetch unread messages for this candidate
+        axios.post(
+          `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/get-all-messages-by-candidate-id`,
+          { candidateId: selectedRow.id },
+          { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } }
+        ).then(response => {
+          console.log("Messages response:", response.data);
+          const unreadMessageIds = response.data
+            ?.filter((msg: any) => msg.whatsappDeliveryStatus === 'receivedFromCandidate')
+            ?.map((msg: any) => msg.id) || [];
+          
+          console.log("Filtered unreadMessageIds:", unreadMessageIds);
+
+          // Open the drawer
+          openRightDrawer(RightDrawerPages.CandidateChat, {
+            title: `Chat with ${selectedRow.fullName || selectedRow.name || 'Candidate'}`,
+            Icon: IconMessages,
+            meta: {
+              candidateId: selectedRow.id,
+              unreadMessageIds
+            }
+          });
+
+          // Update message status if there are unread messages
+          if (unreadMessageIds.length > 0) {
+            updateUnreadMessagesStatus(unreadMessageIds, tokenPair);
+            
+            // Update the table state to clear unread messages count
+            setTableState((prev: any) => ({
+              ...prev,
+              unreadMessagesCounts: {
+                ...prev.unreadMessagesCounts,
+                [selectedRow.id]: 0
+              }
+            }));
+          }
+        }).catch(error => {
+          console.error('Error fetching messages:', error);
+          // Still open drawer even if message fetch fails
+          openRightDrawer(RightDrawerPages.CandidateChat, {
+            title: `Chat with ${selectedRow.fullName || selectedRow.name || 'Candidate'}`,
+            Icon: IconMessages,
+            meta: {
+              candidateId: selectedRow.id,
+              unreadMessageIds: []
+            }
+          });
+        });
+      }
     }
     console.log('Right drawer opened successfully');
   } catch (error) {
@@ -224,49 +290,3 @@ export const performRedo = async (tableRef: React.RefObject<any>, setTableState:
     };
   });
 };
-
-// export const handleKeyDown = ( event: KeyboardEvent, tableRef: React.RefObject<any>, tableState: any, setTableState: any ) => {
-//   // console.log("event in handleKeyDown", event);
-//   if (tableState.isRightPanelOpen && event.key === 'ArrowDown') {
-//     const hot = tableRef.current?.hotInstance;
-//     if (!hot) return;
-    
-//     const selection = hot.getSelected();
-//     if (!selection) return;
-    
-//     const [row] = selection[0];
-//     const nextRowData = hot.getSourceDataAtRow(row + 1);
-    
-//     console.log("nextRowData", nextRowData);
-//     if (nextRowData) {
-//       setTableState((prev: any) => ({
-//         ...prev,
-//         currentRightPanelRowId: nextRowData.id
-//       }));
-//     }
-//     event.stopImmediatePropagation();
-    
-//   }
-// };
-
-
-// export const beforeOnCellMouseDown = (hot: any, event: any, coords: any, tableState: any, setTableState: any ): string[] | undefined => {
-//   console.log("coords in beforeOnCellMouseDown", coords);
-//   if (coords.col === 0) {
-//     const rowData = hot.getSourceDataAtRow(coords.row);
-//     const rowId = rowData.id;
-//     const newSelectedIds = [...tableState.selectedRowIds];
-//     const index = newSelectedIds.indexOf(rowId);
-//     if (index > -1) {
-//       newSelectedIds.splice(index, 1);
-//     } else {
-//       newSelectedIds.push(rowId);
-//     }
-//     setTableState((prev: any) => ({
-//       ...prev,
-//       selectedRowIds: newSelectedIds || []
-//     }));
-
-//     return newSelectedIds;
-//   }
-// }

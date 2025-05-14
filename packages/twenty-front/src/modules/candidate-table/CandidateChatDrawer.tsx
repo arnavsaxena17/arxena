@@ -64,12 +64,53 @@ const MessageBubble = styled.div<{ isSent: boolean }>`
   line-height: 1.5;
   white-space: pre-wrap;
   word-break: break-word;
+  position: relative;
 
   ${props => props.isSent ? `
     border-bottom-right-radius: 4px;
   ` : `
     border-bottom-left-radius: 4px;
   `}
+`;
+
+const MessageStatus = styled.div<{ isSent: boolean }>`
+  font-size: 11px;
+  color: ${props => props.theme.font.color.light};
+  margin-top: 4px;
+  text-align: ${props => props.isSent ? 'right' : 'left'};
+  display: flex;
+  align-items: center;
+  justify-content: ${props => props.isSent ? 'flex-end' : 'flex-start'};
+  gap: 4px;
+`;
+
+const StatusIcon = styled.span<{ status: string }>`
+  width: 16px;
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  
+  &::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: ${props => {
+      switch (props.status) {
+        case 'sent':
+          return '#9CA3AF';
+        case 'delivered':
+          return '#10B981';
+        case 'read':
+          return '#3B82F6';
+        case 'failed':
+          return '#EF4444';
+        default:
+          return '#9CA3AF';
+      }
+    }};
+  }
 `;
 
 const MessageTime = styled.div<{ isSent: boolean }>`
@@ -202,6 +243,32 @@ const groupMessagesByDate = (messages: MessageNode[]) => {
   });
 
   return groups;
+};
+
+// Add type definitions at the top of the file after imports
+type WhatsAppMessage = {
+  node: {
+    id: string;
+    whatsappDeliveryStatus: string;
+  };
+};
+
+type CandidateData = {
+  id: string;
+  personId: string;
+  name: string;
+  phone: string;
+  email: string;
+  status: string;
+  source: string;
+  checkbox: boolean;
+  startChat: boolean;
+  startChatCompleted: boolean;
+  engagementStatus: string | true;
+  messagingChannel: string;
+  whatsappMessages?: {
+    edges: WhatsAppMessage[];
+  };
 };
 
 export const CandidateChatDrawer = () => {
@@ -399,6 +466,38 @@ export const CandidateChatDrawer = () => {
     }
   }, [activeTabId, setActiveTabId]);
 
+  // Add effect to mark messages as read when drawer opens
+  useEffect(() => {
+    if (candidateId && tokenPair?.accessToken?.token) {
+      // Get unread messages from the message history
+      const unreadMessageIds = messageHistory
+        ?.filter(msg => msg.whatsappDeliveryStatus === 'receivedFromCandidate')
+        ?.map(msg => msg.id) || [];
+
+      console.log("Unread message IDs from history:", unreadMessageIds);
+      
+      if (unreadMessageIds.length > 0) {
+        // Update messages in the database
+        axios.post(
+          `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/update-whatsapp-delivery-status`,
+          { listOfMessagesIds: unreadMessageIds },
+          { headers: { Authorization: `Bearer ${tokenPair.accessToken.token}` } },
+        ).then(() => {
+          // Update local message history to mark messages as read
+          setMessageHistory(prev => 
+            prev.map(msg => 
+              unreadMessageIds.includes(msg.id) 
+                ? { ...msg, whatsappDeliveryStatus: 'read' }
+                : msg
+            )
+          );
+        }).catch(error => {
+          console.error('Error updating message status:', error);
+        });
+      }
+    }
+  }, [candidateId, tokenPair, messageHistory]);
+
   const sendMessage = async (messageText: string) => {
     if (!phoneNumber) {
       showSnackbar('Phone number not available', 'error');
@@ -524,16 +623,30 @@ export const CandidateChatDrawer = () => {
               <DateSeparator>
                 <DateLabel>{date}</DateLabel>
               </DateSeparator>
-              {messages.map((message) => (
-                <MessageGroup key={message.id}>
-                  <MessageBubble isSent={message.name === 'botMessage' || message.name === 'botMessage'}>
-                    {message.message}
-                  </MessageBubble>
-                  <MessageTime isSent={message.name === 'botMessage' || message.name === 'botMessage'}>
-                    {formatTime(message.createdAt)}
-                  </MessageTime>
-                </MessageGroup>
-              ))}
+              {messages.map((message) => {
+                const isSent = message.name === 'botMessage';
+                const status = message.whatsappDeliveryStatus || 'sent';
+                
+                return (
+                  <MessageGroup key={message.id}>
+                    <MessageBubble isSent={isSent}>
+                      {message.message}
+                    </MessageBubble>
+                    <MessageStatus isSent={isSent}>
+                      <StatusIcon status={status} />
+                      {formatTime(message.createdAt)}
+                      {isSent && (
+                        <span>
+                          {status === 'sent' && 'Sent'}
+                          {status === 'delivered' && 'Delivered'}
+                          {status === 'read' && 'Read'}
+                          {status === 'failed' && 'Failed'}
+                        </span>
+                      )}
+                    </MessageStatus>
+                  </MessageGroup>
+                );
+              })}
             </React.Fragment>
           ))}
         </MessageContainer>
