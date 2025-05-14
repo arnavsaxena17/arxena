@@ -138,7 +138,7 @@ export const TableColumns = ({
     if (unreadCount > 0) {
       const badge = document.createElement('div');
       badge.textContent = String(unreadCount);
-      badge.style.backgroundColor = '#1976d2';
+      badge.style.backgroundColor = 'black';
       badge.style.color = 'white';
       badge.style.borderRadius = '50%';
       badge.style.width = '20px';
