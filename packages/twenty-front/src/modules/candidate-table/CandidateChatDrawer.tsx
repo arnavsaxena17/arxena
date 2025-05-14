@@ -144,6 +144,7 @@ const MessageInputContainer = styled.div`
   background-color: ${props => props.theme.background.primary};
   position: sticky;
   bottom: 0;
+  box-sizing: border-box;
   width: 100%;
   z-index: 1;
 `;
@@ -152,6 +153,8 @@ const MessageInputTabContainer = styled.div`
   display: flex;
   border-bottom: 1px solid ${props => props.theme.border.color.light};
   margin-bottom: ${props => props.theme.spacing(2)};
+  width: 100%;
+  box-sizing: border-box;
 `;
 
 const MessageInputTab = styled.div<{ isActive: boolean }>`
@@ -162,13 +165,23 @@ const MessageInputTab = styled.div<{ isActive: boolean }>`
   border-bottom: 2px solid ${props => props.isActive ? props.theme.font.color.primary : 'transparent'};
 `;
 
-const StyledChatInput = styled.input`
+const InputWrapper = styled.div`
+  display: flex;
+  align-items: center;
   width: 100%;
+  box-sizing: border-box;
+  gap: ${props => props.theme.spacing(2)};
+`;
+
+const StyledChatInput = styled.input`
+  flex: 1;
   padding: ${props => props.theme.spacing(2)};
   border-radius: ${props => props.theme.border.radius.md};
   border: 1px solid ${props => props.theme.border.color.medium};
   font-size: ${props => props.theme.font.size.md};
   outline: none;
+  box-sizing: border-box;
+  min-width: 0; /* Prevents input from overflowing */
   &:focus {
     border-color: ${props => props.theme.font.color.primary};
   }
@@ -182,11 +195,10 @@ const StyledButton = styled.button`
   border-radius: ${props => props.theme.border.radius.md};
   font-weight: 500;
   cursor: pointer;
-  margin-left: ${props => props.theme.spacing(2)};
+  white-space: nowrap;
   &:hover {
     background-color: ${props => props.theme.color.gray};
     color: black;
-
   }
 `;
 
@@ -194,20 +206,25 @@ const TemplateContainer = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${props => props.theme.spacing(2)};
+  width: 100%;
+  box-sizing: border-box;
 `;
 
 const TemplateSelect = styled.select`
+  width: 100%;
   padding: ${props => props.theme.spacing(2)};
   border-radius: ${props => props.theme.border.radius.md};
   border: 1px solid ${props => props.theme.border.color.medium};
   font-size: ${props => props.theme.font.size.md};
   outline: none;
+  box-sizing: border-box;
   &:focus {
     border-color: ${props => props.theme.font.color.primary};
   }
 `;
 
 const TemplatePreview = styled.div`
+  width: 100%;
   padding: ${props => props.theme.spacing(2)};
   border: 1px solid ${props => props.theme.border.color.light};
   border-radius: ${props => props.theme.border.radius.md};
@@ -215,11 +232,7 @@ const TemplatePreview = styled.div`
   min-height: 80px;
   font-size: ${props => props.theme.font.size.sm};
   color: ${props => props.theme.font.color.secondary};
-`;
-
-const InputWrapper = styled.div`
-  display: flex;
-  align-items: center;
+  box-sizing: border-box;
 `;
 
 const formatDate = (date: string) => {
