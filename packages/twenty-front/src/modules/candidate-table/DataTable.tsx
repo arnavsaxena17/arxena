@@ -1,5 +1,5 @@
 import { tokenPairState } from '@/auth/states/tokenPairState';
-import { afterChange, afterSelectionEnd } from '@/candidate-table/HotHooks';
+import { afterChange, afterSelectionEnd, performRedo, performUndo } from '@/candidate-table/HotHooks';
 import { columnsSelector, processedDataSelector, tableStateAtom } from "@/candidate-table/states";
 import { chatSearchQueryState } from '@/candidate-table/states/chatSearchQueryState';
 import { contextStoreNumberOfSelectedRecordsComponentState } from '@/context-store/states/contextStoreNumberOfSelectedRecordsComponentState';
@@ -373,34 +373,51 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
             columns={columns}
             colHeaders={colHeaders}
             afterGetColHeader={afterGetColHeader}
-          rowHeaders={true}
-          contextMenu={true}
-          height="calc(100vh - 200px)"
-          themeName="ht-theme-main"
-          licenseKey="non-commercial-and-evaluation"
-          stretchH="all"
-          readOnly={false}
-          className="htCenter"
-          columnSorting={true}
-          copyPaste={true}
-          selectionMode="range"
-          autoWrapRow={false}
-          fixedRowsTop={0}
-          afterSelectionEnd={afterSelectionEndHandler}
-          afterChange={afterChangeHandler}
-          // beforeOnCellMouseDown={beforeOnCellMouseDownHandler}
-          // beforeKeyDown={keyDownHandler}
-          autoWrapCol={false}
-          autoRowSize={false}
-          rowHeights={30}
-          manualRowResize={true}
-          manualColumnResize={true}
-          manualColumnMove={true}
-          filters={true}
-          dropdownMenu={true}
-          fixedColumnsLeft={1}
-        />
-      </StyledTableContainer>
+            rowHeaders={true}
+            contextMenu={true}
+            height="calc(100vh - 200px)"
+            themeName="ht-theme-main"
+            licenseKey="non-commercial-and-evaluation"
+            stretchH="all"
+            readOnly={false}
+            className="htCenter"
+            columnSorting={true}
+            copyPaste={true}
+            selectionMode="range"
+            autoWrapRow={false}
+            fixedRowsTop={0}
+            afterSelectionEnd={afterSelectionEndHandler}
+            afterChange={afterChangeHandler}
+            autoWrapCol={false}
+            autoRowSize={false}
+            rowHeights={30}
+            manualRowResize={true}
+            manualColumnResize={true}
+            manualColumnMove={true}
+            filters={true}
+            dropdownMenu={true}
+            fixedColumnsLeft={1}
+            customBorders={true}
+            outsideClickDeselects={false}
+            enterBeginsEditing={true}
+            enterMoves={{ row: 1, col: 0 }}
+            fillHandle={true}
+            persistentState={true}
+            beforeKeyDown={(event) => {
+              // Handle Ctrl/Cmd + Z for undo
+              if ((event.ctrlKey || event.metaKey) && event.key === 'z' && !event.shiftKey) {
+                event.preventDefault();
+                performUndo(tableRef, setTableState);
+              }
+              // Handle Ctrl/Cmd + Shift + Z or Ctrl/Cmd + Y for redo
+              if (((event.ctrlKey || event.metaKey) && event.key === 'z' && event.shiftKey) ||
+                  ((event.ctrlKey || event.metaKey) && event.key === 'y')) {
+                event.preventDefault();
+                performRedo(tableRef, setTableState);
+              }
+            }}
+          />
+        </StyledTableContainer>
       </StyledTableWrapper>
       
     );

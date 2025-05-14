@@ -1,5 +1,6 @@
 import { RightDrawerPages } from "@/ui/layout/right-drawer/types/RightDrawerPages";
 import { IconMessages } from "@tabler/icons-react";
+import { Change } from './states/tableStateAtom';
 
 export const afterSelectionEnd = (tableRef: any, column: number, row: number, row2: number, setTableState: any, setContextStoreNumberOfSelectedRecords: any, setContextStoreTargetedRecordsRule: any, openRightDrawer: any ) => {
   console.log("row in afterSelectionEnd", row);
@@ -74,15 +75,48 @@ export const afterSelectionEnd = (tableRef: any, column: number, row: number, ro
 export const afterChange = async (tableRef: React.RefObject<any>, changes: any, source: any, jobId: string, tokenPair: any, setTableState: any, refreshData: any) => {
   console.log("changes in afterChange", changes);
   console.log("source in afterChange", source);
-  if (!changes || source !== 'edit') return;
+  
+  if (!changes) return;
+
+  const hot = tableRef.current?.hotInstance;
+  if (!hot) return;
+
+  // Handle undo/redo operations
+  if (source === 'undo' || source === 'redo') {
+    // Let the operation complete and return
+    return;
+  }
+
+  // For direct edits, save to undo stack
+  if (source === 'edit') {
+    const changesForUndo: Change[] = changes.map(([row, prop, oldValue, newValue]: [number, string, any, any]) => {
+      const rowData = hot.getSourceDataAtRow(row);
+      return {
+        row,
+        prop,
+        oldValue,
+        newValue,
+        rowId: rowData?.id
+      };
+    }).filter((change: Change) => change.oldValue !== change.newValue); // Only track actual changes
+
+    if (changesForUndo.length > 0) {
+      setTableState((prev: any) => {
+        const currentUndoStack = Array.isArray(prev.undoStack) ? prev.undoStack : [];
+        return {
+          ...prev,
+          undoStack: [...currentUndoStack, ...changesForUndo],
+          redoStack: [] // Clear redo stack on new edit
+        };
+      });
+    }
+  }
+
   // Track successful updates to refresh data if needed
   const updatedRows = new Set();
   
   for (const [row, prop, oldValue, newValue] of changes) {
     if (oldValue === newValue) continue;
-    
-    const hot = tableRef.current?.hotInstance;
-    if (!hot) continue;
     
     const rowData = hot.getSourceDataAtRow(row);
     if (!rowData || !rowData.id) continue;
@@ -91,22 +125,21 @@ export const afterChange = async (tableRef: React.RefObject<any>, changes: any, 
       // Special handling for checkbox column
       if (prop === 'checkbox') {
         setTableState((prev: any) => {
-          const currentSelectedIds = [...prev.selectedRowIds];
+          const currentSelectedIds = Array.isArray(prev.selectedRowIds) ? prev.selectedRowIds : [];
           const rowId = rowData.id;
           
           if (newValue === true && !currentSelectedIds.includes(rowId)) {
-            currentSelectedIds.push(rowId);
+            return {
+              ...prev,
+              selectedRowIds: [...currentSelectedIds, rowId]
+            };
           } else if (newValue === false) {
-            const index = currentSelectedIds.indexOf(rowId);
-            if (index > -1) {
-              currentSelectedIds.splice(index, 1);
-            }
+            return {
+              ...prev,
+              selectedRowIds: currentSelectedIds.filter((id: string) => id !== rowId)
+            };
           }
-          
-          return {
-            ...prev,
-            selectedRowIds: currentSelectedIds
-          };
+          return prev;
         });
         continue;
       }
@@ -133,30 +166,66 @@ export const afterChange = async (tableRef: React.RefObject<any>, changes: any, 
         updatedRows.add(rowData.id);
       } else {
         console.error('Update failed:', await response.text());
-        // Revert the cell to its previous value if update failed
-        hot.setDataAtRowProp(row, prop, oldValue);
+        hot.setDataAtRowProp(row, prop, oldValue, 'external');
       }
-
-      if (updatedRows.size > 0 && refreshData) {
-        console.log("Will be calling refresh data with the changes", updatedRows);
-        await refreshData(Array.from(updatedRows));
-      }
-    
     } catch (error) {
       console.error('Update failed:', error);
-      // Revert cell on error
-      const hot = tableRef.current?.hotInstance;
-      if (hot) hot.setDataAtRowProp(row, prop, oldValue);
+      if (hot) hot.setDataAtRowProp(row, prop, oldValue, 'external');
     }
   }
   
-  // If we have successful updates, refresh the data
-  if (updatedRows.size > 0) {
-    // Optional: refresh data from server to ensure consistency
-    // You could call loadData() here or implement a partial refresh
+  if (updatedRows.size > 0 && refreshData) {
+    await refreshData(Array.from(updatedRows));
   }
-}
+};
 
+export const performUndo = async (tableRef: React.RefObject<any>, setTableState: any) => {
+  const hot = tableRef.current?.hotInstance;
+  if (!hot) return;
+
+  setTableState((prev: any) => {
+    const currentUndoStack = Array.isArray(prev.undoStack) ? prev.undoStack : [];
+    const currentRedoStack = Array.isArray(prev.redoStack) ? prev.redoStack : [];
+
+    if (currentUndoStack.length === 0) return prev;
+
+    const lastChange = currentUndoStack[currentUndoStack.length - 1];
+    const { row, prop, oldValue, rowId } = lastChange;
+
+    // Update the cell with the old value
+    hot.setDataAtRowProp(row, prop, oldValue, 'undo');
+
+    return {
+      ...prev,
+      undoStack: currentUndoStack.slice(0, -1),
+      redoStack: [...currentRedoStack, lastChange]
+    };
+  });
+};
+
+export const performRedo = async (tableRef: React.RefObject<any>, setTableState: any) => {
+  const hot = tableRef.current?.hotInstance;
+  if (!hot) return;
+
+  setTableState((prev: any) => {
+    const currentUndoStack = Array.isArray(prev.undoStack) ? prev.undoStack : [];
+    const currentRedoStack = Array.isArray(prev.redoStack) ? prev.redoStack : [];
+
+    if (currentRedoStack.length === 0) return prev;
+
+    const lastChange = currentRedoStack[currentRedoStack.length - 1];
+    const { row, prop, newValue, rowId } = lastChange;
+
+    // Update the cell with the new value
+    hot.setDataAtRowProp(row, prop, newValue, 'redo');
+
+    return {
+      ...prev,
+      redoStack: currentRedoStack.slice(0, -1),
+      undoStack: [...currentUndoStack, lastChange]
+    };
+  });
+};
 
 // export const handleKeyDown = ( event: KeyboardEvent, tableRef: React.RefObject<any>, tableState: any, setTableState: any ) => {
 //   // console.log("event in handleKeyDown", event);
