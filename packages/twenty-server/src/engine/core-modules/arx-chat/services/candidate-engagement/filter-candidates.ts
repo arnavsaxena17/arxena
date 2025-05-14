@@ -1,4 +1,3 @@
-import axios from 'axios';
 import {
   CandidateNode,
   CandidatesEdge,
@@ -552,15 +551,7 @@ export class FilterCandidates {
         orderBy: { position: 'DescNullsFirst' },
       },
     });
-    const response = await axios.request({
-      method: 'post',
-      url: process.env.GRAPHQL_URL,
-      headers: {
-        authorization: 'Bearer ' + apiToken,
-        'content-type': 'application/json',
-      },
-      data: data,
-    });
+    const response = await axiosRequest(data, apiToken);
     const questionsArray: string[] = response?.data?.data?.candidateFields?.edges.map(
       (val: { node: { name: string } }) => val.node.name,
     );
@@ -571,7 +562,6 @@ export class FilterCandidates {
     );
 
     console.log('This is the questions array:', questionsArray);
-
     return { questionArray: questionsArray, questionIdArray: questionIdArray };
   }
 

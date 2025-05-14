@@ -303,10 +303,14 @@ export class ToolCallingAgents {
     const mostSimilarQuestion = questionIdArray.filter(
       (questionObj) => questionObj.question == matches[0],
     );
+
     const AnswerMessageObj = {
-      questionsId: mostSimilarQuestion[0]?.questionId,
+      // questionsId: mostSimilarQuestion[0]?.questionId,
+      candidateFieldsId: mostSimilarQuestion[0]?.questionId,
       name: inputs.answer,
-      candidateId: candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.id,
+      candidateId: candidateProfileDataNodeObj?.candidates?.edges.filter(
+        (edge) => edge.node.jobs.id === candidateJob.id,
+      )[0]?.node?.id,
     };
 
     await new ToolCallsProcessing(

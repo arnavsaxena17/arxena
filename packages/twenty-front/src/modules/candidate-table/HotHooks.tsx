@@ -81,9 +81,7 @@ export const afterChange = async (tableRef: React.RefObject<any>, changes: any, 
   const hot = tableRef.current?.hotInstance;
   if (!hot) return;
 
-  // Handle undo/redo operations
   if (source === 'undo' || source === 'redo') {
-    // Let the operation complete and return
     return;
   }
 
@@ -98,7 +96,7 @@ export const afterChange = async (tableRef: React.RefObject<any>, changes: any, 
         newValue,
         rowId: rowData?.id
       };
-    }).filter((change: Change) => change.oldValue !== change.newValue); // Only track actual changes
+    }).filter((change: Change) => change.oldValue !== change.newValue);
 
     if (changesForUndo.length > 0) {
       setTableState((prev: any) => {
