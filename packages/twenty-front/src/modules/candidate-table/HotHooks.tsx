@@ -3,7 +3,7 @@ import { IconMessages } from "@tabler/icons-react";
 import axios from 'axios';
 import { Change } from './states/tableStateAtom';
 
-const updateUnreadMessagesStatus = async (unreadMessageIds: string[], tokenPair: any) => {
+export const updateUnreadMessagesStatus = async (unreadMessageIds: string[], tokenPair: any) => {
   if (!unreadMessageIds?.length) return;
 
   try {

@@ -21,7 +21,9 @@ import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modific
 // import { Transformations } from '../candidate-engagement/transformations';
 
 export class WhatsappControls {
-  constructor(private readonly workspaceQueryService: WorkspaceQueryService) {}
+  constructor(
+    private readonly workspaceQueryService: WorkspaceQueryService,
+  ) {}
 
   async sendWhatsappMessageToCandidate(
     messageText: string,

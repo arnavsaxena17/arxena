@@ -2,11 +2,11 @@ import { OnGatewayConnection, OnGatewayDisconnect, WebSocketGateway, WebSocketSe
 import axios from 'axios';
 import * as fs from 'fs';
 import { Server, Socket } from 'socket.io';
+import { FindManyWorkspaceMembers } from 'twenty-shared';
 import { axiosRequest } from '../../arx-chat/utils/arx-chat-agent-utils';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { MessageDto } from '../types/baileys-types';
 import { WhatsappService } from '../whiskeysocket-baileys.service';
-import { FindManyWorkspaceMembers } from 'twenty-shared';
 
 const apiToken = process.env.TWENTY_JWT_SECRET || '';
 
@@ -41,7 +41,7 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
 
   async handleConnection(client: Socket) {
     const user = client?.handshake?.auth?.user;
-    console.log('Client connected:', client.id);
+    console.log('Client connected in handle connection:', client.id);
     const socketClientId = client?.id;
     console.log('socketClientId:', socketClientId);
     console.log('query token:', client?.handshake?.query?.token);
@@ -66,7 +66,7 @@ export class EventsGateway implements OnGatewayConnection<Socket>, OnGatewayDisc
 
         );
 
-        console.log('response:', response?.data);
+        console.log('response in handle connection:', response?.data);
       } catch (error) {
         console.error('Error querying workspace member:', error);
       }

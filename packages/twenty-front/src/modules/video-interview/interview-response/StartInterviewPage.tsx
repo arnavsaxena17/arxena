@@ -72,10 +72,6 @@ export const StartInterviewPage: React.FC<InterviewPageProps> = ({ onStart, Inte
       setIsVideoLoading(false);
     };
 
-
-
-
-
   // useEffect(() => {
   //   checkMediaAccess();
   // }, []);

@@ -1,3 +1,4 @@
+import { Injectable } from '@nestjs/common';
 import axios from 'axios';
 import {
   allStatuses,
@@ -12,7 +13,7 @@ import {
   graphqlToUpdateOneClientInterview,
   Jobs,
   PersonNode,
-  whatappUpdateMessageObjType,
+  whatappUpdateMessageObjType
 } from 'twenty-shared';
 import { v4 } from 'uuid';
 
@@ -26,10 +27,15 @@ import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modific
 import CandidateEngagementArx from './candidate-engagement';
 import { FilterCandidates } from './filter-candidates';
 
+@Injectable()
 export class UpdateChat {
-  constructor(private readonly workspaceQueryService: WorkspaceQueryService) {}
+  constructor(
+    private readonly workspaceQueryService: WorkspaceQueryService,
+  ) {}
 
   // Add this new method to the ScheduledJobService
+
+
   async updateMeetingStatusAfterCompletion(
     candidateProfileDataNodeObj: PersonNode,
     candidateJob: Jobs,
@@ -356,7 +362,7 @@ export class UpdateChat {
         const currentCount = candidate.node.chatCount || 0;
 
         console.log('Current chat count::', currentCount);
-        const messagesList = await await new FilterCandidates(
+        const messagesList = await new FilterCandidates(
           this.workspaceQueryService,
         ).fetchAllWhatsappMessages(candidate.node.id, apiToken);
         const newCount = messagesList.length;
@@ -552,6 +558,7 @@ export class UpdateChat {
     return validResults;
   }
 
+
   async createAndUpdateWhatsappMessage(
     candidateProfileObj: CandidateNode,
     whatappUpdateMessageObj: whatappUpdateMessageObjType,
@@ -606,6 +613,39 @@ export class UpdateChat {
         'This is the response data from the axios request in udpate message::',
         response.data,
       );
+
+      // Get the recruiterId from candidateProfileObj
+      const recruiterId = candidateProfileObj?.jobs?.recruiterId;
+      console.log('This is the recruiterId::', recruiterId);
+      if (recruiterId) {
+        // Emit WebSocket event only to the specific recruiter
+        console.log('Sending WebSocket event to the specific recruiter::', recruiterId);
+        // const currentUser = await getRecruiterProfileFromCurrentUser(apiToken);
+        // console.log('This is the current user::', currentUser);
+        // const userId = currentUser?.id;
+
+
+        // const userResponse = await axios.request({
+        //   method: 'get',
+        //   url: process.env.SERVER_BASE_URL + '/workspace-modifications/user',
+        //   headers: {
+        //     authorization: 'Bearer ' + apiToken,
+        //   },
+        // });
+        // console.log('This is the userResponse::', userResponse.data);
+        // const userId = userResponse?.data?.user?.id;
+        // console.log('This is the userId::', userId);
+
+        
+          this.workspaceQueryService.webSocketService.sendToUser(recruiterId, 'whatsapp_message_updated', {
+            candidateId: candidateProfileObj.id,
+            jobId: candidateProfileObj.jobs?.id,
+            messageId: createNewWhatsappMessageUpdateVariables.input.id,
+        });
+        console.log('WebSocket event sent to the specific recruiter::', recruiterId);
+      } else {
+        console.log('No recruiterId found for the message, skipping WebSocket notification');
+      }
 
       return response.data;
     } catch (error) {
@@ -729,9 +769,7 @@ export class UpdateChat {
 
     if (candidateProfileObj.name === '') return;
     console.log('Candidate information retrieved successfully');
-    const whatsappMessage = await new UpdateChat(
-      this.workspaceQueryService,
-    ).createAndUpdateWhatsappMessage(
+    const whatsappMessage = await this.createAndUpdateWhatsappMessage(
       candidateProfileObj,
       whatappUpdateMessageObj,
       apiToken,
@@ -744,9 +782,7 @@ export class UpdateChat {
 
       return;
     }
-    const updateCandidateStatusObj = await new UpdateChat(
-      this.workspaceQueryService,
-    ).updateCandidateEngagementStatus(
+    const updateCandidateStatusObj = await this.updateCandidateEngagementStatus(
       candidateProfileObj,
       whatappUpdateMessageObj,
       apiToken,

@@ -72,8 +72,8 @@ import { WebSocketService } from './websocket.service';
           // Get user from token using GraphQL API
           const currentUser = await this.getCurrentUser(token);
           console.log('currentUser::', currentUser);
-          if (currentUser?.id) {
-            const userId = currentUser.id;
+          if (currentUser.workspaceMember?.id) {
+            const userId = currentUser.workspaceMember.id;
             console.log(`Authenticated user ${userId} connected with client ${client.id}`);
             
             // Store the mapping between userId and clientId

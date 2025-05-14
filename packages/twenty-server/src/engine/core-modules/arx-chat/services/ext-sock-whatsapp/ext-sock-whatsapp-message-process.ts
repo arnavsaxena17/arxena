@@ -2,13 +2,13 @@ import { Injectable } from '@nestjs/common';
 
 import axios from 'axios';
 import {
-    BaileysIncomingMessage,
-    ChatControlsObjType,
-    ChatHistoryItem,
-    Jobs,
-    PersonNode,
-    WhatsappMessageData,
-    whatappUpdateMessageObjType,
+  BaileysIncomingMessage,
+  ChatControlsObjType,
+  ChatHistoryItem,
+  Jobs,
+  PersonNode,
+  WhatsappMessageData,
+  whatappUpdateMessageObjType,
 } from 'twenty-shared';
 
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
@@ -18,7 +18,9 @@ import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modific
 
 @Injectable()
 export class ExtSockWhatsappMessageProcessor {
-  constructor(private readonly workspaceQueryService: WorkspaceQueryService) {}
+  constructor(
+    private readonly workspaceQueryService: WorkspaceQueryService,
+  ) {}
 
   async processMessageWithUserId(
     messageData: WhatsappMessageData,

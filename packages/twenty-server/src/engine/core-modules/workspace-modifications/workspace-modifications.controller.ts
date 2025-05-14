@@ -144,6 +144,8 @@ export class WorkspaceModificationsController {
   async getUser(@Req() req) {
     const user = req.user;
 
+    console.log('This is the user::', user);
+
     return { user };
   }
 }

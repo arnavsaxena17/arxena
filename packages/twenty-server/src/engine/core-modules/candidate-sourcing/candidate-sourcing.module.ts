@@ -28,7 +28,7 @@ import { DataSourceEntity } from 'src/engine/metadata-modules/data-source/data-s
 import { DataSourceModule } from 'src/engine/metadata-modules/data-source/data-source.module';
 import { WorkspaceCacheStorageService } from 'src/engine/workspace-cache-storage/workspace-cache-storage.service';
 import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
-
+import { WebSocketService } from 'src/modules/websocket/websocket.service';
 @Module({
   imports: [
     AuthModule,
@@ -52,6 +52,7 @@ import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/work
     ApiKeyService,
     ChatService,
     WorkspaceQueryService,
+    WebSocketService,
     WorkspaceDataSourceService,
     EnvironmentService,
     WorkspaceCacheStorageService,

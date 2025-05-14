@@ -32,7 +32,9 @@ import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modific
 import { WhatsappTemplateMessages } from './whatsapp-template-messages';
 
 export class FacebookWhatsappChatApi {
-  constructor(private readonly workspaceQueryService: WorkspaceQueryService) {}
+  constructor(
+    private readonly workspaceQueryService: WorkspaceQueryService,
+  ) {}
 
   async getWhatsappConfig(
     workspaceQueryService: WorkspaceQueryService,

@@ -13,6 +13,7 @@ import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/work
 import { AccessTokenService } from 'src/engine/core-modules/auth/token/services/access-token.service';
 // import { WorkspaceQueryService } from '../workspace-query.service';
 import { ApiKeyService } from 'src/engine/core-modules/auth/services/api-key.service';
+import { WebSocketService } from 'src/modules/websocket/websocket.service';
 
 @Injectable()
 export class WorkspaceQueryService {
@@ -27,6 +28,7 @@ export class WorkspaceQueryService {
 
     public readonly accessTokenService: AccessTokenService,
     public readonly workspaceDataSourceService: WorkspaceDataSourceService,
+    public readonly webSocketService: WebSocketService,
   ) {}
 
   async getWorkspaceIdFromToken(apiToken: string) {
@@ -58,6 +60,7 @@ export class WorkspaceQueryService {
       return null;
     }
   }
+
 
   async initializeLLMClients(workspaceId: string) {
     console.log('LLM Client Initialised');

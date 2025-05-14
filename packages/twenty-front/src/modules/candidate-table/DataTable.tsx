@@ -1,11 +1,12 @@
 import { tokenPairState } from '@/auth/states/tokenPairState';
-import { afterChange, afterSelectionEnd, performRedo, performUndo } from '@/candidate-table/HotHooks';
+import { afterChange, afterSelectionEnd, performRedo, performUndo, updateUnreadMessagesStatus } from '@/candidate-table/HotHooks';
 import { columnsSelector, processedDataSelector, tableStateAtom } from "@/candidate-table/states";
 import { chatSearchQueryState } from '@/candidate-table/states/chatSearchQueryState';
 import { contextStoreNumberOfSelectedRecordsComponentState } from '@/context-store/states/contextStoreNumberOfSelectedRecordsComponentState';
 import { contextStoreTargetedRecordsRuleComponentState } from '@/context-store/states/contextStoreTargetedRecordsRuleComponentState';
 import { useRightDrawer } from '@/ui/layout/right-drawer/hooks/useRightDrawer';
 import { useSetRecoilComponentStateV2 } from '@/ui/utilities/state/component-state/hooks/useSetRecoilComponentStateV2';
+import { useWebSocketEvent } from '@/websocket-context/useWebSocketEvent';
 import styled from '@emotion/styled';
 import HotTable from "@handsontable/react-wrapper";
 import axios from 'axios';
@@ -341,6 +342,58 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
         TH.appendChild(checkbox);
       }
     };
+
+    // Add WebSocket event listener for WhatsApp message updates
+    useWebSocketEvent<{
+      candidateId: string;
+      jobId: string;
+      messageId: string;
+    }>('whatsapp_message_updated', async (data) => {
+      // Only refresh if the message is for the current job
+      if (data.jobId === jobId) {
+        await refreshData();
+        
+        // If chat drawer is open for this candidate, refresh messages
+        const hot = tableRef.current?.hotInstance;
+        if (hot) {
+          const selectedIds = hot.getSelected();
+          if (selectedIds?.length === 1) {
+            const row = selectedIds[0][0];
+            const selectedRow = hot.getSourceDataAtRow(row);
+            if (selectedRow?.id === data.candidateId) {
+              // Fetch and update messages for the open chat
+              try {
+                const response = await axios.post(
+                  `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/get-all-messages-by-candidate-id`,
+                  { candidateId: data.candidateId },
+                  { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } }
+                );
+                
+                const unreadMessageIds = response.data
+                  ?.filter((msg: any) => msg.whatsappDeliveryStatus === 'receivedFromCandidate')
+                  ?.map((msg: any) => msg.id) || [];
+                
+                // Update unread messages count in table state
+                setTableState(prev => ({
+                  ...prev,
+                  unreadMessagesCounts: {
+                    ...prev.unreadMessagesCounts,
+                    [data.candidateId]: unreadMessageIds.length
+                  }
+                }));
+                
+                // Update message status if needed
+                if (unreadMessageIds.length > 0) {
+                  await updateUnreadMessagesStatus(unreadMessageIds, tokenPair);
+                }
+              } catch (error) {
+                console.error('Error refreshing messages:', error);
+              }
+            }
+          }
+        }
+      }
+    }, [jobId, tokenPair]);
 
     if (tableState.isLoading) {
       return <StyledLoadingContainer>Loading candidates data...</StyledLoadingContainer>

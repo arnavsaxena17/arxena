@@ -31,14 +31,18 @@ const TabContent = styled.div`
   flex: 1;
   height: calc(100% - 120px); /* Adjusted to make room for message input */
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
 `;
 
 const ChatView = styled.div`
   flex: 1;
   overflow-y: auto;
   padding: 20px;
+  padding-bottom: 40px; /* Add extra padding at bottom to prevent overlap with input */
   display: flex;
   flex-direction: column-reverse;
+  height: 100%;
 `;
 
 const DateSeparator = styled.div`
@@ -138,6 +142,10 @@ const MessageInputContainer = styled.div`
   border-top: 1px solid ${props => props.theme.border.color.light};
   padding: ${props => props.theme.spacing(2)};
   background-color: ${props => props.theme.background.primary};
+  position: sticky;
+  bottom: 0;
+  width: 100%;
+  z-index: 1;
 `;
 
 const MessageInputTabContainer = styled.div`
@@ -317,17 +325,27 @@ export const CandidateChatDrawer = () => {
   const [phoneNumber, setPhoneNumber] = useState<string>('');
 
   const scrollToBottom = () => {
+    console.log('chatContainerRef.current to scroll to bottom', chatContainerRef.current);
     if (chatContainerRef.current) {
-      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+      chatContainerRef.current.scrollTop = 0;
     }
   };
 
-  // Scroll to bottom when messages change
+  // Scroll to bottom when messages change or when loading completes
   useEffect(() => {
-    if (!isLoading) {
+    console.log('messageHistory to scroll to bottom', messageHistory);
+    if (!isLoading && activeTabId === 'chat') {
       scrollToBottom();
     }
-  }, [messageHistory, isLoading]);
+  }, [messageHistory, isLoading, activeTabId]);
+
+  // Also scroll to bottom when switching to chat tab
+  useEffect(() => {
+    console.log('activeTabId to scroll to bottom', activeTabId);
+    if (activeTabId === 'chat' && !isLoading) {
+      scrollToBottom();
+    }
+  }, [activeTabId]);
 
   const showSnackbar = (message: string, type: 'success' | 'error') => {
     enqueueSnackBar(message, {
@@ -518,7 +536,6 @@ export const CandidateChatDrawer = () => {
         },
       );
       
-      // Add message to the UI immediately
       const newMessage: MessageNode = {
         recruiterId: '',
         message: messageText,

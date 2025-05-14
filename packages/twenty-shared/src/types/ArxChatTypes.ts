@@ -1885,6 +1885,7 @@ export const emptyInterviewData: InterviewData = {
     email: '',
     phoneNumber: '',
     jobTitle: '',
+    id: ''
   },
   id: '',
   name: '',
@@ -1918,6 +1919,7 @@ export const emptyInterviewData: InterviewData = {
 };
 
 export interface RecruiterProfileType {
+  id: string;
   jobTitle: string;
   companyName: string;
   companyDescription: string;
