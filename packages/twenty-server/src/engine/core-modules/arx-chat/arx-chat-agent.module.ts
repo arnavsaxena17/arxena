@@ -10,9 +10,9 @@ import { ArxChatEndpoint } from 'src/engine/core-modules/arx-chat/controllers/ar
 import { GoogleControllers } from 'src/engine/core-modules/arx-chat/controllers/google-calendar-mail-api.controller';
 import { WhatsappTestAPI } from 'src/engine/core-modules/arx-chat/controllers/whatsapp-test-api.controller';
 import {
-  CandidateEngagementCronService,
-  CandidateStatusClassificationCronService,
-  LinkedinSockIncomingMessageFetchingCronService,
+    CandidateEngagementCronService,
+    CandidateStatusClassificationCronService,
+    LinkedinSockIncomingMessageFetchingCronService,
 } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/scheduling-agent';
 import { AuthModule } from 'src/engine/core-modules/auth/auth.module';
 import { GoogleCalendarModule } from 'src/engine/core-modules/calendar-events/google-calendar.module';

@@ -167,7 +167,6 @@ export const useUpdateOneRecord = <
     // Special case: If updating candidate's phoneNumber, also update person's phones
     if (objectNameSingular === 'candidate' && 'phoneNumber' in sanitizedInput && !isNull(cachedRecord)) {
       if (personObjectMetadataItem) {
-
         const phoneNumber = sanitizedInput.phoneNumber as PhoneNumberInput;
         const personUpdateInput = {
           phones: {
@@ -177,6 +176,7 @@ export const useUpdateOneRecord = <
           },
         };
 
+        // Update person's phone number
         await apolloClient.mutate({
           mutation: updatePersonMutation,
           variables: {
@@ -184,6 +184,30 @@ export const useUpdateOneRecord = <
             input: personUpdateInput,
           },
         });
+
+        // Update whitelist in Redis by calling the server endpoint
+        try {
+          const oldPhoneNumber = cachedRecord.phoneNumber?.primaryPhoneNumber;
+          const newPhoneNumber = phoneNumber.primaryPhoneNumber;
+
+          if (oldPhoneNumber !== newPhoneNumber) {
+            const baseUrl = process.env.REACT_APP_SERVER_BASE_URL || 'http://localhost:3000';
+            await fetch(`${baseUrl}/ext-sock-whatsapp/update-whitelist`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${tokenPair?.accessToken?.token}`,
+              },
+              body: JSON.stringify({
+                oldPhoneNumber: oldPhoneNumber,
+                newPhoneNumber: newPhoneNumber,
+                userId: currentWorkspaceMember?.id,
+              }),
+            });
+          }
+        } catch (error) {
+          console.error('Failed to update whitelist:', error);
+        }
       }
     }
 

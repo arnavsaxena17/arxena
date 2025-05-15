@@ -48,7 +48,8 @@ export class WorkspaceDataSourceService {
 
     const dataSource =
       await this.typeormService.connectToDataSource(dataSourceMetadata);
-
+      // console.log("This is the dataSourceMetadata", dataSourceMetadata)
+      // console.log("This is the dataSource", dataSource)
     if (!dataSource) {
       throw new Error(
         `Could not connect to workspace data source for workspace ${workspaceId}`,
@@ -67,7 +68,7 @@ export class WorkspaceDataSourceService {
    */
   public async createWorkspaceDBSchema(workspaceId: string): Promise<string> {
     const schemaName = this.getSchemaName(workspaceId);
-
+    console.log("This is the schemaName", schemaName)
     return await this.typeormService.createSchema(schemaName);
   }
 
@@ -93,6 +94,7 @@ export class WorkspaceDataSourceService {
    * @returns string
    */
   public getSchemaName(workspaceId: string): string {
+    
     return `workspace_${this.uuidToBase36(workspaceId)}`;
   }
 

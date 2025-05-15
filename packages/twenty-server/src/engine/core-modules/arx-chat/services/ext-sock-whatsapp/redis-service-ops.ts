@@ -60,6 +60,14 @@ export class RedisService implements OnModuleInit {
     await this.redisClient.sadd(`whitelist:user:${userId}`, phoneNumber);
   }
 
+  async removeFromWhitelist(userId: string, phoneNumber: string): Promise<void> {
+    await this.redisClient.srem(`whitelist:user:${userId}`, phoneNumber);
+  }
+
+  async removeIdentifierToUserMapping(identifier: string): Promise<void> {
+    await this.redisClient.del(`identifier_to_user:${identifier}`);
+  }
+
   async isWhitelisted(userId: string, identifier: string): Promise<boolean> {
     console.log(
       `Checking whitelist for user: ${userId} with identifier: ${identifier}`,

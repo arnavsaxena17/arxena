@@ -33,7 +33,7 @@ import { WebSocketService } from './websocket.service';
       this.webSocketService.setServer(server);
       console.log('WebSocket Gateway initialized');
     }
-    async getCurrentUser(token: string) {
+    async getCurrentUser(token: string, origin: string) {
       try {
         const data = JSON.stringify({
           query: graphqlQueryToGetCurrentUser,
@@ -44,7 +44,8 @@ import { WebSocketService } from './websocket.service';
           maxBodyLength: Infinity,
           url: process.env.GRAPHQL_URL,
           headers: {
-            Origin: process.env.APPLE_ORIGIN_URL || '*',
+            // Origin: process.env.APPLE_ORIGIN_URL || '*',
+            Origin: origin,
             authorization: `Bearer ${token}`,
             'content-type': 'application/json',
           },
@@ -61,6 +62,7 @@ import { WebSocketService } from './websocket.service';
     }
   
     async handleConnection(client: Socket) {
+      console.log(`Client details: client`, client.handshake.headers);
       console.log(`Client connected: ${client.id}`);
       this.connectedClients.set(client.id, client);
       
@@ -70,7 +72,8 @@ import { WebSocketService } from './websocket.service';
         try {
           console.log('token and will use to get current user::', token);
           // Get user from token using GraphQL API
-          const currentUser = await this.getCurrentUser(token);
+          const origin = client.handshake?.headers?.origin as string;
+          const currentUser = await this.getCurrentUser(token, origin);
           console.log('currentUser::', currentUser);
           if (currentUser.workspaceMember?.id) {
             const userId = currentUser.workspaceMember.id;

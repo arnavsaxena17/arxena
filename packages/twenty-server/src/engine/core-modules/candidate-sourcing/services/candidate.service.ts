@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
+import axios from 'axios';
 import {
   ArxenaCandidateNode,
   ArxenaPersonNode,
@@ -34,6 +35,8 @@ import { createRelations } from 'src/engine/core-modules/workspace-modifications
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 import { PersonService } from './person.service';
+
+import { getRecruiterProfileFromCurrentUser } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 
 interface ProcessingContext {
   jobCandidateInfo: {
@@ -1286,12 +1289,66 @@ export class CandidateService {
       }
 
       if (fieldName === 'mobilePhone' || fieldName === 'phone' || fieldName === 'phoneNumber') {
-        updateData = {"phoneNumber":{primaryPhoneNumber: formattedValue}}
-        const response = await axiosRequest(
-          JSON.stringify({ query: mutationToUpdateOnePerson, variables: {idToUpdate: personId, input: {phones: {primaryPhoneNumber: formattedValue}}} }),
-          apiToken
+        updateData = {"phoneNumber":{primaryPhoneNumber: formattedValue}};
+        
+        // Get the old phone number before updating
+        const candidateResponse = await axiosRequest(
+          JSON.stringify({ 
+            query: graphqlToFetchAllCandidateData, 
+            variables: { 
+              filter: { id: { eq: candidateId } } 
+            } 
+          }),
+          apiToken,
         );
-        console.log("response::", response?.data?.data)
+        const oldPhoneNumber = candidateResponse?.data?.data?.candidates?.edges[0]?.node?.phoneNumber?.primaryPhoneNumber;
+
+        // Update person's phone number
+        const response = await axiosRequest(
+          JSON.stringify({ 
+            query: mutationToUpdateOnePerson, 
+            variables: {
+              idToUpdate: personId, 
+              input: {
+                phones: {
+                  primaryPhoneNumber: formattedValue
+                }
+              }
+            } 
+          }),
+          apiToken,
+        );
+
+        if (oldPhoneNumber !== formattedValue) {
+          try {
+            const recruiterProfile = await getRecruiterProfileFromCurrentUser(apiToken);
+            const userId = recruiterProfile?.id;
+
+            if (!userId) {
+              console.error('Could not get userId from recruiter profile');
+              throw new Error('Could not get userId from recruiter profile');
+            }
+
+            const baseUrl = process.env.SERVER_URL || 'http://localhost:3000';
+            await axios.post(
+              `${baseUrl}/ext-sock-whatsapp/update-whitelist`,
+              {
+                oldPhoneNumber: oldPhoneNumber,
+                newPhoneNumber: formattedValue,
+                userId: userId,
+              },
+              {
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${apiToken}`,
+                },
+              }
+            );
+          } catch (error) {
+            console.error('Failed to update whitelist:', error);
+            // Continue with the update even if whitelist update fails
+          }
+        }
       }
 
 

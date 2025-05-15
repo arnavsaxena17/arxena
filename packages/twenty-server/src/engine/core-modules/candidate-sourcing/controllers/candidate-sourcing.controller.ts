@@ -844,6 +844,7 @@ export class CandidateSourcingController {
       const apiToken = request.headers.authorization.split(' ')[1];
       const { candidateId, fieldName, value, personId } = request.body;
 
+      
       if (!candidateId || !fieldName) {
         return {
           status: 'Failed',

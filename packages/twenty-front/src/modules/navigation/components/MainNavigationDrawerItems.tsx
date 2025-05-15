@@ -3,8 +3,6 @@ import { useRecoilState, useSetRecoilState } from 'recoil';
 import { IconSearch, IconSettings } from 'twenty-ui';
 
 import { useCommandMenu } from '@/command-menu/hooks/useCommandMenu';
-import { CurrentWorkspaceMemberFavoritesFolders } from '@/favorites/components/CurrentWorkspaceMemberFavoritesFolders';
-import { WorkspaceFavorites } from '@/favorites/components/WorkspaceFavorites';
 import { JobsNavigationDrawerItems } from '@/navigation/components/JobsNavigationDrawerItems';
 import { NavigationDrawerOpenedSection } from '@/object-metadata/components/NavigationDrawerOpenedSection';
 import { RemoteNavigationDrawerSection } from '@/object-metadata/components/RemoteNavigationDrawerSection';
@@ -135,9 +133,9 @@ export const MainNavigationDrawerItems = () => {
         <StyledInnerContainer>
           <JobsNavigationDrawerItems />
           <NavigationDrawerOpenedSection />
-          <CurrentWorkspaceMemberFavoritesFolders />
+          {/* <CurrentWorkspaceMemberFavoritesFolders /> */}
           {/* <WorkspaceJobCandidatesFavorites /> */}
-          <WorkspaceFavorites />
+          {/* <WorkspaceFavorites /> */}
           <RemoteNavigationDrawerSection />
         </StyledInnerContainer>
       </ScrollWrapper>

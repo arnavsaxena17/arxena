@@ -13,10 +13,11 @@ import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { useRightDrawer } from '@/ui/layout/right-drawer/hooks/useRightDrawer';
 import { RightDrawerPages } from '@/ui/layout/right-drawer/types/RightDrawerPages';
 import { gql, useLazyQuery, useMutation } from '@apollo/client';
+import styled from '@emotion/styled';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilState, useSetRecoilState } from 'recoil';
 import { graphQLToCreateOneWorkspaceMemberProfile, graphqlToFindManyJobs, isDefined } from 'twenty-shared';
-import { IconEye } from 'twenty-ui';
+import { IconEye, IconInfoCircle } from 'twenty-ui';
 import { v4 } from 'uuid';
 import { FormComponentProps } from '../types/FormComponentProps';
 import {
@@ -28,6 +29,37 @@ import {
   StyledSection,
   StyledSectionContent
 } from './ArxJDUploadModal.styled';
+
+const StyledLabelContainer = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(1)};
+`;
+
+const StyledIconContainer = styled.div`
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: help;
+  margin-top: -2px;
+
+  &:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    top: -10px;
+    left: 24px;
+    transform: translateY(-100%);
+    background-color: ${({ theme }) => theme.background.primary};
+    color: ${({ theme }) => theme.font.color.primary};
+    padding: ${({ theme }) => theme.spacing(2)};
+    border-radius: ${({ theme }) => theme.border.radius.sm};
+    box-shadow: ${({ theme }) => theme.boxShadow.light};
+    width: max-content;
+    max-width: 250px;
+    z-index: 1000;
+    font-size: ${({ theme }) => theme.font.size.sm};
+  }
+`;
 
 export type RecruiterProfileInfo = {
   name?: string;
@@ -281,7 +313,12 @@ export const JobDetailsForm: React.FC<FormComponentProps> = ({
       {/* <StyledSectionHeader>Job Details</StyledSectionHeader> */}
       <StyledSectionContent>
         <StyledFieldGroup>
-          <StyledLabel>Job Title</StyledLabel>
+          <StyledLabelContainer>
+            <StyledLabel>Job Title</StyledLabel>
+            <StyledIconContainer data-tooltip="The official title of the position you're hiring for">
+              <IconInfoCircle size={14} />
+            </StyledIconContainer>
+          </StyledLabelContainer>
           <StyledInput
             value={parsedJD.name}
             onChange={(e) => setParsedJD({ ...parsedJD, name: e.target.value })}
@@ -291,7 +328,12 @@ export const JobDetailsForm: React.FC<FormComponentProps> = ({
         </StyledFieldGroup>
 
         <StyledFieldGroup>
-          <StyledLabel>Company</StyledLabel>
+          <StyledLabelContainer>
+            <StyledLabel>Company</StyledLabel>
+            <StyledIconContainer data-tooltip="The organization offering this position">
+              <IconInfoCircle size={14} />
+            </StyledIconContainer>
+          </StyledLabelContainer>
           {parsedJD.companyId && parsedJD.companyName ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
               <div style={{ flex: 1 }}>
@@ -345,7 +387,12 @@ export const JobDetailsForm: React.FC<FormComponentProps> = ({
         </StyledFieldGroup> */}
 
         <StyledFieldGroup>
-          <StyledLabel>Location</StyledLabel>
+          <StyledLabelContainer>
+            <StyledLabel>Location</StyledLabel>
+            <StyledIconContainer data-tooltip="Where the position is based - can be remote, hybrid, or specific location">
+              <IconInfoCircle size={14} />
+            </StyledIconContainer>
+          </StyledLabelContainer>
           <StyledInput
             value={parsedJD.jobLocation}
             onChange={(e) =>
@@ -360,7 +407,12 @@ export const JobDetailsForm: React.FC<FormComponentProps> = ({
         </StyledFieldGroup>
         
         <StyledFieldGroup>
-          <StyledLabel>Salary Range</StyledLabel>
+          <StyledLabelContainer>
+            <StyledLabel>Salary Range</StyledLabel>
+            <StyledIconContainer data-tooltip="The compensation range for this position">
+              <IconInfoCircle size={14} />
+            </StyledIconContainer>
+          </StyledLabelContainer>
           <StyledInput
             value={parsedJD.salaryBracket}
             onChange={(e) =>
@@ -375,9 +427,13 @@ export const JobDetailsForm: React.FC<FormComponentProps> = ({
         </StyledFieldGroup>
         
         <StyledFullWidthField>
-          <StyledLabel>Short One Line Pitch</StyledLabel>
+          <StyledLabelContainer>
+            <StyledLabel>Short One Line Pitch</StyledLabel>
+            <StyledIconContainer data-tooltip="A brief, compelling summary of the job opportunity">
+              <IconInfoCircle size={14} />
+            </StyledIconContainer>
+          </StyledLabelContainer>
           <StyledInput
-            // as="textarea"
             value={parsedJD.description}
             onChange={(e) =>
               setParsedJD({
@@ -386,7 +442,6 @@ export const JobDetailsForm: React.FC<FormComponentProps> = ({
               })
             }
             placeholder="A one line pitch for the job"
-            // style={{ minHeight: '50px', width: '100%', resize: 'vertical' }}
             onKeyDown={handleKeyDown}
           />
         </StyledFullWidthField>
@@ -400,7 +455,12 @@ export const JobDetailsForm: React.FC<FormComponentProps> = ({
 
             {isDefined(missingRecruiterInfo.name) && (
               <StyledFieldGroup>
-                <StyledLabel>Recruiter Name</StyledLabel>
+                <StyledLabelContainer>
+                  <StyledLabel>Recruiter Name</StyledLabel>
+                  <StyledIconContainer data-tooltip="Your full name as it will appear to candidates">
+                    <IconInfoCircle size={14} />
+                  </StyledIconContainer>
+                </StyledLabelContainer>
                 <StyledInput
                   value={missingRecruiterInfo.name}
                   onChange={(e) => updateRecruiterInfoField('name', e.target.value)}
@@ -412,7 +472,12 @@ export const JobDetailsForm: React.FC<FormComponentProps> = ({
 
             {isDefined(missingRecruiterInfo.phoneNumber) && (
               <StyledFieldGroup>
-                <StyledLabel>Recruiter's Phone Number</StyledLabel>
+                <StyledLabelContainer>
+                  <StyledLabel>Recruiter's Phone Number</StyledLabel>
+                  <StyledIconContainer data-tooltip="Your contact number for candidate communications">
+                    <IconInfoCircle size={14} />
+                  </StyledIconContainer>
+                </StyledLabelContainer>
                 <StyledInput
                   value={missingRecruiterInfo.phoneNumber}
                   onChange={(e) => updateRecruiterInfoField('phoneNumber', e.target.value)}
@@ -424,7 +489,12 @@ export const JobDetailsForm: React.FC<FormComponentProps> = ({
 
             {isDefined(missingRecruiterInfo.jobTitle) && (
               <StyledFieldGroup>
-                <StyledLabel>Recruiter's Job Title</StyledLabel>
+                <StyledLabelContainer>
+                  <StyledLabel>Recruiter's Job Title</StyledLabel>
+                  <StyledIconContainer data-tooltip="Your role in the organization">
+                    <IconInfoCircle size={14} />
+                  </StyledIconContainer>
+                </StyledLabelContainer>
                 <StyledInput
                   value={missingRecruiterInfo.jobTitle}
                   onChange={(e) => updateRecruiterInfoField('jobTitle', e.target.value)}
@@ -436,7 +506,12 @@ export const JobDetailsForm: React.FC<FormComponentProps> = ({
 
             {isDefined(missingRecruiterInfo.companyDescription) && (
               <StyledFullWidthField>
-                <StyledLabel>Company Description</StyledLabel>
+                <StyledLabelContainer>
+                  <StyledLabel>Company Description</StyledLabel>
+                  <StyledIconContainer data-tooltip="A brief overview of your company to help candidates understand the organization">
+                    <IconInfoCircle size={14} />
+                  </StyledIconContainer>
+                </StyledLabelContainer>
                 <StyledInput
                   as="textarea"
                   value={missingRecruiterInfo.companyDescription}
