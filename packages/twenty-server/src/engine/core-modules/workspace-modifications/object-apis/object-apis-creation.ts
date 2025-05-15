@@ -67,7 +67,8 @@ export class CreateMetaDataStructure {
     return response;
   }
 
-  async getCurrentUser(apiToken: string) {
+  async getCurrentUser(apiToken: string, origin: string) {
+    console.log('Getting current user with origin:', origin);
     const data = JSON.stringify({
       query: graphqlQueryToGetCurrentUser,
       variables: {},
@@ -78,7 +79,7 @@ export class CreateMetaDataStructure {
       maxBodyLength: Infinity,
       url: process.env.GRAPHQL_URL,
       headers: {
-        Origin: process.env.APPLE_ORIGIN_URL,
+        Origin: origin,
         authorization: `Bearer ${apiToken}`,
         'content-type': 'application/json',
       },
@@ -149,7 +150,7 @@ export class CreateMetaDataStructure {
     return objectsNameIdMap;
   }
 
-  async createAndUpdateWorkspaceMember(apiToken: string) {
+  async createAndUpdateWorkspaceMember(apiToken: string, origin: string) {
     const currentWorkspaceMemberResponse = await this.axiosRequest(
       JSON.stringify({
         operationName: 'FindManyWorkspaceMembers',
@@ -190,7 +191,7 @@ export class CreateMetaDataStructure {
       ' ' +
       currentWorkspaceMemberResponse.data.data.workspaceMembers.edges[0].node
         .name.lastName;
-    const currentUser = await this.getCurrentUser(apiToken);
+    const currentUser = await this.getCurrentUser(apiToken, origin);
 
     console.log('currentUser', currentUser);
     const createResponse = await this.axiosRequest(
@@ -356,10 +357,10 @@ export class CreateMetaDataStructure {
       throw error;
     }
   }
-  async createMetadataStructure(apiToken: string): Promise<void> {
+  async createMetadataStructure(apiToken: string, origin: string): Promise<void> {
     try {
       console.log('Starting metadata structure creation...');
-      const currentUser = await this.getCurrentUser(apiToken);
+      const currentUser = await this.getCurrentUser(apiToken, origin);
       const userId = currentUser?.id;
       console.log('userId', userId);
 
@@ -437,7 +438,7 @@ export class CreateMetaDataStructure {
         try {
           const apiKeyService = new ApiKeyService();
           const workspaceMemberId =
-            await this.createAndUpdateWorkspaceMember(apiToken);
+            await this.createAndUpdateWorkspaceMember(apiToken, origin);
 
           await this.createPrompts(apiToken);
           const apiKey = await apiKeyService.createApiKey(apiToken);

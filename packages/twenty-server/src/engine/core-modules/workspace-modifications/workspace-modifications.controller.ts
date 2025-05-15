@@ -130,11 +130,11 @@ export class WorkspaceModificationsController {
   @UseGuards(JwtAuthGuard)
   async createMetaDataStructure(@Req() req) {
     const apiToken = req.headers.authorization.split(' ')[1];
-
+    const origin = req.headers.origin;
     new CreateMetaDataStructure(
       this.workspaceQueryService,
       this.webSocketService,
-    ).createMetadataStructure(apiToken);
+    ).createMetadataStructure(apiToken, origin);
 
     return;
   }

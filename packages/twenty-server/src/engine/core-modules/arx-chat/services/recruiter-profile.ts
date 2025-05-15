@@ -41,31 +41,32 @@ export async function getRecruiterProfileByRecruiterId(
     findWorkspaceMemberProfilesQuery,
     apiToken,
   );
+  console.log('workspaceMemberProfilesResponse:', workspaceMemberProfilesResponse.data);
   const recruiterProfile: RecruiterProfileType =
-    workspaceMemberProfilesResponse?.data?.workspaceMemberProfiles?.edges[0]
+    workspaceMemberProfilesResponse?.data?.data?.workspaceMemberProfiles?.edges[0]
       ?.node;
 
+  console.log('recruiterProfile is this:', recruiterProfile);
   return recruiterProfile;
 }
 
-export async function getCurrentUser(apiToken: string) {
-  console.log('Trying to get current user::');
+export async function getCurrentUser(apiToken: string, origin: string) {
   const getCurrentUserQuery = JSON.stringify({
     query: graphqlQueryToGetCurrentUser,
     variables: {},
   });
 
-  console.log('getCurrentUserQuery:', getCurrentUserQuery);
 
-  const response = await axiosRequest(getCurrentUserQuery, apiToken);
+  const response = await axiosRequest(getCurrentUserQuery, apiToken, origin);
 
-  console.log('response.data?.currentUser:', response.data);
 
   return response.data?.data?.currentUser;
 }
 
-export async function getRecruiterProfileFromCurrentUser(apiToken: string) {
-  const currentUser = await getCurrentUser(apiToken);
+export async function getRecruiterProfileFromCurrentUser(apiToken: string, origin: string) {
+  console.log('Getting recruiter profile from current user::');
+  const currentUser = await getCurrentUser(apiToken, origin);
+  console.log('currentUser:', currentUser);
   const recruiterId = currentUser?.workspaceMember?.id;
 
   console.log('recruiterId:', recruiterId);

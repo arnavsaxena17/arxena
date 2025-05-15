@@ -206,7 +206,7 @@ export const useUpdateOneRecord = <
             });
           }
         } catch (error) {
-          console.error('Failed to update whitelist:', error);
+          console.log('Failed to update whitelist in useUpdateOneRecord:', error);
         }
       }
     }

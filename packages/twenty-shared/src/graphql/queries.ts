@@ -1546,6 +1546,12 @@ export const graphqlToFetchAllCandidateData = `
           updatedAt
           createdAt
           whatsappProvider
+          phoneNumber{
+            primaryPhoneNumber
+          }
+          email{
+            primaryEmail
+          }
           candConversationStatus
           peopleId
           startVideoInterviewChat

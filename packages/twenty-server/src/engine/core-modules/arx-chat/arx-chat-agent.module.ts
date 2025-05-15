@@ -10,18 +10,18 @@ import { ArxChatEndpoint } from 'src/engine/core-modules/arx-chat/controllers/ar
 import { GoogleControllers } from 'src/engine/core-modules/arx-chat/controllers/google-calendar-mail-api.controller';
 import { WhatsappTestAPI } from 'src/engine/core-modules/arx-chat/controllers/whatsapp-test-api.controller';
 import {
-    CandidateEngagementCronService,
-    CandidateStatusClassificationCronService,
-    LinkedinSockIncomingMessageFetchingCronService,
+  CandidateEngagementCronService,
+  CandidateStatusClassificationCronService,
+  LinkedinSockIncomingMessageFetchingCronService,
 } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/scheduling-agent';
 import { AuthModule } from 'src/engine/core-modules/auth/auth.module';
 import { GoogleCalendarModule } from 'src/engine/core-modules/calendar-events/google-calendar.module';
 import { DataSourceEntity } from 'src/engine/metadata-modules/data-source/data-source.entity';
 // import { FeatureFlagEntity } from '../feature-flag/feature-flag.entity';
 import { AppToken } from 'src/engine/core-modules/app-token/app-token.entity';
-import { ExtSockWhatsappController } from 'src/engine/core-modules/arx-chat/controllers/ext-sock-whatsapp.controller';
 import { VideoInterviewProcessController } from 'src/engine/core-modules/arx-chat/controllers/video-interview-process-controller';
 import { ExtSockWhatsappMessageProcessor } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/ext-sock-whatsapp-message-process';
+import { ExtSockWhatsappController } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/ext-sock-whatsapp.controller';
 import { WhatsappMessageProcessor } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/ext-sock-whatsapp.job';
 import { ExtSockWhatsappService } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/ext-sock-whatsapp.service';
 import { ExtSockWhatsappWhitelistProcessingService } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/ext-sock-whitelist-processing';

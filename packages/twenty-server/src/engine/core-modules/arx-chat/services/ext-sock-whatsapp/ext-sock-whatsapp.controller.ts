@@ -16,6 +16,7 @@ export class ExtSockWhatsappController {
     @Body() body: { oldPhoneNumber: string; newPhoneNumber: string; userId: string },
   ) {
     try {
+      console.log('updateWhitelist called with body:', body);
       const { oldPhoneNumber, newPhoneNumber, userId } = body;
 
       // Format phone numbers for WhatsApp
@@ -37,7 +38,7 @@ export class ExtSockWhatsappController {
 
       return { success: true };
     } catch (error) {
-      console.error('Failed to update whitelist:', error);
+      console.error('Failed to update whitelist in ext-sock-whatsapp controller:', error);
       throw error;
     }
   }

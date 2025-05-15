@@ -1266,6 +1266,7 @@ export class CandidateService {
     fieldName: string,
     value: any,
     apiToken: string,
+    origin: string,
   ): Promise<any> {
     try {
       // Format the value based on field type
@@ -1302,7 +1303,9 @@ export class CandidateService {
           apiToken,
         );
         const oldPhoneNumber = candidateResponse?.data?.data?.candidates?.edges[0]?.node?.phoneNumber?.primaryPhoneNumber;
-
+        console.log("candidateResponse::", candidateResponse?.data?.data.candidates.edges[0].node)
+        console.log("oldPhoneNumber::", oldPhoneNumber)
+        console.log("formattedValue::", formattedValue)
         // Update person's phone number
         const response = await axiosRequest(
           JSON.stringify({ 
@@ -1321,22 +1324,52 @@ export class CandidateService {
 
         if (oldPhoneNumber !== formattedValue) {
           try {
-            const recruiterProfile = await getRecruiterProfileFromCurrentUser(apiToken);
+            console.log("Going to get recruiter profile from current user in updateCandidateField");
+            const recruiterProfile = await getRecruiterProfileFromCurrentUser(apiToken, origin);
             const userId = recruiterProfile?.id;
-
+            console.log("userId::", userId)
             if (!userId) {
               console.error('Could not get userId from recruiter profile');
               throw new Error('Could not get userId from recruiter profile');
             }
 
-            const baseUrl = process.env.SERVER_URL || 'http://localhost:3000';
-            await axios.post(
-              `${baseUrl}/ext-sock-whatsapp/update-whitelist`,
-              {
-                oldPhoneNumber: oldPhoneNumber,
-                newPhoneNumber: formattedValue,
-                userId: userId,
-              },
+            console.log('Debug - Current environment:', {
+              NODE_ENV: process.env.NODE_ENV,
+              SERVER_BASE_URL: process.env.SERVER_BASE_URL,
+              origin: origin
+            });
+
+            const url = 'http://localhost:3000/ext-sock-whatsapp/update-whitelist';
+            
+            // Ensure we have both old and new phone numbers
+            if (!oldPhoneNumber) {
+              console.warn('No old phone number provided for whitelist update');
+              return;
+            }
+
+            // Format phone numbers to match expected format
+            const formatPhoneForRequest = (number: string) => {
+              if (!number) return '';
+              // Remove all non-digit characters
+              const digits = number.replace(/\D/g, '');
+              // If it's an Indian number without country code, add 91
+              return digits.length === 10 ? `91${digits}` : digits;
+            };
+
+            const payload = {
+              oldPhoneNumber: formatPhoneForRequest(oldPhoneNumber),
+              newPhoneNumber: formatPhoneForRequest(formattedValue),
+              userId: userId,
+            };
+            
+            console.log('Debug - Attempting whitelist update:', {
+              url,
+              payload
+            });
+
+            const response = await axios.post(
+              url,
+              payload,
               {
                 headers: {
                   'Content-Type': 'application/json',
@@ -1344,9 +1377,25 @@ export class CandidateService {
                 },
               }
             );
+            
+            console.log('Debug - Whitelist update response:', {
+              status: response.status,
+              data: response.data
+            });
+            
           } catch (error) {
-            console.error('Failed to update whitelist:', error);
-            // Continue with the update even if whitelist update fails
+            // Enhanced error logging
+            console.error('Debug - Whitelist update error:', {
+              message: error.message,
+              status: error.response?.status,
+              data: error.response?.data,
+              code: error.code,
+              url: 'http://localhost:3000/ext-sock-whatsapp/update-whitelist',
+              headers: error.response?.headers
+            });
+            
+            // Don't throw - we want to continue with the update even if whitelist fails
+            console.log('Continuing with update despite whitelist error');
           }
         }
       }

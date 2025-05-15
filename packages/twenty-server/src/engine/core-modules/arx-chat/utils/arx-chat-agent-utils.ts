@@ -88,14 +88,14 @@ export async function formatChat(messages) {
   return formattedChat;
 }
 
-export async function axiosRequest(data: string, apiToken: string) {
+export async function axiosRequest(data: string, apiToken: string, origin: string = process.env.APPLE_ORIGIN_URL || 'https://app.arxena.com') {
   // console.log("Sending a post request to the graphql server:: with data", data);
   const response = await axios.request({
     method: 'post',
     url: process.env.GRAPHQL_URL,
     headers: {
       authorization: 'Bearer ' + apiToken,
-      Origin: process.env.APPLE_ORIGIN_URL,
+      Origin: origin,
       'content-type': 'application/json',
     },
     data: data,

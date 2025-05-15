@@ -371,7 +371,7 @@ export class CandidateSourcingController {
   async createJobInArxena(@Req() req: any): Promise<any> {
     console.log('going to create job in arxena');
     const apiToken = req.headers.authorization.split(' ')[1];
-
+    const origin = req.headers.origin;
     try {
       if (!req?.body?.job_name || !req?.body?.new_job_id) {
         throw new Error('Missing required fields: job_name or new_job_id');
@@ -405,6 +405,7 @@ export class CandidateSourcingController {
         googleSheetId ?? '',
         apiToken,
         req.body.id_to_update,
+        origin,
       );
 
       const response = await this.callCreateNewJobInArxena(
@@ -486,6 +487,8 @@ export class CandidateSourcingController {
     googleSheetId: string | null,
     apiToken: string,
     idToUpdate: string,
+    origin: string,
+
   ) {
     try {
       const jobCode = `${String.fromCharCode(65 + Math.floor(Math.random() * 10))}${String.fromCharCode(65 + Math.floor(Math.random() * 10))} ${Math.floor(
@@ -493,7 +496,8 @@ export class CandidateSourcingController {
       )
         .toString()
         .padStart(2, '0')}`;
-      const currentUser = await getCurrentUser(apiToken);
+      console.log('Going to get current user in updateTwentyJob');
+      const currentUser = await getCurrentUser(apiToken, origin);
       const recruiterId = currentUser?.workspaceMember?.id;
 
       console.log(
@@ -607,7 +611,6 @@ export class CandidateSourcingController {
       return response.data;
     } catch (error) {
       console.error('Error calling create new job in Arxena:', error);
-
       return { data: error.message };
     }
   }
@@ -841,10 +844,13 @@ export class CandidateSourcingController {
   @UseGuards(JwtAuthGuard)
   async updateCandidateField(@Req() request: any): Promise<object> {
     try {
+      console.log('Going to update candidate field with origin::');
+      console.log("request.headers::", request.headers);
+      const origin = request.headers.origin;
       const apiToken = request.headers.authorization.split(' ')[1];
       const { candidateId, fieldName, value, personId } = request.body;
 
-      
+
       if (!candidateId || !fieldName) {
         return {
           status: 'Failed',
@@ -858,6 +864,7 @@ export class CandidateSourcingController {
         fieldName,
         value,
         apiToken,
+        origin,
       );
 
       return {
