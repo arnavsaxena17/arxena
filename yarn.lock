@@ -18181,6 +18181,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/dompurify@npm:^3.2.0":
+  version: 3.2.0
+  resolution: "@types/dompurify@npm:3.2.0"
+  dependencies:
+    dompurify: "npm:*"
+  checksum: 10c0/e83fec586ffbb1b43f7c8479f2a99c223814d240db912d53fb126aaeea52a4091deceeb75632b5d76004d88ef0fbf444984887b121dece6fa69f4172ed4b2b07
+  languageName: node
+  linkType: hard
+
 "@types/ejs@npm:^3.1.1":
   version: 3.1.5
   resolution: "@types/ejs@npm:3.1.5"
@@ -27623,14 +27632,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"dompurify@npm:^3.0.11":
-  version: 3.1.6
-  resolution: "dompurify@npm:3.1.6"
-  checksum: 10c0/3de1cca187c78d3d8cb4134fc2985b644d6a81f6b4e024c77cfb04c1c2f38544ccf7b0ea37a48ce22fcca64594170ed7c22252574c75b801c44345cdd7b06c64
-  languageName: node
-  linkType: hard
-
-"dompurify@npm:^3.1.7":
+"dompurify@npm:*, dompurify@npm:^3.1.7, dompurify@npm:^3.2.5":
   version: 3.2.5
   resolution: "dompurify@npm:3.2.5"
   dependencies:
@@ -27639,6 +27641,13 @@ __metadata:
     "@types/trusted-types":
       optional: true
   checksum: 10c0/b564167cc588933ad2d25c185296716bdd7124e9d2a75dac76efea831bb22d1230ce5205a1ab6ce4c1010bb32ac35f7a5cb2dd16c78cbf382111f1228362aa59
+  languageName: node
+  linkType: hard
+
+"dompurify@npm:^3.0.11":
+  version: 3.1.6
+  resolution: "dompurify@npm:3.1.6"
+  checksum: 10c0/3de1cca187c78d3d8cb4134fc2985b644d6a81f6b4e024c77cfb04c1c2f38544ccf7b0ea37a48ce22fcca64594170ed7c22252574c75b801c44345cdd7b06c64
   languageName: node
   linkType: hard
 
@@ -49196,13 +49205,16 @@ __metadata:
     "@tiptap/extension-placeholder": "npm:^2.10.4"
     "@tiptap/extension-text": "npm:^2.10.4"
     "@tiptap/react": "npm:^2.10.4"
+    "@types/dompurify": "npm:^3.2.0"
     "@types/file-saver": "npm:^2"
     "@types/react-date-range": "npm:^1.4.10"
     "@xyflow/react": "npm:^12.4.2"
     buffer: "npm:^6.0.3"
     docx: "npm:^9.1.0"
+    dompurify: "npm:^3.2.5"
     file-saver: "npm:^2.0.5"
     handsontable: "npm:^15.2.0"
+    mammoth: "npm:^1.9.0"
     react-date-range: "npm:^2.0.1"
     recoil-sync: "npm:^0.2.0"
     transliteration: "npm:^2.3.5"

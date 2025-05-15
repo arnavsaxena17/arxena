@@ -1,6 +1,7 @@
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import styled from '@emotion/styled';
 import axios from 'axios';
+import DOMPurify from 'dompurify';
 import mammoth from 'mammoth';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
@@ -8,6 +9,7 @@ import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
 import { useRecoilState } from 'recoil';
 import { findManyAttachmentsQuery } from 'twenty-shared';
 // import { extractRawText } from 'docx2html';
+import { TextDecoder } from 'util';
 import { UploadCV } from './UploadCV';
 
 // Add a type declaration for the handleDocFile function
@@ -32,14 +34,63 @@ pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pd
 //   flex-direction: column;
 // `;
 const DocViewer = styled.div`
-  padding: 16px;
+  padding: 24px;
   background: white;
   border-radius: 4px;
+  font-family: 'Calibri', 'Arial', sans-serif;
+  line-height: 1.6;
+  color: #333;
+
+  h1 {
+    font-size: 24px;
+    font-weight: bold;
+    margin: 16px 0 8px;
+    color: #2c3e50;
+  }
+
+  h2 {
+    font-size: 20px;
+    font-weight: bold;
+    margin: 14px 0 7px;
+  }
+
+  h3 {
+    font-size: 16px;
+    font-weight: bold;
+    margin: 12px 0 6px;
+  }
 
   p {
     margin: 8px 0;
-    line-height: 1.6;
     font-size: 14px;
+  }
+
+  strong {
+    font-weight: 600;
+  }
+
+  ul, ol {
+    margin: 8px 0;
+    padding-left: 24px;
+  }
+
+  li {
+    margin: 4px 0;
+  }
+
+  table {
+    border-collapse: collapse;
+    margin: 16px 0;
+    width: 100%;
+  }
+
+  td, th {
+    border: 1px solid #ddd;
+    padding: 8px;
+  }
+
+  th {
+    background-color: #f5f5f5;
   }
 `;
 
@@ -76,33 +127,91 @@ const DefaultPanelContainer = styled.div<{ isOpen: boolean }>`
 // `;
 
 const Header = styled.div`
-  padding: 15px;
-  border-bottom: 1px solid #e0e0e0;
-  width: 80%;
+  padding: 12px 16px;
+  border-bottom: 1px solid ${({ theme }) => theme.border.color.light};
   display: flex;
   justify-content: space-between;
   align-items: center;
+  background: ${({ theme }) => theme.background.primary};
 `;
 
 const CandidateInfo = styled.div`
-  flex-grow: 1;
-  width: 50%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 `;
 
 const CandidateName = styled.h2`
-  font-size: 1.2em;
-  margin: 0 0 8px 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: ${({ theme }) => theme.font.color.primary};
+  margin: 0;
 `;
 
 const FileName = styled.h3`
-  color: #666;
-  font-size: 1em;
+  font-size: 13px;
+  font-weight: 400;
+  color: ${({ theme }) => theme.font.color.tertiary};
   margin: 0;
 `;
 
 const NavigationContainer = styled.div`
-  align-items: center;
   display: flex;
+  align-items: center;
+  gap: 4px;
+`;
+
+const NavButton = styled.button`
+  background: transparent;
+  border: none;
+  color: ${({ theme }) => theme.font.color.secondary};
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  
+  &:hover:not(:disabled) {
+    background: ${({ theme }) => theme.background.tertiary};
+  }
+
+  &:disabled {
+    color: ${({ theme }) => theme.font.color.light};
+    cursor: not-allowed;
+  }
+`;
+
+const AttachmentCounter = styled.span`
+  font-size: 13px;
+  color: ${({ theme }) => theme.font.color.secondary};
+  margin: 0 8px;
+  min-width: 60px;
+  text-align: center;
+`;
+
+const DownloadButton = styled.button`
+  background: ${({ theme }) => theme.background.primary};
+  border: 1px solid ${({ theme }) => theme.border.color.medium};
+  border-radius: 4px;
+  color: ${({ theme }) => theme.font.color.primary};
+  cursor: pointer;
+  font-size: 13px;
+  margin-left: 12px;
+  padding: 6px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+
+  &:hover:not(:disabled) {
+    background: ${({ theme }) => theme.background.tertiary};
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
 `;
 
 const ContentContainer = styled.div`
@@ -128,22 +237,6 @@ const InlineContentContainer = styled.div`
 //   padding: 15px;
 // `;
 
-const NavButton = styled.button`
-  background: none;
-  border: none;
-  font-size: 16px;
-  cursor: pointer;
-  color: #333;
-  padding: 5px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  &:disabled {
-    color: #ccc;
-    cursor: not-allowed;
-  }
-`;
-
 const PDFContainer = styled.div`
   align-items: center;
   display: flex;
@@ -151,12 +244,6 @@ const PDFContainer = styled.div`
   height: 100%;
   overflow-y: auto;
   width: 100%;
-`;
-
-const AttachmentCounter = styled.span`
-  font-size: 14px;
-  color: #666;
-  margin: 0 10px;
 `;
 
 const CloseButton = styled.button`
@@ -228,6 +315,34 @@ const UploadMessage = styled.p`
   color: ${props => props.theme.font.color.secondary};
 `;
 
+const RetryButton = styled.button`
+  background: ${({ theme }) => theme.background.primary};
+  border: 1px solid ${({ theme }) => theme.border.color.medium};
+  border-radius: 4px;
+  color: ${({ theme }) => theme.font.color.primary};
+  cursor: pointer;
+  font-size: 13px;
+  padding: 8px 16px;
+  margin-top: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+
+  &:hover {
+    background: ${({ theme }) => theme.background.tertiary};
+  }
+`;
+
+const ErrorContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  text-align: center;
+`;
+
 interface AttachmentPanelProps {
   isOpen: boolean;
   onClose: () => void;
@@ -265,6 +380,8 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({
   // Add state to track when CV is uploaded
   const [uploadSuccess, setUploadSuccess] = useState(false);
 
+  const [pdfLoadError, setPdfLoadError] = useState<string | null>(null);
+
   const onDocumentLoadSuccess = useCallback(
     ({ numPages }: { numPages: number }) => {
       setNumPages(numPages);
@@ -283,7 +400,7 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({
 
   function onDocumentLoadError(error: Error) {
     console.error('Error loading PDF:', error);
-    setError(error.message);
+    setPdfLoadError('Failed to load PDF. The file might be corrupted or temporarily unavailable.');
   }
 
   const handlePrevPage = useCallback(() => {
@@ -371,13 +488,7 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({
         setError(null);
         setFileContent(null);
         setDownloadUrl(null);
-        console.log(
-          'This si the attachment.fullPath REACT_APP_SERVER_BASE_URL::',
-          process.env.REACT_APP_SERVER_BASE_URL,
-        );
-        console.log('This si the fullPath::', attachment.fullPath);
 
-        // const response = await axios.get(`${process.env.REACT_APP_SERVER_BASE_URL}/files/${attachment.fullPath}`, { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` }, responseType: 'arraybuffer' });
         const response = await axios.get(`${attachment.fullPath}`, {
           headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` },
           responseType: 'arraybuffer',
@@ -420,13 +531,11 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({
             let result: DocHandlerResult;
 
             if (contentType.includes('doc') && !contentType.includes('docx')) {
-              // For .doc files, we need to use a different library or API
-              // Here, we'll use a placeholder for the actual implementation
               result = await handleDocFile(arrayBuffer);
             } else {
-              // For .docx files, we can use mammoth
+              // Basic mammoth conversion
               result = await mammoth.convertToHtml({
-                arrayBuffer: arrayBuffer,
+                arrayBuffer: arrayBuffer
               });
             }
 
@@ -515,11 +624,14 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({
   };
 
   const DocxViewer: React.FC<{ content: string }> = ({ content }) => {
-    const lines = content.split(/\r?\n/).filter((line) => line.trim());
+    // Sanitize the HTML content
+    const sanitizedContent = DOMPurify.sanitize(content, {
+      ADD_TAGS: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'table', 'tr', 'td', 'th'],
+      ADD_ATTR: ['style'],
+    });
+
     return (
-      <DocViewer>
-        {lines?.map((line, index) => <p key={index}>{line}</p>)}
-      </DocViewer>
+      <DocViewer dangerouslySetInnerHTML={{ __html: sanitizedContent }} />
     );
   };
 
@@ -548,6 +660,38 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({
     fetchAttachments();
   }, [fetchAttachments]);
 
+  const handleDownload = useCallback(async () => {
+    if (!currentAttachment) return;
+    
+    try {
+      const response = await axios.get(currentAttachment.fullPath, {
+        headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` },
+        responseType: 'blob'
+      });
+      
+      const blob = new Blob([response.data]);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = currentAttachment.name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading file:', error);
+      setError('Failed to download file. Please try again.');
+    }
+  }, [currentAttachment, tokenPair]);
+
+  const handleRetry = useCallback(() => {
+    setPdfLoadError(null);
+    setError(null);
+    if (currentAttachment) {
+      fetchFileContent(currentAttachment);
+    }
+  }, [currentAttachment, fetchFileContent]);
+
   return (
     <Container isOpen={isOpen}>
       {!isInline && <CloseButton onClick={onClose}>&times;</CloseButton>}
@@ -574,11 +718,24 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({
           >
             &#9660;
           </NavButton>
+          {currentAttachment && (
+            <DownloadButton 
+              onClick={handleDownload}
+              disabled={isLoading}
+            >
+              {isLoading ? 'Loading...' : 'Download'}
+            </DownloadButton>
+          )}
         </NavigationContainer>
       </Header>
       <CustomContentContainer>
         {error ? (
-          <NotFoundMessage>{error}</NotFoundMessage>
+          <ErrorContainer>
+            <ErrorMessage>{error}</ErrorMessage>
+            <RetryButton onClick={handleRetry}>
+              Try Again
+            </RetryButton>
+          </ErrorContainer>
         ) : isLoading ? (
           <div>Loading attachments...</div>
         ) : attachments.length === 0 ? (
@@ -599,26 +756,33 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({
           typeof fileContent === 'string' &&
           fileContent.startsWith('blob:') ? (
             <PDFContainer>
-              <Document
-                file={fileContent}
-                onLoadSuccess={onDocumentLoadSuccess}
-                onLoadError={onDocumentLoadError}
-                options={options}
-              >
-                {Array.from(new Array(numPages), (el, index) => (
-                  <Page
-                    key={`page_${index + 1}`}
-                    pageNumber={index + 1}
-                    renderTextLayer={false}
-                    renderAnnotationLayer={false}
-                  />
-                ))}
-              </Document>
-              {/* Add navigation controls for PDF if needed */}
+              {pdfLoadError ? (
+                <ErrorContainer>
+                  <ErrorMessage>{pdfLoadError}</ErrorMessage>
+                  <RetryButton onClick={handleRetry}>
+                    Reload PDF
+                  </RetryButton>
+                </ErrorContainer>
+              ) : (
+                <Document
+                  file={fileContent}
+                  onLoadSuccess={onDocumentLoadSuccess}
+                  onLoadError={onDocumentLoadError}
+                  options={options}
+                >
+                  {Array.from(new Array(numPages), (el, index) => (
+                    <Page
+                      key={`page_${index + 1}`}
+                      pageNumber={index + 1}
+                      renderTextLayer={false}
+                      renderAnnotationLayer={false}
+                    />
+                  ))}
+                </Document>
+              )}
             </PDFContainer>
           ) : typeof fileContent === 'string' &&
             fileContent.startsWith('<') ? (
-            // <DocxViewer dangerouslySetInnerHTML={{ __html: fileContent }} />
             <DocxViewer content={fileContent} />
           ) : (
             <ContentViewer>
