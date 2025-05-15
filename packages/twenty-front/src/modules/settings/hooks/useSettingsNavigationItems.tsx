@@ -2,21 +2,13 @@ import {
   IconApps,
   IconAt,
   IconCalendarEvent,
-  IconCode,
-  IconColorSwatch,
   IconComponent,
   IconCurrencyDollar,
-  IconFlask,
-  IconFunction,
-  IconHierarchy2,
-  IconKey,
   IconLock,
   IconMail,
-  IconRocket,
-  IconServer,
   IconSettings,
   IconUserCircle,
-  IconUsers,
+  IconUsers
 } from 'twenty-ui';
 
 import { SettingsPath } from '@/types/SettingsPath';
@@ -63,6 +55,8 @@ export const useSettingsNavigationItems = (): SettingsNavigationSection[] => {
   const featureFlags = useFeatureFlagsMap();
   const permissionMap = useSettingsPermissionMap();
 
+
+  console.log("permissionMap", permissionMap);
   return [
     {
       label: t`User`,
@@ -72,11 +66,11 @@ export const useSettingsNavigationItems = (): SettingsNavigationSection[] => {
           path: SettingsPath.ProfilePage,
           Icon: IconUserCircle,
         },
-        {
-          label: t`Experience`,
-          path: SettingsPath.Experience,
-          Icon: IconColorSwatch,
-        },
+        // {
+        //   label: t`Experience`,
+        //   path: SettingsPath.Experience,
+        //   Icon: IconColorSwatch,
+        // },
         {
           label: t`Accounts`,
           path: SettingsPath.Accounts,
@@ -135,69 +129,69 @@ export const useSettingsNavigationItems = (): SettingsNavigationSection[] => {
             !featureFlags[FeatureFlagKey.IsPermissionsEnabled] ||
             !permissionMap[SettingsFeatures.ROLES],
         },
-        {
-          label: t`Data model`,
-          path: SettingsPath.Objects,
-          Icon: IconHierarchy2,
-          isHidden: !permissionMap[SettingsFeatures.DATA_MODEL],
-        },
+        // {
+        //   label: t`Data model`,
+        //   path: SettingsPath.Objects,
+        //   Icon: IconHierarchy2,
+        //   isHidden: !permissionMap[SettingsFeatures.DATA_MODEL],
+        // },
         {
           label: t`Integrations`,
           path: SettingsPath.Integrations,
           Icon: IconApps,
           isHidden: !permissionMap[SettingsFeatures.API_KEYS_AND_WEBHOOKS],
         },
-        {
-          label: t`Security`,
-          path: SettingsPath.Security,
-          Icon: IconKey,
-          isAdvanced: true,
-          isHidden: !permissionMap[SettingsFeatures.SECURITY],
-        },
+        // {
+        //   label: t`Security`,
+        //   path: SettingsPath.Security,
+        //   Icon: IconKey,
+        //   isAdvanced: true,
+        //   isHidden: !permissionMap[SettingsFeatures.SECURITY],
+        // },
       ],
     },
     {
       label: t`Developers`,
       isAdvanced: true,
       items: [
-        {
-          label: t`API & Webhooks`,
-          path: SettingsPath.Developers,
-          Icon: IconCode,
-          isAdvanced: true,
-          isHidden: !permissionMap[SettingsFeatures.API_KEYS_AND_WEBHOOKS],
-        },
-        {
-          label: t`Functions`,
-          path: SettingsPath.ServerlessFunctions,
-          Icon: IconFunction,
-          isHidden: !isFunctionSettingsEnabled,
-          isAdvanced: true,
-        },
+        // {
+        //   label: t`API & Webhooks`,
+        //   path: SettingsPath.Developers,
+        //   Icon: IconCode,
+        //   isAdvanced: true,
+        //   isHidden: !permissionMap[SettingsFeatures.API_KEYS_AND_WEBHOOKS],
+        // },
+        // {
+        //   label: t`Functions`,
+        //   path: SettingsPath.ServerlessFunctions,
+        //   Icon: IconFunction,
+        //   isHidden: !isFunctionSettingsEnabled,
+        //   isAdvanced: true,
+        // },
       ],
     },
     {
       label: t`Other`,
       items: [
-        {
-          label: t`Server Admin`,
-          path: SettingsPath.AdminPanel,
-          Icon: IconServer,
-          isHidden: !isAdminEnabled,
-        },
-        {
-          label: t`Lab`,
-          path: SettingsPath.Lab,
-          Icon: IconFlask,
-          isHidden:
-            !labPublicFeatureFlags.length ||
-            !permissionMap[SettingsFeatures.WORKSPACE],
-        },
-        {
-          label: t`Releases`,
-          path: SettingsPath.Releases,
-          Icon: IconRocket,
-        },
+        // {
+        //   label: t`Server Admin`,
+        //   path: SettingsPath.AdminPanel,
+        //   Icon: IconServer,
+        //   isHidden: !isAdminEnabled,
+        // },
+        // {
+        //   label: t`Lab`,
+        //   path: SettingsPath.Lab,
+        //   Icon: IconFlask,
+        //   isHidden:
+        //     !labPublicFeatureFlags.length ||
+        //     !permissionMap[SettingsFeatures.WORKSPACE],
+        // },
+        // {
+        //   label: t`Releases`,
+        //   path: SettingsPath.Releases,
+        //   Icon: IconRocket,
+        // },
       ],
     },
   ];

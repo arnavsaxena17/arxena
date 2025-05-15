@@ -4,7 +4,7 @@ import styled from '@emotion/styled';
 import { ReactNode } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useRecoilState } from 'recoil';
-import { Button, IconDatabase, IconFileImport, IconMail, IconRefresh, IconSearch, IconVideo } from 'twenty-ui';
+import { Button, IconDatabase, IconMail, IconRefresh, IconSearch } from 'twenty-ui';
 
 type TopBarProps = {
   className?: string;
@@ -62,6 +62,8 @@ const StyledButtonContainer = styled.div`
 display: flex;
 gap: ${({ theme }) => theme.spacing(1)};
 margin-left: ${({ theme }) => theme.spacing(2)};
+
+
 `;
 
 const StyledSearchContainer = styled.div`
@@ -152,7 +154,7 @@ export const TopBar = ({
         )}
 
         
-        {(isJobPage || showSearch) && (
+        {(isJobPage && showSearch) && (
           <>
             <StyledSearchContainer>
               <StyledIconContainer>
@@ -175,7 +177,7 @@ export const TopBar = ({
                   onClick={handleRefresh}
                 />
               )}
-              {isJobPage && (
+              {/* {isJobPage && (
                 <Button
                   Icon={IconFileImport}
                   title="Import Candidates"
@@ -183,8 +185,8 @@ export const TopBar = ({
                   accent="default"
                   onClick={handleImportCandidates}
                 />
-              )}
-              {showRefetch && !isJobPage && (
+              )} */}
+              {/* {showRefetch && !isJobPage && (
                 <Button
                   Icon={IconSearch}
                   title="Sourcing"
@@ -192,7 +194,7 @@ export const TopBar = ({
                   accent="default"
                   onClick={handleRefresh}
                 />
-              )}
+              )} */}
               {showEngagement && (
                 <Button
                   Icon={IconMail}
@@ -211,7 +213,7 @@ export const TopBar = ({
                   onClick={handleEnrichment}
                 />
               )}
-              {showVideoInterviewEdit && (
+              {/* {showVideoInterviewEdit && (
                 <Button
                   Icon={IconVideo}
                   title="Video Interviews"
@@ -219,12 +221,12 @@ export const TopBar = ({
                   accent="default"
                   onClick={handleVideoInterviewEdit}
                 />
-              )}
+              )} */}
             </StyledButtonContainer>
           </>
         )}
 
-        <StyledRightSection>{rightComponent}</StyledRightSection>
+        {!isJobPage && !showSearch && (!location.pathname.includes('jobs') || location.pathname.includes('objects'))  && <StyledRightSection>{rightComponent}</StyledRightSection>}
       </StyledTopBar>
       {bottomComponent}
     </StyledContainer>

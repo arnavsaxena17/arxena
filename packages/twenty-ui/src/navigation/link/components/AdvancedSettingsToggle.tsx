@@ -1,7 +1,6 @@
 import styled from '@emotion/styled';
 import { useLingui } from '@lingui/react/macro';
 import { IconPoint } from '@ui/display';
-import { Toggle } from '@ui/input';
 import { MAIN_COLORS } from '@ui/theme';
 import { useId } from 'react';
 const StyledContainer = styled.div`
@@ -61,7 +60,7 @@ export const AdvancedSettingsToggle = ({
           fill={MAIN_COLORS.yellow}
         />
       </StyledIconContainer>
-      <StyledToggleContainer htmlFor={inputId}>
+      {/* <StyledToggleContainer htmlFor={inputId}>
         <StyledText>{t`Advanced:`}</StyledText>
 
         <Toggle
@@ -70,7 +69,7 @@ export const AdvancedSettingsToggle = ({
           color={MAIN_COLORS.yellow}
           value={isAdvancedModeEnabled}
         />
-      </StyledToggleContainer>
+      </StyledToggleContainer> */}
     </StyledContainer>
   );
 };

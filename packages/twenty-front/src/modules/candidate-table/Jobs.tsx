@@ -1,7 +1,7 @@
 import styled from '@emotion/styled';
 import { useRecoilState, useRecoilValue } from 'recoil';
 
-import { Button, IconCheckbox, IconPlus } from 'twenty-ui';
+import { Button, IconDatabase, IconPlus } from 'twenty-ui';
 
 import { useSelectedRecordForEnrichment } from '@/arx-enrich/hooks/useSelectedRecordForEnrichment';
 import { isArxEnrichModalOpenState } from '@/arx-enrich/states/arxEnrichModalOpenState';
@@ -279,7 +279,7 @@ export const Jobs = () => {
       <SpreadsheetImportProvider>
         <StyledPageContainer>
           <RecordFieldValueSelectorContextProvider>
-            <StyledPageHeader title="Jobs" Icon={IconCheckbox}>
+            <StyledPageHeader title="Jobs" Icon={IconDatabase}>
               <StyledButtonContainer>
                 {/* <Button title="Import Candidates" Icon={IconFileImport} variant="secondary" onClick={handleImportCandidates} /> */}
                 <Button title="Add Job" Icon={IconPlus} variant="primary" onClick={handleEngagement} />
@@ -319,7 +319,7 @@ export const Jobs = () => {
       }}>
         <StyledPageContainer>
           <RecordFieldValueSelectorContextProvider>
-            <StyledPageHeader title="Jobs" Icon={IconCheckbox}>
+            <StyledPageHeader title="Jobs" Icon={IconDatabase}>
               <StyledButtonContainer>
                 {/* <Button title="Import Candidates" Icon={IconFileImport} variant="secondary" onClick={handleImportCandidates} /> */}
                 <Button title="Add Job" Icon={IconPlus} variant="primary" onClick={handleEngagement} />

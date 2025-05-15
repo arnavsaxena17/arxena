@@ -11,7 +11,7 @@ export const SETTINGS_INTEGRATION_REQUEST_CATEGORY: SettingsIntegrationCategory 
         to: null,
         type: 'Goto',
         text: 'Request an integration on Github conversations',
-        link: 'https://github.com/twentyhq/twenty/discussions/categories/ideas',
+        link: 'https://github.com/arnavsaxena17/arxena/discussions',
         linkText: 'Go to GitHub',
       },
     ],

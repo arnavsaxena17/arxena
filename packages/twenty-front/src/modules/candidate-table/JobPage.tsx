@@ -9,7 +9,6 @@ import { isArxUploadJDModalOpenState } from "@/arx-jd-upload/states/arxUploadJDM
 import { ChatOptionsDropdownButton } from "@/candidate-table/ChatOptionsDropdownButton";
 import { DataTable } from "@/candidate-table/DataTable";
 import { HotTableActionMenu } from "@/candidate-table/HotTableActionMenu";
-import { PageAddChatButton } from "@/candidate-table/PageAddChatButton";
 import { jobIdAtom, jobsState } from "@/candidate-table/states";
 import { ContextStoreComponentInstanceContext } from "@/context-store/states/contexts/ContextStoreComponentInstanceContext";
 import { ObjectFilterDropdownButton } from "@/object-record/object-filter-dropdown/components/ObjectFilterDropdownButton";
@@ -21,7 +20,6 @@ import { RecordIndexContextProvider } from "@/object-record/record-index/context
 import { RecordFieldValueSelectorContextProvider } from "@/object-record/record-store/contexts/RecordFieldValueSelectorContext";
 import { useOpenObjectRecordsSpreadsheetImportDialog } from "@/object-record/spreadsheet-import/hooks/useOpenObjectRecordsSpreadsheetImportDialog";
 import { SpreadsheetImportProvider } from "@/spreadsheet-import/provider/components/SpreadsheetImportProvider";
-import { NotificationsButton } from '@/ui/layout/page/components/NotificationsButton';
 import { PageBody } from '@/ui/layout/page/components/PageBody';
 import { PageContainer } from '@/ui/layout/page/components/PageContainer';
 import { PageHeader } from '@/ui/layout/page/components/PageHeader';
@@ -34,7 +32,7 @@ import styled from '@emotion/styled';
 import { useEffect, useMemo, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { useRecoilState, useRecoilValue } from "recoil";
-import { Button, IconCheckbox, IconFileImport, IconFilter, IconPlus } from 'twenty-ui';
+import { Button, IconCheckbox, IconFileImport } from 'twenty-ui';
 
 const StyledPageContainer = styled(PageContainer)`
   display: flex;
@@ -175,11 +173,11 @@ export const JobPage: React.FC = () => {
           <StyledPageHeader title={currentJob?.name || 'Job'} Icon={IconCheckbox}>
             <StyledButtonContainer>
               <Button title="Import Candidates" Icon={IconFileImport} variant="secondary" onClick={handleImportCandidates} />
-              <Button title="Filter" Icon={IconFilter} variant="secondary" />
-              <Button title="Add Candidate" Icon={IconPlus} variant="primary" />
+              {/* <Button title="Filter" Icon={IconFilter} variant="secondary" /> */}
+              {/* <Button title="Add Candidate" Icon={IconPlus} variant="primary" /> */}
             </StyledButtonContainer>
-            <PageAddChatButton />
-            <NotificationsButton />
+            {/* <PageAddChatButton /> */}
+            {/* <NotificationsButton /> */}
           </StyledPageHeader>
           <StyledPageBody>
             <RecordIndexContextProvider value={recordIndexContextValue}>

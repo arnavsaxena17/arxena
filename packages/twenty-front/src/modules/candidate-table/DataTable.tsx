@@ -411,7 +411,9 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
           </StyledEmptyIcon>
           <StyledEmptyTitle>No candidates found</StyledEmptyTitle>
           <StyledEmptyDescription>
-            There are no candidates available for this job. Add candidates to get started.
+            There are no candidates available for this job.
+            <br />
+            Add candidates to get started.
           </StyledEmptyDescription>
         </StyledEmptyContainer>
       );
