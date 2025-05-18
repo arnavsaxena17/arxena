@@ -21,7 +21,7 @@ export class ExtSockWhatsappMessageProcessor {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
   ) {}
-
+  
   async processMessageWithUserId(
     messageData: WhatsappMessageData,
     userId: string,

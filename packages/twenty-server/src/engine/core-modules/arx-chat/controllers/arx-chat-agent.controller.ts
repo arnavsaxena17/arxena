@@ -1344,14 +1344,15 @@ export class ArxChatEndpoint {
       ).getPersonDetailsByPersonId(personId, apiToken);
 
       console.log('personObj:', personObj);
+      
       if (!personObj) {
         throw new HttpException(
           'Person details not found',
           HttpStatus.NOT_FOUND,
         );
       }
-      console.log('personObj:', personObj);
 
+      console.log('personObj:', personObj);
       const chatControl: ChatControlsObjType = {
         chatControlType: 'startChat',
       };

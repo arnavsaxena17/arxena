@@ -282,12 +282,22 @@ export class WhatsappControls {
       'whatsapp_key',
     );
 
-    // const workspace = await this.workspaceQueryService.getWorkspaceById(workspaceId);
-
-    // const whatsappApi = workspace.whatsappApi;
-
-    // if (whatsappApi === 'facebook') {
-
+    const messagingChannel = personNode.candidates.edges.filter(
+      (candidate) => candidate.node.jobs.id == candidateJob.id,
+    )[0].node.messagingChannel;
+    console.log('messagingChannel in sendAttachmentMessageOnWhatsapp ::', messagingChannel);
+    if (messagingChannel === 'whatsapp-official') {
+      whatsapp_key = 'whatsapp-official';
+    } else if (messagingChannel === 'whatsapp-web') {
+      whatsapp_key = 'whatsapp-web';
+    } else if (messagingChannel === 'baileys') {
+      whatsapp_key = 'baileys';
+    } else if (messagingChannel === 'linkedin') {
+      whatsapp_key = 'linkedin';
+    } else {
+      whatsapp_key = 'whatsapp-official';
+    }
+    console.log('whatsapp_key in sendAttachmentMessageOnWhatsapp ::', whatsapp_key);
     if (whatsapp_key === 'whatsapp-official') {
       await new FacebookWhatsappChatApi(
         this.workspaceQueryService,

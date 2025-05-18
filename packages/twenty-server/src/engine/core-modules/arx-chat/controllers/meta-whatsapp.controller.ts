@@ -18,9 +18,11 @@ import { WhatsappTemplateMessages } from 'src/engine/core-modules/arx-chat/servi
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 
-@Controller('whatsapp-test')
-export class WhatsappTestAPI {
+@Controller('meta-whatsapp-controller')
+export class MetaWhatsappController {
   constructor(private readonly workspaceQueryService: WorkspaceQueryService) {}
+
+
 
   @Post('send-template-message')
   @UseGuards(JwtAuthGuard)
@@ -180,41 +182,22 @@ export class WhatsappTestAPI {
     return { status: 'success' };
   }
 
-  @Post('sendAttachment')
-  @UseGuards(JwtAuthGuard)
-  async sendFileToFBWAAPIUser(@Req() request: Request): Promise<object> {
-    console.log('Send file');
-    console.log('Request bod::y::', request.body);
-    const sendTextMessageObj = {
-      phoneNumberFrom: '918411937769',
-      attachmentMessage: 'string',
-      phoneNumberTo: '918411937769',
-      mediaFileName: 'AttachmentFile',
-      mediaID: '377908408596785',
-    };
 
-    return { status: 'success' };
+  @Post('uploadFile')
+  async uploadFileToFBWAAPI(@Req() request: any): Promise<object> {
+    console.log('This is the request body:', request.body);
+    const apiToken = request.headers.authorization.split(' ')[1];
+
+    console.log('upload file to meta whatsapp business api');
+    const requestBody = request?.body;
+    const filePath = requestBody?.filePath;
+    const response = await new FacebookWhatsappChatApi(
+      this.workspaceQueryService,
+    ).uploadFileToWhatsAppUsingControllerApi(filePath, apiToken);
+
+    return response || {}; // Return an empty object if the response is undefined
   }
 
-  // @Post('sendFile')
-  // @UseGuards(JwtAuthGuard)
-  // async uploadAndSendFileToFBWAAPIUser(@Req() request: any): Promise<object> {
-  //   const apiToken = request.headers.authorization.split(' ')[1];
-  //   const sendFileObj = request.body;
-  //   const chatControl:ChatControlsObjType = {chatControlType:"startChat"};
-  //   // candidateJob = {id: "1234"};
-
-  //   new FacebookWhatsappChatApi(this.workspaceQueryService).uploadAndSendFileToWhatsApp(sendFileObj, candidateJob, chatControl,  apiToken);
-  //   return { status: 'success' };
-  // }
-
-  // @Post('downloadAttachment')
-  // @UseGuards(JwtAuthGuard)
-  // async downloadFileToFBWAAPIUser(@Req() request: Request): Promise<object> {
-  //   const downloadAttachmentMessageObj = request.body;
-
-  //   return { status: 'success' };
-  // }
 
   @Get('get-templates')
   @UseGuards(JwtAuthGuard)
@@ -227,60 +210,3 @@ export class WhatsappTestAPI {
     return { templates };
   }
 }
-
-// @Injectable()
-// export class WebhookTestCronService  {
-//   @Cron(TimeManagement.crontabs.crontTabToExecuteCandidateEngagement) // or any timing you prefer
-//   async handleWebhookTest() {
-//     console.log('Starting webhook test:', new Date().toISOString());
-
-//     try {
-//       // Test GET verification
-//       // const verificationResponse = await fetch('https://mrvpnl3x-3000.inc1.devtunnels.ms/webhook?hub.mode=subscribe&hub.verify_token=12345&hub.challenge=test_challenge', {
-//       //   method: 'GET'
-//       // });
-
-//       // console.log('Webhook GET verification response:', {
-//       //   status: verificationResponse.status,
-//       //   // body: await verificationResponse.text()
-//       // });
-
-//       // Test POST message
-//       const testMessage = {
-//         entry: [{
-//           changes: [{
-//             value: {
-//               messages: [{
-//                 from: '1234567890',
-//                 text: { body: 'Test message from cron' },
-//                 type: 'text',
-//                 timestamp: Math.floor(Date.now() / 1000)
-//               }],
-//               metadata: {
-//                 display_phone_number: '0987654321'
-//               }
-//             }
-//           }]
-//         }]
-//       };
-
-//       const messageResponse = await fetch('https://mrvpnl3x-3000.inc1.devtunnels.ms/webhook', {
-//         method: 'POST',
-//         headers: {
-//           'Content-Type': 'application/json'
-//         },
-//         body: JSON.stringify(testMessage)
-//       });
-
-//       console.log('Webhook POST test response:', {
-//         status: messageResponse.status,
-//         body: await messageResponse.text()
-//       });
-
-//     } catch (error) {
-//       console.error('Webhook test failed:', error);
-//     }
-
-//     console.log('Webhook test completed:', new Date().toISOString());
-//   }
-// }

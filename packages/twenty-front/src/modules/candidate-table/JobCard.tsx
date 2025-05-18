@@ -3,12 +3,12 @@ import styled from '@emotion/styled';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useRecoilState, useSetRecoilState } from 'recoil';
 import {
-    IconBriefcase,
-    IconCalendar,
-    IconDotsVertical,
-    IconMap,
-    IconUser,
-    MenuItem
+  IconBriefcase,
+  IconCalendar,
+  IconDotsVertical,
+  IconMap,
+  IconUser,
+  MenuItem
 } from 'twenty-ui';
 
 import { jobsState } from '@/candidate-table/states';
@@ -95,7 +95,7 @@ const StyledActiveStatus = styled.div<{ isActive: boolean }>`
   align-items: center;
   gap: ${({ theme }) => theme.spacing(1)};
   color: ${({ isActive, theme }) => 
-    isActive ? theme.color.green : theme.font.color.tertiary};
+    isActive ? theme.font.color.primary : theme.font.color.tertiary};
   font-size: ${({ theme }) => theme.font.size.sm};
 `;
 

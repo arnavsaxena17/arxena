@@ -592,21 +592,15 @@ export const CandidateChatDrawer = () => {
     }
     
     try {
-      const response = await axios.post(
-        `${process.env.REACT_APP_SERVER_BASE_URL}/whatsapp-test/send-template-message`,
-        {
-          templateName: templateName,
-          phoneNumberTo: phoneNumber.replace('+', ''),
-        },
-        {
-          headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` },
-        },
+      await axios.post(
+        `${process.env.REACT_APP_SERVER_BASE_URL}/meta-whatsapp-controller/send-template-message`,
+        { templateName: templateName, phoneNumberTo: phoneNumber.replace('+', ''), },
+        { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` }, },
       );
-      
+      console.log('Template sent successfully');
       showSnackbar('Template sent successfully', 'success');
       setSelectedTemplate('');
       
-      // Add template message to the UI
       const newMessage: MessageNode = {
         recruiterId: '',
         message: `Template: ${templateName}\n${getTemplatePreview(templateName)}`,
@@ -623,7 +617,6 @@ export const CandidateChatDrawer = () => {
         messageObj: { content: templateName },
         whatsappDeliveryStatus: 'sent',
       };
-      
       setMessageHistory(prev => [newMessage, ...prev]);
     } catch (error) {
       showSnackbar('Failed to send template', 'error');

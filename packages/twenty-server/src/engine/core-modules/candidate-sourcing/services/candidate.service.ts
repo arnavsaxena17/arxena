@@ -1339,7 +1339,7 @@ export class CandidateService {
               origin: origin
             });
 
-            const url = 'http://localhost:3000/ext-sock-whatsapp/update-whitelist';
+            const url = process.env.SERVER_BASE_URL + '/ext-sock-whatsapp/update-whitelist';
             
             // Ensure we have both old and new phone numbers
             if (!oldPhoneNumber) {
@@ -1390,7 +1390,7 @@ export class CandidateService {
               status: error.response?.status,
               data: error.response?.data,
               code: error.code,
-              url: 'http://localhost:3000/ext-sock-whatsapp/update-whitelist',
+              url: process.env.SERVER_BASE_URL + '/ext-sock-whatsapp/update-whitelist',
               headers: error.response?.headers
             });
             

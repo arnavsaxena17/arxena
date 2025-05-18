@@ -56,14 +56,14 @@ export class FacebookWhatsappChatApi {
       method: 'post',
       maxBodyLength: Infinity,
       url: `https://graph.facebook.com/v18.0/${phoneNumberId}/${configType}`,
-      headers: {
-        Authorization: `Bearer ${whatsappAPIToken}`,
-        'Content-Type': 'application/json',
-      },
+      headers: { Authorization: `Bearer ${whatsappAPIToken}`, 'Content-Type': 'application/json', },
     };
   }
 
+
+  
   async getGraphApiConfig(apiToken: string, filePath: string) {
+    console.log('getGraphApiConfig for meta graph facebook api for v18.0 official');
     const workspaceId =
       await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
     const whatsappAPIToken =
@@ -125,7 +125,7 @@ export class FacebookWhatsappChatApi {
       this.workspaceQueryService,
     ).getPersonDetailsByPhoneNumber(phoneNumberTo, apiToken);
     const mostRecentMessageArr: ChatHistoryItem[] =
-      personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node
+      personObj?.candidates?.edges.filter(edge => edge.node.jobs.id == candidateJob.id)[0]?.node?.whatsappMessages?.edges[0]?.node
         ?.messageObj;
 
     mostRecentMessageArr.push({ role: 'user', content: 'Sharing the JD' });
@@ -207,7 +207,7 @@ export class FacebookWhatsappChatApi {
           process.env.SERVER_BASE_URL,
         );
         response = await axios.post(
-          process.env.SERVER_BASE_URL + '/whatsapp-controller/uploadFile',
+          process.env.SERVER_BASE_URL + '/metawhatsapp-controller/uploadFile',
           { filePath: filePath },
           { headers: { Authorization: `Bearer ${apiToken}` } },
         );
@@ -220,7 +220,7 @@ export class FacebookWhatsappChatApi {
             'Failed to upload JD to WhatsApp. Retrying it again...',
           );
           response = await axios.post(
-            process.env.SERVER_BASE_URL + '/whatsapp-controller/uploadFile',
+            process.env.SERVER_BASE_URL + '/meta-whatsapp-controller/uploadFile',
             { filePath: filePath },
             { headers: { Authorization: `Bearer ${apiToken}` } },
           );
@@ -354,7 +354,7 @@ export class FacebookWhatsappChatApi {
       this.workspaceQueryService,
       configType,
       apiToken,
-    ); // Use getWhatsappConfig instead
+    );
     const config = {
       ...baseConfig,
       data: {
@@ -365,8 +365,7 @@ export class FacebookWhatsappChatApi {
         document: {
           id: sendWhatsappAttachmentTextMessageObj.mediaID,
           caption: sendWhatsappAttachmentTextMessageObj.attachmentText,
-          filename:
-            sendWhatsappAttachmentTextMessageObj.mediaFileName || 'attachment',
+          filename: sendWhatsappAttachmentTextMessageObj.mediaFileName || 'attachment',
         },
       },
     };

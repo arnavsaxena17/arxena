@@ -3,12 +3,11 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { TypeORMModule } from 'src/database/typeorm/typeorm.module';
 import { TwilioControllers } from 'src/engine/core-modules/arx-chat/controllers/twilio-api.controller';
-import { WhatsappControllers } from 'src/engine/core-modules/arx-chat/controllers/whatsapp-api.controller';
-import { WhatsappWebhook } from 'src/engine/core-modules/arx-chat/controllers/whatsapp-webhook.controller';
-// import { WebhookTestCronService, WhatsappTestAPI } from 'src/engine/core-modules/arx-chat/controllers/whatsapp-test-api.controller';
+// import { WhatsappControllers } from 'src/engine/core-modules/arx-chat/controllers/whatsapp-api.controller';
 import { ArxChatEndpoint } from 'src/engine/core-modules/arx-chat/controllers/arx-chat-agent.controller';
 import { GoogleControllers } from 'src/engine/core-modules/arx-chat/controllers/google-calendar-mail-api.controller';
-import { WhatsappTestAPI } from 'src/engine/core-modules/arx-chat/controllers/whatsapp-test-api.controller';
+import { MetaWhatsappController } from 'src/engine/core-modules/arx-chat/controllers/meta-whatsapp.controller';
+import { WhatsappWebhook } from 'src/engine/core-modules/arx-chat/controllers/whatsapp-webhook.controller';
 import {
   CandidateEngagementCronService,
   CandidateStatusClassificationCronService,
@@ -19,6 +18,7 @@ import { GoogleCalendarModule } from 'src/engine/core-modules/calendar-events/go
 import { DataSourceEntity } from 'src/engine/metadata-modules/data-source/data-source.entity';
 // import { FeatureFlagEntity } from '../feature-flag/feature-flag.entity';
 import { AppToken } from 'src/engine/core-modules/app-token/app-token.entity';
+// import { ExtSockWhatsappController } from 'src/engine/core-modules/arx-chat/controllers/ext-sock-whatsapp.controller';
 import { VideoInterviewProcessController } from 'src/engine/core-modules/arx-chat/controllers/video-interview-process-controller';
 import { ExtSockWhatsappMessageProcessor } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/ext-sock-whatsapp-message-process';
 import { ExtSockWhatsappController } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/ext-sock-whatsapp.controller';
@@ -61,14 +61,12 @@ import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/work
   controllers: [
     ArxChatEndpoint,
     WhatsappWebhook,
-    WhatsappControllers,
-    WhatsappTestAPI,
+    MetaWhatsappController,
     TwilioControllers,
     GoogleControllers,
     VideoInterviewProcessController,
     ExtSockWhatsappController,
   ],
-  // providers: [CandidateStatusClassificationCronService, WebhookTestCronService, PersonService,CandidateEngagementCronService, CandidateService, WorkspaceDataSourceService],
   providers: [
     CandidateStatusClassificationCronService,
     LinkedinSockIncomingMessageFetchingCronService,

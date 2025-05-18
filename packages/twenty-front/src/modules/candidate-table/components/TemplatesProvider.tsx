@@ -15,7 +15,7 @@ export const TemplatesProvider = ({ children }: { children: React.ReactNode }) =
       try {
         setTemplates(prev => ({ ...prev, isLoading: true }));
         const response = await axios.get(
-          `${process.env.REACT_APP_SERVER_BASE_URL}/whatsapp-test/get-templates`,
+          `${process.env.REACT_APP_SERVER_BASE_URL}/meta-whatsapp-controller/get-templates`,
           { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } },
         );
 

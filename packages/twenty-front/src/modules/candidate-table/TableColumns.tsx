@@ -158,9 +158,7 @@ export const TableColumns = ({
   };
 
   const urlRenderer: ColumnRenderer = (instance, td, row, column, prop, value) => {
-    // Clear any previous content
-    td.innerHTML = '';
-    
+    td.innerHTML = '';    
     if (!value || value === 'N/A' || typeof value !== 'string') {
       const div = document.createElement('div');
       Object.assign(div.style, truncatedCellStyle);
@@ -178,16 +176,14 @@ export const TableColumns = ({
     // Create hyperlink element
     const link = document.createElement('a');
     link.href = url;
-    link.target = '_blank'; // Open in new tab
-    link.rel = 'noopener noreferrer'; // Security best practice
-    link.textContent = value; // Display original value as text
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.textContent = value; 
     
-    // Apply styling
     Object.assign(link.style, truncatedCellStyle);
-    link.style.color = '#1976d2'; // Standard link color
-    link.style.textDecoration = 'none'; // No underline by default
+    link.style.color = '#1976d2';
+    link.style.textDecoration = 'none';
     
-    // Add hover effect
     link.onmouseover = () => {
       link.style.textDecoration = 'underline';
     };
@@ -195,20 +191,16 @@ export const TableColumns = ({
       link.style.textDecoration = 'none';
     };
     
-    // Stop propagation on all events to prevent table from handling them
     link.addEventListener('click', (e) => {
       e.stopPropagation();
       e.stopImmediatePropagation();
-      // Let the default browser behavior handle the link
     });
     
-    // Also stop mousedown event which triggers Handsontable selection
     link.addEventListener('mousedown', (e) => {
       e.stopPropagation();
       e.stopImmediatePropagation();
     });
     
-    // And prevent selection handler from triggering on mouseup
     link.addEventListener('mouseup', (e) => {
       e.stopPropagation();
       e.stopImmediatePropagation();
@@ -218,13 +210,10 @@ export const TableColumns = ({
     return td;
   };
 
-  // Create date renderer
   const dateRenderer: ColumnRenderer = (instance, td, row, column, prop, value) => {
     td.innerHTML = '';
-    
     const div = document.createElement('div');
     Object.assign(div.style, truncatedCellStyle);
-    
     if (value) {
       div.textContent = formatToHumanReadableDateTime(value);
     } else {
@@ -235,14 +224,11 @@ export const TableColumns = ({
     return td;
   };
 
-  // Generate column definitions
   const columns: Handsontable.ColumnSettings[] = [];
 
-  // Add checkbox column first
   columns.push({
     data: 'checkbox',
     type: 'checkbox',
-    // Handsontable expects title as string; custom header must be set via colHeaders in DataTable.tsx
     title: '',
     width: 40,
     readOnly: false,
@@ -250,7 +236,6 @@ export const TableColumns = ({
     className: 'htCenter htMiddle',
   });
 
-  // Add name column second (usually the most important)
   columns.push({
     data: 'name',
     title: 'Name',
@@ -258,7 +243,6 @@ export const TableColumns = ({
     renderer: nameRenderer,
   });
 
-  // Add other commonly used columns
   const commonColumns = ['email', 'phone', 'status', 'source'];
   commonColumns.forEach(column => {
     if (allKeys.has(column) && !excludedFields.includes(column)) {
@@ -272,15 +256,12 @@ export const TableColumns = ({
     }
   });
 
-  // Add remaining columns
   Array.from(allKeys)
     .filter(key => !excludedFields.includes(key))
     .sort()
     .forEach(key => {
-      // Check if this key should use URL renderer or date renderer
       const isUrlField = urlFields.includes(key);
       const isDateField = key === 'createdAt' || key === 'updatedAt' || key === 'deletedAt';
-      
       columns.push({
         data: key,
         title: key.charAt(0).toUpperCase() + key.slice(1),

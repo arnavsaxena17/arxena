@@ -204,8 +204,8 @@ export class GoogleControllers {
   @UseGuards(JwtAuthGuard)
   async sendEmailToSelf(@Req() request: any): Promise<object> {
     const apiToken = request.headers.authorization.split(' ')[1];
-
-    const recruiterProfile = await getRecruiterProfileFromCurrentUser(apiToken);
+    const origin = request.headers.origin;
+    const recruiterProfile = await getRecruiterProfileFromCurrentUser(apiToken, origin);
     // const candidateJob: Jobs = candidateNode?.jobs;
     const emailData: GmailMessageData = {
       sendEmailFrom: recruiterProfile?.email,
