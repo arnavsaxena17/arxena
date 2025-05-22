@@ -667,8 +667,10 @@ export class CandidateService {
       const jobObject = await this.getJobDetails(jobId, jobName, apiToken);
 
       console.log('This is the josb:', jobObject);
+
       if (!jobObject) {
         console.log('Job not found');
+        
       }
       // const googleSheetId = jobObject?.googleSheetId || '';
 
@@ -767,66 +769,109 @@ export class CandidateService {
   ) {
     try {
       console.log('This is tracking in processCandidatesBatch:');
-
+  
       const uniqueStringKeys = batch
         .map((p) => p?.unique_key_string)
         .filter(Boolean);
-
+  
       console.log('Checking candidates with keys:', uniqueStringKeys);
       const candidatesMap = await this.batchCheckExistingCandidates(
         uniqueStringKeys,
         jobObject.id,
         apiToken,
       );
-
+  
+      console.log('Candidates map:', candidatesMap);
       const workspaceId = await this.getWorkspaceIdFromToken(apiToken);
-
-
+      console.log('Workspace ID:', workspaceId);
+  
       const whatsapp_key = await this.workspaceQueryService.getWorkspaceApiKey(
         workspaceId,
         'whatsapp_key',
       ) || 'whatsapp-web';
       console.log('whatsapp_key:', whatsapp_key);
-      console.log('Candidates map:', candidatesMap);
+      
       const candidatesToCreate: ArxenaCandidateNode[] = [];
       const candidateKeys: string[] = [];
-
+      
+      const candidatesToUpdate: Array<{
+        candidateId: string;
+        personId: string;
+        profile: UserProfile;
+        missingFields: string[];
+      }> = [];
+  
       for (const profile of batch) {
         const key = profile?.unique_key_string;
-
+  
         if (!key) continue;
-
+  
         const existingCandidate = candidatesMap.get(key);
-        // console.log('Existing candidate:', existingCandidate);
         const personId = tracking.personIdMap.get(key);
-
+  
         if (personId && !existingCandidate) {
           const { candidateNode } = await processArxCandidate(
             profile,
             jobObject,
             whatsapp_key,
           );
-
-          // console.log("Candidate Node:", candidateNode, "for pro  file:", profile);
+  
           candidateNode.peopleId = personId;
           candidatesToCreate.push(candidateNode);
           candidateKeys.push(key);
           results.manyCandidateObjects.push(candidateNode);
         } else if (existingCandidate) {
+          const missingFields: string[] = [];
+          
+          const isFieldEmpty = (field: any): boolean => {
+            if (!field) return true;
+            if (typeof field === 'string') return field.trim() === '';
+            if (typeof field === 'object') {
+              if (field.primaryPhoneNumber) return field.primaryPhoneNumber.trim() === '';
+              if (field.primaryEmail) return field.primaryEmail.trim() === '';
+              return Object.keys(field).length === 0;
+            }
+            return false;
+          };
+  
+          const candidatePhone = existingCandidate?.phoneNumber?.primaryPhoneNumber || existingCandidate?.phoneNumber;
+          const profilePhone = profile?.phone_number || profile?.mobile_phone || profile?.all_numbers?.[0];
+          
+          if (isFieldEmpty(candidatePhone) && profilePhone && profilePhone.trim() !== '') {
+            missingFields.push('phoneNumber');
+          }
+  
+          const candidateEmail = existingCandidate?.email?.primaryEmail || existingCandidate?.email;
+          const profileEmail = profile?.email_address?.[0] || profile?.all_mails?.[0];
+          
+          if (isFieldEmpty(candidateEmail) && profileEmail && profileEmail.trim() !== '') {
+            missingFields.push('email');
+          }
+  
+          if (missingFields.length > 0) {
+            candidatesToUpdate.push({
+              candidateId: existingCandidate.id,
+              personId: existingCandidate.peopleId || existingCandidate.people?.id,
+              profile,
+              missingFields
+            });
+          }
+  
           tracking.candidateIdMap.set(key, existingCandidate?.id);
         }
       }
-
+  
       console.log('Candidates to create:', candidatesToCreate.length);
+      console.log('Candidates to update:', candidatesToUpdate.length);
       console.log('Candidates candidateKeys:', candidateKeys);
       console.log('tracking.candidateIdMap:', tracking.candidateIdMap);
-
+  
       if (candidatesToCreate.length > 0) {
         const response = await this.createCandidates(
           candidatesToCreate,
           apiToken,
         );
-
+  
         console.log('Create candidates response:', response?.data);
         response?.data?.data?.createCandidates?.forEach(
           (candidate: { id: any }, idx: string | number) => {
@@ -835,6 +880,64 @@ export class CandidateService {
             }
           },
         );
+      }
+  
+      if (candidatesToUpdate.length > 0) {
+        console.log('Updating existing candidates with missing fields...');
+        
+        for (const updateCandidate of candidatesToUpdate) {
+          const { candidateId, personId, profile, missingFields } = updateCandidate;
+          
+          try {
+            for (const fieldName of missingFields) {
+              if (fieldName === 'phoneNumber') {
+                const phoneValue = profile?.phone_number || 
+                                 profile?.mobile_phone || 
+                                 profile?.all_numbers?.[0] || '';
+                
+                if (phoneValue && phoneValue.trim() !== '') {
+                  console.log(`Updating phone number for candidate ${candidateId} with value: ${phoneValue}`);
+                  await this.handlePhoneNumberUpdate(candidateId, phoneValue, apiToken);
+                }
+              } else if (fieldName === 'email') {
+                const emailValue = profile?.email_address?.[0] || 
+                                 profile?.all_mails?.[0] || '';
+                
+                if (emailValue && emailValue.trim() !== '') {
+                  console.log(`Updating email for candidate ${candidateId} with value: ${emailValue}`);
+                  
+                  const updateData = {"email": {primaryEmail: emailValue}};
+                  await axiosRequest(
+                    JSON.stringify({ 
+                      query: graphQltoUpdateOneCandidate, 
+                      variables: { 
+                        idToUpdate: candidateId, 
+                        input: updateData 
+                      } 
+                    }),
+                    apiToken
+                  );
+                  
+                  if (personId) {
+                    const response = await axiosRequest(
+                      JSON.stringify({ 
+                        query: mutationToUpdateOnePerson, 
+                        variables: {
+                          idToUpdate: personId, 
+                          input: {emails: {primaryEmail: emailValue}}
+                        }
+                      }),
+                      apiToken
+                    );
+                    console.log("Email update response:", response?.data?.data);
+                  }
+                }
+              }
+            }
+          } catch (error) {
+            console.log(`Error updating candidate ${candidateId}:`, error);
+          }
+        }
       }
     } catch (error) {
       console.log('Error processing candidates batch:1', error.data);

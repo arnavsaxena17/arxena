@@ -24,7 +24,7 @@ export const mapArxCandidateToCandidateNode = (candidate: {
   if (candidate?.data_source === 'linkedin') {
     whatsapp_key = 'linkedin';
   }
-  else if (candidate?.data_source.includes('naukri')) {
+  else if (candidate?.data_source?.includes('naukri')) {
     whatsapp_key = whatsapp_key
   }
   

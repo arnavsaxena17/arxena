@@ -237,7 +237,8 @@ export class ChatFlowConfigBuilder {
     chatFlowOrder: chatControlType[],
   ) {
     return (candidate: CandidateNode) => {
-      console.log('candidate name', candidate);
+      console.log("Creating filter logic for candidate", candidate.name);
+      // console.log('candidate name', candidate);
       console.log(
         'candidate whtasapp messages lenght',
         candidate.whatsappMessages.edges.length,

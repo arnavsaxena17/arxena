@@ -926,7 +926,6 @@ export class GoogleSheetsService {
 
       const headers = existingData.values[0];
 
-      // Find candidate row by unique key
       const uniqueKeyIndex = headers.findIndex(header => header.toLowerCase().includes('unique') && header.toLowerCase().includes('key'));
 
       if (uniqueKeyIndex === -1) {
@@ -934,7 +933,6 @@ export class GoogleSheetsService {
         return;
       }
 
-      // Find the row index of the candidate
       const rowIndex = existingData.values.findIndex(row => row[uniqueKeyIndex] === candidate.unique_key_string);
 
       if (rowIndex === -1) {
@@ -942,14 +940,12 @@ export class GoogleSheetsService {
         return;
       }
 
-      // Format updated row data
       const updatedRowData = this.formatCandidateRow(candidate, headers);
 
-      // Update the specific row
       await this.updateValues(
         auth,
         spreadsheetId,
-        `Sheet1!A${rowIndex + 1}`, // +1 because rows are 1-based
+        `Sheet1!A${rowIndex + 1}`,
         [updatedRowData],
         apiToken,
       );
