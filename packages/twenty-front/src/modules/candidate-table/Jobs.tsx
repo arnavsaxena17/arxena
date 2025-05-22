@@ -296,7 +296,9 @@ export const Jobs = () => {
                     Loading your Recruiter AI Models
                   </AnimatedPlaceholderEmptyTitle>
                   <AnimatedPlaceholderEmptySubTitle>
-                    Your AI powered models will be ready in 10 minutes. We will notify you when they are ready.
+                    Your AI powered models will be ready in about 10 minutes.
+                    <br />
+                    We will notify you when they are ready.
                   </AnimatedPlaceholderEmptySubTitle>
                 </AnimatedPlaceholderEmptyTextContainer>
               </AnimatedPlaceholderEmptyContainer>
@@ -306,8 +308,6 @@ export const Jobs = () => {
       </SpreadsheetImportProvider>
     );
   }
-
-  // If metadata is loaded, render the full component with context providers
   return (
     <SpreadsheetImportProvider>
       <RecordTableContextProvider value={{
