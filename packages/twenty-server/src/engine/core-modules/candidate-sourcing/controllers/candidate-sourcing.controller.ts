@@ -218,7 +218,7 @@ export class CandidateSourcingController {
       const url =
         process.env.ENV_NODE === 'production'
           ? 'https://arxena.com/process_enrichments'
-          : 'http://127.0.0.1:5050/process_enrichments';
+          : 'http://localhost:5050/process_enrichments';
       const response = await axios.post(
         url,
         {
@@ -290,7 +290,7 @@ export class CandidateSourcingController {
       const url =
         process.env.ENV_NODE === 'production'
           ? 'https://arxena.com/sync_job_candidate'
-          : 'http://127.0.0.1:5050/sync_job_candidate';
+          : 'http://localhost:5050/sync_job_candidate';
 
       console.log('url:', url);
       const response = await axios.post(
@@ -323,7 +323,7 @@ export class CandidateSourcingController {
       const url =
         process.env.ENV_NODE === 'production'
           ? 'https://arxena.com/transcribe_call'
-          : 'http://127.0.0.1:5050/transcribe_call';
+          : 'http://localhost:5050/transcribe_call';
 
       console.log('url:', url);
       const response = await axios.post(
@@ -500,10 +500,7 @@ export class CandidateSourcingController {
       const currentUser = await getCurrentUser(apiToken, origin);
       const recruiterId = currentUser?.workspaceMember?.id;
 
-      console.log(
-        'This is the currentUser?.workspaces:',
-        JSON.stringify(currentUser?.workspaces),
-      );
+      console.log( 'This is the currentUser?.workspaces:', JSON.stringify(currentUser?.workspaces) );
       console.log('This is the current user:', currentUser);
       console.log('This is the recruiter id:', recruiterId);
 
@@ -591,7 +588,7 @@ export class CandidateSourcingController {
       const url =
         process.env.ENV_NODE === 'production'
           ? 'https://arxena.com/create_new_job'
-          : 'http://127.0.0.1:5050/create_new_job';
+          : 'http://localhost:5050/create_new_job';
       const response = await axios.post(
         url,
         {
@@ -711,7 +708,7 @@ export class CandidateSourcingController {
           process.env.ARXENA_SITE_BASE_URL || 'https://arxena.com';
       }
       console.log('arxenaSiteBaseUrl:', arxenaSiteBaseUrl);
-      arxenaSiteBaseUrl = 'http://127.0.0.1:5050';
+      arxenaSiteBaseUrl = 'http://localhost:5050';
       const response = await axios.post(
         arxenaSiteBaseUrl + '/test-connection-from-arx-twenty',
         { jobId: 'some-id' },
@@ -989,28 +986,23 @@ export class CandidateSourcingController {
     apiToken: string,
   ): Promise<any> {
     try {
+      console.log('going to update job in arxena');
+
       const url =
         process.env.ENV_NODE === 'production'
           ? 'https://arxena.com/update_one_job'
-          : 'http://127.0.0.1:5050/update_one_job';
+          : 'http://localhost:5050/update_one_job';
+      
+      console.log('url:', url);
       const response = await axios.post(
         url,
-        {
-          job_name: jobName,
-          arxena_site_id: arxenaSiteId,
-        },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${apiToken}`,
-          },
-        },
+        { job_name: jobName, arxena_site_id: arxenaSiteId, },
+        { headers: {'Content-Type': 'application/json', Authorization: `Bearer ${apiToken}`}},
       );
-
+      console.log('response:', response.data);
       return response.data;
     } catch (error) {
       console.error('Error calling update job in Arxena:', error);
-
       return { data: error.message };
     }
   }

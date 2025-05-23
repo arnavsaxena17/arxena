@@ -176,11 +176,11 @@ export const useArxJDUpload = (objectNameSingular: string) => {
         );
         if (domainMatch) {
           return {
-            name: domainMatch.name,
-            companyId: domainMatch.id,
-            descriptionOneliner: domainMatch.descriptionOneliner || '',
-            id: domainMatch.id,
-            domainName: { primaryLinkUrl: domainMatch.domainName.primaryLinkUrl }
+            name: domainMatch?.name,
+            companyId: domainMatch?.id,
+            descriptionOneliner: domainMatch?.descriptionOneliner || '',
+            id: domainMatch?.id,
+            domainName: { primaryLinkUrl: domainMatch?.domainName?.primaryLinkUrl }
           };
         }
       }
@@ -301,13 +301,12 @@ export const useArxJDUpload = (objectNameSingular: string) => {
           if (data?.companyName) {
             matchedCompany = findBestCompanyMatch(data.companyName, data.companyWebsiteUrl);
             
-            // If no matching company is found, create a new one
             if (!matchedCompany && data.companyName.trim() !== '') {
               try {
                 const newCompany = await createOneCompanyRecord({
-                  name: data.companyName,
-                  ...(data.companyDetails ? { descriptionOneliner: data.companyDetails } : {}),
-                    ...(data.companyWebsiteUrl ? { domainName: { primaryLinkUrl: data.companyWebsiteUrl } } : {}),
+                  name: data?.companyName,
+                  ...(data?.companyDetails ? { descriptionOneliner: data?.companyDetails } : {}),
+                  ...(data?.companyWebsiteUrl ? { domainName: { primaryLinkUrl: data?.companyWebsiteUrl } } : {}),
                 });
                 
                 if (newCompany && newCompany.id) {

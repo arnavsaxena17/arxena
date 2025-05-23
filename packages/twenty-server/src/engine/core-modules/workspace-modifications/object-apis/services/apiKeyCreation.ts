@@ -124,7 +124,7 @@ export class ApiKeyService {
       console.log("process.env.ENV_NODE", process.env.ENV_NODE);
       if (process.env.ENV_NODE === 'development') {
 
-        arxenaSiteBaseUrl = process.env.REACT_APP_ARXENA_SITE_BASE_URL || 'http://127.0.0.1:5050';
+        arxenaSiteBaseUrl = process.env.REACT_APP_ARXENA_SITE_BASE_URL || 'http://localhost:5050';
       } else {
         arxenaSiteBaseUrl = process.env.REACT_APP_ARXENA_SITE_BASE_URL || 'https://arxena.com';
       }

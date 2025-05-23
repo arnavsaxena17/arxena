@@ -276,31 +276,33 @@ export class CandidateService {
   private async processBatches(
     data: UserProfile[],
     jobObject: Jobs,
-    // context: any,
     tracking: any,
     apiToken: string,
-    // googleSheetId: string,
   ): Promise<{
     manyPersonObjects: ArxenaPersonNode[];
     manyCandidateObjects: ArxenaCandidateNode[];
     allPersonObjects: PersonNode[];
-    // manyJobCandidateObjects: ArxenaJobCandidateNode[];
   }> {
     const results = {
       manyPersonObjects: [] as ArxenaPersonNode[],
       allPersonObjects: [] as PersonNode[],
       manyCandidateObjects: [] as ArxenaCandidateNode[],
-      // manyJobCandidateObjects: [] as ArxenaJobCandidateNode[],
     };
 
     console.log('This is the job object in processBatches:', jobObject);
+    if (!jobObject) {
+      throw new Error('jobObject is undefined in processBatches');
+    }
+    if (!jobObject.id) {
+      throw new Error(`jobObject.id is undefined in processBatches. jobObject: ${JSON.stringify(jobObject)}`);
+    }
 
     const uniqueStringKeys = data
       .map((p) => p?.unique_key_string)
       .filter(Boolean);
 
-      console.log(
-      'These are the uniqye string keys that are received::',
+    console.log(
+      'These are the unique string keys that are received::',
       uniqueStringKeys,
     );
 
@@ -311,21 +313,24 @@ export class CandidateService {
       tracking,
       apiToken,
     );
-    await this.processCandidatesBatch(
-      data,
-      jobObject,
-      results,
-      tracking,
-      apiToken,
-    );
+
+    try {
+      await this.processCandidatesBatch(
+        data,
+        jobObject,
+        results,
+        tracking,
+        apiToken,
+      );
+    } catch (error) {
+      console.error('Error in processCandidatesBatch:', error);
+      throw error;
+    }
 
     await this.createCandidateFieldsAndValues(data, jobObject, results, tracking, apiToken);
 
-
     return results;
   }
-
-
 
   async createCandidateFieldsAndValues(
     data: any, 
@@ -489,30 +494,26 @@ export class CandidateService {
     jobName: string,
     apiToken: string,
   ): Promise<Jobs> {
-    console.log('This is the jobID:', jobId);
-    console.log('This is the jobName:', jobName);
+    console.log('Getting job details - jobId:', jobId, 'jobName:', jobName);
     function isValidMongoDBId(str: string) {
-      console.log('This is the str:', str);
       if (!str || str.length !== 24) {
         return false;
       }
       const hexRegex = /^[0-9a-fA-F]{24}$/;
-    
       return hexRegex.test(str);
     }
     
     function isValidUUIDv4(str: string) {
-      console.log('This is the str:', str);
       const uuidV4Regex =
         /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
       return uuidV4Regex.test(str);
     }
 
     let graphlQlQuery: string;
+    let queryType = '';
 
     if (isValidUUIDv4(jobId)) {
-      console.log('Choosing the jobID via uuid:', jobId);
+      queryType = 'UUID';
       graphlQlQuery = JSON.stringify({
         query: graphqlToFindManyJobs,
         variables: {
@@ -522,7 +523,7 @@ export class CandidateService {
         },
       });
     } else if (isValidMongoDBId(jobId)) {
-      console.log('Choosing the jobID via arxenaSiteId:', jobId);
+      queryType = 'MongoDB ID';
       graphlQlQuery = JSON.stringify({
         query: graphqlToFindManyJobs,
         variables: {
@@ -531,8 +532,8 @@ export class CandidateService {
           orderBy: [{ position: 'AscNullsFirst' }],
         },
       });
-    } else {
-      console.log('Choosing the jobName via jobName:', jobName);
+    } else if (jobName) {
+      queryType = 'Job Name';
       graphlQlQuery = JSON.stringify({
         query: graphqlToFindManyJobs,
         variables: {
@@ -541,11 +542,37 @@ export class CandidateService {
           orderBy: [{ position: 'AscNullsFirst' }],
         },
       });
+    } else {
+      throw new Error('Invalid job identifier provided - neither valid ID nor name');
     }
 
-    const response = await axiosRequest(graphlQlQuery, apiToken);
-    console.log('This is the response:', response.data?.data?.jobs?.edges[0]?.node);
-    return response.data?.data?.jobs?.edges[0]?.node;
+    console.log(`Querying job by ${queryType}`);
+    
+    try {
+      const response = await axiosRequest(graphlQlQuery, apiToken);
+      const job = response?.data?.data?.jobs?.edges[0]?.node;
+      
+      if (!job) {
+        console.error('No job found in response:', response?.data);
+        throw new Error(`Job not found using ${queryType}`);
+      }
+      
+      if (!job.id) {
+        console.error('Invalid job data returned:', job);
+        throw new Error('Job found but missing ID');
+      }
+      
+      console.log('Successfully found job:', {
+        id: job.id,
+        name: job.name,
+        arxenaSiteId: job.arxenaSiteId
+      });
+      
+      return job;
+    } catch (error) {
+      console.error('Error fetching job details:', error);
+      throw new Error(`Failed to fetch job details: ${error.message}`);
+    }
   }
 
 
@@ -649,39 +676,29 @@ export class CandidateService {
     manyPersonObjects: ArxenaPersonNode[];
     manyCandidateObjects: ArxenaCandidateNode[];
     allPersonObjects: PersonNode[];
-    // manyJobCandidateObjects: ArxenaJobCandidateNode[];
     timestamp: string;
   }> {
     console.log('Queue has begun to be processed. ');
     try {
       const jobObject = await this.getJobDetails(jobId, jobName, apiToken);
 
-      console.log('This is the josb:', jobObject);
-
-      if (!jobObject) {
-        console.log('Job not found');
-        
+      console.log('This is the job:', jobObject);
+      if (!jobObject || !jobObject.id) {
+        throw new Error(`Job not found or invalid for jobId: ${jobId}, jobName: ${jobName}`);
       }
-      // const googleSheetId = jobObject?.googleSheetId || '';
-
       const tracking = {
         personIdMap: new Map<string, string>(),
         candidateIdMap: new Map<string, string>(),
       };
-
       console.log(
         'This is tracking of unique_key_string in processProfilesWithRateLimiting:',
         data.map((x) => x.unique_key_string),
       );
-
-      
       const results = await this.processBatches(
         data,
         jobObject,
-        // context,
         tracking,
         apiToken,
-        // googleSheetId,
       );
 
       return { ...results, timestamp };
@@ -758,7 +775,16 @@ export class CandidateService {
     apiToken: string,
   ) {
     try {
-      console.log('This is tracking in processCandidatesBatch:');
+      console.log('Starting processCandidatesBatch with jobObject:', jobObject);
+      
+      if (!jobObject) {
+        throw new Error('jobObject is undefined in processCandidatesBatch');
+      }
+      if (!jobObject.id) {
+        throw new Error(`jobObject.id is undefined in processCandidatesBatch. jobObject: ${JSON.stringify(jobObject)}`);
+      }
+
+      console.log('This is tracking in processCandidatesBatch:', tracking);
   
       const uniqueStringKeys = batch
         .map((p) => p?.unique_key_string)
@@ -819,8 +845,8 @@ export class CandidateService {
             if (!field) return true;
             if (typeof field === 'string') return field.trim() === '';
             if (typeof field === 'object') {
-              if (field.primaryPhoneNumber) return field.primaryPhoneNumber.trim() === '';
-              if (field.primaryEmail) return field.primaryEmail.trim() === '';
+              if ('primaryPhoneNumber' in field) return !field.primaryPhoneNumber || field.primaryPhoneNumber.trim() === '';
+              if ('primaryEmail' in field) return !field.primaryEmail || field.primaryEmail.trim() === '';
               return Object.keys(field).length === 0;
             }
             return false;
@@ -829,7 +855,6 @@ export class CandidateService {
           console.log('Current candidate phone:', candidatePhone);
           const profilePhone = profile?.phone_number || profile?.mobile_phone || profile?.all_numbers?.[0];
           console.log('Profile phone:', profilePhone);
-          
           if (isFieldEmpty(candidatePhone) && profilePhone && profilePhone.trim() !== '') {
             console.log('Adding phoneNumber to missing fields');
             missingFields.push('phoneNumber');
@@ -1312,10 +1337,12 @@ export class CandidateService {
       try {
         // Get the candidate to find the associated person
         
-        const candidateResponse = await axiosRequest(
-          JSON.stringify({ query: graphqlToFetchAllCandidateData, variables: { id: candidateId } }),
-          apiToken
-        );
+        const graphqlQueryObj = JSON.stringify({
+          query: graphqlToFetchAllCandidateData,
+          variables: { filter: { id: { eq: candidateId } } },
+        });
+        const candidateResponse = await axiosRequest(graphqlQueryObj, apiToken);
+  
         console.log("candidateResponse:", candidateResponse.data.data)
         const personId = candidateResponse?.data?.data?.candidates?.edges[0]?.node?.peopleId;
         console.log("personId:", personId)
@@ -1325,23 +1352,22 @@ export class CandidateService {
           await axiosRequest(
             JSON.stringify({ 
               query: mutationToUpdateOnePerson, 
-              variables: { 
+              variables: {
                 idToUpdate: personId, 
-                input: { phones: {primaryPhoneNumber: String(value)} } 
+                input: { phones: { primaryPhoneNumber: String(value) } }
               } 
             }),
             apiToken
           );
           console.log("person updated")
         }
-        
-        
+        console.log("this is the value of string value of phone number:", String(value))
         await axiosRequest(
           JSON.stringify({ 
             query: graphQltoUpdateOneCandidate, 
             variables: { 
               idToUpdate: candidateId, 
-              input: { phoneNumber: {primaryPhoneNumber: String(value)} } 
+              input: { phoneNumber: { primaryPhoneNumber: String(value) } } 
             } 
           }),
           apiToken

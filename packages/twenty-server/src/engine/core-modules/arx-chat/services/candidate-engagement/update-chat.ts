@@ -138,7 +138,7 @@ export class UpdateChat {
     const url =
       process.env.ENV_NODE === 'production'
         ? 'https://arxena.com/create-shortlist'
-        : 'http://127.0.0.1:5050/create-shortlist';
+        : 'http://localhost:5050/create-shortlist';
 
     console.log('This is the url:', url);
     console.log(
@@ -166,7 +166,7 @@ export class UpdateChat {
     const url =
       process.env.ENV_NODE === 'production'
         ? 'https://arxena.com/create-shortlist-document'
-        : 'http://127.0.0.1:5050/create-shortlist-document';
+        : 'http://localhost:5050/create-shortlist-document';
 
     console.log('This is the url:', url);
     console.log(
@@ -194,7 +194,7 @@ export class UpdateChat {
     const url =
       process.env.ENV_NODE === 'production'
         ? 'https://arxena.com/create-create_gmail_draft_shortlist'
-        : 'http://127.0.0.1:5050/create_gmail_draft_shortlist';
+        : 'http://localhost:5050/create_gmail_draft_shortlist';
 
     console.log('This is the url:', url);
     console.log(
@@ -225,7 +225,7 @@ export class UpdateChat {
     const url =
       process.env.ENV_NODE === 'production'
         ? 'https://arxena.com/chat_based_shortlist_delivery'
-        : 'http://127.0.0.1:5050/chat_based_shortlist_delivery';
+        : 'http://localhost:5050/chat_based_shortlist_delivery';
 
     console.log('This is the url:', url);
     console.log(
@@ -251,7 +251,7 @@ export class UpdateChat {
     const url =
       process.env.ENV_NODE === 'production'
         ? 'https://arxena.com/create-interview-videos'
-        : 'http://127.0.0.1:5050/create-interview-videos';
+        : 'http://localhost:5050/create-interview-videos';
 
     console.log('This is the url:', url);
     console.log('going to create jobId based interview videos', jobId);
@@ -274,7 +274,7 @@ export class UpdateChat {
     const url =
       process.env.ENV_NODE === 'production'
         ? 'https://arxena.com/test_arxena_connection'
-        : 'http://127.0.0.1:5050/test_arxena_connection';
+        : 'http://localhost:5050/test_arxena_connection';
 
     console.log('This is the url:', url);
     const response = await axios.post(

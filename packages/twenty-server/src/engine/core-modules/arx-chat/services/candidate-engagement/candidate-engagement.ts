@@ -1275,7 +1275,7 @@ export default class CandidateEngagementArx {
       console.log("These are the fetch linkedin sock messages")
       let data = JSON.stringify({});
       const arxenaSiteBaseUrl =
-      process.env.ARXENA_SITE_BASE_URL || 'http://127.0.0.1:5050';
+      process.env.ARXENA_SITE_BASE_URL || 'http://localhost:5050';
 
 
       console.log("arxenaSiteBaseUrl::", arxenaSiteBaseUrl)

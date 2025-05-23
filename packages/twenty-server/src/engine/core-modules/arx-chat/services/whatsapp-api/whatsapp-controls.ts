@@ -416,7 +416,7 @@ export class WhatsappControls {
     if (process.env.WHATSAPP_API === 'ext-sock-whatsapp') {
       try {
         const arxenaSiteBaseUrl =
-          process.env.ARXENA_SITE_BASE_URL || 'http://127.0.0.1:5050';
+          process.env.ARXENA_SITE_BASE_URL || 'http://localhost:5050';
 
         // Read the file from the local path
         const fileBuffer = await fs.promises.readFile(

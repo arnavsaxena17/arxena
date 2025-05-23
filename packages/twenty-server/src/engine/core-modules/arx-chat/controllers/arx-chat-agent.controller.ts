@@ -1240,27 +1240,20 @@ export class ArxChatEndpoint {
       }
 
       const arxenaSiteBaseUrl =
-        process.env.ARXENA_SITE_BASE_URL || 'http://127.0.0.1:5050';
+        process.env.ARXENA_SITE_BASE_URL || 'http://localhost:5050';
 
       console.log('arxenaSiteBaseUrl:', arxenaSiteBaseUrl);
-      // Process the JD using the process-jd endpoint
       const processResponse = await axios.post(
         `${arxenaSiteBaseUrl}/upload-jd`,
-        {
-          jobId,
-          attachmentUrl,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${request.headers.authorization}`,
-          },
-        },
+        { jobId, attachmentUrl, },
+        { headers: { Authorization: `Bearer ${request.headers.authorization.split(' ')[1]}`, 'Content-Type': 'application/json' }, },
       );
 
       console.log('Received processed jd uploaded ::', processResponse.data);
 
       return processResponse.data;
     } catch (error) {
+      console.log('Error in uploadJD servers side:', error);
       throw new HttpException(
         error.message || 'Failed to process JD',
         error.status || HttpStatus.INTERNAL_SERVER_ERROR,
