@@ -79,7 +79,7 @@ export class CandidateSourcingController {
   @UseGuards(JwtAuthGuard)
   async findManyEnrichments(@Req() request: any): Promise<object> {
     const apiToken = request.headers.authorization.split(' ')[1]; // Assuming Bearer token
-
+    console.log('going to find many enrichments:', apiToken);
     try {
       const graphqlQueryObj = JSON.stringify({
         query: graphQlTofindManyCandidateEnrichments,
@@ -87,7 +87,9 @@ export class CandidateSourcingController {
       });
 
       const response = await axiosRequest(graphqlQueryObj, apiToken);
-
+      console.log('response from find many enrichments:', response.data.data.candidateEnrichments.edges.map(
+        (edge: any) => edge.node,
+      ));
       return {
         status: 'Success',
         data: response.data.data.candidateEnrichments.edges.map(
