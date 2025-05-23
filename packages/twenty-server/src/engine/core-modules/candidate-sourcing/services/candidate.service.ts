@@ -334,27 +334,21 @@ export class CandidateService {
     tracking: any, 
     apiToken: string
   ): Promise<void> {
-    // Get workspaceId from token
     const workspaceId = await this.getWorkspaceIdFromToken(apiToken);
     
-    // Initialize fields for this workspace if not already done
     await this.initializeCandidateFields(workspaceId, apiToken);
     
-    // const { manyCandidateObjects } = results;
     const uniqueFields = new Set<string>();
     const fieldValuesToCreate: any[] = [];
     const workspaceFieldsMap = this.candidateFieldsMap.get(workspaceId) || new Map();
     console.log('This is the workspaceFieldsMap:', workspaceFieldsMap);
-    // Log all fields being processed
     console.log('=== Field Processing Summary ===');
     console.log('Total candidates being processed:', data.length);
 
-    // First pass: collect all unique fields from unmapped objects
     for (const candidate of data) {
       console.log('This is the candidate:', candidate);
       const { unmappedCandidateObject, personNode, candidateNode } = await generateCompleteMappings(candidate, jobObject);
       
-      // Log fields that are part of people
       if (personNode) {
         console.log('\nFields part of Person object:');
         Object.keys(personNode).forEach(fieldName => {
@@ -362,7 +356,6 @@ export class CandidateService {
         });
       }
 
-      // Log fields that are part of candidate
       if (candidateNode) {
         console.log('\nFields part of Candidate object:');
         Object.keys(candidateNode).forEach(fieldName => {
@@ -370,7 +363,6 @@ export class CandidateService {
         });
       }
 
-      // Log unmapped fields
       if (unmappedCandidateObject) {
         console.log('\nUnmapped fields:');
         unmappedCandidateObject.forEach((fieldName: any) => {
@@ -380,24 +372,22 @@ export class CandidateService {
       }
     }
 
-    // Log existing workspace fields
     console.log('\nExisting workspace fields:');
+
     workspaceFieldsMap.forEach((field, name) => {
       console.log(`- ${name} (ID: ${field.id})`);
     });
 
     console.log('This is the uniqueFields:', uniqueFields);
-    // Second pass: create missing fields and collect values
     console.log('\nProcessing unique fields:');
     for (const fieldName of uniqueFields) {
       if (!workspaceFieldsMap.has(fieldName)) {
         console.log(`\nCreating new field: ${fieldName}`);
-        // Create the field if it doesn't exist
         const createFieldQuery = createOneCandidateField;
         const fieldVariables = {
           input: {
             name: fieldName.toString(),
-            candidateFieldType: 'Text', // Default to Text type, you can make this smarter based on the value type
+            candidateFieldType: 'Text',
           }
         };
 
@@ -820,9 +810,11 @@ export class CandidateService {
           candidatesToCreate.push(candidateNode);
           candidateKeys.push(key);
           results.manyCandidateObjects.push(candidateNode);
-        } else if (existingCandidate) {
-          const missingFields: string[] = [];
+          console.log('Candidate created:', candidateNode);
           
+        } else if (existingCandidate) {
+          console.log('Existing candidate found:', existingCandidate);
+          const missingFields: string[] = [];
           const isFieldEmpty = (field: any): boolean => {
             if (!field) return true;
             if (typeof field === 'string') return field.trim() === '';
@@ -833,22 +825,33 @@ export class CandidateService {
             }
             return false;
           };
-  
           const candidatePhone = existingCandidate?.phoneNumber?.primaryPhoneNumber || existingCandidate?.phoneNumber;
+          console.log('Current candidate phone:', candidatePhone);
           const profilePhone = profile?.phone_number || profile?.mobile_phone || profile?.all_numbers?.[0];
+          console.log('Profile phone:', profilePhone);
           
           if (isFieldEmpty(candidatePhone) && profilePhone && profilePhone.trim() !== '') {
+            console.log('Adding phoneNumber to missing fields');
             missingFields.push('phoneNumber');
+          } else {
+            console.log('No phone number to update');
           }
   
           const candidateEmail = existingCandidate?.email?.primaryEmail || existingCandidate?.email;
+          console.log('Current candidate email:', candidateEmail);
           const profileEmail = profile?.email_address?.[0] || profile?.all_mails?.[0];
+          console.log('Profile email:', profileEmail);
           
           if (isFieldEmpty(candidateEmail) && profileEmail && profileEmail.trim() !== '') {
+            console.log('Adding email to missing fields');
             missingFields.push('email');
+          } else {
+            console.log('No email to update');
           }
   
+          console.log('Missing fields:', missingFields);
           if (missingFields.length > 0) {
+            console.log('Missing fields:', missingFields);
             candidatesToUpdate.push({
               candidateId: existingCandidate.id,
               personId: existingCandidate.peopleId || existingCandidate.people?.id,
@@ -1043,7 +1046,6 @@ export class CandidateService {
 
     if (!fieldMetadata) return null;
 
-    // Handle nested objects based on the object type
     switch (fieldMetadata.objectType) {
       case 'groupHrHeadJobCandidate':
         return candidate[fieldMetadata.fieldName];
@@ -1066,7 +1068,7 @@ export class CandidateService {
       RawJson: 'IconJson',
     };
 
-    return iconMap[fieldType] || 'IconAbc'; // Default to text icon if type not found
+    return iconMap[fieldType] || 'IconAbc';
   };
 
   private createFieldDefinition(
@@ -1077,7 +1079,6 @@ export class CandidateService {
     const fieldsCreator = new CreateFieldsOnObject();
     const icon = fieldType === 'Number' ? 'IconNumbers' : 'IconAbc';
 
-    // Add validation
     const methodName = `create${fieldType}`;
 
     if (!(methodName in fieldsCreator)) {
@@ -1107,7 +1108,6 @@ export class CandidateService {
         error,
       );
 
-      // Fallback to TextField if there's an error
       return fieldsCreator.createTextField({
         label: this.formatFieldLabel(fieldName),
         name: fieldName,
@@ -1118,7 +1118,6 @@ export class CandidateService {
   }
 
   private determineFieldType(fieldName: string): string {
-    // Match exact method names in CreateFieldsOnObject
     if (
       fieldName.includes('year') ||
       fieldName.includes('months') ||
@@ -1133,7 +1132,6 @@ export class CandidateService {
     ) {
       return 'NumberField';
     }
-
     if (
       fieldName.includes('link') ||
       fieldName.includes('profileUrl') ||
@@ -1141,11 +1139,9 @@ export class CandidateService {
     ) {
       return 'LinkField';
     }
-
     if (fieldName.includes('lastUpdated') || fieldName.includes('lastActive')) {
       return 'DateTimeField';
     }
-
     if (
       fieldName.includes('multi') ||
       fieldName.includes('skills') ||
@@ -1153,7 +1149,6 @@ export class CandidateService {
     ) {
       return 'SelectField';
     }
-
     return 'TextField';
   }
 
@@ -1526,31 +1521,25 @@ export class CandidateService {
     apiToken: string,
   ): Promise<any> {
     try {
-      // Set up the filter to get candidate fields for this job
       const variables = {
         filter: { id: { eq: jobId } },
         orderBy: [{ position: 'AscNullsFirst' }],
-        limit: 100 // Adjust limit as needed
+        limit: 100
       };
 
-      // Use the graphqlQueryToFindManyCandidateFields query from twenty-shared
       const query = graphqlToFindManyJobs;
       
-      // Execute the GraphQL query
       const response = await axiosRequest(
         JSON.stringify({ query, variables }),
         apiToken
       );
       console.log('This is the response:', response.data.data?.jobs?.edges[0]?.node?.candidates?.edges[0]?.node?.candidateFieldValues?.edges.map((edge: any) => edge.node.candidateFields.name));
-      // Process and return the results
       const candidateFieldsJobs = response?.data?.data?.jobs?.edges[0]?.node?.candidateFields?.edges || [];
       const candidateFields = response.data.data?.jobs?.edges[0]?.node?.candidates?.edges[0]?.node?.candidateFieldValues?.edges.map((edge: any) => edge.node.candidateFields.name) || [];
-      // Return a cleaned up version of the fields
       return candidateFields;
     } catch (error) {
       console.error('Error fetching candidate fields by job ID:', error);
       throw error;
     }
   }
-
 }
