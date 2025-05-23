@@ -4,7 +4,6 @@ import { useObjectMetadataItem } from '@/object-metadata/hooks/useObjectMetadata
 import styled from '@emotion/styled';
 import { IconEdit } from '@tabler/icons-react';
 import { Button } from '@ui/input/button/components/Button';
-import axios from 'axios';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { IconAlertCircle, IconPlus, IconX } from 'twenty-ui';
@@ -258,49 +257,34 @@ interface DynamicModelCreatorProps {
   objectNameSingular: string;
   index: number;
   onError: (error: string) => void;
+  candidateFields: Array<{name: string, label: string}>;
+  isLoadingFields: boolean;
+  apiError: string | null;
 }
 
-
-// const validateFieldName = (name: string) => {
-//   if (!name) {
-//     return 'Field name is required';
-//   }
-  
-//   // Add camelCase validation
-//   if (!/^[a-z][a-zA-Z0-9]*$/.test(name)) {
-//     return 'Field name must be in camelCase (start with lowercase letter, followed by letters/numbers)';
-//   }
-  
-//   const isDuplicate = fields.some(
-//     (field: { name: string; id: number }) => 
-//       field.name.toLowerCase() === name.toLowerCase() && 
-//       field.id !== editingFieldId
-//   );
-  
-//   if (isDuplicate) {
-//     return 'Field name must be unique';
-//   }
-  
-//   return '';
-// };
-
-
-// Component Implementation
 const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({ 
   objectNameSingular, 
   index, 
-  onError, // Add this prop
-
+  onError,
+  candidateFields,
+  isLoadingFields,
+  apiError
 }) => {
   const [showAddField, setShowAddField] = useState(false);
   const [editingFieldId, setEditingFieldId] = useState<number | null>(null);
   const [enrichments, setEnrichments] = useRecoilState(enrichmentsState);
   const [error, setError] = useState<string>('');
-  const [candidateFields, setCandidateFields] = useState<Array<{name: string, label: string}>>([]);
-  const [isLoadingFields, setIsLoadingFields] = useState(false);
-  const [apiError, setApiError] = useState<string | null>(null);
-  const currentJobId = useRecoilValue(currentJobIdState);
-  const [tokenPair] = useRecoilState(tokenPairState);
+  const [newField, setNewField] = useState<{
+    name: string;
+    type: string;
+    description: string;
+    enumValues: string[];
+  }>({
+    name: '',
+    type: 'text',
+    description: '',
+    enumValues: []
+  });
 
   // Initialize local state with deep copy of current enrichment
   const currentEnrichment = useMemo(() => ({
@@ -310,110 +294,9 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
   }), [enrichments, index]);
 
   const [fields, setFields] = useState(currentEnrichment.fields);
-  const [newField, setNewField] = useState({
-    name: '',
-    type: 'text',
-    description: '',
-    enumValues: [] as string[], // Add this line
 
-  });
-
-  // Add a state to track if fields have been fetched
-  const [fieldsFetched, setFieldsFetched] = useState(false);
-
-  // Fetch candidate fields only once when component mounts or jobId changes
-  const fetchCandidateFields = useCallback(async () => {
-    try {
-      setIsLoadingFields(true);
-      setApiError(null);
-      
-      // Get jobId from the Recoil state
-      const jobId = currentJobId;
-      
-      if (jobId) {
-        try {
-          console.log('Fetching candidate fields for job ID:', jobId);
-          
-          const response = await axios.post(
-            `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/get-candidate-fields-by-job`,
-            { jobId },
-            {
-              headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
-              },
-            }
-          );
-          
-          if (response.data.status === 'Success' && response.data.candidateFields) {
-            console.log('Received candidate fields:', response.data.candidateFields);
-            setCandidateFields(response.data.candidateFields);
-            
-            // Update enrichment state with job ID if not already set
-            if (!enrichments[index]?.jobId) {
-              setEnrichments(prev => {
-                const newEnrichments = [...prev];
-                if (newEnrichments[index]) {
-                  newEnrichments[index] = {
-                    ...newEnrichments[index],
-                    jobId: jobId
-                  };
-                }
-                return newEnrichments;
-              });
-            }
-          } else {
-            console.warn('No fields returned from API or unexpected response format');
-            setApiError('No custom fields found for this job');
-          }
-        } catch (error) {
-          console.error('Error fetching candidate fields:', error);
-          setApiError('Error fetching candidate fields');
-        }
-      } else {
-        console.warn('No job ID available in Recoil state');
-        setApiError('No job ID available');
-      }
-    } catch (error) {
-      console.error('Error in fetchCandidateFields:', error);
-      setApiError('Unexpected error occurred');
-    } finally {
-      setIsLoadingFields(false);
-    }
-  }, [currentJobId, tokenPair?.accessToken?.token, index, setEnrichments]);
-
-  // Fetch candidate fields only once when component mounts or jobId changes
-  useEffect(() => {
-    if (!fieldsFetched && currentJobId) {
-      fetchCandidateFields();
-      setFieldsFetched(true);
-    }
-  }, [fetchCandidateFields, currentJobId, fieldsFetched]);
-
-  // Reset fieldsFetched when index changes (switching between enrichments)
-  useEffect(() => {
-    setFieldsFetched(false);
-  }, [index]);
-
-  const handleFieldNameValidation = (name: string) => {
-    const validationError = validateFieldName(name);
-    if (validationError) {
-      onError(validationError);
-      return false;
-    }
-    onError('');
-    return true;
-  };
-
-
-  const handleFieldNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newName = e.target.value;
-    handleFieldNameValidation(newName);
-    setNewField({ ...newField, name: newName });
-  };
-
-
-
+  const currentJobId = useRecoilValue(currentJobIdState);
+  const [tokenPair] = useRecoilState(tokenPairState);
 
   // Reset local state when switching enrichments
   useEffect(() => {
@@ -426,9 +309,8 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
         name: '',
         type: 'text',
         description: '',
-        enumValues:[]
+        enumValues: []
       });
-
 
       if (typeof currentEnrichment.bestOf === 'undefined') {
         setEnrichments(prev => {
@@ -442,13 +324,12 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
           return newEnrichments;
         });
       }
-
       
       setShowAddField(false);
       setEditingFieldId(null);
       setError('');
     }
-  }, [index, enrichments]);
+  }, [index, enrichments, setEnrichments]);
 
   // Update enrichment state only when local state changes
   const { objectMetadataItem } = useObjectMetadataItem({

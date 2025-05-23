@@ -80,6 +80,9 @@ interface ArxEnrichRightSideContainerProps {
   closeModal: () => void;
   objectNameSingular: string;
   objectRecordId: string;
+  candidateFields: Array<{name: string, label: string}>;
+  isLoadingFields: boolean;
+  apiError: string | null;
 }
 const LoadingOverlay = styled.div`
   position: absolute;
@@ -99,19 +102,20 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
   closeModal, 
   objectNameSingular, 
   objectRecordId,
+  candidateFields,
+  isLoadingFields,
+  apiError
 }) => {
   const [activeEnrichment, setActiveEnrichment] = useRecoilState(activeEnrichmentState);
   const [enrichments, setEnrichments] = useRecoilState(enrichmentsState);
   const [tokenPair] = useRecoilState(tokenPairState);
-  const [error, setError] = useState<string>(''); // Add this line
+  const [error, setError] = useState<string>('');
   const [fieldErrors, setFieldErrors] = useState<string[]>([]);
-    // Add loading state and style
   const [isLoading, setIsLoading] = useState(false);
   const { enqueueSnackBar } = useSnackBar();
   const setRefreshTableDataTrigger = useSetRecoilState(refreshTableDataTriggerState);
   const jobId = useRecoilValue(currentJobIdState);
 
-  
   const handleError = (newError: string) => {
     setError(newError);
     if (newError) {
@@ -257,7 +261,9 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
             objectNameSingular={objectNameSingular} 
             index={activeEnrichment}
             onError={handleError}
-
+            candidateFields={candidateFields}
+            isLoadingFields={isLoadingFields}
+            apiError={apiError}
           />
         )}
       </StyledQuestionsContainer>

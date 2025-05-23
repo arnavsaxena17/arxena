@@ -4,6 +4,7 @@ import { TableContainer } from "@/candidate-table/components/styled";
 import { ArxEnrichmentModal } from '@/arx-enrich/arxEnrichmentModal';
 import { useSelectedRecordForEnrichment } from "@/arx-enrich/hooks/useSelectedRecordForEnrichment";
 import { isArxEnrichModalOpenState } from "@/arx-enrich/states/arxEnrichModalOpenState";
+import { currentJobIdState } from "@/arx-enrich/states/currentJobIdState";
 import { ArxJDUploadModal } from '@/arx-jd-upload/components/ArxJDUploadModal';
 import { isArxUploadJDModalOpenState } from "@/arx-jd-upload/states/arxUploadJDModalOpenState";
 import { ChatOptionsDropdownButton } from "@/candidate-table/ChatOptionsDropdownButton";
@@ -81,6 +82,7 @@ const StyledButtonContainer = styled.div`
 
 export const JobPage: React.FC = () => {
   const [jobId, setJobId] = useRecoilState(jobIdAtom);
+  const [, setCurrentJobId] = useRecoilState(currentJobIdState);
   const jobs = useRecoilValue(jobsState);
   const theme = useTheme();
   const location = useLocation();
@@ -107,6 +109,7 @@ export const JobPage: React.FC = () => {
       alert('Please select a candidate to enrich');
       return;
     }
+    setCurrentJobId(jobId);
     setIsArxEnrichModalOpen(true);
   };
 

@@ -1,10 +1,13 @@
 import styled from '@emotion/styled';
+import axios from 'axios';
+import { useCallback, useEffect, useState } from 'react';
 import { useRecoilState } from 'recoil';
 
 import { ArxEnrichLeftSideContainer } from '@/arx-enrich/left-side/ArxEnrichLeftSideContainer';
 import { ArxEnrichRightSideContainer } from '@/arx-enrich/right-side/ArxEnrichRightSideContainer';
-import { isArxEnrichModalOpenState } from '@/arx-enrich/states/arxEnrichModalOpenState';
-
+import { enrichmentsState, isArxEnrichModalOpenState } from '@/arx-enrich/states/arxEnrichModalOpenState';
+import { currentJobIdState } from '@/arx-enrich/states/currentJobIdState';
+import { tokenPairState } from '@/auth/states/tokenPairState';
 
 const StyledModalContainer = styled.div`
   background-color: solid;
@@ -32,8 +35,6 @@ const StyledModalBackdrop = styled.div`
   pointer-events: all; /* Ensures clicks are captured by this element */
 `;
 
-
-
 const StyledAdjuster = styled.div`
   display: flex;
   width: 100%;
@@ -41,9 +42,7 @@ const StyledAdjuster = styled.div`
   padding: 0 120px;
   justify-content: center;
   align-items: center;
-
 `;
-
 
 export interface Enrichment {
   modelName: string;
@@ -58,7 +57,6 @@ export interface Enrichment {
   selectedModel: string;
   selectedMetadataFields: string[];
 }
-
 
 const StyledModal = styled.div`
   background-color: ${({ theme }) => theme.background.tertiary};
@@ -79,7 +77,6 @@ const StyledModal = styled.div`
     & * {
     pointer-events: auto;
   }
-
 
   /* Add custom scrollbar styling */
   ::-webkit-scrollbar {
@@ -106,7 +103,6 @@ const StyledModal = styled.div`
   scrollbar-color: ${({ theme }) => `${theme.background.quaternary || '#888'} ${theme.background.tertiary}`};
 `;
 
-
 const ScrollableContent = styled.div`
   display: flex;
   flex-direction: row;
@@ -124,28 +120,70 @@ export const ArxEnrichmentModal = ({
   objectRecordId: string;
 }) => {
   const [isArxEnrichModalOpen, setIsArxEnrichModalOpen] = useRecoilState(isArxEnrichModalOpenState);
+  const [tokenPair] = useRecoilState(tokenPairState);
+  const [currentJobId] = useRecoilState(currentJobIdState);
+  const [enrichments, setEnrichments] = useRecoilState(enrichmentsState);
+  const [candidateFields, setCandidateFields] = useState<Array<{name: string, label: string}>>([]);
+  const [isLoadingFields, setIsLoadingFields] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
   
   const closeModal = () => {
     setIsArxEnrichModalOpen(false);
   };
 
-  // const { loading, error, data } = useQuery(FIND_MANY_VIDEO_INTERVIEW_MODELS);
+  const fetchCandidateFields = useCallback(async () => {
+    try {
+      console.log('fetching candidate fields in ArxEnrichmentModal');
+      setIsLoadingFields(true);
+      setApiError(null);
+      
+      if (currentJobId) {
+        try {
+          console.log('Fetching candidate fields for job ID:', currentJobId);
+          
+          const response = await axios.post(
+            `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/get-candidate-fields-by-job`,
+            { jobId: currentJobId },
+            { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tokenPair?.accessToken?.token}`, } }
+          );
+          
+          console.log('Response from fetch candidate fields:', response.data);
+          
+          if (response.data.status === 'Success' && response.data.candidateFields) {
+            console.log('Received candidate fields:', response?.data?.candidateFields);
+            setCandidateFields(response.data.candidateFields);
+            
+            // Update enrichments with jobId and candidateFields
+            setEnrichments(prev => prev.map(enrichment => ({
+              ...enrichment,
+              jobId: currentJobId,
+              candidateFields: response.data.candidateFields
+            })));
+          } else {
+            console.warn('No fields returned from API or unexpected response format');
+            setApiError('No custom fields found for this job');
+          }
+        } catch (error) {
+          console.error('Error fetching candidate fields:', error);
+          setApiError('Error fetching candidate fields');
+        }
+      } else {
+        console.warn('No job ID available in Recoil state');
+        setApiError('No job ID available');
+      }
+    } catch (error) {
+      console.error('Error in fetchCandidateFields:', error);
+      setApiError('Unexpected error occurred');
+    } finally {
+      setIsLoadingFields(false);
+    }
+  }, [currentJobId, tokenPair?.accessToken?.token, setEnrichments]);
 
-  // if (loading) {
-  //   return (
-  //     <StyledModalContainer onClick={closeModal}>
-  //       <StyledAdjuster>
-  //         <StyledModal onClick={(e) => e.stopPropagation()}>
-  //           <div>Loading...</div>
-  //         </StyledModal>
-  //       </StyledAdjuster>
-  //     </StyledModalContainer>
-  //   );
-  // }
-
-  // if (error != null) {
-  //   return <div>Error: {error.message}</div>;
-  // }
+  useEffect(() => {
+    if (isArxEnrichModalOpen) {
+      fetchCandidateFields();
+    }
+  }, [isArxEnrichModalOpen, fetchCandidateFields]);
 
   if (!isArxEnrichModalOpen) {
     return null;
@@ -162,6 +200,9 @@ export const ArxEnrichmentModal = ({
               closeModal={closeModal}
               objectNameSingular={objectNameSingular}
               objectRecordId={objectRecordId}
+              candidateFields={candidateFields}
+              isLoadingFields={isLoadingFields}
+              apiError={apiError}
             />
           </StyledModal>
         </StyledAdjuster>
