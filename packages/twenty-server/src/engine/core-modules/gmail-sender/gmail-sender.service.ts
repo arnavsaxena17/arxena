@@ -212,11 +212,12 @@ export class MailerService {
             .then(res => Buffer.from(res.data))
           : await fs.readFile(attachment.path);
 
-        if (attachment.filename !== "Executive Shortlist.pdf" && attachment.filename !== 'shortlist.xlsx') {
+        if (attachment.filename !== "Executive Shortlist.pdf" && attachment.filename !== 'shortlist.xlsx' && attachment.filename !== 'Executive Shortlist.docx') {
           // Add file to zip
           zipFile.file(this.cleanFilename(attachment.filename), fileContent);
           hasZipContent = true;
         } else {
+          console.log("This is the attachment.filename:", attachment.filename);
           // Handle Executive Shortlist.pdf separately
           const mimeType = mime.lookup(attachment.path) || 'application/octet-stream';
           emailHeaders.push(`--${boundary}`);
