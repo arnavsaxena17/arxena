@@ -102,14 +102,12 @@ export const useShareChatAndVideoInterviewBasedShortlistAction: ActionHookWithOb
       await sendCVsToClient(recordIdsToShare, 'create-gmail-draft-shortlist' );
     }, [sendCVsToClient, fetchAllRecordIds]);
 
-    console.log('handleShareChatAndVideoInterviewBasedShortlistClick', handleShareChatAndVideoInterviewBasedShortlistClick);
     const onClick = () => {
       if (!shouldBeRegistered) {
       return;
       }
       setIsShareChatAndVideoInterviewBasedShortlistModalOpen(true);
     };
-    console.log('onClick', onClick);
 
     const confirmationModal = (
       <ConfirmationModal

@@ -229,7 +229,7 @@ export class UpdateChat {
 
     console.log('This is the url:', url);
     console.log(
-      'going to create gmail-draft-shortlist by shortlists by candidate Ids',
+      'going to create chat based shortlist delivery by shortlists by candidate Ids',
       candidateIds,
     );
     const response = await axios.post(

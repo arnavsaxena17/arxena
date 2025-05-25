@@ -53,7 +53,6 @@ import { WebSocketService } from './websocket.service';
           data: data,
         };
         const response = await axios.request(config);
-        console.log('WebSocket auth - currentUser:', response.data.data.currentUser?.id);
         return response.data.data.currentUser;
       } catch (error) {
         console.log('Error authenticating WebSocket user:', error.message);
@@ -62,7 +61,6 @@ import { WebSocketService } from './websocket.service';
     }
   
     async handleConnection(client: Socket) {
-      console.log(`Client details: client`, client.handshake.headers);
       console.log(`Client connected: ${client.id}`);
       this.connectedClients.set(client.id, client);
       
@@ -70,11 +68,8 @@ import { WebSocketService } from './websocket.service';
       const token = client.handshake?.query?.token as string;
       if (token) {
         try {
-          console.log('token and will use to get current user::', token);
-          // Get user from token using GraphQL API
           const origin = client.handshake?.headers?.origin as string;
           const currentUser = await this.getCurrentUser(token, origin);
-          console.log('currentUser::', currentUser);
           if (currentUser.workspaceMember?.id) {
             const userId = currentUser.workspaceMember.id;
             console.log(`Authenticated user ${userId} connected with client ${client.id}`);

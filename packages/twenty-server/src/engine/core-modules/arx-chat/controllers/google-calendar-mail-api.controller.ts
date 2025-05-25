@@ -11,6 +11,7 @@ import {
 import { CalendarEmailService } from 'src/engine/core-modules/arx-chat/utils/calendar-email';
 import { SendEmailFunctionality } from 'src/engine/core-modules/arx-chat/utils/send-gmail';
 import { CalendarEventType } from 'src/engine/core-modules/calendar-events/services/calendar-data-objects-types';
+import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/services/candidate.service';
 import { EmailService } from 'src/engine/core-modules/email/email.service';
 import { GmailMessageData } from 'src/engine/core-modules/gmail-sender/services/gmail-sender-objects-types';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
@@ -21,6 +22,7 @@ export class GoogleControllers {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly emailService: EmailService,
+    private readonly candidateService: CandidateService,
   ) {}
 
   @Get('calendar-events')
@@ -167,11 +169,20 @@ export class GoogleControllers {
   async saveDraftEmailWithAttachments(@Req() request: any): Promise<object> {
     console.log('saveDraftEmailWithAttachments');
     const apiToken = request.headers.authorization.split(' ')[1];
-    const person: PersonNode = await new FilterCandidates(
+    const candidateId = request.body.candidateId;
+    console.log('This is the candidateId:', candidateId);
+    let person: PersonNode;
+    const candidateIds = [candidateId];
+    const jobIds = await new FilterCandidates(
       this.workspaceQueryService,
-    ).getPersonDetailsByPhoneNumber(request.body.phoneNumber, apiToken);
-    const candidateNode = person.candidates.edges[0].node;
-    const candidateJob: Jobs = candidateNode?.jobs;
+    ).getJobIdsFromCandidateIds(candidateIds, apiToken);
+    console.log('This is the jobIds:', jobIds);
+
+    const candidateJob: Jobs = await this.candidateService.getJobDetails(
+      jobIds[0] || '',
+      '',
+      apiToken,
+    );
 
     console.log('This is the candidate job:', candidateJob);
     const recruiterProfile = await getRecruiterProfileByJob(
@@ -184,7 +195,7 @@ export class GoogleControllers {
       sendEmailFrom: recruiterProfile?.email,
       sendEmailNameFrom:
         recruiterProfile?.firstName + ' ' + recruiterProfile?.lastName,
-      sendEmailTo: person?.emails.primaryEmail,
+      sendEmailTo: recruiterProfile.email,
       subject: request.body?.subject || 'Email from the recruiter',
       message: request.body?.message || 'This is a test email',
       attachments: request.body.attachments || [],
