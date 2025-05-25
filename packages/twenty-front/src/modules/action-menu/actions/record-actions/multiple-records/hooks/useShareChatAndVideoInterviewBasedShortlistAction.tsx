@@ -1,4 +1,5 @@
 import { ActionHookWithObjectMetadataItem } from '@/action-menu/actions/types/ActionHook';
+import { tableStateAtom } from '@/candidate-table/states';
 import { contextStoreFiltersComponentState } from '@/context-store/states/contextStoreFiltersComponentState';
 import { contextStoreNumberOfSelectedRecordsComponentState } from '@/context-store/states/contextStoreNumberOfSelectedRecordsComponentState';
 import { contextStoreTargetedRecordsRuleComponentState } from '@/context-store/states/contextStoreTargetedRecordsRuleComponentState';
@@ -11,10 +12,11 @@ import { useFilterValueDependencies } from '@/object-record/record-filter/hooks/
 import { ConfirmationModal } from '@/ui/layout/modal/components/ConfirmationModal';
 import { useRecoilComponentValueV2 } from '@/ui/utilities/state/component-state/hooks/useRecoilComponentValueV2';
 import { useCallback, useState } from 'react';
+import { useLocation } from 'react-router-dom';
+import { useRecoilValue } from 'recoil';
 import { isDefined } from 'twenty-shared';
 
-export const useShareChatAndVideoInterviewBasedShortlistAction: ActionHookWithObjectMetadataItem = ({ objectMetadataItem }) => { 
-    
+export const useShareChatAndVideoInterviewBasedShortlistAction: ActionHookWithObjectMetadataItem = ({ objectMetadataItem }) => {
   console.log('objectMetadataItem for share chat and video interview based shortlist', objectMetadataItem);
   const contextStoreNumberOfSelectedRecords = useRecoilComponentValueV2(
     contextStoreNumberOfSelectedRecordsComponentState,
@@ -36,6 +38,7 @@ export const useShareChatAndVideoInterviewBasedShortlistAction: ActionHookWithOb
       objectMetadataItem,
       filterValueDependencies,
     );
+    
     console.log('graphqlFilter', graphqlFilter);
     const { fetchAllRecords: fetchAllRecordIds } = useLazyFetchAllRecords({
       objectNameSingular: objectMetadataItem.nameSingular,
@@ -43,7 +46,30 @@ export const useShareChatAndVideoInterviewBasedShortlistAction: ActionHookWithOb
       limit: DEFAULT_QUERY_PAGE_SIZE,
       recordGqlFields: { id: true },
     });
-    console.log('fetchAllRecordIds', fetchAllRecordIds);
+
+    const location = useLocation();
+    const isJobRoute = location.pathname.includes('/job/');
+    const tableState = useRecoilValue(tableStateAtom);
+    console.log("tableState:::", tableState)
+
+    let recordsToShare;
+    console.log("tableState.rawData:::", tableState.rawData)
+    // Fetch all records
+    // const recordsToStartChat = await fetchAllRecordIds();
+
+
+    if (isJobRoute && tableState) {
+      // Use selected rows from HandsOnTable when in /job/ route
+      recordsToShare = tableState.rawData.filter(record => 
+        tableState.selectedRowIds.includes(record.id)
+      );
+      console.log('Selected records from table:', recordsToShare);
+    } else {
+      // Fallback to fetching all records for other routes
+      recordsToShare =  fetchAllRecordIds();
+    }
+
+    console.log('fetchAllRecordIds', recordsToShare);
     const isRemoteObject = objectMetadataItem.isRemote;
     const shouldBeRegistered =
     !isRemoteObject &&
@@ -56,7 +82,21 @@ export const useShareChatAndVideoInterviewBasedShortlistAction: ActionHookWithOb
     const { sendCVsToClient } = useSendCVsToClient();
 
     const handleShareChatAndVideoInterviewBasedShortlistClick = useCallback(async () => {
-      const recordsToShare = await fetchAllRecordIds();
+      // const recordsToShare = await fetchAllRecordIds();
+
+      // console.log("recordsToShare:::", recordsToShare)
+
+      if (isJobRoute && tableState) {
+        // Use selected rows from HandsOnTable when in /job/ route
+        recordsToShare = tableState.rawData.filter(record => 
+          tableState.selectedRowIds.includes(record.id)
+        );
+        console.log('Selected records from table:', recordsToShare);
+      } else {
+        // Fallback to fetching all records for other routes
+        recordsToShare =  await fetchAllRecordIds();
+      }
+
       const recordIdsToShare:string[] = recordsToShare.map((record) => record.id);
       console.log("Records selected::", recordsToShare, "Record IDs selected::", recordIdsToShare);
       await sendCVsToClient(recordIdsToShare, 'create-gmail-draft-shortlist' );

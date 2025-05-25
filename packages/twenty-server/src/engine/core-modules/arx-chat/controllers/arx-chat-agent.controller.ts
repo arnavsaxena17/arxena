@@ -106,17 +106,16 @@ export class ArxChatEndpoint {
   async startChatsByCandidateIds(@Req() request: any): Promise<object> {
     const apiToken = request.headers.authorization.split(' ')[1];
     const candidateIds = request.body.candidateIds;
-
+    console.log( 'candidateIds', candidateIds, );
+    console.log( 'Number of candidate Ids to start chats', candidateIds.length, );
     for (const candidateId of candidateIds) {
       const chatControl: ChatControlsObjType = {
         chatControlType: 'startChat',
       };
-
       await await new CandidateEngagementArx(
         this.workspaceQueryService,
       ).createChatControl(candidateId, chatControl, apiToken);
     }
-
     return { status: 'Success' };
   }
 
@@ -665,23 +664,13 @@ export class ArxChatEndpoint {
     try {
       const { candidateIds } = request.body;
       const apiToken = request.headers.authorization.split(' ')[1];
-
-      console.log(
-        'going to refresh chat counts by candidate Ids',
-        candidateIds,
-      );
-      const createGmailBasedShortlist = await new UpdateChat(
-        this.workspaceQueryService,
-      ).createGmailDraftShortlist(candidateIds, apiToken);
-
-      console.log(
-        'This is the response in create chatGmailDraftShortlist shortlist',
-      );
-
+      console.log( 'going to refresh chat counts by candidate Ids', candidateIds, );
+      console.log( 'Number of candidate Ids', candidateIds.length, );
+      const createGmailBasedShortlist = await new UpdateChat( this.workspaceQueryService, ).createGmailDraftShortlist(candidateIds, apiToken);
+      console.log( 'This is the response in create chatGmailDraftShortlist shortlist', createGmailBasedShortlist );
       return { status: 'Success' };
     } catch (err) {
       console.error('Error in create_gmail_draft_shortlist chats:', err);
-
       return { status: 'Failed', error: err };
     }
   }

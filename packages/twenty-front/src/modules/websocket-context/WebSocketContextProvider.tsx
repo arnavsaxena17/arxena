@@ -28,13 +28,9 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     if (!tokenPair?.accessToken?.token) {
       return;
     }
-    
-    console.log('Connecting to WebSocket with auth token');
-    
-    const socketInstance = io(process.env.REACT_APP_WEBSOCKET_URL || 'http://localhost:3000', {
-      query: {
-        token: tokenPair.accessToken.token
-      },
+    console.log('Connecting to WebSocket with auth token to process.env.REACT_APP_SERVER_BASE_URL', process.env.REACT_APP_SERVER_BASE_URL);
+    const socketInstance = io(process.env.REACT_APP_SERVER_BASE_URL || 'http://app.arxena.com', {
+      query: { token: tokenPair.accessToken.token },
       transports: ['websocket', 'polling'],
       path: '/socket.io',
     });

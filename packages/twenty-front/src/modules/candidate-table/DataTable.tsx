@@ -46,6 +46,17 @@ const StyledTableContainer = styled.div`
     -ms-overflow-style: none;
   }
 
+  /* Hide scrollbar for the left fixed column */
+  .handsontable .ht_clone_left .wtHolder {
+    overflow: hidden !important;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .handsontable .ht_clone_left .wtHolder::-webkit-scrollbar {
+    display: none;
+  }
+
   .handsontable .wtHolder {
     overflow: auto;
   }

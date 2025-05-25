@@ -5,8 +5,7 @@ import { useRecoilState } from 'recoil';
 
 import { ArxEnrichLeftSideContainer } from '@/arx-enrich/left-side/ArxEnrichLeftSideContainer';
 import { ArxEnrichRightSideContainer } from '@/arx-enrich/right-side/ArxEnrichRightSideContainer';
-import { enrichmentsState, isArxEnrichModalOpenState } from '@/arx-enrich/states/arxEnrichModalOpenState';
-import { currentJobIdState } from '@/arx-enrich/states/currentJobIdState';
+import { currentJobIdState, enrichmentsState, isArxEnrichModalOpenState } from '@/arx-enrich/states/arxEnrichModalOpenState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 
 const StyledModalContainer = styled.div`

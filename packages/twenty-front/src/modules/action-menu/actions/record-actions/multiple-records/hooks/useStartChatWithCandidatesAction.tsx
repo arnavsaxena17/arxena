@@ -1,4 +1,5 @@
 import { ActionHookWithObjectMetadataItem } from '@/action-menu/actions/types/ActionHook';
+import { tableStateAtom } from '@/candidate-table/states';
 import { contextStoreFiltersComponentState } from '@/context-store/states/contextStoreFiltersComponentState';
 import { contextStoreNumberOfSelectedRecordsComponentState } from '@/context-store/states/contextStoreNumberOfSelectedRecordsComponentState';
 import { contextStoreTargetedRecordsRuleComponentState } from '@/context-store/states/contextStoreTargetedRecordsRuleComponentState';
@@ -12,15 +13,23 @@ import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { ConfirmationModal } from '@/ui/layout/modal/components/ConfirmationModal';
 import { useRecoilComponentValueV2 } from '@/ui/utilities/state/component-state/hooks/useRecoilComponentValueV2';
 import { useCallback, useState } from 'react';
+import { useLocation } from 'react-router-dom';
+import { useRecoilValue } from 'recoil';
 import { isDefined } from 'twenty-shared';
 
 export const useStartChatWithCandidatesAction: ActionHookWithObjectMetadataItem =
   ({ objectMetadataItem }) => {
+
+    const location = useLocation();
+    const isJobRoute = location.pathname.includes('/job/');
+    const tableState = useRecoilValue(tableStateAtom);
+    
     console.log('objectMetadataItem in useStartChatWithCandidatesAction:::', objectMetadataItem);
     const contextStoreNumberOfSelectedRecords = useRecoilComponentValueV2(
       contextStoreNumberOfSelectedRecordsComponentState,
     );
 
+    console.log("contextStoreNumberOfSelectedRecords:::", contextStoreNumberOfSelectedRecords)
     const contextStoreTargetedRecordsRule = useRecoilComponentValueV2(
       contextStoreTargetedRecordsRuleComponentState,
     );
@@ -76,9 +85,24 @@ export const useStartChatWithCandidatesAction: ActionHookWithObjectMetadataItem 
     const handleStartChatWithCandidatesClick = useCallback(async () => {
       try {
         setIsProcessing(true);
-        
+        let recordsToStartChat;
+        console.log("tableState.rawData:::", tableState.rawData)
         // Fetch all records
-        const recordsToStartChat = await fetchAllRecordIds();
+        // const recordsToStartChat = await fetchAllRecordIds();
+
+
+        if (isJobRoute && tableState) {
+          // Use selected rows from HandsOnTable when in /job/ route
+          recordsToStartChat = tableState.rawData.filter(record => 
+            tableState.selectedRowIds.includes(record.id)
+          );
+          console.log('Selected records from table:', recordsToStartChat);
+        } else {
+          // Fallback to fetching all records for other routes
+          recordsToStartChat = await fetchAllRecordIds();
+        }
+
+
         console.log('recordsToStartChat in handle start chat:::', recordsToStartChat);
         
         console.log('objectMetadataItem.nameSingular:::', objectMetadataItem.nameSingular);
@@ -93,8 +117,8 @@ export const useStartChatWithCandidatesAction: ActionHookWithObjectMetadataItem 
         
         // Get job IDs for data integrity check
         const jobIds = recordsToStartChat
-          .filter(record => isDefined(record.jobsId))
-          .map(record => record.jobsId);
+          .filter(record => isDefined(record.jobsId) || isDefined(record.jobs?.id))
+          .map(record => record.jobsId || record.jobs?.id);
           
         console.log('jobsId:::', jobIds);
         

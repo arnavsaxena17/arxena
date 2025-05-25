@@ -1,10 +1,11 @@
+import { currentJobIdState } from '@/arx-enrich/states/arxEnrichModalOpenState';
 import { contextStoreTargetedRecordsRuleComponentState } from '@/context-store/states/contextStoreTargetedRecordsRuleComponentState';
 import { mainContextStoreComponentInstanceIdState } from '@/context-store/states/mainContextStoreComponentInstanceId';
 import { useRecoilComponentValueV2 } from '@/ui/utilities/state/component-state/hooks/useRecoilComponentValueV2';
 import { useEffect } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
-import { currentJobIdState } from '../states/currentJobIdState';
+
 
 export const useSelectedRecordForEnrichment = () => {
   // Get URL params - for chat/job pages

@@ -5,7 +5,6 @@ export const ProcessedData = ({ rawData, selectedRowIds }: { rawData: CandidateN
     // Process raw data to generate processed data
     return rawData.map(candidate => {
       const baseData = {
-
         id: candidate?.id,
         personId: candidate?.people?.id,
         name: candidate?.name || 'N/A',
@@ -28,6 +27,7 @@ export const ProcessedData = ({ rawData, selectedRowIds }: { rawData: CandidateN
         createdAt: candidate?.createdAt || 'N/A',
         messagingChannel: candidate?.messagingChannel || 'N/A',
       };
+
       const fieldValues: Record<string, string> = {};
       if (candidate.candidateFieldValues?.edges) {
         candidate.candidateFieldValues.edges.forEach((edge: any) => {

@@ -1,7 +1,8 @@
 import { RightDrawerPages } from "@/ui/layout/right-drawer/types/RightDrawerPages";
 import { IconMessages } from "@tabler/icons-react";
 import axios from 'axios';
-import { Change } from './states/tableStateAtom';
+import { Change } from './states';
+// import { Change } from './states/tableStateAtom';
 
 export const updateUnreadMessagesStatus = async (unreadMessageIds: string[], tokenPair: any) => {
   if (!unreadMessageIds?.length) return;
@@ -24,7 +25,6 @@ export const afterSelectionEnd = (tableRef: any, column: number, row: number, ro
   const hot = tableRef.current?.hotInstance;
   console.log("hot in afterSelectionEnd", hot);
   if (!hot) return;
-  
 
   try {
     const selectedIds = hot.getSelected();
@@ -91,10 +91,12 @@ export const afterSelectionEnd = (tableRef: any, column: number, row: number, ro
     console.error('Error opening right drawer:', error);
   }
 
+  // Handle row selection for both checkbox and regular cell selection
+  const selectedRows: string[] = [];
   
   if (column === 0) {
+    // For checkbox column, toggle the selected state of the clicked row
     const rowData = hot.getSourceDataAtRow(row);
-    console.log("rowData in afterSelectionEnd", rowData);
     if (rowData && rowData.id) {
       setTableState((prev: any) => {
         const currentSelectedIds = [...prev.selectedRowIds];
@@ -114,14 +116,15 @@ export const afterSelectionEnd = (tableRef: any, column: number, row: number, ro
     }
   } else {
     const selectedRows: string[] = [];
+
+    // For regular cell selection, select all rows in the range
     for (let i = Math.min(row, row2); i <= Math.max(row, row2); i++) {
       const rowData = hot.getSourceDataAtRow(i);
-      console.log("rowData", rowData);
       if (rowData && rowData.id) {
         selectedRows.push(rowData.id);
       }
     }
-    console.log("selectedRows", selectedRows);
+    
     setTableState((prev: any) => ({
       ...prev,
       selectedRowIds: selectedRows
@@ -133,10 +136,9 @@ export const afterSelectionEnd = (tableRef: any, column: number, row: number, ro
       selectedRecordIds: selectedRows,
     });
     return selectedRows;
+
   }
-
-
-}
+};
 
 export const afterChange = async (tableRef: React.RefObject<any>, changes: any, source: any, jobId: string, tokenPair: any, setTableState: any, refreshData: any) => {
   console.log("changes in afterChange", changes);

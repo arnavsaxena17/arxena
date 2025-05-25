@@ -9,7 +9,7 @@ export const enrichmentsState = createState<any[]>({
   key: 'enrichmentsState',
   defaultValue: [{
     modelName: '',
-    prompt: '', // Add this field
+    prompt: '',
     fields: [],
     selectedMetadataFields: [],
     selectedModel: 'gpt4omini',
@@ -30,4 +30,3 @@ export const currentJobIdState = createState<string | null>({
   key: 'currentJobIdState',
   defaultValue: null,
 });
-

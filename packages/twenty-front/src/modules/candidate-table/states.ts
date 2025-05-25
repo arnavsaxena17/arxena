@@ -1,16 +1,26 @@
 import { ProcessedData } from '@/candidate-table/ProcessedData';
 import { TableColumns } from '@/candidate-table/TableColumns';
 import { atom, selector } from "recoil";
-import { CandidateNode } from "twenty-shared";
+
+export type Change = {
+  row: number;
+  prop: string;
+  oldValue: any;
+  newValue: any;
+  rowId: string;
+};
 
 export interface TableState {
-  rawData: CandidateNode[];
+  rawData: any[];
   selectedRowIds: string[];
   isRightPanelOpen: boolean;
   currentRightPanelRowId: string | null;
   isLoading: boolean;
   error: string | null;
+
   unreadMessagesCounts: Record<string, number>;
+  undoStack: Change[];
+  redoStack: Change[];
 }
 export const jobIdAtom = atom<string>({
   key: 'candidate-table/jobIdAtom',
@@ -48,9 +58,13 @@ export const tableStateAtom = atom<TableState>({
     currentRightPanelRowId: null,
     isLoading: false,
     error: null,
-    unreadMessagesCounts: {}
+    unreadMessagesCounts: {},
+    undoStack: [],
+    redoStack: [],
+
   },
 });
+
 
 export const processedDataSelector = selector({
   key: 'processedDataSelector',

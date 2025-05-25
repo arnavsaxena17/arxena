@@ -216,14 +216,10 @@ export const RightDrawerChatAllActionsContent = () => {
       }}
     >
       <ContextStoreComponentInstanceContext.Provider
-        value={{
-          instanceId: INSTANCE_ID,
-        }}
+        value={{ instanceId: INSTANCE_ID, }}
       >
         <ActionMenuComponentInstanceContext.Provider
-          value={{
-            instanceId: INSTANCE_ID,
-          }}
+          value={{ instanceId: INSTANCE_ID }}
         >
           <StyledContainer>
             {pinnedActions.length > 0 && (
