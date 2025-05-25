@@ -2,6 +2,7 @@ import { useCandidateEnrichmentAction } from '@/action-menu/actions/record-actio
 import { useCloneMultipleRecordsAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useCloneMultipleRecordsAction';
 import { useCreateMultipleVideoInterviewLinksAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useCreateMultipleVideoInterviewLinksAction';
 import { useDeleteCandidatesAndPeopleAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useDeleteCandidatesAndPeopleAction';
+import { useDownloadCandidateCVsAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useDownloadCandidateCVsAction';
 import { usePopulateShortlistAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/usePopulateShortlistAction';
 import { useRefreshChatCountsAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useRefreshChatCountsAction';
 import { useRefreshChatStatusesAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useRefreshChatStatusesAction';
@@ -183,6 +184,22 @@ export const CHAT_ACTIONS_CONFIG: Record<
     ],
     useAction: useStartChatWithCandidatesAction,
   },
+  downloadCandidateCVs: {
+    type: ActionMenuEntryType.Standard,
+    scope: ActionMenuEntryScope.RecordSelection,
+    key: MultipleRecordsActionKeys.DOWNLOAD_CANDIDATE_CVS,
+    label: msg`Download Candidate CVs`,
+    shortLabel: msg`Download CVs`,
+    position: 6,
+    Icon: IconMessageCircle,
+    accent: 'placeholder',
+    isPinned: false,
+    availableOn: [
+      ActionViewType.INDEX_PAGE_BULK_SELECTION,
+      ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
+    ],
+    useAction: useDownloadCandidateCVsAction,
+  },
 
   refreshChatStatus: {
     type: ActionMenuEntryType.Standard,
@@ -190,7 +207,7 @@ export const CHAT_ACTIONS_CONFIG: Record<
     key: MultipleRecordsActionKeys.REFRESH_CHAT_STATUS,
     label: msg`Refresh Chat Status`,
     shortLabel: msg`Refresh Chat Status`,
-    position: 6,
+    position: 7,
     Icon: IconRefresh,
     accent: 'placeholder',
     isPinned: false,
