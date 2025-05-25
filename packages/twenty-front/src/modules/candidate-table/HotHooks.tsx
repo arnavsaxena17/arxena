@@ -97,9 +97,10 @@ export const afterSelectionEnd = (tableRef: any, column: number, row: number, ro
   if (column === 0) {
     // For checkbox column, toggle the selected state of the clicked row
     const rowData = hot.getSourceDataAtRow(row);
+    let currentSelectedIds: string[] = [];
     if (rowData && rowData.id) {
       setTableState((prev: any) => {
-        const currentSelectedIds = [...prev.selectedRowIds];
+        currentSelectedIds = [...prev.selectedRowIds];
         const rowId = rowData.id;
         
         const index = currentSelectedIds.indexOf(rowId);
@@ -113,6 +114,13 @@ export const afterSelectionEnd = (tableRef: any, column: number, row: number, ro
           selectedRowIds: currentSelectedIds
         };
       });
+
+      setContextStoreNumberOfSelectedRecords(currentSelectedIds.length);
+      setContextStoreTargetedRecordsRule({
+        mode: 'selection',
+        selectedRecordIds: currentSelectedIds,
+      });
+  
     }
   } else {
     const selectedRows: string[] = [];
