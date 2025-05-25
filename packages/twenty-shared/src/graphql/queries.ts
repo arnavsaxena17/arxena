@@ -1823,6 +1823,26 @@ export const findManyShortlistsquery = `query FindManyShortlists($filter: Shortl
         currentJobTitle
         name
         expectedSalary
+        candidate{
+          id
+          name
+          updatedAt
+          createdAt
+          whatsappProvider
+          phoneNumber{
+            primaryPhoneNumber
+          }
+          email{
+            primaryEmail
+          }
+          linkedinUrl{
+            primaryLinkUrl
+            primaryLinkLabel
+          }
+          displayPicture{
+            primaryLinkUrl
+          }
+        }
         createdAt
         currentCompany
         noticePeriod

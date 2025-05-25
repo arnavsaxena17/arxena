@@ -190,7 +190,7 @@ export class UpdateChat {
     return response.data;
   }
 
-  async createGmailDraftShortlist(candidateIds: string[], apiToken: string) {
+  async createGmailDraftShortlist(candidateIds: string[], origin: string, apiToken: string) {
     const url =
       process.env.ENV_NODE === 'production'
         ? 'https://arxena.com/create-create_gmail_draft_shortlist'
@@ -203,7 +203,7 @@ export class UpdateChat {
     );
     const response = await axios.post(
       url,
-      { candidateIds: candidateIds },
+      { candidateIds: candidateIds, origin: origin },
       {
         headers: {
           'Content-Type': 'application/json',
@@ -220,6 +220,7 @@ export class UpdateChat {
 
   async createChatBasedShortlistDelivery(
     candidateIds: string[],
+    origin: string,
     apiToken: string,
   ) {
     const url =
@@ -234,7 +235,7 @@ export class UpdateChat {
     );
     const response = await axios.post(
       url,
-      { candidateIds: candidateIds },
+      { candidateIds: candidateIds, origin: origin },
       {
         headers: {
           'Content-Type': 'application/json',

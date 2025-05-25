@@ -54,6 +54,7 @@ export const WorkspaceLogoUploader = () => {
     });
   };
 
+  console.log("currentWorkspace?.logo::%s", currentWorkspace?.logo)
   return (
     <ImageInput
       picture={currentWorkspace?.logo}
