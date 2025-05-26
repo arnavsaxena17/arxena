@@ -43,13 +43,11 @@ export const TableColumns = ({
 }) => {
   if (!processedData.length) return [];
     
-  // Collect all unique keys from all entries
   const allKeys = new Set<string>();
   processedData.forEach(item => {
     Object.keys(item).forEach(key => allKeys.add(key));
   });
 
-  // Create checkbox renderer
   const checkboxRenderer: ColumnRenderer = (instance, td, row, column, prop, value, cellProperties) => {
     td.innerHTML = '';
     const rowData = instance.getSourceDataAtRow(row);
@@ -59,7 +57,6 @@ export const TableColumns = ({
     checkbox.className = 'row-checkbox';
     td.style.textAlign = 'center';
     
-    // Get the row element and toggle the selected-row class based on checkbox state
     const rowElement = td.parentElement;
     if (rowElement) {
       if (value) {
@@ -70,11 +67,8 @@ export const TableColumns = ({
     }
     
     checkbox.addEventListener('click', (e) => {
-      e.stopPropagation(); // Prevent row selection when clicking checkbox
-      // Update the data source directly to trigger afterChange event
+      e.stopPropagation();
       instance.setDataAtRowProp(row, 'checkbox', !value);
-      
-      // Toggle selected-row class on click
       if (rowElement) {
         rowElement.classList.toggle('selected-row');
       }
@@ -111,18 +105,13 @@ export const TableColumns = ({
     const rowData: any = instance.getSourceDataAtRow(row);
     const candidateId = rowData && typeof rowData === 'object' && 'id' in rowData ? rowData.id : null;
     const unreadCount = candidateId && unreadMessagesCounts[candidateId] ? unreadMessagesCounts[candidateId] : 0;
-    
     const container = document.createElement('div');
     container.style.display = 'flex';
     container.style.alignItems = 'center';
-    // container.style.gap = '8px';
     container.style.cursor = 'pointer';
-    // container.style.padding = '2px';
     container.style.borderRadius = '4px';
     container.style.backgroundColor = '#f5f5f5';
     container.style.transition = 'background-color 0.2s ease';
-    
-    // Add hover effect
     container.onmouseover = () => {
       container.style.backgroundColor = '#e0e0e0';
     };
@@ -158,7 +147,7 @@ export const TableColumns = ({
   };
 
   const urlRenderer: ColumnRenderer = (instance, td, row, column, prop, value) => {
-    td.innerHTML = '';    
+    td.innerHTML = '';
     if (!value || value === 'N/A' || typeof value !== 'string') {
       const div = document.createElement('div');
       Object.assign(div.style, truncatedCellStyle);
@@ -178,7 +167,7 @@ export const TableColumns = ({
     link.href = url;
     link.target = '_blank';
     link.rel = 'noopener noreferrer';
-    link.textContent = value; 
+    link.textContent = value;
     
     Object.assign(link.style, truncatedCellStyle);
     link.style.color = '#1976d2';
