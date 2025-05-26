@@ -121,7 +121,6 @@ export const ImageInput = ({
     : null;
 
 
-  console.log("pictureURI::%s", pictureURI)
   return (
     <StyledContainer className={className}>
       <StyledPicture
