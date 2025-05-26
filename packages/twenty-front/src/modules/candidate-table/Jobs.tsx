@@ -281,7 +281,6 @@ export const Jobs = () => {
           <RecordFieldValueSelectorContextProvider>
             <StyledPageHeader title="Jobs" Icon={IconDatabase}>
               <StyledButtonContainer>
-                {/* <Button title="Import Candidates" Icon={IconFileImport} variant="secondary" onClick={handleImportCandidates} /> */}
                 <Button title="Add Job" Icon={IconPlus} variant="primary" onClick={handleEngagement} />
               </StyledButtonContainer>
               <StyledAddButtonWrapper>
@@ -321,7 +320,6 @@ export const Jobs = () => {
           <RecordFieldValueSelectorContextProvider>
             <StyledPageHeader title="Jobs" Icon={IconDatabase}>
               <StyledButtonContainer>
-                {/* <Button title="Import Candidates" Icon={IconFileImport} variant="secondary" onClick={handleImportCandidates} /> */}
                 <Button title="Add Job" Icon={IconPlus} variant="primary" onClick={handleEngagement} />
               </StyledButtonContainer>
               <StyledAddButtonWrapper>

@@ -8,6 +8,7 @@ import { currentJobIdState, isArxEnrichModalOpenState } from "@/arx-enrich/state
 import { ArxJDUploadModal } from '@/arx-jd-upload/components/ArxJDUploadModal';
 import { isArxUploadJDModalOpenState } from "@/arx-jd-upload/states/arxUploadJDModalOpenState";
 import { ChatOptionsDropdownButton } from "@/candidate-table/ChatOptionsDropdownButton";
+import { ArxDownloadModal } from "@/candidate-table/components/ArxDownloadModal";
 import { DataTable } from "@/candidate-table/DataTable";
 import { HotTableActionMenu } from "@/candidate-table/HotTableActionMenu";
 import { jobIdAtom, jobsState } from "@/candidate-table/states";
@@ -30,10 +31,10 @@ import { isVideoInterviewModalOpenState } from "@/video-interview/interview-crea
 import { ViewComponentInstanceContext } from "@/views/states/contexts/ViewComponentInstanceContext";
 import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useRecoilState, useRecoilValue } from "recoil";
-import { Button, IconCheckbox, IconFileImport } from 'twenty-ui';
+import { Button, IconCheckbox, IconDownload, IconFileImport } from 'twenty-ui';
 
 const StyledPageContainer = styled(PageContainer)`
   display: flex;
@@ -104,6 +105,8 @@ export const JobPage: React.FC = () => {
     return jobs.find((job) => job.id === jobId);
   }, [jobs, jobId]);
 
+  const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
+
   const handleEnrichment = () => {
     if (!selectedRecordId) {
       alert('Please select a candidate to enrich');
@@ -131,6 +134,11 @@ export const JobPage: React.FC = () => {
 
   const handleImportCandidates = () => {
     openObjectRecordsSpreasheetImportDialog();
+  };
+
+  const handleDownloadClick = () => {
+    console.log("Downloading app");
+    setIsDownloadModalOpen(true);
   };
 
   // Extract jobId from URL whenever location changes
@@ -176,6 +184,8 @@ export const JobPage: React.FC = () => {
           <StyledPageHeader title={currentJob?.name || 'Job'} Icon={IconCheckbox}>
             <StyledButtonContainer>
               <Button title="Import Candidates" Icon={IconFileImport} variant="secondary" onClick={handleImportCandidates} />
+              <Button title="Download App" Icon={IconDownload} variant="secondary" onClick={handleDownloadClick} />
+
               {/* <Button title="Filter" Icon={IconFilter} variant="secondary" /> */}
               {/* <Button title="Add Candidate" Icon={IconPlus} variant="primary" /> */}
             </StyledButtonContainer>
@@ -265,6 +275,11 @@ export const JobPage: React.FC = () => {
             ) : (
               <></>
             )}
+
+               <ArxDownloadModal 
+                isOpen={isDownloadModalOpen}
+                onClose={() => setIsDownloadModalOpen(false)}
+              />
           </StyledPageBody>
         </RecordFieldValueSelectorContextProvider>
       </StyledPageContainer>
