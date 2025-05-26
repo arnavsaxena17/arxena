@@ -351,6 +351,8 @@ export class UpdateChat {
     apiToken: string,
   ) {
     try {
+      console.log('Updating candidates with chat count');
+      console.log('Candidate ids for updating chat count::', candidateIds);
       const graphqlQueryObj = JSON.stringify({
         query: graphqlToFetchAllCandidateData,
         variables: { filter: { id: { in: candidateIds } } },
@@ -791,10 +793,37 @@ export class UpdateChat {
 
     if (!updateCandidateStatusObj) return;
 
+    await this.updateCandidateEngagementStatusAndChatCounts(
+      candidateProfileObj,
+      whatappUpdateMessageObj,
+      apiToken,
+    );
     return {
       status: 'success',
       message: 'Candidate engagement status updated successfully',
     };
+  }
+
+
+  async updateCandidateEngagementStatusAndChatCounts(
+    candidateProfileObj: CandidateNode,
+    whatappUpdateMessageObj: whatappUpdateMessageObjType,
+    apiToken: string,
+  ) {
+    console.log('Updating candidate engagement status and chat counts');
+    console.log('Candidate profile object::', candidateProfileObj);
+    console.log('Whatapp update message object::', whatappUpdateMessageObj);
+    // Update chat counts first
+    await new UpdateChat(
+      this.workspaceQueryService,
+    ).updateCandidatesWithChatCount([candidateProfileObj.id], apiToken);
+
+    // Process chat statuses
+    const results = await new UpdateChat(
+      this.workspaceQueryService,
+    ).processCandidatesChatsGetStatuses(apiToken, [candidateProfileObj.jobs?.id], [candidateProfileObj.id]);
+    console.log('Results from updating candidate engagement status and chat counts::', results);
+    return results;
   }
 
   async removeChatsByMessageIDs(messageIDs: string[], apiToken: string) {

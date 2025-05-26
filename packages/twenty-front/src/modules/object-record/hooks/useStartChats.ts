@@ -57,8 +57,7 @@ export const useStartChats = ({
       const url = `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/${apiEndpoint}`;
 
       const results = await axios.post(
-        url, 
-        { candidateIds: candidateIds, objectNameSingular }, 
+        url, { candidateIds: candidateIds, objectNameSingular }, 
         { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}`, 'Content-Type': 'application/json' } }
       );
       
