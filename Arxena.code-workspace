@@ -8,6 +8,9 @@
 		},
 		{
 			"path": "../arx-crx"
+		},
+		{
+			"path": "../arx-app"
 		}
 	],
 	"settings": {

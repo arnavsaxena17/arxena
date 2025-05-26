@@ -25,7 +25,6 @@ export class WorkspaceQueryService {
     @InjectDataSource('metadata')
     private readonly metadataDataSource: DataSource,
     public readonly apiKeyService: ApiKeyService,
-
     public readonly accessTokenService: AccessTokenService,
     public readonly workspaceDataSourceService: WorkspaceDataSourceService,
     public readonly webSocketService: WebSocketService,
@@ -34,14 +33,12 @@ export class WorkspaceQueryService {
   async getWorkspaceIdFromToken(apiToken: string) {
     const validatedToken =
       await this.accessTokenService.validateToken(apiToken);
-
     return validatedToken.workspace.id;
   }
   async getWorkspaceNameFromToken(apiToken: string) {
     const validatedToken =
       await this.accessTokenService.validateToken(apiToken);
       console.log("This isthe validated name workspace:", validatedToken.workspace)
-
     return validatedToken.workspace.displayName;
   }
 
@@ -56,7 +53,6 @@ export class WorkspaceQueryService {
         `Error fetching ${keyName} for workspace ${workspaceId}:`,
         error,
       );
-
       return null;
     }
   }
@@ -98,36 +94,27 @@ export class WorkspaceQueryService {
     ) => Promise<T>,
   ): Promise<T[]> {
     const queryRunner = this.metadataDataSource.createQueryRunner();
-
     await queryRunner.connect();
-
     const results: T[] = [];
-
     try {
       await queryRunner.startTransaction();
       const transactionManager = queryRunner.manager;
-
       const workspaceIds = await this.getWorkspaces();
       const dataSources = await this.dataSourceRepository.find({
         where: {
           workspaceId: In(workspaceIds),
         },
       });
-
       const workspaceIdsWithDataSources = new Set(
         dataSources.map((dataSource) => dataSource.workspaceId),
       );
-
       for (const workspaceId of workspaceIdsWithDataSources) {
         const dataSourceSchema =
           this.workspaceDataSourceService.getSchemaName(workspaceId);
-
-        // Check if table exists before querying
         const tableExists = await this.checkIfTableExists(
           dataSourceSchema,
           '_videoInterview',
         );
-
         if (!tableExists) {
           console.log(
             `Table _videoInterview doesn't exist in schema ${dataSourceSchema}`,
@@ -138,14 +125,12 @@ export class WorkspaceQueryService {
             `Table _videoInterview exists in schema ${dataSourceSchema}`,
           );
         }
-
         try {
           const result = await queryCallback(
             workspaceId,
             dataSourceSchema,
             transactionManager,
           );
-
           if (result) {
             results.push(result);
           }
@@ -156,7 +141,6 @@ export class WorkspaceQueryService {
       }
 
       await queryRunner.commitTransaction();
-
       return results;
     } catch (error) {
       console.error('Error executing query across workspaces:', error);
@@ -433,15 +417,13 @@ export class WorkspaceQueryService {
       console.log('This is the workspace Id:', workspaceId);
 
       params.push(workspaceId);
-      const query = `
-        UPDATE core.workspace
+      const query = `UPDATE core.workspace
         SET ${updates.join(', ')}
         WHERE id = $${paramCounter}
       `;
-
       console.log('This si the raw query:', query);
       await this.executeRawQuery(query, params, workspaceId);
-
+      
       return true;
     } catch (error) {
       console.error(

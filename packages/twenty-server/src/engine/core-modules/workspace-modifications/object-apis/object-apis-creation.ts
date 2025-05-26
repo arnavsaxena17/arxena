@@ -91,7 +91,6 @@ export class CreateMetaDataStructure {
     console.log('This is the response:', response.data.data.currentUser);
     console.log('This is the response:', response.data.data);
     console.log('This is the response:', response.data);
-
     return response.data.data.currentUser;
   }
 
@@ -256,11 +255,11 @@ export class CreateMetaDataStructure {
       twilio_account_sid: undefined,
       twilio_auth_token: undefined,
       linkedin_url: undefined,
-      whatsapp_key: 'whatsapp-official',
+      whatsapp_key: 'whatsapp-web',
       anthropic_key: undefined,
       facebook_whatsapp_api_token: process.env.FACEBOOK_WHATSAPP_API_TOKEN,
       facebook_whatsapp_phone_number_id: process.env.FACEBOOK_WHATSAPP_PHONE_NUMBER_ID,
-        whatsapp_web_phone_number:'918411937769',
+      whatsapp_web_phone_number:'',
       facebook_whatsapp_app_id: process.env.FACEBOOK_WHATSAPP_APP_ID,
       facebook_whatsapp_asset_id: process.env.FACEBOOK_WHATSAPP_ASSET_ID,
       // waba_phone_number: undefined,

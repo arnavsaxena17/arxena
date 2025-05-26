@@ -22,10 +22,7 @@ export async function axiosRequest(data: string, apiToken: string) {
   const response = await axios.request({
     method: 'post',
     url: process.env.GRAPHQL_URL,
-    headers: {
-      authorization: 'Bearer ' + apiToken,
-      'content-type': 'application/json',
-    },
+    headers: { authorization: 'Bearer ' + apiToken, 'content-type': 'application/json' },
     data: data,
     timeout: 10000,
   });

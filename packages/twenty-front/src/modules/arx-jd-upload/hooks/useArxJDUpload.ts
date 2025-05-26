@@ -134,6 +134,33 @@ export const useArxJDUpload = (objectNameSingular: string) => {
         },
       });
 
+      // If phone number is provided, update the whatsapp_web_phone_number in workspace modifications
+      if (recruiterDetails.missingRecruiterInfo.phoneNumber) {
+        try {
+          const response = await axios({
+            method: 'post',
+            url: `${process.env.REACT_APP_SERVER_BASE_URL}/workspace-modifications/api-keys`,
+            data: {
+              whatsapp_web_phone_number: recruiterDetails.missingRecruiterInfo.phoneNumber
+            },
+            headers: {
+              Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
+            },
+          });
+
+          if (response.status === 200) {
+            enqueueSnackBar('WhatsApp phone number updated successfully', {
+              variant: SnackBarVariant.Success,
+            });
+          }
+        } catch (error) {
+          console.error('Error updating WhatsApp phone number:', error);
+          enqueueSnackBar('Failed to update WhatsApp phone number', {
+            variant: SnackBarVariant.Error,
+          });
+        }
+      }
+
       enqueueSnackBar('Recruiter profile updated successfully', {
         variant: SnackBarVariant.Success,
       });
@@ -145,7 +172,7 @@ export const useArxJDUpload = (objectNameSingular: string) => {
       });
       return false;
     }
-  }, [recruiterDetails, enqueueSnackBar, updateWorkspaceMemberProfile]);
+  }, [recruiterDetails, enqueueSnackBar, updateWorkspaceMemberProfile, tokenPair?.accessToken?.token]);
 
   const findBestCompanyMatch = useCallback(
     (companyName: string, companyWebsiteUrl?: string): companyInfoType | null => {
