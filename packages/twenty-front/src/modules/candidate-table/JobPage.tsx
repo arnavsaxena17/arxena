@@ -141,19 +141,16 @@ export const JobPage: React.FC = () => {
     setIsDownloadModalOpen(true);
   };
 
-  // Extract jobId from URL whenever location changes
   useEffect(() => {
     const path = location.pathname;
     const pathParts = path.split('/job/');
     if (pathParts.length > 1) {
-      // Handle potential candidate ID in URL (e.g., /job/jobId/candidateId)
       const remainingPath = pathParts[1];
       const extractedJobId = remainingPath.split('/')[0];
       
       console.log('URL changed, extracted jobId:', extractedJobId);
       setJobId(extractedJobId);
       
-      // Refresh data when job changes
       setTimeout(() => {
         dataTableRef.current?.refreshData();
       }, 100);

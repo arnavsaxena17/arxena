@@ -76,7 +76,6 @@ abstract class BaseCronService {
   }
 }
 
-// const CRON_DISABLED = process.env.NODE_ENV === 'development';
 const CRON_DISABLED = false;
 
 @Injectable()
