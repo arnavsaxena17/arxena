@@ -173,42 +173,22 @@ export const ArxDownloadModal = ({ isOpen, onClose }: ArxDownloadModalProps) => 
       const baseUrl = getBaseUrl();
       const format = getRecommendedFormat(systemInfo.os);
       
-      const response = await fetch(`${baseUrl}/download-app?arch=${systemInfo.arch}&format=${format}`, {
-        method: 'GET',
-        headers: {
-          'User-Agent': window.navigator.userAgent, // Ensure OS detection works on backend
-        },
-      });
+      // Create the download URL
+      const downloadUrl = `${baseUrl}/download-app?arch=${systemInfo.arch}&format=${format}`;
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      // Get the filename from the Content-Disposition header if available
-      const contentDisposition = response.headers.get('Content-Disposition');
-      let filename = 'arxena-app';
-      if (contentDisposition) {
-        const matches = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(contentDisposition);
-        if (matches != null && matches[1]) {
-          filename = matches[1].replace(/['"]/g, '');
-        }
-      }
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
+      // Create a link element and trigger the download directly
       const link = document.createElement('a');
-      link.href = url;
-      link.download = filename;
+      link.href = downloadUrl;
+      link.setAttribute('download', ''); // Let the server set the filename
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
 
-      // Close modal after a short delay to show download starting
+      // Keep the modal open for a moment to show the download starting
       setTimeout(() => {
         setIsDownloading(false);
         onClose();
-      }, 1000);
+      }, 1500);
     } catch (err) {
       setError('Failed to download the application');
       setIsDownloading(false);

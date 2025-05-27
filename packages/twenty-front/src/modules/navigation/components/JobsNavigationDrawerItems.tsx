@@ -103,9 +103,6 @@ export const JobsNavigationDrawerItems = () => {
     setNavigationMemorizedUrl(location.pathname + location.search);
   };
 
-  if (isLoading || localJobs.length === 0) {
-    return null;
-  }
 
   return (
     <NavigationDrawerSection>
