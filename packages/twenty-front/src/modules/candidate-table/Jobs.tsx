@@ -1,7 +1,8 @@
 import styled from '@emotion/styled';
+import { useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 
-import { Button, IconDatabase, IconPlus } from 'twenty-ui';
+import { Button, IconDatabase, IconDownload, IconPlus } from 'twenty-ui';
 
 import { useSelectedRecordForEnrichment } from '@/arx-enrich/hooks/useSelectedRecordForEnrichment';
 import { isArxEnrichModalOpenState } from '@/arx-enrich/states/arxEnrichModalOpenState';
@@ -31,6 +32,7 @@ import { ViewComponentInstanceContext } from '@/views/states/contexts/ViewCompon
 import { useWebSocketEvent } from '../websocket-context/useWebSocketEvent';
 
 import { ArxEnrichmentModal } from '@/arx-enrich/arxEnrichmentModal';
+import { ArxDownloadModal } from '@/candidate-table/components/ArxDownloadModal';
 import { useObjectMetadataItems } from '@/object-metadata/hooks/useObjectMetadataItems';
 import { useFindManyRecords } from '@/object-record/hooks/useFindManyRecords';
 import { RecordTableContextProvider } from '@/object-record/record-table/contexts/RecordTableContext';
@@ -255,6 +257,13 @@ export const Jobs = () => {
     openObjectRecordsSpreasheetImportDialog();
   };
 
+  const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
+
+  const handleDownloadClick = () => {
+    console.log("Downloading app");
+    setIsDownloadModalOpen(true);
+  };
+
   // Check if there are jobs to display
   const hasJobs = jobsFromState.length > 0;
   
@@ -321,6 +330,8 @@ export const Jobs = () => {
             <StyledPageHeader title="Jobs" Icon={IconDatabase}>
               <StyledButtonContainer>
                 <Button title="Add Job" Icon={IconPlus} variant="primary" onClick={handleEngagement} />
+                <Button title="Download App" Icon={IconDownload} variant="secondary" onClick={handleDownloadClick} />
+
               </StyledButtonContainer>
               <StyledAddButtonWrapper>
                 <PageAddChatButton />
@@ -405,6 +416,11 @@ export const Jobs = () => {
               ) : (
                 <></>
               )}
+
+              <ArxDownloadModal 
+                isOpen={isDownloadModalOpen}
+                onClose={() => setIsDownloadModalOpen(false)}
+              />
             </StyledPageBody>
           </RecordFieldValueSelectorContextProvider>
         </StyledPageContainer>
