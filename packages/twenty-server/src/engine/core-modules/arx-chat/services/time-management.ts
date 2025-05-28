@@ -20,7 +20,7 @@ const TimeManagementProd = {
     crontTabToFetchLinkedinSockMessages: CronExpression.EVERY_10_MINUTES,
   },
   timeDifferentials: {
-    timeDifferentialinMinutesToCheckTimeDifferentialBetweenlastMessage: 3,
+    timeDifferentialinMinutesToCheckTimeDifferentialBetweenlastMessage: 1,
     timeDifferentialinMinutesForCheckingCandidateIdsForLastHowManyHoursOfMessagesToFetchForToMakingUpdatesOnChatsForNextChatControls: 120,
     timeDifferentialInMinutesBeforeStartingNextStageMessaging: 180, // 6 hours for prod
   },
