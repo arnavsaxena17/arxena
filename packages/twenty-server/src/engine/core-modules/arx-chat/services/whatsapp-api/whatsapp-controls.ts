@@ -1,8 +1,13 @@
-import fs from 'fs';
-import path from 'path';
-
 import axios from 'axios';
+import fs from 'fs';
 import mime from 'mime-types';
+import path from 'path';
+import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
+import { ExtSockWhatsappMessageProcessor } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/ext-sock-whatsapp-message-process';
+import { getRecruiterProfileByJob } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
+import { BaileysWhatsappAPI } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/baileys/callBaileys';
+import { FacebookWhatsappChatApi } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
+import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import {
   Attachment,
   AttachmentMessageObject,
@@ -13,19 +18,10 @@ import {
   whatappUpdateMessageObjType,
 } from 'twenty-shared';
 
-import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
-import { ExtSockWhatsappMessageProcessor } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/ext-sock-whatsapp-message-process';
-import { getRecruiterProfileByJob } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
-import { BaileysWhatsappAPI } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/baileys/callBaileys';
-import { FacebookWhatsappChatApi } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
-import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
-// import { Transformations } from '../candidate-engagement/transformations';
-
 export class WhatsappControls {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
   ) {}
-
   async sendWhatsappMessageToCandidate(
     messageText: string,
     personNode: PersonNode,
@@ -36,6 +32,7 @@ export class WhatsappControls {
     apiToken: string,
     isChatEnabled?: boolean,
   ) {
+
     try {
       console.log(
         'Called sendWhatsappMessage ToCandidate to send message via any whatsapp api::',
@@ -43,6 +40,7 @@ export class WhatsappControls {
         'message text::',
         messageText,
       );
+
       if (
         mostRecentMessageArr[0].role != 'system' &&
         mostRecentMessageArr.length == 1
@@ -51,6 +49,7 @@ export class WhatsappControls {
 
         return;
       }
+      
       if (
         messageText.includes('#DONTRESPOND#') ||
         (messageText.includes('DONTRESPOND') && messageText)
@@ -61,10 +60,12 @@ export class WhatsappControls {
 
         return;
       }
+      
       console.log(
         'Going to create whatsaappupdatemessage obj for message text::',
         messageText,
       );
+      
       const candidateNode = personNode?.candidates?.edges?.find(
         (edge) => edge.node.jobs.id == candidateJob.id,
       )?.node;
