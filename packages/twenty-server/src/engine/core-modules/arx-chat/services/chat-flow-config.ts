@@ -146,10 +146,10 @@ export class ChatFlowConfigBuilder {
     chatFlowOrder,
   ) => {
     if (candidate.engagementStatus === false) {
+      console.log("candidate", candidate);
       console.log(
         `Candidate ${candidate.name} is not eligible for engagement in ${chatControlType} due to engagementStatus being false. Current time: ${new Date().toISOString()}, Candidate Last updated: ${candidate.updatedAt}`,
       );
-
       return false;
     }
     const currentIndex = chatFlowOrder.indexOf(chatControlType);
@@ -165,7 +165,6 @@ export class ChatFlowConfigBuilder {
           chatFlowOrder,
         );
       }
-
       return false;
     }
     if (currentIndex > 0) {
@@ -175,6 +174,7 @@ export class ChatFlowConfigBuilder {
       const allPreviousStagesCompleted = previousStages.every(
         (stage) => candidate[`${stage}Completed`] === true,
       );
+      console.log("allPreviousStagesCompleted", allPreviousStagesCompleted);
       const currentStageStarted = candidate[chatControlType];
       const currentStageCompleted = candidate[`${chatControlType}Completed`];
 
@@ -198,7 +198,7 @@ export class ChatFlowConfigBuilder {
         const waitTime = waitingPeriodInMinutes * 60 * 1000; // convert to milliseconds
         const cutoffTime = new Date(Date.now() - waitTime).toISOString();
 
-        if (new Date(candidate.updatedAt).toISOString() > cutoffTime) {
+        if (new Date(candidate.updatedAt).toISOString() > cutoffTime && candidate.whatsappMessages?.edges?.length === 1) {
           console.log(
             `Waiting period not elapsed for candidate ${candidate.name} for ${chatControlType}, and last chat control is ${candidate.lastEngagementChatControl} and waiting period is ${waitingPeriodInMinutes} minutes, last updated at ${candidate.updatedAt} and cutoff time is ${cutoffTime}`,
           );
@@ -221,6 +221,9 @@ export class ChatFlowConfigBuilder {
         (!currentStageStarted ||
           (currentStageStarted && !currentStageCompleted))
       ) {
+        console.log("allPreviousStagesCompleted", allPreviousStagesCompleted);
+        console.log("currentStageStarted", currentStageStarted);
+        console.log("currentStageCompleted", currentStageCompleted);
         return this.baseEngagementChecks(
           candidate,
           chatControlType,
