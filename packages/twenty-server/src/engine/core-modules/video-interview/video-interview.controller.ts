@@ -327,7 +327,6 @@ export class VideoInterviewController {
         variables: updateCandidateVariables,
       });
 
-      console.log('graphqlQueryObjForUpdationForCandidateStatus::', graphqlQueryObjForUpdationForCandidateStatus);
       try{
 
         const statusCandidateUpdateResult = (await axiosRequest(graphqlQueryObjForUpdationForCandidateStatus,apiToken)).data;

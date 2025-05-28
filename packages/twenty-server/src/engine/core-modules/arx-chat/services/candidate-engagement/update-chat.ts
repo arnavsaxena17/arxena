@@ -531,10 +531,6 @@ export class UpdateChat {
           variables: updateCandidateVariables,
         });
 
-        console.log(
-          'graphqlQueryObjForUpdationForCandidateStatus::',
-          graphqlQueryObjForUpdationForCandidateStatus,
-        );
         try {
           await axiosRequest(
             graphqlQueryObjForUpdationForCandidateStatus,
