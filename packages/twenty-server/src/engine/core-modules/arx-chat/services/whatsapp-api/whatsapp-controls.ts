@@ -15,6 +15,7 @@ import {
 
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { ExtSockWhatsappMessageProcessor } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/ext-sock-whatsapp-message-process';
+import { getRecruiterProfileByJob } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import { BaileysWhatsappAPI } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/baileys/callBaileys';
 import { FacebookWhatsappChatApi } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
@@ -380,12 +381,18 @@ export class WhatsappControls {
     } catch (error) {
       console.log('Error in downloading the file:', error);
     }
+
+    const recruiterProfile = await getRecruiterProfileByJob(
+      candidateJob,
+      apiToken,
+    );
+    
     const attachmentMessageObj: AttachmentMessageObject = {
       phoneNumberTo:
         person.phones.primaryPhoneNumber.length == 10
           ? '91' + person.phones.primaryPhoneNumber
           : person.phones.primaryPhoneNumber,
-      phoneNumberFrom: '918411937769',
+      phoneNumberFrom: recruiterProfile.phoneNumber,
       fullPath: fullPath,
       fileData: {
         fileName: name,
