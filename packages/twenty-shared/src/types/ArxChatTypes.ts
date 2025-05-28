@@ -1638,11 +1638,6 @@ export interface CandidateNode {
   startChatCompleted?: boolean;
   startMeetingSchedulingChatCompleted?: boolean;
   startVideoInterviewChatCompleted?: boolean;
-  stopChatCompleted?: boolean;
-  stopMeetingSchedulingChat?: boolean;
-  stopMeetingSchedulingChatCompleted?: boolean;
-  stopVideoInterviewChat?: boolean;
-  stopVideoInterviewChatCompleted?: boolean;
   hiringNaukriUrl?: string;
   resdexNaukriUrl?: string;
 }

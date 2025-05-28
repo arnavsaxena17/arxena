@@ -133,9 +133,6 @@ export class GoogleCalendarService {
           },
         };
       }
-
-
-
       calendar.events.insert(
         {
           auth: auth,

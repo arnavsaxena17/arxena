@@ -213,6 +213,39 @@ export const TableColumns = ({
     return td;
   };
 
+  const booleanToggleRenderer: ColumnRenderer = (instance, td, row, column, prop, value) => {
+    td.innerHTML = '';
+    const container = document.createElement('div');
+    container.style.display = 'flex';
+    container.style.justifyContent = 'center';
+    container.style.alignItems = 'center';
+    container.style.cursor = 'pointer';
+    
+    const icon = document.createElement('span');
+    icon.textContent = value ? '✓' : '✗';
+    icon.style.fontSize = '16px';
+    icon.style.color = value ? '#2E7D32' : '#D32F2F';
+    
+    container.addEventListener('click', (e) => {
+      e.stopPropagation();
+      instance.setDataAtRowProp(row, String(prop), !value);
+    });
+    
+    container.appendChild(icon);
+    td.appendChild(container);
+    return td;
+  };
+
+  const chatColumns = [
+    'startChat',
+    'startChatCompleted',
+    'startMeetingSchedulingChat',
+    'startMeetingSchedulingChatCompleted',
+    'startVideoInterviewChat',
+    'startVideoInterviewChatCompleted',
+    'stopChat'
+  ];
+
   const columns: Handsontable.ColumnSettings[] = [];
 
   columns.push({
@@ -251,11 +284,12 @@ export const TableColumns = ({
     .forEach(key => {
       const isUrlField = urlFields.includes(key);
       const isDateField = key === 'createdAt' || key === 'updatedAt' || key === 'deletedAt';
+      const isChatField = chatColumns.includes(key);
       columns.push({
         data: key,
         title: key.charAt(0).toUpperCase() + key.slice(1),
         width: 150,
-        renderer: isUrlField ? urlRenderer : isDateField ? dateRenderer : simpleRenderer,
+        renderer: isChatField ? booleanToggleRenderer : isUrlField ? urlRenderer : isDateField ? dateRenderer : simpleRenderer,
       });
     });
 

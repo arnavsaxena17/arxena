@@ -4,6 +4,7 @@ import { TableContainer } from "@/candidate-table/components/styled";
 import { ArxEnrichmentModal } from '@/arx-enrich/arxEnrichmentModal';
 import { useSelectedRecordForEnrichment } from "@/arx-enrich/hooks/useSelectedRecordForEnrichment";
 import { currentJobIdState, isArxEnrichModalOpenState } from "@/arx-enrich/states/arxEnrichModalOpenState";
+import { processedDataSelector } from "@/candidate-table/states";
 
 import { ArxJDUploadModal } from '@/arx-jd-upload/components/ArxJDUploadModal';
 import { isArxUploadJDModalOpenState } from "@/arx-jd-upload/states/arxUploadJDModalOpenState";
@@ -85,6 +86,7 @@ export const JobPage: React.FC = () => {
   const [jobId, setJobId] = useRecoilState(jobIdAtom);
   const [, setCurrentJobId] = useRecoilState(currentJobIdState);
   const jobs = useRecoilValue(jobsState);
+  const processedData = useRecoilValue(processedDataSelector);
   const theme = useTheme();
   const location = useLocation();
   const dataTableRef = useRef<{ refreshData: () => Promise<void> }>(null);
@@ -178,7 +180,7 @@ export const JobPage: React.FC = () => {
     <SpreadsheetImportProvider>
       <StyledPageContainer>
         <RecordFieldValueSelectorContextProvider>
-          <StyledPageHeader title={currentJob?.name || 'Job'} Icon={IconCheckbox}>
+          <StyledPageHeader title={`${currentJob?.name || 'Job'} (${processedData.length})`} Icon={IconCheckbox}>
             <StyledButtonContainer>
               <Button title="Import Candidates" Icon={IconFileImport} variant="secondary" onClick={handleImportCandidates} />
               <Button title="Download App" Icon={IconDownload} variant="secondary" onClick={handleDownloadClick} />

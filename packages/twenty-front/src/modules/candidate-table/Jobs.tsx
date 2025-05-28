@@ -181,44 +181,34 @@ export const Jobs = () => {
     ? useOpenObjectRecordsSpreadsheetImportDialog('candidate').openObjectRecordsSpreasheetImportDialog
     : () => null;
   console.log('jobsFromState', jobsFromState);
-
   const isArxEnrichModalOpen = useRecoilValue(isArxEnrichModalOpenState);
   const [, setIsArxEnrichModalOpen] = useRecoilState(isArxEnrichModalOpenState);
   const { hasSelectedRecord, selectedRecordId } = useSelectedRecordForEnrichment();
-
   const isVideoInterviewModalOpen = useRecoilValue(isVideoInterviewModalOpenState);
   const [, setIsVideoInterviewModalOpen] = useRecoilState(isVideoInterviewModalOpenState);
   const isArxUploadJDModalOpen = useRecoilValue(isArxUploadJDModalOpenState);
   const [, setIsArxUploadJDModalOpen] = useRecoilState(isArxUploadJDModalOpenState);
 
-  // Add useSnackBar hook
   const { enqueueSnackBar } = useSnackBar();
 
-  // Add WebSocket event listener for metadata structure progress
   useWebSocketEvent<{ step: string; message: string }>(
     'metadata-structure-progress',
     (data: { step: string; message: string }) => {
       console.log('Jobs component received WebSocket event:', data);
-      
       if (data?.message) {
         let variant = SnackBarVariant.Info;
-        
         if (data.step === 'candidate-view-updated') {
           variant = SnackBarVariant.Success;
         }
-        
         if (data.step === 'metadata-structure-complete') {
           variant = SnackBarVariant.Success;
-          enqueueSnackBar(data.message, { variant });
-          
-          // Give the snackbar time to display before reloading
+          enqueueSnackBar(data.message, { variant });          
           console.log('Jobs: Reloading page in 1 seconds due to metadata-structure-complete event');
           setTimeout(() => {
             window.location.reload();
           }, 1000);
           return;
         }
-        
         enqueueSnackBar(data.message, { variant });
       }
     },
@@ -264,19 +254,14 @@ export const Jobs = () => {
     setIsDownloadModalOpen(true);
   };
 
-  // Check if there are jobs to display
   const hasJobs = jobsFromState.length > 0;
   
-  // Show search only if there are jobs and metadata is loaded
   const showSearch = hasJobs && updatedMetadataStructureLoaded;
   
-  // Sort jobs by creation date (most recent first)
   const sortedJobs = [...jobsFromState].sort((a, b) => {
-    // First sort by active status (active jobs first)
     if (a.isActive !== b.isActive) {
       return a.isActive ? -1 : 1;
     }
-    // Then sort by cre ation date descending (newest first)
     const dateA = new Date(a.createdAt || 0).getTime();
     const dateB = new Date(b.createdAt || 0).getTime();
     return dateB - dateA;
@@ -291,6 +276,7 @@ export const Jobs = () => {
             <StyledPageHeader title="Jobs" Icon={IconDatabase}>
               <StyledButtonContainer>
                 <Button title="Add Job" Icon={IconPlus} variant="primary" onClick={handleEngagement} />
+                <Button title="Download App" Icon={IconDownload} variant="secondary" onClick={handleDownloadClick} />
               </StyledButtonContainer>
               <StyledAddButtonWrapper>
                 <PageAddChatButton />
@@ -331,7 +317,6 @@ export const Jobs = () => {
               <StyledButtonContainer>
                 <Button title="Add Job" Icon={IconPlus} variant="primary" onClick={handleEngagement} />
                 <Button title="Download App" Icon={IconDownload} variant="secondary" onClick={handleDownloadClick} />
-
               </StyledButtonContainer>
               <StyledAddButtonWrapper>
                 <PageAddChatButton />
