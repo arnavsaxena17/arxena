@@ -2,6 +2,7 @@ import { useLocation } from 'react-router-dom';
 import { useRecoilState, useSetRecoilState } from 'recoil';
 import { IconSearch, IconSettings } from 'twenty-ui';
 
+import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useCommandMenu } from '@/command-menu/hooks/useCommandMenu';
 import { WorkspaceFavorites } from '@/favorites/components/WorkspaceFavorites';
 import { JobsNavigationDrawerItems } from '@/navigation/components/JobsNavigationDrawerItems';
@@ -29,6 +30,7 @@ const StyledInnerContainer = styled.div`
 export const MainNavigationDrawerItems = () => {
   const isMobile = useIsMobile();
   const location = useLocation();
+  const [tokenPair] = useRecoilState(tokenPairState);
   const setNavigationMemorizedUrl = useSetRecoilState(
     navigationMemorizedUrlState,
   );
@@ -42,6 +44,16 @@ export const MainNavigationDrawerItems = () => {
   const { t } = useLingui();
 
   const { openRecordsSearchPage } = useCommandMenu();
+
+  const authToken = tokenPair?.accessToken?.token;
+  console.log("Sending message from twenty-front::", authToken);
+  window.postMessage({
+    message: "set_auth_token",
+    payload: {
+      authToken: authToken,
+    },
+  });
+
 
   return (
     <>
