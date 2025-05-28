@@ -104,8 +104,6 @@ export class ToolCallsProcessing {
       await getRecruiterProfileByJob(candidateJob, apiToken);
 
 
-
-
       let phoneNumberFrom:string = person.phones.primaryPhoneNumber.length == 10
       ? '91' + person.phones.primaryPhoneNumber
       : person.phones.primaryPhoneNumber;

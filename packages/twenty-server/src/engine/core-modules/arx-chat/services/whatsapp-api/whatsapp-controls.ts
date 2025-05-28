@@ -420,8 +420,14 @@ export class WhatsappControls {
     chatControl: ChatControlsObjType,
     apiToken: string,
   ) {
-    if (process.env.WHATSAPP_API === 'ext-sock-whatsapp') {
+    console.log("Going to send attachment to ext-sock-whatsapp")
+    const messagingChannel = personNode.candidates.edges.filter(
+      (candidate) => candidate.node.jobs.id == candidateJob.id,
+    )[0]?.node?.messagingChannel;
+    console.log("messagingChannel for sending attachment to ext-sock-whatsapp", messagingChannel);
+    if (messagingChannel === 'whatsapp-web') {
       try {
+        console.log("attachmentMessage for sending attachment to ext-sock-whatsapp", attachmentMessage);
         const arxenaSiteBaseUrl =
           process.env.ARXENA_SITE_BASE_URL || 'http://localhost:5050';
 
