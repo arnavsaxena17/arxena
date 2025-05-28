@@ -198,7 +198,7 @@ export class ChatFlowConfigBuilder {
         const waitTime = waitingPeriodInMinutes * 60 * 1000; // convert to milliseconds
         const cutoffTime = new Date(Date.now() - waitTime).toISOString();
 
-        if (new Date(candidate.updatedAt).toISOString() > cutoffTime && candidate.whatsappMessages?.edges?.length === 1) {
+        if (new Date(candidate.updatedAt).toISOString() > cutoffTime && candidate.whatsappMessages?.edges?.length !== 1) {
           console.log(
             `Waiting period not elapsed for candidate ${candidate.name} for ${chatControlType}, and last chat control is ${candidate.lastEngagementChatControl} and waiting period is ${waitingPeriodInMinutes} minutes, last updated at ${candidate.updatedAt} and cutoff time is ${cutoffTime}`,
           );
