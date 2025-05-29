@@ -20,6 +20,8 @@ import { useSelectedRecordForEnrichment } from '@/arx-enrich/hooks/useSelectedRe
 import { isArxEnrichModalOpenState } from '@/arx-enrich/states/arxEnrichModalOpenState';
 import { RecordIndexFiltersToContextStoreEffect } from '@/object-record/record-index/components/RecordIndexFiltersToContextStoreEffect';
 import { RecordIndexTableContainerEffect } from '@/object-record/record-index/components/RecordIndexTableContainerEffect';
+import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
+import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { ViewBar } from '@/views/components/ViewBar';
 import { ViewType } from '@/views/types/ViewType';
 import { useIsFeatureEnabled } from '@/workspace/hooks/useIsFeatureEnabled';
@@ -60,9 +62,13 @@ export const RecordIndexContainer = () => {
 
   const [, setIsArxEnrichModalOpen] = useRecoilState(isArxEnrichModalOpenState);
   const { hasSelectedRecord } = useSelectedRecordForEnrichment();
-
+  const { enqueueSnackBar } = useSnackBar();
   const handleRefresh = async () => {
     await recordTableRefetchFunction();
+
+    enqueueSnackBar(`Refetched records`, {
+      variant: SnackBarVariant.Success,
+    }); 
   };
 
   const handleVideoInterviewEdit = async () => {

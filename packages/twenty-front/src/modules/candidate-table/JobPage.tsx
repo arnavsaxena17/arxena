@@ -23,6 +23,8 @@ import { RecordIndexContextProvider } from "@/object-record/record-index/context
 import { RecordFieldValueSelectorContextProvider } from "@/object-record/record-store/contexts/RecordFieldValueSelectorContext";
 import { useOpenObjectRecordsSpreadsheetImportDialog } from "@/object-record/spreadsheet-import/hooks/useOpenObjectRecordsSpreadsheetImportDialog";
 import { SpreadsheetImportProvider } from "@/spreadsheet-import/provider/components/SpreadsheetImportProvider";
+import { SnackBarVariant } from "@/ui/feedback/snack-bar-manager/components/SnackBar";
+import { useSnackBar } from "@/ui/feedback/snack-bar-manager/hooks/useSnackBar";
 import { PageBody } from '@/ui/layout/page/components/PageBody';
 import { PageContainer } from '@/ui/layout/page/components/PageContainer';
 import { PageHeader } from '@/ui/layout/page/components/PageHeader';
@@ -93,6 +95,8 @@ export const JobPage: React.FC = () => {
   const [isArxEnrichModalOpen, setIsArxEnrichModalOpen] = useRecoilState(isArxEnrichModalOpenState);
   const { hasSelectedRecord, selectedRecordId } = useSelectedRecordForEnrichment();
 
+  const { enqueueSnackBar } = useSnackBar();
+
   const isVideoInterviewModalOpen = useRecoilValue(isVideoInterviewModalOpenState);
   const [, setIsVideoInterviewModalOpen] = useRecoilState(isVideoInterviewModalOpenState);
 
@@ -161,6 +165,9 @@ export const JobPage: React.FC = () => {
   
   const handleRefresh = () => {
     dataTableRef.current?.refreshData();
+    enqueueSnackBar(`Refresh completed`, {
+      variant: SnackBarVariant.Success,
+    });
   };
 
   const recordIndexContextValue = {
