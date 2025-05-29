@@ -73,7 +73,7 @@ export const useRestartMessagesAction: ActionHookWithObjectMetadataItem = ({ obj
       } else {
         selectedRecords = await fetchAllRecords();
       }
-      
+      console.log('selectedRecords::', selectedRecords);
       if (!selectedRecords || selectedRecords.length === 0) {
         enqueueSnackBar('No records selected', {
           variant: SnackBarVariant.Error,
@@ -83,7 +83,7 @@ export const useRestartMessagesAction: ActionHookWithObjectMetadataItem = ({ obj
       }
       // Process each selected record
       for (const record of selectedRecords) {
-        if (!record.phone) {
+        if (!record.people.phones.primaryPhoneNumber) {
           console.warn(`Skipping record ${record.id}: No phone number found`);
           continue;
         }
@@ -92,8 +92,8 @@ export const useRestartMessagesAction: ActionHookWithObjectMetadataItem = ({ obj
           await axios.post(
             `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/start-interim-chat-prompt`,
             {
-              interimChat: 'restart', // Using 'restart' as the interim chat type for restarting messages
-              phoneNumber: record.phone,
+              interimChat: 'remindCandidate', // Using 'restart' as the interim chat type for restarting messages
+              phoneNumber: record.people.phones.primaryPhoneNumber,
             },
             {
               headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` },
@@ -133,10 +133,10 @@ export const useRestartMessagesAction: ActionHookWithObjectMetadataItem = ({ obj
     <ConfirmationModal
       isOpen={isRestartMessagesModalOpen}
       setIsOpen={setIsRestartMessagesModalOpen}
-      title={'Restart Messages'}
-      subtitle={`Are you sure you want to restart messages?`}
+      title={'Restart Messaging'}
+      subtitle={`Are you sure you want to restart with candidates?`}
       onConfirmClick={handleRestartMessagesClick}
-      deleteButtonText={'Restart Messages'}
+      deleteButtonText={'Restart Messaging'}
       confirmButtonAccent='blue'
     />
   );
