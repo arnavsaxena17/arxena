@@ -11,7 +11,7 @@ import {
   MenuItem
 } from 'twenty-ui';
 
-import { jobsState } from '@/candidate-table/states';
+import { jobsState } from '@/candidate-table/states/states';
 import { DropdownMenu } from '@/ui/layout/dropdown/components/DropdownMenu';
 import { DropdownMenuItemsContainer } from '@/ui/layout/dropdown/components/DropdownMenuItemsContainer';
 import { useDropdown } from '@/ui/layout/dropdown/hooks/useDropdown';

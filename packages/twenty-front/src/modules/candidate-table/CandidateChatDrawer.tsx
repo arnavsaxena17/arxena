@@ -1,5 +1,5 @@
 import { tokenPairState } from '@/auth/states/tokenPairState';
-import { processedDataSelector, tableStateAtom } from '@/candidate-table/states';
+import { processedDataSelector, tableStateAtom } from '@/candidate-table/states/states';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { TabList } from '@/ui/layout/tab/components/TabList';

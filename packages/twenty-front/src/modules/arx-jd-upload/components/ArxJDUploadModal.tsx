@@ -1,5 +1,5 @@
 import { isArxUploadJDModalOpenState } from '@/arx-jd-upload/states/arxUploadJDModalOpenState';
-import { jobIdAtom } from '@/candidate-table/states';
+import { jobIdAtom } from '@/candidate-table/states/states';
 import { gql, useLazyQuery } from '@apollo/client';
 import { useEffect, useRef, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';

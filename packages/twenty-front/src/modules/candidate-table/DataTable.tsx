@@ -1,7 +1,7 @@
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { afterChange, afterSelectionEnd, performRedo, performUndo, updateUnreadMessagesStatus } from '@/candidate-table/HotHooks';
-import { columnsSelector, processedDataSelector, tableStateAtom } from "@/candidate-table/states";
 import { chatSearchQueryState } from '@/candidate-table/states/chatSearchQueryState';
+import { columnsSelector, processedDataSelector, tableStateAtom } from "@/candidate-table/states/states";
 import { contextStoreNumberOfSelectedRecordsComponentState } from '@/context-store/states/contextStoreNumberOfSelectedRecordsComponentState';
 import { contextStoreTargetedRecordsRuleComponentState } from '@/context-store/states/contextStoreTargetedRecordsRuleComponentState';
 import { useRightDrawer } from '@/ui/layout/right-drawer/hooks/useRightDrawer';
@@ -314,17 +314,45 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
 
   
     // Compute select-all state for visible rows
-    const allVisibleIds = useMemo(() => filteredData.map((row: any) => row.id), [filteredData]);
+    const allVisibleIds = useMemo(() => {
+      const hot = tableRef.current?.hotInstance;
+      if (!hot) return [];
+      
+      // Get the sorted/filtered data in current view order
+      return filteredData.map((row: any, index: number) => {
+        const physicalRow = hot?.toPhysicalRow(index);
+        const rowData = physicalRow !== undefined ? hot.getSourceDataAtRow(physicalRow) : row;
+        return rowData?.id;
+      }).filter(Boolean);
+    }, [filteredData]);
+
     const allSelected = allVisibleIds.length > 0 && allVisibleIds.every((id: string) => tableState.selectedRowIds.includes(id));
     const noneSelected = allVisibleIds.every((id: string) => !tableState.selectedRowIds.includes(id));
     const someSelected = !allSelected && !noneSelected;
 
     // Handler for select-all checkbox
     const handleSelectAll = (checked: boolean) => {
+      const hot = tableRef.current?.hotInstance;
+      if (!hot) return;
+
+      // Get all visible row IDs in their current sorted order
+      const visibleIds = filteredData.map((row: any, index: number) => {
+        const physicalRow = hot?.toPhysicalRow(index);
+        const rowData = physicalRow !== undefined ? hot.getSourceDataAtRow(physicalRow) : row;
+        return rowData?.id;
+      }).filter(Boolean);
+
       setTableState(prev => ({
         ...prev,
-        selectedRowIds: checked ? allVisibleIds : []
+        selectedRowIds: checked ? visibleIds : []
       }));
+
+      // Update context store states
+      setContextStoreNumberOfSelectedRecords(checked ? visibleIds.length : 0);
+      setContextStoreTargetedRecordsRule({
+        mode: 'selection',
+        selectedRecordIds: checked ? visibleIds : [],
+      });
     };
 
     // Custom colHeaders: first column is empty string, others use column title

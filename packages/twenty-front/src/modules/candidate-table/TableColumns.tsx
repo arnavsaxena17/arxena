@@ -50,7 +50,9 @@ export const TableColumns = ({
 
   const checkboxRenderer: ColumnRenderer = (instance, td, row, column, prop, value, cellProperties) => {
     td.innerHTML = '';
-    const rowData = instance.getSourceDataAtRow(row);
+    // Get the physical row index after sorting
+    const physicalRow = instance.toPhysicalRow(row);
+    const rowData = instance.getSourceDataAtRow(physicalRow);
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
     checkbox.checked = value || false;
@@ -68,7 +70,8 @@ export const TableColumns = ({
     
     checkbox.addEventListener('click', (e) => {
       e.stopPropagation();
-      instance.setDataAtRowProp(row, 'checkbox', !value);
+      // Use physical row index when setting data
+      instance.setDataAtRowProp(physicalRow, 'checkbox', !value);
       if (rowElement) {
         rowElement.classList.toggle('selected-row');
       }

@@ -4,7 +4,7 @@ import { TableContainer } from "@/candidate-table/components/styled";
 import { ArxEnrichmentModal } from '@/arx-enrich/arxEnrichmentModal';
 import { useSelectedRecordForEnrichment } from "@/arx-enrich/hooks/useSelectedRecordForEnrichment";
 import { currentJobIdState, isArxEnrichModalOpenState } from "@/arx-enrich/states/arxEnrichModalOpenState";
-import { processedDataSelector } from "@/candidate-table/states";
+import { processedDataSelector } from "@/candidate-table/states/states";
 
 import { ArxJDUploadModal } from '@/arx-jd-upload/components/ArxJDUploadModal';
 import { isArxUploadJDModalOpenState } from "@/arx-jd-upload/states/arxUploadJDModalOpenState";
@@ -12,7 +12,7 @@ import { ChatOptionsDropdownButton } from "@/candidate-table/ChatOptionsDropdown
 import { ArxDownloadModal } from "@/candidate-table/components/ArxDownloadModal";
 import { DataTable } from "@/candidate-table/DataTable";
 import { HotTableActionMenu } from "@/candidate-table/HotTableActionMenu";
-import { jobIdAtom, jobsState } from "@/candidate-table/states";
+import { jobIdAtom, jobsState } from "@/candidate-table/states/states";
 import { ContextStoreComponentInstanceContext } from "@/context-store/states/contexts/ContextStoreComponentInstanceContext";
 import { ObjectFilterDropdownButton } from "@/object-record/object-filter-dropdown/components/ObjectFilterDropdownButton";
 import { ObjectFilterDropdownComponentInstanceContext } from "@/object-record/object-filter-dropdown/states/contexts/ObjectFilterDropdownComponentInstanceContext";
@@ -37,7 +37,9 @@ import styled from '@emotion/styled';
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useRecoilState, useRecoilValue } from "recoil";
-import { Button, IconCheckbox, IconDownload, IconFileImport } from 'twenty-ui';
+import { Button, IconChartCandle, IconCheckbox, IconDownload, IconFileImport } from 'twenty-ui';
+
+import { JobStatisticsModal } from './components/JobStatisticsModal';
 
 const StyledPageContainer = styled(PageContainer)`
   display: flex;
@@ -112,6 +114,7 @@ export const JobPage: React.FC = () => {
   }, [jobs, jobId]);
 
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
+  const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
 
   const handleEnrichment = () => {
     if (!selectedRecordId) {
@@ -190,6 +193,7 @@ export const JobPage: React.FC = () => {
           <StyledPageHeader title={`${currentJob?.name || 'Job'} (${processedData.length})`} Icon={IconCheckbox}>
             <StyledButtonContainer>
               <Button title="Import Candidates" Icon={IconFileImport} variant="secondary" onClick={handleImportCandidates} />
+              <Button title="Statistics" Icon={IconChartCandle} variant="secondary" onClick={() => setIsStatsModalOpen(true)} />
               <Button title="Download App" Icon={IconDownload} variant="secondary" onClick={handleDownloadClick} />
 
               {/* <Button title="Filter" Icon={IconFilter} variant="secondary" /> */}
@@ -286,6 +290,12 @@ export const JobPage: React.FC = () => {
                 isOpen={isDownloadModalOpen}
                 onClose={() => setIsDownloadModalOpen(false)}
               />
+
+            <JobStatisticsModal 
+              isOpen={isStatsModalOpen}
+              onClose={() => setIsStatsModalOpen(false)}
+              processedData={processedData}
+            />
           </StyledPageBody>
         </RecordFieldValueSelectorContextProvider>
       </StyledPageContainer>

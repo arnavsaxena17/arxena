@@ -4,14 +4,18 @@ import { useRecoilState, useRecoilValue } from 'recoil';
 
 import { Button, IconDatabase, IconDownload, IconPlus } from 'twenty-ui';
 
+import { ArxEnrichmentModal } from '@/arx-enrich/arxEnrichmentModal';
 import { useSelectedRecordForEnrichment } from '@/arx-enrich/hooks/useSelectedRecordForEnrichment';
 import { isArxEnrichModalOpenState } from '@/arx-enrich/states/arxEnrichModalOpenState';
 import { ArxJDUploadModal } from '@/arx-jd-upload/components/ArxJDUploadModal';
 import { isArxUploadJDModalOpenState } from '@/arx-jd-upload/states/arxUploadJDModalOpenState';
 import { ChatOptionsDropdownButton } from '@/candidate-table/ChatOptionsDropdownButton';
+import { ArxDownloadModal } from '@/candidate-table/components/ArxDownloadModal';
 import { JobCard } from '@/candidate-table/JobCard';
 import { PageAddChatButton } from '@/candidate-table/PageAddChatButton';
-import { jobsState } from '@/candidate-table/states';
+import { jobsState } from '@/candidate-table/states/states';
+import { useObjectMetadataItems } from '@/object-metadata/hooks/useObjectMetadataItems';
+import { useFindManyRecords } from '@/object-record/hooks/useFindManyRecords';
 import { ObjectFilterDropdownButton } from '@/object-record/object-filter-dropdown/components/ObjectFilterDropdownButton';
 import { ObjectFilterDropdownComponentInstanceContext } from '@/object-record/object-filter-dropdown/states/contexts/ObjectFilterDropdownComponentInstanceContext';
 import { FiltersHotkeyScope } from '@/object-record/object-filter-dropdown/types/FiltersHotkeyScope';
@@ -19,6 +23,7 @@ import { ObjectSortDropdownButton } from '@/object-record/object-sort-dropdown/c
 import { ObjectSortDropdownComponentInstanceContext } from '@/object-record/object-sort-dropdown/states/context/ObjectSortDropdownComponentInstanceContext';
 import { RecordIndexContextProvider } from '@/object-record/record-index/contexts/RecordIndexContext';
 import { RecordFieldValueSelectorContextProvider } from '@/object-record/record-store/contexts/RecordFieldValueSelectorContext';
+import { RecordTableContextProvider } from '@/object-record/record-table/contexts/RecordTableContext';
 import { RecordTableEmptyStateDisplay } from '@/object-record/record-table/empty-state/components/RecordTableEmptyStateDisplay';
 import { useOpenObjectRecordsSpreadsheetImportDialog } from '@/object-record/spreadsheet-import/hooks/useOpenObjectRecordsSpreadsheetImportDialog';
 import { SpreadsheetImportProvider } from '@/spreadsheet-import/provider/components/SpreadsheetImportProvider';
@@ -28,17 +33,12 @@ import { PageBody } from '@/ui/layout/page/components/PageBody';
 import { PageContainer } from '@/ui/layout/page/components/PageContainer';
 import { PageHeader } from '@/ui/layout/page/components/PageHeader';
 import { TopBar } from '@/ui/layout/top-bar/components/TopBar';
-import { ViewComponentInstanceContext } from '@/views/states/contexts/ViewComponentInstanceContext';
-import { useWebSocketEvent } from '../websocket-context/useWebSocketEvent';
-
-import { ArxEnrichmentModal } from '@/arx-enrich/arxEnrichmentModal';
-import { ArxDownloadModal } from '@/candidate-table/components/ArxDownloadModal';
-import { useObjectMetadataItems } from '@/object-metadata/hooks/useObjectMetadataItems';
-import { useFindManyRecords } from '@/object-record/hooks/useFindManyRecords';
-import { RecordTableContextProvider } from '@/object-record/record-table/contexts/RecordTableContext';
 import { InterviewCreationModal } from '@/video-interview/interview-creation/InterviewCreationModal';
 import { isVideoInterviewModalOpenState } from '@/video-interview/interview-creation/states/videoInterviewModalState';
+import { ViewComponentInstanceContext } from '@/views/states/contexts/ViewComponentInstanceContext';
 import { AnimatedPlaceholder, AnimatedPlaceholderEmptyContainer, AnimatedPlaceholderEmptySubTitle, AnimatedPlaceholderEmptyTextContainer, AnimatedPlaceholderEmptyTitle } from 'twenty-ui';
+import { useWebSocketEvent } from '../websocket-context/useWebSocketEvent';
+import { processedDataSelector } from './states/states';
 
 const StyledPageContainer = styled(PageContainer)`
   display: flex;
@@ -248,6 +248,7 @@ export const Jobs = () => {
   };
 
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
+  const processedData = useRecoilValue(processedDataSelector);
 
   const handleDownloadClick = () => {
     console.log("Downloading app");

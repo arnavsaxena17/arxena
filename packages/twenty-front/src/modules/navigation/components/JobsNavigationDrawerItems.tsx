@@ -5,7 +5,7 @@ import { useRecoilState, useSetRecoilState } from 'recoil';
 import { IconBriefcase } from 'twenty-ui';
 
 import { tokenPairState } from '@/auth/states/tokenPairState';
-import { jobsState } from '@/candidate-table/states';
+import { jobsState } from '@/candidate-table/states/states';
 import { AppPath } from '@/types/AppPath';
 import { NavigationDrawerItem } from '@/ui/navigation/navigation-drawer/components/NavigationDrawerItem';
 import { NavigationDrawerItemGroup } from '@/ui/navigation/navigation-drawer/components/NavigationDrawerItemGroup';

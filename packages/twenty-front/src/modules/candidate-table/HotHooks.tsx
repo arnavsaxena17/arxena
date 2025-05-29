@@ -1,7 +1,7 @@
 import { RightDrawerPages } from "@/ui/layout/right-drawer/types/RightDrawerPages";
 import { IconMessages } from "@tabler/icons-react";
 import axios from 'axios';
-import { Change } from './states';
+import { Change } from './states/states';
 // import { Change } from './states/tableStateAtom';
 
 export const updateUnreadMessagesStatus = async (unreadMessageIds: string[], tokenPair: any) => {
@@ -32,7 +32,9 @@ export const afterSelectionEnd = (tableRef: any, column: number, row: number, ro
     
     // Handle chat drawer opening
     if (selectedIds.length === 1 && column === 1) {
-      const selectedRow = hot.getSourceDataAtRow(row);
+      // Get physical row index for proper data access after sorting
+      const physicalRow = hot.toPhysicalRow(row);
+      const selectedRow = hot.getSourceDataAtRow(physicalRow);
       console.log("selectedRow in afterSelectionEnd", selectedRow);
       
       if (selectedRow?.id) {
@@ -87,64 +89,61 @@ export const afterSelectionEnd = (tableRef: any, column: number, row: number, ro
       }
     }
     console.log('Right drawer opened successfully');
-  } catch (error) {
-    console.error('Error opening right drawer:', error);
-  }
 
-  // Handle row selection for both checkbox and regular cell selection
-  const selectedRows: string[] = [];
-  
-  if (column === 0) {
-    // For checkbox column, toggle the selected state of the clicked row
-    const rowData = hot.getSourceDataAtRow(row);
-    let currentSelectedIds: string[] = [];
-    if (rowData && rowData.id) {
-      setTableState((prev: any) => {
-        currentSelectedIds = [...prev.selectedRowIds];
-        const rowId = rowData.id;
-        
-        const index = currentSelectedIds.indexOf(rowId);
-        if (index > -1) {
-          currentSelectedIds.splice(index, 1);
-        } else {
-          currentSelectedIds.push(rowId);
+    // Handle row selection for both checkbox and regular cell selection
+    const selectedRows: string[] = [];
+    
+    if (column === 0) {
+      // For checkbox column, toggle the selected state of the clicked row
+      const physicalRow = hot.toPhysicalRow(row);
+      const rowData = hot.getSourceDataAtRow(physicalRow);
+      let currentSelectedIds: string[] = [];
+      if (rowData && rowData.id) {
+        setTableState((prev: any) => {
+          currentSelectedIds = [...prev.selectedRowIds];
+          const rowId = rowData.id;
+          
+          const index = currentSelectedIds.indexOf(rowId);
+          if (index > -1) {
+            currentSelectedIds.splice(index, 1);
+          } else {
+            currentSelectedIds.push(rowId);
+          }
+          return {
+            ...prev,
+            selectedRowIds: currentSelectedIds
+          };
+        });
+
+        setContextStoreNumberOfSelectedRecords(currentSelectedIds.length);
+        setContextStoreTargetedRecordsRule({
+          mode: 'selection',
+          selectedRecordIds: currentSelectedIds,
+        });
+      }
+    } else {
+      // For regular cell selection, select all rows in the range using physical indices
+      for (let i = Math.min(row, row2); i <= Math.max(row, row2); i++) {
+        const physicalRow = hot.toPhysicalRow(i);
+        const rowData = hot.getSourceDataAtRow(physicalRow);
+        if (rowData && rowData.id) {
+          selectedRows.push(rowData.id);
         }
-        return {
-          ...prev,
-          selectedRowIds: currentSelectedIds
-        };
-      });
+      }
+      
+      setTableState((prev: any) => ({
+        ...prev,
+        selectedRowIds: selectedRows
+      }));
 
-      setContextStoreNumberOfSelectedRecords(currentSelectedIds.length);
+      setContextStoreNumberOfSelectedRecords(selectedRows.length);
       setContextStoreTargetedRecordsRule({
         mode: 'selection',
-        selectedRecordIds: currentSelectedIds,
+        selectedRecordIds: selectedRows,
       });
-  
     }
-  } else {
-    const selectedRows: string[] = [];
-
-    // For regular cell selection, select all rows in the range
-    for (let i = Math.min(row, row2); i <= Math.max(row, row2); i++) {
-      const rowData = hot.getSourceDataAtRow(i);
-      if (rowData && rowData.id) {
-        selectedRows.push(rowData.id);
-      }
-    }
-    
-    setTableState((prev: any) => ({
-      ...prev,
-      selectedRowIds: selectedRows
-    }));
-
-    setContextStoreNumberOfSelectedRecords(selectedRows.length);
-    setContextStoreTargetedRecordsRule({
-      mode: 'selection',
-      selectedRecordIds: selectedRows,
-    });
-    return selectedRows;
-
+  } catch (error) {
+    console.error('Error in afterSelectionEnd:', error);
   }
 };
 

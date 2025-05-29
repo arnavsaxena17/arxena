@@ -1,5 +1,5 @@
 import { tokenPairState } from '@/auth/states/tokenPairState';
-import { processedDataSelector, tableStateAtom } from '@/candidate-table/states';
+import { processedDataSelector, tableStateAtom } from '@/candidate-table/states/states';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import styled from '@emotion/styled';
@@ -292,10 +292,10 @@ export const CandidateInfoHeader = () => {
     <StyledContainer>
       <StyledTopRow>
         <StyledName>{candidateData.name}</StyledName>
-        {candidateData.status && (
+        {candidateData.engagementStatus && (
           <Status 
-            color={getStatusColor(candidateData.status)} 
-            text={STATUS_LABELS[candidateData.status] || candidateData.status} 
+            color={getStatusColor(typeof candidateData.engagementStatus === 'string' ? candidateData.engagementStatus : '')} 
+            text={typeof candidateData.engagementStatus === 'string' ? (STATUS_LABELS[candidateData.engagementStatus] || candidateData.engagementStatus) : ''}
           />
         )}
       </StyledTopRow>
@@ -331,7 +331,7 @@ export const CandidateInfoHeader = () => {
       <StyledActionsRow>
         <StyledDropdownContainer>
           <StyledSelect 
-            value={candidateData.status || ''} 
+            value={candidateData.engagementStatus as string || ''} 
             onChange={handleStatusUpdate}
           >
             <option value="" disabled>Update Status</option>
