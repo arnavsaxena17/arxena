@@ -94,7 +94,7 @@ export const JobPage: React.FC = () => {
   const dataTableRef = useRef<{ refreshData: () => Promise<void> }>(null);
   const [isArxEnrichModalOpen, setIsArxEnrichModalOpen] = useRecoilState(isArxEnrichModalOpenState);
   const { hasSelectedRecord, selectedRecordId } = useSelectedRecordForEnrichment();
-
+  console.log("processedData in job page::", processedData);
   const { enqueueSnackBar } = useSnackBar();
 
   const isVideoInterviewModalOpen = useRecoilValue(isVideoInterviewModalOpenState);

@@ -308,6 +308,8 @@ export const CandidateChatDrawer = () => {
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   
+  
+  console.log("processedData::", processedData);
   // Use the templates hook
   const { templates, templatePreviews, isLoading: isLoadingTemplates } = useTemplates();
   

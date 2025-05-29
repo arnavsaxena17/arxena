@@ -162,8 +162,8 @@ export const CANDIDATE_SPECIFIC_ACTIONS: Record<
     type: ActionMenuEntryType.Standard,
     scope: ActionMenuEntryScope.RecordSelection,
     key: MultipleRecordsActionKeys.UPDATE_SNAPSHOT_PROFILES_FROM_JOB_BOARDS,
-    shortLabel: msg`Update Snapshot Profiles From Job Boards`,
-    label: msg`Update Snapshot Profiles From Job Boards`,
+    shortLabel: msg`Save Resumes & Contacts from Portals`,
+    label: msg`Save Resumes & Contacts from Portals`,
     position: 8,
     Icon: IconList,
     accent: 'placeholder',
@@ -174,6 +174,7 @@ export const CANDIDATE_SPECIFIC_ACTIONS: Record<
     ],
     useAction: useUpdateSnapshotProfilesFromJobBoardsAction,
   },
+
   shareChatAndVideoInterviewBasedShortlist: {
     type: ActionMenuEntryType.Standard,
     scope: ActionMenuEntryScope.RecordSelection,

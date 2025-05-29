@@ -6,6 +6,8 @@ import { useDownloadCandidateCVsAction } from '@/action-menu/actions/record-acti
 import { usePopulateShortlistAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/usePopulateShortlistAction';
 import { useRefreshChatCountsAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useRefreshChatCountsAction';
 import { useRefreshChatStatusesAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useRefreshChatStatusesAction';
+import { useResetMessagesFromWhatsappAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useResetMessagesFromWhatsappAction';
+import { useRestartMessagesAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useRestartMessagesAction';
 import { useSendToWhatsappAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useSendToWhatsappAction';
 import { useShareChatAndVideoInterviewBasedShortlistAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useShareChatAndVideoInterviewBasedShortlistAction';
 import { useShareChatBasedShortlistAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useShareChatBasedShortlistAction';
@@ -255,8 +257,8 @@ export const CHAT_ACTIONS_CONFIG: Record<
     type: ActionMenuEntryType.Standard,
     scope: ActionMenuEntryScope.RecordSelection,
     key: MultipleRecordsActionKeys.UPDATE_SNAPSHOT_PROFILES_FROM_JOB_BOARDS,
-    shortLabel: msg`Update Snapshot Profiles From Job Boards`,
-    label: msg`Update Snapshot Profiles From Job Boards`,
+    shortLabel: msg`Save Resumes & Contacts from Portals`,
+    label: msg`Save Resumes & Contacts from Portals`,
     position: 9,
     Icon: IconList,
     accent: 'danger',
@@ -267,6 +269,38 @@ export const CHAT_ACTIONS_CONFIG: Record<
       ActionViewType.SHOW_PAGE,
     ],
     useAction: useUpdateSnapshotProfilesFromJobBoardsAction,
+  },
+  restartMessages: {
+    type: ActionMenuEntryType.Standard,
+    scope: ActionMenuEntryScope.RecordSelection,
+    key: MultipleRecordsActionKeys.RESTART_MSGS,
+    shortLabel: msg`Restart Messaging with Candidate`,
+    label: msg`Restart Messaging with Candidate`,
+    position: 9,
+    Icon: IconList,
+    accent: 'placeholder',
+    isPinned: false,
+    availableOn: [
+      ActionViewType.INDEX_PAGE_BULK_SELECTION,
+      ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
+    ],
+    useAction: useRestartMessagesAction,
+  },
+  resetMessagesFromWhatsapp: {
+    type: ActionMenuEntryType.Standard,
+    scope: ActionMenuEntryScope.RecordSelection,
+    key: MultipleRecordsActionKeys.RESET_MSGS_FROM_WHATSAPP,
+    shortLabel: msg`Delete Messages in Whatsapp`,
+    label: msg`Delete Messages in Whatsapp`,
+    position: 9,
+    Icon: IconList,
+    accent: 'placeholder',
+    isPinned: false,
+    availableOn: [
+      ActionViewType.INDEX_PAGE_BULK_SELECTION,
+      ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
+    ],
+    useAction: useResetMessagesFromWhatsappAction,
   },
   sendToWhatsapp: {
     type: ActionMenuEntryType.Standard,

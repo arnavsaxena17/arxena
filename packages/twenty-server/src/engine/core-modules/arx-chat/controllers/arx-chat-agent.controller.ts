@@ -232,6 +232,22 @@ export class ArxChatEndpoint {
 
     return;
   }
+  @Post('reset-messages-from-whatsapp')
+  @UseGuards(JwtAuthGuard)
+  async resetMessagesFromWhatsapp(@Req() request: any) {
+    const apiToken = request.headers.authorization.split(' ')[1]; // Assuming Bearer token
+    const candidateIds = request.body.candidateIds;
+
+    console.log('called resetMessagesFromWhatsapp:', candidateIds);
+    for (const candidateId of candidateIds) {
+    await new UpdateChat(this.workspaceQueryService).resetMessagesFromWhatsapp(
+      candidateId,
+      apiToken,
+    ); 
+  }
+
+    return;
+  }
 
   @Post('send-chat')
   @UseGuards(JwtAuthGuard)

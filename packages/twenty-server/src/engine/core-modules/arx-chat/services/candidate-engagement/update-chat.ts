@@ -5,6 +5,7 @@ import {
   AnswerMessageObj,
   CandidateNode,
   chatMessageType,
+  deleteOneWhatsappMessage,
   graphqlQueryToCreateOneCandidateFieldValue,
   graphqlQueryToCreateOneNewWhatsappMessage,
   graphqlQueryToRemoveMessages,
@@ -291,6 +292,34 @@ export class UpdateChat {
     );
 
     return response.data;
+  }
+
+
+
+
+
+  async resetMessagesFromWhatsapp(candidateId: string, apiToken: string) {
+    console.log('This is the candidate ID::', candidateId);
+
+    const whatsappMessages = await new FilterCandidates(
+      this.workspaceQueryService,
+    ).fetchAllWhatsappMessages(candidateId, apiToken);
+    console.log('This is the whatsapp messages::', whatsappMessages);
+    for (const message of whatsappMessages) {
+      console.log('This is the message::', message);
+      try {
+        const graphqlQueryObj = JSON.stringify({
+          query: deleteOneWhatsappMessage,
+          variables: {
+            idToDelete: message.id
+          },
+        });
+        await axiosRequest(graphqlQueryObj, apiToken);
+        console.log('Successfully deleted message:', message.id);
+      } catch (error) {
+        console.error('Error deleting message:', message.id, error);
+      }
+    }
   }
 
   async createInterimChat(

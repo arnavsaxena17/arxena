@@ -20,6 +20,17 @@ export const graphqlQueryToCreateVideoInterview = `mutation CreateOneVideoInterv
   }
 }`;
 
+
+
+
+export const deleteOneWhatsappMessage = `mutation DeleteOneWhatsappMessage($idToDelete: ID!) {
+  deleteWhatsappMessage(id: $idToDelete) {
+    __typename
+    deletedAt
+    id
+  }
+}`;
+
 export const createResponseMutation = `mutation CreateOneVideoInterviewResponse($input: VideoInterviewResponseCreateInput!) {
   createVideoInterviewResponse(data: $input) {
     id
