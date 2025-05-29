@@ -685,7 +685,7 @@ export class ArxChatEndpoint {
       console.log( 'Number of candidate Ids', candidateIds.length, );
       const createGmailBasedShortlist = await new UpdateChat( this.workspaceQueryService, ).createGmailDraftShortlist(candidateIds, origin, apiToken);
       console.log( 'This is the response in create chatGmailDraftShortlist shortlist', createGmailBasedShortlist );
-      return { status: 'Success' };
+      return { status: 'Success', results: createGmailBasedShortlist };
     } catch (err) {
       console.error('Error in create gmail_ raft shortlist chats:', err);
       return { status: 'Failed', error: err };

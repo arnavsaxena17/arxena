@@ -1,9 +1,9 @@
-import { useState } from 'react';
-import axios from 'axios';
 import { tokenPairState } from '@/auth/states/tokenPairState';
-import { useRecoilState } from 'recoil';
-import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
+import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
+import axios from 'axios';
+import { useState } from 'react';
+import { useRecoilState } from 'recoil';
 
 type UseSendCVsToClientProps = {
   onSuccess?: () => void;
@@ -23,21 +23,18 @@ export const useSendCVsToClient = ({
     setLoading(true);
     setError(null);
   
-
-
-      console.log("Thesea re the candidate ids for whom CVs being sent::", candidateIds);
+    console.log("These are the candidate ids for whom CVs being sent::", candidateIds);
     const url = `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/${actionToTake}`;
 
     try {
-          const response = await axios.post(
-            url,
-            { candidateIds },
-            { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}`, 'Content-Type': 'application/json', }, }
-          )
-
+      const response = await axios.post(
+        url,
+        { candidateIds },
+        { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}`, 'Content-Type': 'application/json', }, }
+      );
 
       // Show success message
-      enqueueSnackBar('Successfully sent shortlist to clietn', {
+      enqueueSnackBar('Successfully sent shortlist to client', {
         variant: SnackBarVariant.Success,
         duration: 3000,
       });
@@ -64,5 +61,8 @@ export const useSendCVsToClient = ({
   };
 
   return {
-    sendCVsToClient  };
+    sendCVsToClient,
+    loading,
+    error
+  };
 };

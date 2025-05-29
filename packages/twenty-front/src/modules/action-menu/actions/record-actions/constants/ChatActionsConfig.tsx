@@ -3,6 +3,7 @@ import { useCloneMultipleRecordsAction } from '@/action-menu/actions/record-acti
 import { useCreateMultipleVideoInterviewLinksAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useCreateMultipleVideoInterviewLinksAction';
 import { useDeleteCandidatesAndPeopleAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useDeleteCandidatesAndPeopleAction';
 import { useDownloadCandidateCVsAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useDownloadCandidateCVsAction';
+import { useDownloadShortlistAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useDownloadShortlistAction';
 import { usePopulateShortlistAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/usePopulateShortlistAction';
 import { useRefreshChatCountsAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useRefreshChatCountsAction';
 import { useRefreshChatStatusesAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useRefreshChatStatusesAction';
@@ -301,6 +302,22 @@ export const CHAT_ACTIONS_CONFIG: Record<
       ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
     ],
     useAction: useResetMessagesFromWhatsappAction,
+  },
+  downloadShortlist: {
+    type: ActionMenuEntryType.Standard,
+    scope: ActionMenuEntryScope.RecordSelection,
+    key: MultipleRecordsActionKeys.CHAT_AND_VIDEO_INTERVIEW_SHORTLIST,
+    label: msg`Download Shortlist`,
+    shortLabel: msg`Download Shortlist`,
+    position: 9,
+    Icon: IconShare,
+    accent: 'placeholder',
+    isPinned: false,
+    availableOn: [
+      ActionViewType.INDEX_PAGE_BULK_SELECTION,
+      ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
+    ],
+    useAction: useDownloadShortlistAction,
   },
   sendToWhatsapp: {
     type: ActionMenuEntryType.Standard,

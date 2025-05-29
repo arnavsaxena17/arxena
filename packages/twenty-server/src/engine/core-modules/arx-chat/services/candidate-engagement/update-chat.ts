@@ -194,7 +194,7 @@ export class UpdateChat {
   async createGmailDraftShortlist(candidateIds: string[], origin: string, apiToken: string) {
     const url =
       process.env.ENV_NODE === 'production'
-        ? 'https://arxena.com/create-create_gmail_draft_shortlist'
+        ? 'https://arxena.com/create_gmail_draft_shortlist'
         : 'http://localhost:5050/create_gmail_draft_shortlist';
 
     console.log('This is the url:', url);

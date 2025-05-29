@@ -17,6 +17,7 @@ import { usePopulateShortlistAction } from '@/action-menu/actions/record-actions
 import { useRefreshChatCountsAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useRefreshChatCountsAction';
 import { useRefreshChatStatusesAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useRefreshChatStatusesAction';
 
+import { useDownloadShortlistAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useDownloadShortlistAction';
 import { useSendToWhatsappAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useSendToWhatsappAction';
 import { useShareChatAndVideoInterviewBasedShortlistAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useShareChatAndVideoInterviewBasedShortlistAction';
 import { useShareChatBasedShortlistAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useShareChatBasedShortlistAction';
@@ -190,6 +191,22 @@ export const CANDIDATE_SPECIFIC_ACTIONS: Record<
       ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
     ],
     useAction: useShareChatAndVideoInterviewBasedShortlistAction,
+  },
+  downloadShortlist: {
+    type: ActionMenuEntryType.Standard,
+    scope: ActionMenuEntryScope.RecordSelection,
+    key: MultipleRecordsActionKeys.CHAT_AND_VIDEO_INTERVIEW_SHORTLIST,
+    label: msg`Download Shortlist`,
+    shortLabel: msg`Download Shortlist`,
+    position: 9,
+    Icon: IconShare,
+    accent: 'placeholder',
+    isPinned: false,
+    availableOn: [
+      ActionViewType.INDEX_PAGE_BULK_SELECTION,
+      ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
+    ],
+    useAction: useDownloadShortlistAction,
   },
   sendToWhatsapp: {
     type: ActionMenuEntryType.Standard,
