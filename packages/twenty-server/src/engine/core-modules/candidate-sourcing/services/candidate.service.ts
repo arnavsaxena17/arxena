@@ -1462,21 +1462,14 @@ export class CandidateService {
               SERVER_BASE_URL: process.env.SERVER_BASE_URL,
               origin: origin
             });
-
             const url = process.env.SERVER_BASE_URL + '/ext-sock-whatsapp/update-whitelist';
-            
-            // Ensure we have both old and new phone numbers
             if (!oldPhoneNumber) {
               console.warn('No old phone number provided for whitelist update');
               return;
             }
-
-            // Format phone numbers to match expected format
             const formatPhoneForRequest = (number: string) => {
               if (!number) return '';
-              // Remove all non-digit characters
               const digits = number.replace(/\D/g, '');
-              // If it's an Indian number without country code, add 91
               return digits.length === 10 ? `91${digits}` : digits;
             };
 
