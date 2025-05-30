@@ -522,10 +522,8 @@ export default class CandidateEngagementArx {
 
           return acc;
         }
-
         const jobId = edge.node.jobs?.id;
         const candidateId = edge.node.id;
-
         if (jobId && candidateId) {
           acc[jobId] = acc[jobId] || [];
           acc[jobId].push(candidateId);
@@ -1021,6 +1019,7 @@ export default class CandidateEngagementArx {
           ? graphqlToFetchManyCandidatesOlderSchema
           : graphqlToFetchAllCandidateData;
       const timestamp = new Date().toISOString();
+      console.log("filters::::", filters);
 
       for (const filter of filters) {
         console.log(
@@ -1032,7 +1031,7 @@ export default class CandidateEngagementArx {
           ...filter,
           updatedAt: { lte: timestamp },
         };
-
+        console.log("timestampedFilter::::", timestampedFilter);
         let hasNextPage = true;
 
         while (hasNextPage) {
@@ -1088,9 +1087,13 @@ export default class CandidateEngagementArx {
             `Found ${newCandidates.length} new candidates after filtering`,
           );
           allCandidates.push(...newCandidates);
-          console.log('hasNextPage::', hasNextPage);
-          if (!hasNextPage) break;
+          console.log('hasNextPage::', hasNextPage, "when hasNextPage is false, we break the loop");
+          if (!hasNextPage) {
+            console.log("No more candidates to fetch");
+            break;
+          };
           lastCursor = edges[edges.length - 1].cursor;
+          console.log("lastCursor::", lastCursor);
         }
       }
       console.log(

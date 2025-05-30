@@ -84,12 +84,13 @@ export const CreateProfile = () => {
   const [currentWorkspaceMember, setCurrentWorkspaceMember] = useRecoilState(
     currentWorkspaceMemberState,
   );
+  console.log('currentWorkspaceMember in create profile::', currentWorkspaceMember);
   const currentUser = useRecoilValue(currentUserState);
   const currentWorkspace = useRecoilValue(currentWorkspaceState);
   const { updateOneRecord } = useUpdateOneRecord<WorkspaceMember>({
     objectNameSingular: CoreObjectNameSingular.WorkspaceMember,
   });
-
+console.log('currentUser in create profile::', currentUser);
 
   const createWorkspaceModifications = async () => {
     try {
@@ -148,11 +149,13 @@ export const CreateProfile = () => {
         phone: userData?.phone,
         token: userData?.token,
         password: userData?.password,
+        origin: userData?.origin || '',
         visitor_fp: userData?.visitorFp || '',
         currentWorkspaceMemberId: userData?.currentWorkspaceMemberId || '',
         twentyId: userData?.twentyId || '',
         currentWorkspaceId: userData?.currentWorkspaceId || '',
       });
+      
       console.log('This is ther requst params:', requestParams);
       const response = await fetch(arxenaSiteBaseUrl + '/auth/signup', {
         method: 'POST',
@@ -241,6 +244,7 @@ export const CreateProfile = () => {
           currentWorkspaceMemberId: currentWorkspaceMember.id,
           currentWorkspaceId: currentWorkspace?.id,
           twentyId: currentUser?.id,
+          origin: currentWorkspace?.subdomain || '',
         };
 
         try {

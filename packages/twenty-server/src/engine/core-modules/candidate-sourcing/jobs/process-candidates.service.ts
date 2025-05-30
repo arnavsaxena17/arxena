@@ -105,6 +105,12 @@ export class ProcessCandidatesService {
           queueJobOptions,
         );
       }
+
+
+
+
+
+      
       console.log(`Successfully queued ${totalBatches} batches of candidates`);
     } catch (error) {
       console.log('Failed to queue candidate processing:', error);

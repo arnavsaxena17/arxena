@@ -596,7 +596,7 @@ export class UpdateChat {
       'This is the message being updated in the database ',
       whatappUpdateMessageObj?.messages[0]?.content || '',
     );
-    // console.log('This is the user candidateProfileObj::', candidateProfileObj);
+    console.log('This is the user candidateProfileObj::', candidateProfileObj);
     const createNewWhatsappMessageUpdateVariables = {
       input: {
         position: 'first',

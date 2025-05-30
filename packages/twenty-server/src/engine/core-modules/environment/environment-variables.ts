@@ -767,7 +767,7 @@ export class EnvironmentVariables {
     description: 'Time-to-live for API rate limiting in milliseconds',
   })
   @CastToPositiveNumber()
-  API_RATE_LIMITING_TTL = 1000;
+  API_RATE_LIMITING_TTL = 100;
 
   @EnvironmentVariablesMetadata({
     group: EnvironmentVariablesGroup.RateLimiting,

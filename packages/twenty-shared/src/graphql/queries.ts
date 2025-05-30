@@ -808,6 +808,13 @@ export const graphqlQueryToFindManyPeople = `query FindManyPeople($filter: Perso
                     name
                     source
                     campaign
+                      people {
+                      id
+                      name {
+                        firstName
+                        lastName
+                      }
+                    }
                     candidateFieldValues{
                       edges{
                         node{

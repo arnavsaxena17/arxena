@@ -6,6 +6,9 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { TypeORMModule } from 'src/database/typeorm/typeorm.module';
 import { AppToken } from 'src/engine/core-modules/app-token/app-token.entity';
+import { ExtSockWhatsappMessageProcessor } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/ext-sock-whatsapp-message-process';
+import { ExtSockWhatsappWhitelistProcessingService } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/ext-sock-whitelist-processing';
+import { RedisService } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/redis-service-ops';
 import { AuthModule } from 'src/engine/core-modules/auth/auth.module';
 import { ApiKeyService } from 'src/engine/core-modules/auth/services/api-key.service';
 import { JwtAuthStrategy } from 'src/engine/core-modules/auth/strategies/jwt.auth.strategy';
@@ -45,8 +48,11 @@ import { WebSocketService } from 'src/modules/websocket/websocket.service';
   controllers: [CandidateSourcingController],
   providers: [
     // JobService,
+    ExtSockWhatsappWhitelistProcessingService,
     PersonService,
     GoogleSheetsService,
+    ExtSockWhatsappMessageProcessor,
+    RedisService,
     ProcessCandidatesService,
     CandidateService,
     ApiKeyService,

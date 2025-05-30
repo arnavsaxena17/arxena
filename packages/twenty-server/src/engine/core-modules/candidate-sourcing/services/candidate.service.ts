@@ -1465,7 +1465,6 @@ export class CandidateService {
             const url = process.env.SERVER_BASE_URL + '/ext-sock-whatsapp/update-whitelist';
             if (!oldPhoneNumber) {
               console.warn('No old phone number provided for whitelist update');
-              return;
             }
             const formatPhoneForRequest = (number: string) => {
               if (!number) return '';

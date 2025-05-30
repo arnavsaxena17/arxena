@@ -131,7 +131,7 @@ export class ExtSockWhatsappWhitelistProcessingService implements OnModuleInit {
     return token?.token || null;
   }
 
-  private async getUsersForWorkspace(
+  async getUsersForWorkspace(
     workspaceId: string,
     token: string,
   ): Promise<any[]> {
@@ -164,7 +164,7 @@ export class ExtSockWhatsappWhitelistProcessingService implements OnModuleInit {
     }
   }
 
-  private async fetchCandidateIdentifiersForUser(
+  async fetchCandidateIdentifiersForUser(
     userId: string,
     apiToken: string,
   ): Promise<string[]> {

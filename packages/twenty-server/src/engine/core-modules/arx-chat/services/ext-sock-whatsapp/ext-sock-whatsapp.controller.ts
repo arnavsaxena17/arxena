@@ -111,21 +111,14 @@ export class ExtSockWhatsappController {
     try {
       console.log('Fetching whitelisted numbers for user:', userId);
       const whitelistedNumbers = await this.redisService.getWhitelist(userId);
-      
+      console.log("whitelistedNumbers::", whitelistedNumbers);
       return {
         status: 'success',
-        data: {
-          userId,
-          whitelistedNumbers,
-        },
+        data: { userId, whitelistedNumbers, },
       };
     } catch (error) {
       console.error('Error fetching whitelisted numbers:', error);
-      return {
-        status: 'error',
-        error: error.message,
-        details: error.stack,
-      };
+      return { status: 'error', error: error.message, details: error.stack, };
     }
   }
 }

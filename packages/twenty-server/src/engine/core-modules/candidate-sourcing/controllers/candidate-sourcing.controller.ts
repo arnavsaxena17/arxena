@@ -501,7 +501,6 @@ export class CandidateSourcingController {
       console.log('Going to get current user in updateTwentyJob');
       const currentUser = await getCurrentUser(apiToken, origin);
       const recruiterId = currentUser?.workspaceMember?.id;
-
       console.log( 'This is the currentUser?.workspaces:', JSON.stringify(currentUser?.workspaces) );
       console.log('This is the current user:', currentUser);
       console.log('This is the recruiter id:', recruiterId);

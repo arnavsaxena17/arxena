@@ -1,7 +1,7 @@
-import { GraphQLResolveInfo } from 'graphql';
-import { getGraphQLRateLimiter } from 'graphql-rate-limit';
 import { Plugin } from '@envelop/core';
 import { useOnResolve } from '@envelop/on-resolve';
+import { GraphQLResolveInfo } from 'graphql';
+import { getGraphQLRateLimiter } from 'graphql-rate-limit';
 
 import { GraphQLContext } from 'src/engine/api/graphql/graphql-config/graphql-config.service';
 

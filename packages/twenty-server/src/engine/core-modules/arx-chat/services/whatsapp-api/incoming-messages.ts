@@ -200,7 +200,6 @@ export class IncomingWhatsappMessages {
             console.log(
               'This is a linkedin phone number, we will not use this phone number to send messages to setup linkedin url as recipient id for api key finding',
             );
-
             rawQuery = `SELECT * FROM core.workspace WHERE id = $1 AND linkedin_url ILIKE '%${incomingRecipientIdentifierId}%'`;
           } else {
             rawQuery = `SELECT * FROM core.workspace WHERE id = $1 AND facebook_whatsapp_phone_number_id ILIKE '%${incomingRecipientIdentifierId}%'`;
@@ -225,10 +224,22 @@ export class IncomingWhatsappMessages {
             );
 
             if (workspace.length === 0) {
-              console.log(
-                'NO WORKSPACE FOUND FOR WHATSAPP INCOMING PHONE NUMBER',
+              rawQuery = `SELECT * FROM core.workspace WHERE id = $1 AND whatsapp_web_phone_number ILIKE '%${incomingSenderIdentifierId}%'`;
+
+              const workspace = await this.workspaceQueryService.executeRawQuery(
+                rawQuery,
+                [workspaceId],
+                workspaceId,
               );
-              return null;
+              if (workspace.length === 0) {
+                console.log("Workspace length is 0 for whatsapp web phone number");
+                return null;
+              }
+              else{
+                console.log("It is a self message, so we will use the incomingRecipientIdentifierId");
+                incomingSenderIdentifierId = incomingRecipientIdentifierId
+              }
+              console.log("Workspace found for whatsapp web phone number::", workspace);
             }
           }
 
