@@ -316,7 +316,7 @@ export const TableColumns = ({
     .sort()
     .forEach(key => {
       const isUrlField = urlFields.includes(key);
-      const isDateField = key === 'createdAt' || key === 'updatedAt' || key === 'deletedAt';
+      const isDateField = key === 'createdAt' || key === 'updatedAt' || key === 'deletedAt' || key === 'lastMessage';
       const isChatField = chatColumns.includes(key);
       columns.push({
         data: key,

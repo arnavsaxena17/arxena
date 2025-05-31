@@ -20,12 +20,12 @@ export const ProcessedData = ({ rawData, selectedRowIds }: { rawData: CandidateN
         startVideoInterviewChat: candidate?.startVideoInterviewChat || false,
         startVideoInterviewChatCompleted: candidate?.startVideoInterviewChatCompleted || false,
         stopChat: candidate?.stopChat || false,
-        createdAt: candidate?.createdAt || '',
+        // createdAt: candidate?.createdAt || '',
         messagingChannel: candidate?.messagingChannel || '',
         lastMessage: candidate?.whatsappMessages?.edges?.length > 0 ? 
           [...(candidate?.whatsappMessages?.edges || [])]
             .sort((a, b) => new Date(b.node.createdAt).getTime() - new Date(a.node.createdAt).getTime())[0]
-            ?.node?.message || '' : '',
+            ?.node?.createdAt || '' : '',
         hasCv: candidate?.attachments?.edges?.length > 0 || false,
       };
 
