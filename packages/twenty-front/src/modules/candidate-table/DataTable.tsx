@@ -371,6 +371,11 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
         // Clear and append
         TH.innerHTML = '';
         TH.appendChild(checkbox);
+      } else {
+        // Add title attribute for tooltip on other columns
+        const columnTitle = columns[col]?.title || '';
+        TH.title = columnTitle;
+        TH.style.cursor = 'help';
       }
     };
 
@@ -399,11 +404,9 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
                   { candidateId: data.candidateId },
                   { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } }
                 );
-                
                 const unreadMessageIds = response.data
                   ?.filter((msg: any) => msg.whatsappDeliveryStatus === 'receivedFromCandidate')
                   ?.map((msg: any) => msg.id) || [];
-                
                 setTableState(prev => ({
                   ...prev,
                   unreadMessagesCounts: {

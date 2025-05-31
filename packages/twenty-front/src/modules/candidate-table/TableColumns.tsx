@@ -25,7 +25,7 @@ const urlFields = [
 ];
 
 const excludedFields = [
-  'id', 'checkbox', 'name', 'hasCv','fullName','candidateFieldValues','token','hiringNaukriCookie','dataSource', 'personId','jobTitle', 'firstName', 'searchId','phoneNumbers','mobilePhone','filterQueryHash','mayAlsoKnow','languages','englishLevel','baseQueryHash','creationDate','apnaSearchToken','lastName', 'emailAddress', 'industries', 'profiles', 'jobProcess', 'locations','experience', 'experienceStats', 'lastUpdated','education','interests','skills','dataSources','allNumbers','jobName','uploadId','allMails','socialprofiles','tables','created','middleName','middleInitial','creationSource','contactDetails','queryId','socialProfiles','updatedAt'
+  'id', 'checkbox', 'name', 'hasCv','fullName','jobName','candidateFieldValues','token','hiringNaukriCookie','dataSource', 'personId', 'firstName', 'searchId','phoneNumbers','mobilePhone','filterQueryHash','mayAlsoKnow','languages','englishLevel','baseQueryHash','creationDate','apnaSearchToken','lastName', 'emailAddress', 'industries', 'profiles', 'jobProcess', 'locations','experience', 'experienceStats', 'lastUpdated','education','interests','skills','dataSources','allNumbers','uploadId','allMails','socialprofiles','tables','created','middleName','middleInitial','creationSource','contactDetails','queryId','socialProfiles','updatedAt'
 ];
 
 export const TableColumns = ({ 
@@ -298,7 +298,7 @@ export const TableColumns = ({
     renderer: nameRenderer,
   });
 
-  const commonColumns = ['email', 'phone', 'status', 'source'];
+  const commonColumns = ['jobTitle','jobCompanyName','locationName','email', 'phone', 'status', 'lastMessage'];
   commonColumns.forEach(column => {
     if (allKeys.has(column) && !excludedFields.includes(column)) {
       columns.push({
@@ -311,6 +311,8 @@ export const TableColumns = ({
     }
   });
 
+
+  const smallFields = chatColumns.concat(['inferredSalary', 'inferredYearsExperience']);
   Array.from(allKeys)
     .filter(key => !excludedFields.includes(key))
     .sort()
@@ -321,7 +323,7 @@ export const TableColumns = ({
       columns.push({
         data: key,
         title: key.charAt(0).toUpperCase() + key.slice(1),
-        width: 150,
+        width: isChatField ? 40 : smallFields.includes(key) ? 40 : 150,
         renderer: isChatField ? booleanToggleRenderer : isUrlField ? urlRenderer : isDateField ? dateRenderer : simpleRenderer,
       });
     });
