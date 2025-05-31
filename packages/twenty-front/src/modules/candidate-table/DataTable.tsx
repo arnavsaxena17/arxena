@@ -197,15 +197,15 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
         );
         
         // Verify the response is valid and sort by createdAt descending
-        const rawData = Array.isArray(response.data) 
-          ? [...response.data].sort((a, b) => 
-              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-            )
-          : [];
-        
+        // const rawData = Array.isArray(response.data) 
+        //   ? [...response.data].sort((a, b) => 
+        //       new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        //     )
+        //   : [];
+        const rawData = response.data;
         // Process unread messages for each candidate
         const unreadMessagesCounts: Record<string, number> = {};
-        rawData.forEach(candidate => {
+        rawData.forEach((candidate: any) => {
           if (!candidate || typeof candidate !== 'object' || !candidate.id) return;
           
           const unreadCount = candidate?.whatsappMessages?.edges
@@ -306,19 +306,14 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
     }, [jobId, setTableState, tokenPair]);
   
 
-  
-    // Initial data load
     useEffect(() => {
       loadData();
     }, [loadData]);
 
-  
-    // Compute select-all state for visible rows
     const allVisibleIds = useMemo(() => {
       const hot = tableRef.current?.hotInstance;
       if (!hot) return [];
       
-      // Get the sorted/filtered data in current view order
       return filteredData.map((row: any, index: number) => {
         const physicalRow = hot?.toPhysicalRow(index);
         const rowData = physicalRow !== undefined ? hot.getSourceDataAtRow(physicalRow) : row;
@@ -330,12 +325,9 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
     const noneSelected = allVisibleIds.every((id: string) => !tableState.selectedRowIds.includes(id));
     const someSelected = !allSelected && !noneSelected;
 
-    // Handler for select-all checkbox
     const handleSelectAll = (checked: boolean) => {
       const hot = tableRef.current?.hotInstance;
       if (!hot) return;
-
-      // Get all visible row IDs in their current sorted order
       const visibleIds = filteredData.map((row: any, index: number) => {
         const physicalRow = hot?.toPhysicalRow(index);
         const rowData = physicalRow !== undefined ? hot.getSourceDataAtRow(physicalRow) : row;
@@ -412,7 +404,6 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
                   ?.filter((msg: any) => msg.whatsappDeliveryStatus === 'receivedFromCandidate')
                   ?.map((msg: any) => msg.id) || [];
                 
-                // Update unread messages count in table state
                 setTableState(prev => ({
                   ...prev,
                   unreadMessagesCounts: {

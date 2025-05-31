@@ -22,6 +22,7 @@ export const ProcessedData = ({ rawData, selectedRowIds }: { rawData: CandidateN
         stopChat: candidate?.stopChat || false,
         createdAt: candidate?.createdAt || '',
         messagingChannel: candidate?.messagingChannel || '',
+        hasCv: candidate?.attachments?.edges?.length > 0 || false,
       };
 
       const fieldValues: Record<string, string> = {};

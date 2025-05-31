@@ -25,7 +25,7 @@ const urlFields = [
 ];
 
 const excludedFields = [
-  'id', 'checkbox', 'name', 'fullName','candidateFieldValues','token','hiringNaukriCookie','dataSource', 'personId','jobTitle', 'firstName', 'searchId','phoneNumbers','mobilePhone','filterQueryHash','mayAlsoKnow','languages','englishLevel','baseQueryHash','creationDate','apnaSearchToken','lastName', 'emailAddress', 'industries', 'profiles', 'jobProcess', 'locations','experience', 'experienceStats', 'lastUpdated','education','interests','skills','dataSources','allNumbers','jobName','uploadId','allMails','socialprofiles','tables','created','middleName','middleInitial','creationSource','contactDetails','queryId','socialProfiles','updatedAt'
+  'id', 'checkbox', 'name', 'hasCv','fullName','candidateFieldValues','token','hiringNaukriCookie','dataSource', 'personId','jobTitle', 'firstName', 'searchId','phoneNumbers','mobilePhone','filterQueryHash','mayAlsoKnow','languages','englishLevel','baseQueryHash','creationDate','apnaSearchToken','lastName', 'emailAddress', 'industries', 'profiles', 'jobProcess', 'locations','experience', 'experienceStats', 'lastUpdated','education','interests','skills','dataSources','allNumbers','jobName','uploadId','allMails','socialprofiles','tables','created','middleName','middleInitial','creationSource','contactDetails','queryId','socialProfiles','updatedAt'
 ];
 
 export const TableColumns = ({ 
@@ -103,11 +103,23 @@ export const TableColumns = ({
   // Name renderer with unread message count
   const nameRenderer: ColumnRenderer = (instance, td, row, column, prop, value) => {
     td.innerHTML = '';
+    // Get physical row index for proper data access after sorting/filtering
+    const physicalRow = instance.toPhysicalRow(row);
+    const rowData = instance.getSourceDataAtRow(physicalRow) as { 
+      id?: string;
+      name?: string;
+      hasCv?: boolean;
+    };
     
-    // Cast rowData to any to safely access properties
-    const rowData: any = instance.getSourceDataAtRow(row);
+    console.log("prop:", prop);
+    console.log("value:", rowData.name, "for row data", rowData.name);
+    console.log("rowData:", rowData);
+    
     const candidateId = rowData && typeof rowData === 'object' && 'id' in rowData ? rowData.id : null;
     const unreadCount = candidateId && unreadMessagesCounts[candidateId] ? unreadMessagesCounts[candidateId] : 0;
+    const hasCv = rowData?.hasCv;
+    console.log("hasCv", hasCv, "for candidate name", rowData?.name);
+    
     const container = document.createElement('div');
     container.style.display = 'flex';
     container.style.alignItems = 'center';
@@ -124,8 +136,26 @@ export const TableColumns = ({
     
     const nameDiv = document.createElement('div');
     Object.assign(nameDiv.style, truncatedCellStyle);
-    nameDiv.textContent = value !== undefined && value !== null ? String(value) : 'N/A';
+    nameDiv.textContent = rowData.name !== undefined && rowData.name !== null ? String(rowData.name) : 'N/A';
     container.appendChild(nameDiv);
+
+    // Add CV availability icon
+    const cvIcon = document.createElement('div');
+    cvIcon.style.display = 'flex';
+    cvIcon.style.alignItems = 'center';
+    cvIcon.style.justifyContent = 'center';
+    cvIcon.style.marginLeft = '8px';
+    cvIcon.style.marginRight = '8px';
+    cvIcon.style.width = '16px';
+    cvIcon.style.height = '16px';
+    cvIcon.innerHTML = hasCv 
+      ? '<svg viewBox="0 0 24 24" width="16" height="16" fill="green"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg>'
+      : '<svg viewBox="0 0 24 24" width="16" height="16" fill="gray"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg>';
+    cvIcon.title = hasCv ? 'CV Available' : 'No CV Available';
+    if (hasCv) {
+      container.appendChild(cvIcon);
+    }
+    
     
     if (unreadCount > 0) {
       const badge = document.createElement('div');

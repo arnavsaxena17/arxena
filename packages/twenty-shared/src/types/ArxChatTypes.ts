@@ -955,7 +955,9 @@ export const emptyCandidateProfileObj: CandidateNode = {
   stopChat: false,
   status: '',
   createdAt: '',
-
+  attachments: {
+    edges: [],
+  },
   whatsappProvider: '',
   jobs: {
     name: '',
@@ -1616,6 +1618,7 @@ export interface CandidateNode {
   source?: string;
   campaign?: string;
   messagingChannel?: string;
+  attachments: any;
   id: string;
   engagementStatus: boolean;
   startVideoInterviewChat: boolean;

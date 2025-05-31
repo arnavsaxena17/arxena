@@ -1565,6 +1565,16 @@ export const graphqlToFetchAllCandidateData = `
           source
           campaign
           messagingChannel
+          attachments {
+            edges {
+              node {
+                authorId
+                createdAt
+                fullPath
+                id
+              }
+            }
+          }
           clientInterview {
             edges{
               node{
