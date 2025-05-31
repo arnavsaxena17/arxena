@@ -615,15 +615,12 @@ export class UpdateChat {
         messageObj: whatappUpdateMessageObj?.messageObj,
         whatsappDeliveryStatus: whatappUpdateMessageObj.whatsappDeliveryStatus,
         whatsappMessageId: whatappUpdateMessageObj?.whatsappMessageId,
-        typeOfMessage: whatappUpdateMessageObj?.type,
+        typeOfMessage: whatappUpdateMessageObj?.typeOfMessage,
         audioFilePath: whatappUpdateMessageObj?.databaseFilePath,
       },
     };
 
-    console.log(
-      'This si the create update whatsapp message::',
-      createNewWhatsappMessageUpdateVariables,
-    );
+    console.log( 'This si the create update whatsapp message::', createNewWhatsappMessageUpdateVariables, );
     const graphqlQueryObj = JSON.stringify({
       query: graphqlQueryToCreateOneNewWhatsappMessage,
       variables: createNewWhatsappMessageUpdateVariables,

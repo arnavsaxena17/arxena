@@ -83,6 +83,7 @@ export class FilterCandidates {
       whatsappDeliveryStatus: 'created',
       whatsappMessageId: wamId,
       whatsappMessageType: '',
+      typeOfMessage: candidateNode?.messagingChannel || 'whatsapp-web',
     };
 
     return updatedChatHistoryObj;

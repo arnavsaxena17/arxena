@@ -83,12 +83,7 @@ export class ToolCallsProcessing {
     status: string,
     apiToken: string,
   ) {
-    console.log(
-      'Updating the candidate status::',
-      status,
-      'aipi token:',
-      apiToken,
-    );
+    console.log( 'Updating the candidate status::', status, 'aipi token:', apiToken );
     const candidateId = person?.candidates?.edges.filter(
       (edge) => edge.node.jobs.id === candidateJob.id,
     )[0]?.node?.id;
@@ -102,70 +97,71 @@ export class ToolCallsProcessing {
     )[0].node;
     const candidateJob: Jobs = candidateNode?.jobs;
     const recruiterProfile: RecruiterProfileType =
-      await getRecruiterProfileByJob(candidateJob, apiToken);
+    await getRecruiterProfileByJob(candidateJob, apiToken);
 
 
-      let phoneNumberFrom:string = person.phones.primaryPhoneNumber.length == 10
-      ? '91' + person.phones.primaryPhoneNumber
-      : person.phones.primaryPhoneNumber;
-      if (person?.candidates?.edges.filter(
-        (candidate) => candidate.node.jobs.id == candidateJob.id,
-      )[0]?.node?.messagingChannel == 'linkedin') {
-        phoneNumberFrom = person?.linkedinLink?.primaryLinkUrl || '';
-      }
-      else{
-        phoneNumberFrom = person.phones.primaryPhoneNumber.length == 10
-            ? '91' + person.phones.primaryPhoneNumber
-            : person.phones.primaryPhoneNumber
-      }
-  
-      let phoneNumberTo:string = recruiterProfile.phoneNumber;
-  
-      if (person?.candidates?.edges.filter(
-        (candidate) => candidate.node.jobs.id == candidateJob.id,
-      )[0]?.node?.messagingChannel == 'linkedin') {
-        phoneNumberTo = recruiterProfile.linkedinUrl || '';
-      }
-      else{
-        phoneNumberTo = recruiterProfile.phoneNumber
-      }
-  
+    let phoneNumberFrom : string = person.phones.primaryPhoneNumber.length == 10
+    ? '91' + person.phones.primaryPhoneNumber
+    : person.phones.primaryPhoneNumber;
+    if (person?.candidates?.edges.filter(
+      (candidate) => candidate.node.jobs.id == candidateJob.id,
+    )[0]?.node?.messagingChannel == 'linkedin') {
+      phoneNumberFrom = person?.linkedinLink?.primaryLinkUrl || '';
+    }
+    else{
+      phoneNumberFrom = person.phones.primaryPhoneNumber.length == 10
+          ? '91' + person.phones.primaryPhoneNumber
+          : person.phones.primaryPhoneNumber
+    }
 
+    let phoneNumberTo:string = recruiterProfile.phoneNumber;
 
+    if (person?.candidates?.edges.filter(
+      (candidate) => candidate.node.jobs.id == candidateJob.id,
+    )[0]?.node?.messagingChannel == 'linkedin') {
+      phoneNumberTo = recruiterProfile.linkedinUrl || '';
+    }
+    else{
+      phoneNumberTo = recruiterProfile.phoneNumber
+    }
     const whatappUpdateMessageObj: whatappUpdateMessageObjType = {
-      // executorResultObj: {},
-      id: uuidv4(),
-      whatsappMessageType: '',
-      candidateProfile: person?.candidates?.edges.filter(
-        (edge) => edge.node.jobs.id === candidateJob.id,
-      )[0]?.node,
-      candidateFirstName: person?.name?.firstName,
-      lastEngagementChatControl: person?.candidates?.edges.filter(
-        (edge) => edge.node.jobs.id === candidateJob.id,
-      )[0]?.node?.lastEngagementChatControl,
-      phoneNumberFrom:
-        phoneNumberFrom,
-      phoneNumberTo: phoneNumberTo,
-      messages: [{ content: status }],
-      messageType: status,
-      messageObj: [],
-      whatsappDeliveryStatus: 'updateCandidateStatus',
-      whatsappMessageId: 'updateCandidateStatus',
-    };
-    const updateCandidateStatusObj = await new UpdateChat(
-      this.workspaceQueryService,
-    ).updateCandidateProfileStatus(
-      candidateNode,
-      whatappUpdateMessageObj,
-      apiToken,
-    );
+    // executorResultObj: {},
+    id: uuidv4(),
+    whatsappMessageType: '',
+    candidateProfile: person?.candidates?.edges.filter(
+      (edge) => edge.node.jobs.id === candidateJob.id,
+    )[0]?.node,
+    candidateFirstName: person?.name?.firstName,
+    lastEngagementChatControl: person?.candidates?.edges.filter(
+      (edge) => edge.node.jobs.id === candidateJob.id,
+    )[0]?.node?.lastEngagementChatControl,
+    phoneNumberFrom:
+      phoneNumberFrom,
+    phoneNumberTo: phoneNumberTo,
+    messages: [{ content: status }],
+    messageType: status,
+    messageObj: [],
+    whatsappDeliveryStatus: 'updateCandidateStatus',
+    typeOfMessage: person?.candidates?.edges.filter(
+      (edge) => edge.node.jobs.id === candidateJob.id,
+    )[0]?.node.messagingChannel || 'whatsapp-web',
+    whatsappMessageId: 'updateCandidateStatus',
+  };
 
-    console.log(
-      'This is the updateCandidateStatusObj:',
-      updateCandidateStatusObj,
-    );
+  const updateCandidateStatusObj = await new UpdateChat(
+    this.workspaceQueryService,
+  ).updateCandidateProfileStatus(
+    candidateNode,
+    whatappUpdateMessageObj,
+    apiToken,
+  );
 
-    return 'Updated the candidate profile with the status.';
+  console.log(
+    'This is the updateCandidateStatusObj:',
+    updateCandidateStatusObj,
+  );
+
+  return 'Updated the candidate profile with the status.';
   }
 
   async scheduleCandidateInterview(
@@ -241,6 +237,9 @@ export class ToolCallsProcessing {
       messageObj: [],
       whatsappDeliveryStatus: 'scheduleCandidateInterview',
       whatsappMessageId: 'scheduleCandidateInterview',
+      typeOfMessage: person?.candidates?.edges.filter(
+        (edge) => edge.node.jobs.id === candidateJob.id,
+      )[0]?.node.messagingChannel || 'whatsapp-web',
     };
     const updateCandidateStatusObj = await new UpdateChat(
       this.workspaceQueryService,

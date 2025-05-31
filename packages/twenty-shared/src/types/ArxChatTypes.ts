@@ -835,6 +835,7 @@ export interface whatappUpdateMessageObjType {
 
   whatsappMessageId: string;
   type?: string;
+  typeOfMessage: string;
   databaseFilePath?: string;
 }
 

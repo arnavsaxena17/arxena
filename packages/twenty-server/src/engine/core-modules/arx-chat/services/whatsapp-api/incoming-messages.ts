@@ -621,23 +621,14 @@ export class IncomingWhatsappMessages {
             messages: [{ role: 'user', content: chatReply || '' }],
             messageType: 'string',
           };
-
-          console.log(
-            'We will first go and get the candiate who sent us the message',
-          );
+          console.log( 'We will first go and get the candiate who sent us the message', );
           const candidateProfileData = await new FilterCandidates(
             this.workspaceQueryService,
           ).getCandidateInformation(whatsappIncomingMessage, apiToken);
           const candidateJob: Jobs = candidateProfileData.jobs;
 
-          console.log(
-            'This is the candiate who has sent us the message., we have to update the database that this message has been recemivged::',
-            chatReply,
-          );
-          console.log(
-            'This is the candiate who has sent us candidateProfileData::',
-            candidateProfileData,
-          );
+          console.log( 'This is the candiate who has sent us the message., we have to update the database that this message has been recemivged::', chatReply, );
+          console.log( 'This is the candiate who has sent us candidateProfileData::', candidateProfileData, );
           const replyObject = {
             chatReply: chatReply,
             whatsappDeliveryStatus: 'receivedFromCandidate',
@@ -655,9 +646,7 @@ export class IncomingWhatsappMessages {
             );
 
           if (candidateProfileData?.candidateReminders?.edges.length > 0) {
-            console.log(
-              'Candidate reminder found, updating the reminder status to false',
-            );
+            console.log( 'Candidate reminder found, updating the reminder status to false', );
             const listOfReminders =
               candidateProfileData?.candidateReminders?.edges;
             const updateOneReminderVariables = {
@@ -670,10 +659,7 @@ export class IncomingWhatsappMessages {
             });
           }
 
-          console.log(
-            'Graphqlreqsponse after message update',
-            responseAfterMessageUpdate,
-          );
+          console.log( 'Graphqlreqsponse after message update', responseAfterMessageUpdate, );
         } else if (
           requestBody?.entry[0]?.changes[0]?.value?.messages[0].type ===
           'document'
@@ -894,6 +880,7 @@ export class IncomingWhatsappMessages {
       whatsappMessageId: replyObject.whatsappMessageId,
       type: replyObject.type || 'text',
       databaseFilePath: replyObject?.databaseFilePath || '',
+      typeOfMessage: candidateProfileDataNodeObj?.messagingChannel || 'whatsapp-web',
     };
 
     await new UpdateChat(

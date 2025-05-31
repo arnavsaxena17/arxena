@@ -296,7 +296,9 @@ export class ArxChatEndpoint {
       
     const whatappUpdateMessageObj: whatappUpdateMessageObjType = {
       id: uuidv4(),
-      candidateProfile: personObj?.candidates?.edges[0]?.node,
+      candidateProfile: personObj?.candidates?.edges.filter(
+        (candidate) => candidate.node.jobs.id == candidateJob.id,
+      )[0]?.node,
       candidateFirstName: personObj?.name?.firstName || '',
       phoneNumberFrom: recruiterProfile.phoneNumber,
       whatsappMessageType:
@@ -311,6 +313,9 @@ export class ArxChatEndpoint {
       lastEngagementChatControl: chatControl.chatControlType,
       whatsappDeliveryStatus: 'created',
       whatsappMessageId: 'startChat',
+      typeOfMessage: personObj?.candidates?.edges.filter(
+        (candidate) => candidate.node.jobs.id == candidateJob.id,
+      )[0]?.node.messagingChannel || 'whatsapp-web',
     };
 
     const messageObj: ChatRequestBody = {

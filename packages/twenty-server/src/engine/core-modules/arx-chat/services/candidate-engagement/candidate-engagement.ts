@@ -178,6 +178,9 @@ export default class CandidateEngagementArx {
       messageObj: chatHistory,
       whatsappDeliveryStatus: 'startChatTriggered',
       whatsappMessageId: 'NA',
+      typeOfMessage: candidatePersonNodeObj?.candidates?.edges.filter(
+        (candidate) => candidate.node.jobs.id == candidateJob.id,
+      )[0]?.node.messagingChannel || 'whatsapp-web',
     };
 
     return whatappUpdateMessageObj;
