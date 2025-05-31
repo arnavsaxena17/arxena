@@ -226,22 +226,14 @@ export class ExtSockWhatsappMessageProcessor {
     apiToken: string,
   ) {
     try {
-      console.log(
-        'Sending WhatsApp message via ext-sock-whatsapp:',
-        whatappUpdateMessageObj.messages[0].content,
-      );
+      console.log( 'Sending WhatsApp message via ext-sock-whatsapp:', whatappUpdateMessageObj.messages[0].content, );
       console.log("whatappUpdateMessageObj. obj:::", whatappUpdateMessageObj);
       const baseUrl = process.env.SERVER_URL || 'http://localhost:3000';
 
       const response = await axios.post(
         `${baseUrl}/ext-sock-whatsapp/send-sock-message`,
         whatappUpdateMessageObj,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${apiToken}`,
-          },
-        },
+        { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiToken}`, }, },
       );
 
       if (response.data.status === 'success') {

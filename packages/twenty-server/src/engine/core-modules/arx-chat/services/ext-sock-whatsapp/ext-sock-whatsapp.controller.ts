@@ -81,6 +81,7 @@ export class ExtSockWhatsappController {
           phoneNumber: messageData.phoneNumberTo,
           message: messageData.messages[0]?.content || messageData.messages,
           candidateFirstName: messageData.candidateFirstName,
+          twentyMessageId: messageData.id,
         },
         {
           headers: {
