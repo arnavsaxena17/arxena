@@ -7,6 +7,7 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
+import { v4 as uuidv4 } from 'uuid';
 
 import axios from 'axios';
 import {
@@ -277,14 +278,10 @@ export class ArxChatEndpoint {
     const chatControl: ChatControlsObjType = {
       chatControlType: 'startChat',
     };
-
     chatHistory =
       personObj?.candidates?.edges.filter(
         (candidate) => candidate.node.jobs.id == candidateJob.id,
-      )[0]?.node?.whatsappMessages?.edges[0]?.node
-        ?.messageObj;
-
-
+      )[0]?.node?.whatsappMessages?.edges[0]?.node?.messageObj;
     let phoneNumberTo:string = personObj.phones.primaryPhoneNumber.length == 10
     ? '91' + personObj.phones.primaryPhoneNumber
     : personObj.phones.primaryPhoneNumber;
@@ -298,6 +295,7 @@ export class ArxChatEndpoint {
     }
       
     const whatappUpdateMessageObj: whatappUpdateMessageObjType = {
+      id: uuidv4(),
       candidateProfile: personObj?.candidates?.edges[0]?.node,
       candidateFirstName: personObj?.name?.firstName || '',
       phoneNumberFrom: recruiterProfile.phoneNumber,
@@ -1355,7 +1353,6 @@ export class ArxChatEndpoint {
       const chatControl: ChatControlsObjType = {
         chatControlType: 'startChat',
       };
-
       await new ToolCallsProcessing(
         this.workspaceQueryService,
       ).shareJDtoCandidate(
@@ -1364,7 +1361,6 @@ export class ArxChatEndpoint {
         chatControl,
         apiToken,
       );
-
       return { status: 'Success', message: 'JD shared successfully' };
     } catch (error) {
       console.error('Error sharing JD:', error);

@@ -808,7 +808,7 @@ export const graphqlQueryToFindManyPeople = `query FindManyPeople($filter: Perso
                     name
                     source
                     campaign
-                      people {
+                    people {
                       id
                       name {
                         firstName

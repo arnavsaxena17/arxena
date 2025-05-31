@@ -16,7 +16,7 @@ import {
   PersonNode,
   whatappUpdateMessageObjType
 } from 'twenty-shared';
-import { v4 } from 'uuid';
+import { v4 as uuidv4 } from 'uuid';
 
 import { StageWiseClassification } from 'src/engine/core-modules/arx-chat/services/llm-agents/stage-classification';
 import { getRecruiterProfileByJob } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
@@ -600,13 +600,12 @@ export class UpdateChat {
     const createNewWhatsappMessageUpdateVariables = {
       input: {
         position: 'first',
-        id: v4(),
+        id: whatappUpdateMessageObj?.id || uuidv4(),
         candidateId: candidateProfileObj?.id,
         personId: candidateProfileObj?.people?.id,
         message:
         whatappUpdateMessageObj?.messages[0]?.content ||
-        whatappUpdateMessageObj?.messages[0]?.text ||
-          '',
+        whatappUpdateMessageObj?.messages[0]?.text || '',
         phoneFrom: whatappUpdateMessageObj?.phoneNumberFrom,
         phoneTo: whatappUpdateMessageObj?.phoneNumberTo,
         jobsId: candidateProfileObj.jobs?.id,
@@ -637,38 +636,18 @@ export class UpdateChat {
       );
       const response = await axiosRequest(graphqlQueryObj, apiToken);
 
-      console.log(
-        'This is the response data from the axios request in udpate message::',
-        response.data,
-      );
-
+      console.log( 'This is the response data from the axios request in udpate message::', response.data, );
       // Get the recruiterId from candidateProfileObj
       const recruiterId = candidateProfileObj?.jobs?.recruiterId;
       console.log('This is the recruiterId::', recruiterId);
       if (recruiterId) {
         // Emit WebSocket event only to the specific recruiter
         console.log('Sending WebSocket event to the specific recruiter::', recruiterId);
-        // const currentUser = await getRecruiterProfileFromCurrentUser(apiToken);
-        // console.log('This is the current user::', currentUser);
-        // const userId = currentUser?.id;
-
-
-        // const userResponse = await axios.request({
-        //   method: 'get',
-        //   url: process.env.SERVER_BASE_URL + '/workspace-modifications/user',
-        //   headers: {
-        //     authorization: 'Bearer ' + apiToken,
-        //   },
-        // });
-        // console.log('This is the userResponse::', userResponse.data);
-        // const userId = userResponse?.data?.user?.id;
-        // console.log('This is the userId::', userId);
-
-        
-          this.workspaceQueryService.webSocketService.sendToUser(recruiterId, 'whatsapp_message_updated', {
-            candidateId: candidateProfileObj.id,
-            jobId: candidateProfileObj.jobs?.id,
-            messageId: createNewWhatsappMessageUpdateVariables.input.id,
+      
+        this.workspaceQueryService.webSocketService.sendToUser(recruiterId, 'whatsapp_message_updated', {
+          candidateId: candidateProfileObj.id,
+          jobId: candidateProfileObj.jobs?.id,
+          messageId: createNewWhatsappMessageUpdateVariables.input.id,
         });
         console.log('WebSocket event sent to the specific recruiter::', recruiterId);
       } else {
@@ -835,15 +814,15 @@ export class UpdateChat {
     whatappUpdateMessageObj: whatappUpdateMessageObjType,
     apiToken: string,
   ) {
+    console.log('whatappUpdateMessageObj::', whatappUpdateMessageObj);
     console.log('Updating candidate engagement status and chat counts');
     console.log('Candidate profile object::', candidateProfileObj);
     console.log('Whatapp update message object::', whatappUpdateMessageObj);
-    // Update chat counts first
+
     await new UpdateChat(
       this.workspaceQueryService,
     ).updateCandidatesWithChatCount([candidateProfileObj.id], apiToken);
 
-    // Process chat statuses
     const results = await new UpdateChat(
       this.workspaceQueryService,
     ).processCandidatesChatsGetStatuses(apiToken, [candidateProfileObj.jobs?.id], [candidateProfileObj.id]);

@@ -154,6 +154,7 @@ export class UpdateInactiveWorkspaceStatusCommand extends BaseCommandRunner {
           subscription.updatedAt &&
           subscription.updatedAt < thirtyDaysAgo)
       ) {
+        console.log("Deleting workspace and marking as suspended and deleting all data for workspace updated at ${workspace.updatedAt} with subscription status ${subscription.status} and subscription updatedAt ${subscription.updatedAt} and canceledAt ${subscription.canceledAt}");
         await this.deleteWorkspaceAndMarkAsSuspendedAndDeleteAllData(
           workspace,
           schemaName,
@@ -162,7 +163,7 @@ export class UpdateInactiveWorkspaceStatusCommand extends BaseCommandRunner {
         );
         continue;
       }
-
+      console.log("Marking as suspended for workspace updated at ${workspace.updatedAt} with subscription status ${subscription.status} and subscription updatedAt ${subscription.updatedAt} and canceledAt ${subscription.canceledAt}");
       await this.markAsSuspended(workspace, options);
     }
   }

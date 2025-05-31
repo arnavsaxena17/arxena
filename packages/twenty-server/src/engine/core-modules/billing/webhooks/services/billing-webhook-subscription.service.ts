@@ -123,6 +123,7 @@ export class BillingWebhookSubscriptionService {
       ].includes(data.object.status as SubscriptionStatus) &&
       !hasActiveWorkspaceCompatibleSubscription
     ) {
+      console.log("Marking as suspended for workspace updated at ${workspace.updatedAt} with subscription status ${subscription.status} and subscription updatedAt ${subscription.updatedAt} and canceledAt ${subscription.canceledAt}");
       await this.workspaceRepository.update(workspaceId, {
         activationStatus: WorkspaceActivationStatus.SUSPENDED,
       });

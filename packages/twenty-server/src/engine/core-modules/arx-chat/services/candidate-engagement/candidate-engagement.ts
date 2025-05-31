@@ -27,6 +27,7 @@ import { GoogleSheetsService } from 'src/engine/core-modules/google-sheets/googl
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 import axios from 'axios';
+import { v4 as uuidv4 } from 'uuid';
 import { FilterCandidates } from './filter-candidates';
 import { UpdateChat } from './update-chat';
 
@@ -125,7 +126,6 @@ export default class CandidateEngagementArx {
         ?.edges.length === 0;
     const messageSetup = config.messageSetup(isFirstMessage);
     const chatHistory = sortedMessagesList[0]?.messageObj || [];
-
     if (messageSetup.requiresSystemPrompt) {
       const SYSTEM_PROMPT = await this.getSystemPrompt(
         candidatePersonNodeObj,
@@ -133,7 +133,6 @@ export default class CandidateEngagementArx {
         chatControl,
         apiToken,
       );
-
       chatHistory.push({ role: 'system', content: SYSTEM_PROMPT });
     }
     chatHistory.push({ role: 'user', content: messageSetup.userContent });
@@ -141,7 +140,6 @@ export default class CandidateEngagementArx {
     const whatsappTemplate =
       candidatePersonNodeObj?.candidates?.edges[0]?.node?.whatsappProvider ||
       config.defaultTemplate;
-
 
     let phoneNumberFrom:string = candidatePersonNodeObj.phones.primaryPhoneNumber.length == 10
     ? '91' + candidatePersonNodeObj.phones.primaryPhoneNumber
@@ -165,11 +163,8 @@ export default class CandidateEngagementArx {
       phoneNumberTo = recruiterProfile.phoneNumber
     }
 
-    
-    
-
-
     const whatappUpdateMessageObj: whatappUpdateMessageObjType = {
+      id: uuidv4(),
       candidateProfile: candidatePersonNodeObj?.candidates?.edges.filter(
         (candidate) => candidate.node.jobs.id == candidateJob.id,
       )[0]?.node,

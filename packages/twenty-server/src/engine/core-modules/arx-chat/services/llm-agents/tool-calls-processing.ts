@@ -5,6 +5,7 @@ import {
   RecruiterProfileType,
   whatappUpdateMessageObjType,
 } from 'twenty-shared';
+import { v4 as uuidv4 } from 'uuid';
 
 import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/update-chat';
 import { getRecruiterProfileByJob } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
@@ -133,6 +134,7 @@ export class ToolCallsProcessing {
 
     const whatappUpdateMessageObj: whatappUpdateMessageObjType = {
       // executorResultObj: {},
+      id: uuidv4(),
       whatsappMessageType: '',
       candidateProfile: person?.candidates?.edges.filter(
         (edge) => edge.node.jobs.id === candidateJob.id,
@@ -213,7 +215,7 @@ export class ToolCallsProcessing {
       phoneNumberTo = recruiterProfile.linkedinUrl || '';
     }
     else{
-      phoneNumberTo = recruiterProfile.phoneNumber
+    phoneNumberTo = recruiterProfile.phoneNumber
     }
 
     
@@ -222,6 +224,7 @@ export class ToolCallsProcessing {
 
     const whatappUpdateMessageObj: whatappUpdateMessageObjType = {
       // executorResultObj: {},
+      id: uuidv4(),
       whatsappMessageType: '',
       candidateProfile: person?.candidates?.edges.filter(
         (edge) => edge.node.jobs.id === candidateJob.id,

@@ -19,6 +19,8 @@ import {
   PersonNode,
   whatappUpdateMessageObjType,
 } from 'twenty-shared';
+import { v4 as uuidv4 } from 'uuid';
+
 
 import { workspacesWithOlderSchema } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/candidate-engagement';
 import { getRecruiterProfileByJob } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
@@ -69,6 +71,7 @@ export class FilterCandidates {
     }
   
     const updatedChatHistoryObj: whatappUpdateMessageObjType = {
+      id: uuidv4(),
       messageObj: chatHistory,
       candidateProfile: candidateNode,
       candidateFirstName: personNode.name?.firstName,

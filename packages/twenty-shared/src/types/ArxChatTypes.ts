@@ -96,6 +96,7 @@ export interface ColumnDefinition {
 export interface WhatsappMessageData {
   id: string;
   body: string;
+  
   type: string;
   from: string;
   linkedin_url?: string;
@@ -819,6 +820,7 @@ export interface BaileysIncomingMessage {
 }
 
 export interface whatappUpdateMessageObjType {
+  id: string;
   // executorResultObj: ChainValues;
   messageObj: ChatHistoryItem[];
   candidateProfile: CandidateNode;

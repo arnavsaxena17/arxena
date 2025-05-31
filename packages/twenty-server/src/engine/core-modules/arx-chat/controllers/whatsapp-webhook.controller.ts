@@ -73,7 +73,7 @@ export class WhatsappWebhook {
     try {
       await new IncomingWhatsappMessages(
         this.workspaceQueryService,
-      ).receiveIncomingMessagesFromFacebook(requestBody);
+      ).receiveIncomingMessagesFromFacebook(requestBody, requestBody?.entry[0]?.changes[0]?.value?.messages[0]);
     } catch (error) {
       // Handle error
     }

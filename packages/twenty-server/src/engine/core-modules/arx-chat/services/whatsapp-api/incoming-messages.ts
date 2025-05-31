@@ -19,6 +19,7 @@ import { getRecruiterProfileByJob } from 'src/engine/core-modules/arx-chat/servi
 import { FacebookWhatsappChatApi } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
 import { axiosRequest } from 'src/engine/core-modules/arx-chat/utils/arx-chat-agent-utils';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
+import { v4 as uuidv4 } from 'uuid';
 
 interface MessageResult {
   token: string;
@@ -167,6 +168,7 @@ export class IncomingWhatsappMessages {
 
   async getApiKeyToUseFromPhoneNumberMessageReceived(
     requestBody: WhatsAppBusinessAccount,
+    messageData?: any,
     transactionManager?: EntityManager,
   ): Promise<string | null> {
 
@@ -180,6 +182,7 @@ export class IncomingWhatsappMessages {
       requestBody?.entry[0]?.changes[0]?.value.metadata?.phone_number_id;
     console.log("This is the incomingRecipientIdentifierId::", incomingRecipientIdentifierId);
     // const waId = requestBody?.entry[0]?.changes[0]?.value?.contacts?.[0]?.wa_id;
+    console.log("This is the requestBody in api key to use from phone number message received::", requestBody);
 
     console.log(
       'This is the phone number to use and search:',
@@ -225,7 +228,6 @@ export class IncomingWhatsappMessages {
 
             if (workspace.length === 0) {
               rawQuery = `SELECT * FROM core.workspace WHERE id = $1 AND whatsapp_web_phone_number ILIKE '%${incomingSenderIdentifierId}%'`;
-
               const workspace = await this.workspaceQueryService.executeRawQuery(
                 rawQuery,
                 [workspaceId],
@@ -267,6 +269,10 @@ export class IncomingWhatsappMessages {
             LIMIT 1`;
           }
           console.log("Recent message query::", recentMessageQuery);
+
+          console.log("Message data::", messageData);
+          
+
           // Get the most recent message for this phone number in this workspace
           const recentMessage =
             await this.workspaceQueryService.executeRawQuery(
@@ -276,6 +282,24 @@ export class IncomingWhatsappMessages {
             );
 
           console.log('recentMessage::', recentMessage);
+
+          // Check if current message matches any recent message
+          if (recentMessage.length > 0 && messageData) {
+            const isMessageDuplicate = recentMessage.some(msg => {
+              const messageMatches = msg.message === messageData.body;
+              const senderMatches = msg.phoneFrom === messageData.from.replace('@c.us', '') || 
+                                  msg.phoneTo === messageData.from.replace('@c.us', '');
+              const recipientMatches = msg.phoneFrom === messageData.to.replace('@c.us', '') || 
+                                     msg.phoneTo === messageData.to.replace('@c.us', '');
+              
+              return messageMatches && senderMatches && recipientMatches;
+            });
+
+            if (isMessageDuplicate) {
+              console.log('Message already exists in database, skipping processing');
+              return null;
+            }
+          }
 
           if (recentMessage.length === 0) {
             console.log(
@@ -369,6 +393,7 @@ export class IncomingWhatsappMessages {
 
   async receiveIncomingMessagesFromFacebook(
     requestBody: WhatsAppBusinessAccount,
+    messageData?: any,
   ) {
     console.log(
       'This is requestBody from Facebook::',
@@ -377,7 +402,7 @@ export class IncomingWhatsappMessages {
     // to check if the incoming message is the status of the message
     // have to use system API Key and get the status updates of all the workspaces where the phone number resides. Then get the api keys of the workspaces and then update the messages
     const apiToken =
-      await this.getApiKeyToUseFromPhoneNumberMessageReceived(requestBody);
+      await this.getApiKeyToUseFromPhoneNumberMessageReceived(requestBody, messageData);
 
     if (apiToken === null) {
       console.log('NO API KEY FOUND FOR THIS PHONE NUMBER FUCK!!!!');
@@ -854,6 +879,7 @@ export class IncomingWhatsappMessages {
 
     const whatappUpdateMessageObj: whatappUpdateMessageObjType = {
       // executorResultObj: {},
+      id: uuidv4(),
       candidateProfile: candidateProfileDataNodeObj,
       whatsappMessageType: candidateProfileDataNodeObj?.whatsappProvider || '',
       candidateFirstName: candidateProfileDataNodeObj.name,

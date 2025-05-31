@@ -15,6 +15,7 @@ import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/cand
 import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/update-chat';
 import { IncomingWhatsappMessages } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/incoming-messages';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
+import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class ExtSockWhatsappMessageProcessor {
@@ -50,41 +51,37 @@ export class ExtSockWhatsappMessageProcessor {
 
 
       const apiToken =
-        await incomingMessages.getApiKeyToUseFromPhoneNumberMessageReceived({
-          object: 'whatsapp_personal_account',
-          entry: [
-            {
-              id: '123',
-              changes: [
-                {
-                  value: {
-                    messages: [
-                      {
-                        from: messageFrom,
-                      },
-                    ],
-                    metadata: {
-                      phone_number_id: messageData.to.split('@')[0],
+      await incomingMessages.getApiKeyToUseFromPhoneNumberMessageReceived({
+        object: 'whatsapp_personal_account',
+        entry: [
+          {
+            id: '123',
+            changes: [
+              {
+                value: {
+                  messages: [
+                    {
+                      from: messageFrom,
                     },
+                  ],
+                  metadata: {
+                    phone_number_id: messageData.to.split('@')[0],
                   },
                 },
-              ],
-            },
-          ],
-        });
-
-        console.log("Thi is the api token found when trying to process message")
-
+              },
+            ],
+          },
+        ],
+      }, messageData);
+      console.log("Thi is the api token found when trying to process message")
       if (apiToken === null) {
         console.log('NO API KEY FOUND FOR THIS PHONE NUMBER');
-
         return;
       } else {
         console.log('API KEY FOUND FOR THIS PHONE NUMBER::', messageData.from);
       }
 
       console.log("Going to rpocess :::", messageData)
-      console.log("Going to rpocess :::", apiToken)
       // Process based on whether the message is from self or from another user
       if (messageData.fromMe) {
         await this.processOutgoingMessage(messageData, apiToken, userId);
@@ -145,7 +142,6 @@ export class ExtSockWhatsappMessageProcessor {
     // Only process chat messages, not call logs or other types
     if (messageData.type !== 'chat') {
       console.log(`Ignoring non-chat message of type: ${messageData.type}`);
-
       return;
     }
 
@@ -188,6 +184,7 @@ export class ExtSockWhatsappMessageProcessor {
 
     // Create update message object
     const whatappUpdateMessageObj: whatappUpdateMessageObjType = {
+      id: uuidv4(),
       candidateProfile: candidateNode,
       whatsappMessageType: candidateNode.whatsappProvider || '',
       candidateFirstName: candidateNode.name,
@@ -197,7 +194,7 @@ export class ExtSockWhatsappMessageProcessor {
       messageType: 'candidateMessage',
       messageObj: messageObj as ChatHistoryItem[],
       lastEngagementChatControl: candidateNode.lastEngagementChatControl,
-      whatsappDeliveryStatus: 'delivered',
+      whatsappDeliveryStatus: 'dispatched',
       whatsappMessageId: messageData.id,
       type: 'text',
       databaseFilePath: '',
@@ -248,13 +245,8 @@ export class ExtSockWhatsappMessageProcessor {
 
       if (response.data.status === 'success') {
         console.log('Message sent successfully via ext-sock-whatsapp');
-
-        // Update the message status in the database
-        whatappUpdateMessageObj.whatsappDeliveryStatus = 'sent';
-
-        // Create a new UpdateChat instance to update the message status
+        whatappUpdateMessageObj.whatsappDeliveryStatus = 'dispatched';
         const updateChat = new UpdateChat(this.workspaceQueryService);
-
         await updateChat.createAndUpdateWhatsappMessage(
           personNode.candidates.edges.filter(
             (candidate) => candidate.node.jobs.id == candidateJob.id,

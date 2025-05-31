@@ -1483,17 +1483,7 @@ export class CandidateService {
               payload
             });
 
-            const response = await axios.post(
-              url,
-              payload,
-              {
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${apiToken}`,
-                },
-              }
-            );
-            
+            const response = await axios.post( url, payload, { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiToken}`, }, } );
             console.log('Debug - Whitelist update response:', {
               status: response.status,
               data: response.data
