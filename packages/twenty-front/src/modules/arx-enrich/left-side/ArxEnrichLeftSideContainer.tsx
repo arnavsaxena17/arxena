@@ -1,9 +1,9 @@
-import styled from '@emotion/styled';
-import { useRecoilState } from 'recoil';
-import { enrichmentsState, activeEnrichmentState } from '@/arx-enrich/states/arxEnrichModalOpenState';
-import { useEffect, useState } from 'react';
-import {  IconTrash } from 'twenty-ui';
 import { Enrichment } from '@/arx-enrich/arxEnrichmentModal';
+import { activeEnrichmentState, enrichmentsState } from '@/arx-enrich/states/arxEnrichModalOpenState';
+import styled from '@emotion/styled';
+import { useEffect } from 'react';
+import { useRecoilState } from 'recoil';
+import { IconTrash } from 'twenty-ui';
 import { SampleEnrichments } from './SampleEnrichments';
 
 
@@ -136,6 +136,7 @@ export const ModalNavElementContainer = () => {
         modelName: '',
         fields: [],
         selectedMetadataFields: [],
+        aiFilterDescription: '',
         prompt: '', // Add this field
         selectedModel: 'gpt4omini',  // Add this field
       };
@@ -147,6 +148,7 @@ export const ModalNavElementContainer = () => {
   const addEnrichment = () => {
     const newEnrichment: Enrichment = {
       modelName: '',
+      aiFilterDescription: '',
       prompt: '', // Add this field
       fields: [],
       selectedMetadataFields: [],
@@ -159,7 +161,7 @@ export const ModalNavElementContainer = () => {
   const deleteEnrichment = (index: number) => {
     setEnrichments(prev => prev.filter((_, i) => i !== index));
     if (activeEnrichment === index) {
-      setActiveEnrichment(null);
+      setActiveEnrichment(0);
     } else if (activeEnrichment !== null && activeEnrichment > index) {
       setActiveEnrichment(activeEnrichment - 1);
     }

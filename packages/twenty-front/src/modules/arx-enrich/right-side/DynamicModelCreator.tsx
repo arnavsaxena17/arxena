@@ -253,6 +253,38 @@ const FieldsLoadingContainer = styled.div`
   justify-content: center;
 `;
 
+const CheckboxFieldsContainer = styled.div`
+  width: 96%;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 0.5rem;
+`;
+
+const CheckboxField = styled.div`
+  display: flex;
+  align-items: center;
+  padding: 0.5rem;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: #f3f4f6;
+  }
+
+  input[type="checkbox"] {
+    cursor: pointer;
+  }
+
+  label {
+    cursor: pointer;
+    flex: 1;
+    user-select: none;
+  }
+`;
+
 interface DynamicModelCreatorProps {
   objectNameSingular: string;
   index: number;
@@ -287,11 +319,28 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
   });
 
   // Initialize local state with deep copy of current enrichment
-  const currentEnrichment = useMemo(() => ({
-    ...enrichments[index],
-    fields: [...(enrichments[index]?.fields || [])],
-    selectedMetadataFields: [...(enrichments[index]?.selectedMetadataFields || [])]
-  }), [enrichments, index]);
+  const currentEnrichment = useMemo(() => {
+    const defaultEnrichment = {
+      modelName: '',
+      prompt: '',
+      fields: [],
+      aiFilterDescription: '',
+      selectedMetadataFields: [],
+      selectedModel: 'gpt4omini',
+      bestOf: 1,
+    };
+
+    if (!enrichments[index]) {
+      return defaultEnrichment;
+    }
+
+    return {
+      ...defaultEnrichment,
+      ...enrichments[index],
+      fields: [...(enrichments[index].fields || [])],
+      selectedMetadataFields: [...(enrichments[index].selectedMetadataFields || [])]
+    };
+  }, [enrichments, index]);
 
   const [fields, setFields] = useState(currentEnrichment.fields);
 
@@ -524,6 +573,25 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
         </ErrorAlert>
       )}
 
+      <SelectLabel>AI Filter Description</SelectLabel>
+      <TextArea
+        placeholder="Enter your AI filter description here..."
+        value={enrichments[index]?.aiFilterDescription || ''}
+        onChange={e => {
+          setEnrichments(prev => {
+            const newEnrichments = [...prev];
+            if (newEnrichments[index]) {
+              newEnrichments[index] = {
+                ...newEnrichments[index],
+                aiFilterDescription: e.target.value
+              };
+            }
+            return newEnrichments;
+          });
+        }}
+        rows={4}
+      />
+
       <SelectLabel>Model Name</SelectLabel>
       <Input
         type="text"
@@ -595,31 +663,36 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
         </FieldsLoadingContainer>
       ) : (
         <>
-          <MultiSelect
-            multiple
-            value={enrichments[index]?.selectedMetadataFields || []}
-            onChange={e => {
-              const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
-              // Deduplicate selected options
-              const uniqueSelectedOptions = [...new Set(selectedOptions)];
-              setEnrichments(prev => {
-                const newEnrichments = [...prev];
-                if (newEnrichments[index]) {
-                  newEnrichments[index] = {
-                    ...newEnrichments[index],
-                    selectedMetadataFields: uniqueSelectedOptions
-                  };
-                }
-                return newEnrichments;
-              });
-            }}>
+          <CheckboxFieldsContainer>
             {candidateFields.map((field, idx) => (
-                <option key={`${field.name}-${idx}`} value={field.name}>
+              <CheckboxField key={`${field.name}-${idx}`}>
+                <input
+                  type="checkbox"
+                  id={`field-${field.name}-${idx}`}
+                  checked={enrichments[index]?.selectedMetadataFields?.includes(field.name) || false}
+                  onChange={(e) => {
+                    const isChecked = e.target.checked;
+                    setEnrichments((prev: any[]) => {
+                      const newEnrichments = [...prev];
+                      if (newEnrichments[index]) {
+                        const currentSelected = newEnrichments[index].selectedMetadataFields || [];
+                        newEnrichments[index] = {
+                          ...newEnrichments[index],
+                          selectedMetadataFields: isChecked
+                            ? [...new Set([...currentSelected, field.name])]
+                            : currentSelected.filter((name: string) => name !== field.name)
+                        };
+                      }
+                      return newEnrichments;
+                    });
+                  }}
+                />
+                <label htmlFor={`field-${field.name}-${idx}`}>
                   {field.label || field.name}
-                </option>
-            ))
-            }
-          </MultiSelect>
+                </label>
+              </CheckboxField>
+            ))}
+          </CheckboxFieldsContainer>
           
           {candidateFields.length === 0 && !isLoadingFields && (
             <div style={{ marginTop: '0.5rem', color: '#6b7280', fontSize: '0.875rem' }}>

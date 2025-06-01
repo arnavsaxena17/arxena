@@ -481,6 +481,7 @@ export class FilterCandidates {
         const candidateProfileObj: CandidateNode = {
           name: personWithActiveJob?.node?.name?.firstName || '',
           id: activeJobCandidate?.id,
+          attachments: activeJobCandidate?.attachments,
           whatsappProvider: activeJobCandidate?.whatsappProvider,
           jobs: {
             name: activeJob?.name || '',

@@ -46,6 +46,7 @@ const StyledSampleDescription = styled.div`
 const SAMPLE_ENRICHMENTS = [
   {
     modelName: "DistanceFromJob",
+    aiFilterDescription: "Calculate the distance in kilometers between each candidate's location and Surat, Gujarat, India. This will help identify candidates based on their proximity to the job location.",
     prompt: "For the given location below, return the distance in kilometeres between the location and the Surat, Gujarat, India. Return only the distance in kilometers. No explanation is needed.",
     fields: [
       {
@@ -60,6 +61,7 @@ const SAMPLE_ENRICHMENTS = [
   },
   {
     modelName: "JobTitleClasssification",
+    aiFilterDescription: "Analyze job titles to classify them by function (sales, marketing, finance, legal) and level (entry, mid, senior, executive) to better understand the candidate's role and seniority.",
     prompt: "Classify the given job title into one of the following function categories - sales, marketing, finance, legal and levels - entry, mid, senior, executive.",
     fields: [
       {

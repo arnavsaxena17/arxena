@@ -11,14 +11,16 @@ export const enrichmentsState = createState<any[]>({
     modelName: '',
     prompt: '',
     fields: [],
+    aiFilterDescription: '',
     selectedMetadataFields: [],
     selectedModel: 'gpt4omini',
+    bestOf: 1
   }],
 });
 
-export const activeEnrichmentState = createState<number | null>({
+export const activeEnrichmentState = createState<number>({
   key: 'activeEnrichmentState',
-  defaultValue: null,
+  defaultValue: 0,
 });
 
 export const recordsToEnrichState = createState<any[]>({
