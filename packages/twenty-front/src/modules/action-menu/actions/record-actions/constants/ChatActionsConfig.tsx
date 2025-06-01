@@ -1,12 +1,10 @@
-import { useCandidateEnrichmentAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useCandidateEnrichmentAction';
 import { useCloneMultipleRecordsAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useCloneMultipleRecordsAction';
 import { useCreateMultipleVideoInterviewLinksAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useCreateMultipleVideoInterviewLinksAction';
 import { useDeleteCandidatesAndPeopleAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useDeleteCandidatesAndPeopleAction';
+import { useDownloadAsExcelAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useDownloadAsExcelAction';
 import { useDownloadCandidateCVsAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useDownloadCandidateCVsAction';
 import { useDownloadShortlistAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useDownloadShortlistAction';
 import { usePopulateShortlistAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/usePopulateShortlistAction';
-import { useRefreshChatCountsAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useRefreshChatCountsAction';
-import { useRefreshChatStatusesAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useRefreshChatStatusesAction';
 import { useResetMessagesFromWhatsappAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useResetMessagesFromWhatsappAction';
 import { useRestartMessagesAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useRestartMessagesAction';
 import { useSendToWhatsappAction } from '@/action-menu/actions/record-actions/multiple-records/hooks/useSendToWhatsappAction';
@@ -24,11 +22,10 @@ import {
   ActionMenuEntryType,
 } from '@/action-menu/types/ActionMenuEntry';
 import { msg } from '@lingui/core/macro';
-import { IconEngine, IconMessageCircle, IconShare } from '@tabler/icons-react';
+import { IconMessageCircle, IconShare } from '@tabler/icons-react';
 import {
   IconCopy,
   IconList,
-  IconRefresh,
   IconVideo
 } from 'twenty-ui';
 
@@ -159,8 +156,8 @@ export const CHAT_ACTIONS_CONFIG: Record<
     type: ActionMenuEntryType.Standard,
     scope: ActionMenuEntryScope.RecordSelection,
     key: MultipleRecordsActionKeys.CHAT_AND_VIDEO_INTERVIEW_SHORTLIST,
-    label: msg`Share VINT and Chat Based Shortlist`,
-    shortLabel: msg`Share VINT and Chat Shortlist`,
+    label: msg`Create Shortlist PDF and XLSX`,
+    shortLabel: msg`Create Shortlist PDF and XLSX`,
     position: 4,
     Icon: IconShare,
     accent: 'placeholder',
@@ -204,39 +201,39 @@ export const CHAT_ACTIONS_CONFIG: Record<
     useAction: useDownloadCandidateCVsAction,
   },
 
-  refreshChatStatus: {
-    type: ActionMenuEntryType.Standard,
-    scope: ActionMenuEntryScope.RecordSelection,
-    key: MultipleRecordsActionKeys.REFRESH_CHAT_STATUS,
-    label: msg`Refresh Chat Status`,
-    shortLabel: msg`Refresh Chat Status`,
-    position: 7,
-    Icon: IconRefresh,
-    accent: 'placeholder',
-    isPinned: false,
-    availableOn: [
-      ActionViewType.INDEX_PAGE_BULK_SELECTION,
-      ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
-    ],
-    useAction: useRefreshChatStatusesAction,
-  },
-  refreshChatCount: {
-    type: ActionMenuEntryType.Standard,
-    scope: ActionMenuEntryScope.RecordSelection,
-    key: MultipleRecordsActionKeys.REFRESH_CHAT_COUNT,
-    label: msg`Refresh Chat Count`,
-    shortLabel: msg`Refresh Chat Counts`,
-    position: 7,
-    Icon: IconMessageCircle,
-    accent: 'placeholder',
-    isPinned: false,
-    availableOn: [
-      ActionViewType.INDEX_PAGE_BULK_SELECTION,
-      ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
-      ActionViewType.SHOW_PAGE,
-    ],
-    useAction: useRefreshChatCountsAction,
-  },
+  // refreshChatStatus: {
+  //   type: ActionMenuEntryType.Standard,
+  //   scope: ActionMenuEntryScope.RecordSelection,
+  //   key: MultipleRecordsActionKeys.REFRESH_CHAT_STATUS,
+  //   label: msg`Refresh Chat Status`,
+  //   shortLabel: msg`Refresh Chat Status`,
+  //   position: 7,
+  //   Icon: IconRefresh,
+  //   accent: 'placeholder',
+  //   isPinned: false,
+  //   availableOn: [
+  //     ActionViewType.INDEX_PAGE_BULK_SELECTION,
+  //     ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
+  //   ],
+  //   useAction: useRefreshChatStatusesAction,
+  // },
+  // refreshChatCount: {
+  //   type: ActionMenuEntryType.Standard,
+  //   scope: ActionMenuEntryScope.RecordSelection,
+  //   key: MultipleRecordsActionKeys.REFRESH_CHAT_COUNT,
+  //   label: msg`Refresh Chat Count`,
+  //   shortLabel: msg`Refresh Chat Counts`,
+  //   position: 7,
+  //   Icon: IconMessageCircle,
+  //   accent: 'placeholder',
+  //   isPinned: false,
+  //   availableOn: [
+  //     ActionViewType.INDEX_PAGE_BULK_SELECTION,
+  //     ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
+  //     ActionViewType.SHOW_PAGE,
+  //   ],
+  //   useAction: useRefreshChatCountsAction,
+  // },
   shareChatBasedShortlist: {
     type: ActionMenuEntryType.Standard,
     scope: ActionMenuEntryScope.RecordSelection,
@@ -339,7 +336,7 @@ export const CHAT_ACTIONS_CONFIG: Record<
     type: ActionMenuEntryType.Standard,
     scope: ActionMenuEntryScope.RecordSelection,
     key: MultipleRecordsActionKeys.DELETE_CANDIDATES_AND_PEOPLE,
-    label: msg`Delete Candidates and People`,
+    label: msg`Delete Candidates`,
     shortLabel: msg`Delete Candidates and People`,
     position: 9,
     Icon: IconList,
@@ -351,20 +348,36 @@ export const CHAT_ACTIONS_CONFIG: Record<
     ],
     useAction: useDeleteCandidatesAndPeopleAction,
   },
-  enrichCandidates: {
+  downloadAsExcel: {
     type: ActionMenuEntryType.Standard,
     scope: ActionMenuEntryScope.RecordSelection,
-    key: MultipleRecordsActionKeys.ENRICH_CANDIDATES,
-    shortLabel: msg`Enrich Candidates`,
-    label: msg`Enrich Candidates`,
-    position: 10,
-    Icon: IconEngine,
+    key: MultipleRecordsActionKeys.DELETE_CANDIDATES_AND_PEOPLE,
+    label: msg`Download as Excel`,
+    shortLabel: msg`Download as Excel`,
+    position: 9,
+    Icon: IconList,
     accent: 'placeholder',
     isPinned: false,
     availableOn: [
       ActionViewType.INDEX_PAGE_BULK_SELECTION,
       ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
     ],
-    useAction: useCandidateEnrichmentAction,
+    useAction: useDownloadAsExcelAction,
   },
+  // enrichCandidates: {
+  //   type: ActionMenuEntryType.Standard,
+  //   scope: ActionMenuEntryScope.RecordSelection,
+  //   key: MultipleRecordsActionKeys.ENRICH_CANDIDATES,
+  //   shortLabel: msg`Enrich Candidates`,
+  //   label: msg`Enrich Candidates`,
+  //   position: 10,
+  //   Icon: IconEngine,
+  //   accent: 'placeholder',
+  //   isPinned: false,
+  //   availableOn: [
+  //     ActionViewType.INDEX_PAGE_BULK_SELECTION,
+  //     ActionViewType.INDEX_PAGE_SINGLE_RECORD_SELECTION,
+  //   ],
+  //   useAction: useCandidateEnrichmentAction,
+  // },
 }; 

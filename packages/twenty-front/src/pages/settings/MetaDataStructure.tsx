@@ -57,6 +57,7 @@ const StyledButton = styled.button<{
 
 export const MetadataStructureSection = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
   const [tokenPair] = useRecoilState(tokenPairState);
   const [hasBeenClicked, setHasBeenClicked] = useState(() => {
     return localStorage.getItem('metadata-structure-created') === 'true';
@@ -187,6 +188,42 @@ export const MetadataStructureSection = () => {
     }
   };
 
+  const handleUpdateStructure = async () => {
+    if (isUpdating) return;
+    setIsUpdating(true);
+
+    try {
+      const response = await fetch(
+        `${process.env.REACT_APP_SERVER_BASE_URL}/workspace-modifications/update-metadata-structure`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
+          },
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to update metadata structure');
+      }
+
+      enqueueSnackBar('Started metadata structure update process', {
+        variant: SnackBarVariant.Info,
+      });
+    } catch (error) {
+      enqueueSnackBar(
+        error instanceof Error
+          ? `Failed to update metadata structure: ${error.message}`
+          : 'Failed to update metadata structure',
+        {
+          variant: SnackBarVariant.Error,
+        },
+      );
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   return (
     <StyledButtonContainer>
       <StyledButton
@@ -199,6 +236,13 @@ export const MetadataStructureSection = () => {
           : hasBeenClicked
             ? 'Creating Structure..'
             : 'Create Metadata Structure'}
+      </StyledButton>
+      <StyledButton
+        onClick={handleUpdateStructure}
+        disabled={isUpdating}
+        variant="secondary"
+      >
+        {isUpdating ? 'Updating...' : 'Update Metadata Structure'}
       </StyledButton>
     </StyledButtonContainer>
   );

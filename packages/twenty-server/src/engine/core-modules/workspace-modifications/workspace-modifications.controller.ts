@@ -1,11 +1,12 @@
 import {
-  Body,
-  Controller,
-  Get,
-  Param,
-  Post,
-  Req,
-  UseGuards,
+    Body,
+    Controller,
+    Get,
+    Headers,
+    Param,
+    Post,
+    Req,
+    UseGuards,
 } from '@nestjs/common';
 
 import axios from 'axios';
@@ -17,6 +18,8 @@ import { WebSocketService } from 'src/modules/websocket/websocket.service';
 import { WorkspaceQueryService } from './workspace-modifications.service';
 
 import { CreateMetaDataStructure } from './object-apis/object-apis-creation';
+import { MetadataUpdateService } from './object-apis/services/metadata-update.service';
+
 export async function axiosRequest(data: string, apiToken: string) {
   // console.log("Sending a post request to the graphql server:: with data", data);
   const response = await axios.request({
@@ -44,6 +47,7 @@ export class WorkspaceModificationsController {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly webSocketService: WebSocketService,
+    private readonly metadataUpdateService: MetadataUpdateService,
   ) {
     console.log('GraphQL URL configured as:', process.env.GRAPHQL_URL);
   }
@@ -125,15 +129,18 @@ export class WorkspaceModificationsController {
 
   @Post('create-metadata-structure')
   @UseGuards(JwtAuthGuard)
-  async createMetaDataStructure(@Req() req) {
-    const apiToken = req.headers.authorization.split(' ')[1];
-    const origin = req.headers.origin;
-    new CreateMetaDataStructure(
-      this.workspaceQueryService,
-      this.webSocketService,
-    ).createMetadataStructure(apiToken, origin);
+  async createMetadataStructure(@Headers('authorization') authHeader: string) {
+    const token = authHeader.split(' ')[1];
+    await this.workspaceQueryService.createMetadataStructure(token);
+    return { message: 'Metadata structure creation initiated' };
+  }
 
-    return;
+  @Post('update-metadata-structure')
+  @UseGuards(JwtAuthGuard)
+  async updateMetadataStructure(@Headers('authorization') authHeader: string) {
+    const token = authHeader.split(' ')[1];
+    const result = await this.metadataUpdateService.updateMetadata(token);
+    return result;
   }
 
   @Get('user')

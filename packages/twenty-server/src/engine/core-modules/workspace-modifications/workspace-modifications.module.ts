@@ -13,6 +13,7 @@ import { WorkspaceCacheStorageService } from 'src/engine/workspace-cache-storage
 import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
 import { WebSocketModule } from 'src/modules/websocket/websocket.module';
 
+import { MetadataUpdateService } from './object-apis/services/metadata-update.service';
 import { WorkspaceModificationsController } from './workspace-modifications.controller';
 import { WorkspaceQueryService } from './workspace-modifications.service';
 
@@ -32,6 +33,7 @@ import { WorkspaceQueryService } from './workspace-modifications.service';
     WorkspaceQueryService,
     WorkspaceDataSourceService,
     ApiKeyService,
+    MetadataUpdateService,
   ],
   controllers: [WorkspaceModificationsController],
 

@@ -14,6 +14,7 @@ import { AccessTokenService } from 'src/engine/core-modules/auth/token/services/
 // import { WorkspaceQueryService } from '../workspace-query.service';
 import { ApiKeyService } from 'src/engine/core-modules/auth/services/api-key.service';
 import { WebSocketService } from 'src/modules/websocket/websocket.service';
+import { CreateMetaDataStructure } from './object-apis/object-apis-creation';
 
 @Injectable()
 export class WorkspaceQueryService {
@@ -432,5 +433,13 @@ export class WorkspaceQueryService {
       );
       throw new Error('Failed to update workspace API keys');
     }
+  }
+
+  async createMetadataStructure(token: string): Promise<void> {
+    const origin = process.env.APPLE_ORIGIN_URL || 'http://localhost:3001';
+    await new CreateMetaDataStructure(
+      this,
+      this.webSocketService,
+    ).createMetadataStructure(token, origin);
   }
 }
