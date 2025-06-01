@@ -4,6 +4,7 @@ import { useObjectMetadataItem } from '@/object-metadata/hooks/useObjectMetadata
 import styled from '@emotion/styled';
 import { IconEdit } from '@tabler/icons-react';
 import { Button } from '@ui/input/button/components/Button';
+import axios from 'axios';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { IconAlertCircle, IconPlus, IconX } from 'twenty-ui';
@@ -285,6 +286,11 @@ const CheckboxField = styled.div`
   }
 `;
 
+const ProcessButton = styled(Button)`
+  margin-top: 1rem;
+  align-self: flex-start;
+`;
+
 interface DynamicModelCreatorProps {
   objectNameSingular: string;
   index: number;
@@ -317,6 +323,7 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
     description: '',
     enumValues: []
   });
+  const [isProcessing, setIsProcessing] = useState(false);
 
   // Initialize local state with deep copy of current enrichment
   const currentEnrichment = useMemo(() => {
@@ -324,7 +331,7 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
       modelName: '',
       prompt: '',
       fields: [],
-      aiFilterDescription: '',
+      filterDescription: '',
       selectedMetadataFields: [],
       selectedModel: 'gpt4omini',
       bestOf: 1,
@@ -563,6 +570,57 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
     console.log("Metadata fields are these::", enrichments[index]?.selectedMetadataFields);
     console.log("Model name is this::", enrichments);
   
+  const processAIFilter = async () => {
+    console.log("Enrichments are these::", enrichments[index]);
+    if (!enrichments[index]?.filterDescription) {
+      // onError('AI Filter Description is required');
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      const response = await axios.post(
+        `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/process-ai-filter`,
+        {
+          filterDescription: enrichments[index].filterDescription,
+          candidateFields: candidateFields.map(field => field.name)
+        },
+        {
+          headers: { 
+            Authorization: `Bearer ${tokenPair?.accessToken?.token}` 
+          }
+        }
+      );
+
+      if (response.data?.status === 'Success' && response.data?.data) {
+        const config = response.data.data;
+        
+        setEnrichments(prev => {
+          const newEnrichments = [...prev];
+          if (newEnrichments[index]) {
+            newEnrichments[index] = {
+              ...newEnrichments[index],
+              modelName: config.modelName || '',
+              prompt: config.prompt || '',
+              fields: config.fields || [],
+              selectedMetadataFields: config.selectedMetadataFields || [],
+              selectedModel: config.selectedModel || 'gpt4omini',
+              bestOf: config.bestOf || 1
+            };
+          }
+          return newEnrichments;
+        });
+      } else {
+        throw new Error(response.data?.error || 'Failed to process AI filter');
+      }
+    } catch (error) {
+      console.error('Error processing AI filter:', error);
+      onError(error instanceof Error ? error.message : 'Failed to process AI filter');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   return (
     <Container>
 
@@ -576,14 +634,14 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
       <SelectLabel>AI Filter Description</SelectLabel>
       <TextArea
         placeholder="Enter your AI filter description here..."
-        value={enrichments[index]?.aiFilterDescription || ''}
+        value={enrichments[index]?.filterDescription || ''}
         onChange={e => {
           setEnrichments(prev => {
             const newEnrichments = [...prev];
             if (newEnrichments[index]) {
               newEnrichments[index] = {
                 ...newEnrichments[index],
-                aiFilterDescription: e.target.value
+                filterDescription: e.target.value
               };
             }
             return newEnrichments;
@@ -592,116 +650,140 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
         rows={4}
       />
 
-      <SelectLabel>Model Name</SelectLabel>
-      <Input
-        type="text"
-        placeholder="Model Name"
-        value={enrichments[index]?.modelName || ''}
-        onChange={e => 
-          handleModelNameChange(e.target.value)
-        }
-        />
-
-      <SelectLabel>Prompt</SelectLabel>
-      <TextArea
-        placeholder="Enter your prompt here..."
-        value={enrichments[index]?.prompt || ''}
-        onChange={e => {
-          setEnrichments(prev => {
-            const newEnrichments = [...prev];
-            if (newEnrichments[index]) {
-              newEnrichments[index] = {
-                ...newEnrichments[index],
-                prompt: e.target.value
-              };
-            }
-            return newEnrichments;
-          });
-        }}
-        rows={4}
-      />
-
-
-      <SelectLabel>Select Model</SelectLabel>
-      <Select
-          value={enrichments[index]?.selectedModel || 'gpt4omini'}
-          onChange={e => {
-        const selectedModel = e.target.value;
-        console.log("selectedModel::", selectedModel);
-        setEnrichments(prev => {
-          const newEnrichments = [...prev];
-          if (newEnrichments[index]) {
-            newEnrichments[index] = {
-          ...newEnrichments[index],
-          selectedModel: selectedModel
-            };
-          }
-          return newEnrichments;
-        });
-          }}
+      {  enrichments[index]?.prompt === '' && (
+        <ProcessButton
+          variant="primary"
+          title="Process AI Filter"
+          onClick={processAIFilter}
+          disabled={isProcessing}
+          type="button"
         >
-        <option>Select a model...</option>
-        {AVAILABLE_MODELS.map(model => (
-          <option key={model.value} value={model.value}>
-        {model.label}
-          </option>
-        ))}
-      </Select>
+          {isProcessing ? 'Processing...' : 'Process AI Filter'}
+        </ProcessButton>
+      )}
 
-
-
-      <SelectLabel>Select Metadata Fields</SelectLabel>
-      {isLoadingFields ? (
-        <FieldsLoadingContainer>
-          <LoadingIndicator>Loading fields...</LoadingIndicator>
-        </FieldsLoadingContainer>
-      ) : apiError ? (
-        <FieldsLoadingContainer>
-          <div style={{ color: '#ef4444', fontSize: '0.875rem' }}>
-            {apiError}
-          </div>
-        </FieldsLoadingContainer>
-      ) : (
+      {enrichments[index]?.modelName && (
         <>
-          <CheckboxFieldsContainer>
-            {candidateFields.map((field, idx) => (
-              <CheckboxField key={`${field.name}-${idx}`}>
-                <input
-                  type="checkbox"
-                  id={`field-${field.name}-${idx}`}
-                  checked={enrichments[index]?.selectedMetadataFields?.includes(field.name) || false}
-                  onChange={(e) => {
-                    const isChecked = e.target.checked;
-                    setEnrichments((prev: any[]) => {
-                      const newEnrichments = [...prev];
-                      if (newEnrichments[index]) {
-                        const currentSelected = newEnrichments[index].selectedMetadataFields || [];
-                        newEnrichments[index] = {
-                          ...newEnrichments[index],
-                          selectedMetadataFields: isChecked
-                            ? [...new Set([...currentSelected, field.name])]
-                            : currentSelected.filter((name: string) => name !== field.name)
-                        };
-                      }
-                      return newEnrichments;
-                    });
-                  }}
-                />
-                <label htmlFor={`field-${field.name}-${idx}`}>
-                  {field.label || field.name}
-                </label>
-              </CheckboxField>
-            ))}
-          </CheckboxFieldsContainer>
-          
-          {candidateFields.length === 0 && !isLoadingFields && (
-            <div style={{ marginTop: '0.5rem', color: '#6b7280', fontSize: '0.875rem' }}>
-              No custom fields found for this job. Using default metadata fields.
-            </div>
-          )}
+          <SelectLabel>Model Name</SelectLabel>
+          <Input
+            type="text"
+            placeholder="Model Name"
+            value={enrichments[index]?.modelName || ''}
+            onChange={e => 
+              handleModelNameChange(e.target.value)
+            }
+          />
         </>
       )}
 
+      {enrichments[index]?.prompt && (
+        <>
+          <SelectLabel>Prompt</SelectLabel>
+          <TextArea
+            placeholder="Enter your prompt here..."
+            value={enrichments[index]?.prompt || ''}
+            onChange={e => {
+              setEnrichments(prev => {
+                const newEnrichments = [...prev];
+                if (newEnrichments[index]) {
+                  newEnrichments[index] = {
+                    ...newEnrichments[index],
+                    prompt: e.target.value
+                  };
+                }
+                return newEnrichments;
+              });
+            }}
+            rows={4}
+          />
+        </>
+      )}
+
+      {enrichments[index]?.selectedModel !== 'gpt4omini' && (
+        <>
+          <SelectLabel>Select Model</SelectLabel>
+          <Select
+            value={enrichments[index]?.selectedModel || 'gpt4omini'}
+            onChange={e => {
+              const selectedModel = e.target.value;
+              console.log("selectedModel::", selectedModel);
+              setEnrichments(prev => {
+                const newEnrichments = [...prev];
+                if (newEnrichments[index]) {
+                  newEnrichments[index] = {
+                    ...newEnrichments[index],
+                    selectedModel: selectedModel
+                  };
+                }
+                return newEnrichments;
+              });
+            }}
+          >
+            <option>Select a model...</option>
+            {AVAILABLE_MODELS.map(model => (
+              <option key={model.value} value={model.value}>
+                {model.label}
+              </option>
+            ))}
+          </Select>
+        </>
+      )}
+
+      {enrichments[index]?.selectedMetadataFields?.length > 0 && (
+        <>
+          <SelectLabel>Select Metadata Fields</SelectLabel>
+          {isLoadingFields ? (
+            <FieldsLoadingContainer>
+              <LoadingIndicator>Loading fields...</LoadingIndicator>
+            </FieldsLoadingContainer>
+          ) : apiError ? (
+            <FieldsLoadingContainer>
+              <div style={{ color: '#ef4444', fontSize: '0.875rem' }}>
+                {apiError}
+              </div>
+            </FieldsLoadingContainer>
+          ) : (
+            <>
+              <CheckboxFieldsContainer>
+                {candidateFields.map((field, idx) => (
+                  <CheckboxField key={`${field.name}-${idx}`}>
+                    <input
+                      type="checkbox"
+                      id={`field-${field.name}-${idx}`}
+                      checked={enrichments[index]?.selectedMetadataFields?.includes(field.name) || false}
+                      onChange={(e) => {
+                        const isChecked = e.target.checked;
+                        setEnrichments((prev: any[]) => {
+                          const newEnrichments = [...prev];
+                          if (newEnrichments[index]) {
+                            const currentSelected = newEnrichments[index].selectedMetadataFields || [];
+                            newEnrichments[index] = {
+                              ...newEnrichments[index],
+                              selectedMetadataFields: isChecked
+                                ? [...new Set([...currentSelected, field.name])]
+                                : currentSelected.filter((name: string) => name !== field.name)
+                            };
+                          }
+                          return newEnrichments;
+                        });
+                      }}
+                    />
+                    <label htmlFor={`field-${field.name}-${idx}`}>
+                      {field.label || field.name}
+                    </label>
+                  </CheckboxField>
+                ))}
+              </CheckboxFieldsContainer>
+              
+              {candidateFields.length === 0 && !isLoadingFields && (
+                <div style={{ marginTop: '0.5rem', color: '#6b7280', fontSize: '0.875rem' }}>
+                  No custom fields found for this job. Using default metadata fields.
+                </div>
+              )}
+            </>
+          )}
+        </>
+      )}
 
       {enrichments[index]?.selectedMetadataFields?.length > 0 && (
         <SelectedFieldsContainer>
@@ -736,291 +818,178 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
         </SelectedFieldsContainer>
       )}
 
-
-  <SelectLabel>Create New Fields</SelectLabel>
-
-    <FieldsList>
-    {currentEnrichment.fields.map((field: { id: number; name: string; type: string; description: string; enumValues:string[] }) => (
-      <FieldContainer key={field.id}>
-      <FieldCard>
-        <FieldContent>
-        <FieldHeader>
-          <FieldName>{field.name}</FieldName>
-          <FieldType>({field.type})</FieldType>
-        </FieldHeader>
-        <FieldDescription>{field.description}</FieldDescription>
-        </FieldContent>
-        <Button
-        Icon={IconEdit}
-        onClick={(e: React.MouseEvent) => {
-          e.preventDefault();
-          e.stopPropagation();
-          setEditingFieldId(field.id);
-          setNewField(field);
-        }}
-        variant="secondary"
-        title="Edit"
-        />
-        <Button Icon={IconX} onClick={() => removeField(field.id)} variant="secondary" title="Remove" />
-      </FieldCard>
-      
-      {/* Add edit form directly below the field being edited */}
-      {editingFieldId === field.id && (
-        <AddFieldForm onSubmit={(e: React.FormEvent) => e.preventDefault()}>
-        <Input
-          type="text"
-          placeholder="Field Name"
-          value={newField.name}
-          onChange={e => {
-            const newName = e.target.value;
-            const validationError = validateFieldName(newName);
-            if (validationError) {
-              setError(validationError);
-            } else {
-              setError('');
-            }
-        
-          e.stopPropagation();
-          setNewField({ ...newField, name: e.target.value });
-          setError('');
-          }}
-        />
-        <Select 
-          value={newField.type} 
-          onChange={e => setNewField({ ...newField, type: e.target.value })}
-        >
-          {fieldTypes.map(type => (
-          <option key={type.value} value={type.value}>
-            {type.label}
-          </option>
-          ))}
-        </Select>
-        {newField.type === 'enum' && (
-          <EnumValuesInput>
-            <SelectLabel>Enum Values</SelectLabel>
-            {(newField.enumValues || []).map((value, index) => (
-              <EnumValueRow key={index}>
+      {enrichments[index]?.fields?.length > 0 && (
+        <>
+          <SelectLabel>Create New Fields</SelectLabel>
+          <FieldsList>
+            {currentEnrichment.fields.map((field: { id: number; name: string; type: string; description: string; enumValues:string[] }) => (
+              <FieldContainer key={field.id}>
+              <FieldCard>
+                <FieldContent>
+                <FieldHeader>
+                  <FieldName>{field.name}</FieldName>
+                  <FieldType>({field.type})</FieldType>
+                </FieldHeader>
+                <FieldDescription>{field.description}</FieldDescription>
+                </FieldContent>
+                <Button
+                Icon={IconEdit}
+                onClick={(e: React.MouseEvent) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setEditingFieldId(field.id);
+                  setNewField(field);
+                }}
+                variant="secondary"
+                title="Edit"
+                />
+                <Button Icon={IconX} onClick={() => removeField(field.id)} variant="secondary" title="Remove" />
+              </FieldCard>
+              
+              {/* Add edit form directly below the field being edited */}
+              {editingFieldId === field.id && (
+                <AddFieldForm onSubmit={(e: React.FormEvent) => e.preventDefault()}>
                 <Input
                   type="text"
-                  value={value}
+                  placeholder="Field Name"
+                  value={newField.name}
                   onChange={e => {
-                    const newEnumValues = [...newField.enumValues];
-                    newEnumValues[index] = e.target.value;
-                    setNewField({ ...newField, enumValues: newEnumValues });
+                    const newName = e.target.value;
+                    const validationError = validateFieldName(newName);
+                    if (validationError) {
+                      setError(validationError);
+                    } else {
+                      setError('');
+                    }
+                
+                  e.stopPropagation();
+                  setNewField({ ...newField, name: e.target.value });
+                  setError('');
                   }}
                 />
-                <Button
-                  Icon={IconX}
+                <Select 
+                  value={newField.type} 
+                  onChange={e => setNewField({ ...newField, type: e.target.value })}
+                >
+                  {fieldTypes.map(type => (
+                  <option key={type.value} value={type.value}>
+                    {type.label}
+                  </option>
+                  ))}
+                </Select>
+                {newField.type === 'enum' && (
+                  <EnumValuesInput>
+                    <SelectLabel>Enum Values</SelectLabel>
+                    {(newField.enumValues || []).map((value, index) => (
+                      <EnumValueRow key={index}>
+                        <Input
+                          type="text"
+                          value={value}
+                          onChange={e => {
+                            const newEnumValues = [...newField.enumValues];
+                            newEnumValues[index] = e.target.value;
+                            setNewField({ ...newField, enumValues: newEnumValues });
+                          }}
+                        />
+                        <Button
+                          Icon={IconX}
+                          variant="secondary"
+                          onClick={() => {
+                            const newEnumValues = newField.enumValues.filter((_, i) => i !== index);
+                            setNewField({ ...newField, enumValues: newEnumValues });
+                          }}
+                          title="Remove enum value"
+                        />
+                      </EnumValueRow>
+                    ))}
+                    <Button
+                      Icon={IconPlus}
+                      variant="secondary"
+                      onClick={() => {
+                        setNewField({
+                          ...newField,
+                          enumValues: [...(newField.enumValues || []), '']
+                        });
+                      }}
+                      title="Add enum value"
+                    />
+                  </EnumValuesInput>
+                )}
+
+
+                <TextArea 
+                  placeholder="Field Description" 
+                  value={newField.description} 
+                  onChange={e => setNewField({ ...newField, description: e.target.value })} 
+                  rows={3} 
+                />
+
+                <ButtonGroup>
+                  <Button Icon={IconPlus}   onClick={(e: React.MouseEvent) => { e.preventDefault(); addField(e);}}  variant="primary" title="Save" />
+                  <Button
                   variant="secondary"
+                  accent="danger"
                   onClick={() => {
-                    const newEnumValues = newField.enumValues.filter((_, i) => i !== index);
-                    setNewField({ ...newField, enumValues: newEnumValues });
+                    setEditingFieldId(null);
+                    setError('');
+                    setNewField({
+                    name: '',
+                    type: 'text',
+                    description: '',
+                    enumValues:[]
+                    });
                   }}
-                  title="Remove enum value"
-                />
-              </EnumValueRow>
+                  title="Cancel"
+                  />
+                </ButtonGroup>
+                </AddFieldForm>
+              )}
+              </FieldContainer>
             ))}
-            <Button
-              Icon={IconPlus}
-              variant="secondary"
-              onClick={() => {
-                setNewField({
-                  ...newField,
-                  enumValues: [...(newField.enumValues || []), '']
+          </FieldsList>
+        </>
+      )}
+
+      {enrichments[index]?.bestOf !== 1 && (
+        <>
+          <SelectLabel>Best Of</SelectLabel>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            width: '90%'
+          }}>
+            <Input
+              type="number"
+              min="1"
+              value={enrichments[index]?.bestOf || 1}
+              onChange={e => {
+                const value = parseInt(e.target.value) || 1;
+                setEnrichments(prev => {
+                  const newEnrichments = [...prev];
+                  if (newEnrichments[index]) {
+                    newEnrichments[index] = {
+                      ...newEnrichments[index],
+                      bestOf: value
+                    };
+                  }
+                  return newEnrichments;
                 });
               }}
-              title="Add enum value"
+              style={{ width: '80px' }}
             />
-          </EnumValuesInput>
-        )}
-
-
-        <TextArea 
-          placeholder="Field Description" 
-          value={newField.description} 
-          onChange={e => setNewField({ ...newField, description: e.target.value })} 
-          rows={3} 
-        />
-
-        <ButtonGroup>
-          <Button Icon={IconPlus}   onClick={(e: React.MouseEvent) => { e.preventDefault(); addField(e);}}  variant="primary" title="Save" />
-          <Button
-          variant="secondary"
-          accent="danger"
-          onClick={() => {
-            setEditingFieldId(null);
-            setError('');
-            setNewField({
-            name: '',
-            type: 'text',
-            description: '',
-            enumValues:[]
-            });
-          }}
-          title="Cancel"
-          />
-        </ButtonGroup>
-        </AddFieldForm>
+          </div>
+        </>
       )}
-      </FieldContainer>
-    ))}
 
-
-{!showAddField ? (
-  <Button 
-    Icon={IconPlus} 
-    onClick={() => setShowAddField(true)} 
-    variant="primary" 
-    title="Add New Field" 
-  />
-) : (
-  <AddFieldForm>
-    <Input
-      type="text"
-      placeholder="Field Name"
-      value={newField.name}
-      
-      onChange={e => {
-        const newName = e.target.value;
-        const validationError = validateFieldName(newName);
-        if (validationError) {
-          setError(validationError);
-        } else {
-          setError('');
-        }
-    
-        setNewField({ ...newField, name: e.target.value });
-        setError('');
-      }}
-    />
-    <Select 
-      value={newField.type} 
-      onChange={e => setNewField({ ...newField, type: e.target.value })}
-    >
-      {fieldTypes.map(type => (
-        <option key={type.value} value={type.value}>
-          {type.label}
-        </option>
-      ))}
-    </Select>
-
-    {newField.type === 'enum' && (
-      <EnumValuesInput>
-        <SelectLabel>Enum Values</SelectLabel>
-        {(newField.enumValues || []).map((value, index) => (
-          <EnumValueRow key={index}>
-            <Input
-              type="text"
-              value={value}
-              onChange={e => {
-                const newName = e.target.value;
-                const validationError = validateFieldName(newName);
-                if (validationError) {
-                  setError(validationError);
-                } else {
-                  setError('');
-                }
-            
-                const newEnumValues = [...newField.enumValues];
-                newEnumValues[index] = e.target.value;
-                setNewField({ ...newField, enumValues: newEnumValues });
-              }}
-            />
-            <Button
-              Icon={IconX}
-              variant="secondary"
-              onClick={() => {
-                const newEnumValues = newField.enumValues.filter((_, i) => i !== index);
-                setNewField({ ...newField, enumValues: newEnumValues });
-              }}
-              title="Remove enum value"
-            />
-          </EnumValueRow>
-        ))}
-        <Button
-          Icon={IconPlus}
-          variant="secondary"
-          onClick={() => {
-            setNewField({
-              ...newField,
-              enumValues: [...(newField.enumValues || []), '']
-            });
-          }}
-          title="Add enum value"
-        />
-      </EnumValuesInput>
-    )}
-
-
-    <TextArea 
-      placeholder="Field Description" 
-      value={newField.description} 
-      onChange={e => setNewField({ ...newField, description: e.target.value })} 
-      rows={3} 
-    />
-    <ButtonGroup>
-      <Button Icon={IconPlus} onClick={addField} variant="primary" title="Add" />
-      <Button
-        variant="secondary"
-        accent="danger"
-        onClick={() => {
-          setShowAddField(false);
-          setError('');
-          setNewField({
-            name: '',
-            type: 'text',
-            description: '',
-            enumValues:[]
-          });
-        }}
-        title="Cancel"
-      />
-    </ButtonGroup>
-  </AddFieldForm>
-  )}
-
-  </FieldsList>
-
-
-  <SelectLabel>Best Of</SelectLabel>
-<div style={{
-  display: 'flex',
-  alignItems: 'center',
-  gap: '0.5rem',
-  width: '90%'
-}}>
-  <Input
-    type="number"
-    min="1"
-    value={enrichments[index]?.bestOf || 1}
-    onChange={e => {
-  
-      const value = parseInt(e.target.value) || 1;
-      setEnrichments(prev => {
-        const newEnrichments = [...prev];
-        if (newEnrichments[index]) {
-          newEnrichments[index] = {
-            ...newEnrichments[index],
-            bestOf: value
-          };
-        }
-        return newEnrichments;
-      });
-    }}
-    style={{ width: '80px' }}
-  />
-</div>
-
-
-
-    {(fields.length > 0) && (
-      <ModelCodeDisplay show={true}>
-      <SelectLabel>Generated Model Code</SelectLabel>
-        <CodeBlock>
-          <pre>{generateModelCode()}</pre>
-        </CodeBlock>
-      </ModelCodeDisplay>
-    )}
+      {(fields.length > 0) && (
+        <ModelCodeDisplay show={true}>
+        <SelectLabel>Generated Model Code</SelectLabel>
+          <CodeBlock>
+            <pre>{generateModelCode()}</pre>
+          </CodeBlock>
+        </ModelCodeDisplay>
+      )}
     </Container>
   );
 };

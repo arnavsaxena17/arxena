@@ -1092,6 +1092,15 @@ export function getFieldsData(
     {
       field: {
         description: '',
+        label: 'filterDescription',
+        name: 'filterDescription',
+        objectMetadataId: objectsNameIdMap.candidateEnrichment,
+        type: 'TEXT',
+      },
+    },
+    {
+      field: {
+        description: '',
         label: 'fields',
         name: 'fields',
         objectMetadataId: objectsNameIdMap.candidateEnrichment,

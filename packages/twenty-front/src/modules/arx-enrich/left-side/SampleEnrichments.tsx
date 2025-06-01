@@ -46,7 +46,7 @@ const StyledSampleDescription = styled.div`
 const SAMPLE_ENRICHMENTS = [
   {
     modelName: "DistanceFromJob",
-    aiFilterDescription: "Calculate the distance in kilometers between each candidate's location and Surat, Gujarat, India. This will help identify candidates based on their proximity to the job location.",
+    filterDescription: "Calculate the distance in kilometers between each candidate's location and Surat, Gujarat, India. This will help identify candidates based on their proximity to the job location.",
     prompt: "For the given location below, return the distance in kilometeres between the location and the Surat, Gujarat, India. Return only the distance in kilometers. No explanation is needed.",
     fields: [
       {
@@ -61,7 +61,7 @@ const SAMPLE_ENRICHMENTS = [
   },
   {
     modelName: "JobTitleClasssification",
-    aiFilterDescription: "Analyze job titles to classify them by function (sales, marketing, finance, legal) and level (entry, mid, senior, executive) to better understand the candidate's role and seniority.",
+    filterDescription: "Analyze job titles to classify them by function (sales, marketing, finance, legal) and level (entry, mid, senior, executive) to better understand the candidate's role and seniority.",
     prompt: "Classify the given job title into one of the following function categories - sales, marketing, finance, legal and levels - entry, mid, senior, executive.",
     fields: [
       {
@@ -128,15 +128,26 @@ export const SampleEnrichments = () => {
     fetchSampleEnrichments();
   }, []); // Run once on component mount
 
-  const handleSampleClick = (sample: { modelName: string; prompt: string; fields: { name: string; type: string; description: string;  id: number; }[]; selectedMetadataFields: string[]; selectedModel: string; }) => {
+  const handleSampleClick = (sample: { modelName: string; prompt: string; fields: { name: string; type: string; description: string;  id: number; }[]; selectedMetadataFields: string[]; selectedModel: string; filterDescription: string; }) => {
     setEnrichments(prev => {
       // Check if an enrichment with the same modelName already exists
       const exists = prev.some(enrichment => enrichment.modelName === sample.modelName);
       // Only add if it doesn't exist
-      return exists ? prev : [...prev, { ...sample }];
+      if (!exists) {
+        // Create a new enrichment with all sample values
+        const newEnrichment = {
+          ...sample,
+          fields: sample.fields.map(field => ({
+            ...field,
+            id: Date.now() + Math.random() // Ensure unique IDs
+          }))
+        };
+        return [...prev.map(e => ({...e})), newEnrichment];
+      }
+      return prev;
     });
     setActiveEnrichment(enrichments.length);
-    };
+  };
 
   return (
     <StyledSampleContainer>

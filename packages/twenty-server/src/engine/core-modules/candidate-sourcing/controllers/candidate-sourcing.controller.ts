@@ -1007,4 +1007,49 @@ export class CandidateSourcingController {
       return { data: error.message };
     }
   }
+
+  @Post('process-ai-filter')
+  @UseGuards(JwtAuthGuard)
+  async processAiFilter(@Req() request: any): Promise<object> {
+    try {
+      const apiToken = request.headers.authorization.split(' ')[1];
+      const { filterDescription, candidateFields } = request.body;
+
+      if (!filterDescription) {
+        return {
+          status: 'Failed',
+          message: 'Missing required field: filterDescription',
+        };
+      }
+
+      const url = process.env.ENV_NODE === 'production'
+        ? 'https://arxena.com/process_ai_filter'
+        : 'http://localhost:5050/process_ai_filter';
+
+      const response = await axios.post(
+        url,
+        { 
+          filter_description: filterDescription,
+          candidate_fields: candidateFields 
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${apiToken}`,
+          },
+        }
+      );
+
+      return {
+        status: 'Success',
+        data: response.data
+      };
+    } catch (err) {
+      console.error('Error in process AI filter:', err);
+      return {
+        status: 'Failed',
+        error: err.message,
+      };
+    }
+  }
 }

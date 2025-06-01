@@ -136,7 +136,7 @@ export const ModalNavElementContainer = () => {
         modelName: '',
         fields: [],
         selectedMetadataFields: [],
-        aiFilterDescription: '',
+        filterDescription: '',
         prompt: '', // Add this field
         selectedModel: 'gpt4omini',  // Add this field
       };
@@ -148,7 +148,7 @@ export const ModalNavElementContainer = () => {
   const addEnrichment = () => {
     const newEnrichment: Enrichment = {
       modelName: '',
-      aiFilterDescription: '',
+      filterDescription: '',
       prompt: '', // Add this field
       fields: [],
       selectedMetadataFields: [],

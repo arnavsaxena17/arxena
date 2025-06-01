@@ -11,7 +11,7 @@ export const enrichmentsState = createState<any[]>({
     modelName: '',
     prompt: '',
     fields: [],
-    aiFilterDescription: '',
+    filterDescription: '',
     selectedMetadataFields: [],
     selectedModel: 'gpt4omini',
     bestOf: 1
