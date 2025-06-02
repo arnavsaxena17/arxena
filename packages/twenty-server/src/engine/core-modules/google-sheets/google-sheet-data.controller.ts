@@ -61,7 +61,7 @@ export class GoogleSheetsDataController {
     );
     console.log("candidateSourcingController:", candidateSourcingController);
 
-    const result = await candidateSourcingController.createEnrichments({
+    const result = await candidateSourcingController.processEnrichments({
       body: enrichmentPayload,
       headers: {
         authorization: `Bearer ${tokenData.token}`
@@ -76,7 +76,6 @@ export class GoogleSheetsDataController {
     console.log("gpong to get workspace token for google sheet with id :", spreadsheetId);
     const results = await this.workspaceQueryService.executeQueryAcrossWorkspaces(
       async (workspaceId, dataSourceSchema, transactionManager) => {
-        // Query to find the Google Sheet integration record
         console.log("workspaceId:", workspaceId);
         const sheetIntegration = await this.workspaceQueryService.executeRawQuery(
           `SELECT * FROM ${dataSourceSchema}."_job" 
