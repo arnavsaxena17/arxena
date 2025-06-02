@@ -1,11 +1,11 @@
-import { activeEnrichmentState, enrichmentsState, recordsToEnrichState } from '@/arx-enrich/states/arxEnrichModalOpenState';
+import { activeEnrichmentState, enrichmentsState } from '@/arx-enrich/states/arxEnrichModalOpenState';
 import styled from '@emotion/styled';
 import axios from 'axios';
 import { useEffect } from 'react';
 import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 
 import { tokenPairState } from '@/auth/states/tokenPairState';
-import { selectedRecordsForModalState } from '@/object-record/states/selectedRecordsState';
+import { TableState, tableStateAtom } from '@/candidate-table/states/states';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 // import { useViewStates } from '@/views/hooks/internal/useViewStates';
@@ -115,6 +115,7 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
   const { enqueueSnackBar } = useSnackBar();
   const setRefreshTableDataTrigger = useSetRecoilState(refreshTableDataTriggerState);
   const jobId = useRecoilValue(currentJobIdState);
+  const tableState = useRecoilValue<TableState>(tableStateAtom);
 
   const handleError = (newError: string) => {
     setError(newError);
@@ -123,12 +124,19 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
       formElement?.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
-  const recordsToEnrich = useRecoilValue(recordsToEnrichState);
 
-  // Log recordsToEnrich when it changes
+  // Get selected or all record IDs from table state
+  const getSelectedOrAllRecordIds = () => {
+    return tableState?.selectedRowIds?.length > 0 
+      ? tableState.selectedRowIds 
+      : tableState?.rawData?.map(row => row.id) || [];
+  };
+
+  // Log selected records when they change
   useEffect(() => {
-    console.log("ArxEnrichRightSideContainer - recordsToEnrich updated:", recordsToEnrich);
-  }, [recordsToEnrich]);
+    const selectedIds = getSelectedOrAllRecordIds();
+    console.log("ArxEnrichRightSideContainer - selected records updated:", selectedIds);
+  }, [tableState]);
 
   const currentViewId = location.href.split("view=")[1];
   // const {
@@ -148,15 +156,12 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
   // );
 
   // const currentViewWithCombinedFiltersAndSorts = useRecoilValue(currentViewWithFiltersState);
-  const selectedRecords = useRecoilValue(selectedRecordsForModalState);
-  console.log("These are the selected record ids", selectedRecords, "from selectedRecordsForModalState")
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError('');
     setFieldErrors([]);
     setIsLoading(true);
-
 
     // Validate current enrichment
     const currentEnrichment = enrichments[activeEnrichment || 0];
@@ -192,24 +197,18 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
 
     console.log("All Enrichmetns", enrichments)
 
-    // Prioritize recordsToEnrich if it has values
-    const selectedRecordIds = recordsToEnrich?.length > 0 
-      ? recordsToEnrich 
-      : selectedRecords || [];
+    const selectedRecordIds = getSelectedOrAllRecordIds();
     
-    console.log("Selected Record Ids::selectedRecordIds", selectedRecordIds)
-    console.log("Selected Record Ids:::recordsToEnrich", recordsToEnrich)
-    console.log("Selected Record Ids:::selectedRecords", selectedRecords)
+    console.log("Selected Record Ids::selectedRecordIds", selectedRecordIds);
+    console.log("Selected Record Ids from table state:", tableState?.selectedRowIds);
+    console.log("All rows from table state:", tableState?.rawData);
 
     try {
-      const response = await axios.post(process.env.REACT_APP_SERVER_BASE_URL+'/candidate-sourcing/create-enrichments', {
+      const response = await axios.post(process.env.REACT_APP_SERVER_BASE_URL+'/candidate-sourcing/process-enrichments', {
         enrichments,
         objectNameSingular,
         jobId,
-        // availableSortDefinitions,
-        // availableFilterDefinitions,
         objectRecordId,
-        // selectedRecordIds,
         selectedRecordIds
       }, {
         headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` }
@@ -220,7 +219,6 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
           variant: SnackBarVariant.Success,
           duration: 3000,
         });
-        // Trigger table refresh
         setRefreshTableDataTrigger(true);
         closeModal();
       }

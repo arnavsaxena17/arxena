@@ -170,9 +170,9 @@ export class CandidateSourcingController {
     }
   }
 
-  @Post('create-enrichments')
+  @Post('process-enrichments')
   @UseGuards(JwtAuthGuard)
-  async createEnrichments(@Req() request: any): Promise<object> {
+  async processEnrichments(@Req() request: any): Promise<object> {
     try {
       console.log('jhave reached create enrichments,', request);
       const apiToken = request?.headers?.authorization?.split(' ')[1]; // Assuming Bearer token
@@ -1048,6 +1048,54 @@ export class CandidateSourcingController {
       console.error('Error in process AI filter:', err);
       return {
         status: 'failed',
+        error: err.message,
+      };
+    }
+  }
+
+  @Post('compute-tokens')
+  @UseGuards(JwtAuthGuard)
+  async computeTokens(@Req() request: any): Promise<object> {
+    try {
+      const apiToken = request.headers.authorization.split(' ')[1];
+      const enrichments = request.body.enrichments;
+      const selectedRecordIds = request.body.selectedRecordIds;
+      const jobId = request.body.jobId;
+
+      if (!enrichments) {
+        return {
+          status: 'Failed',
+          message: 'Missing required field: enrichments',
+        };
+      }
+
+      const url = process.env.ENV_NODE === 'production'
+        ? 'https://arxena.com/compute-tokens'
+        : 'http://localhost:5050/compute-tokens';
+
+      const response = await axios.post(
+        url,
+        {
+          enrichments,
+          selectedRecordIds,
+          jobId,
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${apiToken}`,
+          },
+        },
+      );
+      console.log("Response data is this::", response.data);
+      return {
+        status: 'success',
+        data: response.data,
+      };
+    } catch (err) {
+      console.error('Error computing tokens:', err);
+      return {
+        status: 'Failed',
         error: err.message,
       };
     }

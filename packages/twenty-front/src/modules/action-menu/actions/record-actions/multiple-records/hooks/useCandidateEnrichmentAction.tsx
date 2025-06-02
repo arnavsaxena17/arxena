@@ -1,6 +1,5 @@
 import { ActionHookWithObjectMetadataItem } from '@/action-menu/actions/types/ActionHook';
 import { useArxEnrichCreationModal } from '@/arx-enrich/hooks/useArxEnrichCreationModal';
-import { recordsToEnrichState } from '@/arx-enrich/states/arxEnrichModalOpenState';
 import { tableStateAtom } from '@/candidate-table/states/states';
 import { contextStoreFiltersComponentState } from '@/context-store/states/contextStoreFiltersComponentState';
 import { contextStoreNumberOfSelectedRecordsComponentState } from '@/context-store/states/contextStoreNumberOfSelectedRecordsComponentState';
@@ -13,21 +12,12 @@ import { useStartChats } from '@/object-record/hooks/useStartChats';
 import { useFilterValueDependencies } from '@/object-record/record-filter/hooks/useFilterValueDependencies';
 import { ConfirmationModal } from '@/ui/layout/modal/components/ConfirmationModal';
 import { useRecoilComponentValueV2 } from '@/ui/utilities/state/component-state/hooks/useRecoilComponentValueV2';
-import { useCallback, useEffect, useState } from 'react';
-import { useRecoilState, useRecoilValue } from 'recoil';
+import { useCallback, useState } from 'react';
+import { useRecoilValue } from 'recoil';
 import { isDefined } from 'twenty-shared';
 
 export const useCandidateEnrichmentAction: ActionHookWithObjectMetadataItem = ({ objectMetadataItem }) => { 
-    
-  const [recordsToEnrich, setRecordsToEnrich] = useRecoilState(recordsToEnrichState);
   const tableState = useRecoilValue(tableStateAtom);
-
-  // Effect to sync tableState.selectedRowIds with recordsToEnrich
-  useEffect(() => {
-    if (tableState?.selectedRowIds?.length > 0) {
-      setRecordsToEnrich(tableState.selectedRowIds);
-    }
-  }, [tableState?.selectedRowIds, setRecordsToEnrich]);
 
   const contextStoreNumberOfSelectedRecords = useRecoilComponentValueV2(
     contextStoreNumberOfSelectedRecordsComponentState,
@@ -94,32 +84,22 @@ export const useCandidateEnrichmentAction: ActionHookWithObjectMetadataItem = ({
   const { openModal } = useArxEnrichCreationModal();
     
   const handleModal = async () => {
-    console.log("handleModal: Current selectedIds in recordsToEnrichState:", recordsToEnrich);
     console.log("handleModal: Table state selected row IDs:", tableState?.selectedRowIds);
 
     // Always prioritize table state selected rows
     if (tableState?.selectedRowIds?.length > 0) {
       console.log("Using selected rows from table state:", tableState.selectedRowIds);
-      setRecordsToEnrich(tableState.selectedRowIds);
       openModal();
       return;
     }
 
-    // If no table selection but we have existing recordsToEnrich, use those
-    if (recordsToEnrich?.length > 0) {
-      console.log("Using existing recordsToEnrich:", recordsToEnrich);
-      openModal();
-      return;
-    }
-
-    // Fallback to fetching from server if no selected rows in table and no existing records
+    // Fallback to fetching from server if no selected rows in table
     const recordsToEnrichFromServer = await fetchAllRecordIds();
     const recordIdsToEnrich = recordsToEnrichFromServer.map((record) => record.id);
     
     console.log("Records selected from server:", recordsToEnrichFromServer);
     console.log("Record IDs selected from server:", recordIdsToEnrich);
     
-    setRecordsToEnrich(recordIdsToEnrich);
     openModal();
   };
 

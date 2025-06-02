@@ -7,6 +7,8 @@ import { ArxEnrichLeftSideContainer } from '@/arx-enrich/left-side/ArxEnrichLeft
 import { ArxEnrichRightSideContainer } from '@/arx-enrich/right-side/ArxEnrichRightSideContainer';
 import { currentJobIdState, enrichmentsState, isArxEnrichModalOpenState } from '@/arx-enrich/states/arxEnrichModalOpenState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
+import { usePreviousHotkeyScope } from '@/ui/utilities/hotkey/hooks/usePreviousHotkeyScope';
+import { AppHotkeyScope } from '@/ui/utilities/hotkey/types/AppHotkeyScope';
 
 const StyledModalContainer = styled.div`
   background-color: solid;
@@ -128,8 +130,14 @@ export const ArxEnrichmentModal = ({
   const [isLoadingFields, setIsLoadingFields] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
   
+  const {
+    setHotkeyScopeAndMemorizePreviousScope,
+    goBackToPreviousHotkeyScope,
+  } = usePreviousHotkeyScope();
+
   const closeModal = () => {
     setIsArxEnrichModalOpen(false);
+    goBackToPreviousHotkeyScope();
   };
 
   const fetchCandidateFields = useCallback(async () => {
@@ -182,9 +190,14 @@ export const ArxEnrichmentModal = ({
 
   useEffect(() => {
     if (isArxEnrichModalOpen) {
+      setHotkeyScopeAndMemorizePreviousScope(AppHotkeyScope.App, {
+        commandMenu: false,
+        goto: false,
+        keyboardShortcutMenu: false,
+      });
       fetchCandidateFields();
     }
-  }, [isArxEnrichModalOpen, fetchCandidateFields]);
+  }, [isArxEnrichModalOpen, setHotkeyScopeAndMemorizePreviousScope, fetchCandidateFields]);
 
   if (!isArxEnrichModalOpen) {
     return null;

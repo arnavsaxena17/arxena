@@ -1,8 +1,9 @@
 import { currentJobIdState, enrichmentsState } from '@/arx-enrich/states/arxEnrichModalOpenState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
+import { TableState, tableStateAtom } from '@/candidate-table/states/states';
 import { useObjectMetadataItem } from '@/object-metadata/hooks/useObjectMetadataItem';
 import styled from '@emotion/styled';
-import { IconEdit } from '@tabler/icons-react';
+import { IconEdit, IconLoader2 } from '@tabler/icons-react';
 import { Button } from '@ui/input/button/components/Button';
 import axios from 'axios';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -291,6 +292,60 @@ const ProcessButton = styled(Button)`
   align-self: flex-start;
 `;
 
+const TokenUsageContainer = styled.div`
+  margin-top: ${({ theme }) => theme.spacing(4)};
+  background: ${({ theme }) => theme.background.primary};
+  border: 1px solid ${({ theme }) => theme.border.color.medium};
+  border-radius: ${({ theme }) => theme.border.radius.md};
+  padding: ${({ theme }) => theme.spacing(4)};
+`;
+
+const TokenUsageSection = styled.div`
+  margin-bottom: ${({ theme }) => theme.spacing(4)};
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+`;
+
+const TokenUsageTitle = styled.h3`
+  color: ${({ theme }) => theme.font.color.primary};
+  font-size: ${({ theme }) => theme.font.size.md};
+  font-weight: ${({ theme }) => theme.font.weight.semiBold};
+  margin: 0 0 ${({ theme }) => theme.spacing(2)};
+`;
+
+const TokenUsageRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: ${({ theme }) => theme.spacing(1)} 0;
+  color: ${({ theme }) => theme.font.color.secondary};
+  font-size: ${({ theme }) => theme.font.size.sm};
+`;
+
+const TokenUsageLabel = styled.span`
+  color: ${({ theme }) => theme.font.color.tertiary};
+`;
+
+const TokenUsageValue = styled.span`
+  color: ${({ theme }) => theme.font.color.primary};
+  font-weight: ${({ theme }) => theme.font.weight.medium};
+`;
+
+const LoadingContainer = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(2)};
+  color: ${({ theme }) => theme.font.color.tertiary};
+  font-size: ${({ theme }) => theme.font.size.sm};
+  margin-top: ${({ theme }) => theme.spacing(3)};
+`;
+
+const SectionGap = styled.div`
+  margin-top: ${({ theme }) => theme.spacing(8)};
+`;
+
 interface DynamicModelCreatorProps {
   objectNameSingular: string;
   index: number;
@@ -312,6 +367,9 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
   const [editingFieldId, setEditingFieldId] = useState<number | null>(null);
   const [enrichments, setEnrichments] = useRecoilState(enrichmentsState);
   const [error, setError] = useState<string>('');
+  const [tokenAnalysis, setTokenAnalysis] = useState<any>(null);
+  const [isComputingTokens, setIsComputingTokens] = useState(false);
+  const tableState = useRecoilValue<TableState>(tableStateAtom);
   const [newField, setNewField] = useState<{
     name: string;
     type: string;
@@ -617,6 +675,56 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
       setIsProcessing(false);
     }
   };
+
+  // Get selected or all record IDs from table state
+  const getSelectedOrAllRecordIds = () => {
+    return tableState?.selectedRowIds?.length > 0 
+      ? tableState.selectedRowIds 
+      : tableState?.rawData?.map(row => row.id) || [];
+  };
+
+  const computeTokens = async () => {
+    if (!enrichments[index]?.modelName) {
+      return;
+    }
+    console.log("Enrichments[index] is this::", enrichments[index]);
+    setIsComputingTokens(true);
+    try {
+      // Get selected or all record IDs
+      const selectedRecordIds = getSelectedOrAllRecordIds();
+      console.log("Computing tokens with selectedRecordIds:", selectedRecordIds);
+      
+      const response = await axios.post(
+        `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/compute-tokens`,
+        { 
+          enrichments: [enrichments[index]], 
+          selectedRecordIds, 
+          jobId: currentJobId 
+        },
+        { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } }
+      );
+
+      if (response.data?.status === 'success' && response.data?.data?.data) {
+        console.log("Response data is this::", response.data.data.data);
+        setTokenAnalysis(response.data.data.data);
+      }
+    } catch (error) {
+      console.error('Error computing tokens:', error);
+      onError(error instanceof Error ? error.message : 'Failed to compute tokens');
+    } finally {
+      setIsComputingTokens(false);
+    }
+  };
+
+  // Compute tokens whenever model name, prompt, or fields change
+  useEffect(() => {
+    if (enrichments[index]?.modelName) {
+      computeTokens();
+    }
+  }, [enrichments[index]?.modelName, enrichments[index]?.prompt, enrichments[index]?.fields]);
+
+
+  console.log("Token analysis is this::", tokenAnalysis);
 
   return (
     <Container>
@@ -979,12 +1087,54 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
         </>
       )}
 
+
       {(fields.length > 0) && (
         <ModelCodeDisplay show={true}>
-        <SelectLabel>Generated Model Code</SelectLabel>
+          <SelectLabel>Generated Model Code</SelectLabel>
           <CodeBlock>
             <pre>{generateModelCode()}</pre>
           </CodeBlock>
+          
+          {isComputingTokens ? (
+            <LoadingContainer>
+              <IconLoader2 style={{ animation: 'spin 1s linear infinite' }} />
+              Computing token usage...
+            </LoadingContainer>
+          ) : tokenAnalysis && (
+            <>
+              <SectionGap />
+              <SelectLabel>Cost Analysis</SelectLabel>
+              <TokenUsageContainer>
+                <TokenUsageSection>
+                  <TokenUsageTitle>Token Usage Estimation</TokenUsageTitle>
+                  <TokenUsageRow>
+                    <TokenUsageLabel>Input Tokens</TokenUsageLabel>
+                    <TokenUsageValue>{tokenAnalysis.total_input_tokens.toLocaleString()}</TokenUsageValue>
+                  </TokenUsageRow>
+                  <TokenUsageRow>
+                    <TokenUsageLabel>Output Tokens</TokenUsageLabel>
+                    <TokenUsageValue>{tokenAnalysis.total_output_tokens.toLocaleString()}</TokenUsageValue>
+                  </TokenUsageRow>
+                  <TokenUsageRow>
+                    <TokenUsageLabel>Total Candidates</TokenUsageLabel>
+                    <TokenUsageValue>{tokenAnalysis.total_candidates}</TokenUsageValue>
+                  </TokenUsageRow>
+                </TokenUsageSection>
+
+                <TokenUsageSection>
+                  <TokenUsageTitle>Cost Statistics (USD)</TokenUsageTitle>
+                  <TokenUsageRow>
+                    <TokenUsageLabel>Total Cost</TokenUsageLabel>
+                    <TokenUsageValue>${tokenAnalysis.total_cost.toFixed(4)}</TokenUsageValue>
+                  </TokenUsageRow>
+                  <TokenUsageRow>
+                    <TokenUsageLabel>Mean Cost per Candidate</TokenUsageLabel>
+                    <TokenUsageValue>${tokenAnalysis.cost_statistics.mean_cost.toFixed(4)}</TokenUsageValue>
+                  </TokenUsageRow>
+                </TokenUsageSection>
+              </TokenUsageContainer>
+            </>
+          )}
         </ModelCodeDisplay>
       )}
     </Container>

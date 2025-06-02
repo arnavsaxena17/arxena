@@ -1,12 +1,12 @@
 import {
-    Body,
-    Controller,
-    Get,
-    Headers,
-    Param,
-    Post,
-    Req,
-    UseGuards,
+  Body,
+  Controller,
+  Get,
+  Headers,
+  Param,
+  Post,
+  Req,
+  UseGuards,
 } from '@nestjs/common';
 
 import axios from 'axios';
@@ -139,6 +139,7 @@ export class WorkspaceModificationsController {
   @UseGuards(JwtAuthGuard)
   async updateMetadataStructure(@Headers('authorization') authHeader: string) {
     const token = authHeader.split(' ')[1];
+    console.log("Updating metadata structure");
     const result = await this.metadataUpdateService.updateMetadata(token);
     return result;
   }
