@@ -10,6 +10,8 @@ import { Enrichment } from '../arxEnrichmentModal';
 
 const StyledArxEnrichNameContainer = styled.div`
   display: flex;
+  justify-content: ${({ hasPrompt }: { hasPrompt: boolean }) => hasPrompt ? 'flex-start' : 'flex-end'};
+  width: 100%;
 `;
 
 const StyledButtonsContainer = styled.div`
@@ -67,7 +69,7 @@ const StyledTopValidationMessage = styled.div`
 
 
 export const ArxEnrichModalCloseButton = ({ closeModal }: { closeModal: () => void }) => {
-  return <Button variant="secondary" accent="danger" size="small" onClick={closeModal} justify="center" title="Close" type="submit" />;
+  return <Button variant="secondary" accent="danger" size="small" onClick={closeModal} justify="flex-end" title="Close" type="submit" />;
 };
 
 
@@ -88,7 +90,7 @@ export const ArxEnrichCreateButton = ({
         accent="blue" 
         size="small" 
         justify="center" 
-        title={'Create Enrichment'} 
+        title={'Create AI Filter'} 
         type="submit"
         disabled={disabled}
       />
@@ -172,7 +174,8 @@ export const ArxEnrichName: React.FC<ArxEnrichNameProps> = ({
 
   return (
     <>
-      <StyledArxEnrichNameContainer>
+      <StyledArxEnrichNameContainer hasPrompt={currentEnrichment?.prompt !== ''}>
+      {currentEnrichment?.prompt !== '' && (
         <StyledInput 
           type="text" 
           placeholder="Model Name..." 
@@ -181,13 +184,16 @@ export const ArxEnrichName: React.FC<ArxEnrichNameProps> = ({
           onChange={handleModelNameChange} 
           required 
         />
+        )}
         <StyledButtonsContainer>
           <ArxEnrichModalCloseButton closeModal={closeModal} />
-          <ArxEnrichCreateButton 
-            onClick={onSubmit} 
-            enrichment={currentEnrichment}
-            disabled={!isFormValid}
-          />
+          {currentEnrichment?.prompt !== '' && (
+            <ArxEnrichCreateButton 
+              onClick={onSubmit} 
+              enrichment={currentEnrichment}
+              disabled={!isFormValid}
+            />
+          )}
         </StyledButtonsContainer>
       </StyledArxEnrichNameContainer>
     </>

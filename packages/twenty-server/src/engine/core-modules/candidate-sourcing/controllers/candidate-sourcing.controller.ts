@@ -1008,7 +1008,7 @@ export class CandidateSourcingController {
     }
   }
 
-  @Post('process-ai-filter')
+  @Post('process-filter-description')
   @UseGuards(JwtAuthGuard)
   async processAiFilter(@Req() request: any): Promise<object> {
     try {
@@ -1023,8 +1023,8 @@ export class CandidateSourcingController {
       }
 
       const url = process.env.ENV_NODE === 'production'
-        ? 'https://arxena.com/process_ai_filter'
-        : 'http://localhost:5050/process_ai_filter';
+        ? 'https://arxena.com/process_filter_description'
+        : 'http://localhost:5050/process_filter_description';
 
       const response = await axios.post(
         url,
@@ -1041,13 +1041,13 @@ export class CandidateSourcingController {
       );
 
       return {
-        status: 'Success',
+        status: 'success',
         data: response.data
       };
     } catch (err) {
       console.error('Error in process AI filter:', err);
       return {
-        status: 'Failed',
+        status: 'failed',
         error: err.message,
       };
     }

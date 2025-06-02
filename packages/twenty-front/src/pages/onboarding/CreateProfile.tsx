@@ -93,16 +93,13 @@ export const CreateProfile = () => {
 console.log('currentUser in create profile::', currentUser);
 
   const createWorkspaceModifications = async () => {
-    try {
-      const response = await fetch(
-        `${process.env.REACT_APP_SERVER_BASE_URL}/workspace-modifications/create-metadata-structure`,
-        { method: 'POST', headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } },
-      );
-      if (!response.ok) {
-        throw new Error('Failed to create metadata structure');
-      }
-      return true;
-    } catch (error) {
+    // Run in background and don't wait for response
+    fetch(
+      `${process.env.REACT_APP_SERVER_BASE_URL}/workspace-modifications/create-metadata-structure`,
+      { method: 'POST', headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } },
+    ).then(() => {
+      console.log('Metadata structure creation completed in background');
+    }).catch((error) => {
       console.error('Error creating metadata structure:', error);
       enqueueSnackBar(
         error instanceof Error
@@ -112,8 +109,9 @@ console.log('currentUser in create profile::', currentUser);
           variant: SnackBarVariant.Error,
         },
       );
-      return false;
-    }
+    });
+    // Return immediately to not block execution
+    return true;
   };
 
 
@@ -226,8 +224,8 @@ console.log('currentUser in create profile::', currentUser);
           return current;
         });
         
-        // Call metadata structure creation before Arxena signup
-        await createWorkspaceModifications();
+        // Start metadata structure creation in background
+        createWorkspaceModifications();
         
         setNextOnboardingStatus();
         console.log('Some email and user data');

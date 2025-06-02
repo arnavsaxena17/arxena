@@ -199,7 +199,7 @@ export const ModalNavElementContainer = () => {
 export const ArxEnrichLeftSideContainer = () => {
   return (
     <StyledContainer>
-      <div>New ARX Enrich</div>
+      <div>AI Filtering</div>
       <ScrollableContent>
         <ModalNavElementContainer />
         <SampleEnrichments />

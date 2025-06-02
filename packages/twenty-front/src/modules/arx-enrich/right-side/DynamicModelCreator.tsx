@@ -573,41 +573,38 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
   const processAIFilter = async () => {
     console.log("Enrichments are these::", enrichments[index]);
     if (!enrichments[index]?.filterDescription) {
-      // onError('AI Filter Description is required');
       return;
     }
 
     setIsProcessing(true);
     try {
       const response = await axios.post(
-        `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/process-ai-filter`,
-        {
-          filterDescription: enrichments[index].filterDescription,
-          candidateFields: candidateFields.map(field => field.name)
-        },
-        {
-          headers: { 
-            Authorization: `Bearer ${tokenPair?.accessToken?.token}` 
-          }
-        }
+        `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/process-filter-description`,
+        { filterDescription: enrichments[index].filterDescription, candidateFields: candidateFields.map(field => field.name) },
+        { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } }
       );
 
-      if (response.data?.status === 'Success' && response.data?.data) {
-        const config = response.data.data;
-        
+      if (response.data?.status === 'success' && response.data?.data) {
+        console.log("Response data is this::", response.data.data);
+        const config = response.data.data.data;
+        console.log("Config is this::", config);
         setEnrichments(prev => {
           const newEnrichments = [...prev];
           if (newEnrichments[index]) {
+            console.log("New enrichments are these::", newEnrichments);
+            console.log("Index is this::", index);
+            console.log("New enrichments[index] is this::", newEnrichments[index]);
             newEnrichments[index] = {
               ...newEnrichments[index],
-              modelName: config.modelName || '',
-              prompt: config.prompt || '',
+              modelName: config.modelName,
+              prompt: config.prompt,
               fields: config.fields || [],
               selectedMetadataFields: config.selectedMetadataFields || [],
               selectedModel: config.selectedModel || 'gpt4omini',
               bestOf: config.bestOf || 1
             };
           }
+          console.log("New enrichments are these::", newEnrichments);
           return newEnrichments;
         });
       } else {
