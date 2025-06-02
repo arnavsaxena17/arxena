@@ -358,11 +358,11 @@ export class MetadataUpdateService {
     try {
       // Fetch the metadata once
       const currentMetadata = await this.fetchCurrentMetadata(token);
-      
+      console.log("Current metadata is this::", currentMetadata);
       // Get the object name to ID mapping and objectIds from current metadata
       const objectsNameIdMap: Record<string, string> = {};
       const objectIds: string[] = [];
-      
+      console.log("Current metadata is this::", currentMetadata);
       currentMetadata.data.objects.edges.forEach(edge => {
         console.log(`Mapping object ${edge.node.nameSingular} to ID ${edge.node.id}`);
         objectsNameIdMap[edge.node.nameSingular] = edge.node.id;
