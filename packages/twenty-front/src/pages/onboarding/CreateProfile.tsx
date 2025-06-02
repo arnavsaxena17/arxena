@@ -92,30 +92,26 @@ export const CreateProfile = () => {
   });
 console.log('currentUser in create profile::', currentUser);
 
-  const createWorkspaceModifications = async () => {
-    try {
-      const response = await fetch(
-        `${process.env.REACT_APP_SERVER_BASE_URL}/workspace-modifications/create-metadata-structure`,
-        { method: 'POST', headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } },
-      );
-      if (!response.ok) {
-        throw new Error('Failed to create metadata structure');
-      }
-      return true;
-    } catch (error) {
-      console.error('Error creating metadata structure:', error);
-      enqueueSnackBar(
-        error instanceof Error
-          ? `Failed to create metadata structure: ${error.message}`
-          : 'Failed to create metadata structure',
-        {
-          variant: SnackBarVariant.Error,
-        },
-      );
-      return false;
-    }
-  };
 
+const createWorkspaceModifications = async () => {
+  fetch(
+    `${process.env.REACT_APP_SERVER_BASE_URL}/workspace-modifications/create-metadata-structure`,
+    { method: 'POST', headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } },
+  ).then(() => {
+    console.log('Metadata structure creation completed in background');
+  }).catch((error) => {
+    console.error('Error creating metadata structure:', error);
+    enqueueSnackBar(
+      error instanceof Error
+        ? `Failed to create metadata structure: ${error.message}`
+        : 'Failed to create metadata structure',
+      {
+        variant: SnackBarVariant.Error,
+      },
+    );
+  });
+  return true;
+};
 
 
   const signupUserOnArxena = async (userData: any) => {
@@ -226,10 +222,6 @@ console.log('currentUser in create profile::', currentUser);
           return current;
         });
         
-        // Call metadata structure creation before Arxena signup
-        await createWorkspaceModifications();
-        
-        setNextOnboardingStatus();
         console.log('Some email and user data');
         const userData = {
           fullName:
@@ -253,6 +245,11 @@ console.log('currentUser in create profile::', currentUser);
         } catch (err) {
           console.log('Error while signing up on Arxena:', err);
         }
+
+        // Call metadata structure creation before Arxena signup
+        createWorkspaceModifications();
+        
+        setNextOnboardingStatus();
       } catch (error: any) {
         console.log('ERROR', error);
         // enqueueSnackBar(error?.message, {
