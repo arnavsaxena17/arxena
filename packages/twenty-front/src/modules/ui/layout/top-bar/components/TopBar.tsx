@@ -29,13 +29,12 @@ const StyledContainer = styled.div`
   border-bottom: ${({ theme }) => `1px solid ${theme.border.color.light}`};
   display: flex;
   margin-left: ${({ theme }) => theme.spacing(2)};
-
+  position: relative;
   flex-direction: column;
 `;
 
 const StyledTopBar = styled.div`
   align-items: center;
-
   box-sizing: border-box;
   color: ${({ theme }) => theme.font.color.secondary};
   display: flex;
@@ -44,7 +43,7 @@ const StyledTopBar = styled.div`
   height: 39px;
   justify-content: space-between;
   padding-right: ${({ theme }) => theme.spacing(2)};
-
+  min-height: 39px;
   z-index: 7;
 `;
 
@@ -58,12 +57,18 @@ const StyledRightSection = styled.div`
   gap: ${({ theme }) => theme.betweenSiblingsGap};
 `;
 
-const StyledButtonContainer = styled.div`
-display: flex;
-gap: ${({ theme }) => theme.spacing(1)};
-margin-left: ${({ theme }) => theme.spacing(2)};
+const StyledCenterButtonContainer = styled.div`
+  display: flex;
+  gap: ${({ theme }) => theme.spacing(1)};
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+`;
 
-
+const StyledRightButtonContainer = styled.div`
+  display: flex;
+  gap: ${({ theme }) => theme.spacing(1)};
+  margin-left: auto;
 `;
 
 const StyledSearchContainer = styled.div`
@@ -140,7 +145,7 @@ export const TopBar = ({
             <StyledLeftSection>{leftComponent}</StyledLeftSection>
         )}
         {!isJobPage && !showSearch && (!location.pathname.includes('jobs') || location.pathname.includes('objects')) && (
-          <StyledButtonContainer>
+          <StyledCenterButtonContainer>
             {showRefetch && (
               <Button
                 Icon={IconRefresh}
@@ -150,7 +155,7 @@ export const TopBar = ({
                 onClick={handleRefresh}
               />
             )}
-          </StyledButtonContainer>
+          </StyledCenterButtonContainer>
         )}
 
         
@@ -167,7 +172,7 @@ export const TopBar = ({
                 onChange={handleSearchChange}
               />
             </StyledSearchContainer>
-            <StyledButtonContainer>
+            <StyledCenterButtonContainer>
               {isJobPage && showRefetch && (
                 <Button
                   Icon={IconRefresh}
@@ -177,24 +182,8 @@ export const TopBar = ({
                   onClick={handleRefresh}
                 />
               )}
-              {/* {isJobPage && (
-                <Button
-                  Icon={IconFileImport}
-                  title="Import Candidates"
-                  variant="secondary"
-                  accent="default"
-                  onClick={handleImportCandidates}
-                />
-              )} */}
-              {/* {showRefetch && !isJobPage && (
-                <Button
-                  Icon={IconSearch}
-                  title="Sourcing"
-                  variant="secondary"
-                  accent="default"
-                  onClick={handleRefresh}
-                />
-              )} */}
+            </StyledCenterButtonContainer>
+            <StyledRightButtonContainer>
               {showEngagement && (
                 <Button
                   Icon={IconMail}
@@ -207,22 +196,13 @@ export const TopBar = ({
               {showEnrichment && (
                 <Button
                   Icon={IconDatabase}
-                  title="Enrichment" 
+                  title="AI Filtering" 
                   variant="secondary"
                   accent="default"
                   onClick={handleEnrichment}
                 />
               )}
-              {/* {showVideoInterviewEdit && (
-                <Button
-                  Icon={IconVideo}
-                  title="Video Interviews"
-                  variant="secondary"
-                  accent="default"
-                  onClick={handleVideoInterviewEdit}
-                />
-              )} */}
-            </StyledButtonContainer>
+            </StyledRightButtonContainer>
           </>
         )}
 
