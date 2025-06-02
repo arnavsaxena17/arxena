@@ -76,7 +76,7 @@ abstract class BaseCronService {
   }
 }
 
-const CRON_DISABLED = true;
+const CRON_DISABLED = false;
 
 @Injectable()
 export class CandidateEngagementCronService extends BaseCronService {
