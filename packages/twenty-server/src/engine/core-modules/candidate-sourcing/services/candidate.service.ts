@@ -923,6 +923,7 @@ export class CandidateService {
         );
       }
   
+      console.log("Number of candidates to update:", candidatesToUpdate.length);
       if (candidatesToUpdate.length > 0) {
         console.log('Updating existing candidates with missing fields...');
         
