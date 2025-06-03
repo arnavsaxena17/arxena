@@ -41,16 +41,11 @@ export class ProcessCandidatesService {
       });
 
       const deduplicatedProfiles = Array.from(uniqueKeyToProfileMap.values());
-
       const uniqueCandidates = new Set();
-
       for (const candidate of data) {
         uniqueCandidates.add(candidate.unique_key_string);
       }
       console.log(`Found ${uniqueCandidates.size} unique candidates`);
-
-      // const deduplicatedProfiles = Array.from(uniqueCandidates);
-      // console.log(`Deduplicated ${data.length} candidates to ${deduplicatedProfiles.length} unique profiles`);
 
       console.log(
         `Deduplicated ${data.length} candidates to ${deduplicatedProfiles.length} unique profiles`,
@@ -62,9 +57,6 @@ export class ProcessCandidatesService {
         `Breaking up ${deduplicatedProfiles.length} candidates into ${totalBatches} batches of ~${batchSize} each`,
       );
 
-      // Populate the map with the latest profile for each unique key
-
-      // Convert the map values back to an array of UserProfile objects
       for (let i = 0; i < deduplicatedProfiles.length; i += batchSize) {
         const batch = deduplicatedProfiles.slice(i, i + batchSize);
         const batchNumber = Math.floor(i / batchSize) + 1;

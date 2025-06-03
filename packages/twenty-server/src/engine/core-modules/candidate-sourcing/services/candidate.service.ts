@@ -812,6 +812,10 @@ export class CandidateService {
       
       const candidatesToUpdate: Array<{
         candidateId: string;
+        hiringNaukriUrl: { "primaryLinkLabel": string; "primaryLinkUrl": string; };
+        resdexNaukriUrl: { "primaryLinkLabel": string; "primaryLinkUrl": string; };
+        displayPicture: { "primaryLinkLabel": string; "primaryLinkUrl": string; };
+        linkedinUrl: { "primaryLinkLabel": string; "primaryLinkUrl": string; };
         personId: string;
         profile: UserProfile;
         missingFields: string[];
@@ -861,18 +865,23 @@ export class CandidateService {
           } else {
             console.log('No phone number to update');
           }
-  
+          const profileUrl = profile?.profile_url;
           const candidateEmail = existingCandidate?.email?.primaryEmail || existingCandidate?.email;
           console.log('Current candidate email:', candidateEmail);
           const profileEmail = profile?.email_address?.[0] || profile?.all_mails?.[0];
           console.log('Profile email:', profileEmail);
-          
+          if (profileUrl && !profileUrl.includes('naukri')) {
+            missingFields.push('profileUrl');
+          } else {
+            console.log('No profile url to update');
+          }
           if (isFieldEmpty(candidateEmail) && profileEmail && profileEmail.trim() !== '') {
             console.log('Adding email to missing fields');
             missingFields.push('email');
           } else {
             console.log('No email to update');
           }
+
   
           console.log('Missing fields:', missingFields);
           if (missingFields.length > 0) {
@@ -880,6 +889,10 @@ export class CandidateService {
             candidatesToUpdate.push({
               candidateId: existingCandidate.id,
               personId: existingCandidate.peopleId || existingCandidate.people?.id,
+              hiringNaukriUrl: { "primaryLinkLabel": profile?.profile_url || '', "primaryLinkUrl": profile?.profile_url || '' },
+              resdexNaukriUrl: { "primaryLinkLabel": profile?.profile_url || '', "primaryLinkUrl": profile?.profile_url || '' },
+              displayPicture: { "primaryLinkLabel": "Display Picture", "primaryLinkUrl": profile?.display_picture || '' },
+              linkedinUrl: { "primaryLinkLabel": profile?.profile_url || '', "primaryLinkUrl": profile?.profile_url || '' },
               profile,
               missingFields
             });

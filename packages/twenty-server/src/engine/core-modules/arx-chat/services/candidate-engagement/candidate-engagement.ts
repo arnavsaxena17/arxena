@@ -1017,7 +1017,6 @@ export default class CandidateEngagementArx {
           ? graphqlToFetchManyCandidatesOlderSchema
           : graphqlToFetchAllCandidateData;
       const timestamp = new Date().toISOString();
-      console.log("filters::::", filters);
 
       for (const filter of filters) {
         console.log(
