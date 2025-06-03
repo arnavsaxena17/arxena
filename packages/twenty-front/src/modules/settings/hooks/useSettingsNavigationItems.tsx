@@ -4,7 +4,6 @@ import {
   IconCalendarEvent,
   IconComponent,
   IconCurrencyDollar,
-  IconLock,
   IconMail,
   IconSettings,
   IconUserCircle,
@@ -13,7 +12,6 @@ import {
 
 import { SettingsPath } from '@/types/SettingsPath';
 import { SettingsFeatures } from 'twenty-shared';
-import { FeatureFlagKey } from '~/generated-metadata/graphql';
 
 import { currentUserState } from '@/auth/states/currentUserState';
 import { billingState } from '@/client-config/states/billingState';
@@ -22,7 +20,7 @@ import { useSettingsPermissionMap } from '@/settings/roles/hooks/useSettingsPerm
 import { NavigationDrawerItemIndentationLevel } from '@/ui/navigation/navigation-drawer/components/NavigationDrawerItem';
 import { useFeatureFlagsMap } from '@/workspace/hooks/useFeatureFlagsMap';
 import { t } from '@lingui/core/macro';
-import { IconBrandFacebook } from '@tabler/icons-react';
+import { IconBrandFacebook, IconHierarchy2, IconServer } from '@tabler/icons-react';
 import { useRecoilValue } from 'recoil';
 
 export type SettingsNavigationSection = {
@@ -46,7 +44,7 @@ export type SettingsNavigationItem = {
 export const useSettingsNavigationItems = (): SettingsNavigationSection[] => {
   const billing = useRecoilValue(billingState);
 
-  const isFunctionSettingsEnabled = false;
+  const isFunctionSettingsEnabled = true;
   const isBillingEnabled = billing?.isBillingEnabled ?? false;
   const currentUser = useRecoilValue(currentUserState);
   const isAdminEnabled = currentUser?.canImpersonate ?? false;
@@ -121,20 +119,20 @@ export const useSettingsNavigationItems = (): SettingsNavigationSection[] => {
           isHidden:
             !isBillingEnabled || !permissionMap[SettingsFeatures.WORKSPACE],
         },
-        {
-          label: t`Roles`,
-          path: SettingsPath.Roles,
-          Icon: IconLock,
-          isHidden:
-            !featureFlags[FeatureFlagKey.IsPermissionsEnabled] ||
-            !permissionMap[SettingsFeatures.ROLES],
-        },
         // {
-        //   label: t`Data model`,
-        //   path: SettingsPath.Objects,
-        //   Icon: IconHierarchy2,
-        //   isHidden: !permissionMap[SettingsFeatures.DATA_MODEL],
+        //   label: t`Roles`,
+        //   path: SettingsPath.Roles,
+        //   Icon: IconLock,
+        //   isHidden: false
+        //     // !featureFlags[FeatureFlagKey.IsPermissionsEnabled]
+        //     // !permissionMap[SettingsFeatures.ROLES],
         // },
+        {
+          label: t`Data model`,
+          path: SettingsPath.Objects,
+          Icon: IconHierarchy2,
+          isHidden: !permissionMap[SettingsFeatures.DATA_MODEL],
+        },
         {
           label: t`Integrations`,
           path: SettingsPath.Integrations,
@@ -150,48 +148,48 @@ export const useSettingsNavigationItems = (): SettingsNavigationSection[] => {
         // },
       ],
     },
-    {
-      label: t`Developers`,
-      isAdvanced: true,
-      items: [
-        // {
-        //   label: t`API & Webhooks`,
-        //   path: SettingsPath.Developers,
-        //   Icon: IconCode,
-        //   isAdvanced: true,
-        //   isHidden: !permissionMap[SettingsFeatures.API_KEYS_AND_WEBHOOKS],
-        // },
-        // {
-        //   label: t`Functions`,
-        //   path: SettingsPath.ServerlessFunctions,
-        //   Icon: IconFunction,
-        //   isHidden: !isFunctionSettingsEnabled,
-        //   isAdvanced: true,
-        // },
-      ],
-    },
+    // {
+    //   label: t`Developers`,
+    //   isAdvanced: true,
+    //   items: [
+    //     {
+    //       label: t`API & Webhooks`,
+    //       path: SettingsPath.Developers,
+    //       Icon: IconCode,
+    //       isAdvanced: true,
+    //       isHidden: false,
+    //     },
+    //     {
+    //       label: t`Functions`,
+    //       path: SettingsPath.ServerlessFunctions,
+    //       Icon: IconFunction,
+    //       isHidden: false,
+    //       isAdvanced: true,
+    //     },
+    //   ],
+    // },
     {
       label: t`Other`,
       items: [
-        // {
-        //   label: t`Server Admin`,
-        //   path: SettingsPath.AdminPanel,
-        //   Icon: IconServer,
-        //   isHidden: !isAdminEnabled,
-        // },
-        // {
-        //   label: t`Lab`,
-        //   path: SettingsPath.Lab,
-        //   Icon: IconFlask,
-        //   isHidden:
-        //     !labPublicFeatureFlags.length ||
-        //     !permissionMap[SettingsFeatures.WORKSPACE],
-        // },
-        // {
-        //   label: t`Releases`,
-        //   path: SettingsPath.Releases,
-        //   Icon: IconRocket,
-        // },
+          {
+            label: t`Server Admin`,
+            path: SettingsPath.AdminPanel,
+            Icon: IconServer,
+            isHidden: !isAdminEnabled,
+          },
+          // {
+          //   label: t`Lab`,
+          //   path: SettingsPath.Lab,
+          //   Icon: IconFlask,
+          //   isHidden:
+          //     !labPublicFeatureFlags.length ||
+          //     !permissionMap[SettingsFeatures.WORKSPACE],
+          // },
+          // {
+          //   label: t`Releases`,
+          //   path: SettingsPath.Releases,
+          //   Icon: IconRocket,
+          // },
       ],
     },
   ];

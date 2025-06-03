@@ -90,28 +90,28 @@ export const CreateProfile = () => {
   const { updateOneRecord } = useUpdateOneRecord<WorkspaceMember>({
     objectNameSingular: CoreObjectNameSingular.WorkspaceMember,
   });
-console.log('currentUser in create profile::', currentUser);
+  console.log('currentUser in create profile::', currentUser);
 
 
-const createWorkspaceModifications = async () => {
-  fetch(
-    `${process.env.REACT_APP_SERVER_BASE_URL}/workspace-modifications/create-metadata-structure`,
-    { method: 'POST', headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } },
-  ).then(() => {
-    console.log('Metadata structure creation completed in background');
-  }).catch((error) => {
-    console.error('Error creating metadata structure:', error);
-    enqueueSnackBar(
-      error instanceof Error
-        ? `Failed to create metadata structure: ${error.message}`
-        : 'Failed to create metadata structure',
-      {
-        variant: SnackBarVariant.Error,
-      },
-    );
-  });
-  return true;
-};
+  const createWorkspaceModifications = async () => {
+    fetch(
+      `${process.env.REACT_APP_SERVER_BASE_URL}/workspace-modifications/create-metadata-structure`,
+      { method: 'POST', headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } },
+    ).then(() => {
+      console.log('Metadata structure creation completed in background');
+    }).catch((error) => {
+      console.error('Error creating metadata structure:', error);
+      enqueueSnackBar(
+        error instanceof Error
+          ? `Failed to create metadata structure: ${error.message}`
+          : 'Failed to create metadata structure',
+        {
+          variant: SnackBarVariant.Error,
+        },
+      );
+    });
+    return true;
+  };
 
 
   const signupUserOnArxena = async (userData: any) => {

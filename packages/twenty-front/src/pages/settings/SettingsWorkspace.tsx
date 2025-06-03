@@ -67,15 +67,15 @@ export const SettingsWorkspace = () => {
               />
               <ApiKeysForm />
             </Section>
-
-            {/* <Section>
+          {/* 
+            <Section>
               <H2Title
                 title={t`Support`}
                 adornment={<ToggleImpersonate />}
                 description={t`Grant Arxena support temporary access to your workspace so we can troubleshoot problems or recover content on your behalf. You can revoke access at any time.`}
               />
             </Section> */}
-          </>
+      </>
         )}
         <Section>
           <DeleteWorkspace />

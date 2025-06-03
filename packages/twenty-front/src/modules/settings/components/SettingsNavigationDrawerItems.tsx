@@ -24,6 +24,7 @@ export const SettingsNavigationDrawerItems = () => {
   const settingsNavigationItems: SettingsNavigationSection[] =
     useSettingsNavigationItems();
 
+  console.log('SettingsNavigationDrawerItems got called with settingsNavigationItems:', settingsNavigationItems);
   const currentPathName = useLocation().pathname;
 
   const getSelectedIndexForSubItems = (subItems: SettingsNavigationItem[]) => {
@@ -41,10 +42,14 @@ export const SettingsNavigationDrawerItems = () => {
     });
   };
 
+  console.log('currentPathName:', currentPathName);
+console.log("settingsNavigationItems::", settingsNavigationItems)
+console.log("settingsNavigationItems::", settingsNavigationItems)
   return (
     <>
       {settingsNavigationItems.map((section) => {
-        const allItemsHidden = section.items.every((item) => item.isHidden);
+        const hasItems = section.items.length > 0;
+        const allItemsHidden = hasItems && section.items.every((item) => item.isHidden);
         if (allItemsHidden) {
           return null;
         }

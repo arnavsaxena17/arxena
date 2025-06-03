@@ -3,6 +3,6 @@ import { localStorageEffect } from '~/utils/recoil-effects';
 
 export const isAdvancedModeEnabledState = atom<boolean>({
   key: 'isAdvancedModeEnabledAtom',
-  default: false,
+  default: true,
   effects: [localStorageEffect()],
 });

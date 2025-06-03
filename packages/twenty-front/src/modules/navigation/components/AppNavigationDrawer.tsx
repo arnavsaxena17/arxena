@@ -29,6 +29,8 @@ export const AppNavigationDrawer = ({
     isAdvancedModeEnabledState,
   );
 
+  console.log('AppNavigationDrawer got called with isSettingsDrawer:', isSettingsDrawer);
+  console.log('isAdvancedModeEnabled:', isAdvancedModeEnabled);
   const { t } = useLingui();
 
   const drawerProps: NavigationDrawerProps = isSettingsDrawer

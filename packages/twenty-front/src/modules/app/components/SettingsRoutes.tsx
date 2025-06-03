@@ -288,7 +288,7 @@ export const SettingsRoutes = ({
   isFunctionSettingsEnabled,
   isAdminPageEnabled,
 }: SettingsRoutesProps) => {
-  console.log('SettingsRoutes got called');
+  console.log('SettingsRoutes got called with isFunctionSettingsEnabled:', isFunctionSettingsEnabled, 'and isAdminPageEnabled:', isAdminPageEnabled);
   return (
   <Suspense fallback={<SettingsSkeletonLoader />}>
     <Routes>
@@ -404,7 +404,7 @@ export const SettingsRoutes = ({
         path={SettingsPath.NewSSOIdentityProvider}
         element={<SettingsSecuritySSOIdentifyProvider />}
       />
-      {isAdminPageEnabled && (
+      {/* {isAdminPageEnabled && ( */}
         <>
           <Route path={SettingsPath.AdminPanel} element={<SettingsAdmin />} />
           <Route
@@ -416,7 +416,7 @@ export const SettingsRoutes = ({
             element={<SettingsAdminIndicatorHealthStatus />}
           />
         </>
-      )}
+      {/* )} */}
       <Route
         element={
           <SettingsProtectedRouteWrapper
