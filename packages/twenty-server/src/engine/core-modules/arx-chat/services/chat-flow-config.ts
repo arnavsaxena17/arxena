@@ -82,9 +82,7 @@ export class ChatFlowConfigBuilder {
     chatFlowOrder: chatControlType[],
   ) => {
     if (candidate.engagementStatus === false) {
-      console.log(
-        `Candidate ${candidate.name} is not eligible for engagement due to engagementStatus being false. Current time: ${new Date().toISOString()}, Candidate Last updated: ${candidate.updatedAt}`,
-      );
+      console.log( `Candidate ${candidate.name} is not eligible for engagement due to engagementStatus being false. Current time: ${new Date().toISOString()}, Candidate Last updated: ${candidate.updatedAt}`, );
 
       return false;
     }

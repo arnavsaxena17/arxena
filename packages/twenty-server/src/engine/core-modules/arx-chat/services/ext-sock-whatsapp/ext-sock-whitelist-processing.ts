@@ -221,7 +221,6 @@ export class ExtSockWhatsappWhitelistProcessingService implements OnModuleInit {
     apiToken: string,
     jobIds: string[],
   ): Promise<string[]> {
-    console.log('jobIds', jobIds);
 
     // New pagination logic
     const identifiers = new Set<string>();
@@ -243,8 +242,6 @@ export class ExtSockWhatsappWhitelistProcessingService implements OnModuleInit {
 
       const pageInfo = candidatesResponse?.data?.data?.candidates?.pageInfo;
       const edges = candidatesResponse?.data?.data?.candidates?.edges || [];
-
-      console.log('Number of edges', edges.length);
 
       // Process current page
       edges.forEach((edge) => {

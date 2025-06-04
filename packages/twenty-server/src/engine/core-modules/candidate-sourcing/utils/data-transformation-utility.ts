@@ -83,12 +83,16 @@ export const generateCompleteMappings = async (rawCandidateData, jobNode) => {
     
     return !isMappedInPerson && !isMappedInCandidate;
   });
+
+  console.log('This is the unmappedKeys:', unmappedKeys);
+
   const unmappedCandidateObject = unmappedKeys.map(key => {
     return {
       key,
       value: rawCandidateData[key]
     }
   })
+  
   console.log('This is the unmappedCandidateObject:', unmappedCandidateObject);
   return {
     personNode: personNode,

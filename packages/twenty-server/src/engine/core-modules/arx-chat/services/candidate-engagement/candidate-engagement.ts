@@ -882,6 +882,7 @@ export default class CandidateEngagementArx {
         if (!hasNextPage) {
           break;
         }
+
         lastCursor = edges[edges.length - 1].cursor;
       }
 
@@ -994,24 +995,17 @@ export default class CandidateEngagementArx {
     const config = chatFlowConfigObj[chatControlType];
 
     if (!config || !config.chatFilters) {
-      console.log(
-        `No configuration or filters found for chat control type: ${chatControlType}`,
-      );
-
+      console.log( `No configuration or filters found for chat control type: ${chatControlType}` );
       return [];
     }
+
     const filters = config.chatFilters();
     const allCandidates: CandidateNode[] = [];
     let graphqlQueryObjToFetchAllCandidatesForChats = '';
-
     try {
       const workspaceId =
         await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
 
-      console.log(
-        'workspacesWithOlderSchema.includes(workspaceId)::',
-        workspacesWithOlderSchema.includes(workspaceId),
-      );
       graphqlQueryObjToFetchAllCandidatesForChats =
         workspacesWithOlderSchema.includes(workspaceId)
           ? graphqlToFetchManyCandidatesOlderSchema
@@ -1019,16 +1013,12 @@ export default class CandidateEngagementArx {
       const timestamp = new Date().toISOString();
 
       for (const filter of filters) {
-        console.log(
-          `Fetching candidates for filter condition get for chat control type::`,
-          chatControlType,
-        );
         let lastCursor: string | null = null;
         const timestampedFilter = {
           ...filter,
           updatedAt: { lte: timestamp },
         };
-        console.log("timestampedFilter::::", timestampedFilter);
+
         let hasNextPage = true;
 
         while (hasNextPage) {
@@ -1056,13 +1046,16 @@ export default class CandidateEngagementArx {
           console.log('edges::', edges.length);
 
           hasNextPage = response?.data?.data?.candidates?.pageInfo?.hasNextPage || false;
+
           console.log(
             `Received ${edges.length} candidates for current filter, for chatControlType ${chatControlType}`,
           );
+
           if (!edges.length) {
             console.log('No candidates found for this filter condition');
             break;
           }
+
           const newCandidates = edges
             .map((edge: any) => edge.node)
             .filter((candidate: CandidateNode) => {
@@ -1071,12 +1064,10 @@ export default class CandidateEngagementArx {
               );
               const isRecent =
                 new Date(candidate.updatedAt) <= new Date(timestamp);
-
               if (!isNew)
                 console.log(`Skipping duplicate candidate: ${candidate.id}`);
               if (!isRecent)
                 console.log(`Skipping non-recent candidate: ${candidate.id}`);
-
               return isNew && isRecent;
             });
 
@@ -1271,33 +1262,32 @@ export default class CandidateEngagementArx {
 
 
 
-    async fetchLinkedinSockMessages(token: string) {
-      console.log("These are the fetch linkedin sock messages")
-      let data = JSON.stringify({});
-      const arxenaSiteBaseUrl =
-      process.env.ARXENA_SITE_BASE_URL || 'http://localhost:5050';
+  async fetchLinkedinSockMessages(token: string) {
+    console.log("These are the fetch linkedin sock messages")
+    let data = JSON.stringify({});
+    const arxenaSiteBaseUrl =
+    process.env.ARXENA_SITE_BASE_URL || 'http://localhost:5050';
 
 
-      console.log("arxenaSiteBaseUrl::", arxenaSiteBaseUrl)
-      
-      let config = {
-        method: 'post',
-        maxBodyLength: Infinity,
-        url: arxenaSiteBaseUrl+'/get_linkedin_unread_messages',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        data: data
-      };
+    console.log("arxenaSiteBaseUrl::", arxenaSiteBaseUrl)
+    
+    let config = {
+      method: 'post',
+      maxBodyLength: Infinity,
+      url: arxenaSiteBaseUrl+'/get_linkedin_unread_messages',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      data: data
+    };
 
-      try {
-        const response = await axios.request(config);
-        return response.data;
-      } catch (error) {
-        console.error('Error fetching LinkedIn messages:', error);
-        throw error;
-      }
+    try {
+      const response = await axios.request(config);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching LinkedIn messages:', error);
+      throw error;
     }
-
+  }
 }

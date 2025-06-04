@@ -314,6 +314,19 @@ export class CandidateService {
       apiToken,
     );
 
+    // Get existing candidates before processing
+    const existingCandidatesMap = await this.batchCheckExistingCandidates(
+      uniqueStringKeys,
+      jobObject.id,
+      apiToken,
+    );
+
+    // Filter data to only include new candidates
+    const newCandidatesData = data.filter(profile => {
+      const key = profile?.unique_key_string;
+      return key && !existingCandidatesMap.get(key);
+    });
+
     try {
       await this.processCandidatesBatch(
         data,
@@ -327,7 +340,10 @@ export class CandidateService {
       throw error;
     }
 
-    await this.createCandidateFieldsAndValues(data, jobObject, results, tracking, apiToken);
+    // Only call createCandidateFieldsAndValues for new candidates
+    if (newCandidatesData.length > 0) {
+      await this.createCandidateFieldsAndValues(newCandidatesData, jobObject, results, tracking, apiToken);
+    }
 
     return results;
   }
@@ -350,6 +366,9 @@ export class CandidateService {
     console.log('=== Field Processing Summary ===');
     console.log('Total candidates being processed:', data.length);
 
+    // Define excluded fields
+    const excludedFields = ['age', 'birth_date', 'gender','all_mails','all_numbers','queryId','data_sources','interests','phone_numbers','tables','socialprofiles'];
+
     for (const candidate of data) {
       console.log('This is the candidate:', candidate);
       const { unmappedCandidateObject, personNode, candidateNode } = await generateCompleteMappings(candidate, jobObject);
@@ -371,8 +390,13 @@ export class CandidateService {
       if (unmappedCandidateObject) {
         console.log('\nUnmapped fields:');
         unmappedCandidateObject.forEach((fieldName: any) => {
-          console.log(`- ${fieldName.key}`);
-          uniqueFields.add(fieldName.key);
+          // Skip excluded fields
+          if (!excludedFields.includes(fieldName.key)) {
+            console.log(`- ${fieldName.key}`);
+            uniqueFields.add(fieldName.key);
+          } else {
+            console.log(`Skipping excluded field: ${fieldName.key}`);
+          }
         });
       }
     }
@@ -386,16 +410,16 @@ export class CandidateService {
     console.log('This is the uniqueFields:', uniqueFields);
     console.log('\nProcessing unique fields:');
     for (const fieldName of uniqueFields) {
+      // Skip excluded fields
+      if (excludedFields.includes(fieldName)) {
+        console.log(`Skipping creation of excluded field: ${fieldName}`);
+        continue;
+      }
+
       if (!workspaceFieldsMap.has(fieldName)) {
         console.log(`\nCreating new field: ${fieldName}`);
         const createFieldQuery = createOneCandidateField;
-        const fieldVariables = {
-          input: {
-            name: fieldName.toString(),
-            candidateFieldType: 'Text',
-          }
-        };
-
+        const fieldVariables = { input: { name: fieldName.toString(), candidateFieldType: 'Text', } };
         try {
           const response = await axiosRequest(
             JSON.stringify({ query: createFieldQuery, variables: fieldVariables }),
@@ -418,56 +442,55 @@ export class CandidateService {
       } else {
         console.log(`Field already exists: ${fieldName}`);
       }
-
-      // Collect values for this field from all candidates
     }
 
     console.log('This is the data:', data);
     console.log('This is the numebr of candidates:', data.length);
     for (const candidate of data) {
+
       const { unmappedCandidateObject } = await generateCompleteMappings(candidate, jobObject);
       console.log('This is the unmappedCandidateObject:', unmappedCandidateObject);
       const candidateId = tracking.candidateIdMap.get(candidate.unique_key_string);
       console.log('This is the candidateId:', candidateId);
-      // for (const fieldName of uniqueFields) {
-        // console.log('This is the fieldId:', fieldId);
         
-        console.log('This is the unmappedCandidateObject:', unmappedCandidateObject);
-        console.log('This is the unmappedCandidateObject length:', unmappedCandidateObject.length);
-        unmappedCandidateObject.forEach((field: any) => {
-          console.log('This is the field:', field);
-          const fieldId = workspaceFieldsMap.get(field.key)?.id;
-          console.log('This is the fieldId:', fieldId);
-          if (field.value && field.value !== '') {
-            // Check if the field value is already in the array
-            const isDuplicate = fieldValuesToCreate.some(
-            (fv) => fv.name === String(candidate.value) && fv.candidateId === candidateId && fv.candidateFieldsId === fieldId
-          );
-          if (!isDuplicate) {
-            fieldValuesToCreate.push({
-              name: typeof candidate[field.key] === 'string' ? candidate[field.key] : JSON.stringify(candidate[field.key]),
-              candidateId,
-              candidateFieldsId: fieldId
-            });
-          }
+      console.log('This is the unmappedCandidateObject:', unmappedCandidateObject);
+      console.log('This is the unmappedCandidateObject length:', unmappedCandidateObject.length);
+      unmappedCandidateObject.forEach((field: any) => {
+        // Skip excluded fields
+        if (excludedFields.includes(field.key)) {
+          console.log(`Skipping value creation for excluded field: ${field.key}`);
+          return;
         }
-      });
-    }
-  
 
-    // Update the workspace fields map
+        console.log('This is the field:', field);
+        const fieldId = workspaceFieldsMap.get(field.key)?.id;
+        console.log('This is the fieldId:', fieldId);
+        if (field.value && field.value !== '') {
+          // Check if the field value is already in the array
+          const isDuplicate = fieldValuesToCreate.some(
+          (fv) => fv.name === String(candidate.value) && fv.candidateId === candidateId && fv.candidateFieldsId === fieldId
+        );
+        if (!isDuplicate) {
+          fieldValuesToCreate.push({
+            name: typeof candidate[field.key] === 'string' ? candidate[field.key] : JSON.stringify(candidate[field.key]),
+            candidateId,
+            candidateFieldsId: fieldId
+          });
+        }
+      }
+    });
+  }
+
     this.candidateFieldsMap.set(workspaceId, workspaceFieldsMap);
     console.log('This is the workspaceFieldsMap:', workspaceFieldsMap);
     console.log('This is the fieldValuesToCreate:', fieldValuesToCreate);
     console.log('This is the number of fieldValuesToCreate:', fieldValuesToCreate.length);
-    // Create all field values in batches
     if (fieldValuesToCreate.length > 0) {
       console.log(`\nCreating ${fieldValuesToCreate.length} field values in batches`);
       const batchSize = 100;
       for (let i = 0; i < fieldValuesToCreate.length; i += batchSize) {
         const batch = fieldValuesToCreate.slice(i, i + batchSize);
-        console.log(`Processing batch ${Math.floor(i/batchSize) + 1} of ${Math.ceil(fieldValuesToCreate.length/batchSize)}`);
-        
+        console.log(`Processing batch ${Math.floor(i / batchSize) + 1} of ${Math.ceil(fieldValuesToCreate.length/batchSize)}`);
         try {
           await axiosRequest(
             JSON.stringify({
@@ -477,8 +500,6 @@ export class CandidateService {
             apiToken
           );
           console.log(`Successfully created batch ${Math.floor(i/batchSize) + 1}`);
-          // Add delay between batches to prevent rate limiting
-          // await new Promise(resolve => setTimeout(resolve, 150)); // A bit longer than the 100ms window
         } catch (error) {
           console.error('Error creating field values batch:', error);
         }
@@ -952,10 +973,7 @@ export class CandidateService {
                   await axiosRequest(
                     JSON.stringify({ 
                       query: graphQltoUpdateOneCandidate, 
-                      variables: { 
-                        idToUpdate: candidateId, 
-                        input: updateData 
-                      } 
+                      variables: { idToUpdate: candidateId, input: updateData } 
                     }),
                     apiToken
                   );

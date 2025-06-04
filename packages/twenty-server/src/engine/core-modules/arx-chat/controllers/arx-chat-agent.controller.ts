@@ -511,11 +511,11 @@ export class ArxChatEndpoint {
     }
   }
 
-  @Post('get-id-by-unique-string-key')
+  @Post('get-ids-by-unique-string-key')
   @UseGuards(JwtAuthGuard)
-  async getCandidateByUniqueStringKey(
+  async getIdsByUniqueStringKey(
     @Req() request: any,
-  ): Promise<{ candidateId: string | null }> {
+  ): Promise<{ candidateIds: string[] }> {
     try {
       const apiToken = request.headers.authorization.split(' ')[1];
 
@@ -523,20 +523,18 @@ export class ArxChatEndpoint {
         query: graphqlQueryToFindManyPeople,
         variables: {
           filter: { uniqueStringKey: { eq: request.body.uniqueStringKey } },
-          limit: 1,
         },
       });
 
       const response = await axiosRequest(graphqlQuery, apiToken);
-      const candidateId =
-        response?.data?.data?.people?.edges[0]?.node?.candidates?.edges[0]?.node
-          ?.id || null;
+      const candidateIds = response?.data?.data?.people?.edges[0]?.node?.candidates?.edges
+        .map((edge: any) => edge.node?.id)
+        .filter((id: string) => id) || [];
 
-      return { candidateId };
+      return { candidateIds };
     } catch (err) {
-      console.error('Error in getCandidateByUniqueStringKey:', err);
-
-      return { candidateId: null };
+      console.error('Error in getIdsByUniqueStringKey:', err);
+      return { candidateIds: [] };
     }
   }
 
