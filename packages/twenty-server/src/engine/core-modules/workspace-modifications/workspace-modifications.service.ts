@@ -435,6 +435,27 @@ export class WorkspaceQueryService {
     }
   }
 
+  async getUserIdFromWorkspaceId(workspaceId: string): Promise<string | null> {
+    try {
+      const query = `
+        SELECT "userId"
+        FROM core."userWorkspace"
+        WHERE "workspaceId" = $1
+        LIMIT 1
+      `;
+
+      const result = await this.executeRawQuery(query, [workspaceId], workspaceId);
+      
+      if (result && result[0]) {
+        return result[0].userId;
+      }
+      return null;
+    } catch (error) {
+      console.error(`Error fetching userId for workspace ${workspaceId}:`, error);
+      return null;
+    }
+  }
+
   async createMetadataStructure(token: string): Promise<void> {
     const origin = process.env.APPLE_ORIGIN_URL || 'http://localhost:3001';
     await new CreateMetaDataStructure(

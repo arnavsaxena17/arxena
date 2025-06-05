@@ -1,3 +1,4 @@
+import { tokenPairState } from '@/auth/states/tokenPairState';
 import { canManageFeatureFlagsState } from '@/client-config/states/canManageFeatureFlagsState';
 import { SettingsAdminWorkspaceContent } from '@/settings/admin-panel/components/SettingsAdminWorkspaceContent';
 import { SETTINGS_ADMIN_USER_LOOKUP_WORKSPACE_TABS_ID } from '@/settings/admin-panel/constants/SettingsAdminUserLookupWorkspaceTabsId';
@@ -19,6 +20,7 @@ import {
   H1Title,
   H1TitleFontColor,
   H2Title,
+  IconRefresh,
   IconSearch,
   Section,
 } from 'twenty-ui';
@@ -52,9 +54,17 @@ const StyledContentContainer = styled.div`
   padding: ${({ theme }) => theme.spacing(4)} 0;
 `;
 
+const StyledButtonContainer = styled.div`
+  display: flex;
+  gap: ${({ theme }) => theme.spacing(2)};
+  margin-top: ${({ theme }) => theme.spacing(2)};
+`;
+
 export const SettingsAdminGeneral = () => {
   const [userIdentifier, setUserIdentifier] = useState('');
   const { enqueueSnackBar } = useSnackBar();
+  const [tokenPair] = useRecoilState(tokenPairState);
+  const [isUpdatingAllWorkspaces, setIsUpdatingAllWorkspaces] = useState(false);
 
   const { activeTabId, setActiveTabId } = useTabList(
     SETTINGS_ADMIN_USER_LOOKUP_WORKSPACE_TABS_ID,
@@ -93,6 +103,42 @@ export const SettingsAdminGeneral = () => {
 
     if (isDefined(result?.workspaces) && result.workspaces.length > 0) {
       setActiveTabId(result.workspaces[0].id);
+    }
+  };
+
+  const handleUpdateAllWorkspaces = async () => {
+    if (isUpdatingAllWorkspaces) return;
+    setIsUpdatingAllWorkspaces(true);
+
+    try {
+      const response = await fetch(
+        `${process.env.REACT_APP_SERVER_BASE_URL}/workspace-modifications/update-all-workspaces-metadata`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
+          },
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to update all workspaces metadata');
+      }
+
+      enqueueSnackBar('Started updating metadata structure for all workspaces', {
+        variant: SnackBarVariant.Info,
+      });
+    } catch (error) {
+      enqueueSnackBar(
+        error instanceof Error
+          ? `Failed to update all workspaces metadata: ${error.message}`
+          : 'Failed to update all workspaces metadata',
+        {
+          variant: SnackBarVariant.Error,
+        },
+      );
+    } finally {
+      setIsUpdatingAllWorkspaces(false);
     }
   };
 
@@ -156,6 +202,18 @@ export const SettingsAdminGeneral = () => {
             disabled={!userIdentifier.trim() || isUserLookupLoading}
           />
         </StyledContainer>
+
+        <StyledButtonContainer>
+          <Button
+            Icon={IconRefresh}
+            variant="secondary"
+            title="Update All Workspaces Metadata"
+            onClick={handleUpdateAllWorkspaces}
+            disabled={isUpdatingAllWorkspaces}
+          >
+            {isUpdatingAllWorkspaces ? 'Updating...' : 'Update All Workspaces Metadata'}
+          </Button>
+        </StyledButtonContainer>
       </Section>
 
       {isDefined(userLookupResult) && (

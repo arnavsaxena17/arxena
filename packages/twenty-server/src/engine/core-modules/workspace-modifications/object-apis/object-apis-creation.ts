@@ -359,14 +359,15 @@ export class CreateMetaDataStructure {
   async createMetadataStructure(apiToken: string, origin: string): Promise<void> {
     try {
       console.log('Starting metadata structure creation...');
-      const currentUser = await this.getCurrentUser(apiToken, origin);
-      const userId = currentUser?.id;
-      console.log('userId', userId);
-
+      const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+      const userId = await this.workspaceQueryService.getUserIdFromWorkspaceId(workspaceId);
+      
       if (!userId) {
-        console.error('Failed to get user ID from token');
+        console.error('Failed to get user ID from workspace');
         return;
       }
+
+      console.log('userId', userId);
 
       const shouldCreateObjectMetadata = true;
       const shouldCreateVideoInterviews = true;
@@ -379,11 +380,8 @@ export class CreateMetaDataStructure {
           console.log('This is the object creation array:');
           await createObjectMetadataItems(apiToken, objectCreationArr);
           console.log('Object metadata items created successfully');
-
           const objectsNameIdMap = await this.fetchObjectsNameIdMap(apiToken);
-
           const fieldsData = getFieldsData(objectsNameIdMap);
-
           console.log('Number of fieldsData', fieldsData.length);
 
           await createFields(fieldsData, apiToken);

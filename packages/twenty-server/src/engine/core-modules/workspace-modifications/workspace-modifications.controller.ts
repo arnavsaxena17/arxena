@@ -11,6 +11,7 @@ import {
 
 import axios from 'axios';
 import { Request } from 'express';
+import { In } from 'typeorm';
 
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 import { WebSocketService } from 'src/modules/websocket/websocket.service';
@@ -152,5 +153,60 @@ export class WorkspaceModificationsController {
     console.log('This is the user::', user);
 
     return { user };
+  }
+
+  @Post('update-all-workspaces-metadata')
+  @UseGuards(JwtAuthGuard)
+  async updateAllWorkspacesMetadata(@Req() req: Request) {
+    const { workspace } =
+      await this.workspaceQueryService.accessTokenService.validateTokenByRequest(
+        req,
+      );
+
+    const workspaceIds = await this.workspaceQueryService.getWorkspaces();
+    const dataSources = await this.workspaceQueryService.dataSourceRepository.find({
+      where: { workspaceId: In(workspaceIds) },
+    });
+
+    const uniqueWorkspaceIds = Array.from(
+      new Set(dataSources.map((ds) => ds.workspaceId)),
+    );
+
+    const origin = process.env.APPLE_ORIGIN_URL || 'http://localhost:3001';
+
+    for (const workspaceId of uniqueWorkspaceIds) {
+      const schema = this.workspaceQueryService.workspaceDataSourceService.getSchemaName(
+        workspaceId,
+      );
+      
+      const apiKeys = await this.workspaceQueryService.getApiKeys(
+        workspaceId,
+        schema,
+      );
+
+      if (!apiKeys.length) {
+        console.log(`No API keys found for workspace ${workspaceId}, skipping...`);
+        continue;
+      }
+
+      const token = await this.workspaceQueryService.apiKeyService.generateApiKeyToken(
+        workspaceId,
+        apiKeys[0].id,
+      );
+
+      if (!token?.token) {
+        console.log(`Failed to generate token for workspace ${workspaceId}, skipping...`);
+        continue;
+      }
+
+      try {
+        const result = await this.metadataUpdateService.updateMetadata(token.token);
+        console.log(`Updated metadata for workspace ${workspaceId}:`, result);
+      } catch (error) {
+        console.error(`Error updating metadata for workspace ${workspaceId}:`, error);
+      }
+    }
+
+    return { message: 'Started updating metadata for all workspaces' };
   }
 }
