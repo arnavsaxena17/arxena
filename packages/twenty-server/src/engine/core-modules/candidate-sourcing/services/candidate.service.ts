@@ -960,29 +960,21 @@ export class CandidateService {
       console.log("Number of candidates to update:", candidatesToUpdate.length);
       if (candidatesToUpdate.length > 0) {
         console.log('Updating existing candidates...');
-        
         for (const updateCandidate of candidatesToUpdate) {
           const { candidateId, personId, profile, missingFields } = updateCandidate;
           console.log("updateCandidate:", updateCandidate);
-          
           try {
             for (const fieldName of missingFields) {
               if (fieldName === 'phoneNumber') {
-                const phoneValue = profile?.phone_number || 
-                                 profile?.mobile_phone || 
-                                 profile?.all_numbers?.[0] || '';
-                
+                const phoneValue = profile?.phone_number || profile?.mobile_phone || profile?.all_numbers?.[0] || '';
                 if (phoneValue && phoneValue.trim() !== '') {
                   console.log(`Updating phone number for candidate ${candidateId} with value: ${phoneValue}`);
                   await this.handlePhoneNumberUpdate(candidateId, phoneValue, apiToken);
                 }
               } else if (fieldName === 'email') {
-                const emailValue = profile?.email_address?.[0] || 
-                                 profile?.all_mails?.[0] || '';
-                
+                const emailValue = profile?.email_address?.[0] || profile?.all_mails?.[0] || '';
                 if (emailValue && emailValue.trim() !== '') {
                   console.log(`Updating email for candidate ${candidateId} with value: ${emailValue}`);
-                  
                   const updateData = {"email": {primaryEmail: emailValue}};
                   await axiosRequest(
                     JSON.stringify({ 
@@ -991,7 +983,6 @@ export class CandidateService {
                     }),
                     apiToken
                   );
-                  
                   if (personId) {
                     const response = await axiosRequest(
                       JSON.stringify({ 
@@ -1007,7 +998,6 @@ export class CandidateService {
                   }
                 }
               }
-
               if (fieldName === 'profileUrl') {
                 const profileUrl = profile?.profile_url;
                 if (profileUrl && profileUrl.includes('naukri')) {
