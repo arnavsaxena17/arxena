@@ -4,7 +4,6 @@ import {
   chatControlType,
   ChatHistoryItem,
   graphqlToFetchAllCandidateData,
-  graphqlToFetchManyCandidatesOlderSchema,
   graphQlToFetchWhatsappMessages,
   graphQltoUpdateOneCandidate,
   Jobs,
@@ -920,10 +919,7 @@ export default class CandidateEngagementArx {
       const workspaceId =
         await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
 
-      graphqlQueryObjToFetchAllCandidatesForChats =
-        workspacesWithOlderSchema.includes(workspaceId)
-          ? graphqlToFetchManyCandidatesOlderSchema
-          : graphqlToFetchAllCandidateData;
+      graphqlQueryObjToFetchAllCandidatesForChats =  graphqlToFetchAllCandidateData;
 
       // Add timestamp to ensure fresh data
       const timestamp = new Date().toISOString();
@@ -1006,10 +1002,7 @@ export default class CandidateEngagementArx {
       const workspaceId =
         await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
 
-      graphqlQueryObjToFetchAllCandidatesForChats =
-        workspacesWithOlderSchema.includes(workspaceId)
-          ? graphqlToFetchManyCandidatesOlderSchema
-          : graphqlToFetchAllCandidateData;
+      graphqlQueryObjToFetchAllCandidatesForChats = graphqlToFetchAllCandidateData;
       const timestamp = new Date().toISOString();
 
       for (const filter of filters) {

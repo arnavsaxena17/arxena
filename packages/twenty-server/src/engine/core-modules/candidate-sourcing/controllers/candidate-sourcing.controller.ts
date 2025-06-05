@@ -7,7 +7,6 @@ import {
   CreateOneVideoInterviewTemplate,
   Enrichment,
   graphQlTofindManyCandidateEnrichments,
-  graphqlToFindManyJobByArxenaSiteIdOlderSchema,
   graphqlToFindManyJobs,
   Jobs,
   mutationToCreateOneCandidateEnrichment,
@@ -15,7 +14,6 @@ import {
   UserProfile,
 } from 'twenty-shared';
 
-import { workspacesWithOlderSchema } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/candidate-engagement';
 import { getCurrentUser } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import { ProcessCandidatesService } from 'src/engine/core-modules/candidate-sourcing/jobs/process-candidates.service';
 import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/services/candidate.service';
@@ -668,14 +666,12 @@ export class CandidateSourcingController {
     console.log('Getting all jobs');
     const workspaceId =
       await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-    let graphqlQueryObjToFetchAllJobs = '';
+    let graphqlQueryObjToFetchAllJobs = graphqlToFindManyJobs;
 
-    if (workspacesWithOlderSchema.includes(workspaceId)) {
-      graphqlQueryObjToFetchAllJobs =
-        graphqlToFindManyJobByArxenaSiteIdOlderSchema;
-    } else {
-      graphqlQueryObjToFetchAllJobs = graphqlToFindManyJobs;
-    }
+
+    
+    console.log('graphqlQueryObjToFetchAllJobs:', graphqlQueryObjToFetchAllJobs);
+
     const responseFromGetAllJobs = await axiosRequest(
       JSON.stringify({
         query: graphqlQueryObjToFetchAllJobs,
@@ -849,7 +845,8 @@ export class CandidateSourcingController {
       const origin = request.headers.origin;
       const apiToken = request.headers.authorization.split(' ')[1];
       const { candidateId, fieldName, value, personId } = request.body;
-
+      
+      console.log("request.body::", request.body);
 
       if (!candidateId || !fieldName) {
         return {
@@ -872,6 +869,7 @@ export class CandidateSourcingController {
         message: 'Candidate field updated successfully',
         result,
       };
+
     } catch (err) {
       console.error('Error updating candidate field:', err);
       return {

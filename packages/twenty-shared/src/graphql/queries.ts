@@ -884,6 +884,7 @@ export const graphqlQueryToFindManyPeople = `query FindManyPeople($filter: Perso
                     startMeetingSchedulingChatCompleted
                     startVideoInterviewChat
                     startVideoInterviewChatCompleted
+                    remarks
                     phoneNumber{
                       primaryPhoneNumber
                     }
@@ -1051,6 +1052,7 @@ export const graphQlToFetchWhatsappMessages = `query FindManyWhatsappMessages($f
           campaign
           startChat
           chatCount
+          remarks
           startChatCompleted
           startMeetingSchedulingChat
           startMeetingSchedulingChatCompleted
@@ -1294,6 +1296,7 @@ export const graphqlToFindManyCandidateFieldValues = `query FindManyCandidateFie
             campaign
             whatsappProvider
             startChat
+            remarks
             candConversationStatus
             startVideoInterviewChat
             startMeetingSchedulingChat
@@ -1391,13 +1394,11 @@ export const queryByvideoInterview = `query FindOneVideoInterview($objectRecordI
       }
     }
     id
-  
     videoInterviewTemplateId
     interviewReviewLink {
       primaryLinkLabel
       primaryLinkUrl
     }
-    
         candidate {
           __typename
           id
@@ -1406,6 +1407,7 @@ export const queryByvideoInterview = `query FindOneVideoInterview($objectRecordI
           stopChat
           peopleId
           startChat
+          remarks
           messagingChannel
           chatCount
           status
@@ -1564,6 +1566,7 @@ export const graphqlToFetchAllCandidateData = `
           startVideoInterviewChat
           source
           campaign
+          remarks
           messagingChannel
           attachments {
             edges {
@@ -1702,6 +1705,7 @@ export const graphqlToFetchAllCandidateData = `
             }
           }
           startChat
+          remarks
           chatCount
           startChatCompleted
           startMeetingSchedulingChat
@@ -1846,6 +1850,7 @@ export const findManyShortlistsquery = `query FindManyShortlists($filter: Shortl
           updatedAt
           createdAt
           whatsappProvider
+          remarks
           phoneNumber{
             primaryPhoneNumber
           }
@@ -1921,6 +1926,7 @@ candidate(filter: {id: {eq: $objectRecordId}}) {
     messagingChannel
     updatedAt
     startChat
+    remarks
     startChatCompleted
     startMeetingSchedulingChat
     chatCount
@@ -2065,107 +2071,6 @@ export const graphqlQueryToFindManyPeopleEngagedCandidatesOlderSchema = `query F
       }
     }
   }
-}`;
-
-export const graphqlToFetchManyCandidatesOlderSchema = `
-query FindManyCandidates($lastCursor: String, $limit: Int, $filter: CandidateFilterInput) {
-  candidates(after: $lastCursor, first: $limit, filter: $filter) {
-    edges {
-      cursor
-      node {
-        id
-        name
-        updatedAt
-        whatsappProvider
-        people {
-          id
-          name {
-            firstName
-            lastName
-          }
-          phone
-          email
-          jobTitle
-          
-          uniqueStringKey  
-        }
-        jobs {
-          id
-          name
-          jobLocation
-          jobCode
-          chatFlowOrder
-          isActive
-          recruiterId
-          companies{
-            name
-            id
-            domainName
-            descriptionOneliner
-          }
-        }
-        startChat
-        candConversationStatus
-        startVideoInterviewChat
-        aIInterviewStatus{
-            edges{
-                node{
-                    id
-                    interviewLink{
-                      url
-                    }
-                }
-            }
-        }
-        lastEngagementChatControl
-        startVideoInterviewChat
-        startMeetingSchedulingChat
-        stopChat
-        uniqueStringKey
-        hiringNaukriUrl{
-          url
-          label
-        }
-        resdexNaukriUrl{
-          url
-          label
-        }
-
-      }
-    }
-  }
-}
-`;
-
-export const graphqlToFindManyJobByArxenaSiteIdOlderSchema = `
-query FindManyJobs($filter: JobFilterInput, $orderBy: [JobOrderByInput], $lastCursor: String, $limit: Int) {
-jobs(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
-edges {
-  node {
-    __typename
-    updatedAt
-    isActive
-    recruiterId
-    arxenaSiteId
-    createdAt
-    name
-    jobLocation
-    companiesId
-    position
-    id
-  }
-  cursor
-  __typename
-}
-pageInfo {
-  hasNextPage
-  startCursor
-  endCursor
-  __typename
-}
-totalCount
-__typename
-}
 }`;
 
 

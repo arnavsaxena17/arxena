@@ -1445,6 +1445,15 @@ export class CandidateService {
         console.log("response::", response?.data?.data)
       }
 
+      // if (fieldName === 'remarks') {
+      //   updateData = {"remarks": formattedValue};
+      //   const response = await axiosRequest(
+      //     JSON.stringify({ query: graphQltoUpdateOneCandidate, variables: {idToUpdate: candidateId, input: {remarks: formattedValue}} }),
+      //     apiToken
+      //   );
+      //   console.log("response::", response?.data?.data)
+      // }
+
       if (fieldName === 'mobilePhone' || fieldName === 'phone' || fieldName === 'phoneNumber') {
         updateData = {"phoneNumber":{primaryPhoneNumber: formattedValue}};
         
@@ -1544,11 +1553,14 @@ export class CandidateService {
         idToUpdate: candidateId,
         input: updateData
       };
+
       console.log("variables::", variables)
       const response = await axiosRequest(
         JSON.stringify({ query: graphQltoUpdateOneCandidate, variables }),
         apiToken
       );
+
+      
       console.log("response::", response?.data?.data)
       return response?.data?.data;
     } catch (error) {

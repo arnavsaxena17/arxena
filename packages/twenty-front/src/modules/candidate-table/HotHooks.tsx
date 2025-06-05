@@ -94,6 +94,7 @@ export const afterSelectionEnd = (tableRef: any, column: number, row: number, ro
     const selectedRows: string[] = [];
     
     if (column === 0) {
+      console.log("column is 0");
       // For checkbox column, toggle the selected state of the clicked row
       const physicalRow = hot.toPhysicalRow(row);
       const rowData = hot.getSourceDataAtRow(physicalRow);
@@ -122,14 +123,18 @@ export const afterSelectionEnd = (tableRef: any, column: number, row: number, ro
         });
       }
     } else {
+      console.log("column is not 0 and its a regular cell selection");
       // For regular cell selection, select all rows in the range using physical indices
       for (let i = Math.min(row, row2); i <= Math.max(row, row2); i++) {
         const physicalRow = hot.toPhysicalRow(i);
+        console.log("physicalRow::", physicalRow);
         const rowData = hot.getSourceDataAtRow(physicalRow);
+        console.log("rowData::", rowData);
         if (rowData && rowData.id) {
           selectedRows.push(rowData.id);
         }
       }
+      console.log("selectedRows::", selectedRows);
       
       setTableState((prev: any) => ({
         ...prev,
@@ -192,6 +197,7 @@ export const afterChange = async (tableRef: React.RefObject<any>, changes: any, 
     if (oldValue === newValue) continue;
     
     const rowData = hot.getSourceDataAtRow(row);
+    console.log("rowData in afterChange::", rowData);
     if (!rowData || !rowData.id) continue;
     
     try {
@@ -199,8 +205,9 @@ export const afterChange = async (tableRef: React.RefObject<any>, changes: any, 
       if (prop === 'checkbox') {
         setTableState((prev: any) => {
           const currentSelectedIds = Array.isArray(prev.selectedRowIds) ? prev.selectedRowIds : [];
+          console.log("currentSelectedIds::", currentSelectedIds);
           const rowId = rowData.id;
-          
+          console.log("rowId selected of rowData::", rowId);
           if (newValue === true && !currentSelectedIds.includes(rowId)) {
             return {
               ...prev,
@@ -227,10 +234,7 @@ export const afterChange = async (tableRef: React.RefObject<any>, changes: any, 
       
       const response = await fetch(endpoint, {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json', 
-          'Authorization': `Bearer ${tokenPair?.accessToken?.token}` 
-        },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${tokenPair?.accessToken?.token}` },
         body: JSON.stringify({ candidateId: rowData.id, fieldName: prop, value: newValue, personId: rowData.personId })
       });
       
