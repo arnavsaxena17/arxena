@@ -921,10 +921,10 @@ export class CandidateService {
             candidatesToUpdate.push({
               candidateId: existingCandidate.id,
               personId: existingCandidate.peopleId || existingCandidate.people?.id,
-              hiringNaukriUrl: { "primaryLinkLabel": profile?.profile_url || '', "primaryLinkUrl": profile?.profile_url || '' },
-              resdexNaukriUrl: { "primaryLinkLabel": profile?.profile_url || '', "primaryLinkUrl": profile?.profile_url || '' },
+              hiringNaukriUrl: { "primaryLinkLabel": profile?.profile_url.includes('hiring') ? profile?.profile_url : '', "primaryLinkUrl": profile?.profile_url.includes('hiring') ? profile?.profile_url : '' },
+              resdexNaukriUrl: { "primaryLinkLabel": profile?.profile_url.includes('resdex') ? profile?.profile_url : '', "primaryLinkUrl": profile?.profile_url.includes('resdex') ? profile?.profile_url : '' },
               displayPicture: { "primaryLinkLabel": "Display Picture", "primaryLinkUrl": profile?.display_picture || '' },
-              linkedinUrl: { "primaryLinkLabel": profile?.profile_url || '', "primaryLinkUrl": profile?.profile_url || '' },
+              linkedinUrl: { "primaryLinkLabel": profile?.profile_url.includes('linkedin') ? profile?.profile_url : '', "primaryLinkUrl": profile?.profile_url.includes('linkedin') ? profile?.profile_url : '' },
               profile,
               missingFields
             });

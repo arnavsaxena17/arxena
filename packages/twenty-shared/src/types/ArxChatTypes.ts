@@ -1645,8 +1645,9 @@ export interface CandidateNode {
   startChatCompleted?: boolean;
   startMeetingSchedulingChatCompleted?: boolean;
   startVideoInterviewChatCompleted?: boolean;
-  hiringNaukriUrl?: string;
-  resdexNaukriUrl?: string;
+  hiringNaukriUrl?: {"primaryLinkUrl":string};
+  resdexNaukriUrl?: {"primaryLinkUrl":string};
+  linkedinUrl?: {"primaryLinkUrl":string};
 }
 
 // export interface Candidate {

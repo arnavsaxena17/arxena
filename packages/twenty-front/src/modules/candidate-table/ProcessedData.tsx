@@ -24,7 +24,9 @@ export const ProcessedData = ({ rawData, selectedRowIds }: { rawData: CandidateN
         stopChat: candidate?.stopChat || false,
         source: candidate?.source || 'N/A',
         messagingChannel: candidate?.messagingChannel || '',
-        
+        resdexNaukriUrl: candidate?.resdexNaukriUrl?.primaryLinkUrl || '',
+        hiringNaukriUrl: candidate?.hiringNaukriUrl?.primaryLinkUrl || '',
+        linkedinUrl: candidate?.linkedinUrl?.primaryLinkUrl || '',
         lastMessage: candidate?.whatsappMessages?.edges?.length > 0 ? 
           [...(candidate?.whatsappMessages?.edges || [])]
             .sort((a, b) => new Date(b.node.createdAt).getTime() - new Date(a.node.createdAt).getTime())[0]
