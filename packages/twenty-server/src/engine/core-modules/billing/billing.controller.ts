@@ -46,6 +46,9 @@ export class BillingController {
     @Req() req: RawBodyRequest<Request>,
     @Res() res: Response,
   ) {
+    console.log("Stripe signature::", signature);
+    console.log("Stripe request::", req);
+    console.log("Stripe response::", res);
     if (!req.rawBody) {
       res.status(400).end();
 
@@ -68,6 +71,7 @@ export class BillingController {
   }
 
   private async handleStripeEvent(event: Stripe.Event) {
+    console.log("Stripe Event::", event);
     switch (event.type) {
       case BillingWebhookEvent.SETUP_INTENT_SUCCEEDED:
         return await this.billingSubscriptionService.handleUnpaidInvoices(

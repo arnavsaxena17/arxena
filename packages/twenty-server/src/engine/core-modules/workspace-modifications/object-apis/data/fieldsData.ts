@@ -987,6 +987,16 @@ export function getFieldsData(
     {
       field: {
         description: '',
+        icon: 'IconPhone',
+        label: 'Remarks',
+        name: 'remarks',
+        objectMetadataId: objectsNameIdMap.candidate,
+        type: 'TEXT',
+      },
+    },
+    {
+      field: {
+        description: '',
         icon: 'IconVideoCheck',
         label: 'startVideoInterviewChatCompleted',
         // "name": "isVideoInterviewCompleted",
