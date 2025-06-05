@@ -400,7 +400,6 @@ export const useArxJDUpload = (objectNameSingular: string) => {
 
           console.log("updateOneRecordInput", updateOneRecordInput);
 
-          // Update the job record with the processed data
           await updateOneRecord({
             idToUpdate: createdJob.id,
             updateOneRecordInput: updateOneRecordInput,

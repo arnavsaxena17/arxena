@@ -25,7 +25,7 @@ const urlFields = [
 ];
 
 const excludedFields = [
-  'id', 'checkbox', 'name', 'hasCv','fullName','jobName','candidateFieldValues','token','hiringNaukriCookie','dataSource', 'personId', 'firstName', 'searchId','phoneNumbers','mobilePhone','filterQueryHash','mayAlsoKnow','languages','englishLevel','baseQueryHash','creationDate','apnaSearchToken','lastName', 'emailAddress', 'industries', 'profiles', 'jobProcess', 'locations','experience', 'experienceStats', 'lastUpdated','education','interests','skills','dataSources','allNumbers','uploadId','allMails','socialprofiles','tables','created','middleName','middleInitial','creationSource','contactDetails','queryId','socialProfiles','updatedAt'
+  'id', 'checkbox', 'name', 'hasCv','fullName','jobName','candidateFieldValues','token','hiringNaukriCookie','dataSource', 'personId', 'firstName', 'searchId','phoneNumbers','mobilePhone','filterQueryHash','mayAlsoKnow','languages','englishLevel','baseQueryHash','creationDate','apnaSearchToken','lastName', 'emailAddress', 'industries', 'profiles', 'jobProcess', 'locations','experience', 'experienceStats', 'lastUpdated','education','interests','dataSources','allNumbers','uploadId','allMails','socialprofiles','tables','created','middleName','middleInitial','creationSource','contactDetails','queryId','socialProfiles',
 ];
 
 export const TableColumns = ({ 
@@ -110,15 +110,11 @@ export const TableColumns = ({
       name?: string;
       hasCv?: boolean;
     };
-    
-    console.log("prop:", prop);
-    console.log("value:", rowData.name, "for row data", rowData.name);
-    console.log("rowData:", rowData);
+
     
     const candidateId = rowData && typeof rowData === 'object' && 'id' in rowData ? rowData.id : null;
     const unreadCount = candidateId && unreadMessagesCounts[candidateId] ? unreadMessagesCounts[candidateId] : 0;
     const hasCv = rowData?.hasCv;
-    console.log("hasCv", hasCv, "for candidate name", rowData?.name);
     
     const container = document.createElement('div');
     container.style.display = 'flex';

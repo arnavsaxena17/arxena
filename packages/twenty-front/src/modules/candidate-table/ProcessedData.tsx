@@ -14,6 +14,7 @@ export const ProcessedData = ({ rawData, selectedRowIds }: { rawData: CandidateN
         startChat: candidate?.startChat || false,
         startChatCompleted: candidate?.startChatCompleted || false,
         jobTitle: candidate?.people?.jobTitle || '',
+        updatedAt: candidate?.updatedAt || '',
         engagementStatus: candidate?.engagementStatus || 'No Conversation',
         startMeetingSchedulingChat: candidate?.startMeetingSchedulingChat || false,
         startMeetingSchedulingChatCompleted: candidate?.startMeetingSchedulingChatCompleted || false,
@@ -22,6 +23,7 @@ export const ProcessedData = ({ rawData, selectedRowIds }: { rawData: CandidateN
         stopChat: candidate?.stopChat || false,
         source: candidate?.source || 'N/A',
         messagingChannel: candidate?.messagingChannel || '',
+        
         lastMessage: candidate?.whatsappMessages?.edges?.length > 0 ? 
           [...(candidate?.whatsappMessages?.edges || [])]
             .sort((a, b) => new Date(b.node.createdAt).getTime() - new Date(a.node.createdAt).getTime())[0]
@@ -43,7 +45,6 @@ export const ProcessedData = ({ rawData, selectedRowIds }: { rawData: CandidateN
       }
       // console.log("Field Values", fieldValues);
       const processedData = {  ...fieldValues, ...baseData };
-      console.log("Processed Data", processedData);
       return processedData;
     });
   };
