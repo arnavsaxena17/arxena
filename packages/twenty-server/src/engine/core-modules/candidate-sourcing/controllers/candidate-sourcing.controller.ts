@@ -658,14 +658,10 @@ export class CandidateSourcingController {
     console.log('Getting all jobs');
     const workspaceId =
       await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-    let graphqlQueryObjToFetchAllJobs = graphqlToFindManyJobs;
-
-    
-    console.log('graphqlQueryObjToFetchAllJobs:', graphqlQueryObjToFetchAllJobs);
 
     const responseFromGetAllJobs = await axiosRequest(
       JSON.stringify({
-        query: graphqlQueryObjToFetchAllJobs,
+        query: graphqlToFindManyJobs,
         variables: { limit: 30, orderBy: [{ position: 'AscNullsFirst' }] },
       }),
       apiToken,

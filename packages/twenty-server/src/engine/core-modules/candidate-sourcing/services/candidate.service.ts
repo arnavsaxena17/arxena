@@ -240,6 +240,8 @@ export class CandidateService {
     jobId: string,
     apiToken: string,
   ): Promise<Map<string, any>> {
+
+    // console.log('uniqueStringKeys:', uniqueStringKeys);
     const graphqlQuery = JSON.stringify({
       query: graphqlToFetchAllCandidateData,
       variables: {
@@ -927,7 +929,9 @@ export class CandidateService {
               missingFields
             });
           }
-  
+          console.log("Candidate to update:", candidatesToUpdate.map((c) => c.profile.unique_key_string));
+          console.log("Candidate to update:", candidatesToUpdate);
+          
           tracking.candidateIdMap.set(key, existingCandidate?.id);
         }
       }
@@ -955,10 +959,11 @@ export class CandidateService {
   
       console.log("Number of candidates to update:", candidatesToUpdate.length);
       if (candidatesToUpdate.length > 0) {
-        console.log('Updating existing candidates with missing fields...');
+        console.log('Updating existing candidates...');
         
         for (const updateCandidate of candidatesToUpdate) {
           const { candidateId, personId, profile, missingFields } = updateCandidate;
+          console.log("updateCandidate:", updateCandidate);
           
           try {
             for (const fieldName of missingFields) {
@@ -1000,6 +1005,22 @@ export class CandidateService {
                     );
                     console.log("Email update response:", response?.data?.data);
                   }
+                }
+              }
+
+              if (fieldName === 'profileUrl') {
+                const profileUrl = profile?.profile_url;
+                if (profileUrl && profileUrl.includes('naukri')) {
+                  console.log(`Updating profile url for candidate ${candidateId} with value: ${profileUrl}`);
+                  console.log("profileUrl:", profileUrl);
+                  const updateData = {"hiringNaukriUrl": {primaryLinkLabel: profileUrl, primaryLinkUrl: profileUrl}, "resdexNaukriUrl": {primaryLinkLabel: profileUrl, primaryLinkUrl: profileUrl}, "linkedinUrl": {primaryLinkLabel: profileUrl, primaryLinkUrl: profileUrl}};
+                  await axiosRequest(
+                    JSON.stringify({ 
+                      query: graphQltoUpdateOneCandidate, 
+                      variables: { idToUpdate: candidateId, input: updateData } 
+                    }),
+                    apiToken
+                  );
                 }
               }
             }
