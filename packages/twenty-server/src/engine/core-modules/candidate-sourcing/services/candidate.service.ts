@@ -899,7 +899,7 @@ export class CandidateService {
           console.log('Profile email:', profileEmail);
           
           console.log('profileUrl to be checked for duplication:', profileUrl);
-          if (profileUrl && !profileUrl.includes('naukri')) {
+          if (profileUrl && profileUrl.includes('naukri')) {
             missingFields.push('profileUrl');
           } else {
             console.log('No profile url to update for naukri');
