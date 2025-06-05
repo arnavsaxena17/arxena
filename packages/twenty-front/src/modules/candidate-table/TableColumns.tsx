@@ -298,7 +298,7 @@ export const TableColumns = ({
     renderer: nameRenderer,
   });
 
-  const commonColumns = ['jobTitle','jobCompanyName','locationName','email', 'phone', 'status', 'lastMessage'];
+  const commonColumns = ['jobTitle','jobCompanyName','locationName','remarks','email', 'phone', 'status', 'lastMessage'];
   commonColumns.forEach(column => {
     if (allKeys.has(column) && !excludedFields.includes(column)) {
       columns.push({
