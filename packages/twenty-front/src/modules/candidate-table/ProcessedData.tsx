@@ -9,6 +9,7 @@ export const ProcessedData = ({ rawData, selectedRowIds }: { rawData: CandidateN
         name: candidate?.name || '',
         phone: candidate?.people?.phones?.primaryPhoneNumber || '',
         email: candidate?.people?.emails?.primaryEmail || '',
+        remarks: candidate?.remarks || '',
         candConversationStatus: candidate?.candConversationStatus || 'No Conversation',
         checkbox: selectedRowIds.includes(candidate?.id || ''),
         startChat: candidate?.startChat || false,

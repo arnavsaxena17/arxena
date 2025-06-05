@@ -1617,6 +1617,7 @@ export interface CandidateNode {
   name: string;
   source?: string;
   campaign?: string;
+  remarks?: string;
   messagingChannel?: string;
   attachments: any;
   id: string;
