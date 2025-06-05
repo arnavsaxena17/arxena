@@ -898,10 +898,11 @@ export class CandidateService {
           const profileEmail = profile?.email_address?.[0] || profile?.all_mails?.[0];
           console.log('Profile email:', profileEmail);
           
+          console.log('profileUrl to be checked for duplication:', profileUrl);
           if (profileUrl && !profileUrl.includes('naukri')) {
             missingFields.push('profileUrl');
           } else {
-            console.log('No profile url to update');
+            console.log('No profile url to update for naukri');
           }
           
           if (isFieldEmpty(candidateEmail) && profileEmail && profileEmail.trim() !== '') {
