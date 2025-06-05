@@ -290,9 +290,11 @@ export class CandidateService {
     };
 
     console.log('This is the job object in processBatches:', jobObject);
+    console.log('This is the data in processBatches:', data);
     if (!jobObject) {
       throw new Error('jobObject is undefined in processBatches');
     }
+
     if (!jobObject.id) {
       throw new Error(`jobObject.id is undefined in processBatches. jobObject: ${JSON.stringify(jobObject)}`);
     }
@@ -866,6 +868,7 @@ export class CandidateService {
         } else if (existingCandidate) {
           console.log('Existing candidate found:', existingCandidate);
           const missingFields: string[] = [];
+          
           const isFieldEmpty = (field: any): boolean => {
             if (!field) return true;
             if (typeof field === 'string') return field.trim() === '';
@@ -876,35 +879,40 @@ export class CandidateService {
             }
             return false;
           };
+
           const candidatePhone = existingCandidate?.phoneNumber?.primaryPhoneNumber || existingCandidate?.phoneNumber;
           console.log('Current candidate phone:', candidatePhone);
           const profilePhone = profile?.phone_number || profile?.mobile_phone || profile?.all_numbers?.[0];
           console.log('Profile phone:', profilePhone);
+          
           if (isFieldEmpty(candidatePhone) && profilePhone && profilePhone.trim() !== '') {
             console.log('Adding phoneNumber to missing fields');
             missingFields.push('phoneNumber');
           } else {
             console.log('No phone number to update');
           }
+          
           const profileUrl = profile?.profile_url;
           const candidateEmail = existingCandidate?.email?.primaryEmail || existingCandidate?.email;
           console.log('Current candidate email:', candidateEmail);
           const profileEmail = profile?.email_address?.[0] || profile?.all_mails?.[0];
           console.log('Profile email:', profileEmail);
+          
           if (profileUrl && !profileUrl.includes('naukri')) {
             missingFields.push('profileUrl');
           } else {
             console.log('No profile url to update');
           }
+          
           if (isFieldEmpty(candidateEmail) && profileEmail && profileEmail.trim() !== '') {
             console.log('Adding email to missing fields');
             missingFields.push('email');
           } else {
             console.log('No email to update');
           }
-
-  
+          
           console.log('Missing fields:', missingFields);
+          
           if (missingFields.length > 0) {
             console.log('Missing fields:', missingFields);
             candidatesToUpdate.push({
@@ -1560,7 +1568,7 @@ export class CandidateService {
         apiToken
       );
 
-      
+
       console.log("response::", response?.data?.data)
       return response?.data?.data;
     } catch (error) {
