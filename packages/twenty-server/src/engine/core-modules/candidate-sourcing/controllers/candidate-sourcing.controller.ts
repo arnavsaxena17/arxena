@@ -331,20 +331,12 @@ export class CandidateSourcingController {
       const response = await axios.post(
         url,
         { phoneCallIds: phoneCallIds },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${apiToken}`,
-          },
-        },
+        { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiToken}`, }, },
       );
-
       console.log('Received this response:', response.data);
-
       return { status: 'Success' };
     } catch (err) {
       console.error('Error in refresh chats:', err);
-
       return { status: 'Failed', error: err };
     }
   }
@@ -667,7 +659,6 @@ export class CandidateSourcingController {
     const workspaceId =
       await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
     let graphqlQueryObjToFetchAllJobs = graphqlToFindManyJobs;
-
 
     
     console.log('graphqlQueryObjToFetchAllJobs:', graphqlQueryObjToFetchAllJobs);
