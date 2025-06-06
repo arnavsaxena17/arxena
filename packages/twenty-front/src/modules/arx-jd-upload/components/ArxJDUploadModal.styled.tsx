@@ -163,10 +163,9 @@ export const StyledDropzoneArea = styled.div`
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing(4)};
   justify-content: center;
-  min-height: 400px;
+  min-height: 80%;
   padding: ${({ theme }) => theme.spacing(4)};
-  width: 100%;
-
+  width: 95%;
   &:hover {
     background-color: ${({ theme }) => theme.background.tertiary};
     cursor: pointer;

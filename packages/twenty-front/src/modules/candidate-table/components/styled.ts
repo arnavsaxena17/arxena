@@ -2,7 +2,7 @@ import styled from '@emotion/styled';
 
 export const TableContainer = styled.div`
   width: 100%;
-  height: calc(100vh - 200px); /* Set a fixed height to enable scrolling */
+  flex: 1;
   overflow: auto;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -33,7 +33,6 @@ export const PanelContainer = styled.div<{ isOpen: boolean }>`
   top: 80px;
   right: ${props => (props.isOpen ? '0' : '-40%')};
   width: 40%;
-  height: calc(100vh - 80px);
   background-color: #f5f5f5;
   box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
   transition: right 0.3s ease-in-out;

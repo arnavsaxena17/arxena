@@ -1,14 +1,14 @@
 import styled from '@emotion/styled';
 
 const StyledContainer = styled.div`
-  margin-bottom: ${({ theme }) => theme.spacing(4)};
+  margin-bottom: ${({ theme }) => theme.spacing(0)};
 `;
 
 const StyledTitle = styled.h2`
   font-size: ${({ theme }) => theme.font.size.xl};
   font-weight: ${({ theme }) => theme.font.weight.semiBold};
   color: ${({ theme }) => theme.font.color.primary};
-  margin-bottom: ${({ theme }) => theme.spacing(1)};
+  margin-bottom: ${({ theme }) => theme.spacing(0)};
 `;
 
 const StyledDescription = styled.p`

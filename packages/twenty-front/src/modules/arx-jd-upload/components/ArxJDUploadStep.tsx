@@ -119,9 +119,9 @@ export const ArxJDUploadStep = ({
       <StyledContent>
         <ArxJDStepHeading
           title={isEditMode ? "Manage Job Description File" : "Upload Job Description"}
-          description={isEditMode 
-            ? "View, replace, or remove the current job description file" 
-            : "Upload a job description file to get started"}
+          // description={isEditMode 
+            // ? "View, replace, or remove the current job description file" 
+            // : "Upload a job description file to get started"}
           currentStep={currentStep}
           totalSteps={totalSteps}
         />
@@ -147,13 +147,13 @@ export const ArxJDUploadStep = ({
         {!hasFile && (
           <>
             <StyledInstructions>
-              <p>Please upload a job description file to begin. We support the following formats:</p>
-              <StyledList>
+              {/* <p>Please upload a job description file to begin. We support the following formats:</p> */}
+              {/* <StyledList>
                 <StyledListItem>PDF (.pdf)</StyledListItem>
                 <StyledListItem>Microsoft Word (.doc, .docx)</StyledListItem>
                 <StyledListItem>Text (.txt)</StyledListItem>
               </StyledList>
-              <p>Maximum file size: 10MB</p>
+              <p>Maximum file size: 10MB</p> */}
             </StyledInstructions>
 
             <UploadForm

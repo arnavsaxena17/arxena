@@ -273,8 +273,8 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
         const rawData = Array.isArray(response.data) ? response.data : [];
         console.log("This is raw data::", rawData);
 
-        const columnsFields = rawData[0].candidateFieldValues.edges.map((field: any) => {
-          return field.node.candidateFields.name;
+        const columnsFields = rawData[0]?.candidateFieldValues?.edges?.map((field: any) => {
+          return field?.node?.candidateFields?.name;
         });
         console.log("This is columns fields::", columnsFields);
 
@@ -468,7 +468,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
             afterGetColHeader={afterGetColHeader}
             rowHeaders={true}
             contextMenu={true}
-            height="calc(100vh - 200px)"
+            height="100%"
             themeName="ht-theme-main"
             licenseKey="non-commercial-and-evaluation"
             stretchH="all"

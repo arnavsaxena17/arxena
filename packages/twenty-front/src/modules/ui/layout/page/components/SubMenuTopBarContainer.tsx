@@ -30,12 +30,10 @@ const StyledTitle = styled.h3<{ reserveTitleSpace?: boolean }>`
   font-weight: ${({ theme }) => theme.font.weight.semiBold};
   line-height: 1.2;
   margin: ${({ theme }) => theme.spacing(8, 8, 2)};
-  min-height: ${({ theme, reserveTitleSpace }) =>
-    reserveTitleSpace ? theme.spacing(5) : 'none'};
+  // min-height: ${({ theme, reserveTitleSpace }) => reserveTitleSpace ? theme.spacing(5) : 'none'};
 `;
 
 export const SubMenuTopBarContainer = ({
-
   children,
   title,
   reserveTitleSpace,
