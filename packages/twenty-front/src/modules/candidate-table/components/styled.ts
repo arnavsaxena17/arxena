@@ -1,8 +1,11 @@
 import styled from '@emotion/styled';
 
 export const TableContainer = styled.div`
+  display: flex;
+  flex-direction: column;
   width: 100%;
   flex: 1;
+  min-height: 0;
   overflow: auto;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -12,6 +15,7 @@ export const TableContainer = styled.div`
 
   .handsontable {
     overflow: visible;
+    height: 100%;
   }
 
   .handsontable .ht_clone_top {

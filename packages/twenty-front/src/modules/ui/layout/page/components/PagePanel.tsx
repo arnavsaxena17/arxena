@@ -5,9 +5,10 @@ const StyledPanel = styled.div`
   background: ${({ theme }) => theme.background.primary};
   border: 1px solid ${({ theme }) => theme.border.color.medium};
   border-radius: ${({ theme }) => theme.border.radius.md};
-  height: 100%;
-  overflow-x: auto;
-  overflow-y: hidden;
+    display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
   width: 100%;
 `;
 
