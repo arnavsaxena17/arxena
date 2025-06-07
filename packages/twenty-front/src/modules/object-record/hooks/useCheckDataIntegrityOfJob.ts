@@ -191,8 +191,8 @@ export const useCheckDataIntegrityOfJob = ({
               },
             );
           } else {
-            console.log('Successfully created job object');
-            enqueueSnackBar('Successfully created job object', {
+            console.log('Successfully validated job data');
+            enqueueSnackBar('Successfully validated job data', {
               variant: SnackBarVariant.Success,
               duration: 3000,
             });
@@ -200,7 +200,7 @@ export const useCheckDataIntegrityOfJob = ({
           }
         }
       } catch (error) {
-        enqueueSnackBar('Error in creating job object', {
+        enqueueSnackBar('Error in validating job data', {
           variant: SnackBarVariant.Error,
           duration: 5000,
         });

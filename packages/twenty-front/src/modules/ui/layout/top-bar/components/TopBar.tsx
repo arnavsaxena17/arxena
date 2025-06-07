@@ -17,12 +17,14 @@ type TopBarProps = {
   showVideoInterviewEdit?:boolean;
   handleImportCandidates?: () => void;
   handleVideoInterviewEdit?: () => void;
-  showEngagement?:boolean;
-  handleEngagement?: () => void;
+  showAddJob?:boolean;
+  handleAddJob?: () => void;
   showEnrichment?:boolean;
   handleEnrichment?: () => void;
   onSearch?: (query: string) => void;
   showSearch?: boolean;
+  handleValidateJobData?: () => void;
+  showValidateJobData?: boolean;
 };
 
 const StyledContainer = styled.div`
@@ -109,14 +111,16 @@ export const TopBar = ({
   handleRefresh,
   handleVideoInterviewEdit,
   showRefetch=true,
-  showEngagement=true,
+  handleAddJob,
+  showAddJob=true,
   // handleImportCandidates,
   showEnrichment=true,
   showVideoInterviewEdit=true,
   handleEnrichment,
-  handleEngagement,
   onSearch,
-  showSearch=false
+  showSearch=false,
+  handleValidateJobData,
+  showValidateJobData=true
 }: TopBarProps) => {
   const location = useLocation();
   const isJobPage = location.pathname.includes('/job/') || location.pathname.includes('/jobs/');
@@ -184,13 +188,13 @@ export const TopBar = ({
               )}
             </StyledCenterButtonContainer>
             <StyledRightButtonContainer>
-              {showEngagement && (
+              {showAddJob && (
                 <Button
                   Icon={IconMail}
                   title="Engagement" 
                   variant="secondary"
                   accent="default"
-                  onClick={handleEngagement}
+                  onClick={handleAddJob}
                 />
               )}
               {showEnrichment && (
@@ -200,6 +204,15 @@ export const TopBar = ({
                   variant="secondary"
                   accent="default"
                   onClick={handleEnrichment}
+                />
+              )}
+              {showValidateJobData && handleValidateJobData && (
+                <Button
+                  Icon={IconDatabase}
+                  title="Validate Job Data" 
+                  variant="secondary"
+                  accent="default"
+                  onClick={handleValidateJobData}
                 />
               )}
             </StyledRightButtonContainer>

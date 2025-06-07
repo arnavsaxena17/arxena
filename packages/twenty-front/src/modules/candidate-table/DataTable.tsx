@@ -184,34 +184,22 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
 
     const refreshData = useCallback(async (specificIds?: string[]) => {
       if (!jobId || jobId === "job-id") return;
-      
       try {
         const requestBody = specificIds?.length 
           ? { jobId, candidateIds: specificIds }
           : { jobId };
-        
         const response = await axios.post(
           `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/get-candidates-by-job-id`,
           requestBody,
           { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } }
         );
-        
-        // Verify the response is valid and sort by createdAt descending
-        // const rawData = Array.isArray(response.data) 
-        //   ? [...response.data].sort((a, b) => 
-        //       new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        //     )
-        //   : [];
         const rawData = response.data;
-        // Process unread messages for each candidate
         const unreadMessagesCounts: Record<string, number> = {};
         rawData.forEach((candidate: any) => {
           if (!candidate || typeof candidate !== 'object' || !candidate.id) return;
-          
           const unreadCount = candidate?.whatsappMessages?.edges
             ?.filter((edge: any) => edge?.node?.whatsappDeliveryStatus === 'receivedFromCandidate')
             ?.length || 0;
-          
           unreadMessagesCounts[candidate.id] = unreadCount;
         });
         
@@ -235,7 +223,6 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
             };
           });
         } else {
-          console.log("Full refresh in refreshData", rawData);
           setTableState(prev => ({
             ...prev,
             rawData,

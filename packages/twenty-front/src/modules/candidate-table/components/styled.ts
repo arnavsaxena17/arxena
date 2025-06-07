@@ -12,20 +12,16 @@ export const TableContainer = styled.div`
   -webkit-overflow-scrolling: touch;
   position: relative;
   z-index: 10;
-
   .handsontable {
     overflow: visible;
     height: 100%;
   }
-
   .handsontable .ht_clone_top {
     z-index: 101;
   }
-
   .handsontable .wtHolder {
     overflow: auto;
   }
-
   @media (max-width: 768px) {
     margin: 0;
     padding: 0;

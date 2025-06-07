@@ -1,7 +1,6 @@
 import { RightDrawerPages } from "@/ui/layout/right-drawer/types/RightDrawerPages";
 import { IconMessages } from "@tabler/icons-react";
 import axios from 'axios';
-import { Change } from './states/states';
 // import { Change } from './states/tableStateAtom';
 
 export const updateUnreadMessagesStatus = async (unreadMessageIds: string[], tokenPair: any) => {
@@ -152,6 +151,132 @@ export const afterSelectionEnd = (tableRef: any, column: number, row: number, ro
   }
 };
 
+type Change = {
+  row: number;
+  prop: string;
+  oldValue: any;
+  newValue: any;
+  rowId: string;
+};
+
+type PendingUpdate = {
+  row: number;
+  prop: string;
+  oldValue: any;
+  newValue: any;
+  rowData: any;
+  endpoint: string;
+  isDirectField: boolean;
+};
+
+const handleUndoStackUpdate = (changes: any[], hot: any, setTableState: any) => {
+  const changesForUndo: Change[] = changes
+    .map(([row, prop, oldValue, newValue]: [number, string, any, any]) => {
+      const rowData = hot.getSourceDataAtRow(row);
+      return {
+        row,
+        prop,
+        oldValue,
+        newValue,
+        rowId: rowData?.id
+      };
+    })
+    .filter((change: Change) => change.oldValue !== change.newValue);
+
+  if (changesForUndo.length > 0) {
+    setTableState((prev: any) => {
+      const currentUndoStack = Array.isArray(prev.undoStack) ? prev.undoStack : [];
+      return {
+        ...prev,
+        undoStack: [...currentUndoStack, ...changesForUndo],
+        redoStack: [] // Clear redo stack on new edit
+      };
+    });
+  }
+};
+
+const handleCheckboxChange = (rowData: any, newValue: boolean, setTableState: any) => {
+  console.log("prop is checkbox and hence setting table states");
+  setTableState((prev: any) => {
+    const currentSelectedIds = Array.isArray(prev.selectedRowIds) ? prev.selectedRowIds : [];
+    console.log("currentSelectedIds::", currentSelectedIds);
+    const rowId = rowData.id;
+    console.log("rowId selected of rowData::", rowId);
+    if (newValue === true && !currentSelectedIds.includes(rowId)) {
+      return {
+        ...prev,
+        selectedRowIds: [...currentSelectedIds, rowId]
+      };
+    } else if (newValue === false) {
+      return {
+        ...prev,
+        selectedRowIds: currentSelectedIds.filter((id: string) => id !== rowId)
+      };
+    }
+    return prev;
+  });
+};
+
+const updateTableState = (rowData: any, prop: string, newValue: any, setTableState: any) => {
+  setTableState((prev: any) => {
+    const updatedRawData = [...prev.rawData];
+    const index = updatedRawData.findIndex(item => item.id === rowData.id);
+    if (index >= 0) {
+      updatedRawData[index] = {
+        ...updatedRawData[index],
+        [prop]: newValue
+      };
+    }
+    return {
+      ...prev,
+      rawData: updatedRawData
+    };
+  });
+};
+
+const revertTableState = (rowData: any, prop: string, oldValue: any, row: number, hot: any, setTableState: any) => {
+  setTableState((prev: any) => {
+    const updatedRawData = [...prev.rawData];
+    const index = updatedRawData.findIndex(item => item.id === rowData.id);
+    if (index >= 0) {
+      updatedRawData[index] = {
+        ...updatedRawData[index],
+        [prop]: oldValue
+      };
+    }
+    return {
+      ...prev,
+      rawData: updatedRawData
+    };
+  });
+  if (hot) hot.setDataAtRowProp(row, prop, oldValue, 'external');
+};
+
+const processBackendUpdate = async (
+  update: PendingUpdate, 
+  tokenPair: any, 
+  setTableState: any,
+  tableRef: React.RefObject<any>
+) => {
+  const { row, prop, oldValue, newValue, rowData, endpoint } = update;
+  
+  try {
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${tokenPair?.accessToken?.token}` },
+      body: JSON.stringify({ candidateId: rowData.id, fieldName: prop, value: newValue, personId: rowData.personId })
+    });
+    
+    if (!response.ok) {
+      console.error('Update failed:', await response.text());
+      revertTableState(rowData, prop, oldValue, row, tableRef.current?.hotInstance, setTableState);
+    }
+  } catch (error) {
+    console.error('Update failed:', error);
+    revertTableState(rowData, prop, oldValue, row, tableRef.current?.hotInstance, setTableState);
+  }
+};
+
 export const afterChange = async (tableRef: React.RefObject<any>, changes: any, source: any, jobId: string, tokenPair: any, setTableState: any, refreshData: any) => {
   console.log("changes in afterChange", changes);
   console.log("source in afterChange", source);
@@ -161,99 +286,61 @@ export const afterChange = async (tableRef: React.RefObject<any>, changes: any, 
   const hot = tableRef.current?.hotInstance;
   if (!hot) return;
 
-  if (source === 'undo' || source === 'redo') {
-    return;
-  }
+  if (source === 'undo' || source === 'redo') return;
 
-  // For direct edits, save to undo stack
+  // Handle undo stack updates for direct edits
   if (source === 'edit') {
-    const changesForUndo: Change[] = changes.map(([row, prop, oldValue, newValue]: [number, string, any, any]) => {
-      const rowData = hot.getSourceDataAtRow(row);
-      return {
-        row,
-        prop,
-        oldValue,
-        newValue,
-        rowId: rowData?.id
-      };
-    }).filter((change: Change) => change.oldValue !== change.newValue);
-
-    if (changesForUndo.length > 0) {
-      setTableState((prev: any) => {
-        const currentUndoStack = Array.isArray(prev.undoStack) ? prev.undoStack : [];
-        return {
-          ...prev,
-          undoStack: [...currentUndoStack, ...changesForUndo],
-          redoStack: [] // Clear redo stack on new edit
-        };
-      });
-    }
+    handleUndoStackUpdate(changes, hot, setTableState);
   }
 
-  // Track successful updates to refresh data if needed
+  // Track updates
   const updatedRows = new Set();
+  const pendingUpdates: PendingUpdate[] = [];
   
   for (const [row, prop, oldValue, newValue] of changes) {
     if (oldValue === newValue) continue;
     
+    console.log("oldValue in afterChange::", oldValue);
+    console.log("newValue in afterChange::", newValue);
     const rowData = hot.getSourceDataAtRow(row);
     console.log("rowData in afterChange::", rowData);
     if (!rowData || !rowData.id) continue;
     
-    try {
-      // Special handling for checkbox column
-      if (prop === 'checkbox') {
-        setTableState((prev: any) => {
-          const currentSelectedIds = Array.isArray(prev.selectedRowIds) ? prev.selectedRowIds : [];
-          console.log("currentSelectedIds::", currentSelectedIds);
-          const rowId = rowData.id;
-          console.log("rowId selected of rowData::", rowId);
-          if (newValue === true && !currentSelectedIds.includes(rowId)) {
-            return {
-              ...prev,
-              selectedRowIds: [...currentSelectedIds, rowId]
-            };
-          } else if (newValue === false) {
-            return {
-              ...prev,
-              selectedRowIds: currentSelectedIds.filter((id: string) => id !== rowId)
-            };
-          }
-          return prev;
-        });
-        continue;
-      }
-      
-      const isDirectField = 
-        Object.prototype.hasOwnProperty.call(rowData, prop) && prop !== 'candidateFieldValues';
-      console.log(`Updating field: ${prop}, isDirectField: ${isDirectField}`);
-      
-      const endpoint = isDirectField 
-        ? `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/update-candidate-field`
-        : `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/update-candidate-field-value`;
-      
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${tokenPair?.accessToken?.token}` },
-        body: JSON.stringify({ candidateId: rowData.id, fieldName: prop, value: newValue, personId: rowData.personId })
-      });
-      
-      if (response.ok) {
-        console.log(`Updated candidate field: ${prop} for candidate ${rowData.id}`);
-        updatedRows.add(rowData.id);
-      } else {
-        console.error('Update failed:', await response.text());
-        hot.setDataAtRowProp(row, prop, oldValue, 'external');
-      }
-    } catch (error) {
-      console.error('Update failed:', error);
-      if (hot) hot.setDataAtRowProp(row, prop, oldValue, 'external');
+    // Handle checkbox changes
+    if (prop === 'checkbox') {
+      handleCheckboxChange(rowData, newValue, setTableState);
+      continue;
     }
+
+    const isDirectField = 
+      Object.prototype.hasOwnProperty.call(rowData, prop) && prop !== 'candidateFieldValues';
+    console.log(`Updating field: ${prop}, isDirectField: ${isDirectField}`);
+    
+    const endpoint = isDirectField 
+      ? `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/update-candidate-field`
+      : `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/update-candidate-field-value`;
+
+    // Update UI immediately
+    updateTableState(rowData, prop, newValue, setTableState);
+
+    // Queue for background processing
+    pendingUpdates.push({
+      row,
+      prop,
+      oldValue,
+      newValue,
+      rowData,
+      endpoint,
+      isDirectField
+    });
+    
+    updatedRows.add(rowData.id);
   }
-  
-  if (updatedRows.size > 0 && refreshData) {
-    await refreshData(Array.from(updatedRows));
-  }
+
+  console.log("updatedRows in afterChange::", updatedRows);
+
+  // Process updates in the background
+  pendingUpdates.forEach(update => processBackendUpdate(update, tokenPair, setTableState, tableRef));
 };
 
 export const performUndo = async (tableRef: React.RefObject<any>, setTableState: any) => {

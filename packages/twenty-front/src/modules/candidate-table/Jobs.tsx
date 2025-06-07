@@ -231,7 +231,7 @@ export const Jobs = () => {
     setIsVideoInterviewModalOpen(true);
   };
 
-  const handleEngagement = () => {
+  const handleAddJob = () => {
     if (!candidateId) {
       alert('Please select a chat to upload JD');
       return;
@@ -276,7 +276,7 @@ export const Jobs = () => {
           <RecordFieldValueSelectorContextProvider>
             <StyledPageHeader title="Jobs" Icon={IconDatabase}>
               <StyledButtonContainer>
-                <Button title="Add Job" Icon={IconPlus} variant="primary" onClick={handleEngagement} />
+                <Button title="Add New Job" Icon={IconPlus} variant="primary" onClick={handleAddJob} />
                 <Button title="Download App" Icon={IconDownload} variant="secondary" onClick={handleDownloadClick} />
               </StyledButtonContainer>
               <StyledAddButtonWrapper>
@@ -316,7 +316,7 @@ export const Jobs = () => {
           <RecordFieldValueSelectorContextProvider>
             <StyledPageHeader title="Jobs" Icon={IconDatabase}>
               <StyledButtonContainer>
-                <Button title="Add Job" Icon={IconPlus} variant="primary" onClick={handleEngagement} />
+                <Button title="Add New Job" Icon={IconPlus} variant="primary" onClick={handleAddJob} />
                 <Button title="Download App" Icon={IconDownload} variant="secondary" onClick={handleDownloadClick} />
               </StyledButtonContainer>
               <StyledAddButtonWrapper>
@@ -330,11 +330,11 @@ export const Jobs = () => {
                     leftComponent={ <StyledTabListContainer> </StyledTabListContainer> }
                     handleVideoInterviewEdit={handleVideoInterviewEdit}
                     handleEnrichment={handleEnrichment}
-                    handleEngagement={handleEngagement}
+                    handleAddJob={handleAddJob}
                     handleImportCandidates={handleImportCandidates}
                     showEnrichment={true}
                     showVideoInterviewEdit={true}
-                    showEngagement={true}
+                    showAddJob={true}
                     showSearch={showSearch}
                     rightComponent={
                       <StyledRightSection>
@@ -365,12 +365,12 @@ export const Jobs = () => {
                     </StyledJobCardsGrid>
                   ) : (
                     <RecordTableEmptyStateDisplay
-                      buttonTitle="Add Job"
+                      buttonTitle="Add New Job"
                       subTitle="No jobs found"
                       title="Your workspace is ready"
                       ButtonIcon={IconPlus}
                       animatedPlaceholderType="noRecord"
-                      onClick={handleEngagement}
+                      onClick={handleAddJob}
                     />
                   )}
                 </ViewComponentInstanceContext.Provider>

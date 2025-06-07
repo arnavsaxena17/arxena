@@ -5,6 +5,7 @@ import { ArxEnrichmentModal } from '@/arx-enrich/arxEnrichmentModal';
 import { useSelectedRecordForEnrichment } from "@/arx-enrich/hooks/useSelectedRecordForEnrichment";
 import { currentJobIdState, isArxEnrichModalOpenState } from "@/arx-enrich/states/arxEnrichModalOpenState";
 import { processedDataSelector } from "@/candidate-table/states/states";
+import { useCheckDataIntegrityOfJob } from '@/object-record/hooks/useCheckDataIntegrityOfJob';
 
 import { ArxJDUploadModal } from '@/arx-jd-upload/components/ArxJDUploadModal';
 import { isArxUploadJDModalOpenState } from "@/arx-jd-upload/states/arxUploadJDModalOpenState";
@@ -37,7 +38,7 @@ import styled from '@emotion/styled';
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useRecoilState, useRecoilValue } from "recoil";
-import { Button, IconChartCandle, IconCheckbox, IconDownload, IconFileImport } from 'twenty-ui';
+import { Button, IconChartCandle, IconCheckbox, IconDownload, IconFileImport, IconPlus } from 'twenty-ui';
 
 import { JobStatisticsModal } from './components/JobStatisticsModal';
 
@@ -96,7 +97,7 @@ export const JobPage: React.FC = () => {
   const dataTableRef = useRef<{ refreshData: () => Promise<void> }>(null);
   const [isArxEnrichModalOpen, setIsArxEnrichModalOpen] = useRecoilState(isArxEnrichModalOpenState);
   const { hasSelectedRecord, selectedRecordId } = useSelectedRecordForEnrichment();
-  console.log("processedData in job page::", processedData);
+  const { checkDataIntegrityOfJob } = useCheckDataIntegrityOfJob();
   const { enqueueSnackBar } = useSnackBar();
 
   const isVideoInterviewModalOpen = useRecoilValue(isVideoInterviewModalOpenState);
@@ -133,7 +134,7 @@ export const JobPage: React.FC = () => {
     setIsVideoInterviewModalOpen(true);
   };
 
-  const handleEngagement = () => {
+  const handleAddJob = () => {
     if (!selectedRecordId) {
       alert('Please select a candidate to upload JD');
       return;
@@ -148,6 +149,14 @@ export const JobPage: React.FC = () => {
   const handleDownloadClick = () => {
     console.log("Downloading app");
     setIsDownloadModalOpen(true);
+  };
+
+  const handleValidateJobData = () => {
+    if (!jobId) {
+      alert('No job selected');
+      return;
+    }
+    checkDataIntegrityOfJob([jobId]);
   };
 
   useEffect(() => {
@@ -192,7 +201,8 @@ export const JobPage: React.FC = () => {
         <RecordFieldValueSelectorContextProvider>
           <StyledPageHeader title={`${currentJob?.name || 'Job'} (${processedData.length})`} Icon={IconCheckbox}>
             <StyledButtonContainer>
-              <Button title="Import Candidates" Icon={IconFileImport} variant="secondary" onClick={handleImportCandidates} />
+            <Button title="Add Job" Icon={IconPlus} variant="primary" onClick={handleAddJob} />
+            <Button title="Import Candidates" Icon={IconFileImport} variant="secondary" onClick={handleImportCandidates} />
               <Button title="Statistics" Icon={IconChartCandle} variant="secondary" onClick={() => setIsStatsModalOpen(true)} />
               <Button title="Download App" Icon={IconDownload} variant="secondary" onClick={handleDownloadClick} />
 
@@ -210,13 +220,15 @@ export const JobPage: React.FC = () => {
                   handleRefresh={handleRefresh}
                   handleEnrichment={handleEnrichment}
                   handleVideoInterviewEdit={handleVideoInterviewEdit}
-                  handleEngagement={handleEngagement}
+                  handleAddJob={handleAddJob}
                   handleImportCandidates={handleImportCandidates}
                   showRefetch={true}
                   showEnrichment={true}
                   showVideoInterviewEdit={true}
-                  showEngagement={true}
+                  showAddJob={true}
                   showSearch={true}
+                  handleValidateJobData={handleValidateJobData}
+                  showValidateJobData={true}
                   rightComponent={
                   <StyledRightSection>
                     <ObjectFilterDropdownComponentInstanceContext.Provider value={{ instanceId: jobId }}>

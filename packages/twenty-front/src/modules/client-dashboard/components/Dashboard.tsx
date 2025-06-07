@@ -175,7 +175,7 @@ export const Dashboard = () => {
             onClick={() => {}}
           />
           <Button
-            title="Add Job"
+            title="Add New Job"
             Icon={IconPlus}
             variant="primary"
             onClick={handleOpenAddJobModal}
