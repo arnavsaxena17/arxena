@@ -33,7 +33,6 @@ export const ProcessedData = ({ rawData, selectedRowIds }: { rawData: CandidateN
             ?.node?.createdAt || '' : '',
         hasCv: candidate?.attachments?.edges?.length > 0 || false,
       };
-
       const fieldValues: Record<string, string> = {};
       if (candidate.candidateFieldValues?.edges) {
         candidate.candidateFieldValues.edges.forEach((edge: any) => {
@@ -46,7 +45,6 @@ export const ProcessedData = ({ rawData, selectedRowIds }: { rawData: CandidateN
           }
         });
       }
-      // console.log("Field Values", fieldValues);
       const processedData = {  ...fieldValues, ...baseData };
       return processedData;
     });

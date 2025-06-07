@@ -234,7 +234,8 @@ const updateTableState = (rowData: any, prop: string, newValue: any, setTableSta
   });
 };
 
-const revertTableState = (rowData: any, prop: string, oldValue: any, row: number, hot: any, setTableState: any) => {
+const revertTableState = (rowData: any, prop: string, oldValue: any, hot: any, setTableState: any) => {
+  // First update the state
   setTableState((prev: any) => {
     const updatedRawData = [...prev.rawData];
     const index = updatedRawData.findIndex(item => item.id === rowData.id);
@@ -249,7 +250,19 @@ const revertTableState = (rowData: any, prop: string, oldValue: any, row: number
       rawData: updatedRawData
     };
   });
-  if (hot) hot.setDataAtRowProp(row, prop, oldValue, 'external');
+
+  // Then update the UI, accounting for sorting
+  if (hot) {
+    // Find the current visual row index for this data
+    const allData = hot.getSourceData();
+    const physicalIndex = allData.findIndex((item: any) => item.id === rowData.id);
+    if (physicalIndex >= 0) {
+      const visualRow = hot.toVisualRow(physicalIndex);
+      if (visualRow !== null && visualRow !== undefined) {
+        hot.setDataAtCell(visualRow, hot.propToCol(prop), oldValue, 'external');
+      }
+    }
+  }
 };
 
 const processBackendUpdate = async (
@@ -258,7 +271,7 @@ const processBackendUpdate = async (
   setTableState: any,
   tableRef: React.RefObject<any>
 ) => {
-  const { row, prop, oldValue, newValue, rowData, endpoint } = update;
+  const { prop, oldValue, newValue, rowData, endpoint } = update;
   
   try {
     const response = await fetch(endpoint, {
@@ -269,11 +282,11 @@ const processBackendUpdate = async (
     
     if (!response.ok) {
       console.error('Update failed:', await response.text());
-      revertTableState(rowData, prop, oldValue, row, tableRef.current?.hotInstance, setTableState);
+      revertTableState(rowData, prop, oldValue, tableRef.current?.hotInstance, setTableState);
     }
   } catch (error) {
     console.error('Update failed:', error);
-    revertTableState(rowData, prop, oldValue, row, tableRef.current?.hotInstance, setTableState);
+    revertTableState(rowData, prop, oldValue, tableRef.current?.hotInstance, setTableState);
   }
 };
 
@@ -290,19 +303,45 @@ export const afterChange = async (tableRef: React.RefObject<any>, changes: any, 
 
   // Handle undo stack updates for direct edits
   if (source === 'edit') {
-    handleUndoStackUpdate(changes, hot, setTableState);
+    const changesForUndo: Change[] = changes.map(([row, prop, oldValue, newValue]: [number, string, any, any]) => {
+      // Convert visual row to physical row for storage
+      const physicalRow = hot.toPhysicalRow(row);
+      const rowData = hot.getSourceDataAtRow(physicalRow);
+      return {
+        row: physicalRow, // Store physical row index
+        prop,
+        oldValue,
+        newValue,
+        rowId: rowData?.id
+      };
+    }).filter((change: Change) => change.oldValue !== change.newValue);
+
+    if (changesForUndo.length > 0) {
+      setTableState((prev: any) => {
+        const currentUndoStack = Array.isArray(prev.undoStack) ? prev.undoStack : [];
+        return {
+          ...prev,
+          undoStack: [...currentUndoStack, ...changesForUndo],
+          redoStack: [] // Clear redo stack on new edit
+        };
+      });
+    }
   }
 
   // Track updates
   const updatedRows = new Set();
   const pendingUpdates: PendingUpdate[] = [];
   
-  for (const [row, prop, oldValue, newValue] of changes) {
+  for (const [visualRow, prop, oldValue, newValue] of changes) {
     if (oldValue === newValue) continue;
     
     console.log("oldValue in afterChange::", oldValue);
     console.log("newValue in afterChange::", newValue);
-    const rowData = hot.getSourceDataAtRow(row);
+
+    // Convert visual row to physical row
+    const physicalRow = hot.toPhysicalRow(visualRow);
+    const rowData = hot.getSourceDataAtRow(physicalRow);
+    
     console.log("rowData in afterChange::", rowData);
     if (!rowData || !rowData.id) continue;
     
@@ -325,7 +364,7 @@ export const afterChange = async (tableRef: React.RefObject<any>, changes: any, 
 
     // Queue for background processing
     pendingUpdates.push({
-      row,
+      row: visualRow,
       prop,
       oldValue,
       newValue,
