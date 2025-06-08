@@ -109,12 +109,14 @@ export const TableColumns = ({
       id?: string;
       name?: string;
       hasCv?: boolean;
+      startChat?: boolean;
     };
 
     
     const candidateId = rowData && typeof rowData === 'object' && 'id' in rowData ? rowData.id : null;
     const unreadCount = candidateId && unreadMessagesCounts[candidateId] ? unreadMessagesCounts[candidateId] : 0;
     const hasCv = rowData?.hasCv;
+    const hasStartedChat = rowData?.startChat;
     
     const container = document.createElement('div');
     container.style.display = 'flex';
@@ -151,7 +153,21 @@ export const TableColumns = ({
     if (hasCv) {
       container.appendChild(cvIcon);
     }
-    
+
+    // Add chat status icon
+    if (hasStartedChat) {
+      const chatIcon = document.createElement('div');
+      chatIcon.style.display = 'flex';
+      chatIcon.style.alignItems = 'center';
+      chatIcon.style.justifyContent = 'center';
+      chatIcon.style.marginLeft = '8px';
+      chatIcon.style.marginRight = '8px';
+      chatIcon.style.width = '16px';
+      chatIcon.style.height = '16px';
+      chatIcon.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="#1976d2"><path d="M20,2H4A2,2 0 0,0 2,4V22L6,18H20A2,2 0 0,0 22,16V4A2,2 0 0,0 20,2M6,9H18V11H6M14,14H6V12H14M18,8H6V6H18"/></svg>';
+      chatIcon.title = 'Contacted';
+      container.appendChild(chatIcon);
+    }
     
     if (unreadCount > 0) {
       const badge = document.createElement('div');
