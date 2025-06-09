@@ -113,10 +113,10 @@ export const useShareChatAndVideoInterviewBasedShortlistAction: ActionHookWithOb
       <ConfirmationModal
       isOpen={isShareChatAndVideoInterviewBasedShortlistModalOpen}
       setIsOpen={setIsShareChatAndVideoInterviewBasedShortlistModalOpen}
-      title={'Share Chat and Video Interview Based Shortlist'}
-      subtitle={`Are you sure you want to share chat and video interview based shortlist?`}
+      title={'Create Shortlist PDF and Excel'}
+      subtitle={`Are you sure you want to create shortlist PDF and Excel?`}
       onConfirmClick={handleShareChatAndVideoInterviewBasedShortlistClick}
-      deleteButtonText={'Share Chat and Video Interview Based Shortlist'}
+      deleteButtonText={'Create Shortlist PDF and Excel'}
       confirmButtonAccent = 'blue'
       />
     );

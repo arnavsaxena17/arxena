@@ -374,8 +374,6 @@ export class FilterCandidates {
     console.log('This is the phoneNumberFrom', userMessage?.phoneNumberFrom);
     let phoneNumberToSearch: string;
 
-
-
     if (userMessage.messageType === 'messageFromSelf') {
       phoneNumberToSearch = userMessage.phoneNumberTo.replace('+', '');
     } else {
@@ -386,16 +384,17 @@ export class FilterCandidates {
       console.log( 'Phone number is more than 10 digits will slice:', phoneNumberToSearch );
       phoneNumberToSearch = phoneNumberToSearch.slice(-10);
     }
+
     console.log('phoneNumberToSearch::', phoneNumberToSearch);
     // Ignore if phoneNumberToSearch is not a valid number
     // if (isNaN(Number(phoneNumberToSearch))) {
     //   console.log('Phone number is not valid, ignoring:', phoneNumberToSearch);
     //   return emptyCandidateProfileObj;
     // }
+
     console.log('Phone number to search is :', phoneNumberToSearch);
-
+    
     let graphVariables : any;
-
     graphVariables = {
       filter: {
         phones: {
@@ -414,8 +413,9 @@ export class FilterCandidates {
         },
       }
     }
+    
     console.log("graphVariables::", graphVariables);
-
+    
     try {
       console.log('going to get candidate information');
       const graphqlQueryObj = JSON.stringify({
@@ -424,7 +424,6 @@ export class FilterCandidates {
       });
       const response = await axiosRequest(graphqlQueryObj, apiToken);
       console.log("Number of people fetched::", response.data?.data?.people?.edges.length)
-      
       console.log(
         'Number of candidates fetched::',
         response.data?.data?.people?.edges[0]?.node?.candidates?.edges.length,
@@ -432,34 +431,38 @@ export class FilterCandidates {
         phoneNumberToSearch,
       );
       const candidateDataObjs = response.data?.data?.people?.edges[0]?.node?.candidates?.edges || [];
-
       console.log('candidateDataObjs::', candidateDataObjs);
-      const maxCreatedAt =
+      const maxUpdatedAt =
         candidateDataObjs?.length > 0
           ? Math.max(
               ...candidateDataObjs.map((e) =>
-                e?.node?.jobs?.createdAt
-                  ? new Date(e?.node?.jobs?.createdAt).getTime()
+                e?.node?.updatedAt
+                  ? new Date(e?.node?.updatedAt).getTime()
                   : 0,
               ),
             )
           : 0;
+      
+      console.log('maxUpdatedAt::', maxUpdatedAt ? new Date(maxUpdatedAt).toLocaleString() : 'No date');
+      console.log('Candidate updatedAt timestamps:');
+      candidateDataObjs.forEach((candidateEdge, index) => {
+        console.log(
+          `Candidate ${index + 1} updatedAt:`,
+          candidateEdge?.node?.updatedAt
+            ? new Date(candidateEdge.node.updatedAt).toLocaleString()
+            : 'No updatedAt date',
+        );
+      });
+
       const activeJobCandidateObj = candidateDataObjs?.find(
         (edge: CandidatesEdge) =>
           edge?.node?.jobs?.isActive &&
-          edge?.node?.jobs?.createdAt &&
-          new Date(edge?.node?.jobs?.createdAt).getTime() === maxCreatedAt,
+          edge?.node?.startChat &&
+          edge?.node?.updatedAt &&
+          new Date(edge?.node?.updatedAt).getTime() === maxUpdatedAt,
       );
-
-      console.log(
-        'This is the number of candidates',
-        candidateDataObjs?.length,
-      );
-      // console.log('This is the number of most recent active candidate for whom we can do active job', candidateDataObjs);
-      console.log(
-        'This is the activeJobCandidateObj who got called',
-        activeJobCandidateObj?.node?.name || '',
-      );
+      console.log( 'This is the number of candidates', candidateDataObjs?.length, );
+      console.log( 'This is the activeJobCandidateObj who got called', activeJobCandidateObj?.node?.name || '', );
       if (activeJobCandidateObj) {
         const personWithActiveJob = response?.data?.data?.people?.edges?.find(
           (person: PersonEdge) =>
@@ -470,13 +473,8 @@ export class FilterCandidates {
 
         console.log('personWithActiveJob::', personWithActiveJob);
         const activeJobCandidate: CandidateNode = activeJobCandidateObj?.node;
-
-        // console.log('This isthe activeJobCandidate::', activeJobCandidate);
         const activeJob: Jobs = activeJobCandidate?.jobs;
         const activeCompany = activeJob?.company;
-
-
-
 
         const candidateProfileObj: CandidateNode = {
           name: personWithActiveJob?.node?.name?.firstName || '',

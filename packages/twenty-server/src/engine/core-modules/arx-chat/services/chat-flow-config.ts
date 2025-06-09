@@ -104,22 +104,20 @@ export class ChatFlowConfigBuilder {
       }
     }
 
+
     if (candidate.whatsappMessages?.edges?.length > 0) {
       const latestMessage = candidate.whatsappMessages.edges[0].node;
       const waitTime =
         TimeManagement.timeDifferentials
           .timeDifferentialinMinutesToCheckTimeDifferentialBetweenlastMessage;
       const cutoffTime = new Date(Date.now() - waitTime * 60 * 1000);
-
       if (new Date(latestMessage.createdAt) >= cutoffTime) {
         console.log(
           `Candidate ${candidate.name} messaged too recently for ${chatControlType}`,
         );
-
         return false;
       }
     }
-
     return true;
   };
 

@@ -48,7 +48,9 @@ export class UpdateChat {
       );
       // Get candidate ID
       const candidateId =
-        candidateProfileDataNodeObj?.candidates?.edges[0]?.node?.id;
+        candidateProfileDataNodeObj?.candidates?.edges.filter(
+          (edge) => edge.node.jobs.id === candidateJob.id,
+        )[0]?.node?.id;
       // Get updated version of candidate profile data
       const graphqlQueryObjToFetchCandidateData = JSON.stringify({
         query: graphqlToFetchAllCandidateData,
@@ -59,7 +61,9 @@ export class UpdateChat {
         apiToken,
       );
       const updatedCandidateProfileDataNodeObj =
-        updatedCandidateResponse?.data?.data?.candidates?.edges[0]?.node;
+        updatedCandidateResponse?.data?.data?.candidates?.edges.filter(
+          (edge) => edge.node.jobs.id === candidateJob.id,
+        )[0]?.node;
 
       console.log(
         'updatedCandidateProfileDataNodeObj::',

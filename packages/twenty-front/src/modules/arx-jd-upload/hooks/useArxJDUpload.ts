@@ -460,9 +460,7 @@ export const useArxJDUpload = (objectNameSingular: string) => {
           console.error('Error updating recruiter profile:', error);
         }
       }
-
       let createdJob: ObjectRecord & { id?: string; name?: string } | undefined;
-      
       if (
         typeof parsedJD?.companyName === 'string' &&
         parsedJD?.companyName !== ''

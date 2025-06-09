@@ -1107,13 +1107,10 @@ export default class CandidateEngagementArx {
       const job = await new FilterCandidates(
         this.workspaceQueryService,
       ).fetchJobById(jobId, apiToken);
-      const chatFlowOrder =
-        job?.chatFlowOrder ||
-        this.chatFlowConfigBuilder.getDefaultChatFlowOrder();
+      const chatFlowOrder = job?.chatFlowOrder || this.chatFlowConfigBuilder.getDefaultChatFlowOrder();
 
       for (const candidateId of jobCandidates) {
         const candidate = await this.fetchCandidateById(candidateId, apiToken);
-
         for (let i = 0; i < chatFlowOrder.length - 1; i++) {
           const currentStage = chatFlowOrder[i];
           const nextStage = chatFlowOrder[i + 1];
@@ -1126,9 +1123,7 @@ export default class CandidateEngagementArx {
               { chatControlType: nextStage as chatControlType },
               apiToken,
             );
-            console.log(
-              `Transitioned candidate ${candidateId} from ${currentStage} to ${nextStage}`,
-            );
+            console.log( `Transitioned candidate ${candidateId} from ${currentStage} to ${nextStage}`, );
             break;
           }
         }
