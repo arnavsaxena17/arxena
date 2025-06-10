@@ -263,19 +263,19 @@ export class EnvironmentVariables {
     group: EnvironmentVariablesGroup.EmailSettings,
     description: 'Email address used as the sender for outgoing emails',
   })
-  EMAIL_FROM_ADDRESS = 'noreply@yourdomain.com';
+  EMAIL_FROM_ADDRESS = 'info@arxena.com';
 
   @EnvironmentVariablesMetadata({
     group: EnvironmentVariablesGroup.EmailSettings,
     description: 'Email address used for system notifications',
   })
-  EMAIL_SYSTEM_ADDRESS = 'system@yourdomain.com';
+  EMAIL_SYSTEM_ADDRESS = 'info@arxena.com';
 
   @EnvironmentVariablesMetadata({
     group: EnvironmentVariablesGroup.EmailSettings,
     description: 'Name used in the From header for outgoing emails',
   })
-  EMAIL_FROM_NAME = 'Arnav from Arxea';
+  EMAIL_FROM_NAME = 'Arnav from Arxena';
 
   @EnvironmentVariablesMetadata({
     group: EnvironmentVariablesGroup.EmailSettings,

@@ -24,8 +24,9 @@ export const sendUpdateJobToArxena = async (
         },
       },
     );
+    console.log('response::', response.status);
 
-    if (response.status !== 200) {
+    if (response.status !== 200 && response.status !== 201) {
       throw new Error(`Failed to update job on Arxena: ${response.statusText}`);
     }
     return response.data;

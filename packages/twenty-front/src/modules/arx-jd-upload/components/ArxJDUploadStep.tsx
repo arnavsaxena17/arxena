@@ -83,7 +83,6 @@ type ArxJDUploadStepProps = {
   totalSteps?: number;
   currentStep?: number;
 };
-
 export const ArxJDUploadStep = ({
   getRootProps,
   getInputProps,
@@ -155,7 +154,6 @@ export const ArxJDUploadStep = ({
               </StyledList>
               <p>Maximum file size: 10MB</p> */}
             </StyledInstructions>
-
             <UploadForm
               getRootProps={getRootProps}
               getInputProps={getInputProps}

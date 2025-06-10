@@ -43,7 +43,7 @@ export const PasswordUpdateNotifyEmail = ({
         </Trans>
         <br />
       </MainText>
-      <CallToAction value={t`Connect to Twenty`} href={link} />
+      <CallToAction value={t`Connect to Arxena`} href={link} />
     </BaseEmail>
   );
 };

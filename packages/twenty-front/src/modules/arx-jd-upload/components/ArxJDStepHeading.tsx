@@ -1,4 +1,7 @@
 import styled from '@emotion/styled';
+import { useRecoilValue } from 'recoil';
+import { parsedJDState } from '../states/parsedJDState';
+import { ParsedJD } from '../types/ParsedJD';
 
 const StyledContainer = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing(0)};
@@ -36,16 +39,21 @@ export const ArxJDStepHeading = ({
   currentStep,
   totalSteps,
 }: ArxJDStepHeadingProps) => {
+  const currentParsedJD = useRecoilValue<ParsedJD>(parsedJDState);
+
   // Only show step indicator if both currentStep and totalSteps are provided and valid
   const stepIndicator =
     currentStep && totalSteps && currentStep > 0 && totalSteps > 0
       ? ` (Step ${currentStep} of ${totalSteps})`
       : '';
 
+  // If we have a parsedJD with a name, use it as the title
+  const displayTitle = currentParsedJD.name ? `${title} - ${currentParsedJD.name}` : title;
+
   return (
     <StyledContainer>
       <StyledTitle>
-        {title}
+        {displayTitle}
         {stepIndicator && <StyledStepIndicator>{stepIndicator}</StyledStepIndicator>}
       </StyledTitle>
       {description && <StyledDescription>{description}</StyledDescription>}

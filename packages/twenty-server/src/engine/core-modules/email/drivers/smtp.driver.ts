@@ -1,6 +1,6 @@
 import { Logger } from '@nestjs/common';
 
-import { createTransport, Transporter, SendMailOptions } from 'nodemailer';
+import { createTransport, SendMailOptions, Transporter } from 'nodemailer';
 import SMTPConnection from 'nodemailer/lib/smtp-connection';
 
 import { EmailDriver } from 'src/engine/core-modules/email/drivers/interfaces/email-driver.interface';
@@ -14,6 +14,7 @@ export class SmtpDriver implements EmailDriver {
   }
 
   async send(sendMailOptions: SendMailOptions): Promise<void> {
+    console.log("sendMailOptions::%s", sendMailOptions);
     this.transport
       .sendMail(sendMailOptions)
       .then(() =>

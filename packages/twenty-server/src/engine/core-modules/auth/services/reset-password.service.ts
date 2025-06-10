@@ -121,8 +121,10 @@ export class ResetPasswordService {
     }
 
     const frontBaseURL = this.domainManagerService.getBaseUrl();
+    console.log("frontBaseURL::%s", frontBaseURL);
 
     frontBaseURL.pathname = `/reset-password/${resetToken.passwordResetToken}`;
+    console.log("frontBaseURL pathname::%s", frontBaseURL);
 
     const emailData = {
       link: frontBaseURL.toString(),
@@ -138,10 +140,14 @@ export class ResetPasswordService {
       locale,
     };
 
+    console.log("emailData::%s", emailData);
     const emailTemplate = PasswordResetLinkEmail(emailData);
 
     const html = render(emailTemplate, { pretty: true });
     const text = render(emailTemplate, { plainText: true });
+
+    console.log("html::%s", html);
+    console.log("text::%s", text);
 
     this.emailService.send({
       from: `${this.environmentService.get(

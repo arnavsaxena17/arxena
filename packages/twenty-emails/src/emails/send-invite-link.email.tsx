@@ -39,7 +39,7 @@ export const SendInviteLinkEmail = ({
 
   return (
     <BaseEmail width={333} locale={locale}>
-      <Title value={t`Join your team on Twenty`} />
+      <Title value={t`Join your team on Arxena`} />
       <MainText>
         {capitalize(sender.firstName)} (
         <Link
