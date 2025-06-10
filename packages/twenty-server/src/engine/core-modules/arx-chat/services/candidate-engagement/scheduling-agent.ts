@@ -76,12 +76,12 @@ abstract class BaseCronService {
   }
 }
 
-const CRON_DISABLED = true;
+const CRON_DISABLED = process.env.ENV_NODE === 'production' ? false : true;
 
 @Injectable()
 export class CandidateEngagementCronService extends BaseCronService {
   @Cron(TimeManagement.crontabs.crontTabToExecuteCandidateEngagement, {
-    name: 'my-scheduled-task2',
+    name: 'my-scheduled-task2', 
     disabled: CRON_DISABLED,
   })
   async handleCron() {
@@ -100,7 +100,7 @@ export class CandidateEngagementCronService extends BaseCronService {
 export class CandidateStatusClassificationCronService extends BaseCronService {
   @Cron(TimeManagement.crontabs.crontTabToUpdateCandidatesChatControls, {
     name: 'my-scheduled-task1',
-    disabled: true,
+    disabled: CRON_DISABLED,
   })
   async handleFiveHoursCron() {
     if (CRON_DISABLED) return;
@@ -111,7 +111,6 @@ export class CandidateStatusClassificationCronService extends BaseCronService {
     });
   }
 }
-
 
 
 @Injectable()
