@@ -93,9 +93,17 @@ export const useArxJDUpload = (objectNameSingular: string) => {
       return true; // No update needed, return success
     }
 
-    // Validate that required fields are filled
+    // Validate mandatory fields first
+    if (!recruiterDetails.missingRecruiterInfo.phoneNumber?.trim() || !recruiterDetails.missingRecruiterInfo.jobTitle?.trim()) {
+      enqueueSnackBar('Phone Number and Job Title are required fields', {
+        variant: SnackBarVariant.Error,
+      });
+      return false;
+    }
+
+    // Validate remaining fields if they exist
     const emptyFields = Object.entries(recruiterDetails.missingRecruiterInfo)
-      .filter(([_, value]) => !value)
+      .filter(([key, value]) => key !== 'phoneNumber' && key !== 'jobTitle' && !value)
       .map(([key]) => key);
 
     if (emptyFields.length > 0) {
@@ -245,16 +253,21 @@ export const useArxJDUpload = (objectNameSingular: string) => {
       const file = acceptedFiles[0];
 
       try {
-        const jobCode = file.name.split('.')[0].replace(/ /g, '-').slice(0, 10);
-        // Ensure we're creating a job record, not a candidate record
-        if (objectNameSingular !== 'job') {
-          throw new Error('Cannot upload JD for non-job object');
+        // If we're in edit mode and have a parsedJD, just attach the file to the existing job
+        if (objectNameSingular === 'job' && parsedJD?.id) {
+          await uploadAttachmentFile(file, {
+            targetObjectNameSingular: CoreObjectNameSingular.Job,
+            id: parsedJD.id,
+          });
+          setIsUploading(false);
+          return;
         }
-        
+
+        // Original code for creating a new job
+        const jobCode = file.name.split('.')[0].replace(/ /g, '-').slice(0, 10);
         const createdJob = await createOneRecord({
           name: file.name.split('.')[0],
           jobCode: jobCode,
-          // Remove chatFlowOrder as it's causing issues - we'll set it later
         });
         
         setUploadedJD({
@@ -276,7 +289,6 @@ export const useArxJDUpload = (objectNameSingular: string) => {
             updateOneRecordInput: {
               chatFlowOrder: ['startChat'],
               jobCode: jobCode
-
             },
           });
         } catch (chatFlowError) {
@@ -285,11 +297,7 @@ export const useArxJDUpload = (objectNameSingular: string) => {
         }
 
         // Send job to Arxena after creation
-        if (
-          objectNameSingular === 'job' &&
-          isDefined(createdJob?.name) &&
-          isDefined(createdJob?.id)
-        ) {
+        if (isDefined(createdJob?.name) && isDefined(createdJob?.id)) {
           try {
             await sendCreateJobToArxena(
               createdJob.name,
@@ -390,15 +398,11 @@ export const useArxJDUpload = (objectNameSingular: string) => {
           }
 
           const { companyId: _, ...restOfUpdateData } = updateData;
-          console.log("restOfUpdateData", restOfUpdateData);
           const updateOneRecordInput = {
             ...restOfUpdateData,
             jobCode: jobCode,
             ...(companyId && companyId !== '' ? { companyId } : {}),
           };
-          
-
-          console.log("updateOneRecordInput", updateOneRecordInput);
 
           await updateOneRecord({
             idToUpdate: createdJob.id,
@@ -419,7 +423,6 @@ export const useArxJDUpload = (objectNameSingular: string) => {
           if (createPromptsResponse.data.status !== 'Success') {
             console.error('Failed to create prompts');
           }
-
         } else {
           throw new Error(uploadJDResponse.data.message || 'Failed to process JD');
         }
@@ -441,7 +444,8 @@ export const useArxJDUpload = (objectNameSingular: string) => {
       objectNameSingular,
       setUploadedJD,
       enqueueSnackBar,
-      updateCompanyWithDetails
+      updateCompanyWithDetails,
+      parsedJD
     ],
   );
 
@@ -449,6 +453,21 @@ export const useArxJDUpload = (objectNameSingular: string) => {
   const handleCreateJob = async () => {
     if (parsedJD === null) {
       return;
+    }
+
+    // Validate mandatory job fields first
+    if (!parsedJD.name?.trim()) {
+      enqueueSnackBar('Job Title is required', {
+        variant: SnackBarVariant.Error,
+      });
+      return false;
+    }
+
+    if (!parsedJD.description?.trim()) {
+      enqueueSnackBar('Short One Line Pitch is required', {
+        variant: SnackBarVariant.Error,
+      });
+      return false;
     }
 
     try {
@@ -544,8 +563,18 @@ export const useArxJDUpload = (objectNameSingular: string) => {
 
       if (parsedJD?.chatFlow?.questions && parsedJD?.chatFlow?.questions?.length > 0) {
         try {
-          const createCandidateFieldsPromises = parsedJD.chatFlow.questions.map(
-            async (question: string, index: number) => {
+          // Get the new questions by comparing with existingQuestions from ChatQuestionsSection
+          // Use case-insensitive comparison and trim whitespace to avoid duplicates
+          const newQuestions = parsedJD.chatFlow.questions.filter(
+            (question: string) => !parsedJD.existingChatQuestions?.some(
+              (existingQuestion: string) => 
+                existingQuestion.trim().toLowerCase() === question.trim().toLowerCase()
+            )
+          );
+
+          // Only create candidate fields for new questions
+          const createCandidateFieldsPromises = newQuestions.map(
+            async (question: string) => {
               return axios({
                 method: 'post',
                 url: `${process.env.REACT_APP_SERVER_BASE_URL}/graphql`,
@@ -553,7 +582,7 @@ export const useArxJDUpload = (objectNameSingular: string) => {
                   query: createOneCandidateField,
                   variables: {
                     input: {
-                      name: question,
+                      name: question.trim(), // Ensure the question is trimmed before saving
                       jobsId: parsedJD.id,
                       candidateFieldType: 'Text',
                     },
@@ -566,7 +595,9 @@ export const useArxJDUpload = (objectNameSingular: string) => {
             },
           );
           
-          await Promise.all(createCandidateFieldsPromises);
+          if (newQuestions.length > 0) {
+            await Promise.all(createCandidateFieldsPromises);
+          }
         } catch (error) {
           console.error('Error creating candidate fields:', error);
         }

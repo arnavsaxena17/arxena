@@ -1,13 +1,17 @@
+import { tokenPairState } from '@/auth/states/tokenPairState';
 import styled from '@emotion/styled';
 import { IconInfoCircle } from '@tabler/icons-react';
-import React from 'react';
+import axios from 'axios';
+import React, { useEffect, useState } from 'react';
+import { useRecoilState } from 'recoil';
+import { graphqlMutationToDeleteManyCandidateFields, graphqlQueryToFindManyCandidateFields } from 'twenty-shared';
 import { Button, IconMinus, IconPlus } from 'twenty-ui';
 import { FormComponentProps } from '../types/FormComponentProps';
 import {
-    StyledInput,
-    StyledSection,
-    StyledSectionContent,
-    StyledSectionHeader,
+  StyledInput,
+  StyledSection,
+  StyledSectionContent,
+  StyledSectionHeader,
 } from './ArxJDUploadModal.styled';
 
 const StyledHeaderContainer = styled.div`
@@ -50,30 +54,131 @@ export const ChatQuestionsSection: React.FC<FormComponentProps> = ({
   parsedJD,
   setParsedJD,
 }) => {
+  const [tokenPair] = useRecoilState(tokenPairState);
+  const [existingQuestions, setExistingQuestions] = useState<string[]>([]);
+  const [questionFieldIds, setQuestionFieldIds] = useState<Record<string, string>>({});
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchExistingQuestions = async () => {
+      if (!parsedJD?.id) {
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        const response = await axios({
+          method: 'post',
+          url: `${process.env.REACT_APP_SERVER_BASE_URL}/graphql`,
+          data: {
+            operationName: 'FindManyCandidateFields',
+            variables: {
+              filter: { jobsId: { in: [parsedJD.id] } },
+              orderBy: [{ position: 'AscNullsFirst' }],
+            },
+            query: graphqlQueryToFindManyCandidateFields,
+          },
+          headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}`, },
+        });
+
+        const questions = response.data?.data?.candidateFields?.edges?.map(
+          (edge: any) => edge.node.name
+        ) || [];
+
+        // Store question IDs for deletion later
+        const fieldIds: Record<string, string> = {};
+        response.data?.data?.candidateFields?.edges?.forEach((edge: any) => {
+          fieldIds[edge.node.name] = edge.node.id;
+        });
+        setQuestionFieldIds(fieldIds);
+
+        if (questions.length > 0) {
+          setExistingQuestions(questions);
+          setParsedJD({
+            ...parsedJD,
+            existingChatQuestions: questions,
+            chatFlow: {
+              ...parsedJD.chatFlow,
+              questions: questions,
+            },
+          });
+        } else {
+          setExistingQuestions(DEFAULT_CHAT_QUESTIONS);
+          setParsedJD({
+            ...parsedJD,
+            existingChatQuestions: DEFAULT_CHAT_QUESTIONS,
+            chatFlow: {
+              ...parsedJD.chatFlow,
+              questions: DEFAULT_CHAT_QUESTIONS,
+            },
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching questions:', error);
+        setExistingQuestions(DEFAULT_CHAT_QUESTIONS);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchExistingQuestions();
+  }, [parsedJD?.id, tokenPair?.accessToken?.token]);
+
   // Prevent hotkey propagation when typing in inputs
   const handleKeyDown = (e: React.KeyboardEvent) => {
     e.stopPropagation();
   };
 
   const handleChatQuestionAdd = () => {
-    const currentQuestions = parsedJD.chatFlow?.questions?.length
-      ? [...parsedJD.chatFlow.questions]
-      : [...DEFAULT_CHAT_QUESTIONS];
-
-    setParsedJD({
-      ...parsedJD,
-      chatFlow: {
-        ...parsedJD.chatFlow,
-        questions: [...currentQuestions, ''],
-      },
-    });
+    const currentQuestions = parsedJD.chatFlow?.questions || existingQuestions;
+    const newQuestion = 'New Question';
+    
+    // Only add if it's not a duplicate
+    if (!isDuplicateQuestion(currentQuestions, newQuestion, -1)) {
+      setParsedJD({
+        ...parsedJD,
+        chatFlow: {
+          ...parsedJD.chatFlow,
+          questions: [...currentQuestions, newQuestion],
+        },
+      });
+    }
   };
 
-  const handleChatQuestionRemove = (index: number) => {
-    const currentQuestions = parsedJD.chatFlow?.questions?.length
-      ? [...parsedJD.chatFlow.questions]
-      : [...DEFAULT_CHAT_QUESTIONS];
+  const isDuplicateQuestion = (questions: string[], value: string, currentIndex: number) => {
+    return questions.some((q, idx) => idx !== currentIndex && q.trim().toLowerCase() === value.trim().toLowerCase());
+  };
 
+  const handleChatQuestionRemove = async (index: number) => {
+    const currentQuestions = parsedJD.chatFlow?.questions || existingQuestions;
+    const questionToRemove = currentQuestions[index];
+    const questionId = questionFieldIds[questionToRemove];
+
+    // If the question exists in the database, delete it
+    if (questionId && parsedJD?.id) {
+      try {
+        await axios({
+          method: 'post',
+          url: `${process.env.REACT_APP_SERVER_BASE_URL}/graphql`,
+          data: {
+            operationName: 'DeleteManyCandidateFields',
+            variables: {
+              filter: { id: { in: [questionId] } },
+            },
+            query: graphqlMutationToDeleteManyCandidateFields,
+          },
+          headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}`, },
+        });
+
+        // Remove the question ID from our local state
+        const updatedQuestionFieldIds = { ...questionFieldIds };
+        delete updatedQuestionFieldIds[questionToRemove];
+        setQuestionFieldIds(updatedQuestionFieldIds);
+      } catch (error) {
+        console.error('Error deleting question:', error);
+      }
+    }
+
+    // Update the UI state
     setParsedJD({
       ...parsedJD,
       chatFlow: {
@@ -83,9 +188,11 @@ export const ChatQuestionsSection: React.FC<FormComponentProps> = ({
     });
   };
 
-  const displayQuestions = parsedJD.chatFlow?.questions?.length
-    ? parsedJD.chatFlow.questions
-    : DEFAULT_CHAT_QUESTIONS;
+  const displayQuestions = parsedJD.chatFlow?.questions || existingQuestions;
+
+  if (isLoading) {
+    return <div>Loading questions...</div>;
+  }
 
   return (
     <StyledSection>
@@ -104,16 +211,20 @@ export const ChatQuestionsSection: React.FC<FormComponentProps> = ({
             <StyledInput
               value={question}
               onChange={(e) => {
+                const newValue = e.target.value;
                 const questions = [...displayQuestions];
-                questions[index] = e.target.value;
-
-                setParsedJD({
-                  ...parsedJD,
-                  chatFlow: {
-                    ...parsedJD.chatFlow,
-                    questions,
-                  },
-                });
+                
+                // Only update if the new value is not a duplicate
+                if (!isDuplicateQuestion(questions, newValue, index)) {
+                  questions[index] = newValue;
+                  setParsedJD({
+                    ...parsedJD,
+                    chatFlow: {
+                      ...parsedJD.chatFlow,
+                      questions,
+                    },
+                  });
+                }
               }}
               placeholder="Enter question"
               onKeyDown={handleKeyDown}

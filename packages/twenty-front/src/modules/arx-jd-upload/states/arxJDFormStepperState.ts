@@ -11,6 +11,12 @@ export enum ArxJDFormStepType {
 export type ArxJDFormStepperState = {
   activeStep: number;
 };
+export const arxJDFormStepperState = atom<ArxJDFormStepperState>({
+  key: 'arxJDFormStepperState',
+  default: {
+    activeStep: 0,
+  },
+});
 
 
 export type UploadedJDState = {
@@ -20,12 +26,7 @@ export type UploadedJDState = {
   jobLocation: string;
   jobSalary: string;
 };
-export const arxJDFormStepperState = atom<ArxJDFormStepperState>({
-  key: 'arxJDFormStepperState',
-  default: {
-    activeStep: 0,
-  },
-});
+
 
 
 export const uploadedJDState = atom<UploadedJDState | null>({

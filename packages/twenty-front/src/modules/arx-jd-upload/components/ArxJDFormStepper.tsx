@@ -7,7 +7,7 @@ import { ArxJDFormStepType } from '../states/arxJDFormStepperState';
 import { FormComponentProps } from '../types/FormComponentProps';
 import { ArxJDStepHeading } from './ArxJDStepHeading';
 import { ArxJDUploadStep } from './ArxJDUploadStep';
-import { ChatFlowSection } from './ChatFlowSection';
+// import { ChatFlowSection } from './ChatFlowSection';
 import { ChatQuestionsSection } from './ChatQuestionsSection';
 import { JobDetailsForm, RecruiterDetails } from './JobDetailsForm';
 import { MeetingSchedulingSection } from './MeetingSchedulingSection';
@@ -258,7 +258,7 @@ export const ArxJDFormStepper: React.FC<ArxJDFormStepperProps> = ({
             currentStep={currentStep}
             totalSteps={totalSteps}
           />
-          <ChatFlowSection parsedJD={parsedJD} setParsedJD={setParsedJD} />
+          {/* <ChatFlowSection parsedJD={parsedJD} setParsedJD={setParsedJD} /> */}
           <ChatQuestionsSection
             parsedJD={parsedJD}
             setParsedJD={setParsedJD}

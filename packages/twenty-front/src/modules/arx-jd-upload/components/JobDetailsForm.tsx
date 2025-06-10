@@ -1,6 +1,7 @@
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useObjectMetadataItem } from '@/object-metadata/hooks/useObjectMetadataItem';
 import { useCreateOneRecord } from '@/object-record/hooks/useCreateOneRecord';
+import { useUpdateOneRecord } from '@/object-record/hooks/useUpdateOneRecord';
 import { viewableRecordIdState } from '@/object-record/record-right-drawer/states/viewableRecordIdState';
 import { viewableRecordNameSingularState } from '@/object-record/record-right-drawer/states/viewableRecordNameSingularState';
 import { SingleRecordSelectMenuItems } from '@/object-record/relation-picker/components/SingleRecordSelectMenuItems';
@@ -10,14 +11,18 @@ import { RecordForSelect } from '@/object-record/relation-picker/types/RecordFor
 import { RelationPickerHotkeyScope } from '@/object-record/relation-picker/types/RelationPickerHotkeyScope';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
+import { PhoneCountryPickerDropdownButton } from '@/ui/input/components/internal/phone/components/PhoneCountryPickerDropdownButton';
 import { useRightDrawer } from '@/ui/layout/right-drawer/hooks/useRightDrawer';
 import { RightDrawerPages } from '@/ui/layout/right-drawer/types/RightDrawerPages';
 import { gql, useLazyQuery, useMutation } from '@apollo/client';
 import styled from '@emotion/styled';
+import { parsePhoneNumber } from 'libphonenumber-js';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import ReactPhoneNumberInput from 'react-phone-number-input';
+import 'react-phone-number-input/style.css';
 import { useRecoilState, useSetRecoilState } from 'recoil';
 import { graphQLToCreateOneWorkspaceMemberProfile, graphqlToFindManyJobs, isDefined } from 'twenty-shared';
-import { IconEye, IconInfoCircle } from 'twenty-ui';
+import { IconEye, IconInfoCircle, TEXT_INPUT_STYLE } from 'twenty-ui';
 import { v4 } from 'uuid';
 import { FormComponentProps } from '../types/FormComponentProps';
 import {
@@ -61,6 +66,65 @@ const StyledIconContainer = styled.div`
   }
 `;
 
+const StyledPhoneInput = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(1)};
+  width: 100%;
+`;
+
+const StyledPhoneInputContainer = styled.div`
+  display: flex;
+  align-items: center;
+  width: 100%;
+  position: relative;
+
+  .PhoneInput {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    gap: ${({ theme }) => theme.spacing(1)};
+  }
+
+  .PhoneInputInput {
+    ${TEXT_INPUT_STYLE}
+    flex: 1;
+    width: 100%;
+    background-color: ${({ theme }) => theme.background.primary};
+    border: 1px solid ${({ theme }) => theme.border.color.medium};
+    border-radius: ${({ theme }) => theme.border.radius.sm};
+    padding: ${({ theme }) => theme.spacing(2)};
+    
+    &:hover {
+      border-color: ${({ theme }) => theme.border.color.strong};
+    }
+    
+    &:focus {
+      border-color: ${({ theme }) => theme.border.color.strong};
+      outline: none;
+    }
+  }
+`;
+
+const StyledPhoneNumberInput = styled(ReactPhoneNumberInput)`
+  width: 100%;
+  
+  .PhoneInputCountry {
+    position: relative;
+    align-items: center;
+    display: flex;
+    background-color: ${({ theme }) => theme.background.primary};
+    border: 1px solid ${({ theme }) => theme.border.color.medium};
+    border-radius: ${({ theme }) => theme.border.radius.sm};
+    padding: ${({ theme }) => theme.spacing(1)};
+    margin-right: ${({ theme }) => theme.spacing(1)};
+    
+    &:hover {
+      border-color: ${({ theme }) => theme.border.color.strong};
+    }
+  }
+`;
+
 export type RecruiterProfileInfo = {
   name?: string;
   phoneNumber?: string;
@@ -82,6 +146,7 @@ export const JobDetailsForm: React.FC<FormComponentProps> = ({
   setParsedJD,
   onRecruiterInfoChange,
 }) => {
+  console.log("parsed JD in job details form", parsedJD);
   const [missingRecruiterInfo, setMissingRecruiterInfo] = useState<RecruiterProfileInfo>({});
   const [showRecruiterFields, setShowRecruiterFields] = useState(false);
   const [recruiterProfile, setRecruiterProfile] = useState<any>(null);
@@ -121,6 +186,11 @@ export const JobDetailsForm: React.FC<FormComponentProps> = ({
   const [updateWorkspaceMemberProfile] = useMutation(gql`
     ${graphQLToCreateOneWorkspaceMemberProfile}
   `);
+
+  const { updateOneRecord } = useUpdateOneRecord({
+    objectNameSingular: 'job',
+  });
+
   console.log('recruiterProfile::', recruiterProfile);
 
   // Memoize workspaceMemberId to prevent unnecessary re-renders
@@ -221,10 +291,22 @@ export const JobDetailsForm: React.FC<FormComponentProps> = ({
 
   const updateRecruiterInfoField = (field: keyof RecruiterProfileInfo, value: string) => {
     console.log('updateRecruiterInfoField::', field, value);
-    setMissingRecruiterInfo(prev => ({
-      ...prev,
-      [field]: value
-    }));
+    if (field === 'phoneNumber') {
+      try {
+        // For phone numbers, we store the E.164 format directly
+        setMissingRecruiterInfo(prev => ({
+          ...prev,
+          [field]: value
+        }));
+      } catch (error) {
+        console.error('Error updating phone number:', error);
+      }
+    } else {
+      setMissingRecruiterInfo(prev => ({
+        ...prev,
+        [field]: value
+      }));
+    }
   };
 
   const handleCreateCompany = async (searchInput?: string) => {
@@ -271,6 +353,24 @@ export const JobDetailsForm: React.FC<FormComponentProps> = ({
       return false;
     }
 
+    // Validate phone number format
+    if (missingRecruiterInfo.phoneNumber) {
+      try {
+        const phoneNumber = parsePhoneNumber(missingRecruiterInfo.phoneNumber);
+        if (!phoneNumber?.isValid()) {
+          enqueueSnackBar('Please enter a valid phone number with country code', {
+            variant: SnackBarVariant.Error,
+          });
+          return false;
+        }
+      } catch (error) {
+        enqueueSnackBar('Please enter a valid phone number with country code', {
+          variant: SnackBarVariant.Error,
+        });
+        return false;
+      }
+    }
+
     try {
       console.log('updateRecruiterProfile::', recruiterProfile);
       console.log('missingRecruiterInfo::', missingRecruiterInfo);
@@ -308,22 +408,59 @@ export const JobDetailsForm: React.FC<FormComponentProps> = ({
     }
   };
 
+  const handleJobFieldUpdate = async (
+    field: 'name' | 'jobLocation' | 'salaryBracket',
+    value: string,
+  ) => {
+    if (!parsedJD.id) return;
+
+    try {
+      // Update local state first
+      setParsedJD({
+        ...parsedJD,
+        [field]: value,
+      });
+
+      // Update record in Twenty
+      await updateOneRecord({
+        idToUpdate: parsedJD.id,
+        updateOneRecordInput: {
+          [field]: value,
+        },
+      });
+    } catch (error) {
+      console.error(`Error updating job ${field}:`, error);
+      // Revert local state on error
+      setParsedJD({
+        ...parsedJD,
+      });
+      enqueueSnackBar(`Failed to update job ${field}`, {
+        variant: SnackBarVariant.Error,
+      });
+    }
+  };
+
   return (
     <StyledSection>
       {/* <StyledSectionHeader>Job Details</StyledSectionHeader> */}
       <StyledSectionContent>
         <StyledFieldGroup>
           <StyledLabelContainer>
-            <StyledLabel>Job Title</StyledLabel>
-            <StyledIconContainer data-tooltip="The official title of the position you're hiring for">
+            <StyledLabel>Job Title *</StyledLabel>
+            <StyledIconContainer data-tooltip="The official title of the position you're hiring for (Required)">
               <IconInfoCircle size={14} />
             </StyledIconContainer>
           </StyledLabelContainer>
           <StyledInput
             value={parsedJD.name}
-            onChange={(e) => setParsedJD({ ...parsedJD, name: e.target.value })}
-            placeholder="Enter job title"
+            onChange={(e) => handleJobFieldUpdate('name', e.target.value)}
+            placeholder="Enter job title (Required)"
             onKeyDown={handleKeyDown}
+            onBlur={() => {
+              if (parsedJD.name) {
+                handleJobFieldUpdate('name', parsedJD.name);
+              }
+            }}
           />
         </StyledFieldGroup>
 
@@ -395,14 +532,14 @@ export const JobDetailsForm: React.FC<FormComponentProps> = ({
           </StyledLabelContainer>
           <StyledInput
             value={parsedJD.jobLocation}
-            onChange={(e) =>
-              setParsedJD({
-                ...parsedJD,
-                jobLocation: e.target.value,
-              })
-            }
+            onChange={(e) => handleJobFieldUpdate('jobLocation', e.target.value)}
             placeholder="Enter location"
             onKeyDown={handleKeyDown}
+            onBlur={() => {
+              if (parsedJD.jobLocation) {
+                handleJobFieldUpdate('jobLocation', parsedJD.jobLocation);
+              }
+            }}
           />
         </StyledFieldGroup>
         
@@ -415,21 +552,21 @@ export const JobDetailsForm: React.FC<FormComponentProps> = ({
           </StyledLabelContainer>
           <StyledInput
             value={parsedJD.salaryBracket}
-            onChange={(e) =>
-              setParsedJD({
-                ...parsedJD,
-                salaryBracket: e.target.value,
-              })
-            }
+            onChange={(e) => handleJobFieldUpdate('salaryBracket', e.target.value)}
             placeholder="Enter salary range"
             onKeyDown={handleKeyDown}
+            onBlur={() => {
+              if (parsedJD.salaryBracket) {
+                handleJobFieldUpdate('salaryBracket', parsedJD.salaryBracket);
+              }
+            }}
           />
         </StyledFieldGroup>
         
         <StyledFullWidthField>
           <StyledLabelContainer>
-            <StyledLabel>Short One Line Pitch</StyledLabel>
-            <StyledIconContainer data-tooltip="A brief, compelling summary of the job opportunity">
+            <StyledLabel>Short One Line Pitch *</StyledLabel>
+            <StyledIconContainer data-tooltip="A brief, compelling summary of the job opportunity (Required)">
               <IconInfoCircle size={14} />
             </StyledIconContainer>
           </StyledLabelContainer>
@@ -441,7 +578,7 @@ export const JobDetailsForm: React.FC<FormComponentProps> = ({
                 description: e.target.value,
               })
             }
-            placeholder="A one line pitch for the job"
+            placeholder="A one line pitch for the job (Required)"
             onKeyDown={handleKeyDown}
           />
         </StyledFullWidthField>
@@ -473,32 +610,38 @@ export const JobDetailsForm: React.FC<FormComponentProps> = ({
             {isDefined(missingRecruiterInfo.phoneNumber) && (
               <StyledFieldGroup>
                 <StyledLabelContainer>
-                  <StyledLabel>Recruiter's Phone Number</StyledLabel>
-                  <StyledIconContainer data-tooltip="Your contact number for candidate communications">
+                  <StyledLabel>Recruiter's Phone Number *</StyledLabel>
+                  <StyledIconContainer data-tooltip="Your contact number for candidate communications (Required)">
                     <IconInfoCircle size={14} />
                   </StyledIconContainer>
                 </StyledLabelContainer>
-                <StyledInput
-                  value={missingRecruiterInfo.phoneNumber}
-                  onChange={(e) => updateRecruiterInfoField('phoneNumber', e.target.value)}
-                  placeholder="Enter your phone number"
-                  onKeyDown={handleKeyDown}
-                />
+                <StyledPhoneInputContainer>
+                  <StyledPhoneNumberInput
+                    value={missingRecruiterInfo.phoneNumber}
+                    onChange={(value) => updateRecruiterInfoField('phoneNumber', value || '')}
+                    placeholder="Enter your phone number (Required)"
+                    onKeyDown={handleKeyDown}
+                    international={true}
+                    withCountryCallingCode={true}
+                    countrySelectComponent={PhoneCountryPickerDropdownButton}
+                    defaultCountry="IN"
+                  />
+                </StyledPhoneInputContainer>
               </StyledFieldGroup>
             )}
 
             {isDefined(missingRecruiterInfo.jobTitle) && (
               <StyledFieldGroup>
                 <StyledLabelContainer>
-                  <StyledLabel>Recruiter's Job Title</StyledLabel>
-                  <StyledIconContainer data-tooltip="Your role in the organization">
+                  <StyledLabel>Recruiter's Job Title *</StyledLabel>
+                  <StyledIconContainer data-tooltip="Your role in the organization (Required)">
                     <IconInfoCircle size={14} />
                   </StyledIconContainer>
                 </StyledLabelContainer>
                 <StyledInput
                   value={missingRecruiterInfo.jobTitle}
                   onChange={(e) => updateRecruiterInfoField('jobTitle', e.target.value)}
-                  placeholder="Enter your job title"
+                  placeholder="Enter your job title (Required)"
                   onKeyDown={handleKeyDown}
                 />
               </StyledFieldGroup>

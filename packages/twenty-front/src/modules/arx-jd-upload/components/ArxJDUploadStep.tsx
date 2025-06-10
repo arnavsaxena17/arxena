@@ -1,3 +1,4 @@
+import { useFindManyRecords } from '@/object-record/hooks/useFindManyRecords';
 import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
 import { Button, IconTrash } from 'twenty-ui';
@@ -99,20 +100,31 @@ export const ArxJDUploadStep = ({
 }: ArxJDUploadStepProps) => {
   const theme = useTheme();
 
-  // Helper to extract filename from job data
+  // Fetch attachments for the current parsedJD
+  const { records: attachments } = useFindManyRecords({
+    objectNameSingular: 'attachment',
+    filter: parsedJD?.id ? {
+      jobId: { eq: parsedJD.id }
+    } : undefined,
+    skip: !parsedJD?.id,
+  });
+
   const getFileName = () => {
-    // Return null if parsedJD is null or name is empty
+    if (attachments && attachments.length > 0 && attachments[0].node?.name) {
+      return attachments[0].node.name;
+    }
+    
     if (!parsedJD || !parsedJD.name || parsedJD.name.trim() === '') return null;
     
-    // If we have a job code, use that as part of the displayed filename
     const jobCode = parsedJD.jobCode ? `${parsedJD.jobCode} - ` : '';
     return `${jobCode}${parsedJD.name}.pdf`;
   };
 
-  // Show file info in both edit mode and when a file has been uploaded in create mode
   const fileName = getFileName();
-  const hasFile = fileName !== null;
+  const hasFile = attachments && attachments.length > 0;
 
+  console.log('hasFile', hasFile);
+  console.log('isEditMode', isEditMode);
   return (
     <StyledContainer>
       <StyledContent>

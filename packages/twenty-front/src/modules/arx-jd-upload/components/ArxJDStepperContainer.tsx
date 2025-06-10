@@ -88,8 +88,9 @@ export const ArxJDStepperContainer: React.FC<ArxJDStepperContainerProps> = ({
   onRecruiterInfoChange,
   isEditMode = false,
 }) => {
-  const { activeStep, nextStep, prevStep, setStep } = useArxJDFormStepper();
+  const { activeStep, nextStep, prevStep, setStep, validationMessage } = useArxJDFormStepper();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [recruiterDetails, setRecruiterDetails] = useState<RecruiterDetails | null>(null);
 
   // In edit mode, if we're still loading job data, show a spinner
   // This is different from the upload case because we want to stay in the stepper UI
@@ -152,14 +153,20 @@ export const ArxJDStepperContainer: React.FC<ArxJDStepperContainerProps> = ({
       onSubmit && onSubmit();
     } else {
       console.log('Moving to next step');
-      nextStep();
+      nextStep(parsedJD, recruiterDetails);
     }
-  }, [activeStep, isLastStep, nextStep, onSubmit]);
+  }, [activeStep, isLastStep, nextStep, onSubmit, parsedJD, recruiterDetails]);
 
   // Handle back button action
   const handleBack = useCallback(() => {
     prevStep();
   }, [prevStep]);
+
+  // Handle recruiter info changes
+  const handleRecruiterInfoChange = useCallback((details: RecruiterDetails) => {
+    setRecruiterDetails(details);
+    onRecruiterInfoChange?.(details);
+  }, [onRecruiterInfoChange]);
 
   // Memoize the navigation component to prevent re-renders
   const navigationComponent = useMemo(() => {
@@ -182,9 +189,10 @@ export const ArxJDStepperContainer: React.FC<ArxJDStepperContainerProps> = ({
         }}
         nextLabel={isLastStep ? 'Finish' : 'Next'}
         disableBack={activeStep === 0} // Disable back button on first step in edit mode
+        validationMessage={validationMessage}
       />
     );
-  }, [activeStep, handleBack, handleNext, isLastStep, isSubmitting, isEditMode]);
+  }, [activeStep, handleBack, handleNext, isLastStep, isSubmitting, isEditMode, validationMessage]);
 
   return (
     <ArxJDModalLayout
@@ -218,7 +226,7 @@ export const ArxJDStepperContainer: React.FC<ArxJDStepperContainerProps> = ({
                 handleFileUpload={handleFileUpload}
                 onCancel={onCancel}
                 onSubmit={onSubmit}
-                onRecruiterInfoChange={onRecruiterInfoChange}
+                onRecruiterInfoChange={handleRecruiterInfoChange}
                 isEditMode={isEditMode}
               />
             </StyledContent>

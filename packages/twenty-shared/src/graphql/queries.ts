@@ -1356,7 +1356,6 @@ export const queryByvideoInterview = `query FindOneVideoInterview($objectRecordI
         node {
           clientInterviewId
           phoneCallId
-          
           whatsappMessageId
           candidateReminderId
           opportunityId
@@ -1367,7 +1366,6 @@ export const queryByvideoInterview = `query FindOneVideoInterview($objectRecordI
           authorId
           clientContactId
           jobId
-
           type
           id
           createdAt
@@ -1399,82 +1397,80 @@ export const queryByvideoInterview = `query FindOneVideoInterview($objectRecordI
       primaryLinkLabel
       primaryLinkUrl
     }
-        candidate {
-          __typename
-          id
+    candidate {
+      __typename
+      id
+      name
+      position
+      stopChat
+      peopleId
+      startChat
+      remarks
+      messagingChannel
+      chatCount
+      status
+      source
+      campaign
+      jobSpecificFields
+      jobsId
+      createdAt
+      updatedAt
+      engagementStatus
+      messagingChannel
+      candConversationStatus
+      startChatCompleted
+      startVideoInterviewChat
+      startVideoInterviewChatCompleted
+      startMeetingSchedulingChat
+      startMeetingSchedulingChatCompleted
+      lastEngagementChatControl
+      uniqueStringKey
+      whatsappProvider
+      hiringNaukriUrl {
+        primaryLinkLabel
+        primaryLinkUrl
+        __typename
+      }
+      resdexNaukriUrl {
+        primaryLinkLabel
+        primaryLinkUrl
+        __typename
+      }
+      linkedinUrl {
+        primaryLinkLabel
+        primaryLinkUrl
+        __typename
+      }
+      jobs {
+        name
+        id
+        recruiterId
+        company {
           name
-          position
-          stopChat
-          peopleId
-          startChat
-          remarks
-          messagingChannel
-          chatCount
-          status
-          source
-          campaign
-          jobSpecificFields
-          jobsId
-          createdAt
-          updatedAt
-          engagementStatus
-          messagingChannel
-          candConversationStatus
-          startChatCompleted
-          startVideoInterviewChat
-          startVideoInterviewChatCompleted
-          startMeetingSchedulingChat
-          startMeetingSchedulingChatCompleted
-          lastEngagementChatControl
-          uniqueStringKey
-          whatsappProvider
-          hiringNaukriUrl {
-            primaryLinkLabel
-            primaryLinkUrl
-            __typename
-          }
-          resdexNaukriUrl {
-            primaryLinkLabel
-            primaryLinkUrl
-            __typename
-          }
-          linkedinUrl {
-            primaryLinkLabel
-            primaryLinkUrl
-            __typename
-          }
-          jobs {
-            name
-            id
-            recruiterId
-            company {
-              name
-            }
-          }
-          people {
-            id
-            name {
-              firstName
-              lastName
-            }
-            emails{
-              primaryEmail
-            }            
-            phones{
-              primaryPhoneNumber
-            }
-            linkedinLink{
-              primaryLinkLabel
-              primaryLinkUrl
-              secondaryLinks
-            }
-          }
         }
-        
+      }
+      people {
+        id
+        name {
+          firstName
+          lastName
+        }
+        emails{
+          primaryEmail
+        }            
+        phones{
+          primaryPhoneNumber
+        }
+        linkedinLink{
+          primaryLinkLabel
+          primaryLinkUrl
+          secondaryLinks
+        }
+      }
+    }
     videoInterviewResponse {
       edges {
         node {
-
           videoInterviewId
           createdAt
           timeLimitAdherence
@@ -1516,15 +1512,15 @@ export const queryByvideoInterview = `query FindOneVideoInterview($objectRecordI
       videoInterviewModelId
       position
       introduction
-        videoInterviewQuestions {
-              edges {
-                  node {
-                  id
-                  questionValue
-                  timeLimit
-                  }
-                }
-              }
+      videoInterviewQuestions {
+        edges {
+            node {
+            id
+            questionValue
+            timeLimit
+            }
+          }
+        }
     }
     interviewStarted
     name

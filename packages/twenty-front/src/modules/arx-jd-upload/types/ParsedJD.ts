@@ -22,6 +22,7 @@ export type ParsedJD = {
   videoInterview: {
     questions: string[];
   };
+  existingChatQuestions?: string[];
   meetingScheduling: {
     meetingType: 'walkIn' | 'online' | 'inPerson';
     availableDates: Array<{

@@ -104,6 +104,15 @@ mutation DeleteManyCandidateFieldValues($filter: CandidateFieldValueFilterInput!
 }
 `;
 
+export const graphqlMutationToDeleteManyCandidateFields = `
+mutation DeleteManyCandidateFields($filter: CandidateFieldFilterInput!) {
+  deleteCandidateFields(filter: $filter) {
+    id
+    __typename
+  }
+}
+`;
+
 export const CreateManyCandidateFieldValues = `mutation CreateCandidateFieldValues($data: [CandidateFieldValueCreateInput!]!) {
   createCandidateFieldValues(data: $data) {
     __typename
