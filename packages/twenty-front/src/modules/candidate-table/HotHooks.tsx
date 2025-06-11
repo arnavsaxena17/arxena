@@ -425,7 +425,7 @@ export const afterChange = async (tableRef: React.RefObject<any>, changes: any, 
       : `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/update-candidate-field-value`;
 
     // Update UI immediately
-    updateTableState(rowData, prop, newValue, setTableState);
+    updateTableState(rowData, prop, newValue, setTableState, hot);
 
     // Queue for background processing
     pendingUpdates.push({
