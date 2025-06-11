@@ -9,13 +9,14 @@ import { DEFAULT_QUERY_PAGE_SIZE } from '@/object-record/constants/DefaultQueryP
 import { useLazyFetchAllRecords } from '@/object-record/hooks/useLazyFetchAllRecords';
 import { useSendCVsToClient } from '@/object-record/hooks/useSendCVsToClient';
 import { useFilterValueDependencies } from '@/object-record/record-filter/hooks/useFilterValueDependencies';
+import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
+import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { ConfirmationModal } from '@/ui/layout/modal/components/ConfirmationModal';
 import { useRecoilComponentValueV2 } from '@/ui/utilities/state/component-state/hooks/useRecoilComponentValueV2';
 import { useCallback, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
 import { isDefined } from 'twenty-shared';
-
 export const useShareChatAndVideoInterviewBasedShortlistAction: ActionHookWithObjectMetadataItem = ({ objectMetadataItem }) => {
   console.log('objectMetadataItem for share chat and video interview based shortlist', objectMetadataItem);
   const contextStoreNumberOfSelectedRecords = useRecoilComponentValueV2(
@@ -80,11 +81,19 @@ export const useShareChatAndVideoInterviewBasedShortlistAction: ActionHookWithOb
     
     const [isShareChatAndVideoInterviewBasedShortlistModalOpen, setIsShareChatAndVideoInterviewBasedShortlistModalOpen] = useState(false);
     const { sendCVsToClient } = useSendCVsToClient();
-
+    const { enqueueSnackBar } = useSnackBar();
     const handleShareChatAndVideoInterviewBasedShortlistClick = useCallback(async () => {
       // const recordsToShare = await fetchAllRecordIds();
 
       // console.log("recordsToShare:::", recordsToShare)
+
+      enqueueSnackBar('Beginning to create shortlist PDF and Excel.', {
+        variant: SnackBarVariant.Success,
+        duration: 5000,
+      });
+
+
+
 
       if (isJobRoute && tableState) {
         // Use selected rows from HandsOnTable when in /job/ route

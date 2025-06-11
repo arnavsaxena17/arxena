@@ -18,6 +18,11 @@ import { useRecoilValue } from 'recoil';
 
 export const useDownloadCandidateCVsAction: ActionHookWithObjectMetadataItem =
   ({ objectMetadataItem }) => {
+
+    const { enqueueSnackBar } = useSnackBar();
+
+
+
     const location = useLocation();
     const isJobRoute = location.pathname.includes('/job/');
     const tableState = useRecoilValue(tableStateAtom);
@@ -35,7 +40,6 @@ export const useDownloadCandidateCVsAction: ActionHookWithObjectMetadataItem =
     );
 
     const { filterValueDependencies } = useFilterValueDependencies();
-    const { enqueueSnackBar } = useSnackBar();
 
     const graphqlFilter = computeContextStoreFilters(
       contextStoreTargetedRecordsRule,
@@ -76,8 +80,16 @@ export const useDownloadCandidateCVsAction: ActionHookWithObjectMetadataItem =
 
     const handleDownloadCandidateCVsClick = useCallback(async () => {
       try {
+
+
         setIsProcessing(true);
         let recordsToProcess;
+
+        enqueueSnackBar('Beginning to download candidate CVs.', {
+          variant: SnackBarVariant.Success,
+          duration: 5000,
+        });
+    
 
         if (isJobRoute && tableState && tableState.selectedRowIds && tableState.selectedRowIds.length > 0) {
           recordsToProcess = tableState.rawData.filter((record) =>
