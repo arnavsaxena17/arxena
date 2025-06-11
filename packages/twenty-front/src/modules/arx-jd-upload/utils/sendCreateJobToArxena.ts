@@ -13,13 +13,13 @@ export const sendCreateJobToArxena = async (
     console.log('sending job to arxena in sendJobToArxena::');
     console.log('jobName::', jobName);
     console.log('jobId::', jobId);
-    const arxenaJobId = new mongoose.Types.ObjectId().toString();
-    console.log('arxenaJobId::', arxenaJobId);
+    const arxenaSiteId = new mongoose.Types.ObjectId().toString();
+    console.log('arxenaSiteId::', arxenaSiteId);
     const response = await axios.post(
       process.env.NODE_ENV === 'production'
         ? 'https://app.arxena.com/candidate-sourcing/create-job-in-arxena-and-sheets'
         : 'http://localhost:3000/candidate-sourcing/create-job-in-arxena-and-sheets',
-      { job_name: jobName, new_job_id: arxenaJobId, id_to_update: jobId },
+      { job_name: jobName, new_job_id: arxenaSiteId, id_to_update: jobId },
       {
         headers: {
           Authorization: `Bearer ${accessToken}`,

@@ -18,7 +18,7 @@ import {
   Jobs,
   mutationToUpdateOnePerson,
   PersonNode,
-  updateCandidateFieldValueMutation,
+  updateOneCandidateFieldValue,
   UserProfile
 } from 'twenty-shared';
 
@@ -37,6 +37,7 @@ import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modific
 import { PersonService } from './person.service';
 
 import { getRecruiterProfileFromCurrentUser } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
+// import { WebSocketGateway } from 'src/modules/websocket/websocket.gateway';
 
 interface ProcessingContext {
   jobCandidateInfo: {
@@ -55,6 +56,8 @@ export class CandidateService {
   constructor(
     private readonly personService: PersonService,
     private readonly workspaceQueryService: WorkspaceQueryService,
+    // private readonly webSocketGateway: WebSocketGateway,
+
     private readonly jwtWrapperService: JwtWrapperService,
   ) {}
 
@@ -240,8 +243,6 @@ export class CandidateService {
     jobId: string,
     apiToken: string,
   ): Promise<Map<string, any>> {
-
-    // console.log('uniqueStringKeys:', uniqueStringKeys);
     const graphqlQuery = JSON.stringify({
       query: graphqlToFetchAllCandidateData,
       variables: {
@@ -251,13 +252,14 @@ export class CandidateService {
         },
       },
     });
+    
     const response = await axiosRequest(graphqlQuery, apiToken);
-
     console.log('Raw axios response:', response.data);
     console.log(
       'Response candidate edges:',
       response.data?.data?.candidates?.edges,
     );
+    
     const candidatesMap = new Map<string, any>();
 
     if (!response?.data?.data?.candidates?.edges) {
@@ -331,6 +333,7 @@ export class CandidateService {
       return key && !existingCandidatesMap.get(key);
     });
 
+    const recruiterId = jobObject.recruiterId;
     try {
       await this.processCandidatesBatch(
         data,
@@ -348,6 +351,10 @@ export class CandidateService {
     if (newCandidatesData.length > 0) {
       await this.createCandidateFieldsAndValues(newCandidatesData, jobObject, results, tracking, apiToken);
     }
+
+    // this.webSocketGateway.webSocketService.sendToUser(recruiterId, 'candidate_upload_batch', {
+    //   message: 'Candidate upload batch completed',
+    // });
 
     return results;
   }
@@ -371,7 +378,7 @@ export class CandidateService {
     console.log('Total candidates being processed:', data.length);
 
     // Define excluded fields
-    const excludedFields = ['age', 'birth_date', 'gender','all_mails','all_numbers','queryId','data_sources','interests','phone_numbers','tables','socialprofiles'];
+    const excludedFields = ['age', 'birth_date','full_name', 'gender','all_mails','all_numbers','queryId','data_sources','interests','phone_numbers','tables','socialprofiles'];
 
     for (const candidate of data) {
       console.log('This is the candidate:', candidate);
@@ -455,9 +462,7 @@ export class CandidateService {
       const { unmappedCandidateObject } = await generateCompleteMappings(candidate, jobObject);
       console.log('This is the unmappedCandidateObject:', unmappedCandidateObject);
       const candidateId = tracking.candidateIdMap.get(candidate.unique_key_string);
-      console.log('This is the candidateId:', candidateId);
-        
-      console.log('This is the unmappedCandidateObject:', unmappedCandidateObject);
+      console.log('This is the candidateId:', candidateId, "for the candidate:", candidate.unique_key_string);        
       console.log('This is the unmappedCandidateObject length:', unmappedCandidateObject.length);
       unmappedCandidateObject.forEach((field: any) => {
         // Skip excluded fields
@@ -850,7 +855,8 @@ export class CandidateService {
         const key = profile?.unique_key_string;
   
         if (!key) continue;
-  
+        console.log("This is the candidates unique_key_string:", key);
+        console.log("This is the candidates candidatesMap:", candidatesMap);
         const existingCandidate = candidatesMap.get(key);
         const personId = tracking.personIdMap.get(key);
   
@@ -918,18 +924,26 @@ export class CandidateService {
           
           if (missingFields.length > 0) {
             console.log('Missing fields:', missingFields);
-            candidatesToUpdate.push({
+            const candidateToUpdate = 
+            {
               candidateId: existingCandidate.id,
               personId: existingCandidate.peopleId || existingCandidate.people?.id,
               hiringNaukriUrl: { "primaryLinkLabel": profile?.profile_url.includes('hiring') ? profile?.profile_url : '', "primaryLinkUrl": profile?.profile_url.includes('hiring') ? profile?.profile_url : '' },
               resdexNaukriUrl: { "primaryLinkLabel": profile?.profile_url.includes('resdex') ? profile?.profile_url : '', "primaryLinkUrl": profile?.profile_url.includes('resdex') ? profile?.profile_url : '' },
               displayPicture: { "primaryLinkLabel": "Display Picture", "primaryLinkUrl": profile?.display_picture || '' },
               linkedinUrl: { "primaryLinkLabel": profile?.profile_url.includes('linkedin') ? profile?.profile_url : '', "primaryLinkUrl": profile?.profile_url.includes('linkedin') ? profile?.profile_url : '' },
-              profile,
+              profile: profile,
               missingFields
-            });
+            }
+            if ('uniqueStringKey' in candidateToUpdate) {
+              delete candidateToUpdate.uniqueStringKey;
+            }
+            if ('unique_key_string' in candidateToUpdate) {
+              delete candidateToUpdate.unique_key_string;
+            }
+            candidatesToUpdate.push(candidateToUpdate);
           }
-          console.log("Candidate to update:", candidatesToUpdate.map((c) => c.profile.unique_key_string));
+          // console.log("Candidate to update:", candidatesToUpdate.map((c) => c.profile.unique_key_string));
           console.log("Candidate to update:", candidatesToUpdate);
           
           tracking.candidateIdMap.set(key, existingCandidate?.id);
@@ -1264,8 +1278,9 @@ export class CandidateService {
       if (!fieldInfo) {
         // Try snake_case (convert camelCase to snake_case)
         const snakeCaseName = fieldName.replace(/([A-Z])/g, '_$1').toLowerCase();
+        console.log("snakeCaseName::", snakeCaseName)
         fieldInfo = workspaceFieldsMap.get(snakeCaseName);
-        
+        console.log("fieldInfo::", fieldInfo)
         // If still not found, check if any workspace field name is contained within the fieldName
         if (!fieldInfo) {
           console.log('Field not directly found, checking similar names...');
@@ -1325,37 +1340,45 @@ export class CandidateService {
         return this.handlePhoneNumberUpdate(candidateId, value, apiToken);
       }
       
-
       const findVariables = {
-        where: {
-          candidateFieldsId: { eq: fieldInfo.id },
-          candidateId: { eq: candidateId }
-        }
+        filter: {
+          and: [ { candidateId: { in: [candidateId] } }, { candidateFieldsId: { in: [fieldInfo.id] } } ]
+        },
+        orderBy: [{ position: "AscNullsFirst" }]
       };
       
       const findResponse = await axiosRequest(
         JSON.stringify({ query: graphqlToFindManyCandidateFieldValues, variables: findVariables }),
         apiToken
       );
-      
-      const existingFieldValues = findResponse?.data?.data?.candidateFieldValues?.edges || [];
-      
+      const snakeCaseName = fieldName.replace(/([A-Z])/g, '_$1').toLowerCase();
+      console.log("snakeCaseName::", snakeCaseName)
+      console.log("findResponse?.data?.data?.candidateFieldValues?.edges::", findResponse?.data?.data?.candidateFieldValues?.edges)
+      console.log("findResponse?.data?.data?.candidateFieldValues?.edges[0]?.node?.candidateFields?.name::", findResponse?.data?.data?.candidateFieldValues?.edges[0]?.node?.candidateFields)
+      const existingFieldValues = findResponse?.data?.data?.candidateFieldValues?.edges.filter((edge: any) => edge?.node?.candidateFields?.name === snakeCaseName) || [];
+      console.log("existingFieldValues::", existingFieldValues)
       if (existingFieldValues.length > 0) {
         // Update existing field value using a simple GraphQL mutation
-        
-        const fieldValueId = existingFieldValues[0]?.node?.id;
-        
-        const updateVariables = {
-          id: fieldValueId,
-          data: { name: String(value) }
-        };
-        
-        const updateResponse = await axiosRequest(
-          JSON.stringify({ query: updateCandidateFieldValueMutation, variables: updateVariables }),
-          apiToken
-        );
-        
-        return updateResponse?.data?.data?.updateCandidateFieldValue;
+        console.log("Setting value to :", String(value))
+        const updatePromises = existingFieldValues.map(async (fieldValue) => {
+          console.log("fieldValue::", fieldValue)
+          const fieldValueId = fieldValue?.node?.id;
+          console.log("fieldValueId::", fieldValueId)
+          const updateVariables = {
+            idToUpdate: fieldValueId,
+            input: { name: String(value) }
+          };
+          console.log("updateVariables::", updateVariables)
+          const updateResponse = await axiosRequest(
+            JSON.stringify({ query: updateOneCandidateFieldValue, variables: updateVariables }),
+            apiToken
+          );
+          
+          return updateResponse?.data?.data?.updateCandidateFieldValue;
+        });
+
+        const results = await Promise.all(updatePromises);
+        return results;
       } else {
         // Create new field value
         const createMutation = graphqlQueryToCreateOneCandidateFieldValue;
@@ -1399,8 +1422,6 @@ export class CandidateService {
         const personId = candidateResponse?.data?.data?.candidates?.edges[0]?.node?.peopleId;
         console.log("personId:", personId)
         if (personId) {
-          // Update person's phoneNumber field
-          
           await axiosRequest(
             JSON.stringify({ 
               query: mutationToUpdateOnePerson, 

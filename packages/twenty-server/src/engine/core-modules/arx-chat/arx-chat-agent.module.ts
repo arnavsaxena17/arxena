@@ -38,6 +38,7 @@ import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
 import { DataSourceModule } from 'src/engine/metadata-modules/data-source/data-source.module'; // Add this import
 import { WorkspaceCacheStorageService } from 'src/engine/workspace-cache-storage/workspace-cache-storage.service';
 import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
+import { WebSocketModule } from 'src/modules/websocket/websocket.module';
 
 @Module({
   imports: [
@@ -46,7 +47,7 @@ import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/work
     WorkspaceModificationsModule,
     GoogleCalendarModule,
     DataSourceModule,
-
+    WebSocketModule,
     TypeORMModule,
     TypeORMModule,
     TypeOrmModule.forFeature([Workspace], 'core'),

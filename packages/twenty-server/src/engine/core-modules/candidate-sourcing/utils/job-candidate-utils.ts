@@ -82,12 +82,11 @@ export class JobCandidateUtils {
             createdAt
             jobId
             person{
-            id
+             id
             }
             candidate {
-            id
+             id
             }
-
           }
           cursor
         }

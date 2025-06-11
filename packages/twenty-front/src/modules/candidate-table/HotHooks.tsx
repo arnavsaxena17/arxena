@@ -217,22 +217,87 @@ const handleCheckboxChange = (rowData: any, newValue: boolean, setTableState: an
   });
 };
 
-const updateTableState = (rowData: any, prop: string, newValue: any, setTableState: any) => {
+const updateTableState = (rowData: any, prop: string, newValue: any, setTableState: any, hot: any) => {
+  console.log(`Updating field: ${prop} for row ${rowData.id}`);
+  console.log(`Column index for ${prop}:`, hot?.propToCol(prop));
+
   setTableState((prev: any) => {
     const updatedRawData = [...prev.rawData];
     const index = updatedRawData.findIndex(item => item.id === rowData.id);
+    
     if (index >= 0) {
-      updatedRawData[index] = {
-        ...updatedRawData[index],
-        [prop]: newValue
-      };
+      const currentRow = { ...updatedRawData[index] };
+      
+      // Check if this is a direct field on the candidate object
+      const isDirectField = Object.prototype.hasOwnProperty.call(currentRow, prop);
+      
+      if (isDirectField) {
+        // Update direct field
+        currentRow[prop] = newValue;
+      } else {
+        // This might be a candidateFieldValue - need to update within candidateFieldValues
+        if (currentRow.candidateFieldValues && currentRow.candidateFieldValues.edges) {
+          const updatedEdges = [...currentRow.candidateFieldValues.edges];
+          
+          // Convert camelCase prop back to snake_case for field lookup
+          const snakeCaseFieldName = prop.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+          
+          // Find the field in candidateFieldValues
+          const fieldIndex = updatedEdges.findIndex(edge => 
+            edge.node?.candidateFields?.name === snakeCaseFieldName ||
+            edge.node?.candidateFields?.name === prop // Also check exact match
+          );
+          
+          if (fieldIndex >= 0) {
+            // Update existing field value
+            updatedEdges[fieldIndex] = {
+              ...updatedEdges[fieldIndex],
+              node: {
+                ...updatedEdges[fieldIndex].node,
+                name: String(newValue)
+              }
+            };
+            
+            currentRow.candidateFieldValues = {
+              ...currentRow.candidateFieldValues,
+              edges: updatedEdges
+            };
+          } else {
+            console.warn(`Field ${prop} (${snakeCaseFieldName}) not found in candidateFieldValues`);
+            // Optionally, you could add it as a direct field as fallback
+            currentRow[prop] = newValue;
+          }
+        } else {
+          // No candidateFieldValues structure, add as direct field
+          currentRow[prop] = newValue;
+        }
+      }
+      
+      updatedRawData[index] = currentRow;
     }
+    
+    console.log('updatedRawData in updateTableState::', updatedRawData);
     return {
       ...prev,
       rawData: updatedRawData
     };
   });
+
+  // IMMEDIATELY update the table's visual state
+  if (hot) {
+    // Find the current visual row index for this data
+    const allData = hot.getSourceData();
+    const physicalIndex = allData.findIndex((item: any) => item.id === rowData.id);
+    if (physicalIndex >= 0) {
+      const visualRow = hot.toVisualRow(physicalIndex);
+      const colIndex = hot.propToCol(prop);
+      if (visualRow !== null && visualRow !== undefined && colIndex !== null && colIndex !== undefined) {
+        hot.setDataAtCell(visualRow, colIndex, newValue, 'external');
+      }
+    }
+  }
 };
+
 
 const revertTableState = (rowData: any, prop: string, oldValue: any, hot: any, setTableState: any) => {
   // First update the state

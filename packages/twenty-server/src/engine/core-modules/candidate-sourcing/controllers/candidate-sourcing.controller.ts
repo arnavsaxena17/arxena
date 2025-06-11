@@ -22,6 +22,7 @@ import { axiosRequest } from 'src/engine/core-modules/candidate-sourcing/utils/u
 import { GoogleSheetsService } from 'src/engine/core-modules/google-sheets/google-sheets.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
+import { WebSocketGateway } from 'src/modules/websocket/websocket.gateway';
 
 @Controller('candidate-sourcing')
 export class CandidateSourcingController {
@@ -31,6 +32,8 @@ export class CandidateSourcingController {
     private readonly candidateService: CandidateService,
     private readonly processCandidatesService: ProcessCandidatesService,
     private readonly personService: PersonService,
+    private readonly webSocketGateway: WebSocketGateway,
+
   ) {}
 
   @Post('update-candidate')
@@ -605,6 +608,26 @@ export class CandidateSourcingController {
     }
   }
 
+  @Post('refresh-table-data')
+  @UseGuards(JwtAuthGuard)
+  async refreshTableData(@Req() req) {
+    console.log('Called refresh table data API');
+    const apiToken = req.headers.authorization.split(' ')[1];
+    const recruiterId = req.body?.recruiterId;
+    console.log("recruiterId::", recruiterId);
+    // const gateway = this.webSocketGateway.sendToUser.getInstance();
+
+    if (this.webSocketGateway) {
+      this.webSocketGateway.webSocketService.sendToUser(recruiterId, 'refresh_table_data', {
+        message: 'Refreshing table data',
+      });
+    } else {
+      console.error('WebSocket gateway instance not available');
+    }
+  }
+
+
+
   @Post('post-candidates')
   @UseGuards(JwtAuthGuard)
   async sourceCandidates(@Req() req) {
@@ -612,15 +635,15 @@ export class CandidateSourcingController {
     const apiToken = req.headers.authorization.split(' ')[1];
     const jobId = req.body?.job_id;
     const jobName = req.body?.job_name;
+    const recruiterId = req.body?.recruiterId;
 
-    console.log('arxenaJobId:', jobId);
+    console.log('arxenaSiteId:', jobId);
     const data: UserProfile[] = req.body?.data;
 
     console.log('Data len:', data.length);
     console.log('First candidats:', data[0]);
     await new Promise((resolve) => setTimeout(resolve, Math.random() * 1000));
     const timestamp = req.body?.timestamp || new Date().toISOString();
-
     try {
       // Process profiles and get all the necessary data
       const jobIdProcesed = await this.processCandidatesService.send(
@@ -630,7 +653,18 @@ export class CandidateSourcingController {
         timestamp,
         apiToken,
       );
+      console.log("recruiterId::", recruiterId);
+      // const gateway = this.webSocketGateway.sendToUser.getInstance();
 
+      if (this.webSocketGateway) {
+        this.webSocketGateway.webSocketService.sendToUser(recruiterId, 'candidates_processing_progress', {
+          jobId: jobId,
+          message: 'Candidates processing started',
+        });
+      } else {
+        console.error('WebSocket gateway instance not available');
+      }
+  
       return {
         status: 'success',
         message: 'Candidate processing queued successfully',
@@ -759,10 +793,10 @@ export class CandidateSourcingController {
       // console.log(body);
       const apiToken = request.headers.authorization.split(' ')[1];
       const data = request.body;
-      const arxenaJobId = data?.job_id;
+      const arxenaSiteId = data?.job_id;
       const jobName = data?.job_name;
       const jobObject: Jobs = await this.candidateService.getJobDetails(
-        arxenaJobId,
+        arxenaSiteId,
         jobName,
         apiToken,
       );
@@ -792,6 +826,8 @@ export class CandidateSourcingController {
   @UseGuards(JwtAuthGuard)
   async updateCandidateFieldValue(@Req() request: any): Promise<object> {
     try {
+      console.log("Going to update candidate field value::");
+      console.log("request.body::", request.body);
       const apiToken = request.headers.authorization.split(' ')[1];
       const { candidateId, fieldName, value } = request.body;
 

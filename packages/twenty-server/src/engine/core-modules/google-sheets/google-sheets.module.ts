@@ -12,6 +12,7 @@ import { DataSourceEntity } from 'src/engine/metadata-modules/data-source/data-s
 import { DataSourceModule } from 'src/engine/metadata-modules/data-source/data-source.module';
 import { DataSourceService } from 'src/engine/metadata-modules/data-source/data-source.service';
 import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
+import { WebSocketGateway } from 'src/modules/websocket/websocket.gateway';
 import { WebSocketService } from 'src/modules/websocket/websocket.service';
 import { AppToken } from '../app-token/app-token.entity';
 import { JwtAuthStrategy } from '../auth/strategies/jwt.auth.strategy';
@@ -31,6 +32,7 @@ import { GoogleSheetsService } from './google-sheets.service';
   providers: [
     PersonService,
     GoogleSheetsService,
+    WebSocketGateway,
     ProcessCandidatesService,
     JwtWrapperService,
     CandidateService,

@@ -7,6 +7,6 @@ import { WebSocketService } from './websocket.service';
 @Module({
   controllers: [WebSocketController],
   providers: [WebSocketGateway, WebSocketService],
-  exports: [WebSocketService],
+  exports: [WebSocketGateway, WebSocketService],
 })
 export class WebSocketModule {}

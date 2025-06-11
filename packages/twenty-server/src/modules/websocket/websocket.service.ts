@@ -31,7 +31,7 @@ export class WebSocketService {
 
   sendToAll(event: string, data: any) {
     if (!this.server) {
-      console.error('WebSocket server not initialized');
+      console.error('WebSocket server not initialized for sendToAll');
       return;
     }
     this.server.emit(event, {
@@ -41,12 +41,20 @@ export class WebSocketService {
   }
 
   sendToUser(userId: string, event: string, data: any) {
+    console.log("userId::", userId);
+    console.log("event::", event);
+    console.log("data::", data);
+    console.log("Server initialized:", !!this.server);
+    console.log("Active connections:", this.server?.sockets?.sockets?.size || 0);
+    console.log("User mappings:", Array.from(this.userIdToClientId.entries()));
+  
     if (!this.server) {
-      console.error('WebSocket server not initialized');
+      console.error('WebSocket server not initialized for sendToUser - deferring message');
+      // Optionally queue the message or retry after a delay
+      setTimeout(() => this.sendToUser(userId, event, data), 1000);
       return;
     }
-    
-    console.log(`Attempting to send event ${event} to user ${userId}`);
+      console.log(`Attempting to send event ${event} to user ${userId}`);
     
     // First try direct room-based messaging
     this.server.to(userId).emit(event, {

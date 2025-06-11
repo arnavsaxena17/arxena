@@ -5,6 +5,7 @@ import {
   WebSocketGateway as NestWebSocketGateway,
   OnGatewayConnection,
   OnGatewayDisconnect,
+  OnGatewayInit,
   SubscribeMessage,
   WebSocketServer,
 } from '@nestjs/websockets';
@@ -22,12 +23,12 @@ import { WebSocketService } from './websocket.service';
       transports: ['websocket', 'polling'],
       path: '/socket.io',
       })
-  export class WebSocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
+  export class WebSocketGateway implements OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit {
     @WebSocketServer() server: Server;
     private connectedClients: Map<string, Socket> = new Map();
     private userIdToClientId: Map<string, string> = new Map();
   
-    constructor(private readonly webSocketService: WebSocketService) {}
+    constructor(readonly webSocketService: WebSocketService) {}
   
     afterInit(server: Server) {
       this.webSocketService.setServer(server);
@@ -63,8 +64,6 @@ import { WebSocketService } from './websocket.service';
     async handleConnection(client: Socket) {
       console.log(`Client connected: ${client.id}`);
       this.connectedClients.set(client.id, client);
-      
-      // Check if client has a token and authenticate them
       const token = client.handshake?.query?.token as string;
       if (token) {
         try {

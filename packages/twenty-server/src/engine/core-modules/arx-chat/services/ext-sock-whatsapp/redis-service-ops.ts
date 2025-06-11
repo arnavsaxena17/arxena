@@ -139,9 +139,6 @@ export class RedisService implements OnModuleInit {
     const whitelist = await this.redisClient.smembers(
       `whitelist:user:${userId}`,
     );
-
-    console.log(' This is the whitelist', whitelist);
-
     return whitelist;
   }
 

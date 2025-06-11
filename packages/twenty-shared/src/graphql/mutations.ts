@@ -95,6 +95,19 @@ mutation UpdateCandidateFieldValue($id: ID!, $data: CandidateFieldValueUpdateInp
 }
 `;
 
+export const updateOneCandidateFieldValue = `
+mutation UpdateOneCandidateFieldValue($idToUpdate: ID!, $input: CandidateFieldValueUpdateInput!) {
+  updateCandidateFieldValue(id: $idToUpdate, data: $input) {
+    id
+    candidateFieldsId
+    candidateId
+    createdAt
+    deletedAt
+    updatedAt
+  }
+}`
+
+
 export const graphqlMutationToDeleteManyCandidateFieldValues = `
 mutation DeleteManyCandidateFieldValues($filter: CandidateFieldValueFilterInput!) {
   deleteCandidateFieldValues(filter: $filter) {

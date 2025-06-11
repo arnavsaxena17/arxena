@@ -122,6 +122,8 @@ const VideoInterviewResponseViewer: React.FC<VideoInterviewResponseViewerProps> 
         id: candidate.jobs.id,
         company: {
           name: candidate?.jobs?.company?.name,
+          id: candidate?.jobs?.company?.id,
+          domainName: candidate?.jobs?.company?.domainName,
         },
         name: candidate?.jobs?.name,
       },

@@ -7,7 +7,7 @@ import { CreateOneJob } from 'twenty-shared';
 
 interface JobCreationResponse {
   jobId: string;
-  arxenaJobId: string;
+  arxenaSiteId: string;
   arxenaResponse: any;
   // candidatesResponse: any;
   googleSheetId: string;
@@ -90,7 +90,7 @@ export class JobCreationService {
     jobName: string,
     candidatesData: any,
     twentyToken: string,
-    arxenaJobId: string,
+    arxenaSiteId: string,
   ): Promise<JobCreationResponse | undefined> {
     const googleSheetId = '';
     const googleSheetUrl = '';
@@ -119,13 +119,13 @@ export class JobCreationService {
       console.log('This is the jobId::', jobId);
       const arxenaResponse = await this.createJobInArxena(
         jobName,
-        arxenaJobId,
+        arxenaSiteId,
         jobId,
       );
 
       return {
         jobId,
-        arxenaJobId,
+        arxenaSiteId,
         arxenaResponse,
         // candidatesResponse,
         googleSheetId,

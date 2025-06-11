@@ -1,5 +1,6 @@
 import { Body, Controller, Get, InternalServerErrorException, NotFoundException, Post } from '@nestjs/common';
 import moment from 'moment-timezone';
+import { WebSocketGateway } from 'src/modules/websocket/websocket.gateway';
 import { graphqlToFetchAllCandidateData, graphQltoUpdateOneCandidate, mutationToUpdateOnePerson } from 'twenty-shared';
 import { CandidateSourcingController } from '../candidate-sourcing/controllers/candidate-sourcing.controller';
 import { ProcessCandidatesService } from '../candidate-sourcing/jobs/process-candidates.service';
@@ -21,6 +22,7 @@ export class GoogleSheetsDataController {
     private readonly sheetsService: GoogleSheetsService,
     private readonly personService: PersonService,
     private readonly candidateService: CandidateService,
+    private readonly webSocketGateway: WebSocketGateway,
 
   ) {
   }
@@ -30,7 +32,6 @@ export class GoogleSheetsDataController {
   async enrichmentData(@Body() body: any) {
     console.log('Called Enrichmetn Data with Request Body:', body);
     console.log('Request Body:', body);
-
     const enrichmentPayload = {
       enrichments: body,
       objectNameSingular: body[0]?.objectNameSingular || '',
@@ -39,28 +40,22 @@ export class GoogleSheetsDataController {
       objectRecordId: body[0]?.objectRecordId || '',
       selectedRecordIds: body[0]?.selectedRows?.map(row => row[0]) || [] // Transform selectedRows to selectedRecordIds
     };
-
-    
-    const spreadsheetId = body[0]?.googleSheetId; // Adjust this based on your actual payload structure
+    const spreadsheetId = body[0]?.googleSheetId;
     console.log("got spreadsheet Id:", spreadsheetId);
-    // Get workspace token
     const tokenData = await this.getWorkspaceTokenForGoogleSheet(spreadsheetId);
     if (!tokenData || !tokenData.token) {
       throw new Error('Unable to get valid workspace token');
     }
-
     console.log("got Token Data:", tokenData);
-
-
     const candidateSourcingController = new CandidateSourcingController(
       this.sheetsService,
       this.workspaceQueryService,
       this.candidateService,
       this.processCandidatesService,
-      this.personService
+      this.personService,
+      this.webSocketGateway,
     );
     console.log("candidateSourcingController:", candidateSourcingController);
-
     const result = await candidateSourcingController.processEnrichments({
       body: enrichmentPayload,
       headers: {
