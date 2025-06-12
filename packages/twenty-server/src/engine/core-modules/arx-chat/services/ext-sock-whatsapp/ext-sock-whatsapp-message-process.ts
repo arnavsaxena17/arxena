@@ -13,6 +13,7 @@ import {
 
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/update-chat';
+import { getRecruiterProfileByRecruiterId } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import { IncomingWhatsappMessages } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/incoming-messages';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { v4 as uuidv4 } from 'uuid';
@@ -145,6 +146,7 @@ export class ExtSockWhatsappMessageProcessor {
       return;
     }
 
+
     // Get candidate information
     const filterCandidates = new FilterCandidates(this.workspaceQueryService);
     const personObj = await filterCandidates.getPersonDetailsByPhoneNumber(
@@ -161,7 +163,6 @@ export class ExtSockWhatsappMessageProcessor {
       .sort((a, b) => new Date(b?.node?.updatedAt).getTime() - new Date(a?.node?.updatedAt).getTime())
       [0]?.node;
     
-
     console.log("This is the candidate node in process outgoing message:", candidateNode)
     let messageObj: ChatHistoryItem[] = [];
     if (candidateNode.whatsappMessages?.edges?.length > 0) {
@@ -177,11 +178,41 @@ export class ExtSockWhatsappMessageProcessor {
       ] as ChatHistoryItem[];
     }
 
+
+    console.log("This is the message obj in process outgoing message:", messageObj)
+
+    try{
+      const recruiterProfile = await getRecruiterProfileByRecruiterId (
+        candidateNode.jobs.recruiterId,
+        apiToken,
+      );
+      console.log("This is the recruiter profile in process outgoing message:", recruiterProfile)
+      const phoneFrom = messageData.from.split('@')[0]
+      const recruiterPhoneNumber = recruiterProfile.phoneNumber
+      console.log("This is the phone from in process outgoing message:", phoneFrom)
+      console.log("This is the recruiter phone number in process outgoing message:", recruiterPhoneNumber)
+      if (phoneFrom === recruiterPhoneNumber){
+        console.log("This is a message from the recruiter, so we will not process it")
+        return;
+      }
+    } catch (error) {
+      console.log("Error in process outgoing message:", error)
+    }
+
+    // const candidatePhoneNumber = candidateNode
+
+
     // Add the new message
-    messageObj.push({
-      role: 'assistant',
-      content: messageData.body || '',
-    });
+    if (!messageObj.some(msg => msg.content === messageData.body) && messageData.body !== "" && messageData.body !== null && messageData.body !== undefined) {
+      messageObj.push({
+        role: 'assistant',
+        content: messageData.body || '',
+      });
+    }
+    else{
+      console.log("This message already exists in the message obj, so we will not add it again")
+      return;
+    }
 
     // Create update message object
     const whatappUpdateMessageObj: whatappUpdateMessageObjType = {
