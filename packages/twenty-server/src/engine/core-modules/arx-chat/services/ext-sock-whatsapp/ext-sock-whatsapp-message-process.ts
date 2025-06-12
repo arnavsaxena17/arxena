@@ -183,12 +183,12 @@ export class ExtSockWhatsappMessageProcessor {
 
     try{
       const recruiterProfile = await getRecruiterProfileByRecruiterId (
-        candidateNode.jobs.recruiterId,
+        candidateNode?.jobs?.recruiterId,
         apiToken,
       );
       console.log("This is the recruiter profile in process outgoing message:", recruiterProfile)
-      const phoneFrom = messageData.from.split('@')[0]
-      const recruiterPhoneNumber = recruiterProfile.phoneNumber
+      const phoneFrom = messageData?.from?.split('@')[0]
+      const recruiterPhoneNumber = recruiterProfile?.phoneNumber
       console.log("This is the phone from in process outgoing message:", phoneFrom)
       console.log("This is the recruiter phone number in process outgoing message:", recruiterPhoneNumber)
       if (phoneFrom === recruiterPhoneNumber){
