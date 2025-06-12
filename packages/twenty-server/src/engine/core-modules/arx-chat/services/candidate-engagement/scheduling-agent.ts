@@ -6,6 +6,7 @@ import { In } from 'typeorm';
 import { TimeManagement } from 'src/engine/core-modules/arx-chat/services/time-management';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
+import { Semaphore } from 'src/engine/core-modules/arx-chat/utils/semaphore';
 import CandidateEngagementArx, {
   workspacesWithOlderSchema,
 } from './candidate-engagement';
@@ -13,6 +14,8 @@ import CandidateEngagementArx, {
 @Injectable()
 abstract class BaseCronService {
   protected isProcessing = false;
+  private readonly maxConcurrency = 50; // Adjust based on your resources
+
   constructor(
     protected readonly workspaceQueryService: WorkspaceQueryService,
   ) {}
@@ -22,25 +25,48 @@ abstract class BaseCronService {
   ) {
     if (this.isProcessing) {
       console.log('Previous job still running, skipping');
-
       return;
     }
+
     try {
       this.isProcessing = true;
       console.log('Starting cycle');
+      
       const workspaces = await this.getFilteredWorkspaces();
+      console.log(`Processing ${workspaces.length} workspaces`);
 
-      for (const workspaceId of workspaces) {
-        const token = await this.getWorkspaceToken(workspaceId);
-
-        if (token) await callback(token);
-      }
+      // Process in batches with controlled concurrency
+      await this.processConcurrently(workspaces, callback);
+      
     } catch (error) {
       console.log('Error in job', error);
     } finally {
       this.isProcessing = false;
       console.log('Ending cycle');
     }
+  }
+
+  private async processConcurrently(
+    workspaces: string[],
+    callback: (token: string) => Promise<void>,
+  ) {
+    const semaphore = new Semaphore(this.maxConcurrency);
+    
+    const processWorkspace = async (workspaceId: string) => {
+      await semaphore.acquire();
+      try {
+        const token = await this.getWorkspaceToken(workspaceId);
+        if (token) {
+          await callback(token); // Only pass token
+        }
+      } catch (error) {
+        console.error(`Error processing workspace ${workspaceId}:`, error);
+      } finally {
+        semaphore.release();
+      }
+    };
+      // Process all workspaces concurrently with controlled concurrency
+    await Promise.all(workspaces.map(processWorkspace));
   }
 
   private async getFilteredWorkspaces(): Promise<string[]> {
