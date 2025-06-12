@@ -13,7 +13,6 @@ import {
 
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/update-chat';
-import { getRecruiterProfileByRecruiterId } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import { IncomingWhatsappMessages } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/incoming-messages';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { v4 as uuidv4 } from 'uuid';
@@ -181,23 +180,23 @@ export class ExtSockWhatsappMessageProcessor {
 
     console.log("This is the message obj in process outgoing message:", messageObj)
 
-    try{
-      const recruiterProfile = await getRecruiterProfileByRecruiterId (
-        candidateNode?.jobs?.recruiterId,
-        apiToken,
-      );
-      console.log("This is the recruiter profile in process outgoing message:", recruiterProfile)
-      const phoneFrom = messageData?.from?.split('@')[0]
-      const recruiterPhoneNumber = recruiterProfile?.phoneNumber
-      console.log("This is the phone from in process outgoing message:", phoneFrom)
-      console.log("This is the recruiter phone number in process outgoing message:", recruiterPhoneNumber)
-      if (phoneFrom === recruiterPhoneNumber){
-        console.log("This is a message from the recruiter, so we will not process it")
-        return;
-      }
-    } catch (error) {
-      console.log("Error in process outgoing message:", error)
-    }
+    // try{
+    //   const recruiterProfile = await getRecruiterProfileByRecruiterId (
+    //     candidateNode?.jobs?.recruiterId,
+    //     apiToken,
+    //   );
+    //   console.log("This is the recruiter profile in process outgoing message:", recruiterProfile)
+    //   const phoneFrom = messageData?.from?.split('@')[0]
+    //   const recruiterPhoneNumber = recruiterProfile?.phoneNumber
+    //   console.log("This is the phone from in process outgoing message:", phoneFrom)
+    //   console.log("This is the recruiter phone number in process outgoing message:", recruiterPhoneNumber)
+    //   if (phoneFrom === recruiterPhoneNumber){
+    //     console.log("This is a message from the recruiter, so we will not process it")
+    //     return;
+    //   }
+    // } catch (error) {
+    //   console.log("Error in process outgoing message:", error)
+    // }
 
     // const candidatePhoneNumber = candidateNode
 
