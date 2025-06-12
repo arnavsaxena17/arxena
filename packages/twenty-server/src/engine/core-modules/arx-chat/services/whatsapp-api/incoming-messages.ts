@@ -286,11 +286,11 @@ export class IncomingWhatsappMessages {
           // Check if current message matches any recent message
           if (recentMessage.length > 0 && messageData) {
             const isMessageDuplicate = recentMessage.some(msg => {
-              const messageMatches = msg.message === messageData.body;
-              const senderMatches = msg.phoneFrom === messageData.from.replace('@c.us', '') || 
-                                  msg.phoneTo === messageData.from.replace('@c.us', '');
-              const recipientMatches = msg.phoneFrom === messageData.to.replace('@c.us', '') || 
-                                     msg.phoneTo === messageData.to.replace('@c.us', '');
+              const messageMatches = msg.message === messageData?.body;
+              const senderMatches = msg.phoneFrom === messageData?.from?.replace('@c.us', '') || 
+                                  msg.phoneTo === messageData?.from?.replace('@c.us', '');
+              const recipientMatches = msg.phoneFrom === messageData?.to?.replace('@c.us', '') || 
+                                     msg.phoneTo === messageData?.to?.replace('@c.us', '');
               
               return messageMatches && senderMatches && recipientMatches;
             });

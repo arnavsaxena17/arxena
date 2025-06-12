@@ -207,7 +207,7 @@ export class FacebookWhatsappChatApi {
           process.env.SERVER_BASE_URL,
         );
         response = await axios.post(
-          process.env.SERVER_BASE_URL + '/metawhatsapp-controller/uploadFile',
+          process.env.SERVER_BASE_URL + '/meta-whatsapp-controller/uploadFile',
           { filePath: filePath },
           { headers: { Authorization: `Bearer ${apiToken}` } },
         );
@@ -670,7 +670,6 @@ export class FacebookWhatsappChatApi {
           console.log(
             'Candidate node not found, cannot proceed with sending the message',
           );
-
           return;
         }
 

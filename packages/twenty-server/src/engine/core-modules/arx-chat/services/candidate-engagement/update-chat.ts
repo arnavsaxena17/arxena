@@ -443,7 +443,9 @@ export class UpdateChat {
     apiToken: string,
     jobIds: string[],
     candidateIds: string[] | null = null,
+    updateType: string = "processCandidatesChatsGetStatuses",
   ) {
+    console.log('This is the update type::', updateType);
     console.log('Processing candidates chats to get statuses with chat true');
     console.log('Received a lngth of candidate Ids::', candidateIds?.length);
     console.log('candidate Ids::', candidateIds);
@@ -826,7 +828,7 @@ export class UpdateChat {
 
     const results = await new UpdateChat(
       this.workspaceQueryService,
-    ).processCandidatesChatsGetStatuses(apiToken, [candidateProfileObj.jobs?.id], [candidateProfileObj.id]);
+    ).processCandidatesChatsGetStatuses(apiToken, [candidateProfileObj.jobs?.id], [candidateProfileObj.id], "updateCandidateEngagementStatusAndChatCounts");
     console.log('Results from updating candidate engagement status and chat counts::', results);
     return results;
   }

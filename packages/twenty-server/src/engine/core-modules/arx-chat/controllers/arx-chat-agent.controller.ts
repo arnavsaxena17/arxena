@@ -561,7 +561,7 @@ export class ArxChatEndpoint {
       ).getJobIdsFromCandidateIds(candidateIds, apiToken);
       const results = await new UpdateChat(
         this.workspaceQueryService,
-      ).processCandidatesChatsGetStatuses(apiToken, jobIds, candidateIds);
+      ).processCandidatesChatsGetStatuses(apiToken, jobIds, candidateIds, "countChats");
 
       console.log(
         'Have received results and will try and update the sheets also from the controlelr',

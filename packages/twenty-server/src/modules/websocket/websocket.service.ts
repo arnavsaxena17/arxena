@@ -51,7 +51,7 @@ export class WebSocketService {
     if (!this.server) {
       console.error('WebSocket server not initialized for sendToUser - deferring message');
       // Optionally queue the message or retry after a delay
-      setTimeout(() => this.sendToUser(userId, event, data), 1000);
+      // setTimeout(() => this.sendToUser(userId, event, data), 1000);
       return;
     }
       console.log(`Attempting to send event ${event} to user ${userId}`);

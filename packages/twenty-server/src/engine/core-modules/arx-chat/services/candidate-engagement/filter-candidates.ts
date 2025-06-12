@@ -70,6 +70,7 @@ export class FilterCandidates {
       phoneNumberFrom = recruiterProfile.phoneNumber
     }
   
+    console.log("This is the candiadte node messaging Channel:", candidateNode?.messagingChannel)
     const updatedChatHistoryObj: whatappUpdateMessageObjType = {
       id: uuidv4(),
       messageObj: chatHistory,

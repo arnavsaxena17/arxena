@@ -25,7 +25,7 @@ const urlFields = [
 ];
 
 const excludedFields = [
-  'id', 'checkbox', 'name','profileUrl', 'hasCv','fullName','jobName','candidateFieldValues','token','hiringNaukriCookie','dataSource', 'personId', 'firstName', 'searchId','phoneNumbers','mobilePhone','filterQueryHash','mayAlsoKnow','languages','englishLevel','baseQueryHash','creationDate','apnaSearchToken','lastName', 'emailAddress', 'industries', 'profiles', 'jobProcess', 'locations','experience', 'experienceStats', 'lastUpdated','education','interests','dataSources','allNumbers','uploadId','allMails','socialprofiles','tables','created','middleName','middleInitial','creationSource','contactDetails','queryId','socialProfiles',
+  'id', 'checkbox', 'name','profileUrl', 'uniqueId','hasCv','fullName','jobName','candidateFieldValues','token','hiringNaukriCookie','dataSource', 'personId', 'firstName', 'searchId','phoneNumbers','mobilePhone','filterQueryHash','mayAlsoKnow','languages','englishLevel','baseQueryHash','creationDate','apnaSearchToken','lastName', 'emailAddress', 'industries', 'profiles', 'jobProcess', 'locations','experience', 'experienceStats', 'lastUpdated','education','interests','dataSources','allNumbers','uploadId','allMails','socialprofiles','tables','created','middleName','middleInitial','creationSource','contactDetails','queryId','socialProfiles',
 ];
 
 export const TableColumns = ({ 
@@ -317,7 +317,7 @@ export const TableColumns = ({
         data: column,
         title: column.charAt(0).toUpperCase() + column.slice(1),
         width: 150,
-        renderer: simpleRenderer,
+        renderer: column === 'lastMessage' ? dateRenderer : simpleRenderer,
       });
       allKeys.delete(column);
     }

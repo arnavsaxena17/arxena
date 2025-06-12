@@ -437,7 +437,7 @@ export default class CandidateEngagementArx {
         // Process chat statuses
         const results = await new UpdateChat(
           this.workspaceQueryService,
-        ).processCandidatesChatsGetStatuses(apiToken, jobIds, candidateIds);
+        ).processCandidatesChatsGetStatuses(apiToken, jobIds, candidateIds, "makeUpdatesonChats");
 
         await new GoogleSheetsService().updateGoogleSheetsWithChatData(
           results,
