@@ -154,15 +154,16 @@ export class ExtSockWhatsappMessageProcessor {
 
     if (!personObj || !personObj.candidates?.edges?.[0]?.node) {
       console.log('No candidate found for this phone number');
-
       return;
     }
 
-    const candidateNode = personObj.candidates.edges[0].node;
+    const candidateNode = personObj.candidates.edges
+      .sort((a, b) => new Date(b?.node?.updatedAt).getTime() - new Date(a?.node?.updatedAt).getTime())
+      [0]?.node;
+    
 
-    // Get message object from candidate
+    console.log("This is the candidate node in process outgoing message:", candidateNode)
     let messageObj: ChatHistoryItem[] = [];
-
     if (candidateNode.whatsappMessages?.edges?.length > 0) {
       const messagesList = candidateNode.whatsappMessages.edges;
 

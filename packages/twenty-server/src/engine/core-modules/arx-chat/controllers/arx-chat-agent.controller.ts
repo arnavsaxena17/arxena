@@ -293,6 +293,12 @@ export class ArxChatEndpoint {
           ? '91' + personObj.phones.primaryPhoneNumber
           : personObj.phones.primaryPhoneNumber
     }
+    console.log("This is the messaging channel ::", personObj?.candidates?.edges.filter(
+      (candidate) => candidate.node.jobs.id == candidateJob.id,
+    )[0]?.node.messagingChannel)
+    console.log("This is the whatsapp provider ::", personObj?.candidates?.edges.filter(
+      (candidate) => candidate.node.jobs.id == candidateJob.id,
+    )[0]?.node.whatsappProvider)
       
     const whatappUpdateMessageObj: whatappUpdateMessageObjType = {
       id: uuidv4(),

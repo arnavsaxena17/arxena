@@ -44,6 +44,7 @@ export class FilterCandidates {
       apiToken,
     );
 
+    console.log("This is the candidate node in undate chat hisotry object create whatsapp message obj:", candidateNode)
 
     let phoneNumberTo:string = personNode.phones.primaryPhoneNumber.length == 10
     ? '91' + personNode.phones.primaryPhoneNumber
@@ -70,7 +71,12 @@ export class FilterCandidates {
       phoneNumberFrom = recruiterProfile.phoneNumber
     }
   
+
+    console.log("This is the person node messaging Channel:", personNode?.candidates?.edges.filter(
+      (candidate) => candidate.node.jobs.id == candidateJob.id,
+    )[0]?.node.messagingChannel)
     console.log("This is the candiadte node messaging Channel:", candidateNode?.messagingChannel)
+    console.log("This is the candiadte node whatsapp provider:", candidateNode?.whatsappProvider)
     const updatedChatHistoryObj: whatappUpdateMessageObjType = {
       id: uuidv4(),
       messageObj: chatHistory,
@@ -84,7 +90,9 @@ export class FilterCandidates {
       whatsappDeliveryStatus: 'created',
       whatsappMessageId: wamId,
       whatsappMessageType: '',
-      typeOfMessage: candidateNode?.messagingChannel || 'whatsapp-web',
+      typeOfMessage: personNode?.candidates?.edges.filter(
+        (candidate) => candidate.node.jobs.id == candidateJob.id,
+      )[0]?.node.messagingChannel || 'whatsapp-web',
     };
 
     return updatedChatHistoryObj;

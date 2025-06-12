@@ -162,6 +162,14 @@ export default class CandidateEngagementArx {
       phoneNumberTo = recruiterProfile.phoneNumber
     }
 
+
+    console.log("This is the messaging channel ::", candidatePersonNodeObj?.candidates?.edges.filter(
+      (candidate) => candidate.node.jobs.id == candidateJob.id,
+    )[0]?.node.messagingChannel)
+    console.log("This is the whatsapp provider ::", candidatePersonNodeObj?.candidates?.edges.filter(
+      (candidate) => candidate.node.jobs.id == candidateJob.id,
+    )[0]?.node.whatsappProvider)
+
     const whatappUpdateMessageObj: whatappUpdateMessageObjType = {
       id: uuidv4(),
       candidateProfile: candidatePersonNodeObj?.candidates?.edges.filter(

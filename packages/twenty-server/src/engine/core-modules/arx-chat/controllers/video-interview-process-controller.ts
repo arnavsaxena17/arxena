@@ -196,7 +196,11 @@ export class VideoInterviewProcessController {
               .map((edge) => edge?.node?.jobs?.company?.name)[0]
           : '';
 
-      const candidateNode = personObj.candidates.edges[0].node;
+
+    const candidateNode = personObj.candidates.edges.filter(
+      (edge) => edge.node.id === candidateId,
+    )[0]?.node;
+  
       const candidateJob: Jobs = candidateNode?.jobs;
       const recruiterProfile: RecruiterProfileType =
         await getRecruiterProfileByJob(candidateJob, apiToken);
