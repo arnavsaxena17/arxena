@@ -291,6 +291,30 @@ export const TableColumns = ({
     'stopChat'
   ];
 
+  // Status mapping
+  const STATUS_LABELS: Record<string, string> = {
+    'ONLY_ADDED_NO_CONVERSATION': 'No Conversation',
+    'CONVERSATION_STARTED_HAS_NOT_RESPONDED': 'Started, No Response',
+    'SHARED_JD_HAS_NOT_RESPONDED': 'Shared JD, No Response',
+    'CANDIDATE_REFUSES_TO_RELOCATE': 'Refuses Relocation',
+    'STOPPED_RESPONDING_ON_QUESTIONS': 'Stopped Responding',
+    'CANDIDATE_SALARY_OUT_OF_RANGE': 'Salary Out of Range',
+    'CANDIDATE_IS_KEEN_TO_CHAT': 'Keen to Chat',
+    'CANDIDATE_HAS_FOLLOWED_UP_TO_SETUP_CHAT': 'Followed Up',
+    'CANDIDATE_IS_RELUCTANT_TO_DISCUSS_COMPENSATION': 'Reluctant on Compensation',
+    'CONVERSATION_CLOSED_TO_BE_CONTACTED': 'Closed to Contact'
+  };
+
+  // Status renderer
+  const statusRenderer: ColumnRenderer = (instance, td, row, column, prop, value) => {
+    const div = document.createElement('div');
+    Object.assign(div.style, truncatedCellStyle);
+    div.textContent = value && STATUS_LABELS[value] ? STATUS_LABELS[value] : String(value);
+    td.innerHTML = '';
+    td.appendChild(div);
+    return td;
+  };
+
   const columns: Handsontable.ColumnSettings[] = [];
 
   columns.push({
@@ -323,7 +347,6 @@ export const TableColumns = ({
     }
   });
 
-
   const smallFields = chatColumns.concat(['inferredSalary', 'inferredYearsExperience']);
   Array.from(allKeys)
     .filter(key => !excludedFields.includes(key))
@@ -332,11 +355,16 @@ export const TableColumns = ({
       const isUrlField = urlFields.includes(key);
       const isDateField = key === 'createdAt' || key === 'updatedAt' || key === 'deletedAt' || key === 'lastMessage';
       const isChatField = chatColumns.includes(key);
+      const isStatusField = key === 'candConversationStatus';
       columns.push({
         data: key,
         title: key.charAt(0).toUpperCase() + key.slice(1),
         width: isChatField ? 40 : smallFields.includes(key) ? 40 : 150,
-        renderer: isChatField ? booleanToggleRenderer : isUrlField ? urlRenderer : isDateField ? dateRenderer : simpleRenderer,
+        renderer: isChatField ? booleanToggleRenderer : 
+                 isUrlField ? urlRenderer : 
+                 isDateField ? dateRenderer : 
+                 isStatusField ? statusRenderer :
+                 simpleRenderer,
       });
     });
 

@@ -66,6 +66,56 @@ type JobStatisticsModalProps = {
   processedData: any[];
 };
 
+type CandidateStatus = {
+  label: string;
+  status: string;
+};
+
+const candidateStatuses: CandidateStatus[] = [
+  {
+    label: 'No Conversation',
+    status: 'ONLY_ADDED_NO_CONVERSATION',
+  },
+  {
+    label: 'Started, No Response',
+    status: 'CONVERSATION_STARTED_HAS_NOT_RESPONDED',
+  },
+  {
+    label: 'Shared JD, No Response',
+    status: 'SHARED_JD_HAS_NOT_RESPONDED',
+  },
+  {
+    label: 'Refuses Relocation',
+    status: 'CANDIDATE_REFUSES_TO_RELOCATE',
+  },
+  {
+    label: 'Stopped Responding',
+    status: 'STOPPED_RESPONDING_ON_QUESTIONS',
+  },
+  {
+    label: 'Salary Out of Range',
+    status: 'CANDIDATE_SALARY_OUT_OF_RANGE',
+  },
+  {
+    label: 'Keen to Chat',
+    status: 'CANDIDATE_IS_KEEN_TO_CHAT',
+  },
+  {
+    label: 'Followed Up',
+    status: 'CANDIDATE_HAS_FOLLOWED_UP_TO_SETUP_CHAT',
+  },
+  {
+    label: 'Reluctant on Compensation',
+    status: 'CANDIDATE_IS_RELUCTANT_TO_DISCUSS_COMPENSATION',
+  },
+  {
+    label: 'Closed to Contact',
+    status: 'CONVERSATION_CLOSED_TO_BE_CONTACTED',
+  },
+];
+
+
+
 export const JobStatisticsModal = ({ isOpen, onClose, processedData }: JobStatisticsModalProps) => {
   if (!isOpen) return null;
 
