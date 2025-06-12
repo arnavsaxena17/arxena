@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
 import axios from 'axios';
 import { ExtSockWhatsappService } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/ext-sock-whatsapp.service';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
@@ -106,16 +106,16 @@ export class ExtSockWhatsappController {
     }
   }
 
-  @Get('whitelist/:userId')
+  @Post('whitelist')
   @UseGuards(JwtAuthGuard)
-  async getWhitelistedNumbers(@Param('userId') userId: string) {
+  async getWhitelistedNumbers(@Body() body: { userId: string }) {
     try {
-      console.log('Fetching whitelisted numbers for user:', userId);
-      const whitelistedNumbers = await this.redisService.getWhitelist(userId);
+      console.log('Fetching whitelisted numbers for user:', body.userId);
+      const whitelistedNumbers = await this.redisService.getWhitelist(body.userId);
       console.log("whitelistedNumbers::", whitelistedNumbers);
       return {
         status: 'success',
-        data: { userId, whitelistedNumbers, },
+        data: { userId: body.userId, whitelistedNumbers, },
       };
     } catch (error) {
       console.error('Error fetching whitelisted numbers:', error);

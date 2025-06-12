@@ -332,16 +332,21 @@ const revertTableState = (rowData: any, prop: string, oldValue: any, hot: any, s
 
 const processBackendUpdate = async (
   update: PendingUpdate, 
-  tokenPair: any, 
+  getLatestToken: () => string | undefined,
   setTableState: any,
   tableRef: React.RefObject<any>
 ) => {
   const { prop, oldValue, newValue, rowData, endpoint } = update;
   
   try {
+    const latestToken = getLatestToken();
+    if (!latestToken) {
+      throw new Error('No valid token available');
+    }
+
     const response = await fetch(endpoint, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${tokenPair?.accessToken?.token}` },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${latestToken}` },
       body: JSON.stringify({ candidateId: rowData.id, fieldName: prop, value: newValue, personId: rowData.personId })
     });
     
@@ -355,7 +360,7 @@ const processBackendUpdate = async (
   }
 };
 
-export const afterChange = async (tableRef: React.RefObject<any>, changes: any, source: any, jobId: string, tokenPair: any, setTableState: any, refreshData: any) => {
+export const afterChange = async (tableRef: React.RefObject<any>, changes: any, source: any, jobId: string, getLatestToken: () => string | undefined, setTableState: any, refreshData: any) => {
   console.log("changes in afterChange", changes);
   console.log("source in afterChange", source);
   
@@ -444,7 +449,7 @@ export const afterChange = async (tableRef: React.RefObject<any>, changes: any, 
   console.log("updatedRows in afterChange::", updatedRows);
 
   // Process updates in the background
-  pendingUpdates.forEach(update => processBackendUpdate(update, tokenPair, setTableState, tableRef));
+  pendingUpdates.forEach(update => processBackendUpdate(update, getLatestToken, setTableState, tableRef));
 };
 
 export const performUndo = async (tableRef: React.RefObject<any>, setTableState: any) => {

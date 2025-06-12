@@ -172,9 +172,15 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void> }, DataTa
     //   handleKeyDown(event, tableRef, tableState, setTableState);
     // };
 
+    // Create a function to get the latest token
+    const getLatestToken = useCallback(() => {
+      return tokenPair?.accessToken?.token;
+    }, [tokenPair]);
+
     const afterChangeHandler = ( changes: CellChange[] | null, source: ChangeSource) => {
       console.log("changes and source in after Change Handler", changes, source);
-      afterChange( tableRef, changes, source, jobId, tokenPair, setTableState, refreshData);
+      console.log("Token in after Change Handler", tokenPair?.accessToken?.token);
+      afterChange( tableRef, changes, source, jobId, getLatestToken, setTableState, refreshData);
     }
 
     // const beforeOnCellMouseDownHandler = (event: MouseEvent, coords: { row: number; col: number }) => {
