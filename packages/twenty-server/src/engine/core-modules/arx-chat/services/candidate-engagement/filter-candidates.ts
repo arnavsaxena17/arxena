@@ -471,7 +471,7 @@ export class FilterCandidates {
           const isLatest = updatedAtTime === maxUpdatedAt;
 
           console.log(
-            `Candidate ${edge?.node?.name} - isActive: ${isActive}, hasStartChat: ${hasStartChat}, isLatest: ${isLatest}`
+            `Candidate ${edge?.node?.name} with id ${edge?.node?.id} - isActive: ${isActive}, hasStartChat: ${hasStartChat}, isLatest: ${isLatest}`
           );
 
           return isActive && hasStartChat && isLatest;
