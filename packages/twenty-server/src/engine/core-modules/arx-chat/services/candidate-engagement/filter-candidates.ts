@@ -439,8 +439,10 @@ export class FilterCandidates {
         'for phone number:',
         phoneNumberToSearch,
       );
+      // const candidateDataObjs = response.data?.data?.people?.edges[0]?.node?.candidates?.edges || [];
       const candidateDataObjs = response.data?.data?.people?.edges?.flatMap(person => person?.node?.candidates?.edges || []) || [];
-      console.log('candidateDataObjs::', candidateDataObjs);
+      // console.log('candidateDataObjs::', candidateDataObjs);
+      console.log('Number of candidates in candidateDataObjs::', candidateDataObjs.length);
       const maxUpdatedAt =
         candidateDataObjs?.length > 0
           ? Math.max(
