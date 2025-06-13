@@ -1172,6 +1172,10 @@ export default class CandidateEngagementArx {
         this.workspaceQueryService,
       ).fetchAllPeopleByCandidatePeopleIds(candidatePeopleIds, apiToken);
 
+
+
+      console.log("number of people fetched::", people.length);
+      console.log("Names of people fetched::", people.map((p) => p.name.firstName + " " + p.name.lastName));
       return { people, candidateJobs };
     } catch (error) {
       console.log(
