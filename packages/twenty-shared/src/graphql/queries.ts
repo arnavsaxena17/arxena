@@ -798,6 +798,12 @@ query FindManyWorkspaceMembers($filter: WorkspaceMemberFilterInput, $orderBy: [W
 
 export const graphqlQueryToFindManyPeople = `query FindManyPeople($filter: PersonFilterInput, $orderBy: [PersonOrderByInput], $lastCursor: String, ) {
   people(filter: $filter, orderBy: $orderBy,  after: $lastCursor) {
+    pageInfo {
+      hasNextPage
+      startCursor
+      endCursor
+      __typename
+    }
     edges {
       cursor
       node {
@@ -1538,10 +1544,10 @@ export const queryByvideoInterview = `query FindOneVideoInterview($objectRecordI
 export const graphqlToFetchAllCandidateData = `
   query FindManyCandidates($lastCursor: String, $limit: Int, $filter: CandidateFilterInput) {
     candidates(after: $lastCursor, first: $limit, filter: $filter) {
-        pageInfo {
-          hasNextPage
-          startCursor
-          endCursor
+      pageInfo {
+        hasNextPage
+        startCursor
+        endCursor
       }
       edges {
         cursor

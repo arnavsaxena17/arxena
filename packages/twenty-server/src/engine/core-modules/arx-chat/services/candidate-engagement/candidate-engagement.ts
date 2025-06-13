@@ -891,7 +891,8 @@ export default class CandidateEngagementArx {
           break;
         }
 
-        lastCursor = edges[edges.length - 1].cursor;
+        // lastCursor = edges[edges.length - 1].cursor;
+        lastCursor = response?.data?.data?.candidates?.pageInfo?.endCursor;
         console.log("lastCursor::", lastCursor);
 
       }
@@ -979,7 +980,7 @@ export default class CandidateEngagementArx {
           allCandidates.push(...newCandidates);
 
           if (!hasNextPage) break;
-          lastCursor = edges[edges.length - 1].cursor;
+          lastCursor = response?.data?.data?.candidates?.pageInfo?.endCursor;
           console.log("lastCursor::", lastCursor, "number of candidates fetched::", allCandidates.length);
         }
       }
@@ -1085,7 +1086,8 @@ export default class CandidateEngagementArx {
             console.log("No more candidates to fetch");
             break;
           };
-          lastCursor = edges[edges.length - 1].cursor;
+
+          lastCursor = response?.data?.data?.candidates?.pageInfo?.endCursor;
           console.log("lastCursor::", lastCursor, "number of candidates fetched::", allCandidates.length);
         }
       }

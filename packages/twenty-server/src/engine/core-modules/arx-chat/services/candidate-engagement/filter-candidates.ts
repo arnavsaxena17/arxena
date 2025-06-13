@@ -225,7 +225,8 @@ export class FilterCandidates {
         }
 
         allPeople = allPeople.concat(edges.map((edge: any) => edge?.node));
-        lastCursor = edges[edges.length - 1].lastCursor;
+        lastCursor = response?.data?.data?.people?.pageInfo?.endCursor;
+        // lastCursor = edges[edges.length - 1].lastCursor;
         hasNextPage = response?.data?.data?.people?.pageInfo?.hasNextPage || false;
         console.log("lastCursor::", lastCursor, "number of people fetched::", allPeople.length);
       }
