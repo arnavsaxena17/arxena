@@ -640,7 +640,7 @@ export class CandidateSourcingController {
     console.log('arxenaSiteId:', jobId);
     const data: UserProfile[] = req.body?.data;
 
-    console.log('Data len:', data.length);
+    console.log('Data len of candidates received in post candidates API:', data.length);
     console.log('First candidats:', data[0]);
     await new Promise((resolve) => setTimeout(resolve, Math.random() * 1000));
     const timestamp = req.body?.timestamp || new Date().toISOString();

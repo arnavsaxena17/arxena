@@ -452,6 +452,8 @@ export class FilterCandidates {
         'Active job candidate found:', 
         activeJobCandidateObj?.node?.name || 'None',
         'with updatedAt:',
+        'with id:',
+        activeJobCandidateObj?.node?.id || 'No id',
         activeJobCandidateObj?.node?.updatedAt || 'No date'
       );
 
