@@ -225,8 +225,9 @@ export class FilterCandidates {
         }
 
         allPeople = allPeople.concat(edges.map((edge: any) => edge?.node));
-        lastCursor = edges[edges.length - 1].cursor;
+        lastCursor = edges[edges.length - 1].lastCursor;
         hasNextPage = response?.data?.data?.people?.pageInfo?.hasNextPage || false;
+        console.log("lastCursor::", lastCursor, "number of people fetched::", allPeople.length);
       }
       console.log(
         'Number of people fetched in fetchAllPeopleByCandidatePeopleIds:',
@@ -271,6 +272,7 @@ export class FilterCandidates {
         lastCursor =
           whatsappMessages.edges[whatsappMessages.edges.length - 1].cursor;
         hasNextPage = newWhatsappMessages.length === 400;
+        console.log("lastCursor::", lastCursor, "number of whatsapp messages fetched::", allWhatsappMessages.length);
       } catch (error) {
         hasNextPage = false;
         console.error('Error fetching whatsappmessages:', error);

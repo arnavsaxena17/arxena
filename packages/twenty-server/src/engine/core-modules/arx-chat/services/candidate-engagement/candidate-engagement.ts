@@ -26,6 +26,7 @@ import { GoogleSheetsService } from 'src/engine/core-modules/google-sheets/googl
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 import axios from 'axios';
+import console from 'console';
 import { v4 as uuidv4 } from 'uuid';
 import { FilterCandidates } from './filter-candidates';
 import { UpdateChat } from './update-chat';
@@ -891,6 +892,8 @@ export default class CandidateEngagementArx {
         }
 
         lastCursor = edges[edges.length - 1].cursor;
+        console.log("lastCursor::", lastCursor);
+
       }
 
       console.log(`Fetched ${allCandidates.length} candidates for job ID ${jobId}`);
@@ -977,6 +980,7 @@ export default class CandidateEngagementArx {
 
           if (!hasNextPage) break;
           lastCursor = edges[edges.length - 1].cursor;
+          console.log("lastCursor::", lastCursor, "number of candidates fetched::", allCandidates.length);
         }
       }
 
@@ -1076,13 +1080,13 @@ export default class CandidateEngagementArx {
             `Found ${newCandidates.length} new candidates after filtering`,
           );
           allCandidates.push(...newCandidates);
-          console.log('hasNextPage::', hasNextPage, "when hasNextPage is false, we break the loop");
+          console.log('hasNextPage::', hasNextPage, "when hasNextPage is false, we break the loop", "number of candidates fetched::", allCandidates.length);
           if (!hasNextPage) {
             console.log("No more candidates to fetch");
             break;
           };
           lastCursor = edges[edges.length - 1].cursor;
-          console.log("lastCursor::", lastCursor);
+          console.log("lastCursor::", lastCursor, "number of candidates fetched::", allCandidates.length);
         }
       }
       console.log(
