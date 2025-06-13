@@ -422,8 +422,7 @@ export class FilterCandidates {
         },
       }
     }
-    
-    console.log("graphVariables::", graphVariables);
+    console.log("graphVariables::", JSON.stringify(graphVariables, null, 2));
     
     try {
       console.log('going to get candidate information');
@@ -432,57 +431,66 @@ export class FilterCandidates {
         variables: graphVariables,
       });
       const response = await axiosRequest(graphqlQueryObj, apiToken);
-      console.log("Number of people fetched::", response.data?.data?.people?.edges.length)
-      console.log(
-        'Number of candidates fetched::',
-        response.data?.data?.people?.edges[0]?.node?.candidates?.edges.length,
-        'for phone number:',
-        phoneNumberToSearch,
-      );
-      // const candidateDataObjs = response.data?.data?.people?.edges[0]?.node?.candidates?.edges || [];
-      const candidateDataObjs = response.data?.data?.people?.edges?.flatMap(person => person?.node?.candidates?.edges || []) || [];
-      // console.log('candidateDataObjs::', candidateDataObjs);
-      console.log('Number of candidates in candidateDataObjs::', candidateDataObjs.length);
-      const maxUpdatedAt =
-        candidateDataObjs?.length > 0
-          ? Math.max(
-              ...candidateDataObjs.map((e) =>
-                e?.node?.updatedAt
-                  ? new Date(e?.node?.updatedAt).getTime()
-                  : 0,
-              ),
-            )
-          : 0;
+      const peopleEdges = response.data?.data?.people?.edges || [];
       
+      console.log("Number of people fetched::", peopleEdges.length);
+
+      // Flatten all candidates from all people into single array
+      const candidateDataObjs = peopleEdges.flatMap(person => 
+        person?.node?.candidates?.edges || []
+      );
+
+      console.log('Number of candidates in candidateDataObjs::', candidateDataObjs.length);
+
+      // Find most recently updated candidate
+      const maxUpdatedAt = candidateDataObjs.reduce((max, edge) => {
+        const updatedAt = edge?.node?.updatedAt ? new Date(edge.node.updatedAt).getTime() : 0;
+        return Math.max(max, updatedAt);
+      }, 0);
+
       console.log('maxUpdatedAt::', maxUpdatedAt ? new Date(maxUpdatedAt).toLocaleString() : 'No date');
-      console.log('Candidate updatedAt timestamps:');
+      
+      // Log all candidate timestamps for debugging
       candidateDataObjs.forEach((candidateEdge, index) => {
+        const updatedAt = candidateEdge?.node?.updatedAt;
         console.log(
           `Candidate ${index + 1} updatedAt:`,
-          candidateEdge?.node?.updatedAt
-            ? new Date(candidateEdge.node.updatedAt).toLocaleString()
-            : 'No updatedAt date',
+          updatedAt ? new Date(updatedAt).toLocaleString() : 'No updatedAt date',
+          `isActive: ${candidateEdge?.node?.jobs?.isActive}`,
+          `startChat: ${candidateEdge?.node?.startChat}`
         );
       });
 
-      const activeJobCandidateObj = candidateDataObjs?.find(
-        (edge: CandidatesEdge) =>
-          edge?.node?.jobs?.isActive &&
-          edge?.node?.startChat &&
-          edge?.node?.updatedAt &&
-          new Date(edge?.node?.updatedAt).getTime() === maxUpdatedAt,
+      // Find active candidate with most recent update
+      const activeJobCandidateObj = candidateDataObjs.find(
+        (edge: CandidatesEdge) => {
+          const isActive = edge?.node?.jobs?.isActive;
+          const hasStartChat = edge?.node?.startChat;
+          const updatedAtTime = edge?.node?.updatedAt ? 
+            new Date(edge.node.updatedAt).getTime() : 0;
+          const isLatest = updatedAtTime === maxUpdatedAt;
+
+          console.log(
+            `Candidate ${edge?.node?.name} - isActive: ${isActive}, hasStartChat: ${hasStartChat}, isLatest: ${isLatest}`
+          );
+
+          return isActive && hasStartChat && isLatest;
+        }
       );
-      console.log( 'This is the number of candidates', candidateDataObjs?.length, );
-      console.log( 'This is the activeJobCandidateObj who got called', activeJobCandidateObj?.node?.name || '', );
+
+      console.log(
+        'Active job candidate found:', 
+        activeJobCandidateObj?.node?.name || 'None'
+      );
+
       if (activeJobCandidateObj) {
-        const personWithActiveJob = response?.data?.data?.people?.edges?.find(
+        const personWithActiveJob = peopleEdges.find(
           (person: PersonEdge) =>
             person?.node?.candidates?.edges?.some(
               (candidate) => candidate?.node?.jobs?.isActive,
             ),
         );
 
-        console.log('personWithActiveJob::', personWithActiveJob);
         const activeJobCandidate: CandidateNode = activeJobCandidateObj?.node;
         const activeJob: Jobs = activeJobCandidate?.jobs;
         const activeCompany = activeJob?.company;
@@ -534,18 +542,15 @@ export class FilterCandidates {
         };
 
         return candidateProfileObj;
-        // return activeJobCandidate;
       } else {
-        console.log('No active candidate found.');
-
+        console.log('No active candidate found with startChat enabled');
         return emptyCandidateProfileObj;
       }
     } catch (error) {
-      console.log(
-        'Getting an error and returning empty get Candidate Information candidate profile objeect:',
-        error,
+      console.error(
+        'Error getting candidate information:',
+        error
       );
-
       return emptyCandidateProfileObj;
     }
   }
